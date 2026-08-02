@@ -90,6 +90,7 @@ sleeping scene is visible in the results table. Full account in
 ```
 DESIGN.md                     the specification — start here
 DECISIONS.md                  why things are the way they are, and what was rejected
+primer/                       what was built and why it is interesting — start here to learn
 logbook/                      dated entries on what was tried, and what broke
 CLAUDE.md                     orientation for AI assistants
 LICENSE / LICENSE-DOCS        MIT for code, CC BY 4.0 for prose — see below

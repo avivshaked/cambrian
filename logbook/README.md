@@ -64,3 +64,4 @@ are the ones most likely to go unwritten.
 | [0001](0001-the-design-was-wrong-three-times.md) | 2026-08-02 | The design was wrong three times |
 | [0002](0002-the-spike-that-was-too-fast.md) | 2026-08-02 | The spike that was too fast |
 | [0003](0003-the-ignore-rule-that-keeps-eating-required-files.md) | 2026-08-02 | The ignore rule that keeps eating required files |
+| [0004](0004-two-ways-to-report-a-success-you-dont-have.md) | 2026-08-02 | Two ways to report a success you don't have |

@@ -27,6 +27,18 @@ value. Restated values drift, and a friendly-sounding wrong number is worse than
 What a piece *does* own is meaning: why a mechanism exists, what it buys, what it costs, what
 would go wrong without it. That does not drift, because it is not a parameter.
 
+## Citations
+
+Same convention as everywhere else here: `[KEY §section, p.N]`, with `p.N` the PDF page, and
+keys resolved in [`DESIGN.md`](../DESIGN.md) §13. A piece ends with a short table of which
+sources it leaned on and for what.
+
+Explanatory writing invites a particular failure: the confident bridging sentence that sounds
+like reasoning and is actually just fluent. One of those was the largest error the literature
+review caught in this project's design. So **anything a piece asserts that is not traceable to
+a source is marked as the author's inference, in the text and in the sources table.** A reader
+should never have to guess which sentences are backed and which are guesses.
+
 Pieces are written when the thing works, not when it is planned. A primer that describes
 unwritten code is a design document with adjectives.
 
@@ -35,3 +47,4 @@ unwritten code is a design document with adjectives.
 | # | Piece | About |
 |---|---|---|
 | [01](01-a-graph-that-grows-a-body.md) | A graph that grows a body | The encoding: why a genome is a recipe and not a blueprint |
+| [02](02-from-a-tree-of-boxes-to-something-that-moves.md) | From a tree of boxes to something that moves | Articulations, the scale trap, and why effector conditioning decides whether it looks alive |

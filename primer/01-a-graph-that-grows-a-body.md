@@ -82,12 +82,17 @@ than both its parents. Here the body plan mutates *as a body plan*.
 
 This is what "indirect encoding" means, and why [`DESIGN.md`](../DESIGN.md) §4.1 is emphatic
 about the term. A direct encoding maps genome entries to body parts one-to-one. An indirect
-one runs a program. The genome is the program; the creature is its output.
+one runs a program. The genome is the program; the creature is its output. A survey of
+encodings for evolved creatures classifies Sims as *"an indirect representation that supports
+recursive structures"* [L21 §4.2, p.8] — a point draft 2 of the design got backwards, with
+knock-on consequences.
 
 ## Transforms compound, so limbs taper
 
 Each edge carries a `scale`, and — this is the part that does the work — it applies **to the
-entire subtree**, not just the immediate child.
+entire subtree**, not just the immediate child. The implementation this design follows is
+explicit that such transforms *"are applied to the entire subtree of the phenotype graph
+during its construction"* [K12 §2.1, p.3].
 
 Put `scale = 0.5` on a recursive edge and you do not get one smaller segment. You get every
 subsequent segment smaller than the last:
@@ -105,14 +110,17 @@ a spiral; applied at a branch, shrinks a whole limb and everything growing off i
 This is also where the encoding will happily hurt you. Multiplicative scale down a long chain
 reaches sub-millimetre boxes in a handful of steps, and a physics solver handed a
 sub-millimetre box does not report an error — it reports *plausible nonsense*, jitter that
-looks like behaviour. Development therefore refuses to grow a part below a minimum volume.
-That guard rail is not fussiness; it exists because the alternative failure is silent.
+looks like behaviour. Development therefore refuses to grow a part below a minimum volume,
+because *"extremely small body parts cause instability in the physical engine"*
+[K12 §2.3, p.7]. That guard rail is not fussiness; it exists because the alternative failure
+is silent.
 
 ## One bit of bilateral symmetry
 
-Each edge has three reflection flags, one per axis. Enable one, and the child is instantiated
-**twice** — once as given, once mirrored. Enable two, and you get four copies. Three gives
-eight.
+Each edge has three reflection flags, one per axis: *"if one, two or three reflection flags
+are enabled, two, four or eight mirrored copies of a child node are created in the phenotype
+graph"* [K12 §2.1, p.3]. Enable one, and the child is instantiated **twice** — once as given,
+once mirrored. Enable two, and you get four copies. Three gives eight.
 
 That is the entire mechanism for bilateral symmetry, and it costs one bit.
 
@@ -124,10 +132,15 @@ symmetrically. It never does.
 
 Symmetry matters for a reason beyond search efficiency, and it is worth saying plainly because
 it is the project's actual goal: **symmetric things read as organisms, and asymmetric things
-read as debris.** A viewer decides in about half a second whether they are looking at an
-animal or at wreckage, and near-symmetry is most of that judgement. The paper this design
-follows shows symmetry in three of its four illustrated creatures. That is not decoration —
-it is why those images are recognisable as creatures at all.
+read as debris.** The figure of evolved creatures in [K12 Fig. 1, p.4] is captioned *"Several
+evolved robots exhibit symmetry (1a, 1b, 1d) and segmentation (1c)"* — three of four. That
+is not decoration; it is a large part of why those images are recognisable as creatures at
+all.
+
+<sub>The claim that a viewer *judges* organism-versus-debris largely on symmetry is my own
+reading, not a finding from the reviewed literature. It is the reason reflection was widened
+from one flag to three, so it is worth flagging as an assumption rather than smuggling in as
+fact.</sub>
 
 ## Recursion that runs out, so chains can have ends
 
@@ -153,6 +166,9 @@ way to draw shapes.
 
 **Neurons live inside morph nodes.** Not in a separate brain graph bolted on afterwards —
 inside the node, alongside its dimensions and its joint. Which means recursion copies them.
+The reference implementation uses the same arrangement: *"Each body part contains a local
+neuro-controller (an artificial neural network), as well as a local sensor and effector"*
+[K12 §2.2, p.3].
 
 Grow a five-segment spine from one node, and you have not just made five body segments. You
 have made five copies of that segment's controller, one per segment, each wired to its own
@@ -160,17 +176,25 @@ joint.
 
 A chain of identical local oscillators, each driving its own segment, coupled through the
 physics of being attached to each other — that is, structurally, a **central pattern
-generator**. It is the mechanism real animals use to produce rhythmic locomotion: lampreys,
-leeches, salamanders, and the spinal circuits that swing your legs when you walk.
+generator**, which is how [`DESIGN.md`](../DESIGN.md) §4.3 describes it and why the
+arrangement was chosen.
 
 Nobody designed that into this system. It falls out of the decision to put the neurons inside
 the node.
 
-This is the answer to a question that has puzzled people re-watching Sims' 1994 videos for
-thirty years: why do those blocky things produce such convincing travelling-wave swimming,
-when a modern neural network on a fixed body so often produces twitching? Because a
-travelling wave down a segmented body is what a chain of coupled oscillators *does*. The
-encoding is not merely permitting good gaits. It is biased toward them.
+Which suggests an answer to a question the literature has not settled — *"Why are Sims' 1994
+results hard to reproduce? What are the necessary ingredients?"* is question 2 of
+[this project's review](../research/LITERATURE-REVIEW.md), still marked only partly answered.
+If a travelling wave down a segmented body is what a chain of coupled oscillators does
+anyway, then an implementation that separates brain from body — however sophisticated the
+brain — has thrown away the mechanism that made the original work, and will need to
+rediscover coordination the hard way.
+
+<sub>That inference is mine, not a result from the reviewed papers. It is offered as a
+hypothesis worth testing, and testing it is one of the things this project is for. Central
+pattern generators in real nervous systems are well-established neuroscience, but no source
+in this project's bibliography covers them, so nothing here should be read as evidence about
+biology.</sub>
 
 Get the segment right once and evolution gets the coordination free — across all five copies,
 in the same mutation.
@@ -187,6 +211,27 @@ in the same mutation.
 
 None of this makes good creatures appear. It makes good creatures *reachable* — which is the
 only thing an encoding can do, and the thing that decides whether a search is worth running.
+
+## Sources
+
+Claims here cite `[KEY §section, p.N]`, where `p.N` is the PDF page — the same convention as
+[`DESIGN.md`](../DESIGN.md), whose §13 resolves every key. The papers are not in the
+repository; [`research/FETCH-RESULTS.md`](../research/FETCH-RESULTS.md) records where each
+came from.
+
+| Key | Used here for |
+|---|---|
+| `[K12]` | Reflection flags and their 2/4/8 copies; cumulative subtree transforms; terminal edges; minimum part volume; neurons living inside body parts; the symmetry figure |
+| `[L21]` | Classifying Sims' encoding as indirect |
+| `[S94]` | Sims 1994, the origin of the whole approach |
+
+**Two claims in this piece are mine and are not sourced**, marked where they appear: that a
+viewer's organism-versus-debris judgement rests largely on symmetry, and that separating
+brain from body is why Sims reproductions struggle. Both are the kind of plausible reasoning
+that has already been wrong once in this project — a confident bridging sentence with no
+citation was the single largest error the literature review caught
+([logbook/0001](../logbook/0001-the-design-was-wrong-three-times.md)). They are stated as
+hypotheses because that is what they are.
 
 ## Where it is
 

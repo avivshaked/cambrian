@@ -37,6 +37,16 @@ namespace Evosim.Sim
         [Tooltip("Seconds before the creature is torn down and the next seed grown. Zero disables.")]
         public float CycleSeconds = 8f;
 
+        [Header("Viewing aid — NOT the fluid model")]
+        [Tooltip("Linear damping applied to every part so the creature stays in frame.")]
+        public float ViewerLinearDamping = 4f;
+
+        [Tooltip("Angular damping applied to every part.")]
+        public float ViewerAngularDamping = 4f;
+
+        [Tooltip("Camera to point at whatever is currently spawned.")]
+        public FollowCamera Camera;
+
         private CreatureInstance _creature;
         private EffectorDriver _driver;
         private float[] _scratch;
@@ -71,6 +81,19 @@ namespace Evosim.Sim
 
             _creature = PhenotypeBuilder.Build(phenotype, transform.position, transform);
             _creature.Root.name = $"Creature (seed {Seed})";
+
+            // Crude viscous damping so the creature stays where you can see it. This is NOT
+            // the fluid model and must never become one: DESIGN.md §5.3 and [C18 §4, p.28]
+            // show that a simplified fluid model collapses morphological diversity — no fish,
+            // no squid, a gallery of similar blobs. It is safe here only because nothing is
+            // being selected. Milestone 2 brings real forces, including added mass.
+            foreach (ArticulationBody body in _creature.Bodies)
+            {
+                body.linearDamping = ViewerLinearDamping;
+                body.angularDamping = ViewerAngularDamping;
+            }
+
+            if (Camera != null) Camera.Target = _creature.Root.transform;
 
             _driver = new EffectorDriver(_creature) { TorqueScale = TorqueScale };
             _scratch = new float[Mathf.Max(1, _creature.TotalDof)];

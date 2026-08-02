@@ -8,7 +8,7 @@ A Karl Sims–style evolved-virtual-creatures simulator in Unity. Genomes encode
 body plan and brain; creatures are grown from a recursive directed graph and evaluated in
 physics. Aquatic locomotion first, terrestrial later.
 
-**Five documents, deliberately non-overlapping.** Keep them that way — duplicated rationale
+**Six documents, deliberately non-overlapping.** Keep them that way — duplicated rationale
 drifts and then none of it can be trusted.
 
 | File | Answers |
@@ -17,6 +17,7 @@ drifts and then none of it can be trusted.
 | [`DECISIONS.md`](DECISIONS.md) | *Why we chose this over that*, and what was rejected. Append-only; reversals get a new entry marking the old one superseded |
 | [`research/LITERATURE-REVIEW.md`](research/LITERATURE-REVIEW.md) | *What the evidence says* |
 | [`logbook/`](logbook/) | *What happened, and when* — dated entries on what was tried and what broke. Never a source of truth: it links to the documents above rather than restating them, and is the only one allowed to be out of date |
+| [`primer/`](primer/) | *What the thing is, and why it is interesting* — explanatory prose for a reader, written after a mechanism works. Also never a source of truth. Anything it asserts that is not traceable to a cited source must be marked as inference, in the text and in its sources table |
 | `CLAUDE.md` (this file) | *What will bite you* |
 
 **Two licences.** Code is MIT ([`LICENSE`](LICENSE)); the prose — `DESIGN.md`,
