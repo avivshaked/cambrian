@@ -1,0 +1,11 @@
+# Email addresses permitted to appear in committed file content.
+# One per line, exact match, case-insensitive. Lines starting with # are ignored
+# by convention (the hook compares whole lines, so a comment never matches).
+#
+# Add an address here only when it is deliberately part of the record — for
+# example a corresponding author quoted from a paper. Do NOT add your own
+# address to silence the hook; your committer identity already appears in git
+# metadata and does not belong in file content.
+#
+# Always allowed without listing: your configured git user.email,
+# *.noreply.github.com, *@example.com, *@anthropic.com

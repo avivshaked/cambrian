@@ -8,6 +8,21 @@ A Karl Sims–style evolved-virtual-creatures simulator in Unity. Genomes encode
 body plan and brain; creatures are grown from a recursive directed graph and evaluated in
 physics. Aquatic locomotion first, terrestrial later.
 
+**Four documents, deliberately non-overlapping.** Keep them that way — duplicated rationale
+drifts and then none of it can be trusted.
+
+| File | Answers |
+|---|---|
+| [`DESIGN.md`](DESIGN.md) | *What the system is* — the specification |
+| [`DECISIONS.md`](DECISIONS.md) | *Why we chose this over that*, and what was rejected. Append-only; reversals get a new entry marking the old one superseded |
+| [`research/LITERATURE-REVIEW.md`](research/LITERATURE-REVIEW.md) | *What the evidence says* |
+| `CLAUDE.md` (this file) | *What will bite you* |
+
+**Commits are guarded.** `scripts/githooks/pre-commit` blocks copyrighted PDFs, secrets,
+stray emails, Unity build output and files over 5 MB. Enable with
+`git config core.hooksPath scripts/githooks`. Do not bypass it with `--no-verify`; if it
+fires, the finding is real until proven otherwise.
+
 **[`DESIGN.md`](DESIGN.md) is the source of truth.** It is not a sketch — it is an
 evidence-backed specification where most decisions cite peer-reviewed literature with page
 locators. Read it before proposing architectural changes; several obvious-seeming ideas

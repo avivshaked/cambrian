@@ -29,12 +29,14 @@ research/papers/
 research/extracted/
 research/.cache/
 
-# Extraction artifacts, wherever they end up
+# Extraction artifacts. These patterns are SCOPED TO research/ on purpose —
+# an unscoped **/manifest.json silently excluded Unity's Packages/manifest.json,
+# which would have broken package restore on clone.
 *.pdf
-**/candidates/
-**/manifest.json
-**/*.direct.md
-**/*.ocr.md
+research/**/candidates/
+research/**/manifest.json
+research/**/*.direct.md
+research/**/*.ocr.md
 
 # -------------------------------------------------------------
 # Explicitly tracked (guard against the patterns above)
@@ -94,6 +96,13 @@ $RECYCLE.BIN/
 
 # Unity3D generated crash reports
 sysinfo.txt
+
+# Crash dumps / core files. A stackdump from a failing grep once made it into
+# a commit — they are binary junk and can contain process memory.
+*.stackdump
+*.dmp
+core
+core.*
 
 # Builds
 *.apk

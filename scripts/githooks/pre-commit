@@ -1,0 +1,109 @@
+#!/bin/sh
+# Pre-commit guard for Cambrian.
+#
+# Blocks commits that would leak copyrighted material, secrets, personal
+# information, or Unity build artifacts. Lives in a TRACKED directory and is
+# activated with:
+#
+#     git config core.hooksPath scripts/githooks
+#
+# (.git/hooks is not tracked, so a hook installed there would not survive a
+# clone. core.hooksPath does.)
+#
+# Deliberate override, when you have actually looked and are sure:
+#     git commit --no-verify
+#
+# Exit 0 = allow, 1 = block.
+
+RED=$(printf '\033[31m'); YEL=$(printf '\033[33m'); NC=$(printf '\033[0m')
+fail=0
+
+block() { printf "%sBLOCKED%s  %s\n" "$RED" "$NC" "$1"; fail=1; }
+warn()  { printf "%swarn%s     %s\n" "$YEL" "$NC" "$1"; }
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+# ── 1. Paths that must never be committed ────────────────────────────────────
+# Copyrighted papers and their machine extractions; Unity generated output.
+for f in $staged; do
+  case "$f" in
+    *.pdf)                          block "$f — copyrighted PDF (see .gitignore)" ;;
+    research/papers/*)              block "$f — extracted paper material, not redistributable" ;;
+    *.direct.md|*.ocr.md)           block "$f — raw PDF extraction" ;;
+    */candidates/*)                 block "$f — raw PDF extraction" ;;
+    */Library/*|*/Temp/*|*/Logs/*)  block "$f — Unity generated output" ;;
+    */UserSettings/*)               block "$f — machine-local Unity settings" ;;
+    *.csproj|*.sln|*.user|*.suo)    block "$f — IDE file with absolute local paths" ;;
+    *.stackdump|*.dmp|core|core.*)  block "$f — crash dump; binary junk, may contain process memory" ;;
+    *.env|.env.*|*.pem|*.key|*.pfx) block "$f — credential or key file" ;;
+  esac
+done
+
+# ── 2. Oversized files ───────────────────────────────────────────────────────
+# A stray binary is usually a mistake, and always a leak risk.
+for f in $staged; do
+  [ -f "$f" ] || continue
+  size=$(wc -c < "$f" 2>/dev/null | tr -d ' ')
+  [ -z "$size" ] && continue
+  if [ "$size" -gt 5242880 ]; then
+    block "$f — $((size / 1048576)) MB exceeds the 5 MB limit"
+  fi
+done
+
+# ── 3. Secrets in staged content ─────────────────────────────────────────────
+# High-confidence patterns only; a noisy hook is a disabled hook.
+secret_scan() {
+  pat="$1"; label="$2"
+  # NOTE the `--`. Without it, a pattern beginning with `-` (e.g. the private-key
+  # header) is parsed by grep as command-line options, the check errors out, and
+  # the commit is ALLOWED THROUGH. This exact bug shipped once and let a test key
+  # into a commit; the other checks still passed, which is how it stayed hidden.
+  hits=$(git diff --cached -U0 --diff-filter=ACM | grep -nE -- "^\+" | grep -iE -- "$pat" | head -3)
+  if [ -n "$hits" ]; then
+    block "possible $label in staged content:"
+    printf '%s\n' "$hits" | sed 's/^/           /'
+  fi
+}
+
+secret_scan '-----BEGIN [A-Z ]*PRIVATE KEY-----'      'private key'
+secret_scan 'AKIA[0-9A-Z]{16}'                        'AWS access key'
+secret_scan 'gh[pousr]_[A-Za-z0-9]{30,}'              'GitHub token'
+secret_scan 'sk-ant-[A-Za-z0-9_-]{20,}'               'Anthropic API key'
+secret_scan 'sk-[A-Za-z0-9]{32,}'                     'OpenAI-style API key'
+secret_scan 'xox[baprs]-[A-Za-z0-9-]{10,}'            'Slack token'
+secret_scan '(api[_-]?key|auth[_-]?token|client[_-]?secret|password)["'"'"' ]*[:=]["'"'"' ]*[A-Za-z0-9/+_-]{16,}' 'credential assignment'
+
+# ── 4. Email addresses ───────────────────────────────────────────────────────
+# Your own committer address is expected in git metadata, not in file content.
+# Anything else is likely an accidental disclosure — yours or someone else's.
+self=$(git config user.email 2>/dev/null)
+allow="$(dirname "$0")/allowed-emails.txt"
+emails=$(git diff --cached -U0 --diff-filter=ACM | grep -E "^\+" \
+         | grep -oEi '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' | sort -u)
+for e in $emails; do
+  [ "$e" = "$self" ] && continue
+  case "$e" in
+    *noreply.github.com|*@example.com|*@anthropic.com) continue ;;
+  esac
+  if [ -f "$allow" ] && grep -qiFx -- "$e" "$allow"; then continue; fi
+  block "email address in content: $e
+           If intentional (e.g. a paper author), add it to
+           scripts/githooks/allowed-emails.txt"
+done
+
+# ── 5. Absolute local paths — advisory ───────────────────────────────────────
+# Leaks your directory layout and username. Not fatal; documentation legitimately
+# contains example paths.
+if git diff --cached -U0 --diff-filter=ACM | grep -E "^\+" \
+   | grep -qE '[A-Za-z]:\\+Users\\+[A-Za-z0-9._-]+|/home/[a-z][a-z0-9._-]*/'; then
+  warn "absolute user path in staged content — check it is an example, not your real layout"
+fi
+
+if [ "$fail" -ne 0 ]; then
+  printf "\n%sCommit blocked.%s Fix the above, or override deliberately with:\n" "$RED" "$NC"
+  printf "    git commit --no-verify\n\n"
+  exit 1
+fi
+
+exit 0

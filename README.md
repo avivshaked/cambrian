@@ -90,7 +90,9 @@ good usually are.
 
 ```
 DESIGN.md                     the specification — start here
+DECISIONS.md                  why things are the way they are, and what was rejected
 CLAUDE.md                     orientation for AI assistants
+scripts/githooks/             pre-commit guard (enable with core.hooksPath)
 research/
   LITERATURE-REVIEW.md        PRISMA-style review; §7 is the honest-limitations section
   FETCH-RESULTS.md            exact retrieval URL for every paper (reproducibility record)
@@ -139,7 +141,13 @@ libraries — the spike uses only Unity's built-in physics. Nothing to `npm inst
 ```powershell
 git clone https://github.com/<you>/cambrian.git
 cd cambrian
+git config core.hooksPath scripts/githooks   # enable the pre-commit guard
 ```
+
+That last line is worth running. `.git/hooks` isn't tracked, so the guard only applies once
+you point git at the tracked copy. It blocks commits containing copyrighted PDFs, secrets,
+stray email addresses, Unity build output and oversized files — see
+[`scripts/githooks/pre-commit`](scripts/githooks/pre-commit).
 
 ### 3. Run the spike
 
