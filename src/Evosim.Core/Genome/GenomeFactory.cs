@@ -299,7 +299,8 @@ namespace Evosim.Core
             DevelopmentLimits limits = null,
             int minParts = 3,
             int maxAttempts = 32,
-            int maxBuriedPairs = 0)
+            int maxBuriedPairs = 0,
+            float maxUnjointedOverlap = 0.005f)
         {
             Genome last = null;
             Genome bestSoFar = null;
@@ -312,16 +313,27 @@ namespace Evosim.Core
 
                 if (developed.PartCount < minParts || developed.TotalDof == 0) continue;
 
+                // Unjointed overlap is rejected outright, and not only because two solids
+                // passing through each other looks impossible. With self-collision enabled,
+                // parts born inside each other are pushed apart by the solver's depenetration
+                // pass, and that is momentum arriving from nowhere — a free launch at t=0 that
+                // a search would learn to build creatures around (DESIGN.md §11.2).
+                //
+                // Overlap between a part and its own parent stays permitted (§4.2): PhysX
+                // articulations do not collide directly-jointed links, so it costs nothing.
+                float unjointed = PhenotypeGeometry.MeasureOverlap(developed, samplesPerAxis: 4).UnjointedFraction;
+
                 int buried = PhenotypeGeometry.BuriedPartPairs(developed);
-                if (buried <= maxBuriedPairs) return last;
+                if (buried <= maxBuriedPairs && unjointed <= maxUnjointedOverlap) return last;
 
                 // Structural rules cannot rule burial out — a node with edges on opposite
                 // faces places a child exactly where its own parent already sits, and only
                 // developing it reveals that. So the filter is on the grown creature, and it
                 // keeps the least-bad candidate rather than failing.
-                if (buried < fewestBuried)
+                int badness = buried + (unjointed > maxUnjointedOverlap ? 1 : 0);
+                if (badness < fewestBuried)
                 {
-                    fewestBuried = buried;
+                    fewestBuried = badness;
                     bestSoFar = last;
                 }
             }

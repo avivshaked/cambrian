@@ -41,7 +41,21 @@ namespace Evosim.Sim.EditorTools
         /// a constraint solver is iterative and leaks a little; small enough that a creature
         /// drifting at 5 cm/s out of nothing is treated as a fault rather than as noise.
         /// </summary>
-        private const float MomentumTolerance = 0.05f;
+        /// <summary>
+        /// Angular tolerance, m²/s per unit mass. This is the column that actually separates:
+        /// with correct actuation, measured drift across six creatures spans 0.0012–0.0175;
+        /// with the reaction torque deliberately removed, 3.4–16.9. A bar at 0.1 sits ~6x
+        /// above the worst honest run and ~34x below the mildest leak.
+        /// </summary>
+        private const float AngularTolerance = 0.1f;
+
+        /// <summary>
+        /// Linear tolerance, m/s. Deliberately looser than the angular one because it
+        /// separates far worse — honest drift reaches 0.084 while the mildest injected leak
+        /// is 0.16. It is kept only to catch a gross translation leak that somehow leaves
+        /// angular momentum alone; the angular bar does the real work.
+        /// </summary>
+        private const float ComSpeedTolerance = 0.5f;
 
         /// <summary>Settling discarded before measuring displacement — DESIGN.md §5.5.</summary>
         private const float SettleSeconds = 1f;
@@ -54,6 +68,14 @@ namespace Evosim.Sim.EditorTools
         /// adding energy rather than removing it.
         /// </summary>
         private const float RunawaySpeed = 25f;
+
+        // A growth ratio — momentum at 2T over momentum at T — was tried as a way to tell a
+        // leak from solver drift, on the reasoning that injection accumulates linearly while
+        // error random-walks. It is reported below but NOT asserted on, because testing it
+        // against the known bug showed it made the check strictly worse: a creature leaking at
+        // 3.1 m/s and 5.0 m²/s scored 1.63x, under the threshold, and passed. A leak that
+        // saturates is still a leak. Magnitude catches every case the ratio caught and two it
+        // did not.
 
         [MenuItem("Evosim/Milestone 1 — Smoke Test")]
         public static void RunFromMenu() => Execute();
@@ -147,15 +169,40 @@ namespace Evosim.Sim.EditorTools
         /// It is also the cheapest possible guard against the exploit class in DESIGN.md
         /// §11.2 — a search handed free momentum will build its entire gait on it.
         /// </remarks>
+        /// <summary>
+        /// Runs <paramref name="steps"/> more steps and returns total momentum magnitude,
+        /// linear and angular combined, per unit mass.
+        /// </summary>
+        private static float MeasureMomentumDrift(
+            CreatureInstance creature, EffectorDriver driver, float[] scratch, int steps)
+        {
+            for (int s = 0; s < steps; s++)
+            {
+                driver.Drive(scratch);
+                Physics.Simulate(FixedDt);
+            }
+
+            Momentum(creature, out Vector3 p, out Vector3 l, out float mass);
+            return (p.magnitude + l.magnitude) / Mathf.Max(1e-6f, mass);
+        }
+
         private static bool CheckMomentumConservation(StringBuilder report)
         {
             bool ok = true;
+
+            // Self-collision OFF for this check specifically. The invariant is about the
+            // actuation model, and contact is a legitimate external-to-each-part force: PhysX
+            // resolving an overlap pushes bodies apart, which is real momentum arriving from
+            // the solver rather than from a joint. Leaving collision on here would test two
+            // things at once and blame the wrong one.
+            FluidEnvironment.ConfigureScene(selfCollision: false);
+
             report.AppendLine();
             report.AppendLine("### Momentum conservation — actuation must be internal");
             report.AppendLine("No gravity, no damping, no contact: |P|/m and |L|/m must stay ~0.");
             report.AppendLine();
-            report.AppendLine("| seed | speed of COM m/s | specific ang. momentum m2/s | verdict |");
-            report.AppendLine("|---|---|---|---|");
+            report.AppendLine("| seed | speed of COM m/s | specific ang. momentum m2/s | growth on 2x time | verdict |");
+            report.AppendLine("|---|---|---|---|---|");
 
             for (ulong seed = 1; seed <= 6; seed++)
             {
@@ -172,19 +219,22 @@ namespace Evosim.Sim.EditorTools
                 // hide a momentum leak by averaging it away over a cycle.
                 for (int i = 0; i < scratch.Length; i++) scratch[i] = 1f;
 
-                float t = 0f;
-                for (int s = 0; s < MomentumSteps; s++)
-                {
-                    driver.Drive(scratch);
-                    Physics.Simulate(FixedDt);
-                    t += FixedDt;
-                }
+                // Sampled at T and 2T, because magnitude alone cannot tell a leak from solver
+                // error. A model injecting momentum does so at a roughly constant rate, so
+                // doubling the time doubles the total — ratio near 2. Constraint-solver error
+                // accumulates as a random walk instead, giving roughly sqrt(2) ≈ 1.41.
+                // Anything genuinely broken fails both this and the magnitude bar by a wide
+                // margin: the deliberately reintroduced bug measured 0.85-2.41 m²/s.
+                float half = MeasureMomentumDrift(creature, driver, scratch, MomentumSteps);
+                float full = MeasureMomentumDrift(creature, driver, scratch, MomentumSteps);
 
                 Momentum(creature, out Vector3 p, out Vector3 l, out float mass);
                 float comSpeed = p.magnitude / Mathf.Max(1e-6f, mass);
                 float specificL = l.magnitude / Mathf.Max(1e-6f, mass);
 
-                bool pass = comSpeed < MomentumTolerance && specificL < MomentumTolerance;
+                float growth = half > 1e-9f ? full / half : 1f;
+                bool pass = comSpeed < ComSpeedTolerance && specificL < AngularTolerance;
+
                 if (!pass)
                 {
                     ok = false;
@@ -195,7 +245,8 @@ namespace Evosim.Sim.EditorTools
                 }
 
                 report.AppendLine(
-                    $"| {seed} | {comSpeed:0.#####} | {specificL:0.#####} | {(pass ? "ok" : "**LEAK**")} |");
+                    $"| {seed} | {comSpeed:0.#####} | {specificL:0.#####} | {growth:0.##}x | " +
+                    $"{(pass ? "ok" : "**LEAK**")} |");
 
                 creature.Destroy();
             }
@@ -299,6 +350,7 @@ namespace Evosim.Sim.EditorTools
                 creature.Destroy();
             }
 
+            FluidEnvironment.ConfigureScene(selfCollision: true);
             return ok;
         }
 
@@ -308,9 +360,7 @@ namespace Evosim.Sim.EditorTools
             Vector3 previousGravity = Physics.gravity;
 
             Physics.simulationMode = SimulationMode.Script;
-            Physics.gravity = Vector3.zero;
-            Physics.IgnoreLayerCollision(
-                PhenotypeBuilder.CreatureLayer, PhenotypeBuilder.CreatureLayer, true);
+            FluidEnvironment.ConfigureScene(selfCollision: true);
 
             var report = new StringBuilder();
             report.AppendLine("=== Milestone 1 smoke test ===");

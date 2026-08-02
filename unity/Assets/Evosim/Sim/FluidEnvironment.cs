@@ -34,11 +34,40 @@ namespace Evosim.Sim
         /// <summary>
         /// Sets up the scene for water. Call once, before stepping.
         /// </summary>
-        public static void ConfigureScene()
+        /// <param name="selfCollision">
+        /// Whether a creature's own parts collide with each other.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// Spike 01 disabled collision entirely and Milestone 1 copied that, which meant parts
+        /// swept through each other freely once joints started moving. Development produces
+        /// creatures whose parts barely overlap — measured mean 0.3% of volume — so everything
+        /// visibly passing through everything else was happening at <i>runtime</i>, not at
+        /// growth. The static check could never have found it.
+        /// </para>
+        /// <para>
+        /// DESIGN.md is in two minds about this. §4.2 permits overlap at joints, following
+        /// Sims, because forbidding it rejects too many viable genomes. But §11.2 lists
+        /// <i>self-collision vibration</i> as an exploit to guard against, quoting
+        /// [C18 Fig. 13, p.19] on robots that "exploit self-collisions resulting in fast
+        /// vibrations to produce thrust" — and you cannot exploit a collision that never
+        /// happens. The second only makes sense if self-collision is on.
+        /// </para>
+        /// <para>
+        /// PhysX articulations do not collide directly-jointed links, so enabling this gives
+        /// exactly what §4.2 asks for: a part may overlap its own parent at the joint, but
+        /// distant parts cannot occupy the same space.
+        /// </para>
+        /// <para>
+        /// Creatures are kept apart by tiling at 100 m (§6.3) rather than by layer, since a
+        /// layer cannot distinguish "my parts" from "another creature's".
+        /// </para>
+        /// </remarks>
+        public static void ConfigureScene(bool selfCollision = true)
         {
             Physics.gravity = Vector3.zero;
             Physics.IgnoreLayerCollision(
-                PhenotypeBuilder.CreatureLayer, PhenotypeBuilder.CreatureLayer, true);
+                PhenotypeBuilder.CreatureLayer, PhenotypeBuilder.CreatureLayer, !selfCollision);
         }
 
         /// <summary>
