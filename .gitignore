@@ -1,0 +1,124 @@
+# =============================================================
+# Research materials — what is and isn't safe to commit
+# =============================================================
+#
+# THE RULE: anything that reproduces a publisher's text stays local.
+# Anything we wrote ourselves is tracked.
+#
+# NOT COMMITTED — copyrighted source material:
+#   * the retrieved PDFs themselves
+#   * every derived extraction of them: source.md, candidates/,
+#     figures/, tables/, manifest.json
+#
+# An extraction is still the publisher's words, just reformatted.
+# Machine-converting a paywalled paper to markdown does not make it
+# ours to redistribute, and two of these were obtained through
+# institutional access. Same status as the PDF.
+#
+# COMMITTED — our own work:
+#   * research/FETCH-RESULTS.md
+#     (provenance record: source URLs so anyone with equivalent
+#     access can re-fetch the set — no publisher text)
+#   * the literature review, synthesis, and notes we write
+#   * short quotations under fair dealing, properly attributed
+#
+# -------------------------------------------------------------
+# Papers and their extraction packages
+# -------------------------------------------------------------
+research/papers/
+research/extracted/
+research/.cache/
+
+# Extraction artifacts, wherever they end up
+*.pdf
+**/candidates/
+**/manifest.json
+**/*.direct.md
+**/*.ocr.md
+
+# -------------------------------------------------------------
+# Explicitly tracked (guard against the patterns above)
+# -------------------------------------------------------------
+!research/*.md
+!research/notes/
+!research/notes/**
+
+# =============================================================
+# OS / editor noise
+# =============================================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+*.swp
+*~
+.idea/
+.vs/
+.vscode/*
+!.vscode/extensions.json
+
+# =============================================================
+# Unity
+# =============================================================
+# Generated, machine-specific, or rebuildable from Assets/ +
+# ProjectSettings/ + Packages/manifest.json. Those three ARE tracked.
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Never tracked: Unity regenerates these and they hold absolute local paths
+/[Aa]ssets/AssetStoreTools*
+/[Aa]ssets/Plugins/Editor/JetBrains*
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity3D generated crash reports
+sysinfo.txt
+
+# Builds
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Crashlytics
+crashlytics-build.properties
+
+# Addressables
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+/[Ss]treaming[Aa]ssets/aa.meta
+/[Ss]treaming[Aa]ssets/aa/*
+
+# =============================================================
+# Simulation output
+# =============================================================
+# Evolutionary runs produce large archives and logs. Genomes worth
+# keeping get promoted into a tracked champions/ directory by hand.
+runs/
+!runs/.gitkeep
+*.jsonl
+
+# Spike measurement output. Raw CSVs are regenerable, so they're ignored —
+# but FINDINGS.md is the record of what was measured and DESIGN.md §11.1
+# links to it, so it stays tracked.
+spikes/**/results/*.csv
