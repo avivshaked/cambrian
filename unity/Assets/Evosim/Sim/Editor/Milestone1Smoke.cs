@@ -43,6 +43,18 @@ namespace Evosim.Sim.EditorTools
         /// </summary>
         private const float MomentumTolerance = 0.05f;
 
+        /// <summary>Settling discarded before measuring displacement — DESIGN.md §5.5.</summary>
+        private const float SettleSeconds = 1f;
+
+        private const float SwimSeconds = 8f;
+
+        /// <summary>
+        /// A creature in water cannot keep accelerating: drag rises with the square of speed,
+        /// so every gait has a terminal velocity. Exceeding this means the fluid model is
+        /// adding energy rather than removing it.
+        /// </summary>
+        private const float RunawaySpeed = 25f;
+
         [MenuItem("Evosim/Milestone 1 — Smoke Test")]
         public static void RunFromMenu() => Execute();
 
@@ -184,6 +196,105 @@ namespace Evosim.Sim.EditorTools
 
                 report.AppendLine(
                     $"| {seed} | {comSpeed:0.#####} | {specificL:0.#####} | {(pass ? "ok" : "**LEAK**")} |");
+
+                creature.Destroy();
+            }
+
+            return ok;
+        }
+
+        /// <summary>
+        /// Puts creatures in water and measures how far they get — DESIGN.md §5.5 fitness,
+        /// which is displacement of the centre of mass after discarding settling.
+        /// </summary>
+        /// <remarks>
+        /// Nothing is being selected, so these are random genomes driven by a phase-offset
+        /// sine. Most will barely move and that is the correct outcome; the point is that
+        /// displacement is now a <i>meaningful</i> number rather than an artefact of how much
+        /// torque happened to be applied against nothing.
+        ///
+        /// The assertion is not "creatures swim" — it is that the fluid model does not
+        /// misbehave: speeds stay bounded, nothing goes non-finite, and no creature is
+        /// accelerating without limit. A drag model that can add energy is a free-energy
+        /// source, and [U07 §2, p.3] documents a published search finding exactly that.
+        /// </remarks>
+        private static bool CheckSwimming(StringBuilder report)
+        {
+            bool ok = true;
+            var fluid = new FluidEnvironment(new FluidConfig { AddedMassCoefficient = 1f });
+
+            report.AppendLine();
+            report.AppendLine("### In water — DESIGN.md §5.2 drag, §5.5 displacement");
+            report.AppendLine($"{fluid.Config}   {SwimSeconds:0.#} s after {SettleSeconds:0.#} s settling");
+            report.AppendLine();
+            report.AppendLine("| seed | parts | DOF | displacement m | speed m/s | peak speed m/s |");
+            report.AppendLine("|---|---|---|---|---|---|");
+
+            for (ulong seed = 1; seed <= Creatures; seed++)
+            {
+                var limits = DevelopmentLimits.Default;
+                Genome genome = GenomeFactory.RandomViable(
+                    new Rng(seed), RandomGenomeOptions.Default, limits, minParts: 3);
+                Phenotype phenotype = Developer.Develop(genome, limits);
+
+                CreatureInstance creature = PhenotypeBuilder.Build(phenotype, Vector3.zero);
+                fluid.ApplyAddedMass(creature);
+
+                var driver = new EffectorDriver(creature);
+                var scratch = new float[Mathf.Max(1, creature.TotalDof)];
+
+                float t = 0f;
+                int settleSteps = Mathf.RoundToInt(SettleSeconds / FixedDt);
+                int swimSteps = Mathf.RoundToInt(SwimSeconds / FixedDt);
+
+                for (int s = 0; s < settleSteps; s++)
+                {
+                    driver.DriveTestSine(t, TestSineHz, scratch);
+                    fluid.Apply(creature);
+                    Physics.Simulate(FixedDt);
+                    t += FixedDt;
+                }
+
+                Vector3 start = FluidEnvironment.CentreOfMass(creature);
+                float peak = 0f;
+                bool finite = true;
+
+                for (int s = 0; s < swimSteps; s++)
+                {
+                    driver.DriveTestSine(t, TestSineHz, scratch);
+                    fluid.Apply(creature);
+                    Physics.Simulate(FixedDt);
+                    t += FixedDt;
+
+                    for (int b = 0; b < creature.Bodies.Length; b++)
+                    {
+                        float speed = creature.Bodies[b].linearVelocity.magnitude;
+                        if (float.IsNaN(speed) || float.IsInfinity(speed)) { finite = false; continue; }
+                        if (speed > peak) peak = speed;
+                    }
+                }
+
+                Vector3 end = FluidEnvironment.CentreOfMass(creature);
+                float displacement = Vector3.Distance(end, start);
+                float speedAchieved = displacement / SwimSeconds;
+
+                if (!finite)
+                {
+                    Debug.LogError($"[Evosim] seed {seed}: non-finite velocity in water.");
+                    ok = false;
+                }
+
+                if (peak > RunawaySpeed)
+                {
+                    Debug.LogError(
+                        $"[Evosim] seed {seed}: peak speed {peak:0.#} m/s in water. Drag should " +
+                        "bound this; a body that keeps accelerating means the model is adding energy.");
+                    ok = false;
+                }
+
+                report.AppendLine(
+                    $"| {seed} | {phenotype.PartCount} | {phenotype.TotalDof} | " +
+                    $"{displacement:0.###} | {speedAchieved:0.###} | {peak:0.##} |");
 
                 creature.Destroy();
             }
@@ -338,6 +449,7 @@ namespace Evosim.Sim.EditorTools
             }
 
             if (!CheckMomentumConservation(report)) allOk = false;
+            if (!CheckSwimming(report)) allOk = false;
 
             report.AppendLine();
             report.AppendLine(allOk
@@ -345,11 +457,11 @@ namespace Evosim.Sim.EditorTools
                 : "**FAIL** — see errors above.");
             report.AppendLine();
             report.AppendLine(
-                "Mean speed is an awake-check, NOT a measure of swimming. There is no fluid " +
-                "drag yet, so nothing resists the drive and the figures are as large as the " +
-                "torque happens to be; the effector scale is uncalibrated for the same reason " +
-                "(§4.4, Milestone 2). Read this column as 'the drive reaches the joints', " +
-                "and nothing more.");
+                "The first table runs DRY — no fluid, so its mean-speed column is only an " +
+                "awake-check that the drive reaches the joints, and its magnitude means " +
+                "nothing. Momentum conservation is deliberately measured dry too, because it " +
+                "is a statement about actuation being internal and drag would mask a leak. " +
+                "The water table is the one with physical content.");
 
             Debug.Log(report.ToString());
 

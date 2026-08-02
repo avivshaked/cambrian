@@ -37,30 +37,29 @@ namespace Evosim.Sim
         [Tooltip("Seconds before the creature is torn down and the next seed grown. Zero disables.")]
         public float CycleSeconds = 8f;
 
-        [Header("Viewing aid — NOT the fluid model")]
-        [Tooltip("Linear damping applied to every part so the creature stays in frame.")]
-        public float ViewerLinearDamping = 4f;
+        [Header("Water (DESIGN.md §5.2)")]
+        [Tooltip("Fluid density, kg/m3. Water is 1000.")]
+        public float Density = 1000f;
 
-        [Tooltip("Angular damping applied to every part.")]
-        public float ViewerAngularDamping = 4f;
+        [Tooltip("Quadratic drag coefficient. [C18 §2.2, p.5] uses 1.5.")]
+        public float DragCoefficient = 1.5f;
+
+        [Tooltip("Added mass, as a multiple of displaced water. 0 = drag only.")]
+        public float AddedMassCoefficient = 1f;
 
         [Tooltip("Camera to point at whatever is currently spawned.")]
         public FollowCamera Camera;
 
         private CreatureInstance _creature;
         private EffectorDriver _driver;
+        private FluidEnvironment _fluid;
         private float[] _scratch;
         private float _age;
+        private Vector3 _startCentre;
 
         private void Start()
         {
-            // Water, in the crudest possible sense, until Milestone 2 brings real fluid
-            // forces: no gravity, so a creature neither sinks nor needs buoyancy modelled.
-            Physics.gravity = Vector3.zero;
-
-            Physics.IgnoreLayerCollision(
-                PhenotypeBuilder.CreatureLayer, PhenotypeBuilder.CreatureLayer, true);
-
+            FluidEnvironment.ConfigureScene();
             Spawn();
         }
 
@@ -82,22 +81,20 @@ namespace Evosim.Sim
             _creature = PhenotypeBuilder.Build(phenotype, transform.position, transform);
             _creature.Root.name = $"Creature (seed {Seed})";
 
-            // Crude viscous damping so the creature stays where you can see it. This is NOT
-            // the fluid model and must never become one: DESIGN.md §5.3 and [C18 §4, p.28]
-            // show that a simplified fluid model collapses morphological diversity — no fish,
-            // no squid, a gallery of similar blobs. It is safe here only because nothing is
-            // being selected. Milestone 2 brings real forces, including added mass.
-            foreach (ArticulationBody body in _creature.Bodies)
+            _fluid = new FluidEnvironment(new FluidConfig
             {
-                body.linearDamping = ViewerLinearDamping;
-                body.angularDamping = ViewerAngularDamping;
-            }
+                Density = Density,
+                DragCoefficient = DragCoefficient,
+                AddedMassCoefficient = AddedMassCoefficient,
+            });
+            _fluid.ApplyAddedMass(_creature);
 
             if (Camera != null) Camera.Target = _creature.Root.transform;
 
             _driver = new EffectorDriver(_creature) { TorqueScale = TorqueScale };
             _scratch = new float[Mathf.Max(1, _creature.TotalDof)];
             _age = 0f;
+            _startCentre = FluidEnvironment.CentreOfMass(_creature);
 
             Debug.Log(
                 $"[Evosim] seed {Seed}: {phenotype.PartCount} parts, depth {phenotype.MaxDepthReached}, " +
@@ -116,8 +113,14 @@ namespace Evosim.Sim
                 _driver.DriveTestSine(_age, TestSineHz, _scratch);
             }
 
+            _fluid.Apply(_creature);
+
             if (CycleSeconds > 0f && _age >= CycleSeconds)
             {
+                float travelled = Vector3.Distance(
+                    FluidEnvironment.CentreOfMass(_creature), _startCentre);
+                Debug.Log($"[Evosim] seed {Seed}: travelled {travelled:0.##} m in {_age:0.#} s");
+
                 Seed++;
                 Spawn();
             }
