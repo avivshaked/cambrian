@@ -43,6 +43,39 @@ namespace Evosim.Sim.EditorTools
             if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
         }
 
+        private static string RenderPipelineName()
+        {
+            var asset = UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline;
+            return asset != null ? asset.GetType().Name : "Built-In (no SRP asset assigned)";
+        }
+
+        /// <summary>
+        /// Confirms parts got a real lit shader. Under a render pipeline mismatch Unity
+        /// substitutes the error shader and everything renders magenta — visible instantly on
+        /// screen, invisible to a headless run, which is exactly why it is asserted here.
+        /// </summary>
+        private static bool CheckPartShader(CreatureInstance creature)
+        {
+            var renderer = creature.Root.GetComponentInChildren<MeshRenderer>();
+            if (renderer == null)
+            {
+                Debug.LogError("[Evosim] built creature has no MeshRenderer — nothing would draw.");
+                return false;
+            }
+
+            Shader shader = renderer.sharedMaterial != null ? renderer.sharedMaterial.shader : null;
+            if (shader == null || shader.name.StartsWith("Hidden/InternalError"))
+            {
+                Debug.LogError(
+                    $"[Evosim] parts resolved to '{(shader == null ? "null" : shader.name)}' — " +
+                    "they would render magenta.");
+                return false;
+            }
+
+            Debug.Log($"[Evosim] part shader: {shader.name}");
+            return true;
+        }
+
         private static bool Execute()
         {
             SimulationMode previousMode = Physics.simulationMode;
@@ -56,6 +89,7 @@ namespace Evosim.Sim.EditorTools
             var report = new StringBuilder();
             report.AppendLine("=== Milestone 1 smoke test ===");
             report.AppendLine($"Unity {Application.unityVersion}   dt={FixedDt}   {MeasureSteps} steps");
+            report.AppendLine($"pipeline: {RenderPipelineName()}");
             report.AppendLine();
             report.AppendLine("| seed | parts | depth | DOF | volume m3 | mean speed m/s | finite |");
             report.AppendLine("|---|---|---|---|---|---|---|");
@@ -106,6 +140,10 @@ namespace Evosim.Sim.EditorTools
                         $"worst position error {worstPos:0.#####} m, worst size error {worstSize:0.#####} m.");
                     allOk = false;
                 }
+
+                // A part rendering with the error shader is the "everything is magenta"
+                // symptom, and -nographics cannot see it. Check the material instead.
+                if (seed == 1 && !CheckPartShader(creature)) allOk = false;
 
                 var driver = new EffectorDriver(creature);
                 var scratch = new float[Mathf.Max(1, creature.TotalDof)];
