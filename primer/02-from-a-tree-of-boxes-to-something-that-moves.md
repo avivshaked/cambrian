@@ -142,14 +142,59 @@ raw signal  ->  clamp to [-1,1]  ->  average over last 10  ->  x mass of smaller
 
 Four steps, and three of them exist to stop evolution finding something clever and useless.
 
+## And the torque has to push against something
+
+There is a fourth exploit, and it is not one the search has to be clever to find. It is one
+the *implementation* can hand over for free.
+
+A muscle acts between two things. Your bicep pulls the forearm up and pulls back on the upper
+arm, equally and oppositely. That reaction is what makes the force internal — it is the reason
+you cannot lift yourself by your own belt, and the reason an astronaut cannot swim across a
+capsule by waving.
+
+The first version of this driver applied joint torque to the child link and nothing to the
+parent. Every joint was therefore an *external* torque on the creature, angular momentum
+accumulated with no source, and creatures span up without bound until parts were moving at
+tens of metres per second. Applying the reaction is three lines:
+
+```csharp
+Vector3 worldTorque = body.transform.TransformDirection(torque);
+body.AddTorque(worldTorque);
+_creature.Bodies[part.ParentIndex].AddTorque(-worldTorque);
+```
+
+What makes this worth a section rather than a footnote is that **it is invisible to almost
+every check you would naturally write.** Nothing was NaN. Nothing separated. The geometry was
+correct. The creatures moved — vigorously. Every assertion in the headless test passed, and it
+took a human pressing Play and saying "that's just spinning" to find it.
+
+The assertion that does catch it is not a tolerance or a heuristic. With no gravity, no drag
+and no contact, nothing external acts on a creature, so **its total momentum cannot change no
+matter what its joints do.** Measure linear and angular momentum about the creature's own
+centre of mass, drive every joint as hard as possible, and require both to stay at zero. With
+the reaction torque applied, specific angular momentum comes out around 0.001 m²/s; without
+it, 1–2 m²/s.
+
+That is the general shape of a good check in this kind of system: not *"does the output look
+reasonable"*, but *"which conservation law would this violate if it were wrong."* Physical
+simulations have plenty of those lying around, they cost almost nothing to assert, and unlike
+a plausibility check they cannot be satisfied by an impressive-looking failure.
+
+It matters here more than in most software because of what is coming. An evolutionary search
+is an adversary that reads your bugs as affordances — see [`DESIGN.md`](../DESIGN.md) §11.2.
+Free momentum beats swimming, so selection would have found this within a few generations and
+built every creature on it. The symptom, weeks later, would have been "the swimmers don't
+swim", with a fluid model and a fitness function and a search algorithm all queuing up to be
+blamed first.
+
 ## What is not here yet
 
 The creature moves. It does not swim, and the distinction is the whole of Milestone 2.
 
-There is no fluid. Nothing resists motion, so the recorded speeds — 14 to 81 m/s — measure
-nothing except how much torque happened to be applied. The scale factor is uncalibrated for
-the same reason: the right value depends on drag that does not exist. A number that
-large is not a fast creature, it is an unopposed one.
+There is no fluid. Nothing resists motion, so the recorded speeds — currently well under
+1 m/s, once the torque scale stopped being two orders of magnitude too large — measure nothing
+except how much torque happened to be applied against how much inertia. The scale factor is
+still provisional, because the value that matters is the one measured against real drag.
 
 There is no brain either. The signal driving those effectors is a sine wave with a phase
 offset per joint — a stand-in until the neuron graph from piece 01 is actually evaluated. The

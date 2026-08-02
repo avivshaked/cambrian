@@ -34,6 +34,15 @@ namespace Evosim.Sim.EditorTools
         /// <summary>Metres of disagreement tolerated between the phenotype and what was built.</summary>
         private const float GeometryTolerance = 1e-3f;
 
+        private const int MomentumSteps = 300;
+
+        /// <summary>
+        /// Momentum a creature at rest may acquire from its own actuation. Not zero, because
+        /// a constraint solver is iterative and leaks a little; small enough that a creature
+        /// drifting at 5 cm/s out of nothing is treated as a fault rather than as noise.
+        /// </summary>
+        private const float MomentumTolerance = 0.05f;
+
         [MenuItem("Evosim/Milestone 1 — Smoke Test")]
         public static void RunFromMenu() => Execute();
 
@@ -74,6 +83,112 @@ namespace Evosim.Sim.EditorTools
 
             Debug.Log($"[Evosim] part shader: {shader.name}");
             return true;
+        }
+
+        /// <summary>
+        /// Total linear and angular momentum of a creature, about its own centre of mass.
+        /// </summary>
+        private static void Momentum(CreatureInstance creature, out Vector3 linear, out Vector3 angular, out float mass)
+        {
+            mass = 0f;
+            Vector3 com = Vector3.zero;
+            for (int i = 0; i < creature.Bodies.Length; i++)
+            {
+                ArticulationBody b = creature.Bodies[i];
+                mass += b.mass;
+                com += b.worldCenterOfMass * b.mass;
+            }
+            com /= Mathf.Max(1e-6f, mass);
+
+            linear = Vector3.zero;
+            angular = Vector3.zero;
+
+            for (int i = 0; i < creature.Bodies.Length; i++)
+            {
+                ArticulationBody b = creature.Bodies[i];
+                Vector3 v = b.linearVelocity;
+                Vector3 w = b.angularVelocity;
+
+                linear += v * b.mass;
+                angular += Vector3.Cross(b.worldCenterOfMass - com, v * b.mass);
+
+                // Spin term, via the principal axes the inertia tensor is expressed in.
+                Quaternion principal = b.transform.rotation * b.inertiaTensorRotation;
+                Vector3 wLocal = Quaternion.Inverse(principal) * w;
+                angular += principal * Vector3.Scale(b.inertiaTensor, wLocal);
+            }
+        }
+
+        /// <summary>
+        /// Actuation must be INTERNAL. With no gravity, no drag and no contact, nothing
+        /// external acts on a creature, so its total momentum cannot change no matter what
+        /// its joints do — exactly as you cannot swim by waving your arms in vacuum.
+        /// </summary>
+        /// <remarks>
+        /// This check exists because the first version of <see cref="EffectorDriver"/> failed
+        /// it badly: it applied joint torque to the child link and never applied the reaction
+        /// to the parent, so every actuated joint manufactured angular momentum from nothing
+        /// and creatures span up without bound. On screen that is unmistakable. Headlessly it
+        /// looked like PASS, because "finite and moving" is satisfied very well by a creature
+        /// spinning at 60 rad/s.
+        ///
+        /// It is also the cheapest possible guard against the exploit class in DESIGN.md
+        /// §11.2 — a search handed free momentum will build its entire gait on it.
+        /// </remarks>
+        private static bool CheckMomentumConservation(StringBuilder report)
+        {
+            bool ok = true;
+            report.AppendLine();
+            report.AppendLine("### Momentum conservation — actuation must be internal");
+            report.AppendLine("No gravity, no damping, no contact: |P|/m and |L|/m must stay ~0.");
+            report.AppendLine();
+            report.AppendLine("| seed | speed of COM m/s | specific ang. momentum m2/s | verdict |");
+            report.AppendLine("|---|---|---|---|");
+
+            for (ulong seed = 1; seed <= 6; seed++)
+            {
+                var limits = DevelopmentLimits.Default;
+                Genome genome = GenomeFactory.RandomViable(
+                    new Rng(seed), RandomGenomeOptions.Default, limits, minParts: 3);
+                Phenotype phenotype = Developer.Develop(genome, limits);
+
+                CreatureInstance creature = PhenotypeBuilder.Build(phenotype, Vector3.zero);
+                var driver = new EffectorDriver(creature);
+                var scratch = new float[Mathf.Max(1, creature.TotalDof)];
+
+                // A constant, one-sided drive is the worst case: an oscillating signal can
+                // hide a momentum leak by averaging it away over a cycle.
+                for (int i = 0; i < scratch.Length; i++) scratch[i] = 1f;
+
+                float t = 0f;
+                for (int s = 0; s < MomentumSteps; s++)
+                {
+                    driver.Drive(scratch);
+                    Physics.Simulate(FixedDt);
+                    t += FixedDt;
+                }
+
+                Momentum(creature, out Vector3 p, out Vector3 l, out float mass);
+                float comSpeed = p.magnitude / Mathf.Max(1e-6f, mass);
+                float specificL = l.magnitude / Mathf.Max(1e-6f, mass);
+
+                bool pass = comSpeed < MomentumTolerance && specificL < MomentumTolerance;
+                if (!pass)
+                {
+                    ok = false;
+                    Debug.LogError(
+                        $"[Evosim] seed {seed}: momentum not conserved — COM speed {comSpeed:0.####} m/s, " +
+                        $"specific angular momentum {specificL:0.####} m2/s. Actuation is adding " +
+                        "momentum from outside the creature.");
+                }
+
+                report.AppendLine(
+                    $"| {seed} | {comSpeed:0.#####} | {specificL:0.#####} | {(pass ? "ok" : "**LEAK**")} |");
+
+                creature.Destroy();
+            }
+
+            return ok;
         }
 
         private static bool Execute()
@@ -212,6 +327,8 @@ namespace Evosim.Sim.EditorTools
                 spawned++;
                 creature.Destroy();
             }
+
+            if (!CheckMomentumConservation(report)) allOk = false;
 
             report.AppendLine();
             report.AppendLine(allOk

@@ -41,8 +41,25 @@ namespace Evosim.Sim
         private int _cursor;
         private int _filled;
 
-        /// <summary>Newton-metres per kilogram of the smaller connected part.</summary>
-        public float TorqueScale { get; set; } = 300f;
+        /// <summary>
+        /// Newton-metres per kilogram of the smaller connected part.
+        /// </summary>
+        /// <remarks>
+        /// Reasoned rather than tuned, and still provisional. For a cube of mass m and
+        /// half-extent h the moment of inertia about its centre is (2/3)mh². A part around
+        /// 100 kg with h = 0.25 m gives roughly 4 kg·m², and swinging a joint through about a
+        /// radian in a quarter second needs on the order of 30 rad/s², so ~130 N·m — a little
+        /// over 1 N·m per kilogram.
+        ///
+        /// This was 300, carried over from Spike 01 where the same number meant something
+        /// completely different: a force LIMIT under position control, a ceiling that is
+        /// rarely reached. As directly applied torque it is roughly two orders of magnitude
+        /// too large, which is why the first sandbox creatures were flung rather than swum.
+        ///
+        /// The value that matters is the one measured against real fluid drag at Milestone 2.
+        /// Until then this is a viewing figure.
+        /// </remarks>
+        public float TorqueScale { get; set; } = 2f;
 
         public int Dof => _creature.TotalDof;
 
@@ -111,7 +128,15 @@ namespace Evosim.Sim
                     torque += DriveAxis(frame, d) * (smoothed * _torquePerUnit[idx]);
                 }
 
-                body.AddRelativeTorque(torque);
+                // A muscle pushes against something. Applying torque to the child alone
+                // injects angular momentum from nowhere: the creature spins up without bound
+                // and never has to push against the water to do it. The reaction on the
+                // parent is what makes this an internal joint torque rather than free thrust,
+                // and it is not optional — an evolutionary search would find the free version
+                // within a few generations and build its entire gait on it (DESIGN.md §11.2).
+                Vector3 worldTorque = body.transform.TransformDirection(torque);
+                body.AddTorque(worldTorque);
+                _creature.Bodies[part.ParentIndex].AddTorque(-worldTorque);
             }
         }
 
