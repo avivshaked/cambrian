@@ -8,7 +8,7 @@ A Karl Sims–style evolved-virtual-creatures simulator in Unity. Genomes encode
 body plan and brain; creatures are grown from a recursive directed graph and evaluated in
 physics. Aquatic locomotion first, terrestrial later.
 
-**Four documents, deliberately non-overlapping.** Keep them that way — duplicated rationale
+**Five documents, deliberately non-overlapping.** Keep them that way — duplicated rationale
 drifts and then none of it can be trusted.
 
 | File | Answers |
@@ -16,6 +16,7 @@ drifts and then none of it can be trusted.
 | [`DESIGN.md`](DESIGN.md) | *What the system is* — the specification |
 | [`DECISIONS.md`](DECISIONS.md) | *Why we chose this over that*, and what was rejected. Append-only; reversals get a new entry marking the old one superseded |
 | [`research/LITERATURE-REVIEW.md`](research/LITERATURE-REVIEW.md) | *What the evidence says* |
+| [`logbook/`](logbook/) | *What happened, and when* — dated entries on what was tried and what broke. Never a source of truth: it links to the documents above rather than restating them, and is the only one allowed to be out of date |
 | `CLAUDE.md` (this file) | *What will bite you* |
 
 **Two licences.** Code is MIT ([`LICENSE`](LICENSE)); the prose — `DESIGN.md`,
@@ -29,10 +30,10 @@ stray emails, Unity build output and files over 5 MB. Enable with
 `git config core.hooksPath scripts/githooks`. Do not bypass it with `--no-verify`; if it
 fires, the finding is real until proven otherwise.
 
-**[`DESIGN.md`](DESIGN.md) is the source of truth.** It is not a sketch — it is an
-evidence-backed specification where most decisions cite peer-reviewed literature with page
-locators. Read it before proposing architectural changes; several obvious-seeming ideas
-were already tried, tested against the literature, and rejected for reasons recorded there.
+**[`DESIGN.md`](DESIGN.md) is the source of truth.** Most decisions in it cite peer-reviewed
+literature with page locators. Read it before proposing architectural changes; several
+obvious-seeming ideas were already tested against the literature and rejected, for reasons
+recorded there.
 
 Current state: **design complete, Spike 01 passed, Milestone 1 not started.** The only code
 is a disposable physics spike.

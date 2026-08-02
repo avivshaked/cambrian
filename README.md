@@ -12,7 +12,7 @@ plans**, which is exactly what a morphological archive is trying to produce.
 
 > **Status: design complete, physics foundation validated, evolution not yet built.**
 > The only code here is a disposable spike that answered one question about Unity's physics
-> engine. Everything else is specification. This README does not pretend otherwise.
+> engine. Everything else is specification.
 
 ---
 
@@ -32,17 +32,15 @@ travelling-wave gaits instead of noise.
 
 ---
 
-## What makes this repo unusual
+## Where the design comes from
 
-**The design is evidence-backed, and the evidence is traceable.**
+Most decisions in [`DESIGN.md`](DESIGN.md) cite peer-reviewed literature with page-level
+locators — `[K12 §2.3, p.7]` resolves to an exact page of an exact paper.
+[`research/`](research/) holds the review those citations came from; §7 lists what the review
+did not establish, and two of its six questions remain only partly answered.
 
-[`DESIGN.md`](DESIGN.md) is not a sketch. Most decisions in it cite peer-reviewed literature
-with **page-level locators** — `[K12 §2.3, p.7]` points at an exact page of an exact paper.
-[`research/`](research/) contains the full review that produced them, including a section
-that states its own limitations without softening them.
-
-That process changed the design three times, and one of those was a correction to my own
-reasoning rather than to a fact:
+The design was written first and the review run against it. That changed three things, one
+of which was a correction to reasoning rather than to a fact:
 
 - **A missing failure mode.** Co-evolving body and brain is pathological: a morphological
   mutation invalidates the controller co-adapted to the old body, so selection discards the
@@ -62,11 +60,11 @@ reasoning rather than to a fact:
 
 ---
 
-## Measured, not assumed
+## Physics validation
 
-Before building anything, one question had to be answered by running code rather than
-reading: can Unity's `ArticulationBody` handle hundreds of creatures built, simulated and
-destroyed per minute? [Spike 01](spikes/01-articulation-body/) answered it.
+One question had to be answered by running code rather than reading: can Unity's
+`ArticulationBody` handle hundreds of creatures built, simulated and destroyed per minute?
+[Spike 01](spikes/01-articulation-body/) measured it.
 
 | Measurement | Budget | Measured |
 |---|---|---|
@@ -79,10 +77,11 @@ Sub-linear scaling means PhysX genuinely parallelises across solver islands, so 
 many creatures in one scene works. Extrapolated: **~1,600 evaluations per minute from a
 single process** — the original target was that figure across *ten* processes.
 
-The first run of this spike reported numbers 150× better still, because with zero gravity
-and no actuation the creatures fell asleep and PhysX skipped them entirely. The harness now
-reports mean body speed so it can *prove* the creatures are awake. Results that look too
-good usually are.
+The first run of this spike reported numbers more than an order of magnitude better still,
+because with zero gravity and no actuation the creatures fell asleep and PhysX stopped
+integrating them. The harness now reports mean body speed alongside every timing, so a
+sleeping scene is visible in the results table. Full account in
+[logbook/0002](logbook/0002-the-spike-that-was-too-fast.md).
 
 ---
 
@@ -91,6 +90,7 @@ good usually are.
 ```
 DESIGN.md                     the specification — start here
 DECISIONS.md                  why things are the way they are, and what was rejected
+logbook/                      dated entries on what was tried, and what broke
 CLAUDE.md                     orientation for AI assistants
 LICENSE / LICENSE-DOCS        MIT for code, CC BY 4.0 for prose — see below
 scripts/githooks/             pre-commit guard (enable with core.hooksPath)
@@ -227,8 +227,8 @@ matches the `### Page N` heading in that paper's extracted `source.md`. Keys res
 [`DESIGN.md` §13](DESIGN.md#13-references-and-source-access).
 
 §13.4 quarantines references that were only ever seen inside *other* papers' bibliographies,
-marked not-independently-verified. Two of them are load-bearing. That is stated rather than
-hidden, because a review that hides its weak joints isn't worth much.
+marked not-independently-verified. Two of them are load-bearing, and nothing should be
+promoted out of that table without checking the source directly.
 
 ---
 

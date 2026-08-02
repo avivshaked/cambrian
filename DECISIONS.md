@@ -283,3 +283,32 @@ wrong licence, and a wrong licence is worse than a link.
 
 Neither licence covers the quoted paper excerpts, which stay their publishers' copyright
 under fair dealing and are attributed at the point of use. See [D014].
+
+---
+
+### D016
+**A logbook, kept as dated entries rather than assembled as a book** · 2026-08-02
+
+The four existing documents all describe the system as it currently stands. None of them
+records *process* — what was tried, what broke, what the numbers were on the day. That
+material is perishable: the specifics that make it useful are gone within about a week, and
+they are exactly what makes a failure instructive rather than embarrassing.
+
+`logbook/` fills that gap. Entries are dated, written the day something happens, and never
+edited to match a later reality — a superseded entry is superseded by a newer one, as in
+this file.
+
+**Considered and deferred:** writing a book alongside the work. Two objections. First, it
+duplicates `DESIGN.md` in friendlier prose, and when the spec changes the book is silently
+wrong — the failure mode `CLAUDE.md` exists to prevent, at the largest possible scale.
+Second, committing to book shape before there is a working system claims an outcome the work
+hasn't earned. If the entries later turn out to be chapter-shaped, they can be assembled
+then; they cannot be reconstructed from memory.
+
+The rule that makes it safe: **the logbook is never a source of truth.** It links to the
+other documents for facts rather than restating them.
+
+**Rejected names:** `notebook/` (collides with Jupyter), `journal/` (in a repo full of
+citations, that word means a publication venue), `logs/` and `docs/` — the first is caught by
+`[Ll]ogs/` in `.gitignore` and would have been silently untracked, the second implies
+reference documentation, which the four existing documents already are.
