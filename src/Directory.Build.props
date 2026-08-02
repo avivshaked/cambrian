@@ -1,0 +1,18 @@
+<Project>
+
+  <!--
+    Build output goes to <repo>/artifacts/, NOT to bin/ and obj/ beside the sources.
+
+    Evosim.Core is consumed by the Unity project as a local package (see its package.json).
+    Unity imports every file under a package directory, so a compiled Evosim.Core.dll left
+    in bin/ would be imported as a managed plugin alongside the same code compiled from
+    source — a duplicate-assembly error that reads as if the asmdef were misconfigured.
+    Redirecting the output keeps the package directory to source only.
+  -->
+
+  <PropertyGroup>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)..\artifacts\$(MSBuildProjectName)\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)..\artifacts\$(MSBuildProjectName)\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+</Project>

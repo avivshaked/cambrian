@@ -1,0 +1,10 @@
+{
+  "name": "com.evosim.core",
+  "version": "0.1.0",
+  "displayName": "Evosim Core",
+  "description": "Genome, development, mutation and RNG. No UnityEngine dependency (DESIGN.md §6.1) so it builds and tests outside the Editor. Consumed by the Unity project as a local package so there is exactly one copy of the source.",
+  "unity": "6000.0",
+  "author": {
+    "name": "Aviv Shaked"
+  }
+}

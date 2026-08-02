@@ -149,3 +149,9 @@ runs/
 # but FINDINGS.md is the record of what was measured and DESIGN.md §11.1
 # links to it, so it stays tracked.
 spikes/**/results/*.csv
+
+# Redirected .NET build output. src/Directory.Build.props sends bin/ and obj/ here so
+# they stay out of the Evosim.Core package directory, which Unity would otherwise import.
+# Moving an output location means the OLD ignore rule no longer covers it — check
+# `git status` after any such change (logbook/0003).
+artifacts/
