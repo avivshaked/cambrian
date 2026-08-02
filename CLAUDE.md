@@ -21,7 +21,8 @@ drifts and then none of it can be trusted.
 | `CLAUDE.md` (this file) | *What will bite you* |
 
 **Two licences.** Code is MIT ([`LICENSE`](LICENSE)); the prose — `DESIGN.md`,
-`DECISIONS.md`, `README.md`, this file, and everything under `research/` — is CC BY 4.0
+`DECISIONS.md`, `README.md`, this file, and everything under `research/`, `logbook/` and
+`primer/` — is CC BY 4.0
 ([`LICENSE-DOCS`](LICENSE-DOCS)). New files land under whichever applies; if you add a
 directory that is neither clearly code nor clearly prose, say which it is in `LICENSE-DOCS`
 rather than leaving it ambiguous.
@@ -36,9 +37,11 @@ literature with page locators. Read it before proposing architectural changes; s
 obvious-seeming ideas were already tested against the literature and rejected, for reasons
 recorded there.
 
-Current state: **design complete, Spike 01 passed, Milestone 1 in progress.** `Evosim.Core`
-has genome, development and RNG under test; the phenotype builder and the Unity project
-proper do not exist yet.
+Current state: **design complete, Spike 01 passed, Milestone 1 essentially done.** Genomes
+develop into phenotypes, phenotypes build into articulations, and a sandbox scene spawns and
+drives them. There is no fluid, no fitness, no brain evaluation and no search — the drive
+signal is a test sine. Milestone 2 is next and is what makes any recorded number mean
+something.
 
 ## Commands
 
@@ -85,6 +88,18 @@ and a thirty-second one.
 small amount of vector maths that follows from having no `UnityEngine`. `src/Evosim.Core.Tests/`
 covers it. Plain .NET projects, `netstandard2.1` and C# 9, which is what Unity 6 consumes —
 anything that builds here builds in the Editor.
+
+`unity/` — the real Unity project. `Evosim.Core` is pulled in as a **local package** via
+`Packages/manifest.json` (`file:../../src/Evosim.Core`), so there is exactly one copy of the
+source and no DLL to keep in sync. Its asmdef sets `noEngineReferences`, which means Unity
+refuses to compile Core if anyone reaches for `UnityEngine` — §6.1's rule is enforced by the
+build, not by memory. `src/Directory.Build.props` redirects .NET output to `artifacts/` for a
+related reason: a stray `Evosim.Core.dll` inside the package directory would be imported as a
+plugin and collide with the same code compiled from source.
+
+**The sandbox scene is generated, not hand-edited** — `Evosim/Rebuild Sandbox Scene`, or
+`-executeMethod Evosim.Sim.EditorTools.SandboxSceneBuilder.Run`. Scene YAML merges badly and
+cannot be reviewed in a diff; a script that rebuilds it can.
 
 `spikes/01-articulation-body/` — a standalone Unity project, **disposable by design**. It
 answers one question: can `ArticulationBody` support the evaluation loop at scale? It can;
