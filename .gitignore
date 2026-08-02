@@ -119,6 +119,24 @@ crashlytics-build.properties
 /[Ss]treaming[Aa]ssets/aa/*
 
 # =============================================================
+# .NET build output (src/)
+# =============================================================
+# Evosim.Core and its tests build with the ordinary .NET toolchain so they can run
+# outside the Editor. Unity's own Library/ and Obj/ are covered above.
+src/**/bin/
+src/**/obj/
+*.nupkg
+.vs/
+
+# The Unity section above ignores *.csproj because Unity REGENERATES those and they hold
+# absolute local paths. These are hand-written, contain no machine-specific paths, and are
+# required to build — without them a clone has source files and no way to compile them.
+# Third time an over-broad ignore rule has nearly dropped a required file (Packages/
+# manifest.json was the first); check `git status` after adding any new project type.
+!src/**/*.csproj
+!src/**/*.sln
+
+# =============================================================
 # Simulation output
 # =============================================================
 # Evolutionary runs produce large archives and logs. Genomes worth

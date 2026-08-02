@@ -35,8 +35,9 @@ literature with page locators. Read it before proposing architectural changes; s
 obvious-seeming ideas were already tested against the literature and rejected, for reasons
 recorded there.
 
-Current state: **design complete, Spike 01 passed, Milestone 1 not started.** The only code
-is a disposable physics spike.
+Current state: **design complete, Spike 01 passed, Milestone 1 in progress.** `Evosim.Core`
+has genome, development and RNG under test; the phenotype builder and the Unity project
+proper do not exist yet.
 
 ## Commands
 
@@ -60,17 +61,45 @@ without writing a log. Check compile errors with
 and treats `--headless` as a module path. Fails identically in PowerShell, cmd and bash.
 Don't waste time on it; use the Hub GUI.
 
-There is no test suite yet. `Evosim.Core` (§6.1 of DESIGN.md) is deliberately specified
-with no `UnityEngine` dependency so it can be unit-tested outside the Editor — honour that
-when building it.
+**Test `Evosim.Core`** (fast — the whole suite is well under a second):
+
+```powershell
+./scripts/core-test.ps1
+./scripts/core-test.ps1 -Filter DevelopmentTests
+```
+
+**There is no .NET SDK installed system-wide on this machine** — `dotnet --list-sdks` is
+empty, only runtimes are present. Unity ships a complete .NET 8 SDK at
+`<Unity>\Editor\Data\DotNetSdk\dotnet.exe`, and `core-test.ps1` finds and uses it. Don't
+install an SDK to work around this, and don't reach for the Unity Test Runner for anything
+that belongs in `Evosim.Core` — running these outside the Editor is the whole point of
+§6.1's no-`UnityEngine` rule, and it is the difference between a one-second feedback loop
+and a thirty-second one.
 
 ## Architecture
 
 ### What exists
 
+`src/Evosim.Core/` — genome (§4.1), development (§4.2), deterministic RNG (§7), and the
+small amount of vector maths that follows from having no `UnityEngine`. `src/Evosim.Core.Tests/`
+covers it. Plain .NET projects, `netstandard2.1` and C# 9, which is what Unity 6 consumes —
+anything that builds here builds in the Editor.
+
 `spikes/01-articulation-body/` — a standalone Unity project, **disposable by design**. It
 answers one question: can `ArticulationBody` support the evaluation loop at scale? It can;
 see `results/FINDINGS.md` and DESIGN.md §11.1. Don't build features into it.
+
+Two things in `Evosim.Core` that look like choices and are not:
+
+- **`Rng` is PCG, not `System.Random`.** `System.Random`'s algorithm is not contractually
+  stable across .NET versions and .NET Core changed it. §7 promises a seed means a
+  sequence; that only holds with a fixed integer recurrence.
+- **`Developer` keeps scale out of the transform matrix.** The matrix carries rotation,
+  reflection and translation, so it stays orthogonal up to sign and decomposes cleanly;
+  accumulated scale is folded into half-extents and the anchors derived from them. Baking
+  scale into the matrix makes every anchor computation depend on decomposing a sheared
+  basis. Reflection already forces the matrix to go improper — that is what
+  `PhenotypePart.Mirrored` records.
 
 ### What is planned
 

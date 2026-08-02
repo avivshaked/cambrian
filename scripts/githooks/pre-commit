@@ -34,6 +34,9 @@ for f in $staged; do
     */candidates/*)                 block "$f — raw PDF extraction" ;;
     */Library/*|*/Temp/*|*/Logs/*)  block "$f — Unity generated output" ;;
     */UserSettings/*)               block "$f — machine-local Unity settings" ;;
+    # Hand-written project files under src/ are required to build. Unity-generated ones
+    # anywhere else are not, and carry absolute local paths.
+    src/*.csproj|src/*.sln)         : ;;
     *.csproj|*.sln|*.user|*.suo)    block "$f — IDE file with absolute local paths" ;;
     *.stackdump|*.dmp|core|core.*)  block "$f — crash dump; binary junk, may contain process memory" ;;
     *.env|.env.*|*.pem|*.key|*.pfx) block "$f — credential or key file" ;;

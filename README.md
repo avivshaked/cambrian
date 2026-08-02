@@ -93,7 +93,12 @@ DECISIONS.md                  why things are the way they are, and what was reje
 logbook/                      dated entries on what was tried, and what broke
 CLAUDE.md                     orientation for AI assistants
 LICENSE / LICENSE-DOCS        MIT for code, CC BY 4.0 for prose — see below
-scripts/githooks/             pre-commit guard (enable with core.hooksPath)
+src/
+  Evosim.Core/                genome, development, RNG — no UnityEngine, runs headless
+  Evosim.Core.Tests/          xUnit suite over the above
+scripts/
+  core-test.ps1               build + test Evosim.Core without the Editor
+  githooks/                   pre-commit guard (enable with core.hooksPath)
 research/
   LITERATURE-REVIEW.md        PRISMA-style review; §7 is the honest-limitations section
   FETCH-RESULTS.md            exact retrieval URL for every paper (reproducibility record)
@@ -182,6 +187,17 @@ proves PhysX is parallelising across solver islands.
 
 If the mean-speed column in M3 collapses toward zero, the creatures fell asleep and the
 timings are meaningless. See §M3 in [the spike spec](spikes/01-articulation-body/README.md).
+
+### 4. Run the Core tests
+
+```powershell
+./scripts/core-test.ps1
+```
+
+`Evosim.Core` — the genome and the genotype-to-phenotype development that grows a creature
+from it — has no `UnityEngine` dependency, so it builds and tests as ordinary C# in about a
+second. **No .NET SDK is required:** the script uses a system-wide one if you have it and
+otherwise falls back to the complete .NET 8 SDK that ships inside the Unity install.
 
 ### Troubleshooting
 

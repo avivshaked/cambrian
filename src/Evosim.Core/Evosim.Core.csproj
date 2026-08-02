@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Evosim.Core carries no UnityEngine dependency (DESIGN.md §6.1) so it can be compiled
+    and tested without the Editor. netstandard2.1 and C# 9 are what Unity 6 consumes, so
+    anything that builds here also builds in the Editor.
+
+    There is no .NET SDK installed system-wide on the development machine; Unity ships one
+    at Editor/Data/DotNetSdk/dotnet.exe. See scripts/core-test.ps1.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>Evosim.Core</AssemblyName>
+    <RootNamespace>Evosim.Core</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- 1591: don't demand XML docs on self-evident members (Float3.X, operators, ToString). -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+</Project>
