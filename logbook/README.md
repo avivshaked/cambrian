@@ -66,3 +66,4 @@ are the ones most likely to go unwritten.
 | [0003](0003-the-ignore-rule-that-keeps-eating-required-files.md) | 2026-08-02 | The ignore rule that keeps eating required files |
 | [0004](0004-two-ways-to-report-a-success-you-dont-have.md) | 2026-08-02 | Two ways to report a success you don't have |
 | [0005](0005-the-creatures-were-swimming-in-vacuum.md) | 2026-08-02 | The creatures were swimming in vacuum |
+| [0006](0006-boxes-inside-boxes.md) | 2026-08-02 | Boxes inside boxes |

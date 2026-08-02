@@ -142,6 +142,29 @@ reading, not a finding from the reviewed literature. It is the reason reflection
 from one flag to three, so it is worth flagging as an assumption rather than smuggling in as
 fact.</sub>
 
+### A reflection has to be about the right axis
+
+There is a trap here that is easy to walk into and hard to see afterwards.
+
+Mirroring moves a point only if the point has a component on the mirrored axis. A child
+attached to the parent's **+Y** face sits at roughly `(0, d, 0)`. Mirror that about **X** and
+you get `(0, d, 0)` — the same place. The "mirrored copy" is exactly coincident with the
+original: two boxes occupying one volume.
+
+Attach along X and mirror about X, and the copies land at `+d` and `−d`. That is a bilateral
+pair.
+
+So reflection is only meaningful about the axis the child is attached along. What makes this
+worth calling out is how it fails: the creature still has the expected number of parts, all in
+plausible positions, and it moves. It looks like a working creature that simply is not very
+symmetric. Nothing announces that half its parts are inside the other half.
+
+The first random-genome generator here picked reflection axes independently of the attachment
+axis, and **69.7%** of creatures had a part buried inside another. Fixing the axis and bounding
+edge tilt brought that to 55.5%; the rest needed a check on the developed creature, because no
+rule about single edges can see it — a node with edges on opposite faces places a child exactly
+where its own parent already is, and you only find that out by growing it.
+
 ## Recursion that runs out, so chains can have ends
 
 A repeated segment is good. A repeated segment that ends in something *different* is much

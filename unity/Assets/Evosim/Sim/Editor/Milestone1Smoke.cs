@@ -206,8 +206,8 @@ namespace Evosim.Sim.EditorTools
             report.AppendLine($"Unity {Application.unityVersion}   dt={FixedDt}   {MeasureSteps} steps");
             report.AppendLine($"pipeline: {RenderPipelineName()}");
             report.AppendLine();
-            report.AppendLine("| seed | parts | depth | DOF | volume m3 | mean speed m/s | finite |");
-            report.AppendLine("|---|---|---|---|---|---|---|");
+            report.AppendLine("| seed | parts | depth | DOF | volume m3 | mirrored | buried | mean speed m/s | finite |");
+            report.AppendLine("|---|---|---|---|---|---|---|---|---|");
 
             bool allOk = true;
             int spawned = 0;
@@ -299,10 +299,19 @@ namespace Evosim.Sim.EditorTools
                 float meanSpeed = samples > 0 ? (float)(speedSum / samples) : 0f;
                 bool awake = meanSpeed > AwakeThreshold || creature.TotalDof == 0;
 
+                int buried = PhenotypeGeometry.BuriedPartPairs(phenotype);
+                if (buried > 0)
+                {
+                    Debug.LogError(
+                        $"[Evosim] seed {seed}: {buried} part pair(s) with one centre inside the other.");
+                    allOk = false;
+                }
+
                 report.AppendLine(
                     $"| {seed} | {phenotype.PartCount} | {phenotype.MaxDepthReached} | " +
-                    $"{phenotype.TotalDof} | {phenotype.TotalVolume:0.###} | {meanSpeed:0.####} | " +
-                    $"{(finite ? "yes" : "**NO**")} |");
+                    $"{phenotype.TotalDof} | {phenotype.TotalVolume:0.###} | " +
+                    $"{PhenotypeGeometry.MirroredPartCount(phenotype)} | {buried} | " +
+                    $"{meanSpeed:0.####} | {(finite ? "yes" : "**NO**")} |");
 
                 if (!finite)
                 {
