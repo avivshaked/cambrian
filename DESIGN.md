@@ -1,6 +1,8 @@
 # Evolution Simulator — Design Document
 
-**Status:** Draft 3 — revised against literature. Nothing implemented, no engine installed.
+**Status:** Draft 4 — revised against literature, then against a working implementation.
+Milestone 1 complete: genomes develop, phenotypes build into articulations, creatures move.
+No fluid, no fitness, no search yet.
 **Date:** 2026-08-02
 
 A Karl Sims–style evolved-virtual-creatures simulator in Unity. Genomes encode both
@@ -51,6 +53,26 @@ anything in the literature.
 reimplementation, Lessin's thesis, Sims' originals, Veenstra & Glette 2020, Cheney et al.
 2018, Lehman et al. 2020). Research questions 2 (Sims reproduction) and 5 (controller
 representation) remain only partly answered.
+
+## 0c. Changelog — draft 3 → draft 4
+
+Draft 3 was the last version written before any of it existed. Building Milestone 1 changed
+four things. **No new literature was read**; every change below was forced by an
+implementation or by a human looking at the result, and the distinction matters — these are
+the corrections a review could not have supplied.
+
+| Change | Was (draft 3) | Now | Why |
+|---|---|---|---|
+| **§4.2 recursion** | "Cycle traversal decrements a per-node counter; at zero, only `terminalOnly` edges are followed" | Occurrence counts per path, with the exhaustion and terminal rules stated explicitly | Read literally, the old wording made every non-recursive genome develop into a single box. Ambiguous rather than wrong, but not implementable as written |
+| **§4.2 reflection** | *(unstated)* | Reflection is meaningful only about the **attachment axis** | Mirroring displaces a point only if it has a component on that axis. Choosing axes independently put 69.7% of random creatures partly inside themselves, while still looking plausible |
+| **§4.2 overlap** | "Overlap at joints permitted" | Overlap permitted, **burial** tracked and rejected | A human saw boxes inside boxes within seconds. Per-part fluid forces would make coincident parts collect thrust twice |
+| **§11.2** | Five checks, all from the literature | Adds **momentum conservation** and **buried parts** | Both earned in implementation. The first caught an actuation model that manufactured angular momentum from nothing — invisible to every "is it finite and moving" check that preceded it |
+
+**What the process suggests.** The literature corrected the *design*; running it corrected
+the *specification*. Three of the four entries above were found by a person watching
+creatures move, after the headless test suite had passed. Milestone 3's visual payoff is
+not decoration on the schedule — it is an instrument, and the only one that reports this
+class of fault.
 
 ---
 
@@ -191,11 +213,38 @@ used to represent structures appearing at the end of chains or repeating units."
 
 ### 4.2 Development (genotype → phenotype)
 
-Depth-first traversal from the root. Cycle traversal decrements a per-node counter; at
-zero, only `terminalOnly` edges are followed. All geometric transforms (scale, rotation,
-reflection) are **cumulative down the subtree** — [K12 §2.1, p.3]: *"they are applied to
-the entire subtree of the phenotype graph during its construction."* Worked example at
-[K12 Fig. 4, p.6].
+Depth-first traversal from the root, emitting parts in **pre-order** so a part's parent
+always precedes it — an articulation must be assembled parent-first, so this makes a single
+forward pass over the part list correct by construction.
+
+**Recursion, stated precisely.** Each node carries `recursiveLimit`, the number of times it
+may occur along one root-to-leaf path. Traversal keeps a per-node occurrence count for the
+current path, and:
+
+- a **non-terminal** edge into node *c* is followed while `occurrences[c] < recursiveLimit[c]`;
+- a node's recursion is **spent** when no non-terminal edge from it can still be followed;
+- a **`terminalOnly`** edge is followed only once its source node's recursion is spent.
+
+So a self-loop with `recursiveLimit = 5` yields a five-segment spine, and a `terminalOnly`
+edge attaches one differentiated extremity at the tip of that chain rather than one per
+segment.
+
+> Draft 3 said only *"cycle traversal decrements a per-node counter; at zero, only
+> `terminalOnly` edges are followed."* Read literally that makes a node with
+> `recursiveLimit = 1` spent on first entry, so an ordinary non-recursive genome expands no
+> edges at all and every creature is a single box. The wording above is what was implemented
+> and tested; it is a clarification of intent, not a change of behaviour.
+
+All geometric transforms (scale, rotation, reflection) are **cumulative down the subtree** —
+[K12 §2.1, p.3]: *"they are applied to the entire subtree of the phenotype graph during its
+construction."* Worked example at [K12 Fig. 4, p.6].
+
+**Reflection is only meaningful about the axis the child is attached along.** Mirroring
+displaces a point only if that point has a component on the mirrored axis, so a child
+attached to the parent's +Y face and mirrored about X lands exactly on top of itself: two
+parts occupying one volume, rather than a bilateral pair. This is not a constraint the
+genome enforces — mutation may set any flag — but generators and mutation operators should
+prefer the attachment axis, and §11.2 carries the check for when they do not.
 
 Guard rails:
 - Hard cap on total parts (proposed **16**) and tree depth (proposed **8**).
@@ -203,7 +252,12 @@ Guard rails:
   body part must be larger than the specified threshold as extremely small body parts
   cause instability in the physical engine."*
 - Overlap at joints permitted. Sims allowed it; enforcing non-overlap kills too many
-  viable genomes.
+  viable genomes. **But *burial* is different from overlap:** a part whose centre lies
+  inside another part reads as physically impossible, and once fluid forces are computed
+  per part it also collects drag and thrust twice for one body's worth of volume. Tracked
+  as a distinct measure and checked in §11.2; no single-edge rule can predict it, because
+  whether a child lands on top of its own grandparent depends on the path taken to reach
+  the node.
 
 The phenotype is always a **tree**, mapping cleanly onto a PhysX articulation.
 
@@ -678,11 +732,31 @@ actually needed, adopted wholesale:
 | **Oscillation detector** | Creature moving via small oscillations (solver-error exploitation) | Discard |
 | **Minimum volume** | Any part below volume threshold | Reject **pre-simulation** |
 | **Self-collision vibration** | Thrust generated by parts colliding with each other at high frequency | Flag / discard |
+| **Momentum conservation** | Total linear or angular momentum changes while nothing external acts | Reject — the actuation model is wrong |
+| **Buried parts** | Any part's centre inside another part's box | Reject **pre-simulation** |
 
-The last is from [C18 Fig. 13, p.19], which reports that "some of the best stiff robots
-(S5) **exploit self-collisions resulting in fast vibrations to produce thrust**" — a
-distinct exploit from solver-error oscillation, and one an articulated creature with
-overlapping parts (§4.2) is well-placed to discover.
+Self-collision vibration is from [C18 Fig. 13, p.19], which reports that "some of the best
+stiff robots (S5) **exploit self-collisions resulting in fast vibrations to produce
+thrust**" — a distinct exploit from solver-error oscillation, and one an articulated
+creature with overlapping parts (§4.2) is well-placed to discover.
+
+The last two rows are not from the literature. They were earned during Milestone 1 and
+differ from the rest of the table in a way worth stating: **they are checks on the
+simulator, not on the creature.**
+
+- **Momentum conservation.** With no gravity, drag or contact, nothing external acts on a
+  creature, so its total momentum cannot change however its joints move. The first effector
+  implementation applied joint torque to the child link without the reaction on the parent,
+  making every joint an external torque; creatures span up without bound. This is a
+  conservation law rather than a threshold, so it needs no tuning and cannot be satisfied by
+  an impressive-looking failure — measured specific angular momentum was ~0.001 m²/s when
+  correct against 1–2 m²/s when not.
+- **Buried parts.** See §4.2. Free thrust from coincident parts requires no cleverness from
+  the search to discover; it is simply lying there.
+
+The general lesson is worth keeping: for a physical simulation, prefer *"which conservation
+law would this violate if it were wrong"* over *"does this output look reasonable."* A
+search will satisfy the second while violating the first.
 
 [K12 §2.3, p.7] on the last: *"Such tests help detect invalid robots early, so that they do
 not consume computational resources during full-scale physical simulation"* — a throughput

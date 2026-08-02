@@ -10,9 +10,11 @@ designs the creatures. The interesting ones are discovered.
 The name is the ambition: the Cambrian explosion was a rapid diversification of **body
 plans**, which is exactly what a morphological archive is trying to produce.
 
-> **Status: design complete, physics foundation validated, evolution not yet built.**
-> The only code here is a disposable spike that answered one question about Unity's physics
-> engine. Everything else is specification.
+> **Status: creatures grow and move. No water, no fitness, no evolution yet.**
+> A genome develops into a body, the body builds into a physics articulation, and a sandbox
+> scene spawns one and drives it. Nothing selects anything — the controller is a test sine
+> wave standing in for a brain, and there is no fluid to swim in, so there is not yet
+> anything to be good at.
 
 ---
 
@@ -57,6 +59,23 @@ of which was a correction to reasoning rather than to a fact:
 - **A threat that dissolved.** CPPN encodings looked like they'd force a genome rewrite.
   A survey of every published encoding comparison showed that advantage is confined to
   *soft-body* creatures; on rigid articulated bodies, recursive graph encodings win or tie.
+
+Then building it corrected the specification, which is a different thing from correcting the
+design. Four changes in `DESIGN.md` §0c came from an implementation or from watching
+creatures move, and none could have come from reading:
+
+- A recursion rule that, read literally, developed every non-recursive genome into a single
+  box. Ambiguous rather than wrong, but not implementable as written.
+- Reflection about the wrong axis puts a "mirrored copy" exactly on top of its original.
+  69.7% of random creatures were partly inside themselves, and all of them looked fine.
+- Joint torque applied without a reaction on the parent lets creatures manufacture angular
+  momentum from nothing. Every headless check passed; a person watching spotted it at once.
+- Two anti-exploit checks that are conservation laws rather than thresholds, so they need no
+  tuning and cannot be satisfied by an impressive-looking failure.
+
+The last two were found by looking at the screen after the test suite was green.
+[`logbook/`](logbook/) records how, [`primer/`](primer/) explains what the mechanisms
+actually do.
 
 ---
 
@@ -220,20 +239,23 @@ extraction used [PyMuPDF](https://pymupdf.readthedocs.io/) (`pip install pymupdf
 
 ## Roadmap
 
-| # | Milestone | Ends with |
-|---|---|---|
-| 0 | Project scaffold, physics config | ✅ done |
-| — | Spike 01 — `ArticulationBody` at scale | ✅ passed |
-| 1 | Genome, development rules, phenotype builder | Spawn a random creature and watch it flop |
-| 2 | Evaluation harness: tiling, seeding, fluid forces, anti-exploit checks | Measured throughput |
-| 3 | Multi-BC MAP-Elites + oscillator controllers, water | **First real swimmers** |
-| 4 | Island model across processes | Overnight runs, a full archive |
-| 5 | Land: contact, gravity, anti-degenerate fitness | Walkers |
-| 6 | Full brain graph, sensors, photoreceptors | Target-following, reactive behaviour |
-| 7 | Replay, archive gallery, charts, fluid validation harness | The showpiece |
-| 8 | Sandbox: currents, predators, obstacles | You as the selection pressure |
+| # | Milestone | Ends with | |
+|---|---|---|---|
+| — | Spike 01 — `ArticulationBody` at scale | Measured, six for six | ✅ |
+| 0 | Unity project, assemblies, URP, physics config | Empty scene that builds headless | ✅ |
+| 1 | Genome, development rules, phenotype builder | Spawn a random creature and watch it flop | ✅ |
+| 2 | Evaluation harness: tiling, seeding, fluid forces, fitness, anti-exploit checks | Measured throughput; go/no-go on the cost model | ← next |
+| 3 | Multi-BC MAP-Elites + oscillator controllers, water | **First real swimmers** | |
+| 4 | Island model across processes | Overnight runs, a full archive | |
+| 5 | Land: contact, gravity, anti-degenerate fitness | Walkers | |
+| 6 | Full brain graph, sensors, photoreceptors | Target-following, reactive behaviour | |
+| 7 | Replay, archive gallery, charts, fluid validation harness | The showpiece | |
+| 8 | Sandbox: currents, predators, obstacles | You as the selection pressure | |
 
 Milestone 3 is the one that matters. Everything before it is scaffolding.
+
+Two things are deliberately missing from `Evosim.Core` and are needed before any search can
+run: mutation operators (`DESIGN.md` §4.5) and genome serialization (§9).
 
 ---
 
