@@ -172,6 +172,16 @@ actually verifying it.
 - **Suspiciously good results are usually a broken measurement.** The budgets in
   `spikes/01-articulation-body/README.md` are derived backwards from throughput targets;
   beating them by 100× means the harness is wrong, not that the hardware is amazing.
+- **Never run `-batchmode` against a project the Editor has open.** Two Unity processes
+  sharing one `Library/` corrupt it, and the symptom arrives later as *"Corrupted Library
+  Detected"* on the human's next open. Check first:
+  `Get-Process Unity -ErrorAction SilentlyContinue`. The damage is cheap — `Library/` is
+  gitignored because it regenerates from `Assets/` + `ProjectSettings/` +
+  `Packages/manifest.json`, so *Rebuild Library* is always the right answer — but the
+  interruption is not.
+- **`-createProject` gives you the Built-In Render Pipeline**, which DESIGN.md §10 does not
+  want and Unity 6.5 deprecates. URP has to be added deliberately; `Evosim/Set Up URP`
+  generates the pipeline assets.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

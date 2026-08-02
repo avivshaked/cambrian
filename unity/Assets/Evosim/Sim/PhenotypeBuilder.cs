@@ -164,10 +164,19 @@ namespace Evosim.Sim
             {
                 GameObject temp = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 _cubeMesh = temp.GetComponent<MeshFilter>().sharedMesh;
-                _partMaterial = temp.GetComponent<MeshRenderer>().sharedMaterial;
 
                 if (Application.isPlaying) Object.Destroy(temp);
                 else Object.DestroyImmediate(temp);
+
+                // Resolve the lit shader by name rather than taking the primitive's material.
+                // CreatePrimitive hands back the built-in Standard material, which renders as
+                // magenta under URP — the classic "everything is pink" symptom. Looking the
+                // shader up keeps Evosim.Sim from depending on the URP assemblies at all.
+                Shader shader =
+                    Shader.Find("Universal Render Pipeline/Lit") ??
+                    Shader.Find("Standard");
+
+                _partMaterial = new Material(shader) { name = "Evosim Part" };
             }
 
             var visual = new GameObject("Visual") { layer = CreatureLayer };

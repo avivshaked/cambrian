@@ -3,7 +3,9 @@
     "rootNamespace": "Evosim.Sim.EditorTools",
     "references": [
         "Evosim.Core",
-        "Evosim.Sim"
+        "Evosim.Sim",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
     ],
     "includePlatforms": [
         "Editor"
