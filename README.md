@@ -140,7 +140,7 @@ libraries — the spike uses only Unity's built-in physics. Nothing to `npm inst
 ### 2. Clone
 
 ```powershell
-git clone https://github.com/<you>/cambrian.git
+git clone https://github.com/avivshaked/cambrian.git
 cd cambrian
 git config core.hooksPath scripts/githooks   # enable the pre-commit guard
 ```
