@@ -92,6 +92,7 @@ good usually are.
 DESIGN.md                     the specification — start here
 DECISIONS.md                  why things are the way they are, and what was rejected
 CLAUDE.md                     orientation for AI assistants
+LICENSE / LICENSE-DOCS        MIT for code, CC BY 4.0 for prose — see below
 scripts/githooks/             pre-commit guard (enable with core.hooksPath)
 research/
   LITERATURE-REVIEW.md        PRISMA-style review; §7 is the honest-limitations section
@@ -228,3 +229,22 @@ matches the `### Page N` heading in that paper's extracted `source.md`. Keys res
 §13.4 quarantines references that were only ever seen inside *other* papers' bibliographies,
 marked not-independently-verified. Two of them are load-bearing. That is stated rather than
 hidden, because a review that hides its weak joints isn't worth much.
+
+---
+
+## Licence
+
+Two licences, because this repository is mostly not code.
+
+- **Code** — [MIT](LICENSE). The spike, and everything built later.
+- **Documentation** — [CC BY 4.0](LICENSE-DOCS). `DESIGN.md`, `DECISIONS.md`, this README, and
+  everything under `research/`.
+
+The split is deliberate. A code licence has nothing useful to say about a literature review,
+and the attribution requirement in CC BY matches the norm the written work is already
+following: if you reuse the review's conclusions, cite it — and cite the underlying papers,
+which is what §6 of the review is for.
+
+Quotations from academic papers throughout the documentation are used under fair dealing and
+remain their authors' and publishers' copyright; they're attributed at the point of use. The
+papers themselves aren't distributed here.

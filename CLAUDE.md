@@ -18,6 +18,12 @@ drifts and then none of it can be trusted.
 | [`research/LITERATURE-REVIEW.md`](research/LITERATURE-REVIEW.md) | *What the evidence says* |
 | `CLAUDE.md` (this file) | *What will bite you* |
 
+**Two licences.** Code is MIT ([`LICENSE`](LICENSE)); the prose — `DESIGN.md`,
+`DECISIONS.md`, `README.md`, this file, and everything under `research/` — is CC BY 4.0
+([`LICENSE-DOCS`](LICENSE-DOCS)). New files land under whichever applies; if you add a
+directory that is neither clearly code nor clearly prose, say which it is in `LICENSE-DOCS`
+rather than leaving it ambiguous.
+
 **Commits are guarded.** `scripts/githooks/pre-commit` blocks copyrighted PDFs, secrets,
 stray emails, Unity build output and files over 5 MB. Enable with
 `git config core.hooksPath scripts/githooks`. Do not bypass it with `--no-verify`; if it

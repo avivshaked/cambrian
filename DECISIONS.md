@@ -255,3 +255,31 @@ Enforced by `.gitignore` **and** by [`scripts/githooks/pre-commit`](scripts/gith
 because a gitignore rule is one careless `git add -f` away from being bypassed — and because
 an over-broad ignore rule silently dropped Unity's `Packages/manifest.json` from the first
 commit, which is the same class of failure in the opposite direction.
+
+---
+
+### D015
+**MIT for code, CC BY 4.0 for documentation** · 2026-08-02
+
+This repository is roughly 90% prose and 10% throwaway spike code. A single code licence
+would have been the reflexive choice and the wrong one: MIT says nothing meaningful about a
+literature review or a design specification, and the thing most likely to be reused here is
+the written work.
+
+CC BY 4.0's attribution requirement matches the norm the prose already follows — every
+load-bearing claim in `DESIGN.md` carries a page-level locator, so asking the same of anyone
+downstream is consistent rather than restrictive. Both licences are permissive; neither
+imposes copyleft on anything built on top.
+
+**Rejected:** MIT alone (silent on prose); Apache-2.0 (the patent grant is irrelevant to
+evolutionary algorithms and adds a NOTICE obligation for nothing); CC BY-NC (looks
+protective, but blocks academic reuse in commercially-funded research, which is most of it);
+CC BY-SA (viral into anything quoting the review — a nuisance for the exact audience this is
+written for).
+
+`LICENSE-DOCS` references the canonical CC BY text at creativecommons.org rather than
+reproducing it. Several thousand words transcribed from memory is a real risk of a subtly
+wrong licence, and a wrong licence is worse than a link.
+
+Neither licence covers the quoted paper excerpts, which stay their publishers' copyright
+under fair dealing and are attributed at the point of use. See [D014].
