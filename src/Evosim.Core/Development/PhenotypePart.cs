@@ -44,8 +44,14 @@ namespace Evosim.Core
         /// </remarks>
         public bool Mirrored { get; internal set; }
 
+        /// <summary>What this part is made of — <see cref="CellType.Id"/>, DESIGN.md §5A.1.</summary>
+        public string CellTypeId { get; internal set; } = CellTypeIds.Structural;
+
         /// <summary>Joint to the parent. Meaningless at the root, where it is <see cref="JointType.Fixed"/>.</summary>
         public JointType JointType { get; internal set; } = JointType.Fixed;
+
+        /// <summary>Peak joint torque in newton-metres — links only. See <see cref="MorphNode.Power"/>.</summary>
+        public float Power { get; internal set; }
 
         /// <summary>Min/max per DOF, in radians.</summary>
         public Float2[] JointLimits { get; internal set; } = Array.Empty<Float2>();

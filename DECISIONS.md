@@ -312,3 +312,72 @@ other documents for facts rather than restating them.
 citations, that word means a publication venue), `logs/` and `docs/` — the first is caught by
 `[Ll]ogs/` in `.gitignore` and would have been silently untracked, the second implies
 reference documentation, which the four existing documents already are.
+
+---
+
+### D017
+**Endogenous selection: an energy economy instead of a fitness function** · 2026-08-02
+
+The design through draft 4 was Sims-lineage directed search: evaluate a creature alone, score
+it by displacement (§5.5), let the score drive MAP-Elites. Draft 5 replaces that with an
+ecosystem. Energy is a conserved budget with sunlight as its only primary input; creatures
+spend it on metabolism, thinking and mechanical work; they reproduce on surplus and die at
+zero. Nothing is scored. Specification in DESIGN.md §5A.
+
+**The argument.** The project was never about producing the best swimmer. If swimming is what
+keeps a creature alive, swimmers appear without being asked for — and if something else
+appears instead, that is the more interesting result, because it was not the answer to a
+question we wrote down. Directed search can only return a better version of the thing the
+fitness function already describes.
+
+**Why energy acquisition is a property of a part.** Cell types (photosynthetic, absorptive,
+consumer, structural) make trophic strategy a *morphological* trait, which means the §4.1
+graph encoding already expresses it. No species, niche or strategy concept is needed: a
+species is a distribution of part types, and speciation is a change in that distribution. This
+is what makes the whole thing cost one new field on `MorphNode` rather than a new subsystem.
+
+**What the literature says, honestly.** It splits, and one paper argues the opposite.
+[C18 §2.4, p.8] optimises against energy and material and credits the energy term with
+producing passive tissue that creatures then exploit hydrodynamically. But [CEA07 §3.4, p.5]
+pays a *bonus* for complexity (k^N, k = 1.02) on the grounds that *"simpler creatures are
+likely to evolve faster and gain speed earlier"* — complexity is slow to pay off and gets
+out-competed before it can. Via [L21 §8.2, p.10], Cheney et al. found complexity penalties
+*"drive morphological evolution, [but don't] influence the overall performance of the
+algorithm."* And [TM01 p.7] argues against elaborate fitness functions in principle, since
+creatures find ways to score highly *"while not performing the sort of behavior that we had
+hoped for."*
+
+The energy economy sidesteps that debate rather than settling it: cost is not a term subtracted
+from a score, it is a budget that runs out. [L21 §13] reports two systems that work this way
+(PolyWorld, Ventrella's Gene Pool). Neither is a rigorous result — they are described in a
+survey, not evaluated — and this decision should not be read as literature-backed. It is a bet.
+
+**What it is a bet on.** That a food web is more watchable than a highlight reel of champions,
+and that endogenous selection produces something we did not specify. The risk is real and runs
+the other way: directed search reliably produces spectacular swimmers, and open-ended systems
+reliably produce plateaus. DESIGN.md §5A.7 lists the failure modes and what defends against
+each; the load-bearing one is that if sunlight alone covers upkeep, the world becomes a
+photosynthetic mat and nothing ever has to move.
+
+**Why now rather than later.** Milestone 4 had not been built. Everything through Milestone 2
+is unaffected because the encoding does not care how selection happens. After Milestone 4 this
+would have discarded an island model, a selector, and a throughput target measured in a unit
+that no longer applies.
+
+**Supersedes:** DESIGN.md §5.5 entirely. Demotes §8's MAP-Elites from selector to observatory —
+it existed to protect morphological innovation against premature convergence under exogenous
+fitness (§2), and ecological niches serve that role here. It is retained because an archive of
+what lived is what makes a long run legible, which is a cheaper claim than the one it used to
+carry.
+
+**Considered and rejected:** an energy cost as a term *inside* the fitness function. It fights
+[CEA07]'s finding directly, taxing elaborate bodies before they have learned to use themselves —
+the same direction as the premature-convergence failure that §2 is built to resist. An earlier
+draft of this decision proposed energy as a MAP-Elites descriptor instead, following [CU15]'s
+use of it as a behavioural descriptor rather than an objective; that remains the right answer
+*if* directed search is ever restored, and is recorded here so it does not have to be
+rediscovered.
+
+**Deferred deliberately:** attack and defence mechanics, sexual reproduction, per-part density
+(swim bladders). Each is a second system, and each should be designed against observed
+behaviour rather than guessed before anything runs.

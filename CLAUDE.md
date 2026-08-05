@@ -61,6 +61,28 @@ Start-Process -FilePath $unity -ArgumentList $a -Wait -NoNewWindow
 without writing a log. Check compile errors with
 `Select-String -Path $env:TEMP\spike.log -Pattern 'error CS'`.
 
+**Run the Milestone 1 smoke test** (builds creatures, checks geometry, momentum and swimming):
+
+```powershell
+$unity = 'C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Unity.exe'
+$proj  = 'd:\Projects\experiments\evolution-simulator\unity'
+$log   = "$env:TEMP\evosim-smoke.log"
+$a = @('-projectPath',$proj,'-batchmode','-quit','-nographics',
+       '-executeMethod','Evosim.Sim.EditorTools.Milestone1Smoke.Run','-logFile',$log)
+Start-Process -FilePath $unity -ArgumentList $a -Wait -NoNewWindow
+Get-Content $log | Select-String 'Milestone 1 smoke' -Context 0,140
+```
+
+Note `Evosim.Sim.**EditorTools**`, not `Evosim.Sim.Editor` — the folder is `Editor/` (which
+is what makes it an editor-only assembly) but the namespace is not. Getting it wrong costs a
+full asset reimport before Unity reports
+`executeMethod class 'Milestone1Smoke' could not be found` and exits 1. That failure looks
+exactly like a hang: `-batchmode` prints nothing to the console, so a cold run is several
+minutes of silence whether it is working or not. Tail the log in a second terminal
+(`Get-Content $log -Wait -Tail 5`) rather than guessing, and check for
+`could not be found` as well as `error CS` — a missing method is not a compile error and
+will not show up in the usual grep.
+
 **Unity Hub CLI is broken** in Hub 3.14 — the Electron wrapper consumes the `--` separator
 and treats `--headless` as a module path. Fails identically in PowerShell, cmd and bash.
 Don't waste time on it; use the Hub GUI.
@@ -169,6 +191,18 @@ actually verifying it.
   than one driven chain, because with zero gravity and no actuation everything settled and
   slept. Any physics benchmark here must actuate the creatures and assert they are awake —
   `SpikeHarness.M3` reports mean body speed for exactly this reason.
+- **Unity's physics defaults are not neutral, and they are not specified anywhere.**
+  `ArticulationBody.angularDamping` and `jointFriction` both default to `0.05`, and
+  `Physics.defaultMaxDepenetrationVelocity` to `10`. The first two are a second drag model
+  acting on top of DESIGN.md §5.2's — they removed roughly ten times more energy than the fluid
+  did, invisibly, from Milestone 1 until an energy audit found them (logbook/0008). Anything the
+  engine does that the design did not ask for is a fault, including doing nothing visibly wrong.
+- **Identical numbers across a configuration change mean the change was not applied.** This has
+  now happened twice: self-collision "made no difference" because the scene state was being
+  inherited rather than set (logbook/0007), and a 40x drive-strength sweep returned byte-identical
+  results because `TorqueScale` was read once in a constructor while every call site set it by
+  object initializer afterwards (logbook/0008). Before concluding that a parameter does not
+  matter, prove it reached the thing it configures.
 - **Suspiciously good results are usually a broken measurement.** The budgets in
   `spikes/01-articulation-body/README.md` are derived backwards from throughput targets;
   beating them by 100× means the harness is wrong, not that the hardware is amazing.

@@ -28,12 +28,17 @@ namespace Evosim.Core
         /// </summary>
         public NeuronDef[] GlobalBrain { get; set; } = Array.Empty<NeuronDef>();
 
+        /// <summary>How surplus energy is turned into offspring — DESIGN.md §5A.6.</summary>
+        public ReproductionTraits Reproduction { get; set; } =
+            new ReproductionTraits { BroodSize = 1, OffspringEndowment = 1f };
+
         public Genome Clone()
         {
             var clone = new Genome
             {
                 RootIndex = RootIndex,
                 GlobalBrain = new NeuronDef[GlobalBrain.Length],
+                Reproduction = Reproduction.Clone(),
             };
 
             for (int i = 0; i < GlobalBrain.Length; i++) clone.GlobalBrain[i] = GlobalBrain[i].Clone();
@@ -51,7 +56,11 @@ namespace Evosim.Core
         /// the <i>phenotype</i>, cannot be known without developing the genome, and are
         /// handled by <see cref="Developer"/> against <see cref="DevelopmentLimits"/>.
         /// </remarks>
-        public IReadOnlyList<string> Validate()
+        /// <param name="cellTypes">
+        /// Registry to resolve <see cref="MorphNode.CellTypeId"/> against.
+        /// Defaults to <see cref="CellTypeRegistry.Standard"/>.
+        /// </param>
+        public IReadOnlyList<string> Validate(CellTypeRegistry cellTypes = null)
         {
             var issues = new List<string>();
 
@@ -64,6 +73,25 @@ namespace Evosim.Core
             if (RootIndex < 0 || RootIndex >= Nodes.Count)
             {
                 issues.Add($"RootIndex {RootIndex} is outside [0, {Nodes.Count - 1}].");
+            }
+
+            // A brood of zero is a lineage that ends, which is a thing a creature may not
+            // express — dying childless has to be something the world does to it, not something
+            // the genome declares. A negative endowment would let a parent gain energy by
+            // reproducing, which is a free-energy source of exactly the kind §11.2 exists for.
+            if (Reproduction.BroodSize < 1)
+            {
+                issues.Add($"Brood size {Reproduction.BroodSize} must be at least 1.");
+            }
+
+            if (float.IsNaN(Reproduction.OffspringEndowment) ||
+                float.IsInfinity(Reproduction.OffspringEndowment) ||
+                Reproduction.OffspringEndowment <= 0f)
+            {
+                issues.Add(
+                    $"Offspring endowment {Reproduction.OffspringEndowment} must be finite and " +
+                    "positive. An offspring born with nothing is dead on arrival, and one born " +
+                    "with less than nothing pays its parent to make it.");
             }
 
             for (int n = 0; n < Nodes.Count; n++)
@@ -88,6 +116,45 @@ namespace Evosim.Core
                 if (node.JointLimits.Length != dof)
                 {
                     issues.Add($"Node {n}: {node.JointType} has {dof} DOF but {node.JointLimits.Length} joint limits.");
+                }
+
+                // Cell type, and the rule that only a link may move (DESIGN.md §5A.1). Checked
+                // here rather than trusted as a convention: a genome whose stomach is also its
+                // elbow would develop, run and be scored, and nothing downstream could tell it
+                // was never meant to be legal.
+                CellTypeRegistry registry = cellTypes ?? CellTypeRegistry.Standard;
+                if (!registry.Contains(node.CellTypeId))
+                {
+                    issues.Add(
+                        $"Node {n}: unknown cell type '{node.CellTypeId}'. " +
+                        $"Registered: {string.Join(", ", registry.Ids())}.");
+                }
+                else if (dof > 0 && !registry.Resolve(node.CellTypeId).AllowsJoint)
+                {
+                    issues.Add(
+                        $"Node {n}: cell type '{node.CellTypeId}' has a {node.JointType} joint, " +
+                        $"but only '{CellTypeIds.Link}' may move. Two parts cannot actuate " +
+                        "against each other without a link between them (§5A.1).");
+                }
+
+                // Power is charged for, so it must not sit unread on a part that cannot use it:
+                // a rigid cell carrying power would pay nothing and mean nothing, and a link
+                // with none is a joint that cannot move but is billed as though it could.
+                if (float.IsNaN(node.Power) || float.IsInfinity(node.Power) || node.Power < 0f)
+                {
+                    issues.Add($"Node {n}: Power {node.Power} must be finite and non-negative.");
+                }
+                else if (dof > 0 && node.Power <= 0f)
+                {
+                    issues.Add(
+                        $"Node {n}: a {node.JointType} joint with Power {node.Power} cannot " +
+                        "actuate. Give it capacity or make it Fixed.");
+                }
+                else if (dof == 0 && node.Power != 0f)
+                {
+                    issues.Add(
+                        $"Node {n}: Power {node.Power} on a part with no joint. Nothing reads it, " +
+                        "and nothing charges for it.");
                 }
 
                 for (int i = 0; i < node.JointLimits.Length; i++)

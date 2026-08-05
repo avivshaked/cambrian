@@ -56,8 +56,9 @@ representation) remain only partly answered.
 
 ## 0c. Changelog — draft 3 → draft 4
 
-Draft 3 was the last version written before any of it existed. Building Milestone 1 changed
-four things. **No new literature was read**; every change below was forced by an
+Draft 3 was the last version written before any of it existed. Building Milestone 1 and
+starting Milestone 2 changed five things. **No new literature was read**; every change below
+was forced by an
 implementation or by a human looking at the result, and the distinction matters — these are
 the corrections a review could not have supplied.
 
@@ -67,12 +68,45 @@ the corrections a review could not have supplied.
 | **§4.2 reflection** | *(unstated)* | Reflection is meaningful only about the **attachment axis** | Mirroring displaces a point only if it has a component on that axis. Choosing axes independently put 69.7% of random creatures partly inside themselves, while still looking plausible |
 | **§4.2 overlap** | "Overlap at joints permitted" | Overlap permitted, **burial** tracked and rejected | A human saw boxes inside boxes within seconds. Per-part fluid forces would make coincident parts collect thrust twice |
 | **§11.2** | Five checks, all from the literature | Adds **momentum conservation** and **buried parts** | Both earned in implementation. The first caught an actuation model that manufactured angular momentum from nothing — invisible to every "is it finite and moving" check that preceded it |
+| **§11.2** | Momentum conservation measured with self-collision disabled | Measured **both** with and without, and adds a **depenetration velocity cap** | A human asked whether directly-connected boxes can actuate at all. They can — PhysX exempts jointed links — but the question exposed that non-adjacent parts jam, that jamming *paid* (the two least mobile creatures were the two furthest travelled), and that the conservation check had been excused from the one configuration where the leak lived. Contact between a creature's own parts is internal, not external; the original exclusion was reasoned, confident and wrong |
 
 **What the process suggests.** The literature corrected the *design*; running it corrected
-the *specification*. Three of the four entries above were found by a person watching
-creatures move, after the headless test suite had passed. Milestone 3's visual payoff is
-not decoration on the schedule — it is an instrument, and the only one that reports this
-class of fault.
+the *specification*. Four of the five entries above were found by a person watching creatures
+move or asking whether the mechanism could work at all, after the headless test suite had
+passed. Milestone 3's visual payoff is not decoration on the schedule — it is an instrument,
+and the only one that reports this class of fault.
+
+The fifth entry sharpens that. It came from a question rather than an observation, and the
+question was answerable from documentation — the answer to *"can two jointed boxes rotate
+against each other"* is yes, by exemption. Answering it and stopping there would have left the
+exploit in place. What found the fault was checking a claim that was already known to be true.
+
+---
+
+## 0d. Changelog — draft 4 → draft 5
+
+One change, and it is a change of genre rather than of detail. **No new papers were retrieved**;
+one already-held paper was read further ([L21 §13]), which is a review scope change and is
+recorded as such in `research/LITERATURE-REVIEW.md`.
+
+| Change | Was (draft 4) | Now | Why |
+|---|---|---|---|
+| **§5A (new)** | Exogenous fitness: evaluate a creature alone, score it by displacement, let the score drive search | Endogenous selection: energy is a conserved budget, creatures acquire and spend it, reproduce on surplus and die at zero | Nothing is being taught to swim. If swimming is what keeps a creature alive it will appear on its own, and if it does not, the thing that does appear is the more interesting answer |
+| **§5.5** | The fitness function | ❌ Superseded; displacement demoted to an observable | Follows from the above |
+| **§6.3, §6.4, §8** | Tiling as isolation; throughput in evaluations/second; MAP-Elites as the selector | Tiling as spatial partition; throughput in simulated seconds per wall-clock second; MAP-Elites demoted to an observatory | An ecosystem is one shared world with no episode boundary. MAP-Elites solved a problem that exogenous fitness creates; ecological niches serve that role here |
+
+| **§11.2** | Six checks | Adds **engine damping defaults** and **energy balance** | Both found while building §5A's first measurement. Creatures had been swimming in two fluids since Milestone 1 — §5.2's, and PhysX's `angularDamping`/`jointFriction` defaults, which nobody chose and which removed ~10x more. The energy balance is what caught it; verifying that balance on a two-body system then verified the work measurement itself. See logbook/0008 |
+
+**Timing, and why it cost almost nothing.** This arrived at Milestone 2, before search
+(Milestone 4) existed. Everything built to date — genome, development, phenotype builder,
+fluid model, effector conditioning, determinism — is unaffected, because the encoding does not
+care how selection happens. Proposed after Milestone 4 it would have discarded an island
+model, an archive-driven selector, and a throughput target derived from a unit that no longer
+applies.
+
+**What did not change:** the priority order. Mesmerising to watch first, research-grade
+instrument a strong second. §5A is a bet that a food web is more watchable than a highlight
+reel of champions — and it is a bet, recorded as one in `DECISIONS.md` D017.
 
 ---
 
@@ -301,9 +335,33 @@ express, and it costs nothing to include from the start.
 ### 4.4 Sensors and effectors
 
 **Sensors** (per part, normalised to ≈[-1, 1]): joint angle per DOF; joint angular
-velocity per DOF; contact (land only); orientation vs world up; photosensor triple
+velocity per DOF; contact; orientation vs world up; **damage**; photosensor triple
 (Milestone 6). [K12 §2.2, p.4] used only joint-angle sensors — *"A sensor in each body
 part is measuring current angle of each degree of freedom of a joint."*
+
+**Damage is readable on every part, not only on links.** Once creatures eat each other
+(§5A.3), being bitten is the most consequential thing that happens to a body cell, and a
+cell that cannot report it leaves the creature unable to distinguish a good photosynthetic
+pose from being slowly eaten in one. It reads as the fraction of the part's own stored
+energy taken over the last step, so it is scale-free and does not need a separate
+normalisation constant.
+
+Contact moves forward with it. Draft 3 scoped contact to terrain and Milestone 5; §5A makes
+it aquatic, because contact is how a consumer cell finds tissue to bite. Both channels are
+needed as soon as predation is, which is Milestone 3.
+
+**No relay mechanism is added for damage to reach the rest of the creature.** A neuron on
+the bitten part is already readable by its neighbours through `ParentNode` and `ChildNode`
+inputs, so a hit propagates one node per step on machinery that exists. The latency is a
+feature — it is what a conduction delay looks like, and it is bounded by body length. The
+alternative, an input kind naming an absolute part, would break under recursion for the
+reason §4.3 gives.
+
+**Which channels a part may read is not restricted by cell type.** The joint channels read
+zero on anything rigid, which achieves what a restriction would without making a genome's
+legality depend on a mutation elsewhere in it. What limits perception is cost, not
+permission: a sensor is only useful through a neuron, neurons are billed per step (§5A.2),
+and a creature that senses everything everywhere starves.
 
 **Effectors:** one per joint DOF. Draft 1 posed this as binary; [K12 §2.2, p.5] supplies
 a third option that is cheaper than PD control and empirically works:
@@ -477,7 +535,17 @@ physically fictitious, **and is less morphologically varied than it should be**.
 of those is the one that hurts most here, and added mass is the cheapest thing that
 addresses it.
 
-### 5.5 Fitness (water)
+### 5.5 Fitness (water) — ❌ superseded by §5A
+
+> **Superseded, kept for the record.** §5A replaces exogenous fitness with an energy economy:
+> nothing is scored, and creatures persist by staying solvent. Displacement survives as an
+> *observable* — it is still how §5A.7 detects the "efficient nothing" failure, and still what
+> the §11.2 checks are measured against — but it no longer selects anything.
+>
+> The evaluation-window reasoning below stays relevant: an ecosystem has no episode boundary,
+> so the question changes from "how long is an evaluation" to "how long before a behaviour is
+> distinguishable from a transient", which is the same question with the answer no longer
+> bounded by a budget.
 
 Horizontal displacement of centre of mass, discarding ~1 s of settling. [K12 §3.1, p.9]
 used *"the distance between the final and starting positions of the robot"* over 60 s.
@@ -488,6 +556,304 @@ steps, very differently distributed. Finer steps resist solver exploitation; lon
 windows separate a real gait from a lucky transient. Note [K12] still needed an explicit
 oscillation detector at 30 Hz. Proposed compromise for Milestone 2 measurement:
 **1/100 s over 20–30 s**, treated as measured rather than guessed.
+
+---
+
+## 5A. Ecosystem: energy, food webs and endogenous selection
+
+**Status: specification, not yet implemented.** Nothing in this section has been built or
+measured. It supersedes §5.5, and changes the role of §6.3, §6.4 and §8 — see §5A.8.
+
+Lettered rather than renumbered because `§4.2`-style locators appear throughout this
+document, in `DECISIONS.md`, and in code comments, and renumbering would silently invalidate
+all of them.
+
+### 5A.0 What changes, and why
+
+Everything above §5.5 assumes **exogenous** selection: a creature is evaluated alone, scored
+by a function we wrote, and the score drives search. §5.5 is that function.
+
+This section replaces it with **endogenous** selection. Energy is a real, conserved budget.
+Creatures acquire it, spend it on everything they do, reproduce when they have a surplus, and
+die when they run out. Nothing is scored. Swimming well is not rewarded — it is one of
+several ways to stay solvent, and it wins only where it happens to be the cheapest route to
+food.
+
+Two systems in the corpus work this way, both reported in [L21 §13]. PolyWorld, p.14:
+*"Actions spend energy, so the creatures need to hunt for food."* Ventrella's Gene Pool
+swimbots, pp.15–16: *"swimbots spend energy when they move. Once its energy level drops below
+a certain threshold, a swimbot starts looking for food. A swimbot with zero energy dies."*
+
+> ⚠ **Provenance.** §13.2 records [L21] as read only for §4.1–4.2 and two tables. §13 of that
+> paper was read while drafting this section, which is a scope change to the review under
+> `research/LITERATURE-REVIEW.md` §3.5 and needs a round entry there rather than a quiet
+> citation here.
+
+**What this does not change.** §4.1 genome, §4.2 development, §4.3 brain graph, §5.1–5.4
+fluid model, §6.1 assemblies, §7 reproducibility, §11.2 exploit checks. The encoding does not
+care how selection happens. Everything built through Milestone 2 remains correct.
+
+### 5A.1 Cell types
+
+Energy acquisition is a property of a **part**, not of a creature. A species is therefore a
+distribution of part types over a body plan, and speciation is a change in that distribution —
+no separate species, niche or strategy concept is required, because §4.1's graph already
+encodes exactly this.
+
+Implementation: one new field on `MorphNode`, and mutation operators (§4.5) that can change
+it.
+
+| Type | Gains energy from | Notes |
+|---|---|---|
+| **Photosynthetic** | Light, ∝ exposed area × irradiance at its depth | Reliable, free, and favours flat spread-out bodies — which cost mobility |
+| **Absorptive** | Nutrient particles it intersects | Nutrients drift on the current, so this rewards being *where* food is |
+| **Consumer** | Tissue on contact — living or dead | See §5A.3. Works on carrion without perception, which is what makes it survivable early |
+| **Structural** | Nothing | Cheapest upkeep, but **not free** — see §5A.2 |
+
+**Why `Structural` exists.** Without a part type permitted to have no energy function, every
+part must pay for itself and a tail can never evolve: a fin pays only indirectly, through
+better swimming, so it is a net loss on the step it appears. Structural parts are what make
+fins, levers and streamlining reachable — the difference between creatures with bodies and
+creatures that are clumps of stomachs.
+
+**Why its upkeep is nonzero.** A part costing nothing is a free lever: arbitrarily large
+bodies, arbitrarily long limbs, no pressure to be economical. This is the same class of fault
+as the free momentum in §11.2 — a resource with no price gets spent without limit. *(Author's
+inference; no source in the corpus addresses zero-cost structure.)*
+
+### 5A.2 The energy economy
+
+**Sunlight is the only primary input.** Nutrients are recycled dead matter; predation
+transfers between creatures; death returns tissue to the nutrient pool. Metabolism is the only
+outflow, and it leaves the system.
+
+This makes total world energy **auditable**: sun in, metabolism out, everything else
+conserved. It is the economic counterpart of the momentum invariant in §11.2, and it matters
+for the same reason. Under exogenous fitness a physics exploit produces a bad evaluation that
+gets discarded. Here there is nothing to discard into — **free energy from the solver is free
+food**, and a creature that extracts it eats without foraging while its descendants inherit
+the trick. The depenetration leak found at Milestone 2 (0.254 m/s of centre-of-mass velocity
+from purely internal forces) would have been a population-wide takeover rather than one bad
+score. A global energy audit detects that class of fault without tuning, which is the property
+that makes conservation laws worth preferring.
+
+**Expenditure, per step:**
+
+| Term | Scales with | Purpose |
+|---|---|---|
+| **Basal metabolism** | Part volume × type multiplier | Makes stasis cost something. Without it, doing nothing is free and doing nothing wins |
+| **Neural** | Neuron count + connection count | Stops brains bloating without a fitness penalty |
+| **Mechanical work** | ∫\|τ·ω\| dt over all DOF | The physically honest actuation cost; we already apply τ and the bodies know ω |
+
+The neural term is the one the user asked for and the one with no precedent in the corpus.
+[C18 §2.4, p.8] minimises *"the percentage of actuated voxels (energy)"* — a proxy, not work —
+and [CU15] measures energy in N·m·rad only as a **behavioural descriptor**, never as a cost.
+No paper we hold implements a work integral or a per-neuron charge. *(Both terms are therefore
+this design's own, and must not be presented as literature-backed.)*
+
+> **The knob that decides everything.** The ratio of basal metabolism to peak photosynthesis.
+> If sunlight alone covers upkeep anywhere in the world, nothing there ever has to move, and
+> the world becomes a photosynthetic mat. It has to not quite cover it.
+
+### 5A.3 Feeding, and where herbivores come from
+
+A `Consumer` part gains energy on contact with tissue. Yield depends on **what it touches**:
+
+| Target | Yield | Consequence |
+|---|---|---|
+| Dead tissue (carrion, sinking) | High, no resistance | Scavenging works while drifting blind — no perception needed |
+| Living `Photosynthetic` tissue | Moderate | Grazing. Viable as soon as photosynthesisers are common |
+| Living `Consumer` tissue | Low, and contested | Predation proper. Needs perception to be worth attempting |
+
+Herbivore and carnivore are therefore **behavioural outcomes of what a creature ends up
+eating**, not separate body types — which is why they can appear in that order without any
+morphological innovation between them.
+
+**The predator valley, and two bridges across it.** A `Consumer` part costs upkeep from the
+mutation that creates it and pays nothing until perception, directed movement and prey density
+all exist together. Populations do not cross valleys that wide, and a lineage that loses the
+part may never recover it. Two mechanisms keep it reachable:
+
+1. **Carrion.** A `Consumer` that feeds on dead tissue has a payoff from the first generation,
+   so the part is not purged while it waits for perception. Detritivore → scavenger → predator
+   is a gradient rather than a leap.
+2. **Cell-type mutation.** A rare mutation converting one part type into another means the
+   trait need not be conserved continuously — it can be rediscovered. This is
+   **density-dependent and therefore self-timing**: a `Photosynthetic → Consumer` mutation is
+   worthless in an empty world and immediately profitable in one full of plants, so it fires
+   when the food web is ready for it rather than when we schedule it.
+
+Attack and defence — whether a target resists, at what cost, and whether armour or toxicity
+are expressible — are **deliberately unspecified**. They are the next layer and should be
+designed against observed behaviour, not guessed now.
+
+### 5A.4 Environment: currents, light, depth
+
+**Currents.** A procedural divergence-free field (curl noise), evolving slowly. It enters the
+existing model at one point: `FluidModel.BoxDrag` already takes a velocity, so passing
+`bodyVelocity − currentVelocity` gives real advection for the price of a noise lookup. Drifting
+stops being free, and nutrients — being small and drag-dominated — are carried much further by
+it than creatures are.
+
+**Light and depth.** Irradiance falls off with depth; dead matter sinks. This is the cheapest
+available source of **spatial heterogeneity**, and heterogeneity is what stops one strategy
+winning everywhere: the surface is the photosynthetic niche, the depths are the detritus
+niche, and neither dominates. Two trophic modes maintained by geometry rather than by tuning.
+
+**Light cycle.** A diurnal cycle over irradiance. Combined with depth and visual predators,
+this gives **diel vertical migration** — rising at night, sinking by day, trading light against
+being seen — a genuine reason to emerge. Real plankton do this. It is the single most
+watchable outcome this design could produce, and it is legible to anyone who knows the
+biology. *(Stated as a target, not a prediction.)*
+
+### 5A.5 Colour and perception
+
+Part colour is an evolvable genome field with no physical cost. It is inert until creatures
+can see, and §4.4 already specifies a **photosensor triple** on parts, scheduled at
+Milestone 6. Once perception is closed-loop, colour becomes a signal in a world where things
+look at each other:
+
+- **Camouflage** — matching the water or the nutrient field
+- **Warning colouration**, and mimicry of it, if some targets are costly to attack
+- **Foraging as a visual task**, if nutrients are coloured — the brain has to find food rather
+  than being handed it
+- **Display**, if reproduction is in-world
+
+The light cycle then does ecological work rather than decorative work: at night the visual
+channel narrows and the balance between sight-based hunting and everything else shifts on a
+cycle.
+
+Nothing guarantees signalling emerges — it requires a payoff structure that supports it. But
+heritable, visible colour costs a genome field, and if it goes unused it is still a lineage
+marker that makes speciation watchable.
+
+### 5A.6 Reproduction and death
+
+**Death** at zero energy. Tissue returns to the nutrient pool at its location and sinks,
+which is what closes the loop in §5A.2.
+
+**Reproduction** in-world, paying the offspring's starting energy out of the parent's.
+**Asexual — a mutated copy, with no recombination.** Sexual reproduction requires
+partner-finding, which requires perception, and stacking both on the first implementation
+would confound two failures into one.
+
+This has a consequence worth stating plainly rather than discovering later: **§4.5's
+grafting operator has no mechanism to fire.** Grafting is the design's only recombination —
+plain parameter-vector crossover being meaningless on a variable-topology graph — and it
+needs a second parent that asexual reproduction never supplies. So variation is by mutation
+alone. That is a defensible position (Tierra and Avida produce open-ended dynamics with no
+recombination at all, and §2's co-adaptation argument says recombination is where the damage
+to a tuned controller is worst), but it is **not an evidence-led one**: the literature review
+has no coverage of crossover or recombination whatsoever, and Q2 remains 🟡 partial. Settling
+it is review round 3 work, before Milestone 6. Two alternatives were considered and deferred:
+sexual reproduction once perception exists, and horizontal gene transfer through predation —
+which would give grafting a mechanism at Milestone 5 without needing perception, at the cost
+of breaking the archive's assumption that lineage is a tree.
+
+**Brood size and offspring endowment are evolved, not global constants.** A creature carries
+two numbers: *n*, how many offspring per event, and *e*, how much energy each starts with.
+A reproduction event costs
+
+```
+n × (e + overhead)
+```
+
+where `overhead` is a world constant (§5A.10) and **not** evolvable — a creature permitted
+to set its own overhead would set it to zero, and every lineage would converge on the largest
+brood it could express.
+
+The overhead term is load-bearing, not bookkeeping. Without it, cost is strictly proportional
+to energy invested, and one brood of four is indistinguishable from four broods of one — same
+energy, same offspring, differing only in timing. Brood size would then select for nothing.
+The overhead is what separates them, and what makes r/K selection an axis the world can
+explore: the same surplus buys one well-provisioned offspring or eight feeble ones, and which
+wins is a property of the environment rather than something written in here.
+
+**The reproduction threshold is derived, not configured.** A creature reproduces once it
+holds `n × (e + overhead)` above its own reserve. A creature that evolves a larger brood
+therefore waits longer for it automatically, and there is no separate constant to keep in
+sync.
+
+⚠ Until growth exists, an offspring is born full-size, so endowment buys it *time* — how long
+it can search before starving — rather than body. Early runs are therefore unusually kind to
+the many-and-feeble strategy, and should be read with that in mind.
+
+Neutral buoyancy is retained (§5.2): depth changes only by swimming. Per-part density is a
+tempting knob — swim bladders are cheap and biological — but it is a second system and is
+deferred.
+
+### 5A.7 Failure modes
+
+| Failure | Why it happens | Defence |
+|---|---|---|
+| **Photosynthetic mat** | Sunlight covers upkeep, so nothing must move | Basal metabolism above peak photosynthesis at depth; depth/light gradient (§5A.4) |
+| **No carnivores ever** | Predator valley; trait purged before it can pay | Carrion feeding, plus cell-type mutation (§5A.3) |
+| **Free-energy takeover** | A physics exploit becomes an unlimited food source | Global energy audit (§5A.2) and §11.2's conservation checks |
+| **Efficient nothing** | With no reachable strategy, minimising cost is the winning move | Watch for populations with near-zero work and near-zero displacement. [C18 §3, p.13] documents exactly this under directed search: artefacts *"which may be mistaken for the existence of highly energy efficient locomotion strategies"* |
+| **Bloat** | Any resource with no price | Every part and every neuron costs, including `Structural` (§5A.1) |
+
+### 5A.8 What this supersedes
+
+| Section | Status |
+|---|---|
+| **§5.5 Fitness (water)** | ❌ **Superseded.** There is no fitness function. Displacement becomes an observable, not an objective |
+| **§6.3 Tiling** | ⚠ **Repurposed.** Tiling isolated simultaneous independent evaluations. An ecosystem is one shared world where creatures must be able to meet, so tiling becomes spatial partitioning rather than isolation |
+| **§6.4 Throughput** | ⚠ **Unit changed.** Evaluations per second stops being meaningful. The unit is simulated seconds per wall-clock second at a given population |
+| **§8 MAP-Elites** | ⚠ **Demoted.** It was the selector, and it existed to solve a problem exogenous fitness creates (§2). Under endogenous selection its innovation-protection role is served by ecological niches. Retained as an **observatory** — an archive recording what lived and what it looked like — which costs little and is what makes a long run legible |
+| **§10 Milestones** | ⚠ Milestone 6 (sensors, photosensors) moves from last to load-bearing; foraging is target-following with the target being food |
+
+### 5A.9 Feasibility
+
+Spike 01 (§11.1) measured 128 actuated creatures at **1.945 ms/step**. At dt = 0.01 that is
+195 ms of compute per simulated second — **5× faster than real time with 128 creatures in the
+world**. Those figures exclude fluid drag, self-collision and brain evaluation, all of which
+now exist or are coming; applying a 3× penalty still leaves 128 creatures at ~1.7× real time,
+and roughly 500 at about half real time.
+
+PhysX parallelises across solver islands, which is why per-creature cost fell to 0.28× going
+from 1 to 64 creatures. Creatures in open water are mostly far apart and stay separate
+islands, so that scaling largely survives; it degrades only where creatures touch, which here
+means predation — rare and local.
+
+**Cheap:** nutrients as plain advected data with a spatial hash (never rigidbodies — that is
+the one trap, and would cost more than every creature combined); the current field; the light
+cycle; brain evaluation at a few hundred creatures.
+
+**Expensive:** creature count and DOF count. The wall is population, somewhere around 500–1000,
+and it is physics rather than ecosystem bookkeeping.
+
+### 5A.10 Open parameters
+
+Every number below is unknown and must be measured rather than guessed. They are listed here
+so that a value appearing in code without an entry here is visible as an unexamined choice.
+
+**They all live in one place: `RunConfig` (`Evosim.Core`).** A constant compiled into a class
+is a constant no run can vary, and an unmeasured constant that cannot be varied is an
+assumption wearing the costume of a fact. So every number here is a settable property, cell
+upkeep and feeding rates included, and a run is defined by a `RunConfig` instance.
+
+`RunConfig.Hash()` is **§7's `configHash`** — the same object that parameterises a run is the
+one that identifies it. Two tests drive that by reflection over `RunConfig` and
+`RandomGenomeOptions`, so a tunable added without being folded into the hash fails
+immediately rather than years later; the first run of that test found `MaxEdgesPerNode`
+already missing. This matters most in the case where two runs produce *identical* output,
+which on this project has twice meant a configuration change never reached the thing it
+configured (logbook/0007, logbook/0008). A hash that differs while the results do not is the
+cheapest way to tell that apart from a parameter that genuinely does not matter.
+
+- Basal metabolic rate per unit volume, per part type
+- Peak photosynthetic rate, and its falloff with depth — jointly with the above, this is the
+  knob in §5A.2
+- Neural cost per neuron and per connection
+- Mechanical work coefficient — what a joule of ∫\|τ·ω\| dt is worth against a joule of sunlight
+- Yield fractions in §5A.3, and the loss on transfer
+- Nutrient spawn rate from decay, and sink rate
+- ~~Reproduction threshold and offspring endowment~~ — **resolved by §5A.6**: endowment and
+  brood size are evolved genome traits, and the threshold is derived from them. What remains
+  is the per-offspring **overhead**, which is a world constant and still unmeasured
+- Cell-type mutation rate — "very scarce" is the requirement; the value is not known
+- Current field magnitude and correlation length
+- Starting population and world volume
 
 ---
 
@@ -576,6 +942,21 @@ Every evaluation defined by `(genome, seed, configHash)`.
 ---
 
 ## 8. Search: MAP-Elites, revised
+
+> ⚠ **Demoted by §5A — read this section as conditional.** MAP-Elites was the *selector*, and
+> §8.1's argument for it is an argument about exogenous fitness: it protects morphological
+> innovation from being out-competed before its controller re-adapts (§2). Under endogenous
+> selection nothing is scored, and that role passes to ecological niches — spatial and
+> trophic — maintained by the depth/light gradient and cell-type mutation (§5A.3, §5A.4).
+>
+> **Retained as an observatory:** an archive recording what lived and what it looked like,
+> which is what makes a long run legible and what the §8.5 metrics measure. That is a much
+> cheaper claim than the one this section originally carried.
+>
+> Everything below remains correct *if* directed search is ever restored — for a benchmark, or
+> to seed a population the ecosystem then has to keep alive. §8.2 (fitness-proportional
+> selection) and §8.3 (two descriptors) are the parts that would be easy to get wrong twice,
+> which is why they are kept rather than deleted.
 
 ### 8.1 Why it stays
 
@@ -670,19 +1051,31 @@ Genomes as **JSON** — readable, diffable, git-friendly, small.
 
 ## 10. Milestones
 
+**Revised at draft 5.** The old plan built a search engine (MAP-Elites, island model) and
+treated currents and predators as a final sandbox. §5A inverts that: currents and feeding are
+the mechanism, and search is something the world does by itself. Milestones 0–2 are unchanged
+because they are physics, and physics does not care how selection happens.
+
 | # | Milestone | Ends with |
 |---|---|---|
-| **0** | Unity project, URP, assemblies, physics config, git init | Empty scene that builds and runs headless |
-| **1** | Genome model, development, phenotype builder | Spawn a random creature, watch it flop. **First visual payoff.** |
-| **2** | Eval harness: tiling, fixed stepping, seeding, fluid forces, fitness, **anti-exploit checks (§11.2)** | Measured throughput. Go/no-go on §6.4. |
-| **3** | Multi-BC MAP-Elites + CPG controllers, water | **First real swimmers.** Check for morphological stagnation (§2). |
-| **4** | Island model across processes | Overnight runs, full archive |
-| **5** | Land: contact, gravity, anti-degenerate fitness | Walkers |
-| **6** | Full brain graph, sensors, photosensors | Target-following, reactive behaviour |
-| **7** | Theatre: replay, gallery, charts, lineage, export, **fluid validation harness (§5.4)** | Showpiece + research instrument |
-| **8** | Sandbox: currents, predators, obstacles | You as the selection pressure |
+| **0** ✅ | Unity project, URP, assemblies, physics config | Empty scene that builds and runs headless |
+| **1** ✅ | Genome model, development, phenotype builder | Spawn a random creature, watch it flop. **First visual payoff.** |
+| **2** | Physics harness: fixed stepping, seeding + config hash (§7), fluid forces, **anti-exploit checks (§11.2)**, mechanical work accounting | Throughput in *simulated seconds per wall-clock second* at a given population — not evaluations/second (§5A.8) |
+| **3** | Metabolism: cell types on the genome, per-part upkeep, neural cost, energy as a running balance. Mutation operators (§4.5) | **A creature that starves.** The first thing in this project that can fail on its own |
+| **4** | World: current field, light/depth gradient, nutrient particles and absorption | A creature that survives by drifting into food, and one that doesn't |
+| **5** | Life cycle: death returns tissue to the nutrient pool, reproduction on an energy threshold, mutation on reproduction | **A population that persists without intervention.** The first open-ended run, and where it stops being a project and becomes fun |
+| **6** | Perception: photosensors, evolvable colour, closed-loop brain graph (§4.3, §4.4) | Directed foraging — a creature that moves *toward* something |
+| **7** | Food web: `Consumer` cells, carrion, predation, attack and defence | Trophic levels, or clear evidence of why not (§5A.7) |
+| **8** | Theatre: replay, gallery, charts, lineage, export, **fluid validation harness (§5.4)** | Showpiece + research instrument |
+| **9** | Land: contact, gravity | Deferred. Water first, and the ecosystem is a water design |
 
-Milestone 3 is where it stops being a project and becomes fun.
+**Milestone 3 is the pivot.** Everything before it is a simulator; everything after it is a
+world. It is also the cheapest place to discover that the metabolism/photosynthesis ratio in
+§5A.2 is wrong, because at that point nothing eats yet and starvation is the only outcome
+being measured.
+
+**Superseded:** old Milestone 3 (multi-BC MAP-Elites + CPG) and old Milestone 4 (island
+model). Neither is deleted from §8 — see the note there — but neither is on the path.
 
 ---
 
@@ -734,13 +1127,16 @@ actually needed, adopted wholesale:
 | **Self-collision vibration** | Thrust generated by parts colliding with each other at high frequency | Flag / discard |
 | **Momentum conservation** | Total linear or angular momentum changes while nothing external acts | Reject — the actuation model is wrong |
 | **Buried parts** | Any part's centre inside another part's box | Reject **pre-simulation** |
+| **Depenetration velocity cap** | Solver separating overlapping parts faster than the cap | Prevent — engine configuration, not a per-creature test |
+| **Engine damping defaults** | Any physics-engine damping the design did not specify | Zero it — §5.2 is the only resistance a creature may feel |
+| **Energy balance** | Joint work ≠ ΔKE + drag dissipated, on a system with no other sink | Reject — the actuation or fluid model is not measuring what it claims |
 
 Self-collision vibration is from [C18 Fig. 13, p.19], which reports that "some of the best
 stiff robots (S5) **exploit self-collisions resulting in fast vibrations to produce
 thrust**" — a distinct exploit from solver-error oscillation, and one an articulated
 creature with overlapping parts (§4.2) is well-placed to discover.
 
-The last two rows are not from the literature. They were earned during Milestone 1 and
+The last three rows are not from the literature. They were earned during implementation and
 differ from the rest of the table in a way worth stating: **they are checks on the
 simulator, not on the creature.**
 
@@ -753,6 +1149,35 @@ simulator, not on the creature.**
   correct against 1–2 m²/s when not.
 - **Buried parts.** See §4.2. Free thrust from coincident parts requires no cleverness from
   the search to discover; it is simply lying there.
+- **Engine damping defaults.** `ArticulationBody.angularDamping` and `jointFriction` both
+  default to 0.05, and nothing in Milestone 1 set them. Creatures were therefore swimming in
+  two fluids: the one in §5.2, which is unit-tested to prove it can never add energy, and
+  PhysX's, which nobody chose and which removed roughly **ten times more**. Every displacement
+  figure produced before 2026-08-04 was measured against the wrong resistance. Zeroing it
+  raised measured drag dissipation on one creature from 4,672 to 5,705 J — energy that had been
+  vanishing now reaches the water. If the solver ever needs damping for stability, that is a
+  fluid-model parameter belonging in `FluidConfig` where it can be measured, not an engine
+  default.
+- **Energy balance.** With no gravity, contact or ground, signed joint work must equal the
+  change in kinetic energy plus everything drag dissipated. Verified on a two-cube, one-hinge
+  system with the DOF genuinely free: the residual converges first-order with the timestep
+  (6.60% → 3.55% → 1.99% → 1.04% as dt halves), which establishes that `τ·(ω_child − ω_parent)`
+  measures what it claims. On real creatures the balance does *not* close, and the gap is real
+  energy destroyed by joint-limit constraints — a calibration finding rather than a defect, so
+  it is reported as *energy into joint limits* rather than asserted on. See logbook/0008.
+- **Depenetration velocity cap.** PhysX resolves an overlap by assigning separating velocity,
+  which is a positional correction rather than a force and does not conserve momentum. At
+  Unity's default of 10 m/s this is a free-energy source a creature can reach deliberately:
+  fold a limb into your own body and the solver pays you to unfold it. Measured with
+  self-collision enabled, a creature retaining 2% of its free-swinging range of motion reached
+  0.254 m/s of centre-of-mass velocity under purely internal forces — 119× the same creature
+  with self-collision off — and travelled further in water than any creature that actually
+  swam. Since fitness is displacement (§5.5), the search would have converged on jamming.
+  `Physics.defaultMaxDepenetrationVelocity` is set to **0.02 m/s**. It was 0.5 until the
+  engine-damping row below removed a term that had been masking a second, smaller injection;
+  the leak falls monotonically with the cap (0.5 → 0.045, 0.1 → 0.032, 0.02 → 0.019 m²/s) and
+  is bounded rather than eliminated. Unlike the rest of the table this is a *prevention* rather than a test, and it is
+  the momentum conservation row that detects it if the setting is ever lost.
 
 The general lesson is worth keeping: for a physical simulation, prefer *"which conservation
 law would this violate if it were wrong"* over *"does this output look reasonable."* A
@@ -849,10 +1274,13 @@ is missing, start there.
 | Key | Citation | Local package |
 |---|---|---|
 | **[C18]** ⚠ *partial* | F. Corucci, N. Cheney, F. Giorgio-Serchi, J. Bongard, C. Laschi, "Evolving Soft Locomotion in Aquatic and Terrestrial Environments," *Soft Robotics*, vol. 5, no. 4, pp. 475–495, 2018. DOI `10.1089/soro.2017.0055` — **read: abstract, §2.1–2.2 (pp.4–5), §3.2 (pp.17–21), §3.3 (pp.22–27), §4 (pp.28–30). Sections 2.3–3.1 unread.** | `research/papers/27-corucci-2018-evolving-soft-locomotion/` |
-| **[L21]** ⚠ *partial* | G. Lai, F. F. Leymarie, W. Latham, T. Arita, R. Suzuki, "Virtual Creature Morphology – A Review," *Computer Graphics Forum*, vol. 40, no. 2, pp. 659–681, 2021. DOI `10.1111/cgf.142661` — **read: §4.1–4.2 (pp.7–8), Table 2 (p.15), Table 6 (p.18). Rest unread.** All §12.1 claims come from these sections | `research/papers/14-lai-2021-virtual-creature-morphology-review/` |
+| **[L21]** ⚠ *partial* | G. Lai, F. F. Leymarie, W. Latham, T. Arita, R. Suzuki, "Virtual Creature Morphology – A Review," *Computer Graphics Forum*, vol. 40, no. 2, pp. 659–681, 2021. DOI `10.1111/cgf.142661` — **read: §4.1–4.2 (pp.7–8), §8.2 (p.10), §13 (pp.14–16), Table 2 (p.15), Table 6 (p.18). Rest unread.** §12.1 claims come from §4.1–4.2; §5A's claims about complexity penalties come from §8.2 and its account of PolyWorld and Gene Pool from §13 (review round 2) | `research/papers/14-lai-2021-virtual-creature-morphology-review/` |
 | **[K12]** | P. Krčah, "Solving Deceptive Tasks in Robot Body-Brain Co-evolution by Searching for Behavioral Novelty," in *Advances in Robotics and Virtual Reality*, Intelligent Systems Reference Library vol. 26, Springer, 2012, pp. 167–186. DOI `10.1007/978-3-642-23363-0_7` | `research/papers/05-krcah-2012-solving-deceptive-tasks/` |
 | **[U07]** | Y. Usami, "Re-examination of Swimming Motion of Virtually Evolved Creature Based on Fluid Dynamics," in *Advances in Artificial Life* (ECAL 2007), LNCS 4648, Springer, pp. 183–192. DOI `10.1007/978-3-540-74913-4_19` | `research/papers/28-usami-2007-swimming-motion-fluid-dynamics/` |
 | **[EA23]** | L. Eguiarte-Morett and W. Aguilar, "Premature convergence in morphology and control co-evolution: a study," *Adaptive Behavior*, vol. 32, no. 2, pp. 137–165, 2023. DOI `10.1177/10597123231198497` 🔓 CC BY-NC 4.0 | `research/papers/03-eguiarte-morett-2023-premature-convergence/` |
+| **[TM01]** ⚠ *partial* | T. Taylor and C. Massey, "Recent Developments in the Evolution of Morphologies and Controllers for Physically Simulated Creatures," *Artificial Life*, vol. 7, no. 1, pp. 77–87, 2001. DOI `10.1162/106454601300328034` — **read: pp.4, 6–8 (joint actuation, fitness-function design, complexity caps). Rest unread.** Moved here from §13.3 in review round 2 | `research/papers/09-taylor-massey-2001-recent-developments/` |
+| **[CEA07]** ⚠ *partial* | N. Chaumont, R. Egli, C. Adami, "Evolving Virtual Creatures and Catapults," *Artificial Life*, vol. 13, no. 2, pp. 139–157, 2007. DOI `10.1162/artl.2007.13.2.139` — **read: §3.2–3.4 (pp.3–6), §5 (pp.13–14). Rest unread.** Moved here in round 2. ⚠ The C_l/C_s/C_v/C_c equations on pp.5–6 are **lost in PDF extraction** — the prose survives, the display equations do not. Check the PDF before citing any formula | `research/papers/12-chaumont-egli-adami-2007-catapults/` |
+| **[CU15]** ⚠ *partial* | A. Cully, J. Clune, D. Tarapore, J.-B. Mouret, "Robots that can adapt like animals," *Nature*, vol. 521, no. 7553, pp. 503–507, 2015. DOI `10.1038/nature14422` — **read: supplementary pp.15, 22, 24, Extended Data Figs. 4 and 7. Main text unread.** Moved here in round 2; §5A cites it only for energy as a *behavioural descriptor* | `research/papers/19-cully-clune-tarapore-mouret-2015-robots-that-can-adapt/` |
 
 > **Page-numbering note for [EA23]:** citations use **PDF page numbers** (matching
 > `### Page N` in `source.md`). Journal page = PDF page + 136. So `[EA23 §7, p.27]` is
@@ -860,11 +1288,10 @@ is missing, start there.
 
 ### 13.3 Retrieved, not yet read
 
-| Key | Citation | Local package |
-|---|---|---|
-| **[TM01]** | T. Taylor and C. Massey, "Recent Developments in the Evolution of Morphologies and Controllers for Physically Simulated Creatures," *Artificial Life*, vol. 7, no. 1, pp. 77–87, 2001. DOI `10.1162/106454601300328034` | `research/papers/09-taylor-massey-2001-recent-developments/` |
-| **[CEA07]** | N. Chaumont, R. Egli, C. Adami, "Evolving Virtual Creatures and Catapults," *Artificial Life*, vol. 13, no. 2, pp. 139–157, 2007. DOI `10.1162/artl.2007.13.2.139` | `research/papers/12-chaumont-egli-adami-2007-catapults/` |
-| **[CU15]** | A. Cully, J. Clune, D. Tarapore, J.-B. Mouret, "Robots that can adapt like animals," *Nature*, vol. 521, no. 7553, pp. 503–507, 2015. DOI `10.1038/nature14422` | `research/papers/19-cully-clune-tarapore-mouret-2015-robots-that-can-adapt/` |
+**Empty as of draft 5.** All three former entries were read in part during review round 2 and
+have moved to §13.2 — [TM01], [CEA07] and [CU15]. They are cited with page locators in §5A
+and `DECISIONS.md` D017, and a citation whose source is filed as unread is exactly the kind of
+drift the round protocol exists to catch.
 
 ### 13.4 Cited via read papers — ⚠ metadata from their reference lists, NOT independently verified
 

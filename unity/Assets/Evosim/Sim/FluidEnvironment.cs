@@ -68,7 +68,37 @@ namespace Evosim.Sim
             Physics.gravity = Vector3.zero;
             Physics.IgnoreLayerCollision(
                 PhenotypeBuilder.CreatureLayer, PhenotypeBuilder.CreatureLayer, !selfCollision);
+            Physics.defaultMaxDepenetrationVelocity = MaxDepenetrationVelocity;
         }
+
+        /// <summary>
+        /// How fast PhysX may push two overlapping bodies apart, in m/s. Unity's default is 10.
+        /// </summary>
+        /// <remarks>
+        /// Depenetration is a correction, not a force: the solver assigns separating velocity
+        /// to resolve an overlap and does not have to conserve momentum doing it. That makes it
+        /// a free-energy source, and one a creature can reach deliberately — fold a limb into
+        /// your own body and the solver pays you to unfold it.
+        ///
+        /// Measured, not assumed. With the default of 10, a creature whose joints had seized
+        /// almost completely (3% of its free-swinging range) still reached 0.254 m/s of
+        /// centre-of-mass velocity under purely internal forces, 119x the same creature with
+        /// self-collision off, and travelled further in water than any creature that actually
+        /// swam. Fitness is displacement (§5.5), so search would have found this immediately.
+        ///
+        /// The cost of a low cap is that genuine overlaps resolve slowly and can look soft.
+        /// That is the better failure: a creature that separates sluggishly is ugly, a creature
+        /// paid to jam is a corrupt fitness function (DESIGN.md §11.2).
+        /// </remarks>
+        /// <remarks>
+        /// Lowered from 0.5 after zeroing PhysX's own body damping (see PhenotypeBuilder). That
+        /// damping had been quietly bleeding off the momentum contact injects, so removing it —
+        /// correct in itself, since it was an unmodelled second drag — exposed a leak it had
+        /// been hiding: one creature went from 0.006 to 0.045 m²/s of specific angular momentum
+        /// when self-collision was enabled, growing 1.7x over 2x the time, which is injection
+        /// accumulating rather than solver error random-walking.
+        /// </remarks>
+        public const float MaxDepenetrationVelocity = 0.02f;
 
         /// <summary>
         /// Adds the water a creature drags along with it to each part's mass. Call once, after
@@ -87,8 +117,24 @@ namespace Evosim.Sim
             }
         }
 
+        /// <summary>
+        /// Energy drag has removed from creatures passed to <see cref="Apply"/>, in joules.
+        /// </summary>
+        /// <remarks>
+        /// Positive means energy left the creature, which is the only direction drag is allowed
+        /// to move it — <see cref="FluidModel"/>'s tests assert that per force, and this
+        /// accumulates the consequence over a run so the energy balance can be closed.
+        /// Accumulated across every creature this instance is applied to.
+        /// </remarks>
+        public double DissipatedJoules { get; private set; }
+
         /// <summary>Applies drag to every part. Call once per fixed step, before simulating.</summary>
-        public void Apply(CreatureInstance creature)
+        /// <param name="stepSeconds">
+        /// The step about to be simulated. Only used for <see cref="DissipatedJoules"/>; pass 0
+        /// to skip the accounting. Power is evaluated at the pre-step velocity, so the integral
+        /// is a first-order estimate and will not close a balance to better than a percent or so.
+        /// </param>
+        public void Apply(CreatureInstance creature, float stepSeconds = 0f)
         {
             for (int i = 0; i < creature.Bodies.Length; i++)
             {
@@ -104,9 +150,65 @@ namespace Evosim.Sim
                     out Float3 force,
                     out Float3 torque);
 
-                body.AddForce(force.ToVector3());
-                body.AddTorque(torque.ToVector3());
+                Vector3 f = force.ToVector3();
+                Vector3 t = torque.ToVector3();
+
+                body.AddForce(f);
+                body.AddTorque(t);
+
+                if (stepSeconds > 0f)
+                {
+                    EnsurePendingCapacity(creature.Bodies.Length);
+                    _pendingForce[i] = f;
+                    _pendingTorque[i] = t;
+                    _pendingV[i] = body.linearVelocity;
+                    _pendingW[i] = body.angularVelocity;
+                    _pendingStep = stepSeconds;
+                }
             }
+        }
+
+        /// <summary>
+        /// Integrates the energy the last <see cref="Apply"/> removed. Call immediately after
+        /// <c>Physics.Simulate</c>; only needed when <see cref="DissipatedJoules"/> is wanted.
+        /// </summary>
+        /// <remarks>
+        /// Midpoint, for the reason given on <see cref="EffectorDriver.Settle"/>: drag is
+        /// quadratic in speed, so evaluating its power at the pre-step velocity over-counts
+        /// whenever the body is decelerating — which, under drag, is most of the time.
+        /// </remarks>
+        public void Settle(CreatureInstance creature)
+        {
+            if (_pendingStep <= 0f) return;
+
+            for (int i = 0; i < creature.Bodies.Length && i < _pendingForce.Length; i++)
+            {
+                ArticulationBody body = creature.Bodies[i];
+
+                Vector3 v = (_pendingV[i] + body.linearVelocity) * 0.5f;
+                Vector3 w = (_pendingW[i] + body.angularVelocity) * 0.5f;
+
+                float power = Vector3.Dot(_pendingForce[i], v) + Vector3.Dot(_pendingTorque[i], w);
+                DissipatedJoules -= power * _pendingStep;   // power is negative: drag opposes
+            }
+
+            _pendingStep = 0f;
+        }
+
+        private Vector3[] _pendingForce = System.Array.Empty<Vector3>();
+        private Vector3[] _pendingTorque = System.Array.Empty<Vector3>();
+        private Vector3[] _pendingV = System.Array.Empty<Vector3>();
+        private Vector3[] _pendingW = System.Array.Empty<Vector3>();
+        private float _pendingStep;
+
+        private void EnsurePendingCapacity(int n)
+        {
+            if (_pendingForce.Length >= n) return;
+
+            _pendingForce = new Vector3[n];
+            _pendingTorque = new Vector3[n];
+            _pendingV = new Vector3[n];
+            _pendingW = new Vector3[n];
         }
 
         /// <summary>

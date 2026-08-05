@@ -125,6 +125,23 @@ namespace Evosim.Sim
 
                 var body = go.AddComponent<ArticulationBody>();
                 body.mass = Mathf.Max(0.001f, part.Volume * DensityKgPerM3);
+
+                // PhysX's own damping, zeroed deliberately. Unity defaults angularDamping and
+                // jointFriction to 0.05, which is a second velocity-proportional drag acting on
+                // top of the fluid model in §5.2 — energy leaving the creature through a channel
+                // the design never specified and no fitness or energy figure accounts for.
+                //
+                // Found by an energy audit: joints were doing ~10x more work than drag was
+                // removing, at a ratio that stayed near-constant across a 40x sweep of drive
+                // strength. A scale-invariant loss is the signature of a linear damping term,
+                // not of anything the creature is doing.
+                //
+                // §5.2's drag is the only resistance a creature should feel. If the solver needs
+                // damping for stability, that is a fluid-model parameter and belongs in
+                // FluidConfig where it can be measured, not a hidden engine default.
+                body.linearDamping = 0f;
+                body.angularDamping = 0f;
+                body.jointFriction = 0f;
                 bodies[i] = body;
 
                 if (part.IsRoot)

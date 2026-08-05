@@ -12,6 +12,20 @@ namespace Evosim.Core
         public Float3 Dimensions { get; set; } = new Float3(0.5f, 0.5f, 0.5f);
 
         /// <summary>
+        /// What this node's parts are made of — <see cref="CellType.Id"/>, DESIGN.md §5A.1.
+        /// </summary>
+        /// <remarks>
+        /// A string rather than an enum so genomes survive new types being added; resolved
+        /// against a <see cref="CellTypeRegistry"/>, which fails loudly on an unknown id rather
+        /// than substituting a default.
+        ///
+        /// Defaults to structural — inert, cheapest, and unable to carry a joint. A default that
+        /// fed itself would quietly give every genome written before this field existed a free
+        /// energy source.
+        /// </remarks>
+        public string CellTypeId { get; set; } = CellTypeIds.Structural;
+
+        /// <summary>
         /// Joint connecting a part grown from this node to its parent. Ignored at the root,
         /// which has no parent. Mutable, with limits resampled to the new DOF count (§4.1).
         /// </summary>
@@ -19,6 +33,22 @@ namespace Evosim.Core
 
         /// <summary>Min/max per DOF, in radians. Length should match <see cref="JointType"/>'s DOF count.</summary>
         public Float2[] JointLimits { get; set; } = Array.Empty<Float2>();
+
+        /// <summary>
+        /// Peak torque this node's joint may exert, in newton-metres — links only, DESIGN.md §5A.1.
+        /// </summary>
+        /// <remarks>
+        /// Evolvable, and paid for: <see cref="LinkCell"/> charges a standing cost proportional
+        /// to it, per degree of freedom, whether or not the joint is moving. Zero on anything
+        /// that is not a link, and <c>Genome.Validate</c> enforces that so a rigid cell cannot
+        /// carry meaningful data in a field nothing reads.
+        ///
+        /// This replaces the fixed <c>TorqueScale</c> of §4.4, which applied the same strength
+        /// to every joint in every creature. The mass-scaling that scheme inherited from
+        /// [K12 §2.2, p.5] existed for numerical stability rather than realism; bounds on this
+        /// field serve that purpose now, and the metabolic cost does the rest.
+        /// </remarks>
+        public float Power { get; set; }
 
         /// <summary>
         /// How many times this node may occur along one path before its recursion is
@@ -38,8 +68,10 @@ namespace Evosim.Core
             var clone = new MorphNode
             {
                 Dimensions = Dimensions,
+                CellTypeId = CellTypeId,
                 JointType = JointType,
                 JointLimits = (Float2[])JointLimits.Clone(),
+                Power = Power,
                 RecursiveLimit = RecursiveLimit,
                 Neurons = new NeuronDef[Neurons.Length],
             };

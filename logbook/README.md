@@ -67,3 +67,5 @@ are the ones most likely to go unwritten.
 | [0004](0004-two-ways-to-report-a-success-you-dont-have.md) | 2026-08-02 | Two ways to report a success you don't have |
 | [0005](0005-the-creatures-were-swimming-in-vacuum.md) | 2026-08-02 | The creatures were swimming in vacuum |
 | [0006](0006-boxes-inside-boxes.md) | 2026-08-02 | Boxes inside boxes |
+| [0007](0007-the-creature-that-was-paid-to-jam.md) | 2026-08-02 | The creature that was paid to jam |
+| [0008](0008-the-energy-audit.md) | 2026-08-04 | What an energy audit found |

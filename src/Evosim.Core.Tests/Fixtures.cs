@@ -15,6 +15,16 @@ namespace Evosim.Core.Tests
                 Dimensions = new Float3(half, half, half),
                 JointType = joint,
                 RecursiveLimit = recursiveLimit,
+
+                // Only a link may move (DESIGN.md §5A.1), so asking for a joint here is asking
+                // for a link. These fixtures exist to exercise development — recursion,
+                // reflection, anchors — and would otherwise all have to spell out a cell type
+                // that is implied by the joint they already asked for.
+                CellTypeId = joint == JointType.Fixed ? CellTypeIds.Structural : CellTypeIds.Link,
+
+                // A joint with no capacity cannot actuate, and Genome.Validate says so. The
+                // value is arbitrary — these fixtures test development, not energetics.
+                Power = joint == JointType.Fixed ? 0f : 50f,
             };
             node.ResampleJointLimits(new Float2(-1f, 1f));
             return node;

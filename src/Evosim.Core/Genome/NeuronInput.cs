@@ -35,10 +35,19 @@ namespace Evosim.Core
     /// Sensor channels, normalised to approximately [-1, 1] — DESIGN.md §4.4.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// [K12 §2.2, p.4] used joint-angle sensors alone. The rest are staged:
-    /// <see cref="Contact"/> arrives with land (Milestone 5) and <see cref="Photo"/> with
+    /// <see cref="Damage"/> arrives with predation (Milestone 3) and <see cref="Photo"/> with
     /// the full brain graph (Milestone 6). They are declared now so the genome format does
     /// not change when they land.
+    /// </para>
+    /// <para>
+    /// <b>Which channels a part may read is not restricted by cell type.</b> The joint channels
+    /// read zero on anything rigid, which is the same thing a restriction would achieve without
+    /// making the legality of a genome depend on a mutation elsewhere in it. What limits
+    /// perception is not permission but cost: a sensor is only useful through a neuron, and
+    /// neurons are billed per step (§5A.2). A creature that senses everything everywhere starves.
+    /// </para>
     /// </remarks>
     public enum SensorChannel
     {
@@ -48,7 +57,14 @@ namespace Evosim.Core
         /// <summary>Joint angular velocity for one DOF.</summary>
         JointAngularVelocity = 1,
 
-        /// <summary>Contact with terrain. Land only.</summary>
+        /// <summary>
+        /// Something solid is touching this part — terrain, or another creature.
+        /// </summary>
+        /// <remarks>
+        /// Originally scoped to terrain and Milestone 5. §5A made it aquatic too: contact is how
+        /// a consumer cell finds tissue to bite (§5A.3), so the channel that reports it is
+        /// needed as soon as predation is, which is Milestone 3.
+        /// </remarks>
         Contact = 2,
 
         /// <summary>Part orientation against world up.</summary>
@@ -56,6 +72,30 @@ namespace Evosim.Core
 
         /// <summary>Photoreceptor triple. Milestone 6.</summary>
         Photo = 4,
+
+        /// <summary>
+        /// Energy taken out of this part by something else, over the last step — DESIGN.md §4.4.
+        /// Normalised against the part's own stored energy, so it reads as a fraction lost
+        /// rather than in joules. <see cref="NeuronInput.Index"/> is ignored.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Available on <i>every</i> part, not only links. Once creatures can eat each other,
+        /// being bitten is the most consequential thing that happens to a body cell, and a
+        /// cell that cannot report it leaves the creature with no way to distinguish a
+        /// successful photosynthetic pose from being slowly eaten in one.
+        /// </para>
+        /// <para>
+        /// <b>No signal relay is needed for it to reach the rest of the creature.</b> A neuron
+        /// on the bitten part is read by <see cref="NeuronInputKind.ParentNode"/> and
+        /// <see cref="NeuronInputKind.ChildNode"/> inputs on its neighbours, so damage
+        /// propagates one node per step through machinery that already exists. That latency is
+        /// a feature: it is what a conduction delay looks like, it is bounded by body length,
+        /// and it does not require an input kind that names an absolute part — which would
+        /// break under recursion for the reasons in <see cref="NeuronInputKind"/>.
+        /// </para>
+        /// </remarks>
+        Damage = 5,
     }
 
     /// <summary>

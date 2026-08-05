@@ -31,7 +31,10 @@ namespace Evosim.Sim
         [Header("Test actuation — placeholder until the brain graph (Milestone 3)")]
         public bool Actuate = true;
         public float TestSineHz = 0.8f;
-        public float TorqueScale = 300f;
+
+        [Tooltip("Multiplier on each link's evolved Power (§5A.1). A viewing knob — leave at 1 " +
+                 "for anything you intend to believe.")]
+        public float PowerScale = 1f;
 
         [Header("Respawn")]
         [Tooltip("Seconds before the creature is torn down and the next seed grown. Zero disables.")]
@@ -91,7 +94,7 @@ namespace Evosim.Sim
 
             if (Camera != null) Camera.Target = _creature.Root.transform;
 
-            _driver = new EffectorDriver(_creature) { TorqueScale = TorqueScale };
+            _driver = new EffectorDriver(_creature, Time.fixedDeltaTime) { PowerScale = PowerScale };
             _scratch = new float[Mathf.Max(1, _creature.TotalDof)];
             _age = 0f;
             _startCentre = FluidEnvironment.CentreOfMass(_creature);

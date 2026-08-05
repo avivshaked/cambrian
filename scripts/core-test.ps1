@@ -22,7 +22,12 @@ param(
     [string] $Filter,
 
     # Use a specific dotnet.exe instead of the one bundled with Unity.
-    [string] $DotnetPath
+    [string] $DotnetPath,
+
+    # Show what tests write to ITestOutputHelper. Several tests here exist to report a
+    # measurement rather than to assert on one — population overlap, joint clearance — and
+    # their tables are invisible at the default verbosity.
+    [switch] $ShowOutput
 )
 
 $ErrorActionPreference = 'Stop'
@@ -74,6 +79,7 @@ $env:DOTNET_NOLOGO = '1'
 
 $testArgs = @('test', $project, '--nologo', '-v', 'minimal')
 if ($Filter) { $testArgs += @('--filter', $Filter) }
+if ($ShowOutput) { $testArgs += @('--logger', 'console;verbosity=detailed') }
 
 & $dotnet @testArgs
 exit $LASTEXITCODE

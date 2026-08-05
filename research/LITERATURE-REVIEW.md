@@ -8,9 +8,12 @@ quality-diversity search).
 **Reporting standard:** PRISMA-2020 / PRISMA-S, with an AI-assistance disclosure (§8).
 
 > **Scope honesty up front.** This is a **decision-support review for an engineering
-> project**, not a publication-grade systematic review. Five papers were read (three in
-> full, two in part) from a 28-paper candidate pool. Two of six research questions remain
-> only partly answered. Section 7 states the limitations without softening them.
+> project**, not a publication-grade systematic review. After round 2, all eight retrieved
+> papers have been read at least in part — three in full, five in part — from a 28-paper
+> candidate pool. Two of six original research questions remain only partly answered, and
+> round 2 opened a seventh (endogenous selection, `DESIGN.md` §5A) that **has never been
+> searched for at all**: its only sources are two systems described second-hand in
+> [L21 §13]. Section 7 states the limitations without softening them.
 
 ---
 
@@ -24,6 +27,26 @@ history.
 | Round | Date | Trigger | Queries | Papers read | Design changes produced |
 |---|---|---|---|---|---|
 | **1** | 2026-08-02 | Initial — six ranked questions before implementation | 15 | 3 full, 2 partial | DESIGN.md draft 1→3: added §2 (premature convergence), changed §8.2/§8.3 (selection + multi-BC), corrected §5.4 (fluid model diversity cost), §4.4 (effector scheme), §4.1 (reflection flags), §11.2 (exploit checklist), closed §12.1 (encoding) |
+| **2** | 2026-08-02 | New question, raised during implementation: **should morphological and neural complexity carry a metabolic cost?** | 0 new searches — targeted re-reading of the 8 papers already held | **0 new papers.** Extended reading of [L21] (§8.2 p.10, §13 pp.14–16) and [C18] (§2.4 p.8, §3 pp.13/17, §4 p.29); confirmatory passes on [CEA07] §3.4, [TM01] pp.6–8, [K12] §2.2, [CU15] supplementary p.24 | DESIGN.md draft 4→5: added **§5A** (energy economy, endogenous selection), superseded §5.5, demoted §8 to observatory, repurposed §6.3/§6.4. Recorded as `DECISIONS.md` D017 |
+
+**Round 2 note — no new retrieval.** This round searched nothing. It re-read papers already
+in `research/papers/` against a question that had not been asked in round 1, and the answer
+changed the design more than round 1's fifteen queries did. Three limitations of this follow,
+and they are carried into §7:
+
+- **The corpus was assembled to answer different questions.** Round 1's six questions were
+  about encodings, quality-diversity and physics exploitation. Nothing was retrieved *because*
+  it addressed metabolic cost, so the eight papers are a convenience sample with respect to
+  this question, not a search result. A proper round 3 would search for it directly —
+  candidate terms: open-ended evolution, artificial ecosystem, endogenous fitness, energy-based
+  selection, Avida/Tierra/PolyWorld/Geb.
+- **The two directly relevant systems are known only through a survey.** PolyWorld and
+  Ventrella's Gene Pool appear in [L21 §13] as descriptions, not evaluations. Neither primary
+  source is held. DESIGN.md §5A is therefore **not literature-backed**, and D017 records it as
+  a bet rather than a finding.
+- **[L21] is marked ⚠ partial in §13.2 of DESIGN.md**, and the sections read here (§8.2, §13)
+  were outside the range that entry declares. That entry has been widened; the general point
+  is that "partial" reads accumulate silently unless each extension is recorded.
 
 ### Rules for adding a round
 
@@ -341,10 +364,23 @@ Tarapore & Mouret 2015 (`10.1038/nature14422`). All verified and available local
   included papers — particularly anything post-2023 responding to [EA23] — is absent. One
   2025 preprint claiming brain-body co-optimisation "consistently fails to select for
   morphological potential" was surfaced in Pass 1 and **never followed up**; if it holds,
-  it would bear directly on §2 of the design. *Round 2 addresses this — it is step 2 of the
-  update protocol in §3.5.*
+  it would bear directly on §2 of the design. ~~*Round 2 addresses this — it is step 2 of the
+  update protocol in §3.5.*~~ **Round 2 did not address it.** That round was triggered by a
+  new question and searched nothing; forward snowballing remains outstanding and is now
+  overdue. Struck rather than deleted, per §0 — a prediction the review made about itself and
+  did not keep is part of the record.
 - **Saturation was asserted, not measured.** Pass 1 stopped when new queries returned
   known papers. That is a weak criterion applied over three batches.
+- **⚠ Round 2 answered a question the corpus was not assembled for.** The eight held papers
+  were retrieved against round 1's questions on encodings, quality-diversity and physics
+  exploitation. None was retrieved because it addressed metabolic cost or open-ended
+  evolution, so with respect to those topics the corpus is a **convenience sample**, and the
+  absence of contrary evidence in it means very little. `DESIGN.md` §5A is built on two
+  systems known only through a survey ([L21 §13]) with neither primary source held; D017
+  records it as a bet, not a finding. A round 3 searching *open-ended evolution, artificial
+  ecosystem, endogenous fitness, energy-based selection, Avida, Tierra, PolyWorld, Geb* is
+  the correction, and until it runs §5A should be read as unreviewed design rather than as
+  evidence-led.
 
 ### 7.2 Verification validity
 
@@ -421,16 +457,29 @@ set is reconstructible by anyone with equivalent access.
    brain-body co-optimisation "consistently fails to select for morphological potential."
    If sound, it challenges the mitigations in `DESIGN.md` §2.3. *Cheapest high-value
    action remaining.*
-2. **Q2 — Sims reproduction.** [TM01] and [CEA07] are retrieved and unread. Krčah's
-   GECCO'07 reimplementation and Lessin's thesis are openly available and were never
-   fetched. Directly relevant to whether Milestone 3 will actually produce swimmers.
-3. **Q5 — controller representation.** Only one implementation's scheme was found ([K12]).
+2. **⚠ NEW (round 2) — open-ended evolution and artificial ecosystems.** `DESIGN.md` §5A now
+   specifies endogenous selection, and **the review has never searched for this literature.**
+   The only sources are two systems described second-hand in [L21 §13]. This is the largest
+   gap between what the design asserts and what the review supports. Suggested terms:
+   *open-ended evolution, artificial ecosystem, endogenous fitness, energy-based selection,
+   Avida, Tierra, PolyWorld, Geb, Ventrella Gene Pool.* Specific questions: does anything
+   report trophic levels emerging from morphology-encoded feeding modes; what stops these
+   systems collapsing to a single strategy; and is there any precedent for a per-neuron
+   metabolic charge.
+3. **Q2 — Sims reproduction.** ~~[TM01] and [CEA07] are retrieved and unread.~~ **Both were
+   read in round 2** — [TM01] pp.4, 6–8 on fitness design, joint actuation and complexity
+   caps; [CEA07] §3.2–3.4 pp.3–6 and §5 pp.13–14 on the complexity bonus, joint DOF and
+   simulator settings. Both are now partial reads and their §13.2 entries need widening the
+   same way [L21]'s did. Still outstanding: Krčah's GECCO'07 reimplementation and Lessin's
+   thesis, both openly available and never fetched. Directly relevant to whether Milestone 3
+   will actually produce swimmers.
+4. **Q5 — controller representation.** Only one implementation's scheme was found ([K12]).
    Lessin et al.'s muscle-drive work proposes shifting complexity from controller to body
    — a third architectural option not represented in the design at all.
-4. **Verify the §13.4 quarantine.** Cheney et al. 2018 (morphological innovation
+5. **Verify the §13.4 quarantine.** Cheney et al. 2018 (morphological innovation
    protection) and Pugh et al. 2016 (BC alignment) are load-bearing but unverified and
    read only second-hand.
-5. **Forward snowballing from [EA23] and [C18]** — no post-2023 responses were sought.
+6. **Forward snowballing from [EA23] and [C18]** — no post-2023 responses were sought.
 
 **Not worth pursuing** on current evidence: deep-RL co-design (DERL, Evolution Gym) and
 CPPN encoding literature, both of which address a different substrate than this project
