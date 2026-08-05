@@ -112,6 +112,17 @@ namespace Evosim.Core
         /// makes two materially different runs hash identically, and §7's whole purpose is to
         /// <i>detect</i> that.
         /// </remarks>
+        /// <summary>
+        /// Writes this type's own tunable parameters into an already-open JSON object — §9.
+        /// </summary>
+        /// <remarks>
+        /// The id and the upkeep are written by <see cref="CellTypeJson"/>, since every type has
+        /// them. Override to add whatever else a subclass takes, and register a matching reader
+        /// with <see cref="CellTypeJson.Register"/> — the two together are what keep the type
+        /// system extensible without the serializer needing to know the full list.
+        /// </remarks>
+        public virtual void WriteParameters(Json.Writer writer) { }
+
         public virtual string HashContribution() =>
             string.Format(
                 CultureInfo.InvariantCulture, "{0}:upkeep={1:R},joint={2}", Id, UpkeepWattsPerCubicMetre, AllowsJoint);

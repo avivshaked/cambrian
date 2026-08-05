@@ -379,10 +379,44 @@ control, at a fraction of the complexity.
 
 ### 4.5 Mutation and variation
 
-Perturb scalars (Gaussian); add/remove morph node; add/remove morph edge; add/remove
+Perturb scalars (Gaussian); duplicate a morph node; add/remove morph edge; add/remove
 neuron; rewire neuron input (respecting §4.3); change joint type; change neuron op;
-toggle any `reflect` flag or `terminalOnly`; change `recursiveLimit`; and **graft** —
+toggle any `reflect` flag or `terminalOnly`; change `recursiveLimit`; change cell type
+(rare, §5A.3); perturb brood size and offspring endowment (§5A.6); and **graft** —
 attach a subgraph from genome B at a random edge of genome A.
+
+**There is no remove-node operator, and that is deliberate.** A node enters small — a
+duplicate arrives just above the extinction threshold rather than at its source's size — and
+leaves by shrinking below it. Nothing else deletes a node.
+
+Three things follow, and the third is the reason:
+
+1. **Duplication is nearly neutral on the birth it happens.** A new part too small to change
+   much can then grow if it turns out to be worth something. Arriving full-size made every
+   duplication a large jump, and a large jump in a co-adapted body is almost always worse than
+   what it replaced (§2).
+2. **Genome size is emergent, not declared.** It settles near 39 nodes over a 100,000-birth
+   lineage without any rate saying so — the balance of duplication against drift across the
+   threshold.
+3. **Removal is filtered by selection instead of blind.** A per-node deletion chance hits
+   useful and useless nodes at the same rate, so selection must keep re-winning structure it
+   has already won; and the rate's magnitude silently decides how large a genome may be, which
+   is not mutation's decision to make. Here a node vanishes only by shrinking, and shrinking is
+   something selection can prevent: a node doing work is held large, one doing nothing drifts
+   out. **Extinction reaches exactly the nodes nothing is holding up** — which is also what
+   makes genetic bloat self-clearing, since unexpressed nodes are unexpressed *because* nothing
+   selects on them.
+
+The threshold is not a new invented constant: development already refuses to grow a part
+below `MinPartVolume`, and a node shrunk past the point where it would produce a viable part
+is the natural definition of extinct.
+
+⚠ Size is perturbed proportionally, so log-size random-walks and the threshold is an
+*absorbing* barrier — with no selection at all, every node is eventually absorbed. That is
+intended rather than a flaw, and it is why duplication still has a rate. The measured history
+of getting here is in the changelog: per-birth add/remove drifted to **847 nodes over 100,000
+births** and took the replay cost quadratic (32 s); per-node removal fixed the size but
+imposed a restoring force that fought selection; this fixes it without imposing one.
 
 Grafting is Sims' crossover. Plain parameter-vector crossover is meaningless on a
 variable-topology graph. (Note [K12 §2.5, p.8] instead used NEAT **historical markings**
@@ -790,7 +824,8 @@ deferred.
 | **No carnivores ever** | Predator valley; trait purged before it can pay | Carrion feeding, plus cell-type mutation (§5A.3) |
 | **Free-energy takeover** | A physics exploit becomes an unlimited food source | Global energy audit (§5A.2) and §11.2's conservation checks |
 | **Efficient nothing** | With no reachable strategy, minimising cost is the winning move | Watch for populations with near-zero work and near-zero displacement. [C18 §3, p.13] documents exactly this under directed search: artefacts *"which may be mistaken for the existence of highly energy efficient locomotion strategies"* |
-| **Bloat** | Any resource with no price | Every part and every neuron costs, including `Structural` (§5A.1) |
+| **Bloat (body)** | Any resource with no price | Every part and every neuron costs, including `Structural` (§5A.1) |
+| **Bloat (genome)** | Development caps a body at `MaxParts`, so nodes beyond what it expresses are never grown, cost nothing, and are invisible to an economy that prices bodies. Measured: with per-birth add/remove, a 100,000-birth lineage reached **847 nodes** and replay went quadratic — 32 s for the chain | Nodes enter small and leave by shrinking below an extinction threshold (§4.5). Unexpressed nodes are unexpressed *because* nothing selects on them, so they are exactly the ones that drift out — bloat clears itself, with no rate, cap or price doing the work. Measured at ~39 nodes over 100,000 births. ⚠ Still worth pricing genome size at Milestone 3, since replication is genuinely costly in real cells; the tension to resolve is that unexpressed nodes are also the raw material adaptation draws on. Genetic-programming bloat is well studied and the review has never covered it — round 3 |
 
 ### 5A.8 What this supersedes
 

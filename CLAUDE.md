@@ -223,8 +223,27 @@ actually verifying it.
 
 - Simulation output (`runs/`) and spike CSVs are gitignored; `FINDINGS.md` is tracked
   because DESIGN.md links to it.
-- Genomes serialize to **JSON**, not binary — readable, diffable, and small enough that
-  packing would be premature.
+- Genomes serialize to **JSON**, not binary — readable, diffable, and hand-written rather than
+  via a library, because `Evosim.Core` has no dependencies and that is what keeps its tests at
+  one second. `Json`, `GenomeJson`, `RunConfigJson`, `CellTypeJson`, `RunDirectory`.
+- **A run is a directory, and its two high-volume files are append-only JSONL.** `config.json`
+  (indented, hand-editable, carries its own hash), `lineage.jsonl` (one row per creature ever
+  born), `stats.jsonl` (one row per sample), `snapshots/`. A killed run leaves every completed
+  row valid; a single rewritten document would leave a truncated file that parses as nothing.
+  Creatures are **rows, not files** — a genome measures ~5 KB and the working estimate is 40,000
+  births an hour, so one file each is 40,000 files and 200 MB per hour.
+  - Compact mode is not cosmetic: **one row must be one line.** `JsonlWriter` refuses a row
+    containing a line break, because one embedded newline makes every row after it unreadable.
+  - Read a live run with `JsonlWriter.ReadRows`, not `File.ReadAllLines` — the latter opens with
+    `FileShare.Read`, which will not coexist with the writer and throws a sharing violation.
+- **Two reflection-driven tests guard the config.** `RunConfigTests` checks every tunable
+  reaches `RunConfig.Hash()`; `RunConfigJsonTests` checks every tunable survives a save and
+  reload. Add a property to `RunConfig` or `RandomGenomeOptions` and forget either and they fail
+  immediately — which is how `MaxEdgesPerNode` and `FluidConfig.PanelsPerAxis` were both caught.
+- **Loading refuses rather than defaults.** A missing field throws and lists what was present;
+  enums serialize by name, not ordinal. A genome that loads with one field silently defaulted is
+  a different creature wearing the original's identity, measured and filed under the stored
+  genome with nothing downstream able to notice.
 - Every evaluation must be reproducible from `(genome, seed, configHash)`. PhysX is not
   bitwise deterministic across machines or Unity versions, so the hash exists to *detect*
   mismatches rather than to promise portability.

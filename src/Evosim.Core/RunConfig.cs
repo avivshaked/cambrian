@@ -38,6 +38,9 @@ namespace Evosim.Core
         /// <summary>Caps applied while growing a genome into a body — §4.2.</summary>
         public DevelopmentLimits Development { get; set; } = DevelopmentLimits.Default;
 
+        /// <summary>How often each variation operator fires — §4.5.</summary>
+        public MutationRates Mutation { get; set; } = MutationRates.Default;
+
         /// <summary>Water: density, drag, added mass — §5.2.</summary>
         public FluidConfig Fluid { get; set; } = new FluidConfig();
 
@@ -139,7 +142,8 @@ namespace Evosim.Core
             sb.Append(CellTypes.HashContribution()).Append('|');
             sb.Append(Fluid.Density.ToString("R", c)).Append(',');
             sb.Append(Fluid.DragCoefficient.ToString("R", c)).Append(',');
-            sb.Append(Fluid.AddedMassCoefficient.ToString("R", c)).Append('|');
+            sb.Append(Fluid.AddedMassCoefficient.ToString("R", c)).Append(',');
+            sb.Append(Fluid.PanelsPerAxis).Append('|');
             sb.Append(Development.MaxParts).Append(',');
             sb.Append(Development.MaxDepth).Append(',');
             sb.Append(Development.MinPartVolume.ToString("R", c)).Append('|');
@@ -148,6 +152,7 @@ namespace Evosim.Core
             sb.Append(NeuralCostPerNeuronWatts.ToString("R", c)).Append(',');
             sb.Append(NeuralCostPerConnectionWatts.ToString("R", c)).Append(',');
             sb.Append(CellTypeMutationChance.ToString("R", c)).Append('|');
+            AppendMutationRates(sb, c);
             AppendGenomeOptions(sb, c);
 
             ulong hash = 14695981039346656037UL;
@@ -168,6 +173,31 @@ namespace Evosim.Core
         /// added here shows up as two different configurations sharing a hash, which is what the
         /// tests below check for.
         /// </remarks>
+        private void AppendMutationRates(StringBuilder sb, CultureInfo c)
+        {
+            MutationRates m = Mutation;
+
+            sb.Append(m.ScalarChance.ToString("R", c)).Append(',');
+            sb.Append(m.ScalarStdDev.ToString("R", c)).Append(',');
+            sb.Append(m.AddNodeChance.ToString("R", c)).Append(',');
+            sb.Append(m.NewNodeHalfExtent.ToString("R", c)).Append(',');
+            sb.Append(m.NodeExtinctionHalfExtent.ToString("R", c)).Append(',');
+            sb.Append(m.AddEdgeChance.ToString("R", c)).Append(',');
+            sb.Append(m.RemoveEdgeChance.ToString("R", c)).Append(',');
+            sb.Append(m.AddNeuronChance.ToString("R", c)).Append(',');
+            sb.Append(m.RemoveNeuronChance.ToString("R", c)).Append(',');
+            sb.Append(m.RewireInputChance.ToString("R", c)).Append(',');
+            sb.Append(m.NeuronOpChance.ToString("R", c)).Append(',');
+            sb.Append(m.JointTypeChance.ToString("R", c)).Append(',');
+            sb.Append(m.FlagChance.ToString("R", c)).Append(',');
+            sb.Append(m.RecursiveLimitChance.ToString("R", c)).Append(',');
+            sb.Append(m.CellTypeChance.ToString("R", c)).Append(',');
+            sb.Append(m.BroodSizeChance.ToString("R", c)).Append(',');
+            sb.Append(m.EndowmentChance.ToString("R", c)).Append(',');
+            sb.Append(m.MaxBroodSize).Append(',');
+            sb.Append(m.MaxNodes).Append('|');
+        }
+
         private void AppendGenomeOptions(StringBuilder sb, CultureInfo c)
         {
             RandomGenomeOptions g = Genome;

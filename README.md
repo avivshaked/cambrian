@@ -1,20 +1,30 @@
 # Cambrian
 
-**Evolved virtual creatures in Unity — bodies and brains co-evolved by quality-diversity search.**
+**An evolving aquatic ecosystem in Unity — bodies and brains encoded together, selected by
+whether they can afford to stay alive.**
 
 Creatures are grown from a recursive directed graph that encodes *both* morphology and
-neural control. They are dropped into simulated water, evaluated on how well they swim, and
-selected by an algorithm that rewards being *different* as much as being *fast*. Nobody
-designs the creatures. The interesting ones are discovered.
+neural control. They are dropped into simulated water where **energy is a conserved
+budget**: they earn it from sunlight, drifting nutrients, or each other, and they spend it on
+tissue, on thinking, and on every movement they make. Run out and you die. Accumulate a
+surplus and you reproduce.
+
+**There is no fitness function.** Nothing is scored, and nothing is being taught to swim. If
+swimming is what keeps a creature alive it will appear on its own — and if something else
+appears instead, that is the more interesting answer. A creature made only of rigid feeding
+cells is a plant; one that eats plants is a herbivore; the word "species" appears nowhere in
+the code.
 
 The name is the ambition: the Cambrian explosion was a rapid diversification of **body
-plans**, which is exactly what a morphological archive is trying to produce.
+plans**, which is what an open-ended ecosystem is being built to produce.
 
-> **Status: creatures grow and move. No water, no fitness, no evolution yet.**
-> A genome develops into a body, the body builds into a physics articulation, and a sandbox
-> scene spawns one and drives it. Nothing selects anything — the controller is a test sine
-> wave standing in for a brain, and there is no fluid to swim in, so there is not yet
-> anything to be good at.
+> **Status: creatures grow, swim, and are made of something. No energy economy yet, so
+> nothing lives or dies.**
+> Genomes develop into bodies, bodies build into physics articulations, water applies drag
+> and added mass, and every part has a cell type with a metabolic cost attached. Mutation,
+> genome serialization and the run format all work. What does not exist yet is the economy
+> that spends the energy — so the numbers are recorded but nothing yet depends on them, and
+> the controller is still a test sine wave standing in for a brain.
 
 ---
 
@@ -32,6 +42,25 @@ a segment it duplicates that segment's controller too — which is, structurally
 central pattern generator works. That is why creatures in this family produce coordinated
 travelling-wave gaits instead of noise.
 
+Where this departs from Sims is the **selection**. Sims scored creatures on a fitness
+function and bred the winners. Here nothing is scored: a part is made of a specific tissue,
+each tissue earns and costs energy differently, and a creature that cannot cover its own
+metabolism dies without anything having to judge it. Two consequences fall out rather than
+being designed in:
+
+- **Trophic strategy is morphology.** Photosynthesis, filter-feeding and predation are cell
+  types, so a species is a distribution of cell types over a body plan and speciation is a
+  change in that distribution. No separate species or niche concept exists.
+- **Motion costs a part.** Only a *link* cell may carry a joint, so two parts cannot move
+  relative to each other without one between them — and link tissue is the most expensive
+  there is, charged for its strength whether or not it moves. A creature with no links is a
+  rigid body drifting on the current, which is what a plant is, without "plant" being defined
+  anywhere.
+
+Which of those is the right call is genuinely open. The literature review behind the rest of
+the design has **no coverage of artificial ecosystems or open-ended evolution** — §5A is
+reasoned from first principles and labelled as such.
+
 ---
 
 ## Where the design comes from
@@ -40,6 +69,11 @@ Most decisions in [`DESIGN.md`](DESIGN.md) cite peer-reviewed literature with pa
 locators — `[K12 §2.3, p.7]` resolves to an exact page of an exact paper.
 [`research/`](research/) holds the review those citations came from; §7 lists what the review
 did not establish, and two of its six questions remain only partly answered.
+
+**One large part of the design has no review behind it at all.** The ecosystem — energy, cell
+types, feeding, reproduction — was reasoned from first principles, and open-ended evolution
+and artificial ecosystems have never been searched. `DESIGN.md` §5A says so in the text, and
+settling it is the next round of reading rather than something to discover later.
 
 The design was written first and the review run against it. That changed three things, one
 of which was a correction to reasoning rather than to a fact:
@@ -107,15 +141,23 @@ sleeping scene is visible in the results table. Full account in
 ## Layout
 
 ```
-DESIGN.md                     the specification — start here
+DESIGN.md                     the specification — start here (§5A is the ecosystem)
 DECISIONS.md                  why things are the way they are, and what was rejected
 primer/                       what was built and why it is interesting — start here to learn
 logbook/                      dated entries on what was tried, and what broke
-CLAUDE.md                     orientation for AI assistants
+CLAUDE.md                     orientation for AI assistants — what will bite you
 LICENSE / LICENSE-DOCS        MIT for code, CC BY 4.0 for prose — see below
 src/
-  Evosim.Core/                genome, development, RNG — no UnityEngine, runs headless
+  Evosim.Core/                no UnityEngine, runs headless in ~1 s
+    Genome/                   the recursive graph: nodes, edges, neurons, reproduction traits
+    Development/              genotype to phenotype — growing a body from the graph
+    Cells/                    what a part is made of, and how it earns and spends energy
+    Mutation/                 the variation operators
+    Serialization/            hand-written JSON; genomes, run settings, the run directory
+    Environment/              fluid model — drag and added mass
   Evosim.Core.Tests/          xUnit suite over the above
+unity/                        the real Unity project; Evosim.Core is a local package
+  Assets/Evosim/Sim/          phenotype builder, effectors, fluid, sandbox scene
 scripts/
   core-test.ps1               build + test Evosim.Core without the Editor
   githooks/                   pre-commit guard (enable with core.hooksPath)
@@ -126,7 +168,15 @@ research/
 spikes/
   01-articulation-body/       disposable Unity project; physics validation
     results/FINDINGS.md       measured output
+runs/                         NOT COMMITTED — simulation output, see below
 ```
+
+**A run is a directory, not a file.** `config.json` holds every tunable and its own hash;
+`lineage.jsonl` gets one row per creature ever born; `stats.jsonl` one row per sample;
+`snapshots/` the world state. The two high-volume files are append-only and line-oriented, so
+a run killed halfway leaves every completed row valid and readable — and can be watched live
+by tailing it. Creatures are **rows, not files**: a genome measures ~5 KB and the working
+estimate is 40,000 births an hour.
 
 **`research/papers/` is deliberately absent.** It holds copyrighted publisher PDFs and their
 machine extractions; two were obtained through a university subscription. Converting a
@@ -214,10 +264,39 @@ timings are meaningless. See §M3 in [the spike spec](spikes/01-articulation-bod
 ./scripts/core-test.ps1
 ```
 
-`Evosim.Core` — the genome and the genotype-to-phenotype development that grows a creature
-from it — has no `UnityEngine` dependency, so it builds and tests as ordinary C# in about a
-second. **No .NET SDK is required:** the script uses a system-wide one if you have it and
-otherwise falls back to the complete .NET 8 SDK that ships inside the Unity install.
+`Evosim.Core` — the genome, the development that grows a creature from it, the cell types,
+mutation and serialization — has no `UnityEngine` dependency, so it builds and tests as
+ordinary C# in a few seconds. **No .NET SDK is required:** the script uses a system-wide one
+if you have it and otherwise falls back to the complete .NET 8 SDK that ships inside the
+Unity install.
+
+The no-dependency rule is enforced by the build, not by memory: the package sets
+`noEngineReferences`, so Unity refuses to compile `Evosim.Core` if anything in it reaches for
+`UnityEngine`. It is also why the JSON layer is hand-written rather than taken from a library.
+
+Add `-Filter` to run one class: `./scripts/core-test.ps1 -Filter MutationTests`, and
+`-ShowOutput` to see what the tests print — several of them report measurements rather than
+just passing.
+
+### 5. Run the Milestone 1 smoke test
+
+Builds twelve creatures, checks their geometry against the phenotype, actuates them, and
+asserts two conservation laws:
+
+```powershell
+$unity = 'C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Unity.exe'
+$log   = Join-Path $env:TEMP 'evosim-smoke.log'
+
+Start-Process -FilePath $unity -Wait -NoNewWindow -ArgumentList @(
+    '-projectPath', (Join-Path $PWD 'unity'), '-batchmode', '-quit', '-nographics',
+    '-executeMethod', 'Evosim.Sim.EditorTools.Milestone1Smoke.Run', '-logFile', $log)
+
+Get-Content $log | Select-String 'Milestone 1 smoke' -Context 0,140
+```
+
+**Never run this while the Editor has the project open** — two Unity processes sharing one
+`Library/` corrupt it. A cold run is several minutes of silence either way, so tail the log
+in a second terminal (`Get-Content $log -Wait -Tail 5`) rather than guessing.
 
 ### Troubleshooting
 
@@ -239,23 +318,40 @@ extraction used [PyMuPDF](https://pymupdf.readthedocs.io/) (`pip install pymupdf
 
 ## Roadmap
 
+**Revised.** The original plan built a search engine — quality-diversity archive, island
+model — and treated currents and predators as a final sandbox to play in. That got inverted:
+currents and feeding *are* the mechanism, and search is something the world does by itself.
+Milestones 0–2 survived unchanged, because they are physics, and physics does not care how
+selection happens.
+
 | # | Milestone | Ends with | |
 |---|---|---|---|
 | — | Spike 01 — `ArticulationBody` at scale | Measured, six for six | ✅ |
 | 0 | Unity project, assemblies, URP, physics config | Empty scene that builds headless | ✅ |
 | 1 | Genome, development rules, phenotype builder | Spawn a random creature and watch it flop | ✅ |
-| 2 | Evaluation harness: tiling, seeding, fluid forces, fitness, anti-exploit checks | Measured throughput; go/no-go on the cost model | ← next |
-| 3 | Multi-BC MAP-Elites + oscillator controllers, water | **First real swimmers** | |
-| 4 | Island model across processes | Overnight runs, a full archive | |
-| 5 | Land: contact, gravity, anti-degenerate fitness | Walkers | |
-| 6 | Full brain graph, sensors, photoreceptors | Target-following, reactive behaviour | |
-| 7 | Replay, archive gallery, charts, fluid validation harness | The showpiece | |
-| 8 | Sandbox: currents, predators, obstacles | You as the selection pressure | |
+| 2 | Physics harness: fixed stepping, config hash, fluid forces, anti-exploit checks, work accounting | Throughput in *simulated seconds per wall-clock second* | ← here |
+| 3 | Metabolism: per-part upkeep, neural cost, energy as a running balance | **A creature that starves** — the first thing here that can fail on its own | |
+| 4 | World: current field, light and depth gradient, drifting nutrients | A creature that survives by drifting into food, and one that doesn't | |
+| 5 | Life cycle: death returns tissue to the water, reproduction on surplus | **A population that persists without intervention** | |
+| 6 | Perception: photosensors, evolvable colour, closed-loop brain graph | Directed foraging — a creature that moves *toward* something | |
+| 7 | Food web: predation, carrion, attack and defence | Trophic levels, or clear evidence of why not | |
+| 8 | Theatre: replay, gallery, charts, lineage, fluid validation harness | Showpiece and research instrument | |
+| 9 | Land: contact, gravity | Deferred — the ecosystem is a water design | |
 
-Milestone 3 is the one that matters. Everything before it is scaffolding.
+**Milestone 3 is the pivot.** Everything before it is a simulator; everything after it is a
+world. It is also the cheapest place to find out that the metabolism-to-photosynthesis ratio
+is wrong, because at that point nothing eats yet and starvation is the only outcome.
 
-Two things are deliberately missing from `Evosim.Core` and are needed before any search can
-run: mutation operators (`DESIGN.md` §4.5) and genome serialization (§9).
+The quality-diversity archive is not deleted, but it is **demoted**: it existed to solve a
+problem that exogenous fitness creates, and under endogenous selection that job belongs to
+ecological niches. It survives as an *observatory* — a record of what lived and what it
+looked like — which is what makes a long run legible.
+
+**Known gaps, recorded rather than hidden.** Reproduction is asexual, which leaves the
+design's only recombination operator with no mechanism to fire; every number in the energy
+economy is a placeholder rather than a measurement; and the literature review has never
+covered open-ended evolution or artificial ecosystems, so §5A is reasoned rather than
+evidenced.
 
 ---
 

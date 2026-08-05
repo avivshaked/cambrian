@@ -102,6 +102,9 @@ namespace Evosim.Core
         public override bool AllowsJoint => true;
         public override float Acquire(in CellContext context) => 0f;
 
+        public override void WriteParameters(Json.Writer writer) =>
+            writer.Field("idleWattsPerNewtonMetre", IdleWattsPerNewtonMetre);
+
         public override float Upkeep(in CellContext context) =>
             base.Upkeep(context) +
             IdleWattsPerNewtonMetre * Math.Max(0f, context.Power) *
@@ -148,6 +151,9 @@ namespace Evosim.Core
             Math.Max(0f, context.Irradiance) * Math.Max(0f, context.LitArea) *
             Efficiency * context.Seconds;
 
+        public override void WriteParameters(Json.Writer writer) =>
+            writer.Field("efficiency", Efficiency);
+
         public override string HashContribution() =>
             string.Format(
                 CultureInfo.InvariantCulture,
@@ -186,6 +192,9 @@ namespace Evosim.Core
         public override float Acquire(in CellContext context) =>
             Math.Max(0f, context.NutrientDensity) * ClearanceRate *
             Math.Max(0f, context.Volume) * context.Seconds;
+
+        public override void WriteParameters(Json.Writer writer) =>
+            writer.Field("clearanceRate", ClearanceRate);
 
         public override string HashContribution() =>
             string.Format(
@@ -299,6 +308,12 @@ namespace Evosim.Core
 
             return taken * YieldAgainst(contact);
         }
+
+        public override void WriteParameters(Json.Writer writer) =>
+            writer.Field("biteRate", BiteRate)
+                  .Field("carrionYield", CarrionYield)
+                  .Field("grazingYield", GrazingYield)
+                  .Field("predationYield", PredationYield);
 
         public override string HashContribution() =>
             string.Format(
