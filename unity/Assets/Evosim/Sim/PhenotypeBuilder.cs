@@ -27,6 +27,22 @@ namespace Evosim.Sim
         /// <summary>Total actuated degrees of freedom across the creature.</summary>
         public int TotalDof { get; internal set; }
 
+        /// <summary>
+        /// Drag panels for each part, built once. Owned by <see cref="FluidEnvironment"/>.
+        /// </summary>
+        /// <remarks>
+        /// A part's local geometry is fixed the moment it is developed, but panels were rebuilt
+        /// from the <see cref="PartShape"/> on every part on every step — which §5A.9 measured as
+        /// the largest single term in the simulation. Cached here rather than in the environment
+        /// because they belong to the creature: they describe its body, and they die with it.
+        /// <see cref="DragPanelsPerAxis"/> records the resolution they were built at so that an
+        /// environment configured differently rebuilds instead of silently using someone else's.
+        /// </remarks>
+        public DragPanelSet[] DragPanels { get; internal set; }
+
+        /// <summary><see cref="FluidConfig.PanelsPerAxis"/> that <see cref="DragPanels"/> was built at.</summary>
+        public int DragPanelsPerAxis { get; internal set; }
+
         public void Destroy()
         {
             if (Root == null) return;

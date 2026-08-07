@@ -74,3 +74,4 @@ are the ones most likely to go unwritten.
 | [0011](0011-the-sun-was-infinite.md) | 2026-08-07 | The sun was infinite |
 | [0012](0012-the-body-that-cost-nothing.md) | 2026-08-07 | The body that cost nothing |
 | [0013](0013-ninety-knobs-and-four-copies-of-each.md) | 2026-08-07 | Ninety knobs and four copies of each |
+| [0014](0014-the-rotations-that-were-not-needed.md) | 2026-08-07 | The rotations that were not needed |

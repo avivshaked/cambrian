@@ -133,14 +133,14 @@ namespace Evosim.Sim.EditorTools
                 totalPanels += PanelCount(phenotype);
             }
 
+            // Warmup also builds every creature's panels, so the measured loop never pays for
+            // it — which is the point of building them once, and would otherwise land entirely
+            // on the first measured step and be read as noise.
             float t = 0f;
             for (int s = 0; s < WarmupSteps; s++)
             {
-                for (int i = 0; i < population; i++)
-                {
-                    drivers[i].DriveTestSine(t, TestSineHz, scratch[i]);
-                    fluid.Apply(creatures[i]);
-                }
+                for (int i = 0; i < population; i++) drivers[i].DriveTestSine(t, TestSineHz, scratch[i]);
+                fluid.Apply(creatures);
                 Physics.Simulate(FixedDt);
                 t += FixedDt;
             }
@@ -152,11 +152,8 @@ namespace Evosim.Sim.EditorTools
             for (int s = 0; s < MeasureSteps; s++)
             {
                 drag.Start();
-                for (int i = 0; i < population; i++)
-                {
-                    drivers[i].DriveTestSine(t, TestSineHz, scratch[i]);
-                    fluid.Apply(creatures[i]);
-                }
+                for (int i = 0; i < population; i++) drivers[i].DriveTestSine(t, TestSineHz, scratch[i]);
+                fluid.Apply(creatures);
                 drag.Stop();
 
                 physics.Start();

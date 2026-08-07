@@ -1241,32 +1241,52 @@ Spike 01's figure with a guessed penalty applied for drag and self-collision, bo
 now exist. `ThroughputSurvey` measures the real configuration: self-collision on, §5.2 drag
 applied, mixed shapes, creatures tiled at 100 m.
 
+~~At 512 creatures drag is 88% of the step … real time holds to about **200 creatures** as the
+code stands.~~ — **superseded by the optimisations below**, which were listed there as deferred
+to Milestone 4 and have now been done. The measurement that produced that text is kept in
+logbook/0014, because the attribution it established is still the reason any of this happened.
+
 | creatures | ms/step | drag ms | physics ms | µs per creature | real time |
 |---|---|---|---|---|---|
-| 1 | 0.134 | 0.053 | 0.080 | 133.6 (1.00×) | 74.9× |
-| 32 | 1.870 | 1.353 | 0.518 | 58.4 (0.44×) | 5.35× |
-| 128 | 6.418 | 5.465 | 0.953 | 50.1 (0.38×) | 1.56× |
-| 256 | 12.772 | 11.013 | 1.759 | 49.9 (0.37×) | 0.78× |
-| 512 | 25.909 | 22.698 | 3.210 | 50.6 (0.38×) | 0.39× |
+| 1 | 0.069 | 0.014 | 0.054 | 69.0 (1.00×) | 144.97× |
+| 8 | 0.312 | 0.109 | 0.203 | 39.1 (0.57×) | 32.01× |
+| 32 | 0.806 | 0.202 | 0.604 | 25.2 (0.37×) | 12.41× |
+| 64 | 0.991 | 0.293 | 0.699 | 15.5 (0.22×) | 10.09× |
+| 128 | 1.465 | 0.588 | 0.877 | 11.4 (0.17×) | 6.83× |
+| 256 | 2.760 | 1.343 | 1.417 | 10.8 (0.16×) | 3.62× |
+| 512 | 6.446 | 3.521 | 2.925 | 12.6 (0.18×) | 1.55× |
 
-The headline number survives almost exactly — 128 creatures at 1.56× real time against a
-predicted 1.7×. **The attribution does not, and it was backwards.**
+**Real time now holds to 512 creatures**, against about 200 before. The step is 4.0× faster at
+that population and the drag loop 6.4×, and no force changed: `DragEquivalenceTests` holds the
+new path against a frozen transcription of the old one and measures them equal to 6–9×10⁻⁸ of
+the panel-force scale, which is float epsilon.
 
-**The wall is §5.2's drag loop, not physics.** At 512 creatures drag is 88% of the step. Split
-per creature, PhysX falls from 0.080 ms to 0.0063 ms — **0.078×**, far better island scaling
-than the 0.28× claimed above — while the drag loop goes 0.053 → 0.0443 ms, essentially flat,
-as a single-threaded managed pass over every panel of every part must be.
+Three changes, none of them physical:
 
-That is the better problem to have. Physics is a ceiling; our own loop is a to-do. Two levers
-exist and neither has been pulled, because at the population Milestone 2 needs there is no
-reason to: panels are regenerated from scratch every step though a part's local geometry never
-changes after development, and the loop is embarrassingly parallel across creatures. Neither
-changes a force, so both are deferred to Milestone 4, where the island model is what first
-makes population the binding constraint.
+- **The sum runs in the part's own frame.** Rotating each panel's normal and centre into world
+  space is two quaternion rotations per panel — 48 for a box. Rotating the two inputs in and the
+  two results out is four per *part*, and gives the same numbers, because a rotation preserves
+  the dot product and `Rᵀ(ω × Rc) = (Rᵀω) × c`.
+- **Panels are built once**, at a creature's first step, instead of regenerated through a virtual
+  call on every part on every step. A part's local geometry is fixed at development.
+- **The arithmetic phase is spread across cores**, between a serial gather and a serial apply,
+  because Unity permits neither `Transform` reads nor `AddForce` off the main thread.
 
-Shape matters here in a way it does not elsewhere: the loop is linear in panel count, and a
-capsule emits 40 panels to a box's 24. A population drifting towards capsules gets slower for
-a reason no other measurement would show.
+**What the remaining cost is, and why this is the place to stop.** At one creature — below the
+threshold where work is spread out, so the first two changes acting alone — the drag loop went
+0.053 → 0.014 ms, **3.8×**. At 512 the same loop is 6.4× faster, so parallelising 2,871 parts
+across 24 cores bought only a further **1.7×**. That is not a bad implementation of parallelism;
+it is what happens when little of what remains is arithmetic. The gather and apply phases are
+per-body Unity interop — four property reads and two force calls, 2,871 times — and they are
+serial by Unity's rules, not by ours.
+
+So the drag loop is now **55% of the step against PhysX's 45%**, and the part of it that further
+arithmetic work could touch is a minority of a minority. Vectorising the panel sum or integrating
+faces analytically would be sound engineering aimed at almost nothing. The next real lever is
+the timestep, which multiplies simulated seconds rather than dividing the cost of one.
+
+Shape still matters: the loop is linear in panel count, and a capsule emits 40 panels to a box's
+24. A population drifting towards capsules gets slower for a reason no other measurement shows.
 
 PhysX parallelises across solver islands. Creatures in open water are mostly far apart and stay
 separate islands, so that scaling survives; it degrades only where creatures touch, which here
@@ -1276,9 +1296,8 @@ means predation — rare and local.
 the one trap, and would cost more than every creature combined); the current field; the light
 cycle; brain evaluation at a few hundred creatures. Physics, at any population tried.
 
-**Expensive:** the drag loop, ahead of everything else. Real time holds to about **200
-creatures** as the code stands, and the ceiling moves with engineering rather than with
-hardware.
+**Expensive:** per-body engine interop, which is now the largest term we own, and is the reason
+the population ceiling moves with batching rather than with arithmetic from here.
 
 ### 5A.10 Open parameters
 

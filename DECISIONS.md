@@ -846,3 +846,55 @@ single object owns.
 **Deferred by agreement:** a GUI for editing these. The schema is what such a UI would need —
 path, group, unit, description, typed get/set — and it now exists, so building it is presentation
 work against a stable surface rather than a second copy of the list.
+
+---
+
+### D028
+**Drag is summed in the part's own frame, and the panels are built once** · 2026-08-07
+
+§5A.9 had measured the drag loop at 88% of the step against PhysX's 12%, and named two levers as
+deferred to Milestone 4. This pulls them, plus a third.
+
+**The fork this started from was wrong.** The speed question had been posed as *keep every
+creature in PhysX, or sample physics occasionally and run the economy in arithmetic.* The second
+is aimed at 12% of the cost. Physics was never the wall; our own managed loop was.
+
+**Three changes, no change to any force.**
+
+- **Summed in the part's local frame.** Two quaternion rotations per panel — 48 for a box — become
+  four per part. A rotation preserves the dot product and `Rᵀ(ω × Rc) = (Rᵀω) × c`, so this is a
+  change of basis and not of arithmetic.
+- **Panels built once**, at a creature's first step, rather than regenerated through a virtual
+  call per part per step. Local geometry is fixed at development.
+- **The arithmetic phase spread across cores**, between a serial gather and a serial apply, since
+  Unity permits neither `Transform` reads nor `AddForce` off the main thread.
+
+**Measured: 4.0× on the step at 512 creatures, 6.4× on the drag loop, and real time now holds to
+512 creatures rather than about 200.**
+
+**Equivalence is asserted, not asserted-to.** `DragEquivalenceTests` keeps a frozen transcription
+of the world-space loop and holds the new path against it: agreement to 6–9×10⁻⁸ of the
+panel-force scale, against a float epsilon of 1.19×10⁻⁷. This is the one place the project
+deliberately keeps two implementations of one quantity — the usual rule (logbook/0009) is the
+opposite, and it inverts here because the claim being made *is* that they are equal.
+
+**Rejected, and rejected on the measurement rather than on principle:** *vectorising the panel
+sum*, and *replacing the 2×2 midpoint sampling of each face with Gauss–Legendre nodes or a
+closed-form integral*. Both are sound. Both are now aimed at the arithmetic share of a loop that
+is 55% of a step, and the measurement says arithmetic is the minority of what remains: the first
+two changes alone gave 3.8× on a single creature, so parallelising 2,871 parts across 24 cores
+added only 1.7×. **What is left is per-body engine interop, which is serial by Unity's rules.**
+The ceiling now moves with batching, not with flops.
+
+**Also rejected:** *physics level-of-detail between creatures in one world* — a creature under a
+cheaper drag model swims differently, ends up somewhere else and earns different light, which is
+two populations under two physics reported as one experiment. And *caching a gait per genome and
+advecting kinematically* — highest theoretical payoff, and §11.2 already records this drag model
+as exploitable; a cache would be a third model to exploit, and it deletes exactly the physical
+accidents that make evolved swimming worth watching.
+
+**Still open, and deliberately not decided here:** the timestep. It is the only lever that
+multiplies simulated seconds rather than dividing the cost of one, and its acceptance test already
+exists — if the energy audit's residual grows, the speed was bought with free energy that
+selection will find. Also `AddedMassCoefficient`, which is 0 today and consumes dt headroom when
+enabled, so it has to be settled before any dt sweep means anything.

@@ -42,28 +42,38 @@ namespace Evosim.Core
         /// <summary>
         /// Drag force and torque on one part, in world space. Torque is about the part centre.
         /// </summary>
-        /// <param name="shape">Geometry. Supplies the panels the force is summed over.</param>
-        /// <param name="halfExtents">Half-extents, in metres. Read differently per shape.</param>
+        /// <param name="panels">
+        /// The part's panels, built once by <see cref="DragPanelSet.For"/> at development.
+        /// </param>
         /// <param name="rotation">Orientation in world space.</param>
         /// <param name="velocity">Velocity of the part's centre.</param>
         /// <param name="angularVelocity">Angular velocity, radians per second.</param>
-        /// <param name="config">Water density, drag coefficient and panel resolution — §5.2.</param>
+        /// <param name="config">Water density and drag coefficient — §5.2.</param>
         /// <param name="force">Out: world-space drag force on the part.</param>
         /// <param name="torque">Out: world-space torque about the part centre.</param>
-        /// <param name="panels">
-        /// Scratch list, cleared and refilled. Passed in so a per-step loop over a whole
-        /// population allocates nothing — a fresh list per part per step is thousands of
-        /// allocations a second, and the garbage collector pausing mid-run shows up as a physics
-        /// hitch rather than as anything recognisable.
-        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>Summed in the part's own frame, and that is an identity rather than an
+        /// approximation.</b> The obvious way to write this rotates each panel's normal and centre
+        /// into world space — two quaternion rotations per panel, so 48 for a 24-panel box, which
+        /// measured as over half the arithmetic in the loop that was 88% of the step (§5A.9).
+        /// </para>
+        /// <para>
+        /// None of it is necessary. A rotation preserves the dot product, so
+        /// <c>dot(Rn, Rv) = dot(n, v)</c>; and <c>Rᵀ(ω × Rc) = (Rᵀω) × c</c>, so the panel's own
+        /// velocity transforms just as cleanly. Rotating the two inputs in and the two results out
+        /// is therefore <b>four rotations per part</b> instead of two per panel, and every
+        /// intermediate quantity is the same number it was before, differing only in which basis
+        /// it is written in. <c>DragEquivalenceTests</c> holds that against a transcription of the
+        /// world-space version.
+        /// </para>
+        /// </remarks>
         public static void Drag(
-            PartShape shape,
-            Float3 halfExtents,
+            DragPanelSet panels,
             Quat rotation,
             Float3 velocity,
             Float3 angularVelocity,
             FluidConfig config,
-            System.Collections.Generic.List<DragPanel> panels,
             out Float3 force,
             out Float3 torque)
         {
@@ -71,44 +81,53 @@ namespace Evosim.Core
             torque = Float3.Zero;
 
             float k = 0.5f * config.Density * config.DragCoefficient;
-            if (k <= 0f) return;
+            if (k <= 0f || panels == null) return;
 
-            panels.Clear();
-            shape.AddPanels(halfExtents, config.PanelsPerAxis < 1 ? 1 : config.PanelsPerAxis, panels);
+            Quat inverse = rotation.Conjugate;
+            Float3 v = inverse.Rotate(velocity);
+            Float3 w = inverse.Rotate(angularVelocity);
 
-            for (int i = 0; i < panels.Count; i++)
+            Float3[] centres = panels.Centres;
+            Float3[] normals = panels.Normals;
+            float[] areas = panels.Areas;
+
+            Float3 localForce = Float3.Zero;
+            Float3 localTorque = Float3.Zero;
+
+            for (int i = 0; i < areas.Length; i++)
             {
-                DragPanel panel = panels[i];
-                if (panel.Area <= 0f) continue;
-
-                Float3 normal = rotation.Rotate(panel.Normal);
-                Float3 offset = rotation.Rotate(panel.Centre);
+                Float3 centre = centres[i];
 
                 // Velocity where this panel actually is. Sampling the part's centre alone would
                 // report zero for a part spinning about one of its own axes, because a surface
                 // point moves perpendicular to its normal — and a limb flapping about its joint
                 // is precisely that case.
-                Float3 panelVelocity = velocity + Float3.Cross(angularVelocity, offset);
+                Float3 panelVelocity = v + Float3.Cross(w, centre);
 
+                Float3 normal = normals[i];
                 float normalSpeed = Float3.Dot(panelVelocity, normal);
                 if (normalSpeed <= 0f) continue; // trailing: no pressure drag
 
-                Float3 panelForce = normal * (-k * panel.Area * normalSpeed * normalSpeed);
+                Float3 panelForce = normal * (-k * areas[i] * normalSpeed * normalSpeed);
 
-                force += panelForce;
-                torque += Float3.Cross(offset, panelForce);
+                localForce += panelForce;
+                localTorque += Float3.Cross(centre, panelForce);
             }
+
+            force = rotation.Rotate(localForce);
+            torque = rotation.Rotate(localTorque);
         }
 
         private static readonly BoxShape Box = new BoxShape();
 
         /// <summary>
-        /// Drag on a box. Convenience for tests and one-off calls — it allocates.
+        /// Drag on a box. Convenience for tests and one-off calls — it builds panels every call.
         /// </summary>
         /// <remarks>
-        /// The per-step path over a whole population must use the overload taking a scratch list;
-        /// a fresh one per part per step is thousands of allocations a second, and a collection
-        /// pause mid-run reads as a physics hitch rather than as anything recognisable.
+        /// The per-step path over a population must hold a <see cref="DragPanelSet"/> built once
+        /// at development and pass it in. Rebuilding panels per part per step was the single
+        /// largest term in the step (§5A.9), and it recomputed geometry that had been fixed since
+        /// the phenotype was grown.
         /// </remarks>
         public static void BoxDrag(
             Float3 halfExtents,
@@ -118,8 +137,8 @@ namespace Evosim.Core
             FluidConfig config,
             out Float3 force,
             out Float3 torque) =>
-            Drag(Box, halfExtents, rotation, velocity, angularVelocity, config,
-                 new System.Collections.Generic.List<DragPanel>(), out force, out torque);
+            Drag(DragPanelSet.For(Box, halfExtents, config.PanelsPerAxis),
+                 rotation, velocity, angularVelocity, config, out force, out torque);
 
         /// <summary>
         /// Effective mass of a part once the water it drags along is included —

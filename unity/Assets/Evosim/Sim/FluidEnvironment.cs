@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Evosim.Core;
 
@@ -143,38 +144,160 @@ namespace Evosim.Sim
         /// </param>
         public void Apply(CreatureInstance creature, float stepSeconds = 0f)
         {
-            for (int i = 0; i < creature.Bodies.Length; i++)
+            _one[0] = creature;
+            Apply(_one, stepSeconds);
+        }
+
+        /// <summary>
+        /// Applies drag to a whole population in one pass — DESIGN.md §5A.9.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Gather, compute in parallel, apply serially.</b> The middle phase is pure arithmetic
+        /// over cached geometry and is the term §5A.9 measured at 88% of the step, so it is the
+        /// one worth spreading over cores. The other two cannot be: reading
+        /// <c>body.transform.rotation</c> touches a <see cref="Transform"/> and
+        /// <see cref="ArticulationBody.AddForce"/> mutates solver state, and Unity permits
+        /// neither off the main thread.
+        /// </para>
+        /// <para>
+        /// <b>Determinism survives</b> (§7). Each body owns one slot in the flat arrays and writes
+        /// only its own, so no result depends on which thread got there first, and the forces are
+        /// applied afterwards in index order. Floating-point summation order — the thing that
+        /// actually breaks reproducibility when work is spread out — never changes, because
+        /// nothing is summed across bodies here.
+        /// </para>
+        /// </remarks>
+        public void Apply(IReadOnlyList<CreatureInstance> creatures, float stepSeconds = 0f)
+        {
+            int bodies = Layout(creatures);
+            if (bodies == 0) return;
+
+            // ---- gather (main thread): everything the solver owns, copied out
+            for (int c = 0; c < creatures.Count; c++)
             {
-                ArticulationBody body = creature.Bodies[i];
-                PhenotypePart part = creature.Phenotype.Parts[i];
+                CreatureInstance creature = creatures[c];
+                if (creature?.Bodies == null) continue;
 
-                FluidModel.Drag(
-                    Shapes.Resolve(part.ShapeId),
-                    part.HalfExtents,
-                    body.transform.rotation.ToQuat(),
-                    body.linearVelocity.ToFloat3(),
-                    body.angularVelocity.ToFloat3(),
-                    Config,
-                    _panels,
-                    out Float3 force,
-                    out Float3 torque);
+                EnsurePanels(creature);
+                int at = _offset[c];
 
-                Vector3 f = force.ToVector3();
-                Vector3 t = torque.ToVector3();
-
-                body.AddForce(f);
-                body.AddTorque(t);
-
-                if (stepSeconds > 0f)
+                for (int i = 0; i < creature.Bodies.Length; i++)
                 {
-                    EnsurePendingCapacity(creature.Bodies.Length);
-                    _pendingForce[i] = f;
-                    _pendingTorque[i] = t;
-                    _pendingV[i] = body.linearVelocity;
-                    _pendingW[i] = body.angularVelocity;
-                    _pendingStep = stepSeconds;
+                    ArticulationBody body = creature.Bodies[i];
+
+                    _rotation[at + i] = body.transform.rotation.ToQuat();
+                    _velocity[at + i] = body.linearVelocity.ToFloat3();
+                    _spin[at + i] = body.angularVelocity.ToFloat3();
+                    _panelsAt[at + i] = creature.DragPanels[i];
                 }
             }
+
+            // ---- compute (any thread): no Unity types touched past this point
+            if (bodies >= ParallelThreshold)
+            {
+                System.Threading.Tasks.Parallel.For(0, bodies, Compute);
+            }
+            else
+            {
+                for (int i = 0; i < bodies; i++) Compute(i);
+            }
+
+            // ---- apply (main thread)
+            for (int c = 0; c < creatures.Count; c++)
+            {
+                CreatureInstance creature = creatures[c];
+                if (creature?.Bodies == null) continue;
+
+                int at = _offset[c];
+
+                for (int i = 0; i < creature.Bodies.Length; i++)
+                {
+                    ArticulationBody body = creature.Bodies[i];
+
+                    body.AddForce(_force[at + i]);
+                    body.AddTorque(_torque[at + i]);
+
+                    if (stepSeconds > 0f)
+                    {
+                        _preV[at + i] = body.linearVelocity;
+                        _preW[at + i] = body.angularVelocity;
+                    }
+                }
+            }
+
+            _pendingStep = stepSeconds > 0f ? stepSeconds : 0f;
+        }
+
+        /// <summary>
+        /// Bodies below which spreading the work costs more than it saves.
+        /// </summary>
+        /// <remarks>
+        /// A <c>Parallel.For</c> has a fixed cost of a few microseconds in scheduling, and one
+        /// creature is around eight bodies of a few microseconds each. The sandbox scene and the
+        /// single-creature harnesses sit well under this and take the serial path, so they are
+        /// unaffected by any of it.
+        /// </remarks>
+        private const int ParallelThreshold = 64;
+
+        private void Compute(int i)
+        {
+            FluidModel.Drag(
+                _panelsAt[i], _rotation[i], _velocity[i], _spin[i], Config,
+                out Float3 force, out Float3 torque);
+
+            _force[i] = force.ToVector3();
+            _torque[i] = torque.ToVector3();
+        }
+
+        /// <summary>
+        /// Builds this creature's panels if they are missing or were built at another resolution.
+        /// </summary>
+        /// <remarks>
+        /// The resolution check is not defensive padding. This project's recurring fault is a
+        /// parameter that never reaches what it configures (logbook/0007, 0008, 0013), and a
+        /// cached panel set is exactly the shape that fault takes next: change
+        /// <see cref="FluidConfig.PanelsPerAxis"/>, re-run, and get byte-identical results because
+        /// every creature was still carrying panels built at the old value.
+        /// </remarks>
+        private void EnsurePanels(CreatureInstance creature)
+        {
+            int resolution = Config.PanelsPerAxis < 1 ? 1 : Config.PanelsPerAxis;
+
+            if (creature.DragPanels != null &&
+                creature.DragPanels.Length == creature.Bodies.Length &&
+                creature.DragPanelsPerAxis == resolution)
+            {
+                return;
+            }
+
+            var sets = new DragPanelSet[creature.Bodies.Length];
+            for (int i = 0; i < sets.Length; i++)
+            {
+                PhenotypePart part = creature.Phenotype.Parts[i];
+                sets[i] = DragPanelSet.For(
+                    Shapes.Resolve(part.ShapeId), part.HalfExtents, resolution, _panels);
+            }
+
+            creature.DragPanels = sets;
+            creature.DragPanelsPerAxis = resolution;
+        }
+
+        /// <summary>Assigns each body a slot in the flat arrays. Returns the total.</summary>
+        private int Layout(IReadOnlyList<CreatureInstance> creatures)
+        {
+            if (_offset.Length < creatures.Count) _offset = new int[creatures.Count * 2];
+
+            int total = 0;
+            for (int c = 0; c < creatures.Count; c++)
+            {
+                _offset[c] = total;
+                CreatureInstance creature = creatures[c];
+                if (creature?.Bodies != null) total += creature.Bodies.Length;
+            }
+
+            EnsurePendingCapacity(total);
+            return total;
         }
 
         /// <summary>
@@ -188,49 +311,89 @@ namespace Evosim.Sim
         /// </remarks>
         public void Settle(CreatureInstance creature)
         {
+            _one[0] = creature;
+            Settle(_one);
+        }
+
+        /// <summary>
+        /// Integrates the energy the last <see cref="Apply"/> removed, for a whole population.
+        /// Pass the same list, in the same order.
+        /// </summary>
+        /// <remarks>
+        /// Summed serially in index order rather than alongside the parallel compute phase.
+        /// <see cref="DissipatedJoules"/> is one accumulator over every part of every creature, so
+        /// spreading the addition would make the total depend on thread scheduling — a run whose
+        /// energy audit differs slightly on each replay, which is precisely the reproducibility
+        /// §7 promises. The addition is cheap; the parallel phase was never this.
+        /// </remarks>
+        public void Settle(IReadOnlyList<CreatureInstance> creatures)
+        {
             if (_pendingStep <= 0f) return;
 
-            for (int i = 0; i < creature.Bodies.Length && i < _pendingForce.Length; i++)
+            for (int c = 0; c < creatures.Count; c++)
             {
-                ArticulationBody body = creature.Bodies[i];
+                CreatureInstance creature = creatures[c];
+                if (creature?.Bodies == null) continue;
 
-                Vector3 v = (_pendingV[i] + body.linearVelocity) * 0.5f;
-                Vector3 w = (_pendingW[i] + body.angularVelocity) * 0.5f;
+                int at = _offset[c];
 
-                float power = Vector3.Dot(_pendingForce[i], v) + Vector3.Dot(_pendingTorque[i], w);
-                DissipatedJoules -= power * _pendingStep;   // power is negative: drag opposes
+                for (int i = 0; i < creature.Bodies.Length; i++)
+                {
+                    ArticulationBody body = creature.Bodies[i];
+                    int j = at + i;
+                    if (j >= _force.Length) break;
+
+                    Vector3 v = (_preV[j] + body.linearVelocity) * 0.5f;
+                    Vector3 w = (_preW[j] + body.angularVelocity) * 0.5f;
+
+                    float power = Vector3.Dot(_force[j], v) + Vector3.Dot(_torque[j], w);
+                    DissipatedJoules -= power * _pendingStep;   // power is negative: drag opposes
+                }
             }
 
             _pendingStep = 0f;
         }
 
         /// <summary>
-        /// Panel scratch, reused across every part of every creature for the life of this
-        /// environment.
+        /// Panel scratch, used only while <i>building</i> a creature's panels.
         /// </summary>
         /// <remarks>
-        /// A fresh list per part per step is thousands of allocations a second once a population
-        /// is running, and the collection pause that eventually follows presents as a physics
-        /// hitch — something that looks like the simulation, not like the allocator. Reused here
-        /// because <see cref="Apply"/> is single-threaded and the panels do not outlive the call.
+        /// This used to be refilled for every part on every step. It is now touched once per
+        /// creature, at the first step of its life, and never again.
         /// </remarks>
-        private readonly System.Collections.Generic.List<DragPanel> _panels =
-            new System.Collections.Generic.List<DragPanel>(64);
+        private readonly List<DragPanel> _panels = new List<DragPanel>(64);
 
-        private Vector3[] _pendingForce = System.Array.Empty<Vector3>();
-        private Vector3[] _pendingTorque = System.Array.Empty<Vector3>();
-        private Vector3[] _pendingV = System.Array.Empty<Vector3>();
-        private Vector3[] _pendingW = System.Array.Empty<Vector3>();
+        /// <summary>Backing list for the single-creature overloads, so they allocate nothing.</summary>
+        private readonly CreatureInstance[] _one = new CreatureInstance[1];
+
+        private int[] _offset = new int[64];
+
+        // One slot per body across the whole population. Written by the parallel phase (each
+        // index by exactly one iteration), read by the serial apply and settle phases.
+        private Quat[] _rotation = System.Array.Empty<Quat>();
+        private Float3[] _velocity = System.Array.Empty<Float3>();
+        private Float3[] _spin = System.Array.Empty<Float3>();
+        private DragPanelSet[] _panelsAt = System.Array.Empty<DragPanelSet>();
+        private Vector3[] _force = System.Array.Empty<Vector3>();
+        private Vector3[] _torque = System.Array.Empty<Vector3>();
+        private Vector3[] _preV = System.Array.Empty<Vector3>();
+        private Vector3[] _preW = System.Array.Empty<Vector3>();
         private float _pendingStep;
 
         private void EnsurePendingCapacity(int n)
         {
-            if (_pendingForce.Length >= n) return;
+            if (_force.Length >= n) return;
 
-            _pendingForce = new Vector3[n];
-            _pendingTorque = new Vector3[n];
-            _pendingV = new Vector3[n];
-            _pendingW = new Vector3[n];
+            int size = n * 2;   // grown with slack: population changes every birth and death
+
+            _rotation = new Quat[size];
+            _velocity = new Float3[size];
+            _spin = new Float3[size];
+            _panelsAt = new DragPanelSet[size];
+            _force = new Vector3[size];
+            _torque = new Vector3[size];
+            _preV = new Vector3[size];
+            _preW = new Vector3[size];
         }
 
         /// <summary>

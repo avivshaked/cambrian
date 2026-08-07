@@ -122,12 +122,12 @@ namespace Evosim.Core.Tests
             foreach (string id in PartShapeRegistry.Standard.Ids())
             {
                 PartShape shape = PartShapeRegistry.Standard.Resolve(id);
-                var scratch = new List<DragPanel>();
+                DragPanelSet panels = DragPanelSet.For(shape, h, config.PanelsPerAxis);
 
-                FluidModel.Drag(shape, h, Quat.Identity, new Float3(0f, 1f, 0f), Float3.Zero,
-                    config, scratch, out Float3 along, out _);
-                FluidModel.Drag(shape, h, Quat.Identity, new Float3(1f, 0f, 0f), Float3.Zero,
-                    config, scratch, out Float3 across, out _);
+                FluidModel.Drag(panels, Quat.Identity, new Float3(0f, 1f, 0f), Float3.Zero,
+                    config, out Float3 along, out _);
+                FluidModel.Drag(panels, Quat.Identity, new Float3(1f, 0f, 0f), Float3.Zero,
+                    config, out Float3 across, out _);
 
                 float a = (float)Math.Sqrt(Float3.Dot(along, along));
                 float b = (float)Math.Sqrt(Float3.Dot(across, across));
@@ -157,12 +157,12 @@ namespace Evosim.Core.Tests
             foreach (string id in PartShapeRegistry.Standard.Ids())
             {
                 PartShape shape = PartShapeRegistry.Standard.Resolve(id);
-                var scratch = new List<DragPanel>();
+                DragPanelSet panels = DragPanelSet.For(shape, flat, config.PanelsPerAxis);
 
-                FluidModel.Drag(shape, flat, Quat.Identity, new Float3(0f, 1f, 0f), Float3.Zero,
-                    config, scratch, out Float3 broadside, out _);
-                FluidModel.Drag(shape, flat, Quat.Identity, new Float3(1f, 0f, 0f), Float3.Zero,
-                    config, scratch, out Float3 edgeOn, out _);
+                FluidModel.Drag(panels, Quat.Identity, new Float3(0f, 1f, 0f), Float3.Zero,
+                    config, out Float3 broadside, out _);
+                FluidModel.Drag(panels, Quat.Identity, new Float3(1f, 0f, 0f), Float3.Zero,
+                    config, out Float3 edgeOn, out _);
 
                 float a = (float)Math.Sqrt(Float3.Dot(broadside, broadside));
                 float b = (float)Math.Sqrt(Float3.Dot(edgeOn, edgeOn));
