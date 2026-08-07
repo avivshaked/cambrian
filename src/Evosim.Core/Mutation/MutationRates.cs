@@ -28,6 +28,7 @@ namespace Evosim.Core
         /// than a small one. That is deliberate: it keeps the amount of variation proportional
         /// to how much there is to vary, rather than diluting it across a growing body.
         /// </remarks>
+        [Tunable("mutation")]
         public float ScalarChance { get; set; } = 0.08f;
 
         /// <summary>Standard deviation of a scalar perturbation, as a fraction of the value.</summary>
@@ -36,6 +37,7 @@ namespace Evosim.Core
         /// half-extent and a 120 N·m link capacity. An absolute step would be imperceptible on
         /// one and catastrophic on the other.
         /// </remarks>
+        [Tunable("mutation")]
         public float ScalarStdDev { get; set; } = 0.15f;
 
         /// <summary>Chance per birth that a node is duplicated into the genome.</summary>
@@ -46,11 +48,13 @@ namespace Evosim.Core
         /// full-size made every duplication a large jump, and a large jump in a co-adapted body
         /// is almost always worse than what it replaced (§2).
         /// </remarks>
+        [Tunable("mutation")]
         public float AddNodeChance { get; set; } = 0.04f;
 
         /// <summary>
         /// Half-extent a duplicated node starts at, metres. Just above extinction.
         /// </summary>
+        [Tunable("mutation")]
         public float NewNodeHalfExtent { get; set; } = 0.03f;
 
         /// <summary>
@@ -88,6 +92,7 @@ namespace Evosim.Core
         /// under a removal rate it could not.
         /// </para>
         /// </remarks>
+        [Tunable("mutation")]
         public float NodeExtinctionHalfExtent { get; set; } = 0.02f;
 
         /// <summary>
@@ -100,16 +105,23 @@ namespace Evosim.Core
         /// near 39 over 100,000 births. A limit doing real work every generation is a limit
         /// hiding a missing pressure.
         /// </remarks>
+        [Tunable("mutation")]
         public int MaxNodes { get; set; } = 64;
+        [Tunable("mutation")]
         public float AddEdgeChance { get; set; } = 0.06f;
+        [Tunable("mutation")]
         public float RemoveEdgeChance { get; set; } = 0.05f;
+        [Tunable("mutation")]
         public float AddNeuronChance { get; set; } = 0.05f;
+        [Tunable("mutation")]
         public float RemoveNeuronChance { get; set; } = 0.04f;
 
         /// <summary>Chance a neuron input is repointed at something else.</summary>
+        [Tunable("mutation")]
         public float RewireInputChance { get; set; } = 0.05f;
 
         /// <summary>Chance a neuron's operator changes.</summary>
+        [Tunable("mutation")]
         public float NeuronOpChance { get; set; } = 0.03f;
 
         /// <summary>Chance a node's joint type changes — and with it its degrees of freedom.</summary>
@@ -117,12 +129,15 @@ namespace Evosim.Core
         /// Only reachable on a link (§5A.1), and the operator repairs the joint limit array and
         /// capacity to match, because a joint type changed without them is an invalid genome.
         /// </remarks>
+        [Tunable("mutation")]
         public float JointTypeChance { get; set; } = 0.04f;
 
         /// <summary>Chance an edge's reflect flag or terminal-only flag is toggled.</summary>
+        [Tunable("mutation")]
         public float FlagChance { get; set; } = 0.03f;
 
         /// <summary>Chance a node's recursion depth changes by one.</summary>
+        [Tunable("mutation")]
         public float RecursiveLimitChance { get; set; } = 0.03f;
 
         /// <summary>Chance a part changes its geometry — §4.1.</summary>
@@ -132,6 +147,7 @@ namespace Evosim.Core
         /// producing — so it should not be routine; but unlike cell type it does not change what
         /// a lineage <i>is</i>, only how it is built, so it need not be as scarce.
         /// </remarks>
+        [Tunable("mutation")]
         public float ShapeChance { get; set; } = 0.02f;
 
         /// <summary>Chance a part changes what it is made of — §5A.3.</summary>
@@ -149,13 +165,21 @@ namespace Evosim.Core
         /// still finding the bridge eventually.
         ///
         /// ⚠ "Very scarce" is the requirement; this value is a guess (§5A.10).
+        ///
+        /// <b>This is the only one.</b> <c>RunConfig</c> carried a second knob for the same thing,
+        /// <c>CellTypeMutationChance</c>, at ten times this value and with nothing reading it —
+        /// setting it changed the hash, so two runs looked different in the record and were
+        /// identical in fact. Which is §7 failing in the direction it least wants to (logbook/0013).
         /// </remarks>
+        [Tunable("mutation")]
         public float CellTypeChance { get; set; } = 0.001f;
 
         /// <summary>Chance brood size changes by one — §5A.6.</summary>
+        [Tunable("mutation")]
         public float BroodSizeChance { get; set; } = 0.05f;
 
         /// <summary>Chance offspring endowment is perturbed — §5A.6.</summary>
+        [Tunable("mutation")]
         public float EndowmentChance { get; set; } = 0.08f;
 
         /// <summary>Largest brood a mutation may produce.</summary>
@@ -165,6 +189,7 @@ namespace Evosim.Core
         /// runaway cannot allocate unbounded offspring in a single step and take the process
         /// down with it — a guard on the implementation, not a pressure on evolution.
         /// </remarks>
+        [Tunable("mutation")]
         public int MaxBroodSize { get; set; } = 64;
 
         public static MutationRates Default => new MutationRates();

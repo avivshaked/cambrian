@@ -6,13 +6,18 @@ namespace Evosim.Core
     /// <summary>Knobs for <see cref="GenomeFactory"/>. Part of the config hash (DESIGN.md §7).</summary>
     public sealed class RandomGenomeOptions
     {
+        [Tunable("genome")]
         public int MinNodes { get; set; } = 2;
+        [Tunable("genome")]
         public int MaxNodes { get; set; } = 5;
 
         /// <summary>Outgoing edges per node, before terminal edges are considered.</summary>
+        [Tunable("genome")]
         public int MaxEdgesPerNode { get; set; } = 2;
 
+        [Tunable("genome")]
         public int MinRecursiveLimit { get; set; } = 1;
+        [Tunable("genome")]
         public int MaxRecursiveLimit { get; set; } = 4;
 
         /// <summary>Half-extent range, in metres, per axis, for body cells.</summary>
@@ -24,20 +29,27 @@ namespace Evosim.Core
         /// here restricts what a genome may express — mutation may take a body cell outside this
         /// range, and should. It bounds the initial population only.
         /// </remarks>
+        [Tunable("genome")]
         public float MinHalfExtent { get; set; } = 0.15f;
+        [Tunable("genome")]
         public float MaxHalfExtent { get; set; } = 0.40f;
 
         /// <summary>Per-edge cumulative scale range. Below 1 so recursive chains taper rather than explode.</summary>
+        [Tunable("genome")]
         public float MinEdgeScale { get; set; } = 0.6f;
+        [Tunable("genome")]
         public float MaxEdgeScale { get; set; } = 1.0f;
 
         /// <summary>Chance an edge sets one reflection flag, giving a bilateral pair.</summary>
+        [Tunable("genome")]
         public float ReflectChance { get; set; } = 0.35f;
 
         /// <summary>Chance an extra edge is marked terminal, giving a differentiated extremity.</summary>
+        [Tunable("genome")]
         public float TerminalChance { get; set; } = 0.3f;
 
         /// <summary>Chance an edge tilts the child rather than attaching it square-on.</summary>
+        [Tunable("genome")]
         public float RotateChance { get; set; } = 0.4f;
 
         /// <summary>
@@ -52,18 +64,24 @@ namespace Evosim.Core
         /// This bounds the initial population only. Mutation may still take an edge anywhere —
         /// nothing here is a rule about what a genome may express.
         /// </remarks>
+        [Tunable("genome")]
         public float MaxEdgeTiltDegrees { get; set; } = 50f;
 
+        [Tunable("genome")]
         public int MinNeuronsPerNode { get; set; } = 1;
+        [Tunable("genome")]
         public int MaxNeuronsPerNode { get; set; } = 3;
 
+        [Tunable("genome")]
         public float MinOscillatorHz { get; set; } = 0.3f;
+        [Tunable("genome")]
         public float MaxOscillatorHz { get; set; } = 2.5f;
 
         /// <summary>
         /// Joint types drawn for non-root nodes. <see cref="JointType.Fixed"/> is excluded —
         /// an unactuated creature cannot swim, and the archive would fill with driftwood.
         /// </summary>
+        [Tunable("genome", "Joint types a random genome may draw")]
         public JointType[] JointTypes { get; set; } =
         {
             JointType.Hinge,
@@ -75,7 +93,9 @@ namespace Evosim.Core
         };
 
         /// <summary>Symmetric joint limit magnitude, in radians.</summary>
+        [Tunable("genome")]
         public float MinJointLimit { get; set; } = 0.4f;
+        [Tunable("genome")]
         public float MaxJointLimit { get; set; } = 1.4f;
 
         /// <summary>Shapes drawn for parts, weighted by repetition — DESIGN.md §4.1.</summary>
@@ -87,6 +107,7 @@ namespace Evosim.Core
         /// interesting. Capsules are here as limbs. Nothing in this list restricts what a genome
         /// may express — mutation reaches every registered shape.
         /// </remarks>
+        [Tunable("genome")]
         public string[] ShapeIdChoices { get; set; } =
         {
             ShapeIds.Box,
@@ -105,6 +126,7 @@ namespace Evosim.Core
         /// can find nutrients or catch anything yet, and a consumer cell in generation zero is
         /// upkeep with nothing to show for it (§5A.3).
         /// </remarks>
+        [Tunable("genome")]
         public string[] BodyCellTypes { get; set; } =
         {
             CellTypeIds.Structural,
@@ -126,7 +148,9 @@ namespace Evosim.Core
         /// no clearance; too large and the creature is mostly joint. Neither bound is measured
         /// against behaviour yet — §5A.10.
         /// </remarks>
+        [Tunable("genome")]
         public float MinLinkHalfExtent { get; set; } = 0.10f;
+        [Tunable("genome")]
         public float MaxLinkHalfExtent { get; set; } = 0.26f;
 
         // A per-edge link/body size RATIO was tried here and made things worse — mean unjointed
@@ -153,6 +177,7 @@ namespace Evosim.Core
         /// creature is mostly joint, paying link upkeep for degrees of freedom it cannot use.
         /// Listed in §5A.10 with the rest of what is still guessed.
         /// </remarks>
+        [Tunable("genome")]
         public float LinkChance { get; set; } = 0.5f;
 
         /// <summary>Peak joint torque range for links, in newton-metres — DESIGN.md §5A.1.</summary>
@@ -166,7 +191,9 @@ namespace Evosim.Core
         /// reaches its joint stop in a fraction of a second and spends ~85% of its energy
         /// there (logbook/0008), so the useful range is probably well below that.
         /// </remarks>
+        [Tunable("genome")]
         public float MinLinkPower { get; set; } = 5f;
+        [Tunable("genome")]
         public float MaxLinkPower { get; set; } = 120f;
 
         /// <summary>
@@ -179,7 +206,9 @@ namespace Evosim.Core
         /// r/K axis gets explored by selection rather than handed out at random, which is the
         /// difference between measuring a strategy and seeding one.
         /// </remarks>
+        [Tunable("genome")]
         public int MinBroodSize { get; set; } = 1;
+        [Tunable("genome")]
         public int MaxBroodSize { get; set; } = 3;
 
         /// <summary>
@@ -191,7 +220,9 @@ namespace Evosim.Core
         /// the time an offspring takes to become self-sufficient, and nothing here knows that
         /// yet. Treated as a placeholder that must be revisited at Milestone 5, not as a value.
         /// </remarks>
+        [Tunable("genome")]
         public float MinOffspringEndowment { get; set; } = 50f;
+        [Tunable("genome")]
         public float MaxOffspringEndowment { get; set; } = 400f;
 
         /// <summary>
@@ -220,6 +251,7 @@ namespace Evosim.Core
         /// from being entirely stillborn.
         /// </para>
         /// </remarks>
+        [Tunable("genome")]
         public string[] FounderCellTypes { get; set; } =
         {
             CellTypeIds.Photosynthetic,
@@ -241,6 +273,7 @@ namespace Evosim.Core
         /// Which is the better opening is exactly the sort of question §5A exists to be answered
         /// by rather than to answer.
         /// </remarks>
+        [Tunable("genome")]
         public float FounderTailChance { get; set; } = 0.5f;
 
         public static RandomGenomeOptions Default => new RandomGenomeOptions();

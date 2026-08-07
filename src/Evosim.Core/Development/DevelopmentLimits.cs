@@ -6,9 +6,11 @@ namespace Evosim.Core
     public sealed class DevelopmentLimits
     {
         /// <summary>Hard cap on parts in the developed phenotype. DESIGN.md §4.2 proposes 16.</summary>
+        [Tunable("development")]
         public int MaxParts { get; set; } = 16;
 
         /// <summary>Hard cap on tree depth, root at depth 0. DESIGN.md §4.2 proposes 8.</summary>
+        [Tunable("development")]
         public int MaxDepth { get; set; } = 8;
 
         /// <summary>
@@ -22,6 +24,7 @@ namespace Evosim.Core
         /// reaches sub-millimetre boxes and the solver misbehaves in ways that look like
         /// evolved behaviour.
         /// </remarks>
+        [Tunable("development", Unit = "m3")]
         public float MinPartVolume { get; set; } = 1e-4f;
 
         /// <summary>
@@ -58,6 +61,7 @@ namespace Evosim.Core
         /// either edge.
         /// </para>
         /// </remarks>
+        [Tunable("development", Unit = "m3")]
         public float MaxPartVolume { get; set; } = 1e6f;
 
         /// <summary>
@@ -91,6 +95,7 @@ namespace Evosim.Core
         /// alone, where §4.5 depends on it to remove nodes at all.
         /// </para>
         /// </remarks>
+        [Tunable("development", Unit = "m")]
         public float MinPartHalfExtent { get; set; } = 0.01f;
 
         public static DevelopmentLimits Default => new DevelopmentLimits();

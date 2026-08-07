@@ -1299,6 +1299,28 @@ has twice meant a configuration change never reached the thing it configured (lo
 logbook/0008). A hash that differs while the results do not is the cheapest way to tell that
 apart from a parameter that genuinely does not matter.
 
+#### One declaration, four consumers
+
+**A knob is declared once, with `[Tunable]`, and everything else is derived from it.** It used to
+be written out four times — the property, `Hash()`, the JSON writer, the JSON reader — which at
+this size is close to four hundred sites held in agreement by memory. `ConfigSchema.Of(config)`
+walks the config and returns every declared knob with a dotted path, a group, a unit and a typed
+get/set pair; the hash iterates it, the writer iterates it, and the reader iterates it and
+*requires* a value for each. A knob that exists is therefore hashed, written and demanded on
+load, and cannot be present in three of the four and missing from the fourth (D027).
+
+**Reflection is used for discovery and never for ordering.** `Type.GetProperties()` guarantees no
+order, so a hash taken in discovery order would be stable on one runtime and quietly different on
+the next — §7's identity holding only until someone upgrades .NET. Entries are sorted by full
+path, ordinal, so the order is a property of the names alone.
+
+`EverySettableValueIsDeclaredTunable` is what makes this self-enforcing: it fails on **any** public settable
+property carrying none of `[Tunable]`, `[TunableGroup]` or `[TunableRegistry]`. Not a list of
+types we thought of — its own first draft checked `float`/`int`/`bool`/`string[]` and passed while
+`RandomGenomeOptions.JointTypes`, a `JointType[]` that decides which joints a random genome may
+draw, sat outside both the hash and the file. The two group attributes are how a property says it
+is *not* a knob, and both are statements someone wrote down. Silence is the failure.
+
 ⚠ **The guard had the same hole it exists to catch.** It walked `RunConfig` and
 `RandomGenomeOptions` only, so `DevelopmentLimits.MaxPartVolume` reached neither the hash nor
 the JSON — a check against forgetting a tunable that had itself forgotten a whole object. The
@@ -1353,6 +1375,14 @@ confirm the knob actually reaches the arithmetic. Both faults it was written aft
 `ConsumerCell`'s scavenging rate as a hardcoded coefficient of 1, and `LightModel` handed to the
 world *beside* its config rather than inside it, so every run of the §5A.2b sweep — from the
 extinct end to the runaway end — carried one identical `configHash` (logbook/0013).
+
+⚠ **A knob in the hash is not necessarily a knob that does anything.** The declarative walk found
+`RunConfig.CellTypeMutationChance` and `MutationRates.CellTypeChance` — two knobs for one thing,
+differing tenfold, and only the second read by `Mutator`. Setting the first moved the `configHash`
+and changed nothing about the run, which is the failure of §7 in its least visible direction: two
+records claiming to be different experiments and byte-identical in fact. The dead one is gone, and
+this remains the project's recurring fault in its third form. *Prove a parameter reached the thing
+it configures* (logbook/0007, logbook/0008, logbook/0013).
 
 - Basal metabolic rate per unit volume, per part type — ✅ **located**: the transition sits
   between 24 and 32 W/m² of surface irradiance against the default upkeep rates (§5A.2b)

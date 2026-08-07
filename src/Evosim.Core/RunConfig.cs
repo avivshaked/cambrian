@@ -33,9 +33,11 @@ namespace Evosim.Core
     public sealed class RunConfig
     {
         /// <summary>How the initial population is drawn — §4.1.</summary>
+        [TunableGroup]
         public RandomGenomeOptions Genome { get; set; } = RandomGenomeOptions.Default;
 
         /// <summary>Caps applied while growing a genome into a body — §4.2.</summary>
+        [TunableGroup]
         public DevelopmentLimits Development { get; set; } = DevelopmentLimits.Default;
 
         /// <summary>The geometries available to parts — §4.1.</summary>
@@ -43,12 +45,15 @@ namespace Evosim.Core
         /// Ordered, and the order is hashed: shape mutation picks by an RNG draw, so a registry
         /// rebuilt in a different order yields different shapes from the same seed.
         /// </remarks>
+        [TunableRegistry]
         public PartShapeRegistry Shapes { get; set; } = PartShapeRegistry.Standard;
 
         /// <summary>How often each variation operator fires — §4.5.</summary>
+        [TunableGroup]
         public MutationRates Mutation { get; set; } = MutationRates.Default;
 
         /// <summary>Water: density, drag, added mass — §5.2.</summary>
+        [TunableGroup]
         public FluidConfig Fluid { get; set; } = new FluidConfig();
 
         /// <summary>How much light reaches each depth — §5A.4, §5A.2b.</summary>
@@ -67,6 +72,7 @@ namespace Evosim.Core
         /// could have found it. The guard now covers this and every registered cell type
         /// (logbook/0013).
         /// </remarks>
+        [TunableGroup]
         public LightModel Light { get; set; } = new LightModel();
 
         /// <summary>
@@ -78,6 +84,7 @@ namespace Evosim.Core
         /// given draw yields. Two registries holding the same types in a different order are not
         /// interchangeable.
         /// </remarks>
+        [TunableRegistry]
         public CellTypeRegistry CellTypes { get; set; } = CellTypeRegistry.Standard;
 
         /// <summary>
@@ -98,6 +105,7 @@ namespace Evosim.Core
         /// </para>
         /// <para>⚠ Unmeasured — §5A.10.</para>
         /// </remarks>
+        [Tunable("economy", Unit = "J")]
         public float PerOffspringOverheadJoules { get; set; } = 25f;
 
         /// <summary>
@@ -113,6 +121,7 @@ namespace Evosim.Core
         /// ⚠ Unmeasured, and not measurable until the economy runs — §5A.10. Above 1 is not a
         /// mistake: muscle is lossy, so a joule delivered at the joint costs more than a joule.
         /// </remarks>
+        [Tunable("economy")]
         public float WorkCostMultiplier { get; set; } = 1f;
 
         /// <summary>Metabolic joules per neuron per second — §5A.2.</summary>
@@ -121,6 +130,7 @@ namespace Evosim.Core
         /// exist because a brain that costs nothing grows without limit, in the same way a part
         /// that costs nothing does (§5A.1). ⚠ Unmeasured — §5A.10.
         /// </remarks>
+        [Tunable("economy", Unit = "W")]
         public float NeuralCostPerNeuronWatts { get; set; } = 0.05f;
 
         /// <summary>Metabolic joules per neuron input per second — §5A.2.</summary>
@@ -129,17 +139,8 @@ namespace Evosim.Core
         /// growth is: neurons scale linearly with body size and connections need not.
         /// ⚠ Unmeasured — §5A.10.
         /// </remarks>
+        [Tunable("economy", Unit = "W")]
         public float NeuralCostPerConnectionWatts { get; set; } = 0.01f;
-
-        /// <summary>Chance a mutation changes a part's cell type — §5A.3.</summary>
-        /// <remarks>
-        /// Deliberately small. It is one of the two bridges across the predator valley — the
-        /// route by which a herbivore becomes a carnivore once there is something worth eating —
-        /// so it must be possible; but a cell type that flips often is not a trait, it is noise,
-        /// and lineages cannot specialise around it. "Very scarce" is the requirement; the value
-        /// is a guess. ⚠ Unmeasured — §5A.10.
-        /// </remarks>
-        public float CellTypeMutationChance { get; set; } = 0.01f;
 
         /// <summary>
         /// Living creatures below which the population floor spawns founders — §5A.6, D021.
@@ -151,6 +152,7 @@ namespace Evosim.Core
         /// working ecosystem and every one of them propped up. The success condition is that this
         /// fires at t=0 and never again; §5A.6b's minimum generation depth is what reports it.
         /// </remarks>
+        [Tunable("population")]
         public int MinimumPopulation { get; set; } = 40;
 
         /// <summary>
@@ -171,6 +173,7 @@ namespace Evosim.Core
         /// the last — a loop that merely noticed would still be a loop that never returned.
         /// </para>
         /// </remarks>
+        [Tunable("population")]
         public int MaximumPopulation { get; set; } = 5000;
 
         /// <summary>Most founders the floor may spawn in one step.</summary>
@@ -179,6 +182,7 @@ namespace Evosim.Core
         /// manufactures a boom-and-bust oscillation that is an artefact of the refill rule rather
         /// than anything the world is doing.
         /// </remarks>
+        [Tunable("population")]
         public int FloorSpawnsPerStep { get; set; } = 2;
 
         /// <summary>Joules a floor-spawned founder starts with.</summary>
@@ -188,6 +192,7 @@ namespace Evosim.Core
         /// growth does not exist (§5A.6) — and setting it high enough that founders survive
         /// regardless would make the floor a life-support machine. ⚠ Unmeasured — §5A.10.
         /// </remarks>
+        [Tunable("population", Unit = "J")]
         public float FounderEnergyJoules { get; set; } = 200f;
 
         /// <summary>Depth range founders are scattered through, metres.</summary>
@@ -197,6 +202,7 @@ namespace Evosim.Core
         /// more generous than it is — and it would remove the depth gradient that §5A.4 says is
         /// what stops one strategy winning everywhere.
         /// </remarks>
+        [Tunable("population", Unit = "m")]
         public float FounderDepthSpread { get; set; } = 20f;
 
         /// <summary>Horizontal area of the world, m² — the sun's aperture. DESIGN.md §5A.2b.</summary>
@@ -209,6 +215,7 @@ namespace Evosim.Core
         /// (logbook/0011). Larger worlds support more life in exact proportion; they do not
         /// support a <i>denser</i> one.
         /// </remarks>
+        [Tunable("world", Unit = "m2")]
         public float WorldAreaSquareMetres { get; set; } = 400f;
 
         /// <summary>Thickness of one shading layer, metres — <see cref="LightField.LayerMetres"/>.</summary>
@@ -217,6 +224,7 @@ namespace Evosim.Core
         /// bodies are metre-scale (§4.1's dimension range), and a layer much thicker than that
         /// would let a creature shade one floating beside it.
         /// </remarks>
+        [Tunable("world", Unit = "m")]
         public float LightLayerMetres { get; set; } = 1f;
 
         /// <summary>How deep the world is, metres — DESIGN.md §5A.2c.</summary>
@@ -228,6 +236,7 @@ namespace Evosim.Core
         /// layer is the sea floor and detritus accumulates on it — which is where a scavenging
         /// niche would live, if one evolves.
         /// </remarks>
+        [Tunable("world", Unit = "m")]
         public float WorldDepthMetres { get; set; } = 60f;
 
         /// <summary>How fast dead matter falls, m/s — §5A.2c, §5A.4.</summary>
@@ -236,6 +245,7 @@ namespace Evosim.Core
         /// reaches the floor before anything in the water column can eat it; slow, and the surface
         /// keeps its own dead and the deep starves. ⚠ Unmeasured — §5A.10.
         /// </remarks>
+        [Tunable("world", Unit = "m/s")]
         public float NutrientSinkMetresPerSecond { get; set; } = 0.02f;
 
         /// <summary>
@@ -256,39 +266,46 @@ namespace Evosim.Core
         /// genuinely does not matter.
         /// </para>
         /// </remarks>
+        /// <summary>
+        /// A stable digest of every tunable — the <c>configHash</c> of §7.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Derived from <see cref="ConfigSchema"/> rather than written out by hand.</b> The
+        /// hand-written version required every knob to be listed here as well as on the property,
+        /// in the JSON writer and in the JSON reader — around a hundred knobs across four hundred
+        /// sites — and both faults §7 exists to catch came from exactly that:
+        /// <c>DevelopmentLimits.MaxPartVolume</c> reached two of the four, and
+        /// <see cref="Light"/> reached none (logbook/0011, logbook/0013).
+        /// </para>
+        /// <para>
+        /// <b>Sorted by path, never by reflection order.</b> <c>Type.GetProperties()</c> is
+        /// documented not to guarantee an order, so a digest taken in discovery order would be
+        /// stable on one runtime and silently different on the next — which would turn §7's
+        /// promise into one that holds until someone upgrades .NET. The sort is ordinal, over
+        /// names, and therefore a property of the code rather than of the host.
+        /// </para>
+        /// <para>
+        /// FNV-1a: a fixed integer recurrence, for the same reason <see cref="Rng"/> is PCG rather
+        /// than <c>System.Random</c> — a digest whose algorithm may change between framework
+        /// versions cannot identify anything.
+        /// </para>
+        /// </remarks>
         public string Hash()
         {
             var sb = new StringBuilder();
-            var c = CultureInfo.InvariantCulture;
 
+            foreach (TunableEntry entry in ConfigSchema.Of(this))
+            {
+                sb.Append(entry.Path).Append('=').Append(entry.Format()).Append('|');
+            }
+
+            // The registries are not walkable the same way: their members have constructor-only
+            // parameters and their membership varies, so each carries its own contribution. Their
+            // *order* is part of it, because mutation picks by an RNG draw and a registry rebuilt
+            // in a different order yields different types from the same seed.
             sb.Append(CellTypes.HashContribution()).Append('|');
             sb.Append(Shapes.HashContribution()).Append('|');
-            sb.Append(Light.HashContribution()).Append('|');
-            sb.Append(Fluid.Density.ToString("R", c)).Append(',');
-            sb.Append(Fluid.DragCoefficient.ToString("R", c)).Append(',');
-            sb.Append(Fluid.AddedMassCoefficient.ToString("R", c)).Append(',');
-            sb.Append(Fluid.PanelsPerAxis).Append('|');
-            sb.Append(Development.MaxParts).Append(',');
-            sb.Append(Development.MaxDepth).Append(',');
-            sb.Append(Development.MinPartVolume.ToString("R", c)).Append(',');
-            sb.Append(Development.MaxPartVolume.ToString("R", c)).Append(',');
-            sb.Append(Development.MinPartHalfExtent.ToString("R", c)).Append('|');
-            sb.Append(PerOffspringOverheadJoules.ToString("R", c)).Append(',');
-            sb.Append(WorkCostMultiplier.ToString("R", c)).Append(',');
-            sb.Append(NeuralCostPerNeuronWatts.ToString("R", c)).Append(',');
-            sb.Append(NeuralCostPerConnectionWatts.ToString("R", c)).Append(',');
-            sb.Append(MinimumPopulation).Append(',');
-            sb.Append(MaximumPopulation).Append(',');
-            sb.Append(FloorSpawnsPerStep).Append(',');
-            sb.Append(FounderEnergyJoules.ToString("R", c)).Append(',');
-            sb.Append(FounderDepthSpread.ToString("R", c)).Append(',');
-            sb.Append(WorldAreaSquareMetres.ToString("R", c)).Append(',');
-            sb.Append(LightLayerMetres.ToString("R", c)).Append(',');
-            sb.Append(WorldDepthMetres.ToString("R", c)).Append(',');
-            sb.Append(NutrientSinkMetresPerSecond.ToString("R", c)).Append(',');
-            sb.Append(CellTypeMutationChance.ToString("R", c)).Append('|');
-            AppendMutationRates(sb, c);
-            AppendGenomeOptions(sb, c);
 
             ulong hash = 14695981039346656037UL;
             for (int i = 0; i < sb.Length; i++)
@@ -297,82 +314,7 @@ namespace Evosim.Core
                 hash *= 1099511628211UL;
             }
 
-            return hash.ToString("x16", c);
+            return hash.ToString("x16", CultureInfo.InvariantCulture);
         }
-
-        /// <remarks>
-        /// Written out field by field rather than by reflection. Reflection would pick up new
-        /// fields automatically, which sounds like the safer choice and is the opposite: it
-        /// would also silently pick up anything added for a non-behavioural reason, and quietly
-        /// change every stored hash. An explicit list fails visibly — a new tunable that nobody
-        /// added here shows up as two different configurations sharing a hash, which is what the
-        /// tests below check for.
-        /// </remarks>
-        private void AppendMutationRates(StringBuilder sb, CultureInfo c)
-        {
-            MutationRates m = Mutation;
-
-            sb.Append(m.ScalarChance.ToString("R", c)).Append(',');
-            sb.Append(m.ScalarStdDev.ToString("R", c)).Append(',');
-            sb.Append(m.AddNodeChance.ToString("R", c)).Append(',');
-            sb.Append(m.NewNodeHalfExtent.ToString("R", c)).Append(',');
-            sb.Append(m.NodeExtinctionHalfExtent.ToString("R", c)).Append(',');
-            sb.Append(m.AddEdgeChance.ToString("R", c)).Append(',');
-            sb.Append(m.RemoveEdgeChance.ToString("R", c)).Append(',');
-            sb.Append(m.AddNeuronChance.ToString("R", c)).Append(',');
-            sb.Append(m.RemoveNeuronChance.ToString("R", c)).Append(',');
-            sb.Append(m.RewireInputChance.ToString("R", c)).Append(',');
-            sb.Append(m.NeuronOpChance.ToString("R", c)).Append(',');
-            sb.Append(m.JointTypeChance.ToString("R", c)).Append(',');
-            sb.Append(m.FlagChance.ToString("R", c)).Append(',');
-            sb.Append(m.RecursiveLimitChance.ToString("R", c)).Append(',');
-            sb.Append(m.CellTypeChance.ToString("R", c)).Append(',');
-            sb.Append(m.ShapeChance.ToString("R", c)).Append(',');
-            sb.Append(m.BroodSizeChance.ToString("R", c)).Append(',');
-            sb.Append(m.EndowmentChance.ToString("R", c)).Append(',');
-            sb.Append(m.MaxBroodSize).Append(',');
-            sb.Append(m.MaxNodes).Append('|');
-        }
-
-        private void AppendGenomeOptions(StringBuilder sb, CultureInfo c)
-        {
-            RandomGenomeOptions g = Genome;
-
-            sb.Append(g.MinNodes).Append(',').Append(g.MaxNodes).Append(',');
-            sb.Append(g.MaxEdgesPerNode).Append(',');
-            sb.Append(g.MinRecursiveLimit).Append(',').Append(g.MaxRecursiveLimit).Append(',');
-            sb.Append(g.MinHalfExtent.ToString("R", c)).Append(',');
-            sb.Append(g.MaxHalfExtent.ToString("R", c)).Append(',');
-            sb.Append(g.MinEdgeScale.ToString("R", c)).Append(',');
-            sb.Append(g.MaxEdgeScale.ToString("R", c)).Append(',');
-            sb.Append(g.ReflectChance.ToString("R", c)).Append(',');
-            sb.Append(g.TerminalChance.ToString("R", c)).Append(',');
-            sb.Append(g.RotateChance.ToString("R", c)).Append(',');
-            sb.Append(g.MaxEdgeTiltDegrees.ToString("R", c)).Append(',');
-            sb.Append(g.MinNeuronsPerNode).Append(',').Append(g.MaxNeuronsPerNode).Append(',');
-            sb.Append(g.MinOscillatorHz.ToString("R", c)).Append(',');
-            sb.Append(g.MaxOscillatorHz.ToString("R", c)).Append(',');
-            sb.Append(g.MinJointLimit.ToString("R", c)).Append(',');
-            sb.Append(g.MaxJointLimit.ToString("R", c)).Append(',');
-            sb.Append(g.MinLinkHalfExtent.ToString("R", c)).Append(',');
-            sb.Append(g.MaxLinkHalfExtent.ToString("R", c)).Append(',');
-            sb.Append(g.LinkChance.ToString("R", c)).Append(',');
-            sb.Append(g.MinLinkPower.ToString("R", c)).Append(',');
-            sb.Append(g.MaxLinkPower.ToString("R", c)).Append(',');
-            sb.Append(g.MinBroodSize).Append(',').Append(g.MaxBroodSize).Append(',');
-            sb.Append(g.MinOffspringEndowment.ToString("R", c)).Append(',');
-            sb.Append(g.MaxOffspringEndowment.ToString("R", c)).Append(',');
-            sb.Append(g.FounderTailChance.ToString("R", c)).Append(',');
-
-            for (int i = 0; i < g.JointTypes.Length; i++) sb.Append((int)g.JointTypes[i]).Append('.');
-            sb.Append(',');
-            for (int i = 0; i < g.BodyCellTypes.Length; i++) sb.Append(g.BodyCellTypes[i]).Append('.');
-            sb.Append(',');
-            for (int i = 0; i < g.ShapeIdChoices.Length; i++) sb.Append(g.ShapeIdChoices[i]).Append('.');
-            sb.Append(',');
-            for (int i = 0; i < g.FounderCellTypes.Length; i++) sb.Append(g.FounderCellTypes[i]).Append('.');
-        }
-
-        public override string ToString() => $"RunConfig({Hash()})";
     }
 }

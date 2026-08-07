@@ -12,19 +12,42 @@ namespace Evosim.Core
     /// the one artefact in a run directory meant to be edited by hand.
     /// </para>
     /// <para>
+    /// <b>Both directions are derived from <see cref="ConfigSchema"/>.</b> A knob used to be
+    /// written out four times — the property, <see cref="RunConfig.Hash"/>, the writer here and
+    /// the reader here — and with around a hundred knobs that is four hundred sites nobody can
+    /// hold in their head. Both faults §7 exists to catch came from exactly that:
+    /// <c>DevelopmentLimits.MaxPartVolume</c> was in two of the four, and
+    /// <see cref="RunConfig.Light"/> was in none (logbook/0011, logbook/0013). Now a knob that
+    /// exists is written, and a knob that is written is required on load.
+    /// </para>
+    /// <para>
+    /// <b>Loading refuses rather than defaults</b> (§9). A missing field throws and says what was
+    /// present, because a config that loads with one value silently defaulted describes a run that
+    /// never happened, and every result filed under its hash is mislabelled.
+    /// </para>
+    /// <para>
     /// <b>The hash is written alongside the settings, and checked on load.</b> If they disagree,
     /// the file was hand-edited — which is expected and allowed, since editing it is the point —
-    /// but the stored hash is then stale and every result filed under it is mislabelled. So the
-    /// load reports the discrepancy rather than silently recomputing, and the caller decides.
+    /// but the stored hash is then stale. The load reports the discrepancy rather than silently
+    /// recomputing, and the caller decides.
     /// </para>
     /// </remarks>
     public static class RunConfigJson
     {
-        public const int FormatVersion = 1;
+        /// <summary>Bumped when the layout changes, not when a knob is added.</summary>
+        /// <remarks>
+        /// 2 since <see cref="ConfigSchema"/> took over: sections and keys are derived from
+        /// <see cref="TunableAttribute.Group"/> and the property name rather than hand-placed, and
+        /// the light model gained a section of its own. Adding a knob does not bump this — the
+        /// reader refuses a file missing one, which is a clearer failure than a version number.
+        /// </remarks>
+        public const int FormatVersion = 2;
 
         public static string Write(RunConfig config)
         {
             if (config == null) throw new ArgumentNullException(nameof(config));
+
+            IReadOnlyList<TunableEntry> schema = ConfigSchema.Of(config);
 
             var w = new Json.Writer(indent: true);
             w.BeginObject();
@@ -34,74 +57,52 @@ namespace Evosim.Core
             // settings below are.
             w.Field("configHash", config.Hash());
 
-            w.BeginObject("economy")
-                .Field("perOffspringOverheadJoules", config.PerOffspringOverheadJoules)
-                .Field("workCostMultiplier", config.WorkCostMultiplier)
-                .Field("neuralCostPerNeuronWatts", config.NeuralCostPerNeuronWatts)
-                .Field("neuralCostPerConnectionWatts", config.NeuralCostPerConnectionWatts)
-                .Field("cellTypeMutationChance", config.CellTypeMutationChance)
-                .EndObject();
+            foreach (string group in ConfigSchema.Groups(schema))
+            {
+                w.BeginObject(group);
 
-            w.BeginObject("population")
-                .Field("minimumPopulation", config.MinimumPopulation)
-                .Field("maximumPopulation", config.MaximumPopulation)
-                .Field("floorSpawnsPerStep", config.FloorSpawnsPerStep)
-                .Field("founderEnergyJoules", config.FounderEnergyJoules)
-                .Field("founderDepthSpread", config.FounderDepthSpread)
-                .Field("worldAreaSquareMetres", config.WorldAreaSquareMetres)
-                .Field("lightLayerMetres", config.LightLayerMetres)
-                .Field("worldDepthMetres", config.WorldDepthMetres)
-                .Field("nutrientSinkMetresPerSecond", config.NutrientSinkMetresPerSecond)
-                .EndObject();
+                foreach (TunableEntry entry in schema)
+                {
+                    if (entry.Group == group) WriteValue(w, entry);
+                }
 
-            w.BeginObject("light")
-                .Field("surfaceIrradiance", config.Light.SurfaceIrradiance)
-                .Field("attenuationDepth", config.Light.AttenuationDepth)
-                .EndObject();
-
-            w.BeginObject("fluid")
-                .Field("density", config.Fluid.Density)
-                .Field("dragCoefficient", config.Fluid.DragCoefficient)
-                .Field("addedMassCoefficient", config.Fluid.AddedMassCoefficient)
-                .Field("panelsPerAxis", config.Fluid.PanelsPerAxis)
-                .EndObject();
-
-            w.BeginObject("development")
-                .Field("maxParts", config.Development.MaxParts)
-                .Field("maxDepth", config.Development.MaxDepth)
-                .Field("minPartVolume", config.Development.MinPartVolume)
-                .Field("maxPartVolume", config.Development.MaxPartVolume)
-                .Field("minPartHalfExtent", config.Development.MinPartHalfExtent)
-                .EndObject();
-
-            w.BeginObject("mutation")
-                .Field("scalarChance", config.Mutation.ScalarChance)
-                .Field("scalarStdDev", config.Mutation.ScalarStdDev)
-                .Field("addNodeChance", config.Mutation.AddNodeChance)
-                .Field("newNodeHalfExtent", config.Mutation.NewNodeHalfExtent)
-                .Field("nodeExtinctionHalfExtent", config.Mutation.NodeExtinctionHalfExtent)
-                .Field("addEdgeChance", config.Mutation.AddEdgeChance)
-                .Field("removeEdgeChance", config.Mutation.RemoveEdgeChance)
-                .Field("addNeuronChance", config.Mutation.AddNeuronChance)
-                .Field("removeNeuronChance", config.Mutation.RemoveNeuronChance)
-                .Field("rewireInputChance", config.Mutation.RewireInputChance)
-                .Field("neuronOpChance", config.Mutation.NeuronOpChance)
-                .Field("jointTypeChance", config.Mutation.JointTypeChance)
-                .Field("flagChance", config.Mutation.FlagChance)
-                .Field("recursiveLimitChance", config.Mutation.RecursiveLimitChance)
-                .Field("cellTypeChance", config.Mutation.CellTypeChance)
-                .Field("shapeChance", config.Mutation.ShapeChance)
-                .Field("broodSizeChance", config.Mutation.BroodSizeChance)
-                .Field("endowmentChance", config.Mutation.EndowmentChance)
-                .Field("maxBroodSize", config.Mutation.MaxBroodSize)
-                .Field("maxNodes", config.Mutation.MaxNodes)
-                .EndObject();
+                w.EndObject();
+            }
 
             CellTypeJson.WriteRegistry(w, "cellTypes", config.CellTypes);
-            WriteGenomeOptions(w, config.Genome);
 
             w.EndObject();
             return w.ToString();
+        }
+
+        private static void WriteValue(Json.Writer w, TunableEntry entry)
+        {
+            switch (entry.Get())
+            {
+                case float f: w.Field(entry.Key, f); break;
+                case int i: w.Field(entry.Key, i); break;
+                case bool b: w.Field(entry.Key, b); break;
+
+                case string[] a:
+                    w.BeginArray(entry.Key);
+                    foreach (string s in a) w.Value(s);
+                    w.EndArray();
+                    break;
+
+                // Enums by name, per §9. An ordinal would silently re-point at a different member
+                // the first time anyone inserts one, and the file would still load.
+                case Array e when ConfigSchema.EnumElementOf(e.GetType()) != null:
+                    w.BeginArray(entry.Key);
+                    foreach (object v in e) w.Value(v.ToString());
+                    w.EndArray();
+                    break;
+
+                default:
+                    throw new InvalidOperationException(
+                        $"{entry.Path} is a {entry.ValueType.Name}, which the config format cannot " +
+                        "write. Add a case here and a matching one in ReadValue, or the knob is " +
+                        "unsavable and the run cannot be reproduced from its own directory.");
+            }
         }
 
         /// <param name="text">Contents of a <c>config.json</c>.</param>
@@ -120,55 +121,17 @@ namespace Evosim.Core
                     $"Run settings are format {format}, this build reads {FormatVersion}.");
             }
 
-            JsonNode economy = root["economy"];
-            JsonNode population = root["population"];
-            JsonNode fluid = root["fluid"];
-            JsonNode light = root["light"];
-            JsonNode development = root["development"];
-
+            // Cell types are constructed rather than assigned into, so they cannot come from the
+            // schema walk — and the walk needs a config to write into, so they are read first.
             var config = new RunConfig
             {
-                PerOffspringOverheadJoules = economy["perOffspringOverheadJoules"].AsFloat(),
-                WorkCostMultiplier = economy["workCostMultiplier"].AsFloat(),
-                NeuralCostPerNeuronWatts = economy["neuralCostPerNeuronWatts"].AsFloat(),
-                NeuralCostPerConnectionWatts = economy["neuralCostPerConnectionWatts"].AsFloat(),
-                CellTypeMutationChance = economy["cellTypeMutationChance"].AsFloat(),
-
-                MinimumPopulation = population["minimumPopulation"].AsInt(),
-                MaximumPopulation = population["maximumPopulation"].AsInt(),
-                FloorSpawnsPerStep = population["floorSpawnsPerStep"].AsInt(),
-                FounderEnergyJoules = population["founderEnergyJoules"].AsFloat(),
-                FounderDepthSpread = population["founderDepthSpread"].AsFloat(),
-                WorldAreaSquareMetres = population["worldAreaSquareMetres"].AsFloat(),
-                LightLayerMetres = population["lightLayerMetres"].AsFloat(),
-                WorldDepthMetres = population["worldDepthMetres"].AsFloat(),
-                NutrientSinkMetresPerSecond = population["nutrientSinkMetresPerSecond"].AsFloat(),
-
-                Light = new LightModel(
-                    light["surfaceIrradiance"].AsFloat(),
-                    light["attenuationDepth"].AsFloat()),
-
-                Fluid = new FluidConfig
-                {
-                    Density = fluid["density"].AsFloat(),
-                    DragCoefficient = fluid["dragCoefficient"].AsFloat(),
-                    AddedMassCoefficient = fluid["addedMassCoefficient"].AsFloat(),
-                    PanelsPerAxis = fluid["panelsPerAxis"].AsInt(),
-                },
-
-                Development = new DevelopmentLimits
-                {
-                    MaxParts = development["maxParts"].AsInt(),
-                    MaxDepth = development["maxDepth"].AsInt(),
-                    MinPartVolume = development["minPartVolume"].AsFloat(),
-                    MaxPartVolume = development["maxPartVolume"].AsFloat(),
-                    MinPartHalfExtent = development["minPartHalfExtent"].AsFloat(),
-                },
-
                 CellTypes = CellTypeJson.ReadRegistry(root["cellTypes"]),
-                Genome = ReadGenomeOptions(root["genome"]),
-                Mutation = ReadMutationRates(root["mutation"]),
             };
+
+            foreach (TunableEntry entry in ConfigSchema.Of(config))
+            {
+                entry.Set(ReadValue(entry, root[entry.Group][entry.Key]));
+            }
 
             string stored = root["configHash"].AsString();
             string actual = config.Hash();
@@ -182,147 +145,60 @@ namespace Evosim.Core
             return config;
         }
 
-        public static RunConfig Read(string text) => Read(text, out _);
-
-        private static MutationRates ReadMutationRates(JsonNode n) => new MutationRates
+        private static object ReadValue(TunableEntry entry, JsonNode node)
         {
-            ScalarChance = n["scalarChance"].AsFloat(),
-            ScalarStdDev = n["scalarStdDev"].AsFloat(),
-            AddNodeChance = n["addNodeChance"].AsFloat(),
-            NewNodeHalfExtent = n["newNodeHalfExtent"].AsFloat(),
-            NodeExtinctionHalfExtent = n["nodeExtinctionHalfExtent"].AsFloat(),
-            AddEdgeChance = n["addEdgeChance"].AsFloat(),
-            RemoveEdgeChance = n["removeEdgeChance"].AsFloat(),
-            AddNeuronChance = n["addNeuronChance"].AsFloat(),
-            RemoveNeuronChance = n["removeNeuronChance"].AsFloat(),
-            RewireInputChance = n["rewireInputChance"].AsFloat(),
-            NeuronOpChance = n["neuronOpChance"].AsFloat(),
-            JointTypeChance = n["jointTypeChance"].AsFloat(),
-            FlagChance = n["flagChance"].AsFloat(),
-            RecursiveLimitChance = n["recursiveLimitChance"].AsFloat(),
-            CellTypeChance = n["cellTypeChance"].AsFloat(),
-            ShapeChance = n["shapeChance"].AsFloat(),
-            BroodSizeChance = n["broodSizeChance"].AsFloat(),
-            EndowmentChance = n["endowmentChance"].AsFloat(),
-            MaxBroodSize = n["maxBroodSize"].AsInt(),
-            MaxNodes = n["maxNodes"].AsInt(),
-        };
+            if (entry.ValueType == typeof(float)) return node.AsFloat();
+            if (entry.ValueType == typeof(int)) return node.AsInt();
+            if (entry.ValueType == typeof(bool)) return node.AsBool();
 
-        // ---------------------------------------------------------------- genome options
-
-        private static void WriteGenomeOptions(Json.Writer w, RandomGenomeOptions g)
-        {
-            w.BeginObject("genome")
-                .Field("minNodes", g.MinNodes)
-                .Field("maxNodes", g.MaxNodes)
-                .Field("maxEdgesPerNode", g.MaxEdgesPerNode)
-                .Field("minRecursiveLimit", g.MinRecursiveLimit)
-                .Field("maxRecursiveLimit", g.MaxRecursiveLimit)
-                .Field("minHalfExtent", g.MinHalfExtent)
-                .Field("maxHalfExtent", g.MaxHalfExtent)
-                .Field("minEdgeScale", g.MinEdgeScale)
-                .Field("maxEdgeScale", g.MaxEdgeScale)
-                .Field("reflectChance", g.ReflectChance)
-                .Field("terminalChance", g.TerminalChance)
-                .Field("rotateChance", g.RotateChance)
-                .Field("maxEdgeTiltDegrees", g.MaxEdgeTiltDegrees)
-                .Field("minNeuronsPerNode", g.MinNeuronsPerNode)
-                .Field("maxNeuronsPerNode", g.MaxNeuronsPerNode)
-                .Field("minOscillatorHz", g.MinOscillatorHz)
-                .Field("maxOscillatorHz", g.MaxOscillatorHz)
-                .Field("minJointLimit", g.MinJointLimit)
-                .Field("maxJointLimit", g.MaxJointLimit)
-                .Field("minLinkHalfExtent", g.MinLinkHalfExtent)
-                .Field("maxLinkHalfExtent", g.MaxLinkHalfExtent)
-                .Field("linkChance", g.LinkChance)
-                .Field("minLinkPower", g.MinLinkPower)
-                .Field("maxLinkPower", g.MaxLinkPower)
-                .Field("minBroodSize", g.MinBroodSize)
-                .Field("maxBroodSize", g.MaxBroodSize)
-                .Field("minOffspringEndowment", g.MinOffspringEndowment)
-                .Field("maxOffspringEndowment", g.MaxOffspringEndowment)
-                .Field("founderTailChance", g.FounderTailChance);
-
-            w.BeginArray("jointTypes");
-            foreach (JointType t in g.JointTypes) w.Value(t.ToString());
-            w.EndArray();
-
-            w.BeginArray("bodyCellTypes");
-            foreach (string id in g.BodyCellTypes) w.Value(id);
-            w.EndArray();
-
-            w.BeginArray("shapeChoices");
-            foreach (string id in g.ShapeIdChoices) w.Value(id);
-            w.EndArray();
-
-            w.BeginArray("founderCellTypes");
-            foreach (string id in g.FounderCellTypes) w.Value(id);
-            w.EndArray();
-
-            w.EndObject();
-        }
-
-        private static RandomGenomeOptions ReadGenomeOptions(JsonNode n)
-        {
-            var jointTypes = new List<JointType>();
-            foreach (JsonNode t in n["jointTypes"].Items())
+            if (entry.ValueType == typeof(string[]))
             {
-                string name = t.AsString();
-                if (!Enum.TryParse(name, out JointType parsed) ||
-                    !Enum.IsDefined(typeof(JointType), parsed))
-                {
-                    throw new FormatException(
-                        $"'{name}' is not a JointType. Known: " +
-                        string.Join(", ", Enum.GetNames(typeof(JointType))) + ".");
-                }
-                jointTypes.Add(parsed);
+                var values = new List<string>();
+                foreach (JsonNode item in node.Items()) values.Add(item.AsString());
+                return values.ToArray();
             }
 
-            var bodyCellTypes = new List<string>();
-            foreach (JsonNode t in n["bodyCellTypes"].Items()) bodyCellTypes.Add(t.AsString());
-
-            var shapeChoices = new List<string>();
-            foreach (JsonNode t in n["shapeChoices"].Items()) shapeChoices.Add(t.AsString());
-
-            var founderCellTypes = new List<string>();
-            foreach (JsonNode t in n["founderCellTypes"].Items()) founderCellTypes.Add(t.AsString());
-
-            return new RandomGenomeOptions
+            Type element = ConfigSchema.EnumElementOf(entry.ValueType);
+            if (element != null)
             {
-                MinNodes = n["minNodes"].AsInt(),
-                MaxNodes = n["maxNodes"].AsInt(),
-                MaxEdgesPerNode = n["maxEdgesPerNode"].AsInt(),
-                MinRecursiveLimit = n["minRecursiveLimit"].AsInt(),
-                MaxRecursiveLimit = n["maxRecursiveLimit"].AsInt(),
-                MinHalfExtent = n["minHalfExtent"].AsFloat(),
-                MaxHalfExtent = n["maxHalfExtent"].AsFloat(),
-                MinEdgeScale = n["minEdgeScale"].AsFloat(),
-                MaxEdgeScale = n["maxEdgeScale"].AsFloat(),
-                ReflectChance = n["reflectChance"].AsFloat(),
-                TerminalChance = n["terminalChance"].AsFloat(),
-                RotateChance = n["rotateChance"].AsFloat(),
-                MaxEdgeTiltDegrees = n["maxEdgeTiltDegrees"].AsFloat(),
-                MinNeuronsPerNode = n["minNeuronsPerNode"].AsInt(),
-                MaxNeuronsPerNode = n["maxNeuronsPerNode"].AsInt(),
-                MinOscillatorHz = n["minOscillatorHz"].AsFloat(),
-                MaxOscillatorHz = n["maxOscillatorHz"].AsFloat(),
-                MinJointLimit = n["minJointLimit"].AsFloat(),
-                MaxJointLimit = n["maxJointLimit"].AsFloat(),
-                MinLinkHalfExtent = n["minLinkHalfExtent"].AsFloat(),
-                MaxLinkHalfExtent = n["maxLinkHalfExtent"].AsFloat(),
-                LinkChance = n["linkChance"].AsFloat(),
-                MinLinkPower = n["minLinkPower"].AsFloat(),
-                MaxLinkPower = n["maxLinkPower"].AsFloat(),
-                MinBroodSize = n["minBroodSize"].AsInt(),
-                MaxBroodSize = n["maxBroodSize"].AsInt(),
-                MinOffspringEndowment = n["minOffspringEndowment"].AsFloat(),
-                MaxOffspringEndowment = n["maxOffspringEndowment"].AsFloat(),
-                FounderTailChance = n["founderTailChance"].AsFloat(),
-                JointTypes = jointTypes.ToArray(),
-                BodyCellTypes = bodyCellTypes.ToArray(),
-                ShapeIdChoices = shapeChoices.ToArray(),
-                FounderCellTypes = founderCellTypes.ToArray(),
-            };
+                var parsed = new List<object>();
+                foreach (JsonNode item in node.Items()) parsed.Add(ParseEnum(entry, element, item));
+
+                // A typed array, not object[] — the property setter would reject anything else.
+                Array array = Array.CreateInstance(element, parsed.Count);
+                for (int i = 0; i < parsed.Count; i++) array.SetValue(parsed[i], i);
+                return array;
+            }
+
+            throw new InvalidOperationException(
+                $"{entry.Path} is a {entry.ValueType.Name}, which the config format cannot read.");
         }
+
+        /// <remarks>
+        /// <see cref="Enum.TryParse{TEnum}(string, out TEnum)"/> alone is not enough: it accepts any
+        /// number, so <c>"7"</c> would load as a <c>JointType</c> that does not exist and the run
+        /// would fail somewhere far away from the file that caused it. §9's rule is that loading
+        /// refuses rather than defaults, and this is the shape that takes for a name.
+        /// </remarks>
+        private static object ParseEnum(TunableEntry entry, Type element, JsonNode node)
+        {
+            string name = node.AsString();
+
+            try
+            {
+                object value = Enum.Parse(element, name, ignoreCase: false);
+                if (Enum.IsDefined(element, value)) return value;
+            }
+            catch (ArgumentException)
+            {
+                // Falls through to the same message as an out-of-range number.
+            }
+
+            throw new FormatException(
+                $"'{name}' is not a {element.Name} (at {entry.Group}.{entry.Key}). Known: " +
+                string.Join(", ", Enum.GetNames(element)) + ".");
+        }
+
+        public static RunConfig Read(string text) => Read(text, out _);
     }
 }

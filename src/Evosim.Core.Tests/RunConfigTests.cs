@@ -150,6 +150,90 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void EverySettableValueIsDeclaredTunable()
+        {
+            // The guard that replaces four hundred hand-maintained sites. A knob is declared once
+            // with [Tunable]; the hash, the file and the reader are all derived from that. So the
+            // only way to add a knob and have it escape is to add a settable property and not mark
+            // it — which is what this fails on, immediately, rather than years later when two runs
+            // come back identical and nobody can say why (logbook/0011, logbook/0013).
+            //
+            // Note what it demands: not "declare it" but "declare it, or say what it is instead".
+            // [TunableGroup] and [TunableRegistry] are the two ways to say a property is not a knob,
+            // and both are statements someone wrote down. Silence is the failure.
+            var missing = new List<string>();
+
+            Walk(typeof(RunConfig), "", missing);
+
+            _output.WriteLine(missing.Count == 0
+                ? $"{ConfigSchema.Of(new RunConfig()).Count} tunables, all declared"
+                : "settable but not [Tunable]: " + string.Join(", ", missing));
+
+            Assert.Empty(missing);
+        }
+
+        private static void Walk(Type type, string prefix, List<string> missing)
+        {
+            foreach (PropertyInfo p in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (p.GetCustomAttribute<TunableAttribute>() != null) continue;
+
+                if (p.GetCustomAttribute<TunableGroupAttribute>() != null)
+                {
+                    Walk(p.PropertyType, prefix + p.Name + ".", missing);
+                    continue;
+                }
+
+                // Registries carry their own contribution and their own serializer, and are marked
+                // as such so that "not walkable" is a stated fact rather than an oversight.
+                if (p.GetCustomAttribute<TunableRegistryAttribute>() != null) continue;
+
+                if (!p.CanWrite || !p.CanRead) continue;
+
+                // Everything settable, not a list of types we thought of. The first version of this
+                // test checked float/int/bool/string[] and passed while RandomGenomeOptions.
+                // JointTypes — a JointType[], settable, and materially part of the experiment — sat
+                // outside the hash and outside the file. A test that only looks for the failures it
+                // already imagined is the same fault as the code it is guarding (logbook/0013).
+                missing.Add($"{prefix}{p.Name} ({p.PropertyType.Name})");
+            }
+        }
+
+        [Fact]
+        public void TheSchemaIsSortedSoTheHashCannotMoveWithTheRuntime()
+        {
+            // Type.GetProperties() is documented not to guarantee an order. A hash taken in
+            // discovery order would be stable on this runtime and silently different on the next,
+            // which turns §7's promise into one that holds until someone upgrades .NET.
+            IReadOnlyList<TunableEntry> schema = ConfigSchema.Of(new RunConfig());
+
+            for (int i = 1; i < schema.Count; i++)
+            {
+                Assert.True(
+                    string.CompareOrdinal(schema[i - 1].Path, schema[i].Path) < 0,
+                    $"{schema[i - 1].Path} then {schema[i].Path} — not sorted, or a duplicate path");
+            }
+
+            Assert.True(schema.Count > 60, $"only {schema.Count} tunables found — the walk broke");
+        }
+
+        [Fact]
+        public void EveryTunableCarriesAGroupAndAUsableType()
+        {
+            foreach (TunableEntry entry in ConfigSchema.Of(new RunConfig()))
+            {
+                Assert.False(string.IsNullOrWhiteSpace(entry.Group), $"{entry.Path} has no group");
+                Assert.False(string.IsNullOrWhiteSpace(entry.Key), $"{entry.Path} has no key");
+
+                Assert.True(
+                    entry.ValueType == typeof(float) || entry.ValueType == typeof(int) ||
+                    entry.ValueType == typeof(bool) || entry.ValueType == typeof(string[]) ||
+                    ConfigSchema.EnumElementOf(entry.ValueType) != null,
+                    $"{entry.Path} is a {entry.ValueType.Name}, which the file format cannot carry");
+            }
+        }
+
+        [Fact]
         public void CellTypeTuningChangesTheHash()
         {
             var tuned = new RunConfig

@@ -794,3 +794,55 @@ accumulates on the sea floor forever — 93% of all detritus after 40,000 s. It 
 source, so conservation holds, but it grows without bound and whatever first evolves to live down
 there inherits a very large bank. Whether that is a flaw or the most interesting thing in the
 world is not yet measurable.
+
+---
+
+### D027
+**A knob is declared once, and everything else is derived from that declaration** · 2026-08-07
+
+Every tunable used to be written out four times: the property, `RunConfig.Hash()`, the JSON
+writer and the JSON reader. With around ninety knobs that is nearly four hundred sites, kept in
+agreement by memory. Memory lost twice in two weeks. `DevelopmentLimits.MaxPartVolume` reached
+two of the four ([D024](#d024)); `RunConfig.Light` reached none of them; and
+`RandomGenomeOptions.JointTypes` — which decides what joints a random genome may draw, and so
+which experiments are even different from each other — was found sitting outside the hash and
+outside the file during this work.
+
+**`[Tunable]` plus a reflection walk replaces all four.** `ConfigSchema.Of(config)` returns every
+declared knob with a path, a group, a unit and a get/set pair. `Hash()` iterates it. The writer
+iterates it. The reader iterates it and *demands* a value for each. So a knob that exists is
+hashed, is written, and is required on load, and there is no way to be in three of those and
+missing from the fourth.
+
+**Reflection for discovery, never for ordering, and the distinction is the whole safety
+argument.** `Type.GetProperties()` is explicitly documented to make no guarantee about order. A
+hash taken in discovery order would be stable on this runtime and quietly different on the next —
+turning §7's promise that `(genome, seed, configHash)` identifies a run into one that holds until
+someone upgrades .NET, at which point every stored result becomes unmatchable and nothing says
+why. Entries are sorted by full dotted path with an ordinal comparison, so the order is a property
+of the names and of nothing else.
+
+**The coverage test is the part that makes it hold.** `EverySettableValueIsDeclaredTunable` fails on *any*
+public settable property that carries none of the three attributes. Not a list of types we thought
+of — the first draft of that test checked `float`/`int`/`bool`/`string[]` and passed while
+`JointType[]` escaped, which is the same fault as the code it was guarding. `[TunableGroup]` and
+`[TunableRegistry]` are the two ways to say "this is not a knob", and both are statements someone
+wrote down. Silence is the failure.
+
+**It immediately found a dead knob.** `RunConfig.CellTypeMutationChance` and
+`MutationRates.CellTypeChance` were two knobs for one thing, differing tenfold, and only the
+second had a reader. Setting the first changed the config hash and changed nothing about the run —
+two records that claim to be different experiments and are byte-identical. That is §7 failing in
+the direction it least wants to, and it is the third instance of this project's recurring fault:
+*prove a parameter reached the thing it configures.* The dead one is gone.
+
+**Rejected:** *a hand-maintained list of tunables* — that is what the four sites already were.
+*Source generation* — it would move the same declaration into a build step and buy a startup cost
+we do not pay; a walk of ninety properties happens once per run. *Deriving the file's sections
+from the C# object graph* — the object graph is organised for the code, and the file is organised
+for the person editing it, so `Group` is named explicitly and `light` gets a section that no
+single object owns.
+
+**Deferred by agreement:** a GUI for editing these. The schema is what such a UI would need —
+path, group, unit, description, typed get/set — and it now exists, so building it is presentation
+work against a stable surface rather than a second copy of the list.

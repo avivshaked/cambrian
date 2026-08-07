@@ -41,6 +41,7 @@ namespace Evosim.Core
         /// everything. Its absolute value means little on its own — what matters is this against
         /// <see cref="PhotosyntheticCell.Efficiency"/> and against cell upkeep.
         /// </remarks>
+        [Tunable("light", Unit = "W/m2")]
         public float SurfaceIrradiance
         {
             get => _surfaceIrradiance;
@@ -58,6 +59,7 @@ namespace Evosim.Core
         /// creature must travel to leave the lit zone, and therefore how much vertical structure
         /// the world has to offer. ⚠ Unmeasured (§5A.10).
         /// </remarks>
+        [Tunable("light", Unit = "m")]
         public float AttenuationDepth
         {
             get => _attenuationDepth;

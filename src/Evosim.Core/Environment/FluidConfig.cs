@@ -6,12 +6,14 @@ namespace Evosim.Core
     public sealed class FluidConfig
     {
         /// <summary>Density in kg/m³. Fresh water is 1000.</summary>
+        [Tunable("fluid")]
         public float Density { get; set; } = 1000f;
 
         /// <summary>
         /// Quadratic drag coefficient. [C18 §2.2, p.5] uses C_d = 1.5 for its mesh-based
         /// drag model, which is the same scheme as this one.
         /// </summary>
+        [Tunable("fluid")]
         public float DragCoefficient { get; set; } = 1.5f;
 
         /// <summary>
@@ -29,6 +31,7 @@ namespace Evosim.Core
         /// and costs linearly in <c>n²</c>; DESIGN.md §6.4's throughput budget is the
         /// constraint, and this is the term most likely to consume it.
         /// </remarks>
+        [Tunable("fluid")]
         public int PanelsPerAxis { get; set; } = 2;
 
         /// <summary>
@@ -51,6 +54,7 @@ namespace Evosim.Core
         /// implicit term and integrating it explicitly is unstable.
         /// </para>
         /// </remarks>
+        [Tunable("fluid")]
         public float AddedMassCoefficient { get; set; }
 
         /// <summary>Water, with drag only. The state DESIGN.md §5.4 warns is not enough.</summary>
