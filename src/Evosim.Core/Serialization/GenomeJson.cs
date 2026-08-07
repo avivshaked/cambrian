@@ -103,6 +103,7 @@ namespace Evosim.Core
         {
             w.BeginObject();
             w.Field("cell", node.CellTypeId);
+            w.Field("shape", node.ShapeId);
             w.Field("joint", node.JointType.ToString());
             w.Field("power", node.Power);
             w.Field("recursiveLimit", node.RecursiveLimit);
@@ -132,6 +133,7 @@ namespace Evosim.Core
             var node = new MorphNode
             {
                 CellTypeId = n["cell"].AsString(),
+                ShapeId = n["shape"].AsString(),
                 JointType = ParseEnum<JointType>(n["joint"].AsString()),
                 Power = n["power"].AsFloat(),
                 RecursiveLimit = n["recursiveLimit"].AsInt(),

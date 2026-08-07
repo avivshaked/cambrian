@@ -31,9 +31,19 @@ namespace Evosim.Core
         /// <param name="genome">Must pass <see cref="Genome.Validate"/>; an invalid genome throws.</param>
         /// <param name="limits">Guard rails. Defaults to <see cref="DevelopmentLimits.Default"/>.</param>
         /// <param name="rootTransform">Where to place the root. Defaults to the origin.</param>
-        public static Phenotype Develop(Genome genome, DevelopmentLimits limits = null, Mat4? rootTransform = null)
+        /// <param name="shapes">
+        /// Geometry each node's shape id resolves against. Defaults to
+        /// <see cref="PartShapeRegistry.Standard"/>. A run using custom shapes must pass its own,
+        /// or its genomes will fail to resolve rather than silently developing as boxes.
+        /// </param>
+        public static Phenotype Develop(
+            Genome genome,
+            DevelopmentLimits limits = null,
+            Mat4? rootTransform = null,
+            PartShapeRegistry shapes = null)
         {
             if (genome == null) throw new ArgumentNullException(nameof(genome));
+            shapes = shapes ?? PartShapeRegistry.Standard;
 
             IReadOnlyList<string> issues = genome.Validate();
             if (issues.Count > 0)
@@ -53,6 +63,7 @@ namespace Evosim.Core
             Expand(
                 genome,
                 limits,
+                shapes,
                 phenotype,
                 occurrences,
                 genome.RootIndex,
@@ -71,6 +82,7 @@ namespace Evosim.Core
         private static void Expand(
             Genome genome,
             DevelopmentLimits limits,
+            PartShapeRegistry shapes,
             Phenotype phenotype,
             int[] occurrences,
             int nodeIndex,
@@ -86,7 +98,14 @@ namespace Evosim.Core
             MorphNode node = genome.Nodes[nodeIndex];
             Float3 halfExtents = Float3.Abs(node.Dimensions * accumulatedScale);
 
-            if (halfExtents.BoxVolume < limits.MinPartVolume)
+            // Volume is the shape's, not the bounding box's. A sphere holds about half what its
+            // box does, so pruning on the box would keep parts that mass, upkeep and drag all
+            // treat as half the size — three systems disagreeing with the limit that admitted
+            // the part.
+            PartShape shape = shapes.Resolve(node.ShapeId);
+            float volume = shape.Volume(halfExtents);
+
+            if (volume < limits.MinPartVolume)
             {
                 phenotype.PrunedForVolume++;
                 return;
@@ -110,6 +129,8 @@ namespace Evosim.Core
                 Rotation = rotation,
                 Mirrored = mirrored,
                 CellTypeId = node.CellTypeId,
+                ShapeId = node.ShapeId,
+                Volume = volume,
                 JointType = jointType,
                 JointLimits = jointLimits,
                 Power = jointType == JointType.Fixed ? 0f : node.Power,
@@ -139,10 +160,13 @@ namespace Evosim.Core
                 Float3 childScale = accumulatedScale * edge.Scale;
                 Float3 childHalfExtents = Float3.Abs(childNode.Dimensions * childScale);
 
-                // Anchors are normalised box coordinates; ±1 is a face. Scaling by the
-                // half-extents puts them on the actual surface in metres.
-                Float3 anchorOnParent = edge.ParentAnchor * halfExtents;
-                Float3 anchorOnChild = edge.ChildAnchor * childHalfExtents;
+                // Anchors are directions, and each shape decides where its own surface is. For a
+                // box that is a point on a face, as before; for a sphere or capsule it is a
+                // point on the curve. Scaling by half-extents instead would attach children to a
+                // bounding box that is not there, leaving a visible gap on every round part.
+                Float3 anchorOnParent = shape.SurfacePoint(edge.ParentAnchor, halfExtents);
+                Float3 anchorOnChild = shapes.Resolve(childNode.ShapeId)
+                    .SurfacePoint(edge.ChildAnchor, childHalfExtents);
 
                 foreach (Bool3 mirror in edge.Reflect.MirrorCombinations())
                 {
@@ -162,6 +186,7 @@ namespace Evosim.Core
                     Expand(
                         genome,
                         limits,
+                        shapes,
                         phenotype,
                         occurrences,
                         edge.Child,

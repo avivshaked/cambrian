@@ -71,6 +71,7 @@ namespace Evosim.Core
                 .Field("flagChance", config.Mutation.FlagChance)
                 .Field("recursiveLimitChance", config.Mutation.RecursiveLimitChance)
                 .Field("cellTypeChance", config.Mutation.CellTypeChance)
+                .Field("shapeChance", config.Mutation.ShapeChance)
                 .Field("broodSizeChance", config.Mutation.BroodSizeChance)
                 .Field("endowmentChance", config.Mutation.EndowmentChance)
                 .Field("maxBroodSize", config.Mutation.MaxBroodSize)
@@ -84,6 +85,7 @@ namespace Evosim.Core
             return w.ToString();
         }
 
+        /// <param name="text">Contents of a <c>config.json</c>.</param>
         /// <param name="hashMismatch">
         /// Set when the stored hash does not match the settings that were read — see the class
         /// remarks. Not an error, but never something to ignore silently.
@@ -162,6 +164,7 @@ namespace Evosim.Core
             FlagChance = n["flagChance"].AsFloat(),
             RecursiveLimitChance = n["recursiveLimitChance"].AsFloat(),
             CellTypeChance = n["cellTypeChance"].AsFloat(),
+            ShapeChance = n["shapeChance"].AsFloat(),
             BroodSizeChance = n["broodSizeChance"].AsFloat(),
             EndowmentChance = n["endowmentChance"].AsFloat(),
             MaxBroodSize = n["maxBroodSize"].AsInt(),
@@ -200,7 +203,8 @@ namespace Evosim.Core
                 .Field("minBroodSize", g.MinBroodSize)
                 .Field("maxBroodSize", g.MaxBroodSize)
                 .Field("minOffspringEndowment", g.MinOffspringEndowment)
-                .Field("maxOffspringEndowment", g.MaxOffspringEndowment);
+                .Field("maxOffspringEndowment", g.MaxOffspringEndowment)
+                .Field("founderTailChance", g.FounderTailChance);
 
             w.BeginArray("jointTypes");
             foreach (JointType t in g.JointTypes) w.Value(t.ToString());
@@ -208,6 +212,14 @@ namespace Evosim.Core
 
             w.BeginArray("bodyCellTypes");
             foreach (string id in g.BodyCellTypes) w.Value(id);
+            w.EndArray();
+
+            w.BeginArray("shapeChoices");
+            foreach (string id in g.ShapeIdChoices) w.Value(id);
+            w.EndArray();
+
+            w.BeginArray("founderCellTypes");
+            foreach (string id in g.FounderCellTypes) w.Value(id);
             w.EndArray();
 
             w.EndObject();
@@ -231,6 +243,12 @@ namespace Evosim.Core
 
             var bodyCellTypes = new List<string>();
             foreach (JsonNode t in n["bodyCellTypes"].Items()) bodyCellTypes.Add(t.AsString());
+
+            var shapeChoices = new List<string>();
+            foreach (JsonNode t in n["shapeChoices"].Items()) shapeChoices.Add(t.AsString());
+
+            var founderCellTypes = new List<string>();
+            foreach (JsonNode t in n["founderCellTypes"].Items()) founderCellTypes.Add(t.AsString());
 
             return new RandomGenomeOptions
             {
@@ -262,8 +280,11 @@ namespace Evosim.Core
                 MaxBroodSize = n["maxBroodSize"].AsInt(),
                 MinOffspringEndowment = n["minOffspringEndowment"].AsFloat(),
                 MaxOffspringEndowment = n["maxOffspringEndowment"].AsFloat(),
+                FounderTailChance = n["founderTailChance"].AsFloat(),
                 JointTypes = jointTypes.ToArray(),
                 BodyCellTypes = bodyCellTypes.ToArray(),
+                ShapeIdChoices = shapeChoices.ToArray(),
+                FounderCellTypes = founderCellTypes.ToArray(),
             };
         }
     }

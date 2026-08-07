@@ -1,8 +1,14 @@
 # 02 — From a tree of boxes to something that moves
 
 [Piece 01](01-a-graph-that-grows-a-body.md) ended with development producing a `Phenotype`: a
-tree of boxes, each with a position, an orientation, a size and a joint. Pure data. No physics
-engine anywhere near it.
+tree of parts, each with a position, an orientation, a size, a shape and a joint. Pure data. No
+physics engine anywhere near it.
+
+> Everything below was written when every part was a box, and the title has kept the name. Parts
+> can now also be spheres and capsules — what that changes about *swimming* is
+> [piece 03](03-what-it-means-to-push-against-water.md); what it changes here is one line about
+> colliders, marked where it appears. The scale trap and the effector conditioning are unaffected,
+> because neither has anything to do with what shape a part is.
 
 That separation is deliberate and it is worth defending before we cross it, because the
 temptation is always to skip it — to have the graph traversal create physics objects directly
@@ -91,7 +97,8 @@ a metre across. Wrong shape, wrong place, wrong proportions.
 The fix is to refuse the premise. Size never touches the transform that positions a body:
 
 - the body transform stays at unit scale, always
-- the **collider** carries the size, as a `BoxCollider.size`
+- the **collider** carries the size — a `BoxCollider.size`, a `SphereCollider.radius`, a
+  `CapsuleCollider`'s radius and height, depending on what the part is
 - a separate child object carries the visual mesh, scaled for rendering
 
 Nothing compounds, because nothing is scaled. It is also faster and gives PhysX cleaner

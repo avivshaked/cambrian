@@ -96,6 +96,62 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         Damage = 5,
+
+        /// <summary>
+        /// Nutrient concentration in the water at this part — smell. Milestone 4.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Without this, §5A.1's absorptive cell is a lottery ticket.</b> That section says the
+        /// type "rewards being <i>where</i> food is" — but a creature that cannot smell has no
+        /// way to get where food is except by drifting into it, so no amount of control or
+        /// intelligence improves its intake. The strategy the design describes was not reachable.
+        /// </para>
+        /// <para>
+        /// Chemotaxis predates vision by billions of years and bacteria manage it, which is a
+        /// reasonable indication of how basic a capability this is and how odd its absence was.
+        /// </para>
+        /// </remarks>
+        Chemical = 6,
+
+        /// <summary>
+        /// The creature's own energy reserve, as seconds of life remaining at its current burn
+        /// rate — DESIGN.md §5A.2. Milestone 4.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The level, not a hunger flag.</b> A flag needs a threshold, and picking one is us
+        /// deciding when a creature ought to feel hungry — an unmeasured constant (§5A.10)
+        /// baked somewhere no run could vary it. A neuron builds whatever thresholds it wants
+        /// from a weight and a bias, and can hold several at once for different behaviours.
+        /// Hunger is derivable from the level; the level is not recoverable from hunger.
+        /// </para>
+        /// <para>
+        /// <b>Normalised against the creature's own burn rate</b>, so it reads as a duration
+        /// rather than a quantity. Raw joules would be meaningless across bodies of different
+        /// sizes, and normalising against the reproduction threshold instead would make a
+        /// brood-size mutation silently rescale how the creature perceives itself. Time to
+        /// starvation is the quantity every decision actually turns on, and it needs no
+        /// reference number that anyone has to guess.
+        /// </para>
+        /// <para>
+        /// Whole-creature rather than per-part, since §5A.6 kills the creature at zero and not
+        /// the part. <see cref="NeuronInput.Index"/> is ignored.
+        /// </para>
+        /// </remarks>
+        Energy = 7,
+
+        /// <summary>
+        /// Water velocity relative to this part, along the part's own axes — a lateral line.
+        /// Milestone 4. <see cref="NeuronInput.Index"/> selects the axis.
+        /// </summary>
+        /// <remarks>
+        /// Currents exist in §5A.4, so holding station against one is a real task, and something
+        /// large moving nearby disturbs the water before it arrives. That makes this the only
+        /// channel offering warning of a thing that has not touched you yet and that you cannot
+        /// see — which is what it is for in every animal that has one.
+        /// </remarks>
+        Flow = 8,
     }
 
     /// <summary>

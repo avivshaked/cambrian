@@ -47,6 +47,9 @@ namespace Evosim.Core
         /// <summary>What this part is made of — <see cref="CellType.Id"/>, DESIGN.md §5A.1.</summary>
         public string CellTypeId { get; internal set; } = CellTypeIds.Structural;
 
+        /// <summary>Geometry — <see cref="PartShape.Id"/>, DESIGN.md §4.1.</summary>
+        public string ShapeId { get; internal set; } = ShapeIds.Box;
+
         /// <summary>Joint to the parent. Meaningless at the root, where it is <see cref="JointType.Fixed"/>.</summary>
         public JointType JointType { get; internal set; } = JointType.Fixed;
 
@@ -70,7 +73,12 @@ namespace Evosim.Core
         /// </summary>
         public NeuronDef[] Neurons { get; internal set; } = Array.Empty<NeuronDef>();
 
-        public float Volume => HalfExtents.BoxVolume;
+        /// <summary>Volume in m³, computed by this part's shape at development time.</summary>
+        /// <remarks>
+        /// Stored rather than derived, because deriving it needs the shape registry and this is
+        /// read on every part on every step by the metabolic accounting.
+        /// </remarks>
+        public float Volume { get; internal set; }
 
         public bool IsRoot => ParentIndex < 0;
 

@@ -78,6 +78,23 @@ namespace Evosim.Core
         public float MinJointLimit { get; set; } = 0.4f;
         public float MaxJointLimit { get; set; } = 1.4f;
 
+        /// <summary>Shapes drawn for parts, weighted by repetition — DESIGN.md §4.1.</summary>
+        /// <remarks>
+        /// Boxes appear twice because they are the only shape that can be flat, and a flat
+        /// surface is the strongest paddle available (see <see cref="BoxShape"/>). An initial
+        /// population made mostly of spheres would have almost nothing able to swim, and the
+        /// first thing selection did would be to rediscover boxes rather than anything
+        /// interesting. Capsules are here as limbs. Nothing in this list restricts what a genome
+        /// may express — mutation reaches every registered shape.
+        /// </remarks>
+        public string[] ShapeIdChoices { get; set; } =
+        {
+            ShapeIds.Box,
+            ShapeIds.Box,
+            ShapeIds.Capsule,
+            ShapeIds.Sphere,
+        };
+
         /// <summary>
         /// Cell types drawn for body cells. Links are not here — they are placed structurally,
         /// not sampled, because the graph's alternation depends on knowing which is which.
@@ -96,6 +113,7 @@ namespace Evosim.Core
             CellTypeIds.Photosynthetic,
             CellTypeIds.Absorptive,
             CellTypeIds.Consumer,
+            CellTypeIds.Neural,
         };
 
         /// <summary>
@@ -175,6 +193,55 @@ namespace Evosim.Core
         /// </remarks>
         public float MinOffspringEndowment { get; set; } = 50f;
         public float MaxOffspringEndowment { get; set; } = 400f;
+
+        /// <summary>
+        /// Cell types a founder's single body cell may be — DESIGN.md §5A.0b.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Every entry earns.</b> <see cref="CellTypeIds.Structural"/> and
+        /// <see cref="CellTypeIds.Link"/> acquire nothing, so a founder made only of those has
+        /// zero income against nonzero upkeep and starves with certainty, in every world, every
+        /// time. Compute spent on it buys nothing but a corpse. Structure stays reachable in one
+        /// mutation; it is simply not where a lineage starts.
+        /// </para>
+        /// <para>
+        /// <b>Photosynthesis is weighted double, and the other half is meant to die.</b> At t=0
+        /// there is no nutrient in the water and no corpse to bite, so an absorptive or consumer
+        /// founder earns exactly nothing — it is born into a world with no food of its kind. It
+        /// starves, and its tissue becomes the first nutrient anything has ever had. The doomed
+        /// half of generation zero <i>is</i> the primordial soup, and it is what makes the other
+        /// two strategies mean something by generation two.
+        /// </para>
+        /// <para>
+        /// So this is not a guess about which strategy is best — that is the world's to decide,
+        /// and handing it to photosynthesis outright would make "plants came first" an
+        /// arrangement rather than a finding. It is only the ratio that keeps generation zero
+        /// from being entirely stillborn.
+        /// </para>
+        /// </remarks>
+        public string[] FounderCellTypes { get; set; } =
+        {
+            CellTypeIds.Photosynthetic,
+            CellTypeIds.Photosynthetic,
+            CellTypeIds.Absorptive,
+            CellTypeIds.Consumer,
+        };
+
+        /// <summary>
+        /// Chance a founder gets a link, making it two parts rather than one — §5A.0b.
+        /// </summary>
+        /// <remarks>
+        /// One part is a blob that cannot move. Two is a blob with a beating appendage — the
+        /// link is the tail, not a connector to something else — which is the smallest thing in
+        /// this encoding that can swim.
+        ///
+        /// Half and half, so neither is handed the world. A blob pays less upkeep and stays
+        /// where it drifts; a flagellate pays for tissue and joint capacity it may never recoup.
+        /// Which is the better opening is exactly the sort of question §5A exists to be answered
+        /// by rather than to answer.
+        /// </remarks>
+        public float FounderTailChance { get; set; } = 0.5f;
 
         public static RandomGenomeOptions Default => new RandomGenomeOptions();
     }
@@ -262,6 +329,88 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// A founder: one earning cell, and half the time a tail — DESIGN.md §5A.0b.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>This is the world's generation zero, and it is deliberately almost nothing.</b>
+        /// <see cref="Random"/> builds creatures of two to five nodes developing into three to
+        /// sixteen parts, with branches, recursion, bilateral pairs and several joints. That was
+        /// right when a fitness function had to have something to grade on the first evaluation.
+        /// Under §5A nothing grades anything, so handing evolution a body it did not build makes
+        /// every subsequent claim about morphology a claim about our initial conditions.
+        /// </para>
+        /// <para>
+        /// A founder is therefore one cell, or one cell and a beating appendage. Everything
+        /// else — branching, symmetry, limbs, recursion, more than one strategy in one
+        /// body — has to be discovered, priced, and kept because it paid.
+        /// </para>
+        /// <para>
+        /// <b>Two parts is a flagellate, not a stub.</b> A link is a full part with its own
+        /// tissue, upkeep and shape; it does not need a child. So one body cell with one link
+        /// hanging off it is a cell with a tail — the smallest thing in this encoding that can
+        /// swim — rather than an incomplete two-cell creature waiting for its other half.
+        /// </para>
+        /// <para>
+        /// <b>Nothing here filters for viability, and that is the point.</b>
+        /// <see cref="RandomViable"/> rejects creatures with no degrees of freedom, which every
+        /// one-part founder has. Under §5A stillness is not a defect — a blob that sits in the
+        /// light and pays its bills is a plant, and refusing to spawn it would be an exogenous
+        /// judgement about what deserves to exist, which is the whole thing §5A removes.
+        /// </para>
+        /// </remarks>
+        public static Genome Founder(Rng rng, RandomGenomeOptions options = null)
+        {
+            if (rng == null) throw new ArgumentNullException(nameof(rng));
+            options = options ?? RandomGenomeOptions.Default;
+
+            var genome = new Genome
+            {
+                RootIndex = 0,
+                Reproduction = new ReproductionTraits
+                {
+                    BroodSize = rng.Range(options.MinBroodSize, options.MaxBroodSize + 1),
+                    OffspringEndowment =
+                        rng.Range(options.MinOffspringEndowment, options.MaxOffspringEndowment),
+                },
+            };
+
+            MorphNode body = RandomBodyCell(rng, options);
+
+            // Drawn from the earning types only. Structural and Link acquire nothing, so a
+            // founder built from them starves with certainty rather than probably — see
+            // RandomGenomeOptions.FounderCellTypes.
+            body.CellTypeId = rng.Pick(options.FounderCellTypes);
+
+            // No recursion on a founder. RecursiveLimit governs how many times a cycle in the
+            // graph re-expands, and a genome with one edge and no cycle has nothing to expand —
+            // but leaving a stray value here would come alive the moment mutation added the
+            // edge that closes a loop, growing a body nobody selected for.
+            body.RecursiveLimit = 1;
+            genome.Nodes.Add(body);
+
+            if (rng.Chance(options.FounderTailChance))
+            {
+                MorphNode tail = RandomLinkCell(rng, options);
+                genome.Nodes.Add(tail);
+
+                // One edge, square onto a face, no reflection and no tilt. A bilateral pair or a
+                // tilted attachment is morphology, and morphology is what this is refusing to
+                // hand out.
+                genome.Nodes[0].Edges.Add(new MorphEdge
+                {
+                    Child = 1,
+                    ParentAnchor = AxisVector(1, 1f),
+                    ChildAnchor = AxisVector(1, -1f),
+                    Orientation = Quat.Identity,
+                    Scale = new Float3(1f, 1f, 1f),
+                });
+            }
+
+            return genome;
+        }
+
+        /// <summary>
         /// A body cell: it feeds or it is structure, and it cannot move against its parent.
         /// </summary>
         private static MorphNode RandomBodyCell(Rng rng, RandomGenomeOptions options)
@@ -273,6 +422,7 @@ namespace Evosim.Core
                     rng.Range(options.MinHalfExtent, options.MaxHalfExtent),
                     rng.Range(options.MinHalfExtent, options.MaxHalfExtent)),
                 CellTypeId = rng.Pick(options.BodyCellTypes),
+                ShapeId = rng.Pick(options.ShapeIdChoices),
                 JointType = JointType.Fixed,
                 JointLimits = Array.Empty<Float2>(),
                 RecursiveLimit = rng.Range(options.MinRecursiveLimit, options.MaxRecursiveLimit + 1),
@@ -301,6 +451,7 @@ namespace Evosim.Core
                     rng.Range(options.MinLinkHalfExtent, options.MaxLinkHalfExtent),
                     rng.Range(options.MinLinkHalfExtent, options.MaxLinkHalfExtent)),
                 CellTypeId = CellTypeIds.Link,
+                ShapeId = rng.Pick(options.ShapeIdChoices),
                 JointType = rng.Pick(options.JointTypes),
                 Power = rng.Range(options.MinLinkPower, options.MaxLinkPower),
                 RecursiveLimit = 1,

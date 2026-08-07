@@ -26,9 +26,16 @@ namespace Evosim.Sim
     {
         public FluidConfig Config { get; }
 
-        public FluidEnvironment(FluidConfig config = null)
+        /// <summary>
+        /// Geometry part shape ids resolve against. Must match what the creature was built and
+        /// developed with — the collider, the mesh and these panels all describe one part.
+        /// </summary>
+        public PartShapeRegistry Shapes { get; }
+
+        public FluidEnvironment(FluidConfig config = null, PartShapeRegistry shapes = null)
         {
             Config = config ?? FluidConfig.DragOnly;
+            Shapes = shapes ?? PartShapeRegistry.Standard;
         }
 
         /// <summary>
@@ -141,12 +148,14 @@ namespace Evosim.Sim
                 ArticulationBody body = creature.Bodies[i];
                 PhenotypePart part = creature.Phenotype.Parts[i];
 
-                FluidModel.BoxDrag(
+                FluidModel.Drag(
+                    Shapes.Resolve(part.ShapeId),
                     part.HalfExtents,
                     body.transform.rotation.ToQuat(),
                     body.linearVelocity.ToFloat3(),
                     body.angularVelocity.ToFloat3(),
                     Config,
+                    _panels,
                     out Float3 force,
                     out Float3 torque);
 
@@ -194,6 +203,19 @@ namespace Evosim.Sim
 
             _pendingStep = 0f;
         }
+
+        /// <summary>
+        /// Panel scratch, reused across every part of every creature for the life of this
+        /// environment.
+        /// </summary>
+        /// <remarks>
+        /// A fresh list per part per step is thousands of allocations a second once a population
+        /// is running, and the collection pause that eventually follows presents as a physics
+        /// hitch — something that looks like the simulation, not like the allocator. Reused here
+        /// because <see cref="Apply"/> is single-threaded and the panels do not outlive the call.
+        /// </remarks>
+        private readonly System.Collections.Generic.List<DragPanel> _panels =
+            new System.Collections.Generic.List<DragPanel>(64);
 
         private Vector3[] _pendingForce = System.Array.Empty<Vector3>();
         private Vector3[] _pendingTorque = System.Array.Empty<Vector3>();

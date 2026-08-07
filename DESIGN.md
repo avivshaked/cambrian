@@ -336,8 +336,57 @@ express, and it costs nothing to include from the start.
 
 **Sensors** (per part, normalised to ≈[-1, 1]): joint angle per DOF; joint angular
 velocity per DOF; contact; orientation vs world up; **damage**; photosensor triple
-(Milestone 6). [K12 §2.2, p.4] used only joint-angle sensors — *"A sensor in each body
-part is measuring current angle of each degree of freedom of a joint."*
+(Milestone 6); **chemical**, **energy** and **flow** (Milestone 4). [K12 §2.2, p.4] used only
+joint-angle sensors — *"A sensor in each body part is measuring current angle of each degree
+of freedom of a joint."*
+
+**Five of the original six sense the creature's own body.** Only the photosensor and contact
+say anything about the world, and contact only reports something already touching. That is
+adequate for locomotion — a central pattern generator needs nothing else — and inadequate for
+everything §5A is about. A world where nothing can perceive anything at a distance cannot
+produce foraging, pursuit or avoidance; it produces rhythmic open-loop swimmers and drift.
+
+**The largest omission was smell.** §5A.1 says an absorptive cell *"rewards being where food
+is"*, and until draft 5 nothing could sense where food was. Absorptive feeding was therefore
+not a strategy but a lottery: intake depended on what a creature drifted into, and no degree of
+control or intelligence could improve it. Chemotaxis predates vision by billions of years and
+bacteria manage it, which is some indication of how basic the missing capability was.
+
+| Channel | Reads | Why |
+|---|---|---|
+| **Chemical** | Nutrient concentration at this part | Smell. Makes §5A.1's absorptive cell a strategy rather than luck |
+| **Energy** | The creature's reserve, as **seconds of life remaining at its current burn rate** | The state variable everything in §5A turns on |
+| **Flow** | Water velocity relative to this part, per axis | A lateral line: currents (§5A.4), and something large moving before it arrives |
+
+**Energy is the level, not a hunger flag.** A flag needs a threshold, and choosing one is us
+deciding when a creature ought to feel hungry — an unmeasured constant (§5A.10) baked where no
+run could vary it. A neuron builds whatever thresholds it wants from a weight and a bias, and
+can hold several at once for different behaviours. Hunger is derivable from the level; the
+level is not recoverable from hunger. It is normalised against the creature's own burn rate so
+it reads as a duration: raw joules are meaningless across body sizes, and normalising against
+the §5A.6 reproduction threshold instead would let a brood-size mutation silently rescale how a
+creature perceives itself.
+
+**Every distal sense is a scalar, and direction is computed by the body.** No channel reports a
+*bearing* to anything. A sensor on a part is already a gradient sensor for a creature made of
+several parts: two cells at opposite ends read different concentrations, and the difference is
+a direction — which is how chemotaxis actually works. This makes **morphology part of the
+sensory apparatus.** A long creature resolves direction better than a compact one; a
+bilaterally symmetric one can compare left against right; and because signals meet at one node
+per step (above), a long body senses direction better but thinks about it slower.
+
+A "direction to nearest food" channel is therefore rejected, not deferred: it would hand the
+creature a solved problem and sever the link between body shape and perception. The photosensor
+triple is the same design — an eyespot, not an eye. Directional light sensing comes from parts
+facing different ways and shading each other, not from rendering a view per creature.
+*(Author's inference; the corpus addresses none of these channels.)*
+
+**Sensors are evaluated on demand, not per channel per part.** Which `(part, channel)` pairs any
+neuron ever references is a static property of a developed phenotype, so the builder computes a
+requirement mask once and the step loop evaluates only what is in it. Cost then scales with what
+evolution actually uses rather than with what is declared, and adding a channel costs nothing
+until something reads it. This matters because §5A.9's measured bottleneck is a per-part
+per-step loop already, and the mask is what stops perception becoming a second one.
 
 **Damage is readable on every part, not only on links.** Once creatures eat each other
 (§5A.3), being bitten is the most consequential thing that happens to a body cell, and a
@@ -627,6 +676,56 @@ a certain threshold, a swimbot starts looking for food. A swimbot with zero ener
 fluid model, §6.1 assemblies, §7 reproducibility, §11.2 exploit checks. The encoding does not
 care how selection happens. Everything built through Milestone 2 remains correct.
 
+### 5A.0b Generation zero: what the world starts with
+
+§4.1's `GenomeFactory.Random` builds creatures of two to five nodes that develop into three to
+sixteen parts, with branching, recursion, bilateral pairs and several joints. That was correct
+under exogenous fitness: a fitness function needs something to grade on the first evaluation,
+so the initial population has to be able to do the thing being graded.
+
+Under §5A nothing grades anything, and that argument disappears. Worse, it inverts: **a
+founder population with body plans we designed makes every later claim about morphology a
+claim about our initial conditions.** If bilateral symmetry is present at t=0, its appearance
+in the archive is not evidence that bilateral symmetry pays.
+
+**A founder is one cell, or one cell and a beating appendage.**
+
+| Founder | Parts | Can it move? |
+|---|---|---|
+| Blob | 1 body cell | No |
+| Flagellate | 1 body cell + 1 link | Yes — the link *is* the tail |
+
+Drawn half and half. A link is a full part with its own tissue, upkeep and shape, and it does
+not require a child, so one link hanging off one cell is a flagellum rather than an incomplete
+two-cell creature. Everything else — branching, symmetry, limbs, recursion, more than one
+strategy in one body — has to be discovered, priced, and kept because it paid.
+
+**Founders draw only from the earning cell types** (`Photosynthetic`, `Absorptive`,
+`Consumer`), weighted 2:1:1. `Structural` and `Link` acquire nothing, so a founder built from
+those alone has zero income against nonzero upkeep and starves with certainty in every world —
+compute spent to produce a corpse. Structure remains one mutation away; it is simply not where
+a lineage starts.
+
+**The half that cannot eat yet is the point.** At t=0 there is no nutrient in the water and no
+corpse to bite, so absorptive and consumer founders earn nothing and die. Their tissue becomes
+the first nutrient anything has ever had (§5A.6 returns tissue to the pool). **The doomed half
+of generation zero is the primordial soup**, and it is what makes the other two strategies mean
+something by generation two. Weighting photosynthesis double is not a claim that it is the best
+strategy — that is the world's to decide, and handing it over outright would make "plants came
+first" an arrangement rather than a finding. It is only the ratio that keeps generation zero
+from being entirely stillborn.
+
+**Nothing filters founders for viability.** `GenomeFactory.RandomViable` rejects genomes with
+no degrees of freedom, which every blob has. Under §5A stillness is a way of living rather than
+a defect: a photosynthetic blob paying its bills in the light is a plant, and refusing to spawn
+it would be an exogenous judgement about what deserves to exist — the exact thing this section
+removes.
+
+**Measured:** over 500 seeds, 52% blobs / 48% flagellates and 52.8% / 24.6% / 22.6% across the
+three strategies. A single founder node reaches 32 nodes and 16-part bodies within 2,000
+births under mutation alone (`FounderTests`), which is the load-bearing check: if founders are
+this small, complexity must be reachable from them or the world never becomes interesting.
+
 ### 5A.1 Cell types
 
 Energy acquisition is a property of a **part**, not of a creature. A species is therefore a
@@ -643,6 +742,43 @@ it.
 | **Absorptive** | Nutrient particles it intersects | Nutrients drift on the current, so this rewards being *where* food is |
 | **Consumer** | Tissue on contact — living or dead | See §5A.3. Works on carrion without perception, which is what makes it survivable early |
 | **Structural** | Nothing | Cheapest upkeep, but **not free** — see §5A.2 |
+| **Neural** | Nothing | Hosts neurons cheaply. Makes a *brain* a morphological trait — see below |
+
+**Why `Neural` exists, and it is this section's own argument turned on cognition.** The thesis
+above is that energy acquisition is a property of a part rather than of a creature, and that
+this is what makes trophic strategy a morphological trait the §4.1 graph already encodes. The
+identical argument applies to thinking. With neurons distributed uniformly across parts and
+`Genome.GlobalBrain` owned by no part at all, a brain has no volume, no location, and cannot be
+damaged — so **brain size and brain placement cannot evolve, because there is nowhere for a
+brain to be.** Cephalization, one of the most universal patterns in animal evolution, was
+structurally unreachable.
+
+`GlobalBrain` was also the one cost in §5A attached to no tissue: joules spent, nothing to bite.
+
+**Every cell hosts a small baseline of neurons; neural tissue makes them cheaper.** The
+baseline is a nerve net, which is what cnidarians have, and it exists to avoid a valley: a
+flagellate that needed neural tissue before its joint could be driven would require two
+mutations that are each useless alone, and populations do not cross those.
+
+**Neural tissue discounts rather than gates** — it does not cap how many neurons a part may
+carry, it reduces what they cost (§5A.2). Gating was rejected: it would couple genome
+*validity* to part size, and under §4.5's extinction-by-shrinking parts change size constantly,
+so a shrinking cell could invalidate a genome that was legal when it was written.
+
+The discount produces cephalization as an economic outcome rather than a rule. §4.3 requires a
+neuron to sit on the part whose joint it drives, and it reads that part's sensors — but neurons
+are cheaper where the neural tissue is. Motor neurons stay out at the muscles; everything else
+migrates. And because capacity follows volume while *latency* follows topology (§4.3 reaches a
+neighbour in one node per step), one large neural cell and several small ones of the same total
+volume behave differently:
+
+- **Centralised** — neurons reach each other in one step, but sit far from the sensors and
+  joints they serve.
+- **Distributed** — short paths to local sensors and joints, ganglia slow to reach each other.
+
+That is octopus against vertebrate, and it is a trade-off selection resolves rather than one we
+pick. *(Author's inference; no source in the corpus addresses neural tissue as an evolvable
+part type.)*
 
 **Why `Structural` exists.** Without a part type permitted to have no energy function, every
 part must pay for itself and a tail can never evolve: a fin pays only indirectly, through
@@ -839,23 +975,52 @@ deferred.
 
 ### 5A.9 Feasibility
 
-Spike 01 (§11.1) measured 128 actuated creatures at **1.945 ms/step**. At dt = 0.01 that is
-195 ms of compute per simulated second — **5× faster than real time with 128 creatures in the
-world**. Those figures exclude fluid drag, self-collision and brain evaluation, all of which
-now exist or are coming; applying a 3× penalty still leaves 128 creatures at ~1.7× real time,
-and roughly 500 at about half real time.
+~~Spike 01 (§11.1) measured 128 actuated creatures at 1.945 ms/step … applying a 3× penalty
+still leaves 128 creatures at ~1.7× real time, and roughly 500 at about half real time. …
+**Expensive:** creature count and DOF count. The wall is population, somewhere around
+500–1000, and it is physics rather than ecosystem bookkeeping.~~ — **superseded.** That was
+Spike 01's figure with a guessed penalty applied for drag and self-collision, both of which
+now exist. `ThroughputSurvey` measures the real configuration: self-collision on, §5.2 drag
+applied, mixed shapes, creatures tiled at 100 m.
 
-PhysX parallelises across solver islands, which is why per-creature cost fell to 0.28× going
-from 1 to 64 creatures. Creatures in open water are mostly far apart and stay separate
-islands, so that scaling largely survives; it degrades only where creatures touch, which here
+| creatures | ms/step | drag ms | physics ms | µs per creature | real time |
+|---|---|---|---|---|---|
+| 1 | 0.134 | 0.053 | 0.080 | 133.6 (1.00×) | 74.9× |
+| 32 | 1.870 | 1.353 | 0.518 | 58.4 (0.44×) | 5.35× |
+| 128 | 6.418 | 5.465 | 0.953 | 50.1 (0.38×) | 1.56× |
+| 256 | 12.772 | 11.013 | 1.759 | 49.9 (0.37×) | 0.78× |
+| 512 | 25.909 | 22.698 | 3.210 | 50.6 (0.38×) | 0.39× |
+
+The headline number survives almost exactly — 128 creatures at 1.56× real time against a
+predicted 1.7×. **The attribution does not, and it was backwards.**
+
+**The wall is §5.2's drag loop, not physics.** At 512 creatures drag is 88% of the step. Split
+per creature, PhysX falls from 0.080 ms to 0.0063 ms — **0.078×**, far better island scaling
+than the 0.28× claimed above — while the drag loop goes 0.053 → 0.0443 ms, essentially flat,
+as a single-threaded managed pass over every panel of every part must be.
+
+That is the better problem to have. Physics is a ceiling; our own loop is a to-do. Two levers
+exist and neither has been pulled, because at the population Milestone 2 needs there is no
+reason to: panels are regenerated from scratch every step though a part's local geometry never
+changes after development, and the loop is embarrassingly parallel across creatures. Neither
+changes a force, so both are deferred to Milestone 4, where the island model is what first
+makes population the binding constraint.
+
+Shape matters here in a way it does not elsewhere: the loop is linear in panel count, and a
+capsule emits 40 panels to a box's 24. A population drifting towards capsules gets slower for
+a reason no other measurement would show.
+
+PhysX parallelises across solver islands. Creatures in open water are mostly far apart and stay
+separate islands, so that scaling survives; it degrades only where creatures touch, which here
 means predation — rare and local.
 
 **Cheap:** nutrients as plain advected data with a spatial hash (never rigidbodies — that is
 the one trap, and would cost more than every creature combined); the current field; the light
-cycle; brain evaluation at a few hundred creatures.
+cycle; brain evaluation at a few hundred creatures. Physics, at any population tried.
 
-**Expensive:** creature count and DOF count. The wall is population, somewhere around 500–1000,
-and it is physics rather than ecosystem bookkeeping.
+**Expensive:** the drag loop, ahead of everything else. Real time holds to about **200
+creatures** as the code stands, and the ceiling moves with engineering rather than with
+hardware.
 
 ### 5A.10 Open parameters
 

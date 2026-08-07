@@ -37,6 +37,7 @@ namespace Evosim.Core
         public static readonly CellTypeRegistry Standard = new CellTypeRegistry(
             new StructuralCell(),
             new LinkCell(),
+            new NeuralCell(),
             new PhotosyntheticCell(),
             new AbsorptiveCell(),
             new ConsumerCell());

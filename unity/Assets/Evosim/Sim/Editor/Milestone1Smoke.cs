@@ -101,6 +101,63 @@ namespace Evosim.Sim.EditorTools
         }
 
         /// <summary>
+        /// Largest disagreement, in metres, between the collider PhysX will push and the size
+        /// development asked for — DESIGN.md §4.1.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Per shape rather than through a bounding box, because a bounding box is exactly what
+        /// would hide the failure this exists to catch. A sphere and a capsule both fit inside
+        /// the box a set of half-extents describes; comparing bounds would pass a creature whose
+        /// parts had all silently been built as boxes, which is the single most likely way for
+        /// the shape work to be wrong.
+        /// </para>
+        /// <para>
+        /// A missing collider of the expected type reports as a large error rather than throwing,
+        /// so the run names the seed instead of ending on a null reference.
+        /// </para>
+        /// </remarks>
+        private static float ColliderSizeError(ArticulationBody body, PhenotypePart expected)
+        {
+            Float3 h = expected.HalfExtents;
+
+            switch (expected.ShapeId)
+            {
+                case ShapeIds.Sphere:
+                {
+                    var collider = body.GetComponent<SphereCollider>();
+                    if (collider == null) return float.MaxValue;
+
+                    return Mathf.Abs(collider.radius - SphereShape.Radius(h));
+                }
+
+                case ShapeIds.Capsule:
+                {
+                    var collider = body.GetComponent<CapsuleCollider>();
+                    if (collider == null || collider.direction != 1) return float.MaxValue;
+
+                    float r = CapsuleShape.Radius(h);
+                    return Mathf.Max(
+                        Mathf.Abs(collider.radius - r),
+                        Mathf.Abs(collider.height - 2f * (CapsuleShape.HalfSpan(h) + r)));
+                }
+
+                default:
+                {
+                    var collider = body.GetComponent<BoxCollider>();
+                    if (collider == null) return float.MaxValue;
+
+                    Vector3 size = collider.size;
+                    return Mathf.Max(
+                        Mathf.Abs(size.x - 2f * Mathf.Abs(h.X)),
+                        Mathf.Max(
+                            Mathf.Abs(size.y - 2f * Mathf.Abs(h.Y)),
+                            Mathf.Abs(size.z - 2f * Mathf.Abs(h.Z))));
+                }
+            }
+        }
+
+        /// <summary>
         /// Confirms parts got a real lit shader. Under a render pipeline mismatch Unity
         /// substitutes the error shader and everything renders magenta — visible instantly on
         /// screen, invisible to a headless run, which is exactly why it is asserted here.
@@ -1275,13 +1332,7 @@ namespace Evosim.Sim.EditorTools
                     // Size lives on the collider, not the transform — see PhenotypeBuilder.
                     // Checking lossyScale here would pass trivially now that every part
                     // transform is unit scale, so check the thing physics actually uses.
-                    Vector3 expectedSize = (expected.HalfExtents * 2f).ToVector3();
-                    Vector3 actualSize = creature.Bodies[b].GetComponent<BoxCollider>().size;
-                    worstSize = Mathf.Max(worstSize, Mathf.Max(
-                        Mathf.Abs(actualSize.x - expectedSize.x),
-                        Mathf.Max(
-                            Mathf.Abs(actualSize.y - expectedSize.y),
-                            Mathf.Abs(actualSize.z - expectedSize.z))));
+                    worstSize = Mathf.Max(worstSize, ColliderSizeError(creature.Bodies[b], expected));
                 }
 
                 if (worstPos > GeometryTolerance || worstSize > GeometryTolerance)

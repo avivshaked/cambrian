@@ -263,7 +263,7 @@ hypotheses because that is what they are.
 - The tests that pin all of the above — [`DevelopmentTests.cs`](../src/Evosim.Core.Tests/DevelopmentTests.cs)
 - Specification, with citations and exact caps — [`DESIGN.md`](../DESIGN.md) §4
 
-Development produces a `Phenotype`: a tree of boxes with joints, positions and orientations,
-and no physics engine anywhere near it. Turning that into something that can actually move is
+Development produces a `Phenotype`: a tree of parts with joints, positions, orientations and
+shapes, and no physics engine anywhere near it. Turning that into something that can actually move is
 a separate problem, and it is where the geometry is easy to get quietly wrong — the next
 piece.

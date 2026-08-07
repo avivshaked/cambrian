@@ -125,6 +125,15 @@ namespace Evosim.Core
         /// <summary>Chance a node's recursion depth changes by one.</summary>
         public float RecursiveLimitChance { get; set; } = 0.03f;
 
+        /// <summary>Chance a part changes its geometry — §4.1.</summary>
+        /// <remarks>
+        /// Rarer than a scalar tweak and commoner than a cell-type change. Shape is a large,
+        /// discontinuous jump — a flat paddle becoming a ball loses every bit of thrust it was
+        /// producing — so it should not be routine; but unlike cell type it does not change what
+        /// a lineage <i>is</i>, only how it is built, so it need not be as scarce.
+        /// </remarks>
+        public float ShapeChance { get; set; } = 0.02f;
+
         /// <summary>Chance a part changes what it is made of — §5A.3.</summary>
         /// <remarks>
         /// <b>Deliberately the rarest operator here, and it has to be.</b> It is one of the two

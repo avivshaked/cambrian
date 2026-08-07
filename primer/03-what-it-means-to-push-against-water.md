@@ -30,23 +30,23 @@ oscillates in place forever.
 [`DESIGN.md`](../DESIGN.md) §5.2 puts it more bluntly than a specification usually puts
 anything: *"Three lines of code; decides whether the project works."*
 
-## Quadratic drag, per face
+## Quadratic drag, per panel
 
-The model is the standard one, applied to each face of each box:
+The model is the standard one, applied to each small patch of a part's surface:
 
 ```
-F = -½ · ρ · Cd · A · v⊥²  ... along the face normal
+F = -½ · ρ · Cd · A · v⊥²  ... along the patch normal
 ```
 
-Density, a drag coefficient, the face's area, and the square of the speed at which that face
-is moving *along its own normal*. Only faces advancing into the water contribute — pressure
+Density, a drag coefficient, the patch's area, and the square of the speed at which that patch
+is moving *along its own normal*. Only patches advancing into the water contribute — pressure
 drag acts on leading surfaces, and counting trailing ones would both double the force and
 cancel the asymmetry the whole thing depends on.
 
-Summing per face rather than using one whole-body number is what makes the broadside/edge-on
-difference automatic. A thin plate presents a large face along one axis and a sliver along
-the others; the same formula gives ten times the force in one direction as the other, without
-anything special being written for it.
+Summing over the surface rather than using one whole-body number is what makes the
+broadside/edge-on difference automatic. A thin plate presents a large area along one axis and
+a sliver along the others; the same formula gives ten times the force in one direction as the
+other, without anything special being written for it.
 
 [C18 §2.2, p.5] arrived at the same scheme independently — a *"simplified mesh-based
 quadratic drag model"* projecting each facet's speed along its normal, with `Cd = 1.5`. That
@@ -69,7 +69,7 @@ Now recall what a limb does. A limb attached to a joint rotates. That is the ent
 paddle is a surface turning about its root, and under centre-sampling most of its interaction
 with the water simply does not exist.
 
-The fix is to integrate over each face instead of sampling a point — divide it into panels
+The fix is to integrate over the surface instead of sampling a point — divide it into panels
 and sum. Points away from the rotation axis *do* have normal-direction velocity, and they
 produce the torque that resists a spinning limb. Two panels per axis, so four per face and
 twenty-four per box, is the cheapest version that works.
@@ -82,6 +82,43 @@ var singleSample = new FluidConfig { PanelsPerAxis = 1 };
 FluidModel.BoxDrag(Plate, Quat.Identity, Float3.Zero, spin, singleSample, out _, out Float3 blind);
 Fixtures.AssertClose(Float3.Zero, blind, 1e-4f);
 ```
+
+## The shape of a part decides what it can do
+
+Parts are boxes, spheres or capsules. That sounds like variety for its own sake, and it is not:
+once drag is summed over a surface, the shape of that surface *is* the set of strokes available
+to the creature.
+
+Measure it. Take one set of half-extents — flat, 1.2 m across and 0.1 m thick — and push each
+shape through water broadside, then edge-on:
+
+| shape | broadside | edge-on | ratio |
+|---|---|---|---|
+| box | 1080 N | 90 N | **12×** |
+| capsule | 455 N | 344.9 N | 1.32× |
+| sphere | 205.8 N | 203.6 N | 1.01× |
+
+The box is the paddle. It is the only one of the three that can be *flat* — a sphere's radius
+is one number and a capsule is round in cross-section — and flatness is where a factor of
+twelve comes from.
+
+And the sphere is the interesting entry, because 1.01× is not an approximation of a small
+effect. It is the statement that **a sphere cannot paddle at all.** Every orientation presents
+the same area, so there is no fast stroke and slow return to be had from turning it; sweeping
+one sideways produces drag along its path and nothing perpendicular to it. Whatever a sphere is
+for — a head, a float, a body that carries other parts — it is not for thrust.
+
+That is worth stating out loud because it is a prediction the model makes rather than a
+behaviour anyone wrote. Nothing in the code says "spheres do not swim". It falls out of
+summing pressure over a surface, in the same way the broadside/edge-on difference does. A test
+asserts it, so if it ever stops being true, something upstream has broken.
+
+The capsule sits in between and is the useful middle: round in cross-section like a sphere, but
+elongated, so it has exactly one axis of anisotropy. Broadside it is a long side; end-on it is
+a small circle. That is a limb.
+
+None of which prejudges what evolution should build out of them. It only means the three shapes
+are genuinely different offers, rather than three ways of drawing the same part.
 
 ## The check that matters more than any of this
 
@@ -156,39 +193,62 @@ hidden.
 ## What it looks like
 
 Twelve random genomes, driven by a phase-offset sine wave, no evolution whatsoever, measured
-over eight seconds after a second of settling:
+over eight seconds after a second of settling. Six of them:
 
-| seed | parts | DOF | displacement | speed |
-|---|---|---|---|---|
-| 3 | 3 | 6 | 0.72 m | 0.09 m/s |
-| 7 | 5 | 8 | 0.79 m | 0.10 m/s |
-| 9 | 4 | 9 | 0.62 m | 0.08 m/s |
-| 5 | 3 | 2 | 0.06 m | 0.01 m/s |
-| 11 | 7 | 6 | 0.07 m | 0.01 m/s |
+| seed | parts | DOF | displacement | speed | J per metre |
+|---|---|---|---|---|---|
+| 1 | 6 | 2 | 0.787 m | 0.098 m/s | 5,149 |
+| 9 | 3 | 6 | 0.687 m | 0.086 m/s | 6,034 |
+| 3 | 3 | 3 | 0.476 m | 0.059 m/s | 6,845 |
+| 12 | 3 | 2 | 0.391 m | 0.049 m/s | 4,907 |
+| 5 | 5 | 4 | 0.014 m | 0.002 m/s | 1,720 |
+| 8 | 3 | 2 | 0.000 m | 0.000 m/s | — |
 
 Nobody designed any of these and nothing selected them. The spread is the interesting part:
-the best moves more than ten times as far as the worst, on the same controller and the same
-physics.
+the best travels fifty times as far as the worst that moves at all, on the same controller and
+the same physics. One does not move.
 
-That spread is the raw material a search needs. Fitness is now a real quantity —
-displacement of the centre of mass, [`DESIGN.md`](../DESIGN.md) §5.5 — rather than a number
-that reflected how much torque happened to be applied against nothing.
+That spread is the raw material a search needs.
+
+The last column is a warning label as much as a measurement. [C18 §3, p.17] makes the point
+that energy alone says nothing without a performance level to divide it by — and here is why:
+seed 5 is the most efficient creature in the table at 1,720 joules per metre, and it is also
+the second-worst. It barely moves, so it barely spends. **A creature that does nothing is
+perfectly efficient.** Seed 8, which does not move at all, cannot be scored on this axis
+without dividing by zero, which is the honest answer rather than an inconvenience.
+
+An earlier draft of this piece reported the same experiment without the energy column, and
+without knowing that most of what these creatures spend is destroyed against their own joint
+limits rather than delivered to the water. Both of those are recent
+([logbook 0008](../logbook/0008-the-energy-audit.md)), and they are the difference between a
+table that looks like a result and one that is.
 
 ## Sources
 
 | Key | Used here for |
 |---|---|
-| `[C18]` | The mesh-based quadratic drag scheme and `Cd = 1.5`; neutral buoyancy via zero gravity; added mass as the term whose absence precludes fish and squid and collapses morphological variety |
+| `[C18]` | The mesh-based quadratic drag scheme and `Cd = 1.5`; neutral buoyancy via zero gravity; added mass as the term whose absence precludes fish and squid and collapses morphological variety; energy meaning nothing without a performance level to divide it by |
 | `[U07]` | Per-part reaction-force models disagreeing with hydrodynamics on direction of travel, and a published search exploiting that |
 | `[K12]` | Water as drag per part with gravity disabled |
 
-**Mine, not the literature's:** the framing of asymmetry as "the whole trick", and the
-argument that physics-as-strategy-space explains why a simplified model costs variety rather
-than only accuracy. The second is a reading of [C18]'s result, not a claim [C18] makes.
+**Mine, not the literature's:**
+
+- The framing of asymmetry as "the whole trick".
+- The argument that physics-as-strategy-space explains why a simplified model costs variety
+  rather than only accuracy. This is a reading of [C18]'s result, not a claim [C18] makes.
+- **That a sphere cannot paddle.** No source says this; it is a property of *this*
+  implementation, measured in the table above and asserted by a test. It follows from summing
+  pressure over an isotropic surface, and it would not survive a fluid model that captured
+  vortex shedding — which, per [C18 §4, p.28], this one does not.
+- The reading of "a creature that does nothing is perfectly efficient" as the reason the
+  per-metre column is the one to look at. [C18] makes the general point about energy needing a
+  performance level; the illustration from seed 5 is ours.
 
 ## Where it is
 
 - [`FluidModel.cs`](../src/Evosim.Core/Environment/FluidModel.cs) — the force calculation, no engine required
+- [`PartShape.cs`](../src/Evosim.Core/Shapes/PartShape.cs) and [`StandardShapes.cs`](../src/Evosim.Core/Shapes/StandardShapes.cs) — the three shapes and the panels each presents
 - [`FluidModelTests.cs`](../src/Evosim.Core.Tests/FluidModelTests.cs) — including the energy law
+- [`ShapeTests.cs`](../src/Evosim.Core.Tests/ShapeTests.cs) — including the isotropy and flat-paddle measurements above
 - [`FluidEnvironment.cs`](../unity/Assets/Evosim/Sim/FluidEnvironment.cs) — applying it per step
 - [`DESIGN.md`](../DESIGN.md) §5 — the specification, and §5.3 on how this model has already been exploited in print

@@ -10,6 +10,7 @@ namespace Evosim.Core
     {
         public const string Structural = "structural";
         public const string Link = "link";
+        public const string Neural = "neural";
         public const string Photosynthetic = "photosynthetic";
         public const string Absorptive = "absorptive";
         public const string Consumer = "consumer";
@@ -35,6 +36,9 @@ namespace Evosim.Core
 
         public override string Id => CellTypeIds.Structural;
         public override float Acquire(in CellContext context) => 0f;
+
+        /// <summary>Bone white — inert tissue, and the reference the others read against.</summary>
+        public override Float3 InspectionColour => new Float3(0.86f, 0.84f, 0.78f);
     }
 
     /// <summary>
@@ -102,6 +106,9 @@ namespace Evosim.Core
         public override bool AllowsJoint => true;
         public override float Acquire(in CellContext context) => 0f;
 
+        /// <summary>Amber — muscle. The only type that can move, so it should read at a glance.</summary>
+        public override Float3 InspectionColour => new Float3(0.95f, 0.55f, 0.15f);
+
         public override void WriteParameters(Json.Writer writer) =>
             writer.Field("idleWattsPerNewtonMetre", IdleWattsPerNewtonMetre);
 
@@ -115,6 +122,103 @@ namespace Evosim.Core
                 CultureInfo.InvariantCulture,
                 "{0}:upkeep={1:R},joint={2},idle={3:R}",
                 Id, UpkeepWattsPerCubicMetre, AllowsJoint, IdleWattsPerNewtonMetre);
+    }
+
+    /// <summary>
+    /// Tissue that makes thinking cheap — DESIGN.md §5A.1, and the reason a head can evolve.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why it is a cell type and not a field on the creature.</b> §5A.1's thesis is that
+    /// energy acquisition is a property of a <i>part</i>, and that this is what makes trophic
+    /// strategy a morphological trait the §4.1 graph already encodes. The identical argument
+    /// applies to cognition: with neurons spread uniformly over parts and a global brain owned by
+    /// nobody, a brain has no volume, no place and nothing that can be bitten — so brain size and
+    /// brain placement cannot evolve, because there is nowhere for a brain to be. Cephalization,
+    /// one of the most universal patterns in animal evolution, was unreachable by construction.
+    /// </para>
+    /// <para>
+    /// <b>It earns nothing, and it is not cheap.</b> Upkeep sits just under a consumer's: real
+    /// nervous tissue is among the most metabolically expensive an animal carries, and a brain
+    /// that cost little would grow without limit for the same reason a free part would (§5A.1).
+    /// </para>
+    /// <para>
+    /// <b>Growing more than you use is waste.</b> Tissue past what
+    /// <see cref="NeuronsSupportedPerCubicMetre"/> needs to cover the neurons actually present
+    /// discounts nothing further and still pays upkeep, so there is an optimum size rather than a
+    /// ceiling to press against. That is the shape a cost should have: pressure from both
+    /// directions, no wall.
+    /// </para>
+    /// </remarks>
+    public sealed class NeuralCell : CellType
+    {
+        /// <summary>How many neurons a cubic metre of this tissue supports at the discount.</summary>
+        /// <remarks>
+        /// ⚠ Unmeasured (§5A.10), and it sets how large a brain has to be before it pays. Too
+        /// high and neural tissue is free capacity; too low and no body can afford a brain at all.
+        /// </remarks>
+        public float NeuronsSupportedPerCubicMetre { get; }
+
+        /// <summary>What a supported neuron costs, as a fraction of the standard rate.</summary>
+        public float DiscountedCostFraction { get; }
+
+        public NeuralCell(
+            float neuronsSupportedPerCubicMetre = 400f,
+            float discountedCostFraction = 0.2f,
+            float upkeepWattsPerCubicMetre = 5f)
+            : base(upkeepWattsPerCubicMetre)
+        {
+            if (!(neuronsSupportedPerCubicMetre > 0f))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(neuronsSupportedPerCubicMetre), neuronsSupportedPerCubicMetre,
+                    "Neural tissue that supports no neurons is upkeep with no function.");
+            }
+
+            if (!(discountedCostFraction >= 0f) || discountedCostFraction >= 1f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(discountedCostFraction), discountedCostFraction,
+                    "Must be in [0, 1). At 1 the tissue discounts nothing and is dead weight; " +
+                    "above 1 a brain would make thinking more expensive than having no brain.");
+            }
+
+            NeuronsSupportedPerCubicMetre = neuronsSupportedPerCubicMetre;
+            DiscountedCostFraction = discountedCostFraction;
+        }
+
+        public override string Id => CellTypeIds.Neural;
+        public override float Acquire(in CellContext context) => 0f;
+
+        /// <summary>Violet — nervous tissue, and distinct from every other type at a glance.</summary>
+        public override Float3 InspectionColour => new Float3(0.60f, 0.35f, 0.85f);
+
+        /// <remarks>
+        /// Blended rather than switched: neurons up to what the tissue supports pay the discount
+        /// and the rest pay full price, so the return on a marginal cubic metre falls smoothly to
+        /// zero instead of stepping. A step would make brain size a threshold to find rather than
+        /// a gradient to climb, and §2's whole concern is that this search is bad at thresholds.
+        /// </remarks>
+        public override float NeuronCostMultiplier(int neuronCount, float volume)
+        {
+            if (neuronCount <= 0) return 1f;
+
+            float supported = Math.Max(0f, volume) * NeuronsSupportedPerCubicMetre;
+            if (supported >= neuronCount) return DiscountedCostFraction;
+
+            float share = supported / neuronCount;
+            return share * DiscountedCostFraction + (1f - share);
+        }
+
+        public override void WriteParameters(Json.Writer writer) => writer
+            .Field("neuronsSupportedPerCubicMetre", NeuronsSupportedPerCubicMetre)
+            .Field("discountedCostFraction", DiscountedCostFraction);
+
+        public override string HashContribution() =>
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}:upkeep={1:R},supported={2:R},discount={3:R}",
+                Id, UpkeepWattsPerCubicMetre, NeuronsSupportedPerCubicMetre, DiscountedCostFraction);
     }
 
     /// <summary>
@@ -146,6 +250,9 @@ namespace Evosim.Core
         }
 
         public override string Id => CellTypeIds.Photosynthetic;
+
+        /// <summary>Green, for the obvious reason.</summary>
+        public override Float3 InspectionColour => new Float3(0.25f, 0.72f, 0.30f);
 
         public override float Acquire(in CellContext context) =>
             Math.Max(0f, context.Irradiance) * Math.Max(0f, context.LitArea) *
@@ -188,6 +295,9 @@ namespace Evosim.Core
         }
 
         public override string Id => CellTypeIds.Absorptive;
+
+        /// <summary>Cyan — it feeds on what the water carries, so it reads as the water's own.</summary>
+        public override Float3 InspectionColour => new Float3(0.20f, 0.65f, 0.85f);
 
         public override float Acquire(in CellContext context) =>
             Math.Max(0f, context.NutrientDensity) * ClearanceRate *
@@ -237,6 +347,10 @@ namespace Evosim.Core
         /// <summary>Fraction kept when feeding on another consumer: contested, so lowest.</summary>
         public float PredationYield { get; }
 
+        /// <param name="biteRate">Joules per second of contact, per cubic metre, before yield.</param>
+        /// <param name="upkeepWattsPerCubicMetre">Standing cost — the highest of the five (§5A.3).</param>
+        /// <param name="grazingYield">Fraction kept when feeding on living non-consumer tissue.</param>
+        /// <param name="predationYield">Fraction kept when feeding on another consumer.</param>
         /// <param name="carrionYield">
         /// Must stay the largest of the three, and that ordering is load-bearing rather than
         /// cosmetic. It is what lets a consumer cell pay its way before perception exists, and
@@ -283,6 +397,15 @@ namespace Evosim.Core
         }
 
         public override string Id => CellTypeIds.Consumer;
+
+        /// <summary>
+        /// Red — a mouth. Paired with green it is the worst case for red-green colour blindness,
+        /// which is a real cost accepted for a real reason: plant-green and mouth-red are the two
+        /// strongest colour intuitions available, and the alternative is a palette nobody can
+        /// read without a legend. The overlay prints a legend regardless, and the two also differ
+        /// in brightness, so hue is not the only channel carrying the distinction.
+        /// </summary>
+        public override Float3 InspectionColour => new Float3(0.85f, 0.24f, 0.22f);
 
         /// <summary>Fraction of what is taken that the feeder keeps — DESIGN.md §5A.3.</summary>
         /// <remarks>

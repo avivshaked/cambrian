@@ -29,6 +29,11 @@ namespace Evosim.Core
                 [CellTypeIds.Link] = (n, upkeep) =>
                     new LinkCell(n["idleWattsPerNewtonMetre"].AsFloat(), upkeep),
 
+                [CellTypeIds.Neural] = (n, upkeep) => new NeuralCell(
+                    n["neuronsSupportedPerCubicMetre"].AsFloat(),
+                    n["discountedCostFraction"].AsFloat(),
+                    upkeep),
+
                 [CellTypeIds.Photosynthetic] = (n, upkeep) =>
                     new PhotosyntheticCell(n["efficiency"].AsFloat(), upkeep),
 

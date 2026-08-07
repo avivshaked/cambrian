@@ -69,3 +69,5 @@ are the ones most likely to go unwritten.
 | [0006](0006-boxes-inside-boxes.md) | 2026-08-02 | Boxes inside boxes |
 | [0007](0007-the-creature-that-was-paid-to-jam.md) | 2026-08-02 | The creature that was paid to jam |
 | [0008](0008-the-energy-audit.md) | 2026-08-04 | What an energy audit found |
+| [0009](0009-when-a-part-stopped-being-a-box.md) | 2026-08-07 | When a part stopped being a box |
+| [0010](0010-the-world-starts-with-almost-nothing.md) | 2026-08-07 | The world starts with almost nothing |

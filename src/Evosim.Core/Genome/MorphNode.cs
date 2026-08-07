@@ -25,6 +25,14 @@ namespace Evosim.Core
         /// </remarks>
         public string CellTypeId { get; set; } = CellTypeIds.Structural;
 
+        /// <summary>Geometry of the parts grown from this node — <see cref="PartShape.Id"/>.</summary>
+        /// <remarks>
+        /// Independent of <see cref="CellTypeId"/>: what a part is made of and what shape it is
+        /// are separate traits, so a photosynthetic sheet and a photosynthetic ball are both
+        /// reachable and evolution picks between them on their merits.
+        /// </remarks>
+        public string ShapeId { get; set; } = ShapeIds.Box;
+
         /// <summary>
         /// Joint connecting a part grown from this node to its parent. Ignored at the root,
         /// which has no parent. Mutable, with limits resampled to the new DOF count (§4.1).
@@ -69,6 +77,7 @@ namespace Evosim.Core
             {
                 Dimensions = Dimensions,
                 CellTypeId = CellTypeId,
+                ShapeId = ShapeId,
                 JointType = JointType,
                 JointLimits = (Float2[])JointLimits.Clone(),
                 Power = Power,

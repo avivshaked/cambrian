@@ -104,14 +104,35 @@ namespace Evosim.Core
             Upkeep(new CellContext(seconds, volume));
 
         /// <summary>
-        /// Everything about this type that changes behaviour, for the config hash (§7).
+        /// What this part's neurons cost, as a multiple of the per-neuron rate in
+        /// <see cref="RunConfig.NeuralCostPerNeuronWatts"/> — DESIGN.md §5A.1.
         /// </summary>
+        /// <param name="neuronCount">Neurons hosted on this part.</param>
+        /// <param name="volume">The part's volume, cubic metres.</param>
         /// <remarks>
-        /// Override when a subclass adds tunable parameters. The default covers the id and the
-        /// upkeep only; a type whose feeding rate is configurable and does not extend this
-        /// makes two materially different runs hash identically, and §7's whole purpose is to
-        /// <i>detect</i> that.
+        /// <para>
+        /// <b>1 for everything except <see cref="NeuralCell"/>.</b> Every cell hosts neurons at
+        /// full price — a nerve net, which is what a creature without a brain has and what a
+        /// cnidarian has for real. Neural tissue does not grant permission to think, it makes
+        /// thinking cheaper.
+        /// </para>
+        /// <para>
+        /// <b>Discount rather than a cap, and the difference is not stylistic.</b> Capping
+        /// neurons by tissue volume would couple genome <i>validity</i> to part size — and under
+        /// §4.5 parts change size constantly, since extinction-by-shrinking is the whole removal
+        /// mechanism. A cell that shrank would invalidate a genome that was legal when it was
+        /// written, and a genome whose legality depends on a mutation elsewhere in it is one that
+        /// cannot be reasoned about locally.
+        /// </para>
+        /// <para>
+        /// The discount is also what makes cephalization an economic outcome instead of a rule.
+        /// §4.3 requires a neuron to sit on the part whose joint it drives, so motor neurons
+        /// cannot leave the muscles — but everything else is cheaper where the tissue is, and so
+        /// it concentrates. Nothing anywhere says "grow a head".
+        /// </para>
         /// </remarks>
+        public virtual float NeuronCostMultiplier(int neuronCount, float volume) => 1f;
+
         /// <summary>
         /// Writes this type's own tunable parameters into an already-open JSON object — §9.
         /// </summary>
@@ -123,6 +144,41 @@ namespace Evosim.Core
         /// </remarks>
         public virtual void WriteParameters(Json.Writer writer) { }
 
+        /// <summary>
+        /// False colour for the cell-type view, as linear RGB in [0,1] — an instrument, not
+        /// an appearance.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>This is not §5A.5's colour, and the two must never be merged.</b> §5A.5 makes part
+        /// colour an <i>evolvable genome field</i>: inert until creatures can see, and then a
+        /// channel for camouflage, warning colouration, mimicry and display. That is a trait a
+        /// creature <i>has</i>. This is a label for what a part <i>does</i>, chosen by us and
+        /// heritable by nobody.
+        /// </para>
+        /// <para>
+        /// Painting parts by cell type in the ordinary view would spend the exact visual channel
+        /// that trait needs, and would then have to be taken away again — so the viewer offers
+        /// them as separate modes and this one is never the creature's natural appearance.
+        /// </para>
+        /// <para>
+        /// Deliberately not a constructor argument and deliberately absent from
+        /// <see cref="HashContribution"/>: it cannot change a result, so a run that differs only
+        /// in it is the same run. A tunable that reached the hash would make two identical
+        /// experiments look different, which is the mirror of the fault §7 exists to catch.
+        /// </para>
+        /// </remarks>
+        public virtual Float3 InspectionColour => new Float3(0.80f, 0.80f, 0.82f);
+
+        /// <summary>
+        /// Everything about this type that changes behaviour, for the config hash (§7).
+        /// </summary>
+        /// <remarks>
+        /// Override when a subclass adds tunable parameters. The default covers the id and the
+        /// upkeep only; a type whose feeding rate is configurable and does not extend this
+        /// makes two materially different runs hash identically, and §7's whole purpose is to
+        /// <i>detect</i> that.
+        /// </remarks>
         public virtual string HashContribution() =>
             string.Format(
                 CultureInfo.InvariantCulture, "{0}:upkeep={1:R},joint={2}", Id, UpkeepWattsPerCubicMetre, AllowsJoint);

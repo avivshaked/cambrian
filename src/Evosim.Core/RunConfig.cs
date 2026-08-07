@@ -38,6 +38,13 @@ namespace Evosim.Core
         /// <summary>Caps applied while growing a genome into a body — §4.2.</summary>
         public DevelopmentLimits Development { get; set; } = DevelopmentLimits.Default;
 
+        /// <summary>The geometries available to parts — §4.1.</summary>
+        /// <remarks>
+        /// Ordered, and the order is hashed: shape mutation picks by an RNG draw, so a registry
+        /// rebuilt in a different order yields different shapes from the same seed.
+        /// </remarks>
+        public PartShapeRegistry Shapes { get; set; } = PartShapeRegistry.Standard;
+
         /// <summary>How often each variation operator fires — §4.5.</summary>
         public MutationRates Mutation { get; set; } = MutationRates.Default;
 
@@ -140,6 +147,7 @@ namespace Evosim.Core
             var c = CultureInfo.InvariantCulture;
 
             sb.Append(CellTypes.HashContribution()).Append('|');
+            sb.Append(Shapes.HashContribution()).Append('|');
             sb.Append(Fluid.Density.ToString("R", c)).Append(',');
             sb.Append(Fluid.DragCoefficient.ToString("R", c)).Append(',');
             sb.Append(Fluid.AddedMassCoefficient.ToString("R", c)).Append(',');
@@ -192,6 +200,7 @@ namespace Evosim.Core
             sb.Append(m.FlagChance.ToString("R", c)).Append(',');
             sb.Append(m.RecursiveLimitChance.ToString("R", c)).Append(',');
             sb.Append(m.CellTypeChance.ToString("R", c)).Append(',');
+            sb.Append(m.ShapeChance.ToString("R", c)).Append(',');
             sb.Append(m.BroodSizeChance.ToString("R", c)).Append(',');
             sb.Append(m.EndowmentChance.ToString("R", c)).Append(',');
             sb.Append(m.MaxBroodSize).Append(',');
@@ -226,10 +235,15 @@ namespace Evosim.Core
             sb.Append(g.MinBroodSize).Append(',').Append(g.MaxBroodSize).Append(',');
             sb.Append(g.MinOffspringEndowment.ToString("R", c)).Append(',');
             sb.Append(g.MaxOffspringEndowment.ToString("R", c)).Append(',');
+            sb.Append(g.FounderTailChance.ToString("R", c)).Append(',');
 
             for (int i = 0; i < g.JointTypes.Length; i++) sb.Append((int)g.JointTypes[i]).Append('.');
             sb.Append(',');
             for (int i = 0; i < g.BodyCellTypes.Length; i++) sb.Append(g.BodyCellTypes[i]).Append('.');
+            sb.Append(',');
+            for (int i = 0; i < g.ShapeIdChoices.Length; i++) sb.Append(g.ShapeIdChoices[i]).Append('.');
+            sb.Append(',');
+            for (int i = 0; i < g.FounderCellTypes.Length; i++) sb.Append(g.FounderCellTypes[i]).Append('.');
         }
 
         public override string ToString() => $"RunConfig({Hash()})";

@@ -16,6 +16,14 @@ namespace Evosim.Sim
         /// <summary>Index of the first actuated DOF for each body, or -1 where the joint is fixed.</summary>
         public int[] DofOffset { get; internal set; }
 
+        /// <summary>Every renderer in the creature, and the part each one belongs to.</summary>
+        /// <remarks>
+        /// Kept so the cell-type view can be toggled without rebuilding — a capsule draws with
+        /// three renderers, so there is no one-to-one mapping to recover afterwards.
+        /// </remarks>
+        public MeshRenderer[] Renderers { get; internal set; }
+        public int[] RendererPart { get; internal set; }
+
         /// <summary>Total actuated degrees of freedom across the creature.</summary>
         public int TotalDof { get; internal set; }
 
@@ -69,12 +77,23 @@ namespace Evosim.Sim
         /// </summary>
         public const float DensityKgPerM3 = 1000f;
 
-        public static CreatureInstance Build(Phenotype phenotype, Vector3 origin, Transform parent = null)
+        /// <param name="shapes">
+        /// Geometry each part's shape id resolves against. Must be the same registry the
+        /// phenotype was developed with and the same one the fluid model is given, since all
+        /// three have to agree on how large a part is.
+        /// </param>
+        public static CreatureInstance Build(
+            Phenotype phenotype,
+            Vector3 origin,
+            Transform parent = null,
+            PartShapeRegistry shapes = null)
         {
             if (phenotype == null || phenotype.PartCount == 0)
             {
                 throw new System.ArgumentException("Cannot build an empty phenotype.", nameof(phenotype));
             }
+
+            shapes = shapes ?? PartShapeRegistry.Standard;
 
             var root = new GameObject("Creature");
             root.transform.SetParent(parent, worldPositionStays: false);
@@ -84,6 +103,9 @@ namespace Evosim.Sim
             var transforms = new Transform[phenotype.PartCount];
             var dofOffset = new int[phenotype.PartCount];
             int dofCursor = 0;
+
+            _renderers.Clear();
+            _rendererPart.Clear();
 
             for (int i = 0; i < phenotype.PartCount; i++)
             {
@@ -117,9 +139,8 @@ namespace Evosim.Sim
                         inverseParent * part.Rotation.ToQuaternion();
                 }
 
-                Vector3 fullExtents = (part.HalfExtents * 2f).ToVector3();
-                go.AddComponent<BoxCollider>().size = fullExtents;
-                AddVisual(go.transform, fullExtents);
+                _partBeingBuilt = i;
+                AddColliderAndVisual(go, part, shapes.Resolve(part.ShapeId));
 
                 transforms[i] = go.transform;
 
@@ -165,42 +186,188 @@ namespace Evosim.Sim
                 Phenotype = phenotype,
                 DofOffset = dofOffset,
                 TotalDof = dofCursor,
+                Renderers = _renderers.ToArray(),
+                RendererPart = _rendererPart.ToArray(),
             };
         }
 
-        private static Mesh _cubeMesh;
-        private static Material _partMaterial;
+        /// <summary>
+        /// Paints each part by what it is made of, or restores the plain look — DESIGN.md §5A.1.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A view mode, not the creature's appearance, and the distinction is load-bearing.</b>
+        /// §5A.5 makes part colour an <i>evolvable genome field</i> — inert until creatures can
+        /// see, and then a channel for camouflage, warning colouration, mimicry and display.
+        /// Painting parts by cell type in the ordinary view would spend exactly the channel that
+        /// trait needs, and would have to be taken away again when it lands. So it is offered as
+        /// a mode that can be turned off, and it is never what a creature looks like.
+        /// </para>
+        /// <para>
+        /// Applied through a <see cref="MaterialPropertyBlock"/> so every part still shares one
+        /// material and one draw-call batch. Instancing a material per part would break batching
+        /// for a debug view, which is the wrong trade at any population worth watching.
+        /// </para>
+        /// </remarks>
+        public static void ApplyCellTypeColours(
+            CreatureInstance creature, bool on, CellTypeRegistry cellTypes = null)
+        {
+            if (creature?.Renderers == null) return;
+            cellTypes = cellTypes ?? CellTypeRegistry.Standard;
+
+            var block = new MaterialPropertyBlock();
+
+            for (int i = 0; i < creature.Renderers.Length; i++)
+            {
+                MeshRenderer renderer = creature.Renderers[i];
+                if (renderer == null) continue;
+
+                Color colour = Color.white;
+                if (on)
+                {
+                    Float3 rgb = cellTypes
+                        .Resolve(creature.Phenotype.Parts[creature.RendererPart[i]].CellTypeId)
+                        .InspectionColour;
+
+                    colour = new Color(rgb.X, rgb.Y, rgb.Z, 1f);
+                }
+
+                renderer.GetPropertyBlock(block);
+
+                // URP Lit reads _BaseColor and the built-in Standard shader reads _Color. Setting
+                // both costs nothing and means the view works whichever pipeline resolved.
+                block.SetColor(BaseColorId, colour);
+                block.SetColor(ColorId, colour);
+                renderer.SetPropertyBlock(block);
+            }
+        }
+
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId = Shader.PropertyToID("_Color");
+
+        private static readonly List<MeshRenderer> _renderers = new List<MeshRenderer>();
+        private static readonly List<int> _rendererPart = new List<int>();
+        private static int _partBeingBuilt;
 
         /// <summary>
-        /// Adds the renderable box as a CHILD of the body transform, so its scale never
-        /// reaches the transform PhysX positions the link by.
+        /// Gives the part a collider matching its shape, and a renderable child that draws the
+        /// same solid — DESIGN.md §4.1.
         /// </summary>
-        private static void AddVisual(Transform parent, Vector3 fullExtents)
+        /// <remarks>
+        /// <para>
+        /// Every dimension here comes from the <see cref="PartShape"/> rather than from a formula
+        /// repeated locally. Three things have to agree about how large a part is — the collider
+        /// PhysX pushes with, the mesh a viewer sees, and the panels
+        /// <see cref="FluidModel"/> pushes on — and only the first two are visible. A collider
+        /// sized from an independently-derived radius that drifted would give a creature whose
+        /// body and whose hydrodynamics were different objects, and nothing would report it.
+        /// </para>
+        /// <para>
+        /// The visual is a CHILD, so its scale never reaches the transform PhysX positions the
+        /// link by — see the note in <see cref="Build"/> on shear.
+        /// </para>
+        /// </remarks>
+        private static void AddColliderAndVisual(GameObject go, PhenotypePart part, PartShape shape)
         {
-            if (_cubeMesh == null)
+            EnsureAssets();
+
+            Float3 h = part.HalfExtents;
+            Transform t = go.transform;
+
+            switch (shape)
             {
-                GameObject temp = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                _cubeMesh = temp.GetComponent<MeshFilter>().sharedMesh;
+                case SphereShape _:
+                {
+                    float r = SphereShape.Radius(h);
+                    go.AddComponent<SphereCollider>().radius = r;
+                    AddMesh(t, _sphereMesh, Vector3.zero, Vector3.one * (2f * r));
+                    break;
+                }
 
-                if (Application.isPlaying) Object.Destroy(temp);
-                else Object.DestroyImmediate(temp);
+                case CapsuleShape _:
+                {
+                    float r = CapsuleShape.Radius(h);
+                    float span = CapsuleShape.HalfSpan(h);
 
-                // Resolve the lit shader by name rather than taking the primitive's material.
-                // CreatePrimitive hands back the built-in Standard material, which renders as
-                // magenta under URP — the classic "everything is pink" symptom. Looking the
-                // shader up keeps Evosim.Sim from depending on the URP assemblies at all.
-                Shader shader =
-                    Shader.Find("Universal Render Pipeline/Lit") ??
-                    Shader.Find("Standard");
+                    CapsuleCollider capsule = go.AddComponent<CapsuleCollider>();
+                    capsule.direction = 1;                 // Y, matching CapsuleShape
+                    capsule.radius = r;
+                    capsule.height = 2f * (span + r);      // Unity's height includes the caps
 
-                _partMaterial = new Material(shader) { name = "Evosim Part" };
+                    // Drawn as a cylinder plus two spheres rather than as Unity's capsule
+                    // primitive. That primitive is a fixed 1 wide by 2 tall, so making it the
+                    // right length and the right width needs a non-uniform scale, which
+                    // stretches the hemispherical caps into ellipsoids — the rendered part
+                    // stops matching its own collider, by an amount that grows the further the
+                    // capsule is from twice-as-long-as-wide. Three uniformly-scaled primitives
+                    // are exact, and cost two extra renderers on a quarter of parts.
+                    if (span > 0f) AddMesh(t, _cylinderMesh, Vector3.zero, new Vector3(2f * r, span, 2f * r));
+
+                    AddMesh(t, _sphereMesh, new Vector3(0f, span, 0f), Vector3.one * (2f * r));
+                    AddMesh(t, _sphereMesh, new Vector3(0f, -span, 0f), Vector3.one * (2f * r));
+                    break;
+                }
+
+                default:
+                {
+                    var full = new Vector3(
+                        2f * Mathf.Abs(h.X), 2f * Mathf.Abs(h.Y), 2f * Mathf.Abs(h.Z));
+
+                    go.AddComponent<BoxCollider>().size = full;
+                    AddMesh(t, _cubeMesh, Vector3.zero, full);
+                    break;
+                }
             }
+        }
 
+        private static Mesh _cubeMesh;
+        private static Mesh _sphereMesh;
+        private static Mesh _cylinderMesh;
+        private static Material _partMaterial;
+
+        private static void AddMesh(Transform parent, Mesh mesh, Vector3 offset, Vector3 scale)
+        {
             var visual = new GameObject("Visual") { layer = CreatureLayer };
             visual.transform.SetParent(parent, false);
-            visual.transform.localScale = fullExtents;
-            visual.AddComponent<MeshFilter>().sharedMesh = _cubeMesh;
-            visual.AddComponent<MeshRenderer>().sharedMaterial = _partMaterial;
+            visual.transform.localPosition = offset;
+            visual.transform.localScale = scale;
+            visual.AddComponent<MeshFilter>().sharedMesh = mesh;
+
+            var renderer = visual.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = _partMaterial;
+
+            _renderers.Add(renderer);
+            _rendererPart.Add(_partBeingBuilt);
+        }
+
+        private static void EnsureAssets()
+        {
+            if (_cubeMesh != null) return;
+
+            _cubeMesh = PrimitiveMesh(PrimitiveType.Cube);
+            _sphereMesh = PrimitiveMesh(PrimitiveType.Sphere);
+            _cylinderMesh = PrimitiveMesh(PrimitiveType.Cylinder);
+
+            // Resolve the lit shader by name rather than taking the primitive's material.
+            // CreatePrimitive hands back the built-in Standard material, which renders as
+            // magenta under URP — the classic "everything is pink" symptom. Looking the
+            // shader up keeps Evosim.Sim from depending on the URP assemblies at all.
+            Shader shader =
+                Shader.Find("Universal Render Pipeline/Lit") ??
+                Shader.Find("Standard");
+
+            _partMaterial = new Material(shader) { name = "Evosim Part" };
+        }
+
+        private static Mesh PrimitiveMesh(PrimitiveType type)
+        {
+            GameObject temp = GameObject.CreatePrimitive(type);
+            Mesh mesh = temp.GetComponent<MeshFilter>().sharedMesh;
+
+            if (Application.isPlaying) Object.Destroy(temp);
+            else Object.DestroyImmediate(temp);
+
+            return mesh;
         }
 
         /// <summary>

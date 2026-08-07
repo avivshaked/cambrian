@@ -113,6 +113,9 @@ namespace Evosim.Core
                 node.RecursiveLimit = Math.Max(0, node.RecursiveLimit + (rng.Chance(0.5f) ? 1 : -1));
             }
 
+            if (rng.Chance(rates.ShapeChance)) node.ShapeId = PickOther(
+                PartShapeRegistry.Standard, node.ShapeId, rng);
+
             if (rng.Chance(rates.CellTypeChance)) ChangeCellType(node, rng, cellTypes);
 
             // After a possible cell-type change, because whether a joint is even legal here
@@ -144,6 +147,21 @@ namespace Evosim.Core
 
             MutateNeuronSet(node.Neurons, node, g, rng, rates, out NeuronDef[] neurons);
             node.Neurons = neurons;
+        }
+
+        /// <summary>Picks a registered shape other than the current one.</summary>
+        /// <remarks>
+        /// Excluding the current shape means the operator always does something when it fires.
+        /// Allowing it to redraw the same value would make the effective rate depend on how many
+        /// shapes are registered, so adding a fourth shape would quietly change how often the
+        /// other three mutate.
+        /// </remarks>
+        private static string PickOther(PartShapeRegistry shapes, string current, Rng rng)
+        {
+            var others = new List<string>();
+            foreach (string id in shapes.Ids()) if (id != current) others.Add(id);
+
+            return others.Count == 0 ? current : others[rng.Range(others.Count)];
         }
 
         /// <remarks>
@@ -235,7 +253,7 @@ namespace Evosim.Core
         /// could never be.
         /// </para>
         /// <para>
-        /// The root is exempt. Not because losing it would be invalid — <see cref="RemoveNode"/>
+        /// The root is exempt. Not because losing it would be invalid — <see cref="RemoveNodeAt"/>
         /// would refuse anyway — but because a creature whose root shrank away is not a smaller
         /// creature, it is no creature, and that is a different event from a limb being lost.
         /// </para>

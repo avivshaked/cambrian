@@ -122,6 +122,13 @@ namespace Evosim.Core
                 // here rather than trusted as a convention: a genome whose stomach is also its
                 // elbow would develop, run and be scored, and nothing downstream could tell it
                 // was never meant to be legal.
+                if (!PartShapeRegistry.Standard.Contains(node.ShapeId))
+                {
+                    issues.Add(
+                        $"Node {n}: unknown shape '{node.ShapeId}'. " +
+                        $"Registered: {string.Join(", ", PartShapeRegistry.Standard.Ids())}.");
+                }
+
                 CellTypeRegistry registry = cellTypes ?? CellTypeRegistry.Standard;
                 if (!registry.Contains(node.CellTypeId))
                 {

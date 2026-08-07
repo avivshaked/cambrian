@@ -69,6 +69,7 @@ namespace Evosim.Core
         /// Creates a new run directory named for the time it started and its settings hash.
         /// </summary>
         /// <param name="root">Usually <c>runs/</c>. Created if absent.</param>
+        /// <param name="config">Written to <c>config.json</c>; its hash names the directory.</param>
         /// <param name="startedUtc">
         /// Passed in rather than read from the clock, so that a caller wanting a reproducible
         /// directory name can supply one — and so this stays testable.
@@ -91,6 +92,7 @@ namespace Evosim.Core
         }
 
         /// <summary>Reopens an existing run directory for reading.</summary>
+        /// <param name="path">The run directory itself, not the <c>runs/</c> root.</param>
         /// <param name="hashMismatch">
         /// Set when the settings file was edited after it was written — see
         /// <see cref="RunConfigJson.Read(string, out string)"/>.
@@ -141,6 +143,7 @@ namespace Evosim.Core
         public string Path { get; }
         public long RowCount { get; private set; }
 
+        /// <param name="path">File to append to. Parent directories are created.</param>
         /// <param name="flushEachRow">
         /// <c>true</c> costs a system call per row and guarantees a killed process loses nothing.
         /// <c>false</c> buffers, which is what a birth-rate write path needs; on a crash the last

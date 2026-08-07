@@ -9,16 +9,28 @@ namespace Evosim.Core
     public static class PhenotypeGeometry
     {
         /// <summary>
-        /// True when <paramref name="point"/> lies inside the box of <paramref name="part"/>.
+        /// Shapes used when a caller does not supply a registry. Not a default in the
+        /// configuration sense — geometry questions have one right answer per shape id, and a
+        /// run using custom shapes must pass its own registry so the answer stays right.
         /// </summary>
-        public static bool ContainsPoint(this PhenotypePart part, Float3 point)
+        private static PartShapeRegistry Shapes => PartShapeRegistry.Standard;
+
+        public static bool ContainsPoint(this PhenotypePart part, Float3 point) =>
+            part.ContainsPoint(point, Shapes);
+
+        /// <remarks>
+        /// Asks the shape rather than testing a box. A sphere occupies about half its bounding
+        /// box, so treating every part as a box would report overlap between parts that are
+        /// nowhere near each other — and overlap is what the jamming and depenetration measures
+        /// are built on (logbook/0007).
+        /// </remarks>
+        public static bool ContainsPoint(
+            this PhenotypePart part, Float3 point, PartShapeRegistry shapes)
         {
-            // Into the part's own frame, where the box is axis-aligned.
+            // Into the part's own frame, where the shape is axis-aligned.
             Float3 local = part.Rotation.Conjugate.Rotate(point - part.Position);
 
-            return System.Math.Abs(local.X) <= part.HalfExtents.X
-                && System.Math.Abs(local.Y) <= part.HalfExtents.Y
-                && System.Math.Abs(local.Z) <= part.HalfExtents.Z;
+            return shapes.Resolve(part.ShapeId).ContainsPoint(local, part.HalfExtents);
         }
 
         /// <summary>

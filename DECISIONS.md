@@ -37,6 +37,12 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D012](#d012) | Living literature review, extended in rounds | 2026-08-02 | active |
 | [D013](#d013) | Public repository, named `cambrian` | 2026-08-02 | active |
 | [D014](#d014) | Papers and extractions never committed | 2026-08-02 | active |
+| [D015](#d015) | MIT for code, CC BY 4.0 for documentation | 2026-08-02 | active |
+| [D016](#d016) | A logbook, kept as dated entries | 2026-08-02 | active |
+| [D017](#d017) | Endogenous selection: an energy economy, not a fitness function | 2026-08-02 | active |
+| [D018](#d018) | Generation zero is one cell, or one cell and a tail | 2026-08-07 | active |
+| [D019](#d019) | `Neural` is a cell type; it discounts neurons rather than gating them | 2026-08-07 | active |
+| [D020](#d020) | Distal senses are scalars; direction is computed by the body | 2026-08-07 | active |
 
 ---
 
@@ -381,3 +387,123 @@ rediscovered.
 **Deferred deliberately:** attack and defence mechanics, sexual reproduction, per-part density
 (swim bladders). Each is a second system, and each should be designed against observed
 behaviour rather than guessed before anything runs.
+
+---
+
+### D018
+**Generation zero is one cell, or one cell and a tail** · 2026-08-07
+
+`GenomeFactory.Random` built founders of two to five nodes developing into three to sixteen
+parts, with branching, recursion, bilateral pairs and several joints. Under exogenous fitness
+that was necessary: a fitness function has to grade something on the first evaluation, so the
+initial population must already be able to do the graded thing.
+
+[D017](#d017) removed the fitness function, and with it that requirement. What remained was a
+liability: **a founder population whose body plans we designed makes every later claim about
+morphology a claim about our initial conditions.** Bilateral symmetry present at t=0 cannot be
+evidence that bilateral symmetry pays.
+
+Founders are now one earning cell, and half the time one link — a blob or a flagellate. A link
+is a full part with tissue and upkeep and needs no child, so one hanging off one cell is a
+flagellum rather than half a creature. Everything else must be discovered and must pay.
+
+**Founders draw only from the earning cell types**, weighted 2:1:1 toward photosynthesis.
+`Structural` and `Link` acquire nothing, so a founder of those alone starves with certainty
+rather than probably — compute spent to make a corpse.
+
+**The half that cannot eat is deliberate.** At t=0 there is no nutrient and no carrion, so
+absorptive and consumer founders die, and their tissue is the first nutrient the world has.
+The doomed half of generation zero *is* the primordial soup. Photosynthesis is weighted double
+only so generation zero is not entirely stillborn — not as a claim that it wins, which is the
+world's to determine.
+
+**Rejected: filtering founders for viability.** `RandomViable` rejects genomes with no degrees
+of freedom, which every blob has. Under §5A stillness is a way of living, not a defect, and
+refusing to spawn a plant would be an exogenous judgement about what deserves to exist.
+
+**Rejected: two cells as the minimum**, which was the first proposal. It assumed a link sits
+*between* two cells; the implementation lets it dangle, and a dangling link is a tail. Two
+parts is therefore already a swimmer, and one is the true floor.
+
+**The load-bearing check:** if founders are this small, complexity must be reachable from them.
+Measured — a single founder node reaches 32 nodes and 16-part bodies within 2,000 births under
+mutation alone (`FounderTests`).
+
+**Supersedes:** nothing. `GenomeFactory.Random` is retained for the Milestone 1 harnesses,
+which need creatures with joints to actuate.
+
+---
+
+### D019
+**`Neural` is a cell type; it discounts neurons rather than gating them** · 2026-08-07
+
+Neurons lived on `MorphNode`, distributed across parts, plus a `GlobalBrain` array owned by no
+part at all. That global array was the only cost in [D017](#d017)'s economy attached to no
+tissue: joules spent, nothing to bite, nowhere to be.
+
+The argument for changing it is §5A.1's own, applied to cognition. That section's thesis is
+that energy acquisition is a property of a *part*, and that this is what makes trophic strategy
+a morphological trait the graph already encodes. **The same holds for thinking: if a brain has
+no location, brain size and placement cannot evolve, and cephalization — among the most
+universal patterns in animal evolution — is structurally unreachable.**
+
+**Every cell hosts a baseline of neurons; neural tissue makes them cheaper.** The baseline is a
+nerve net, and it exists to avoid a valley: if neural tissue were required before any joint
+could be driven, gaining a working tail would need two mutations each useless alone, and
+populations do not cross those.
+
+**Rejected: gating.** Capping neurons per part by tissue volume couples genome *validity* to
+part size — and under §4.5's extinction-by-shrinking, parts change size constantly, so a
+shrinking cell could invalidate a genome that was legal when written. Discounting has no such
+coupling and nothing is silently disabled.
+
+Discounting also produces cephalization as an economic outcome rather than a rule. §4.3
+requires a neuron to sit on the part whose joint it drives, but neurons are cheaper where the
+tissue is; motor neurons stay at the muscles and everything else migrates. And because capacity
+follows volume while latency follows topology, one large neural cell and several small ones of
+equal volume behave differently — centralised thinks fast and senses far, distributed the
+reverse. Octopus against vertebrate, settled by selection.
+
+**Rejected: forcing every creature to carry neural tissue.** A photosynthetic blob needs no
+neurons, and charging it for them charges most of the world for a capability it never uses.
+Plants have no neurons, and that is a strategy rather than an oversight.
+
+---
+
+### D020
+**Distal senses are scalars; direction is computed by the body** · 2026-08-07
+
+Five of the six original sensor channels report the creature's own body. Only the photosensor
+and contact concern the world, and contact only reports what is already touching. Adequate for
+a central pattern generator; inadequate for everything [D017](#d017) is about.
+
+**The largest omission was smell.** §5A.1 says an absorptive cell *"rewards being where food
+is"* — and nothing could sense where food was, so absorptive feeding was a lottery rather than
+a strategy, with no degree of control able to improve intake. Added: `Chemical`, `Energy`,
+`Flow`.
+
+**`Energy` reports the level, not hunger.** A hunger flag needs a threshold, and choosing one
+is deciding for the creature when it ought to feel hungry — an unmeasured constant where no run
+could vary it. A neuron builds any threshold from a weight and a bias, and several at once.
+Hunger is derivable from the level; the reverse is not. Normalised as **seconds of life
+remaining at the current burn rate**, so it is a duration rather than a quantity: raw joules
+are meaningless across body sizes, and normalising against the reproduction threshold would let
+a brood-size mutation rescale how a creature perceives itself.
+
+**Rejected: any channel reporting a bearing to something.** A "direction to nearest food"
+sensor hands the creature a solved problem. It is also unnecessary — a scalar sensor on a part
+is already a gradient sensor for a body of several parts, since two cells at opposite ends read
+different values and the difference is a direction. That is how chemotaxis works, and it makes
+**morphology part of the sensory apparatus**: a long creature resolves direction better than a
+compact one, and thinks about it slower, because signals meet at one node per step.
+
+**Rejected: image-forming vision.** The photosensor stays a triple — an eyespot, not an eye.
+Rendering a view per creature per step would be enormous, and directional light already falls
+out of parts facing different ways and shading each other. Consistency is the point: every
+distal sense is a scalar and the body does the geometry.
+
+**Evaluated on demand.** Which `(part, channel)` pairs are ever read is static once a phenotype
+is developed, so the builder computes a mask and the step loop evaluates only what is in it.
+Cost scales with what evolution uses, not with what is declared. This is not premature: §5A.9's
+measured bottleneck is already a per-part per-step loop at 88% of the frame, and the mask is
+what stops perception becoming a second one.

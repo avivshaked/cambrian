@@ -162,6 +162,33 @@ namespace Evosim.Sim.EditorTools
         /// touching.
         /// </para>
         /// </remarks>
+        /// <summary>
+        /// The part's own smallest half-width, in metres — what an overlap depth is measured
+        /// against so that "buried" means the same thing for every shape.
+        /// </summary>
+        /// <remarks>
+        /// Not the smallest half-extent. A sphere's radius is the <i>mean</i> of the three
+        /// (§4.1), so on an elongated set of extents the shortest one is far smaller than
+        /// anything the part actually has — which would inflate every sphere's reported overlap
+        /// for a reason having nothing to do with how deeply it was overlapping.
+        /// </remarks>
+        private static float HalfThickness(PhenotypePart part)
+        {
+            Float3 h = part.HalfExtents;
+
+            switch (part.ShapeId)
+            {
+                case ShapeIds.Sphere:
+                    return SphereShape.Radius(h);
+
+                case ShapeIds.Capsule:
+                    return CapsuleShape.Radius(h);
+
+                default:
+                    return Mathf.Min(Mathf.Abs(h.X), Mathf.Min(Mathf.Abs(h.Y), Mathf.Abs(h.Z)));
+            }
+        }
+
         private static void ReportRuntimeOverlap(StringBuilder report)
         {
             const int OverlapSeeds = 40;
@@ -187,10 +214,14 @@ namespace Evosim.Sim.EditorTools
                 var driver = new EffectorDriver(creature, FixedDt);
                 var scratch = new float[Mathf.Max(1, creature.TotalDof)];
 
-                var colliders = new BoxCollider[creature.Bodies.Length];
+                // Collider, not BoxCollider: parts are boxes, spheres or capsules (§4.1), and
+                // asking for the concrete type would silently hand back null for two shapes out
+                // of three — reporting an overlap-free population that had simply not been
+                // measured. ComputePenetration is shape-agnostic, so nothing below cares.
+                var colliders = new Collider[creature.Bodies.Length];
                 for (int i = 0; i < creature.Bodies.Length; i++)
                 {
-                    colliders[i] = creature.Bodies[i].GetComponent<BoxCollider>();
+                    colliders[i] = creature.Bodies[i].GetComponent<Collider>();
                 }
 
                 float seedJointed = 0f, seedUnjointed = 0f;
@@ -226,11 +257,9 @@ namespace Evosim.Sim.EditorTools
                                 continue;
                             }
 
-                            Float3 ha = phenotype.Parts[a].HalfExtents;
-                            Float3 hb = phenotype.Parts[b].HalfExtents;
                             float smallest = Mathf.Min(
-                                Mathf.Min(ha.X, Mathf.Min(ha.Y, ha.Z)),
-                                Mathf.Min(hb.X, Mathf.Min(hb.Y, hb.Z)));
+                                HalfThickness(phenotype.Parts[a]),
+                                HalfThickness(phenotype.Parts[b]));
 
                             float fraction = distance / Mathf.Max(1e-5f, smallest);
 
@@ -262,7 +291,7 @@ namespace Evosim.Sim.EditorTools
             report.AppendLine();
             report.AppendLine("### Runtime interpenetration, by pair type");
             report.AppendLine($"{OverlapSeeds} creatures, measured while moving. Depth as a share of the");
-            report.AppendLine("smaller part's shortest half-extent: 100% is one box buried by its own half-width.");
+            report.AppendLine("smaller part's own half-thickness: 100% is one part buried by its own half-width.");
             report.AppendLine();
             report.AppendLine("| pair type | permitted? | mean worst depth | worst seen |");
             report.AppendLine("|---|---|---|---|");

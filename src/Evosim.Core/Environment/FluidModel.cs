@@ -40,18 +40,30 @@ namespace Evosim.Core
     public static class FluidModel
     {
         /// <summary>
-        /// Drag force and torque on one box, in world space. Torque is about the box centre.
+        /// Drag force and torque on one part, in world space. Torque is about the part centre.
         /// </summary>
-        /// <param name="halfExtents">Box half-extents, in metres.</param>
-        /// <param name="rotation">Box orientation in world space.</param>
-        /// <param name="velocity">Velocity of the box centre.</param>
+        /// <param name="shape">Geometry. Supplies the panels the force is summed over.</param>
+        /// <param name="halfExtents">Half-extents, in metres. Read differently per shape.</param>
+        /// <param name="rotation">Orientation in world space.</param>
+        /// <param name="velocity">Velocity of the part's centre.</param>
         /// <param name="angularVelocity">Angular velocity, radians per second.</param>
-        public static void BoxDrag(
+        /// <param name="config">Water density, drag coefficient and panel resolution — §5.2.</param>
+        /// <param name="force">Out: world-space drag force on the part.</param>
+        /// <param name="torque">Out: world-space torque about the part centre.</param>
+        /// <param name="panels">
+        /// Scratch list, cleared and refilled. Passed in so a per-step loop over a whole
+        /// population allocates nothing — a fresh list per part per step is thousands of
+        /// allocations a second, and the garbage collector pausing mid-run shows up as a physics
+        /// hitch rather than as anything recognisable.
+        /// </param>
+        public static void Drag(
+            PartShape shape,
             Float3 halfExtents,
             Quat rotation,
             Float3 velocity,
             Float3 angularVelocity,
             FluidConfig config,
+            System.Collections.Generic.List<DragPanel> panels,
             out Float3 force,
             out Float3 torque)
         {
@@ -61,57 +73,53 @@ namespace Evosim.Core
             float k = 0.5f * config.Density * config.DragCoefficient;
             if (k <= 0f) return;
 
-            int n = config.PanelsPerAxis < 1 ? 1 : config.PanelsPerAxis;
+            panels.Clear();
+            shape.AddPanels(halfExtents, config.PanelsPerAxis < 1 ? 1 : config.PanelsPerAxis, panels);
 
-            for (int axis = 0; axis < 3; axis++)
+            for (int i = 0; i < panels.Count; i++)
             {
-                int u = (axis + 1) % 3;
-                int v = (axis + 2) % 3;
+                DragPanel panel = panels[i];
+                if (panel.Area <= 0f) continue;
 
-                float panelArea = 4f * halfExtents[u] * halfExtents[v] / (n * n);
-                if (panelArea <= 0f) continue;
+                Float3 normal = rotation.Rotate(panel.Normal);
+                Float3 offset = rotation.Rotate(panel.Centre);
 
-                for (int side = 0; side < 2; side++)
-                {
-                    float sign = side == 0 ? 1f : -1f;
+                // Velocity where this panel actually is. Sampling the part's centre alone would
+                // report zero for a part spinning about one of its own axes, because a surface
+                // point moves perpendicular to its normal — and a limb flapping about its joint
+                // is precisely that case.
+                Float3 panelVelocity = velocity + Float3.Cross(angularVelocity, offset);
 
-                    Float3 normalLocal = AxisVector(axis, sign);
-                    Float3 normal = rotation.Rotate(normalLocal);
+                float normalSpeed = Float3.Dot(panelVelocity, normal);
+                if (normalSpeed <= 0f) continue; // trailing: no pressure drag
 
-                    for (int i = 0; i < n; i++)
-                    {
-                        // Panel centres, evenly spaced across the face.
-                        float du = (2f * (i + 0.5f) / n - 1f) * halfExtents[u];
+                Float3 panelForce = normal * (-k * panel.Area * normalSpeed * normalSpeed);
 
-                        for (int j = 0; j < n; j++)
-                            {
-                            float dv = (2f * (j + 0.5f) / n - 1f) * halfExtents[v];
-
-                            Float3 panelLocal =
-                                normalLocal * halfExtents[axis]
-                                + AxisVector(u, du)
-                                + AxisVector(v, dv);
-
-                            Float3 offset = rotation.Rotate(panelLocal);
-
-                            // Velocity where this panel actually is. Sampling the face centre
-                            // alone would report zero for a box spinning about one of its own
-                            // axes, because a face centre moves perpendicular to its normal —
-                            // and a limb flapping about its joint is precisely that case.
-                            Float3 panelVelocity = velocity + Float3.Cross(angularVelocity, offset);
-
-                            float normalSpeed = Float3.Dot(panelVelocity, normal);
-                            if (normalSpeed <= 0f) continue; // trailing: no pressure drag
-
-                            Float3 panelForce = normal * (-k * panelArea * normalSpeed * normalSpeed);
-
-                            force += panelForce;
-                            torque += Float3.Cross(offset, panelForce);
-                        }
-                    }
-                }
+                force += panelForce;
+                torque += Float3.Cross(offset, panelForce);
             }
         }
+
+        private static readonly BoxShape Box = new BoxShape();
+
+        /// <summary>
+        /// Drag on a box. Convenience for tests and one-off calls — it allocates.
+        /// </summary>
+        /// <remarks>
+        /// The per-step path over a whole population must use the overload taking a scratch list;
+        /// a fresh one per part per step is thousands of allocations a second, and a collection
+        /// pause mid-run reads as a physics hitch rather than as anything recognisable.
+        /// </remarks>
+        public static void BoxDrag(
+            Float3 halfExtents,
+            Quat rotation,
+            Float3 velocity,
+            Float3 angularVelocity,
+            FluidConfig config,
+            out Float3 force,
+            out Float3 torque) =>
+            Drag(Box, halfExtents, rotation, velocity, angularVelocity, config,
+                 new System.Collections.Generic.List<DragPanel>(), out force, out torque);
 
         /// <summary>
         /// Effective mass of a part once the water it drags along is included —
@@ -131,15 +139,5 @@ namespace Evosim.Core
         /// </remarks>
         public static float EffectiveMass(float mass, float volume, FluidConfig config) =>
             mass + config.AddedMassCoefficient * config.Density * volume;
-
-        private static Float3 AxisVector(int axis, float sign)
-        {
-            switch (axis)
-            {
-                case 0: return new Float3(sign, 0f, 0f);
-                case 1: return new Float3(0f, sign, 0f);
-                default: return new Float3(0f, 0f, sign);
-            }
-        }
     }
 }
