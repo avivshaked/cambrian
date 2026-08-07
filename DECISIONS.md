@@ -898,3 +898,60 @@ multiplies simulated seconds rather than dividing the cost of one, and its accep
 exists — if the energy audit's residual grows, the speed was bought with free energy that
 selection will find. Also `AddedMassCoefficient`, which is 0 today and consumes dt headroom when
 enabled, so it has to be settled before any dt sweep means anything.
+
+---
+
+### D029
+**The physics and the economy are joined by one method, and it revealed that work must not be billed yet** · 2026-08-07
+
+Three facts, found by grep before anything was written: `new World(...)` appeared only in tests,
+`workJoules:` was `0f` at every call site in the repository, and `Organism.HeightY` was written
+once at birth and never again. **Two correct halves that had never met** — physics could swim a
+creature and measure its work, the economy could feed and kill one, and no number crossed between
+them.
+
+It also bounds what §5A.2b established: those numbers describe a world of stationary organisms for
+whom motion is free.
+
+**The seam is `World.Observe(creature, heightY, workJoules)` and it points one way.** §6.1 forbids
+`UnityEngine` in `Evosim.Core`, so the world cannot ask where anything is; `Evosim.Sim.Ecosystem`
+reads the articulations and pushes both numbers in, then reconciles births and deaths against the
+scene. The world stays runnable with nothing attached, which is the fast sweep.
+
+**Work accumulates and is drained exactly once.** Physics runs at 100 Hz and the economy at 2 Hz,
+so a metabolic step is the sum of fifty strokes. Charged twice it destroys energy; never drained it
+bills a creature forever for one stroke. The audit holds at 0.0000% with the term live.
+
+**Two clocks, and only one of them is safe to coarsen.** Energy is an integral, so a slower
+metabolic clock changes its quantisation and not its value. A slower *physics* clock changes what
+is physically possible and hands free energy to whatever finds it (§11.2). They are not the same
+kind of approximation.
+
+**What the first run found: every creature with a moving part was dead within sixty simulated
+seconds**, and none was ever born again — 10% jointed at t=20, 2.3% at t=40, 0% thereafter. The
+population then grew from 45 to 183 without a joule of mechanical work.
+
+**And this is correct behaviour, not a fault in the join.** There is no brain evaluator. The genome
+carries `NeuronDef`, `NeuronInput` and oscillator frequencies, development places them, and nothing
+reads them — every creature is driven by one shared sine on every degree of freedom, identical
+regardless of genome. So the controller is a constant, a uniform flap produces no net thrust
+(measured: 0.0003 m/s while spending 38 J/step), and the 27× light gradient overhead is
+unreachable. A real cost against an unobtainable benefit. Selection removed the cost.
+
+**Therefore: billing mechanical work belongs after Milestone 6, not at Milestone 4.** Until a
+creature's own genome decides how it moves, work is a tax on *having* a body part rather than a
+price for *using* one, and §10's ordering is wrong on this specific point. The join itself belongs
+exactly where it is.
+
+**Rejected:** *setting `WorkCostMultiplier` to 0 as a new default* — a default chosen to make an
+uncomfortable result go away is how a finding gets buried. It stays at 1 and the finding is
+recorded. *Widening joint limits to reduce the waste* — the smoke test measured that 4× wider
+ranges cut energy destroyed at the stops from 74.5% to 14.4%, but a smaller pure cost against an
+unobtainable benefit is still selected out; it delays the extermination without preventing it.
+*Adding the current field now* — it was next on the list and would push creatures off their depth
+with no controller able to hold station, which adds mortality rather than a reason to swim.
+
+**One thing worked that neither half could have produced alone.** Mean depth rose from −9.98 m to
+−5.91 m while mean speed was zero: the shallow out-bred the deep and the population's centre of
+mass moved by differential survival. Selection acting on a spatial trait, in a world where the
+trait cannot be changed within a lifetime.

@@ -43,7 +43,28 @@ namespace Evosim.Core
         public float Age { get; internal set; }
 
         /// <summary>World height, metres. Y is up, so the surface is 0.</summary>
+        /// <remarks>
+        /// Written by <see cref="World.Observe"/> from the simulator, or inherited from the parent
+        /// at birth for a world with no physics attached. It decides both of a creature's incomes —
+        /// light falls off upward-to-downward and detritus sinks — so it is the one number that
+        /// makes swimming worth doing.
+        /// </remarks>
         public float HeightY { get; internal set; }
+
+        /// <summary>
+        /// Mechanical work done at the joints since the last metabolic step, in joules.
+        /// </summary>
+        /// <remarks>
+        /// <b>Accumulated by <see cref="World.Observe"/> and consumed exactly once</b>, in
+        /// <c>Metabolise</c>, which zeroes it. Physics steps far more often than the economy does,
+        /// so this is a sum over many solver steps; and it must be drained rather than read,
+        /// because a work term counted twice is an energy cost invented by the bookkeeping and a
+        /// term never drained is a creature billed forever for one stroke.
+        ///
+        /// Zero for anything the simulator has not reported on — every plant, and every creature
+        /// in a world running the economy alone.
+        /// </remarks>
+        public float PendingWorkJoules { get; internal set; }
 
         /// <summary>Standing cost in watts, cached at birth — the body does not change.</summary>
         /// <remarks>

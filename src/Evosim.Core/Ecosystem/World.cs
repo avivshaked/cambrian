@@ -36,12 +36,16 @@ namespace Evosim.Core
     /// <para>
     /// <b>No physics, deliberately, and this is what makes the design testable at all.</b>
     /// Photosynthetic income depends on lit area and depth; upkeep depends on tissue; neither
-    /// needs a solver. The mechanical work term is the only physical quantity in §5A.2's ledger,
-    /// and it is supplied by the caller — zero for anything that is not actuating, which is every
-    /// plant and every founder without a link. So the calibration question §5A.2 calls the knob
-    /// that decides everything can be swept in milliseconds instead of stepped through PhysX at
-    /// 6.4 ms per step (§5A.9). Milestone 4 hands the real work figures in; the arithmetic does
-    /// not change.
+    /// needs a solver. Height and mechanical work are the only physical quantities in §5A.2's
+    /// ledger and both arrive through <see cref="Observe"/>, so the calibration question §5A.2
+    /// calls the knob that decides everything can be swept in milliseconds instead of stepped
+    /// through PhysX at 6.4 ms per step (§5A.9).
+    /// </para>
+    /// <para>
+    /// <b>A world with nothing calling <see cref="Observe"/> is a world of stationary
+    /// organisms for whom swimming is free</b>, and that is what every number in §5A.2b was
+    /// measured against. It remains a legitimate configuration — it is the fast sweep — but it is
+    /// a different world from the embodied one, and results from the two are not interchangeable.
     /// </para>
     /// <para>
     /// <b>The population floor is the only thing that creates a creature from nothing</b>
@@ -160,6 +164,60 @@ namespace Evosim.Core
             _nextSeed = seed;
         }
 
+        /// <summary>
+        /// Reports where a creature is and what it spent moving — DESIGN.md §5A.2, §10 M4.
+        /// </summary>
+        /// <param name="creature">A living organism of this world.</param>
+        /// <param name="heightY">Height of its centre of mass, metres. Y is up.</param>
+        /// <param name="workJoules">
+        /// Mechanical work done at its joints since the last call. Accumulated, not replaced —
+        /// physics steps many times per metabolic step.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>This is the entire seam between the physics and the economy, and it points one
+        /// way.</b> §6.1 forbids <c>UnityEngine</c> in this assembly, so the world cannot reach
+        /// into PhysX to ask where anything is; the simulator pushes both measurements in and the
+        /// world never knows a solver exists. The same world runs with nothing calling this, which
+        /// is what every calibration in §5A.2b was measured against — a population that cannot
+        /// move and for which swimming is free.
+        /// </para>
+        /// <para>
+        /// <b>Work is added rather than assigned</b> because the two clocks differ: physics
+        /// integrates at 0.01 s and the economy steps far more slowly, so one metabolic step is
+        /// the sum of many strokes. <c>Metabolise</c> drains it.
+        /// </para>
+        /// <para>
+        /// Negative work is refused. <see cref="EffectorDriver"/> reports the unsigned integral
+        /// precisely because a joint driven <i>by</i> the water is doing negative work at the
+        /// actuator, and billing that as income would be a free-energy source of exactly the kind
+        /// §11.2 exists to catch — the creature would evolve to be pushed around.
+        /// </para>
+        /// </remarks>
+        public void Observe(Organism creature, float heightY, float workJoules)
+        {
+            if (creature == null) throw new ArgumentNullException(nameof(creature));
+
+            if (float.IsNaN(heightY) || float.IsInfinity(heightY))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(heightY), heightY,
+                    $"Creature {creature.Id} has a non-finite height, so the solver has already " +
+                    "diverged and every income derived from depth would be meaningless.");
+            }
+
+            if (workJoules < 0f || float.IsNaN(workJoules))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(workJoules), workJoules,
+                    "Mechanical work must be unsigned. A negative cost is an income, and an " +
+                    "income for being moved by the water is a free-energy source (§11.2).");
+            }
+
+            creature.HeightY = heightY;
+            creature.PendingWorkJoules += workJoules;
+        }
+
         /// <summary>Advances the world by one step.</summary>
         /// <param name="seconds">Step length. Large steps are fine — this is not a solver.</param>
         public void Step(float seconds)
@@ -236,7 +294,8 @@ namespace Evosim.Core
 
                 EnergyLedger ledger = Metabolism.StepAt(
                     creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY),
-                    Nutrients.DensityAt(creature.HeightY), workJoules: 0f, seconds: seconds);
+                    Nutrients.DensityAt(creature.HeightY),
+                    creature.PendingWorkJoules, seconds);
 
                 _ledgers[i] = ledger;
                 Nutrients.Demand(creature.HeightY, ledger.PoolDrawn);
@@ -255,13 +314,18 @@ namespace Evosim.Core
                 // is not for anything with a bite rate that saturates.
                 if (share < 1f)
                 {
+                    // The same work, not more: this replaces the ledger rather than adding to it.
                     ledger = Metabolism.StepAt(
                         creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY),
                         Nutrients.DensityAt(creature.HeightY) * share,
-                        workJoules: 0f, seconds: seconds);
+                        creature.PendingWorkJoules, seconds);
                 }
 
                 if (ledger.PoolDrawn > 0f) Nutrients.Take(creature.HeightY, ledger.PoolDrawn);
+
+                // Drained here and nowhere else. Both branches above priced the same joules, so
+                // this is the one point at which they stop being owed.
+                creature.PendingWorkJoules = 0f;
 
                 creature.Energy += ledger.Net;
                 creature.Lifetime += ledger;
