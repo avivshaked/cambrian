@@ -93,7 +93,21 @@ namespace Evosim.Sim
         {
             public CreatureInstance Instance;
             public EffectorDriver Driver;
-            public float[] Scratch;
+
+            /// <summary>
+            /// The creature's own nervous system — DESIGN.md §4.3.
+            /// </summary>
+            /// <remarks>
+            /// Replaces the shared test sine that drove every creature identically regardless of
+            /// genome. That constant controller is why billing mechanical work exterminated every
+            /// joint in the world in sixty seconds (logbook/0015): with no genome able to change
+            /// how it moved, work was a tax on having a body part rather than a price for using
+            /// one. Held per creature because the brain carries state — oscillator phase, and the
+            /// previous step's outputs that every non-local input reads.
+            /// </remarks>
+            public Brain Brain;
+
+            public float[] Drive;
 
             /// <summary>
             /// <see cref="EffectorDriver.MechanicalWorkJoules"/> at the last metabolic step.
@@ -127,7 +141,12 @@ namespace Evosim.Sim
             for (int i = 0; i < _instanceIds.Count; i++)
             {
                 Body body = _bodies[_instanceIds[i]];
-                body.Driver.DriveTestSine(Steps * FixedDt, TestSineHz, body.Scratch);
+
+                // Sensors are not wired yet, so this is §4.3's MVP: a pure central pattern
+                // generator, whose operators are driven by their own parameters and by time and
+                // need to read nothing. Closing the loop is Milestone 6.
+                body.Brain.Step(FixedDt, body.Drive);
+                body.Driver.Drive(body.Drive);
             }
 
             Fluid.Apply(_instances, FixedDt);
@@ -143,9 +162,6 @@ namespace Evosim.Sim
             Metabolise();
             return true;
         }
-
-        /// <summary>Drive frequency until the brain graph exists (Milestone 6).</summary>
-        public float TestSineHz { get; set; } = 1.2f;
 
         private void Metabolise()
         {
@@ -245,13 +261,30 @@ namespace Evosim.Sim
 
             Fluid.ApplyAddedMass(instance);
 
+            Brain brain = Brain.For(creature.Phenotype, creature.Genome.GlobalBrain);
+
             var body = new Body
             {
                 Instance = instance,
                 Driver = new EffectorDriver(instance, FixedDt),
-                Scratch = new float[Mathf.Max(1, instance.TotalDof)],
+                Brain = brain,
+                Drive = new float[Mathf.Max(1, brain.TotalDof)],
                 PreviousCentre = FluidEnvironment.CentreOfMass(instance),
             };
+
+            // The one silent failure in this wiring: Brain indexes drive by walking every part in
+            // order, EffectorDriver indexes it through CreatureInstance.DofOffset, which skips the
+            // root. They agree only because Developer forces the root's joint to Fixed. If they
+            // ever stopped agreeing, every creature would drive the wrong joints and nothing would
+            // throw (logbook/0007, logbook/0008). BrainTests holds the invariant; this catches a
+            // build that got past it.
+            if (brain.TotalDof != instance.TotalDof)
+            {
+                throw new System.InvalidOperationException(
+                    $"Creature {creature.Id}: the brain produces {brain.TotalDof} drive values and " +
+                    $"the articulation has {instance.TotalDof} degrees of freedom. The two DOF " +
+                    "orderings have diverged and every joint would be driven by the wrong neuron.");
+            }
 
             _bodies.Add(creature.Id, body);
             _instances.Add(instance);

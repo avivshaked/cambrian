@@ -324,6 +324,16 @@ function, oscillatory transfer function was used to enable faster discovery of e
 swimming strategies."* This is a *population constraint, not a separate system* — no code
 is discarded when it lifts.
 
+**The graph is evaluated by `Brain` in `Evosim.Core`** — built once per creature at birth, stepped
+once per physics step, producing one drive value per joint DOF for §4.4's effector. Until it
+existed the genome's neurons were carried, developed and mutated but never read, and every creature
+ran one shared sine regardless of genome (D030, logbook/0016). Three properties are load-bearing:
+**synchronous update** (every neuron reads the previous step and writes a separate buffer, which is
+what makes the one-node-per-step latency below true rather than an artefact of iteration order);
+**neuron *d* of a part drives DOF *d*** of its joint, the only effector mapping that survives
+recursion, since the genome carries no mapping field of its own; and **`sigmoid` is `tanh`**, because
+a logistic curve is strictly positive and a joint driven through one could not oscillate.
+
 **`oscillate-saw` is in the MVP set deliberately.** [C18 §4, p.30] warns that purely
 harmonic actuation is a real limitation: aquatic organisms use "swimming cycles where
 impulsive thrusting phases are associated with ramp down, recovering ones, which helps

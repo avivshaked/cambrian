@@ -955,3 +955,57 @@ with no controller able to hold station, which adds mortality rather than a reas
 −5.91 m while mean speed was zero: the shallow out-bred the deep and the population's centre of
 mass moved by differential survival. Selection acting on a spatial trait, in a world where the
 trait cannot be changed within a lifetime.
+
+---
+
+### D030
+**The genome's brain is evaluated, and creatures can swim** · 2026-08-07
+
+[D029](#d029) found that billing mechanical work exterminated every joint in the world in sixty
+seconds, because every creature ran one shared test sine and a uniform flap produces no net
+thrust. The genome had carried neurons, oscillator frequencies and input references since draft 1;
+development copied them onto every part; mutation perturbed them. **Nothing read them.**
+
+**Less was missing than it looked.** The effector side was complete (§4.4's torque + mass-scale +
+10-step average, validated by Spike 01 M4) and the genome side was complete. The entire gap was
+one function: `Phenotype + time → float[TotalDof]`.
+
+**Three decisions the genome did not make for us.**
+
+- **Synchronous update.** Neurons read the previous step's outputs and write a separate buffer,
+  swapped at the end. In-place update would make a neuron's value depend on part iteration order —
+  the plausible-number fault this project has paid for twice (logbook/0007, 0008) — and it is what
+  makes §4.4's "one node per step" latency a property rather than an accident. Measured: a signal
+  reaches parts 0, 1, 2 on steps 1, 2, 3.
+- **Neuron *d* of a part drives DOF *d*.** The genome has no effector-mapping field, so this was
+  invented rather than read. It is the only mapping that survives recursion, since neurons are
+  copied with the morph node. Summing all of a part's neurons instead would make gain depend on
+  neuron count, so adding a neuron for any unrelated purpose would silently change how hard the
+  creature swims.
+- **`Sigmoid` is `tanh`.** Both are sigmoids; only one is centred. A logistic curve is strictly
+  positive, so a joint driven through one could only ever push one way and could not oscillate —
+  paralysis in a direction, reported by nothing except a poor swimmer.
+
+**Every operator is implemented, not only the MVP set**, because §4.3 states the MVP is a
+population constraint rather than a separate system. Restricting the evaluator would turn a
+constraint on the starting population into a permanent ceiling.
+
+**Result: joints survive.** Jointed share at t=200 went from 0% to 6.4%, and it is no longer zero
+at t=60; deaths over the run halved. The audit still closes at 0.0000%.
+
+**And the mechanism is confirmed reachable, which the mean could not show.** Mean speed in an
+embodied run is ~0.0002 m/s, which reads as "nothing swims". The distribution says otherwise: over
+200 random genomes driven by their own brains, the median is 0.0062 m/s, the 90th percentile
+0.0276, and **the best is 0.485 m/s — 78× the median, with no selection at all.** 35% exceed 1
+cm/s. A good swimmer exists in roughly one genome in two hundred.
+
+**So [D029](#d029)'s conclusion narrows rather than reverses.** Billing mechanical work is still
+premature, but no longer because swimming is impossible — because two hundred simulated seconds
+and 114 births is nowhere near enough search to find a swimmer, let alone keep one. What follows
+is a longer run, not another mechanism.
+
+**Rejected:** *restricting the evaluator to the MVP operators* — see above. *Reading sensors in
+this pass* — the MVP set's oscillators have arity zero and need no inputs at all, so a working
+per-genome gait costs no sensor plumbing; closing the loop is Milestone 6 and gets §4.4's
+requirement-mask treatment when it lands. *Summing neurons into a joint, or a dedicated output
+neuron* — the first makes gain depend on neuron count, the second needs a new genome field.
