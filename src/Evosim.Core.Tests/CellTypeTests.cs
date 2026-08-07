@@ -16,14 +16,14 @@ namespace Evosim.Core.Tests
         {
             public FreeCell() : base(0f) { }
             public override string Id => "free";
-            public override float Acquire(in CellContext context) => 0f;
+            public override CellIntake Acquire(in CellContext context) => CellIntake.None;
         }
 
         private sealed class Duplicate : CellType
         {
             public Duplicate() : base(1f) { }
             public override string Id => CellTypeIds.Structural;
-            public override float Acquire(in CellContext context) => 0f;
+            public override CellIntake Acquire(in CellContext context) => CellIntake.None;
         }
 
         [Fact]
@@ -109,8 +109,8 @@ namespace Evosim.Core.Tests
         {
             var cell = new PhotosyntheticCell(0.5f);
 
-            float small = cell.Acquire(new CellContext(1f, volume: 100f, litArea: 1f, irradiance: 10f));
-            float large = cell.Acquire(new CellContext(1f, volume: 0.01f, litArea: 4f, irradiance: 10f));
+            float small = cell.Acquire(new CellContext(1f, volume: 100f, litArea: 1f, irradiance: 10f)).FromLight;
+            float large = cell.Acquire(new CellContext(1f, volume: 0.01f, litArea: 4f, irradiance: 10f)).FromLight;
 
             // A huge dark body earns less than a small bright sheet. That trade-off — collect
             // more light, swim worse — is the whole reason the type is interesting.
@@ -140,11 +140,17 @@ namespace Evosim.Core.Tests
             var cell = new ConsumerCell(biteRate: 1_000_000f);
             var contact = new TissueContact(new StructuralCell(), 10f, isAlive: false);
 
-            float gained = cell.Acquire(new CellContext(1f, volume: 1f, contact: contact));
+            CellIntake bite = cell.Acquire(new CellContext(1f, volume: 1f, contact: contact));
+            float gained = bite.FromPool;
 
             // Yield is a fraction of what was taken, and what was taken is capped by what
             // existed — otherwise a big enough mouth mints energy out of a small corpse.
-            Assert.True(gained <= 10f, $"took {gained} J from 10 J of tissue");
+            Assert.True(gained <= 10f, $"kept {gained} J from 10 J of tissue");
+
+            // And what left the corpse is what was taken, not what was kept: the difference is
+            // destroyed rather than left behind, which is what shortens a food chain.
+            Assert.True(bite.PoolDrawn <= 10f, $"drew {bite.PoolDrawn} J from 10 J of tissue");
+            Assert.True(bite.PoolDrawn >= gained);
         }
 
         [Fact]
@@ -154,7 +160,7 @@ namespace Evosim.Core.Tests
             // would be invisible until a population was living on it.
             var structural = new StructuralCell();
 
-            Assert.Equal(0f, structural.Acquire(new CellContext(1f, volume: 1f)));
+            Assert.Equal(0f, structural.Acquire(new CellContext(1f, volume: 1f)).Total);
             Assert.True(structural.Upkeep(1f, 1f) > 0f);
         }
 

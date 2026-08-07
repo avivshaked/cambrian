@@ -35,7 +35,7 @@ namespace Evosim.Core
             : base(upkeepWattsPerCubicMetre) { }
 
         public override string Id => CellTypeIds.Structural;
-        public override float Acquire(in CellContext context) => 0f;
+        public override CellIntake Acquire(in CellContext context) => CellIntake.None;
 
         /// <summary>Bone white — inert tissue, and the reference the others read against.</summary>
         public override Float3 InspectionColour => new Float3(0.86f, 0.84f, 0.78f);
@@ -104,7 +104,7 @@ namespace Evosim.Core
 
         public override string Id => CellTypeIds.Link;
         public override bool AllowsJoint => true;
-        public override float Acquire(in CellContext context) => 0f;
+        public override CellIntake Acquire(in CellContext context) => CellIntake.None;
 
         /// <summary>Amber — muscle. The only type that can move, so it should read at a glance.</summary>
         public override Float3 InspectionColour => new Float3(0.95f, 0.55f, 0.15f);
@@ -188,7 +188,7 @@ namespace Evosim.Core
         }
 
         public override string Id => CellTypeIds.Neural;
-        public override float Acquire(in CellContext context) => 0f;
+        public override CellIntake Acquire(in CellContext context) => CellIntake.None;
 
         /// <summary>Violet — nervous tissue, and distinct from every other type at a glance.</summary>
         public override Float3 InspectionColour => new Float3(0.60f, 0.35f, 0.85f);
@@ -254,9 +254,10 @@ namespace Evosim.Core
         /// <summary>Green, for the obvious reason.</summary>
         public override Float3 InspectionColour => new Float3(0.25f, 0.72f, 0.30f);
 
-        public override float Acquire(in CellContext context) =>
-            Math.Max(0f, context.Irradiance) * Math.Max(0f, context.LitArea) *
-            Efficiency * context.Seconds;
+        public override CellIntake Acquire(in CellContext context) =>
+            CellIntake.Light(
+                Math.Max(0f, context.Irradiance) * Math.Max(0f, context.LitArea) *
+                Efficiency * context.Seconds);
 
         public override void WriteParameters(Json.Writer writer) =>
             writer.Field("efficiency", Efficiency);
@@ -299,9 +300,15 @@ namespace Evosim.Core
         /// <summary>Cyan — it feeds on what the water carries, so it reads as the water's own.</summary>
         public override Float3 InspectionColour => new Float3(0.20f, 0.65f, 0.85f);
 
-        public override float Acquire(in CellContext context) =>
-            Math.Max(0f, context.NutrientDensity) * ClearanceRate *
-            Math.Max(0f, context.Volume) * context.Seconds;
+        /// <remarks>
+        /// Filtering, so nothing is lost in the transfer: what leaves the water is what the cell
+        /// keeps. A consumer tears its food up and wastes most of it (§5A.3); a filter feeder does
+        /// not, and that difference is most of why the two strategies coexist.
+        /// </remarks>
+        public override CellIntake Acquire(in CellContext context) =>
+            CellIntake.Food(
+                Math.Max(0f, context.NutrientDensity) * ClearanceRate *
+                Math.Max(0f, context.Volume) * context.Seconds);
 
         public override void WriteParameters(Json.Writer writer) =>
             writer.Field("clearanceRate", ClearanceRate);
@@ -420,17 +427,53 @@ namespace Evosim.Core
             return GrazingYield;
         }
 
-        public override float Acquire(in CellContext context)
+        /// <remarks>
+        /// <para>
+        /// <b>Two routes, and only one of them exists yet.</b> Feeding on a body it is touching
+        /// needs contact, which needs physics — that arrives at Milestone 4. Feeding on carrion
+        /// does not: dead tissue is sinking through the water as detritus (§5A.2c), and a mouth in
+        /// that water can scavenge without perceiving anything.
+        /// </para>
+        /// <para>
+        /// <b>That route is the bridge across the predator valley</b> (§5A.3). A consumer part
+        /// costs upkeep from the mutation that creates it and pays nothing until perception,
+        /// directed movement and prey density all exist together — a valley too wide for a
+        /// population to cross. Carrion pays from the first generation, so the part survives long
+        /// enough to become something. Detritivore, then scavenger, then predator: a gradient
+        /// rather than a leap.
+        /// </para>
+        /// <para>
+        /// The carrion yield applies, so a consumer wastes most of what it tears up where a filter
+        /// feeder wastes none — which is what makes scavenging a worse living than filtering, and
+        /// worth abandoning as soon as something better appears.
+        /// </para>
+        /// </remarks>
+        public override CellIntake Acquire(in CellContext context)
         {
+            float bite = BiteRate * Math.Max(0f, context.Volume) * context.Seconds;
+
+            CellIntake carrion = context.NutrientDensity > 0f
+                ? CellIntake.Food(
+                    Math.Min(bite, Math.Max(0f, context.NutrientDensity) * ScavengeVolume(context)),
+                    CarrionYield)
+                : CellIntake.None;
+
             TissueContact contact = context.Contact;
-            if (contact == null || contact.AvailableJoules <= 0f) return 0f;
+            if (contact == null || contact.AvailableJoules <= 0f) return carrion;
 
-            float taken = Math.Min(
-                contact.AvailableJoules,
-                BiteRate * Math.Max(0f, context.Volume) * context.Seconds);
-
-            return taken * YieldAgainst(contact);
+            float taken = Math.Min(contact.AvailableJoules, bite);
+            return carrion + CellIntake.Food(taken, YieldAgainst(contact));
         }
+
+        /// <summary>Cubic metres of water this part can pick detritus out of, per step.</summary>
+        /// <remarks>
+        /// Scaled by the same clearance idea a filter feeder uses, so that a consumer in thin
+        /// water is limited by how much water it can search rather than only by its bite. Without
+        /// it, a mouth in an almost-empty ocean still takes a full bite every step and scavenging
+        /// becomes a better living the emptier the world gets.
+        /// </remarks>
+        private float ScavengeVolume(in CellContext context) =>
+            Math.Max(0f, context.Volume) * context.Seconds;
 
         public override void WriteParameters(Json.Writer writer) =>
             writer.Field("biteRate", BiteRate)

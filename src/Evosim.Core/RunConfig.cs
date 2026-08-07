@@ -201,6 +201,25 @@ namespace Evosim.Core
         /// </remarks>
         public float LightLayerMetres { get; set; } = 1f;
 
+        /// <summary>How deep the world is, metres — DESIGN.md §5A.2c.</summary>
+        /// <remarks>
+        /// <b>The world's first vertical bound, and it exists because detritus has to land
+        /// somewhere.</b> Light needs no floor: it attenuates exponentially and simply gets darker
+        /// forever. A sinking pool does need one, because energy that falls past the last layer
+        /// would vanish, and vanished energy is what §5A.2's audit exists to notice. The deepest
+        /// layer is the sea floor and detritus accumulates on it — which is where a scavenging
+        /// niche would live, if one evolves.
+        /// </remarks>
+        public float WorldDepthMetres { get; set; } = 60f;
+
+        /// <summary>How fast dead matter falls, m/s — §5A.2c, §5A.4.</summary>
+        /// <remarks>
+        /// The rate that decides whether the deep is a niche or a graveyard. Fast, and everything
+        /// reaches the floor before anything in the water column can eat it; slow, and the surface
+        /// keeps its own dead and the deep starves. ⚠ Unmeasured — §5A.10.
+        /// </remarks>
+        public float NutrientSinkMetresPerSecond { get; set; } = 0.02f;
+
         /// <summary>
         /// A stable digest of everything above — the <c>configHash</c> of §7.
         /// </summary>
@@ -246,6 +265,8 @@ namespace Evosim.Core
             sb.Append(FounderDepthSpread.ToString("R", c)).Append(',');
             sb.Append(WorldAreaSquareMetres.ToString("R", c)).Append(',');
             sb.Append(LightLayerMetres.ToString("R", c)).Append(',');
+            sb.Append(WorldDepthMetres.ToString("R", c)).Append(',');
+            sb.Append(NutrientSinkMetresPerSecond.ToString("R", c)).Append(',');
             sb.Append(CellTypeMutationChance.ToString("R", c)).Append('|');
             AppendMutationRates(sb, c);
             AppendGenomeOptions(sb, c);

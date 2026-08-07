@@ -48,6 +48,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D023](#d023) | The sun is finite: light is competed for, and that is the carrying capacity | 2026-08-07 | active |
 | [D024](#d024) | Bodies are bounded at both ends, and a bodyless genome is stillborn | 2026-08-07 | active |
 | [D025](#d025) | Self-sustaining means the floor has gone quiet, not that minimum depth rose | 2026-08-07 | active |
+| [D026](#d026) | A body costs what a corpse is worth, and it is one number | 2026-08-07 | active |
 
 ---
 
@@ -725,3 +726,71 @@ should exist is an open question this makes visible rather than settles.
 **The lesson worth keeping:** an instrument whose reading is pinned by a mechanism elsewhere in
 the design is not a conservative instrument, it is a broken one. D022 reasoned about what minimum
 depth *would* mean without checking whether the world could produce it.
+
+---
+
+### D026
+**A body costs what a corpse is worth, and it is one number** · 2026-08-07
+
+Phase 2 of the energy economy: death returns tissue, absorptive cells feed on it, and consumers
+scavenge it. Building it exposed that §5A.2's audit had been closing for a smaller world than it
+claimed.
+
+**Two things were free.** An offspring's *body* cost its parent nothing — the same endowment and
+overhead bought a mote or a whale, and only upkeep noticed afterwards. And a corpse was worth
+nothing, so the detritus niche §5A.4 depends on had no fuel and `Consumer` had nothing to eat.
+
+**Both are fixed by one number, and it must be one number.**
+`CellType.TissueEnergyPerCubicMetre` is what a body is worth, so it is what a body costs: the
+parent pays it at birth, the pool receives it at death. If the two ever differed, a
+birth-and-death cycle would create or destroy energy — a free-energy source built in by us rather
+than discovered, which is the single thing §5A.2 exists to make impossible. So both sides call
+one method.
+
+**The pool is a stock, not a density.** `AbsorptiveCell` read a density and converted it to joules
+with nothing anywhere reduced — the same infinite-subsidy shape that made the population unbounded
+when light worked that way ([D023](#d023)). It had not bitten only because the density was always
+zero. Building it as a finite stock that feeding depletes means the fault cannot appear rather
+than appearing later under another name.
+
+**Consumers can finally eat.** `ConsumerCell` fed only on `TissueContact`, which needs physics and
+does not arrive until Milestone 4, so consumers earned exactly nothing and the predator valley
+§5A.3 worries about was infinitely wide. Scavenging the detritus pool at `CarrionYield` is the
+bridge §5A.3 already specified; it just had no pool to scavenge from.
+
+**`CellIntake` replaced a float, and the reason is a conservation law.** A cell used to report one
+number. The world needs three facts about it: how much was sunlight (new energy), how much the
+cell kept from eating (transferred), and how much left the pool to yield that (drawn). Yield is
+below 1, so what is drawn exceeds what is kept, and leaving the difference in the pool would make
+every meal a partial refund and a food chain a perpetual motion machine. The first attempt
+recovered the split by *re-running the whole metabolic step with the food removed and subtracting*
+— two expressions of one quantity, on the only hot loop in the design, at four evaluations per
+creature per step.
+
+**Result:** the audit is now an equality across the whole food web —
+`EnergyIn − EnergyOut == reserves + bodies + detritus` — measured at 0.0000% residual over a run
+with births, deaths and feeding.
+
+**And it supplied the pressure [D023](#d023) noticed was missing.** That entry recorded, as an
+oddity, that more light bought *bigger* creatures. It did, because bodies were free. At 96 W/m²
+the population was ~38 giants; it is now 6,400 rising to 8,500 while living biomass converges at
+about 550 m³. Light still caps total tissue exactly as before. What changed is how it is divided.
+
+**Rejected:** *charging construction as upkeep spread over a lifetime* — it prices the body but
+not the decision, so a parent still makes an arbitrarily large offspring for free and the cost
+lands on someone who did not choose it. *Refusing a whole brood the parent cannot fully afford* —
+a slightly-too-expensive mutation would then cost a lineage every offspring rather than one, which
+is a selection pressure invented by the accounting; the affordable prefix is born instead.
+
+**Two mistakes worth recording.** The reproduction gate was left checking only endowment and
+overhead while the price now included tissue, so every solvent creature mutated and developed a
+genome each step purely to discover it could not pay for it — the test suite went from 18 seconds
+to not finishing. And the first sweep after this change looked like unbounded growth; it was not.
+Population rose while *biomass* held flat, which is the quantity light actually caps. Watching the
+wrong variable made a correct result look like the failure of [D023](#d023).
+
+**Known limit, recorded rather than solved:** detritus does not remineralise, so it sinks and
+accumulates on the sea floor forever — 93% of all detritus after 40,000 s. It is a sink and not a
+source, so conservation holds, but it grows without bound and whatever first evolves to live down
+there inherits a very large bank. Whether that is a flaw or the most interesting thing in the
+world is not yet measurable.

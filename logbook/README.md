@@ -72,3 +72,4 @@ are the ones most likely to go unwritten.
 | [0009](0009-when-a-part-stopped-being-a-box.md) | 2026-08-07 | When a part stopped being a box |
 | [0010](0010-the-world-starts-with-almost-nothing.md) | 2026-08-07 | The world starts with almost nothing |
 | [0011](0011-the-sun-was-infinite.md) | 2026-08-07 | The sun was infinite |
+| [0012](0012-the-body-that-cost-nothing.md) | 2026-08-07 | The body that cost nothing |

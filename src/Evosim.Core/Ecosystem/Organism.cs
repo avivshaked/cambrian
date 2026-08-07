@@ -57,20 +57,50 @@ namespace Evosim.Core
         public EnergyLedger Lifetime { get; internal set; }
 
         /// <summary>
+        /// Energy embodied in this body, in joules — what it cost to build and what it is worth
+        /// dead. DESIGN.md §5A.2c.
+        /// </summary>
+        /// <remarks>
+        /// <b>Held separately from <see cref="Energy"/> because it is not spendable.</b> A
+        /// starving creature cannot metabolise its own body — there is no growth in this design
+        /// and therefore no shrinking either (§5A.6) — so this sits outside the reserve that
+        /// death-at-zero watches, and moves exactly twice: in when a parent builds it, out into
+        /// the nutrient pool when it dies. Two movements of one number is what keeps the food web
+        /// inside §5A.2's audit instead of alongside it.
+        /// </remarks>
+        public float TissueJoules { get; internal set; }
+
+        /// <summary>
         /// What <see cref="SensorChannel.Energy"/> reports: seconds of life left at the current
         /// burn rate — §4.4.
         /// </summary>
         public float SecondsOfReserve =>
             StandingWatts > 1e-9f ? Energy / StandingWatts : float.PositiveInfinity;
 
-        /// <summary>Joules this creature must hold before it can reproduce — §5A.6.</summary>
+        /// <summary>Joules this creature must hold before it is worth attempting to reproduce — §5A.6.</summary>
         /// <remarks>
+        /// <para>
         /// Derived from the creature's own evolved traits rather than configured, so a lineage
         /// that evolves a larger brood waits longer for it automatically and there is no separate
         /// constant to keep in sync.
+        /// </para>
+        /// <para>
+        /// <b>An estimate, not the price.</b> Since §5A.2c a parent also builds each offspring's
+        /// body, and what that costs is unknown until the mutated genome has been developed. This
+        /// stands in <see cref="TissueJoules"/> — the parent's own body — because offspring are
+        /// mutated copies and are nearly always close to the parent's size. Whoever passes this
+        /// gate still pays the true price or is refused, so the estimate cannot buy anything; it
+        /// only decides whether developing a genome is worth trying.
+        /// </para>
+        /// <para>
+        /// <b>Leaving tissue out of the gate is not a small mistake.</b> With it omitted, every
+        /// solvent creature clears a gate it cannot actually pay, mutates and develops a genome,
+        /// discovers it is unaffordable and discards it — once per creature per step, for the
+        /// whole run. The test suite went from 18 seconds to not finishing.
+        /// </para>
         /// </remarks>
         public float ReproductionThreshold(float perOffspringOverheadJoules) =>
-            Genome.Reproduction.CostJoules(perOffspringOverheadJoules);
+            Genome.Reproduction.CostJoules(perOffspringOverheadJoules + TissueJoules);
 
         public override string ToString() =>
             $"#{Id} gen {GenerationDepth}, {Energy:0.#} J, {Age:0.#} s, {Phenotype.PartCount} parts";

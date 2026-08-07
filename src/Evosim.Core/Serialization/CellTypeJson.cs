@@ -63,6 +63,7 @@ namespace Evosim.Core
             writer.BeginObject();
             writer.Field("id", type.Id);
             writer.Field("upkeepWattsPerCubicMetre", type.UpkeepWattsPerCubicMetre);
+            writer.Field("tissueEnergyPerCubicMetre", type.TissueEnergyPerCubicMetre);
             type.WriteParameters(writer);
             writer.EndObject();
         }
@@ -79,7 +80,14 @@ namespace Evosim.Core
                     "read makes its runs unloadable, so register one alongside the type itself.");
             }
 
-            return reader(node, node["upkeepWattsPerCubicMetre"].AsFloat());
+            CellType type = reader(node, node["upkeepWattsPerCubicMetre"].AsFloat());
+
+            // Fields every type has are applied here rather than threaded through the reader
+            // delegate. A type registered from outside this assembly then picks them up without
+            // its constructor knowing they exist, which is what Register promises.
+            type.TissueEnergyPerCubicMetre = node["tissueEnergyPerCubicMetre"].AsFloat();
+
+            return type;
         }
 
         public static void WriteRegistry(Json.Writer writer, string name, CellTypeRegistry registry)

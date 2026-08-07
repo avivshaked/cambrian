@@ -69,6 +69,54 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// Energy embodied in a cubic metre of this tissue, in joules — DESIGN.md §5A.2c.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What a body is worth, and therefore what it costs.</b> This is one number doing two
+        /// jobs that must be the same number: a parent pays it to build each offspring, and the
+        /// world gets it back as detritus when that offspring dies. If the two ever differ, a
+        /// birth-and-death cycle either creates or destroys energy — and a cycle that creates it
+        /// is a free-energy source built in by us rather than discovered, which is the one thing
+        /// §5A.2's audit exists to make impossible.
+        /// </para>
+        /// <para>
+        /// Before this, an offspring's <i>body</i> was free: a parent paid the same endowment and
+        /// overhead whether it produced a mote or a whale, and only upkeep ever noticed the
+        /// difference. Building tissue is the dominant cost of reproduction in anything real, and
+        /// its absence made offspring size a lever with no price on it (§5A.1's rule about free
+        /// levers). It also makes brood size and offspring size genuinely trade against each
+        /// other, which is what turns them into strategies rather than settings.
+        /// </para>
+        /// <para>
+        /// <b>Settable rather than constructor-injected</b>, unlike <see cref="UpkeepWattsPerCubicMetre"/>,
+        /// and deliberately: it is a field <i>every</i> type has, so <see cref="CellTypeJson"/>
+        /// applies it after construction. A reader registered by a type outside this assembly then
+        /// gets it without its constructor knowing it exists, which is the extension contract
+        /// <see cref="CellTypeJson.Register"/> promises. ⚠ Unmeasured — §5A.10.
+        /// </para>
+        /// </remarks>
+        public float TissueEnergyPerCubicMetre
+        {
+            get => _tissueEnergyPerCubicMetre;
+            set
+            {
+                if (!(value > 0f) || float.IsInfinity(value))
+                {
+                    throw new System.ArgumentOutOfRangeException(
+                        nameof(value), value,
+                        "Tissue worth nothing is tissue that costs nothing to build, and a body " +
+                        "that costs nothing is a free lever of exactly the kind this design " +
+                        "refuses elsewhere.");
+                }
+
+                _tissueEnergyPerCubicMetre = value;
+            }
+        }
+
+        private float _tissueEnergyPerCubicMetre = 500f;
+
+        /// <summary>
         /// Whether a part of this type may have a movable joint to its parent — §5A.1.
         /// </summary>
         /// <remarks>
@@ -82,12 +130,22 @@ namespace Evosim.Core
 
         /// <summary>Energy this cell acquires over one step, in joules. Never negative.</summary>
         /// <remarks>
+        /// <para>
         /// Upkeep is charged separately by the caller, so an implementation returns gross
         /// intake rather than net. Returning a net figure would let a type quietly refund its
         /// own costs, which is exactly the sort of thing that is invisible until a population
         /// is living on it.
+        /// </para>
+        /// <para>
+        /// <b>Light and food are reported apart because only one of them is new energy.</b> §5A.2
+        /// makes sunlight the sole primary input; anything eaten was already in the world and has
+        /// to be removed from wherever it came from (§5A.2c). Returning a single total would leave
+        /// the caller unable to tell which, and the only way back would be to run the whole step
+        /// again with the food taken away — two evaluations of one quantity, on the design's only
+        /// hot loop, which is also two chances for them to disagree.
+        /// </para>
         /// </remarks>
-        public abstract float Acquire(in CellContext context);
+        public abstract CellIntake Acquire(in CellContext context);
 
         /// <summary>Standing cost of a part over one step, in joules.</summary>
         /// <remarks>
@@ -182,6 +240,22 @@ namespace Evosim.Core
         public virtual string HashContribution() =>
             string.Format(
                 CultureInfo.InvariantCulture, "{0}:upkeep={1:R},joint={2}", Id, UpkeepWattsPerCubicMetre, AllowsJoint);
+
+        /// <summary>
+        /// Everything common to all types, folded in around whatever
+        /// <see cref="HashContribution"/> returns — §7.
+        /// </summary>
+        /// <remarks>
+        /// Separate from <see cref="HashContribution"/> because that one is overridden per type,
+        /// and a subclass author adding a parameter has no reason to know that the base gained a
+        /// field. Every override that forgot to call <c>base</c> would silently drop it from the
+        /// hash — the exact fault §7 exists to catch, reintroduced by the mechanism meant to
+        /// prevent it.
+        /// </remarks>
+        public string FullHashContribution() =>
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "{0},tissue={1:R}", HashContribution(), TissueEnergyPerCubicMetre);
 
         public override string ToString() => Id;
     }

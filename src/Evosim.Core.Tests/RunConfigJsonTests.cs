@@ -154,7 +154,7 @@ namespace Evosim.Core.Tests
         {
             public BallastCell(float upkeep = 1.5f) : base(upkeep) { }
             public override string Id => "test-ballast";
-            public override float Acquire(in CellContext context) => 0f;
+            public override CellIntake Acquire(in CellContext context) => CellIntake.None;
         }
 
         [Fact]

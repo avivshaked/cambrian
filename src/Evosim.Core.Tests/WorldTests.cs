@@ -101,14 +101,17 @@ namespace Evosim.Core.Tests
             try { for (int i = 0; i < 300; i++) world.Step(1f); }
             catch (PopulationRunawayException e) { _output.WriteLine($"stopped: {e.Population} living"); }
 
-            double held = 0;
-            foreach (Organism creature in world.Living) held += creature.Energy;
-            foreach (Organism creature in world.Dead) held += creature.Energy;
-
-            double residual = world.EnergyIn - world.EnergyOut - held;
+            // Three accounts now, not one: what creatures hold in reserve, what is locked up in
+            // their bodies, and what is lying in the water as detritus (§5A.2c). Endowment,
+            // tissue, feeding and death all move energy between them and none of them creates
+            // any, so the same equality has to hold across a whole food web as across a pond of
+            // plants.
+            double residual = world.AuditResidual;
             double scale = Math.Max(1.0, world.EnergyIn);
 
-            _output.WriteLine($"in {world.EnergyIn:0.###} out {world.EnergyOut:0.###} held {held:0.###}");
+            _output.WriteLine(
+                $"in {world.EnergyIn:0.###} out {world.EnergyOut:0.###} " +
+                $"standing {world.StandingJoules:0.###} (of which detritus {world.Nutrients.TotalJoules:0.###})");
             _output.WriteLine($"residual {residual:0.######} ({residual / scale:P4})");
 
             Assert.True(
@@ -135,26 +138,36 @@ namespace Evosim.Core.Tests
         [Fact]
         public void ReproductionCostsExactlyWhatTheGenomeSays()
         {
-            // n * (e + overhead) — §5A.6. The overhead is spent rather than transferred, which is
-            // what makes brood size a trait selection can act on: without it, one brood of four
-            // and four broods of one are the same transaction.
+            // n * (e + overhead + body) — §5A.6 and §5A.2c. The overhead is spent rather than
+            // transferred, which is what makes brood size a trait selection can act on: without
+            // it, one brood of four and four broods of one are the same transaction. The body term
+            // is what stops offspring size being free, and is an estimate from the parent's own
+            // tissue since the offspring does not exist yet.
             //
             // That the world charges this correctly is proven by EnergyIsConservedAcrossTheWholeRun
             // rather than here — a reproduction priced wrong would not close the books. This checks
-            // only that a creature's threshold is its own genome's number and not a global one.
+            // only that a creature's threshold is its own genome's and its own body's number and
+            // not a global one.
             var world = Run(new RunConfig { MinimumPopulation = 20 }, new LightModel(), seconds: 30f);
+
+            Assert.NotEmpty(world.Living);
 
             foreach (Organism creature in world.Living)
             {
                 ReproductionTraits traits = creature.Genome.Reproduction;
 
                 Assert.Equal(
-                    traits.BroodSize * (traits.OffspringEndowment + 25f),
+                    traits.BroodSize *
+                        (traits.OffspringEndowment + 25f + creature.TissueJoules),
                     creature.ReproductionThreshold(25f), 3);
 
                 // A larger brood must cost more, or brood size is a free parameter and every
                 // lineage converges on the largest one it can express.
                 Assert.True(creature.ReproductionThreshold(50f) > creature.ReproductionThreshold(25f));
+
+                // And a body must cost something to build, or offspring size is the free
+                // parameter instead and every lineage converges on the largest of those.
+                Assert.True(creature.TissueJoules > 0f, "a body with no worth is a body with no price");
             }
         }
 

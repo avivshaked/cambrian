@@ -56,6 +56,9 @@ namespace Evosim.Core
         private readonly List<Organism> _dead = new List<Organism>();
         private readonly List<Organism> _born = new List<Organism>();
 
+        /// <summary>This step's ledgers, parallel to <c>_living</c>. Reused, never reallocated.</summary>
+        private readonly List<EnergyLedger> _ledgers = new List<EnergyLedger>();
+
         private long _nextId;
         private ulong _nextSeed;
 
@@ -73,6 +76,9 @@ namespace Evosim.Core
         /// of how full a world is.
         /// </remarks>
         public LightField Field { get; }
+
+        /// <summary>Dead matter in the water, and what feeds on it — §5A.2c.</summary>
+        public NutrientField Nutrients { get; }
 
         /// <summary>Simulated seconds since the world began.</summary>
         public double ElapsedSeconds { get; private set; }
@@ -102,23 +108,40 @@ namespace Evosim.Core
         public double EnergyOut { get; private set; }
 
         /// <summary>
-        /// Energy held by creatures that starved, waiting to become nutrient. Always zero for now.
+        /// Everything the world holds right now: reserves, bodies and detritus, in joules.
         /// </summary>
         /// <remarks>
-        /// §5A.6 returns tissue to the nutrient pool on death, and §5A.0b's argument that the
-        /// doomed half of generation zero <i>is</i> the primordial soup depends on it. The pool
-        /// does not exist yet (Phase 2), so this is carried as an explicit named quantity rather
-        /// than quietly dropped: a creature starves at exactly zero energy, so the tissue owed to
-        /// the world is its body, not its reserve, and pretending otherwise would leave the §5A.2
-        /// audit closing for the wrong reason.
+        /// The middle term of §5A.2's audit, which is a hard equality rather than a plausibility
+        /// check: <c>EnergyIn − EnergyOut == Standing</c>, always, to floating-point. Sunlight and
+        /// founders are the only sources; metabolism and reproductive overhead the only sinks;
+        /// everything else — endowment, tissue, feeding, death — moves energy between the three
+        /// accounts below without changing the total. A creature that finds free energy in the
+        /// physics or in our arithmetic breaks this and nothing else has to notice it.
         /// </remarks>
-        public double UnrecycledTissueJoules { get; private set; }
+        public double StandingJoules
+        {
+            get
+            {
+                double sum = Nutrients.TotalJoules;
+                for (int i = 0; i < _living.Count; i++)
+                {
+                    sum += _living[i].Energy + _living[i].TissueJoules;
+                }
+                return sum;
+            }
+        }
+
+        /// <summary>How far §5A.2's books are from balancing, in joules. Should be ~0.</summary>
+        public double AuditResidual => EnergyIn - EnergyOut - StandingJoules;
 
         public World(RunConfig config, LightModel light = null, ulong seed = 1)
         {
             Config = config ?? throw new ArgumentNullException(nameof(config));
             Light = light ?? new LightModel();
             Field = new LightField(Light, config.WorldAreaSquareMetres, config.LightLayerMetres);
+            Nutrients = new NutrientField(
+                config.WorldAreaSquareMetres, config.LightLayerMetres,
+                config.NutrientSinkMetresPerSecond, config.WorldDepthMetres);
             _nextSeed = seed;
         }
 
@@ -132,6 +155,7 @@ namespace Evosim.Core
             SecondsSinceFloorFired += seconds;
 
             Metabolise(seconds);
+            Nutrients.Settle(seconds);
             Reproduce();
             EnforceFloor();
             EnforceCeiling();
@@ -159,15 +183,26 @@ namespace Evosim.Core
         }
 
         /// <remarks>
-        /// <b>Two passes, because light is finite and shared</b> (§5A.2b). Every creature's shadow
-        /// must be known before anyone's income can be, so the field is filled first and solved,
-        /// and only then is anybody paid. A single pass would give whoever the list happened to
-        /// walk first the undiminished sun, making income depend on iteration order — which is
-        /// the kind of fault that produces a perfectly plausible number.
+        /// <para>
+        /// <b>Three passes, because both resources are finite and shared</b> (§5A.2b, §5A.2c).
+        /// Every creature's shadow must be known before anyone's income can be, and every
+        /// creature's appetite before anyone is fed. A single pass would give whoever the list
+        /// happened to walk first the undiminished sun and an unemptied larder, making income
+        /// depend on iteration order — the kind of fault that produces a perfectly plausible
+        /// number.
+        /// </para>
+        /// <para>
+        /// The appetite pass costs a second evaluation of the metabolic step per creature, since
+        /// what a body would take is exactly what <see cref="Metabolism"/> says it takes at the
+        /// unrationed density. Estimating it more cheaply would mean a second expression of the
+        /// same quantity, and two expressions of one quantity is how they come to disagree.
+        /// </para>
         /// </remarks>
         private void Metabolise(float seconds)
         {
             Field.Clear();
+            Nutrients.ClearDemand();
+
             for (int i = 0; i < _living.Count; i++)
             {
                 Organism creature = _living[i];
@@ -175,20 +210,51 @@ namespace Evosim.Core
             }
             Field.Solve();
 
+            // Appetite. Priced at the full local density, so this is what each creature would eat
+            // if it were alone — which is the quantity a proportional share has to be taken of.
+            // Kept, because it is also the answer whenever the larder turns out to be full.
+            while (_ledgers.Count < _living.Count) _ledgers.Add(default);
+
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+
+                EnergyLedger ledger = Metabolism.StepAt(
+                    creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY),
+                    Nutrients.DensityAt(creature.HeightY), workJoules: 0f, seconds: seconds);
+
+                _ledgers[i] = ledger;
+                Nutrients.Demand(creature.HeightY, ledger.PoolDrawn);
+            }
+
             for (int i = _living.Count - 1; i >= 0; i--)
             {
                 Organism creature = _living[i];
                 creature.Age += seconds;
 
-                EnergyLedger ledger = Metabolism.StepAt(
-                    creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY),
-                    nutrientDensity: 0f, workJoules: 0f, seconds: seconds);
+                float share = Nutrients.ShareAt(creature.HeightY);
+                EnergyLedger ledger = _ledgers[i];
+
+                // Recomputed only when the larder is short. Scaling the stored ledger instead
+                // would assume intake is linear in density, which it is for a filter feeder and
+                // is not for anything with a bite rate that saturates.
+                if (share < 1f)
+                {
+                    ledger = Metabolism.StepAt(
+                        creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY),
+                        Nutrients.DensityAt(creature.HeightY) * share,
+                        workJoules: 0f, seconds: seconds);
+                }
+
+                if (ledger.PoolDrawn > 0f) Nutrients.Take(creature.HeightY, ledger.PoolDrawn);
 
                 creature.Energy += ledger.Net;
                 creature.Lifetime += ledger;
 
-                EnergyIn += ledger.Income;
-                EnergyOut += ledger.Expenditure;
+                // Only sunlight is new energy. What was eaten was already in the world — and what
+                // was torn up and not eaten has left it, which is why a food chain shortens.
+                EnergyIn += ledger.LightIncome;
+                EnergyOut += ledger.Expenditure + ledger.Wasted;
 
                 if (creature.Energy > 0f) continue;
 
@@ -197,7 +263,11 @@ namespace Evosim.Core
                 EnergyOut += creature.Energy;
                 creature.Energy = 0f;
 
-                UnrecycledTissueJoules += 0.0;
+                // The body becomes detritus where it died — §5A.2c. This is the whole reason
+                // anything other than a plant can live, and the reason the doomed half of
+                // generation zero is the world's first food rather than merely a waste of seeds.
+                Nutrients.Deposit(creature.HeightY, creature.TissueJoules);
+                creature.TissueJoules = 0f;
 
                 _living.RemoveAt(i);
                 _dead.Add(creature);
@@ -205,6 +275,23 @@ namespace Evosim.Core
             }
         }
 
+
+        /// <remarks>
+        /// <para>
+        /// <b>A brood is truncated rather than refused</b> — §5A.2c. An offspring's body has to be
+        /// built out of the parent's reserve, and what a body costs is not known until the mutated
+        /// genome has been developed, so the affordable prefix of the brood is born and the rest
+        /// is not. Refusing the whole brood instead would make a slightly-too-expensive mutation
+        /// cost a lineage every offspring rather than one, which is a selection pressure invented
+        /// by the accounting.
+        /// </para>
+        /// <para>
+        /// The threshold gate is still checked first, on the part of the cost that <i>is</i> known
+        /// in advance. Without it every solvent creature would mutate and develop a genome on
+        /// every step just to discover it could not pay for it — the same work, at the cost of
+        /// most of the run.
+        /// </para>
+        /// </remarks>
         private void Reproduce()
         {
             // Collected first and appended after, so an offspring cannot itself reproduce on the
@@ -216,21 +303,12 @@ namespace Evosim.Core
             {
                 Organism parent = _living[i];
 
-                float cost = parent.ReproductionThreshold(Config.PerOffspringOverheadJoules);
-                if (cost <= 0f || parent.Energy < cost) continue;
-
-                parent.Energy -= cost;
-
-                // The overhead is spent, not transferred: it is what makes brood size a trait
-                // selection can act on at all (§5A.6). Without it, one brood of four and four
-                // broods of one are indistinguishable and brood size selects for nothing.
-                EnergyOut +=
-                    parent.Genome.Reproduction.BroodSize * Config.PerOffspringOverheadJoules;
+                float gate = parent.ReproductionThreshold(Config.PerOffspringOverheadJoules);
+                if (gate <= 0f || parent.Energy < gate) continue;
 
                 for (int n = 0; n < parent.Genome.Reproduction.BroodSize; n++)
                 {
-                    Organism child = Conceive(parent);
-                    if (child != null) _born.Add(child);
+                    if (!Conceive(parent)) break;
                 }
             }
 
@@ -241,16 +319,39 @@ namespace Evosim.Core
             }
         }
 
-        private Organism Conceive(Organism parent)
+        /// <summary>
+        /// Makes one offspring if the parent can afford it. False means it could not, and the
+        /// rest of the brood is abandoned.
+        /// </summary>
+        private bool Conceive(Organism parent)
         {
             ulong seed = _nextSeed++;
 
-            Genome child = Mutator.Mutate(
+            Genome childGenome = Mutator.Mutate(
                 parent.Genome, new Rng(seed), Config.Mutation, Config.CellTypes);
 
-            return Admit(
-                child, BirthKind.Reproduction, seed, parent.Id, parent.GenerationDepth + 1,
-                parent.Genome.Reproduction.OffspringEndowment, parent.HeightY);
+            Phenotype body = Developer.Develop(
+                childGenome, Config.Development, null, Config.Shapes);
+
+            float endowment = parent.Genome.Reproduction.OffspringEndowment;
+            float tissue = Metabolism.TissueJoules(body, Config);
+            float price = endowment + tissue + Config.PerOffspringOverheadJoules;
+
+            if (parent.Energy < price) return false;
+
+            parent.Energy -= price;
+
+            // Endowment and tissue are transferred and stay in the world; the overhead is burned.
+            // It is what makes brood size a trait selection can act on at all (§5A.6) — without
+            // it, one brood of four and four broods of one are indistinguishable.
+            EnergyOut += Config.PerOffspringOverheadJoules;
+
+            Organism child = Admit(
+                childGenome, body, BirthKind.Reproduction, seed, parent.Id,
+                parent.GenerationDepth + 1, endowment, tissue, parent.HeightY);
+
+            if (child != null) _born.Add(child);
+            return true;
         }
 
         /// <remarks>
@@ -281,9 +382,13 @@ namespace Evosim.Core
                 // §5A.2 calibration read as more generous than it is.
                 float height = -rng.Range(0f, Config.FounderDepthSpread);
 
+                Phenotype body = Developer.Develop(
+                    genome, Config.Development, null, Config.Shapes);
+
                 Organism founder = Admit(
-                    genome, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
-                    energy: Config.FounderEnergyJoules, heightY: height);
+                    genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
+                    energy: Config.FounderEnergyJoules,
+                    tissue: Metabolism.TissueJoules(body, Config), heightY: height);
 
                 // A stillborn founder is still an attempt, and counting it keeps the floor's
                 // trickle a trickle. Not counting it would let a step retry until something
@@ -313,19 +418,17 @@ namespace Evosim.Core
         /// today: §4.5's extinction-by-shrinking prunes the root as readily as any other node.
         /// </remarks>
         private Organism Admit(
-            Genome genome, BirthKind kind, ulong seed, long parentId, int generationDepth,
-            float energy, float heightY)
+            Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
+            int generationDepth, float energy, float tissue, float heightY)
         {
-            Phenotype phenotype = Developer.Develop(
-                genome, Config.Development, null, Config.Shapes);
-
             if (phenotype.PartCount == 0)
             {
                 Stillbirths++;
 
                 // The energy still has to balance. A floor spawn's endowment was never created,
                 // so nothing is owed; an offspring's was already deducted from its parent, so it
-                // leaves the world here and must be recorded as leaving.
+                // leaves the world here and must be recorded as leaving. Its tissue is zero either
+                // way — there is no body to have paid for.
                 if (kind != BirthKind.Floor) EnergyOut += energy;
 
                 return null;
@@ -340,14 +443,15 @@ namespace Evosim.Core
                 Genome = genome,
                 Phenotype = phenotype,
                 Energy = energy,
+                TissueJoules = tissue,
                 HeightY = heightY,
                 StandingWatts = Metabolism.StandingWatts(phenotype, Config),
             };
 
-            // Endowment is transferred from the parent and floor energy is created, so only the
-            // second is income the world has to account for. Conflating them would let a
-            // population manufacture energy by breeding.
-            if (kind == BirthKind.Floor) EnergyIn += energy;
+            // Endowment and body are transferred from the parent, and a founder's are created out
+            // of nothing, so only the second is income the world has to account for. Conflating
+            // them would let a population manufacture energy by breeding.
+            if (kind == BirthKind.Floor) EnergyIn += energy + tissue;
 
             return creature;
         }

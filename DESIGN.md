@@ -904,17 +904,87 @@ break-even for a 0.3 m photosynthetic cube — where lit area × irradiance × e
 volume × upkeep — is 24 W/m². The measurement and the arithmetic agree, which is the point at
 which either is worth believing.
 
-**Above the transition, nothing runs away.** Every setting up to 400 W/m² settles at tens to
-hundreds of creatures against a ceiling of 50,000, with total shadow 10–290× the world's area:
-the light is fully contested and the population is regulated by that, not by us. More light
-produces *bigger* creatures rather than more of them, because a larger body shades its
-competitors — an outcome nothing in the model was told to produce.
+**Above the transition, nothing runs away.** The light is fully contested and the population is
+regulated by that, not by us. What light caps is **living biomass**, not head count: in steady
+state the world's metabolic burn equals its light income, and burn is proportional to tissue.
+Two worlds of equal biomass can hold forty giants or eight thousand motes.
 
-⚠ **The world has no length scale, and this exposes it.** At 400 W/m² the surviving creatures
-carry thousands of square metres of surface in an aperture 20 m across. Nothing relates a body's
-size to the world's size except the light budget, because `Evosim.Core` has no positions beyond
-depth. The constraint that is missing is spatial extent, and it arrives with the physics
-simulation at Milestone 4, not before.
+~~More light produces *bigger* creatures rather than more of them, because a larger body shades
+its competitors.~~ ⚠ **Superseded by §5A.2c.** That was true, and it was true because an
+offspring's body cost its parent nothing to build — so the only limit on size was shading, and
+shading rewards being large. Once tissue has to be paid for, the same worlds hold many small
+creatures instead of a few enormous ones, at the same total biomass. The observation was
+correct; the cause was a missing price, not a property of light.
+
+~~⚠ The world has no length scale, and this exposes it. At 400 W/m² the surviving creatures carry
+thousands of square metres of surface in an aperture 20 m across.~~ **Largely resolved by
+§5A.2c**, and not by adding a length scale. With bodies costing what they are worth, total shadow
+across the population fell from 10–290× the world's area to **0.3–1.3×** — bodies are now
+world-scale because a giant is unaffordable to construct, not because anything measured the world
+and forbade one. Spatial extent still arrives with the physics simulation at Milestone 4, and it
+is still the honest constraint; it is no longer load-bearing for plausibility.
+
+### 5A.2c Bodies cost, corpses feed — the loop that closes ✅ implemented
+
+§5A.2 promised an auditable world: sun in, metabolism out, everything else conserved. Until
+Phase 2 the middle clause was aspiration. Two things were free.
+
+**A body was free to build.** A parent paid its offspring's endowment and a fixed overhead, and
+nothing else — the same price for a mote as for a whale. Only upkeep ever noticed the
+difference, and upkeep is paid later by the offspring rather than now by the parent. Building
+tissue is the dominant cost of reproduction in anything real, and its absence made offspring
+size a lever with no price on it, which §5A.1 says is exactly what evolution takes to the limit.
+
+**A corpse was worth nothing.** Death removed a creature and its body went nowhere, so the
+detritus niche §5A.4 depends on had no fuel and `Consumer` had nothing to eat.
+
+Both are fixed by one number. **`CellType.TissueEnergyPerCubicMetre` is what a body is worth,
+and it is therefore what a body costs** — a parent pays it to build each offspring, and the
+nutrient pool receives it when that offspring dies. The two must be the same figure or a
+birth-and-death cycle creates or destroys energy, so both call one method.
+
+**The nutrient pool is a stock, not a density.** `AbsorptiveCell` previously read a density from
+its surroundings and converted it to joules with nothing anywhere being reduced — the same
+infinite-subsidy shape that made the population unbounded when light worked that way (§5A.2b).
+It had not bitten only because the density was always zero. `NutrientField` holds joules per
+layer, feeding removes them, and demand above supply is shared proportionally exactly as light
+is.
+
+**Detritus sinks, and that is what makes the deep a niche rather than only a dark place.** Light
+falls off downward; food falls *toward* the dark. The two gradients oppose, so neither strategy
+wins everywhere — and nobody arranged it. It follows from photosynthesis needing the surface and
+corpses having mass. The world therefore gains its first vertical bound
+(`WorldDepthMetres`): light can attenuate forever, but a sinking pool needs a floor or energy
+falls out of the world, and vanished energy is what the audit exists to notice.
+
+**Carrion is the predator valley's bridge, and it now exists.** §5A.3 argues a `Consumer` part
+costs upkeep from the mutation that creates it and pays nothing until perception, directed
+movement and prey density coexist — a valley too wide to cross. `ConsumerCell` could only feed on
+`TissueContact`, which needs physics and does not arrive until Milestone 4, so consumers earned
+exactly nothing. They can now scavenge the detritus pool at `CarrionYield`. Detritivore →
+scavenger → predator is a gradient the population can actually walk.
+
+**The audit is now an equality, not a check.** `EnergyIn − EnergyOut == StandingJoules`, where
+standing energy is creature reserves plus creature bodies plus detritus. Sunlight and floor
+spawns are the only sources; metabolism, reproductive overhead and the loss on every feeding
+transfer are the only sinks. Measured residual over a 300 s run with births, deaths and feeding:
+**0.0000%**.
+
+**What it did to the world.** At 96 W/m², where the population previously settled at a few dozen
+giants, the same world now holds **551 creatures at t=10,000 s and 835 at t=20,000 s while living
+biomass goes 111 m³ → 129 m³** — head count up half again over a doubling of elapsed time, tissue
+up 16%. Total tissue is capped by light exactly as §5A.2b says; what changed is that it is now
+divided among many small creatures rather than a few enormous ones, because a large offspring is
+finally expensive to build. That is the pressure §5A.2b was missing.
+
+The transition itself did not move: **32 W/m², identical across three seeds**, and agreeing much
+more closely between them than before. What changed is everything above it.
+
+⚠ **Detritus accumulates on the sea floor and nothing removes it.** 80–93% of all detritus ends
+up in the bottom layer, where no lineage has yet evolved to live.
+It is a sink and not a source, so conservation is unaffected — but it grows without bound, and
+whatever first reaches it inherits a very large bank. Real remineralisation would return it
+slowly to the water; whether that matters here is unmeasured and deliberately not guessed at.
 
 ### 5A.3 Feeding, and where herbivores come from
 
@@ -1147,6 +1217,8 @@ produces nothing.
 | **Unbounded body size** | Half-extent mutation is a multiplicative random walk, and only §4.5's lower tail was absorbed | `MaxPartVolume` — extinction by growing, mirroring extinction by shrinking (§4.2) |
 | **The infinitely thin sheet** | Income scales with area, upkeep with volume, and volume does not bound area | `MinPartHalfExtent` keeps the arithmetic representable; what actually bounds a body is the light running out (§5A.2b) |
 | **The immortal nothing** | A genome that develops into no parts has zero income and zero upkeep, so death-at-zero never fires | Stillbirth: a bodyless creature is refused at admission and counted (§5A.6) |
+| **The free body** | An offspring's tissue costs the parent nothing, so offspring size is a lever with no price | A parent builds each body out of its own reserve (§5A.2c) |
+| **The refunded meal** | A feeder keeps a fraction of what it takes; leaving the rest in the pool makes every meal a partial refund | `CellIntake` reports what was drawn as well as what was kept, and the difference leaves the world |
 | **Bloat (genome)** | Development caps a body at `MaxParts`, so nodes beyond what it expresses are never grown, cost nothing, and are invisible to an economy that prices bodies. Measured: with per-birth add/remove, a 100,000-birth lineage reached **847 nodes** and replay went quadratic — 32 s for the chain | Nodes enter small and leave by shrinking below an extinction threshold (§4.5). Unexpressed nodes are unexpressed *because* nothing selects on them, so they are exactly the ones that drift out — bloat clears itself, with no rate, cap or price doing the work. Measured at ~39 nodes over 100,000 births. ⚠ Still worth pricing genome size at Milestone 3, since replication is genuinely costly in real cells; the tension to resolve is that unexpressed nodes are also the raw material adaptation draws on. Genetic-programming bloat is well studied and the review has never covered it — round 3 |
 
 ### 5A.8 What this supersedes
@@ -1248,7 +1320,13 @@ nothing checkable, so it cannot quietly stop covering one.
 - Neural cost per neuron and per connection
 - Mechanical work coefficient — what a joule of ∫\|τ·ω\| dt is worth against a joule of sunlight
 - Yield fractions in §5A.3, and the loss on transfer
-- Nutrient spawn rate from decay, and sink rate
+- **Energy embodied in a cubic metre of tissue**, per type — new with §5A.2c, and doing two jobs
+  at once: what a parent pays to build an offspring and what the world gets back when it dies.
+  It sets how expensive a large body is to make, which is what decides whether a world holds a
+  few big creatures or many small ones
+- Nutrient sink rate — how fast detritus falls, which decides whether the deep is a niche or a
+  graveyard. ⚠ And whether detritus should remineralise at all: it currently does not, so the
+  sea floor accumulates energy nothing can reach (§5A.2c)
 - ~~Reproduction threshold and offspring endowment~~ — **resolved by §5A.6**: endowment and
   brood size are evolved genome traits, and the threshold is derived from them. What remains
   is the per-offspring **overhead**, which is a world constant and still unmeasured

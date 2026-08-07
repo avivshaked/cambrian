@@ -117,9 +117,12 @@ size. And the transition appeared immediately, sharp and repeatable — and land
 the hand calculation for a single break-even plant said it would, which is the point at which
 either is worth believing.
 
-There is a second result here, and it was not designed either: **more light produces bigger
+There is a second result here, and it was not designed either: **more light produced bigger
 creatures, not more of them.** Once light is contested, a large body is worth having because it
-shades its competitors. Nothing was told to do that.
+shades its competitors.
+
+That one turned out to be a symptom rather than a finding — see *the corpse that was worth
+nothing*, below.
 
 ### Bodies grew until the arithmetic broke
 
@@ -186,6 +189,40 @@ straight through it.
 A guard whose coverage you never test is a guard you are trusting on the strength of its
 intentions.
 
+### The corpse that was worth nothing
+
+The rules at the top of this piece have a hole in them, and it took building the rest of the food
+web to see it. **Everything costs — except being born.**
+
+A parent paid its offspring a starting stake and a fixed fee. That was the whole price, the same
+for a mote as for a whale. Making a body was free; only keeping it alive cost anything, and that
+bill went to the offspring, later. In anything real, building tissue is the *dominant* cost of
+reproduction — it is why an egg is expensive and why having many is a trade against having big
+ones.
+
+The matching hole is at the other end. When a creature died, its body went nowhere. So there was
+nothing for a scavenger to scavenge, and the whole detritus half of the world had no fuel.
+
+Both are fixed by one number, and it has to be one number: **what a cubic metre of tissue is
+worth is also what it costs.** The parent pays it to build the body; the world gets it back as
+detritus when that body dies. If those two figures ever differed, then birth followed by death
+would create or destroy energy — a free lunch put there by us rather than found by evolution,
+which is the one thing the whole no-scoring approach cannot survive.
+
+And that closed the loop the piece opened with. The world's accounts are now an equality across a
+whole food web: **what came in as sunlight, minus what metabolism burned, equals exactly what is
+standing** — energy in creatures' reserves, plus energy locked in their bodies, plus dead matter
+drifting in the water. Measured residual: 0.0000%.
+
+It also explained the "more light makes bigger creatures" result above, which was not the finding
+it looked like. Bodies grew because they were free; the only limit on size was shading, and
+shading rewards being large. With tissue priced, the same worlds hold **many small creatures
+instead of a few enormous ones, at the same total biomass** — and the total shadow the population
+casts fell from 290 times the world's own area to a little over one.
+
+That last number matters more than it looks. Nothing measured the world and forbade a giant. A
+giant simply became unaffordable to build.
+
 ## What this buys
 
 The world now regulates itself. Populations rise, contest the light, and settle. Lineages run a
@@ -219,14 +256,18 @@ The thing that made them visible was insisting the books balance.
   arrived at by the sweep failing (see [logbook 0011](../logbook/0011-the-sun-was-infinite.md)).
 - **The rejection of an area-proportional upkeep term.** No source discusses it. The argument is
   ours and is given in full in [`DECISIONS.md` D024](../DECISIONS.md#d024) so it can be checked.
-- **"More light makes bigger creatures, not more of them."** An observed property of this model
-  over three seeds, not a general claim about ecosystems.
+- ~~**"More light makes bigger creatures, not more of them."**~~ Withdrawn: it was an artefact of
+  bodies being free to build, and reverses once they are not.
+- **Tissue cost and corpse worth being the same number.** The conservation argument is ours
+  ([`DECISIONS.md` D026](../DECISIONS.md#d026)). That reproduction is dominated by the cost of
+  building tissue is ordinary biology, but no paper in the corpus models it.
 
 ## Where it is
 
 - [`Metabolism.cs`](../src/Evosim.Core/Ecosystem/Metabolism.cs) — what one creature earns and spends in a step
 - [`World.cs`](../src/Evosim.Core/Ecosystem/World.cs) — the loop: earn, spend, breed, starve
 - [`LightField.cs`](../src/Evosim.Core/Environment/LightField.cs) — the finite sun, and who shades whom
+- [`NutrientField.cs`](../src/Evosim.Core/Environment/NutrientField.cs) — dead matter in the water, sinking, and what is left after everyone has fed
 - [`CellType.cs`](../src/Evosim.Core/Cells/CellType.cs) — what a part is made of, and how that decides how it earns
 - [`CalibrationSweep.cs`](../src/Evosim.Core.Tests/CalibrationSweep.cs) — the experiment, and the two tables above
 - [`DESIGN.md`](../DESIGN.md) §5A — the specification, and §5A.7 for the failure modes this is watched for

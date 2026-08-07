@@ -100,7 +100,7 @@ namespace Evosim.Core.Tests
         {
             var cell = new NeuralCell();
 
-            Assert.Equal(0f, cell.Acquire(new CellContext(1f, 0.05f)));
+            Assert.Equal(0f, cell.Acquire(new CellContext(1f, 0.05f)).Total);
             Assert.True(cell.Upkeep(0.05f, 1f) > 0f);
 
             // Nervous tissue is among the most expensive an animal carries, and a brain that

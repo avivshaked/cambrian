@@ -117,12 +117,17 @@ namespace Evosim.Core.Tests
         [Fact]
         public void TheTransitionExistsAndThisIsWhereItIs()
         {
-            float[] irradiances = { 4f, 8f, 16f, 24f, 32f, 48f, 96f, 128f, 400f };
-            const int Seeds = 3;
+            // Stops at 48 W/m², and that is a deliberate division of labour rather than a gap.
+            // What this test locates is the transition, which lives down here in worlds of tens
+            // to hundreds of creatures. Everything above it costs a hundred times as much to step
+            // and was only ever witnessing that nothing runs away — a claim
+            // BiomassIsCappedByLightRatherThanByUs now makes properly, by watching the quantity
+            // light actually caps instead of waiting for a ceiling that might never be reached.
+            float[] irradiances = { 4f, 8f, 16f, 24f, 32f, 48f };
 
             _output.WriteLine(
                 $"{Steps} s per world, attenuation 1/e at 12 m, floor 30, ceiling {Ceiling}, " +
-                $"{Seeds} seeds each.");
+                "3 seeds each.");
             _output.WriteLine("");
             _output.WriteLine(
                 "| W/m² | reproducing | pop | peak | depth med/max | shadow m² | ×world | floor | births |");
@@ -130,15 +135,17 @@ namespace Evosim.Core.Tests
 
             float worldArea = Config().WorldAreaSquareMetres;
             var reproducingAt = new List<float>();
+            var outcomes = new List<bool>();
             bool anyRunaway = false;
 
             foreach (float irradiance in irradiances)
             {
-                for (ulong seed = 1; seed <= Seeds; seed++)
+                for (ulong seed = 1; seed <= 3; seed++)
                 {
                     Result r = RunOne(irradiance, seed);
                     if (r.Reproducing) reproducingAt.Add(irradiance);
                     if (r.Runaway) anyRunaway = true;
+                    outcomes.Add(r.Reproducing);
 
                     _output.WriteLine(
                         $"| {irradiance:0.#} | {(r.Runaway ? "**RUNAWAY**" : r.Reproducing ? "yes" : "no")} | " +
@@ -161,7 +168,7 @@ namespace Evosim.Core.Tests
             // exactly like "the parameter does not matter" (logbook/0007, logbook/0008).
             Assert.NotEmpty(reproducingAt);
             Assert.True(
-                reproducingAt.Count < irradiances.Length * Seeds,
+                reproducingAt.Count < outcomes.Count,
                 "every setting established a lineage, so the sweep straddles no transition — " +
                 "extend it downwards until something fails to reproduce");
 
@@ -172,6 +179,70 @@ namespace Evosim.Core.Tests
                 $"a world exceeded {Ceiling} creatures. Light is finite, so income per creature " +
                 "must fall as the population rises — if it did not, LightField is not reaching " +
                 "the metabolic path.");
+        }
+
+        [Fact]
+        public void BiomassIsCappedByLightRatherThanByUs()
+        {
+            // §5A.2b's whole claim, asserted on the quantity it is actually about. In steady
+            // state the world's metabolic burn equals its light income, and burn is proportional
+            // to tissue — so *living biomass* is what the finite sun caps. Population is not: two
+            // worlds of the same biomass can hold forty giants or eight thousand motes, and after
+            // §5A.2c made bodies cost something to build, the same world moved from one to the
+            // other. Watching population made a converged world look like a runaway (logbook/0012).
+            var config = new RunConfig
+            {
+                MinimumPopulation = 30,
+                MaximumPopulation = Ceiling,
+                FloorSpawnsPerStep = 2,
+
+                // A quarter of the default aperture, purely so this finishes: the claim is a
+                // ratio between two windows of the same run and does not care how big the world
+                // is. A smaller sun feeds proportionally less life, which is itself the point.
+                WorldAreaSquareMetres = 100f,
+            };
+
+            var world = new World(config, new LightModel(96f, 12f), seed: 1);
+
+            for (int i = 0; i < 10000; i++) world.Step(1f);
+            float early = Biomass(world);
+            int earlyPopulation = world.Living.Count;
+
+            for (int i = 0; i < 10000; i++) world.Step(1f);
+            float late = Biomass(world);
+
+            _output.WriteLine(
+                $"t=10000: {earlyPopulation} creatures, {early:0.#} m³ of tissue");
+            _output.WriteLine(
+                $"t=20000: {world.Living.Count} creatures, {late:0.#} m³ of tissue");
+            _output.WriteLine(
+                $"population x{(float)world.Living.Count / Math.Max(1, earlyPopulation):0.##}, " +
+                $"biomass x{late / Math.Max(1e-6f, early):0.##}");
+            _output.WriteLine(
+                $"detritus {world.Nutrients.TotalJoules:0} J, of which " +
+                $"{world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1) / Math.Max(1.0, world.Nutrients.TotalJoules):P0} " +
+                "has settled on the floor and nothing lives there yet");
+
+            Assert.True(early > 0f, "nothing was alive to measure");
+
+            // Doubling the elapsed time must not double the standing tissue. Loose, because this
+            // is a stochastic world and the claim is "bounded", not "converged to three figures".
+            Assert.InRange(late / early, 0.5f, 1.5f);
+
+            // And the books still close with a whole food web running through them.
+            Assert.True(
+                Math.Abs(world.AuditResidual) / Math.Max(1.0, world.EnergyIn) < 1e-4,
+                $"energy is not conserved: {world.AuditResidual:0.###} J unaccounted for");
+        }
+
+        private static float Biomass(World world)
+        {
+            float volume = 0f;
+            for (int i = 0; i < world.Living.Count; i++)
+            {
+                volume += world.Living[i].Phenotype.TotalVolume;
+            }
+            return volume;
         }
 
         [Fact]

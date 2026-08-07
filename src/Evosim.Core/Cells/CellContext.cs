@@ -87,6 +87,69 @@ namespace Evosim.Core
         }
     }
 
+    /// <summary>
+    /// What one cell took in over a step, and where from — DESIGN.md §5A.2, §5A.2c.
+    /// </summary>
+    /// <remarks>
+    /// <b>The distinction is a conservation law, not bookkeeping.</b> Sunlight is the world's only
+    /// primary input, so light is energy that did not exist a moment ago; everything else was
+    /// taken from a pool or a body that must lose exactly as much. A cell reporting one total
+    /// would leave the world unable to tell which, and §5A.2's audit closes only because it can.
+    /// </remarks>
+    public readonly struct CellIntake
+    {
+        /// <summary>Joules converted from light. New energy.</summary>
+        public float FromLight { get; }
+
+        /// <summary>Joules the cell <i>kept</i> from eating. Somebody's loss.</summary>
+        public float FromPool { get; }
+
+        /// <summary>
+        /// Joules removed from the pool to yield <see cref="FromPool"/>. Never less than it.
+        /// </summary>
+        /// <remarks>
+        /// <b>The gap between the two is what makes a food chain lose energy at every level.</b>
+        /// A consumer keeps only a fraction of what it takes (§5A.3), and the remainder is
+        /// destroyed rather than left behind — so the world must remove the larger figure and
+        /// account the difference as an outflow. Reporting only what was kept would leave that
+        /// difference sitting in the pool, quietly turning every meal into a partial refund and
+        /// a food chain into a perpetual motion machine.
+        /// </remarks>
+        public float PoolDrawn { get; }
+
+        public CellIntake(float fromLight, float fromPool, float poolDrawn)
+        {
+            FromLight = fromLight;
+            FromPool = fromPool;
+            PoolDrawn = poolDrawn < fromPool ? fromPool : poolDrawn;
+        }
+
+        public float Total => FromLight + FromPool;
+
+        /// <summary>Joules lost in the transfer — taken from the world, kept by nobody.</summary>
+        public float Wasted => PoolDrawn - FromPool;
+
+        /// <summary>A cell that took nothing in.</summary>
+        public static CellIntake None => default;
+
+        /// <summary>Photosynthesis and nothing else.</summary>
+        public static CellIntake Light(float joules) => new CellIntake(joules, 0f, 0f);
+
+        /// <summary>Feeding with no loss on transfer — filtering, where nothing is torn up.</summary>
+        public static CellIntake Food(float joules) => new CellIntake(0f, joules, joules);
+
+        /// <summary>Feeding that keeps <paramref name="yield"/> of what it takes.</summary>
+        public static CellIntake Food(float drawn, float yield) =>
+            new CellIntake(0f, drawn * yield, drawn);
+
+        public static CellIntake operator +(CellIntake a, CellIntake b) =>
+            new CellIntake(
+                a.FromLight + b.FromLight, a.FromPool + b.FromPool, a.PoolDrawn + b.PoolDrawn);
+
+        public override string ToString() =>
+            $"light {FromLight:0.###} J, food {FromPool:0.###} J of {PoolDrawn:0.###} drawn";
+    }
+
     /// <summary>Tissue in contact with a feeding cell — DESIGN.md §5A.3.</summary>
     public sealed class TissueContact
     {

@@ -11,8 +11,27 @@ namespace Evosim.Core
     /// </remarks>
     public readonly struct EnergyLedger
     {
+        /// <summary>
+        /// Joules acquired from sunlight — the only energy that is new to the world.
+        /// </summary>
+        /// <remarks>
+        /// <b>Split from <see cref="FoodIncome"/> because the world has to treat them
+        /// differently, and because asking twice is how they came apart.</b> §5A.2 makes sunlight
+        /// the sole primary input: light is created, food is taken from somewhere that must lose
+        /// it. Reporting only the total left <see cref="World"/> re-running the whole metabolic
+        /// step with the food removed just to work out how much of it there had been — four
+        /// evaluations per creature per step where one would do, on the only hot loop in the
+        /// design.
+        /// </remarks>
+        public float LightIncome { get; }
+
+        /// <summary>
+        /// Joules acquired by eating — nutrients and tissue. Somebody else's loss, always.
+        /// </summary>
+        public float FoodIncome { get; }
+
         /// <summary>Joules acquired: light, nutrients, tissue.</summary>
-        public float Income { get; }
+        public float Income => LightIncome + FoodIncome;
 
         /// <summary>Joules spent on standing costs — tissue upkeep and idle joint capacity.</summary>
         public float Upkeep { get; }
@@ -23,9 +42,33 @@ namespace Evosim.Core
         /// <summary>Joules spent doing mechanical work at the joints.</summary>
         public float Work { get; }
 
-        public EnergyLedger(float income, float upkeep, float neural, float work)
+        /// <summary>
+        /// Joules removed from the nutrient pool to produce <see cref="FoodIncome"/>. Never less.
+        /// </summary>
+        /// <remarks>
+        /// The difference is lost in the transfer — see <see cref="CellIntake.PoolDrawn"/>. The
+        /// world has to remove this figure and account the shortfall as an outflow, or a food
+        /// chain refunds part of every meal.
+        /// </remarks>
+        public float PoolDrawn { get; }
+
+        public EnergyLedger(CellIntake intake, float upkeep, float neural, float work)
         {
-            Income = income;
+            LightIncome = intake.FromLight;
+            FoodIncome = intake.FromPool;
+            PoolDrawn = intake.PoolDrawn;
+            Upkeep = upkeep;
+            Neural = neural;
+            Work = work;
+        }
+
+        private EnergyLedger(
+            float lightIncome, float foodIncome, float poolDrawn,
+            float upkeep, float neural, float work)
+        {
+            LightIncome = lightIncome;
+            FoodIncome = foodIncome;
+            PoolDrawn = poolDrawn;
             Upkeep = upkeep;
             Neural = neural;
             Work = work;
@@ -34,9 +77,14 @@ namespace Evosim.Core
         public float Expenditure => Upkeep + Neural + Work;
         public float Net => Income - Expenditure;
 
+        /// <summary>Joules taken from the world and kept by nobody — the loss on transfer.</summary>
+        public float Wasted => PoolDrawn - FoodIncome;
+
         public static EnergyLedger operator +(EnergyLedger a, EnergyLedger b) =>
             new EnergyLedger(
-                a.Income + b.Income, a.Upkeep + b.Upkeep, a.Neural + b.Neural, a.Work + b.Work);
+                a.LightIncome + b.LightIncome, a.FoodIncome + b.FoodIncome,
+                a.PoolDrawn + b.PoolDrawn,
+                a.Upkeep + b.Upkeep, a.Neural + b.Neural, a.Work + b.Work);
 
         public override string ToString() =>
             $"+{Income:0.###} −{Expenditure:0.###} = {Net:0.###} J";
@@ -119,7 +167,8 @@ namespace Evosim.Core
             if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
             if (config == null) throw new ArgumentNullException(nameof(config));
 
-            float income = 0f, upkeep = 0f, neural = 0f;
+            CellIntake intake = CellIntake.None;
+            float upkeep = 0f, neural = 0f;
 
             foreach (PhenotypePart part in phenotype.Parts)
             {
@@ -137,7 +186,7 @@ namespace Evosim.Core
                     power: part.Power,
                     dof: part.JointType.DofCount());
 
-                income += cell.Acquire(context);
+                intake += cell.Acquire(context);
                 upkeep += cell.Upkeep(context);
 
                 // Neurons are billed where they live, and neural tissue discounts them (§5A.1).
@@ -157,7 +206,8 @@ namespace Evosim.Core
             }
 
             return new EnergyLedger(
-                income, upkeep, neural, Math.Max(0f, workJoules) * config.WorkCostMultiplier);
+                intake, upkeep, neural,
+                Math.Max(0f, workJoules) * config.WorkCostMultiplier);
         }
 
         /// <summary>
@@ -175,6 +225,29 @@ namespace Evosim.Core
                 nutrientDensity: 0f, workJoules: 0f, seconds: 1f);
 
             return ledger.Expenditure;
+        }
+
+        /// <summary>
+        /// Energy embodied in a developed body, in joules — DESIGN.md §5A.2c.
+        /// </summary>
+        /// <remarks>
+        /// What a parent pays to build this creature and what the nutrient pool receives when it
+        /// dies. Both call this, so the two figures cannot drift apart — and if they did, a
+        /// birth-and-death cycle would create or destroy energy.
+        /// </remarks>
+        public static float TissueJoules(Phenotype phenotype, RunConfig config)
+        {
+            if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            float total = 0f;
+            foreach (PhenotypePart part in phenotype.Parts)
+            {
+                total += Math.Max(0f, part.Volume) *
+                         config.CellTypes.Resolve(part.CellTypeId).TissueEnergyPerCubicMetre;
+            }
+
+            return total;
         }
 
         /// <remarks>

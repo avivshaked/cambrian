@@ -50,6 +50,8 @@ namespace Evosim.Core
                 .Field("founderDepthSpread", config.FounderDepthSpread)
                 .Field("worldAreaSquareMetres", config.WorldAreaSquareMetres)
                 .Field("lightLayerMetres", config.LightLayerMetres)
+                .Field("worldDepthMetres", config.WorldDepthMetres)
+                .Field("nutrientSinkMetresPerSecond", config.NutrientSinkMetresPerSecond)
                 .EndObject();
 
             w.BeginObject("fluid")
@@ -133,6 +135,8 @@ namespace Evosim.Core
                 FounderDepthSpread = population["founderDepthSpread"].AsFloat(),
                 WorldAreaSquareMetres = population["worldAreaSquareMetres"].AsFloat(),
                 LightLayerMetres = population["lightLayerMetres"].AsFloat(),
+                WorldDepthMetres = population["worldDepthMetres"].AsFloat(),
+                NutrientSinkMetresPerSecond = population["nutrientSinkMetresPerSecond"].AsFloat(),
 
                 Fluid = new FluidConfig
                 {

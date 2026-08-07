@@ -126,7 +126,7 @@ namespace Evosim.Core
             for (int i = 0; i < _types.Length; i++)
             {
                 if (i > 0) sb.Append('|');
-                sb.Append(_types[i].HashContribution());
+                sb.Append(_types[i].FullHashContribution());
             }
             return sb.Append(']').ToString();
         }
