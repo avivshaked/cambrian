@@ -68,10 +68,29 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>
+        /// Total lit area, m² — the shadow this creature casts, and its claim on the world's
+        /// light. DESIGN.md §5A.2b.
+        /// </summary>
+        /// <remarks>
+        /// <b>This is a projected area, not a surface area, and that is what makes it a shadow.</b>
+        /// Each part's <see cref="PhenotypePart.LitArea"/> is a quarter of its surface, which by
+        /// Cauchy's formula is exactly its orientation-averaged projected area — so summing them
+        /// gives the mean area the creature blocks when seen from above. That is precisely the
+        /// quantity <see cref="LightField"/> needs, and it is the same number the creature earns
+        /// on, which is what makes shading self-consistent: nothing can collect light it does not
+        /// also deny to whatever is below it.
+        ///
+        /// Accumulated as parts are added, because it is read once per creature per step and parts
+        /// are never removed.
+        /// </remarks>
+        public float TotalLitArea { get; private set; }
+
         internal PhenotypePart Add(PhenotypePart part)
         {
             part.Index = _parts.Count;
             _parts.Add(part);
+            TotalLitArea += part.LitArea;
             return part;
         }
 

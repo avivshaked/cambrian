@@ -357,6 +357,24 @@ bacteria manage it, which is some indication of how basic the missing capability
 | **Chemical** | Nutrient concentration at this part | Smell. Makes §5A.1's absorptive cell a strategy rather than luck |
 | **Energy** | The creature's reserve, as **seconds of life remaining at its current burn rate** | The state variable everything in §5A turns on |
 | **Flow** | Water velocity relative to this part, per axis | A lateral line: currents (§5A.4), and something large moving before it arrives |
+| **Depth** | How deep this part is, as a fraction of the world's depth | The axis the whole environment is structured along — and the only way to know it at night |
+
+**Depth is not redundant with the photosensor, and the reason is the night.** Irradiance is a
+usable depth proxy only while the sun is up; once §5A.4's diurnal cycle exists, light at night
+says nothing about depth at all. This channel is what makes **diel vertical migration**
+expressible — rising in darkness, sinking by day — which §5A.4 names as the most watchable
+outcome this design could produce.
+
+It is called depth rather than pressure deliberately. Pressure would be the better framing, a
+local quantity rather than a world coordinate — but §5.2 disables gravity outright to obtain
+neutral buoyancy, so hydrostatic pressure here is uniform and the name would promise a model
+that does not exist.
+
+**It is also the one channel reporting a world-frame quantity**, which is worth stating rather
+than hiding: every other channel is something physically present at the part. It is admitted
+because depth in this world is not an arbitrary coordinate but a real gradient a creature is
+immersed in — and because the gradient rule below still applies to it, so a creature recovers
+*which way is up* from its own morphology with no light required.
 
 **Energy is the level, not a hunger flag.** A flag needs a threshold, and choosing one is us
 deciding when a creature ought to feel hungry — an unmeasured constant (§5A.10) baked where no
@@ -825,6 +843,79 @@ this design's own, and must not be presented as literature-backed.)*
 > If sunlight alone covers upkeep anywhere in the world, nothing there ever has to move, and
 > the world becomes a photosynthetic mat. It has to not quite cover it.
 
+### 5A.2b Competition for light — where carrying capacity comes from ✅ measured
+
+> **§5A.2's knob decides how fast, not whether.** Sweeping the metabolism-to-photosynthesis
+> ratio over 400× found no setting where a population held steady, because there was none to
+> find: with irradiance a function of depth alone, a creature's income does not depend on how
+> many others exist, so every creature above break-even accumulates surplus at a fixed rate and
+> breeds on a fixed period regardless of the crowd. That is a linear birth process. It grows
+> without bound above break-even and goes extinct below it — a step function, not a transition
+> (logbook/0011).
+
+What was missing is **density dependence**, and the physically honest source of it is that the
+sun is finite. Sunlight arrives as watts per square metre of surface, so a world of finite width
+receives finite power, and light one creature absorbs is light that never reaches whatever is
+below it.
+
+Total photosynthetic income across the whole world therefore cannot exceed
+`surfaceIrradiance × worldArea`, whatever evolution discovers. **Carrying capacity stops being a
+number we chose and becomes a consequence of the world having a size** — which is the same class
+of constraint as the momentum invariant in §11.2, and preferred for the same reason: it is a
+conservation law, not a tuning parameter.
+
+**The mechanism.** The water column is divided into layers. A layer holding total projected area
+*L* over horizontal area *A* intercepts a fraction 1 − e<sup>−L/A</sup> of the light passing
+through it, and its occupants share that in proportion to their own lit area. This is not an
+analogy to Beer–Lambert but the same derivation for randomly-placed absorbers, which is why real
+ocean optics treats chlorophyll and water as two terms of one exponent. The naive `min(1, L/A)`
+would claim two creatures of half a layer's area shade it completely — true only if their
+shadows never overlap — and would put a hard edge in the model at exactly the density where
+competition begins to matter.
+
+Three properties are load-bearing:
+
+1. **It reduces to §5A.4's plain depth model exactly**, continuously, as the world empties. What
+   is stored per layer is a *multiplier* in (0, 1] rather than an irradiance, so the depth term
+   stays exact and occupancy can only ever take light away. Storing an irradiance instead means
+   everyone in a layer receives the light entering its top, so drifting into an occupied layer
+   *raises* your income — a free-energy source manufactured by the discretisation, in precisely
+   the direction §11.2 says to look.
+2. **Non-photosynthetic tissue shades too.** Every part casts a shadow whether or not it can use
+   the light, and light a structural part intercepts is lost. That is what makes bulk cost
+   something in a crowd, and it prices a canopy correctly: a creature holding a large opaque body
+   above a photosynthetic one is taking food from it.
+3. **Lit area is a projected area, not a surface area.** A part's lit area is a quarter of its
+   surface, which by Cauchy's formula is exactly its orientation-averaged projected area — so the
+   number a creature earns on is the same number it denies to whatever is beneath it. Nothing can
+   collect light it does not also block.
+
+**The measured transition.** With attenuation 1/e at 12 m, a 400 m² aperture, and default cell
+upkeep, three seeds each over 20,000 s of world:
+
+| Surface irradiance | Outcome |
+|---|---|
+| 4 – 24 W/m² | Nothing reproduces. Max generation depth 1, floor firing continuously |
+| **32 W/m²** | **Lineages establish — median depth 15–79, floor falls silent** |
+| 48 – 400 W/m² | Establishes; more light buys fewer, larger creatures, not more of them |
+
+So the ratio is **located between 24 and 32 W/m²** for these upkeep rates, and the analytic
+break-even for a 0.3 m photosynthetic cube — where lit area × irradiance × efficiency equals
+volume × upkeep — is 24 W/m². The measurement and the arithmetic agree, which is the point at
+which either is worth believing.
+
+**Above the transition, nothing runs away.** Every setting up to 400 W/m² settles at tens to
+hundreds of creatures against a ceiling of 50,000, with total shadow 10–290× the world's area:
+the light is fully contested and the population is regulated by that, not by us. More light
+produces *bigger* creatures rather than more of them, because a larger body shades its
+competitors — an outcome nothing in the model was told to produce.
+
+⚠ **The world has no length scale, and this exposes it.** At 400 W/m² the surviving creatures
+carry thousands of square metres of surface in an aperture 20 m across. Nothing relates a body's
+size to the world's size except the light budget, because `Evosim.Core` has no positions beyond
+depth. The constraint that is missing is spatial extent, and it arrives with the physics
+simulation at Milestone 4, not before.
+
 ### 5A.3 Feeding, and where herbivores come from
 
 A `Consumer` part gains energy on contact with tissue. Yield depends on **what it touches**:
@@ -952,6 +1043,97 @@ Neutral buoyancy is retained (§5.2): depth changes only by swimming. Per-part d
 tempting knob — swim bladders are cheap and biological — but it is a second system and is
 deferred.
 
+**A population floor, and it is the only thing that ever creates a creature.** When the living
+count falls below a configured minimum, fresh founders (§5A.0b) are spawned until it is met.
+This subsumes world seeding rather than sitting beside it: at t=0 the population is zero, the
+floor fires, and generation zero appears. One mechanism, exercised continuously, rather than an
+initialisation path that runs once and is therefore tested once.
+
+Refills are **fresh founders, never descendants of survivors.** Choosing who repopulates is
+selection performed by us, which is what §5A exists to remove. And it is not a reset: the
+nutrient pool left by everything that died persists, so refills enter a world *richer* than the
+original founders did — extinction followed by radiation into an empty, nutrient-loaded ocean.
+They arrive as a trickle rather than a cohort, so the refill rule cannot itself manufacture a
+boom-and-bust oscillation.
+
+> **The floor is an instrument, not a safety net, and the distinction decides whether any
+> number from a run means anything.** A floor that fires regularly means the world is not
+> sustaining life — *we* are — and the run would look healthy while doing it: stable
+> population, births, deaths, lineages accumulating, every figure consistent with a working
+> ecosystem and every one of them propped up. So a floor spawn is recorded as its own event
+> type in `lineage.jsonl`, never indistinguishable from a birth, and **a floor that keeps
+> firing is a failed world, reported as failed.**
+
+**No ceiling of the same kind.** The opposite failure (§5A.7's photosynthetic mat) does not go
+extinct, it explodes, and §5A.9 puts real time at roughly 200 creatures. But killing creatures
+to stay inside a compute budget is selection by us of the worst sort — arbitrary, invisible in
+the lineage record, and biased towards whatever the cull happens to reach first. A population
+ceiling is therefore a **hard stop with a loud report**, not a silent cull.
+
+### 5A.6b Is the world alive? — generation depth
+
+**Generation depth** is the number of reproduction events between a creature and the founder it
+descends from. It is free: §5A.6 makes reproduction asexual and mutation-only, so every birth
+is exactly one mutation event, and depth is a counter inherited from the parent. Because of
+that it measures two things at once — how many generations have passed, and how far the genome
+has drifted from its founder.
+
+~~**Minimum depth among the living is the definition of self-sustaining.** If it is greater than
+zero, no creature currently alive is a floor spawn: everything here got here by being born.
+That is a single integer with no threshold to choose and no window to average over, and the
+moment it first rises above zero and stays there is a dated event worth recording — *the point
+at which life became self-sustaining.*~~
+
+⚠ **Superseded — it is a true statement and an unreachable one.** Nothing dies of age: §5A.6
+kills only at zero energy, so a founder whose income covers its upkeep never dies at all. A
+handful of immortal generation-zero photosynthesisers pin the minimum at zero permanently, in
+worlds that stopped needing the floor thousands of seconds earlier and are visibly running
+themselves at median depth 78 (logbook/0011). The test was measuring immortality, not dependence.
+
+**What replaces it: how long the floor has been silent.** That is literally the question — is
+anyone being handed life by us right now — and unlike minimum depth it is reachable. It needs a
+window, which minimum depth did not, and the window has to be long against the generation time of
+whatever is living there; so it is supplied per run rather than defaulted. Minimum depth is still
+reported and is still the stronger claim if it ever rises, which it will as soon as anything can
+die of something other than starvation.
+
+The distribution matters more than the mean, because a takeover and a healthy world can have
+identical means:
+
+| Shape | Reads as |
+|---|---|
+| everything at 0–1 | Too harsh. Nothing reproduces; the floor is the only source of creatures |
+| climbing fast, population at the ceiling | Too generous — §5A.7's mat |
+| max high, **median near zero** | One lucky lineage among floor spawns. Life possible but rare |
+| min and max close | A bottleneck or a takeover: all descent from one recent ancestor |
+| **wide spread** | Deep lineages coexisting with young ones — a working world |
+
+**This is how §5A.2's ratio gets calibrated, and it needs no prior guess at the right value.**
+There is a phase transition: below some metabolism-to-photosynthesis ratio depth pins at zero,
+above it lineages establish. Sweep the knob and the transition locates itself — §5A.2b reports
+where it is. That is what `RunConfig` and its hash exist for: a swept parameter that silently
+fails to reach the thing it configures has already happened twice here (logbook/0007,
+logbook/0008).
+
+⚠ **A sweep is only as good as its runs are long.** The first pass ran each world for 4,000 s
+and reported a stable floor-fed world at 48 W/m²; that world was on a clean exponential and blew
+past the population ceiling at t=5,303 s. **A truncated run cannot tell a steady state from an
+exponential caught early**, and the shorter the run the more confidently it reports the wrong
+answer. The other half of the same lesson: the ceiling must be far above the carrying capacity
+being measured, or dense-but-bounded worlds read as runaways — 96 W/m² tripped a ceiling of
+1,500 while being perfectly regulated.
+
+Paired with **age at death** and **depth per wall-clock hour**, because depth alone can be
+fooled: a world where creatures reproduce instantly and die instantly posts healthy depth and is
+broken. Depth per hour is the actual evolutionary clock and decides whether a run of a given
+length can produce anything at all.
+
+⚠ **Depth measures reproduction, not adaptation.** A world can post excellent depth statistics
+and be a treadmill — lineages turning over forever with nothing improving. That is §5A.7's
+plateau and this instrument cannot see it. *Is the world alive* and *is the world interesting*
+are different questions, and conflating them is how a run looks healthy for twelve hours and
+produces nothing.
+
 ### 5A.7 Failure modes
 
 | Failure | Why it happens | Defence |
@@ -961,6 +1143,10 @@ deferred.
 | **Free-energy takeover** | A physics exploit becomes an unlimited food source | Global energy audit (§5A.2) and §11.2's conservation checks |
 | **Efficient nothing** | With no reachable strategy, minimising cost is the winning move | Watch for populations with near-zero work and near-zero displacement. [C18 §3, p.13] documents exactly this under directed search: artefacts *"which may be mistaken for the existence of highly energy efficient locomotion strategies"* |
 | **Bloat (body)** | Any resource with no price | Every part and every neuron costs, including `Structural` (§5A.1) |
+| **Unbounded population** | Income independent of density: nobody's earnings fall as the crowd grows | Finite sun over a finite aperture (§5A.2b). Without it there is no calibration that helps |
+| **Unbounded body size** | Half-extent mutation is a multiplicative random walk, and only §4.5's lower tail was absorbed | `MaxPartVolume` — extinction by growing, mirroring extinction by shrinking (§4.2) |
+| **The infinitely thin sheet** | Income scales with area, upkeep with volume, and volume does not bound area | `MinPartHalfExtent` keeps the arithmetic representable; what actually bounds a body is the light running out (§5A.2b) |
+| **The immortal nothing** | A genome that develops into no parts has zero income and zero upkeep, so death-at-zero never fires | Stillbirth: a bodyless creature is refused at admission and counted (§5A.6) |
 | **Bloat (genome)** | Development caps a body at `MaxParts`, so nodes beyond what it expresses are never grown, cost nothing, and are invisible to an economy that prices bodies. Measured: with per-birth add/remove, a 100,000-birth lineage reached **847 nodes** and replay went quadratic — 32 s for the chain | Nodes enter small and leave by shrinking below an extinction threshold (§4.5). Unexpressed nodes are unexpressed *because* nothing selects on them, so they are exactly the ones that drift out — bloat clears itself, with no rate, cap or price doing the work. Measured at ~39 nodes over 100,000 births. ⚠ Still worth pricing genome size at Milestone 3, since replication is genuinely costly in real cells; the tension to resolve is that unexpressed nodes are also the raw material adaptation draws on. Genetic-programming bloat is well studied and the review has never covered it — round 3 |
 
 ### 5A.8 What this supersedes
@@ -1033,17 +1219,32 @@ assumption wearing the costume of a fact. So every number here is a settable pro
 upkeep and feeding rates included, and a run is defined by a `RunConfig` instance.
 
 `RunConfig.Hash()` is **§7's `configHash`** — the same object that parameterises a run is the
-one that identifies it. Two tests drive that by reflection over `RunConfig` and
-`RandomGenomeOptions`, so a tunable added without being folded into the hash fails
-immediately rather than years later; the first run of that test found `MaxEdgesPerNode`
-already missing. This matters most in the case where two runs produce *identical* output,
-which on this project has twice meant a configuration change never reached the thing it
-configured (logbook/0007, logbook/0008). A hash that differs while the results do not is the
-cheapest way to tell that apart from a parameter that genuinely does not matter.
+one that identifies it. Tests drive that by reflection over `RunConfig` and over each
+sub-config it owns, so a tunable added without being folded into the hash fails immediately
+rather than years later; the first run of that test found `MaxEdgesPerNode` already missing.
+This matters most in the case where two runs produce *identical* output, which on this project
+has twice meant a configuration change never reached the thing it configured (logbook/0007,
+logbook/0008). A hash that differs while the results do not is the cheapest way to tell that
+apart from a parameter that genuinely does not matter.
 
-- Basal metabolic rate per unit volume, per part type
+⚠ **The guard had the same hole it exists to catch.** It walked `RunConfig` and
+`RandomGenomeOptions` only, so `DevelopmentLimits.MaxPartVolume` reached neither the hash nor
+the JSON — a check against forgetting a tunable that had itself forgotten a whole object. The
+sub-configs are now named in a literal list rather than discovered by reflection, because
+reflection would have missed that case too and would fail the same way again: `Shapes` and
+`CellTypes` are registries with no settable scalars and cannot be exercised this way, so an
+automatic walk silently passes for whatever it did not think to look at. A list can only be
+wrong in a way a human reading it can see. The test also fails if any named sub-config exposes
+nothing checkable, so it cannot quietly stop covering one.
+
+- Basal metabolic rate per unit volume, per part type — ✅ **located**: the transition sits
+  between 24 and 32 W/m² of surface irradiance against the default upkeep rates (§5A.2b)
 - Peak photosynthetic rate, and its falloff with depth — jointly with the above, this is the
-  knob in §5A.2
+  knob in §5A.2. ✅ **located** by the same sweep
+- **World aperture** (`WorldAreaSquareMetres`) — new with §5A.2b, and the only thing setting
+  carrying capacity. It scales total life in proportion; it does not change its density
+- **Shading layer thickness** (`LightLayerMetres`) — a discretisation of who shades whom, so it
+  wants to be near a creature's own size
 - Neural cost per neuron and per connection
 - Mechanical work coefficient — what a joule of ∫\|τ·ω\| dt is worth against a joule of sunlight
 - Yield fractions in §5A.3, and the loss on transfer

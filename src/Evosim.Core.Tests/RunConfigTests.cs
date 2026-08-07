@@ -41,9 +41,7 @@ namespace Evosim.Core.Tests
                 if (!p.CanWrite) continue;
 
                 var config = new RunConfig();
-                if (p.PropertyType == typeof(float)) p.SetValue(config, (float)p.GetValue(config) + 7.5f);
-                else if (p.PropertyType == typeof(int)) p.SetValue(config, (int)p.GetValue(config) + 3);
-                else continue;   // sub-objects are covered by their own tests below
+                if (!Nudge(config, p)) continue;   // sub-objects are covered by their own test
 
                 if (config.Hash() == baseline) missed.Add(p.Name);
             }
@@ -55,33 +53,97 @@ namespace Evosim.Core.Tests
             Assert.Empty(missed);
         }
 
-        [Fact]
-        public void EveryTunableOnRandomGenomeOptionsChangesTheHash()
+        /// <summary>
+        /// Every sub-config RunConfig owns, walked the same way.
+        /// </summary>
+        /// <remarks>
+        /// <b>Named individually rather than reflected over, and that is the point.</b> This test
+        /// once covered only <see cref="RandomGenomeOptions"/>, which is why
+        /// <see cref="DevelopmentLimits.MaxPartVolume"/> reached neither the hash nor the JSON
+        /// (logbook/0011): the guard against forgetting a tunable had itself forgotten a whole
+        /// object. Discovering sub-configs by reflection would have caught that one and would fail
+        /// the same way again — silently passing for whatever it had not thought to look at, since
+        /// <see cref="RunConfig.Shapes"/> and <see cref="RunConfig.CellTypes"/> are registries
+        /// with no settable scalars and cannot be nudged like this. A literal list can only be
+        /// wrong in a way a human reading it can see.
+        /// </remarks>
+        public static IEnumerable<object[]> SubConfigs => new[]
+        {
+            new object[] { typeof(RandomGenomeOptions) },
+            new object[] { typeof(DevelopmentLimits) },
+            new object[] { typeof(MutationRates) },
+            new object[] { typeof(FluidConfig) },
+        };
+
+        [Theory]
+        [MemberData(nameof(SubConfigs))]
+        public void EveryTunableOnEverySubConfigChangesTheHash(Type subConfig)
         {
             string baseline = new RunConfig().Hash();
             var missed = new List<string>();
+            int checkedCount = 0;
 
-            foreach (PropertyInfo p in typeof(RandomGenomeOptions).GetProperties())
+            PropertyInfo owner = FindOwner(subConfig);
+
+            foreach (PropertyInfo p in subConfig.GetProperties())
             {
                 if (!p.CanWrite) continue;
 
-                var config = new RunConfig { Genome = new RandomGenomeOptions() };
-                if (p.PropertyType == typeof(float))
-                    p.SetValue(config.Genome, (float)p.GetValue(config.Genome) + 7.5f);
-                else if (p.PropertyType == typeof(int))
-                    p.SetValue(config.Genome, (int)p.GetValue(config.Genome) + 3);
-                else if (p.PropertyType == typeof(string[]))
-                    p.SetValue(config.Genome, new[] { CellTypeIds.Consumer });
-                else continue;
+                var config = new RunConfig();
+                owner.SetValue(config, Activator.CreateInstance(subConfig));
+
+                if (!Nudge(owner.GetValue(config), p)) continue;
+                checkedCount++;
 
                 if (config.Hash() == baseline) missed.Add(p.Name);
             }
 
-            _output.WriteLine(missed.Count == 0
-                ? "every genome-generation tunable reaches the hash"
-                : "missing from Hash(): " + string.Join(", ", missed));
+            _output.WriteLine($"{subConfig.Name}: {checkedCount} tunables checked");
+            if (missed.Count > 0) _output.WriteLine("missing from Hash(): " + string.Join(", ", missed));
 
+            // A sub-config with nothing checkable means the walk quietly stopped covering it —
+            // an all-enum or all-registry object would pass this test by never testing anything.
+            Assert.True(checkedCount > 0, $"{subConfig.Name} exposed no nudgeable tunable");
             Assert.Empty(missed);
+        }
+
+        private static PropertyInfo FindOwner(Type subConfig)
+        {
+            foreach (PropertyInfo p in typeof(RunConfig).GetProperties())
+            {
+                if (p.PropertyType == subConfig && p.CanWrite) return p;
+            }
+
+            throw new InvalidOperationException(
+                $"RunConfig has no writable property of type {subConfig.Name}. Either it was " +
+                "removed and this list is stale, or it was never wired up at all.");
+        }
+
+        /// <summary>Changes a property to something different, or returns false if it cannot.</summary>
+        private static bool Nudge(object target, PropertyInfo p)
+        {
+            if (p.PropertyType == typeof(float))
+            {
+                p.SetValue(target, (float)p.GetValue(target) + 7.5f);
+            }
+            else if (p.PropertyType == typeof(int))
+            {
+                p.SetValue(target, (int)p.GetValue(target) + 3);
+            }
+            else if (p.PropertyType == typeof(bool))
+            {
+                p.SetValue(target, !(bool)p.GetValue(target));
+            }
+            else if (p.PropertyType == typeof(string[]))
+            {
+                p.SetValue(target, new[] { CellTypeIds.Consumer });
+            }
+            else
+            {
+                return false;
+            }
+
+            return true;
         }
 
         [Fact]

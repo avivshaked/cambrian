@@ -152,6 +152,41 @@ namespace Evosim.Core
         /// see — which is what it is for in every animal that has one.
         /// </remarks>
         Flow = 8,
+
+        /// <summary>
+        /// How deep this part is, as a fraction of the world's depth — DESIGN.md §5A.4.
+        /// Milestone 4. 0 at the surface, 1 at the bottom.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Depth is the axis the whole environment is structured along.</b> Irradiance falls
+        /// off down it, dead matter sinks down it, and §5A.4's argument that heterogeneity is
+        /// what stops one strategy winning everywhere is entirely an argument about depth. A
+        /// creature that cannot sense it cannot hold a niche.
+        /// </para>
+        /// <para>
+        /// <b>Not redundant with <see cref="Photo"/>, and the reason is the night.</b> Irradiance
+        /// is a usable depth proxy only while the sun is up; once §5A.4's diurnal cycle exists,
+        /// light at night says nothing about depth at all. This channel is what makes diel
+        /// vertical migration expressible — rising in darkness, sinking by day — which §5A.4
+        /// names as the most watchable outcome the design could produce.
+        /// </para>
+        /// <para>
+        /// <b>Called depth rather than pressure deliberately.</b> Pressure would be the nicer
+        /// framing — a local quantity rather than a world coordinate — but §5.2 disables gravity
+        /// outright to get neutral buoyancy, so hydrostatic pressure in this world is uniform and
+        /// the name would promise a model that is not there.
+        /// </para>
+        /// <para>
+        /// <b>It is the one channel reporting a world-frame quantity</b>, and that is worth
+        /// stating rather than hiding. Every other channel is something physically present at the
+        /// part. This is acceptable because depth is not an arbitrary coordinate here — it is a
+        /// real gradient the creature is immersed in — and because the gradient rule in §4.4 still
+        /// applies: two parts at different depths give a creature <i>which way is up</i> out of
+        /// its own morphology, with no light required.
+        /// </para>
+        /// </remarks>
+        Depth = 9,
     }
 
     /// <summary>

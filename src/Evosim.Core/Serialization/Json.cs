@@ -181,6 +181,31 @@ namespace Evosim.Core
                 return this;
             }
 
+            /// <summary>
+            /// A double-precision field. For accumulators, not for genome scalars.
+            /// </summary>
+            /// <remarks>
+            /// Genomes are float throughout and should stay that way — the genome is the thing
+            /// whose size matters, and doubling it to store precision no phenotype can express
+            /// would be waste. This exists for the other case: run statistics that accumulate
+            /// over millions of steps, where float stops registering small additions long before
+            /// a run ends. §5A.2's energy audit is exactly that — sunlight in and metabolism out,
+            /// summed forever — and an audit that silently stops adding is worse than none.
+            /// </remarks>
+            public Writer Field(string name, double value)
+            {
+                Key(name);
+                if (double.IsNaN(value) || double.IsInfinity(value))
+                {
+                    throw new ArgumentException(
+                        $"Field '{name}' is {value}, which JSON cannot represent. A non-finite " +
+                        "number here means something upstream produced one and nothing noticed.",
+                        nameof(value));
+                }
+                _sb.Append(value.ToString("R", Invariant));
+                return this;
+            }
+
             public Writer Value(float value)
             {
                 Separate();

@@ -101,6 +101,27 @@ namespace Evosim.Core
         /// </remarks>
         public abstract void AddPanels(Float3 halfExtents, int resolution, List<DragPanel> into);
 
+        /// <summary>Total surface area for the given half-extents, m².</summary>
+        /// <remarks>
+        /// Derived from <see cref="AddPanels"/> rather than from a second, analytic formula per
+        /// shape. Two independent expressions of the same quantity is how they come to disagree,
+        /// and the disagreement would be silent — a capsule whose panels already summed to 79% of
+        /// its true area shipped exactly that way (logbook/0009). This cannot drift, because it
+        /// is the same sum <c>ShapeTests</c> checks against the analytic answer.
+        ///
+        /// Allocating and only called once per part, at development. The per-step path reads
+        /// <see cref="PhenotypePart.SurfaceArea"/>.
+        /// </remarks>
+        public float SurfaceArea(Float3 halfExtents, int resolution = 4)
+        {
+            var panels = new List<DragPanel>();
+            AddPanels(halfExtents, resolution < 1 ? 1 : resolution, panels);
+
+            float total = 0f;
+            for (int i = 0; i < panels.Count; i++) total += panels[i].Area;
+            return total;
+        }
+
         /// <summary>Everything about this shape that changes behaviour, for the config hash (§7).</summary>
         public virtual string HashContribution() => Id;
 

@@ -96,7 +96,8 @@ namespace Evosim.Core
             Float3 childAnchorLocal)
         {
             MorphNode node = genome.Nodes[nodeIndex];
-            Float3 halfExtents = Float3.Abs(node.Dimensions * accumulatedScale);
+            Float3 halfExtents = Thicken(
+                Float3.Abs(node.Dimensions * accumulatedScale), limits.MinPartHalfExtent);
 
             // Volume is the shape's, not the bounding box's. A sphere holds about half what its
             // box does, so pruning on the box would keep parts that mass, upkeep and drag all
@@ -105,7 +106,10 @@ namespace Evosim.Core
             PartShape shape = shapes.Resolve(node.ShapeId);
             float volume = shape.Volume(halfExtents);
 
-            if (volume < limits.MinPartVolume)
+            // Both tails, one counter. A part is dropped for being unrepresentably small (§4.5's
+            // extinction by shrinking) or unrepresentably large (DevelopmentLimits.MaxPartVolume),
+            // and in both cases the whole subtree goes with it.
+            if (volume < limits.MinPartVolume || volume > limits.MaxPartVolume)
             {
                 phenotype.PrunedForVolume++;
                 return;
@@ -131,6 +135,7 @@ namespace Evosim.Core
                 CellTypeId = node.CellTypeId,
                 ShapeId = node.ShapeId,
                 Volume = volume,
+                SurfaceArea = shape.SurfaceArea(halfExtents),
                 JointType = jointType,
                 JointLimits = jointLimits,
                 Power = jointType == JointType.Fixed ? 0f : node.Power,
@@ -204,6 +209,24 @@ namespace Evosim.Core
                 }
             }
         }
+
+        /// <summary>
+        /// Raises any half-extent below <see cref="DevelopmentLimits.MinPartHalfExtent"/> to it.
+        /// </summary>
+        /// <remarks>
+        /// Applied before volume is measured, so the volume limits see the body that will actually
+        /// be built rather than the one the genome asked for. Checking the genome's figure instead
+        /// would prune a wafer for being under the volume floor and then build nothing, even
+        /// though the thickened part is comfortably above it.
+        ///
+        /// A NaN half-extent is thickened too — it fails every comparison, so it would otherwise
+        /// pass both volume limits untouched and poison every quantity derived from it.
+        /// </remarks>
+        private static Float3 Thicken(Float3 h, float floor) =>
+            new Float3(
+                h.X > floor ? h.X : floor,
+                h.Y > floor ? h.Y : floor,
+                h.Z > floor ? h.Z : floor);
 
         /// <summary>
         /// A node may be entered again while it occurs fewer times on the current path than

@@ -124,6 +124,84 @@ namespace Evosim.Core
         public float CellTypeMutationChance { get; set; } = 0.01f;
 
         /// <summary>
+        /// Living creatures below which the population floor spawns founders — §5A.6, D021.
+        /// </summary>
+        /// <remarks>
+        /// <b>Read the floor's firing rate, never just this number.</b> A floor that keeps firing
+        /// means the world is not sustaining life, we are — and the run still shows a stable
+        /// population, births, deaths and accumulating lineages, every figure consistent with a
+        /// working ecosystem and every one of them propped up. The success condition is that this
+        /// fires at t=0 and never again; §5A.6b's minimum generation depth is what reports it.
+        /// </remarks>
+        public int MinimumPopulation { get; set; } = 40;
+
+        /// <summary>
+        /// Living creatures above which the world stops and says so — §5A.6, §5A.7, D021.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A hard stop, not a cull.</b> §5A.7's photosynthetic mat does not go extinct, it
+        /// explodes — and killing creatures to fit a compute budget is selection performed by us
+        /// of the worst kind: arbitrary, invisible in the lineage record, and biased toward
+        /// whatever the cull happens to reach first. A world that hits this has told us its
+        /// calibration is wrong, and continuing under a cull would hide that behind a population
+        /// number we chose.
+        /// </para>
+        /// <para>
+        /// It fires as an exception rather than a flag because a runaway is not a state a caller
+        /// can sensibly carry on from, and because every step past the ceiling costs more than
+        /// the last — a loop that merely noticed would still be a loop that never returned.
+        /// </para>
+        /// </remarks>
+        public int MaximumPopulation { get; set; } = 5000;
+
+        /// <summary>Most founders the floor may spawn in one step.</summary>
+        /// <remarks>
+        /// A trickle rather than a cohort. Creatures spawned together tend to die together, which
+        /// manufactures a boom-and-bust oscillation that is an artefact of the refill rule rather
+        /// than anything the world is doing.
+        /// </remarks>
+        public int FloorSpawnsPerStep { get; set; } = 2;
+
+        /// <summary>Joules a floor-spawned founder starts with.</summary>
+        /// <remarks>
+        /// The only energy in the design created from nothing besides sunlight, so it is counted
+        /// as income in the §5A.2 audit. It buys a founder time to establish rather than body —
+        /// growth does not exist (§5A.6) — and setting it high enough that founders survive
+        /// regardless would make the floor a life-support machine. ⚠ Unmeasured — §5A.10.
+        /// </remarks>
+        public float FounderEnergyJoules { get; set; } = 200f;
+
+        /// <summary>Depth range founders are scattered through, metres.</summary>
+        /// <remarks>
+        /// Spread rather than placed at the surface. Starting every founder at depth zero would
+        /// hand generation zero the best light in the world and make §5A.2's calibration read as
+        /// more generous than it is — and it would remove the depth gradient that §5A.4 says is
+        /// what stops one strategy winning everywhere.
+        /// </remarks>
+        public float FounderDepthSpread { get; set; } = 20f;
+
+        /// <summary>Horizontal area of the world, m² — the sun's aperture. DESIGN.md §5A.2b.</summary>
+        /// <remarks>
+        /// <b>This is the carrying capacity, and it is the only thing that sets one.</b> The world
+        /// receives <see cref="LightModel.SurfaceIrradiance"/> × this many watts and no more, so
+        /// total photosynthetic income is capped however many creatures there are and whatever
+        /// they evolve. Without it a population above break-even grows without bound at every
+        /// setting of §5A.2's ratio, which is what the first calibration sweep found
+        /// (logbook/0011). Larger worlds support more life in exact proportion; they do not
+        /// support a <i>denser</i> one.
+        /// </remarks>
+        public float WorldAreaSquareMetres { get; set; } = 400f;
+
+        /// <summary>Thickness of one shading layer, metres — <see cref="LightField.LayerMetres"/>.</summary>
+        /// <remarks>
+        /// A discretisation of who shades whom, so it wants to be near a creature's own size:
+        /// bodies are metre-scale (§4.1's dimension range), and a layer much thicker than that
+        /// would let a creature shade one floating beside it.
+        /// </remarks>
+        public float LightLayerMetres { get; set; } = 1f;
+
+        /// <summary>
         /// A stable digest of everything above — the <c>configHash</c> of §7.
         /// </summary>
         /// <remarks>
@@ -154,11 +232,20 @@ namespace Evosim.Core
             sb.Append(Fluid.PanelsPerAxis).Append('|');
             sb.Append(Development.MaxParts).Append(',');
             sb.Append(Development.MaxDepth).Append(',');
-            sb.Append(Development.MinPartVolume.ToString("R", c)).Append('|');
+            sb.Append(Development.MinPartVolume.ToString("R", c)).Append(',');
+            sb.Append(Development.MaxPartVolume.ToString("R", c)).Append(',');
+            sb.Append(Development.MinPartHalfExtent.ToString("R", c)).Append('|');
             sb.Append(PerOffspringOverheadJoules.ToString("R", c)).Append(',');
             sb.Append(WorkCostMultiplier.ToString("R", c)).Append(',');
             sb.Append(NeuralCostPerNeuronWatts.ToString("R", c)).Append(',');
             sb.Append(NeuralCostPerConnectionWatts.ToString("R", c)).Append(',');
+            sb.Append(MinimumPopulation).Append(',');
+            sb.Append(MaximumPopulation).Append(',');
+            sb.Append(FloorSpawnsPerStep).Append(',');
+            sb.Append(FounderEnergyJoules.ToString("R", c)).Append(',');
+            sb.Append(FounderDepthSpread.ToString("R", c)).Append(',');
+            sb.Append(WorldAreaSquareMetres.ToString("R", c)).Append(',');
+            sb.Append(LightLayerMetres.ToString("R", c)).Append(',');
             sb.Append(CellTypeMutationChance.ToString("R", c)).Append('|');
             AppendMutationRates(sb, c);
             AppendGenomeOptions(sb, c);

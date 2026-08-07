@@ -80,6 +80,27 @@ namespace Evosim.Core
         /// </remarks>
         public float Volume { get; internal set; }
 
+        /// <summary>Total surface area, m². Stored at development because it never changes.</summary>
+        /// <remarks>
+        /// Recomputing it means asking the shape for its panels and summing them, which allocates
+        /// and costs more than everything else in an energy step put together — the same fault
+        /// the fluid model documents and avoids. A part's geometry is fixed from development to
+        /// death (growth does not exist, §5A.6), so this is computed once.
+        /// </remarks>
+        public float SurfaceArea { get; internal set; }
+
+        /// <summary>
+        /// Area light can fall on, m² — a quarter of the surface. DESIGN.md §5A.1.
+        /// </summary>
+        /// <remarks>
+        /// The quarter is not a fudge: for any convex body the average projected area over all
+        /// orientations is exactly one quarter of its surface area (Cauchy's formula), so this is
+        /// the orientation-averaged answer rather than an estimate. Using the full surface area
+        /// would let a creature collect light on faces pointing away from it, which is free energy
+        /// of the kind §11.2 exists to catch.
+        /// </remarks>
+        public float LitArea => SurfaceArea * 0.25f;
+
         public bool IsRoot => ParentIndex < 0;
 
         public override string ToString() =>

@@ -42,6 +42,16 @@ namespace Evosim.Core
                 .Field("cellTypeMutationChance", config.CellTypeMutationChance)
                 .EndObject();
 
+            w.BeginObject("population")
+                .Field("minimumPopulation", config.MinimumPopulation)
+                .Field("maximumPopulation", config.MaximumPopulation)
+                .Field("floorSpawnsPerStep", config.FloorSpawnsPerStep)
+                .Field("founderEnergyJoules", config.FounderEnergyJoules)
+                .Field("founderDepthSpread", config.FounderDepthSpread)
+                .Field("worldAreaSquareMetres", config.WorldAreaSquareMetres)
+                .Field("lightLayerMetres", config.LightLayerMetres)
+                .EndObject();
+
             w.BeginObject("fluid")
                 .Field("density", config.Fluid.Density)
                 .Field("dragCoefficient", config.Fluid.DragCoefficient)
@@ -53,6 +63,8 @@ namespace Evosim.Core
                 .Field("maxParts", config.Development.MaxParts)
                 .Field("maxDepth", config.Development.MaxDepth)
                 .Field("minPartVolume", config.Development.MinPartVolume)
+                .Field("maxPartVolume", config.Development.MaxPartVolume)
+                .Field("minPartHalfExtent", config.Development.MinPartHalfExtent)
                 .EndObject();
 
             w.BeginObject("mutation")
@@ -102,6 +114,7 @@ namespace Evosim.Core
             }
 
             JsonNode economy = root["economy"];
+            JsonNode population = root["population"];
             JsonNode fluid = root["fluid"];
             JsonNode development = root["development"];
 
@@ -112,6 +125,14 @@ namespace Evosim.Core
                 NeuralCostPerNeuronWatts = economy["neuralCostPerNeuronWatts"].AsFloat(),
                 NeuralCostPerConnectionWatts = economy["neuralCostPerConnectionWatts"].AsFloat(),
                 CellTypeMutationChance = economy["cellTypeMutationChance"].AsFloat(),
+
+                MinimumPopulation = population["minimumPopulation"].AsInt(),
+                MaximumPopulation = population["maximumPopulation"].AsInt(),
+                FloorSpawnsPerStep = population["floorSpawnsPerStep"].AsInt(),
+                FounderEnergyJoules = population["founderEnergyJoules"].AsFloat(),
+                FounderDepthSpread = population["founderDepthSpread"].AsFloat(),
+                WorldAreaSquareMetres = population["worldAreaSquareMetres"].AsFloat(),
+                LightLayerMetres = population["lightLayerMetres"].AsFloat(),
 
                 Fluid = new FluidConfig
                 {
@@ -126,6 +147,8 @@ namespace Evosim.Core
                     MaxParts = development["maxParts"].AsInt(),
                     MaxDepth = development["maxDepth"].AsInt(),
                     MinPartVolume = development["minPartVolume"].AsFloat(),
+                    MaxPartVolume = development["maxPartVolume"].AsFloat(),
+                    MinPartHalfExtent = development["minPartHalfExtent"].AsFloat(),
                 },
 
                 CellTypes = CellTypeJson.ReadRegistry(root["cellTypes"]),

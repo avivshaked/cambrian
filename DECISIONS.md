@@ -43,6 +43,11 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D018](#d018) | Generation zero is one cell, or one cell and a tail | 2026-08-07 | active |
 | [D019](#d019) | `Neural` is a cell type; it discounts neurons rather than gating them | 2026-08-07 | active |
 | [D020](#d020) | Distal senses are scalars; direction is computed by the body | 2026-08-07 | active |
+| [D021](#d021) | A population floor, treated as an instrument rather than a safety net | 2026-08-07 | active |
+| [D022](#d022) | Generation depth is the calibration readout | 2026-08-07 | ⚠ partly superseded by D025 |
+| [D023](#d023) | The sun is finite: light is competed for, and that is the carrying capacity | 2026-08-07 | active |
+| [D024](#d024) | Bodies are bounded at both ends, and a bodyless genome is stillborn | 2026-08-07 | active |
+| [D025](#d025) | Self-sustaining means the floor has gone quiet, not that minimum depth rose | 2026-08-07 | active |
 
 ---
 
@@ -480,7 +485,16 @@ a central pattern generator; inadequate for everything [D017](#d017) is about.
 **The largest omission was smell.** §5A.1 says an absorptive cell *"rewards being where food
 is"* — and nothing could sense where food was, so absorptive feeding was a lottery rather than
 a strategy, with no degree of control able to improve intake. Added: `Chemical`, `Energy`,
-`Flow`.
+`Flow`, `Depth`.
+
+**`Depth` earns its place despite looking redundant with the photosensor.** Irradiance proxies
+depth only while the sun is up; once §5A.4's diurnal cycle exists, light at night says nothing
+about depth, and depth is the axis the entire environment is structured along. It is what makes
+diel vertical migration expressible at all. Named depth rather than pressure because §5.2
+disables gravity to get neutral buoyancy, so hydrostatic pressure here would be uniform and the
+name would promise a model that is not there. It is the only channel reporting a world-frame
+quantity, admitted because depth is a real gradient rather than an arbitrary coordinate — and
+the gradient rule below still recovers *which way is up* from morphology alone.
 
 **`Energy` reports the level, not hunger.** A hunger flag needs a threshold, and choosing one
 is deciding for the creature when it ought to feel hungry — an unmeasured constant where no run
@@ -507,3 +521,207 @@ is developed, so the builder computes a mask and the step loop evaluates only wh
 Cost scales with what evolution uses, not with what is declared. This is not premature: §5A.9's
 measured bottleneck is already a per-part per-step loop at 88% of the frame, and the mask is
 what stops perception becoming a second one.
+
+---
+
+### D021
+**A population floor, treated as an instrument rather than a safety net** · 2026-08-07
+
+[D017](#d017)'s world can go extinct, and a dead world is a wasted run. A minimum living count
+that spawns fresh founders when breached prevents that.
+
+It also **subsumes world seeding**. At t=0 the population is zero, the floor fires, and
+generation zero appears — so there is no separate initialisation path that runs once and is
+therefore tested once. One mechanism, exercised continuously.
+
+**The risk is that it lies.** A floor is an exogenous intervention in a deliberately endogenous
+system — the class of thing D017 exists to remove — and its failure mode looks like success. If
+it fires regularly, the world is not sustaining life, *we* are, and the run still shows a stable
+population, births, deaths and accumulating lineages. Every figure consistent with a working
+ecosystem; every one of them propped up. That is the same fault as everything in the logbook: a
+right-looking number arrived at for the wrong reason.
+
+So the floor reports. A floor spawn is its own event type in `lineage.jsonl`, never
+indistinguishable from a birth, and **a floor that keeps firing is a failed world, reported as
+failed.** The success condition is that it fires at t=0 and never again.
+
+**Rejected: repopulating from survivors or the recently dead.** Choosing who repopulates is
+selection performed by us. Fresh founders require no judgement from us, and it is not a reset
+anyway — the nutrient pool left by the dead persists, so refills enter a richer world than the
+original founders did.
+
+**Rejected: a population ceiling of the same kind.** §5A.7's mat explodes rather than dies, and
+§5A.9 puts real time near 200 creatures — but culling to fit a compute budget is selection by us
+of the worst sort: arbitrary, invisible in the lineage record, and biased toward whatever the
+cull reaches first. A hard stop with a loud report instead.
+
+**The trap this does not solve:** a floor can mask bad calibration indefinitely. If §5A.2's
+ratio is set so nothing can pay its bills, the population never reaches zero and the failure
+never announces itself. See [D022](#d022) — the floor's firing rate is the calibration
+instrument, and it only works if it is reported.
+
+---
+
+### D022
+**Generation depth is the calibration readout** · 2026-08-07
+
+The question [D021](#d021) leaves open — *is this world running itself, or are we running it* —
+is answered by **generation depth**: the number of reproduction events between a creature and
+its founder.
+
+**Minimum depth among the living is the definition of self-sustaining.** Above zero means no
+living creature is a floor spawn. A single integer, no threshold to choose, no averaging window.
+An earlier draft of this decision proposed *time since the floor last fired*, which is coarse
+and nearly binary; depth is continuous, always available, and has structure.
+
+It is free. §5A.6 makes reproduction asexual and mutation-only, so a birth is exactly one
+mutation event and depth is a counter inherited from the parent — which also makes it a measure
+of accumulated genetic distance from the founder. Two instruments in one integer.
+
+**The distribution is reported, not just the mean**, because a takeover and a healthy world have
+the same mean. A high maximum with a median near zero is one lucky lineage among floor spawns;
+a narrow spread is a bottleneck; a wide spread is a working world.
+
+**This is how §5A.2's ratio gets calibrated without guessing it.** There is a phase transition —
+below some metabolism-to-photosynthesis ratio depth pins at zero, above it depth runs away — and
+sweeping the knob locates the transition without anyone needing to know the right value in
+advance. `RunConfig`'s hash exists for exactly this; a swept parameter silently failing to reach
+what it configures has already happened twice (logbook/0007, logbook/0008).
+
+Paired with **age at death** and **depth per wall-clock hour**, since a world where creatures
+reproduce and die instantly posts healthy depth and is broken.
+
+**Known limit, recorded rather than solved:** depth measures reproduction, not adaptation. A
+treadmill — lineages turning over forever with nothing improving — posts excellent depth
+statistics. That is §5A.7's plateau, and *is the world alive* and *is the world interesting* are
+different questions. What answers the second is undecided; the likeliest candidate is whether
+the distribution of strategies moves over time rather than sitting still, but that is a weaker
+instrument and is not being adopted on the strength of a hunch.
+
+---
+
+### D023
+**The sun is finite: light is competed for, and that is the carrying capacity** · 2026-08-07
+
+[D017](#d017) made energy the selective mechanism and [D022](#d022) proposed sweeping §5A.2's
+metabolism-to-photosynthesis ratio to find where a population sustains itself. The sweep was run
+over 400× and **found no such setting, because there was none.**
+
+With irradiance a function of depth alone, a creature's income does not depend on how many others
+exist. Every creature above break-even accumulates surplus at a fixed rate and breeds on a fixed
+period regardless of the crowd — a linear birth process, which grows without bound above
+break-even and goes extinct below it. A step function, not a transition. **The knob decided only
+how fast the world exploded.** Measured: at 48 W/m² the population went 30 → 37 → 84 → 259 → 907
+over 5,000 s, roughly tripling per thousand seconds, with deaths flat at ~100 throughout
+(logbook/0011).
+
+What was missing is **density dependence**. The design had no mechanism by which one creature's
+existence cost another anything, and no calibration can substitute for one.
+
+**Chosen: make the sun finite.** The world has a horizontal area; it receives
+`surfaceIrradiance × worldArea` watts and no more; light one creature absorbs never reaches what
+is below it. Total photosynthetic income is then capped whatever evolution discovers. This is
+preferred over the alternatives because it is a **conservation law rather than a tuning
+parameter** — the same reason §11.2 prefers momentum and energy invariants to plausibility
+checks. Carrying capacity stops being a number we chose and becomes a consequence of the world
+having a size.
+
+Shading uses `1 − e^(−L/A)` per layer, which is Beer–Lambert's own derivation applied to biomass
+rather than water, and what real ocean optics does. What is stored per layer is a **multiplier**
+in (0, 1], not an irradiance — see §5A.2b for why an irradiance is a free-energy source.
+
+**Result:** the transition exists and sits between 24 and 32 W/m² for the default upkeep rates,
+consistent across three seeds, and it agrees with the analytic break-even for a 0.3 m
+photosynthetic cube. Above it nothing runs away: every setting to 400 W/m² settles at tens to
+hundreds of creatures against a ceiling of 50,000. More light produces *bigger* creatures, not
+more of them, because a larger body shades its competitors — which nothing was told to do.
+
+**Rejected:** *a population-dependent penalty* — a crowding term with a coefficient is the
+tuning parameter this replaces, and it would have to be calibrated by the same sweep that could
+not find anything. *A hard population cap* — that is selection performed by us, invisible in the
+lineage record, and [D021](#d021) already rejected it as a mechanism. *Nutrient limitation
+first* — real, and coming in Phase 2, but it constrains absorptive and consumer feeding, and the
+lineages that exploded were photosynthetic.
+
+**Known limit, recorded rather than solved:** the world still has no length scale. At 400 W/m²
+survivors carry thousands of square metres of surface in an aperture 20 m across, because nothing
+relates a body's size to the world's size except the light budget — `Evosim.Core` has no
+positions beyond depth. Spatial extent arrives with the physics simulation at Milestone 4.
+
+---
+
+### D024
+**Bodies are bounded at both ends, and a bodyless genome is stillborn** · 2026-08-07
+
+Three faults found while calibrating [D023](#d023), all of the same family: a quantity with a
+floor and no ceiling.
+
+**1. Size had one absorbing tail.** Mutation perturbs a half-extent by a Gaussian scaled to the
+half-extent itself — geometric Brownian motion, whose log diffuses without bound and has no
+stationary distribution. §4.5 *depends* on the lower tail hitting `MinPartVolume`:
+extinction-by-shrinking is what removes nodes at all, and what makes genome size settle near 39
+nodes on its own. Nothing absorbed the upper tail. Bodies grew until half-extents reached
+10¹⁸ m, at which point volume (10⁵⁴) passes `float.MaxValue`, upkeep becomes infinite, energy
+goes to −∞ and §5A.2's audit is permanently NaN with no way back.
+
+Added `MaxPartVolume`, pruned by the same mechanism as the minimum, giving **extinction by
+growing** to mirror extinction by shrinking. It is deliberately set far outside anything the
+economy tolerates — 10⁶ m³ is a 100 m cube — because *the economics already forbid giants*:
+income scales with area and upkeep with volume, so a body that size starves within one step.
+This bound exists only so the arithmetic survives long enough to say so, not to judge what
+evolution may build.
+
+**2. Volume does not bound surface area, and the economy pays for area.** A box of half-extents
+(10⁻²⁵, 10⁻⁵, 10³⁰) has a volume of 8 m³ and a surface of 10²⁶ m², and `MaxPartVolume` admits
+it. Selection found this immediately: shadow areas reached 10³⁷ m² in a 400 m² world. This is
+§11.2's physics exploitation moved into the economy — a free lunch discovered rather than
+designed, handed over by our own arithmetic.
+
+Added `MinPartHalfExtent`, and it **clamps rather than prunes**. Flatness is a real and valuable
+trait: a flat box is the strongest paddle in the shape registry, 12× more directional than a
+sphere, so dropping thin parts would delete the best swimmers in the world.
+
+**Rejected: an area-proportional upkeep term.** It is the obviously principled fix — real tissue
+costs to maintain per unit area, which is why leaves have a minimum viable thickness — and it
+does not work. Income and an area cost both scale linearly with area, so their difference still
+scales linearly and thinness is still unbounded; the coefficient can only choose between
+"thinning is free" and "thinning never pays", with nothing in between. What actually bounds a
+body is that the world's light runs out ([D023](#d023)). Not adopting it is the whole value of
+having checked.
+
+**3. A genome that develops into no parts was immortal and free.** With nothing to price, income
+and upkeep are both exactly zero, energy never moves, and §5A.6's death-at-zero never fires — a
+creature costing nothing, doing nothing, and holding a slot against the population floor forever.
+Reachable today, since extinction-by-shrinking prunes the root as readily as any other node. Such
+a creature is now refused at admission and counted as a **stillbirth**; the count is reported,
+because a rising stillbirth rate says mutation is pushing bodies past what development will build
+and looks exactly like ordinary mortality in a population curve.
+
+---
+
+### D025
+**Self-sustaining means the floor has gone quiet, not that minimum depth rose** · 2026-08-07
+
+⚠ Supersedes the central claim of [D022](#d022), which remains correct in everything else.
+
+D022 said: minimum generation depth above zero means no living creature is a floor spawn, so the
+world is running itself — a single integer, no threshold, no averaging window. It explicitly
+rejected *time since the floor last fired* as coarse and nearly binary.
+
+**It is a true statement and an unreachable one.** Nothing dies of age: §5A.6 kills only at zero
+energy, so a founder whose income covers its upkeep never dies. A handful of immortal
+generation-zero photosynthesisers pin the minimum at zero permanently — measured, in worlds that
+had not needed the floor for 17,000 s and were running at median depth 78 with births and deaths
+in balance. The instrument reported those worlds as floor-fed. **It was measuring immortality,
+not dependence.**
+
+So the rejected option is adopted: how long the floor has been silent. It is coarse, and it needs
+a window that minimum depth did not — supplied per run, because it has to be long against the
+generation time of whatever lives there, which is a property of the run and not of the
+measurement. Minimum depth is still reported and remains the stronger claim if it ever rises. It
+will, as soon as anything can die of something other than starvation, and whether senescence
+should exist is an open question this makes visible rather than settles.
+
+**The lesson worth keeping:** an instrument whose reading is pinned by a mechanism elsewhere in
+the design is not a conservative instrument, it is a broken one. D022 reasoned about what minimum
+depth *would* mean without checking whether the world could produce it.
