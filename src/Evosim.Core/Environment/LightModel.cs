@@ -41,7 +41,13 @@ namespace Evosim.Core
         /// everything. Its absolute value means little on its own — what matters is this against
         /// <see cref="PhotosyntheticCell.Efficiency"/> and against cell upkeep.
         /// </remarks>
-        public float SurfaceIrradiance { get; }
+        public float SurfaceIrradiance
+        {
+            get => _surfaceIrradiance;
+            set => _surfaceIrradiance = Require(value, nameof(SurfaceIrradiance), NoLight);
+        }
+
+        private float _surfaceIrradiance;
 
         /// <summary>
         /// Depth over which irradiance falls to 1/e of its surface value, in metres.
@@ -52,28 +58,40 @@ namespace Evosim.Core
         /// creature must travel to leave the lit zone, and therefore how much vertical structure
         /// the world has to offer. ⚠ Unmeasured (§5A.10).
         /// </remarks>
-        public float AttenuationDepth { get; }
+        public float AttenuationDepth
+        {
+            get => _attenuationDepth;
+            set => _attenuationDepth = Require(value, nameof(AttenuationDepth), NoDepth);
+        }
+
+        private float _attenuationDepth;
 
         public LightModel(float surfaceIrradiance = 400f, float attenuationDepth = 12f)
         {
-            if (!(surfaceIrradiance > 0f) || float.IsInfinity(surfaceIrradiance))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(surfaceIrradiance), surfaceIrradiance,
-                    "A world with no light has no primary energy input and nothing can live in it.");
-            }
-
-            if (!(attenuationDepth > 0f) || float.IsInfinity(attenuationDepth))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(attenuationDepth), attenuationDepth,
-                    "Light must fall off over some distance, or depth means nothing and the " +
-                    "world has no vertical structure at all.");
-            }
-
             SurfaceIrradiance = surfaceIrradiance;
             AttenuationDepth = attenuationDepth;
         }
+
+        /// <remarks>
+        /// Settable as well as constructable, because §5A.10's rule is that an unmeasured number
+        /// must be sweepable, and both of these are unmeasured. Validated on the way in either
+        /// route, so a config loaded from a hand-edited file cannot introduce a world with no sun.
+        /// </remarks>
+        private static float Require(float value, string name, string why)
+        {
+            if (!(value > 0f) || float.IsInfinity(value))
+            {
+                throw new ArgumentOutOfRangeException(name, value, why);
+            }
+            return value;
+        }
+
+        private const string NoLight =
+            "A world with no light has no primary energy input and nothing can live in it.";
+
+        private const string NoDepth =
+            "Light must fall off over some distance, or depth means nothing and the world has " +
+            "no vertical structure at all.";
 
         /// <summary>
         /// Irradiance at a world height, W/m². Y is up, so the surface is 0 and depths are

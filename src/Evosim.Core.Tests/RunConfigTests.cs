@@ -73,6 +73,7 @@ namespace Evosim.Core.Tests
             new object[] { typeof(DevelopmentLimits) },
             new object[] { typeof(MutationRates) },
             new object[] { typeof(FluidConfig) },
+            new object[] { typeof(LightModel) },
         };
 
         [Theory]
@@ -89,8 +90,10 @@ namespace Evosim.Core.Tests
             {
                 if (!p.CanWrite) continue;
 
+                // A fresh config each time, and its own sub-object rather than a new one: every
+                // Default here is `=> new ...`, so this is already private to this iteration, and
+                // LightModel has no parameterless constructor to call anyway.
                 var config = new RunConfig();
-                owner.SetValue(config, Activator.CreateInstance(subConfig));
 
                 if (!Nudge(owner.GetValue(config), p)) continue;
                 checkedCount++;

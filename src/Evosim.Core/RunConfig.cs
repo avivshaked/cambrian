@@ -51,6 +51,24 @@ namespace Evosim.Core
         /// <summary>Water: density, drag, added mass — §5.2.</summary>
         public FluidConfig Fluid { get; set; } = new FluidConfig();
 
+        /// <summary>How much light reaches each depth — §5A.4, §5A.2b.</summary>
+        /// <remarks>
+        /// <b>It lives here because it is the most consequential number in the design, and for a
+        /// while it was the only one that could not be told apart after the fact.</b>
+        /// <see cref="LightModel"/> used to be handed to <c>World</c> alongside a config rather
+        /// than inside one, so <see cref="LightModel.SurfaceIrradiance"/> — §5A.2's <i>knob that
+        /// decides everything</i> — never reached <see cref="Hash"/>. Every run in the calibration
+        /// sweep of §5A.2b, from the extinct end to the runaway end, carried the same
+        /// <c>configHash</c>. The whole promise of §7 is that <c>(genome, seed, configHash)</c>
+        /// identifies an evaluation, and it did not.
+        ///
+        /// It escaped the reflection guard for the same reason <see cref="DevelopmentLimits"/>
+        /// did, only worse: not a property of this class at all, so nothing walking this class
+        /// could have found it. The guard now covers this and every registered cell type
+        /// (logbook/0013).
+        /// </remarks>
+        public LightModel Light { get; set; } = new LightModel();
+
         /// <summary>
         /// The cell types available, their upkeep and their feeding rates — §5A.1.
         /// </summary>
@@ -245,6 +263,7 @@ namespace Evosim.Core
 
             sb.Append(CellTypes.HashContribution()).Append('|');
             sb.Append(Shapes.HashContribution()).Append('|');
+            sb.Append(Light.HashContribution()).Append('|');
             sb.Append(Fluid.Density.ToString("R", c)).Append(',');
             sb.Append(Fluid.DragCoefficient.ToString("R", c)).Append(',');
             sb.Append(Fluid.AddedMassCoefficient.ToString("R", c)).Append(',');

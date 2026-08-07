@@ -95,7 +95,10 @@ namespace Evosim.Core.Tests
 
         private static Result RunOne(float surfaceIrradiance, ulong seed)
         {
-            var world = new World(Config(), new LightModel(surfaceIrradiance, 12f), seed);
+            RunConfig config = Config();
+            config.Light = new LightModel(surfaceIrradiance, 12f);
+
+            var world = new World(config, seed);
             int peak = 0;
 
             try
@@ -202,7 +205,7 @@ namespace Evosim.Core.Tests
                 WorldAreaSquareMetres = 100f,
             };
 
-            var world = new World(config, new LightModel(96f, 12f), seed: 1);
+            var world = new World(config, seed: 1);
 
             for (int i = 0; i < 10000; i++) world.Step(1f);
             float early = Biomass(world);

@@ -63,7 +63,15 @@ namespace Evosim.Core
         private ulong _nextSeed;
 
         public RunConfig Config { get; }
-        public LightModel Light { get; }
+
+        /// <summary>How much light reaches each depth — <see cref="RunConfig.Light"/>.</summary>
+        /// <remarks>
+        /// Read from the config rather than accepted alongside it. Passing it separately let a
+        /// world run at an irradiance its own <c>configHash</c> knew nothing about, which is §7's
+        /// exact failure and went unnoticed through the whole §5A.2b sweep (logbook/0013). One
+        /// source, so the two cannot disagree.
+        /// </remarks>
+        public LightModel Light => Config.Light;
 
         /// <summary>
         /// How this step's light was divided — §5A.2b. Rebuilt every step.
@@ -134,10 +142,17 @@ namespace Evosim.Core
         /// <summary>How far §5A.2's books are from balancing, in joules. Should be ~0.</summary>
         public double AuditResidual => EnergyIn - EnergyOut - StandingJoules;
 
-        public World(RunConfig config, LightModel light = null, ulong seed = 1)
+        public World(RunConfig config, ulong seed = 1)
         {
             Config = config ?? throw new ArgumentNullException(nameof(config));
-            Light = light ?? new LightModel();
+
+            if (config.Light == null)
+            {
+                throw new ArgumentException(
+                    "RunConfig.Light is null, so the world has no primary energy input and " +
+                    "nothing in it can live.", nameof(config));
+            }
+
             Field = new LightField(Light, config.WorldAreaSquareMetres, config.LightLayerMetres);
             Nutrients = new NutrientField(
                 config.WorldAreaSquareMetres, config.LightLayerMetres,

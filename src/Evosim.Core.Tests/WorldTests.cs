@@ -15,7 +15,8 @@ namespace Evosim.Core.Tests
 
         private static World Run(RunConfig config, LightModel light, float seconds, float dt = 1f)
         {
-            var world = new World(config, light, seed: 1);
+            if (light != null) config.Light = light;
+            var world = new World(config, seed: 1);
             for (float t = 0f; t < seconds; t += dt) world.Step(dt);
             return world;
         }
@@ -96,7 +97,8 @@ namespace Evosim.Core.Tests
             // books must close in all three cases, and tying this to a calibration nobody has
             // measured yet would make it fail for reasons that have nothing to do with energy.
             var config = new RunConfig { MinimumPopulation = 30, MaximumPopulation = 600 };
-            var world = new World(config, new LightModel(400f, 12f), seed: 1);
+            config.Light = new LightModel(400f, 12f);
+            var world = new World(config, seed: 1);
 
             try { for (int i = 0; i < 300; i++) world.Step(1f); }
             catch (PopulationRunawayException e) { _output.WriteLine($"stopped: {e.Population} living"); }
@@ -179,7 +181,8 @@ namespace Evosim.Core.Tests
             // is capable of producing a birth at all, so a sweep that finds nothing is telling us
             // about the ratio rather than about a broken loop.
             var config = new RunConfig { MinimumPopulation = 20, MaximumPopulation = 400 };
-            var world = new World(config, new LightModel(4000f, 40f), seed: 1);
+            config.Light = new LightModel(4000f, 40f);
+            var world = new World(config, seed: 1);
 
             WorldSample sample = default;
             bool exploded = false;
@@ -218,7 +221,8 @@ namespace Evosim.Core.Tests
             // into D021 and never implemented, so the first genuinely over-lit world ran until
             // it was killed by hand.
             var config = new RunConfig { MinimumPopulation = 20, MaximumPopulation = 300 };
-            var world = new World(config, new LightModel(50000f, 60f), seed: 1);
+            config.Light = new LightModel(50000f, 60f);
+            var world = new World(config, seed: 1);
 
             var thrown = Assert.Throws<PopulationRunawayException>(() =>
             {
@@ -238,7 +242,8 @@ namespace Evosim.Core.Tests
             // reported. Checked against the real population rather than a synthetic one — a
             // fixture with hand-set depths would test the sorting and not the reading.
             var config = new RunConfig { MinimumPopulation = 25, MaximumPopulation = 400 };
-            var world = new World(config, new LightModel(4000f, 40f));
+            config.Light = new LightModel(4000f, 40f);
+            var world = new World(config);
 
             var depths = new List<int>();
             for (int i = 0; i < 1500; i++)
@@ -288,7 +293,7 @@ namespace Evosim.Core.Tests
             // runs differing only in the knob could differ for any other reason too.
             string First(ulong seed)
             {
-                var world = new World(new RunConfig(), new LightModel(), seed);
+                var world = new World(new RunConfig(), seed);
                 for (int i = 0; i < 200; i++) world.Step(1f);
                 return WorldStats.Sample(world).ToJson();
             }

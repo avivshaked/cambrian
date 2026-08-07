@@ -172,20 +172,26 @@ namespace Evosim.Core.Tests
             // Guards against the field being built, solved, and then ignored — the shape of fault
             // this project has hit twice (logbook/0007, logbook/0008). Two worlds differing only
             // in aperture must reach different states.
+            // Both just above the transition (§5A.2b). Aperture is the only difference, and it
+            // must be the only difference: at the 400 W/m² default the wide world is a hundred
+            // times the standard one and legitimately reaches fifty thousand creatures, which
+            // stops the run for a reason that has nothing to do with what is being tested.
             var narrow = new RunConfig
             {
                 MinimumPopulation = 30, MaximumPopulation = 50000,
                 FloorSpawnsPerStep = 2, WorldAreaSquareMetres = 25f,
+                Light = new LightModel(48f, 12f),
             };
 
             var wide = new RunConfig
             {
                 MinimumPopulation = 30, MaximumPopulation = 50000,
                 FloorSpawnsPerStep = 2, WorldAreaSquareMetres = 40000f,
+                Light = new LightModel(48f, 12f),
             };
 
-            var a = new World(narrow, new LightModel(48f, 12f), 1);
-            var b = new World(wide, new LightModel(48f, 12f), 1);
+            var a = new World(narrow, 1);
+            var b = new World(wide, 1);
 
             for (int i = 0; i < 4000; i++) { a.Step(1f); b.Step(1f); }
 

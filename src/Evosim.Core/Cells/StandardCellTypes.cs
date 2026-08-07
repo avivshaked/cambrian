@@ -283,16 +283,53 @@ namespace Evosim.Core
     public sealed class AbsorptiveCell : CellType
     {
         /// <summary>Cubic metres of water cleared per second, per cubic metre of tissue.</summary>
+        /// <remarks>
+        /// <b>Capture</b>, not assimilation: how much water this tissue can strain, which is what
+        /// limits a filter feeder in thin water. What it keeps of what it catches is
+        /// <see cref="Yield"/>. Two rates because they fail differently — a bigger filter helps in
+        /// an empty ocean and not in a rich one, and better digestion helps in both.
+        /// ⚠ Unmeasured — §5A.10.
+        /// </remarks>
         public float ClearanceRate { get; }
 
-        public AbsorptiveCell(float clearanceRate = 0.5f, float upkeepWattsPerCubicMetre = 4f)
+        /// <summary>Fraction of captured matter the cell keeps. The rest is lost, not returned.</summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Defaults to 1, and that is a modelling statement rather than a missing number.</b>
+        /// Dissolved matter taken across a membrane has no mechanical loss the way a torn-up
+        /// carcass does — the waste in real filter feeding is in <i>capture</i>, which
+        /// <see cref="ClearanceRate"/> already carries. So filtering is lossless here by default
+        /// and biting is not (<see cref="ConsumerCell.CarrionYield"/>), and most of why the two
+        /// strategies coexist is that difference.
+        /// </para>
+        /// <para>
+        /// It is settable anyway, because "assimilation is perfect" is a claim and §5A.10's rule
+        /// is that a claim nobody has measured must be one a run can vary. Turning it below 1
+        /// models digestion that is not free.
+        /// </para>
+        /// </remarks>
+        public float Yield { get; }
+
+        public AbsorptiveCell(
+            float clearanceRate = 0.5f, float upkeepWattsPerCubicMetre = 4f, float yield = 1f)
             : base(upkeepWattsPerCubicMetre)
         {
             if (clearanceRate <= 0f)
             {
                 throw new ArgumentOutOfRangeException(nameof(clearanceRate), clearanceRate, "Must be positive.");
             }
+
+            if (!(yield > 0f) || yield > 1f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(yield), yield,
+                    "Yield must be in (0, 1]. Above 1 a feeder gains more than it takes, which is " +
+                    "a free-energy source (§11.2) and not a tuning choice; at zero the cell " +
+                    "pays upkeep to eat nothing.");
+            }
+
             ClearanceRate = clearanceRate;
+            Yield = yield;
         }
 
         public override string Id => CellTypeIds.Absorptive;
@@ -308,15 +345,18 @@ namespace Evosim.Core
         public override CellIntake Acquire(in CellContext context) =>
             CellIntake.Food(
                 Math.Max(0f, context.NutrientDensity) * ClearanceRate *
-                Math.Max(0f, context.Volume) * context.Seconds);
+                Math.Max(0f, context.Volume) * context.Seconds,
+                Yield);
 
         public override void WriteParameters(Json.Writer writer) =>
-            writer.Field("clearanceRate", ClearanceRate);
+            writer.Field("clearanceRate", ClearanceRate)
+                  .Field("yield", Yield);
 
         public override string HashContribution() =>
             string.Format(
                 CultureInfo.InvariantCulture,
-                "{0}:upkeep={1:R},joint={2},clearance={3:R}", Id, UpkeepWattsPerCubicMetre, AllowsJoint, ClearanceRate);
+                "{0}:upkeep={1:R},joint={2},clearance={3:R},yield={4:R}",
+                Id, UpkeepWattsPerCubicMetre, AllowsJoint, ClearanceRate, Yield);
     }
 
     /// <summary>
@@ -354,6 +394,18 @@ namespace Evosim.Core
         /// <summary>Fraction kept when feeding on another consumer: contested, so lowest.</summary>
         public float PredationYield { get; }
 
+        /// <summary>
+        /// Cubic metres of water searched for detritus per second, per cubic metre of tissue.
+        /// </summary>
+        /// <remarks>
+        /// The scavenging counterpart of <see cref="AbsorptiveCell.ClearanceRate"/>, and separate
+        /// from it because the two describe different animals: a filter feeder sweeps water
+        /// continuously, a mouth hunts through it. Together with <see cref="BiteRate"/> it sets
+        /// which of the two limits a scavenger — searching in thin water, or swallowing in thick.
+        /// ⚠ Unmeasured — §5A.10.
+        /// </remarks>
+        public float ScavengeRate { get; }
+
         /// <param name="biteRate">Joules per second of contact, per cubic metre, before yield.</param>
         /// <param name="upkeepWattsPerCubicMetre">Standing cost — the highest of the five (§5A.3).</param>
         /// <param name="grazingYield">Fraction kept when feeding on living non-consumer tissue.</param>
@@ -370,7 +422,8 @@ namespace Evosim.Core
             float upkeepWattsPerCubicMetre = 6f,
             float carrionYield = 0.8f,
             float grazingYield = 0.5f,
-            float predationYield = 0.2f)
+            float predationYield = 0.2f,
+            float scavengeRate = 1f)
             : base(upkeepWattsPerCubicMetre)
         {
             if (biteRate <= 0f)
@@ -378,11 +431,20 @@ namespace Evosim.Core
                 throw new ArgumentOutOfRangeException(nameof(biteRate), biteRate, "Must be positive.");
             }
 
+            if (scavengeRate <= 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(scavengeRate), scavengeRate,
+                    "A consumer that searches no water can never find carrion, which closes the " +
+                    "only route across the predator valley (§5A.3).");
+            }
+
             Require(carrionYield, nameof(carrionYield));
             Require(grazingYield, nameof(grazingYield));
             Require(predationYield, nameof(predationYield));
 
             BiteRate = biteRate;
+            ScavengeRate = scavengeRate;
             CarrionYield = carrionYield;
             GrazingYield = grazingYield;
             PredationYield = predationYield;
@@ -473,10 +535,11 @@ namespace Evosim.Core
         /// becomes a better living the emptier the world gets.
         /// </remarks>
         private float ScavengeVolume(in CellContext context) =>
-            Math.Max(0f, context.Volume) * context.Seconds;
+            ScavengeRate * Math.Max(0f, context.Volume) * context.Seconds;
 
         public override void WriteParameters(Json.Writer writer) =>
             writer.Field("biteRate", BiteRate)
+                  .Field("scavengeRate", ScavengeRate)
                   .Field("carrionYield", CarrionYield)
                   .Field("grazingYield", GrazingYield)
                   .Field("predationYield", PredationYield);
@@ -484,8 +547,8 @@ namespace Evosim.Core
         public override string HashContribution() =>
             string.Format(
                 CultureInfo.InvariantCulture,
-                "{0}:upkeep={1:R},joint={2},bite={3:R},yield={4:R}/{5:R}/{6:R}",
-                Id, UpkeepWattsPerCubicMetre, AllowsJoint, BiteRate,
+                "{0}:upkeep={1:R},joint={2},bite={3:R},scavenge={4:R},yield={5:R}/{6:R}/{7:R}",
+                Id, UpkeepWattsPerCubicMetre, AllowsJoint, BiteRate, ScavengeRate,
                 CarrionYield, GrazingYield, PredationYield);
     }
 }

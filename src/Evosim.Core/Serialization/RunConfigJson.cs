@@ -54,6 +54,11 @@ namespace Evosim.Core
                 .Field("nutrientSinkMetresPerSecond", config.NutrientSinkMetresPerSecond)
                 .EndObject();
 
+            w.BeginObject("light")
+                .Field("surfaceIrradiance", config.Light.SurfaceIrradiance)
+                .Field("attenuationDepth", config.Light.AttenuationDepth)
+                .EndObject();
+
             w.BeginObject("fluid")
                 .Field("density", config.Fluid.Density)
                 .Field("dragCoefficient", config.Fluid.DragCoefficient)
@@ -118,6 +123,7 @@ namespace Evosim.Core
             JsonNode economy = root["economy"];
             JsonNode population = root["population"];
             JsonNode fluid = root["fluid"];
+            JsonNode light = root["light"];
             JsonNode development = root["development"];
 
             var config = new RunConfig
@@ -137,6 +143,10 @@ namespace Evosim.Core
                 LightLayerMetres = population["lightLayerMetres"].AsFloat(),
                 WorldDepthMetres = population["worldDepthMetres"].AsFloat(),
                 NutrientSinkMetresPerSecond = population["nutrientSinkMetresPerSecond"].AsFloat(),
+
+                Light = new LightModel(
+                    light["surfaceIrradiance"].AsFloat(),
+                    light["attenuationDepth"].AsFloat()),
 
                 Fluid = new FluidConfig
                 {

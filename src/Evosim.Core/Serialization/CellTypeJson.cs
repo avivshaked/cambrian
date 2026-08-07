@@ -38,14 +38,16 @@ namespace Evosim.Core
                     new PhotosyntheticCell(n["efficiency"].AsFloat(), upkeep),
 
                 [CellTypeIds.Absorptive] = (n, upkeep) =>
-                    new AbsorptiveCell(n["clearanceRate"].AsFloat(), upkeep),
+                    new AbsorptiveCell(
+                        n["clearanceRate"].AsFloat(), upkeep, n["yield"].AsFloat()),
 
                 [CellTypeIds.Consumer] = (n, upkeep) => new ConsumerCell(
                     n["biteRate"].AsFloat(),
                     upkeep,
                     n["carrionYield"].AsFloat(),
                     n["grazingYield"].AsFloat(),
-                    n["predationYield"].AsFloat()),
+                    n["predationYield"].AsFloat(),
+                    n["scavengeRate"].AsFloat()),
             };
 
         /// <summary>

@@ -1309,6 +1309,51 @@ automatic walk silently passes for whatever it did not think to look at. A list 
 wrong in a way a human reading it can see. The test also fails if any named sub-config exposes
 nothing checkable, so it cannot quietly stop covering one.
 
+#### Every knob that moves energy
+
+**Nothing that costs or earns energy may be a constant in a class.** Almost every number in §5A
+is unmeasured, so a cost baked into code is an assumption nobody can test, and a cost that varies
+without reaching `RunConfig.Hash()` is two different experiments filed under one identity.
+
+| Knob | Where | What it decides |
+|---|---|---|
+| **Earning** | | |
+| Surface irradiance, attenuation depth | `RunConfig.Light` | How much energy enters the world at all, and how deep it reaches |
+| Photosynthetic efficiency | `PhotosyntheticCell.Efficiency` | Joules per watt of light per m² of lit area |
+| World aperture | `RunConfig.WorldAreaSquareMetres` | Total watts arriving — the carrying capacity (§5A.2b) |
+| Filter clearance rate | `AbsorptiveCell.ClearanceRate` | Water searched per m³ of tissue — what limits feeding in thin water |
+| Filter assimilation | `AbsorptiveCell.Yield` | Fraction of captured matter kept. 1 by default, and that is a claim, not an omission |
+| Bite rate | `ConsumerCell.BiteRate` | Joules swallowed per m³ per second — what limits feeding in rich water |
+| Scavenge rate | `ConsumerCell.ScavengeRate` | Water searched for carrion. Separate from bite rate because they fail differently |
+| Carrion / grazing / predation yield | `ConsumerCell.*Yield` | Fraction kept per target type. Carrion highest — the predator valley's bridge (§5A.3) |
+| Founder stake | `RunConfig.FounderEnergyJoules` | The only energy besides sunlight created from nothing |
+| **Spending** | | |
+| Basal upkeep, per type | `CellType.UpkeepWattsPerCubicMetre` | What tissue costs to keep alive. Never zero (§5A.1) |
+| Idle actuator cost | `LinkCell.IdleWattsPerNewtonMetre` | What capacity costs whether or not it is used |
+| Mechanical work | `RunConfig.WorkCostMultiplier` | What a joule at the joint costs against a joule of sunlight |
+| Neuron and connection cost | `RunConfig.NeuralCost*` | What thinking costs |
+| Neural discount | `NeuralCell.NeuronsSupportedPerCubicMetre`, `.DiscountedCostFraction` | What a brain buys over a nerve net |
+| **Moving between accounts** | | |
+| Tissue energy, per type | `CellType.TissueEnergyPerCubicMetre` | What a body costs to build and is worth dead — one number, both (§5A.2c) |
+| Per-offspring overhead | `RunConfig.PerOffspringOverheadJoules` | Burned, not transferred — what makes brood size a strategy |
+| Detritus sink rate | `RunConfig.NutrientSinkMetresPerSecond` | Whether the deep is a niche or a graveyard |
+
+Two things deliberately **not** tunable, and the distinction matters:
+
+- **Offspring endowment and brood size are evolved genome traits**, not config. A creature that
+  could choose its own would choose whatever is free.
+- **Lit area is a quarter of surface area.** That is Cauchy's formula — the orientation-averaged
+  projected area of any convex body — not a coefficient. A tunable there would be a licence to
+  break geometry.
+
+`EnergyKnobTests` enforces all of this rather than trusting it. It walks every cell type's saved
+JSON, mutates each numeric field, reloads it and demands the hash move — proving writable,
+readable and identifying in one pass — and separately drives each ledger term end to end to
+confirm the knob actually reaches the arithmetic. Both faults it was written after had shipped:
+`ConsumerCell`'s scavenging rate as a hardcoded coefficient of 1, and `LightModel` handed to the
+world *beside* its config rather than inside it, so every run of the §5A.2b sweep — from the
+extinct end to the runaway end — carried one identical `configHash` (logbook/0013).
+
 - Basal metabolic rate per unit volume, per part type — ✅ **located**: the transition sits
   between 24 and 32 W/m² of surface irradiance against the default upkeep rates (§5A.2b)
 - Peak photosynthetic rate, and its falloff with depth — jointly with the above, this is the

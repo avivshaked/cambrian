@@ -128,7 +128,7 @@ namespace Evosim.Core.Tests
                 },
             };
 
-            var world = new World(config, new LightModel(100f, 12f), 1);
+            var world = new World(config, 1);
             for (int i = 0; i < 200; i++) world.Step(1f);
 
             _output.WriteLine(
@@ -160,7 +160,7 @@ namespace Evosim.Core.Tests
                 },
             };
 
-            var world = new World(config, new LightModel(100f, 12f), 1);
+            var world = new World(config, 1);
             for (int i = 0; i < 200; i++) world.Step(1f);
 
             _output.WriteLine($"in {world.EnergyIn:0.####} J, out {world.EnergyOut:0.####} J");
