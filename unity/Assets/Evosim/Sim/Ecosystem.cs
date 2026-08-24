@@ -66,6 +66,18 @@ namespace Evosim.Sim
         /// <summary>Mean speed of every living creature's centre of mass, m/s, this metabolic step.</summary>
         public double MeanSpeed { get; private set; }
 
+        /// <summary>
+        /// Speed of the fastest living creature, m/s, this metabolic step.
+        /// </summary>
+        /// <remarks>
+        /// <b>Reported because the mean was actively misleading.</b> An embodied run showed a mean
+        /// of 0.0002 m/s, which reads as "nothing swims"; the same population of random genomes
+        /// contains creatures doing 0.48 m/s, because a mean over a population that is mostly
+        /// motionless plants is dominated by the zeros (logbook/0016). Selection acts on the tail,
+        /// so the tail is what has to be watched.
+        /// </remarks>
+        public double MaxSpeed { get; private set; }
+
         /// <summary>Joules the population's joints did this metabolic step.</summary>
         public double WorkThisStep { get; private set; }
 
@@ -168,6 +180,7 @@ namespace Evosim.Sim
             float seconds = StepsPerMetabolicStep * FixedDt;
 
             double speedSum = 0d;
+            double fastest = 0d;
             double work = 0d;
 
             IReadOnlyList<Organism> living = World.Living;
@@ -190,12 +203,16 @@ namespace Evosim.Sim
 
                 World.Observe(creature, centre.y, interval);
 
-                speedSum += Vector3.Distance(centre, body.PreviousCentre) / seconds;
+                double speed = Vector3.Distance(centre, body.PreviousCentre) / seconds;
+                speedSum += speed;
+                if (speed > fastest) fastest = speed;
+
                 body.PreviousCentre = centre;
                 work += interval;
             }
 
             MeanSpeed = living.Count > 0 ? speedSum / living.Count : 0d;
+            MaxSpeed = fastest;
             WorkThisStep = work;
 
             World.Step(seconds);

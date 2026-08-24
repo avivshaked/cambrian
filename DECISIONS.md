@@ -1009,3 +1009,62 @@ this pass* — the MVP set's oscillators have arity zero and need no inputs at a
 per-genome gait costs no sensor plumbing; closing the loop is Milestone 6 and gets §4.4's
 requirement-mask treatment when it lands. *Summing neurons into a joint, or a dedicated output
 neuron* — the first makes gain depend on neuron count, the second needs a new genome field.
+
+---
+
+### D031
+**What owning an actuator costs is the knob that decides whether anything can move** · 2026-08-07
+
+[D030](#d030) closed by recommending a longer run: a random genome swims at 0.485 m/s about one
+time in two hundred, so the capability exists and 200 seconds was too little search to find it.
+**That recommendation was wrong, and ten minutes of running it said so.**
+
+**§5A.2b's calibration is superseded by embodiment.** It located the self-sustaining transition at
+32 W/m², measured before bodies cost tissue ([D026](#d026)) and before swimming cost work
+([D029](#d029)). Embodied, 48 W/m² sustains nothing — 6 births against 99 deaths, population pinned
+at the floor, `gen min` never leaving zero — and 64 W/m² is barely above replacement. The numbers in
+that section describe a world that no longer exists and must be re-measured before being quoted.
+
+**Joints were dying at every irradiance tested** — 64, 100, 150, 200, 400 W/m², with up to 4,046
+births and lineages sixteen generations deep. Not a search-time problem.
+
+**The cause is the standing cost of owning an actuator**, `IdleWattsPerNewtonMetre` ×
+`MaxLinkPower`. At the shipped 0.02 × 120 that is **2.4 W billed continuously before the joint
+moves once**, against roughly 2.3 W of total income for a photosynthetic part at 100 W/m². The
+actuator costs a creature's entire earnings simply to exist. `LinkCell`'s own documentation names
+the failure — *"too high and nothing can afford to move"* — and §5A.10 marks the knob unmeasured.
+
+**Measured, nine runs at 100 W/m² over 1500 s, sorted by the product:**
+
+| idle | maxPower | standing cost | jointed alive at t=1500 |
+|---|---|---|---|
+| 0.02 | 120 | 2.4 W | 0, 1, 1 *(3 seeds — default)* |
+| 0.02 | 60 | 1.2 W | 1 |
+| 0.005 | 120 | 0.6 W | 4, 11, 4 *(3 seeds)* |
+| 0.02 | 20 | 0.4 W | 4 |
+| 0.02 | 8 | 0.16 W | 8 |
+
+Monotonic in the product, reached independently down two different knobs, consistent in direction
+across three seeds. **A joint is affordable at well under a fifth of what a body earns and
+unaffordable at all of it**, and the default is on the wrong side by about 5×.
+
+**The default is deliberately left where it is.** A knob moved to make an uncomfortable result go
+away is how a finding gets buried, and *which* of the two to move is a design decision rather than
+a measurement: the coefficient is the pressure §5A.10 intends to keep evolved `Power` down, while
+the power range is what founders start from. Only one of those should absorb the correction, and
+that choice is not the measurement's to make.
+
+**Two reading errors worth recording, both of the same shape.** The harness reported jointed
+creatures as a percentage and the population was quadrupling inside the window, so "0%" read as
+extinction when the underlying count was going 11 → 14 → 16 → 19. And a first four-point sweep was
+called a clean curve one step before its cheapest setting turned out to perform *worse* than the
+setting above it — noise, at counts between 4 and 19 with one run per point. Both were aggregates
+that looked more authoritative than the counts underneath them, which is the same fault as
+[D030](#d030)'s mean hiding a 78× tail. The harness now prints counts.
+
+**Unplanned, and it passed:** two runs of the same config and seed in separate Unity processes
+produced byte-identical trajectories. §7 promises same-machine same-version reproducibility and
+declines to promise more; it holds.
+
+**Still not known:** whether persisting joints ever produce a swimmer. The fastest creature in any
+of these runs manages 0.0075 m/s. Persistence is a precondition, not evidence.

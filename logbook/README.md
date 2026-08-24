@@ -77,3 +77,4 @@ are the ones most likely to go unwritten.
 | [0014](0014-the-rotations-that-were-not-needed.md) | 2026-08-07 | The rotations that were not needed |
 | [0015](0015-the-world-deleted-its-own-muscles.md) | 2026-08-07 | The world deleted its own muscles |
 | [0016](0016-the-brain-that-was-never-read.md) | 2026-08-07 | The brain that was never read |
+| [0017](0017-what-a-muscle-costs-to-own.md) | 2026-08-07 | What a muscle costs to own |

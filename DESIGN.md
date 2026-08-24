@@ -1413,8 +1413,20 @@ records claiming to be different experiments and byte-identical in fact. The dea
 this remains the project's recurring fault in its third form. *Prove a parameter reached the thing
 it configures* (logbook/0007, logbook/0008, logbook/0013).
 
-- Basal metabolic rate per unit volume, per part type — ✅ **located**: the transition sits
-  between 24 and 32 W/m² of surface irradiance against the default upkeep rates (§5A.2b)
+- Basal metabolic rate per unit volume, per part type — ~~✅ **located**: the transition sits
+  between 24 and 32 W/m² of surface irradiance against the default upkeep rates (§5A.2b)~~
+  ⚠ **Superseded by embodiment.** That figure was measured with `workJoules: 0` and a height fixed
+  at birth. With bodies costing tissue (§5A.2c) and swimming costing work (§10 M4), 48 W/m² no
+  longer sustains a population at all — 6 births against 99 deaths, pinned at the floor — and 64
+  W/m² is barely above replacement. Re-measure before quoting (logbook/0017)
+- **What owning an actuator costs, `IdleWattsPerNewtonMetre` × `MaxLinkPower`** — ✅ **located**,
+  and it decides whether anything in the world can move. The two knobs enter the ledger as a
+  product, so only the product matters: at the shipped 2.4 W a jointed creature is at the edge of
+  extinction (0–1 alive across three seeds), and below roughly 0.5 W joints persist and grow. The
+  threshold is a fraction of what a body earns — a photosynthetic part makes ~2.3 W at 100 W/m²,
+  so an actuator is affordable at well under a fifth of income and unaffordable at all of it.
+  ⚠ **The default is on the unaffordable side by about 5×** and is deliberately left there until
+  the choice of which knob to move is made (logbook/0017)
 - Peak photosynthetic rate, and its falloff with depth — jointly with the above, this is the
   knob in §5A.2. ✅ **located** by the same sweep
 - **World aperture** (`WorldAreaSquareMetres`) — new with §5A.2b, and the only thing setting
