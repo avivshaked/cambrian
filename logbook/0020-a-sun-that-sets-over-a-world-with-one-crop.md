@@ -68,30 +68,26 @@ migrates. Depth spread rises by about a quarter and mean depth does not move.
 
 **Food income is 0% of all income, in every run.** Not small — zero.
 
-So the chain is closed, and every link of it is measured rather than argued:
-
-> Absorptive cells are effectively unreachable from a founder → nothing earns from nutrients →
-> light is the only income → light is monotonically decreasing in depth at every hour → the
-> surface wins at every hour → there is no optimum to track → a moving sun moves nothing.
-
 A cycle needs *two* incomes pulling in opposite directions before it can move a balance point.
 There is only one crop in this world, and it grows at the top.
 
-## The rate that assumes a body nobody has
+## ~~The rate that assumes a body nobody has~~ — struck, and wrong
 
-`MutationRates.CellTypeChance` is 0.001, and its own documentation explains the choice:
-
-> A body has around eight parts, so a per-node chance of 0.006 changes something in roughly one
-> birth in twenty (…). At 0.001 it is about one birth in a hundred and twenty.
-
-**Founders have 1.51 parts.** So the effective rate is nearer one birth in six hundred, and only a
-fifth of those land on absorptive — call it one in three thousand, in runs of about a thousand
-births. The estimate is not wrong; it was made for a body plan the population does not have.
-
-Which is the same fault as [0018](0018-nothing-to-swim-towards.md), in a different subsystem. That
-entry found founders averaging 1.5 parts against the 5.8 of a full random genome, and concluded
-that reasoning calibrated on mature bodies does not transfer to the population that actually
-exists. This is a per-node rate documented against eight nodes, running on one and a half.
+> **Superseded within the hour by [0021](0021-the-food-all-fell-to-the-bottom.md).** This section
+> claimed absorptive cells were effectively unreachable from a founder at
+> `MutationRates.CellTypeChance`, and did the arithmetic to prove it. The arithmetic is fine and
+> the premise is false: **founders draw absorptive one time in four**, directly, from
+> `RandomGenomeOptions.FounderCellTypes`, and never touch the mutation rate at all. There were
+> five absorptive creatures alive in the very next run.
+>
+> The conclusion that food income is 0% survives; the reason given for it does not. The real one
+> is in 0021 and is a different problem with a different fix.
+>
+> Left in place rather than edited, per the rule at the top of this directory. Worth noting how it
+> happened: the measurement said *0% food income*, and rather than ask the code why, I reasoned
+> from a mutation rate I had read ten minutes earlier to a conclusion that fitted. It fitted
+> because it was plausible, which is the failure this whole logbook is about, arriving this time in
+> the diagnosis rather than in the instrument.
 
 ## The half of the objection that was right
 

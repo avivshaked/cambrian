@@ -58,6 +58,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D033](#d033) | Founders draw sensor references from the implemented channel set, and mutation may rewire an input | 2026-08-24 | active |
 | [D034](#d034) | Per-creature seeds are mixed with the world seed, not counted from it | 2026-08-24 | active |
 | [D035](#d035) | The diurnal cycle is mean-preserving, and off by default | 2026-08-25 | active |
+| [D036](#d036) | The world needs a current: energy has no return path without one | 2026-08-25 | active |
 
 ---
 
@@ -1238,3 +1239,53 @@ That guard's companion, the hash test, failed too, and that one was a hole in th
 every float tunable by +7.5, which silently required every knob in the project to be unbounded —
 the opposite of §7's *loading refuses rather than defaults*. It now shrinks the nudge until one is
 accepted, and still fails if none is.
+
+---
+
+### D036
+**The world needs a current: energy has no return path without one** · 2026-08-25
+
+§5A.4 has always specified a current — *"a procedural divergence-free field (curl noise), evolving
+slowly"*, entering the model at one point because `FluidModel.BoxDrag` already takes a velocity, so
+`bodyVelocity - currentVelocity` gives real advection for a noise lookup. §10 lists it under
+Milestone 4. It was never built, and this records that it is not optional.
+
+**Three separately measured failures resolve to its absence** (logbook/0021):
+
+1. **Energy is immobilised, not lost.** Light enters at the surface, plants grow and die at the
+   surface, and their bodies sink past everything that could eat them onto a floor sixty metres
+   down. By 3,500 s, 77.5% of every joule of dead matter the world has produced is on the sediment
+   and the nutrient density where the living population sits is exactly zero. The audit closes at
+   0.0000% throughout, which is the point: the books balance perfectly on a world with a one-way
+   trip from surface to bottom. Real oceans have this problem and solve it with upwelling, which is
+   where essentially all marine productivity comes from.
+2. **Position is inherited and effectively immutable.** A creature moves **six millimetres** from
+   where it was born over a mean life of 289 s, against a founder scatter of twenty metres — a
+   ratio of 1:3300. Swimming accounts for roughly 0.03% of the variance in a creature's realised
+   depth, so selection cannot see it at any generation count. A current makes birth depth stop
+   being destiny.
+3. **Swimming has no climbable gradient, and this is the load-bearing one.** In still water doing
+   nothing is free *and optimal* — drifting costs zero, the best strategy is to be a blob, and
+   every run so far has duly converged on blobs. In moving water, **station-keeping is a task with
+   continuous returns from arbitrarily close to zero**: a creature that swims slightly holds
+   position slightly better than one that does not swim at all. That is a gradient evolution can
+   climb from nothing. "Swim four metres to reach better light" is not, because the first four
+   metres pay nothing.
+
+**Rejected: making creatures faster instead.** The obvious reading of six millimetres is that
+muscles are too weak, and D032 already shows torque buys speed. It does not fix this. The problem is
+the *ratio* of achievable travel to inherited scatter, and closing a factor of 3,300 by strengthening
+actuators would need a world where creatures cross the water column in a lifetime — which is a
+different world, not a calibrated one. A current changes the denominator instead, and changes it for
+free.
+
+**Rejected: reducing `FounderDepthSpread` to shrink the scatter.** Same ratio from the other end, and
+it works, and it is the wrong mechanism: it makes swimming selectable by making the world flat, which
+removes the vertical structure §5A.4 exists to provide. It would trade the reason for locomotion
+against the ability to select for it.
+
+**Note what this says about D035.** The diurnal cycle was built to give locomotion a moving target
+and could not, because the second income it needed does not exist. A current is upstream of it: with
+detritus returned to the lit zone, absorptive feeding becomes viable, the two incomes finally pull in
+opposite directions, and the cycle has a balance point to move. The cycle is not wasted work; it was
+built one layer too early.

@@ -51,6 +51,20 @@ namespace Evosim.Core
         /// </remarks>
         public float HeightY { get; internal set; }
 
+        /// <summary>Where this creature started, metres. Set once, at birth.</summary>
+        /// <remarks>
+        /// <b>Kept so that "did it move" is answerable at all.</b> Depth decides both incomes, and
+        /// a creature inherits its parent's depth — so at any instant the population's depth
+        /// distribution is mostly a record of where things were *born*, not of where they swam to.
+        /// Those two are confounded in <see cref="HeightY"/> and separable only against this.
+        ///
+        /// It is the denominator of the question logbook/0021 asks: selection can only act on
+        /// swimming to the extent that swimming moves a creature further than the spread it was
+        /// born into. If birth depth varies over twenty metres and a lifetime of swimming is worth
+        /// a tenth of one, the trait is invisible to selection however many generations run.
+        /// </remarks>
+        public float BirthHeightY { get; internal set; }
+
         /// <summary>
         /// Mechanical work done at the joints since the last metabolic step, in joules.
         /// </summary>

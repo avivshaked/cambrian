@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -106,12 +107,7 @@ namespace Evosim.Sim.EditorTools
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
-            report.AppendLine(
-                "| t (s) | alive | births | deaths | **jointed** | jointed % | mean dof | " +
-                "mean m/s | max m/s | work J/s | work share | **food %** | depth m | **depth sd** | " +
-                "sun | gen min | gen max | audit |");
-            report.AppendLine(
-                "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
+            report.AppendLine(Header());
 
             Flush(outPath, report);
 
@@ -190,7 +186,8 @@ namespace Evosim.Sim.EditorTools
             World world = eco.World;
 
             double spend = 0d, workSpend = 0d, depth = 0d, light = 0d, food = 0d;
-            int jointed = 0, dof = 0;
+            double travelled = 0d, age = 0d;
+            int jointed = 0, dof = 0, absorptive = 0;
             int genMin = int.MaxValue, genMax = 0;
 
             for (int i = 0; i < world.Living.Count; i++)
@@ -208,6 +205,27 @@ namespace Evosim.Sim.EditorTools
                 // where they should be (D035).
                 light += creature.Lifetime.LightIncome;
                 food += creature.Lifetime.FoodIncome;
+
+                // How far a creature has actually moved from where it was born, against the
+                // spread it was born into. Selection can only see swimming through this ratio: a
+                // trait worth a tenth of a metre in a population scattered over twenty is a trait
+                // whose signal is two orders of magnitude under the noise, and no number of
+                // generations recovers it.
+                travelled += Math.Abs(creature.HeightY - creature.BirthHeightY);
+                age += creature.Age;
+
+                // Counted, because "food income is 0%" has two completely different causes and
+                // the share cannot tell them apart: nothing is trying to eat detritus, or plenty
+                // is trying and there is nothing to eat. Founders draw absorptive one time in
+                // four (RandomGenomeOptions.FounderCellTypes), so the first should be false — and
+                // an assumption is exactly what wants checking here.
+                foreach (PhenotypePart part in creature.Phenotype.Parts)
+                {
+                    if (part.CellTypeId != CellTypeIds.Absorptive) continue;
+
+                    absorptive++;
+                    break;
+                }
 
                 int creatureDof = 0;
                 foreach (PhenotypePart part in creature.Phenotype.Parts)
@@ -250,21 +268,70 @@ namespace Evosim.Sim.EditorTools
 
             var c = CultureInfo.InvariantCulture;
 
-            return string.Format(
-                c,
-                "| {0:0} | {1} | {2} | {3} | **{4}** | {5:0.#}% | {6:0.##} | {7:0.####} | " +
-                "{8:0.####} | {9:0.##} | {10:0.#}% | **{11:0.##}%** | {12:0.#} | " +
-                "**{13:0.##}** | {14:0.##} | {15} | {16} | {17:0.0000}% |",
-                world.ElapsedSeconds, alive, world.Births, world.Deaths,
-                jointed,
-                alive > 0 ? 100d * jointed / alive : 0d,
-                alive > 0 ? (double)dof / alive : 0d,
-                eco.MeanSpeed, eco.MaxSpeed,
-                eco.WorkThisStep / seconds, 100d * workShare,
-                light + food > 0d ? 100d * food / (light + food) : 0d,
-                meanDepth, depthSd, world.Field.DayFactor,
-                genMin, genMax, residual);
+            // Built column by column rather than through a positional format string. That string
+            // had reached twenty-five indices and desynchronised from its argument list the moment
+            // two more measurements were added — a FormatException at the first row, which is the
+            // benign version; the malign one is two columns swapping and every number staying
+            // plausible. Pairing each header with its own value makes that impossible to express.
+            var row = new List<string>
+            {
+                world.ElapsedSeconds.ToString("0", c),
+                alive.ToString(c),
+                world.Births.ToString(c),
+                world.Deaths.ToString(c),
+                "**" + jointed.ToString(c) + "**",
+                (alive > 0 ? 100d * jointed / alive : 0d).ToString("0.#", c) + "%",
+                (alive > 0 ? (double)dof / alive : 0d).ToString("0.##", c),
+                eco.MeanSpeed.ToString("0.####", c),
+                eco.MaxSpeed.ToString("0.####", c),
+                (eco.WorkThisStep / seconds).ToString("0.##", c),
+                (100d * workShare).ToString("0.#", c) + "%",
+                "**" + (light + food > 0d ? 100d * food / (light + food) : 0d).ToString("0.##", c) + "%**",
+                "**" + absorptive.ToString(c) + "**",
+                "**" + world.Nutrients.TotalJoules.ToString("0.#", c) + "**",
+
+                // Density where the creatures actually are, and how much of the world's detritus
+                // has already fallen past them. Total joules cannot tell "there is no food" from
+                // "the food is forty metres below everything that could eat it", and those two
+                // want opposite responses.
+                "**" + world.Nutrients.DensityAt((float)meanDepth).ToString("0.####", c) + "**",
+                "**" + (world.Nutrients.TotalJoules > 0d
+                    ? 100d * world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1) /
+                      world.Nutrients.TotalJoules
+                    : 0d).ToString("0.#", c) + "%**",
+
+                meanDepth.ToString("0.#", c),
+                "**" + depthSd.ToString("0.##", c) + "**",
+                "**" + (alive > 0 ? travelled / alive : 0d).ToString("0.####", c) + "**",
+                (alive > 0 ? age / alive : 0d).ToString("0.#", c),
+                world.Field.DayFactor.ToString("0.##", c),
+                genMin.ToString(c),
+                genMax.ToString(c),
+                residual.ToString("0.0000", c) + "%",
+            };
+
+            if (row.Count != Columns.Length)
+            {
+                throw new InvalidOperationException(
+                    $"{row.Count} values against {Columns.Length} headers. A column was added at " +
+                    "one end and not the other, and every row after it would be mislabelled.");
+            }
+
+            return "| " + string.Join(" | ", row) + " |";
         }
+
+        /// <summary>Column headers. The single source of the table's shape — see <c>Row</c>.</summary>
+        private static readonly string[] Columns =
+        {
+            "t (s)", "alive", "births", "deaths", "**jointed**", "jointed %", "mean dof",
+            "mean m/s", "max m/s", "work J/s", "work share", "**food %**", "**absorpt**",
+            "**detritus J**", "**J/m3 here**", "**% on floor**", "depth m", "**depth sd**",
+            "**rise m**", "age s", "sun", "gen min", "gen max", "audit",
+        };
+
+        private static string Header() =>
+            "| " + string.Join(" | ", Columns) + " |" + Environment.NewLine +
+            "|" + string.Concat(System.Linq.Enumerable.Repeat("---|", Columns.Length)) + "|";
 
         private static void Flush(string path, StringBuilder report)
         {

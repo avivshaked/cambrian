@@ -536,6 +536,7 @@ namespace Evosim.Core
                 Energy = energy,
                 TissueJoules = tissue,
                 HeightY = heightY,
+                BirthHeightY = heightY,
                 StandingWatts = Metabolism.StandingWatts(phenotype, Config),
             };
 
