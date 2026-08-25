@@ -127,7 +127,16 @@ namespace Evosim.Core.Tests
         {
             if (p.PropertyType == typeof(float))
             {
-                p.SetValue(target, (float)p.GetValue(target) + 7.5f);
+                // Shrinking, because a tunable may validate its own range and +7.5 is outside
+                // plenty of legitimate ones — LightModel.DayNightAmplitude is a fraction. A fixed
+                // nudge would make this guard demand that every knob be unbounded, which is the
+                // opposite of what the project wants: "loading refuses rather than defaults", and
+                // a knob that refuses a nonsense value is doing its job.
+                //
+                // It must still fail loudly if NO nudge works — the caller does not increment its
+                // checked count, and the "exposed no nudgeable tunable" assert catches a
+                // sub-config that has quietly become untestable.
+                return NudgeFloat(target, p);
             }
             else if (p.PropertyType == typeof(int))
             {
@@ -147,6 +156,36 @@ namespace Evosim.Core.Tests
             }
 
             return true;
+        }
+
+        /// <summary>Moves a float tunable to a different legal value, or reports that it cannot.</summary>
+        private static bool NudgeFloat(object target, PropertyInfo p)
+        {
+            var original = (float)p.GetValue(target);
+
+            for (float delta = 7.5f; delta > 1e-4f; delta *= 0.5f)
+            {
+                foreach (float candidate in new[] { original + delta, original - delta })
+                {
+                    try
+                    {
+                        p.SetValue(target, candidate);
+                    }
+                    catch (Exception e) when (
+                        e is ArgumentOutOfRangeException ||
+                        e.InnerException is ArgumentOutOfRangeException)
+                    {
+                        continue;
+                    }
+
+                    // A setter is free to clamp rather than throw, and one that clamped back to
+                    // the original would leave this reporting a hash that never had a chance to
+                    // change. Confirm the value actually moved.
+                    if ((float)p.GetValue(target) != original) return true;
+                }
+            }
+
+            return false;
         }
 
         [Fact]

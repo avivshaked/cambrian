@@ -57,6 +57,11 @@ namespace Evosim.Sim.EditorTools
             float idle = Env("EVOSIM_IDLE", 0.02f);
             float maxPower = Env("EVOSIM_MAXPOWER", 120f);
 
+            // The day/night cycle (D035). Mean-preserving, so amplitude 0 is exactly the acyclic
+            // world every earlier number was measured in and the arms of a sweep stay comparable.
+            float dayAmplitude = Env("EVOSIM_DAY_AMPLITUDE", 0f);
+            float dayLength = Env("EVOSIM_DAY_LENGTH", 200f);
+
             string outPath = Environment.GetEnvironmentVariable("EVOSIM_OUT");
             if (string.IsNullOrEmpty(outPath))
             {
@@ -74,7 +79,11 @@ namespace Evosim.Sim.EditorTools
 
             var config = new RunConfig
             {
-                Light = new LightModel(irradiance, 12f),
+                Light = new LightModel(irradiance, 12f)
+                {
+                    DayNightAmplitude = dayAmplitude,
+                    DayLengthSeconds = dayLength,
+                },
                 CellTypes = new CellTypeRegistry(
                     new StructuralCell(),
                     new LinkCell(idle),
@@ -94,13 +103,15 @@ namespace Evosim.Sim.EditorTools
                 "Unity " + Application.unityVersion + " · dt=" + Ecosystem.FixedDt +
                 " · metabolic step " + (Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt) +
                 " s · seed " + seed + " · idle " + idle + " W/N·m · maxPower " + maxPower +
+                " · day ±" + dayAmplitude + " over " + dayLength + " s" +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(
                 "| t (s) | alive | births | deaths | **jointed** | jointed % | mean dof | " +
-                "mean m/s | max m/s | work J/s | work share | depth m | gen min | gen max | audit |");
+                "mean m/s | max m/s | work J/s | work share | **food %** | depth m | **depth sd** | " +
+                "sun | gen min | gen max | audit |");
             report.AppendLine(
-                "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
+                "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
 
             Flush(outPath, report);
 
@@ -178,7 +189,7 @@ namespace Evosim.Sim.EditorTools
         {
             World world = eco.World;
 
-            double spend = 0d, workSpend = 0d, depth = 0d;
+            double spend = 0d, workSpend = 0d, depth = 0d, light = 0d, food = 0d;
             int jointed = 0, dof = 0;
             int genMin = int.MaxValue, genMax = 0;
 
@@ -189,6 +200,14 @@ namespace Evosim.Sim.EditorTools
                 spend += creature.Lifetime.Expenditure;
                 workSpend += creature.Lifetime.Work;
                 depth += creature.HeightY;
+
+                // The two incomes, separately. Light is shallow and detritus sinks, so a moving
+                // optimum — and therefore any reason to migrate — exists only to the extent that
+                // both are worth having. If food income is a rounding error then the best depth is
+                // the surface at every hour and a day/night cycle changes when creatures earn, not
+                // where they should be (D035).
+                light += creature.Lifetime.LightIncome;
+                food += creature.Lifetime.FoodIncome;
 
                 int creatureDof = 0;
                 foreach (PhenotypePart part in creature.Phenotype.Parts)
@@ -208,6 +227,23 @@ namespace Evosim.Sim.EditorTools
             int alive = world.Living.Count;
             if (alive == 0) genMin = 0;
 
+            // Spread, not only the mean, and it is the statistic a migration would show up in.
+            // A population that has settled at one good depth and a population sloshing up and
+            // down with the sun have the same mean at the moment you sample them and completely
+            // different spreads — which is the same lesson as the mean speed that hid a 78x tail
+            // (logbook/0016). Sampled across the population rather than over time, so one row is
+            // one snapshot of how vertically spread the world is.
+            double meanDepth = alive > 0 ? depth / alive : 0d;
+            double variance = 0d;
+
+            for (int i = 0; i < world.Living.Count; i++)
+            {
+                double d = world.Living[i].HeightY - meanDepth;
+                variance += d * d;
+            }
+
+            double depthSd = alive > 1 ? Math.Sqrt(variance / (alive - 1)) : 0d;
+
             double workShare = spend > 0d ? workSpend / spend : 0d;
             double residual = world.EnergyIn > 0d ? 100d * world.AuditResidual / world.EnergyIn : 0d;
             double seconds = Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt;
@@ -217,14 +253,16 @@ namespace Evosim.Sim.EditorTools
             return string.Format(
                 c,
                 "| {0:0} | {1} | {2} | {3} | **{4}** | {5:0.#}% | {6:0.##} | {7:0.####} | " +
-                "{8:0.####} | {9:0.##} | {10:0.#}% | {11:0.#} | {12} | {13} | {14:0.0000}% |",
+                "{8:0.####} | {9:0.##} | {10:0.#}% | **{11:0.##}%** | {12:0.#} | " +
+                "**{13:0.##}** | {14:0.##} | {15} | {16} | {17:0.0000}% |",
                 world.ElapsedSeconds, alive, world.Births, world.Deaths,
                 jointed,
                 alive > 0 ? 100d * jointed / alive : 0d,
                 alive > 0 ? (double)dof / alive : 0d,
                 eco.MeanSpeed, eco.MaxSpeed,
                 eco.WorkThisStep / seconds, 100d * workShare,
-                alive > 0 ? depth / alive : 0d,
+                light + food > 0d ? 100d * food / (light + food) : 0d,
+                meanDepth, depthSd, world.Field.DayFactor,
                 genMin, genMax, residual);
         }
 

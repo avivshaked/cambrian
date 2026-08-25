@@ -57,6 +57,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D032](#d032) | The actuator-cost correction goes on `MaxLinkPower`, and the two knobs are not interchangeable | 2026-08-24 | active |
 | [D033](#d033) | Founders draw sensor references from the implemented channel set, and mutation may rewire an input | 2026-08-24 | active |
 | [D034](#d034) | Per-creature seeds are mixed with the world seed, not counted from it | 2026-08-24 | active |
+| [D035](#d035) | The diurnal cycle is mean-preserving, and off by default | 2026-08-25 | active |
 
 ---
 
@@ -1186,3 +1187,54 @@ collide.
 Two tests hold it, and the one that matters — that two world seeds give different founder
 populations — was run against the old code first to confirm it fails there. A guard that has never
 been seen to fail is a guard trusted on its intentions (D027).
+
+---
+
+### D035
+**The diurnal cycle is mean-preserving, and off by default** · 2026-08-25
+
+`LightModel.DayNightAmplitude` and `DayLengthSeconds` implement §5A.4's day/night cycle.
+
+**The objection this answers.** `LightModel` carried a paragraph explaining why there was no cycle:
+one turns §5A.2's calibration question from *does light cover upkeep* into *does light cover upkeep
+averaged over a period, and can anything survive the trough* — two unknowns at once, before either
+had been measured alone. That is a good objection and it is answered by construction rather than by
+deferral. `SurfaceIrradiance` remains the daily **mean** and the amplitude modulates around it, so
+amplitude 0 reproduces the acyclic world exactly and turning it up does not move the world's energy
+budget by one joule. One new unknown, with a defined zero.
+
+**Rejected: `max(0, sin)`, the obvious shape.** It gives a true half-day night and averages to 1/pi
+of its peak, so switching it on at a fixed irradiance would cut the world's income to a third and
+present as a diurnal effect. Most of the resulting difficulty would have been an unannounced 68%
+cut to the sun. A centred sinusoid trades a literal night for a budget that does not move, and the
+budget is what every earlier result was measured against.
+
+**What it does not buy, stated as a test rather than a caveat.** Irradiance stays monotonically
+decreasing in depth at every hour, so light alone always favours the surface and a cycle moves no
+optimum on its own. What it moves is the *balance* against the deep income — and the first runs
+measured food income at **0% of all income**, because absorptive cells are effectively unreachable
+from a founder at the current `CellTypeChance` (logbook/0020). With one income term there is
+nothing to track. `TheSunMovesAndTheSurfaceIsStillTheBrightestPlace` asserts the monotonicity so
+this limit cannot be quietly forgotten.
+
+**Mean-preserving is not survival-preserving**, and this is the half of the original objection that
+was load-bearing. At full amplitude, on identical settings and seeds, deaths roughly tripled and
+the population ended about 40% lower. Death is a threshold, and the threshold of an average is not
+the average of a threshold: a creature that runs out of energy at midnight does not get to average
+over the following noon. The audit closes at 0.0000%, so this is a harder world rather than a
+leaking one.
+
+**Off by default**, for the same reason D032 is marked provisional: every number on file was
+measured without a night, and a default that changed them all would mean no earlier result
+described a world that still exists — which is what §5A.2b turned out to be (D031), and is not a
+thing to do twice deliberately.
+
+**The phase is not on `LightModel`.** It lives on `LightField`, which already holds the other thing
+about light that changes every step. D027's coverage guard rejected the first attempt within a
+second — *settable but not `[Tunable]`* — and was right: that class is configuration, §7 hashes it,
+and where the world has got to is not part of how it was set up.
+
+That guard's companion, the hash test, failed too, and that one was a hole in the guard. It nudged
+every float tunable by +7.5, which silently required every knob in the project to be unbounded —
+the opposite of §7's *loading refuses rather than defaults*. It now shrinks the nudge until one is
+accepted, and still fails if none is.

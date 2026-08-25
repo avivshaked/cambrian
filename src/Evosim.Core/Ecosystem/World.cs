@@ -234,6 +234,11 @@ namespace Evosim.Core
             ElapsedSeconds += seconds;
             SecondsSinceFloorFired += seconds;
 
+            // Before anything reads the light, and from the absolute clock rather than a delta —
+            // a sun advanced by accumulating steps drifts out of phase with the world that is
+            // paying for it, and would present as a slow trend nobody chose (§5A.4).
+            Field.Advance(ElapsedSeconds);
+
             Metabolise(seconds);
             Nutrients.Settle(seconds);
             Reproduce();

@@ -1047,6 +1047,24 @@ being seen — a genuine reason to emerge. Real plankton do this. It is the sing
 watchable outcome this design could produce, and it is legible to anyone who knows the
 biology. *(Stated as a target, not a prediction.)*
 
+**Built, and it is off by default** — `LightModel.DayNightAmplitude` and `DayLengthSeconds`
+(D035). The cycle is **mean-preserving**: `SurfaceIrradiance` remains the daily mean and the
+amplitude modulates around it, so 0 reproduces the acyclic world exactly and switching it on
+does not move the §5A.2 calibration. That is what let it land as one unknown rather than two.
+
+**A cycle alone does not move the best place to be, and the first runs say so.** Irradiance stays
+monotonically decreasing in depth at every hour, so light on its own always favours the surface.
+What a cycle moves is the *balance* against the deep income — and in the runs so far food income
+is **0% of all income**, because absorptive cells are effectively unreachable from a founder at
+`MutationRates.CellTypeChance` (logbook/0020). With one income term there is no optimum to track
+and nothing migrates. The mechanism is built; what it needs is a second income worth having.
+
+**And mean-preserving is not survival-preserving.** Death is a threshold, and the threshold of an
+average is not the average of a threshold: at full amplitude, deaths roughly tripled and the
+population fell by about 40% on identical settings and seeds. The energy budget is untouched and
+the world is meaningfully harder. That was the *"can anything survive the trough"* half of the
+original objection to adding a cycle at all, and it is real.
+
 ### 5A.5 Colour and perception
 
 Part colour is an evolvable genome field with no physical cost. It is inert until creatures

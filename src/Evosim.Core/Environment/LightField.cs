@@ -217,6 +217,21 @@ namespace Evosim.Core
 
         private float _deepFactor = 1f;
 
+        /// <summary>
+        /// The world's current point in its day, as a multiplier on surface irradiance — §5A.4.
+        /// </summary>
+        /// <remarks>
+        /// State, and it lives here rather than on <see cref="LightModel"/> because that object is
+        /// configuration: everything on it is a <c>[Tunable]</c> and §7 hashes it, and where the
+        /// world has got to is not part of how it was set up. This class already holds the other
+        /// thing about light that changes every step, which is who is shading whom.
+        /// </remarks>
+        public float DayFactor { get; private set; } = 1f;
+
+        /// <summary>Moves the sun to a point in time. Idempotent for a given second.</summary>
+        public void Advance(double elapsedSeconds) =>
+            DayFactor = Model.DayFactorAt(elapsedSeconds);
+
         /// <summary>Effective irradiance at a world height after shading, W/m².</summary>
         /// <remarks>
         /// Valid only after <see cref="Solve"/>. Before any creature has contributed this returns
@@ -228,7 +243,7 @@ namespace Evosim.Core
             int layer = LayerOf(heightY);
             float factor = layer < _factor.Count ? _factor[layer] : _deepFactor;
 
-            return Model.IrradianceAt(heightY) * factor;
+            return Model.IrradianceAt(heightY) * factor * DayFactor;
         }
 
         /// <summary>What fraction of the unshaded light reaches a depth, in (0, 1].</summary>

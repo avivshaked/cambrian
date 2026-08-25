@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Evosim.Core;
 using Xunit;
 
@@ -200,6 +201,79 @@ namespace Evosim.Core.Tests
                 b.Births > a.Births,
                 $"a 1600x wider world produced {b.Births} births against {a.Births} — " +
                 "aperture is not reaching the metabolic path");
+        }
+
+        [Fact]
+        public void TheDiurnalCycleIsMeanPreserving()
+        {
+            // The property the whole design of the cycle rests on, and the reason it could be
+            // added at all. DESIGN.md §5A.4 wanted a day/night cycle; the standing objection was
+            // that one turns §5A.2's calibration into two unknowns — does light cover upkeep, and
+            // can anything survive the trough. It does not, if the mean is untouched: every number
+            // measured under the acyclic world still means what it meant, and the amplitude is one
+            // new unknown with a defined zero at "no night" (D035).
+            //
+            // A clamped max(0, sin) would have failed this by a factor of about π, silently, and
+            // presented as a diurnal effect.
+            var model = new LightModel(100f, 12f) { DayNightAmplitude = 1f, DayLengthSeconds = 200f };
+
+            double sum = 0d;
+            const int Samples = 20000;
+
+            for (int i = 0; i < Samples; i++)
+            {
+                sum += model.DayFactorAt(i * (200.0 / Samples));
+            }
+
+            Assert.Equal(1d, sum / Samples, 3);
+        }
+
+        [Fact]
+        public void ZeroAmplitudeIsTheAcyclicWorldExactly()
+        {
+            // Not "close to" — the same world. A default that perturbed anything would mean every
+            // result on file was measured against a world that no longer exists, which is what
+            // §5A.2b turned out to be (logbook/0017) and is not a thing to do twice.
+            var still = new LightModel(100f, 12f);
+            var field = new LightField(still, 400f, 1f);
+
+            float before = field.IrradianceAt(-5f);
+
+            for (int i = 0; i < 500; i++)
+            {
+                field.Advance(i * 0.37);
+                Assert.Equal(before, field.IrradianceAt(-5f));
+            }
+        }
+
+        [Fact]
+        public void TheSunMovesAndTheSurfaceIsStillTheBrightestPlace()
+        {
+            // Two claims at once. The first is that the cycle reaches the light a creature is
+            // actually paid for — a knob that does not reach what it configures is this project's
+            // most-repeated fault (logbook/0019).
+            //
+            // The second is the limit of what a cycle buys, stated as a test so it cannot be
+            // quietly forgotten: irradiance stays monotonically decreasing in depth at every hour,
+            // so light alone never makes it better to be deep. What moves with the sun is the
+            // balance against the nutrient gradient, which is a different mechanism in a different
+            // class, and a cycle on its own is not a reason to migrate.
+            var model = new LightModel(100f, 12f) { DayNightAmplitude = 1f, DayLengthSeconds = 200f };
+            var field = new LightField(model, 400f, 1f);
+
+            var seen = new HashSet<float>();
+
+            for (int i = 0; i < 200; i++)
+            {
+                field.Advance(i);
+                seen.Add(field.IrradianceAt(-5f));
+
+                Assert.True(
+                    field.IrradianceAt(-1f) >= field.IrradianceAt(-20f),
+                    $"at t={i} s the deep was brighter than the shallow");
+            }
+
+            Assert.True(seen.Count > 100, $"the sun took only {seen.Count} distinct values over a day");
         }
     }
 }

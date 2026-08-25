@@ -27,10 +27,29 @@ namespace Evosim.Core
     /// than by tuning.
     /// </para>
     /// <para>
-    /// No diurnal cycle yet. §5A.4 wants one and it is what would make diel vertical migration
-    /// possible, but a cycle turns the calibration question in §5A.2 from "does light cover
-    /// upkeep" into "does light cover upkeep averaged over a period, and can anything survive the
-    /// trough" — two unknowns at once, before either has been measured alone.
+    /// <b>There is a diurnal cycle, and it is off by default.</b> §5A.4 wants one, and it is what
+    /// makes diel vertical migration expressible. The objection to adding it was that a cycle
+    /// turns §5A.2's calibration question from "does light cover upkeep" into "does light cover
+    /// upkeep <i>averaged over a period</i>, and can anything survive the trough" — two unknowns
+    /// at once, before either had been measured alone.
+    /// </para>
+    /// <para>
+    /// <b>That objection is answered by making the cycle mean-preserving</b>, not by deferring it.
+    /// <see cref="SurfaceIrradiance"/> stays the daily <i>mean</i> and
+    /// <see cref="DayNightAmplitude"/> modulates around it, so 0 reproduces the acyclic world
+    /// exactly and turning it up does not move the world's energy budget by one joule. One
+    /// unknown, and it has a defined zero.
+    /// </para>
+    /// <para>
+    /// <b>What a cycle does and does not buy.</b> It does not on its own move the best place to
+    /// be: irradiance is monotonically decreasing in depth at every hour, so the surface always
+    /// wins on light alone. What it moves is the <i>balance</i> against the other income.
+    /// Detritus sinks (§5A.2c), so nutrients are deep and light is shallow, and a creature earning
+    /// from both has an optimum somewhere between. Darken the surface and that optimum descends;
+    /// brighten it and it rises. A migrator tracks it and a sitter takes the average of both —
+    /// which is diel vertical migration, arrived at from the economics rather than installed.
+    /// <i>(Author's inference. Real DVM is usually attributed to predation risk, which this world
+    /// does not have yet.)</i>
     /// </para>
     /// </remarks>
     public sealed class LightModel
@@ -68,11 +87,87 @@ namespace Evosim.Core
 
         private float _attenuationDepth;
 
+        /// <summary>
+        /// How far surface irradiance swings either side of its mean over a day, as a fraction —
+        /// DESIGN.md §5A.4. 0 is a world with no night.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The cycle is mean-preserving by construction</b>, so this dial does not change how
+        /// much energy the world receives in a day, only when it arrives. At 1 the surface runs
+        /// from dark to twice the mean; at 0 it sits at the mean forever and every number measured
+        /// under the acyclic model still means what it meant.
+        /// </para>
+        /// <para>
+        /// A sinusoid rather than a clamped one. <c>max(0, sin)</c> would give a true half-day
+        /// night, and it averages to 1/π of its peak — so switching it on at a fixed
+        /// <see cref="SurfaceIrradiance"/> would quietly cut the world's income to a third and
+        /// present as a diurnal effect. Preserving the mean is what keeps this one unknown rather
+        /// than two.
+        /// </para>
+        /// <para>⚠ Unmeasured (§5A.10). Default 0: no night until a run asks for one.</para>
+        /// </remarks>
+        [Tunable("light")]
+        public float DayNightAmplitude
+        {
+            get => _dayNightAmplitude;
+            set => _dayNightAmplitude = value >= 0f && value <= 1f
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(DayNightAmplitude), value,
+                    "Must be in [0, 1]. Above 1 the surface goes dark for part of the day and " +
+                    "the cycle stops preserving its own mean, which is the whole reason it can " +
+                    "be switched on without recalibrating the world.");
+        }
+
+        private float _dayNightAmplitude;
+
+        /// <summary>Length of one day, in simulated seconds — DESIGN.md §5A.4.</summary>
+        /// <remarks>
+        /// <b>The period a creature has to outlive, and to anticipate.</b> Too short and no body
+        /// can cross a meaningful part of the water column within one, so the cycle is noise that
+        /// can only be averaged over; too long and a run contains no days at all. It only means
+        /// anything read against how far a creature can actually swim in one, which today is very
+        /// little. ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("light", Unit = "s")]
+        public float DayLengthSeconds
+        {
+            get => _dayLengthSeconds;
+            set => _dayLengthSeconds = Require(value, nameof(DayLengthSeconds), NoDay);
+        }
+
+        private float _dayLengthSeconds = 200f;
+
         public LightModel(float surfaceIrradiance = 400f, float attenuationDepth = 12f)
         {
             SurfaceIrradiance = surfaceIrradiance;
             AttenuationDepth = attenuationDepth;
         }
+
+        /// <summary>
+        /// The multiplier on <see cref="SurfaceIrradiance"/> at a point in time. 1 with no cycle.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A pure function of absolute elapsed seconds, and deliberately not a mutable phase this
+        /// object carries. <b>This class is configuration</b> — every other member on it is a
+        /// <c>[Tunable]</c>, it is what §7 hashes, and where the world has got to is not part of
+        /// how the world was set up. <see cref="LightField"/> already holds the light's per-step
+        /// state and holds this too.
+        /// </para>
+        /// <para>
+        /// Absolute seconds rather than a delta, so a caller that skips a step or calls twice
+        /// cannot walk the sun out of phase with the world that is paying for it. That failure
+        /// would present as a slow trend nobody chose, which is the kind this project keeps
+        /// paying for.
+        /// </para>
+        /// </remarks>
+        public float DayFactorAt(double elapsedSeconds) =>
+            DayNightAmplitude <= 0f
+                ? 1f
+                : (float)(1.0 + DayNightAmplitude *
+                    Math.Sin(2.0 * Math.PI * elapsedSeconds / DayLengthSeconds));
 
         /// <remarks>
         /// Settable as well as constructable, because §5A.10's rule is that an unmeasured number
@@ -90,6 +185,10 @@ namespace Evosim.Core
 
         private const string NoLight =
             "A world with no light has no primary energy input and nothing can live in it.";
+
+        private const string NoDay =
+            "A day of zero or infinite length is not a cycle, and the sun would sit at one " +
+            "instant of it forever.";
 
         private const string NoDepth =
             "Light must fall off over some distance, or depth means nothing and the world has " +
@@ -129,10 +228,11 @@ namespace Evosim.Core
             return -AttenuationDepth * (float)Math.Log(fraction);
         }
 
-        public string HashContribution() =>
-            string.Format(
-                System.Globalization.CultureInfo.InvariantCulture,
-                "surface={0:R},attenuation={1:R}", SurfaceIrradiance, AttenuationDepth);
+        // HashContribution() was removed rather than extended. Nothing called it: the two
+        // properties it hand-wrote both carry [Tunable] and reach 7's hash through
+        // ConfigSchema (D027), so it was a second copy of the same declaration free to
+        // diverge. Adding the two knobs above to it would have made that copy look
+        // maintained.
 
         public override string ToString() =>
             $"{SurfaceIrradiance:0} W/m² at surface, 1/e at {AttenuationDepth:0.#} m";
