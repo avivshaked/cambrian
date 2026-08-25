@@ -50,3 +50,4 @@ unwritten code is a design document with adjectives.
 | [02](02-from-a-tree-of-boxes-to-something-that-moves.md) | From a tree of boxes to something that moves | Articulations, the scale trap, and why effector conditioning decides whether it looks alive |
 | [03](03-what-it-means-to-push-against-water.md) | What it means to push against water | Drag, asymmetry, and why a cheap fluid model costs variety rather than only accuracy |
 | [04](04-nobody-decides-who-wins.md) | Nobody decides who wins | An energy economy instead of a fitness function, and the four ways the world cheated once we let it run |
+| [05](05-a-brain-that-is-copied-with-the-limb.md) | A brain that is copied with the limb | Why the controller lives inside the body graph, and what an open-loop swimmer cannot do |

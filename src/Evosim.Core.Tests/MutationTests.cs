@@ -282,6 +282,119 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void RewiringActuallyRepointsInputs()
+        {
+            // RewireInputChance was declared, reached the config hash, survived a JSON round
+            // trip, and was set to 0.9 by the violent-mutation test above — and nothing read it
+            // (logbook/0019). Neuron topology inside a node was frozen at whatever the founder
+            // drew, for every generation of every lineage that has ever run here.
+            //
+            // The two reflection tests could not catch it. They prove a tunable reaches the hash
+            // and the file, which is a statement about serialization, not about whether any code
+            // consults the value. This one asserts the effect instead: turn the knob off and the
+            // wiring must be identical; turn it up and it must not be.
+            Genome parent = Parent(7);
+
+            var off = new MutationRates { RewireInputChance = 0f };
+            var on = new MutationRates { RewireInputChance = 0.9f };
+
+            Assert.Equal(Wiring(parent), Wiring(Mutator.Mutate(parent, new Rng(11), off)));
+            Assert.NotEqual(Wiring(parent), Wiring(Mutator.Mutate(parent, new Rng(11), on)));
+        }
+
+        [Fact]
+        public void RewiringReachesEveryInputKindAndOnlyImplementedChannels()
+        {
+            // Two properties at once, because they fail in opposite directions. A rewire that
+            // cannot reach ParentNode or GlobalBrain leaves whole classes of connection
+            // unevolvable and looks exactly like a search that is merely slow. A rewire that
+            // draws channels uniformly from the enum spends most of its sensory mutations on
+            // channels wired to a constant zero, which looks exactly like a sensor that does
+            // not help.
+            var rates = new MutationRates { RewireInputChance = 0.9f };
+            var kinds = new HashSet<NeuronInputKind>();
+            var channels = new HashSet<SensorChannel>();
+
+            Genome g = Parent(3);
+            for (ulong step = 1; step <= 300; step++)
+            {
+                g = Mutator.Mutate(g, new Rng(step), rates);
+
+                foreach (MorphNode node in g.Nodes)
+                {
+                    foreach (NeuronDef neuron in node.Neurons)
+                    {
+                        foreach (NeuronInput input in neuron.Inputs)
+                        {
+                            kinds.Add(input.Kind);
+                            if (input.Kind == NeuronInputKind.Sensor) channels.Add(input.Channel);
+                        }
+                    }
+                }
+            }
+
+            foreach (NeuronInputKind kind in Enum.GetValues(typeof(NeuronInputKind)))
+            {
+                Assert.Contains(kind, kinds);
+            }
+
+            Assert.NotEmpty(channels);
+            Assert.All(channels, c => Assert.True(
+                c.IsImplemented(),
+                $"mutation introduced {c}, which nothing reads — it would evaluate to zero " +
+                "forever and be indistinguishable from a dead input"));
+
+            _output.WriteLine($"kinds reached: {kinds.Count}; channels used: {string.Join(", ", channels)}");
+        }
+
+        [Fact]
+        public void SensorIndicesStayInRangeForTheirChannel()
+        {
+            // Depth has one value; a reference to Depth[6] can never become meaningful however
+            // the body changes. It reads zero rather than faulting, which is precisely why
+            // nothing would report it.
+            var rates = new MutationRates { RewireInputChance = 0.9f };
+
+            Genome g = Parent(5);
+            for (ulong step = 1; step <= 200; step++)
+            {
+                g = Mutator.Mutate(g, new Rng(step), rates);
+
+                foreach (MorphNode node in g.Nodes)
+                {
+                    foreach (NeuronDef neuron in node.Neurons)
+                    {
+                        foreach (NeuronInput input in neuron.Inputs)
+                        {
+                            if (input.Kind != NeuronInputKind.Sensor) continue;
+
+                            Assert.InRange(input.Index, 0, input.Channel.IndexCount() - 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>Every input reference in the genome, ignoring weights and constants.</summary>
+        private static string Wiring(Genome g)
+        {
+            var parts = new List<string>();
+
+            foreach (MorphNode node in g.Nodes)
+            {
+                foreach (NeuronDef neuron in node.Neurons)
+                {
+                    foreach (NeuronInput input in neuron.Inputs)
+                    {
+                        parts.Add($"{input.Kind}:{input.Index}:{input.Channel}");
+                    }
+                }
+            }
+
+            return string.Join("|", parts);
+        }
+
+        [Fact]
         public void GraftingIsAbsentRatherThanDisabled()
         {
             // §4.5 lists grafting as the design's only recombination and §5A.6 makes

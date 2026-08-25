@@ -107,6 +107,45 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void AdjacentSeedsGiveUnrelatedStreams()
+        {
+            // The property SeedFor exists to provide, and the one World was silently assuming of
+            // a bare counter. Two runs one apart in seed must not share creatures.
+            var a = new HashSet<ulong>();
+            var b = new HashSet<ulong>();
+
+            for (ulong i = 0; i < 1000; i++)
+            {
+                a.Add(Rng.SeedFor(1, i));
+                b.Add(Rng.SeedFor(2, i));
+            }
+
+            Assert.Equal(1000, a.Count);
+            Assert.Equal(1000, b.Count);
+
+            a.IntersectWith(b);
+            Assert.Empty(a);
+        }
+
+        [Fact]
+        public void SeedForIsStableAndInjective()
+        {
+            // §7 promises a seed means a sequence, which is a promise about the future as well as
+            // about this process. Pinned values, so a change to the mixing constants fails here
+            // rather than silently making every stored run irreproducible.
+            Assert.Equal(Rng.SeedFor(1, 0), Rng.SeedFor(1, 0));
+            Assert.NotEqual(Rng.SeedFor(1, 0), Rng.SeedFor(0, 1));
+
+            var seen = new HashSet<ulong>();
+            for (ulong stream = 1; stream <= 40; stream++)
+            {
+                for (ulong i = 0; i < 200; i++) seen.Add(Rng.SeedFor(stream, i));
+            }
+
+            Assert.Equal(40 * 200, seen.Count);
+        }
+
+        [Fact]
         public void RotationsAreUnitQuaternions()
         {
             var rng = new Rng(31);

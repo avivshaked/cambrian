@@ -1061,6 +1061,145 @@ namespace Evosim.Sim.EditorTools
             return ok;
         }
 
+        /// <summary>
+        /// Every channel in <see cref="SensorChannels.Implemented"/> reports something — §4.4.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>This exists because the promise it checks cannot be checked by the compiler.</b>
+        /// <c>SensorChannels.Implemented</c> is a claim made in <c>Evosim.Core</c> about code in
+        /// <c>Evosim.Sim</c>, and §6.1's no-<c>UnityEngine</c> rule means Core cannot reference
+        /// the thing it is describing. So a channel could be listed there, drawn by every founder
+        /// and mutated toward for a thousand generations while <see cref="CreatureSensors"/>
+        /// answered it with zero — the exact shape of the fault that left the whole brain unread
+        /// until logbook/0016, and of the one that left <c>RewireInputChance</c> unimplemented
+        /// until logbook/0019.
+        /// </para>
+        /// <para>
+        /// <b>Finite is not enough; it has to vary.</b> A channel hardwired to zero is finite,
+        /// in range, and completely useless. The creature is driven and the reading is watched
+        /// across the run, and a channel that never changes fails — which is the only observable
+        /// difference between a sensor and a dead input.
+        /// </para>
+        /// <para>
+        /// <see cref="SensorChannel.Depth"/> is the exception and is checked differently: it is
+        /// constant for a creature that does not move vertically, which is most of them, so what
+        /// is asserted is that it differs <i>between parts at different heights</i> — the gradient
+        /// §4.4 says a body recovers direction from. A one-part creature cannot show that, so the
+        /// check needs a creature with several.
+        /// </para>
+        /// </remarks>
+        private static bool CheckSensors(StringBuilder report)
+        {
+            FluidEnvironment.ConfigureScene(selfCollision: true);
+
+            var fluid = new FluidEnvironment(new FluidConfig { AddedMassCoefficient = 1f });
+            var config = new RunConfig();
+            var limits = DevelopmentLimits.Default;
+
+            report.AppendLine();
+            report.AppendLine("### Sensors — DESIGN.md §4.4");
+            report.AppendLine();
+            report.AppendLine("| channel | min | max | spread | verdict |");
+            report.AppendLine("|---|---|---|---|---|");
+
+            // Deliberately a body with several parts and several joints: a founder has neither,
+            // and half of what is being checked is a difference between parts.
+            Genome genome = GenomeFactory.RandomViable(new Rng(3), config.Genome, limits, minParts: 4);
+            Phenotype phenotype = Developer.Develop(genome, limits);
+
+            CreatureInstance creature = PhenotypeBuilder.Build(
+                phenotype, new Vector3(0f, -20f, 0f), null, config.Shapes);
+            fluid.ApplyAddedMass(creature);
+
+            var driver = new EffectorDriver(creature, FixedDt);
+            var brain = Brain.For(phenotype, genome.GlobalBrain);
+            var sensors = new CreatureSensors(creature, config.WorldDepthMetres);
+            var drive = new float[Mathf.Max(1, brain.TotalDof)];
+
+            int channels = SensorChannels.Implemented.Length;
+            var min = new float[channels];
+            var max = new float[channels];
+            var spread = new float[channels];
+            bool finite = true;
+
+            for (int c = 0; c < channels; c++) { min[c] = float.MaxValue; max[c] = float.MinValue; }
+
+            int steps = Mathf.RoundToInt(SwimSeconds / FixedDt);
+
+            for (int s = 0; s < steps; s++)
+            {
+                sensors.Sample();
+
+                for (int c = 0; c < channels; c++)
+                {
+                    SensorChannel channel = SensorChannels.Implemented[c];
+                    float low = float.MaxValue, high = float.MinValue;
+
+                    for (int p = 0; p < creature.Bodies.Length; p++)
+                    {
+                        for (int i = 0; i < channel.IndexCount(); i++)
+                        {
+                            float v = sensors.Read(p, channel, i);
+
+                            if (float.IsNaN(v) || float.IsInfinity(v)) finite = false;
+                            if (v < min[c]) min[c] = v;
+                            if (v > max[c]) max[c] = v;
+                            if (v < low) low = v;
+                            if (v > high) high = v;
+                        }
+                    }
+
+                    // The within-a-step range across the body: the gradient a creature actually
+                    // steers on. Depth has this and no variation over time; the joint channels
+                    // have both.
+                    if (high - low > spread[c]) spread[c] = high - low;
+                }
+
+                brain.Step(FixedDt, drive, sensors);
+                driver.Drive(drive);
+
+                fluid.Apply(creature, FixedDt);
+                Physics.Simulate(FixedDt);
+                fluid.Settle(creature);
+                driver.Settle();
+            }
+
+            bool ok = finite;
+
+            for (int c = 0; c < channels; c++)
+            {
+                SensorChannel channel = SensorChannels.Implemented[c];
+
+                // Either it changed over time, or it differs across the body. A channel with
+                // neither is indistinguishable from a constant and cannot inform anything.
+                bool varies = max[c] - min[c] > 1e-6f || spread[c] > 1e-6f;
+                if (!varies) ok = false;
+
+                report.AppendLine(
+                    $"| {channel} | {min[c]:0.####} | {max[c]:0.####} | {spread[c]:0.######} | " +
+                    (varies ? "reads" : "**CONSTANT — nothing implements it**") + " |");
+            }
+
+            creature.Destroy();
+
+            report.AppendLine();
+            report.AppendLine(ok
+                ? "Every channel in `SensorChannels.Implemented` varies over the run or across " +
+                  "the body. A channel listed there and unhandled reads a flat zero and fails here."
+                : "**FAIL** — a channel Core promises is implemented reads a constant. Mutation " +
+                  "will keep drawing it, and a neuron wired to it is a dead input that nothing " +
+                  "else would report.");
+
+            if (!finite)
+            {
+                report.AppendLine();
+                report.AppendLine("**FAIL** — a sensor produced NaN or infinity.");
+            }
+
+            return ok;
+        }
+
         private static bool CheckSwimming(StringBuilder report)
         {
             bool ok = true;
@@ -1479,6 +1618,7 @@ namespace Evosim.Sim.EditorTools
             ReportLimitSweep(report);
             ReportTimestepConvergence(report);
             if (!CheckSwimming(report)) allOk = false;
+            if (!CheckSensors(report)) allOk = false;
             // The report is only printed at the very end, so anything that throws here takes
             // every measurement above it down with it — which is how the first run of this
             // diagnostic produced a stack trace and no data at all. Caught, not swallowed:

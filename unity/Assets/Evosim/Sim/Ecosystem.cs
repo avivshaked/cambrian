@@ -98,6 +98,20 @@ namespace Evosim.Sim
 
         private readonly List<long> _departed = new List<long>();
         private readonly Transform _parent;
+
+        /// <summary>
+        /// Lattice slots freed by death, reused before any new one is issued.
+        /// </summary>
+        /// <remarks>
+        /// <b>Without this the world walks away from the origin and takes its own precision with
+        /// it.</b> Slots were issued from a counter that only ever went up, so after 100,000 births
+        /// creatures were being built 156 km out — where a <c>float</c> resolves about 1 cm, which
+        /// is larger than the 3.75 mm a creature covers in a metabolic step. Speeds would quantise
+        /// toward zero and the solver would degrade, and both would look like biology rather than
+        /// arithmetic. Harmless at the few hundred births measured so far; fatal to exactly the
+        /// long run this exists for.
+        /// </remarks>
+        private readonly Stack<int> _freeTiles = new Stack<int>();
         private int _nextTile;
 
         /// <summary>One creature's physical presence, and the bookkeeping the join needs.</summary>
@@ -119,6 +133,17 @@ namespace Evosim.Sim
             /// </remarks>
             public Brain Brain;
 
+            /// <summary>
+            /// What that nervous system can perceive — DESIGN.md §4.4.
+            /// </summary>
+            /// <remarks>
+            /// Held per creature because it caches a sample of that creature's own body. Until it
+            /// existed every sensor input in every genome read zero, which made the brain an open
+            /// loop: it could produce a stroke but could not aim one, so swimming cost work and
+            /// returned nothing on average and the ledger deleted it (logbook/0018).
+            /// </remarks>
+            public CreatureSensors Sensors;
+
             public float[] Drive;
 
             /// <summary>
@@ -133,6 +158,25 @@ namespace Evosim.Sim
             public double WorkAtLastStep;
 
             public Vector3 PreviousCentre;
+
+            /// <summary>
+            /// False until this creature has completed one whole metabolic step.
+            /// </summary>
+            /// <remarks>
+            /// <b>A newborn's first speed sample is not a speed.</b> <see cref="PreviousCentre"/>
+            /// is taken the instant the articulation is built, before the solver has run once, and
+            /// the interval that follows contains whatever the build transient does — added mass
+            /// being applied, a spawn pose depenetrating at up to
+            /// <c>Physics.defaultMaxDepenetrationVelocity</c>. Including it made "fastest creature
+            /// seen at any point" report 0.075 m/s in runs whose fastest living creature at every
+            /// sampled row was doing 0.003, and report the <i>same</i> figure for two different
+            /// seeds — which is the signature this project has twice agreed means the number is
+            /// not measuring what it says (logbook/0007, logbook/0008).
+            /// </remarks>
+            public bool Settled;
+
+            /// <summary>Lattice slot this creature occupies, returned to the pool when it dies.</summary>
+            public int Tile;
         }
 
         public Ecosystem(RunConfig config, ulong seed = 1, Transform parent = null)
@@ -154,10 +198,10 @@ namespace Evosim.Sim
             {
                 Body body = _bodies[_instanceIds[i]];
 
-                // Sensors are not wired yet, so this is §4.3's MVP: a pure central pattern
-                // generator, whose operators are driven by their own parameters and by time and
-                // need to read nothing. Closing the loop is Milestone 6.
-                body.Brain.Step(FixedDt, body.Drive);
+                // Sampled before the brain reads it, so every neuron in the creature perceives
+                // the same instant — the sensory counterpart of §4.3's synchronous update.
+                body.Sensors.Sample();
+                body.Brain.Step(FixedDt, body.Drive, body.Sensors);
                 body.Driver.Drive(body.Drive);
             }
 
@@ -182,6 +226,7 @@ namespace Evosim.Sim
             double speedSum = 0d;
             double fastest = 0d;
             double work = 0d;
+            int counted = 0;
 
             IReadOnlyList<Organism> living = World.Living;
 
@@ -203,15 +248,20 @@ namespace Evosim.Sim
 
                 World.Observe(creature, centre.y, interval);
 
-                double speed = Vector3.Distance(centre, body.PreviousCentre) / seconds;
-                speedSum += speed;
-                if (speed > fastest) fastest = speed;
+                if (body.Settled)
+                {
+                    double speed = Vector3.Distance(centre, body.PreviousCentre) / seconds;
+                    speedSum += speed;
+                    counted++;
+                    if (speed > fastest) fastest = speed;
+                }
 
+                body.Settled = true;
                 body.PreviousCentre = centre;
                 work += interval;
             }
 
-            MeanSpeed = living.Count > 0 ? speedSum / living.Count : 0d;
+            MeanSpeed = counted > 0 ? speedSum / counted : 0d;
             MaxSpeed = fastest;
             WorkThisStep = work;
 
@@ -248,6 +298,8 @@ namespace Evosim.Sim
             for (int i = 0; i < _departed.Count; i++)
             {
                 Body body = _bodies[_departed[i]];
+
+                _freeTiles.Push(body.Tile);
                 body.Instance.Destroy();
                 _bodies.Remove(_departed[i]);
             }
@@ -268,7 +320,7 @@ namespace Evosim.Sim
             // Tiled on a lattice rather than placed at the parent, because §6.3 keeps creatures
             // apart and two overlapping articulations would depenetrate — which is a force, and
             // one logbook/0007 measured a creature learning to farm.
-            int tile = _nextTile++;
+            int tile = _freeTiles.Count > 0 ? _freeTiles.Pop() : _nextTile++;
             int side = 64;
             var origin = new Vector3(
                 (tile % side) * TileSpacing, creature.HeightY, (tile / side) * TileSpacing);
@@ -285,8 +337,10 @@ namespace Evosim.Sim
                 Instance = instance,
                 Driver = new EffectorDriver(instance, FixedDt),
                 Brain = brain,
+                Sensors = new CreatureSensors(instance, World.Config.WorldDepthMetres),
                 Drive = new float[Mathf.Max(1, brain.TotalDof)],
                 PreviousCentre = FluidEnvironment.CentreOfMass(instance),
+                Tile = tile,
             };
 
             // The one silent failure in this wiring: Brain indexes drive by walking every part in
@@ -315,6 +369,8 @@ namespace Evosim.Sim
             _bodies.Clear();
             _instances.Clear();
             _instanceIds.Clear();
+            _freeTiles.Clear();
+            _nextTile = 0;
         }
     }
 }

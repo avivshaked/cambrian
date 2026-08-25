@@ -49,6 +49,14 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D024](#d024) | Bodies are bounded at both ends, and a bodyless genome is stillborn | 2026-08-07 | active |
 | [D025](#d025) | Self-sustaining means the floor has gone quiet, not that minimum depth rose | 2026-08-07 | active |
 | [D026](#d026) | A body costs what a corpse is worth, and it is one number | 2026-08-07 | active |
+| [D027](#d027) | A knob is declared once, and everything else is derived from that declaration | 2026-08-07 | active |
+| [D028](#d028) | Drag is summed in the part's own frame, and the panels are built once | 2026-08-07 | active |
+| [D029](#d029) | The physics and the economy are joined by one method, and it revealed that work must not be billed yet | 2026-08-07 | active |
+| [D030](#d030) | The genome's brain is evaluated, and creatures can swim | 2026-08-07 | active |
+| [D031](#d031) | What owning an actuator costs is the knob that decides whether anything can move | 2026-08-07 | ⚠ partly superseded by D032 |
+| [D032](#d032) | The actuator-cost correction goes on `MaxLinkPower`, and the two knobs are not interchangeable | 2026-08-24 | active |
+| [D033](#d033) | Founders draw sensor references from the implemented channel set, and mutation may rewire an input | 2026-08-24 | active |
+| [D034](#d034) | Per-creature seeds are mixed with the world seed, not counted from it | 2026-08-24 | active |
 
 ---
 
@@ -1068,3 +1076,113 @@ declines to promise more; it holds.
 
 **Still not known:** whether persisting joints ever produce a swimmer. The fastest creature in any
 of these runs manages 0.0075 m/s. Persistence is a precondition, not evidence.
+
+
+---
+
+### D032
+**The actuator-cost correction goes on `MaxLinkPower`, and the two knobs are not interchangeable** · 2026-08-24
+
+`RandomGenomeOptions.MaxLinkPower` 120 N·m → 20 N·m; `LinkCell.IdleWattsPerNewtonMetre` left at
+0.02.
+
+[D031](#d031) measured the standing cost of owning a joint and left the correction unapplied,
+because *which* knob absorbs it is a design decision. It is applied here, and the argument it was
+applied on turned out to be wrong in a way worth recording rather than quietly fixing.
+
+**The argument given, and why it was wrong.** D031 observed that the coefficient and the ceiling
+enter the ledger as a product and concluded that cutting either would do, so the choice could rest
+on which knob carries design intent — the coefficient is the pressure that keeps evolved `Power`
+down, so the ceiling should move. Both halves of that are true and the conclusion does not follow.
+**Both knobs enter the cost as a product; only `MaxLinkPower` enters the benefit**, because it
+multiplies straight into joint torque and torque is what makes thrust. D031 measured one side of a
+two-sided trade and read it as symmetric.
+
+Measured on identical genomes — the setting consumes the same single RNG draw either way, so the
+two arms are the same animals with different muscles:
+
+| | 20 N·m | 120 N·m |
+|---|---|---|
+| founders over 1 cm/s | 4% | 14.5% |
+| randomViable median | 0.0047 m/s | 0.0079 m/s |
+| randomViable over 1 cm/s | 22.5% | 38.5% |
+| randomViable best | 0.072 m/s | 0.261 m/s |
+
+So the correction costs **1.7× to 3.6× of swimming ability**, in still water with no selection.
+
+**It is applied anyway, and provisionally.** At 120 N·m nothing with a joint survives at any
+irradiance from 64 to 400 W/m² (D031), and three times the thrust on a creature that starves is
+worth nothing. Six embodied runs at 100 W/m² with genuinely independent seeds cannot separate the
+two settings at all — seed 2 gives zero jointed creatures under both, seed 3 gives the most under
+both, and the seed-to-seed spread swamps the knob (logbook/0019). **This is a reversible
+calibration choice resting on a measurement that n=3 cannot make**, not a design commitment, and
+the honest position is that the affordable region has a lower edge nobody has looked for.
+
+Superseded in part: D031's "they enter the ledger as a product, so cutting either should do".
+
+---
+
+### D033
+**Founders draw sensor references from the implemented channel set, and mutation may rewire an input** · 2026-08-24
+
+§4.3 describes the founder population as a pure CPG with self-only connections. That was
+never quite what `GenomeFactory` did — it has always drawn `SensorChannel.JointAngle` for half of
+every neuron's inputs — and it is now deliberately not what it does.
+
+**The reason is that an open-loop swimmer cannot aim.** [logbook/0018](logbook/0018-nothing-to-swim-towards.md)
+argues that in an economy whose only prize is a gradient in depth, undirected locomotion earns
+nothing on average while costing real work, so the ledger correctly deletes it. A controller that
+cannot read the world is not a simpler version of one that can; it is one for which the trait being
+selected is unreachable, which is the same shape as the shared test sine that
+[D030](#d030) removed.
+
+Three things follow, and each is a rule rather than a value:
+
+1. **`SensorChannels.Implemented` is what new references are drawn from.** Every channel stays
+   legal in a genome — the enum is complete so the format does not change when a milestone lands,
+   and an unimplemented channel reads zero by definition (§4.4). But *introducing* one by mutation
+   spends a sensory mutation on a dead input, and a dead input is indistinguishable from a live one
+   that is not helping.
+2. **The list is a promise Core makes about Sim**, which §6.1 makes uncheckable by reference. It is
+   checked by measurement instead: the Milestone 1 smoke test drives a creature and fails any
+   listed channel that reads a constant.
+3. **`MutationRates.RewireInputChance` is implemented.** It was declared, hashed, serialized and
+   set to 0.9 by a test, and nothing read it — so neuron topology inside a node was frozen at
+   whatever the founder drew, for every generation of every lineage ever run here (logbook/0019).
+
+**Rejected: restricting which channels a founder may read.** §4.4 already rejects cell-type
+restrictions on perception, on the grounds that what should limit a sense is cost rather than
+permission. The same argument applies to founders. A channel a founder cannot draw is one evolution
+reaches only through mutation, which is a slower version of the same outcome bought with a rule
+somebody has to remember.
+
+---
+
+### D034
+**Per-creature seeds are mixed with the world seed, not counted from it** · 2026-08-24
+
+`Rng.SeedFor(stream, index)` — SplitMix64's finaliser — replaces `_nextSeed++`.
+
+`World` issued every founder and every birth a seed from a counter initialised to the run's own
+seed. A run seeded 1 drew its founders from seeds 1…40; a run seeded 2 drew from 2…41. **Two
+"independent" runs shared thirty-nine of forty founder genomes.**
+
+It surfaced as an anomaly rather than a suspicion: an embodied A/B reported the same fastest-ever
+speed to four significant figures under two different seeds, which by this project's own rule
+(logbook/0007, logbook/0008) means a change has not reached what it configures. It had; the seeds
+had not.
+
+**Consequence, stated plainly: every claim of the form "consistent across three seeds" made before
+today rests on much less than it reads.** [D031](#d031)'s actuator calibration is the one that
+matters. Its rows are not withdrawn — the direction it found is monotonic in a physical quantity
+and reproduced down two independent knobs — but its *replication* is not replication.
+
+**Rejected: a wider stride between runs.** Starting run *n* at `n × 1_000_000` makes overlap
+unlikely rather than impossible and leaves the streams correlated in a way nobody would think to
+check. The fault being replaced was already the plausible-looking kind; the replacement should not
+be. A mixing bijection with avalanche gives unrelated outputs for adjacent inputs and cannot
+collide.
+
+Two tests hold it, and the one that matters — that two world seeds give different founder
+populations — was run against the old code first to confirm it fails there. A guard that has never
+been seen to fail is a guard trusted on its intentions (D027).

@@ -108,6 +108,7 @@ namespace Evosim.Sim.EditorTools
             string ending = "budget reached";
             int metabolicSteps = 0;
             double bestSpeedEver = 0d;
+            double bestSpeedAt = 0d;
 
             try
             {
@@ -117,7 +118,13 @@ namespace Evosim.Sim.EditorTools
                     if (!eco.Step()) continue;
 
                     metabolicSteps++;
-                    if (eco.MaxSpeed > bestSpeedEver) bestSpeedEver = eco.MaxSpeed;
+                    // When, not only how much. A best that only ever occurs in the opening
+                    // seconds is a transient; one that recurs late is a creature.
+                    if (eco.MaxSpeed > bestSpeedEver)
+                    {
+                        bestSpeedEver = eco.MaxSpeed;
+                        bestSpeedAt = eco.World.ElapsedSeconds;
+                    }
 
                     if (metabolicSteps % reportEvery != 0) continue;
 
@@ -156,7 +163,8 @@ namespace Evosim.Sim.EditorTools
                 "x real time).");
             report.AppendLine();
             report.AppendLine(
-                "**Fastest creature seen at any point: " + bestSpeedEver.ToString("0.####") + " m/s.**");
+                "**Fastest creature seen at any point: " + bestSpeedEver.ToString("0.####") +
+                " m/s, at t=" + bestSpeedAt.ToString("0.#") + " s.**");
 
             Flush(outPath, report);
             Debug.Log(report.ToString());

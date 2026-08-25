@@ -64,7 +64,14 @@ namespace Evosim.Core
         private readonly List<EnergyLedger> _ledgers = new List<EnergyLedger>();
 
         private long _nextId;
-        private ulong _nextSeed;
+        /// <summary>
+        /// Counter behind every per-creature seed. Mixed with <see cref="Seed"/> rather than used
+        /// raw — see <see cref="Rng.SeedFor"/> for why consecutive seeds are not independent runs.
+        /// </summary>
+        private ulong _nextIndex;
+
+        /// <summary>The seed this world was constructed with. Every creature's seed derives from it.</summary>
+        public ulong Seed { get; }
 
         public RunConfig Config { get; }
 
@@ -161,7 +168,7 @@ namespace Evosim.Core
             Nutrients = new NutrientField(
                 config.WorldAreaSquareMetres, config.LightLayerMetres,
                 config.NutrientSinkMetresPerSecond, config.WorldDepthMetres);
-            _nextSeed = seed;
+            Seed = seed;
         }
 
         /// <summary>
@@ -404,7 +411,7 @@ namespace Evosim.Core
         /// </summary>
         private bool Conceive(Organism parent)
         {
-            ulong seed = _nextSeed++;
+            ulong seed = Rng.SeedFor(Seed, _nextIndex++);
 
             Genome childGenome = Mutator.Mutate(
                 parent.Genome, new Rng(seed), Config.Mutation, Config.CellTypes);
@@ -451,7 +458,7 @@ namespace Evosim.Core
 
             for (int i = 0; i < wanted; i++)
             {
-                ulong seed = _nextSeed++;
+                ulong seed = Rng.SeedFor(Seed, _nextIndex++);
                 var rng = new Rng(seed);
 
                 Genome genome = GenomeFactory.Founder(rng, Config.Genome);

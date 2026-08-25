@@ -78,3 +78,5 @@ are the ones most likely to go unwritten.
 | [0015](0015-the-world-deleted-its-own-muscles.md) | 2026-08-07 | The world deleted its own muscles |
 | [0016](0016-the-brain-that-was-never-read.md) | 2026-08-07 | The brain that was never read |
 | [0017](0017-what-a-muscle-costs-to-own.md) | 2026-08-07 | What a muscle costs to own |
+| [0018](0018-nothing-to-swim-towards.md) | 2026-08-24 | Nothing to swim towards |
+| [0019](0019-three-knobs-that-reached-nothing.md) | 2026-08-24 | Three knobs that reached nothing, and a seed that was not a seed |

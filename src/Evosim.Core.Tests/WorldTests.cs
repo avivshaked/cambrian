@@ -22,6 +22,50 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void DifferentSeedsGiveDifferentFounderPopulations()
+        {
+            // The guard for logbook/0019. World issued per-creature seeds from a counter started
+            // at its own seed, so run 1 drew founders from seeds 1..40 and run 2 from 2..41 —
+            // thirty-nine of the same forty genomes. Every "consistent across three seeds" claim
+            // made here was three runs of nearly one experiment, and nothing said so.
+            //
+            // Asserted on the genomes rather than on the seeds, because the seeds are an
+            // implementation detail and the thing that has to differ is the biology.
+            var one = FounderGenomes(seed: 1);
+            var two = FounderGenomes(seed: 2);
+
+            Assert.NotEmpty(one);
+            Assert.Equal(one.Count, two.Count);
+
+            int shared = 0;
+            for (int i = 0; i < one.Count; i++)
+            {
+                if (two.Contains(one[i])) shared++;
+            }
+
+            Assert.True(
+                shared * 4 < one.Count,
+                $"seeds 1 and 2 share {shared} of {one.Count} founder genomes. Consecutive " +
+                "seeds are not independent runs, and a replication across them proves much " +
+                "less than it looks like it does.");
+        }
+
+        /// <summary>Serialized founder genomes of a freshly seeded world, in birth order.</summary>
+        private static List<string> FounderGenomes(ulong seed)
+        {
+            var config = new RunConfig { Light = new LightModel(100f, 12f) };
+            var world = new World(config, seed);
+
+            // Enough steps for the floor to fill toward MinimumPopulation. One step spawns only
+            // FloorSpawnsPerStep creatures, and a two-genome sample is not a population.
+            for (int i = 0; i < 60; i++) world.Step(1f);
+
+            var genomes = new List<string>();
+            foreach (Organism creature in world.Living) genomes.Add(GenomeJson.Write(creature.Genome));
+            return genomes;
+        }
+
+        [Fact]
         public void TheFloorIsWhatCreatesGenerationZero()
         {
             // There is no separate seeding path — at t=0 the population is zero, the floor fires,

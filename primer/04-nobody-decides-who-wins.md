@@ -223,6 +223,44 @@ casts fell from 290 times the world's own area to a little over one.
 That last number matters more than it looks. Nothing measured the world and forbade a giant. A
 giant simply became unaffordable to build.
 
+## The world answered, and the answer was no
+
+Rule 1 above says *moving a joint costs the mechanical work it actually did*. When this piece was
+first written, that was a specification rather than a fact.
+
+The economy had a work term and the physics simulator computed joules of actuation, and the two had
+never been introduced. Every call site that charged a creature for moving passed literally zero.
+Two simulators, running the same creatures, with no seam between them — and nothing failed, because
+a bill of zero is a perfectly valid bill.
+
+Joining them is one method: the simulator hands the world a measured joule count and a height, and
+the world still knows nothing about a solver. (The one-way direction is not fastidiousness — the
+economy has to remain testable in a second, outside the editor, which is the rule that has kept it
+honest since piece 01.) The moment that seam existed, *"whether swimming is worth doing is a
+question the world answers"* stopped being rhetorical.
+
+**The world answered no. Twice, for two different reasons, and both times the economy was right and
+the world was incomplete.**
+
+The first is [piece 05](05-a-brain-that-is-copied-with-the-limb.md)'s opening: every creature was
+driven by the same test sine, so the controller did not vary across the population and a uniform
+flap produces no thrust. A real cost against an unreachable benefit. The world deleted every joint
+it had, inside a minute.
+
+The second appeared once that was fixed. A creature with a brain but no senses swims in whatever
+direction its body dictates and cannot tell up from down. Moving up earns light, moving down loses
+it, undirected the two cancel — and the work is billed either way. So the surviving jointed
+creatures are exactly the ones whose joints barely move, which is what the ledger should do, given
+a world where locomotion cannot be aimed.
+
+This is the shape of the whole approach, and it is worth being plain about the cost. A fitness
+function would have declared swimming worth twelve points and creatures would have swum — badly at
+first, then well. Here, **a capability is necessary and nowhere near sufficient: a trait pays only
+if the world contains a route from the trait to energy.** Twice now that route has been missing,
+and each time the only signal was the trait quietly disappearing.
+
+Getting a *no* out of a world with no score is slow, and it is not ambiguous.
+
 ## What this buys
 
 The world now regulates itself. Populations rise, contest the light, and settle. Lineages run a
@@ -258,6 +296,10 @@ The thing that made them visible was insisting the books balance.
   ours and is given in full in [`DECISIONS.md` D024](../DECISIONS.md#d024) so it can be checked.
 - ~~**"More light makes bigger creatures, not more of them."**~~ Withdrawn: it was an artefact of
   bodies being free to build, and reverses once they are not.
+- **"A capability is necessary and nowhere near sufficient."** The author's inference, drawn from
+  two measured failures rather than from any source; the second of them is argued in
+  [piece 05](05-a-brain-that-is-copied-with-the-limb.md) and recorded in
+  [logbook 0017](../logbook/0017-what-a-muscle-costs-to-own.md).
 - **Tissue cost and corpse worth being the same number.** The conservation argument is ours
   ([`DECISIONS.md` D026](../DECISIONS.md#d026)). That reproduction is dominated by the cost of
   building tissue is ordinary biology, but no paper in the corpus models it.
@@ -265,7 +307,8 @@ The thing that made them visible was insisting the books balance.
 ## Where it is
 
 - [`Metabolism.cs`](../src/Evosim.Core/Ecosystem/Metabolism.cs) — what one creature earns and spends in a step
-- [`World.cs`](../src/Evosim.Core/Ecosystem/World.cs) — the loop: earn, spend, breed, starve
+- [`World.cs`](../src/Evosim.Core/Ecosystem/World.cs) — the loop: earn, spend, breed, starve, and `Observe`, the one-way seam the simulator pushes measurements through
+- [`Ecosystem.cs`](../unity/Assets/Evosim/Sim/Ecosystem.cs) — the other side of that seam: physics steps, the metabolic clock, bodies built and destroyed as creatures are born and die
 - [`LightField.cs`](../src/Evosim.Core/Environment/LightField.cs) — the finite sun, and who shades whom
 - [`NutrientField.cs`](../src/Evosim.Core/Environment/NutrientField.cs) — dead matter in the water, sinking, and what is left after everyone has fed
 - [`CellType.cs`](../src/Evosim.Core/Cells/CellType.cs) — what a part is made of, and how that decides how it earns

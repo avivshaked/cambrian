@@ -37,6 +37,45 @@ namespace Evosim.Core
             NextUInt();
         }
 
+        /// <summary>
+        /// A seed for item <paramref name="index"/> of run <paramref name="stream"/>, decorrelated
+        /// from every other pair — SplitMix64's finaliser (Steele, Lea &amp; Flood 2014).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Consecutive seeds do not give independent runs, and this project ran on the
+        /// assumption that they did.</b> <see cref="World"/> issued each creature a seed from a
+        /// counter started at the run's own seed, so a run seeded 1 drew its founders from seeds
+        /// 1…40 and a run seeded 2 drew from 2…41 — thirty-nine of the same forty genomes. Two
+        /// "independent" runs were one experiment offset by a single creature, which is how they
+        /// came to report a fastest-ever speed identical to four significant figures
+        /// (logbook/0019). Every earlier claim of the form "consistent across three seeds" rests
+        /// on much less than it appears to; the calibration in logbook/0017 is the one that
+        /// matters.
+        /// </para>
+        /// <para>
+        /// A mixing function rather than a wider stride. Striding by a million makes the overlap
+        /// unlikely rather than impossible and leaves the streams correlated in a way nobody would
+        /// think to check; the failure it replaces was itself the plausible-looking kind. This is
+        /// a bijection on 64 bits with avalanche, so adjacent inputs give unrelated outputs and no
+        /// two pairs collide.
+        /// </para>
+        /// <para>
+        /// Fixed integer arithmetic, for the reason the class exists at all: §7 promises a seed
+        /// means a sequence, and that only holds if the recurrence never changes.
+        /// </para>
+        /// </remarks>
+        public static ulong SeedFor(ulong stream, ulong index)
+        {
+            // Golden-ratio odd constant: distinct (stream, index) pairs land on distinct inputs
+            // for any run of indices shorter than 2^64.
+            ulong z = stream * 0x9E3779B97F4A7C15UL + index;
+
+            z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
+            z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
+            return z ^ (z >> 31);
+        }
+
         public uint NextUInt()
         {
             ulong old = _state;

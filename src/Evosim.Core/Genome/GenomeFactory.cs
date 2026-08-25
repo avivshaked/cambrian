@@ -187,14 +187,23 @@ namespace Evosim.Core
         /// [K12 §2.2, p.5]'s mass scaling was actually for; what stops evolution sitting at the
         /// ceiling is that <see cref="LinkCell"/> bills for capacity even when idle.
         ///
-        /// ⚠ Both bounds unmeasured (§5A.10). For scale: a 250 kg part driven at 500 N·m
-        /// reaches its joint stop in a fraction of a second and spends ~85% of its energy
-        /// there (logbook/0008), so the useful range is probably well below that.
+        /// The upper bound was 120 N·m until logbook/0017 measured what that costs to own. It
+        /// enters the ledger as a product with <see cref="LinkCell.IdleWattsPerNewtonMetre"/>, so
+        /// a median link billed 1.24 W standing against a photosynthetic part's ~2.3 W total
+        /// income — over half a leaf's earnings before the joint moved once, and nothing with a
+        /// joint survived at any irradiance from 64 to 400 W/m². Nine runs across both knobs and
+        /// three seeds put the affordable region well under a fifth of income; 20 N·m sits there
+        /// and measured the same jointed count as cutting the coefficient fourfold (D032).
+        ///
+        /// The coefficient was left alone deliberately: it *is* the pressure described above, and
+        /// weakening it makes capacity free again. For scale: a 250 kg part driven at 500 N·m
+        /// reaches its joint stop in a fraction of a second and spends ~85% of its energy there
+        /// (logbook/0008), so the useful range was always well below the old ceiling.
         /// </remarks>
         [Tunable("genome")]
         public float MinLinkPower { get; set; } = 5f;
         [Tunable("genome")]
-        public float MaxLinkPower { get; set; } = 120f;
+        public float MaxLinkPower { get; set; } = 20f;
 
         /// <summary>
         /// Brood size range for the initial population — DESIGN.md §5A.6.
@@ -530,8 +539,14 @@ namespace Evosim.Core
                 var inputs = new NeuronInput[arity];
                 for (int a = 0; a < arity; a++)
                 {
+                    // Drawn from SensorChannels.Implemented rather than pinned to JointAngle.
+                    // §4.3 describes the founder population as a pure CPG with self-only
+                    // connections; that was never quite what this code did, and logbook/0018 is
+                    // the argument for the departure being right — an open-loop swimmer cannot
+                    // aim, so locomotion has negative expected value and the world deletes it.
+                    // A founder that can read depth has something to steer by (D033).
                     inputs[a] = rng.Chance(0.5f)
-                        ? NeuronInput.FromSensor(SensorChannel.JointAngle, 0, rng.Gaussian(0f, 1f))
+                        ? SensorChannels.RandomSensor(rng, rng.Gaussian(0f, 1f))
                         : NeuronInput.FromNeuron(NeuronInputKind.SameNode, rng.Range(count), rng.Gaussian(0f, 1f));
                 }
                 neurons[i].Inputs = inputs;
