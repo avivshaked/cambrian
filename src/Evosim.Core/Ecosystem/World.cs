@@ -312,7 +312,7 @@ namespace Evosim.Core
                 EnergyLedger ledger = Metabolism.StepAt(
                     creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY),
                     Nutrients.DensityAt(creature.HeightY),
-                    creature.PendingWorkJoules, seconds);
+                    creature.PendingWorkJoules, seconds, creature.Age);
 
                 _ledgers[i] = ledger;
                 Nutrients.Demand(creature.HeightY, ledger.PoolDrawn);
@@ -321,6 +321,11 @@ namespace Evosim.Core
             for (int i = _living.Count - 1; i >= 0; i--)
             {
                 Organism creature = _living[i];
+
+                // Read before it advances, because the recompute below has to price the same
+                // step the loop above priced. Ageing a creature mid-step would make the short-
+                // larder branch a different creature from the full-larder one.
+                float age = creature.Age;
                 creature.Age += seconds;
 
                 float share = Nutrients.ShareAt(creature.HeightY);
@@ -335,7 +340,7 @@ namespace Evosim.Core
                     ledger = Metabolism.StepAt(
                         creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY),
                         Nutrients.DensityAt(creature.HeightY) * share,
-                        creature.PendingWorkJoules, seconds);
+                        creature.PendingWorkJoules, seconds, age);
                 }
 
                 if (ledger.PoolDrawn > 0f) Nutrients.Take(creature.HeightY, ledger.PoolDrawn);
@@ -343,6 +348,14 @@ namespace Evosim.Core
                 // Drained here and nowhere else. Both branches above priced the same joules, so
                 // this is the one point at which they stop being owed.
                 creature.PendingWorkJoules = 0f;
+
+                // Refreshed from the ledger rather than left at its birth value, because under
+                // senescence the cost of doing nothing is not a property of the body alone
+                // (D038). Free: upkeep and neural are exactly what StandingWatts recomputes, and
+                // they were just computed. Without this a creature's SecondsOfReserve — and
+                // §4.4's Energy sensor, when it exists — would grow more optimistic the closer it
+                // came to starving.
+                creature.StandingWatts = (ledger.Upkeep + ledger.Neural) / seconds;
 
                 creature.Energy += ledger.Net;
                 creature.Lifetime += ledger;

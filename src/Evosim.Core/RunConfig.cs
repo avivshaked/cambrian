@@ -278,6 +278,54 @@ namespace Evosim.Core
         public float NutrientMixingDiffusivity { get; set; }
 
         /// <summary>
+        /// Seconds of life after which a body costs twice as much to keep — DESIGN.md §5A.2, D038.
+        /// Zero is an immortal world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Nothing died of age, and the design already knew.</b> §5A.6b records that "a handful
+        /// of immortal generation-zero photosynthesisers pin the minimum at zero permanently", and
+        /// the response was to change the instrument (D025) rather than the ecology. But a
+        /// creature whose income covers its upkeep simply never dies, so a successful lineage is
+        /// never replaced — only added to. Measured: 98 deaths against 1,164 births, an 8% death
+        /// rate, with the literal t=0 founders still alive at t=3,500 (logbook/0023). Selection
+        /// needs differential mortality as well as differential reproduction, and there was
+        /// essentially none.
+        /// </para>
+        /// <para>
+        /// <b>It changes the terms of trade rather than killing anybody.</b> A maximum lifespan
+        /// would be an exogenous rule — us deciding how long a creature ought to live, which is
+        /// the kind of judgement §5A.0 exists to remove. Senescence as an ageing metabolism keeps
+        /// death where §5A.6 puts it: the reserve reaches zero. An old creature starves, and how
+        /// long it takes depends on how good it was at earning, which is the world's answer rather
+        /// than ours.
+        /// </para>
+        /// <para>
+        /// <b>Both sides of the ledger, from this one number.</b> At age <c>t</c> the wear factor
+        /// is <c>1 + t/this</c>: upkeep and neural cost are multiplied by it and income is divided
+        /// by it, so an old body spends more <i>and</i> converts less. Costs alone would be the
+        /// cheaper implementation and the wrong biology — senescence is loss of function first
+        /// and expense second, and a creature that photosynthesised at full efficiency until the
+        /// day it starved would be an odd thing to call old. Note that what falls is what a
+        /// creature <i>keeps</i>: it still draws the same joules from the pool, and the shortfall
+        /// leaves through the transfer loss §5A.3 already accounts for. So an ageing population
+        /// depletes the larder exactly as fast while feeding itself worse, which is the
+        /// density-dependence §5A.7's ceiling stands in for.
+        /// </para>
+        /// <para>
+        /// <b>Linear, and not heritable.</b> Linear because the doubling time is then a number
+        /// with a plain meaning; and not heritable because there is no cost here to repairing
+        /// damage, so an evolvable senescence rate would go straight to zero and buy immortality
+        /// for free — a §11.2 free lunch arriving through the ledger. Making it evolvable needs
+        /// the disposable-soma trade-off, where repair competes with reproduction for the same
+        /// joules, and that is a larger design than a knob.
+        /// </para>
+        /// <para>⚠ Unmeasured (§5A.10). Default 0: nothing ages until a run asks it to.</para>
+        /// </remarks>
+        [Tunable("world", Unit = "s")]
+        public float SenescenceDoublingSeconds { get; set; }
+
+        /// <summary>
         /// A stable digest of everything above — the <c>configHash</c> of §7.
         /// </summary>
         /// <remarks>

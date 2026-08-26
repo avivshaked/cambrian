@@ -156,16 +156,37 @@ namespace Evosim.Core
         /// scalar here keeps that entirely outside this class: whether the number arrived from a
         /// crowded layer or from an empty ocean, the arithmetic on one body is identical.
         /// </remarks>
+        /// <param name="phenotype">The developed body. Cell types come from its parts.</param>
+        /// <param name="config">Supplies cell types, shapes and the neural cost rates.</param>
+        /// <param name="irradiance">Light reaching this creature, W/m².</param>
+        /// <param name="nutrientDensity">Energy density of nutrients here, J/m³.</param>
+        /// <param name="workJoules">Mechanical work done at the joints this step.</param>
+        /// <param name="seconds">Step length.</param>
+        /// <param name="ageSeconds">
+        /// How long this creature has been alive. Drives senescence — see
+        /// <see cref="RunConfig.SenescenceDoublingSeconds"/>. Zero is a world without ageing, and
+        /// is what every result before D038 was measured in.
+        /// </param>
         public static EnergyLedger StepAt(
             Phenotype phenotype,
             RunConfig config,
             float irradiance,
             float nutrientDensity,
             float workJoules,
-            float seconds)
+            float seconds,
+            float ageSeconds = 0f)
         {
             if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
             if (config == null) throw new ArgumentNullException(nameof(config));
+
+            // Senescence, as a multiplier on the terms of staying alive rather than as a clock
+            // that kills (D038). It moves both sides of the ledger from one knob and by the same
+            // factor: an old body spends more and converts less, which is what ageing is. Death
+            // stays exactly where §5A.6 puts it, at a reserve of zero, so how long a creature
+            // lasts depends on how well it earns rather than on a lifespan we picked.
+            float wear = config.SenescenceDoublingSeconds > 0f && ageSeconds > 0f
+                ? 1f + ageSeconds / config.SenescenceDoublingSeconds
+                : 1f;
 
             CellIntake intake = CellIntake.None;
             float upkeep = 0f, neural = 0f;
@@ -205,8 +226,19 @@ namespace Evosim.Core
                 neural += rate * cell.NeuronCostMultiplier(neurons, part.Volume) * seconds;
             }
 
+            // Conversion falls by the same factor the costs rise by. Note what is *not* scaled:
+            // PoolDrawn. An old creature strips the larder exactly as fast and keeps less of it,
+            // and the difference leaves the world through EnergyLedger.Wasted — the same route
+            // §5A.3's transfer loss already takes, so §5A.2's audit closes without a new term.
+            // Scaling the draw instead would make ageing a discount on the world's groceries.
+            if (wear > 1f)
+            {
+                intake = new CellIntake(
+                    intake.FromLight / wear, intake.FromPool / wear, intake.PoolDrawn);
+            }
+
             return new EnergyLedger(
-                intake, upkeep, neural,
+                intake, upkeep * wear, neural * wear,
                 Math.Max(0f, workJoules) * config.WorkCostMultiplier);
         }
 

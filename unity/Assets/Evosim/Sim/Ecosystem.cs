@@ -96,7 +96,36 @@ namespace Evosim.Sim
         private readonly List<CreatureInstance> _instances = new List<CreatureInstance>();
         private readonly List<long> _instanceIds = new List<long>();
 
-        private readonly List<long> _departed = new List<long>();
+        /// <summary>Ids whose creature has died, scratch for <see cref="Reconcile"/>.</summary>
+        /// <remarks>
+        /// A set rather than a list, because it is built from every body and then has every
+        /// <i>living</i> creature removed from it. On a list that removal is a linear scan, so the
+        /// method was quadratic in population — about 610,000 element shifts at 781 creatures,
+        /// a hundred times per simulated second (logbook/0023).
+        /// </remarks>
+        private readonly HashSet<long> _departed = new HashSet<long>();
+
+        /// <summary>
+        /// The bodies to step, in the same order as <see cref="_instances"/>.
+        /// </summary>
+        /// <remarks>
+        /// Held directly so the two hot loops in <see cref="Step"/> do not hash an id per creature
+        /// per physics step. Rebuilt only when the population changes, which is what
+        /// <see cref="_reconciledAt"/> decides.
+        /// </remarks>
+        private readonly List<Body> _order = new List<Body>();
+
+        /// <summary>
+        /// Value of the world's birth-and-death counter when the scene last matched it.
+        /// </summary>
+        /// <remarks>
+        /// <b>Creatures are born and die inside <see cref="World.Step"/>, which runs once every
+        /// <see cref="StepsPerMetabolicStep"/> physics steps.</b> Reconciling on every physics step
+        /// therefore did the whole scan forty-nine times out of fifty to discover that nothing had
+        /// changed. Births, deaths and floor spawns are the only things that add or remove a
+        /// creature, so their sum is a complete revision number for the population.
+        /// </remarks>
+        private long _reconciledAt = -1;
         private readonly Transform _parent;
 
         /// <summary>
@@ -194,9 +223,9 @@ namespace Evosim.Sim
         {
             Reconcile();
 
-            for (int i = 0; i < _instanceIds.Count; i++)
+            for (int i = 0; i < _order.Count; i++)
             {
-                Body body = _bodies[_instanceIds[i]];
+                Body body = _order[i];
 
                 // Sampled before the brain reads it, so every neuron in the creature perceives
                 // the same instant — the sensory counterpart of §4.3's synchronous update.
@@ -214,7 +243,7 @@ namespace Evosim.Sim
             Physics.Simulate(FixedDt);
             Fluid.Settle(_instances);
 
-            for (int i = 0; i < _instanceIds.Count; i++) _bodies[_instanceIds[i]].Driver.Settle();
+            for (int i = 0; i < _order.Count; i++) _order[i].Driver.Settle();
 
             Steps++;
 
@@ -283,6 +312,11 @@ namespace Evosim.Sim
         /// </remarks>
         private void Reconcile()
         {
+            long revision = World.Births + World.Deaths + World.FloorSpawns;
+            if (revision == _reconciledAt) return;
+
+            _reconciledAt = revision;
+
             IReadOnlyList<Organism> living = World.Living;
 
             _departed.Clear();
@@ -298,25 +332,29 @@ namespace Evosim.Sim
                 Build(creature);
             }
 
-            if (_departed.Count == 0) return;
-
-            for (int i = 0; i < _departed.Count; i++)
+            foreach (long id in _departed)
             {
-                Body body = _bodies[_departed[i]];
+                Body body = _bodies[id];
 
                 _freeTiles.Push(body.Tile);
                 body.Instance.Destroy();
-                _bodies.Remove(_departed[i]);
+                _bodies.Remove(id);
             }
 
+            // Rebuilt whether or not anything departed, because Build appends to these and a birth
+            // alone leaves them correct but a death leaves them holding a destroyed instance. The
+            // early return above is what keeps this off the hot path.
             _instances.Clear();
             _instanceIds.Clear();
+            _order.Clear();
+
             for (int i = 0; i < living.Count; i++)
             {
                 if (!_bodies.TryGetValue(living[i].Id, out Body body)) continue;
 
                 _instances.Add(body.Instance);
                 _instanceIds.Add(living[i].Id);
+                _order.Add(body);
             }
         }
 
@@ -365,6 +403,7 @@ namespace Evosim.Sim
             _bodies.Add(creature.Id, body);
             _instances.Add(instance);
             _instanceIds.Add(creature.Id);
+            _order.Add(body);
         }
 
         public void DestroyAll()
@@ -374,8 +413,10 @@ namespace Evosim.Sim
             _bodies.Clear();
             _instances.Clear();
             _instanceIds.Clear();
+            _order.Clear();
             _freeTiles.Clear();
             _nextTile = 0;
+            _reconciledAt = -1;
         }
     }
 }

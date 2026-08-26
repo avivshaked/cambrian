@@ -83,3 +83,4 @@ are the ones most likely to go unwritten.
 | [0020](0020-a-sun-that-sets-over-a-world-with-one-crop.md) | 2026-08-25 | A sun that sets, over a world with one crop |
 | [0021](0021-the-food-all-fell-to-the-bottom.md) | 2026-08-25 | The food all fell to the bottom |
 | [0022](0022-the-conveyor-belt-and-the-thin-soup.md) | 2026-08-26 | The conveyor belt, and the thin soup |
+| [0023](0023-nothing-died-of-old-age.md) | 2026-08-26 | Nothing died of old age |

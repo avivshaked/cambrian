@@ -1188,6 +1188,15 @@ handful of immortal generation-zero photosynthesisers pin the minimum at zero pe
 worlds that stopped needing the floor thousands of seconds earlier and are visibly running
 themselves at median depth 78 (logbook/0011). The test was measuring immortality, not dependence.
 
+↻ **Un-superseded, 2026-08-26 — by the mechanism the paragraph above names.** §5A.6c gives
+creatures a metabolism that ages, so a founder whose income covers its upkeep no longer covers it
+forever. Minimum depth now rises above zero and keeps rising: replicated across three independent
+seeds, first crossing at t=3,500–4,700 s and reaching 3, 3 and 6 by the end of the run, in worlds
+carrying 619–1,919 creatures with 40–53% mortality — against 16% and a permanent zero in the
+immortal control (D038, logbook/0023). **The struck claim is restored: minimum depth above zero
+means no creature alive is a floor spawn, and it is the stronger statement.** How long the floor has
+been silent stays, because it is the cheaper reading and answers the same question sooner.
+
 **What replaces it: how long the floor has been silent.** That is literally the question — is
 anyone being handed life by us right now — and unlike minimum depth it is reachable. It needs a
 window, which minimum depth did not, and the window has to be long against the generation time of
@@ -1231,6 +1240,41 @@ and be a treadmill — lineages turning over forever with nothing improving. Tha
 plateau and this instrument cannot see it. *Is the world alive* and *is the world interesting*
 are different questions, and conflating them is how a run looks healthy for twelve hours and
 produces nothing.
+
+### 5A.6c Senescence — ageing as an energy phenomenon
+
+**Death at zero energy is the only death (§5A.6), and by itself it makes a creature whose income
+covers its upkeep immortal.** §5A.6b already records the consequence and treats it as an
+instrument problem: a handful of generation-zero photosynthesisers pin minimum depth at zero
+forever. It is an ecological problem as well. Measured: **98 deaths against 1,164 births**, an 8%
+death rate, with the literal t=0 founders still alive at t=3,500 (logbook/0023). Selection needs
+differential *mortality* as well as differential *reproduction*; a successful lineage that is never
+replaced, only added to, is a world in which almost nothing is selected.
+
+**`SenescenceDoublingSeconds` raises the cost of being alive rather than killing anybody.** A
+maximum lifespan would be exogenous — us deciding how long a creature ought to live, which is what
+§5A.0 exists to remove. At age *t* the wear factor is `1 + t/T`. Death stays exactly where §5A.6
+puts it, at a reserve of zero: an old creature starves, and how long that takes depends on how well
+it earned, which is the world's answer rather than ours.
+
+**It moves both sides of the ledger, from one number.** Upkeep and neural cost are multiplied by
+the wear factor; income is divided by it. Costs alone would be the cheaper implementation and the
+wrong biology — senescence is loss of function first and expense second, and a creature
+photosynthesising at full efficiency until the day it starved would be an odd thing to call old.
+
+**What falls is what a creature keeps, not what it takes.** `PoolDrawn` is unscaled: an ageing
+population strips the larder exactly as fast while feeding itself worse, and the shortfall leaves
+the world through the transfer loss §5A.3 already accounts for. Scaling the draw instead would make
+ageing a form of restraint — a world of the old would deplete *less* than a world of the young.
+
+**Linear, and not heritable.** Linear so the doubling time means something plain. Not heritable
+because nothing here costs anything to repair, so an evolvable senescence rate would go straight to
+zero and buy immortality free — a §11.2 free lunch arriving through the ledger. Making it evolvable
+needs the disposable-soma trade-off, where repair competes with reproduction for the same joules,
+and that is a larger design than a knob.
+
+⚠ **Unmeasured (§5A.10), and default 0.** Zero is bit-identical to the world every earlier number
+was measured in — the property D031 lost and D035 and D037 both kept deliberately.
 
 ### 5A.7 Failure modes
 

@@ -69,6 +69,11 @@ namespace Evosim.Sim.EditorTools
             float currentSpeed = Env("EVOSIM_CURRENT", 0f);
             float mixing = Env("EVOSIM_MIXING", 0f);
 
+            // Ageing (D038). Seconds of life after which a body costs twice as much to keep and
+            // converts half as much of what it takes. 0 is the immortal world every earlier run
+            // measured, in which 92% of everything ever born was still alive.
+            float senescence = Env("EVOSIM_SENESCENCE", 0f);
+
             string outPath = Environment.GetEnvironmentVariable("EVOSIM_OUT");
             if (string.IsNullOrEmpty(outPath))
             {
@@ -103,6 +108,7 @@ namespace Evosim.Sim.EditorTools
             config.Genome.MaxLinkPower = maxPower;
             config.Current.Speed = currentSpeed;
             config.NutrientMixingDiffusivity = mixing;
+            config.SenescenceDoublingSeconds = senescence;
             var eco = new Ecosystem(config, seed);
 
             var report = new StringBuilder();
@@ -114,6 +120,7 @@ namespace Evosim.Sim.EditorTools
                 " s · seed " + seed + " · idle " + idle + " W/N·m · maxPower " + maxPower +
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
                 " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
+                " · senescence " + (senescence > 0f ? senescence + " s" : "off") +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());
@@ -314,6 +321,13 @@ namespace Evosim.Sim.EditorTools
                 "**" + (alive > 0 ? travelled / alive : 0d).ToString("0.####", c) + "**",
                 (alive > 0 ? age / alive : 0d).ToString("0.#", c),
                 world.Field.DayFactor.ToString("0.##", c),
+
+                // How much of the sun the population is actually intercepting where it lives.
+                // D023 made light finite and competed for, and that is the world's carrying
+                // capacity — but a population too sparse to shade itself is not yet feeling it,
+                // and a runaway that looks like a calibration failure may simply be a world with
+                // room left. 0% is an empty world; 100% is a closed canopy.
+                (100d * (1d - world.Field.ShadingAt((float)meanDepth))).ToString("0.#", c) + "%",
                 genMin.ToString(c),
                 genMax.ToString(c),
                 residual.ToString("0.0000", c) + "%",
@@ -335,7 +349,7 @@ namespace Evosim.Sim.EditorTools
             "t (s)", "alive", "births", "deaths", "**jointed**", "jointed %", "mean dof",
             "mean m/s", "max m/s", "work J/s", "work share", "**food %**", "**absorpt**",
             "**detritus J**", "**J/m3 here**", "**% on floor**", "depth m", "**depth sd**",
-            "**rise m**", "age s", "sun", "gen min", "gen max", "audit",
+            "**rise m**", "age s", "sun", "**shade %**", "gen min", "gen max", "audit",
         };
 
         private static string Header() =>

@@ -60,6 +60,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D035](#d035) | The diurnal cycle is mean-preserving, and off by default | 2026-08-25 | active |
 | [D036](#d036) | The world needs a current: energy has no return path without one | 2026-08-25 | active |
 | [D037](#d037) | The current is two standing waves, and stirring is separate from it | 2026-08-26 | active |
+| [D038](#d038) | Ageing is an energy phenomenon, and immortality was suppressing selection | 2026-08-26 | active |
 
 ---
 
@@ -1349,3 +1350,104 @@ two minutes of its own metabolism**, and detritus at 8 J/m³ would require the w
 sixty times the world's standing biomass in corpses. Nothing remineralises detritus, so the pool
 grows without bound and would reach it in around 260,000 simulated seconds — hours of wall clock,
 and long after the population runaway ends the run.
+
+---
+
+### D038
+**Ageing is an energy phenomenon, and immortality was suppressing selection** · 2026-08-26
+
+§5A.6 kills at zero energy and nowhere else, so **a creature whose income covers its upkeep never
+dies.** §5A.6b already recorded the consequence and treated it as an instrument fault — "a handful
+of immortal generation-zero photosynthesisers pin the minimum at zero permanently" — and struck out
+minimum generation depth as *"a true statement and an unreachable one"*. It is an ecological fault
+as well, and the larger of the two. **Selection needs differential mortality, not only differential
+reproduction.** A lineage that succeeds and is never replaced, only added to, is a world in which
+almost nothing is selected: measured at 98 deaths against 1,164 births (logbook/0022), and still
+only 233 against 1,475 once shading began to bite.
+
+**`SenescenceDoublingSeconds` changes the terms of being alive rather than killing anybody.** A
+maximum lifespan would be exogenous — us deciding how long a creature ought to live, which is what
+§5A.0 exists to remove. At age *t* the wear factor is `1 + t/T`, and death stays exactly where
+§5A.6 puts it, at a reserve of zero. An old creature starves; how long that takes depends on how
+well it earned, which is the world's answer rather than ours.
+
+**Both sides of the ledger, from the one number.** Upkeep and neural cost are multiplied by the
+wear factor and income is divided by it, so an old body spends more *and* converts less. Costs
+alone would have been the cheaper implementation and the wrong biology: senescence is loss of
+function first and expense second, and a creature photosynthesising at full efficiency until the
+day it starved would be an odd thing to call old. The human asked for exactly this and was right to.
+
+**What falls is what a creature keeps, not what it takes.** `PoolDrawn` is unscaled. An ageing
+population strips the larder at full speed and feeds itself worse on it, and the shortfall leaves
+the world through the transfer loss §5A.3 already accounts for — so §5A.2's audit closes at 0.0000%
+with no new term. Scaling the draw instead would have made ageing a form of restraint, with a world
+of the old depleting *less* than a world of the young.
+
+**Rejected: making it heritable.** Nothing here costs anything to repair, so an evolvable senescence
+rate goes straight to zero and buys immortality free — a §11.2 free lunch arriving through the
+ledger rather than through the physics. Evolvable senescence needs the disposable-soma trade-off,
+where repair competes with reproduction for the same joules, and that is a larger design than a knob.
+
+**Default 0, bit-identical to the immortal world**, guarded by a test rather than by intent. Every
+number on file was measured without this, and D031 is what a default that silently perturbs the
+ledger costs.
+
+#### What it measured
+
+64 W/m², current 0.05 m/s, mixing 2 m²/s, `maxPower` 20. **The doubling time has to be long against
+the reproductive career, not against the lifespan**, and the first two values tried were chosen
+against the wrong quantity and were lethal:
+
+| T | alive at t=4000 | births | floor spawns | gen max | gen min |
+|---|---|---|---|---|---|
+| off | 1,342 | 1,475 | 100 | 17 | **0** |
+| 30,000 s | 1,066 | 1,177 | 99 | 14 | 0 |
+| 10,000 s | 876 | 946 | 105 | 15 | 0 |
+| 3,000 s | 106 | 142 | 134 | 20 | **1** |
+| 1,200 s | 40 | 35 | **473** | 9 | 0 |
+| 300 s | 40 | 42 | **754** | 1 | 0 |
+
+At 300 s a creature pays double before it has reproduced once, which is what `gen max = 1` says
+happened; both short arms pinned at the population floor and were kept alive by it, which §5A.6
+defines as a failed world.
+
+**Minimum generation depth rises above zero, for the first time in this project.** Replicated
+across three independent seeds (D034), it climbs and holds rather than touching:
+
+| run | first t with gen min > 0 | gen min at end | alive | deaths / births |
+|---|---|---|---|---|
+| T=3,000, seed 1 | 3,600 s | 1 | 106 | 170 / 142 |
+| T=3,000, seed 2 | 3,500 s | **3** | 1,919 | 1,226 / 3,038 (40%) |
+| T=3,000, seed 3 | 4,400 s | **6** | 699 | 524 / 1,046 (50%) |
+| T=5,000, seed 1 | 4,700 s | **3** | 619 | 582 / 1,089 (53%) |
+
+Gen min is 0 in every immortal control, always. **No floor-spawned creature is
+alive in any of these worlds**, which is what §5A.6b called *the point at which life became
+self-sustaining* before striking it out as unreachable — and the struck passage names this exact
+mechanism as what would make it reachable again. Seed 1's small population turns out to be
+seed-specific; the rest carry 619–1,919 creatures, so this is turnover rather than collapse.
+
+**The control is sharper than a mortality comparison, and corrects one.** The immortal world is not
+a world without death — at seed 2 it kills 828 of 2,496 (33%) by t=4,100, because shading at 1,761
+creatures is severe. Matched on seed and elapsed time:
+
+| at t=4,100 s, seed 2 | immortal | T=3,000 |
+|---|---|---|
+| alive | 1,761 | 1,599 |
+| deaths / births | 828 / 2,496 — 33% | 629 / 2,121 — 30% |
+| shading | 57.5% | 48.1% |
+| gen max | 19 | **23** |
+| **gen min** | **0** | **3** |
+
+**Near-identical mortality, and only one of them retires its founders.** What immortality protects
+is not creatures in general but the specific creatures that got the good depths first and never had
+to give them up. That is the thing senescence removes, and it is why the death *rate* was the wrong
+number to look at.
+
+**And it is faster.** Seed 1 at T=3,000 reached generation 20 in 1.3 minutes of wall clock against
+the immortal world's 17 in 6.9. §5A.6b calls depth per wall-clock hour the actual evolutionary
+clock; carrying thirteen hundred immortal creatures was buying population, not progress.
+
+⚠ **T itself remains unmeasured (§5A.10).** What is measured is that the transition exists and lies
+between 1,200 s and 3,000 s for this configuration. It is a property of the world's energy margin,
+not a constant, so it will move whenever §5A.2's ratio does.
