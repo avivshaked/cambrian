@@ -82,3 +82,4 @@ are the ones most likely to go unwritten.
 | [0019](0019-three-knobs-that-reached-nothing.md) | 2026-08-24 | Three knobs that reached nothing, and a seed that was not a seed |
 | [0020](0020-a-sun-that-sets-over-a-world-with-one-crop.md) | 2026-08-25 | A sun that sets, over a world with one crop |
 | [0021](0021-the-food-all-fell-to-the-bottom.md) | 2026-08-25 | The food all fell to the bottom |
+| [0022](0022-the-conveyor-belt-and-the-thin-soup.md) | 2026-08-26 | The conveyor belt, and the thin soup |

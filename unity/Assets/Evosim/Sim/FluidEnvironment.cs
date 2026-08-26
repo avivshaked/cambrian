@@ -33,11 +33,37 @@ namespace Evosim.Sim
         /// </summary>
         public PartShapeRegistry Shapes { get; }
 
-        public FluidEnvironment(FluidConfig config = null, PartShapeRegistry shapes = null)
+        public FluidEnvironment(
+            FluidConfig config = null,
+            PartShapeRegistry shapes = null,
+            CurrentField current = null)
         {
             Config = config ?? FluidConfig.DragOnly;
             Shapes = shapes ?? PartShapeRegistry.Standard;
+            Current = current;
         }
+
+        /// <summary>
+        /// Water that moves, or null for still water — DESIGN.md §5A.4, D036.
+        /// </summary>
+        /// <remarks>
+        /// <b>It enters the model at exactly one point</b>, which §5A.4 predicted it would: drag is
+        /// computed against a velocity, so subtracting the water's velocity from the body's turns
+        /// drag into advection for the price of one evaluation per part. Nothing else changes —
+        /// same panels, same coefficients, same parallel path — and a creature standing still in
+        /// moving water now feels exactly the force it would feel swimming through still water at
+        /// the same relative speed, which is the whole of the physics.
+        /// </remarks>
+        public CurrentField Current { get; set; }
+
+        /// <summary>Seconds the world has been running, for <see cref="Current"/>.</summary>
+        /// <remarks>
+        /// Set by the caller each step rather than accumulated here. This class is stepped by
+        /// several harnesses at several timesteps, and a clock that counted its own calls would
+        /// read differently in each of them while looking identical — the same argument that makes
+        /// <c>EffectorDriver</c> demand its timestep rather than defaulting it.
+        /// </remarks>
+        public double ElapsedSeconds { get; set; }
 
         /// <summary>
         /// Sets up the scene for water. Call once, before stepping.
@@ -187,9 +213,17 @@ namespace Evosim.Sim
                     ArticulationBody body = creature.Bodies[i];
 
                     _rotation[at + i] = body.transform.rotation.ToQuat();
-                    _velocity[at + i] = body.linearVelocity.ToFloat3();
                     _spin[at + i] = body.angularVelocity.ToFloat3();
                     _panelsAt[at + i] = creature.DragPanels[i];
+
+                    // Relative to the water, not to the world. Sampled here in the gather phase
+                    // because it needs the body's position, which is a Transform read and so main
+                    // thread only; the compute phase past this point touches no Unity type.
+                    Float3 water = Current != null
+                        ? Current.VelocityAt(body.transform.position.y, ElapsedSeconds)
+                        : Float3.Zero;
+
+                    _velocity[at + i] = body.linearVelocity.ToFloat3() - water;
                 }
             }
 

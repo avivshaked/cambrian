@@ -75,6 +75,10 @@ namespace Evosim.Core
         [TunableGroup]
         public LightModel Light { get; set; } = new LightModel();
 
+        /// <summary>Water that moves — §5A.4, D036. Still by default.</summary>
+        [TunableGroup]
+        public CurrentField Current { get; set; } = new CurrentField();
+
         /// <summary>
         /// The cell types available, their upkeep and their feeding rates — §5A.1.
         /// </summary>
@@ -247,6 +251,31 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world", Unit = "m/s")]
         public float NutrientSinkMetresPerSecond { get; set; } = 0.02f;
+
+        /// <summary>
+        /// How strongly the water stirs detritus vertically, m²/s — §5A.4, D036.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The world's only return path for energy.</b> Without it, light enters at the surface,
+        /// bodies sink past everything that could eat them, and every joule the world has ever
+        /// received ends on the sea floor: 77.5% of all dead matter on the sediment, and a
+        /// measured nutrient density of exactly zero everywhere anything lives (logbook/0021). The
+        /// audit balanced perfectly throughout, because the energy was never lost — it was
+        /// immobilised.
+        /// </para>
+        /// <para>
+        /// <b>Read it against <see cref="NutrientSinkMetresPerSecond"/>, which is the only thing it
+        /// competes with.</b> Diffusion spreads over a distance like the square root of time while
+        /// sinking covers one linear in it, so the balance between them is what decides whether
+        /// there is a nutrient gradient through the column or a line on the floor. Their ratio has
+        /// length units — it is the depth over which mixing wins — and that depth is the thickness
+        /// of the habitable layer for anything that eats.
+        /// </para>
+        /// <para>⚠ Unmeasured (§5A.10). Default 0: the world does not stir until a run asks it to.</para>
+        /// </remarks>
+        [Tunable("world", Unit = "m2/s")]
+        public float NutrientMixingDiffusivity { get; set; }
 
         /// <summary>
         /// A stable digest of everything above — the <c>configHash</c> of §7.

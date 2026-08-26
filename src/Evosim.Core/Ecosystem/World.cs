@@ -241,6 +241,11 @@ namespace Evosim.Core
 
             Metabolise(seconds);
             Nutrients.Settle(seconds);
+
+            // Stirred after it sinks, in the same step. The two are opposed — one carries detritus
+            // down and the other spreads it back through the column — and whether the world has a
+            // nutrient gradient or a line on the floor is the balance between them (D036).
+            Nutrients.Mix(seconds, Config.NutrientMixingDiffusivity);
             Reproduce();
             EnforceFloor();
             EnforceCeiling();

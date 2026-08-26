@@ -201,6 +201,75 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>
+        /// Stirs detritus between neighbouring layers — DESIGN.md §5A.4, D036.
+        /// </summary>
+        /// <param name="seconds">Interval to mix over.</param>
+        /// <param name="diffusivity">
+        /// Eddy diffusivity, m²/s. Zero leaves the field exactly as it was.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>This is the world's only return path for energy, and without it there is none.</b>
+        /// Light enters at the surface, plants grow and die at the surface, and
+        /// <see cref="Settle"/> carries their bodies down past everything that could eat them onto
+        /// a floor sixty metres below anything alive. Measured: 77.5% of every joule of dead matter
+        /// the world had ever produced was lying on the sediment, and the nutrient density where
+        /// the living population actually sat was exactly zero (logbook/0021). The audit still
+        /// closed at 0.0000%, which is the point — the energy was never lost, it was immobilised.
+        /// Real oceans have this problem and solve it by mixing.
+        /// </para>
+        /// <para>
+        /// <b>What it buys is a gradient where there was a step.</b> With all the detritus on the
+        /// floor, a creature that dives one metre gains nothing, thirty metres gains nothing and
+        /// fifty-nine metres gains everything — and evolution cannot climb a step function,
+        /// particularly one approached downhill through failing light. Spread the same detritus
+        /// through the column and diving one metre is worth one metre of food, immediately. That is
+        /// the difference between a deceptive task [K12] and an ordinary one.
+        /// </para>
+        /// <para>
+        /// <b>Conservative by construction.</b> Every joule that leaves a layer arrives in a
+        /// neighbour, computed as fluxes across the interfaces rather than as a per-layer average —
+        /// so it cannot create or destroy detritus however coarse the timestep, and §5A.2's audit
+        /// never has to trust it. The boundaries are closed: the surface has nothing above it and
+        /// the floor nothing below, and a flux that is not written is a flux that does not exist.
+        /// </para>
+        /// <para>
+        /// <b>Clamped rather than sub-stepped.</b> Explicit diffusion goes unstable above a
+        /// Courant number of ½ and would oscillate a layer negative — which conservation would
+        /// happily preserve, giving a world with a debt of detritus in one layer and a surplus in
+        /// the next. The mixed fraction is capped there instead. A capped step is a slower stir
+        /// than asked for; an uncapped one is a different physics.
+        /// </para>
+        /// </remarks>
+        public void Mix(float seconds, float diffusivity)
+        {
+            if (!(diffusivity > 0f) || !(seconds > 0f) || LayerCount < 2) return;
+
+            // Fick's law across each interface, discretised: the flux between neighbours is the
+            // diffusivity times the concentration difference over the layer thickness. Working in
+            // stock rather than concentration is the same equation because every layer has the
+            // same volume, and it keeps the arithmetic in the units the audit is written in.
+            double fraction = diffusivity * seconds / (LayerMetres * LayerMetres);
+            if (fraction > 0.5) fraction = 0.5;
+
+            for (int i = 0; i < _sinking.Count; i++) _sinking[i] = 0.0;
+
+            // _sinking is reused as the flux buffer: it is scratch, cleared at the top of both
+            // methods, and a second array of the same shape would be one more thing to keep in
+            // step with LayerCount.
+            for (int layer = 0; layer < LayerCount - 1; layer++)
+            {
+                _sinking[layer] = (_stock[layer] - _stock[layer + 1]) * fraction;
+            }
+
+            for (int layer = 0; layer < LayerCount - 1; layer++)
+            {
+                _stock[layer] -= _sinking[layer];
+                _stock[layer + 1] += _sinking[layer];
+            }
+        }
+
         /// <summary>What one layer holds, J. For reporting and for tests.</summary>
         public double StockInLayer(int layer) =>
             layer < 0 || layer >= _stock.Count ? 0.0 : _stock[layer];

@@ -63,6 +63,12 @@ namespace Evosim.Sim.EditorTools
             float dayAmplitude = Env("EVOSIM_DAY_AMPLITUDE", 0f);
             float dayLength = Env("EVOSIM_DAY_LENGTH", 200f);
 
+            // Moving water, and the stirring that gives the world a return path for its own
+            // energy (D036). Both default to off, so a run with neither set is the still world
+            // every earlier number here was measured in.
+            float currentSpeed = Env("EVOSIM_CURRENT", 0f);
+            float mixing = Env("EVOSIM_MIXING", 0f);
+
             string outPath = Environment.GetEnvironmentVariable("EVOSIM_OUT");
             if (string.IsNullOrEmpty(outPath))
             {
@@ -95,6 +101,8 @@ namespace Evosim.Sim.EditorTools
             };
 
             config.Genome.MaxLinkPower = maxPower;
+            config.Current.Speed = currentSpeed;
+            config.NutrientMixingDiffusivity = mixing;
             var eco = new Ecosystem(config, seed);
 
             var report = new StringBuilder();
@@ -105,6 +113,7 @@ namespace Evosim.Sim.EditorTools
                 " · metabolic step " + (Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt) +
                 " s · seed " + seed + " · idle " + idle + " W/N·m · maxPower " + maxPower +
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
+                " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());

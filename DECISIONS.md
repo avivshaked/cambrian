@@ -59,6 +59,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D034](#d034) | Per-creature seeds are mixed with the world seed, not counted from it | 2026-08-24 | active |
 | [D035](#d035) | The diurnal cycle is mean-preserving, and off by default | 2026-08-25 | active |
 | [D036](#d036) | The world needs a current: energy has no return path without one | 2026-08-25 | active |
+| [D037](#d037) | The current is two standing waves, and stirring is separate from it | 2026-08-26 | active |
 
 ---
 
@@ -1289,3 +1290,62 @@ and could not, because the second income it needed does not exist. A current is 
 detritus returned to the lit zone, absorptive feeding becomes viable, the two incomes finally pull in
 opposite directions, and the cycle has a balance point to move. The cycle is not wasted work; it was
 built one layer too early.
+
+---
+
+### D037
+**The current is two standing waves, and stirring is separate from it** · 2026-08-26
+
+[D036](#d036) established that the world needs a current. This is what was built, and two of the
+three choices in it were forced rather than preferred.
+
+**Moving water and stirring are separate mechanisms.** `CurrentField` advects bodies;
+`NutrientField.Mix` diffuses detritus. One cannot do both jobs, because **detritus is not
+physical** — a corpse is deposited into a scalar field indexed by depth and its articulation is
+destroyed, so a velocity field applied to `ArticulationBody` drag cannot touch it. That is not an
+omission to fix later: §6.3 tiles creatures a hundred metres apart so they cannot collide, which is
+what defers predation to Milestone 7, and a physical corpse would sit in its own tile where nothing
+could reach it. The scalar field is what lets a creature at −8 m eat detritus at −8 m without being
+in the same place, and it matches the one-dimensional ecology that tiling forces. **Physical
+corpses become the right design at the same moment tiling stops being necessary, and not before.**
+
+**Rejected: the curl-noise field §5A.4 specifies**, on a proof rather than a preference. Tiling
+makes horizontal position a recycled bookkeeping slot, so a field that reads it makes an artefact
+ecologically meaningful — which forces the field to depend on depth and time alone. For such a
+field `div v = ∂w/∂y`, so divergence-free requires `w` constant in depth: a uniform drift that moves
+every creature identically and shears nothing past anything. Depth-varying vertical flow and
+divergence-free are incompatible here. The compensating horizontal circulation is real and lies
+outside a column one tile wide.
+
+**Rejected: a single travelling wave**, which was built first and was a conveyor belt. Its
+time-average velocity at every fixed depth is exactly zero — the Eulerian mean — and a particle
+riding it is still dragged along with the phase. The first embodied run carried the population six
+metres above the surface and was still climbing (logbook/0022). What matters is the mean
+displacement of something the flow carries, and the guard that existed asserted the other one while
+its own comment described this one.
+
+**Two standing waves at incommensurate periods.** Each term is `sin(ky)·sin(ωt)`, antisymmetric
+about its half-period, so a particle in one term returns exactly home — zero drift by symmetry
+rather than cancellation, independent of the integrator. One term alone would also mix nothing, so
+there are two, in the ratio of the golden section: their sum never repeats, trajectories separate,
+and the field disperses without a mean. The ratio is a constant rather than a tunable because a
+rational value would give the whole field a common period and switch the mixing off at a timescale
+nobody chose.
+
+**Both default to off.** Every number on file was measured in still water, and a default that
+perturbed them would mean no earlier result describes a world that still exists — the mistake
+D031 recorded and D035 declined to repeat.
+
+**Measured, same seed and settings, 64 W/m²:** detritus on the sea floor falls from 77.5% to 2.7%;
+nutrient density where creatures actually live goes from 0 to 0.18 J/m³; and the distance a creature
+travels from its birth depth in a lifetime rises from 0.006 m to 0.34–0.70 m — roughly a hundredfold,
+which is the ratio D036 named as the reason selection could not see swimming.
+
+**What it did not fix, and the number that explains it.** Absorptive creatures still starve. Their
+break-even is size-independent, since income and upkeep both scale with volume:
+`upkeep / clearance = 4 / 0.5 = 8 J/m³`, against a world that produces 0.18. The root is further
+back: a cubic metre of tissue is worth 500 J and costs 3–4 W to maintain, so **a body is worth about
+two minutes of its own metabolism**, and detritus at 8 J/m³ would require the water to hold some
+sixty times the world's standing biomass in corpses. Nothing remineralises detritus, so the pool
+grows without bound and would reach it in around 260,000 simulated seconds — hours of wall clock,
+and long after the population runaway ends the run.

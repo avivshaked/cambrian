@@ -182,7 +182,7 @@ namespace Evosim.Sim
         public Ecosystem(RunConfig config, ulong seed = 1, Transform parent = null)
         {
             World = new World(config, seed);
-            Fluid = new FluidEnvironment(config.Fluid, config.Shapes);
+            Fluid = new FluidEnvironment(config.Fluid, config.Shapes, config.Current);
             _parent = parent;
         }
 
@@ -204,6 +204,11 @@ namespace Evosim.Sim
                 body.Brain.Step(FixedDt, body.Drive, body.Sensors);
                 body.Driver.Drive(body.Drive);
             }
+
+            // The water's own clock, advanced from the physics step rather than the metabolic one:
+            // a current that only updated twice a second would be a staircase to swim against, and
+            // the creature would feel the discretisation rather than the flow.
+            Fluid.ElapsedSeconds = Steps * (double)FixedDt;
 
             Fluid.Apply(_instances, FixedDt);
             Physics.Simulate(FixedDt);

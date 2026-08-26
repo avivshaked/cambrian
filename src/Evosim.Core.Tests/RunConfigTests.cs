@@ -74,7 +74,52 @@ namespace Evosim.Core.Tests
             new object[] { typeof(MutationRates) },
             new object[] { typeof(FluidConfig) },
             new object[] { typeof(LightModel) },
+            new object[] { typeof(CurrentField) },
         };
+
+        [Fact]
+        public void TheSubConfigListCoversEveryTunableGroup()
+        {
+            // The hole the list above left open, closed. CurrentField was added to RunConfig as a
+            // [TunableGroup] and the theory beside this one passed — by never looking at it, which
+            // is the exact fault it was written for after DevelopmentLimits escaped the same way
+            // (logbook/0011). A literal list can only be wrong in a way a human reading it can see;
+            // nothing was making a human read it.
+            //
+            // Reflection is used here to check the list rather than to replace it, so the argument
+            // for keeping it literal survives: the list still decides what gets nudged and how,
+            // and this only refuses to let it fall behind RunConfig.
+            var listed = new HashSet<Type>();
+            foreach (object[] row in SubConfigs) listed.Add((Type)row[0]);
+
+            var missing = new List<string>();
+
+            foreach (PropertyInfo p in typeof(RunConfig).GetProperties())
+            {
+                if (p.GetCustomAttribute<TunableGroupAttribute>() == null) continue;
+                if (listed.Contains(p.PropertyType)) continue;
+
+                // A group with no nudgeable scalar cannot be tested this way and is covered by
+                // EverySettableValueIsDeclaredTunable instead — registries are the standing
+                // example. Anything with a settable float, int or bool has no such excuse.
+                bool nudgeable = false;
+                foreach (PropertyInfo q in p.PropertyType.GetProperties())
+                {
+                    if (!q.CanWrite) continue;
+                    if (q.PropertyType == typeof(float) ||
+                        q.PropertyType == typeof(int) ||
+                        q.PropertyType == typeof(bool))
+                    {
+                        nudgeable = true;
+                        break;
+                    }
+                }
+
+                if (nudgeable) missing.Add($"{p.Name} ({p.PropertyType.Name})");
+            }
+
+            Assert.Empty(missing);
+        }
 
         [Theory]
         [MemberData(nameof(SubConfigs))]
