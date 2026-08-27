@@ -74,6 +74,13 @@ namespace Evosim.Sim.EditorTools
             // measured, in which 92% of everything ever born was still alive.
             float senescence = Env("EVOSIM_SENESCENCE", 0f);
 
+            // How often a birth changes a part's trade (§5A.3). Exposed to make one specific
+            // question askable: the trophic niche opens at t≈9,500 s and absorptive arrivals run
+            // at one per 5,128 births, so a run that ends shortly after cannot tell an
+            // arrival-limited world from an establishment-limited one. Raising this delivers
+            // arrivals on demand and separates the two (logbook/0024).
+            float cellTypeMutation = Env("EVOSIM_CELLTYPE_MUTATION", MutationRates.Default.CellTypeChance);
+
             string outPath = Environment.GetEnvironmentVariable("EVOSIM_OUT");
             if (string.IsNullOrEmpty(outPath))
             {
@@ -109,6 +116,7 @@ namespace Evosim.Sim.EditorTools
             config.Current.Speed = currentSpeed;
             config.NutrientMixingDiffusivity = mixing;
             config.SenescenceDoublingSeconds = senescence;
+            config.Mutation.CellTypeChance = cellTypeMutation;
             var eco = new Ecosystem(config, seed);
 
             var report = new StringBuilder();
@@ -121,6 +129,7 @@ namespace Evosim.Sim.EditorTools
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
                 " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
                 " · senescence " + (senescence > 0f ? senescence + " s" : "off") +
+                " · cellType mut " + cellTypeMutation +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());

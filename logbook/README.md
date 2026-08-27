@@ -84,3 +84,4 @@ are the ones most likely to go unwritten.
 | [0021](0021-the-food-all-fell-to-the-bottom.md) | 2026-08-25 | The food all fell to the bottom |
 | [0022](0022-the-conveyor-belt-and-the-thin-soup.md) | 2026-08-26 | The conveyor belt, and the thin soup |
 | [0023](0023-nothing-died-of-old-age.md) | 2026-08-26 | Nothing died of old age |
+| [0024](0024-the-larder-filled-and-nobody-came.md) | 2026-08-27 | The larder filled, and nobody came |

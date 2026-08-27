@@ -1276,6 +1276,33 @@ and that is a larger design than a knob.
 ⚠ **Unmeasured (§5A.10), and default 0.** Zero is bit-identical to the world every earlier number
 was measured in — the property D031 lost and D035 and D037 both kept deliberately.
 
+### 5A.6d Margin, not break-even — what makes a trade viable
+
+**A trade that exactly covers its costs founds nothing.** §5A.6 pays for offspring out of surplus,
+so a creature at break-even survives indefinitely and never reproduces. Quoting a break-even density
+therefore says where a trade stops losing money, not where it is worth doing, and the difference is
+the whole question of whether a niche can be occupied.
+
+**The comparable quantity is the margin**: net watts per cubic metre of tissue, divided into the
+body's tissue cost to give **the seconds a body takes to earn its own replacement**. It is the
+closest thing to a generation time this economy has, and unlike break-even it is comparable between
+trades that acquire energy in completely different ways — photosynthesis scales with lit area,
+absorption with volume, and the two have no common denominator until they are both expressed as
+surplus per body.
+
+Measured at 64 W/m² (D039, `TrophicMarginTests`):
+
+| trade | conditions | net | earns its own tissue in |
+|---|---|---|---|
+| photosynthetic | −2 m, full sun | 1.063 W | 470 s |
+| absorptive | −2 m, 10 J/m³ | 1.000 W | 500 s |
+| photosynthetic | −45 m | −2.887 W | never |
+
+⚠ **Any claim in this document of the form "X is not viable because the world only produces Y" is
+suspect until restated as a margin.** §5A.2c's absorptive break-even of 8 J/m³ was quoted three
+times as the reason detritus feeding could not work; the world reached 12.3 J/m³ unaided and the
+trade turned out to be at parity with photosynthesis (logbook/0024).
+
 ### 5A.7 Failure modes
 
 | Failure | Why it happens | Defence |

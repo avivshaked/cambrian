@@ -61,6 +61,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D036](#d036) | The world needs a current: energy has no return path without one | 2026-08-25 | active |
 | [D037](#d037) | The current is two standing waves, and stirring is separate from it | 2026-08-26 | active |
 | [D038](#d038) | Ageing is an energy phenomenon, and immortality was suppressing selection | 2026-08-26 | active |
+| [D039](#d039) | The trophic niche is arrival-limited, not viability-limited — measure the margin, not the break-even | 2026-08-27 | active |
 
 ---
 
@@ -1451,3 +1452,64 @@ clock; carrying thirteen hundred immortal creatures was buying population, not p
 ⚠ **T itself remains unmeasured (§5A.10).** What is measured is that the transition exists and lies
 between 1,200 s and 3,000 s for this configuration. It is a property of the world's energy margin,
 not a constant, so it will move whenever §5A.2's ratio does.
+
+---
+
+### D039
+**The trophic niche is arrival-limited, not viability-limited — measure the margin, not the
+break-even** · 2026-08-27
+
+§8 demotes MAP-Elites on the grounds that under endogenous selection its innovation-protection role
+*"passes to ecological niches — spatial and trophic"*. That is a claim about the world, so it is
+measurable, and D038's corpses made it worth measuring: nutrient density where creatures live rose
+from 0.18 to 2.1–4.3 J/m³ and then, over a 15,000 s run, to **12.3 J/m³** — past the absorptive
+break-even of 8. **The trophic niche opens on its own.** Absorptive creatures arrived, survived a
+thousand seconds apiece, and produced the first non-zero food income on record (0.03 → 0.12% over
+four consecutive samples). The count never reached two.
+
+**Break-even is the wrong number and this entry retires it.** `upkeep / clearance = 4 / 0.5 = 8
+J/m³` is where a trade stops losing money, not where it is worth doing: §5A.6 pays for offspring out
+of surplus, so a creature at break-even survives forever and founds nothing. **The quantity that
+decides a trade is the margin** — net watts per cubic metre, divided into a body's tissue cost to
+give the seconds it takes to earn its own replacement. That number is comparable across trades that
+acquire energy in completely different ways, which break-even is not.
+
+**Measured, and it refuted the change this entry was going to authorise.** The plan was to raise
+`AbsorptiveCell.ClearanceRate`, on the reasoning that a 25% margin over break-even explains
+creatures that survive without breeding. Both that knob and its upkeep are ⚠ unmeasured (§5A.10), so
+setting them was legitimate. Then:
+
+| trade | conditions | net | earns its own tissue in |
+|---|---|---|---|
+| photosynthetic | −2 m, full sun | 1.063 W | **470 s** |
+| absorptive | −2 m, 10 J/m³ | 1.000 W | **500 s** |
+
+**Parity, at 1.06×.** At the density the world now produces, eating the dead is as good a living as
+photosynthesis in the light. No knob was changed. `TrophicMarginTests` keeps the measurement.
+
+**What is actually scarce is arrivals.** Two sources, both measured in `TrophicInvasionTests`:
+
+| source | rate |
+|---|---|
+| founder draw | **24.7%** carry an absorptive part |
+| cell-type mutation from a photosynthesiser | **one per 5,128 births** |
+
+The founder draw is 1,265× faster and **the population floor is its only user.** D021 makes the
+floor fire only to hold the population up, so it goes silent when the world becomes self-sustaining
+— at t≈2,700 s, against a larder that does not become worth entering until t≈9,500. **The world
+switches off its supply of consumers at the moment it starts producing food for them.** Neither
+mechanism is wrong; their timing collides.
+
+**Rejected: making the floor draw consumers when the larder is rich.** It would work and it is
+§5A.0's exact prohibition — us deciding what the world should contain, at a moment we chose, on
+evidence we read. The floor is an instrument, and D021 is emphatic that it is not a safety net.
+
+**`EVOSIM_CELLTYPE_MUTATION` is exposed as a probe, not as a new default.** Arrival-limited and
+establishment-limited predict opposite things when the arrival rate is raised twentyfold — a trophic
+level, or a parade of solitary creatures that never become two — and nothing else distinguishes
+them. The default is unchanged.
+
+⚠ **Open.** Which of the two it is, is being measured. If it is arrival-limited the fix is
+ecological (a source of consumers that does not switch off); if establishment-limited, something
+not yet identified prevents a viable trade from founding a lineage, and that would be the more
+interesting result.
