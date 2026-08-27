@@ -81,6 +81,11 @@ namespace Evosim.Sim.EditorTools
             // arrivals on demand and separates the two (logbook/0024).
             float cellTypeMutation = Env("EVOSIM_CELLTYPE_MUTATION", MutationRates.Default.CellTypeChance);
 
+            // What a cubic metre of filter can strain per second (D041). Raised 0.5 → 1.0 because
+            // converting a spread-out photosynthesiser costs it 9.2× its income, and swept from
+            // here because §5A.10 says an unmeasured claim must be one a run can vary.
+            float clearance = Env("EVOSIM_CLEARANCE", 1.0f);
+
             string outPath = Environment.GetEnvironmentVariable("EVOSIM_OUT");
             if (string.IsNullOrEmpty(outPath))
             {
@@ -108,7 +113,7 @@ namespace Evosim.Sim.EditorTools
                     new LinkCell(idle),
                     new NeuralCell(),
                     new PhotosyntheticCell(),
-                    new AbsorptiveCell(),
+                    new AbsorptiveCell(clearance),
                     new ConsumerCell()),
             };
 
@@ -130,6 +135,7 @@ namespace Evosim.Sim.EditorTools
                 " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
                 " · senescence " + (senescence > 0f ? senescence + " s" : "off") +
                 " · cellType mut " + cellTypeMutation +
+                " · clearance " + clearance +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());

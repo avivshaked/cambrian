@@ -288,7 +288,25 @@ namespace Evosim.Core
         /// limits a filter feeder in thin water. What it keeps of what it catches is
         /// <see cref="Yield"/>. Two rates because they fail differently — a bigger filter helps in
         /// an empty ocean and not in a rich one, and better digestion helps in both.
-        /// ⚠ Unmeasured — §5A.10.
+        /// <para>
+        /// <b>Raised 0.5 → 1.0 at D041, and the reason is a shape asymmetry rather than a
+        /// generosity judgement.</b> Photosynthesis scales with lit area and this scales with
+        /// volume, so the two trades want opposite bodies — and every absorptive creature in this
+        /// world is a mutant of a photosynthesiser, wearing a body selection spread out to catch
+        /// light. At equal volume that body earns 4.59 W from light and 0.50 W from filtering: a
+        /// <b>9.2× income collapse</b> on conversion, against 2.1× for a cube. An earlier
+        /// measurement priced both trades on a cube, found parity, and withdrew this change
+        /// (D039); a cube is a shape neither trade would build.
+        /// </para>
+        /// <para>
+        /// <b>Deliberately short of parity.</b> Matching a spread photosynthesiser at the 10 J/m³
+        /// this world reaches needs ≈1.3. This is 1.0, because absorption is depth-independent and
+        /// photosynthesis is not: a trade that ties at the surface wins everywhere below it, and
+        /// the world would swap one monoculture for another. At 1.0 the deep water becomes
+        /// habitable and the lit layer does not change hands, which is §5A.4's depth gradient
+        /// finally having two sides. <see cref="Metabolism"/>'s margin tests guard both directions.
+        /// </para>
+        /// ⚠ Still unmeasured — §5A.10. What is measured is the asymmetry it answers.
         /// </remarks>
         public float ClearanceRate { get; }
 
@@ -311,7 +329,7 @@ namespace Evosim.Core
         public float Yield { get; }
 
         public AbsorptiveCell(
-            float clearanceRate = 0.5f, float upkeepWattsPerCubicMetre = 4f, float yield = 1f)
+            float clearanceRate = 1.0f, float upkeepWattsPerCubicMetre = 4f, float yield = 1f)
             : base(upkeepWattsPerCubicMetre)
         {
             if (clearanceRate <= 0f)

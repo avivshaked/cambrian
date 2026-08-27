@@ -63,6 +63,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D038](#d038) | Ageing is an energy phenomenon, and immortality was suppressing selection | 2026-08-26 | active |
 | [D039](#d039) | The trophic niche is arrival-limited, not viability-limited — measure the margin, not the break-even | 2026-08-27 | active · open question resolved by D040 |
 | [D040](#d040) | The world grew a food chain, and the binding constraint is now throughput | 2026-08-27 | active |
+| [D041](#d041) | Filtering clearance 0.5 → 1.0 — the two trades want opposite bodies | 2026-08-27 | active |
 
 ---
 
@@ -1574,3 +1575,55 @@ one that answers a single one.
 ⚠ **Single seed.** Seed 3, one configuration. The mechanism is not in doubt — the `inherit` column
 is a direct observation, not a statistic — but how reliably a world grows a food chain, and how
 large the toehold becomes, are unmeasured.
+
+---
+
+### D041
+**Filtering clearance 0.5 → 1.0 — the two trades want opposite bodies** · 2026-08-27
+
+[D039](#d039) proposed raising `AbsorptiveCell.ClearanceRate`, measured photosynthesis and
+absorption at 470 s and 500 s to earn their own tissue, called it parity, and withdrew the change.
+**That measurement priced both trades on a cube, and a cube is a shape neither trade would build.**
+
+Photosynthesis scales with **lit area**; absorption scales with **volume**. At equal volume
+(0.5 m³), before this change:
+
+| body | area/volume | photosynthesis | filtering at 10 J/m³ |
+|---|---|---|---|
+| flat plate | 4.50 | **4.59 W** | 0.50 W |
+| cube | 1.89 | 1.06 W | 0.50 W |
+
+**Filtering is completely indifferent to shape. Photosynthesis is 4.3× better spread out** — and
+selection in a lit layer spreads bodies out, so that is the body every real creature has. Every
+absorptive creature in this world is a mutant of a photosynthesiser, so conversion cost it **9.2×
+its income**, not the 1.06× the cube measurement reported. That is why a lone arrival on a rich
+larder survived a thousand seconds, ate, and never bred (D040, logbook/0025): solvent, and many
+times poorer than the siblings it was competing against.
+
+**1.0 rather than the 1.3 that would equalise them, and the gap is the design.** Filtering is
+depth-independent and photosynthesis is not. A trade that ties at the surface wins everywhere
+below it, and the world would swap a photosynthetic monoculture for a detritivore one — which
+would look like success for a long time, because food income would finally be large. At 1.0:
+
+| | photosynthesis | filtering |
+|---|---|---|
+| −2 m, spread out | **4.59 W** | 3.00 W |
+| −45 m | −1.33 W | **3.00 W** |
+| −2 m, compact | 1.06 W | **3.00 W** |
+
+**Two niches where there was one, and they divide on two axes at once** — by depth, which §5A.4's
+gradient always promised and nothing could ever use, and by *shape*, which was not the intent. A
+spread body should stay in the light; a compact one does better filtering, at any depth. That is a
+morphological trade-off rather than a positional one, and it is the first thing in this world that
+gives a creature a reason to be a particular shape.
+
+`TheLitLayerStaysPhotosynthesisAndTheDeepWaterOpensToFiltering` guards both directions, because the
+failure modes are symmetric and only one of them looks like a failure.
+
+⚠ **This changes `configHash`.** Every measurement on file — D031's calibration, the §5A.2b sweep,
+D038's senescence transition, D040's food chain — was taken at clearance 0.5, and the arms of any
+comparison spanning this entry are not comparable. `EVOSIM_CLEARANCE` exists so a run can go back.
+
+⚠ **Unmeasured in the world.** The margins above are arithmetic on a developed body; whether a
+population actually splits into a lit canopy and a filtering deep is the run this authorises, not
+a result it reports.
