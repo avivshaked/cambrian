@@ -206,13 +206,27 @@ namespace Evosim.Sim.EditorTools
             Physics.gravity = previousGravity;
         }
 
+        /// <summary>
+        /// Every creature ever seen carrying an absorptive part. Ids only, never released.
+        /// </summary>
+        /// <remarks>
+        /// <b>The instrument that separates a lineage from a standing crop</b>, which nothing else
+        /// here can do. Raising the cell-type mutation rate twentyfold produced thirteen absorptive
+        /// creatures where there had been one, while the arrival rate stayed flat — strong evidence
+        /// of reproduction, and not proof, because nutrient density was climbing over the same
+        /// window and a longer-lived standing crop draws the same curve (logbook/0024). A creature
+        /// whose <i>parent</i> was absorptive settles it: that one was born into the trade rather
+        /// than mutating into it.
+        /// </remarks>
+        private static readonly HashSet<long> EverAbsorptive = new HashSet<long>();
+
         private static string Row(Ecosystem eco)
         {
             World world = eco.World;
 
             double spend = 0d, workSpend = 0d, depth = 0d, light = 0d, food = 0d;
             double travelled = 0d, age = 0d;
-            int jointed = 0, dof = 0, absorptive = 0;
+            int jointed = 0, dof = 0, absorptive = 0, inherited = 0;
             int genMin = int.MaxValue, genMax = 0;
 
             for (int i = 0; i < world.Living.Count; i++)
@@ -249,6 +263,13 @@ namespace Evosim.Sim.EditorTools
                     if (part.CellTypeId != CellTypeIds.Absorptive) continue;
 
                     absorptive++;
+                    EverAbsorptive.Add(creature.Id);
+
+                    // Born into the trade rather than mutated into it. Counted against the ids
+                    // ever seen rather than against the living, because a parent that has already
+                    // died is exactly the case that matters — it means the lineage outlived its
+                    // founder.
+                    if (EverAbsorptive.Contains(creature.ParentId)) inherited++;
                     break;
                 }
 
@@ -313,6 +334,7 @@ namespace Evosim.Sim.EditorTools
                 (100d * workShare).ToString("0.#", c) + "%",
                 "**" + (light + food > 0d ? 100d * food / (light + food) : 0d).ToString("0.##", c) + "%**",
                 "**" + absorptive.ToString(c) + "**",
+                "**" + inherited.ToString(c) + "**",
                 "**" + world.Nutrients.TotalJoules.ToString("0.#", c) + "**",
 
                 // Density where the creatures actually are, and how much of the world's detritus
@@ -356,7 +378,7 @@ namespace Evosim.Sim.EditorTools
         private static readonly string[] Columns =
         {
             "t (s)", "alive", "births", "deaths", "**jointed**", "jointed %", "mean dof",
-            "mean m/s", "max m/s", "work J/s", "work share", "**food %**", "**absorpt**",
+            "mean m/s", "max m/s", "work J/s", "work share", "**food %**", "**absorpt**", "**inherit**",
             "**detritus J**", "**J/m3 here**", "**% on floor**", "depth m", "**depth sd**",
             "**rise m**", "age s", "sun", "**shade %**", "gen min", "gen max", "audit",
         };

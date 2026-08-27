@@ -61,7 +61,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D036](#d036) | The world needs a current: energy has no return path without one | 2026-08-25 | active |
 | [D037](#d037) | The current is two standing waves, and stirring is separate from it | 2026-08-26 | active |
 | [D038](#d038) | Ageing is an energy phenomenon, and immortality was suppressing selection | 2026-08-26 | active |
-| [D039](#d039) | The trophic niche is arrival-limited, not viability-limited — measure the margin, not the break-even | 2026-08-27 | active |
+| [D039](#d039) | The trophic niche is arrival-limited, not viability-limited — measure the margin, not the break-even | 2026-08-27 | active · open question resolved by D040 |
+| [D040](#d040) | The world grew a food chain, and the binding constraint is now throughput | 2026-08-27 | active |
 
 ---
 
@@ -1513,3 +1514,63 @@ them. The default is unchanged.
 ecological (a source of consumers that does not switch off); if establishment-limited, something
 not yet identified prevents a viable trade from founding a lineage, and that would be the more
 interesting result.
+
+---
+
+### D040
+**The world grew a food chain, and the binding constraint is now throughput** · 2026-08-27
+
+[D039](#d039) left one question open: absorptive creatures arrive on a larder that can feed them,
+survive a thousand seconds apiece, and the count never reaches two — **arrival-limited or
+establishment-limited?** Raising the cell-type mutation rate twentyfold answers it. Arrival-limited.
+
+**Arrivals stayed flat while the standing population grew fifteenfold** (1 → 15), which a crop
+maintained by mutation pressure alone cannot do. But that argument has a confound in the next column
+of the same table — nutrient density rose 5.99 → 8.60 J/m³ over exactly that window, so creatures
+were living longer, and a longer-lived standing crop draws the same curve as a reproducing one.
+
+**So the claim rests on an instrument rather than on the inference.** An `inherit` column counts
+living absorptive creatures whose *parent* was also absorptive, checked against every absorptive id
+ever seen rather than against the living — a parent that has already died being exactly the case
+that matters, since it means the lineage outlived its founder.
+
+| t | density | absorptive | inherited | food income |
+|---|---|---|---|---|
+| 10,500 | 6.96 J/m³ | 8 | **1** | 0.13% |
+| 11,000 | 8.65 | 10 | **2** | 0.11% |
+| 11,250 | 8.00 | 12 | **3** | 0.13% |
+| 12,250 | 8.60 | **15** | **4** | **0.42%** |
+
+Better than a quarter of the detritivores were born into the trade, and the share rises with the
+larder. The counter under-reports — it is sampled every 250 s, so a creature that lives and dies
+between samples is never credited — which makes 27% a floor. **Energy path: sun → photosynthesiser
+→ corpse → detritus → consumer, with §5A.2's audit closing at 0.0000% throughout.**
+
+**Nothing was designed to produce this**, which is the entire content of the claim. No fitness
+function, no niche assignment, no archive cell, no code naming detritivores. D038 made things die of
+age; the corpses raised density past the margin (D039); mutants arrived and bred. That chain is
+D017's bet and this is the first time it has paid.
+
+**It is a toehold, not a trophic level:** 15 creatures in 2,478, 0.42% of income.
+
+**The probe stays a probe.** `EVOSIM_CELLTYPE_MUTATION` defaults to §5A.3's rate and is not changed
+by this entry. Twentyfold arrivals accelerated a clock; they did not alter the energetics, the cell
+parameters, or what makes the trade viable. The same state is reachable at the default rate — one
+arrival per 5,128 births is rare, not impossible.
+
+#### What this changes about what to do next
+
+**The run ended on wall clock.** Not extinction, not runaway, not §5A.7's ceiling: ninety minutes at
+2.3× real time and falling, stopping at t=12,309 against a 16,000 s target, having produced 8,140
+births. At the default mutation rate the same result needs roughly twenty hours.
+
+**The binding constraint stopped being ecological somewhere around t=9,500 and became throughput.**
+Every question still open — do joints ever pay, does anything swim on purpose, does shading ever
+close the population, is 0.42% food income a toehold or a ceiling — is a question about states this
+world reaches later than it can currently be run to. That makes §6.4's throughput work
+(`windows-il2cpp`, the island model) the lever that makes every other question cheaper, rather than
+one that answers a single one.
+
+⚠ **Single seed.** Seed 3, one configuration. The mechanism is not in doubt — the `inherit` column
+is a direct observation, not a statistic — but how reliably a world grows a food chain, and how
+large the toehold becomes, are unmeasured.
