@@ -216,6 +216,20 @@ actually verifying it.
 - **`-createProject` gives you the Built-In Render Pipeline**, which DESIGN.md §10 does not
   want and Unity 6.5 deprecates. URP has to be added deliberately; `Evosim/Set Up URP`
   generates the pipeline assets.
+- **A morphology share is contaminated by the population floor.** `MinimumPopulation` (40)
+  trickles fresh generation-zero founders in whenever a world drops to it, and founders carry a
+  joint about two times in five. So in a bottlenecked world the jointed *share* is largely a
+  readout of the founder draw, and it sawtooths — five apparent "muscle recoveries" in one run,
+  one reaching 59% at generation 28, were all the floor (logbook/0029). `FloorSpawnsPerStep` = 2
+  prevents synchronous cohort *death* and does nothing about this. Read `jointedInherited` /
+  `absorptiveInherited` — creatures whose parent had the trait — not the share; and treat
+  `gen min = 0` as "founders present, share meaningless".
+- **PowerShell scripts need a UTF-8 BOM.** Windows PowerShell reads a BOM-less `.ps1` as ANSI, so
+  an em-dash inside a double-quoted string becomes three bytes that terminate the string and the
+  file will not parse — the error points at the following token and says nothing about encoding.
+  The three scripts in `scripts/` carry BOMs; keep it that way when adding one, since this
+  project's scripts are written with prose in them. `[ulong]` is also PowerShell 7-only — use
+  `[uint64]`, which both editions accept.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
