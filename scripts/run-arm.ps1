@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Launch one evolution arm against a worker project.
 
@@ -38,7 +38,7 @@ param(
     [hashtable]$Settings = @{},
     [float]$Seconds = 40000,
     [float]$WallMinutes = 600,
-    [ulong]$Seed = 1
+    [uint64]$Seed = 1   # not [ulong]: that accelerator is PowerShell 7 only
 )
 
 $ErrorActionPreference = 'Stop'

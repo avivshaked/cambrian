@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Clone the Unity project into sibling worker directories so runs can go in parallel.
 

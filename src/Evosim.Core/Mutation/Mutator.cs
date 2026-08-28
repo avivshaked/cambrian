@@ -9,7 +9,8 @@ namespace Evosim.Core
     /// <remarks>
     /// <para>
     /// <b>Deterministic in its inputs, and that is worth more than it looks.</b> An offspring is
-    /// entirely determined by <c>(parent, rng seed, rates)</c>, so a birth can be recorded as a
+    /// entirely determined by <c>(parent, rng seed, rates, genome options)</c>, so a birth can be
+    /// recorded as a
     /// parent reference plus a seed — a couple of dozen bytes — instead of a whole genome, which
     /// measures about 5 KB. At the working estimate of 40,000 births an hour that is the
     /// difference between 200 MB and a few megabytes. §9's diff-and-keyframe storage rests on
@@ -37,16 +38,18 @@ namespace Evosim.Core
         /// Bumped whenever an operator changes in a way that makes a stored seed reproduce a
         /// different offspring. Recorded per birth; see the class remarks.
         /// </summary>
-        public const int CodeVersion = 1;
+        public const int CodeVersion = 2;
 
         public static Genome Mutate(
-            Genome parent, Rng rng, MutationRates rates = null, CellTypeRegistry cellTypes = null)
+            Genome parent, Rng rng, MutationRates rates = null, CellTypeRegistry cellTypes = null,
+            RandomGenomeOptions genome = null)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (rng == null) throw new ArgumentNullException(nameof(rng));
 
             rates = rates ?? MutationRates.Default;
             cellTypes = cellTypes ?? CellTypeRegistry.Standard;
+            genome = genome ?? RandomGenomeOptions.Default;
 
             Genome child = parent.Clone();
 
@@ -67,7 +70,7 @@ namespace Evosim.Core
 
             for (int n = 0; n < child.Nodes.Count; n++)
             {
-                MutateNode(child, child.Nodes[n], rng, rates, cellTypes);
+                MutateNode(child, child.Nodes[n], rng, rates, cellTypes, genome);
             }
 
             if (rng.Chance(rates.AddNodeChance) && child.Nodes.Count < rates.MaxNodes)
@@ -111,7 +114,8 @@ namespace Evosim.Core
         // ---------------------------------------------------------------- nodes
 
         private static void MutateNode(
-            Genome g, MorphNode node, Rng rng, MutationRates rates, CellTypeRegistry cellTypes)
+            Genome g, MorphNode node, Rng rng, MutationRates rates, CellTypeRegistry cellTypes,
+            RandomGenomeOptions genome)
         {
             node.Dimensions = new Float3(
                 PerturbPositive(node.Dimensions.X, rng, rates),
@@ -130,7 +134,7 @@ namespace Evosim.Core
 
             // After a possible cell-type change, because whether a joint is even legal here
             // depends on what the part is now made of.
-            if (rng.Chance(rates.JointTypeChance)) ChangeJointType(node, rng, cellTypes);
+            if (rng.Chance(rates.JointTypeChance)) ChangeJointType(node, rng, cellTypes, genome);
 
             if (node.JointType.DofCount() > 0)
             {
@@ -196,7 +200,8 @@ namespace Evosim.Core
             }
         }
 
-        private static void ChangeJointType(MorphNode node, Rng rng, CellTypeRegistry cellTypes)
+        private static void ChangeJointType(
+            MorphNode node, Rng rng, CellTypeRegistry cellTypes, RandomGenomeOptions genome)
         {
             if (!cellTypes.Resolve(node.CellTypeId).AllowsJoint) return;
 
@@ -223,8 +228,23 @@ namespace Evosim.Core
             // A joint with no capacity cannot actuate, and one on a part with no joint is
             // charged for nothing. Both are invalid; both are repaired here rather than left
             // for Validate to catch after the fact.
-            if (dof > 0 && node.Power <= 0f) node.Power = rng.Range(5f, 120f);
-            else if (dof == 0) node.Power = 0f;
+            // Drawn from the same bounds a founder draws from. This used to be a hardcoded
+            // rng.Range(5f, 120f) — the ceiling RandomGenomeOptions retired in logbook/0017,
+            // left behind here when the founder path was lowered to 20. It mattered more than a
+            // stale constant usually does, because this branch fires only when a node that had
+            // no joint gains one: it is the single path by which an established lineage can
+            // invent a muscle, and it was handing that muscle a mean 62.5 N·m against a founder
+            // mean of 12.5. At LinkCell's 0.02 W/N·m that is 1.25 W standing per degree of
+            // freedom before the joint moves — almost exactly the 1.24 W median link that
+            // logbook/0017 measured nothing surviving, and six times what D032 found affordable.
+            if (dof > 0 && node.Power <= 0f)
+            {
+                node.Power = rng.Range(genome.MinLinkPower, genome.MaxLinkPower);
+            }
+            else if (dof == 0)
+            {
+                node.Power = 0f;
+            }
         }
 
         private static void AddNode(

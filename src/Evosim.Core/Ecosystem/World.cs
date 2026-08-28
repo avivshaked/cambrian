@@ -437,7 +437,7 @@ namespace Evosim.Core
             ulong seed = Rng.SeedFor(Seed, _nextIndex++);
 
             Genome childGenome = Mutator.Mutate(
-                parent.Genome, new Rng(seed), Config.Mutation, Config.CellTypes);
+                parent.Genome, new Rng(seed), Config.Mutation, Config.CellTypes, Config.Genome);
 
             Phenotype body = Developer.Develop(
                 childGenome, Config.Development, null, Config.Shapes);

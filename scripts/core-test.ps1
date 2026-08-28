@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Builds and tests Evosim.Core without the Unity Editor.
 

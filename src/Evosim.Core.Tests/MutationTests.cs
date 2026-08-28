@@ -409,5 +409,112 @@ namespace Evosim.Core.Tests
                 typeof(Mutator).GetMethods(),
                 m => m.Name.IndexOf("graft", StringComparison.OrdinalIgnoreCase) >= 0);
         }
+
+        /// <summary>
+        /// A parent whose nodes may all take a joint and none of which has one, so every joint
+        /// seen in a mutant was created by <c>ChangeJointType</c> rather than inherited.
+        /// </summary>
+        private static Genome Jointless(ulong seed)
+        {
+            Genome g = Parent(seed);
+
+            foreach (MorphNode node in g.Nodes)
+            {
+                node.CellTypeId = CellTypeIds.Link;
+                node.JointType = JointType.Fixed;
+                node.JointLimits = Array.Empty<Float2>();
+                node.Power = 0f;
+            }
+
+            return g;
+        }
+
+        [Fact]
+        public void AMutationBornJointIsNoStrongerThanAFounderIsAllowedToBe()
+        {
+            // The branch that gives a jointless node a joint is the only path by which an
+            // established lineage can invent a muscle, and it used to draw rng.Range(5f, 120f) —
+            // the ceiling RandomGenomeOptions retired in logbook/0017 — while founders drew
+            // 5..20. A mutant muscle therefore arrived a mean six times stronger than a
+            // founder's, and LinkCell bills for capacity whether or not it moves.
+            //
+            // Asserted against the options rather than the literals, because two hardcoded
+            // bounds that must agree are exactly how this drifted apart in the first place.
+            // ScalarChance is zeroed so the draw is observed rather than the draw plus a
+            // perturbation — Perturb is relative (sigma = 0.15 x value), so one step carries a
+            // 20 N·m joint past 24 and would make a bound assertion meaningless.
+            var options = new RandomGenomeOptions { MinLinkPower = 5f, MaxLinkPower = 20f };
+            var rates = new MutationRates
+            {
+                JointTypeChance = 1f, CellTypeChance = 0f, ScalarChance = 0f,
+            };
+
+            var powers = new List<float>();
+
+            for (ulong seed = 0; seed < 400; seed++)
+            {
+                Genome child = Mutator.Mutate(
+                    Jointless(seed), new Rng(seed + 90000), rates,
+                    CellTypeRegistry.Standard, options);
+
+                foreach (MorphNode node in child.Nodes)
+                {
+                    if (node.JointType.DofCount() == 0) continue;
+                    powers.Add(node.Power);
+                    Assert.InRange(node.Power, options.MinLinkPower, options.MaxLinkPower);
+                }
+            }
+
+            Assert.NotEmpty(powers);
+            _output.WriteLine(
+                $"{powers.Count} freshly drawn joints over 400 mutants, " +
+                $"max {Max(powers):0.##} N·m against a ceiling of {options.MaxLinkPower:0.##}");
+        }
+
+        [Fact]
+        public void TheRunsConfiguredPowerCeilingReachesTheMutator()
+        {
+            // "Identical numbers across a configuration change mean the change was not applied."
+            // A ceiling World never forwards is a ceiling that does nothing, which is the same
+            // class of fault as the hardcode it replaced — so this checks the value travels, not
+            // merely that some bound is honoured.
+            var tight = new RandomGenomeOptions { MinLinkPower = 1f, MaxLinkPower = 2f };
+            var loose = new RandomGenomeOptions { MinLinkPower = 90f, MaxLinkPower = 100f };
+            var rates = new MutationRates
+            {
+                JointTypeChance = 1f, CellTypeChance = 0f, ScalarChance = 0f,
+            };
+
+            float tightMax = 0f, looseMin = float.MaxValue;
+
+            for (ulong seed = 0; seed < 200; seed++)
+            {
+                foreach (MorphNode n in Mutator.Mutate(
+                    Jointless(seed), new Rng(seed + 70000), rates,
+                    CellTypeRegistry.Standard, tight).Nodes)
+                {
+                    if (n.JointType.DofCount() > 0) tightMax = Math.Max(tightMax, n.Power);
+                }
+
+                foreach (MorphNode n in Mutator.Mutate(
+                    Jointless(seed), new Rng(seed + 70000), rates,
+                    CellTypeRegistry.Standard, loose).Nodes)
+                {
+                    if (n.JointType.DofCount() > 0) looseMin = Math.Min(looseMin, n.Power);
+                }
+            }
+
+            _output.WriteLine(
+                $"ceiling 2 produced max {tightMax:0.##}; floor 90 produced min {looseMin:0.##}");
+            Assert.True(tightMax <= 2f, $"a ceiling of 2 N·m produced {tightMax} — it did not reach the mutator");
+            Assert.True(looseMin >= 90f, $"a floor of 90 N·m produced {looseMin} — it did not reach the mutator");
+        }
+
+        private static float Max(List<float> xs)
+        {
+            float m = 0f;
+            for (int i = 0; i < xs.Count; i++) m = Math.Max(m, xs[i]);
+            return m;
+        }
     }
 }

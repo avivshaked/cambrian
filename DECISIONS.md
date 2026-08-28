@@ -1898,3 +1898,72 @@ exactly where the open questions turn on whether a rare variant can be found at 
 here: [D036](#d036)'s objection to shrinking the spread is untouched by this, and the fix is to
 derive it from the light model rather than pick a smaller constant.
 `MostFoundersAreBornSomewhereTheyCanLive` is the invariant that would have caught it.
+
+### D045
+**A mutation-born joint draws from the same bounds a founder does** · 2026-08-28
+
+[D032](#d032) lowered the joint capacity ceiling to 20 N·m after logbook/0017 measured what
+capacity costs to own, and `RandomGenomeOptions.MaxLinkPower` has said 20 ever since. The
+mutation operator was never told. `Mutator.ChangeJointType` drew `rng.Range(5f, 120f)` — the
+retired ceiling, as a literal — and nothing pointed at the option it was supposed to honour.
+
+**It fires on exactly one branch, and it is the branch that matters:**
+
+```csharp
+if (dof > 0 && node.Power <= 0f) node.Power = rng.Range(5f, 120f);
+```
+
+`node.Power <= 0f` means the node had no joint. So this is not a general capacity draw — it is
+the single code path by which a lineage that has no muscle invents one. Founders were never
+affected; their descendants inherit a founder-drawn capacity and perturb it from there. What was
+overcharged was every *de novo* muscle, which is the event this project has been trying to
+observe since [D042](#d042).
+
+| | draw | mean | idle at `LinkCell` 0.02 W/N·m | against a leaf's ~2.3 W income |
+|---|---|---|---|---|
+| founder | 5–20 N·m | 12.5 | 0.25 W per DOF | 11% |
+| **mutant (before)** | **5–120 N·m** | **62.5** | **1.25 W per DOF** | **54%** |
+
+D032 put the affordable region "well under a fifth of income". A founder-drawn joint sits inside
+it at 11%; a mutation-drawn one sat at 54%, and 1.25 W is within a percent of the 1.24 W median
+link that logbook/0017 measured nothing surviving at any irradiance from 64 to 400 W/m². A
+spherical joint made it three degrees of freedom: **3.75 W standing, before the joint moved
+once.**
+
+[D044](#d044)'s thrust table is the other half of the joke. It measures 120 N·m at 0.052 m/s —
+the best swimming in the survey. That is what a mutation-born muscle was buying, and it was
+paying five times a founder's rate for it.
+
+**Chosen: `Mutate` takes `RandomGenomeOptions` and `ChangeJointType` draws from
+`MinLinkPower`..`MaxLinkPower`.** One source of truth rather than a second copy, because two
+constants that must agree is the arrangement that produced this. `World` forwards `Config.Genome`,
+so a run's configured ceiling reaches the operator — `TheRunsConfiguredPowerCeilingReachesTheMutator`
+asserts that specifically, since a bound that never arrives is the same fault wearing a
+different hat.
+
+`Mutator.CodeVersion` goes to 2. The class contract is that an offspring is determined by its
+inputs, and this changes what a stored seed reproduces; old chains would rebuild into creatures
+that are plausible, valid, and not the ones that lived.
+
+**A second copy of the same stale constant, found while writing this up.** `EvolutionRun` reads
+`EVOSIM_MAXPOWER` and assigns it to `config.Genome.MaxLinkPower` — defaulting to `120f`, the same
+retired ceiling, as its own literal. So the effective bound depended on whether a run happened to
+name the knob:
+
+| run | founders | mutation-born |
+|---|---|---|
+| ceiling not set (runner default 120) | 5–120 | 5–120 |
+| **ceiling set to 20** (`sink-mid`, `sink-slow`, `sink-still`, `linkearn`) | **5–20** | **5–120** |
+
+The bug was therefore invisible in exactly the runs that did not care, and bit only the ones
+**deliberately lowering the ceiling to find out whether an affordable joint could survive.** Every
+affordability experiment this project has run was overcharging de-novo muscles by six times on the
+one path that creates them. Both defaults now come from `RandomGenomeOptions.Default` rather than
+from literals.
+
+**What this does not claim.** It does not explain the joint-share decay in the runs to date —
+those populations are dominated by founders and their children, who were correctly priced, and
+[D043](#d043)'s arithmetic that the cost side is structurally closed stands untouched. What it
+explains is narrower and more useful: why no lineage ever *invented* a muscle and kept it. The
+prediction is that de-novo joint lineages become more frequent, not that jointed creatures start
+winning — the two are different claims and only the first is tested here.

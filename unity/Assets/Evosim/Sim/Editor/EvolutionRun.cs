@@ -56,14 +56,18 @@ namespace Evosim.Sim.EditorTools
             // move". A calibration sweep found nothing with a joint alive at any irradiance from
             // 64 to 400 W/m2, so which end we are on is the question these make askable.
             float idle = Env("EVOSIM_IDLE", 0.02f);
-            float maxPower = Env("EVOSIM_MAXPOWER", 120f);
+            // Defaulted from RandomGenomeOptions rather than to a literal. It was 120f — the
+            // ceiling D032 retired — so every arm that did not set EVOSIM_MAXPOWER silently
+            // overrode the design default of 20 with the old one, and the two disagreed in
+            // opposite directions depending on whether a run happened to name the knob.
+            float maxPower = Env("EVOSIM_MAXPOWER", RandomGenomeOptions.Default.MaxLinkPower);
 
             // The FLOOR of the capacity draw, and the knob D031 and D032 both left alone while
             // sweeping the ceiling. It is the one that mattered: a survivor-sized creature is
             // insolvent carrying any hinge above about 5 N·m, and MinLinkPower is 5 — so every
             // jointed creature ever born started at or past break-even and died of arithmetic
             // before its swimming was ever tested (D042).
-            float minPower = Env("EVOSIM_MINPOWER", 5f);
+            float minPower = Env("EVOSIM_MINPOWER", RandomGenomeOptions.Default.MinLinkPower);
 
             // Muscle that also earns. The 1.30 W a two-part flagellate forfeits by making one of
             // its parts a link dominates the 0.51 W upkeep and 0.40 W idle charge together
