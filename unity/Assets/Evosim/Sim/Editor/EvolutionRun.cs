@@ -628,8 +628,12 @@ namespace Evosim.Sim.EditorTools
                 // organ from one that keeps the label.
                 "**" + buoyant.ToString(c) + "**",
                 "**" + buoyantInherited.ToString(c) + "**",
-                (buoyant > 0 ? liftHeld / buoyant : 0d).ToString("0.##", c),
-                (buoyant > 0 ? buoyantDepth / buoyant : 0d).ToString("0.#", c),
+                // Em-dash and not 0 when nobody is buoyant: 0.0 is a real depth and a real lift,
+                // and a column that prints one for "no such creature" is the shape of trap this
+                // whole entry was written after. A reader scanning `flt m` alone must not be able
+                // to mistake an empty set for a population at the waterline.
+                buoyant > 0 ? (liftHeld / buoyant).ToString("0.##", c) : "—",
+                buoyant > 0 ? (buoyantDepth / buoyant).ToString("0.#", c) : "—",
                 world.Matter.DensityAt(0f).ToString("0.###", c),
                 world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f)
                     .ToString("0.###", c),

@@ -2170,6 +2170,20 @@ cannot see it, but `Mutator` clamps to it and it therefore bounds which genomes 
 [D046](#d046)'s bug, where a derived value decided behaviour and was absent from the hash meant to
 notice.
 
-⚠ **The fix is unmeasured at the time of writing.** `d050-slow` and `d050-heavy` re-run the two
-arms under the new units. Nothing here establishes that a correctly-scaled bladder pays for
-itself — only that the previous answer was an artefact of the units and of a missing surface.
+**Measured.** Same worlds, same seed, new units: the runaway is gone, `flt m` never rises above
+−3.7 m, selection moves lift from a founder mean of 1.15 to 1.6–1.8 — just above neutral — and
+52 of 56 buoyant creatures inherited the trait with zero floor spawns after t=400. At sink 0.1
+`d050-heavy` crashed to 63 and recovered to 940 with buoyancy at 47% through the bottleneck; at
+sink 0.02 the organ is nearly inert, which is correct, because there is almost nothing to cancel.
+
+⚠ **The surface clamp never fired** in either arm, so the rescaling is what fixed the runaway and
+the clamp is so far only a guard. It is still the right thing to have: a brain-driven lift channel
+([D049](#d049) step two) is precisely what could push a creature up again.
+
+⚠ **What it does not establish.** Buoyancy stayed a 6% minority in worlds whose absorptive cells
+had gone extinct by t=1300, leaving detritus piling up unconsumed and half the population sunk on
+the sea bed as producers in the dark. Passive lift lets a lineage choose a depth; the world D048
+built has light at the top and matter at the bottom and rewards being in *both*, which is a case
+for D049's second step rather than against its first. Those arms also inherited `mixing 0` from
+`run-arm.ps1`'s defaults where D048's world used `mixing 2`, so the sterile-surface half of that
+reading is provisional (logbook/0034).

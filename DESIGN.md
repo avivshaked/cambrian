@@ -1587,6 +1587,9 @@ without reaching `RunConfig.Hash()` is two different experiments filed under one
 | Tissue energy, per type | `CellType.TissueEnergyPerCubicMetre` | What a body costs to build and is worth dead — one number, both (§5A.2c) |
 | Per-offspring overhead | `RunConfig.PerOffspringOverheadJoules` | Burned, not transferred — what makes brood size a strategy |
 | Detritus sink rate | `RunConfig.NutrientSinkMetresPerSecond` | Whether the deep is a niche or a graveyard |
+| Lift upkeep | `BuoyancyCell.WattsPerLiftUnit` | What holding gas costs, per sink-multiple per m³. D050 changed its units and not its value, so it now prices neutral buoyancy at 0.05 W/m³ — about 2% of the cell's own upkeep |
+| Founder lift range | `RandomGenomeOptions.Min/MaxBuoyancyLift` | Which bladders a creature can be born with. Must straddle 1, which is neutral (D050) |
+| Tissue excess density | `FluidConfig.TissueExcessDensity` | The sink every lift is denominated against, so it sets the timescale of all vertical movement. Measured: at 0.02 the organ is nearly inert, at 0.1 it is decisive (logbook/0034) |
 
 Two things deliberately **not** tunable, and the distinction matters:
 
@@ -1595,6 +1598,13 @@ Two things deliberately **not** tunable, and the distinction matters:
 - **Lit area is a quarter of surface area.** That is Cauchy's formula — the orientation-averaged
   projected area of any convex body — not a coefficient. A tunable there would be a licence to
   break geometry.
+
+⚠ **`BuoyancyCell.MaxLiftSinkMultiples` is a `const`, and this section says it should not be.**
+It bounds which genomes exist — `Mutator` clamps to it — so by the rule above it is an unmeasured
+constant no run can vary. It is not there by choice: `Genome.Validate()` takes no options, so a
+tunable could not be read where the bound is enforced, and threading one through is a refactor
+this has not had. It is at least *hashed* (D050), so two builds that disagree about it cannot
+agree about the number meant to notice. That makes the gap detectable, not closed.
 
 `EnergyKnobTests` enforces all of this rather than trusting it. It walks every cell type's saved
 JSON, mutates each numeric field, reloads it and demands the hash move — proving writable,
