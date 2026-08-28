@@ -345,5 +345,129 @@ namespace Evosim.Core.Tests
             Assert.Equal(First(7), First(7));
             Assert.NotEqual(First(7), First(8));
         }
+
+        // ------------------------------------------------------------ D048: matter
+
+        private static RunConfig MatterWorld(float perTissueJoule, float initialPerCubicMetre) =>
+            new RunConfig
+            {
+                Light = new LightModel(200f, 12f),
+                MatterPerTissueJoule = perTissueJoule,
+                InitialMatterPerCubicMetre = initialPerCubicMetre,
+            };
+
+        [Fact]
+        public void MatterNeverEntersTheEnergyAudit()
+        {
+            // §5A.2's audit is a hard equality over joules. Matter is a different substance, and
+            // folding it in would let the books balance by counting the wrong thing — the exact
+            // failure the audit exists to catch. The residual must be blind to it.
+            World without = Run(MatterWorld(0f, 1f), null, seconds: 300f);
+            World with = Run(MatterWorld(0.5f, 1f), null, seconds: 300f);
+
+            _output.WriteLine($"matter off: residual {without.AuditResidual:0.######} J");
+            _output.WriteLine($"matter on : residual {with.AuditResidual:0.######} J, " +
+                              $"standing matter {with.StandingMatter:0.##}");
+
+            double scale = Math.Max(1d, with.EnergyIn);
+            Assert.True(
+                Math.Abs(with.AuditResidual) / scale < 1e-6,
+                $"matter opened a hole in the energy audit: {with.AuditResidual} J");
+        }
+
+        [Fact]
+        public void MatterIsConservedBecauseNothingCreatesIt()
+        {
+            // Seeded once and thereafter only moved: reproduction takes it out of a layer, death
+            // puts it back. A drift here is matter being mined out of nothing, which is how a
+            // nutrient limit stops limiting anything.
+            var config = MatterWorld(0.5f, 1f);
+            var world = new World(config, seed: 1);
+
+            double atStart = 0d;
+            for (float t = 0f; t < 400f; t += 1f)
+            {
+                world.Step(1f);
+                if (t == 0f) atStart = world.StandingMatter;
+            }
+
+            double drift = world.StandingMatter - atStart;
+
+            _output.WriteLine(
+                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}), " +
+                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
+
+            Assert.True(
+                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
+                $"matter drifted by {drift} — something creates or destroys it");
+        }
+
+        [Fact]
+        public void AWorldWithNoMatterCannotBreedHoweverMuchLightItHas()
+        {
+            // The whole point of D048 in one assertion. Sunlight is not sufficient: a parent with
+            // energy to spare and nothing dissolved around it does not reproduce. Before this,
+            // light alone bought everything and no creature's success ever cost the world a
+            // finite thing.
+            World rich = Run(MatterWorld(0.5f, 5f), null, seconds: 400f);
+            World barren = Run(MatterWorld(0.5f, 0f), null, seconds: 400f);
+
+            _output.WriteLine($"matter 5/m3: {rich.Births} births, {rich.ConceptionsBlockedByMatter} blocked");
+            _output.WriteLine($"matter 0/m3: {barren.Births} births, {barren.ConceptionsBlockedByMatter} blocked");
+
+            Assert.True(
+                barren.Births == 0,
+                $"a world with no matter produced {barren.Births} births");
+            Assert.True(
+                barren.ConceptionsBlockedByMatter > 0,
+                "nothing even tried to breed, so this proves nothing about matter");
+            Assert.True(
+                rich.Births > 0,
+                $"the same world with matter produced no births either — light is the binding " +
+                $"constraint here and this test measures nothing");
+        }
+
+        [Fact]
+        public void SuccessAtADepthStripsThatDepth()
+        {
+            // The feedback the world had nowhere: reproducing somewhere makes that somewhere
+            // worse. Founders are scattered through the lit zone and breed there, so the layers
+            // they occupy must end up poorer in matter than the ones they do not.
+            var config = MatterWorld(0.5f, 1f);
+            config.MatterMixingDiffusivity = 0f;   // isolate the draw from the stirring
+            config.MatterSinkMetresPerSecond = 0f; // and from the falling
+
+            var world = new World(config, seed: 1);
+            double[] before = LayerMatter(world);
+            for (float t = 0f; t < 600f; t += 1f) world.Step(1f);
+            double[] after = LayerMatter(world);
+
+            int stripped = 0, untouched = 0;
+            for (int i = 0; i < after.Length; i++)
+            {
+                if (after[i] < before[i] - 1e-9) stripped++;
+                else untouched++;
+            }
+
+            _output.WriteLine(
+                $"{stripped} layers depleted, {untouched} untouched, " +
+                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
+
+            Assert.True(world.Births > 0, "nothing bred, so nothing could have stripped anything");
+            Assert.True(
+                stripped > 0,
+                "no layer lost matter — reproduction is not drawing from where the parent is");
+            Assert.True(
+                untouched > 0,
+                "every layer was depleted equally, which means the draw is not local and the " +
+                "gradient D048 exists to create cannot form");
+        }
+
+        private static double[] LayerMatter(World world)
+        {
+            var layers = new double[world.Matter.LayerCount];
+            for (int i = 0; i < layers.Length; i++) layers[i] = world.Matter.StockInLayer(i);
+            return layers;
+        }
     }
 }

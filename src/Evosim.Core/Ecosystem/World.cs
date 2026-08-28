@@ -99,6 +99,38 @@ namespace Evosim.Core
         /// <summary>Dead matter in the water, and what feeds on it — §5A.2c.</summary>
         public NutrientField Nutrients { get; }
 
+        /// <summary>The world's stock of matter, by depth layer — D048.</summary>
+        /// <remarks>
+        /// <para>
+        /// A <see cref="NutrientField"/> by construction because the mechanics are identical —
+        /// depth layers, sinking, mixing — and a second copy of that arithmetic is how two things
+        /// obliged to agree drift apart. <b>Its unit is matter, not joules.</b> The type's own
+        /// vocabulary says joules throughout; here every such quantity is matter, and the two are
+        /// never added.
+        /// </para>
+        /// <para>
+        /// <b>Deliberately absent from <see cref="StandingJoules"/>.</b> §5A.2's audit is a hard
+        /// equality over energy, and matter is not energy — folding this in would make the books
+        /// balance by counting a different substance, which is precisely the failure the audit
+        /// exists to catch.
+        /// </para>
+        /// </remarks>
+        public NutrientField Matter { get; }
+
+        /// <summary>Total matter in the world, free and locked up. Conserved — D048.</summary>
+        public double StandingMatter => Matter.TotalJoules + MatterInBodies;
+
+        /// <summary>Matter locked up in living tissue, awaiting its owner's death.</summary>
+        public double MatterInBodies { get; private set; }
+
+        /// <summary>Conceptions refused for want of matter rather than energy — D048.</summary>
+        /// <remarks>
+        /// The only number that says whether matter is binding at all. A world where this stays
+        /// zero has the mechanism switched on and doing nothing, which reads in every other
+        /// column exactly like a world that does not have it.
+        /// </remarks>
+        public long ConceptionsBlockedByMatter { get; private set; }
+
         /// <summary>Simulated seconds since the world began.</summary>
         public double ElapsedSeconds { get; private set; }
 
@@ -168,6 +200,22 @@ namespace Evosim.Core
             Nutrients = new NutrientField(
                 config.WorldAreaSquareMetres, config.LightLayerMetres,
                 config.NutrientSinkMetresPerSecond, config.WorldDepthMetres);
+
+            Matter = new NutrientField(
+                config.WorldAreaSquareMetres, config.LightLayerMetres,
+                config.MatterSinkMetresPerSecond, config.WorldDepthMetres);
+
+            // Seeded uniformly and never created again. Everything after this is redistribution:
+            // reproduction takes it out of a layer, death puts it back into one.
+            if (config.InitialMatterPerCubicMetre > 0f)
+            {
+                float perLayer = config.InitialMatterPerCubicMetre * Matter.LayerVolume;
+                for (int i = 0; i < Matter.LayerCount; i++)
+                {
+                    Matter.Deposit(-((i + 0.5f) * Matter.LayerMetres), perLayer);
+                }
+            }
+
             Seed = seed;
         }
 
@@ -241,11 +289,13 @@ namespace Evosim.Core
 
             Metabolise(seconds);
             Nutrients.Settle(seconds);
+            Matter.Settle(seconds);
 
             // Stirred after it sinks, in the same step. The two are opposed — one carries detritus
             // down and the other spreads it back through the column — and whether the world has a
             // nutrient gradient or a line on the floor is the balance between them (D036).
             Nutrients.Mix(seconds, Config.NutrientMixingDiffusivity);
+            Matter.Mix(seconds, Config.MatterMixingDiffusivity);
             Reproduce();
             EnforceFloor();
             EnforceCeiling();
@@ -376,6 +426,20 @@ namespace Evosim.Core
                 // anything other than a plant can live, and the reason the doomed half of
                 // generation zero is the world's first food rather than merely a waste of seeds.
                 Nutrients.Deposit(creature.HeightY, creature.TissueJoules);
+
+                // The matter that tissue cost returns to the layer the body died in, and sinks
+                // from there — which is why the deep is rich and the surface is not. Floor
+                // founders are exempt because they never paid: they are the one way a creature
+                // enters the world without a parent, and crediting their tissue to a pool they
+                // never drew from would create matter out of nothing. Identified by having no
+                // parent rather than by a stored birth kind, which Organism does not keep.
+                float matterBack = Config.MatterPerTissueJoule * creature.TissueJoules;
+                if (matterBack > 0f && creature.ParentId >= 0)
+                {
+                    Matter.Deposit(creature.HeightY, matterBack);
+                    MatterInBodies -= matterBack;
+                }
+
                 creature.TissueJoules = 0f;
 
                 _living.RemoveAt(i);
@@ -447,6 +511,29 @@ namespace Evosim.Core
             float price = endowment + tissue + Config.PerOffspringOverheadJoules;
 
             if (parent.Energy < price) return false;
+
+            // Energy is necessary and, from D048, no longer sufficient. Tissue is matter, and a
+            // parent with sunlight to spare and nothing dissolved in the water around it does not
+            // breed. Drawn from the parent's own layer, so success at a depth depletes that
+            // depth — the negative feedback the world previously had nowhere at all.
+            float matterPrice = Config.MatterPerTissueJoule * tissue;
+
+            if (matterPrice > 0f)
+            {
+                // Checked before taking, not by taking. NutrientField.Take is a partial-take API:
+                // it removes min(asked, stock) and returns that. Calling it and bailing when the
+                // return is short removes the partial amount and then drops it on the floor, which
+                // leaks matter on every blocked conception — 132 units of 24,000 in a 400 s test,
+                // and it leaks fastest exactly when matter is scarce enough to matter.
+                if (Matter.StockInLayer(Matter.LayerOf(parent.HeightY)) < matterPrice)
+                {
+                    ConceptionsBlockedByMatter++;
+                    return false;
+                }
+
+                Matter.Take(parent.HeightY, matterPrice);
+                MatterInBodies += matterPrice;
+            }
 
             parent.Energy -= price;
 

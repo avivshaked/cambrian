@@ -253,6 +253,66 @@ namespace Evosim.Core
         public float NutrientSinkMetresPerSecond { get; set; } = 0.02f;
 
         /// <summary>
+        /// Matter a child's tissue costs, per joule of that tissue — D048. Zero disables the
+        /// whole mechanism.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The point is not the cost, it is who pays it.</b> Until D048 the producer consumed
+        /// nothing: <c>PhotosyntheticCell.Acquire</c> returns light and draws no pool, so nothing a
+        /// creature did made its own position worse, there was no negative feedback anywhere on
+        /// occupying the best spot, and every world sorted to the surface and stayed. The depth
+        /// axis was a ramp with its maximum at the boundary rather than a landscape.
+        /// </para>
+        /// <para>
+        /// Reproduction is the right place to charge it, and not only for convenience. §5A.6 has
+        /// no growth — tissue is created exactly once, when a child is made — and no amount of
+        /// sunlight builds a daughter cell without nitrogen and phosphorus. So a nutrient-starved
+        /// world does not kill its inhabitants; it stops them breeding, which is what actually
+        /// happens to a nutrient-limited bloom.
+        /// </para>
+        /// <para>
+        /// <b>Zero by default</b>, so §5A.2's ledger and every arm measured before D048 are
+        /// unchanged, and a run that turns this on says so in its own header and config hash.
+        /// ⚠ The ratio is unmeasured — pick it against
+        /// <see cref="InitialMatterPerCubicMetre"/> and read the blocked-conception count, which
+        /// is the only number that says whether matter is binding at all.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public float MatterPerTissueJoule { get; set; }
+
+        /// <summary>Matter the world starts with, per cubic metre — D048.</summary>
+        /// <remarks>
+        /// Seeded uniformly through the column and thereafter conserved: reproduction removes it
+        /// from the layer the parent is in, death returns it to the layer the body is in, and it
+        /// sinks and mixes like detritus. Nothing creates it, so the surface is stripped by
+        /// whatever succeeds there and the deep is fed by what dies and falls — which is the
+        /// ocean's actual vertical structure and the reason gas vesicles exist (D049).
+        /// </remarks>
+        [Tunable("world")]
+        public float InitialMatterPerCubicMetre { get; set; } = 1f;
+
+        /// <summary>How fast matter falls, m/s — D048.</summary>
+        /// <remarks>
+        /// Separate from <see cref="NutrientSinkMetresPerSecond"/> rather than shared. They
+        /// describe different things — corpses carrying energy, and dissolved matter — and a
+        /// single knob would make the deep-versus-graveyard trade-off inseparable from the
+        /// nutrient gradient this is meant to create.
+        /// </remarks>
+        [Tunable("world", Unit = "m/s")]
+        public float MatterSinkMetresPerSecond { get; set; } = 0.02f;
+
+        /// <summary>How strongly the water stirs matter vertically, m²/s — D048.</summary>
+        /// <remarks>
+        /// The counterweight to <see cref="MatterSinkMetresPerSecond"/>. With no mixing, matter
+        /// drains to the floor and the photic zone becomes permanently sterile — D036's failure,
+        /// in the currency that now gates reproduction rather than the one that gates feeding.
+        /// </remarks>
+        [Tunable("world", Unit = "m2/s")]
+        public float MatterMixingDiffusivity { get; set; } = 2f;
+
+        /// <summary>
         /// How strongly the water stirs detritus vertically, m²/s — §5A.4, D036.
         /// </summary>
         /// <remarks>

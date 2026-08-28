@@ -110,6 +110,14 @@ namespace Evosim.Sim.EditorTools
             // (logbook/0027) — and above it nothing holds station.
             float excessDensity = Env("EVOSIM_EXCESS_DENSITY", 0f);
 
+            // D048. Matter a child's tissue costs, per joule of it, and what the column starts
+            // with per cubic metre. 0 is the world as it was before D048 — producers consuming
+            // nothing, no negative feedback on occupying the best depth, every run sorting to the
+            // surface. Read the blocked-conception count: matter that never binds changes nothing
+            // and reads identically to matter that is switched off.
+            float matterPerTissue = Env("EVOSIM_MATTER_PER_TISSUE", 0f);
+            float initialMatter = Env("EVOSIM_MATTER_INITIAL", 1f);
+
             string outPath = Environment.GetEnvironmentVariable("EVOSIM_OUT");
             if (string.IsNullOrEmpty(outPath))
             {
@@ -148,6 +156,8 @@ namespace Evosim.Sim.EditorTools
             config.Genome.MaxLinkPower = maxPower;
             config.Genome.MinLinkPower = Math.Min(minPower, maxPower);
             config.Current.Speed = currentSpeed;
+            config.MatterPerTissueJoule = matterPerTissue;
+            config.InitialMatterPerCubicMetre = initialMatter;
             config.NutrientMixingDiffusivity = mixing;
             config.SenescenceDoublingSeconds = senescence;
             config.Mutation.CellTypeChance = cellTypeMutation;
@@ -185,6 +195,7 @@ namespace Evosim.Sim.EditorTools
                 " · clearance " + clearance +
                 " · linkPhoto " + linkPhoto +
                 " · excessDensity " + excessDensity + " kg/m3" +
+                " · matter " + matterPerTissue + "/J from " + initialMatter + "/m3" +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());
@@ -315,6 +326,9 @@ namespace Evosim.Sim.EditorTools
         /// The cumulative count answers that and the window count dates it.
         /// </remarks>
         private static long LastFloorSpawns;
+
+        /// <summary>Matter-blocked conceptions as of the previous row, so a row shows a rate.</summary>
+        private static long LastMatterBlocks;
 
 
         /// <summary>
@@ -497,6 +511,11 @@ namespace Evosim.Sim.EditorTools
                 .Field("meanAge", alive > 0 ? age / alive : 0d)
                 .Field("dayFactor", world.Field.DayFactor)
                 .Field("shading", 1d - world.Field.ShadingAt((float)meanDepth))
+                .Field("matterHere", world.Matter.DensityAt((float)meanDepth))
+                .Field("matterSurface", world.Matter.DensityAt(0f))
+                .Field("matterDeep", world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f))
+                .Field("matterStanding", world.StandingMatter)
+                .Field("conceptionsBlockedByMatter", world.ConceptionsBlockedByMatter)
                 .Field("floorSpawns", world.FloorSpawns)
                 .Field("floorSpawnsWindow", world.FloorSpawns - LastFloorSpawns)
                 .Field("secondsSinceFloorFired", world.SecondsSinceFloorFired)
@@ -555,6 +574,14 @@ namespace Evosim.Sim.EditorTools
                 // D021: "fires at t=0 and never again". Anything but 0 after the first row says
                 // the world is being kept alive rather than staying alive, and every other
                 // number in the row is propped up by it.
+                // Surface against deep is the gradient D048 exists to create, and the pair says
+                // more than either alone: equal numbers mean matter is not binding anywhere.
+                world.Matter.DensityAt(0f).ToString("0.###", c),
+                world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f)
+                    .ToString("0.###", c),
+                // Conceptions refused for want of matter rather than energy. Zero means the
+                // mechanism is on and doing nothing, which looks like off in every other column.
+                "**" + (world.ConceptionsBlockedByMatter - LastMatterBlocks).ToString(c) + "**",
                 "**" + (world.FloorSpawns - LastFloorSpawns).ToString(c) + "**",
                 genMin.ToString(c),
                 genMax.ToString(c),
@@ -562,6 +589,7 @@ namespace Evosim.Sim.EditorTools
             };
 
             LastFloorSpawns = world.FloorSpawns;
+            LastMatterBlocks = world.ConceptionsBlockedByMatter;
 
             if (row.Count != Columns.Length)
             {
@@ -579,7 +607,8 @@ namespace Evosim.Sim.EditorTools
             "t (s)", "alive", "births", "deaths", "**jointed**", "jointed %", "**jnt inh**", "mean dof",
             "mean m/s", "max m/s", "work J/s", "work share", "**food %**", "**absorpt**", "**inherit**",
             "**detritus J**", "**J/m3 here**", "**% on floor**", "depth m", "**depth sd**",
-            "**rise m**", "age s", "sun", "**shade %**", "**floor**", "gen min", "gen max", "audit",
+            "**rise m**", "age s", "sun", "**shade %**",
+            "mat top", "mat deep", "**mat blk**", "**floor**", "gen min", "gen max", "audit",
         };
 
         private static string Header() =>
