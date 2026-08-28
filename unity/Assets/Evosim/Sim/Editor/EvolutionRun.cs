@@ -58,6 +58,20 @@ namespace Evosim.Sim.EditorTools
             float idle = Env("EVOSIM_IDLE", 0.02f);
             float maxPower = Env("EVOSIM_MAXPOWER", 120f);
 
+            // The FLOOR of the capacity draw, and the knob D031 and D032 both left alone while
+            // sweeping the ceiling. It is the one that mattered: a survivor-sized creature is
+            // insolvent carrying any hinge above about 5 N·m, and MinLinkPower is 5 — so every
+            // jointed creature ever born started at or past break-even and died of arithmetic
+            // before its swimming was ever tested (D042).
+            float minPower = Env("EVOSIM_MINPOWER", 5f);
+
+            // Muscle that also earns. The 1.30 W a two-part flagellate forfeits by making one of
+            // its parts a link dominates the 0.51 W upkeep and 0.40 W idle charge together
+            // (logbook/0026), and no setting of those two can reach it. 0 is §5A.1 unchanged.
+            // Expressed as a fraction of green tissue's capture rate, not as an absolute
+            // efficiency: 0.5 means "half as good at light as a photosynthetic cell".
+            float linkPhoto = Env("EVOSIM_LINK_PHOTO", 0f);
+
             // The day/night cycle (D035). Mean-preserving, so amplitude 0 is exactly the acyclic
             // world every earlier number was measured in and the arms of a sweep stay comparable.
             float dayAmplitude = Env("EVOSIM_DAY_AMPLITUDE", 0f);
@@ -86,6 +100,12 @@ namespace Evosim.Sim.EditorTools
             // here because §5A.10 says an unmeasured claim must be one a run can vary.
             float clearance = Env("EVOSIM_CLEARANCE", 1.0f);
 
+            // How much denser than water tissue is, kg/m3. 0 is §5.2's neutral buoyancy, in which
+            // a creature stays exactly where it was born and doing nothing is optimal. The
+            // ceiling is what a joint can push against — 0.017 m/s for a founder body at 20 N.m
+            // (logbook/0027) — and above it nothing holds station.
+            float excessDensity = Env("EVOSIM_EXCESS_DENSITY", 0f);
+
             string outPath = Environment.GetEnvironmentVariable("EVOSIM_OUT");
             if (string.IsNullOrEmpty(outPath))
             {
@@ -103,6 +123,7 @@ namespace Evosim.Sim.EditorTools
 
             var config = new RunConfig
             {
+                Fluid = new FluidConfig { TissueExcessDensity = excessDensity },
                 Light = new LightModel(irradiance, 12f)
                 {
                     DayNightAmplitude = dayAmplitude,
@@ -110,7 +131,10 @@ namespace Evosim.Sim.EditorTools
                 },
                 CellTypes = new CellTypeRegistry(
                     new StructuralCell(),
-                    new LinkCell(idle),
+                    new LinkCell(
+                        idle,
+                        photosyntheticEfficiency:
+                            linkPhoto * PhotosyntheticCell.DefaultEfficiency),
                     new NeuralCell(),
                     new PhotosyntheticCell(),
                     new AbsorptiveCell(clearance),
@@ -118,6 +142,7 @@ namespace Evosim.Sim.EditorTools
             };
 
             config.Genome.MaxLinkPower = maxPower;
+            config.Genome.MinLinkPower = Math.Min(minPower, maxPower);
             config.Current.Speed = currentSpeed;
             config.NutrientMixingDiffusivity = mixing;
             config.SenescenceDoublingSeconds = senescence;
@@ -148,12 +173,14 @@ namespace Evosim.Sim.EditorTools
             report.AppendLine(
                 "Unity " + Application.unityVersion + " · dt=" + Ecosystem.FixedDt +
                 " · metabolic step " + (Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt) +
-                " s · seed " + seed + " · idle " + idle + " W/N·m · maxPower " + maxPower +
+                " s · seed " + seed + " · idle " + idle + " W/N·m · power " + minPower + "-" + maxPower +
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
                 " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
                 " · senescence " + (senescence > 0f ? senescence + " s" : "off") +
                 " · cellType mut " + cellTypeMutation +
                 " · clearance " + clearance +
+                " · linkPhoto " + linkPhoto +
+                " · excessDensity " + excessDensity + " kg/m3" +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());
@@ -184,7 +211,7 @@ namespace Evosim.Sim.EditorTools
 
                     if (metabolicSteps % reportEvery != 0) continue;
 
-                    report.AppendLine(Row(eco));
+                    report.AppendLine(Row(eco, dir));
                     Flush(outPath, report);
 
                     // Every tenth report: often enough that a killed run keeps something recent,
@@ -257,6 +284,18 @@ namespace Evosim.Sim.EditorTools
         /// </remarks>
         private static readonly HashSet<long> EverAbsorptive = new HashSet<long>();
 
+        /// <summary>Ids of every creature ever seen carrying a joint.</summary>
+        /// <remarks>
+        /// The same trick as <see cref="EverAbsorptive"/>, for the same reason and a worse
+        /// problem. The population floor (<see cref="RunConfig.MinimumPopulation"/>) trickles
+        /// fresh generation-zero founders in whenever the world falls below it, and founders
+        /// are jointed about two times in five — so in a world that spends its life at the
+        /// floor, the jointed *share* is largely a readout of the founder draw rather than of
+        /// anything selection did. Counting the ones whose parent was also jointed separates
+        /// "joints keep arriving" from "joints are being kept".
+        /// </remarks>
+        private static readonly HashSet<long> EverJointed = new HashSet<long>();
+
 
         /// <summary>
         /// Write every living creature's genome to <c>snapshots/&lt;t&gt;.jsonl</c>, one per line.
@@ -299,13 +338,25 @@ namespace Evosim.Sim.EditorTools
             }
         }
 
-        private static string Row(Ecosystem eco)
+        /// <summary>
+        /// One sample: the markdown table row, and — when a run directory exists — the matching
+        /// <c>stats.jsonl</c> row.
+        /// </summary>
+        /// <remarks>
+        /// <b>Both are built here, from the same locals, deliberately.</b> §9 specifies
+        /// <c>stats.jsonl</c> and <see cref="RunDirectory"/> has opened the writer since it was
+        /// built, but nothing ever called it: every run this project has produced has an empty
+        /// <c>stats.jsonl</c> and exists only as a markdown table a human can read and nothing can
+        /// plot. Writing it from a second pass over the population would let the two drift, and a
+        /// stats file that disagrees with the report is worse than no stats file.
+        /// </remarks>
+        private static string Row(Ecosystem eco, RunDirectory dir)
         {
             World world = eco.World;
 
             double spend = 0d, workSpend = 0d, depth = 0d, light = 0d, food = 0d;
             double travelled = 0d, age = 0d;
-            int jointed = 0, dof = 0, absorptive = 0, inherited = 0;
+            int jointed = 0, jointedInherited = 0, dof = 0, absorptive = 0, inherited = 0;
             int genMin = int.MaxValue, genMax = 0;
 
             for (int i = 0; i < world.Living.Count; i++)
@@ -358,7 +409,12 @@ namespace Evosim.Sim.EditorTools
                     creatureDof += part.JointType.DofCount();
                 }
 
-                if (creatureDof > 0) jointed++;
+                if (creatureDof > 0)
+                {
+                    jointed++;
+                    EverJointed.Add(creature.Id);
+                    if (EverJointed.Contains(creature.ParentId)) jointedInherited++;
+                }
                 dof += creatureDof;
 
                 // §5A.6b's instrument: a minimum generation depth above zero means no living
@@ -391,6 +447,40 @@ namespace Evosim.Sim.EditorTools
             double residual = world.EnergyIn > 0d ? 100d * world.AuditResidual / world.EnergyIn : 0d;
             double seconds = Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt;
 
+            // The same sample, as data. Raw numbers and no percentages: a reader can divide, and
+            // a stored percentage loses the denominator that says whether it means anything —
+            // "food 100%" over two joules and over two hundred thousand are the same column.
+            dir?.Stats.WriteRow(w => w
+                .Field("t", world.ElapsedSeconds)
+                .Field("alive", alive)
+                .Field("births", world.Births)
+                .Field("deaths", world.Deaths)
+                .Field("jointed", jointed)
+                .Field("jointedInherited", jointedInherited)
+                .Field("dof", dof)
+                .Field("meanSpeed", eco.MeanSpeed)
+                .Field("maxSpeed", eco.MaxSpeed)
+                .Field("workJoulesPerSecond", eco.WorkThisStep / seconds)
+                .Field("spendJoules", spend)
+                .Field("workJoules", workSpend)
+                .Field("lightJoules", light)
+                .Field("foodJoules", food)
+                .Field("absorptive", absorptive)
+                .Field("absorptiveInherited", inherited)
+                .Field("detritusJoules", world.Nutrients.TotalJoules)
+                .Field("detritusHere", world.Nutrients.DensityAt((float)meanDepth))
+                .Field("detritusOnFloor",
+                    world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1))
+                .Field("meanHeight", meanDepth)
+                .Field("heightSd", depthSd)
+                .Field("meanRise", alive > 0 ? travelled / alive : 0d)
+                .Field("meanAge", alive > 0 ? age / alive : 0d)
+                .Field("dayFactor", world.Field.DayFactor)
+                .Field("shading", 1d - world.Field.ShadingAt((float)meanDepth))
+                .Field("generationMin", genMin)
+                .Field("generationMax", genMax)
+                .Field("auditResidual", world.AuditResidual));
+
             var c = CultureInfo.InvariantCulture;
 
             // Built column by column rather than through a positional format string. That string
@@ -406,6 +496,7 @@ namespace Evosim.Sim.EditorTools
                 world.Deaths.ToString(c),
                 "**" + jointed.ToString(c) + "**",
                 (alive > 0 ? 100d * jointed / alive : 0d).ToString("0.#", c) + "%",
+                "**" + jointedInherited.ToString(c) + "**",
                 (alive > 0 ? (double)dof / alive : 0d).ToString("0.##", c),
                 eco.MeanSpeed.ToString("0.####", c),
                 eco.MaxSpeed.ToString("0.####", c),
@@ -456,7 +547,7 @@ namespace Evosim.Sim.EditorTools
         /// <summary>Column headers. The single source of the table's shape — see <c>Row</c>.</summary>
         private static readonly string[] Columns =
         {
-            "t (s)", "alive", "births", "deaths", "**jointed**", "jointed %", "mean dof",
+            "t (s)", "alive", "births", "deaths", "**jointed**", "jointed %", "**jnt inh**", "mean dof",
             "mean m/s", "max m/s", "work J/s", "work share", "**food %**", "**absorpt**", "**inherit**",
             "**detritus J**", "**J/m3 here**", "**% on floor**", "depth m", "**depth sd**",
             "**rise m**", "age s", "sun", "**shade %**", "gen min", "gen max", "audit",

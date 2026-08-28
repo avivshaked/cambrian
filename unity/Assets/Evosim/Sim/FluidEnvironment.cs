@@ -238,6 +238,8 @@ namespace Evosim.Sim
             }
 
             // ---- apply (main thread)
+            float excessDensity = Config.TissueExcessDensity;
+
             for (int c = 0; c < creatures.Count; c++)
             {
                 CreatureInstance creature = creatures[c];
@@ -251,6 +253,25 @@ namespace Evosim.Sim
 
                     body.AddForce(_force[at + i]);
                     body.AddTorque(_torque[at + i]);
+
+                    // Excess weight, applied here rather than in Compute because it does not
+                    // depend on velocity — drag does, and the balance of the two is what sets the
+                    // terminal sink rate without anyone choosing it. mass is volume x water
+                    // density, so dividing by the *same* constant PhenotypeBuilder used recovers
+                    // the volume the buoyancy acts on. Not FluidConfig.Density: that is a
+                    // [Tunable] and a sweep of it would silently rescale every creature's weight
+                    // through a term that has nothing to do with how its mass was assigned. Gravity itself stays off (§5.2): this is the *difference*
+                    // between weight and upthrust, which is all that a neutrally buoyant world was
+                    // ever missing.
+                    if (excessDensity > 0f)
+                    {
+                        body.AddForce(
+                            new Vector3(
+                                0f,
+                                -excessDensity * body.mass * GravityMetresPerSecondSquared /
+                                    PhenotypeBuilder.DensityKgPerM3,
+                                0f));
+                    }
 
                     if (stepSeconds > 0f)
                     {
@@ -273,6 +294,13 @@ namespace Evosim.Sim
         /// unaffected by any of it.
         /// </remarks>
         private const int ParallelThreshold = 64;
+
+        /// <summary>
+        /// Standard gravity, m/s². Used only to weigh <see cref="FluidConfig.TissueExcessDensity"/>
+        /// — <see cref="UnityEngine.Physics.gravity"/> stays at zero (§5.2), so this is a constant
+        /// in a buoyancy term rather than a field acting on the scene.
+        /// </summary>
+        private const float GravityMetresPerSecondSquared = 9.81f;
 
         private void Compute(int i)
         {

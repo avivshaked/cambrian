@@ -58,6 +58,47 @@ namespace Evosim.Core
         public float AddedMassCoefficient { get; set; }
 
         /// <summary>Water, with drag only. The state DESIGN.md §5.4 warns is not enough.</summary>
+        /// <summary>
+        /// How much denser than the water a creature's tissue is, kg/m³. 0 is neutral buoyancy.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Neutral buoyancy is a rare state that organisms spend energy to maintain, and §5.2
+        /// hands it out for free.</b> With gravity disabled a creature stays exactly where it was
+        /// born, so doing nothing is not merely cheap but optimal, and the population reaches the
+        /// best depth by differential survival rather than by swimming (D036, logbook/0027). Most
+        /// cells are denser than seawater; flagella in phytoplankton are largely anti-sinking
+        /// machinery, and holding station is the oldest thing motility is for.
+        /// </para>
+        /// <para>
+        /// <b>An excess density and not a sink rate</b>, because the rate is what the physics
+        /// should decide: a body sinks until §5.2's drag balances its excess weight, so shape
+        /// pays exactly as it does for swimming, and a flat body that collects more light also
+        /// sinks more slowly. Setting a velocity directly would make sinking a property of the
+        /// world rather than of the creature, and would hand every body the same answer.
+        /// </para>
+        /// <para>
+        /// ⚠ Unmeasured (§5A.10), and not transferable from biology: diatoms run 5–75 kg/m³ over
+        /// seawater and sink at ~1 m/day, but they are microscopic and in Stokes flow, while these
+        /// bodies are tenths of a metre in quadratic drag. Calibrate against the observable — the
+        /// terminal sink rate — and not against a real organism's density. <b>The ceiling is what
+        /// a joint can push against: 0.017 m/s for a founder-shaped body at 20 N·m</b>
+        /// (logbook/0027). Above that nothing holds station and the world drowns.
+        /// </para>
+        /// <para>
+        /// ⚠ <b>Non-zero values invalidate §11.2's momentum check by construction.</b> That check
+        /// asserts that with no gravity, drag or contact nothing external acts on a creature, so
+        /// internal forces alone cannot move its centre of mass — and this is an external force.
+        /// It is a real exemption and not an oversight: the check must be run at 0, which is the
+        /// default and is what every harness uses. The metabolic audit is unaffected, because
+        /// sinking moves a creature without moving a joule — buoyancy does mechanical work and the
+        /// economy of §5A counts food, so there is no free lunch to find here. Going back up still
+        /// costs, and up is where the light is.
+        /// </para>
+        /// </remarks>
+        [Tunable("fluid")]
+        public float TissueExcessDensity { get; set; }
+
         public static FluidConfig DragOnly => new FluidConfig();
 
         public FluidConfig Clone() => new FluidConfig

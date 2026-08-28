@@ -51,7 +51,16 @@ namespace Evosim.Core.Tests
             string runs = Path.Combine(root, "runs");
             if (!Directory.Exists(runs)) { _output.WriteLine("no runs/ — skipped"); return; }
 
-            string[] snapshots = Directory.GetFiles(runs, "*.jsonl", SearchOption.AllDirectories);
+            // Only the snapshot directories. A run directory holds other .jsonl files — stats.jsonl
+            // is one, and lineage.jsonl will be another — and "every .jsonl under runs/" quietly
+            // meant "every genome" only for as long as genomes were the sole thing written as
+            // rows. Feeding a stats row to the genome reader is a test failure that reports a
+            // corrupt genome, which is the most misleading thing this suite could say.
+            string[] snapshots = Directory.GetFiles(
+                runs, "*.jsonl", SearchOption.AllDirectories);
+            snapshots = Array.FindAll(
+                snapshots,
+                f => Path.GetFileName(Path.GetDirectoryName(f)) == "snapshots");
             if (snapshots.Length == 0) { _output.WriteLine("no snapshots — skipped"); return; }
 
             int files = 0, genomes = 0, parts = 0, neurons = 0;

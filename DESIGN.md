@@ -771,6 +771,26 @@ it.
 | **Consumer** | Tissue on contact — living or dead | See §5A.3. Works on carrion without perception, which is what makes it survivable early |
 | **Structural** | Nothing | Cheapest upkeep, but **not free** — see §5A.2 |
 | **Neural** | Nothing | Hosts neurons cheaply. Makes a *brain* a morphological trait — see below |
+| **Link** | Nothing *by default* | The only type that may carry a joint, so the only source of motion. See below — the default is now a setting rather than a rule |
+
+**Link tissue and whether a muscle may earn.** A link was given no income for the same reason
+`Structural` has none: it is not a feeding organ. The consequence was not noticed for four months.
+Because intake scales with volume, making one part of a two-part creature a link forfeits **1.30 W**
+of photosynthesis — more than the link's own upkeep (0.51 W) and idle capacity charge (0.40 W)
+together. A joint's *best possible* case is therefore costing nothing and earning nothing, which
+loses to a photosynthetic part of the same volume at every price. Four sweeps of the other two terms
+found nothing alive with a joint, and could not have (D042, D043, logbook/0026, logbook/0027).
+
+`LinkCell.PhotosyntheticEfficiency` makes this a measured parameter (§5A.10) rather than a rule,
+expressed as a fraction of `PhotosyntheticCell.DefaultEfficiency`. **It defaults to 0, which is this
+section exactly as written above**, so every number recorded before 2026-08-28 stands unchanged.
+
+The biological case for it being non-zero is that motility did not begin as inert tissue: a
+flagellum is an organelle on a metabolically productive cell, not a segment bolted to one.
+*Chlamydomonas* swims and photosynthesises with a single cell, and the choanoflagellates animals
+descend from feed with the collar that drives the flagellum. A muscle that earns nothing describes a
+large animal, not the first thing that moved. ⚠ At a fraction of 1.0 the trade-off disappears and a
+joint drifts neutrally rather than being selected, which is as uninformative as never affording one.
 
 **Why `Neural` exists, and it is this section's own argument turned on cognition.** The thesis
 above is that energy acquisition is a property of a part rather than of a creature, and that

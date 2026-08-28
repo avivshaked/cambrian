@@ -87,3 +87,6 @@ are the ones most likely to go unwritten.
 | [0024](0024-the-larder-filled-and-nobody-came.md) | 2026-08-27 | The larder filled, and nobody came |
 | [0025](0025-something-ate-something.md) | 2026-08-27 | Something ate something |
 | [0026](0026-nothing-was-ever-eliminated-for-swimming-badly.md) | 2026-08-28 | Nothing was ever eliminated for swimming badly |
+| [0027](0027-the-prize-was-smaller-than-the-entry-fee.md) | 2026-08-28 | The prize was smaller than the entry fee |
+| [0028](0028-the-canopy-closed-and-the-scavengers-came.md) | 2026-08-28 | The canopy closed, and the scavengers came |
+| [0029](0029-the-floor-kept-putting-the-muscles-back.md) | 2026-08-28 | The floor kept putting the muscles back |

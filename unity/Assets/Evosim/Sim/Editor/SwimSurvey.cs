@@ -120,6 +120,22 @@ namespace Evosim.Sim.EditorTools
             FluidEnvironment.ConfigureScene(selfCollision: true);
 
             var config = new RunConfig();
+
+            // Calibration instrument as well as a survey. With tissue denser than water, the
+            // *median* net rise is the terminal sink rate of a creature that cannot swim — the
+            // median brain is unselected and rises 0.0000 m in still water — while the best is
+            // what a good stroke wins back against it. Reading both is how a sink rate gets
+            // chosen against an observable rather than against arithmetic on a drag coefficient.
+            string rawDensity = Environment.GetEnvironmentVariable("EVOSIM_EXCESS_DENSITY");
+            if (!string.IsNullOrEmpty(rawDensity) &&
+                float.TryParse(rawDensity, NumberStyles.Float, CultureInfo.InvariantCulture,
+                    out float excess))
+            {
+                config.Fluid.TissueExcessDensity = excess;
+            }
+
+            report.AppendLine(
+                $"TissueExcessDensity {config.Fluid.TissueExcessDensity:0.####} kg/m3");
             config.Genome.MaxLinkPower = MaxLinkPower();
 
             var fluid = new FluidEnvironment(config.Fluid, config.Shapes);

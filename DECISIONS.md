@@ -1684,3 +1684,217 @@ about what a muscle *is* in this world, not a calibration.
 ⚠ **Unestablished: whether an affordable joint is any use.** All of the above is arithmetic on a
 developed body — no physics, no thrust, no swimming. A 5 N·m hinge on a 0.34 m³ body may produce
 nothing worth having, in which case the fix is elsewhere entirely. That measurement needs a run.
+
+---
+
+### D043
+**Muscle may earn, because the term nobody swept is the one that dominates** · 2026-08-28
+
+[D042](#d042) priced a 20 N·m hinge on a survivor-sized two-part creature at 2.22 W against a
+surplus of 1.92 W, and closed by refusing to pick which of four knobs should move. This picks one,
+and it picks it on arithmetic rather than preference: of that 2.22 W, **1.30 W is neither upkeep
+nor idle capacity — it is the photosynthesis the same volume would have done.** The other two terms
+together are 0.91 W, less than three quarters of it.
+
+**Every sweep this project has run moved one of the small two.** D031 and D032 swept actuator
+power; the two probes of 2026-08-28 moved `MinLinkPower` to 1–4 N·m and `IdleWattsPerNewtonMetre`
+to a tenth. The weak probe put a joint genuinely below break-even and **joints still reached 0% by
+t=7,500 while the run went on to generation 36.** Cheapness is not enough, and it cannot be, because
+§5A.1 makes a link's best possible case *earning nothing* — and nothing loses to a photosynthetic
+cell of the same volume earning 0.96 W, at every price. **No setting of the swept knobs can reach a
+term they do not contain.**
+
+**Chosen: `LinkCell.PhotosyntheticEfficiency`, defaulting to 0 — §5A.1 unchanged.** What is added is
+the ability to ask the question, not an answer to it. At 0 every earlier number stands exactly.
+`JointMarginTests` pins the arithmetic: insolvent at 0 (−0.2956 W), solvent at half of green
+tissue's capture rate, and still behind two photosynthetic parts at full rate — so the trade-off is
+priced rather than abolished. Expressed as a *fraction of* `PhotosyntheticCell.DefaultEfficiency`
+rather than as an absolute, after a first attempt that read 20× high because 1.0 meant "all incident
+light" instead of "as good as a leaf".
+
+**Why this and not the other three knobs, on biology.** Motility did not begin as inert tissue a
+body had to afford. It began in cells that swam and fed at once: *Chlamydomonas* photosynthesises
+and swims with one cell, and the choanoflagellates the animals descend from feed with the collar
+that drives their flagellum. A flagellum is an organelle on a productive cell, not a segment bolted
+to one. **A muscle that earns nothing is a large-animal arrangement, and §5A.1 charges it to the
+first thing that ever moved.** The three rejected knobs all make muscle cheaper; only this one makes
+it *ancestral*.
+
+**Rejected: bigger founders.** [D042](#d042) shows three parts carries a 20 N·m hinge at +1.63 W, and
+raising `Founder`'s body count is a two-line change. It is an engineering workaround with no
+biological claim behind it — evolution made muscle affordable by fusing it with metabolism, not by
+growing large first, and growing large first is the thing that could not happen because the
+intermediate buys nothing.
+
+**Rejected for now: negative buoyancy.** The strongest real mechanism — most cells are denser than
+seawater and flagella in phytoplankton are largely anti-sinking machinery, so immobility carries a
+continuous cost. It contradicts §5.2, which disables gravity to obtain neutral buoyancy on Sims'
+own wording, and [D036](#d036) rejected the neighbouring "make creatures faster" for building a
+different world rather than a calibrated one. Worth a probe, after this one.
+
+⚠ **Still unestablished, and unchanged from [D042](#d042): whether an affordable joint is any use.**
+This makes one affordable. Whether a hinge on a 0.34 m³ body produces thrust worth having is a
+measurement that needs a run, and two are in flight — `linkearn` at 0.5, and `daynight` at
+`DayNightAmplitude` 1 testing [D035](#d035)'s cycle in the world [D037](#d037) finally gave it.
+
+**Amended the same day, by the arm it authorised.** `linkearn` ran at 0.5 and **link tissue was
+gone from the population by t=3,000** — not the joints only, the cell type. The pricing says why,
+and it is the error this project keeps making:
+
+```
+two photosynthetic parts, no joint :  1.9239 W
+one part + 20 N.m hinge, photo 0.50:  0.6999 W   solvent — and 36% of the plant
+one part + 20 N.m hinge, photo 1.00:  1.6954 W   solvent — and 88% of the plant
+```
+
+**Solvency was never the bar; out-reproducing is.** §5A.6 pays for offspring out of surplus, so a
+creature banking at 36% of its neighbours' rate is outbred and gone regardless of being comfortably
+alive. That is [D039](#d039) and [D042](#d042) again, and `linkearn` is the **fourth** arm in a row
+built to reach break-even when the requirement was competitiveness.
+
+**And the ceiling is structural.** At a fraction of 1.0 — muscle as good at light as a leaf, the
+literal *Chlamydomonas* case — a jointed creature still reaches only 88% of a plant, because the
+idle capacity charge does not scale away. **No setting of this knob alone can make a joint
+competitive**, and the test written to guard the change asserts exactly that domination. The arm's
+own guard guaranteed it could not succeed.
+
+What this establishes is a *requirement*, which is worth more than the arm was: **movement must be
+worth more than 12% of a creature's income**, since that is what the best possible muscle still
+gives away. It is currently worth about 7% (≈0.13 W against 1.92 W) and realised at 0%. So the cost
+side is now closed — it is bounded at 88% and cannot reach — and every remaining option is on the
+prize side.
+
+⚠ [D035](#d035)'s cycle alone is also closed: `daynight` at amplitude 1 kept `linkPhoto` at 0, so its
+joints were fully insolvent at −0.30 W and died by t=5,000 having never been affordable. Affordability
+and a reason to move are each useless without the other, and were run as separate arms when they
+had to be one. `linkday` — fraction 1.0 with amplitude 1 — is that arm, and is the first test in
+this project's history in which a joint is both affordable and has something to buy.
+
+---
+
+### D044
+**Tissue is denser than water, because staying still has to cost something** · 2026-08-28
+
+[D043](#d043) closed the cost side: the best possible muscle reaches 88% of a plant and cannot do
+better, so a joint must *earn* its keep and the only thing it can buy is position. This is the
+mechanism that makes position worth buying.
+
+**First, the measurement that should have preceded all of it.** `SwimSurvey` had measured signed
+vertical displacement since logbook/0018 and nobody had read it as a thrust curve. Founder-shaped
+bodies, best of 200, 20 s, no gravity, no contact:
+
+| joint capacity | sustained vertical |
+|---|---|
+| 5 N·m | 0.008 m/s |
+| **20 N·m** | **0.017 m/s** |
+| 60 N·m | 0.029 m/s |
+| 120 N·m | 0.052 m/s |
+
+**A hinge on a two-part body produces real directed thrust.** The question open since
+[D042](#d042) — *is an affordable joint any use?* — is answered yes. Every failure recorded in
+D042 and D043 was an affordability failure and none was ever about swimming. The median is 0.0000 m
+at every capacity, which is correct for unselected random brains and makes this a bound on what
+selection could find, from below.
+
+**Chosen: `FluidConfig.TissueExcessDensity`, kg/m³ over the water, defaulting to 0.** At 0 this is
+§5.2 exactly — the same survey returns byte-identical numbers — so nothing measured before today
+moves. Above 0 a creature sinks out of the light unless it swims, and *"doing nothing"* stops being
+free. §5A.6 already called per-part density "a tempting knob — swim bladders are cheap and
+biological — but a second system, deferred": one global constant is not that second system, and
+evolvable per-part density stays deferred.
+
+**An excess density, not a sink rate**, so the physics decides the rate: a body sinks until §5.2's
+drag balances its excess weight, and a flat body that collects more light also sinks more slowly.
+Shape therefore pays twice, through one mechanism, without anyone arranging it.
+
+**Calibrated against the observable, because the arithmetic was wrong by 10×.** Predicting the sink
+rate from quadratic drag gave 0.011 kg/m³ for 0.01 m/s. Measured, with the median brain — which
+cannot swim, so its net displacement *is* the terminal sink:
+
+| excess density | sink rate |
+|---|---|
+| 0.001 kg/m³ | 0.0001 m/s |
+| 0.01 kg/m³ | 0.00097 m/s |
+| 0.1 kg/m³ | 0.0089 m/s |
+
+**Linear, not square-root** — at hundredths of a metre per second these bodies are not in the
+quadratic regime the estimate assumed. Real densities do not transfer either: diatoms run 5–75 kg/m³
+over seawater, but they are microscopic and in Stokes flow while these are tenths of a metre.
+
+**0.15 kg/m³ for the first arm, and the margin is the point.** Averaging income over the descent
+rather than taking its endpoint, a non-swimmer at the resulting ~0.013 m/s loses **~30%** of lifetime
+income against a muscle costing **12%** — a ratio of 2.5. At 0.1 kg/m³ it would have been 1.75, and
+**every arm this project has run at a ratio near 1 has failed**: D031, D032, the two joint probes,
+and `linkearn`. The requirement is not to clear the bar but to clear it visibly. The sink also stays
+under the 0.017 m/s a founder can already swim, so holding station is achievable rather than
+notional, and a partial swimmer sinks proportionately more slowly — [D036](#d036)'s "continuous
+returns from arbitrarily close to zero", finally available to the photosynthetic majority instead of
+to a 0.01% minority.
+
+⚠ **Non-zero values invalidate §11.2's momentum check by construction**, which asserts that nothing
+external acts on a creature. That is an exemption, not an oversight: the check runs at 0, which is
+the default and what every harness uses. The metabolic audit is untouched — sinking moves a creature
+without moving a joule.
+
+**Amended the same day: 0.15 kg/m³ drowned the world, and the reason was never buoyancy.** `sink`
+ran its full 40,000 s and ended **alive=40, generation 0** — every living creature a floor spawn,
+nothing ever bred, mean lifetime expenditure 241 J against 87 J of income. Work share stayed between
+0.2% and 5.8% throughout, so station-keeping was never the expense.
+
+The missing measurement, taken afterwards and belonging before every arm of the day:
+
+| depth | irradiance | net W |
+|---|---|---|
+| 0 m | 64.00 | +2.6460 |
+| −8 m | 32.86 | +0.3571 |
+| **−10 m** | **27.81** | **−0.0136** |
+| −20 m | 12.09 | −1.1695 |
+
+**The habitable band is eight metres.** The sink rate above was chosen against what a joint can push
+(0.017 m/s) and never against where a creature can live; it carried the population to −19 m, more
+than twice the band, and a world with no solvent depth reports exactly what a world with no reason
+to swim reports.
+
+Three consequences that outlive this arm:
+
+- **Surface sorting was never a preference.** Mean height of +0.7 to +5.4 m across every run is the
+  top of an 8 m band.
+- **`FounderDepthSpread` is 20 m**, so a large fraction of founders in every run ever performed are
+  born below −10 m and cannot survive at any depth they were placed.
+- **Depth as a selectable axis is capped by irradiance.** Band depth is `12·ln(I_surface / 27.8)`:
+  8 m at 64 W/m², 24 m at 200. Eight metres is 0.67 attenuation lengths, so income varies by at most
+  51% across the whole livable world and a descent worth 27% would consume most of it.
+
+**Irradiance and buoyancy have room together that neither has alone**, and it is not a coincidence:
+§5A.2b holds irradiance at 64 because light covering upkeep completely is what makes a runaway, and
+a sink is a cost that restores the pressure a brighter world removes. `sink-lit` tests the pair —
+200 W/m² for a 24 m band, 0.13 kg/m³ for an 8 m lifetime descent, giving a 27% prize against the
+muscle's 12% at a ratio of 2.25, with the required 0.0116 m/s inside the 0.0168 m/s a founder can
+already swim. ⚠ A runaway at 200 W/m² is a possible and informative outcome ([D021](#d021)), not a
+failure.
+
+**Second amendment: the coupling is confirmed, and the density window is what is being searched.**
+Three arms at 200 W/m² differing only in `TissueExcessDensity`:
+
+| arm | density | outcome |
+|---|---|---|
+| `lit` | 0 | **RUNAWAY at t=938 s, 5,008 alive** |
+| `sink-lit` | 0.13 | pinned at the population floor, 40–113 alive, search-limited |
+| `sink-slow` | 0.02 | 217 alive at t=1,000 and growing |
+
+**A bright world alone is untenable and a sink is what makes it affordable.** §5A.2b holds
+irradiance at 64 because light covering upkeep completely is the runaway condition; `lit` reproduces
+that in 938 seconds at 200. The same world with a sink does not run away — buoyancy restores exactly
+the pressure brightness removes. That was the argument for pairing them and this is the measurement.
+
+⚠ What remains unknown is whether the window between "runs away" and "cannot sustain a population"
+contains anything, and whether a joint is selected inside it. `sink-mid` at 0.05 brackets it.
+
+**And a consequence of the band that outlives all of this.** `World.SpawnFounders` places founders
+at `-rng.Range(0, FounderDepthSpread)` — uniform over 20 m — with a comment describing it as "the
+lit zone". The lit zone is 9.75 m at 64 W/m². **Fifty-one per cent of every floor spawn is born
+below break-even**, in every run this project has performed, which halves the mutational supply
+exactly where the open questions turn on whether a rare variant can be found at all. Not changed
+here: [D036](#d036)'s objection to shrinking the spread is untouched by this, and the fix is to
+derive it from the light model rather than pick a smaller constant.
+`MostFoundersAreBornSomewhereTheyCanLive` is the invariant that would have caught it.

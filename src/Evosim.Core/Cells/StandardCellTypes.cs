@@ -90,7 +90,41 @@ namespace Evosim.Core
         /// </remarks>
         public float IdleWattsPerNewtonMetre { get; }
 
-        public LinkCell(float idleWattsPerNewtonMetre = 0.02f, float upkeepWattsPerCubicMetre = 2.5f)
+        /// <summary>
+        /// Fraction of incident light this tissue captures, as a photosynthetic cell would.
+        /// Zero — the default — restores §5A.1's rule that muscle earns nothing.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why muscle is allowed to earn at all.</b> §5A.1 charges a link for its volume and
+        /// pays it nothing, so a two-part flagellate forfeits half its income to carry one hinge:
+        /// 1.30 W of the 2.22 W a 20 N·m joint costs is not upkeep or idle capacity at all, it is
+        /// the photosynthesis the same volume would have done (logbook/0026). That term dominates
+        /// the other two together, and no setting of either can reach it — which is why four
+        /// separate sweeps of actuator cost found nothing alive with a joint.
+        /// </para>
+        /// <para>
+        /// <b>It is also what biology did.</b> Motility did not begin as a separate inert tissue
+        /// that a body had to afford; it began in cells that swam and fed at once — a flagellum
+        /// is an organelle on a metabolically productive cell, not a segment bolted to one.
+        /// <i>Chlamydomonas</i> photosynthesises and swims with the same cell, and the
+        /// choanoflagellates the animals came from feed with the collar that drives their
+        /// flagellum. A muscle that earns nothing is a late, large-animal arrangement being
+        /// charged to the first thing that ever moved.
+        /// </para>
+        /// <para>
+        /// ⚠ Unmeasured (§5A.10), and deliberately defaulted to zero so that no existing run
+        /// changes behaviour. At 1.0 a link is a photosynthetic cell that also moves, the
+        /// trade-off disappears and joints drift neutrally rather than being selected — which
+        /// would be as uninformative as never affording one.
+        /// </para>
+        /// </remarks>
+        public float PhotosyntheticEfficiency { get; }
+
+        public LinkCell(
+            float idleWattsPerNewtonMetre = 0.02f,
+            float upkeepWattsPerCubicMetre = 2.5f,
+            float photosyntheticEfficiency = 0f)
             : base(upkeepWattsPerCubicMetre)
         {
             if (idleWattsPerNewtonMetre <= 0f)
@@ -99,18 +133,32 @@ namespace Evosim.Core
                     nameof(idleWattsPerNewtonMetre), idleWattsPerNewtonMetre,
                     "Capacity with no standing cost is free capacity, and evolution takes all of it.");
             }
+            if (photosyntheticEfficiency < 0f || photosyntheticEfficiency > 1f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(photosyntheticEfficiency), photosyntheticEfficiency, "Must be in [0, 1].");
+            }
             IdleWattsPerNewtonMetre = idleWattsPerNewtonMetre;
+            PhotosyntheticEfficiency = photosyntheticEfficiency;
         }
 
         public override string Id => CellTypeIds.Link;
         public override bool AllowsJoint => true;
-        public override CellIntake Acquire(in CellContext context) => CellIntake.None;
+        public override CellIntake Acquire(in CellContext context) =>
+            PhotosyntheticEfficiency > 0f
+                ? CellIntake.Light(
+                    Math.Max(0f, context.Irradiance) * Math.Max(0f, context.LitArea) *
+                    PhotosyntheticEfficiency * context.Seconds)
+                : CellIntake.None;
 
         /// <summary>Amber — muscle. The only type that can move, so it should read at a glance.</summary>
         public override Float3 InspectionColour => new Float3(0.95f, 0.55f, 0.15f);
 
-        public override void WriteParameters(Json.Writer writer) =>
+        public override void WriteParameters(Json.Writer writer)
+        {
             writer.Field("idleWattsPerNewtonMetre", IdleWattsPerNewtonMetre);
+            writer.Field("photosyntheticEfficiency", PhotosyntheticEfficiency);
+        }
 
         public override float Upkeep(in CellContext context) =>
             base.Upkeep(context) +
@@ -120,8 +168,9 @@ namespace Evosim.Core
         public override string HashContribution() =>
             string.Format(
                 CultureInfo.InvariantCulture,
-                "{0}:upkeep={1:R},joint={2},idle={3:R}",
-                Id, UpkeepWattsPerCubicMetre, AllowsJoint, IdleWattsPerNewtonMetre);
+                "{0}:upkeep={1:R},joint={2},idle={3:R},photo={4:R}",
+                Id, UpkeepWattsPerCubicMetre, AllowsJoint, IdleWattsPerNewtonMetre,
+                PhotosyntheticEfficiency);
     }
 
     /// <summary>
@@ -239,7 +288,13 @@ namespace Evosim.Core
         /// <summary>Fraction of incident light captured.</summary>
         public float Efficiency { get; }
 
-        public PhotosyntheticCell(float efficiency = 0.05f, float upkeepWattsPerCubicMetre = 3f)
+        /// <summary>
+        /// The default capture fraction, named so that tissue defined as a fraction of green
+        /// tissue has one number to refer to — see <see cref="LinkCell.PhotosyntheticEfficiency"/>.
+        /// </summary>
+        public const float DefaultEfficiency = 0.05f;
+
+        public PhotosyntheticCell(float efficiency = DefaultEfficiency, float upkeepWattsPerCubicMetre = 3f)
             : base(upkeepWattsPerCubicMetre)
         {
             if (efficiency <= 0f || efficiency > 1f)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Evosim.Core;
 using Xunit;
 using Xunit.Abstractions;
@@ -261,6 +262,222 @@ namespace Evosim.Core.Tests
             _output.WriteLine($"  big enough for a 20 N·m hinge (>=3 parts): {100.0 * canCarryAJoint / Draws:0.#}%");
 
             Assert.True(meanParts > 0, "no founder developed into anything");
+        }
+
+        [Fact]
+        public void WhatTheJointProbesActuallyMadeAffordable()
+        {
+            // Checking my own experiment rather than its result. Two probes were launched to ask
+            // whether an affordable joint is useful, and the question is only answerable if they
+            // made one. The three charges are 1.30 W of forfeited photosynthesis, 0.51 W of
+            // higher link upkeep, and 0.40 W of idle capacity — and BOTH probes moved only the
+            // last, which is the smallest.
+            var cases = new (string name, float power, float idle)[]
+            {
+                ("control     (5-20 N·m, idle 0.02)",  20f,  0.02f),
+                ("joint-weak  (1-4 N·m,  idle 0.02)",   2.5f, 0.02f),
+                ("joint-strong(10-20 N·m, idle 0.002)", 15f,  0.002f),
+            };
+
+            foreach (var c in cases)
+            {
+                var config = new RunConfig { Light = new LightModel(64f, 12f) };
+                config.Genome.MaxLinkPower = 120f;
+                config.CellTypes = new CellTypeRegistry(
+                    new StructuralCell(), new LinkCell(c.idle), new NeuralCell(),
+                    new PhotosyntheticCell(), new AbsorptiveCell(), new ConsumerCell());
+
+                var plant = Price(config, TwoPart(CellTypeIds.Photosynthetic, 0f, JointType.Fixed));
+                var hinge = Price(config, TwoPart(CellTypeIds.Link, c.power, JointType.Hinge));
+
+                _output.WriteLine(
+                    $"{c.name,-34} jointless {plant.net,7:0.###} W -> jointed {hinge.net,7:0.###} W " +
+                    $"({100f * hinge.net / plant.net,5:0.#}% of it)");
+            }
+
+            _output.WriteLine("");
+            _output.WriteLine(
+                "If the probe arms sit near zero rather than comfortably positive, they are " +
+                "break-even arms, and break-even is not viability (§5A.6d). They would then be " +
+                "unable to answer whether a joint is USEFUL, because no creature in them can " +
+                "afford to find out.");
+        }
+        /// <summary>
+        /// Muscle that earns is the only term big enough to make a two-part flagellate solvent.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The three charges on a 20 N·m hinge are 1.30 W of forfeited photosynthesis, 0.51 W of
+        /// link upkeep and 0.40 W of idle capacity (logbook/0026). Every sweep this project has
+        /// run — D031, D032, and the two probes of 2026-08-28 — moved one of the second two, which
+        /// together are less than half the first. This asserts the arithmetic that says they could
+        /// not have worked, and that the remaining term can.
+        /// </para>
+        /// <para>
+        /// The claim is deliberately about <i>solvency</i> and not about swimming. Whether an
+        /// affordable joint is any use is the measurement logbook/0026 named as still open, and it
+        /// needs a run rather than a test.
+        /// </para>
+        /// </remarks>
+        [Fact]
+        public void MuscleThatEarnsIsWhatMakesATwoPartFlagellateSolvent()
+        {
+            Genome jointless = TwoPart(CellTypeIds.Photosynthetic, 0f, JointType.Fixed);
+            Genome jointed = TwoPart(CellTypeIds.Link, 20f, JointType.Hinge);
+
+            var rows = new List<(float photo, float net)>();
+
+            foreach (float photo in new[] { 0f, 0.25f, 0.5f, 1f })
+            {
+                RunConfig config = World();
+                config.CellTypes = new CellTypeRegistry(
+                    new StructuralCell(),
+                    new LinkCell(
+                        0.02f,
+                        photosyntheticEfficiency: photo * PhotosyntheticCell.DefaultEfficiency),
+                    new NeuralCell(),
+                    new PhotosyntheticCell(),
+                    new AbsorptiveCell(),
+                    new ConsumerCell());
+
+                (float net, _, _) = Price(config, jointed);
+                rows.Add((photo, net));
+            }
+
+            (float plantNet, _, _) = Price(World(), jointless);
+
+            _output.WriteLine($"two photosynthetic parts, no joint : {plantNet,8:F4} W");
+            foreach ((float photo, float net) in rows)
+            {
+                _output.WriteLine(
+                    $"one part + 20 N.m hinge, linkPhoto {photo:F2} : {net,8:F4} W" +
+                    (net > 0f ? "  solvent" : "  insolvent"));
+            }
+
+            // The world as it stands: insolvent before it actuates once. This is D042.
+            Assert.True(rows[0].net < 0f, $"expected insolvent at linkPhoto 0, got {rows[0].net}");
+
+            // And solvent once the forfeited income is returned. Half is enough, which is the
+            // point: the term is large enough that it does not need to be taken all the way.
+            Assert.True(
+                rows[2].net > 0f,
+                $"expected solvent at linkPhoto 0.5, got {rows[2].net}");
+
+            // Still worse than simply being a plant, or the trade-off has been abolished rather
+            // than priced and a joint would drift neutrally instead of being selected.
+            Assert.True(
+                rows[3].net < plantNet,
+                $"a fully photosynthetic link ({rows[3].net}) must still lose to two green " +
+                $"parts ({plantNet}), or there is no cost to carrying a joint at all");
+        }
+        /// <summary>
+        /// How deep a creature can live, which bounds everything sinking could ever be worth.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Income falls exponentially with depth and upkeep does not fall at all, so there is a
+        /// depth below which nothing solvent exists. That depth is the <i>whole</i> arena any
+        /// depth-based selection pressure has to work in: a sink that carries a creature past it
+        /// does not make swimming valuable, it makes the world uninhabitable, and the run reports
+        /// the same thing either way — a population pinned at the floor with generation 0.
+        /// </para>
+        /// <para>
+        /// This is what the <c>sink</c> arm of 2026-08-28 needed and did not have. It ran at
+        /// 0.15 kg/m³, carrying creatures to −20 m, and spent 40,000 s entirely floor-fed while
+        /// mean lifetime expenditure ran at 2.7x mean lifetime income (logbook/0027).
+        /// </para>
+        /// </remarks>
+        [Fact]
+        public void HowDeepACreatureCanStillPayItsBills()
+        {
+            Genome plant = TwoPart(CellTypeIds.Photosynthetic, 0f, JointType.Fixed);
+            RunConfig config = World();
+
+            _output.WriteLine($"{"depth m",8} {"irradiance",11} {"net W",10}");
+
+            float lastSolvent = 0f, firstInsolvent = float.NaN;
+
+            for (float depth = 0f; depth >= -40f; depth -= 2f)
+            {
+                Phenotype body = Developer.Develop(
+                    plant, config.Development, shapes: config.Shapes);
+
+                float irradiance = config.Light.IrradianceAt(depth);
+                EnergyLedger led = Metabolism.StepAt(
+                    body, config, irradiance,
+                    nutrientDensity: 0f, workJoules: 0f, seconds: 1f);
+
+                _output.WriteLine($"{depth,8:F0} {irradiance,11:F2} {led.Net,10:F4}");
+
+                if (led.Net > 0f) lastSolvent = depth;
+                else if (float.IsNaN(firstInsolvent)) firstInsolvent = depth;
+            }
+
+            _output.WriteLine("");
+            _output.WriteLine(
+                $"solvent to {lastSolvent:F0} m; insolvent from {firstInsolvent:F0} m. " +
+                $"Habitable band {Math.Abs(lastSolvent):F0} m.");
+
+            // A band at all, or depth cannot be a gradient and no sink rate is survivable.
+            Assert.True(
+                lastSolvent < 0f,
+                "nothing is solvent below the surface, so depth is not a selectable axis");
+
+            // And a bounded one — if a creature is solvent at 40 m the light model is not
+            // attenuating and the depth column in every run means nothing.
+            Assert.False(
+                float.IsNaN(firstInsolvent),
+                "solvent at every depth to 40 m: attenuation is not biting");
+        }
+        /// <summary>
+        /// What fraction of founders are born somewhere they can pay their bills.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Founders are scattered over <see cref="RunConfig.FounderDepthSpread"/> — 20 m — into a
+        /// habitable band that is 8 m at 64 W/m².</b> `World.SpawnFounders` places them at
+        /// <c>-rng.Range(0, spread)</c>, and its comment says "through the lit zone"; the lit zone
+        /// is where a creature is solvent, and that was never measured until 2026-08-28
+        /// (logbook/0027). Half of every floor spawn is therefore born below break-even, which
+        /// halves the mutational supply of every run this project has performed.
+        /// </para>
+        /// <para>
+        /// The default is not changed here. <b>Where founders start is a design decision</b> —
+        /// D036 rejected shrinking the spread on the grounds that it flattens the vertical
+        /// structure §5A.4 exists to provide, and that argument is untouched by this. What this
+        /// asserts is the weaker thing that has to hold for any run to mean anything: that a
+        /// world is not spawning founders almost entirely into water they cannot live in.
+        /// </para>
+        /// </remarks>
+        [Fact]
+        public void MostFoundersAreBornSomewhereTheyCanLive()
+        {
+            RunConfig config = World();
+            Genome plant = TwoPart(CellTypeIds.Photosynthetic, 0f, JointType.Fixed);
+            Phenotype body = Developer.Develop(plant, config.Development, shapes: config.Shapes);
+
+            // Walk down in fine steps; the last solvent depth is the bottom of the band.
+            float band = 0f;
+            for (float d = 0f; d >= -60f; d -= 0.25f)
+            {
+                EnergyLedger led = Metabolism.StepAt(
+                    body, config, config.Light.IrradianceAt(d),
+                    nutrientDensity: 0f, workJoules: 0f, seconds: 1f);
+                if (led.Net > 0f) band = -d; else break;
+            }
+
+            float spread = config.FounderDepthSpread;
+            float viable = Math.Min(1f, band / Math.Max(0.0001f, spread));
+
+            _output.WriteLine(
+                $"irradiance {config.Light.SurfaceIrradiance:F0} W/m2, habitable band {band:F2} m, " +
+                $"founder spread {spread:F0} m -> {viable * 100f:F0}% of founders born solvent");
+
+            Assert.True(
+                viable >= 0.25f,
+                $"only {viable * 100f:F0}% of founders are born above the break-even depth " +
+                $"({band:F2} m) given a spread of {spread:F0} m. Below a quarter, the floor is " +
+                "mostly manufacturing corpses and no run's mutational supply means what it says.");
         }
     }
 }
