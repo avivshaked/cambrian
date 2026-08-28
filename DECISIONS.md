@@ -2184,6 +2184,8 @@ the clamp is so far only a guard. It is still the right thing to have: a brain-d
 had gone extinct by t=1300, leaving detritus piling up unconsumed and half the population sunk on
 the sea bed as producers in the dark. Passive lift lets a lineage choose a depth; the world D048
 built has light at the top and matter at the bottom and rewards being in *both*, which is a case
-for D049's second step rather than against its first. Those arms also inherited `mixing 0` from
-`run-arm.ps1`'s defaults where D048's world used `mixing 2`, so the sterile-surface half of that
-reading is provisional (logbook/0034).
+for D049's second step rather than against its first. Re-run in D048's world (`mixing 2`, `current 0.05`,
+`senescence 3000`) the buoyancy result sharpens into a dose-response — extinct at sink 0.02,
+15% of the population and lift 2.06 at sink 0.1, the latter *above* the range a founder can be
+born into — while the trophic failure survives unchanged: `absorpt` reaches 0 there too. No world
+measured today held a food chain, and that is not a buoyancy problem (logbook/0034).

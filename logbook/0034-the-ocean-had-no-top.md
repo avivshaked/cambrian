@@ -134,14 +134,38 @@ places, and this world now requires exactly that.
 
 That is the measured case for D049's second step rather than an argument against its first.
 
-⚠ **These arms ran `mixing 0`, and D048's headline world ran `mixing 2`.** `run-arm.ps1` does not
-set it, so it defaulted away from the world the matter economy was measured in — the same trap
-as reading a share instead of an inheritance. With mixing off, matter never returns to the
-surface at all, so the light niche is sterile *by construction* and the 55× gradient is partly
-an artefact of the setting. `d050-mix-heavy` and `d050-mix-slow` re-run both arms with
-`mixing 2`, `current 0.05` and `senescence 3000`; until they land, the trophic half of the
-paragraph above is provisional and the buoyancy half is not — the organ's position-holding does
-not depend on where the matter is.
+## Re-run in D048's world
+
+Those arms had inherited `mixing 0` from `run-arm.ps1`'s defaults, where the matter economy was
+measured at `mixing 2` — the same class of trap as reading a share instead of an inheritance.
+`d050-mix-heavy` and `d050-mix-slow` re-run the pair with `mixing 2`, `current 0.05` and
+`senescence 3000`. ⚠ **That is three settings at once**, so what the comparison identifies is
+"D048's world against `run-arm`'s defaults", not mixing on its own. The sea-bed pile is the
+clearest casualty — `% on floor` 54.6% before against 2.6% after — and senescence is at least as
+likely a cause as mixing, since ageing removes the old rather than letting them settle. It is
+not attributed here because it was not measured.
+
+The buoyancy result survives the change, and sharpens into a dose-response:
+
+| sink | outcome at t=5000 |
+|---|---|
+| **0.02** | **buoyancy extinct at t=3100**, population 1,190 |
+| **0.1** | **15% buoyant, 65 of 68 inherited, lift 2.06**, population 442 |
+
+At 0.02 kg/m³ there is almost nothing to cancel, so the bladder is pure cost and selection
+deletes it. At 0.1 it sweeps: after the floor falls silent at t=2600 the population goes 46 → 442
+while the buoyant go 32 → 68, and **evolved lift reaches 2.06 — above the 0.25–2 range a founder
+can be born into**, so mutation is being selected past the founder draw rather than sampling it.
+The organ's worth scales with the sink it opposes, which is exactly what denominating it in
+sink-multiples was supposed to make legible.
+
+`flt m` printing an em-dash earned itself on the first run that used it: the extinction row would
+otherwise have read `lift 0, flt m 0`, which is indistinguishable from a population floating at
+the waterline.
+
+**The trophic failure survives the change too.** `absorpt` reaches 0 in both mixing arms as well,
+so no world measured today held a food chain, and the detritus goes on piling up. That is now the
+oldest open problem here and it is not a buoyancy problem.
 
 The units error **was not caught by a test and could not have been**. The netting that gives
 lift its meaning lives in `FluidEnvironment`, which is Unity-side and outside the one-second
