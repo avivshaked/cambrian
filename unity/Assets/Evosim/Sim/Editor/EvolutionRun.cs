@@ -118,6 +118,13 @@ namespace Evosim.Sim.EditorTools
             float matterPerTissue = Env("EVOSIM_MATTER_PER_TISSUE", 0f);
             float initialMatter = Env("EVOSIM_MATTER_INITIAL", 1f);
 
+            // D049. Chance a tail-less founder is born with a gas bladder, and what holding lift
+            // costs. 0 is a world where buoyancy has to be *found* by mutation rather than given
+            // — which of those happened is most of what D049 is trying to measure, so it shows in
+            // the header and the hash.
+            float floatChance = Env("EVOSIM_FOUNDER_FLOAT", 0f);
+            float liftCost = Env("EVOSIM_LIFT_COST", 0.05f);
+
             string outPath = Environment.GetEnvironmentVariable("EVOSIM_OUT");
             if (string.IsNullOrEmpty(outPath))
             {
@@ -150,7 +157,8 @@ namespace Evosim.Sim.EditorTools
                     new NeuralCell(),
                     new PhotosyntheticCell(),
                     new AbsorptiveCell(clearance),
-                    new ConsumerCell()),
+                    new ConsumerCell(),
+                    new BuoyancyCell(liftCost)),
             };
 
             config.Genome.MaxLinkPower = maxPower;
@@ -158,6 +166,7 @@ namespace Evosim.Sim.EditorTools
             config.Current.Speed = currentSpeed;
             config.MatterPerTissueJoule = matterPerTissue;
             config.InitialMatterPerCubicMetre = initialMatter;
+            config.Genome.FounderFloatChance = floatChance;
             config.NutrientMixingDiffusivity = mixing;
             config.SenescenceDoublingSeconds = senescence;
             config.Mutation.CellTypeChance = cellTypeMutation;
@@ -196,6 +205,7 @@ namespace Evosim.Sim.EditorTools
                 " · linkPhoto " + linkPhoto +
                 " · excessDensity " + excessDensity + " kg/m3" +
                 " · matter " + matterPerTissue + "/J from " + initialMatter + "/m3" +
+                " · float " + floatChance + " at " + liftCost + " W/lift" +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());
@@ -330,6 +340,9 @@ namespace Evosim.Sim.EditorTools
         /// <summary>Matter-blocked conceptions as of the previous row, so a row shows a rate.</summary>
         private static long LastMatterBlocks;
 
+        /// <summary>Ids of every creature ever seen holding lift — D049, same trick as EverJointed.</summary>
+        private static readonly HashSet<long> EverBuoyant = new HashSet<long>();
+
 
         /// <summary>
         /// Write every living creature's genome to <c>snapshots/&lt;t&gt;.jsonl</c>, one per line.
@@ -391,6 +404,8 @@ namespace Evosim.Sim.EditorTools
             double spend = 0d, workSpend = 0d, depth = 0d, light = 0d, food = 0d;
             double travelled = 0d, age = 0d;
             int jointed = 0, jointedInherited = 0, dof = 0, absorptive = 0, inherited = 0;
+            int buoyant = 0, buoyantInherited = 0;
+            double liftHeld = 0d;
             int genMin = int.MaxValue, genMax = 0;
 
             for (int i = 0; i < world.Living.Count; i++)
@@ -450,6 +465,26 @@ namespace Evosim.Sim.EditorTools
                     if (EverJointed.Contains(creature.ParentId)) jointedInherited++;
                 }
                 dof += creatureDof;
+
+                // Counted the same way and for the same reason as joints and feeding: a share is
+                // contaminated by whatever the founder draw happens to be, and only the inherited
+                // count separates "buoyancy keeps arriving" from "buoyancy is being kept"
+                // (logbook/0029). Total lift as well, because a lineage that holds a bladder and
+                // lets its lift decay to nothing is a lineage abandoning the organ while still
+                // being counted as having it.
+                float creatureLift = 0f;
+                foreach (PhenotypePart part in creature.Phenotype.Parts)
+                {
+                    if (part.CellTypeId == CellTypeIds.Buoyancy) creatureLift += part.Lift;
+                }
+
+                if (creatureLift > 0f)
+                {
+                    buoyant++;
+                    liftHeld += creatureLift;
+                    EverBuoyant.Add(creature.Id);
+                    if (EverBuoyant.Contains(creature.ParentId)) buoyantInherited++;
+                }
 
                 // §5A.6b's instrument: a minimum generation depth above zero means no living
                 // creature is a floor spawn, which is the definition of a world running itself.
@@ -511,6 +546,9 @@ namespace Evosim.Sim.EditorTools
                 .Field("meanAge", alive > 0 ? age / alive : 0d)
                 .Field("dayFactor", world.Field.DayFactor)
                 .Field("shading", 1d - world.Field.ShadingAt((float)meanDepth))
+                .Field("buoyant", buoyant)
+                .Field("buoyantInherited", buoyantInherited)
+                .Field("liftHeld", liftHeld)
                 .Field("matterHere", world.Matter.DensityAt((float)meanDepth))
                 .Field("matterSurface", world.Matter.DensityAt(0f))
                 .Field("matterDeep", world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f))
@@ -576,6 +614,12 @@ namespace Evosim.Sim.EditorTools
                 // number in the row is propped up by it.
                 // Surface against deep is the gradient D048 exists to create, and the pair says
                 // more than either alone: equal numbers mean matter is not binding anywhere.
+                // Count, inherited count, and mean lift among those that hold any. The share alone
+                // repeats logbook/0029's mistake; the mean separates a lineage that keeps the
+                // organ from one that keeps the label.
+                "**" + buoyant.ToString(c) + "**",
+                "**" + buoyantInherited.ToString(c) + "**",
+                (buoyant > 0 ? liftHeld / buoyant : 0d).ToString("0.##", c),
                 world.Matter.DensityAt(0f).ToString("0.###", c),
                 world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f)
                     .ToString("0.###", c),
@@ -608,6 +652,7 @@ namespace Evosim.Sim.EditorTools
             "mean m/s", "max m/s", "work J/s", "work share", "**food %**", "**absorpt**", "**inherit**",
             "**detritus J**", "**J/m3 here**", "**% on floor**", "depth m", "**depth sd**",
             "**rise m**", "age s", "sun", "**shade %**",
+            "**float**", "**flt inh**", "lift",
             "mat top", "mat deep", "**mat blk**", "**floor**", "gen min", "gen max", "audit",
         };
 

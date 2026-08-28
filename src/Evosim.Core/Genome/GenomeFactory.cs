@@ -302,6 +302,25 @@ namespace Evosim.Core
         [Tunable("genome")]
         public float FounderTailChance { get; set; } = 0.5f;
 
+        /// <summary>
+        /// Chance a founder without a tail gets a gas bladder instead — D049.
+        /// </summary>
+        /// <remarks>
+        /// The same argument <see cref="FounderTailChance"/> makes, for the organ that is three
+        /// billion years older. A bladder is reachable by mutation — a node added, then its cell
+        /// type changed at <c>CellTypeChance</c> = 0.001 — and the intermediate is viable, so
+        /// there is no valley to cross; but "reachable eventually" and "reachable inside a run"
+        /// are different claims, and the tail is handed out at even odds precisely because the
+        /// difference matters.
+        ///
+        /// <b>Zero by default</b>, unlike the tail. Turning it on is a per-run choice that shows
+        /// in the header and the config hash, so a world where buoyancy was *given* is never
+        /// confused with one where it was *found* — and which of those happened is most of what
+        /// D049 is trying to measure.
+        /// </remarks>
+        [Tunable("genome")]
+        public float FounderFloatChance { get; set; }
+
         public static RandomGenomeOptions Default => new RandomGenomeOptions();
     }
 
@@ -463,6 +482,33 @@ namespace Evosim.Core
                 // One edge, square onto a face, no reflection and no tilt. A bilateral pair or a
                 // tilted attachment is morphology, and morphology is what this is refusing to
                 // hand out.
+                genome.Nodes[0].Edges.Add(new MorphEdge
+                {
+                    Child = 1,
+                    ParentAnchor = AxisVector(1, 1f),
+                    ChildAnchor = AxisVector(1, -1f),
+                    Orientation = Quat.Identity,
+                    Scale = new Float3(1f, 1f, 1f),
+                });
+            }
+            // Short-circuited on the chance itself, not left to rng.Chance(0f). Chance consumes a
+            // draw whichever way it answers, so calling it unconditionally would shift the random
+            // stream for every run that has this switched off — and "off changes nothing" is the
+            // property that lets a new knob be added without invalidating what came before.
+            else if (options.FounderFloatChance > 0f && rng.Chance(options.FounderFloatChance))
+            {
+                // A bladder instead of a tail — the Archean answer to the same question the tail
+                // is the Cambrian answer to. Mutually exclusive with the tail rather than stacked,
+                // so a founder is a blob, a flagellate, or a float, and the three are comparable.
+                MorphNode bladder = RandomBodyCell(rng, options);
+                bladder.CellTypeId = CellTypeIds.Buoyancy;
+                bladder.JointType = JointType.Fixed;
+                bladder.JointLimits = Array.Empty<Float2>();
+                bladder.Power = 0f;
+                bladder.Lift = rng.Range(options.MinBuoyancyLift, options.MaxBuoyancyLift);
+                bladder.RecursiveLimit = 1;
+                genome.Nodes.Add(bladder);
+
                 genome.Nodes[0].Edges.Add(new MorphEdge
                 {
                     Child = 1,

@@ -92,8 +92,21 @@ namespace Evosim.Core
         /// It is a real exemption and not an oversight: the check must be run at 0, which is the
         /// default and is what every harness uses. The metabolic audit is unaffected, because
         /// sinking moves a creature without moving a joule — buoyancy does mechanical work and the
-        /// economy of §5A counts food, so there is no free lunch to find here. Going back up still
-        /// costs, and up is where the light is.
+        /// economy of §5A counts food, so there is no free lunch to find here.
+        /// </para>
+        /// <para>
+        /// <b>D049 puts a second force under the same exemption, with the opposite sign.</b>
+        /// <see cref="BuoyancyCell"/> lets a part cancel some of its own weight, and
+        /// <c>FluidEnvironment</c> nets the two into one term — a part that lifts more than it
+        /// weighs rises. The momentum check is invalidated by a creature carrying lift for exactly
+        /// the same reason and must likewise be run without one. There is still no free lunch: lift
+        /// is billed per unit held, every step, whether or not it is buying anything.
+        /// </para>
+        /// <para>
+        /// ⚠ The older note here said "going back up still costs, and up is where the light is."
+        /// Only the first half survives D048. Up is where the light is and <b>down is where the
+        /// matter is</b>, and reproduction now needs both — which is what makes depth a trade
+        /// rather than a climb, and what gives a buoyancy cell something to be for.
         /// </para>
         /// </remarks>
         [Tunable("fluid")]

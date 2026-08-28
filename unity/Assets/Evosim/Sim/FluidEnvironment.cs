@@ -263,12 +263,23 @@ namespace Evosim.Sim
                     // through a term that has nothing to do with how its mass was assigned. Gravity itself stays off (§5.2): this is the *difference*
                     // between weight and upthrust, which is all that a neutrally buoyant world was
                     // ever missing.
-                    if (excessDensity > 0f)
+                    // D049: a buoyancy cell cancels some of its own weight. Netted against the
+                    // excess above rather than applied separately, because they are the same
+                    // term with opposite signs — one force, one sign, and a part that lifts
+                    // more than it weighs rises. Lift is per part and zero on every cell type
+                    // but Buoyancy, so a creature's depth is decided by which of its parts hold
+                    // gas and how much, which is what makes it a morphological trait.
+                    float lift = i < creature.Phenotype.Parts.Count
+                        ? creature.Phenotype.Parts[i].Lift
+                        : 0f;
+                    float netDensity = excessDensity - lift;
+
+                    if (netDensity != 0f)
                     {
                         body.AddForce(
                             new Vector3(
                                 0f,
-                                -excessDensity * body.mass * GravityMetresPerSecondSquared /
+                                -netDensity * body.mass * GravityMetresPerSecondSquared /
                                     PhenotypeBuilder.DensityKgPerM3,
                                 0f));
                     }
