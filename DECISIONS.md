@@ -64,6 +64,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D039](#d039) | The trophic niche is arrival-limited, not viability-limited — measure the margin, not the break-even | 2026-08-27 | active · open question resolved by D040 |
 | [D040](#d040) | The world grew a food chain, and the binding constraint is now throughput | 2026-08-27 | active |
 | [D041](#d041) | Filtering clearance 0.5 → 1.0 — the two trades want opposite bodies | 2026-08-27 | active |
+| [D042](#d042) | Joints were never affordable — D031 and D032 swept the wrong side of a line at 5 N·m | 2026-08-28 | active |
 
 ---
 
@@ -1627,3 +1628,59 @@ comparison spanning this entry are not comparable. `EVOSIM_CLEARANCE` exists so 
 ⚠ **Unmeasured in the world.** The margins above are arithmetic on a developed body; whether a
 population actually splits into a lit canopy and a filtering deep is the run this authorises, not
 a result it reports.
+
+---
+
+### D042
+**Joints were never affordable — D031 and D032 swept the wrong side of a line at 5 N·m** · 2026-08-28
+
+Nothing in this project has ever evolved a working muscle. [D031](#d031) and [D032](#d032) swept
+actuator cost across irradiances from 64 to 400 W/m², found nothing alive with a joint at any
+setting, and concluded the failure was not a knob. **It is a knob, and the sweeps ran entirely above
+the value that mattered.**
+
+**A link is charged three times, and none of the charges requires it to move.**
+`LinkCell.Acquire` returns `CellIntake.None`, so link tissue earns nothing at all. For a real
+creature — half-extent 0.35 m, which is what survivors measure — carrying one 20 N·m hinge:
+
+| | |
+|---|---|
+| income forfeited by non-earning tissue | 1.30 W |
+| link tissue's higher base upkeep (2.5 vs 1.0 W/m³) | 0.51 W |
+| idle capacity charge, 0.02 × power × dof | 0.40 W |
+| **total** | **2.22 W**, against a surplus of **1.92 W** |
+
+**115% of everything the creature earns.** Measured directly: two photosynthetic parts net
+**+1.92 W**; one part plus an idle hinge nets **−0.30 W**. Insolvent before actuating once.
+
+**The solvency threshold is 5 N·m, and `MinLinkPower` is 5.** Capacity is drawn uniformly from
+[5, 20], so the *minimum possible draw* sits exactly at break-even and everything above it is
+insolvent. D031 and D032 swept `MaxLinkPower` at 8, 20, 60 and 120 — all above the line — while
+`MinLinkPower` was never touched in any arm.
+
+**And size cannot rescue it, because nothing selects for size.** The fixed charges amortise: at
+three parts a 20 N·m hinge is comfortably solvent (+1.63 W). But 2,000 founder draws give a mean of
+**1.51 parts**, **0%** at three or more, and **every jointed founder is exactly two parts** — one
+photosynthetic, one link. Escaping needs a third part first, and a 3-part jointless creature earns
+no more per unit tissue than a 1-part one, so the intermediate step buys nothing. (Development is
+not the culprit: **100%** of the genome reaches the body. `MinNodes`/`MaxNodes` of 2–5 belong to
+`GenomeFactory.Random`, not `Founder`.)
+
+**So the failure is not behavioural.** Nothing has ever been eliminated for swimming badly; jointed
+creatures die of arithmetic before behaviour is tested, and "are joints useless?" has never been an
+askable question because an affordable joint has never existed here.
+
+**Structurally identical to [D039](#d039), three days apart.** A trade priced at break-even, where
+break-even is not viability because §5A.6 pays for offspring out of surplus. §5A.6d was written two
+days ago about absorptive cells and closes with a warning — *"any claim of the form 'X is not viable
+because the world only produces Y' is suspect until restated as a margin"* — that applied to joints
+the whole time, in the same document.
+
+⚠ **No fix is chosen here, deliberately.** Four different knobs produce that 2.22 W —
+`MinLinkPower`, `IdleWattsPerNewtonMetre`, link tissue upkeep, and §5A.1's rule that link tissue
+cannot earn — and only the first has been examined. Which one should move is a design decision
+about what a muscle *is* in this world, not a calibration.
+
+⚠ **Unestablished: whether an affordable joint is any use.** All of the above is arithmetic on a
+developed body — no physics, no thrust, no swimming. A 5 N·m hinge on a 0.34 m³ body may produce
+nothing worth having, in which case the fix is elsewhere entirely. That measurement needs a run.

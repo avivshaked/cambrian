@@ -86,3 +86,4 @@ are the ones most likely to go unwritten.
 | [0023](0023-nothing-died-of-old-age.md) | 2026-08-26 | Nothing died of old age |
 | [0024](0024-the-larder-filled-and-nobody-came.md) | 2026-08-27 | The larder filled, and nobody came |
 | [0025](0025-something-ate-something.md) | 2026-08-27 | Something ate something |
+| [0026](0026-nothing-was-ever-eliminated-for-swimming-badly.md) | 2026-08-28 | Nothing was ever eliminated for swimming badly |
