@@ -155,3 +155,8 @@ spikes/**/results/*.csv
 # Moving an output location means the OLD ignore rule no longer covers it — check
 # `git status` after any such change (logbook/0003).
 artifacts/
+
+# Parallel run workers — clones of unity/ created by scripts/new-worker.ps1 so that two
+# batchmode processes never share one Library/. Everything in them is either a copy of
+# unity/ or regenerated, so tracking them would duplicate every script in the repository.
+unity-w*/
