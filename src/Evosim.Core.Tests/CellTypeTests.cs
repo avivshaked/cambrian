@@ -335,5 +335,86 @@ namespace Evosim.Core.Tests
                 }
             }
         }
+
+        // ---------------------------------------------------------- D049: buoyancy
+
+        [Fact]
+        public void HoldingGasCostsSomethingWhetherOrNotItIsUseful()
+        {
+            // The same argument as LinkCell's idle charge, and it has to hold for the same reason:
+            // free lift runs away to whatever ceiling exists and every creature returns to the
+            // surface, which is the world D048 was built to escape. Real gas vesicles are protein
+            // shells that cost to build and to keep from imploding.
+            var cell = new BuoyancyCell();
+
+            float none = cell.Upkeep(new CellContext(1f, volume: 0.01f, lift: 0f));
+            float some = cell.Upkeep(new CellContext(1f, volume: 0.01f, lift: 1f));
+            float lots = cell.Upkeep(new CellContext(1f, volume: 0.01f, lift: 10f));
+
+            _output.WriteLine($"lift 0 / 1 / 10 costs {none:0.#####} / {some:0.#####} / {lots:0.#####} J");
+
+            Assert.True(some > none, "lift is free");
+            Assert.True(lots > some, "lift does not scale with how much is held");
+
+            // And it earns nothing, like structural tissue. A bladder has to pay for itself
+            // entirely through where it puts the rest of the body.
+            Assert.Equal(0f, cell.Acquire(new CellContext(1f, volume: 1f, litArea: 1f, irradiance: 500f)).Total);
+        }
+
+        [Fact]
+        public void LiftOnAnythingButABuoyancyCellIsRejected()
+        {
+            // Same rule as Power on a rigid part: a genome must not record a trait the phenotype
+            // cannot express and nothing charges for, or selection is being shown a creature that
+            // does not exist.
+            Genome g = GenomeFactory.RandomViable(
+                new Rng(4), RandomGenomeOptions.Default, DevelopmentLimits.Default, minParts: 2);
+
+            foreach (MorphNode node in g.Nodes)
+            {
+                node.CellTypeId = CellTypeIds.Photosynthetic;
+                node.JointType = JointType.Fixed;
+                node.JointLimits = Array.Empty<Float2>();
+                node.Power = 0f;
+                node.Lift = 0f;
+            }
+
+            Assert.Empty(g.Validate());
+
+            g.Nodes[0].Lift = 2f;
+            Assert.Contains(g.Validate(), i => i.Contains("Lift"));
+        }
+
+        [Fact]
+        public void LiftReachesThePhenotypeOrNothingIsEverChargedForIt()
+        {
+            // The genome is not what gets billed — Metabolism reads PhenotypePart. A lift that
+            // develops to zero is a trait a creature pays nothing for and gains nothing from,
+            // which is indistinguishable in every column from not having the mutation at all.
+            //
+            // Only the positive case is asserted. The negative one — lift surviving onto some
+            // other cell type — cannot be reached: Develop validates first, and Validate rejects
+            // it. LiftOnAnythingButABuoyancyCellIsRejected covers that end.
+            Genome g = GenomeFactory.RandomViable(
+                new Rng(9), RandomGenomeOptions.Default, DevelopmentLimits.Default, minParts: 2);
+
+            foreach (MorphNode node in g.Nodes)
+            {
+                node.CellTypeId = CellTypeIds.Buoyancy;
+                node.JointType = JointType.Fixed;
+                node.JointLimits = Array.Empty<Float2>();
+                node.Power = 0f;
+                node.Lift = 3f;
+            }
+
+            Assert.Empty(g.Validate());
+
+            Phenotype buoyant = Developer.Develop(g, DevelopmentLimits.Default, null, null);
+
+            _output.WriteLine($"{buoyant.Parts.Count} parts, lift {buoyant.Parts[0].Lift}");
+
+            Assert.NotEmpty(buoyant.Parts);
+            Assert.All(buoyant.Parts, p => Assert.Equal(3f, p.Lift));
+        }
     }
 }

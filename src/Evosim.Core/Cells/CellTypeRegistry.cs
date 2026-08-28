@@ -40,7 +40,8 @@ namespace Evosim.Core
             new NeuralCell(),
             new PhotosyntheticCell(),
             new AbsorptiveCell(),
-            new ConsumerCell());
+            new ConsumerCell(),
+            new BuoyancyCell());
 
         public CellTypeRegistry(params CellType[] types)
         {

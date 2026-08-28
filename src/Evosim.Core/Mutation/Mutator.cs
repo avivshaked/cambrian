@@ -130,7 +130,7 @@ namespace Evosim.Core
             if (rng.Chance(rates.ShapeChance)) node.ShapeId = PickOther(
                 PartShapeRegistry.Standard, node.ShapeId, rng);
 
-            if (rng.Chance(rates.CellTypeChance)) ChangeCellType(node, rng, cellTypes);
+            if (rng.Chance(rates.CellTypeChance)) ChangeCellType(node, rng, cellTypes, genome);
 
             // After a possible cell-type change, because whether a joint is even legal here
             // depends on what the part is now made of.
@@ -146,6 +146,15 @@ namespace Evosim.Core
                         Math.Max(1e-3f, Math.Abs(node.JointLimits[i].Y)), rng, rates);
                     node.JointLimits[i] = new Float2(-magnitude, magnitude);
                 }
+            }
+
+            // D049. Perturbed like any other scalar, and bounded because the ceiling is a solver
+            // limit rather than an economic one — BuoyancyCell's charge is what is meant to hold
+            // it down, and if it does not, that is a finding rather than something to clamp away.
+            if (node.CellTypeId == CellTypeIds.Buoyancy)
+            {
+                node.Lift = Math.Min(
+                    BuoyancyCell.MaxLiftKgPerCubicMetre, PerturbPositive(node.Lift, rng, rates));
             }
 
             for (int e = node.Edges.Count - 1; e >= 0; e--)
@@ -184,13 +193,27 @@ namespace Evosim.Core
         /// surrender its capacity — a real cost, and the right one. It is what makes this a
         /// genuine trade rather than a free relabelling.
         /// </remarks>
-        private static void ChangeCellType(MorphNode node, Rng rng, CellTypeRegistry cellTypes)
+        private static void ChangeCellType(
+            MorphNode node, Rng rng, CellTypeRegistry cellTypes, RandomGenomeOptions genome)
         {
             var ids = new List<string>();
             foreach (string id in cellTypes.Ids()) if (id != node.CellTypeId) ids.Add(id);
             if (ids.Count == 0) return;
 
             node.CellTypeId = ids[rng.Range(ids.Count)];
+
+            // Lift belongs to a buoyancy cell and to nothing else — Genome.Validate rejects it
+            // anywhere else — so a type change repairs it rather than leaving an invalid genome
+            // for the assertion at the end of Mutate to catch.
+            //
+            // A cell becoming buoyant is *drawn* a lift rather than started at zero, for the same
+            // reason a node acquiring a joint is drawn a capacity: PerturbPositive is relative,
+            // so from 0 it reaches 1e-4 and never climbs out. A trait that can only arrive
+            // useless is a trait selection never sees. Bounds come from the same options founders
+            // use, which is D045's rule after two hardcoded ceilings drifted apart.
+            node.Lift = node.CellTypeId == CellTypeIds.Buoyancy
+                ? rng.Range(genome.MinBuoyancyLift, genome.MaxBuoyancyLift)
+                : 0f;
 
             if (!cellTypes.Resolve(node.CellTypeId).AllowsJoint && node.JointType.DofCount() > 0)
             {

@@ -59,6 +59,23 @@ namespace Evosim.Core
         public float Power { get; set; }
 
         /// <summary>
+        /// Weight this node's tissue cancels, in kg/m³ of displaced water — buoyancy cells only,
+        /// DESIGN.md §5A.1, D049.
+        /// </summary>
+        /// <remarks>
+        /// Evolvable and paid for, exactly as <see cref="Power"/> is:
+        /// <see cref="BuoyancyCell"/> charges a standing cost proportional to it whether or
+        /// not it is holding the creature anywhere useful. Zero on anything that is not a
+        /// buoyancy cell, and <c>Genome.Validate</c> enforces that so a cell type nothing reads
+        /// it on cannot carry meaningful data.
+        ///
+        /// Lift rather than density: being heavier than water is already free (§5.2 and D044's
+        /// <c>TissueExcessDensity</c>), so the thing that needs an organ, a price and a genome
+        /// field is going up.
+        /// </remarks>
+        public float Lift { get; set; }
+
+        /// <summary>
         /// How many times this node may occur along one path before its recursion is
         /// considered spent. At that point only <see cref="MorphEdge.TerminalOnly"/> edges
         /// are followed (DESIGN.md §4.2).
@@ -81,6 +98,7 @@ namespace Evosim.Core
                 JointType = JointType,
                 JointLimits = (Float2[])JointLimits.Clone(),
                 Power = Power,
+                Lift = Lift,
                 RecursiveLimit = RecursiveLimit,
                 Neurons = new NeuronDef[Neurons.Length],
             };

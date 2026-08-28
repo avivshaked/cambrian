@@ -48,6 +48,18 @@ namespace Evosim.Core
         public int Dof { get; }
 
         /// <summary>
+        /// Lift this part is holding, kg/m³ of displaced water it cancels — D049. Zero on
+        /// anything that is not a buoyancy cell.
+        /// </summary>
+        /// <remarks>
+        /// Charged for exactly as <see cref="Power"/> is, and for the same reason: gas vesicles
+        /// are protein shells that cost to build and maintain, so lift that were free would run
+        /// away to the maximum on offer and every creature would sit at the surface — which is
+        /// the world D048 exists to have escaped.
+        /// </remarks>
+        public float Lift { get; }
+
+        /// <summary>
         /// Surface area able to receive light, m². Not the full box area: a face pointing away
         /// from the light, or shadowed by the creature's own body, contributes nothing.
         /// </summary>
@@ -74,12 +86,14 @@ namespace Evosim.Core
             float nutrientDensity = 0f,
             TissueContact contact = null,
             float power = 0f,
-            int dof = 0)
+            int dof = 0,
+            float lift = 0f)
         {
             Seconds = seconds;
             Volume = volume;
             Power = power;
             Dof = dof;
+            Lift = lift;
             LitArea = litArea;
             Irradiance = irradiance;
             NutrientDensity = nutrientDensity;

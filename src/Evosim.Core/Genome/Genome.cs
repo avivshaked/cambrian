@@ -164,6 +164,26 @@ namespace Evosim.Core
                         "and nothing charges for it.");
                 }
 
+                // Lift, for the same reason and with the same shape as Power above: a cell type
+                // nothing reads it on must not carry it, or the genome records a trait the
+                // phenotype cannot express and selection cannot see.
+                if (float.IsNaN(node.Lift) || float.IsInfinity(node.Lift) || node.Lift < 0f)
+                {
+                    issues.Add($"Node {n}: Lift {node.Lift} must be finite and non-negative.");
+                }
+                else if (node.Lift > 0f && node.CellTypeId != CellTypeIds.Buoyancy)
+                {
+                    issues.Add(
+                        $"Node {n}: Lift {node.Lift} on a '{node.CellTypeId}' cell. Only a " +
+                        $"'{CellTypeIds.Buoyancy}' cell holds gas, and nothing charges for this.");
+                }
+                else if (node.Lift > BuoyancyCell.MaxLiftKgPerCubicMetre)
+                {
+                    issues.Add(
+                        $"Node {n}: Lift {node.Lift} exceeds the {BuoyancyCell.MaxLiftKgPerCubicMetre} " +
+                        "kg/m3 bound, past which the solver rather than the economy decides what happens.");
+                }
+
                 for (int i = 0; i < node.JointLimits.Length; i++)
                 {
                     if (!node.JointLimits[i].IsOrderedRange)

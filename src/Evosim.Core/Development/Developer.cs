@@ -139,6 +139,12 @@ namespace Evosim.Core
                 JointType = jointType,
                 JointLimits = jointLimits,
                 Power = jointType == JointType.Fixed ? 0f : node.Power,
+
+                // Only a buoyancy cell holds gas. Belt-and-braces rather than load-bearing:
+                // Develop validates first and Genome.Validate already rejects lift on any other
+                // cell type, so this branch is unreachable through the public path. Kept because
+                // it costs nothing and states the invariant where the field is assigned.
+                Lift = node.CellTypeId == CellTypeIds.Buoyancy ? node.Lift : 0f,
                 ParentAnchorLocal = parentAnchorLocal,
                 ChildAnchorLocal = childAnchorLocal,
                 Neurons = node.Neurons,

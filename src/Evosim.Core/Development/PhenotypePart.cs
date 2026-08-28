@@ -56,6 +56,12 @@ namespace Evosim.Core
         /// <summary>Peak joint torque in newton-metres — links only. See <see cref="MorphNode.Power"/>.</summary>
         public float Power { get; internal set; }
 
+        /// <summary>
+        /// Weight this part cancels, kg/m³ of displaced water — buoyancy cells only. See
+        /// <see cref="MorphNode.Lift"/>.
+        /// </summary>
+        public float Lift { get; internal set; }
+
         /// <summary>Min/max per DOF, in radians.</summary>
         public Float2[] JointLimits { get; internal set; } = Array.Empty<Float2>();
 

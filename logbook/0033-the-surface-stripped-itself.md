@@ -86,4 +86,31 @@ is at the surface collapses to "everyone floats". The optimum is no longer at th
 matter binds hard; whether it binds *too* hard is open, and the blocked count is also pure wasted
 compute. Calibrating it is the next measurement, not the next feature.
 
-⚠ One run, one seed, 1,400 s. Everything above is a single observation.
+⚠ One run, one seed. Everything above is a single observation.
+
+## Correction: the wasted bodies were not the bottleneck
+
+I claimed, in the commit that added the early-bail check, that 944 blocked conceptions per birth
+— 2.3 million genome mutations and body developments built and discarded — was *why* the probe
+reached t=2,100 instead of its 4,000 s budget. **That was wrong, and I asserted it without
+measuring.**
+
+`Conceive` now refuses before mutating when the parent's layer cannot afford the cheapest child
+that could physically exist. Re-running the identical probe against the identical 12-minute wall
+budget:
+
+| | reached | alive | blocked : births at t=2,000 |
+|---|---|---|---|
+| before | t=2,100 | 2,463 | 899 : 1 |
+| after | t=2,000 | 2,242 | 899 : 1 |
+
+**No speedup, and the same ratio to three figures.** The bound is exact — no conception is
+refused that the full check would allow — but it is far too loose to filter anything: a real
+child costs orders of magnitude more than one part at `MinPartVolume`, so almost every blocked
+conception still pays for its mutation and body before failing the real check.
+
+The check is kept, because it is correct and costs nothing. The claim is withdrawn. Where the
+time actually goes is unmeasured, and with 2,400 creatures the physics step is the obvious
+suspect — but that is a guess, and guessing is what produced the withdrawn claim. A tighter
+bound (the parent's own tissue predicts the child's, since children are near-copies) would
+filter far more and is available, but optimising before measuring is how this happened.

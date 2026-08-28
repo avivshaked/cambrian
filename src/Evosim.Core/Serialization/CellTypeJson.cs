@@ -39,6 +39,9 @@ namespace Evosim.Core
                 [CellTypeIds.Photosynthetic] = (n, upkeep) =>
                     new PhotosyntheticCell(n["efficiency"].AsFloat(), upkeep),
 
+                [CellTypeIds.Buoyancy] = (n, upkeep) =>
+                    new BuoyancyCell(n["wattsPerLiftUnit"].AsFloat(), upkeep),
+
                 [CellTypeIds.Absorptive] = (n, upkeep) =>
                     new AbsorptiveCell(
                         n["clearanceRate"].AsFloat(), upkeep, n["yield"].AsFloat()),

@@ -38,7 +38,12 @@ namespace Evosim.Core
         /// failing on a missing field twelve levels down. It is not a compatibility mechanism —
         /// there is no migration code — it is a diagnostic.
         /// </remarks>
-        public const int FormatVersion = 1;
+        /// <remarks>
+        /// 2 — D049 added <see cref="MorphNode.Lift"/>. A format-1 genome has no <c>lift</c> key,
+        /// and §9's rule is that loading refuses rather than defaults: a genome that loads with
+        /// one field silently zeroed is a different creature wearing the original's identity.
+        /// </remarks>
+        public const int FormatVersion = 2;
 
         public static string Write(Genome genome, bool indent = false)
         {
@@ -106,6 +111,7 @@ namespace Evosim.Core
             w.Field("shape", node.ShapeId);
             w.Field("joint", node.JointType.ToString());
             w.Field("power", node.Power);
+            w.Field("lift", node.Lift);
             w.Field("recursiveLimit", node.RecursiveLimit);
 
             WriteFloat3(w, "dimensions", node.Dimensions);
@@ -136,6 +142,7 @@ namespace Evosim.Core
                 ShapeId = n["shape"].AsString(),
                 JointType = ParseEnum<JointType>(n["joint"].AsString()),
                 Power = n["power"].AsFloat(),
+                Lift = n["lift"].AsFloat(),
                 RecursiveLimit = n["recursiveLimit"].AsInt(),
                 Dimensions = ReadFloat3(n["dimensions"]),
             };

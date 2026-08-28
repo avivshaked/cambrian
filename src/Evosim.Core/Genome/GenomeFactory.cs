@@ -205,6 +205,23 @@ namespace Evosim.Core
         [Tunable("genome")]
         public float MaxLinkPower { get; set; } = 20f;
 
+        /// <summary>Lift range for a buoyancy cell, kg/m³ of displaced water — D049.</summary>
+        /// <remarks>
+        /// The range a cell is drawn when it first becomes buoyant, whether at generation zero or
+        /// by mutation — one source of truth for both, which is D045's rule after the retired
+        /// 120 N·m ceiling survived in the mutator for three weeks.
+        ///
+        /// The floor is not zero. <c>PerturbPositive</c> is relative, so a cell starting at zero
+        /// lift reaches 1e-4 and never climbs out; a trait that can only arrive useless is one
+        /// selection never gets to see. ⚠ Both bounds unmeasured (§5A.10) — read them against
+        /// <c>BuoyancyCell.WattsPerLiftUnit</c>, since what matters is whether the depth a lift
+        /// buys is worth what holding it costs.
+        /// </remarks>
+        [Tunable("genome")]
+        public float MinBuoyancyLift { get; set; } = 0.5f;
+        [Tunable("genome")]
+        public float MaxBuoyancyLift { get; set; } = 5f;
+
         /// <summary>
         /// Brood size range for the initial population — DESIGN.md §5A.6.
         /// </summary>
@@ -423,6 +440,13 @@ namespace Evosim.Core
             // founder built from them starves with certainty rather than probably — see
             // RandomGenomeOptions.FounderCellTypes.
             body.CellTypeId = rng.Pick(options.FounderCellTypes);
+
+            // Drawn from the same bounds a mutation-born buoyancy cell gets. A founder that is
+            // buoyant and holds no gas is a founder whose one distinguishing organ does nothing.
+            if (body.CellTypeId == CellTypeIds.Buoyancy)
+            {
+                body.Lift = rng.Range(options.MinBuoyancyLift, options.MaxBuoyancyLift);
+            }
 
             // No recursion on a founder. RecursiveLimit governs how many times a cycle in the
             // graph re-expands, and a genome with one edge and no cycle has nothing to expand —

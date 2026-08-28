@@ -14,6 +14,7 @@ namespace Evosim.Core
         public const string Photosynthetic = "photosynthetic";
         public const string Absorptive = "absorptive";
         public const string Consumer = "consumer";
+        public const string Buoyancy = "buoyancy";
     }
 
     /// <summary>
@@ -669,5 +670,89 @@ namespace Evosim.Core
                 "{0}:upkeep={1:R},joint={2},bite={3:R},scavenge={4:R},yield={5:R}/{6:R}/{7:R}",
                 Id, UpkeepWattsPerCubicMetre, AllowsJoint, BiteRate, ScavengeRate,
                 CarrionYield, GrazingYield, PredationYield);
+    }
+
+    /// <summary>
+    /// Tissue that holds gas and so weighs less than water — DESIGN.md §5A.1, D049.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The oldest behaviour there is.</b> Gas vesicles are protein shells that let
+    /// cyanobacteria hold a depth in a light gradient, and they predate muscle by roughly three
+    /// billion years. This world's only economic axis is vertical (D037), so a creature's depth
+    /// is very nearly its whole strategy — and until D049 there was no organ for choosing one.
+    /// The joint was being asked to do this job, which is a Cambrian answer to an Archean
+    /// question and the reason it never paid (logbook/0027).
+    /// </para>
+    /// <para>
+    /// <b>Lift, not density.</b> The cell cancels some of its own weight rather than setting an
+    /// absolute density: being heavier is already free — that is
+    /// <see cref="FluidConfig.TissueExcessDensity"/> — so what wants an organ and a price is
+    /// going *up*. <see cref="MorphNode.Lift"/> carries the amount, in kg/m³ of displaced water
+    /// cancelled, and is evolvable per part.
+    /// </para>
+    /// <para>
+    /// <b>Charged for whether or not it is doing anything</b>, exactly as
+    /// <see cref="LinkCell.IdleWattsPerNewtonMetre"/> charges capacity. Free lift runs away to
+    /// the maximum on offer and every creature returns to the surface, which is precisely the
+    /// world D048 was built to escape. Real vesicles cost protein to build and to keep from
+    /// collapsing under pressure.
+    /// </para>
+    /// <para>
+    /// It earns nothing, like <see cref="StructuralCell"/>. Whether that is survivable is the
+    /// measurement D049 exists to make: a buoyancy cell has to pay for itself entirely through
+    /// where it puts the rest of the body, which is the same shape of bet as a fin and the
+    /// reason §5A.1 permits earning nothing at all.
+    /// </para>
+    /// </remarks>
+    public sealed class BuoyancyCell : CellType
+    {
+        /// <summary>What holding a unit of lift costs, W per (kg/m³) per m³ of tissue.</summary>
+        /// <remarks>
+        /// ⚠ Unmeasured (§5A.10), and it trades the same way <c>IdleWattsPerNewtonMetre</c> does:
+        /// too low and depth is free, too high and nothing can afford to leave the surface. The
+        /// calibration question is whether a creature can buy its way to the matter at depth for
+        /// less than the matter is worth — which is a comparison D048 made possible and nothing
+        /// before it could have asked.
+        /// </remarks>
+        public float WattsPerLiftUnit { get; }
+
+        /// <summary>Most lift one cell may hold, kg/m³ — a numerical bound, not an economic one.</summary>
+        public const float MaxLiftKgPerCubicMetre = 50f;
+
+        public BuoyancyCell(
+            float wattsPerLiftUnit = 0.05f,
+            float upkeepWattsPerCubicMetre = 2.5f)
+            : base(upkeepWattsPerCubicMetre)
+        {
+            if (wattsPerLiftUnit <= 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(wattsPerLiftUnit), wattsPerLiftUnit,
+                    "Lift must cost something, or every creature holds the maximum.");
+            }
+
+            WattsPerLiftUnit = wattsPerLiftUnit;
+        }
+
+        public override string Id => CellTypeIds.Buoyancy;
+
+        public override Float3 InspectionColour => new Float3(0.55f, 0.80f, 0.95f);
+
+        public override CellIntake Acquire(in CellContext context) => CellIntake.None;
+
+        public override float Upkeep(in CellContext context) =>
+            base.Upkeep(context) +
+            WattsPerLiftUnit * Math.Max(0f, context.Lift) *
+            Math.Max(0f, context.Volume) * context.Seconds;
+
+        public override void WriteParameters(Json.Writer writer) =>
+            writer.Field("wattsPerLiftUnit", WattsPerLiftUnit);
+
+        public override string HashContribution() =>
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}:upkeep={1:R},joint={2},lift={3:R}",
+                Id, UpkeepWattsPerCubicMetre, AllowsJoint, WattsPerLiftUnit);
     }
 }

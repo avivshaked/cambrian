@@ -63,7 +63,7 @@ namespace Evosim.Core.Tests
                 f => Path.GetFileName(Path.GetDirectoryName(f)) == "snapshots");
             if (snapshots.Length == 0) { _output.WriteLine("no snapshots — skipped"); return; }
 
-            int files = 0, genomes = 0, parts = 0, neurons = 0;
+            int files = 0, genomes = 0, parts = 0, neurons = 0, stale = 0;
             var cellTypes = new HashSet<string>();
             var failures = new List<string>();
 
@@ -77,6 +77,19 @@ namespace Evosim.Core.Tests
                 string[] rows;
                 try { rows = JsonlWriter.ReadRows(file); }
                 catch (Exception e) { failures.Add($"{Path.GetFileName(file)}: unreadable — {e.Message}"); continue; }
+
+                // Archaeology is not a regression. This guards that a run cannot write a genome
+                // *this build* is unable to read back; a snapshot from an older schema is
+                // correctly unreadable, and GenomeJson.FormatVersion exists to say so plainly
+                // rather than fail on a missing field twelve levels down. Skipped and counted,
+                // never quietly passed over — a run of nothing but old files would otherwise
+                // report success while testing zero genomes.
+                if (rows.Length > 0 && !string.IsNullOrWhiteSpace(rows[0]) &&
+                    FormatOf(rows[0]) is int format && format != GenomeJson.FormatVersion)
+                {
+                    stale++;
+                    continue;
+                }
 
                 for (int i = 0; i < rows.Length; i++)
                 {
@@ -112,15 +125,30 @@ namespace Evosim.Core.Tests
             }
 
             _output.WriteLine(
-                $"{genomes:N0} genomes from {files} snapshot(s): {parts:N0} parts, " +
+                $"{genomes:N0} genomes from {files - stale} snapshot(s): {parts:N0} parts, " +
                 $"{neurons:N0} neurons, cell types [{string.Join(", ", cellTypes)}]");
+            if (stale > 0)
+            {
+                _output.WriteLine(
+                    $"{stale} snapshot(s) skipped: written before genome format " +
+                    $"{GenomeJson.FormatVersion} and correctly unreadable by this build.");
+            }
 
             Assert.True(
                 failures.Count == 0,
                 $"{failures.Count} of {genomes} genomes could not be read back or were invalid:" +
                 Environment.NewLine + string.Join(Environment.NewLine, failures.GetRange(0, Math.Min(5, failures.Count))));
 
-            Assert.True(genomes > 0, "snapshots existed but held no genomes");
+            Assert.True(
+                genomes > 0 || stale == files,
+                "snapshots existed but held no genomes");
+        }
+
+        /// <summary>The declared format of a genome row, or null if it will not even parse.</summary>
+        private static int? FormatOf(string row)
+        {
+            try { return Json.Parse(row)["format"].AsInt(); }
+            catch { return null; }
         }
     }
 }

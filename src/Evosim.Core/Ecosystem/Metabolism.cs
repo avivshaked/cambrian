@@ -205,7 +205,8 @@ namespace Evosim.Core
                     nutrientDensity: nutrientDensity,
                     contact: null,
                     power: part.Power,
-                    dof: part.JointType.DofCount());
+                    dof: part.JointType.DofCount(),
+                    lift: part.Lift);
 
                 intake += cell.Acquire(context);
                 upkeep += cell.Upkeep(context);
