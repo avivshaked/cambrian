@@ -124,6 +124,24 @@ namespace Evosim.Sim.EditorTools
             config.Mutation.CellTypeChance = cellTypeMutation;
             var eco = new Ecosystem(config, seed);
 
+            // Named after the report rather than timestamped, so a run's table and its creatures
+            // sit side by side and an A/B arm's genomes are findable by the arm's own name.
+            RunDirectory dir = null;
+            try
+            {
+                dir = RunDirectory.Create(
+                    Path.Combine(
+                        Path.GetDirectoryName(outPath),
+                        Path.GetFileNameWithoutExtension(outPath)),
+                    config, DateTime.UtcNow);
+            }
+            catch (Exception e)
+            {
+                // A run that cannot save its creatures is still a run worth having, and losing
+                // the report as well would be the worse outcome.
+                Debug.LogWarning("no genome directory: " + e.Message);
+            }
+
             var report = new StringBuilder();
             report.AppendLine("# Evolution run — " + irradiance.ToString("0") + " W/m2");
             report.AppendLine();
@@ -169,6 +187,10 @@ namespace Evosim.Sim.EditorTools
                     report.AppendLine(Row(eco));
                     Flush(outPath, report);
 
+                    // Every tenth report: often enough that a killed run keeps something recent,
+                    // rare enough that a population of thousands is not serialised every sample.
+                    if (metabolicSteps % (reportEvery * 10) == 0) Snapshot(dir, eco);
+
                     if (eco.World.Living.Count == 0)
                     {
                         ending = "extinct, and the floor could not refill it";
@@ -207,6 +229,15 @@ namespace Evosim.Sim.EditorTools
             Flush(outPath, report);
             Debug.Log(report.ToString());
 
+            Snapshot(dir, eco);
+            if (dir != null)
+            {
+                report.AppendLine();
+                report.AppendLine("Genomes: `" + dir.Path + "`");
+                Flush(outPath, report);
+                dir.Dispose();
+            }
+
             eco.DestroyAll();
             Physics.simulationMode = previousMode;
             Physics.gravity = previousGravity;
@@ -225,6 +256,48 @@ namespace Evosim.Sim.EditorTools
         /// than mutating into it.
         /// </remarks>
         private static readonly HashSet<long> EverAbsorptive = new HashSet<long>();
+
+
+        /// <summary>
+        /// Write every living creature's genome to <c>snapshots/&lt;t&gt;.jsonl</c>, one per line.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Until this existed, every creature this project ever evolved was discarded at
+        /// process exit.</b> Runs left a markdown table and nothing else — so the first
+        /// detritivore lineage to inherit its trade, sixty-two generations deep, survives only as
+        /// the row saying it happened (logbook/0025). <c>RunDirectory</c> and <c>GenomeJson</c>
+        /// had been built and tested for this and were wired to nothing.
+        /// </para>
+        /// <para>
+        /// <b>Survivors, not lineage.</b> §9's <c>lineage.jsonl</c> is one row per creature ever
+        /// born — at the observed birth rate that is tens of thousands of rows and hundreds of
+        /// megabytes an hour. What a future run actually needs is a founder pool, and for that the
+        /// living population at a moment is the whole answer: they are precisely the genomes that
+        /// were solvent in this world. So this writes survivors periodically and at the end, and
+        /// leaves the full lineage to whenever something needs ancestry.
+        /// </para>
+        /// <para>
+        /// Written at the end <i>and</i> periodically, because a run that hits its wall-clock
+        /// budget or explodes is exactly the run whose creatures are most worth having, and it is
+        /// the one that never reaches an orderly shutdown.
+        /// </para>
+        /// </remarks>
+        private static void Snapshot(RunDirectory dir, Ecosystem eco)
+        {
+            if (dir == null) return;
+
+            // .jsonl, not RunDirectory's .json: the file holds one genome per line, and a
+            // reader that trusts the extension would fail on the second line rather than the
+            // first — which is the shape of bug that gets blamed on the data.
+            string path = Path.ChangeExtension(
+                dir.SnapshotPath(eco.World.ElapsedSeconds), ".jsonl");
+
+            using (var writer = new JsonlWriter(path, flushEachRow: false))
+            {
+                foreach (Organism creature in eco.World.Living) writer.WriteGenome(creature.Genome);
+            }
+        }
 
         private static string Row(Ecosystem eco)
         {
