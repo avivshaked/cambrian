@@ -1016,6 +1016,64 @@ It is a sink and not a source, so conservation is unaffected — but it grows wi
 whatever first reaches it inherits a very large bank. Real remineralisation would return it
 slowly to the water; whether that matters here is unmeasured and deliberately not guessed at.
 
+### 5A.2d Matter — what the producer consumes ✅ implemented
+
+Until D048 the producer consumed nothing. `PhotosyntheticCell.Acquire` returns light and draws
+no pool, so **nothing a creature did made its own position worse.** The only thing a producer
+emitted was shade, which harms creatures below it and never itself. There was no negative
+feedback anywhere on occupying the best spot, and the consequence ran through everything
+measured here: the depth axis was a ramp with its maximum at the boundary rather than a
+landscape with an interior optimum, so every run sorted to the surface and stayed, and depth
+was never worth buying.
+
+The real ocean's vertical structure *is* that feedback. Light is at the top and nutrients are
+at the bottom, and **the surface is nutrient-poor because producers live there and strip it**;
+corpses sink, remineralise at depth, and the deep stays rich and dark. Two opposed gradients,
+one of them made by the organisms.
+
+**Light is energy; matter is matter.** They are separate currencies and are never added.
+
+| | source | sink | conserved by |
+|---|---|---|---|
+| energy (J) | sunlight, founder endowment | metabolism, reproductive overhead | §5A.2's audit, a hard equality |
+| **matter** | seeded once at `InitialMatterPerCubicMetre` | nothing — it is only ever moved | `World.StandingMatter` |
+
+- **Reproduction requires matter as well as energy**, `MatterPerTissueJoule` per joule of the
+  child's tissue, drawn from the parent's own layer. No amount of sunlight builds a daughter
+  cell without nitrogen and phosphorus. §5A.6 has no growth, so reproduction is the only moment
+  tissue is ever created and therefore the only place this can be charged.
+- **A matter-starved world does not kill its inhabitants, it stops them breeding** — which is
+  what happens to a nutrient-limited bloom, and is why the charge is here rather than in upkeep.
+- **Death returns it** to the layer the body died in, whence it sinks. Floor founders are exempt
+  because they never paid; crediting them would mine matter out of nothing.
+- **`World.Matter` is deliberately outside `StandingJoules`.** Matter is not energy, and folding
+  it into §5A.2's audit would let the books balance by counting a different substance — the
+  exact failure that audit exists to catch.
+
+**Measured.** A 200 W/m² world at `MatterPerTissueJoule` 0.5 from 1.0/m³:
+
+| t | alive | matter at surface | matter deep | conceptions blocked | floor spawns |
+|---|---|---|---|---|---|
+| 100 | 40 | 0.802 | 1.136 | 0 | 48 |
+| 500 | 219 | 0.009 | 1.393 | 4,707 | 0 |
+| 1,200 | 931 | **0.004** | **1.151** | 114,450 | **0** |
+
+A ~300× vertical gradient, built by the creatures out of a uniform start. The population still
+grows, because mixing resupplies the surface from below — so **primary production is now limited
+by vertical nutrient flux**, which is the constraint that governs it in the real ocean. And the
+floor stops firing entirely, which by D021 is the only statement that this world is alive rather
+than being kept alive.
+
+⚠ **The tension it creates has no answer yet.** Creatures sit at −2.6 m in stripped water while
+the matter is at depth, and nothing in §5A.1 can move them there. That is the selective pressure
+D049's buoyancy cell exists to meet, and it is why D049 is sequenced after this rather than
+before: buoyancy in a world whose optimum is at the surface collapses to "everyone floats".
+
+⚠ `MatterPerTissueJoule` and `InitialMatterPerCubicMetre` are unmeasured (§5A.10). The blocked
+count above is very large relative to the population, which says the ratio binds hard; whether
+it binds *too* hard is open. Zero disables the mechanism and reproduces every result recorded
+before D048.
+
 ### 5A.3 Feeding, and where herbivores come from
 
 A `Consumer` part gains energy on contact with tissue. Yield depends on **what it touches**:
