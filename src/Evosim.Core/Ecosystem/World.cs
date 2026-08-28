@@ -123,6 +123,46 @@ namespace Evosim.Core
         /// <summary>Matter locked up in living tissue, awaiting its owner's death.</summary>
         public double MatterInBodies { get; private set; }
 
+        /// <summary>
+        /// Matter the smallest child physically expressible would cost — D048. A strict lower
+        /// bound, cached because it depends only on config.
+        /// </summary>
+        /// <remarks>
+        /// <c>Conceive</c> pays for a full <c>Mutator.Mutate</c> and <c>Developer.Develop</c>
+        /// before it knows the child's tissue, and therefore before it can price the child in
+        /// matter. In a world where matter binds that is almost all wasted: the first probe ran
+        /// **944 blocked conceptions per birth**, 2.3 million mutate-and-develop pairs built and
+        /// thrown away, and it is why that run reached t=2,100 rather than its 4,000 s budget.
+        ///
+        /// Tissue is <c>Σ volume × TissueEnergyPerCubicMetre</c> and a viable body has at least
+        /// one part, so the cheapest cell type at the smallest legal part volume bounds every
+        /// possible child from below. A layer that cannot afford *that* cannot afford anything,
+        /// which makes this an exact test rather than a heuristic — no conception is refused that
+        /// the full check would have allowed.
+        /// </remarks>
+        private float CheapestPossibleChildMatter
+        {
+            get
+            {
+                if (_cheapestChildMatter < 0f)
+                {
+                    float cheapestPerCubicMetre = float.MaxValue;
+                    foreach (string id in Config.CellTypes.Ids())
+                    {
+                        float rate = Config.CellTypes.Resolve(id).TissueEnergyPerCubicMetre;
+                        if (rate < cheapestPerCubicMetre) cheapestPerCubicMetre = rate;
+                    }
+
+                    _cheapestChildMatter = Config.MatterPerTissueJoule *
+                        Config.Development.MinPartVolume * cheapestPerCubicMetre;
+                }
+
+                return _cheapestChildMatter;
+            }
+        }
+
+        private float _cheapestChildMatter = -1f;
+
         /// <summary>Conceptions refused for want of matter rather than energy — D048.</summary>
         /// <remarks>
         /// The only number that says whether matter is binding at all. A world where this stays
@@ -498,6 +538,17 @@ namespace Evosim.Core
         /// </summary>
         private bool Conceive(Organism parent)
         {
+            // Before anything expensive. See CheapestPossibleChildMatter: if the parent's layer
+            // cannot afford the smallest child that could exist, no mutation of this genome can
+            // be afforded either, and building one to find that out is the dominant cost in a
+            // matter-limited world.
+            if (Config.MatterPerTissueJoule > 0f &&
+                Matter.StockInLayer(Matter.LayerOf(parent.HeightY)) < CheapestPossibleChildMatter)
+            {
+                ConceptionsBlockedByMatter++;
+                return false;
+            }
+
             ulong seed = Rng.SeedFor(Seed, _nextIndex++);
 
             Genome childGenome = Mutator.Mutate(
