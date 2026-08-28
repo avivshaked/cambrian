@@ -65,6 +65,10 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D040](#d040) | The world grew a food chain, and the binding constraint is now throughput | 2026-08-27 | active |
 | [D041](#d041) | Filtering clearance 0.5 → 1.0 — the two trades want opposite bodies | 2026-08-27 | active |
 | [D042](#d042) | Joints were never affordable — D031 and D032 swept the wrong side of a line at 5 N·m | 2026-08-28 | active |
+| [D043](#d043) | A muscle that earns its keep — `LinkCell.PhotosyntheticEfficiency` | 2026-08-28 | ⚠ its 88% ceiling superseded by D046 |
+| [D044](#d044) | Tissue is denser than water, because staying still has to cost something | 2026-08-28 | active |
+| [D045](#d045) | A mutation-born joint draws from the same bounds a founder does | 2026-08-28 | active |
+| [D046](#d046) | A link that photosynthesises pays green tissue's upkeep | 2026-08-28 | active · supersedes D043's ceiling |
 
 ---
 
@@ -1967,3 +1971,53 @@ those populations are dominated by founders and their children, who were correct
 explains is narrower and more useful: why no lineage ever *invented* a muscle and kept it. The
 prediction is that de-novo joint lineages become more frequent, not that jointed creatures start
 winning — the two are different claims and only the first is tested here.
+
+### D046
+**A link that photosynthesises pays green tissue's upkeep** · 2026-08-28
+
+[D043](#d043) added `LinkCell.PhotosyntheticEfficiency` and concluded from it that the cost side
+is structurally closed: *"even at `linkPhoto = 1.0` a jointed creature reaches only 88% of a
+plant"*. Both halves of that were wrong, in opposite directions, and they were hiding each other.
+
+**The 88% was measured at `Power = 20f`** — `MaxLinkPower`, the most expensive joint a founder can
+draw — in a test that hardcoded it. `MorphNode.Power` is evolvable per node down to
+`MinLinkPower`, and `LinkCell` bills in proportion to it, so 88% is the worst case rather than
+the ceiling. The question that matters is what the *cheapest* joint costs, because a lineage that
+lowers its capacity is walking down that curve.
+
+**Walking down it went past parity.** A link earning at a photosynthetic cell's efficiency was
+paying a link's upkeep — 2.5 W/m³ against green tissue's 3 — so at full efficiency it took a
+plant's income for half a watt per cubic metre less:
+
+| capacity | before | after |
+|---|---|---|
+| 5 N·m | **103.7%** of a plant | 94.8% |
+| 20 N·m | 88.1% | 79.2% |
+| 120 N·m | −15.8% | −24.7% |
+
+At 5 N·m the knob had made a joint **pay you to carry it**. D043 intended to price a trade-off and
+had abolished it, which is the failure mode §5A exists to avoid: a muscle that spreads because it
+is free tells you nothing about whether muscles are worth having.
+
+**Chosen: `LinkCell.Upkeep` charges a surcharge, proportional to its share of
+`PhotosyntheticCell.DefaultEfficiency`, that brings its rate to
+`PhotosyntheticCell.DefaultUpkeepWattsPerCubicMetre` at full efficiency.** The capacity term is
+then the only thing separating a link from a plant, which is what D043 meant to be measuring.
+
+Derived from `PhotosyntheticCell` rather than taken as a parameter: it is not an independent
+choice — it is whatever green tissue costs — and a second copy is exactly how
+[D045](#d045)'s two ceilings drifted apart.
+
+Being derived meant the config hash could not see it, and the first relaunch proved it: three arms
+came back carrying **byte-identical hashes to the runs the fix had just invalidated**. A hash whose
+job is to detect exactly that mismatch and cannot is worse than no hash, so
+`PhotosyntheticCell.DefaultUpkeepWattsPerCubicMetre` is now in `LinkCell.HashContribution`.
+`TheCeilingOnAnEarningMuscleIsSetByCapacity` pins the curve at both ends — it must move with capacity, and it must never reach parity.
+
+**What this changes about the muscle question.** The honest number is that an earning muscle at
+minimum capacity sits **5.2% below a plant**, and that 5.2% is precisely the idle charge on 5 N·m.
+That is a far narrower gap than D043 reported and a very different claim: not "no muscle can ever
+compete" but "a muscle competes if it is cheap, earns, and is worth the last five per cent". D043's
+conclusion is **superseded** — the cost side is not structurally closed. What remains true is the
+part that was never about cost: a muscle still has to buy something, and depth is still the only
+thing it can buy ([D037](#d037)).

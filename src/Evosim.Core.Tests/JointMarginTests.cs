@@ -370,6 +370,68 @@ namespace Evosim.Core.Tests
                 $"a fully photosynthetic link ({rows[3].net}) must still lose to two green " +
                 $"parts ({plantNet}), or there is no cost to carrying a joint at all");
         }
+
+        [Fact]
+        public void TheCeilingOnAnEarningMuscleIsSetByCapacity()
+        {
+            // The 88% figure D043 rests on was measured at Power = 20 N.m — MaxLinkPower, the
+            // most expensive joint a founder can draw. Power is evolvable per node down to
+            // MinLinkPower, and LinkCell bills in proportion to it, so the interesting question
+            // is not what the worst joint costs but what the cheapest one does: a lineage that
+            // can lower its capacity is walking down this curve, and whether the curve reaches
+            // parity decides whether "structurally closed" is a property of the design or of the
+            // number the test happened to pick.
+            Genome jointless = TwoPart(CellTypeIds.Photosynthetic, 0f, JointType.Fixed);
+            (float plantNet, _, _) = Price(World(), jointless);
+
+            _output.WriteLine($"two photosynthetic parts, no joint : {plantNet,8:F4} W");
+            _output.WriteLine("");
+            _output.WriteLine("  N.m    linkPhoto 0     linkPhoto 1    share of plant");
+
+            float bestShare = 0f;
+
+            foreach (float power in new[] { 5f, 10f, 20f, 60f, 120f })
+            {
+                var nets = new float[2];
+                float[] photos = { 0f, 1f };
+
+                for (int i = 0; i < photos.Length; i++)
+                {
+                    RunConfig config = World();
+                    config.CellTypes = new CellTypeRegistry(
+                        new StructuralCell(),
+                        new LinkCell(
+                            0.02f,
+                            photosyntheticEfficiency: photos[i] * PhotosyntheticCell.DefaultEfficiency),
+                        new NeuralCell(),
+                        new PhotosyntheticCell(),
+                        new AbsorptiveCell(),
+                        new ConsumerCell());
+
+                    (nets[i], _, _) = Price(config, TwoPart(CellTypeIds.Link, power, JointType.Hinge));
+                }
+
+                float share = plantNet > 0f ? nets[1] / plantNet : 0f;
+                bestShare = Math.Max(bestShare, share);
+                _output.WriteLine(
+                    $"{power,5:F0}  {nets[0],10:F4} W  {nets[1],10:F4} W  {100f * share,12:F1}%");
+            }
+
+            // The curve must actually move with capacity, or the charge is not doing its job and
+            // D032's whole premise — that billing for capacity is what stops evolution sitting at
+            // the ceiling — is false.
+            Assert.True(
+                bestShare > 0.88f,
+                $"the cheapest earning joint reaches {100f * bestShare:F1}% of a plant, no better " +
+                "than the 20 N.m case D043 measured — capacity is not being priced");
+
+            // And it must still not reach parity, or a joint is free and would drift rather than
+            // be selected.
+            Assert.True(
+                bestShare < 1f,
+                $"an earning joint reached {100f * bestShare:F1}% of a plant — at parity there is " +
+                "no cost to carrying one");
+        }
         /// <summary>
         /// How deep a creature can live, which bounds everything sinking could ever be worth.
         /// </summary>

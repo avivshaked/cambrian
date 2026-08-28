@@ -160,17 +160,52 @@ namespace Evosim.Core
             writer.Field("photosyntheticEfficiency", PhotosyntheticEfficiency);
         }
 
-        public override float Upkeep(in CellContext context) =>
-            base.Upkeep(context) +
-            IdleWattsPerNewtonMetre * Math.Max(0f, context.Power) *
-            Math.Max(0, context.Dof) * context.Seconds;
+        /// <remarks>
+        /// Three terms: volume, the photosynthetic machinery if any, and capacity.
+        ///
+        /// <para>
+        /// <b>The middle one exists because otherwise a link beats a plant outright.</b>
+        /// <see cref="PhotosyntheticEfficiency"/> buys a link a photosynthetic cell's income, and
+        /// a link's own upkeep is 2.5 W/m³ against green tissue's 3. So at full efficiency it
+        /// earned exactly what a plant earns for half a watt per cubic metre less, and measured
+        /// 103.7% of a two-part plant at 5 N·m — a joint that pays you to carry it. The
+        /// surcharge brings the rate to green tissue's at full efficiency, leaving the capacity
+        /// term as the only difference, which is what D043 intended to be measuring.
+        /// </para>
+        /// <para>
+        /// Derived from <see cref="PhotosyntheticCell.DefaultUpkeepWattsPerCubicMetre"/> rather
+        /// than taken as a parameter, because it is not an independent choice — it is whatever
+        /// green tissue costs — and a second copy is how the two would drift apart. ⚠ It is
+        /// therefore not separately visible in <see cref="HashContribution"/>: the inputs are
+        /// unchanged, so a run from before this existed carries the same config hash and
+        /// different economics.
+        /// </para>
+        /// </remarks>
+        public override float Upkeep(in CellContext context)
+        {
+            float seconds = context.Seconds;
+            float volume = Math.Max(0f, context.Volume);
+
+            float photoFraction = PhotosyntheticEfficiency / PhotosyntheticCell.DefaultEfficiency;
+            float photoSurcharge = Math.Max(
+                0f, PhotosyntheticCell.DefaultUpkeepWattsPerCubicMetre - UpkeepWattsPerCubicMetre);
+
+            return base.Upkeep(context) +
+                photoFraction * photoSurcharge * volume * seconds +
+                IdleWattsPerNewtonMetre * Math.Max(0f, context.Power) *
+                Math.Max(0, context.Dof) * seconds;
+        }
 
         public override string HashContribution() =>
             string.Format(
                 CultureInfo.InvariantCulture,
-                "{0}:upkeep={1:R},joint={2},idle={3:R},photo={4:R}",
+                "{0}:upkeep={1:R},joint={2},idle={3:R},photo={4:R},photoUpkeep={5:R}",
                 Id, UpkeepWattsPerCubicMetre, AllowsJoint, IdleWattsPerNewtonMetre,
-                PhotosyntheticEfficiency);
+                PhotosyntheticEfficiency,
+                // Derived rather than stored (see Upkeep), so without it the hash cannot tell a
+                // run from before the surcharge existed from one after — same inputs, different
+                // economics. A config hash that cannot detect that is not doing its one job.
+                PhotosyntheticCell.DefaultUpkeepWattsPerCubicMetre);
     }
 
     /// <summary>
@@ -294,7 +329,18 @@ namespace Evosim.Core
         /// </summary>
         public const float DefaultEfficiency = 0.05f;
 
-        public PhotosyntheticCell(float efficiency = DefaultEfficiency, float upkeepWattsPerCubicMetre = 3f)
+        /// <summary>What green tissue costs to keep alive, W/m³.</summary>
+        /// <remarks>
+        /// Named because <see cref="LinkCell"/> has to charge the same rate for the same
+        /// machinery. A link that photosynthesises at a photosynthetic cell's efficiency while
+        /// paying a link's cheaper upkeep is a strictly better plant than a plant, which
+        /// abolishes the trade-off instead of pricing it.
+        /// </remarks>
+        public const float DefaultUpkeepWattsPerCubicMetre = 3f;
+
+        public PhotosyntheticCell(
+            float efficiency = DefaultEfficiency,
+            float upkeepWattsPerCubicMetre = DefaultUpkeepWattsPerCubicMetre)
             : base(upkeepWattsPerCubicMetre)
         {
             if (efficiency <= 0f || efficiency > 1f)
