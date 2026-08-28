@@ -300,6 +300,22 @@ namespace Evosim.Sim.EditorTools
         /// </remarks>
         private static readonly HashSet<long> EverJointed = new HashSet<long>();
 
+        /// <summary>Floor spawns as of the previous report row, so a row can show a rate.</summary>
+        /// <remarks>
+        /// D021 built the population floor as an instrument and stated its success condition
+        /// exactly: it "fires at t=0 and never again". A floor that keeps firing means the world
+        /// is not sustaining life, we are — and the run still shows a stable population, births,
+        /// deaths and accumulating lineages, every figure consistent with a working ecosystem and
+        /// every one of them propped up.
+        ///
+        /// The reporting D021 specified lives in <c>lineage.jsonl</c>, which is not written. So
+        /// the instrument was designed and never built, and a whole day of arms was read as data
+        /// without anyone able to tell a living world from a life-supported one — <c>gen min = 0</c>
+        /// cannot separate "founders from t=0 are still alive" from "the floor fires every step".
+        /// The cumulative count answers that and the window count dates it.
+        /// </remarks>
+        private static long LastFloorSpawns;
+
 
         /// <summary>
         /// Write every living creature's genome to <c>snapshots/&lt;t&gt;.jsonl</c>, one per line.
@@ -481,6 +497,9 @@ namespace Evosim.Sim.EditorTools
                 .Field("meanAge", alive > 0 ? age / alive : 0d)
                 .Field("dayFactor", world.Field.DayFactor)
                 .Field("shading", 1d - world.Field.ShadingAt((float)meanDepth))
+                .Field("floorSpawns", world.FloorSpawns)
+                .Field("floorSpawnsWindow", world.FloorSpawns - LastFloorSpawns)
+                .Field("secondsSinceFloorFired", world.SecondsSinceFloorFired)
                 .Field("generationMin", genMin)
                 .Field("generationMax", genMax)
                 .Field("auditResidual", world.AuditResidual));
@@ -533,10 +552,16 @@ namespace Evosim.Sim.EditorTools
                 // and a runaway that looks like a calibration failure may simply be a world with
                 // room left. 0% is an empty world; 100% is a closed canopy.
                 (100d * (1d - world.Field.ShadingAt((float)meanDepth))).ToString("0.#", c) + "%",
+                // D021: "fires at t=0 and never again". Anything but 0 after the first row says
+                // the world is being kept alive rather than staying alive, and every other
+                // number in the row is propped up by it.
+                "**" + (world.FloorSpawns - LastFloorSpawns).ToString(c) + "**",
                 genMin.ToString(c),
                 genMax.ToString(c),
                 residual.ToString("0.0000", c) + "%",
             };
+
+            LastFloorSpawns = world.FloorSpawns;
 
             if (row.Count != Columns.Length)
             {
@@ -554,7 +579,7 @@ namespace Evosim.Sim.EditorTools
             "t (s)", "alive", "births", "deaths", "**jointed**", "jointed %", "**jnt inh**", "mean dof",
             "mean m/s", "max m/s", "work J/s", "work share", "**food %**", "**absorpt**", "**inherit**",
             "**detritus J**", "**J/m3 here**", "**% on floor**", "depth m", "**depth sd**",
-            "**rise m**", "age s", "sun", "**shade %**", "gen min", "gen max", "audit",
+            "**rise m**", "age s", "sun", "**shade %**", "**floor**", "gen min", "gen max", "audit",
         };
 
         private static string Header() =>

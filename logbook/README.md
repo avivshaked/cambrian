@@ -92,3 +92,4 @@ are the ones most likely to go unwritten.
 | [0029](0029-the-floor-kept-putting-the-muscles-back.md) | 2026-08-28 | The floor kept putting the muscles back |
 | [0030](0030-the-mutation-that-never-got-the-memo.md) | 2026-08-28 | The mutation that never got the memo |
 | [0031](0031-the-muscle-that-paid-you-to-carry-it.md) | 2026-08-28 | The muscle that paid you to carry it |
+| [0032](0032-the-instrument-that-was-designed-and-never-built.md) | 2026-08-28 | The instrument that was designed and never built |

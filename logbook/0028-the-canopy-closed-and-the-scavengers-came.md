@@ -105,6 +105,34 @@ t=13,900, 5 and 9 individuals) had **zero inherited** and went nowhere, so estab
 corpse pulse and did not happen without it. Whether the system oscillates or merely did this once
 is settled by watching for a second irruption, not by this trace.
 
+## ⚠ Both of these were re-audited against the floor, later the same day
+
+[0032](0032-the-instrument-that-was-designed-and-never-built.md) built the report
+[D021](../DECISIONS.md#d021) specified and never got: the population floor's firing rate. D021's
+success condition is that the floor "fires at t=0 and never again", and a floor that keeps firing
+means *we* are sustaining the world rather than the world sustaining itself — with every figure in
+the table still consistent with a working ecosystem.
+
+Applying it to both worlds above, using `alive` pinned at `MinimumPopulation` with `gen min = 0` as
+the proxy the completed runs allow:
+
+| | rows with no founders alive | rows pinned at the floor |
+|---|---|---|
+| `g-c1.0-s2` — the canopy chain | **64%** | 10% |
+| `sink-mid` — the cycle | **21%** | 16% |
+
+**The canopy chain stands.** It happened in a world that was self-sustaining for most of its
+length.
+
+**The cycle is weaker than written above.** `sink-mid` spent most of its life needing the floor,
+and the irruption began at `alive = 40` with the floor firing on the next sample. What survives
+scrutiny is that an absorptive lineage with 4 *inherited* members already existed at t=19,000 with
+no founders alive, and floor spawns carry `parentId = -1` so they can never be counted as
+inherited — the 163 inherited at the peak are real reproduction, not injection. What does **not**
+survive is the amplitude and the timing: a world oscillating around its floor has its booms and
+busts partly written by the refill rule, and the lag structure quoted above should not be read as
+cleanly as it was.
+
 ## What is not established
 
 Whether the absorptive lineage persists or is a bloom on a transient corpse spike. Detritus is

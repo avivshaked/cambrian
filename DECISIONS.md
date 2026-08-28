@@ -69,6 +69,9 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D044](#d044) | Tissue is denser than water, because staying still has to cost something | 2026-08-28 | active |
 | [D045](#d045) | A mutation-born joint draws from the same bounds a founder does | 2026-08-28 | active |
 | [D046](#d046) | A link that photosynthesises pays green tissue's upkeep | 2026-08-28 | active · supersedes D043's ceiling |
+| [D047](#d047) | The alphabet stays flat; what was missing is the floor’s report | 2026-08-28 | active |
+| [D048](#d048) | Producers must consume something — nutrient is matter, light is energy | 2026-08-28 | accepted, not yet built |
+| [D049](#d049) | A buoyancy cell, passive before controlled | 2026-08-28 | accepted, not yet built · follows D048 |
 
 ---
 
@@ -2021,3 +2024,110 @@ compete" but "a muscle competes if it is cheap, earns, and is worth the last fiv
 conclusion is **superseded** — the cost side is not structurally closed. What remains true is the
 part that was never about cost: a muscle still has to buy something, and depth is still the only
 thing it can buy ([D037](#d037)).
+
+### D047
+**The alphabet stays flat; what was missing is the floor's report** · 2026-08-28
+
+A day spent asking why a muscle never evolves ended in the observation that our six cell types sit
+at wildly different points on life's timeline and are all available at t=0: photosynthesis (~3.5
+Ga), detritivory (~2 Ga), predation (~0.8 Ga), and nervous systems and muscle (~0.6 Ga, Cambrian).
+`FounderTailChance` is 0.5, so **half of all founders are born with a Cambrian organ** in a world
+that is otherwise Archean — no predators to flee, no prey to chase, and under [D037](#d037) no
+spatial structure to exploit.
+
+**Rejected: staging the cell-type registry by era**, whether gated on time or on ecological
+precondition. The objection that killed it is that natural selection already does this, only more
+wastefully — and the day's data agrees. In `sink-mid` the jointed share was driven below 5% **five
+separate times** from cohorts starting near 45%. Selection never failed once.
+
+Two further reasons:
+
+- **What gating approximates is dependency, and we have not modelled it.** Muscle proteins descend
+  from cytoskeletal ones; nervous systems from ion channels used for osmoregulation. Later
+  innovations are *built out of* earlier ones, which is the actual reason they cannot appear first.
+  Our six cell types are independent atoms with no ancestry between them. A gate would be a crude
+  stand-in for a structure the model lacks, and recording the gap is more honest than faking it.
+- It is a second exogenous intervention in a system [D017](#d017) exists to keep endogenous.
+
+**Also rejected: simplifying the founder draw** to photosynthetic blobs, requiring everything else
+to be evolved. [D021](#d021) and `FounderCellTypes` already answer this: the doomed absorptive and
+consumer founders of generation zero *are* the primordial soup — they starve, and their tissue is
+the first nutrient anything ever has. And handing generation zero to photosynthesis would make
+"plants came first" an arrangement rather than a finding. Both arguments hold.
+
+**What is real is that D021's report was never built.** Its success condition is that the floor
+"fires at t=0 and never again", and its failure mode "looks like success". The reporting it
+specifies lives in `lineage.jsonl`, which is deliberately unwritten — so the guard existed as a
+design and as two unread properties on `World`. `gen min` cannot substitute: `gen min = 0` reads
+identically for a healthy young world and one the floor is holding up.
+
+**Chosen: `floorSpawns`, `floorSpawnsWindow` and `secondsSinceFloorFired` in `stats.jsonl`, and a
+`floor` column beside `gen min`.** The default 48 W/m² world takes 107 floor spawns against 6
+births in its first 600 s. See
+[logbook/0032](../logbook/0032-the-instrument-that-was-designed-and-never-built.md) for the
+re-audit; the short version is that the clearance arms were largely self-sustaining and the sink
+arms essentially never were.
+
+---
+
+### D048
+**Producers must consume something — nutrient is matter, light is energy** · 2026-08-28
+
+`PhotosyntheticCell.Acquire` returns `CellIntake.Light(...)` and draws no pool. `AbsorptiveCell`
+draws from the nutrient field. **So consumers deplete and producers do not**, and the only thing a
+producer emits is shade, which harms creatures below it and never itself.
+
+The consequence is that nothing a creature does makes its own position worse. There is no negative
+feedback anywhere on occupying the best spot, so every arm sorts to the surface and stays, and the
+depth axis is a ramp with its maximum at the boundary rather than a landscape with an interior
+optimum. That absence has been mistaken for several other things today, including the conclusion
+that a muscle has nothing worth buying.
+
+The real ocean's vertical structure *is* this feedback: light at the top, nutrients at the bottom,
+and the surface is nutrient-poor **because producers live there and strip it**. Corpses sink,
+remineralise at depth, and the deep stays rich and dark. Two opposed gradients, one of them created
+by the organisms themselves — and the reason gas vesicles exist ([D049](#d049)).
+
+**Chosen:**
+
+- Light stays energy; photosynthetic income is unchanged.
+- A **separate nutrient field** carries matter. Not the detritus pool: reusing it is cheaper and
+  would make producers and decomposers compete directly, which is ecologically right, but it
+  conflates joules with matter in §5A.2's audit, and an audit that cannot tell energy from matter
+  is the failure mode this project keeps rediscovering.
+- **Reproduction requires nutrient as well as energy**, drawn locally. Biologically exact — no
+  amount of sunlight builds a daughter cell without nitrogen and phosphorus — and it fits §5A.6,
+  where growth does not exist and tissue is only ever created at reproduction.
+- **Death returns the matter** to the field, where it sinks. The loop closes and nothing leaks.
+
+**Rejected: an imposed photodamage cost at high irradiance.** It would also produce an interior
+optimum, and it is real Archean biology (no ozone). But it manufactures the optimum by fiat where
+this produces one endogenously, and a moving one — the band shifts as the population shifts.
+
+Predicted, and the thing to check the implementation against: a **deep chlorophyll maximum**, a
+standing layer of peak productivity at intermediate depth, and blooms that crash by exhausting
+their own resource rather than by the crowding artefact seen so far.
+
+---
+
+### D049
+**A buoyancy cell, passive before controlled** · 2026-08-28
+
+Gas vesicles are the earliest mechanism life evolved for exactly this world's problem —
+positioning in a light gradient in a water column — and predate muscle by roughly three billion
+years. This world has been asking how a creature controls its depth while omitting the organ that
+does it, and answering with a joint, which is a Cambrian solution to an Archean problem.
+
+**Chosen: a `BuoyancyCell` with a genome-encoded, evolvable lift, priced like `LinkCell`'s
+capacity.** The machinery is largely present: [D044](#d044)'s `FluidConfig.TissueExcessDensity`
+already applies a buoyancy force per body in `FluidEnvironment`, and the change is to make it
+per-part and cell-determined.
+
+**Passive first, controlled second.** Step one is a fixed evolvable lift per cell: a lineage evolves
+to sit at a depth. Step two adds brain-driven modulation as a new effector channel — brains already
+run (`Brain.Step` → `Driver.Drive` in `Ecosystem.cs`), so this is a channel rather than a subsystem.
+Splitting them isolates *can creatures find their depth* from *does regulating help*.
+
+**Sequenced after [D048](#d048), deliberately.** Buoyancy in a world whose optimum is at the surface
+collapses to "everyone floats". Real cyanobacteria regulate buoyancy to **hold a band**; the band
+has to exist first.
