@@ -154,7 +154,7 @@ namespace Evosim.Core
             if (node.CellTypeId == CellTypeIds.Buoyancy)
             {
                 node.Lift = Math.Min(
-                    BuoyancyCell.MaxLiftKgPerCubicMetre, PerturbPositive(node.Lift, rng, rates));
+                    BuoyancyCell.MaxLiftSinkMultiples, PerturbPositive(node.Lift, rng, rates));
             }
 
             for (int e = node.Edges.Count - 1; e >= 0; e--)

@@ -177,11 +177,11 @@ namespace Evosim.Core
                         $"Node {n}: Lift {node.Lift} on a '{node.CellTypeId}' cell. Only a " +
                         $"'{CellTypeIds.Buoyancy}' cell holds gas, and nothing charges for this.");
                 }
-                else if (node.Lift > BuoyancyCell.MaxLiftKgPerCubicMetre)
+                else if (node.Lift > BuoyancyCell.MaxLiftSinkMultiples)
                 {
                     issues.Add(
-                        $"Node {n}: Lift {node.Lift} exceeds the {BuoyancyCell.MaxLiftKgPerCubicMetre} " +
-                        "kg/m3 bound, past which the solver rather than the economy decides what happens.");
+                        $"Node {n}: Lift {node.Lift} exceeds the {BuoyancyCell.MaxLiftSinkMultiples}x " +
+                        "sink bound, past which the solver rather than the economy decides what happens.");
                 }
 
                 for (int i = 0; i < node.JointLimits.Length; i++)

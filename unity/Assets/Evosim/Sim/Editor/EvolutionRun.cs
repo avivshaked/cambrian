@@ -405,7 +405,7 @@ namespace Evosim.Sim.EditorTools
             double travelled = 0d, age = 0d;
             int jointed = 0, jointedInherited = 0, dof = 0, absorptive = 0, inherited = 0;
             int buoyant = 0, buoyantInherited = 0;
-            double liftHeld = 0d;
+            double liftHeld = 0d, buoyantDepth = 0d;
             int genMin = int.MaxValue, genMax = 0;
 
             for (int i = 0; i < world.Living.Count; i++)
@@ -482,6 +482,14 @@ namespace Evosim.Sim.EditorTools
                 {
                     buoyant++;
                     liftHeld += creatureLift;
+
+                    // Where they are, separately from where everyone is. A mean over the whole
+                    // population cannot answer the only question D049 asks — does the organ buy
+                    // a position? — because the organ is held by a minority and the majority
+                    // sets the mean. The first probe reported a population rising to +12.8 m
+                    // with 4% of it buoyant, which says nothing about the 4%.
+                    buoyantDepth += creature.HeightY;
+
                     EverBuoyant.Add(creature.Id);
                     if (EverBuoyant.Contains(creature.ParentId)) buoyantInherited++;
                 }
@@ -549,6 +557,7 @@ namespace Evosim.Sim.EditorTools
                 .Field("buoyant", buoyant)
                 .Field("buoyantInherited", buoyantInherited)
                 .Field("liftHeld", liftHeld)
+                .Field("buoyantDepth", buoyant > 0 ? buoyantDepth / buoyant : 0d)
                 .Field("matterHere", world.Matter.DensityAt((float)meanDepth))
                 .Field("matterSurface", world.Matter.DensityAt(0f))
                 .Field("matterDeep", world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f))
@@ -620,6 +629,7 @@ namespace Evosim.Sim.EditorTools
                 "**" + buoyant.ToString(c) + "**",
                 "**" + buoyantInherited.ToString(c) + "**",
                 (buoyant > 0 ? liftHeld / buoyant : 0d).ToString("0.##", c),
+                (buoyant > 0 ? buoyantDepth / buoyant : 0d).ToString("0.#", c),
                 world.Matter.DensityAt(0f).ToString("0.###", c),
                 world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f)
                     .ToString("0.###", c),
@@ -652,7 +662,7 @@ namespace Evosim.Sim.EditorTools
             "mean m/s", "max m/s", "work J/s", "work share", "**food %**", "**absorpt**", "**inherit**",
             "**detritus J**", "**J/m3 here**", "**% on floor**", "depth m", "**depth sd**",
             "**rise m**", "age s", "sun", "**shade %**",
-            "**float**", "**flt inh**", "lift",
+            "**float**", "**flt inh**", "lift", "**flt m**",
             "mat top", "mat deep", "**mat blk**", "**floor**", "gen min", "gen max", "audit",
         };
 

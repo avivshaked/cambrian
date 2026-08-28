@@ -272,7 +272,23 @@ namespace Evosim.Sim
                     float lift = i < creature.Phenotype.Parts.Count
                         ? creature.Phenotype.Parts[i].Lift
                         : 0f;
-                    float netDensity = excessDensity - lift;
+
+                    // D050: lift is denominated in multiples of the sink it opposes, not in
+                    // absolute kg/m3. 1 is neutral. Absolute units put the two sides of the
+                    // trade on unrelated scales — the founder range was 25x to 250x the 0.02
+                    // kg/m3 it had to cancel, so the smallest bladder a creature could be born
+                    // with was already a rocket, and no genome value meant "a little lift"
+                    // (logbook/0034). This way the organ survives retuning TissueExcessDensity,
+                    // which §5.2 flags as unmeasured and expects to change.
+                    float netDensity = excessDensity * (1f - lift);
+
+                    // The ocean has a top. Above it light is constant and matter clamps to
+                    // layer 0, so every metre gained is physically identical to floating at
+                    // the waterline while still costing upkeep to hold — an unbounded ray of
+                    // nothing that the first D049 probe climbed 96 m into. A real body stops
+                    // rising when it emerges, because the water it displaces runs out; this is
+                    // that, at its coarsest. Sinking across the line is untouched.
+                    if (netDensity < 0f && body.transform.position.y >= 0f) netDensity = 0f;
 
                     if (netDensity != 0f)
                     {

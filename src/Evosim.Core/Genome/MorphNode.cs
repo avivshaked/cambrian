@@ -72,6 +72,11 @@ namespace Evosim.Core
         /// Lift rather than density: being heavier than water is already free (§5.2 and D044's
         /// <c>TissueExcessDensity</c>), so the thing that needs an organ, a price and a genome
         /// field is going up.
+        ///
+        /// <b>In multiples of that sink, not in kg/m³</b> — D050. 1 is neutral buoyancy, 2 rises
+        /// as fast as a bare body falls. Absolute units made the field's meaning depend on a
+        /// world constant §5.2 flags as unmeasured, and the two were 25x to 250x apart, so the
+        /// weakest expressible bladder was already a runaway (logbook/0034).
         /// </remarks>
         public float Lift { get; set; }
 

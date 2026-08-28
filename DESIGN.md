@@ -772,6 +772,38 @@ it.
 | **Structural** | Nothing | Cheapest upkeep, but **not free** — see §5A.2 |
 | **Neural** | Nothing | Hosts neurons cheaply. Makes a *brain* a morphological trait — see below |
 | **Link** | Nothing *by default* | The only type that may carry a joint, so the only source of motion. See below — the default is now a setting rather than a rule |
+| **Buoyancy** | Nothing | Holds gas: cancels some of its own weight, and is billed per unit of lift whether or not it is useful. The only type that can choose a depth without swimming — D049 |
+
+**Buoyancy tissue, and why it is not a muscle.** Gas vesicles are the oldest behaviour in the
+record — cyanobacteria hold a depth in a light gradient with them, three billion years before
+anything had muscle. Under §5A.2d the water column has light at the top and matter at the
+bottom, so **depth is very nearly a creature's whole strategy**, and until D049 there was no
+organ for choosing one. The joint was being asked to do that job, which is a Cambrian answer to
+an Archean question and is why it never paid (logbook/0027, logbook/0030).
+
+**Lift, not density.** Being *heavier* than water is already free — §5.2's neutral buoyancy and
+D044's `TissueExcessDensity` — so the thing that needs an organ, a price and a genome field is
+going **up**. `MorphNode.Lift` carries it, evolvable per part and zero on every other cell type
+by validation.
+
+**In multiples of the sink it cancels, not in kg/m³** — D050. 1 is neutral buoyancy, 2 rises as
+fast as a bare body falls, and `FluidEnvironment` applies `excessDensity × (1 − lift)`. Absolute
+units made the genome's meaning depend on a world constant §5.2 flags as unmeasured, and the two
+were 25× to 2,500× apart: the weakest bladder a creature could be born with was already a runaway
+and neutral buoyancy was not a reachable value, which is the one thing gas vesicles are for
+(logbook/0034).
+
+**The water column has a top.** A part at or above y = 0 gets no *upward* net force, because the
+water it displaces has run out; sinking across the line is untouched. Without it the world was an
+unbounded ray — `LightModel.IrradianceAt` returns a constant above 0 and `NutrientField.LayerOf`
+clamps to layer 0, so every metre gained was physically identical to floating at the waterline
+while still costing upkeep to hold. Measured: buoyant creatures at +155.8 m in a band 23.7 m deep.
+
+**Charged for whether or not it is doing anything**, exactly as a link is charged for capacity.
+Free lift runs away to whatever ceiling exists and returns every creature to the surface, which
+is the world §5A.2d was built to escape. It earns nothing, like structural tissue: a bladder has
+to pay for itself entirely through where it puts the rest of the body, which is the same shape
+of bet as a fin.
 
 **Link tissue and whether a muscle may earn.** A link was given no income for the same reason
 `Structural` has none: it is not a feeding organ. The consequence was not noticed for four months.

@@ -43,7 +43,7 @@ namespace Evosim.Core
         /// and §9's rule is that loading refuses rather than defaults: a genome that loads with
         /// one field silently zeroed is a different creature wearing the original's identity.
         /// </remarks>
-        public const int FormatVersion = 2;
+        public const int FormatVersion = 3;
 
         public static string Write(Genome genome, bool indent = false)
         {

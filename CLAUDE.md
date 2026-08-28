@@ -224,6 +224,19 @@ actually verifying it.
   prevents synchronous cohort *death* and does nothing about this. Read `jointedInherited` /
   `absorptiveInherited` — creatures whose parent had the trait — not the share; and treat
   `gen min = 0` as "founders present, share meaningless".
+- **The world has no top, and three separate clamps hide it.** `LightModel.IrradianceAt` returns a
+  constant for `heightY >= 0`, `NutrientField.LayerOf` puts everything at or above 0 in layer 0, and
+  `FluidEnvironment` bounds y not at all. Each is reasonable alone; together they make the region
+  above the waterline an unbounded ray on which every point is physically identical to floating at
+  y = 0, while the physics keeps integrating. D049's first buoyancy probe climbed 155 m into it in a
+  world whose habitable band is 23.7 m deep, paying upkeep the whole way for a position no different
+  from the surface (logbook/0034). D050 stops *upward* net force at y = 0. Anything else that can
+  push a creature up — an effector channel, a current — needs the same question asked of it.
+- **`gen min = 0` has two causes and they need opposite responses.** CLAUDE.md's floor rule reads it
+  as founder contamination, which is right when the floor is firing. With `EVOSIM_SENESCENCE` off,
+  founders simply never age out, so `gen min = 0` persists in a world whose floor stopped firing at
+  t=400 and whose traits are entirely inherited. Read `floor` and `*Inherited` together: floor 0 plus
+  82-of-88 inherited is a lineage, whatever the generation minimum says.
 - **PowerShell scripts need a UTF-8 BOM.** Windows PowerShell reads a BOM-less `.ps1` as ANSI, so
   an em-dash inside a double-quoted string becomes three bytes that terminate the string and the
   file will not parse — the error points at the following token and says nothing about encoding.

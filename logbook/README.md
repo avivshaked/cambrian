@@ -94,3 +94,4 @@ are the ones most likely to go unwritten.
 | [0031](0031-the-muscle-that-paid-you-to-carry-it.md) | 2026-08-28 | The muscle that paid you to carry it |
 | [0032](0032-the-instrument-that-was-designed-and-never-built.md) | 2026-08-28 | The instrument that was designed and never built |
 | [0033](0033-the-surface-stripped-itself.md) | 2026-08-28 | The surface stripped itself |
+| [0034](0034-the-ocean-had-no-top.md) | 2026-08-28 | The ocean had no top |

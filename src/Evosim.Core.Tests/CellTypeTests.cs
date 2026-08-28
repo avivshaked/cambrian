@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using Evosim.Core;
 using Xunit;
@@ -415,6 +416,59 @@ namespace Evosim.Core.Tests
 
             Assert.NotEmpty(buoyant.Parts);
             Assert.All(buoyant.Parts, p => Assert.Equal(3f, p.Lift));
+        }
+
+        [Fact]
+        public void AFounderBladderStraddlesNeutralBuoyancyRatherThanBeingARocket()
+        {
+            // Lift is a multiple of the sink it cancels (D050), so the range must contain 1.
+            // A range entirely above it can only make rockets; one entirely below it can only
+            // make creatures that sink slightly slower, and selection never sees the interesting
+            // case either way.
+            //
+            // ⚠ This does NOT reproduce the bug it was written after. Under the old absolute
+            // kg/m3 units the range was 0.5-5 against a 0.02 kg/m3 sink — 25x to 250x
+            // overpowered — and it would have passed all three assertions below, because 0.5
+            // and 5 straddle 1 whatever 1 happens to mean. The error was in the *units*, and
+            // the netting that gives them meaning lives in FluidEnvironment, which is Unity-side
+            // and outside this suite. It was caught by measurement, not by a test: buoyant
+            // creatures at +155 m in a world whose habitable band is 23.7 m deep
+            // (logbook/0034). What this pins is the invariant going forward, not the fault.
+            var o = RandomGenomeOptions.Default;
+
+            _output.WriteLine($"founder lift {o.MinBuoyancyLift}-{o.MaxBuoyancyLift} sinks, " +
+                              $"bound {BuoyancyCell.MaxLiftSinkMultiples}");
+
+            Assert.True(
+                o.MinBuoyancyLift < 1f,
+                $"MinBuoyancyLift {o.MinBuoyancyLift} is at or above neutral, so every founder " +
+                "bladder rises and holding station is not an expressible strategy.");
+
+            Assert.True(
+                o.MaxBuoyancyLift > 1f,
+                $"MaxBuoyancyLift {o.MaxBuoyancyLift} is at or below neutral, so no founder can " +
+                "climb and the organ can only ever slow a fall.");
+
+            Assert.True(
+                o.MaxBuoyancyLift <= BuoyancyCell.MaxLiftSinkMultiples,
+                $"MaxBuoyancyLift {o.MaxBuoyancyLift} exceeds the {BuoyancyCell.MaxLiftSinkMultiples}x " +
+                "bound, so a founder is born already clamped and the draw is a lie.");
+        }
+
+        [Fact]
+        public void TheLiftBoundIsInTheHashBecauseItDecidesWhichGenomesExist()
+        {
+            // MaxLiftSinkMultiples is a const rather than a [Tunable], so RunConfigTests cannot
+            // see it — but Mutator clamps to it, which makes it a bound on the reachable genome
+            // space. Two builds that disagree about it produce different creatures; if it is
+            // absent from the hash they agree about the one number meant to notice (§7, D046).
+            string contribution = new BuoyancyCell().HashContribution();
+
+            _output.WriteLine(contribution);
+
+            Assert.Contains(
+                BuoyancyCell.MaxLiftSinkMultiples.ToString("R", CultureInfo.InvariantCulture),
+                contribution);
         }
     }
 }

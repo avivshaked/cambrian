@@ -707,18 +707,30 @@ namespace Evosim.Core
     /// </remarks>
     public sealed class BuoyancyCell : CellType
     {
-        /// <summary>What holding a unit of lift costs, W per (kg/m³) per m³ of tissue.</summary>
+        /// <summary>
+        /// What holding a unit of lift costs, W per sink-multiple per m³ of tissue — so the
+        /// default prices neutral buoyancy at 0.05 W/m³, about 2% of the cell's own upkeep.
+        /// </summary>
         /// <remarks>
         /// ⚠ Unmeasured (§5A.10), and it trades the same way <c>IdleWattsPerNewtonMetre</c> does:
         /// too low and depth is free, too high and nothing can afford to leave the surface. The
         /// calibration question is whether a creature can buy its way to the matter at depth for
         /// less than the matter is worth — which is a comparison D048 made possible and nothing
         /// before it could have asked.
+        ///
+        /// Deliberately small against the cell's 2.5 W/m³ upkeep: holding gas is cheap in life —
+        /// a vesicle costs to build, not to keep inflated — so the bet a bladder makes is mostly
+        /// the photosynthesis it forfeits by not being a producer, which is the same shape of bet
+        /// as a fin. ⚠ Its units changed under D050 and this default did not; it now prices a
+        /// multiple of the sink rather than a kg/m³.
         /// </remarks>
         public float WattsPerLiftUnit { get; }
 
-        /// <summary>Most lift one cell may hold, kg/m³ — a numerical bound, not an economic one.</summary>
-        public const float MaxLiftKgPerCubicMetre = 50f;
+        /// <summary>
+        /// Most lift one cell may hold, in multiples of the sink it opposes — a numerical bound,
+        /// not an economic one. 1 is neutral, so 3 rises at twice a bare body's sink rate.
+        /// </summary>
+        public const float MaxLiftSinkMultiples = 3f;
 
         public BuoyancyCell(
             float wattsPerLiftUnit = 0.05f,
@@ -752,7 +764,8 @@ namespace Evosim.Core
         public override string HashContribution() =>
             string.Format(
                 CultureInfo.InvariantCulture,
-                "{0}:upkeep={1:R},joint={2},lift={3:R}",
-                Id, UpkeepWattsPerCubicMetre, AllowsJoint, WattsPerLiftUnit);
+                "{0}:upkeep={1:R},joint={2},lift={3:R},maxLift={4:R}",
+                Id, UpkeepWattsPerCubicMetre, AllowsJoint, WattsPerLiftUnit,
+                MaxLiftSinkMultiples);
     }
 }

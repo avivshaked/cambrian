@@ -205,7 +205,7 @@ namespace Evosim.Core
         [Tunable("genome")]
         public float MaxLinkPower { get; set; } = 20f;
 
-        /// <summary>Lift range for a buoyancy cell, kg/m³ of displaced water — D049.</summary>
+        /// <summary>Lift range for a buoyancy cell, in multiples of the sink — D049, D050.</summary>
         /// <remarks>
         /// The range a cell is drawn when it first becomes buoyant, whether at generation zero or
         /// by mutation — one source of truth for both, which is D045's rule after the retired
@@ -216,11 +216,16 @@ namespace Evosim.Core
         /// selection never gets to see. ⚠ Both bounds unmeasured (§5A.10) — read them against
         /// <c>BuoyancyCell.WattsPerLiftUnit</c>, since what matters is whether the depth a lift
         /// buys is worth what holding it costs.
+        ///
+        /// <b>The range straddles 1, which is neutral</b> — D050. It used to be 0.5–5 kg/m³
+        /// against a 0.02 kg/m³ sink, so every founder bladder was between 25x and 250x
+        /// overpowered and neutral buoyancy — the thing a swim bladder is actually for — was
+        /// not a reachable genome value at all (logbook/0034).
         /// </remarks>
         [Tunable("genome")]
-        public float MinBuoyancyLift { get; set; } = 0.5f;
+        public float MinBuoyancyLift { get; set; } = 0.25f;
         [Tunable("genome")]
-        public float MaxBuoyancyLift { get; set; } = 5f;
+        public float MaxBuoyancyLift { get; set; } = 2f;
 
         /// <summary>
         /// Brood size range for the initial population — DESIGN.md §5A.6.

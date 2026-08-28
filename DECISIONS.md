@@ -71,7 +71,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D046](#d046) | A link that photosynthesises pays green tissue's upkeep | 2026-08-28 | active · supersedes D043's ceiling |
 | [D047](#d047) | The alphabet stays flat; what was missing is the floor’s report | 2026-08-28 | active |
 | [D048](#d048) | Producers must consume something — nutrient is matter, light is energy | 2026-08-28 | accepted, not yet built |
-| [D049](#d049) | A buoyancy cell, passive before controlled | 2026-08-28 | accepted, not yet built · follows D048 |
+| [D049](#d049) | A buoyancy cell, passive before controlled | 2026-08-28 | active · built; rescaled by D050 |
+| [D050](#d050) | Lift is a multiple of the sink it cancels, and the ocean has a top | 2026-08-28 | active · fixes D049 units |
 
 ---
 
@@ -2131,3 +2132,44 @@ Splitting them isolates *can creatures find their depth* from *does regulating h
 **Sequenced after [D048](#d048), deliberately.** Buoyancy in a world whose optimum is at the surface
 collapses to "everyone floats". Real cyanobacteria regulate buoyancy to **hold a band**; the band
 has to exist first.
+
+### D050
+**Lift is a multiple of the sink it cancels, and the ocean has a top** · 2026-08-28
+
+[D049](#d049) shipped and was measured, and the measurement said the organ was a rocket:
+buoyant creatures 100–178 m above the rest of the population in a world whose habitable band is
+23.7 m deep, holding a share that fell from 25% to 4% while they climbed (logbook/0034). Two
+faults, independent of each other and of D049's reasoning, which stands.
+
+**Lift was denominated in absolute kg/m³ and the thing it opposes was not.** `TissueExcessDensity`
+was 0.02 kg/m³ in every one of those runs; the founder lift range was 0.5–5 and the bound 50 — so
+25× to 2,500× the weight there was to cancel. The weakest bladder a creature could be born with was
+already a runaway, and **neutral buoyancy was not a reachable genome value**, which is the one
+thing gas vesicles are for.
+
+**Chosen: `MorphNode.Lift` is a multiple of `TissueExcessDensity`.** 1 is neutral, 2 rises as fast
+as a bare body sinks; `FluidEnvironment` computes `excessDensity × (1 − lift)`. The founder range
+became 0.25–2 and the bound 3. The alternative — keep absolute units and fix the numbers — was
+rejected because §5.2 flags `TissueExcessDensity` as unmeasured and expects to retune it, and
+absolute lift fails that silently: every sweep of the sink would rescale what the genome means
+without changing a line of it. This couples a genome field's force to a world constant, which is
+the cost, and is the same coupling a real fish has to the water it is in.
+
+**Chosen: no upward net force at or above y = 0.** Above the waterline `LightModel.IrradianceAt`
+returns a constant and `NutrientField.LayerOf` clamps to layer 0, while the physics keeps
+integrating — so the world was an unbounded ray on which every point is identical to floating at
+the surface, and lift bought a hundred metres of nothing at a standing cost. §5A.1 anticipated
+that "free lift runs away to whatever ceiling exists"; the ceiling was what was missing. A real
+body stops rising as it emerges because the water it displaces runs out, and this is that at its
+coarsest. Sinking across the line is untouched.
+
+**`GenomeJson.FormatVersion` 2 → 3**, because the units of a stored field changed and §9's rule is
+that loading refuses rather than reinterprets. **`MaxLiftSinkMultiples` joins
+`BuoyancyCell.HashContribution`**: it is a `const` and not a `[Tunable]`, so `RunConfigTests`
+cannot see it, but `Mutator` clamps to it and it therefore bounds which genomes exist — exactly
+[D046](#d046)'s bug, where a derived value decided behaviour and was absent from the hash meant to
+notice.
+
+⚠ **The fix is unmeasured at the time of writing.** `d050-slow` and `d050-heavy` re-run the two
+arms under the new units. Nothing here establishes that a correctly-scaled bladder pays for
+itself — only that the previous answer was an artefact of the units and of a missing surface.
