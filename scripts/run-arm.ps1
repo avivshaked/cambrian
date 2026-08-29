@@ -51,8 +51,10 @@ $proj = if ($Worker -eq 1) { Join-Path $root 'unity' } else { Join-Path $root "u
 if (-not (Test-Path $proj)) { throw "No worker project at $proj — run scripts/new-worker.ps1 -Workers $Worker" }
 
 # Refuse rather than corrupt: a Library/ is not shareable, and the damage shows up later.
+# The path must end where the argument ends: unity/ is a prefix of unity-w2/, and a prefix
+# match refused worker 1 whenever any other worker was busy (logbook/0037).
 $busy = Get-CimInstance Win32_Process -Filter "Name='Unity.exe'" |
-    Where-Object { $_.CommandLine -match [regex]::Escape($proj) }
+    Where-Object { $_.CommandLine -match ([regex]::Escape($proj) + '(?=["\s]|$)') }
 if ($busy) { throw "A Unity process (PID $($busy.ProcessId)) already has $proj open." }
 
 $log = Join-Path $env:TEMP "evosim-$Name.log"
