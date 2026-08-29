@@ -130,4 +130,80 @@ upstream to D048's economy before any food chain can be called self-sustaining.
 
 ### Round 2b — results
 
-*(to be written when the arms finish)*
+*Interim note, written while `d052b-s3` was still running.* Once seeds 1, 2 and 4 had died
+at their matter crashes (t=9,146, 5,039, 20,313 — Q2 in three arms of five), the round's
+main answer was fixed, and the two remaining arms with no lineage were stopped by hand to
+free the machine: `d052-s3` (the surviving 2a arm) at t=16,800 with 2,764 alive, and
+`d052b-s5` at t=26,000 with 2,212 alive — both producer worlds healthy, both past every
+crash time seen elsewhere, neither ever visited by a breeding mutant. `d052b-s3` runs on
+because it carries the one question left worth the hours: its mutant lineage peaked at 250
+at t≈18,400, ate the deep water to 4.5 J/m³, and bust to 2 by t=20,500 with the food
+rebuilding beneath it — Q6, live.
+
+### Round 2b — final
+
+`d052b-s3` was stopped by hand at t=20,900 once its lineage had reached zero: at a fifth of
+real time it would have hit its wall budget around t≈23,000 with nothing left to learn.
+No arm reached 40,000 s. Every arm passed t=20,000 or died before it.
+
+| arm | producers | absorptive lineage | ended |
+|---|---|---|---|
+| s1 | crash at t≈8,000, births frozen at 2,954 | none | **extinct t=9,146** |
+| s2 | crash at t≈4,000, births frozen at 1,972 | none | **extinct t=5,039** |
+| s3 | healthy, 2,294 at the end, gen min 12 | mutant present from t=16,000 (1–2 individuals); **bred at t≈17,200, 378 (376 inherited) by t=18,000**, ate the deep water 32.5 → 4.0 J/m³ in 1,500 s, fell 378 → 100 → 25 → 4 → **0 at t=20,900** while the food rebuilt to 7.4 beneath the last survivor | stopped t=20,900 |
+| s4 | crash at t≈19,000, births frozen at 8,451, 47 J/m³ on the bed | none | **extinct t=20,313** |
+| s5 | healthy, 2,212, gen min 14 | one mutant at t≈14,000, did not breed | stopped t=26,000 |
+
+And the 2a survivor, `d052-s3`: founded itself from forty random genomes with the floor
+closed at 20 s, 2,764 producers and gen min 12 when stopped at t=16,800; no mutant ever.
+
+**Scored against the pre-registration:**
+
+| # | result |
+|---|---|
+| Q1 | **held** — `floor` = 0 after t=3,100 in every arm |
+| Q2 | **held, three arms of five** — the reading written for that case applies: the matter crash is lethal without the net, and the work moves upstream |
+| Q3 | not testable by the letter (no arm reached 40,000); in spirit, three producer worlds (2b-s3, 2b-s5, 2a-s3) held 2,200–2,800 at gen min 12–14 with the net down, past every crash time seen elsewhere |
+| Q4 | **failed** — mutants in 2 of 5, not 3 |
+| Q5 | **failed** — no lineage alive at any arm's end |
+| Q6 | **falsified** — the one lineage that bust went to zero, not back up |
+| Q7 | **failed** — no arm fell below 100 and recovered; every one that fell died |
+
+**The goal, scored:** not met. *Self-sustaining* fails at the producers, three seeds in
+five; *holds a food chain* was shown in round 1 and shown once more here with the net down
+(s3), and *keeps one* has now failed every time it has been watched to the end — four
+lineages, four busts to zero or nearly so.
+
+### What the two rounds actually found
+
+1. **The crash is a trap, and it has one signature.** Six extinctions (2a-s2, 2b-s1, s2,
+   s4, and round 1's near-misses) read identically: surface matter falls to ~0.02/m³ and
+   thousands of conceptions are refused; births freeze; the heavy bodies (excess density
+   0.1, D050) sink out of the light over the next thousand seconds; the cohort ages out
+   under senescence with the surface matter recovering to 0.5/m³ above it and nobody left
+   to use it. Starvation is the trigger; **sinking is what makes it irreversible**, because
+   a population that stops being born at the surface leaves it. The floor has been
+   masking this since D048 shipped, and D050's "heavy" world — chosen because buoyancy
+   only matters there — is where it bites hardest.
+2. **A food chain arises by mutation and dies by overshoot.** With the net down, one
+   mutant in `d052b-s3` went from 2 to 378 in 800 s and drew 23 J/m³ of deep water down to
+   4 in 1,500 s. Nothing regulates an absorptive lineage but its food, its food regrows at
+   ~1 J/m³ per 200 s, and the lineage does not slow down as it thins the water — it eats
+   the last of it and starves. Every lineage watched to the end did this. A chain in this
+   world is a pulse, not a standing structure.
+3. **Founding is a lottery the floor has been running.** Forty random genomes breed in one
+   seed of four; the floor's t=0 job was never "place founders", it was "keep drawing
+   until one breeds". D021's "fires at t=0 and never again" describes a world that does
+   not exist yet.
+4. **The instrument worked.** Two pre-registrations, both falsified in the direction that
+   taught something, both within a day. `read-arm.ps1` scored every claim above by rule.
+
+### What comes next is a decision, not an arm
+
+The route to "self-sustaining" runs through the trap in (1), which is a design question
+with at least three candidate answers — a lighter world (sink 0.02, where bodies stay lit
+through a matter drought), a faster matter return (the matter field mixes at 2 m²/s
+already; the lag is the population's, not the field's), or senescence slower than the
+drought — and the overshoot in (2), which is the classic consumer–resource cycle with no
+damping. Neither is this entry's to decide; both belong in DECISIONS.md with a
+pre-registration behind them.

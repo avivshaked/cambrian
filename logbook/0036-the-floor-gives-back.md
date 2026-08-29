@@ -178,7 +178,7 @@ budget ended at t≈16,600 (past the t≥10,000 the pre-registration required). 
 | ctl-s2 | 0 | 38.2 | t=4,600 | floor top-ups t=4,600–9,500 never bred; **a mutant** (gen min 11) present alone from t=17,500 bred at t=19,200 | 437 (436) at t=20,000 | 9 samples · FAIL (run ended) | **437 alive, rising** |
 | ctl-s3 | 0 | 32.7 | t=15,800 | **mutation** — floor silent from t≈1,000 | 401 (399) at t=17,800 | 29 samples, t=17,200–20,000 · **PASS** | 4 — bust in progress |
 | rem-s1 | 0.01 | 38.7 | t=9,900 | **mutation** — three separate mutants lingered as 1–4 individuals (t=9,900, 13,200, 17,100); the third bred at t=18,700 | 1,092 (1,091) at t=20,000 | 14 samples · FAIL (run ended) | **1,092 alive, rising** |
-| rem-s2 | 0.01 | 35.4 | t=4,600 | floor top-ups during crashes, none bred | 12 (1) | none · FAIL | 0 at t=16,600 |
+| rem-s2 | 0.01 | 37.3 | t=4,600 | floor top-ups during crashes, none bred; a mutant present as 3 individuals from t≈16,900 | 12 (1) | none · FAIL | 3 (0 inherited) at t=17,300, wall budget |
 | rem-s3 | 0.01 | 35.6 | t=5,300 | **mutation** at 7 J/m³, did not breed | 16 (0) | none · FAIL | 0 |
 
 **By the rule written before launch: P6 holds in 2 of 6 arms, P7 is moot.** Two of three
