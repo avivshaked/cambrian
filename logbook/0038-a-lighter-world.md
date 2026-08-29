@@ -121,3 +121,15 @@ Predictions R1–R6 as above, plus:
 producers alive is one that also removes the limit on them, and the next question is
 what limits a lit population — shading is meant to (D023) and at 3,000 creatures it was
 only 19%.
+
+### Interim — 3b fails R2 within two arms
+
+`d053b-s1` extinct at t=4,045 and `d053b-s2` at t=5,854. Seed 1 never had a drought: matter
+0.2–0.5/m³ throughout, nothing blocked, and births still froze at 715 by t≈2,700 with the
+population at −23 to −29 m — below the light — before it sank to −52 m and aged out. The
+trap's trigger was depth this time, not matter; the mechanism was the same. R2 allowed one
+extinction and 3b has two of three, so the round's answer is fixed while seeds 3 and 4
+run: **at 0.02 the world runs away, at 0.05 and 0.1 it dies.** Suggestion 1 on its own gives
+no world that can be scored. Which half of the trap is irreversible depends on the density
+— sinking at 0.05 and 0.1, age synchrony at 0.02 — and the second is what suggestion 2
+addresses. Round 4 is logbook/0039.
