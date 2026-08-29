@@ -84,4 +84,50 @@ wall budget that ends an arm before t=20,000.
 
 ## Results
 
+### Round 2a — floor closed at 20 s: three of four extinct before t≈2,600
+
+Four arms launched (seed 5 waited for a worker). Within an hour:
+
+| arm | fate | what the trace says |
+|---|---|---|
+| s1 | **extinct at t=2,509** | 40 founders, **0 births**. Nothing in the cohort could breed; the last founder died at −12 m with 0.53 matter/m³ at the surface |
+| s2 | **extinct at t=2,613** | bred to 287 by t=1,000, then surface matter fell to 0.05/m³, births stopped at 310, and the population sank and died — D048's matter crash, uncaught |
+| s3 | alive, 174 at t=1,500 | still running |
+| s4 | **extinct at t=1,586** | 40 founders, **2 births** |
+
+Q1 held (the floor was silent everywhere after t=100). Q2 held, in three arms of four —
+and the pre-registered reading for that case named the wrong cause. Only s2 died of the
+matter crash the reading anticipated. **s1 and s4 died of founding**: forty random
+generation-zero genomes, most of which cannot breed at all, and in two seeds of four none
+that could. Round 1's populations sitting at 40–86 through t≈1,000–2,000 in seed 1 were
+not a small viable population, they were the floor replacing founders as fast as they
+died, until a lineage that could breed happened to be drawn.
+
+So the floor has had two jobs, and only one of them was visible before today: it rescues
+matter crashes (round 1), and it **runs the founding lottery** until a breeding lineage
+exists. Closing it at 20 s tests whether forty random genomes are a viable population.
+They are not, and that was not the goal's question — a self-sustaining world is one that
+keeps itself *once it exists*. The 20-second answer stands as written: **with founding
+limited to one draw, the world is not self-sustaining, three seeds in four.**
+
+### Round 2b — pre-registered before launch, same day
+
+**One change: the floor closes at t=3,000 s** instead of 20. Round 1's traces put the
+founding phase (floor firing on a rising population) inside t<1,000 in every seed, and the
+earliest matter crash at t=4,600. So 3,000 is after founding and before the first crash:
+the floor may build the population, and may not rescue it. Everything else as above —
+40,000 s, five seeds, arms `d052b-s1..s5`. Seed 3's 2a arm runs on as a 2a result.
+
+Predictions Q1–Q6 as above, with Q1 read after t=3,100 and one addition:
+
+| # | prediction | falsified by |
+|---|---|---|
+| Q7 | at least 2 of 5 arms fall below 100 producers after t=3,000 and recover above 300 without the floor — a matter crash survived | `alive`, `floor` |
+
+The success line is unchanged: **Q1, Q3 and Q5**. If Q2 still holds in ≥3 arms at 3,000 s,
+the finding is that the matter crash itself is lethal without the net, and the work moves
+upstream to D048's economy before any food chain can be called self-sustaining.
+
+### Round 2b — results
+
 *(to be written when the arms finish)*
