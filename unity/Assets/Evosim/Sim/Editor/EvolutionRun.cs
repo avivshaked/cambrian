@@ -94,6 +94,13 @@ namespace Evosim.Sim.EditorTools
             // in, where the floor only ever accumulates.
             float remin = Env("EVOSIM_REMIN", 0f);
 
+            // D021's "never again", enforced directly rather than only measured. 0 keeps the
+            // floor open forever — today's behaviour, and every earlier run's. A positive value
+            // closes it after that many simulated seconds (RunConfig.FloorClosesAfterSeconds), so
+            // anything alive past that point got there on its own; a world that crashes to zero
+            // after closing is left at zero rather than rescued.
+            float floorCloses = Env("EVOSIM_FLOOR_CLOSES", 0f);
+
             // Ageing (D038). Seconds of life after which a body costs twice as much to keep and
             // converts half as much of what it takes. 0 is the immortal world every earlier run
             // measured, in which 92% of everything ever born was still alive.
@@ -177,6 +184,7 @@ namespace Evosim.Sim.EditorTools
             config.NutrientMixingDiffusivity = mixing;
             config.NutrientRemineralisationPerSecond = remin;
             config.MatterRemineralisationPerSecond = remin;
+            config.FloorClosesAfterSeconds = floorCloses;
             config.SenescenceDoublingSeconds = senescence;
             config.Mutation.CellTypeChance = cellTypeMutation;
             var eco = new Ecosystem(config, seed);
@@ -209,6 +217,7 @@ namespace Evosim.Sim.EditorTools
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
                 " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
                 " · remin " + remin + " /s" +
+                (floorCloses > 0f ? " · floor closes " + floorCloses + " s" : " · floor open") +
                 " · senescence " + (senescence > 0f ? senescence + " s" : "off") +
                 " · cellType mut " + cellTypeMutation +
                 " · clearance " + clearance +
@@ -236,6 +245,23 @@ namespace Evosim.Sim.EditorTools
                     if (!eco.Step()) continue;
 
                     metabolicSteps++;
+
+                    // Checked every step, not only at a report row: with FloorClosesAfterSeconds
+                    // set (or any other way the floor can fail to refill), an empty world would
+                    // otherwise sit doing nothing for up to reportEvery more steps before anyone
+                    // noticed. A crash to zero is a real outcome (RunConfig.FloorClosesAfterSeconds),
+                    // so it ends the run through the same finishing path as a normal one — one last
+                    // row is written first so the final state is not lost.
+                    if (eco.World.Living.Count == 0)
+                    {
+                        ending =
+                            "extinct at t=" + eco.World.ElapsedSeconds.ToString("0.#") +
+                            " s, and the floor could not refill it";
+                        report.AppendLine(Row(eco, dir));
+                        Flush(outPath, report);
+                        break;
+                    }
+
                     // When, not only how much. A best that only ever occurs in the opening
                     // seconds is a transient; one that recurs late is a creature.
                     if (eco.MaxSpeed > bestSpeedEver)
@@ -252,12 +278,6 @@ namespace Evosim.Sim.EditorTools
                     // Every tenth report: often enough that a killed run keeps something recent,
                     // rare enough that a population of thousands is not serialised every sample.
                     if (metabolicSteps % (reportEvery * 10) == 0) Snapshot(dir, eco);
-
-                    if (eco.World.Living.Count == 0)
-                    {
-                        ending = "extinct, and the floor could not refill it";
-                        break;
-                    }
                 }
             }
             catch (PopulationRunawayException runaway)

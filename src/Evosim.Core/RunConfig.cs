@@ -189,6 +189,35 @@ namespace Evosim.Core
         [Tunable("population")]
         public int FloorSpawnsPerStep { get; set; } = 2;
 
+        /// <summary>
+        /// Simulated seconds after which the floor stops intervening, however far the population
+        /// has fallen — D021, and the contamination gotcha in CLAUDE.md.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Zero means never</b> — bit-identical to the floor's behaviour before this knob
+        /// existed, and the default for exactly that reason. D021 wants the floor to "fire at t=0
+        /// and never again"; in every run so far it instead keeps firing through every later
+        /// population crash, because <see cref="MinimumPopulation"/> is checked with no memory of
+        /// how much time has passed. Each rescue seeds fresh generation-zero founders into a world
+        /// that is supposed to be sustaining itself, so a trait's later share is partly a readout
+        /// of the founder draw rather than of what survived (CLAUDE.md, "morphology share is
+        /// contaminated by the population floor").
+        /// </para>
+        /// <para>
+        /// A positive value closes the floor once <see cref="World.ElapsedSeconds"/> reaches it —
+        /// the floor does nothing at all past that point, including refusing to top a population
+        /// up from zero. The founding cohort is unaffected: there is no seeding path apart from
+        /// the floor (see <see cref="World"/>'s remarks), so it still fires on the world's first
+        /// step regardless of this value, provided that step's duration is less than the
+        /// threshold — set this below one step's length and there is no founding cohort either.
+        /// A world that crashes to zero after the floor closes is allowed to stay at zero; that is
+        /// a real outcome, not a bug to paper over.
+        /// </para>
+        /// </remarks>
+        [Tunable("population", Unit = "s")]
+        public float FloorClosesAfterSeconds { get; set; } = 0f;
+
         /// <summary>Joules a floor-spawned founder starts with.</summary>
         /// <remarks>
         /// The only energy in the design created from nothing besides sunlight, so it is counted

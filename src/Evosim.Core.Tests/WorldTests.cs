@@ -132,6 +132,79 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void FloorClosesAfterSecondsDefaultZeroNeverCloses()
+        {
+            // Bit-identical to the floor's behaviour before this knob existed: 0 means never, so
+            // a dark world that keeps crashing keeps getting rescued indefinitely rather than
+            // being allowed to reach zero.
+            var config = new RunConfig { MinimumPopulation = 20 };
+            Assert.Equal(0f, config.FloorClosesAfterSeconds);
+
+            var world = Run(config, new LightModel(1e-6f, 1f), seconds: 200f);
+            long spawnsAt200 = world.FloorSpawns;
+
+            for (int i = 0; i < 200; i++) world.Step(1f);
+
+            Assert.True(world.FloorSpawns > spawnsAt200, "the floor should still be firing past t=200");
+            Assert.NotEmpty(world.Living);
+        }
+
+        [Fact]
+        public void FloorClosesAfterSecondsFoundsOnceThenNeverRescuesAgain()
+        {
+            // The founding cohort must survive the knob. One step of 0.5 s puts ElapsedSeconds at
+            // 0.5, below the 1 s threshold, so the floor still fires and places founders — there
+            // is no other way for a creature to enter this world (World's remarks). Every step
+            // after that crosses the threshold, and a dark world that would otherwise be propped
+            // up forever is instead allowed to starve to zero: D021's "never again", enforced by
+            // this knob rather than by the world's own biology.
+            var config = new RunConfig
+            {
+                MinimumPopulation = 20,
+                FloorClosesAfterSeconds = 1f,
+                Light = new LightModel(1e-6f, 1f),
+            };
+            var world = new World(config);
+
+            world.Step(0.5f);
+            Assert.NotEmpty(world.Living);
+            Assert.True(world.FloorSpawns > 0);
+
+            long spawnsAtClose = world.FloorSpawns;
+
+            for (int i = 0; i < 800; i++) world.Step(0.5f);
+
+            Assert.Equal(spawnsAtClose, world.FloorSpawns);
+            Assert.Empty(world.Living); // allowed to crash to zero and stay there.
+        }
+
+        [Fact]
+        public void FloorClosesAfterSecondsReachesTheFloorSpawnArithmetic()
+        {
+            // Same seed, same crash, only the knob differs — so any difference in the floor-spawn
+            // counter is this setting reaching EnforceFloor rather than something else diverging
+            // between the two worlds.
+            var dark = new LightModel(1e-6f, 1f);
+
+            var open = new World(
+                new RunConfig { MinimumPopulation = 20, Light = dark, FloorClosesAfterSeconds = 0f },
+                seed: 7);
+            var closes = new World(
+                new RunConfig { MinimumPopulation = 20, Light = dark, FloorClosesAfterSeconds = 1f },
+                seed: 7);
+
+            for (int i = 0; i < 800; i++)
+            {
+                open.Step(0.5f);
+                closes.Step(0.5f);
+            }
+
+            Assert.True(
+                open.FloorSpawns > closes.FloorSpawns,
+                $"open floor spawned {open.FloorSpawns}, closing floor spawned {closes.FloorSpawns}");
+        }
+
+        [Fact]
         public void EnergyIsConservedAcrossTheWholeRun()
         {
             // §5A.2's audit, and the reason it is worth having: under endogenous selection there

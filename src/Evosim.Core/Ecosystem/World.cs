@@ -614,6 +614,14 @@ namespace Evosim.Core
         /// </remarks>
         private void EnforceFloor()
         {
+            // Config.FloorClosesAfterSeconds (0 = never) — D021 wants the founding cohort but
+            // nothing after it. This runs before the population check so a world that has already
+            // crashed to zero past the threshold is left at zero rather than rescued.
+            if (Config.FloorClosesAfterSeconds > 0f && ElapsedSeconds >= Config.FloorClosesAfterSeconds)
+            {
+                return;
+            }
+
             if (_living.Count >= Config.MinimumPopulation) return;
 
             SecondsSinceFloorFired = 0.0;
