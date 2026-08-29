@@ -95,3 +95,4 @@ are the ones most likely to go unwritten.
 | [0032](0032-the-instrument-that-was-designed-and-never-built.md) | 2026-08-28 | The instrument that was designed and never built |
 | [0033](0033-the-surface-stripped-itself.md) | 2026-08-28 | The surface stripped itself |
 | [0034](0034-the-ocean-had-no-top.md) | 2026-08-28 | The ocean had no top |
+| [0035](0035-the-neuron-was-priced-in-1994.md) | 2026-08-29 | The neuron was priced in 1994 |

@@ -8,12 +8,14 @@ quality-diversity search).
 **Reporting standard:** PRISMA-2020 / PRISMA-S, with an AI-assistance disclosure (§8).
 
 > **Scope honesty up front.** This is a **decision-support review for an engineering
-> project**, not a publication-grade systematic review. After round 2, all eight retrieved
-> papers have been read at least in part — three in full, five in part — from a 28-paper
-> candidate pool. Two of six original research questions remain only partly answered, and
-> round 2 opened a seventh (endogenous selection, `DESIGN.md` §5A) that **has never been
-> searched for at all**: its only sources are two systems described second-hand in
-> [L21 §13]. Section 7 states the limitations without softening them.
+> project**, not a publication-grade systematic review. After round 3, sixteen retrieved
+> papers are held — three read in full, the rest in part, where "in part" for the round-3
+> additions mostly means *specific claims verified against the primary text* rather than
+> cover-to-cover reading. ~~Round 2 opened a seventh question (endogenous selection,
+> `DESIGN.md` §5A) that **has never been searched for at all**~~ **Round 3 (2026-08-29)
+> searched it**: §5A is no longer unreviewed design, though the round-3 coverage is
+> breadth-first and single-pass — see §7.1. Section 7 states the limitations without
+> softening them.
 
 ---
 
@@ -28,6 +30,7 @@ history.
 |---|---|---|---|---|---|
 | **1** | 2026-08-02 | Initial — six ranked questions before implementation | 15 | 3 full, 2 partial | DESIGN.md draft 1→3: added §2 (premature convergence), changed §8.2/§8.3 (selection + multi-BC), corrected §5.4 (fluid model diversity cost), §4.4 (effector scheme), §4.1 (reflection flags), §11.2 (exploit checklist), closed §12.1 (encoding) |
 | **2** | 2026-08-02 | New question, raised during implementation: **should morphological and neural complexity carry a metabolic cost?** | 0 new searches — targeted re-reading of the 8 papers already held | **0 new papers.** Extended reading of [L21] (§8.2 p.10, §13 pp.14–16) and [C18] (§2.4 p.8, §3 pp.13/17, §4 p.29); confirmatory passes on [CEA07] §3.4, [TM01] pp.6–8, [K12] §2.2, [CU15] supplementary p.24 | DESIGN.md draft 4→5: added **§5A** (energy economy, endogenous selection), superseded §5.5, demoted §8 to observatory, repurposed §6.3/§6.4. Recorded as `DECISIONS.md` D017 |
+| **3** | 2026-08-29 | §9's backlog, overdue by the review's own protocol: §5A implemented and measured for a month with its literature never searched; the 2025 co-optimisation preprint never followed up; forward snowballing never done; §13.4 quarantine unverified | 4 parallel search sweeps (delegated to subagents — §3.2, §8), plus Semantic Scholar citation API for forward snowballing and CrossRef for verification | **8 new papers retrieved** ([Y94] [MC25] [CO02] [VG05] [GOY23] [ST00] [CB18] [PU16]), ~45 candidates surfaced and screened, ~13 citing works triaged; key claims verified against primary text for [Y94] [MC25] [CO02] [CB18] | **§5A.2's "no precedent for a per-neuron charge" corrected** — [Y94 p.7] is the precedent (DESIGN.md §0e). [CB18] and [PU16] verified and promoted out of §13.4. Q1 sharpened by [MC25]; **Q7 answered in part; Q8 opened and answered in principle** (§2). No DESIGN mechanism changed; the round's findings feed the next decisions rather than rewriting existing ones |
 
 **Round 2 note — no new retrieval.** This round searched nothing. It re-read papers already
 in `research/papers/` against a question that had not been asked in round 1, and the answer
@@ -119,12 +122,14 @@ statistical significance and is reported here as suggestive only.
 
 | # | Question | Status |
 |---|---|---|
-| Q1 | What prevents premature morphological convergence in body–brain co-optimisation? | ✅ **Answered** |
-| Q2 | Why are Sims' 1994 results hard to reproduce? What are the necessary ingredients? | 🟡 **Partial** — sources retrieved, unread |
+| Q1 | What prevents premature morphological convergence in body–brain co-optimisation? | ✅ **Answered — and sharpened in round 3.** [MC25], with ground truth from an exhaustively-mapped 1.3M-morphology landscape, shows the mechanism precisely: fitness under a co-evolving controller systematically *undervalues* newly-mutated bodies, so promising morphologies are eliminated before their controllers adapt — and even MAP-Elites and explicit innovation protection found near-optimal morphologies in only 17–22% of trials [MC25 p.1, p.29]. The mitigation question is less settled than round 1 concluded |
+| Q2 | Why are Sims' 1994 results hard to reproduce? What are the necessary ingredients? | 🟡 **Partial** — [TM01]/[CEA07] read in part (round 2); Krčah's GECCO'07 reimplementation and Lessin's thesis still never fetched |
 | Q3 | Direct graph vs CPPN vs grammar encoding? | ✅ **Resolved** |
 | Q4 | Which quality-diversity variant? | ✅ **Answered** |
 | Q5 | Controller and actuator representation? | 🟡 **Partial** — one implementation's scheme, no comparison |
 | Q6 | What physics exploits should be defended against? | ✅ **Answered** (checklist + two case studies) |
+| Q7 | *(opened round 2, searched round 3)* Does endogenous / energy-based selection have precedent, and what lets such systems hold multiple strategies and trophic structure instead of collapsing to the cheapest trade? | 🟡 **Answered in part.** Precedent is real and primary-sourced: [Y94] (PolyWorld — per-neuron and per-synapse energy charge, behaviour-priced actions), [VG05] (Gene Pool — locomotion pays because food and mates are the only routes to reproduction), [CO02] (Avida — **depletable** resources produce negative frequency-dependent selection and stable coexistence of up to nine strategies; making the same resources unlimited collapses diversity to one genotype). Trophic emergence conditions from the ecology-modelling side: adaptive prey selection [DROSSEL04 — lead], spatial structure and density thresholds [HAMM21 — lead], closed nutrient cycles [GOY23]. What no held source yet shows: trophic levels emerging from *morphology-encoded* feeding on a physically simulated body — that remains this design's own bet |
+| Q8 | *(opened round 3)* What instrument distinguishes adaptive evolution from a treadmill, computable from this project's logs (births with parent ids, deaths, genomes, energy ledgers)? | 🟡 **Answered in principle, not yet implemented.** Bedau–Packard evolutionary activity with the class 1–4 taxonomy (via [BSP98 — lead, unfetched]) is the formal treadmill test; [ST00] supplies an implementation that replaces the "neutral shadow run" with a randomly-permuted shadow population, which fits a system that has no fitness function to switch off. The MODES toolbox ([DOL19 — lead, bot-gated preprint]) is the modern alternative and substitutes a lineage-persistence filter for the shadow. Both need a lineage record, which bears directly on the open `lineage.jsonl` decision |
 
 **PICOC framing.** *Population:* evolved virtual creatures with genetically encoded 3D
 morphology and control. *Intervention:* co-evolution of body and controller under
@@ -239,6 +244,32 @@ the old claim is **struck through, not deleted**, with a pointer to what replace
 design's history of being wrong is the most useful thing about it — three corrections in
 round 1 are why the current draft is trustworthy.
 
+### 3.6 Round 3 searches (2026-08-29)
+
+Discovery was **delegated to four parallel search subagents** (see §8 for the AI-assistance
+record), each with a scoped brief and a hard rule set: read-only on the web, topic keywords
+only in queries, fetched content treated as untrusted data. The four sweeps:
+
+1. **Artificial-ecosystem primaries** — PolyWorld, Gene Pool, Tierra, Avida, Geb, and any
+   system with emergent (not scripted) trophic structure. Terms per §7.1's round-2 backlog:
+   *open-ended evolution, artificial ecosystem, endogenous fitness, energy-based selection,
+   Avida, Tierra, PolyWorld, Geb, Ventrella Gene Pool.*
+2. **Open-endedness instruments** — Bedau–Packard evolutionary activity, the MODES toolbox,
+   OEE definitions and necessary-condition lists, treadmill detection from lineage records.
+3. **Trophic emergence, recycling, neural cost, motility economics** — conditions for
+   multi-trophic food webs in evolving models; decomposer/remineralisation loops; precedent
+   for per-neuron metabolic charges; when locomotion pays (chemotaxis, DVM, buoyancy
+   trade-offs).
+4. **Recorded debts** — the 2025 co-optimisation preprint (§9 item 1); independent
+   verification of the two load-bearing §13.4 quarantine entries; forward snowballing from
+   [EA23] and [C18] via the Semantic Scholar citation API.
+
+Verification: CrossRef API for metadata; retrieval of eight open-access primaries, six of
+which were then re-verified **by the reviewing model directly against the downloaded text**
+at the specific passages cited (see `FETCH-RESULTS.md`, round-3 section). ⚠ The protocol
+deviation of round 1 (general web search rather than native database queries) repeats here,
+with the additional layer that discovery ran through subagents — §7.1.
+
 ---
 
 ## 4. PRISMA flow
@@ -277,6 +308,32 @@ working candidate list were caught and corrected — Krčah's chapter is 2012 no
 Eguiarte-Morett published online 2023 in the 2024 issue; two DOIs were missing; and one
 record (Usami) had no author attributed at all.
 
+**Round 3 additions (2026-08-29):**
+
+```
+IDENTIFICATION
+  Candidates surfaced by 4 subagent search sweeps                  ~45
+  Citing works surfaced by forward snowballing ([EA23], [C18])     ~49 (3 + ~46)
+SCREENING
+  Screened into the working pool (reported per sweep)               ~40
+  Triaged citing works retained as relevant                         ~13
+RETRIEVAL
+  Targeted for retrieval (open access)                                9
+  Successfully retrieved                                            8/9
+     (the MODES preprint is free but bot-gated — queued for manual fetch)
+APPRAISAL
+  Key passages verified against primary text by the reviewer          4   [Y94] [MC25] [CO02] [CB18]
+  Read in part (full text by search agent, spot-checked)              2   [VG05] [PU16]
+  Retrieved, abstract-level only                                      2   [GOY23] [ST00]
+  ADDED TO SYNTHESIS                                                  6   [Y94] [MC25] [CO02] [VG05] [CB18] [PU16]
+  Leads recorded, not retrieved (paywalled or gated)                 ~12   see §9
+```
+
+Metadata notes from round 3: [CO02] has **no DOI** (checked three ways against CrossRef) and
+is sometimes miscited as 2003 — the PDF header confirms Artificial Life VIII, 2002. [MC25]
+is arXiv:2508.17464v2, the accepted-manuscript version for *Artificial Life*, extending an
+ALIFE 2025 paper — cite the journal version once it has volume/page identity.
+
 ---
 
 ## 5. Synthesis matrix
@@ -288,6 +345,12 @@ record (Usami) had no author attributed at all.
 | **[K12]** | Novelty search loses at unconstrained swimming, wins at constrained deceptive tasks; concrete anti-exploit checklist; effector scaling + smoothing; three reflection flags; oscillatory transfer aids swimming | Rigid-body ODE creatures, Sims-style graph; NEAT-based; pop 300 × 150 gens; 25–30 runs; t-tests | **Confirmatory + enriching** — §4.1, §4.4, §11.2 | 📄 Peer-reviewed Springer chapter | Behaviour descriptor (final position) is a poor choice, which limits how far the negative swimming result generalises to well-designed QD |
 | **[L21]** ⚠ partial | Encoding advantage splits by phenotype: CPPN wins soft-body, direct/recursive win or tie rigid-body; Sims is an *indirect* encoding; PhysX and Unity have precedent here | Survey; Table 6 synthesises 6 published encoding comparisons 2001–2020 | **Decisive** — closed §12.1 | 📄 Peer-reviewed, *Computer Graphics Forum* 🔓 | Secondary source — the underlying comparisons were not read individually; [L21] itself flags one (2017) as confounded |
 | **[C18]** ⚠ partial | Simplified fluid collapses morphological diversity, not just accuracy; land→water detrimental, water→land beneficial; non-harmonic actuation matters; self-collision vibration exploit | Voxelyze soft robots + mesh-based quadratic drag; 5 stiffness levels; multi-objective; land/water/transition experiments | **Corrective** — overturned §5.4's own framing; added evidence to §5.1 | 📄 Peer-reviewed, *Soft Robotics* | Soft-body; authors describe their own EA as "rather weak"; transition benefit **p > 0.05**; single stiffness value used for transitions |
+| **[Y94]** ⚠ partial *(round 3)* | Per-neuron **and** per-synapse energy charge, linear against world maxima, plus per-behaviour energy prices and a fixed drain — the direct precedent for §5A.2's neural term | PolyWorld: 2D-ish simulated ecology, Hebbian networks, endogenous selection, emergent predation/mimicry | **Corrective (provenance)** — §5A.2 claimed the per-neuron charge had no precedent in the corpus; it now has one, on p.7 | 📄 Proceedings chapter (ALife III, 1994), pre-DOI | Old, descriptive rather than experimental; no ablation of the neural charge; read at targeted passages only |
+| **[MC25]** ⚠ partial *(round 3)* | Co-optimisation *undervalues* newly-mutated bodies (observed fitness drop exceeds true fitness difference), so promising morphologies are eliminated; AFPO, MAP-Elites and MIP all found near-optimal morphologies in ≤22% of trials against ground truth; early rankings barely predict final ones; upside — goal-switching can beat fixed-morphology training | Exhaustive landscape: controllers trained for all 1,305,840 3×3 voxel soft robots; 3 algorithms × 100 trials × 10k generations against ground truth | **Corrective (degree)** — Q1's mitigations are weaker than round 1 concluded; strengthens the case that ecological-niche protection must be *measured*, not assumed | 📄 arXiv v2 = accepted manuscript, *Artificial Life* | Soft-body voxels, tiny 3×3 grid, fixed controller architecture; transfer to rigid articulated bodies unestablished — the same substrate caveat as [EA23] |
+| **[CO02]** ⚠ partial *(round 3)* | With **depletable** resources, negative frequency-dependent selection sustains up to 9 coexisting strategies for tens of thousands of generations *with mutation off*; the same populations under non-limiting resources collapse to a single genotype | Avida; 9 computable resources; evolution phase + ecology phase (mutation off); infinite-resource control and restart control | **Confirmatory + generalising** — D023's finite sun is one instance of the general rule: every earning channel needs depletion or it collapses diversity | 📄 Proceedings (ALife VIII, 2002), no DOI | Digital organisms computing logic functions, not embodied creatures; niches are hand-provided resource types, not emergent |
+| **[VG05]** ⚠ partial *(round 3)* | Locomotion pays under endogenous selection when it is the **only route to reproduction**: food bits are the sole energy inflow and mating requires physical approach; rewarding stillness bifurcated the population into sitters plus a small mobile breeding caste | Gene Pool / swimbots: 2D spring-mass swimmers, energy economy, in-world mating, no fitness function | **Diagnostic** — explains why this design's swimmers never came: depth (the prize here) is reachable without moving; Gene Pool's prizes were not | 📄 Springer chapter (2005), author self-archive | 2D, springs not rigid bodies, sexual selection entangled with the energy result; descriptive, single system |
+| **[CB18]** *(round 3, verified out of §13.4)* | Morphological innovation protection: temporarily shield lineages whose morphology just changed, giving controllers generations to re-adapt; sustains morphological search longer than unprotected baselines | Soft voxel robots, CPPN encodings; protection via nested age layers | **Confirmatory** — the mechanism §2.3 and §8.4 already lean on, now independently verified rather than bibliography-inherited | 📄 Peer-reviewed, *J. R. Soc. Interface*, OA | Soft-body; and [MC25] later shows MIP alone still fails to select for morphological potential — protection helps, it does not solve |
+| **[PU16]** *(round 3, verified out of §13.4)* | A behaviour characterisation unaligned with quality can actively harm search (hardest maze: 2 solutions in 20 runs, worse than plain fitness); the fix is multi-BC, aligned + unaligned | Maze navigation family of graded deception; QD-score proposed here | **Confirmatory, with nuance** — supports §8.3 as written; the paper's own claim is "not just any behavioural diversity succeeds", not "unaligned always fails" | 📄 Peer-reviewed, *Frontiers Robotics & AI*, OA | Maze domain, not embodied creatures; the specific failure threshold is domain-dependent |
 
 ---
 
@@ -345,9 +408,71 @@ authors are notably frank about their own limitations (weak EA, insufficient rep
 non-significant transition result), which raises rather than lowers confidence in what they
 do claim. Read in part (abstract, §2.1–2.2, §3.2–3.3, §4).
 
-**Retrieved but unread** — [TM01] Taylor & Massey 2001 (`10.1162/106454601300328034`);
-[CEA07] Chaumont, Egli & Adami 2007 (`10.1162/artl.2007.13.2.139`); [CU15] Cully, Clune,
-Tarapore & Mouret 2015 (`10.1038/nature14422`). All verified and available locally.
+~~**Retrieved but unread** — [TM01], [CEA07], [CU15].~~ All three were read in part during
+round 2 and are cited with page locators in `DESIGN.md` §13.2. Struck rather than deleted,
+per §0.
+
+### Round 3 additions (2026-08-29)
+
+**[Y94]** L. Yaeger, "Computational Genetics, Physiology, Metabolism, Neural Systems,
+Learning, Vision, and Behavior or PolyWorld: Life in a New Context," in *Artificial Life
+III*, SFI Studies in the Sciences of Complexity XVII, Addison-Wesley, 1994, pp. 263–298.
+Pre-DOI — 📄 proceedings chapter, open author self-archive.
+*The precedent §5A didn't know it had.* An endogenous-selection ecology from 1994 that
+charges energy linearly per neuron and per synapse, prices every behaviour, and lets
+predation and mimicry emerge. The neural-charge mechanism (p.7) directly anticipates
+§5A.2's neural term, which the design had believed was its own invention. Read: targeted
+passages (pp.1, 7, 10–11), verified against the downloaded text.
+
+**[MC25]** A. Mertan and N. Cheney, "Evolutionary Brain-Body Co-Optimization Consistently
+Fails to Select for Morphological Potential," arXiv:2508.17464v2 (accepted manuscript,
+*Artificial Life*; extends ALIFE 2025). 🔓 open access.
+*The §9-item-1 debt, finally read — and it was worth the wait.* Exhaustively maps a
+1.3M-morphology fitness landscape to get ground truth, then shows every tested algorithm —
+including MAP-Elites and morphological innovation protection — regularly eliminates bodies
+whose true fitness is higher, because fitness under a co-evolving controller systematically
+undervalues the newly mutated. Sharpens Q1 from "protection works" to "protection helps and
+is insufficient". Read: abstract, discussion, conclusion (pp.1, 29, 31).
+
+**[CO02]** T. F. Cooper and C. Ofria, "Evolution of Stable Ecosystems in Populations of
+Digital Organisms," in *Artificial Life VIII*, MIT Press, 2002, pp. 227–232. No DOI —
+📄 proceedings, open author self-archive.
+*The cleanest transferable result of the round.* Depletable resources → negative
+frequency-dependent selection → stable multi-strategy coexistence, proven by the control:
+the same evolved ecosystems collapse to one genotype when resources are made unlimited.
+Generalises D023's finite sun into a design rule. Read: abstract and results passages
+verified (pp.1, 2, 4–5).
+
+**[VG05]** J. Ventrella, "GenePool: Exploring the Interaction Between Natural Selection and
+Sexual Selection," in *Artificial Life Models in Software*, Springer, 2005, pp. 81–96.
+DOI `10.1007/1-84628-214-4_4` — 📄 chapter, open author self-archive.
+*Why locomotion paid there.* Food and mates both require physical approach, so movement is
+the only route to reproduction; the design's own prize (depth) is reachable by buoyancy and
+demography, which is the diagnostic contrast. Read in full by the round-3 search agent;
+spot-checked, not fully re-read.
+
+**[CB18]** N. Cheney, J. Bongard, V. SunSpiral, H. Lipson, "Scalable co-optimization of
+morphology and control in embodied machines," *J. R. Soc. Interface* 15(143):20170937,
+2018. DOI `10.1098/rsif.2017.0937` — ✅ CrossRef-verified 📄 peer-reviewed 🔓 OA.
+Promoted out of §13.4: the morphological-innovation-protection mechanism §2.3/§8.4 lean on,
+now read at the method section (§II.C, pp.2–3 of the arXiv copy) rather than inherited from
+[EA23]'s bibliography.
+
+**[PU16]** J. K. Pugh, L. B. Soros, K. O. Stanley, "Quality Diversity: A New Frontier for
+Evolutionary Computation," *Frontiers in Robotics and AI* 3:40, 2016.
+DOI `10.3389/frobt.2016.00040` — ✅ CrossRef-verified 📄 peer-reviewed 🔓 OA.
+Promoted out of §13.4: confirms the §8.3 claim about unaligned behaviour characterisations,
+with a nuance worth preserving — their conclusion is "not just any type of behavioral
+diversity is successful", not that misalignment always fails. Read in full by the round-3
+search agent; spot-checked.
+
+**Retrieved in round 3, supporting only (not in the synthesis matrix):**
+[GOY23] Goyal, Flamholz, Petroff & Murugan, "Closed ecosystems extract energy through
+self-organized nutrient cycles," *PNAS* 120(52):e2309387120, 2023 (read: abstract; arXiv
+copy held) — the theoretical anchor for remineralisation, to be read in full before that
+mechanism's D-entry. [ST00] Standish, "An Ecolab Perspective on the Bedau Evolutionary
+Statistics," *ALife VII*, 2000 (read: abstract level; arXiv copy held) — the
+permuted-shadow implementation for Q8.
 
 ---
 
@@ -360,15 +485,19 @@ Tarapore & Mouret 2015 (`10.1038/nature14422`). All verified and available local
   reproducible result counts, no field-restricted queries, no systematic date filtering,
   and ranking determined by a general search engine rather than citation structure.
   Relevant work may have been missed for want of the right phrasing.
-- **Forward snowballing was not performed.** Backward chasing only. Work *citing* the
-  included papers — particularly anything post-2023 responding to [EA23] — is absent. One
-  2025 preprint claiming brain-body co-optimisation "consistently fails to select for
-  morphological potential" was surfaced in Pass 1 and **never followed up**; if it holds,
-  it would bear directly on §2 of the design. ~~*Round 2 addresses this — it is step 2 of the
-  update protocol in §3.5.*~~ **Round 2 did not address it.** That round was triggered by a
-  new question and searched nothing; forward snowballing remains outstanding and is now
-  overdue. Struck rather than deleted, per §0 — a prediction the review made about itself and
-  did not keep is part of the record.
+- ~~**Forward snowballing was not performed.**~~ ↻ **Performed in round 3** (2026-08-29),
+  via the Semantic Scholar citation API, and the 2025 preprint was found, read in part, and
+  is now [MC25] in the synthesis. Two findings from the snowball are themselves threats
+  worth recording: **[EA23] has only 3 recorded citations** — it is a niche paper, so §2
+  should lean on its *mechanism* (independently attributed to three prior groups) rather
+  than its algorithm ranking, which has no independent replication; and the ~46 works citing
+  [C18] are almost entirely voxel/soft-body work — **the rigid-articulated aquatic corner
+  this project occupies has essentially no recent citation traffic**, a field gap rather
+  than a search failure. Earlier struck text kept below, per §0 — a prediction the review
+  made about itself and kept late is part of the record.
+  ~~*Round 2 addresses this — it is step 2 of the update protocol in §3.5.* **Round 2 did
+  not address it.** That round was triggered by a new question and searched nothing;
+  forward snowballing remains outstanding and is now overdue.~~
 - **Saturation was asserted, not measured.** Pass 1 stopped when new queries returned
   known papers. That is a weak criterion applied over three batches.
 - **⚠ Round 2 answered a question the corpus was not assembled for.** The eight held papers
@@ -377,10 +506,24 @@ Tarapore & Mouret 2015 (`10.1038/nature14422`). All verified and available local
   evolution, so with respect to those topics the corpus is a **convenience sample**, and the
   absence of contrary evidence in it means very little. `DESIGN.md` §5A is built on two
   systems known only through a survey ([L21 §13]) with neither primary source held; D017
-  records it as a bet, not a finding. A round 3 searching *open-ended evolution, artificial
+  records it as a bet, not a finding. ~~A round 3 searching *open-ended evolution, artificial
   ecosystem, endogenous fitness, energy-based selection, Avida, Tierra, PolyWorld, Geb* is
   the correction, and until it runs §5A should be read as unreviewed design rather than as
-  evidence-led.
+  evidence-led.~~ ↻ **Round 3 ran** (2026-08-29): both primaries are now held and read in
+  part ([Y94], [VG05]), and the endogenous-selection precedent question (Q7) is answered in
+  part. §5A is no longer *unreviewed*; it is *thinly reviewed* — see the round-3 items
+  below.
+- **⚠ Round 3 discovery ran through search subagents.** Four scoped sweeps executed by
+  subagent models (§3.6, §8), then screened and synthesised by the reviewing model. This
+  repeats round 1's database-protocol deviation and adds a relay: the reviewer saw the
+  agents' reports, not the raw result lists, so recall is unmeasurable and pool coverage
+  depends on four prompt framings. Mitigation: every claim that entered the synthesis or
+  changed `DESIGN.md` was re-verified by the reviewer against the downloaded primary text
+  ([Y94] [MC25] [CO02] [CB18]); claims resting on scout-only reads are marked as such in §6.
+- **⚠ Several round-3 claims rest on abstract-level reads.** [GOY23], [ST00], and all of the
+  trophic-conditions leads (Drossel, Hamm, Fritsch) were read at abstract level or via one
+  open full text. None of these has yet informed a design mechanism; each must be read in
+  full before it does — the same rule `research/early-life/` already applies to itself.
 
 ### 7.2 Verification validity
 
@@ -392,13 +535,19 @@ Tarapore & Mouret 2015 (`10.1038/nature14422`). All verified and available local
   possible sense — it was read. But the formal protocol was not followed.
 - Records cited **via** other papers' reference lists (Cheney et al. 2018, Pugh et al. 2016,
   Lehman & Stanley 2011, Cully & Demiris 2018, and others) were **not verified at all**.
-  These are quarantined in `DESIGN.md` §13.4 and flagged as leads. Two of them are
-  load-bearing for design sections §2 and §8.3, which is a genuine weakness.
+  These are quarantined in `DESIGN.md` §13.4 and flagged as leads. ~~Two of them are
+  load-bearing for design sections §2 and §8.3, which is a genuine weakness.~~ ↻ **The two
+  load-bearing entries were verified in round 3** — CrossRef metadata confirmed, open copies
+  retrieved and read at the load-bearing passages, promoted to the corpus as [CB18] and
+  [PU16]. The remaining §13.4 entries stay quarantined.
 
 ### 7.3 Synthesis validity
 
-- **Small n.** Five papers inform the synthesis; three read in full. Conclusions rest on
-  few sources, and two of the five were read only in part.
+- **Small n.** Eleven papers inform the synthesis (five from rounds 1–2, six added in
+  round 3); still only three read in full. The round-3 additions were read at targeted
+  passages against specific claims, which is honest for provenance-checking and weaker than
+  full reads for anything else — a round-3 paper could contradict this design somewhere
+  nobody looked.
 - **⚠ Substrate mismatch is the dominant threat.** [EA23] and [C18] — the two papers
   driving the largest design changes — both use **soft voxel robots**, while the design
   targets **rigid articulated bodies**. The premature-convergence mechanism and the
@@ -434,6 +583,9 @@ Tarapore & Mouret 2015 (`10.1038/nature14422`). All verified and available local
 | Text and figure extraction | PyMuPDF via `pdf-clean-markdown` | — |
 | Reading, claim extraction, synthesis | Claude Opus 5 | User directed effort allocation at three decision points |
 | This report | Claude Opus 5 | — |
+| **Round 3** (2026-08-29): search execution | 4 parallel Claude Sonnet subagents (scoped briefs; read-only web; Semantic Scholar + CrossRef public APIs) | User authorised the round and its autonomy level |
+| Round 3: screening, primary-text verification, synthesis, this update | Claude Fable 5 | Screening checkpoints recorded in-document rather than user-gated, at the user's request; paywalled retrievals queued for the user rather than attempted |
+| Round 3: paper retrieval | Claude Fable 5, open-access sources only — **no institutional access used** | — |
 
 **No citation in this document was generated from model memory.** Every reference
 originates from a tool-call result within the session, and all cited works were retrieved
@@ -449,38 +601,51 @@ set is reconstructible by anyone with equivalent access.
 
 ## 9. Gaps and recommended next steps
 
-**Answered well enough to build on:** Q1, Q3, Q4, Q6.
+**Answered well enough to build on:** Q1 (with [MC25]'s sharpening), Q3, Q4, Q6, Q7 in its
+precedent half.
+
+**Resolved by round 3, kept for the record:**
+
+1. ~~**The 2025 co-optimisation preprint** — surfaced in Pass 1, never followed up.~~
+   Found, retrieved, read in part — now [MC25]. It does challenge §2.3's mitigations: even
+   explicit innovation protection selected near-optimal morphologies in ≤22% of trials
+   against ground truth. Full read still outstanding (below).
+2. ~~**⚠ NEW (round 2) — open-ended evolution and artificial ecosystems** … never searched.~~
+   Searched (§3.6). Precedent half of Q7 answered; the emergent-trophic-structure half has
+   leads, not held sources. One specific answer: **yes, there is precedent for a per-neuron
+   metabolic charge** — [Y94 p.7].
+3. ~~**Verify the §13.4 quarantine** (the two load-bearing entries).~~ Done — [CB18], [PU16].
+4. ~~**Forward snowballing from [EA23] and [C18]**.~~ Done, with the two field-shape findings
+   recorded in §7.1.
 
 **Open, in priority order:**
 
-1. **The 2025 co-optimisation preprint** — surfaced in Pass 1, never followed up. Claims
-   brain-body co-optimisation "consistently fails to select for morphological potential."
-   If sound, it challenges the mitigations in `DESIGN.md` §2.3. *Cheapest high-value
-   action remaining.*
-2. **⚠ NEW (round 2) — open-ended evolution and artificial ecosystems.** `DESIGN.md` §5A now
-   specifies endogenous selection, and **the review has never searched for this literature.**
-   The only sources are two systems described second-hand in [L21 §13]. This is the largest
-   gap between what the design asserts and what the review supports. Suggested terms:
-   *open-ended evolution, artificial ecosystem, endogenous fitness, energy-based selection,
-   Avida, Tierra, PolyWorld, Geb, Ventrella Gene Pool.* Specific questions: does anything
-   report trophic levels emerging from morphology-encoded feeding modes; what stops these
-   systems collapsing to a single strategy; and is there any precedent for a per-neuron
-   metabolic charge.
-3. **Q2 — Sims reproduction.** ~~[TM01] and [CEA07] are retrieved and unread.~~ **Both were
-   read in round 2** — [TM01] pp.4, 6–8 on fitness design, joint actuation and complexity
-   caps; [CEA07] §3.2–3.4 pp.3–6 and §5 pp.13–14 on the complexity bonus, joint DOF and
-   simulator settings. Both are now partial reads and their §13.2 entries need widening the
-   same way [L21]'s did. Still outstanding: Krčah's GECCO'07 reimplementation and Lessin's
-   thesis, both openly available and never fetched. Directly relevant to whether Milestone 3
-   will actually produce swimmers.
-4. **Q5 — controller representation.** Only one implementation's scheme was found ([K12]).
-   Lessin et al.'s muscle-drive work proposes shifting complexity from controller to body
-   — a third architectural option not represented in the design at all.
-5. **Verify the §13.4 quarantine.** Cheney et al. 2018 (morphological innovation
-   protection) and Pugh et al. 2016 (BC alignment) are load-bearing but unverified and
-   read only second-hand.
-6. **Forward snowballing from [EA23] and [C18]** — no post-2023 responses were sought.
+1. **Read [MC25] in full**, and decide what it means for §2.3/§8.4 *under endogenous
+   selection* — whether ecological-niche protection suffers the same undervaluation
+   mechanism, and how that would be measured here.
+2. **Implement a Q8 instrument.** [ST00]'s permuted-shadow evolutionary activity is the
+   candidate that fits the project's logs; it needs a lineage record, so this is coupled to
+   the open `lineage.jsonl` decision. Read [BSP98] first (paywalled — queued) so the class
+   taxonomy is taken from the source rather than from summaries.
+3. **The paywalled/manual fetch queue** (institutional access, in rough priority):
+   [BSP98] Bedau, Snyder & Packard 1998 (ALife VI, MIT Press); [DOL19] MODES — free but
+   bot-gated at PeerJ, needs a manual browser download, or the *Artificial Life* 25(1)
+   version; Bohm, Zhang & Dolson 2024 (ALIFE 2024) — the MODES critique; Channon 2019
+   (*Artificial Life* 25(2), DOI `10.1162/artl_a_00285`) and Channon 2001 (ECAL, DOI
+   `10.1007/3-540-44811-X_45`); Egbert, Barandiaran & Di Paolo 2012 (*Artificial Life*
+   18(1), DOI `10.1162/artl_a_00047`); Taylor et al. 2016 (nominally CC BY, both mirrors
+   bot-gated, DOI `10.1162/artl_a_00210`); Wilke & Chow 2005 (OUP, DOI
+   `10.1093/oso/9780195188165.003.0011`); Ventrella 1998 (ALife VI, MIT Press).
+4. **Read the trophic-conditions leads in full before the remineralisation D-entry**:
+   [GOY23] (held), Drossel/McKane/Quince 2004 (arXiv q-bio/0401025), Hamm & Drossel 2021
+   (Sci Rep, OA), Fritsch et al. 2021 (arXiv 1905.06855). These are what the mechanism's
+   acceptance criteria should be checked against.
+5. **Q2 — Sims reproduction.** Unchanged from round 2: Krčah's GECCO'07 reimplementation and
+   Lessin's thesis, both openly available and never fetched.
+6. **Q5 — controller representation.** Unchanged: only [K12]'s scheme is held; Lessin's
+   muscle-drive line remains unexplored.
 
 **Not worth pursuing** on current evidence: deep-RL co-design (DERL, Evolution Gym) and
 CPPN encoding literature, both of which address a different substrate than this project
-targets.
+targets — a judgement the round-3 snowball reinforced, since the citation traffic around
+[C18] is dominated by exactly that substrate.

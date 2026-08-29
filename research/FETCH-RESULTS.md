@@ -129,3 +129,64 @@ Anyone with equivalent access can rebuild the source set from the URLs below.
   that the physical property of the water strictly regulate the structure of swimming
   creatures."
 
+
+---
+
+## Round 3 retrievals — 2026-08-29
+
+All six below were fetched by Claude (Fable 5) from public sources during literature review
+round 3, with no login of any kind. Candidate discovery ran through four search subagents
+(Claude Sonnet); every retrieval below was then downloaded and verified directly.
+
+### [29] PolyWorld: Life in a New Context
+- Status: OBTAINED
+- Saved as: `29-yaeger-1994-polyworld.pdf`
+- Source used: https://shinyverse.org/larryy/Yaeger.ALife3.pdf
+- Route: open-access (author's personal site — Larry Yaeger self-archive)
+- Notes: Artificial Life III proceedings chapter (Addison-Wesley 1994, pp. 263–298); pre-DOI.
+  25-page PDF; title and author verified from page 1 of the downloaded copy. The per-neuron /
+  per-synapse energy mechanism cited in DESIGN.md is on PDF p.7 (§ Physiology and Metabolism).
+
+### [30] Evolutionary Brain-Body Co-Optimization Consistently Fails to Select for Morphological Potential
+- Status: OBTAINED
+- Saved as: `30-mertan-cheney-2025-morphological-potential.pdf`
+- Source used: https://arxiv.org/pdf/2508.17464
+- Route: open-access (arXiv, v2 of 2026-08-12 — author's accepted manuscript for *Artificial
+  Life*, extending an ALIFE 2025 conference paper)
+- Notes: This is the "2025 co-optimisation preprint" flagged as unresolved in
+  LITERATURE-REVIEW.md §9 item 1 since round 1. Mertan & Cheney, University of Vermont. 37-page
+  PDF verified from page 1.
+
+### [31] Evolution of Stable Ecosystems in Populations of Digital Organisms
+- Status: OBTAINED
+- Saved as: `31-cooper-ofria-2002-stable-ecosystems.pdf`
+- Source used: https://cse.msu.edu/~ofria/pubs/2002CooperOfria.pdf
+- Route: open-access (Charles Ofria's MSU publications page)
+- Notes: Artificial Life VIII proceedings (MIT Press 2002, pp. 227–232); no DOI assigned
+  (verified by the round-3 search agent against CrossRef three ways). Some secondary sources
+  miscite the year as 2003; the PDF's own header confirms 2002.
+
+### [32] GenePool: Exploring the Interaction Between Natural Selection and Sexual Selection
+- Status: OBTAINED
+- Saved as: `32-ventrella-2005-genepool.pdf`
+- Source used: https://www.ventrella.com/Alife/GenePool.pdf
+- Route: open-access (author's personal site — Jeffrey Ventrella self-archive)
+- Notes: Chapter in *Artificial Life Models in Software*, Springer 2005; DOI of the Springer
+  version 10.1007/1-84628-214-4_4. 16-page PDF verified from page 1.
+
+### [33] Closed ecosystems extract energy through self-organized nutrient cycles
+- Status: OBTAINED
+- Saved as: `33-goyal-2023-nutrient-cycles.pdf`
+- Source used: https://arxiv.org/pdf/2305.19102
+- Route: open-access (arXiv preprint of PNAS 120(52) e2309387120, DOI 10.1073/pnas.2309387120)
+- Notes: The PNAS version of record is paywalled; the arXiv twin was used. If a page-anchored
+  claim ever needs the version of record, fetch it via institutional access and note it here.
+
+### [34] An Ecolab Perspective on the Bedau Evolutionary Statistics
+- Status: OBTAINED
+- Saved as: `34-standish-2000-ecolab-bedau-statistics.pdf`
+- Source used: https://arxiv.org/pdf/nlin/0004026
+- Route: open-access (arXiv preprint; published in Artificial Life VII, MIT Press, DOI
+  10.7551/mitpress/1432.003.0032)
+- Notes: 5-page PDF; the shadow-population implementation notes cited in the review are the
+  reason this was retrieved.
