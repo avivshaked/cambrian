@@ -133,3 +133,11 @@ run: **at 0.02 the world runs away, at 0.05 and 0.1 it dies.** Suggestion 1 on i
 no world that can be scored. Which half of the trap is irreversible depends on the density
 — sinking at 0.05 and 0.1, age synchrony at 0.02 — and the second is what suggestion 2
 addresses. Round 4 is logbook/0039.
+
+*Later the same evening:* with round 3's answer fixed, `d053-s1` (t=8,200, 1,614 alive, mean
+age 2,801 s — the age-synchrony signature forming, births frozen) and `d053-s2` (t=6,400,
+2,481 alive, mean age 615 s — came through its drought young) were stopped by hand to free
+the machine; both would have been censored by their walls before 30,000 s. `d053b-s4`, the
+one 0.05 arm alive, runs to its budget: at t=25,200 it carried **200 absorptives** — the
+round's only chain — and whether that lineage persists or busts is the last thing round 3
+can say.
