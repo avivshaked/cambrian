@@ -48,7 +48,7 @@ namespace Evosim.Sim.EditorTools
             float budgetSeconds = Env("EVOSIM_SECONDS", 4000f);
             float wallMinutes = Env("EVOSIM_WALL_MINUTES", 30f);
             int reportEvery = (int)Env("EVOSIM_REPORT_EVERY", 200f);
-            ulong seed = (ulong)Env("EVOSIM_SEED", 1f);
+            ulong seed = EnvULong("EVOSIM_SEED", 1UL);
 
             // The two halves of what a joint costs to own before it does anything. §5A.10 marks
             // both unmeasured, and LinkCell's own documentation names the failure at each end:
@@ -732,6 +732,19 @@ namespace Evosim.Sim.EditorTools
 
             return !string.IsNullOrEmpty(raw) &&
                    float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float v)
+                ? v
+                : fallback;
+        }
+
+        // A float loses exactness above 2^24, and a seed is exactly the kind of value where a
+        // silently-rounded high bit changes which sequence Rng produces without anyone noticing —
+        // so the seed gets its own parse straight to ulong rather than going through Env(float).
+        private static ulong EnvULong(string name, ulong fallback)
+        {
+            string raw = Environment.GetEnvironmentVariable(name);
+
+            return !string.IsNullOrEmpty(raw) &&
+                   ulong.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong v)
                 ? v
                 : fallback;
         }

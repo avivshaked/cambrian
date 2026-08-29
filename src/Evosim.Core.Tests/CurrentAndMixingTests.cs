@@ -271,10 +271,11 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
-        public void RemineraliseMovesAFirstOrderFractionOfTheFloorUpOneLayer()
+        public void RemineraliseMovesAnExactFirstOrderFractionOfTheFloorUpOneLayer()
         {
-            // D051: the return leg Settle lacks. The moved amount is exactly rate * dt of what
-            // the floor held, taken from nowhere else and arriving nowhere else.
+            // D051: the return leg Settle lacks. The moved amount is the closed-form solution of
+            // dN/dt = -rate*N, taken from nowhere else and arriving nowhere else — not a capped
+            // forward-Euler step, so no min(1, ...) appears here.
             var field = new NutrientField(400f, 1f, 0f, 60f);
             field.Deposit(-59.5f, 1000f);
             field.Deposit(-30.5f, 250f);
@@ -284,13 +285,47 @@ namespace Evosim.Core.Tests
             double aboveBefore = field.StockInLayer(floor - 1);
             double totalBefore = field.TotalJoules;
 
-            field.Remineralise(2.0, 0.01f);
+            const float rate = 0.01f;
+            const double seconds = 2.0;
+            field.Remineralise(seconds, rate);
 
-            double expectedMoved = floorBefore * (0.01 * 2.0);
+            // rate is float-promoted before the multiply, exactly as Remineralise does it — a
+            // double literal here would differ from the source by ~1e-10 in the exponent, which
+            // is small but not smaller than this test's own tolerance.
+            double expectedMoved = floorBefore * (1.0 - Math.Exp(-(double)rate * seconds));
 
             Assert.Equal(floorBefore - expectedMoved, field.StockInLayer(floor), 6);
             Assert.Equal(aboveBefore + expectedMoved, field.StockInLayer(floor - 1), 6);
             Assert.Equal(totalBefore, field.TotalJoules, 6);
+        }
+
+        [Fact]
+        public void RemineraliseIsStepSizeIndependent()
+        {
+            // The whole point of the exact decay law: one long call and many short calls at the
+            // same rate must agree, because the fraction moved depends only on rate * elapsed
+            // time, not on how that time was divided into steps. A capped forward-Euler step
+            // (min(1, rate * seconds) applied ten times) would not have this property.
+            var oneCall = new NutrientField(400f, 1f, 0f, 60f);
+            oneCall.Deposit(-59.5f, 1000f);
+            oneCall.Deposit(-30.5f, 250f);
+
+            var tenCalls = new NutrientField(400f, 1f, 0f, 60f);
+            tenCalls.Deposit(-59.5f, 1000f);
+            tenCalls.Deposit(-30.5f, 250f);
+
+            oneCall.Remineralise(10.0, 0.05f);
+            for (int i = 0; i < 10; i++) tenCalls.Remineralise(1.0, 0.05f);
+
+            for (int layer = 0; layer < oneCall.LayerCount; layer++)
+            {
+                double expected = oneCall.StockInLayer(layer);
+                double actual = tenCalls.StockInLayer(layer);
+                double tolerance = Math.Max(1e-9, Math.Abs(expected) * 1e-9);
+                Assert.True(
+                    Math.Abs(expected - actual) <= tolerance,
+                    $"Layer {layer}: expected {expected}, got {actual}, diff {Math.Abs(expected - actual)}");
+            }
         }
 
         [Fact]
@@ -311,20 +346,22 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
-        public void RemineraliseAtMorethanOneRateDtMovesTheWholeFloorAndNeverGoesNegative()
+        public void RemineraliseAtAVeryLargeRateDtMovesNearlyAllTheFloorAndNeverGoesNegative()
         {
-            // fraction is clamped at 1, the same discretisation limit Settle and Mix both apply:
-            // a step long enough to imply more than the whole stock moves only the whole stock.
+            // Unlike Settle and Mix, this is the exact law 1 - exp(-rate*seconds), which
+            // approaches but never reaches 1 — so a huge rate*dt empties the floor almost
+            // entirely rather than exactly, and there is no cap to test.
             var field = new NutrientField(400f, 1f, 0f, 60f);
             field.Deposit(-59.5f, 1000f);
 
             int floor = field.LayerCount - 1;
+            double floorBefore = field.StockInLayer(floor);
             double totalBefore = field.TotalJoules;
 
             field.Remineralise(100.0, 1f);
 
-            Assert.Equal(0d, field.StockInLayer(floor), 6);
             Assert.True(field.StockInLayer(floor) >= 0d);
+            Assert.True(field.StockInLayer(floor) < floorBefore * 0.0001);
             Assert.Equal(totalBefore, field.TotalJoules, 6);
         }
 

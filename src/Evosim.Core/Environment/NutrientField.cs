@@ -207,6 +207,7 @@ namespace Evosim.Core
         /// First-order rate constant, s⁻¹. Zero leaves the field exactly as it was.
         /// </param>
         /// <remarks>
+        /// <para>
         /// <see cref="Settle"/> pays into the floor and never out of it, so in still water a pool
         /// with an inflow and no outflow ratchets to the bottom over any long-enough run. This is
         /// a one-way return leg: first-order decay of the floor stock, standing in for benthic
@@ -214,12 +215,20 @@ namespace Evosim.Core
         /// <see cref="Mix"/> already runs across the floor interface, and at 0.2 m²/s that
         /// exchange is twenty times this leak at its tested rate. The floor is a ratchet at
         /// mixing 0 only, and this is the knob for that world alone.
+        /// </para>
+        /// <para>
+        /// <b>Exact, not a capped forward-Euler step.</b> The moved fraction is
+        /// <c>1 - exp(-rate * seconds)</c>, the closed-form solution of dN/dt = -rate*N, so the
+        /// result is step-size independent: one call over 10 s and ten calls over 1 s each move
+        /// the same fraction of the floor. That formula never exceeds 1 on its own, so unlike
+        /// <see cref="Settle"/> and <see cref="Mix"/> there is no cap to apply.
+        /// </para>
         /// </remarks>
         public void Remineralise(double seconds, float ratePerSecond)
         {
             if (!(ratePerSecond > 0f) || LayerCount < 2) return;
 
-            double fraction = Math.Min(1.0, ratePerSecond * seconds);
+            double fraction = 1.0 - Math.Exp(-ratePerSecond * seconds);
             double moved = _stock[LayerCount - 1] * fraction;
 
             _stock[LayerCount - 1] -= moved;

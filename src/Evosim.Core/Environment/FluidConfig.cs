@@ -120,6 +120,7 @@ namespace Evosim.Core
             DragCoefficient = DragCoefficient,
             AddedMassCoefficient = AddedMassCoefficient,
             PanelsPerAxis = PanelsPerAxis,
+            TissueExcessDensity = TissueExcessDensity,
         };
 
         public override string ToString() =>
