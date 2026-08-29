@@ -101,6 +101,12 @@ namespace Evosim.Sim.EditorTools
             // after closing is left at zero rather than rescued.
             float floorCloses = Env("EVOSIM_FLOOR_CLOSES", 0f);
 
+            // The population ceiling (D021) is an instrument limit, not a world mechanism: a run
+            // that reaches it ends as a runaway and is censored. Exposed so a world that is
+            // merely generous can be run past 5,000 without pretending that number is biology.
+            // The default is RunConfig's own, so a run that does not name it is unchanged.
+            int maxPopulation = (int)Env("EVOSIM_MAX_POP", new RunConfig().MaximumPopulation);
+
             // Ageing (D038). Seconds of life after which a body costs twice as much to keep and
             // converts half as much of what it takes. 0 is the immortal world every earlier run
             // measured, in which 92% of everything ever born was still alive.
@@ -185,6 +191,7 @@ namespace Evosim.Sim.EditorTools
             config.NutrientRemineralisationPerSecond = remin;
             config.MatterRemineralisationPerSecond = remin;
             config.FloorClosesAfterSeconds = floorCloses;
+            config.MaximumPopulation = maxPopulation;
             config.SenescenceDoublingSeconds = senescence;
             config.Mutation.CellTypeChance = cellTypeMutation;
             var eco = new Ecosystem(config, seed);
@@ -218,6 +225,7 @@ namespace Evosim.Sim.EditorTools
                 " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
                 " · remin " + remin + " /s" +
                 (floorCloses > 0f ? " · floor closes " + floorCloses + " s" : " · floor open") +
+                " · ceiling " + maxPopulation +
                 " · senescence " + (senescence > 0f ? senescence + " s" : "off") +
                 " · cellType mut " + cellTypeMutation +
                 " · clearance " + clearance +

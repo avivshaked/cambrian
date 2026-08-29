@@ -61,4 +61,63 @@ whose wall budget ends it before t=15,000.
 
 ## Results
 
-*(to be written when the arms finish)*
+### Interim — the first extinction has a different signature
+
+`d053-s3` went extinct at t=11,223, and the trace does not read like 0037's:
+
+| t | alive | births | mat top | mat blk | depth m | mean age s |
+|---|---|---|---|---|---|---|
+| 4,000 | 768 | 2,178 | 0.009 | 22,854 | −16.4 | 698 |
+| 4,500 | 924 | 2,564 | 0.089 | 0 | −18.1 | 716 |
+| 5,000 | 815 | 2,756 | 0.285 | 0 | −19.0 | 867 |
+| 5,500 | 584 | 2,830 | 0.413 | 0 | −22.6 | 1,073 |
+| 6,000 | 365 | 2,867 | 0.472 | 0 | −24.3 | 1,300 |
+| 7,000 | 153 | 2,885 | 0.508 | 0 | −29.4 | 1,793 |
+| 9,000 | 8 | 2,885 | 0.529 | 0 | −42.8 | 3,361 |
+
+The drought came and went as in every earlier crash. The sink did what the hypothesis
+said: 2 m per 500 s instead of 10, so at t=5,000 the population was still at −19 m with
+matter back at 0.285/m³ and nothing blocked. **And births did not resume.** They ran at 386
+per 500 s before the drought, 74 in the window after it, 3 in the one after that, then
+zero. What the table shows instead is the mean age: 700 s before the drought, 1,300 s a
+thousand seconds after it, 1,800 s a thousand seconds later — the population is one cohort,
+born before the gap the drought opened, ageing together. Under D038's wear (upkeep
+×(1 + age/3000), yield halved at 3,000 s) a cohort at 1,300 s in dimming light at −22 m has
+no surplus to breed with, and a population with no births is a cohort by definition. It
+sank slowly and died of age, not of depth. R3 is falsified for this arm. The irreversible
+half of the trap here was **age synchrony**, which is suggestion 2's territory — the drought
+was shorter than the population's reproductive life, but the cohort it produced was not.
+
+Noted in passing: buoyant creatures fell from 157 to 3 over the same window, ahead of the
+rest — the floaters died first, not last, which D049/D050 did not predict and this entry
+does not explain.
+
+### Interim — the second ending is a runaway
+
+`d053-s4` ended at t=10,049 with **5,001 alive: the population ceiling**, after coming
+through a drought of 15,385 blocked conceptions at t=8,000 with births resumed by 9,500
+(R3 held there). Seeds 1, 2 and 5 were at 2,900–4,400 and climbing when this was written.
+The lighter world's other face: producers that no longer fall through the drought grow
+until the instrument stops the run — "light is covering upkeep so completely that nothing
+has to do anything", as the footer puts it — and the pre-registration classes that as
+uninterpretable. At 0.1 the world killed its producers; at 0.02 it cannot be scored.
+
+### Round 3b — pre-registered before launch, same day
+
+The dose midpoint, **`excessDensity 0.05`** (D050's "mid" world), with the ceiling raised
+to **8,000** through a new `EVOSIM_MAX_POP` so a generous world can be scored rather than
+censored. The ceiling is an instrument limit — nothing in the world reads it — so raising it
+changes where a run is cut, not what the world does; it is declared here and printed in
+the header. Everything else as round 3. Arms `d053b-s1..s5`, launched two at a time as
+workers free, since seeds 1, 2 and 5 of round 3 are mid-drought and answering R3.
+
+Predictions R1–R6 as above, plus:
+
+| # | prediction | falsified by |
+|---|---|---|
+| R7 | no arm reaches 8,000 (the mid world self-limits below it) | run footer |
+
+**The goal is met if R1, R2, R5 and R7 hold.** If R7 fails too, the density that keeps the
+producers alive is one that also removes the limit on them, and the next question is
+what limits a lit population — shading is meant to (D023) and at 3,000 creatures it was
+only 19%.
