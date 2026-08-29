@@ -165,3 +165,57 @@ P6 false means establishment — the spatial hypothesis.
 reading the code's structure and not its loop bounds — the same class of error as
 logbook/0019's knobs that reached nothing, in the other direction: a knob that reaches
 something something else already does.
+
+### Final — six arms, scored by `read-arm.ps1` against the rule above
+
+All six ran to t=20,000 except `rem-s2`, the largest population, which its six-hour wall
+budget ended at t≈16,600 (past the t≥10,000 the pre-registration required). No arm hit the
+5,000 ceiling.
+
+| arm | remin | `det deep` max | first absorptive after t=3,000 | origin | peak absorptives (inherited) | P6 window | at t=20,000 |
+|---|---|---|---|---|---|---|---|
+| ctl-s1 | 0 | 22.2 | t=8,500 | floor top-up during a crash to 41 | 171 (170) at t=14,500 | 26 samples, t=13,700–16,200 · **PASS** | 0 — bust by t=16,500 |
+| ctl-s2 | 0 | 38.2 | t=4,600 | floor top-ups t=4,600–9,500 never bred; **a mutant** (gen min 11) present alone from t=17,500 bred at t=19,200 | 437 (436) at t=20,000 | 9 samples · FAIL (run ended) | **437 alive, rising** |
+| ctl-s3 | 0 | 32.7 | t=15,800 | **mutation** — floor silent from t≈1,000 | 401 (399) at t=17,800 | 29 samples, t=17,200–20,000 · **PASS** | 4 — bust in progress |
+| rem-s1 | 0.01 | 38.7 | t=9,900 | **mutation** — three separate mutants lingered as 1–4 individuals (t=9,900, 13,200, 17,100); the third bred at t=18,700 | 1,092 (1,091) at t=20,000 | 14 samples · FAIL (run ended) | **1,092 alive, rising** |
+| rem-s2 | 0.01 | 35.4 | t=4,600 | floor top-ups during crashes, none bred | 12 (1) | none · FAIL | 0 at t=16,600 |
+| rem-s3 | 0.01 | 35.6 | t=5,300 | **mutation** at 7 J/m³, did not breed | 16 (0) | none · FAIL | 0 |
+
+**By the rule written before launch: P6 holds in 2 of 6 arms, P7 is moot.** Two of three
+controls pass and no treatment does, which with the knob measured inert (above) is the seed
+lottery and nothing else — the two treatments that "failed" P6 include the arm with the
+largest lineage of the round, which simply arrived too late for twenty samples. P5 (an
+absorptive appears after t=3,000) held in all six.
+
+**By the goal's spirit, three readings, kept separate:**
+
+1. **Arrival by mutation happens, and it happens at depth.** Four arms grew an inherited
+   absorptive lineage; three of the four (`ctl-s2`, `ctl-s3`, `rem-s1`) came from a
+   cell-type mutant born into a producer population with the floor silent, not from a
+   founder. Five mutants were seen in all (`rem-s3`'s at 7 J/m³ and two of `rem-s1`'s did not
+   breed; the ones that bred met 30–38 J/m³). Across ~116,000 arm-seconds that is one mutant
+   per ~23,000 s, and roughly three in five of those established — the arrival rate the
+   pre-flight guessed at (one per 3,000–4,000 s) was optimistic by 6×, because most births
+   are in the lit band, not the bottom ten metres.
+2. **Establishment is a boom.** Every lineage that bred went from a handful to hundreds in
+   1,000–1,500 s and drew the deep water down from 22–38 J/m³ to 3–13 in the same time. The
+   two that had time to finish the arc (`ctl-s1`, `ctl-s3`) crashed to 0 and 4; the two
+   still rising at t=20,000 (`ctl-s2`, `rem-s1`) had not yet reached the top of theirs.
+   **Whether a bust ends at zero or oscillates is the open question**, and 20,000 s did not
+   answer it: `ctl-s1`'s deep water had rebuilt from 3 to 15 J/m³ by the end with no
+   absorptive left to use it.
+3. **The population floor is still load-bearing for the producers.** `ctl-s1`, `ctl-s2` and
+   `rem-s2` all fell to exactly 40 for thousands of seconds (t≈4,600–9,500) — the D048
+   matter-starvation crash — and the floor held them there. A world whose producers need
+   the safety net is not yet self-sustaining whatever its absorptives do, and that is the
+   first thing the next round has to find out.
+
+**The goal, scored honestly:** *a world holds a food chain, replicated* — yes, six seeds,
+four lineages, three of them the world's own mutants. *Self-sustaining* — not shown: the
+producers leaned on the floor in three arms, and no lineage has yet been watched through a
+full boom–bust cycle. Round 2 (logbook/0037) closes the floor and doubles the budget.
+
+**The knob that mattered was mixing.** Nothing in this entry's mechanism did anything; the
+whole result is the world at 0.2 m²/s, which no one had run. The D/v arithmetic in the
+pre-flight — a 10 m gradient above the floor — was correct, and it is the reason the deep
+water was worth living in for the first time.

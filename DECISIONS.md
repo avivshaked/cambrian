@@ -2282,3 +2282,12 @@ mixing 0.2 the deep water crosses the absorptive break-even by t≈2,300–4,000
 which no earlier world did — so the world for the food-chain question is *that* one, and
 whether a lineage establishes in it is what 0036's remaining predictions score.
 `STATUS: built · redundant except at mixing 0`.
+
+**Scored, end of day.** Six arms at mixing 0.2: four grew an inherited absorptive lineage,
+three of them from the world's own cell-type mutants with the population floor silent, the
+largest 1,092 strong and still rising at t=20,000. Every lineage that bred boomed within
+1,500 s and drew the deep water from 22–38 J/m³ to 3–13; the two that had time to finish
+the arc busted. The world holds a food chain and has not yet been shown to keep one, and its
+producers still lean on the population floor during D048's matter crashes (logbook/0036).
+The next round closes the floor (`FloorClosesAfterSeconds`, D021's "never again" enforced
+rather than measured) and runs 40,000 s — logbook/0037.

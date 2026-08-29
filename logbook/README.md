@@ -97,3 +97,4 @@ are the ones most likely to go unwritten.
 | [0034](0034-the-ocean-had-no-top.md) | 2026-08-28 | The ocean had no top |
 | [0035](0035-the-neuron-was-priced-in-1994.md) | 2026-08-29 | The neuron was priced in 1994 |
 | [0036](0036-the-floor-gives-back.md) | 2026-08-29 | The floor gives back |
+| [0037](0037-the-net-comes-down.md) | 2026-08-29 | The net comes down |
