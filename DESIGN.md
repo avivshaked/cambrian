@@ -129,7 +129,7 @@ open-ended-evolution literature that §5A had been specified without.
 
 | Change | Was | Now | Why |
 |---|---|---|---|
-| **§5A.2c mechanism** | Detritus reaching the floor stays there; the ⚠ said whether that matters was "unmeasured and deliberately not guessed at" | `NutrientField.Remineralise`: a first-order leak from the floor layer into the water above it, per field, both rates `[Tunable]` and default 0 | D051. A materially closed ecosystem extracts energy only through balanced cycles [GOY23]; the floor was the one pool with no return leg. Its effect is still unmeasured — the regime it acts in (mixing between 0 and 2) has never been run, and logbook/0036 pre-registers the test |
+| **§5A.2c mechanism** | Detritus reaching the floor stays there; the ⚠ said whether that matters was "unmeasured and deliberately not guessed at" | `NutrientField.Remineralise`: a first-order leak from the floor layer into the water above it, per field, both rates `[Tunable]` and default 0 | D051. A materially closed ecosystem extracts energy only through balanced cycles [GOY23]; the floor looked like the one pool with no return leg. Measured the same day: `Mix` already exchanges across the floor interface, so the leak is redundant at any mixing > 0 and the floor is a ratchet at mixing 0 only (logbook/0036). Kept, off by default. The experiment's real yield is the mixing-0.2 world, whose deep water crosses break-even |
 | **§5A.10 parameter list** | Sink rate carried a ⚠ asking whether detritus should remineralise at all | The rate constant joins the unmeasured list; the ratio D/v (mixing over sink) is named as the gradient's length scale | Same |
 
 ---
@@ -1107,9 +1107,16 @@ particulate and dissolved into one absorbable pool, so "remineralising" a water-
 would move joules from a pool to itself; the floor is the one place `Settle` breaks the
 conflation. The rationale for closing the cycle at all is [GOY23]: a materially closed
 ecosystem extracts energy only through balanced cycles, and one with a return leg extracts
-~100× more than one without [GOY23 p.2, p.7]. ⚠ **What it does to a world is unmeasured at
-the time of writing** — the regime it acts in (mixing between 0 and 2) has never been run;
-see D051 and logbook/0036.
+~100× more than one without [GOY23 p.2, p.7]. ⚠ **Measured the same day, and it is redundant
+wherever mixing is on**: `Mix` already runs across the floor interface (its loop reaches
+`LayerCount − 1`), so at mixing 0.2 a world with the leak and a world without differ by 0.2
+points of floor share and 0.04 J/m³ of deep density at the same seed (logbook/0036). The
+floor is a ratchet at mixing 0 only. The knob stays, off, as the one-way return leg a
+mixing-free world would need; nothing in the design asks for such a world. What the same
+experiment did find is that **at mixing 0.2 the deep water crosses `AbsorptiveCell`'s
+break-even (4 J/m³) by t≈2,300–4,000 in every seed** — the gradient the D/v = 10 m arithmetic
+predicted — which is the first world here whose deep water is worth living in, and is where
+the food-chain question is now being asked.
 
 ### 5A.2d Matter — what the producer consumes ✅ implemented
 

@@ -238,6 +238,13 @@ actually verifying it.
   world whose habitable band is 23.7 m deep, paying upkeep the whole way for a position no different
   from the surface (logbook/0034). D050 stops *upward* net force at y = 0. Anything else that can
   push a creature up — an effector channel, a current — needs the same question asked of it.
+- **The sea floor is a ratchet at mixing 0 only.** `NutrientField.Mix` runs across every interface
+  including the floor's, so at any `NutrientMixingDiffusivity` above zero the floor already gives
+  back — 20%/s of its excess at 0.2 m²/s. The 80–93% on-floor figures in DESIGN.md §5A.2c and the
+  66–76% in the D050 arms are all mixing-0 worlds; at 0.2 the floor holds 5–7%. D051's
+  remineralisation leak was built on the premise that nothing leaves the floor, and was measured
+  redundant the same day (logbook/0036). Before building a mechanism on a code fact, read the loop
+  bounds, not the method's shape — a reconnaissance pass quoted `Mix` and still missed this.
 - **`gen min = 0` has two causes and they need opposite responses.** CLAUDE.md's floor rule reads it
   as founder contamination, which is right when the floor is firing. With `EVOSIM_SENESCENCE` off,
   founders simply never age out, so `gen min = 0` persists in a world whose floor stopped firing at

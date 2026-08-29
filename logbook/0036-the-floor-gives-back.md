@@ -113,4 +113,55 @@ read from `inherit` with `floor` silent, not from `absorpt`.
 
 ## Results
 
-*(to be written when the arms finish)*
+### Interim, at t≈4,000–5,300 of 20,000 — P1 is already false, and the reason is in the code
+
+Written while the arms were still running, because the finding does not depend on how they
+end. The readout (`scripts/read-arm.ps1`, which scores the predictions above by rule) at the
+first look:
+
+| arm | remin | `% on floor` at t=2,000 → end | `det deep` max | first t ≥ 4 J/m³ |
+|---|---|---|---|---|
+| ctl-s1 | 0 | 5.3% → 5.5% (t=4,000) | 4.03 | 4,000 |
+| rem-s1 | 0.01 | 5.1% → 5.2% (t=4,000) | 4.03 | 4,000 |
+| ctl-s2 | 0 | 4.8% → 7.0% (t=3,800) | 9.53 | 2,300 |
+| rem-s2 | 0.01 | 4.6% → 6.8% (t=3,800) | 9.57 | 2,300 |
+| rem-s3 | 0.01 | 4.0% → 6.8% (t=5,300) | 7.29 | 3,800 |
+
+**P1 is falsified** — the control's floor share is 5–7% and flat, not rising past 50% — and
+**P2 is falsified with it**: the control's deep water reached 4 J/m³ at seed 1 and 9.5 at
+seed 2, on the same samples and to within 1% of the treatment's. Same seed, same world,
+knob on or off: the floor share differs by 0.2 points and `det deep` by 0.04 J/m³. The knob
+reached the arithmetic (the unit test proves it, and the numbers are not identical) and the
+arithmetic does not matter.
+
+**Why: `Mix` already exchanges across the floor interface.** `NutrientField.Mix` runs Fick's
+law over every interface `layer < LayerCount − 1`, which includes the one between the floor
+layer and the water above it — the code's own doc comment says *"this is the world's only
+return path for energy"* and it was right. At 0.2 m²/s over 1 m layers that is a 20%/s
+exchange of the floor's excess; D051's leak is 1%/s of the floor's stock. The premise
+*"`Settle` pays into the floor and nothing pays out"* is true at mixing exactly 0 — the world
+§5A.2c's 80–93% was measured in, and the world `d050-heavy`'s 66% was measured in — and false
+at any mixing above it. Two readers, one of them a code-reconnaissance pass that quoted
+`Mix`'s loop bounds, looked at that method and did not notice that the loop reaches the
+floor. The reconnaissance report actually said the opposite of the doc comment: it called the
+floor's only debit path "a creature resident in the bottom layer".
+
+So the pre-flight arithmetic was right about the *column* — D/v = 10 m gives a gradient, and
+the deep water does cross break-even by t≈2,300–4,000 in every arm — and wrong about the
+*floor*, which the diffusion already empties. Remineralisation as built is redundant with
+mixing wherever mixing is on, and where mixing is off it would feed only the one layer above
+the floor. Its distinguishable regime is `mixing ≲ 0.01 m²/s`, which no design decision has
+asked for.
+
+**What the arms still test.** P1–P4 are settled. P5, P6 and P7 are not, and they are the
+goal's question: the deep water is now above break-even in five worlds with five seeds,
+which is the condition no earlier arm reached before its absorptive founders were gone. With
+control and treatment indistinguishable, the six arms are six replicates of the same world
+rather than a comparison, and the readout's P6 count across all six is what the goal is
+scored on. The pre-registered two-sided reading stands: P5 false means arrival, P5 true and
+P6 false means establishment — the spatial hypothesis.
+
+**What was wrong, in one line:** a decision was built on a code fact that was checked by
+reading the code's structure and not its loop bounds — the same class of error as
+logbook/0019's knobs that reached nothing, in the other direction: a knob that reaches
+something something else already does.

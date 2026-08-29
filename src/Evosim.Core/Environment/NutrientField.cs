@@ -207,11 +207,13 @@ namespace Evosim.Core
         /// First-order rate constant, s⁻¹. Zero leaves the field exactly as it was.
         /// </param>
         /// <remarks>
-        /// <see cref="Settle"/> pays into the floor and nothing pays out of it, so without this a
-        /// pool with an inflow and no outflow ratchets to the bottom over any long-enough run.
-        /// This is the return leg: first-order decay of the floor stock, standing in for benthic
-        /// remineralisation, with <see cref="Mix"/> doing the further, upward transport from
-        /// there exactly as it does for every other gradient in the column.
+        /// <see cref="Settle"/> pays into the floor and never out of it, so in still water a pool
+        /// with an inflow and no outflow ratchets to the bottom over any long-enough run. This is
+        /// a one-way return leg: first-order decay of the floor stock, standing in for benthic
+        /// remineralisation. <b>Measured redundant wherever mixing is on</b> (logbook/0036):
+        /// <see cref="Mix"/> already runs across the floor interface, and at 0.2 m²/s that
+        /// exchange is twenty times this leak at its tested rate. The floor is a ratchet at
+        /// mixing 0 only, and this is the knob for that world alone.
         /// </remarks>
         public void Remineralise(double seconds, float ratePerSecond)
         {

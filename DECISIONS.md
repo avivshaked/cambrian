@@ -73,7 +73,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D048](#d048) | Producers must consume something — nutrient is matter, light is energy | 2026-08-28 | accepted, not yet built |
 | [D049](#d049) | A buoyancy cell, passive before controlled | 2026-08-28 | active · built; rescaled by D050 |
 | [D050](#d050) | Lift is a multiple of the sink it cancels, and the ocean has a top | 2026-08-28 | active · fixes D049 units |
-| [D051](#d051) | The floor gives back — remineralisation closes the nutrient cycle | 2026-08-29 | active · built |
+| [D051](#d051) | The floor gives back — remineralisation closes the nutrient cycle | 2026-08-29 | built · redundant with D036 mixing except at mixing 0 |
 
 ---
 
@@ -2268,3 +2268,17 @@ stays above zero with the population floor silent. If the density arrives and th
 still does not, that is evidence the missing ingredient is spatial — a mutant has to arise
 *where* the food is — rather than recycling; the two-sided reading is the point of running
 it.
+
+**Measured, same day, and the premise was wrong wherever mixing is on.** `NutrientField.Mix`
+already runs Fick's law across the floor interface — its loop covers every
+`layer < LayerCount − 1` — so at mixing 0.2 the floor exchanges 20% of its excess per second
+with the water above it and a 1%/s leak on top is noise: control and treatment differ by 0.2
+points of floor share and 0.04 J/m³ of deep density at the same seed (logbook/0036). The
+sentence *"nothing decays out of it"* is true at mixing exactly 0 and at no other setting.
+The mechanism is kept — it is small, tested, and off by default — but it is **redundant with
+D036's mixing in every world the design has asked for**, and its only distinguishable regime
+(mixing ≲ 0.01 m²/s) is one no decision wants. The unexpected result is the useful one: at
+mixing 0.2 the deep water crosses the absorptive break-even by t≈2,300–4,000 in every seed,
+which no earlier world did — so the world for the food-chain question is *that* one, and
+whether a lineage establishes in it is what 0036's remaining predictions score.
+`STATUS: built · redundant except at mixing 0`.

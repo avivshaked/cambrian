@@ -254,8 +254,10 @@ namespace Evosim.Core
 
         /// <summary>How fast the floor gives detritus back, s⁻¹ — D051.</summary>
         /// <remarks>
-        /// <see cref="NutrientSinkMetresPerSecond"/> pays into the floor and nothing paid out of
-        /// it until this existed, so a run long enough ratchets every joule onto the sediment.
+        /// <see cref="NutrientSinkMetresPerSecond"/> pays into the floor and never out of it; in
+        /// still water a run long enough ratchets every joule onto the sediment. With
+        /// <see cref="NutrientMixingDiffusivity"/> above zero the floor already exchanges with the
+        /// water above it and this leak is redundant — measured at 0.2 m²/s, logbook/0036.
         /// A rate constant rather than a velocity: the floor is a stock being decayed, not a
         /// distance being crossed, and there is no layer thickness below it for a velocity to
         /// mean anything against. Zero by default, so the world is bit-identical until a run
