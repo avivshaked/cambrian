@@ -37,11 +37,17 @@ literature with page locators. Read it before proposing architectural changes; s
 obvious-seeming ideas were already tested against the literature and rejected, for reasons
 recorded there.
 
-Current state: **design complete, Spike 01 passed, Milestone 1 essentially done.** Genomes
-develop into phenotypes, phenotypes build into articulations, and a sandbox scene spawns and
-drives them. There is no fluid, no fitness, no brain evaluation and no search — the drive
-signal is a test sine. Milestone 2 is next and is what makes any recorded number mean
-something.
+Current state: **the ecosystem runs.** Genomes develop into phenotypes, articulations swim
+under their own evolved brains, and `Evosim.Core`'s world charges upkeep, feeds, breeds and
+kills — the energy audit closes at 0.0000% across a food web that has twice assembled itself
+(logbook/0025, 0028). Milestones 2–5 are done, out of the listed order; perception is partial
+(four sensor channels read — `Chemical`, `Energy` and `Flow` do not). The open frontier is
+DECISIONS.md D040–D050: no world yet holds a full ecology and a food chain at once, movement
+has never paid its energy cost (the cost side is closed, the prize side is open), and
+throughput binds every remaining question. Experiments are *arms*, launched with
+`scripts/run-arm.ps1` against worker copies `unity-w2`..`unity-w7` — never two processes on
+one worker, at most five concurrent arms, and verify every arm's settings from the header its
+run report writes, not from the launch command.
 
 ## Commands
 

@@ -248,4 +248,6 @@ argument.)*
 - [`EffectorDriver.cs`](../unity/Assets/Evosim/Sim/EffectorDriver.cs) — the other half of piece 02: drive value to torque
 - [`BrainTests.cs`](../src/Evosim.Core.Tests/BrainTests.cs) — distinct signals, one-node-per-step latency, and that `sigmoid` is centred
 - [`SwimSurvey.cs`](../unity/Assets/Evosim/Sim/Editor/SwimSurvey.cs) — the distribution the mean was hiding
-- [`DESIGN.md`](../DESIGN.md) §4.3 for the brain, §4.4 for the sensors that are not built yet
+- [`DESIGN.md`](../DESIGN.md) §4.3 for the brain, §4.4 for the sensors — four channels read
+  as of [`DECISIONS.md` D033](../DECISIONS.md#d033); `Chemical`, `Energy` and `Flow` are still
+  unimplemented

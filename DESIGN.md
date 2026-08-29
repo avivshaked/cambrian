@@ -1,9 +1,11 @@
 # Evolution Simulator — Design Document
 
-**Status:** Draft 4 — revised against literature, then against a working implementation.
-Milestone 1 complete: genomes develop, phenotypes build into articulations, creatures move.
-No fluid, no fitness, no search yet.
-**Date:** 2026-08-02
+**Status:** Draft 5 — endogenous selection (§5A) specified, then largely implemented and
+measured; findings are recorded inline with ✅/⚠/strikethrough marks as they land, and the
+decision trail is `DECISIONS.md` D017–D050. Milestones 0–5 of §10 are complete (out of the
+listed order); perception (§4.4) is partial. There is no fitness function and no directed
+search — that is §5A working as specified, not something missing.
+**Date:** 2026-08-29 (draft 5 specified 2026-08-07; document begun 2026-08-02)
 
 A Karl Sims–style evolved-virtual-creatures simulator in Unity. Genomes encode both
 **body plan** and **brain**; creatures are grown from a directed graph and evaluated in
@@ -110,6 +112,21 @@ reel of champions — and it is a bet, recorded as one in `DECISIONS.md` D017.
 
 ---
 
+## 0e. Changelog — review round 3 (2026-08-29)
+
+No mechanism changed. What changed is **provenance**: round 3 of the literature review
+(`research/LITERATURE-REVIEW.md` §0, §3.6) finally searched the endogenous-selection and
+open-ended-evolution literature that §5A had been specified without.
+
+| Change | Was | Now | Why |
+|---|---|---|---|
+| **§5A.2 provenance** | The per-neuron charge "has no precedent in the corpus" and is "this design's own" | The charge has a direct 1994 precedent — PolyWorld bills linearly per neuron and per synapse | [Y94, p.7], primary text verified. The work integral remains this design's own |
+| **§2 confidence** | Innovation protection (archive cells, ecological niches) reads as the answer to premature convergence | Protection helps and is insufficient: against a ground-truth landscape, MAP-Elites and explicit protection found near-optimal morphologies in ≤22% of trials | [MC25 pp.1, 29, 31] — the preprint §9 of the review had owed a read since round 1 |
+| **§13.4 quarantine** | Cheney 2018 and Pugh 2016 load-bearing and never independently verified | Both CrossRef-verified, retrieved, read at the load-bearing passages, promoted to §13.2 as [CB18] and [PU16] | Review round 3, task 2 |
+| *(no section)* | — | Round 3 also holds, in the review rather than here: [CO02] (depletable resources are what sustain multi-strategy coexistence — D023's finite sun as an instance of a general rule) and [VG05] (locomotion pays when it is the only route to reproduction). Neither has changed a mechanism yet; both are expected to inform the next decisions | `research/LITERATURE-REVIEW.md` §5, §6 |
+
+---
+
 ## 1. Target hardware
 
 | | |
@@ -181,6 +198,21 @@ in a **different cell** and competes only against others of its own body class, 
 against the globally-fittest incumbent — exactly the protection Cheney et al. add
 explicitly. A strong reason to prefer a morphology-descriptor archive over a plain GA,
 independent of the gallery benefit.
+
+> ⚠ **Round-3 sharpening (2026-08-29): the mitigations are weaker than this section reads.**
+> [MC25] trained a controller for every one of 1,305,840 voxel morphologies to obtain a
+> ground-truth landscape, then ran AFPO, MAP-Elites and explicit innovation protection against
+> it: all three found near-optimal morphologies in **17–22% of trials**, and runs regularly
+> stalled on bodies that were not even local optima, because fitness under a co-evolving
+> controller systematically *undervalues* newly-mutated bodies [MC25 p.1, p.29, p.31]. The
+> mechanism this section describes is confirmed; the confidence that protection *solves* it is
+> not. Under §5A the same mechanism plausibly operates through the ledger — a body's realised
+> energy balance under its current brain is a noisy underestimate of what that body could earn
+> with an adapted one — *(author's inference; [MC25] tests directed search, not endogenous
+> selection)*. Whether ecological niches protect innovation here is therefore a claim to
+> measure, not to assume; §8's demotion note already says the observatory exists partly to
+> make that measurable. Substrate caveat as ever: soft voxels, 3×3, not rigid articulated
+> bodies.
 
 ---
 
@@ -895,11 +927,19 @@ that makes conservation laws worth preferring.
 | **Neural** | Neuron count + connection count | Stops brains bloating without a fitness penalty |
 | **Mechanical work** | ∫\|τ·ω\| dt over all DOF | The physically honest actuation cost; we already apply τ and the bodies know ω |
 
-The neural term is the one the user asked for and the one with no precedent in the corpus.
-[C18 §2.4, p.8] minimises *"the percentage of actuated voxels (energy)"* — a proxy, not work —
-and [CU15] measures energy in N·m·rad only as a **behavioural descriptor**, never as a cost.
-No paper we hold implements a work integral or a per-neuron charge. *(Both terms are therefore
-this design's own, and must not be presented as literature-backed.)*
+~~The neural term is the one the user asked for and the one with no precedent in the corpus.~~
+⚠ **Corrected in review round 3: the neural term has a direct precedent.** PolyWorld charges
+energy for neural processing *"determined linearly from the number of neurons and the number of
+synapses"*, scaled against world maxima by neuron-to-energy and synapse-to-energy conversion
+factors, summed with per-behaviour costs and a fixed drain [Y94, p.7] — an endogenous-selection
+ecology doing in 1994 what this section specified independently in 2026. [C18 §2.4, p.8]
+minimises *"the percentage of actuated voxels (energy)"* — a proxy, not work — and [CU15]
+measures energy in N·m·rad only as a **behavioural descriptor**, never as a cost. **The
+mechanical work integral remains this design's own**: no paper held implements ∫|τ·ω| dt as a
+metabolic charge. A recent corroboration for the neural charge's expected effect: under an
+explicit per-neuron/per-connection energy cost, scarcity selects *against* neural complexity
+unless the cognitive payoff clearly exceeds the charge (Heesom-Green, Shock & Nitschke, ALIFE
+2025 — lead, read at abstract level, `research/LITERATURE-REVIEW.md` round 3).
 
 > **The knob that decides everything.** The ratio of basal metabolism to peak photosynthesis.
 > If sunlight alone covers upkeep anywhere in the world, nothing there ever has to move, and
@@ -1864,12 +1904,12 @@ because they are physics, and physics does not care how selection happens.
 |---|---|---|
 | **0** ✅ | Unity project, URP, assemblies, physics config | Empty scene that builds and runs headless |
 | **1** ✅ | Genome model, development, phenotype builder | Spawn a random creature, watch it flop. **First visual payoff.** |
-| **2** | Physics harness: fixed stepping, seeding + config hash (§7), fluid forces, **anti-exploit checks (§11.2)**, mechanical work accounting | Throughput in *simulated seconds per wall-clock second* at a given population — not evaluations/second (§5A.8) |
-| **3** | Metabolism: cell types on the genome, per-part upkeep, neural cost, energy as a running balance. Mutation operators (§4.5) | **A creature that starves.** The first thing in this project that can fail on its own |
-| **4** | World: current field, light/depth gradient, nutrient particles and absorption | A creature that survives by drifting into food, and one that doesn't |
-| | ⚠ **The join is done; the work term must wait for 6.** `World.Observe` carries height and mechanical work from the simulator into the ledger, and the audit holds at 0.0000% with it live. But billing work before a genome-specified controller exists exterminated every jointed creature in sixty simulated seconds ([D029](DECISIONS.md#d029), logbook/0015): with one shared test sine driving every creature, a uniform flap yields no net thrust, so work is a tax on *having* a body part rather than a price for *using* one. The current field is deferred with it, for the same reason — it displaces creatures that have no way to hold station | |
-| **5** | Life cycle: death returns tissue to the nutrient pool, reproduction on an energy threshold, mutation on reproduction | **A population that persists without intervention.** The first open-ended run, and where it stops being a project and becomes fun |
-| **6** | Perception: photosensors, evolvable colour, closed-loop brain graph (§4.3, §4.4) | Directed foraging — a creature that moves *toward* something |
+| **2** ✅ | Physics harness: fixed stepping, seeding + config hash (§7), fluid forces, **anti-exploit checks (§11.2)**, mechanical work accounting | Throughput in *simulated seconds per wall-clock second* at a given population — not evaluations/second (§5A.8) |
+| **3** ✅ | Metabolism: cell types on the genome, per-part upkeep, neural cost, energy as a running balance. Mutation operators (§4.5) | **A creature that starves.** The first thing in this project that can fail on its own |
+| **4** ✅ | World: current field, light/depth gradient, nutrient particles and absorption | A creature that survives by drifting into food, and one that doesn't |
+| | ~~⚠ **The join is done; the work term must wait for 6.**~~ **Superseded.** The deferral was correct on the day: billing work under one shared test sine exterminated every jointed creature in sixty seconds ([D029](DECISIONS.md#d029), logbook/0015), because a uniform flap yields no net thrust. [D030](DECISIONS.md#d030) then built the brain evaluator, work has been billed in every embodied run since, and the current field arrived with [D036](DECISIONS.md#d036)/[D037](DECISIONS.md#d037). Kept because the lesson generalises: a cost is only meaningful once its benefit is reachable | |
+| **5** ✅ | Life cycle: death returns tissue to the nutrient pool, reproduction on an energy threshold, mutation on reproduction | **A population that persists without intervention.** The first open-ended run, and where it stops being a project and becomes fun — reached, and verifiable since the floor report ([D047](DECISIONS.md#d047)): worlds exist whose floor goes silent and stays silent (logbook/0033) |
+| **6** ⚠ *partial* | Perception: photosensors, evolvable colour, closed-loop brain graph (§4.3, §4.4) | Directed foraging — a creature that moves *toward* something. The loop is closed and four channels read ([D033](DECISIONS.md#d033)); photosensors, colour and the `Chemical`/`Energy`/`Flow` channels do not exist |
 | **7** | Food web: `Consumer` cells, carrion, predation, attack and defence | Trophic levels, or clear evidence of why not (§5A.7) |
 | **8** | Theatre: replay, gallery, charts, lineage, export, **fluid validation harness (§5.4)** | Showpiece + research instrument |
 | **9** | Land: contact, gravity | Deferred. Water first, and the ecosystem is a water design |
@@ -2086,6 +2126,10 @@ is missing, start there.
 | **[TM01]** ⚠ *partial* | T. Taylor and C. Massey, "Recent Developments in the Evolution of Morphologies and Controllers for Physically Simulated Creatures," *Artificial Life*, vol. 7, no. 1, pp. 77–87, 2001. DOI `10.1162/106454601300328034` — **read: pp.4, 6–8 (joint actuation, fitness-function design, complexity caps). Rest unread.** Moved here from §13.3 in review round 2 | `research/papers/09-taylor-massey-2001-recent-developments/` |
 | **[CEA07]** ⚠ *partial* | N. Chaumont, R. Egli, C. Adami, "Evolving Virtual Creatures and Catapults," *Artificial Life*, vol. 13, no. 2, pp. 139–157, 2007. DOI `10.1162/artl.2007.13.2.139` — **read: §3.2–3.4 (pp.3–6), §5 (pp.13–14). Rest unread.** Moved here in round 2. ⚠ The C_l/C_s/C_v/C_c equations on pp.5–6 are **lost in PDF extraction** — the prose survives, the display equations do not. Check the PDF before citing any formula | `research/papers/12-chaumont-egli-adami-2007-catapults/` |
 | **[CU15]** ⚠ *partial* | A. Cully, J. Clune, D. Tarapore, J.-B. Mouret, "Robots that can adapt like animals," *Nature*, vol. 521, no. 7553, pp. 503–507, 2015. DOI `10.1038/nature14422` — **read: supplementary pp.15, 22, 24, Extended Data Figs. 4 and 7. Main text unread.** Moved here in round 2; §5A cites it only for energy as a *behavioural descriptor* | `research/papers/19-cully-clune-tarapore-mouret-2015-robots-that-can-adapt/` |
+| **[Y94]** ⚠ *partial* | L. Yaeger, "Computational Genetics, Physiology, Metabolism, Neural Systems, Learning, Vision, and Behavior or PolyWorld: Life in a New Context," in *Artificial Life III*, SFI Studies in the Sciences of Complexity XVII, Addison-Wesley, 1994, pp. 263–298. Pre-DOI — **read: pp.1, 7, 10–11 (metabolism and behaviour pricing). Rest unread.** Added in review round 3; §5A.2 cites it for the per-neuron/per-synapse charge | `research/papers/29-yaeger-1994-polyworld/` |
+| **[MC25]** ⚠ *partial* | A. Mertan and N. Cheney, "Evolutionary Brain-Body Co-Optimization Consistently Fails to Select for Morphological Potential," arXiv:2508.17464v2 (accepted manuscript, *Artificial Life*; extends ALIFE 2025) — **read: pp.1 (abstract), 29 (discussion), 31 (conclusion). Body unread.** Added in round 3; §2 cites it for the undervaluation mechanism and the protection-is-insufficient result | `research/papers/30-mertan-cheney-2025-morphological-potential/` |
+| **[CB18]** ⚠ *partial* | N. Cheney, J. Bongard, V. SunSpiral, H. Lipson, "Scalable co-optimization of morphology and control in embodied machines," *J. R. Soc. Interface*, vol. 15, no. 143, 20170937, 2018. DOI `10.1098/rsif.2017.0937` — **read: §II.C (pp.2–3 of the arXiv copy). Rest unread.** Promoted from §13.4 in round 3 after CrossRef verification and a direct read of the method | `research/papers/36-cheney-2018-scalable-cooptimization/` (arXiv version) |
+| **[PU16]** ⚠ *partial* | J. K. Pugh, L. B. Soros, K. O. Stanley, "Quality Diversity: A New Frontier for Evolutionary Computation," *Frontiers in Robotics and AI*, vol. 3, art. 40, 2016. DOI `10.3389/frobt.2016.00040` — **read in full by the round-3 search agent; spot-checked by the reviewer.** Promoted from §13.4 in round 3 | `research/papers/37-pugh-2016-quality-diversity-frontier/` |
 
 > **Page-numbering note for [EA23]:** citations use **PDF page numbers** (matching
 > `### Page N` in `source.md`). Journal page = PDF page + 136. So `[EA23 §7, p.27]` is
@@ -2106,8 +2150,8 @@ Treat these as leads, not citations. Verify before relying on any of them.
 |---|---|---|
 | [S94] | K. Sims, "Evolving Virtual Creatures," SIGGRAPH '94, pp. 15–22; and "Evolving 3D Morphology and Behavior by Competition," *Artificial Life* 1(4):353–372, 1994 | [K12 refs 6–7, p.18]; [U07 refs 1–2, p.10] |
 | [LSBC16] | Lipson, SunSpiral, Bongard, Cheney, "On the difficulty of co-optimizing morphology and control in evolved virtual creatures," ALIFE 2016, pp. 226–233 | [EA23 refs, p.28] |
-| — | Cheney, Bongard, SunSpiral, Lipson, *J. R. Soc. Interface* 15(143):20170937, 2018. DOI `10.1098/rsif.2017.0937` | [EA23 refs, p.27] |
-| [PSS16] | Pugh, Soros, Stanley, "Quality Diversity: A New Frontier for Evolutionary Computation," *Frontiers in Robotics and AI* 3, 2016. DOI `10.3389/frobt.2016.00040` | [EA23 refs, p.28] |
+| — | ~~Cheney, Bongard, SunSpiral, Lipson, *J. R. Soc. Interface* 15(143):20170937, 2018~~ **Verified and promoted to §13.2 as [CB18]** (round 3) | [EA23 refs, p.27] |
+| [PSS16] | ~~Pugh, Soros, Stanley, "Quality Diversity: A New Frontier for Evolutionary Computation," *Frontiers in Robotics and AI* 3, 2016~~ **Verified and promoted to §13.2 as [PU16]** (round 3) | [EA23 refs, p.28] |
 | — | Lehman & Stanley, "Evolving a diversity of virtual creatures through novelty search and local competition," GECCO '11, pp. 211–218 | [EA23 §2.8, p.6] |
 | — | Cully & Demiris, "Quality and diversity optimization: a unifying modular framework," *IEEE TEVC* 22(2):245–259, 2018 | [EA23 §3.5.4, p.12] |
 | — | Nordmoen, Veenstra, Ellefsen, Glette, "Quality and diversity in evolutionary modular robotics," IEEE SSCI 2020, pp. 2109–2116 | [EA23 §2.4, p.4] |

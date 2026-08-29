@@ -18,13 +18,16 @@ the code.
 The name is the ambition: the Cambrian explosion was a rapid diversification of **body
 plans**, which is what an open-ended ecosystem is being built to produce.
 
-> **Status: creatures grow, swim, and are made of something. No energy economy yet, so
-> nothing lives or dies.**
-> Genomes develop into bodies, bodies build into physics articulations, water applies drag
-> and added mass, and every part has a cell type with a metabolic cost attached. Mutation,
-> genome serialization and the run format all work. What does not exist yet is the economy
-> that spends the energy — so the numbers are recorded but nothing yet depends on them, and
-> the controller is still a test sine wave standing in for a brain.
+> **Status: the ecosystem runs — creatures earn, spend, reproduce and die, and the world has
+> twice grown a food chain nobody designed.**
+> Genomes develop into bodies, bodies build into articulations driven by their own evolved
+> brains, and energy is a conserved budget audited to 0.0000% across the whole food web. A
+> finite competed-for sun, currents and mixing, senescence, a matter currency and a buoyancy
+> organ are all in and measured ([`DECISIONS.md`](DECISIONS.md) D023–D050). The open frontier:
+> no world yet holds a full ecology and a food chain at the same time, movement has never paid
+> its energy cost — the cost side of that question is closed, the prize side is open — and
+> throughput now binds every remaining question ([logbook/0025](logbook/0025-something-ate-something.md)
+> onward).
 
 ---
 
@@ -329,14 +332,17 @@ selection happens.
 | — | Spike 01 — `ArticulationBody` at scale | Measured, six for six | ✅ |
 | 0 | Unity project, assemblies, URP, physics config | Empty scene that builds headless | ✅ |
 | 1 | Genome, development rules, phenotype builder | Spawn a random creature and watch it flop | ✅ |
-| 2 | Physics harness: fixed stepping, config hash, fluid forces, anti-exploit checks, work accounting | Throughput in *simulated seconds per wall-clock second* | ← here |
-| 3 | Metabolism: per-part upkeep, neural cost, energy as a running balance | **A creature that starves** — the first thing here that can fail on its own | |
-| 4 | World: current field, light and depth gradient, drifting nutrients | A creature that survives by drifting into food, and one that doesn't | |
-| 5 | Life cycle: death returns tissue to the water, reproduction on surplus | **A population that persists without intervention** | |
-| 6 | Perception: photosensors, evolvable colour, closed-loop brain graph | Directed foraging — a creature that moves *toward* something | |
-| 7 | Food web: predation, carrion, attack and defence | Trophic levels, or clear evidence of why not | |
+| 2 | Physics harness: fixed stepping, config hash, fluid forces, anti-exploit checks, work accounting | Throughput in *simulated seconds per wall-clock second* | ✅ |
+| 3 | Metabolism: per-part upkeep, neural cost, energy as a running balance | **A creature that starves** — the first thing here that can fail on its own | ✅ |
+| 4 | World: current field, light and depth gradient, drifting nutrients | A creature that survives by drifting into food, and one that doesn't | ✅ |
+| 5 | Life cycle: death returns tissue to the water, reproduction on surplus | **A population that persists without intervention** | ✅ |
+| 6 | Perception: photosensors, evolvable colour, closed-loop brain graph | Directed foraging — a creature that moves *toward* something | ← partial: the loop is closed and four channels read; photosensors, colour, `Chemical`/`Energy`/`Flow` do not exist |
+| 7 | Food web: predation, carrion, attack and defence | Trophic levels, or clear evidence of why not | ← partial: carrion and detritivory work, and a food chain has assembled twice; contact predation waits on shared space |
 | 8 | Theatre: replay, gallery, charts, lineage, fluid validation harness | Showpiece and research instrument | |
 | 9 | Land: contact, gravity | Deferred — the ecosystem is a water design | |
+
+Milestones 2–5 completed out of the listed order — the ecosystem work of `DECISIONS.md`
+D017–D050 is the real sequence, and the logbook is the day-by-day record of it.
 
 **Milestone 3 is the pivot.** Everything before it is a simulator; everything after it is a
 world. It is also the cheapest place to find out that the metabolism-to-photosynthesis ratio
@@ -348,10 +354,11 @@ ecological niches. It survives as an *observatory* — a record of what lived an
 looked like — which is what makes a long run legible.
 
 **Known gaps, recorded rather than hidden.** Reproduction is asexual, which leaves the
-design's only recombination operator with no mechanism to fire; every number in the energy
-economy is a placeholder rather than a measurement; and the literature review has never
-covered open-ended evolution or artificial ecosystems, so §5A is reasoned rather than
-evidenced.
+design's only recombination operator with no mechanism to fire; several energy-economy
+numbers are still unmeasured (`DESIGN.md` §5A.10 is the honest list — some are now located
+by sweeps, others remain placeholders); and the literature review had never covered
+open-ended evolution or artificial ecosystems when §5A was written — review round 3, which
+searches exactly that literature, is in progress.
 
 ---
 
