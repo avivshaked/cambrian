@@ -141,3 +141,37 @@ the machine; both would have been censored by their walls before 30,000 s. `d053
 one 0.05 arm alive, runs to its budget: at t=25,200 it carried **200 absorptives** — the
 round's only chain — and whether that lineage persists or busts is the last thing round 3
 can say.
+
+### Final — rounds 3 and 3b, scored
+
+| arm | density | fate | absorptive lineage |
+|---|---|---|---|
+| d053-s1 | 0.02 | stopped t=8,200, 1,614 alive, mean age 2,801 — ageing out | none |
+| d053-s2 | 0.02 | stopped t=6,400, 2,481 alive, mean age 615 — came through its drought | none |
+| d053-s3 | 0.02 | **extinct t=11,223** — age synchrony after a drought | none |
+| d053-s4 | 0.02 | **runaway t=10,049**, 5,001 alive | none |
+| d053-s5 | 0.02 | **runaway t=5,516**, 5,002 alive | none |
+| d053b-s1 | 0.05 | **extinct t=4,045** — drifted below the light, no drought | none |
+| d053b-s2 | 0.05 | **extinct t=5,854** | none |
+| d053b-s3 | 0.05 | **extinct t=4,194** | none |
+| d053b-s4 | 0.05 | **budget, t=30,000, 929 alive**, floor silent from t=3,000 | mutant present as 1–10 individuals from t≈20,000; bred at t≈23,500; **304 (303 inherited) at t=24,500**; ate the deep water 28 → 4.5 J/m³; declined monotonically to **0 at t=30,000** while the water rebuilt to 11 |
+
+Against the pre-registration: R1 held everywhere. **R2 failed** in both forms — at 0.02 the
+producers do not die of the drought but run away to the instrument (two arms) or age out
+(one), and at 0.05 three of four die within 2,000 s of the floor closing. R3 was split at
+0.02 (births resumed in s2 and s4, not in s1 and s3) and could not be scored at 0.05. R4
+held only in 3b-s4. **R5 failed** (no lineage alive at any end). **R6 falsified** for the fifth
+time: the one lineage that ran its full arc fell from 304 to 0 without a single upturn, over
+5,500 s, with its food recovering beneath it from t≈25,500. R7 (3b) held trivially — 3b's
+survivor never exceeded 1,000.
+
+**What round 3 established.** Suggestion 1 does not produce a scoreable world at any density:
+heavy worlds die of sinking, the light world is not self-limiting on the ecology's own terms
+and, when it does not run away, dies of age synchrony. The density that was supposed to be
+one variable turned out to select *which* half of the trap closes. And `d053b-s4` is the most
+complete single trace the project owns of a consumer bust: a lineage that arrived by
+mutation, established with no net, and could not stop eating when the water thinned — the
+classic undamped consumer–resource cycle, with the resource recovering only after the
+consumer was gone. Fix 3's target, exactly; and D052's argument that the producers' side has
+to be fixed first, because in every other arm the producers died before a consumer could be
+watched this long.
