@@ -245,6 +245,16 @@ actually verifying it.
   remineralisation leak was built on the premise that nothing leaves the floor, and was measured
   redundant the same day (logbook/0036). Before building a mechanism on a code fact, read the loop
   bounds, not the method's shape — a reconnaissance pass quoted `Mix` and still missed this.
+- **The population floor does two jobs, and closing it exposes both.** It runs the founding
+  lottery — forty random genomes breed in about one seed in four, and the floor keeps drawing
+  until one does — and it rescues every matter crash. `FloorClosesAfterSeconds` (`EVOSIM_FLOOR_CLOSES`)
+  stops it; founding takes 2 spawns per 0.5 s step, so anything under 20 s leaves fewer than forty
+  founders, and 3,000 s is after founding and before the first crash. With it closed, three seeds in
+  five die at their first drought (logbook/0037). A world that needs the net is not self-sustaining.
+- **Throughput is population, and the ceiling is an instrument.** Four to five thousand creatures
+  run at 0.2–2× real time depending on how many arms share the machine; 30,000 simulated seconds
+  took five to ten hours. `MaximumPopulation` (5,000, `EVOSIM_MAX_POP`) ends a run as a *runaway* —
+  censored, not an outcome — and the light 0.02 world reaches it by t≈5,500 (logbook/0038).
 - **`gen min = 0` has two causes and they need opposite responses.** CLAUDE.md's floor rule reads it
   as founder contamination, which is right when the floor is firing. With `EVOSIM_SENESCENCE` off,
   founders simply never age out, so `gen min = 0` persists in a world whose floor stopped firing at

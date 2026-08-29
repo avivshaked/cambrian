@@ -1152,6 +1152,15 @@ one of them made by the organisms.
   it into §5A.2's audit would let the books balance by counting a different substance — the
   exact failure that audit exists to catch.
 
+⚠ **Matter is returned only by death, and that is harsher than any real ocean.** Measured
+across rounds 2–4 of the food-chain goal (logbook/0037–0039): a bloom locks the whole
+surface reservoir into bodies, the surface falls to ~0.01/m³, every conception is refused,
+and the matter comes back only when the bodies die — at depth, after sinking. A real sunlit
+ocean is also nutrient-poor, but most of what its producers take is regenerated in place
+within days by excretion, grazing and leakage; here nothing leaves a living body. The
+*excretion contract* (`fable-propose.md` §4c, `HANDOFF.md`) is the candidate fix and has no
+D-entry yet. Author's inference from general marine ecology; not yet a cited claim.
+
 **Measured.** A 200 W/m² world at `MatterPerTissueJoule` 0.5 from 1.0/m³:
 
 | t | alive | matter at surface | matter deep | conceptions blocked | floor spawns |

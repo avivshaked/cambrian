@@ -74,6 +74,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D049](#d049) | A buoyancy cell, passive before controlled | 2026-08-28 | active · built; rescaled by D050 |
 | [D050](#d050) | Lift is a multiple of the sink it cancels, and the ocean has a top | 2026-08-28 | active · fixes D049 units |
 | [D051](#d051) | The floor gives back — remineralisation closes the nutrient cycle | 2026-08-29 | built · redundant with D036 mixing except at mixing 0 |
+| [D052](#d052) | Living bodies give matter back — the excretion contract | 2026-08-29 | decided · not built |
 
 ---
 
@@ -2291,3 +2292,56 @@ the arc busted. The world holds a food chain and has not yet been shown to keep 
 producers still lean on the population floor during D048's matter crashes (logbook/0036).
 The next round closes the floor (`FloorClosesAfterSeconds`, D021's "never again" enforced
 rather than measured) and runs 40,000 s — logbook/0037.
+
+---
+
+### D052
+**Living bodies give matter back — the excretion contract** · 2026-08-29
+
+Eleven extinctions across logbook/0037–0039 read the same way: a bloom of producers locks the
+surface's matter into bodies, the surface falls to ~0.01/m³, conceptions are refused, births
+stop, and then the survivors either sink out of the light (excess density 0.05–0.1) or age
+out together before the matter returns (0.02). The drought is the common cause, and the
+drought lasts longer than a lifetime because **matter leaves a body only at death** (D048),
+and a body dies at depth after sinking. Nothing a living creature takes at the surface ever
+comes back to the surface.
+
+That is harsher than any real ocean. The sunlit sea *is* a nutrient desert — the design was
+right to make it one — but most of what its producers take is regenerated in place within
+days by excretion, grazing and leakage, and only a minority sinks out. This world has no
+regeneration while alive at all. The owner's question — "where does matter come from?" —
+had the answer "from the seed at t=0, and then only from corpses", and that is the gap.
+
+**Chosen: living creatures return matter continuously, at their own depth, in proportion to
+their metabolism.** A fraction `ExcretionPerJoule` of the matter locked in a body is returned
+to the body's current layer per joule of energy the body spends on upkeep — turnover, the
+microbial loop at its simplest. Death returns whatever is still locked. The body's locked
+matter therefore falls over its life; **the child's price is unchanged** (`MatterPerTissueJoule`
+per joule of tissue), so a parent that has excreted much of its own matter has not thereby
+made children cheaper — the price is paid from the layer, as now. `MatterInBodies` is
+debited by exactly what the field is credited, so `World.StandingMatter` does not drift and
+D048's test passes unchanged. One knob, default 0, bit-identical world; `EVOSIM_EXCRETION` in
+the header.
+
+**Rejected for now: a matter source paid in energy** (the owner's first formulation —
+"a creature that consumes energy excretes a percent of it as matter"). It has a real
+analogue, nitrogen fixation, where microbes spend energy to make inert N₂ usable, and it is
+the honest meaning of "life changed the composition of the sea". But it makes matter out of
+energy, which breaks the one property D048 built the field on and removes the limit
+entirely — a world where every joule mints nutrient has no drought and no reason for the
+deep to be worth anything — and a source needs a sink (burial, denitrification) or the pool
+grows without bound. That is a larger world than the first self-sustaining one needs.
+Revisit as a second knob once the closed cycle has been shown to hold or shown not to.
+
+**Rejected for now: several kinds of matter.** The literature round's [CO02] says more
+depletable resources sustain more coexisting strategies, which is a diversity result for
+after the world stands up, not a way to make it stand.
+
+**Sequenced:** after round 4 (logbook/0039) is scored and before fix 3 (damping on the
+consumer), because it addresses the producers' failure that every round has ended on, and
+the consumers cannot be watched for long enough to score in a world whose producers die.
+Pre-registration in the 0036–0039 style before any arm; the world is round 4's.
+
+⚠ Not built at the time of writing. Project inference from general marine ecology; the
+review has not searched nutrient regeneration, and a primary source on new versus
+regenerated production should be added before the numbers here are leaned on.
