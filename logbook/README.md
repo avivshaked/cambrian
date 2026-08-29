@@ -98,3 +98,4 @@ are the ones most likely to go unwritten.
 | [0035](0035-the-neuron-was-priced-in-1994.md) | 2026-08-29 | The neuron was priced in 1994 |
 | [0036](0036-the-floor-gives-back.md) | 2026-08-29 | The floor gives back |
 | [0037](0037-the-net-comes-down.md) | 2026-08-29 | The net comes down |
+| [0038](0038-a-lighter-world.md) | 2026-08-29 | A lighter world |
