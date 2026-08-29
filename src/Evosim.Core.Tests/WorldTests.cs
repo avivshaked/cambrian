@@ -166,6 +166,36 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void EnergyIsConservedWithRemineralisationRunning()
+        {
+            // D051: Remineralise is a transfer within Nutrients.TotalJoules, which StandingJoules
+            // already sums whole, so the audit needs no new term. Run it aggressively rather than
+            // at a realistic rate — if any leak existed it would show fastest here.
+            var config = new RunConfig
+            {
+                MinimumPopulation = 30,
+                MaximumPopulation = 600,
+                NutrientRemineralisationPerSecond = 0.01f,
+            };
+            config.Light = new LightModel(400f, 12f);
+            var world = new World(config, seed: 1);
+
+            try { for (int i = 0; i < 300; i++) world.Step(1f); }
+            catch (PopulationRunawayException e) { _output.WriteLine($"stopped: {e.Population} living"); }
+
+            double residual = world.AuditResidual;
+            double scale = Math.Max(1.0, world.EnergyIn);
+
+            _output.WriteLine(
+                $"in {world.EnergyIn:0.###} out {world.EnergyOut:0.###} " +
+                $"standing {world.StandingJoules:0.###} residual {residual:0.######} ({residual / scale:P4})");
+
+            Assert.True(
+                Math.Abs(residual) / scale < 1e-4,
+                $"remineralisation opened a hole in the energy audit: {residual:0.###} J unaccounted for");
+        }
+
+        [Fact]
         public void NoCreatureEverHoldsNegativeEnergy()
         {
             // A creature carrying a debt is one the world has no way to settle, and the audit
@@ -400,6 +430,70 @@ namespace Evosim.Core.Tests
             Assert.True(
                 Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
                 $"matter drifted by {drift} — something creates or destroys it");
+        }
+
+        [Fact]
+        public void MatterIsConservedWithRemineralisationRunning()
+        {
+            // D051's matter-side knob, mirroring MatterIsConservedBecauseNothingCreatesIt: the
+            // leak is an internal transfer within Matter.TotalJoules, which StandingMatter already
+            // sums whole, so this must drift no more than the knob-off case does.
+            var config = MatterWorld(0.5f, 1f);
+            config.MatterRemineralisationPerSecond = 0.01f;
+            var world = new World(config, seed: 1);
+
+            double atStart = 0d;
+            for (float t = 0f; t < 400f; t += 1f)
+            {
+                world.Step(1f);
+                if (t == 0f) atStart = world.StandingMatter;
+            }
+
+            double drift = world.StandingMatter - atStart;
+
+            _output.WriteLine(
+                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}), " +
+                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
+
+            Assert.True(
+                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
+                $"matter drifted by {drift} with remineralisation running — something creates or destroys it");
+        }
+
+        [Fact]
+        public void NutrientRemineralisationPerSecondReachesTheArithmetic()
+        {
+            // This project's house rule (CLAUDE.md): before concluding a parameter matters, prove
+            // it reached the thing it configures. Two worlds, identical but for the knob, stepped
+            // long enough for detritus to reach the floor — their floor stocks must differ, or the
+            // config value never made it past the RunConfig field it lives in.
+            var off = new RunConfig
+            {
+                Light = new LightModel(400f, 12f), MinimumPopulation = 30, MaximumPopulation = 600,
+            };
+            var on = new RunConfig
+            {
+                Light = new LightModel(400f, 12f), MinimumPopulation = 30, MaximumPopulation = 600,
+                NutrientRemineralisationPerSecond = 0.01f,
+            };
+
+            var worldOff = new World(off, seed: 7);
+            var worldOn = new World(on, seed: 7);
+
+            // Caught rather than avoided by tuning irradiance down: this test only needs the two
+            // worlds to have run identically long enough for detritus to reach the floor, and a
+            // runaway (D021) is a population outcome unrelated to what it is checking.
+            try { for (int i = 0; i < 600; i++) worldOff.Step(1f); }
+            catch (PopulationRunawayException) { }
+            try { for (int i = 0; i < 600; i++) worldOn.Step(1f); }
+            catch (PopulationRunawayException) { }
+
+            double floorOff = worldOff.Nutrients.StockInLayer(worldOff.Nutrients.LayerCount - 1);
+            double floorOn = worldOn.Nutrients.StockInLayer(worldOn.Nutrients.LayerCount - 1);
+
+            _output.WriteLine($"floor stock: rate 0 -> {floorOff:0.###} J, rate 0.01 -> {floorOn:0.###} J");
+
+            Assert.NotEqual(floorOff, floorOn);
         }
 
         [Fact]

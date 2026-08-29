@@ -201,6 +201,29 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>Leaks a fraction of the floor's stock into the layer above it — D051.</summary>
+        /// <param name="seconds">Interval to decay over.</param>
+        /// <param name="ratePerSecond">
+        /// First-order rate constant, s⁻¹. Zero leaves the field exactly as it was.
+        /// </param>
+        /// <remarks>
+        /// <see cref="Settle"/> pays into the floor and nothing pays out of it, so without this a
+        /// pool with an inflow and no outflow ratchets to the bottom over any long-enough run.
+        /// This is the return leg: first-order decay of the floor stock, standing in for benthic
+        /// remineralisation, with <see cref="Mix"/> doing the further, upward transport from
+        /// there exactly as it does for every other gradient in the column.
+        /// </remarks>
+        public void Remineralise(double seconds, float ratePerSecond)
+        {
+            if (!(ratePerSecond > 0f) || LayerCount < 2) return;
+
+            double fraction = Math.Min(1.0, ratePerSecond * seconds);
+            double moved = _stock[LayerCount - 1] * fraction;
+
+            _stock[LayerCount - 1] -= moved;
+            _stock[LayerCount - 2] += moved;
+        }
+
         /// <summary>
         /// Stirs detritus between neighbouring layers — DESIGN.md §5A.4, D036.
         /// </summary>

@@ -269,5 +269,79 @@ namespace Evosim.Core.Tests
                 Assert.Equal(a.StockInLayer(layer), b.StockInLayer(layer), 12);
             }
         }
+
+        [Fact]
+        public void RemineraliseMovesAFirstOrderFractionOfTheFloorUpOneLayer()
+        {
+            // D051: the return leg Settle lacks. The moved amount is exactly rate * dt of what
+            // the floor held, taken from nowhere else and arriving nowhere else.
+            var field = new NutrientField(400f, 1f, 0f, 60f);
+            field.Deposit(-59.5f, 1000f);
+            field.Deposit(-30.5f, 250f);
+
+            int floor = field.LayerCount - 1;
+            double floorBefore = field.StockInLayer(floor);
+            double aboveBefore = field.StockInLayer(floor - 1);
+            double totalBefore = field.TotalJoules;
+
+            field.Remineralise(2.0, 0.01f);
+
+            double expectedMoved = floorBefore * (0.01 * 2.0);
+
+            Assert.Equal(floorBefore - expectedMoved, field.StockInLayer(floor), 6);
+            Assert.Equal(aboveBefore + expectedMoved, field.StockInLayer(floor - 1), 6);
+            Assert.Equal(totalBefore, field.TotalJoules, 6);
+        }
+
+        [Fact]
+        public void RemineraliseWithZeroRateChangesNothing()
+        {
+            var field = new NutrientField(400f, 1f, 0f, 60f);
+            field.Deposit(-59.5f, 1000f);
+            field.Deposit(-30.5f, 250f);
+
+            var stocksBefore = new double[field.LayerCount];
+            for (int layer = 0; layer < field.LayerCount; layer++)
+                stocksBefore[layer] = field.StockInLayer(layer);
+
+            field.Remineralise(500.0, 0f);
+
+            for (int layer = 0; layer < field.LayerCount; layer++)
+                Assert.Equal(stocksBefore[layer], field.StockInLayer(layer), 12);
+        }
+
+        [Fact]
+        public void RemineraliseAtMorethanOneRateDtMovesTheWholeFloorAndNeverGoesNegative()
+        {
+            // fraction is clamped at 1, the same discretisation limit Settle and Mix both apply:
+            // a step long enough to imply more than the whole stock moves only the whole stock.
+            var field = new NutrientField(400f, 1f, 0f, 60f);
+            field.Deposit(-59.5f, 1000f);
+
+            int floor = field.LayerCount - 1;
+            double totalBefore = field.TotalJoules;
+
+            field.Remineralise(100.0, 1f);
+
+            Assert.Equal(0d, field.StockInLayer(floor), 6);
+            Assert.True(field.StockInLayer(floor) >= 0d);
+            Assert.Equal(totalBefore, field.TotalJoules, 6);
+        }
+
+        [Fact]
+        public void RemineraliseOnASingleLayerFieldIsANoOp()
+        {
+            // LayerCount < 2 means there is no layer above the floor to receive anything —
+            // the same guard Settle and Mix both apply for the same reason.
+            var field = new NutrientField(400f, 100f, 0f, 50f);
+            Assert.Equal(1, field.LayerCount);
+
+            field.Deposit(-25f, 500f);
+            double before = field.StockInLayer(0);
+
+            field.Remineralise(1000.0, 0.5f);
+
+            Assert.Equal(before, field.StockInLayer(0), 12);
+        }
     }
 }

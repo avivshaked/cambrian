@@ -125,6 +125,13 @@ open-ended-evolution literature that §5A had been specified without.
 | **§13.4 quarantine** | Cheney 2018 and Pugh 2016 load-bearing and never independently verified | Both CrossRef-verified, retrieved, read at the load-bearing passages, promoted to §13.2 as [CB18] and [PU16] | Review round 3, task 2 |
 | *(no section)* | — | Round 3 also holds, in the review rather than here: [CO02] (depletable resources are what sustain multi-strategy coexistence — D023's finite sun as an instance of a general rule) and [VG05] (locomotion pays when it is the only route to reproduction). Neither has changed a mechanism yet; both are expected to inform the next decisions | `research/LITERATURE-REVIEW.md` §5, §6 |
 
+## 0f. Changelog — D051 (2026-08-29)
+
+| Change | Was | Now | Why |
+|---|---|---|---|
+| **§5A.2c mechanism** | Detritus reaching the floor stays there; the ⚠ said whether that matters was "unmeasured and deliberately not guessed at" | `NutrientField.Remineralise`: a first-order leak from the floor layer into the water above it, per field, both rates `[Tunable]` and default 0 | D051. A materially closed ecosystem extracts energy only through balanced cycles [GOY23]; the floor was the one pool with no return leg. Its effect is still unmeasured — the regime it acts in (mixing between 0 and 2) has never been run, and logbook/0036 pre-registers the test |
+| **§5A.10 parameter list** | Sink rate carried a ⚠ asking whether detritus should remineralise at all | The rate constant joins the unmeasured list; the ratio D/v (mixing over sink) is named as the gradient's length scale | Same |
+
 ---
 
 ## 1. Target hardware
@@ -1082,11 +1089,27 @@ finally expensive to build. That is the pressure §5A.2b was missing.
 The transition itself did not move: **32 W/m², identical across three seeds**, and agreeing much
 more closely between them than before. What changed is everything above it.
 
-⚠ **Detritus accumulates on the sea floor and nothing removes it.** 80–93% of all detritus ends
+~~⚠ **Detritus accumulates on the sea floor and nothing removes it.** 80–93% of all detritus ends
 up in the bottom layer, where no lineage has yet evolved to live.
 It is a sink and not a source, so conservation is unaffected — but it grows without bound, and
 whatever first reaches it inherits a very large bank. Real remineralisation would return it
-slowly to the water; whether that matters here is unmeasured and deliberately not guessed at.
+slowly to the water; whether that matters here is unmeasured and deliberately not guessed at.~~
+
+**The floor gives back — D051.** `NutrientField.Remineralise` moves `min(1, r·dt)` of the
+bottom layer's stock into the layer above it each step, between `Settle` and `Mix`; `r` is
+`NutrientRemineralisationPerSecond` (s⁻¹, a first-order rate constant on a stock, not a
+velocity — there is no layer thickness below the floor for a velocity to mean anything
+against). Matter has its own `MatterRemineralisationPerSecond`. Both default to 0, in which
+case the world is bit-identical to every number above. It is an internal transfer within a
+stock the audit already sums whole, so the equality is untouched. Only the floor
+remineralises, and that is not an approximation: this model deliberately conflates
+particulate and dissolved into one absorbable pool, so "remineralising" a water-column layer
+would move joules from a pool to itself; the floor is the one place `Settle` breaks the
+conflation. The rationale for closing the cycle at all is [GOY23]: a materially closed
+ecosystem extracts energy only through balanced cycles, and one with a return leg extracts
+~100× more than one without [GOY23 p.2, p.7]. ⚠ **What it does to a world is unmeasured at
+the time of writing** — the regime it acts in (mixing between 0 and 2) has never been run;
+see D051 and logbook/0036.
 
 ### 5A.2d Matter — what the producer consumes ✅ implemented
 
@@ -1690,8 +1713,11 @@ it configures* (logbook/0007, logbook/0008, logbook/0013).
   It sets how expensive a large body is to make, which is what decides whether a world holds a
   few big creatures or many small ones
 - Nutrient sink rate — how fast detritus falls, which decides whether the deep is a niche or a
-  graveyard. ⚠ And whether detritus should remineralise at all: it currently does not, so the
-  sea floor accumulates energy nothing can reach (§5A.2c)
+  graveyard. ~~⚠ And whether detritus should remineralise at all: it currently does not, so the
+  sea floor accumulates energy nothing can reach (§5A.2c)~~ It does now (D051); the
+  remineralisation rate `NutrientRemineralisationPerSecond` joins this list as unmeasured, and
+  the ratio D/v of mixing to sink — the length scale of the deep-water gradient it feeds — is
+  the number the two knobs together set
 - ~~Reproduction threshold and offspring endowment~~ — **resolved by §5A.6**: endowment and
   brood size are evolved genome traits, and the threshold is derived from them. What remains
   is the per-offspring **overhead**, which is a world constant and still unmeasured

@@ -331,6 +331,11 @@ namespace Evosim.Core
             Nutrients.Settle(seconds);
             Matter.Settle(seconds);
 
+            // The floor's only outflow besides a creature resident there eating it (D051): first-
+            // order decay back into the layer above, before that layer is stirred.
+            Nutrients.Remineralise(seconds, Config.NutrientRemineralisationPerSecond);
+            Matter.Remineralise(seconds, Config.MatterRemineralisationPerSecond);
+
             // Stirred after it sinks, in the same step. The two are opposed — one carries detritus
             // down and the other spreads it back through the column — and whether the world has a
             // nutrient gradient or a line on the floor is the balance between them (D036).

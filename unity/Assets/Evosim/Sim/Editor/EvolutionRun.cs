@@ -87,6 +87,13 @@ namespace Evosim.Sim.EditorTools
             float currentSpeed = Env("EVOSIM_CURRENT", 0f);
             float mixing = Env("EVOSIM_MIXING", 0f);
 
+            // D051. The floor's return leg: a first-order rate constant, s⁻¹, decaying the floor
+            // layer's stock back into the layer above it. One knob for both currencies — the
+            // cycle needs energy and matter both to return, and a run comparing them separately
+            // is not this decision's question. 0 is the world every earlier number was measured
+            // in, where the floor only ever accumulates.
+            float remin = Env("EVOSIM_REMIN", 0f);
+
             // Ageing (D038). Seconds of life after which a body costs twice as much to keep and
             // converts half as much of what it takes. 0 is the immortal world every earlier run
             // measured, in which 92% of everything ever born was still alive.
@@ -168,6 +175,8 @@ namespace Evosim.Sim.EditorTools
             config.InitialMatterPerCubicMetre = initialMatter;
             config.Genome.FounderFloatChance = floatChance;
             config.NutrientMixingDiffusivity = mixing;
+            config.NutrientRemineralisationPerSecond = remin;
+            config.MatterRemineralisationPerSecond = remin;
             config.SenescenceDoublingSeconds = senescence;
             config.Mutation.CellTypeChance = cellTypeMutation;
             var eco = new Ecosystem(config, seed);
@@ -199,6 +208,7 @@ namespace Evosim.Sim.EditorTools
                 " s · seed " + seed + " · idle " + idle + " W/N·m · power " + minPower + "-" + maxPower +
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
                 " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
+                " · remin " + remin + " /s" +
                 " · senescence " + (senescence > 0f ? senescence + " s" : "off") +
                 " · cellType mut " + cellTypeMutation +
                 " · clearance " + clearance +
@@ -548,6 +558,8 @@ namespace Evosim.Sim.EditorTools
                 .Field("detritusHere", world.Nutrients.DensityAt((float)meanDepth))
                 .Field("detritusOnFloor",
                     world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1))
+                .Field("detritusDeep",
+                    world.Nutrients.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f))
                 .Field("meanHeight", meanDepth)
                 .Field("heightSd", depthSd)
                 .Field("meanRise", alive > 0 ? travelled / alive : 0d)
@@ -605,6 +617,13 @@ namespace Evosim.Sim.EditorTools
                     ? 100d * world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1) /
                       world.Nutrients.TotalJoules
                     : 0d).ToString("0.#", c) + "%**",
+
+                // D051's return leg: detritus density in the deep water, 90% of depth — the same
+                // reading the matter field takes below. The floor layer is the last 1 m; this is
+                // the water above it, and the prediction under test is that this number
+                // rises once remineralisation leaks matter back out of the floor.
+                "**" + world.Nutrients.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f)
+                    .ToString("0.####", c) + "**",
 
                 meanDepth.ToString("0.#", c),
                 "**" + depthSd.ToString("0.##", c) + "**",
@@ -664,7 +683,7 @@ namespace Evosim.Sim.EditorTools
         {
             "t (s)", "alive", "births", "deaths", "**jointed**", "jointed %", "**jnt inh**", "mean dof",
             "mean m/s", "max m/s", "work J/s", "work share", "**food %**", "**absorpt**", "**inherit**",
-            "**detritus J**", "**J/m3 here**", "**% on floor**", "depth m", "**depth sd**",
+            "**detritus J**", "**J/m3 here**", "**% on floor**", "**det deep**", "depth m", "**depth sd**",
             "**rise m**", "age s", "sun", "**shade %**",
             "**float**", "**flt inh**", "lift", "**flt m**",
             "mat top", "mat deep", "**mat blk**", "**floor**", "gen min", "gen max", "audit",

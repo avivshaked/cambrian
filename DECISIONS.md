@@ -73,6 +73,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D048](#d048) | Producers must consume something — nutrient is matter, light is energy | 2026-08-28 | accepted, not yet built |
 | [D049](#d049) | A buoyancy cell, passive before controlled | 2026-08-28 | active · built; rescaled by D050 |
 | [D050](#d050) | Lift is a multiple of the sink it cancels, and the ocean has a top | 2026-08-28 | active · fixes D049 units |
+| [D051](#d051) | The floor gives back — remineralisation closes the nutrient cycle | 2026-08-29 | active · built |
 
 ---
 
@@ -2189,3 +2190,81 @@ for D049's second step rather than against its first. Re-run in D048's world (`m
 15% of the population and lift 2.06 at sink 0.1, the latter *above* the range a founder can be
 born into — while the trophic failure survives unchanged: `absorpt` reaches 0 there too. No world
 measured today held a food chain, and that is not a buoyancy problem (logbook/0034).
+
+---
+
+### D051
+**The floor gives back — remineralisation closes the nutrient cycle** · 2026-08-29
+
+Every run in the D048 world ends the same way: the water where the population lives thins to
+0.07–1.9 J/m³ against a break-even of 4 J/m³ (`AbsorptiveCell`: 4 W/m³ upkeep over a
+clearance of 1) and an observed establishment threshold around 14 (logbook/0028), the
+absorptive lineage starves before t≈1,200, and the food chain dies from the bottom
+(logbook/0033, 0034). The floor is not a separate bank in code — it is the last layer of the
+same `NutrientField` creatures eat from — but `Settle` only ever pays *into* it, nothing
+decays *out* of it, and the only debit path is a creature physically resident in the bottom
+layer. A pool with an inflow and no outflow is a ratchet.
+
+**How much the ratchet matters depends on the mixing, and only two mixings have ever been
+run.** Across every arm in `runs/`, `mixing 0` worlds end with 66–76% of all detritus on the
+floor and `mixing 2` worlds with 0.2–7%: at 2 m²/s the column is uniform to the bottom and the
+floor is nothing, at 0 the floor is everything and nothing above it is fed. Neither regime is
+the ocean, whose deep water is rich *because* remineralisation at the sediment feeds a
+gradient that weak mixing carries upward. The regime in between — sinking winning in the
+column, mixing lifting what the floor returns over a scale of D/v metres — has never been
+measured here, and it is the one this decision's mechanism acts in.
+
+The literature says this is not a tuning problem but a structural one. Goyal et al. 2023:
+a materially closed ecosystem extracts energy *only* through balanced cycles — every
+transformation needs a return path, and locally greedy populations then self-organize to
+~100× the energy extraction of an uncycled community [GOY23]. The real ocean's version is
+benthic remineralisation: bacteria mineralise sediment organic matter and the dissolved
+nutrients re-enter the water column at the sediment–water interface, carried up by mixing.
+This world built the sink (D036), the mixing (D037), and the deposit (D023/D048) — and
+omitted the return leg.
+
+**Chosen: a first-order leak from the floor layer into the layer above it, per field.**
+`NutrientField.Remineralise(seconds, ratePerSecond)` moves `min(1, rate·dt)` of the last
+layer's stock up one layer; mixing does the rest of the transport, exactly as it does for
+every other gradient. Two knobs, `NutrientRemineralisationPerSecond` and
+`MatterRemineralisationPerSecond` (both `[Tunable]`, both default 0 — the world is
+bit-identical until a run asks otherwise). It runs in `World.Step` between `Settle` and
+`Mix`, and it is an internal transfer within a stock the audit already sums whole, so §5A.2's
+energy audit and D048's matter-drift test close without a new term.
+
+**The rate is a rate constant (s⁻¹), not a velocity.** Sinking is transport through water and
+is rightly m/s; the floor is a stock being decayed, not a distance being crossed, and
+first-order decay of sediment organic matter is the standard model. A velocity denominated
+knob would imply a layer thickness below the floor that does not exist.
+
+**Only the floor remineralises, and that is not an approximation.** This model deliberately
+conflates particulate detritus and dissolved nutrient into one absorbable pool (D023);
+"remineralisation" of a water-column layer would move joules from a pool to itself. The floor
+is the one place where the conflation breaks down, because `Settle` traps stock there — so
+the leak is defined exactly where it is needed and nowhere else.
+
+**Rejected: a separate dissolved pool that does not sink** (the viral-shunt analog). Two more
+fields, a second audit surface, and it un-conflates particulate from dissolved at exactly one
+seam while every other mechanism keeps the conflation — the inconsistency would cost more
+than the realism buys. Revisit if the single-pool model itself is superseded.
+
+**Rejected: lowering the sink rate instead.** It slows the ratchet without removing it, it
+retunes transport everywhere in the column at once, and D050's buoyancy dose–response is
+denominated in the sink — a knob three decisions now depend on for three different things is
+a knob to stop turning.
+
+**Rejected: column-wide redistribution** (leak the floor into all layers pro rata, an
+upwelling shortcut). It moves matter with no transport mechanism the design owns; mixing
+exists and is that mechanism. If mixing proves too slow to matter, that is a finding about
+the D036 balance, not a licence to teleport.
+
+Predicted, and the acceptance experiment for the food-chain goal will check (pre-registered
+in logbook/0036 before launch): in the D048+D050 reference world at `mixing 0.2` — chosen so
+the D/v scale is 10 m, a gradient rather than a line or a uniform soup — with the leak at
+0.01 s⁻¹, `% on floor` plateaus near the 17% the steady-state arithmetic gives instead of
+rising past 60%; `det deep` (a new column, density 6 m above the floor) climbs past the
+4 J/m³ break-even by t≈5,000 s while the control stays below 2; and `absorptiveInherited`
+stays above zero with the population floor silent. If the density arrives and the chain
+still does not, that is evidence the missing ingredient is spatial — a mutant has to arise
+*where* the food is — rather than recycling; the two-sided reading is the point of running
+it.

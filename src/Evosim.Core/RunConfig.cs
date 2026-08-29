@@ -252,6 +252,18 @@ namespace Evosim.Core
         [Tunable("world", Unit = "m/s")]
         public float NutrientSinkMetresPerSecond { get; set; } = 0.02f;
 
+        /// <summary>How fast the floor gives detritus back, s⁻¹ — D051.</summary>
+        /// <remarks>
+        /// <see cref="NutrientSinkMetresPerSecond"/> pays into the floor and nothing paid out of
+        /// it until this existed, so a run long enough ratchets every joule onto the sediment.
+        /// A rate constant rather than a velocity: the floor is a stock being decayed, not a
+        /// distance being crossed, and there is no layer thickness below it for a velocity to
+        /// mean anything against. Zero by default, so the world is bit-identical until a run
+        /// asks otherwise.
+        /// </remarks>
+        [Tunable("world", Unit = "1/s")]
+        public float NutrientRemineralisationPerSecond { get; set; } = 0f;
+
         /// <summary>
         /// Matter a child's tissue costs, per joule of that tissue — D048. Zero disables the
         /// whole mechanism.
@@ -311,6 +323,17 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world", Unit = "m2/s")]
         public float MatterMixingDiffusivity { get; set; } = 2f;
+
+        /// <summary>How fast the floor gives matter back, s⁻¹ — D051.</summary>
+        /// <remarks>
+        /// Matter's own copy of <see cref="NutrientRemineralisationPerSecond"/>, separate for the
+        /// same reason <see cref="MatterSinkMetresPerSecond"/> is separate from
+        /// <see cref="NutrientSinkMetresPerSecond"/>: dissolved matter and detrital energy are
+        /// different pools even though this model conflates particulate and dissolved within
+        /// each one. Zero by default, so the world is bit-identical until a run asks otherwise.
+        /// </remarks>
+        [Tunable("world", Unit = "1/s")]
+        public float MatterRemineralisationPerSecond { get; set; } = 0f;
 
         /// <summary>
         /// How strongly the water stirs detritus vertically, m²/s — §5A.4, D036.
