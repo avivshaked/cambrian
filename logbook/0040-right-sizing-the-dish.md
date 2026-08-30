@@ -89,3 +89,50 @@ printed no `ceiling`. A full `Assets/` diff showed nothing else stale, the seed 
 identically, and neither arm approached any ceiling, so i50/i25 stand; the workers were
 refreshed before the gap arms launched. (`d054-s2` ran past 5,000 without a cut, so round
 4's workers were current — no earlier round is contaminated.)
+
+### The gap is empty — irradiance cannot right-size this world
+
+Both gap arms founded (946 and 1,521 alive by t≈4,500, thousands of births — the famine
+cliff is between 100 and 150) and both then went **extinct at their droughts**: `d055-i150`
+at t=9,406, `d055-i175` at t=16,925. The full seed-1 dose curve, all six points:
+
+| W/m² | 25 | 50 | 100 | 150 | 175 | 200 |
+|---|---|---|---|---|---|---|
+| fate | extinct 4,130 | extinct 4,337 | extinct 6,433 | extinct 9,406 | extinct 16,925 | runaway 25,998 |
+
+Time-to-death is perfectly monotone in dose, and the window between "dies" and "runs away"
+is **empty at this seed**. **T2 and T4 are falsified; the probe failed.** The reading:
+irradiance scales what one creature earns, so it moves the *whole* trajectory — founding,
+drought depth, recovery — together, and the world it makes at every dose is the same world
+on a slower or faster clock. It cannot set how many creatures the world holds without also
+setting whether any single creature can live. (Worth noting: `d054-s1` at 200 fell to 73
+alive at t=16,500 before recovering — seed 1 at 200 was itself a near-death, so the cliff
+between 175 and 200 is thinner than the table makes it look.)
+
+What *would* rescale the dish is the knob D053 deferred: **`WorldAreaSquareMetres`** — the
+sun's aperture, every layer's volume, and the denominator of shading at once, so halving it
+halves total income and total stock at identical per-creature margins. It was a tunable
+already; `EVOSIM_AREA` now reaches it, printed in the header as `· area X m2`.
+
+### Round 5b — pre-registered before launch, same night
+
+Round 4's world exactly (irradiance 200, 0.02, senescence 10,000, floor 3,000, ceiling
+8,000, mixing 0.2), **`EVOSIM_AREA` 400 → 100 and 200**. Arms `d055b-a100-s1`,
+`d055b-a100-s2`, `d055b-a200-s1`, 30,000 s, 600 min wall.
+
+| # | prediction | falsified by |
+|---|---|---|
+| U1 | `floor` = 0 after t=3,100 everywhere | `floor` |
+| U2 | founding works at both areas — >500 births by t=3,000 (per-creature margins are untouched) | `births` |
+| U3 | at most 1 of 3 arms goes extinct | run footer |
+| U4 | no a100 arm reaches the 8,000 ceiling | run footer |
+| U5 | at least one arm ends at t=30,000 uncensored with mean `alive` over its last 10 samples in 500–3,000 — that area is round 6's world | footer, `alive` |
+| U6 | a mutant arrives in ≥1 arm | `absorpt`, `inherit` |
+
+**The two-sided reading, before the answer.** If U4 fails, the 400 m² equilibrium is above
+32,000 and the probe continues downward at 50 m². If U3 fails by drought deaths, the
+smaller dish is the same world with smaller absolute numbers — the drought that left 73
+survivors at 400 m² leaves ~18 at 100 m², and demographic noise finishes what the drought
+started; then the dish cannot be shrunk without first softening droughts, and round 6
+(D052's excretion) runs at 400 m² with the ceiling accepted as a censor. If U2 fails, area
+is not the clean rescale the code reading says it is — find what else reads 400.

@@ -101,6 +101,13 @@ namespace Evosim.Sim.EditorTools
             // ever came back until it died.
             float excretion = Env("EVOSIM_EXCRETION", new RunConfig().ExcretionPerJoule);
 
+            // D053. The world's footprint — the aperture the sun shines through, the volume of
+            // every layer, and the denominator of shading all at once, so halving it halves the
+            // world's total income and stock at identical per-creature margins. The rescale knob:
+            // logbook/0040 found that irradiance cannot do this job, because it scales what one
+            // creature earns, not how many the world holds.
+            float area = Env("EVOSIM_AREA", new RunConfig().WorldAreaSquareMetres);
+
             // D021's "never again", enforced directly rather than only measured. 0 keeps the
             // floor open forever — today's behaviour, and every earlier run's. A positive value
             // closes it after that many simulated seconds (RunConfig.FloorClosesAfterSeconds), so
@@ -198,6 +205,7 @@ namespace Evosim.Sim.EditorTools
             config.NutrientRemineralisationPerSecond = remin;
             config.MatterRemineralisationPerSecond = remin;
             config.ExcretionPerJoule = excretion;
+            config.WorldAreaSquareMetres = area;
             config.FloorClosesAfterSeconds = floorCloses;
             config.MaximumPopulation = maxPopulation;
             config.SenescenceDoublingSeconds = senescence;
@@ -233,6 +241,7 @@ namespace Evosim.Sim.EditorTools
                 " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
                 " · remin " + remin + " /s" +
                 " · excretion " + excretion + " /J" +
+                " · area " + area + " m2" +
                 (floorCloses > 0f ? " · floor closes " + floorCloses + " s" : " · floor open") +
                 " · ceiling " + maxPopulation +
                 " · senescence " + (senescence > 0f ? senescence + " s" : "off") +
