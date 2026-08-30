@@ -100,3 +100,4 @@ are the ones most likely to go unwritten.
 | [0037](0037-the-net-comes-down.md) | 2026-08-29 | The net comes down |
 | [0038](0038-a-lighter-world.md) | 2026-08-29 | A lighter world |
 | [0039](0039-a-slower-drought.md) | 2026-08-29 | A slower drought |
+| [0040](0040-right-sizing-the-dish.md) | 2026-08-30 | Right-sizing the dish |

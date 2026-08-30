@@ -75,6 +75,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D050](#d050) | Lift is a multiple of the sink it cancels, and the ocean has a top | 2026-08-28 | active · fixes D049 units |
 | [D051](#d051) | The floor gives back — remineralisation closes the nutrient cycle | 2026-08-29 | built · redundant with D036 mixing except at mixing 0 |
 | [D052](#d052) | Living bodies give matter back — the excretion contract | 2026-08-29 | decided · not built |
+| [D053](#d053) | Right-sizing the dish — the equilibrium must sit inside the instrument | 2026-08-30 | active |
+| [D054](#d054) | The floor becomes a gradient — a beach, a shelf, and a deep | 2026-08-30 | decided · not designed |
 
 ---
 
@@ -2345,3 +2347,81 @@ Pre-registration in the 0036–0039 style before any arm; the world is round 4's
 ⚠ Not built at the time of writing. Project inference from general marine ecology; the
 review has not searched nutrient regeneration, and a primary source on new versus
 regenerated production should be added before the numbers here are leaned on.
+
+### D053
+**Right-sizing the dish — the equilibrium must sit inside the instrument** · 2026-08-30
+
+Round 4 (logbook/0039) removed the last thing that killed producers, and both seeds then
+grew until the run ended — one at the 8,000 ceiling, one at the wall clock, still climbing.
+The world almost certainly has its own carrying capacity — light income is a finite rate
+(irradiance × area, discounted by shading) and matter is a finite stock that bodies lock —
+but at irradiance 200 both limits sit **above the population the machine can afford**:
+8,000 creatures already run at a fifth of real time. Every run that ends as a runaway is
+censored, and a censored run can never satisfy the goal's "alive at the last sample". The
+world is not broken; it is bigger than the instrument.
+
+**Chosen: scale the world down until its natural equilibrium sits inside what we can
+compute** — lower `IrradianceWattsPerM2` (`EVOSIM_IRRADIANCE`) until the round-4 world
+settles at roughly 1,500–3,000 creatures, found by a pre-registered dose probe
+(logbook/0040) rather than by guessing. No new death, no new cap: the same biology in a
+dimmer sea.
+
+**Rejected: raising the ceiling** — throughput is population (CLAUDE.md), so chasing the
+equilibrium upward buys nothing but wall clock; and the equilibrium might sit at 20,000.
+**Rejected: an artificial population cap or culling** — it would *be* the self-limitation
+the goal requires the world to provide, and every result downstream would be about the cap.
+**Deferred: shrinking the area instead** — in principle the cleaner rescale (same
+per-creature physics, fewer creatures), but area is not known to be one knob
+(`NutrientField` area, fluid bounds, spawn region), and irradiance already has the env var
+and the header line. Revisit if lowering irradiance distorts per-creature margins enough to
+matter — it shallows the photic band, which is a real change to the world, not a pure
+rescale.
+
+**Cost, named:** a smaller population is a slower mutation supply — mutant absorptives
+arrived at roughly one per 23,000 arm-seconds at round-4 population sizes, and arrival
+scales with births. Scoreability is being bought with evolutionary throughput.
+
+**Sequenced before D052's round**, reordering D052's own "next" — because D052's round
+cannot be scored in a world that ends every run by censoring, whatever excretion does.
+
+### D054
+**The floor becomes a gradient — a beach, a shelf, and a deep** · 2026-08-30
+
+The owner's proposal: one side of the world is a beach where the floor meets the surface,
+and the floor slopes from there to full depth at the far side. Decided as a direction and an
+architecture; not designed, not scheduled before the goal.
+
+**Why it matters here, beyond looks.** The project's central disease is that matter falls
+out of the light and returns from 60 m down over timescales longer than a lifetime. On a
+sloped floor the shallow end has its floor *inside the photic band*: detritus landing there
+mixes back into lit water over a metre, not sixty. A shelf is regeneration by geometry — the
+same mechanism D052 buys by contract — and it is why real coastal shelves are the ocean's
+productive zones. It also creates habitat structure this world has never had: a
+self-fertilising shallows against an oligotrophic deep, basins that trap matter, sills that
+partition populations — the island model emerging from terrain instead of orchestration.
+
+**The load-bearing architectural commitment, made now so the first build does not preclude
+the later ones:** the floor is **a depth per column** — `floorDepth[x]`, the environment
+becoming 2-D (depth varies along one axis, uniform along the other; the nutrient field
+gains columns, `Settle`/`Mix`/floor-exchange and shading go per-column) — and a straight
+slope is merely the first *profile* fed to it. An irregular bottom is then content, not
+architecture. The physics floor is a mesh following the profile.
+
+**The profile is config, hashed like everything else:** explicit control points *or*
+generator parameters plus a seed — loading refuses ambiguity, per the project's rule — so a
+run stays reproducible from `(genome, seed, configHash)`. **Procedural generation is
+deferred** until terrain diversity is itself the question (many worlds, or the island
+model); when built, it is a seeded 1-D midpoint-displacement/fractal pass over `Rng` in
+`Evosim.Core` — Unity's Perlin is neither seedable nor allowed there.
+
+**Questions the design must answer before building** (recorded so they are not discovered
+mid-build): the world currently has no lateral bounds at all — the beach forces the question
+of what the other three sides are; the corner where the floor meets D050's y=0 surface clamp;
+whether a deep basin at low mixing becomes a matter ratchet with geography (the CLAUDE.md
+floor-ratchet gotcha, per column); and conservation audits closing at 0.0000% across a
+per-column floor.
+
+**Sequenced after the goal** (D053 → D052 round → fix 3 if still needed), as the destination
+the goal's world grows into — unless D052's round fails in a way that regeneration by
+geometry would answer and the contract cannot, in which case this moves up and gets its
+design pass early.

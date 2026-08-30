@@ -19,8 +19,9 @@ rule written before each round launched:
 **Status: not met.** The failure has been narrowed to one mechanism with two faces, and the
 owner's instruction was to work through three candidate fixes in order until one meets the
 rule. Fix 1 was tested and failed; fix 2 ran on two seeds of five and **fixed the producers'
-extinction but not their runaway**; fix 3 is untried. The owner then decided the next step is
-D052 (below), before fix 3 and before any producer limit.
+extinction but not their runaway**; fix 3 is untried. On 2026-08-30 the owner locked the
+path in *Queued* below: right-size the world first (D053, round 5), then D052 (round 6),
+then fix 3 only if needed, with the sloped world (D054) as the destination after the goal.
 
 ## What was established, in order (the logbook entries are the record)
 
@@ -44,17 +45,23 @@ budget stopped the run. Separately, every absorptive lineage that established (s
 ate the deep water from 18–38 J/m³ to ~4 in about 1,500–4,000 s and bust to zero or nearly
 so; nothing damps a consumer here but its food.
 
-## Queued — what to do next, in order
+## Queued — the locked plan (owner, 2026-08-30), in order
 
-1. **Finish round 4** (fix 2) — optional, as a baseline for step 2. Seeds 1 and 2 are scored
-   in logbook/0039's *Results* (n=2: S1, S2, S5 held; S4, S6, S7 failed). Launch `d054-s3`,
-   `d054-s4`, `d054-s5` exactly as below, score all five with
-   `./scripts/read-arm.ps1 -Name d054-s1,d054-s2,d054-s3,d054-s4,d054-s5` against the S1–S7
-   table, and append to 0039's *Results* rather than rewriting them. Expect runaways: budget
-   the wall clock for populations of 6,000–8,000 (0.2× real time when three arms share the
-   machine). The pre-registration's own next step for the S4-failed branch is a limit on
-   producers (irradiance or shading); the owner chose D052 first because it changes what
-   the drought is. Do not add a producer limit until D052 has been run.
+The goal is unchanged. The path was re-sequenced with the owner after round 4:
+
+1. **Round 5 — right-size the dish (D053).** The irradiance dose probe pre-registered in
+   logbook/0040: arms `d055-i100`, `d055-i50`, `d055-i25`, seed 1, round-4 world otherwise.
+   A probe, not a scored round; its product is the irradiance for round 6. `d054-s1` is the
+   already-run 200 dose point.
+2. **Round 6 — D052, the excretion contract**, built and run on the right-sized world, five
+   seeds, the standing success rule, pre-registered as always.
+3. **Fix 3 — damping on the consumer**, only if round 6's chains still bust. Needs its own
+   D-entry (biology vs world — the owner's open call).
+4. **The sloped world (D054)** — the destination after the goal: `floorDepth[column]`
+   architecture, straight slope as the first profile, profile in the config hash, procedural
+   generation deferred. Design questions it must answer first are listed in the D-entry.
+5. **Round 4 seeds 3–5** were dropped by agreement (n=2 answered both directions); the
+   launch command below survives only in case a baseline at irradiance 200 is ever wanted.
 
    ```powershell
    $s = @{ EVOSIM_IRRADIANCE = 200; EVOSIM_CURRENT = 0.05; EVOSIM_MIXING = 0.2;
