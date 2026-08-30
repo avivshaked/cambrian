@@ -49,16 +49,19 @@ so; nothing damps a consumer here but its food.
 
 The goal is unchanged. The path was re-sequenced with the owner after round 4:
 
-1. **Round 5 — right-size the dish (D053).** The irradiance dose probe pre-registered in
-   logbook/0040: arms `d055-i100`, `d055-i50`, `d055-i25`, seed 1, round-4 world otherwise.
-   A probe, not a scored round; its product is the irradiance for round 6. `d054-s1` is the
-   already-run 200 dose point.
+1. **Round 5 — right-size the dish (D053): run and failed, both halves** (logbook/0040,
+   scored). Irradiance 25–175 all die (famine below ~150, drought above), 200 runs away —
+   the window is empty; area (`EVOSIM_AREA`, added) rescales cleanly but the small dish
+   dies of shading-driven darkness and the sink spiral. **No geometric rescale bounds this
+   world.** Two mechanism findings for later: shading limits by killing, not capping; and
+   the ocean has no floor for bodies (CLAUDE.md gotcha, −131 m in a 60 m world).
 2. **Round 6 — D052, the excretion contract** — **built 2026-08-30** (suite 348, knob-off
-   bit-identical, `EVOSIM_EXCRETION`); run it on the right-sized world, five seeds, the
-   standing success rule, pre-registered as always. Known issue found during the build,
-   pre-existing, not yet fixed: a stillborn conception orphans its `matterPrice` in
-   `MatterInBodies` (conservation holds, matter unusable) — fix with a test when touching
-   `Conceive` next.
+   bit-identical, `EVOSIM_EXCRETION`), **running as `d056-s1..s5` since the night of
+   2026-08-30/31**: k=0.001 in round 4's world, ceiling declared as censor, pre-registered
+   with dose arithmetic in logbook/0041. Score V1–V7 there when the arms end. Known issue
+   found during the build, pre-existing, not yet fixed: a stillborn conception orphans its
+   `matterPrice` in `MatterInBodies` (conservation holds, matter unusable) — fix with a
+   test when touching `Conceive` next.
 3. **Fix 3 — damping on the consumer**, only if round 6's chains still bust. Needs its own
    D-entry (biology vs world — the owner's open call).
 4. **The sloped world (D054)** — the destination after the goal: `floorDepth[column]`
