@@ -65,4 +65,27 @@ world before round 6 is registered.
 
 ## Results
 
-*(to be written when the arms finish)*
+### Interim — the whole grid is a famine, and the probe moves up
+
+All three arms went **extinct within minutes of wall clock**: i25 at t≈4,130, i50 at
+t≈4,337, i100 at t≈6,433 — each shortly after the floor closed at 3,000, and each having
+barely founded at all (26, 22 and 33 births in total; `d054-s1` at irradiance 200 had ~950
+births by t=2,000). The trace is not a drought: deaths ran 12–40 per window from t=100 with
+the floor holding the population at 40. **T2 is falsified across the grid.** This is an
+energy famine, not a matter crash — at half the light, a founder at −10 m cannot cover
+upkeep at all, so the founding lottery never starts. Extinction time is monotone in dose
+(T3's ordering holds in the mirror), which says irradiance is reaching the world; the world
+under 200 W/m² is simply on the wrong side of a founding cliff somewhere in (100, 200).
+
+The pre-registration's own reading for this branch: probe the gap before concluding the
+approach is wrong. `d055-i150` and `d055-i175` launched, same world, same seed. If 150
+dies and 175 runs away, the window for "alive but bounded" is narrow-to-empty and D053's
+deferred option (shrink the area, keeping per-creature margins intact) comes back as the
+main road.
+
+Caught by the header check, worth recording: workers 2 and 3 were running an
+`EvolutionRun.cs` from before `EVOSIM_MAX_POP` and the exact seed parse — their headers
+printed no `ceiling`. A full `Assets/` diff showed nothing else stale, the seed parses
+identically, and neither arm approached any ceiling, so i50/i25 stand; the workers were
+refreshed before the gap arms launched. (`d054-s2` ran past 5,000 without a cut, so round
+4's workers were current — no earlier round is contaminated.)
