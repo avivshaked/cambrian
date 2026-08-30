@@ -18,7 +18,9 @@ rule written before each round launched:
 
 **Status: not met.** The failure has been narrowed to one mechanism with two faces, and the
 owner's instruction was to work through three candidate fixes in order until one meets the
-rule. Fix 1 was tested and failed; fix 2 is half-run; fix 3 is untried.
+rule. Fix 1 was tested and failed; fix 2 ran on two seeds of five and **fixed the producers'
+extinction but not their runaway**; fix 3 is untried. The owner then decided the next step is
+D052 (below), before fix 3 and before any producer limit.
 
 ## What was established, in order (the logbook entries are the record)
 
@@ -27,7 +29,7 @@ rule. Fix 1 was tested and failed; fix 2 is half-run; fix 3 is untried.
 | [0036](logbook/0036-the-floor-gives-back.md) | 1 | D051 remineralisation (a floor→water leak) and — the thing that mattered — **mixing 0.2 m²/s**, a value nobody had run (only 0 and 2 ever had) | D051 is inert: `NutrientField.Mix` already exchanges across the floor. At mixing 0.2 the deep water crosses the absorptive break-even by t≈2,300–4,000 in every seed and **food chains appear** — 4 of 6 seeds, 3 from the world's own mutants. Every lineage booms then busts |
 | [0037](logbook/0037-the-net-comes-down.md) | 2a, 2b | `FloorClosesAfterSeconds` — the population floor stops firing after founding | The floor had been running the founding lottery (40 random genomes breed in 1 seed of 4) **and** rescuing every matter crash. With it closed at 3,000 s, **3 of 5 seeds go extinct** at their first drought. One mutant chain arose with the net down and bust to zero |
 | [0038](logbook/0038-a-lighter-world.md) | 3, 3b | fix 1: `excessDensity` 0.1 → 0.02, then 0.05 | At 0.02 producers stop dying and **run away** to the population ceiling (uninterpretable); one seed died of **age synchrony** instead. At 0.05 they die as at 0.1. No density gives a scoreable world on its own |
-| [0039](logbook/0039-a-slower-drought.md) | 4 | fix 2: senescence 3,000 → 10,000 s, in the 0.02 world, ceiling 8,000 | **Two of five seeds run; three not launched.** See *Queued* |
+| [0039](logbook/0039-a-slower-drought.md) | 4 | fix 2: senescence 3,000 → 10,000 s, in the 0.02 world, ceiling 8,000 | **Two of five seeds run; three not launched.** The claim held: producers bred through an 8,000-s drought and **recovered from 73 individuals without the floor** (s1) and from a cohort at mean age 3,400 (s2) — states that were terminal in every earlier round. Both then **ran away** (s1 to the ceiling at t=25,998; s2 at ~6,500 and rising at the budget): a lit population that no longer dies of age has no limit (S4 failed). Consumers unchanged: s2's chain 549 → 3 over 12,000 s, no upturn (S7 falsified, sixth time). See *Queued* |
 
 **The mechanism, in one paragraph.** Surface matter runs out (D048's economy — producers
 strip it), conceptions are refused, births stop. From there one of two things is
@@ -35,19 +37,24 @@ irreversible: at excess density 0.05–0.1 the bodies sink out of the photic ban
 ~1,000 s and age out in the dark while the matter recovers above them; at 0.02 they stay lit
 but the drought has made the survivors one cohort, and under D038's wear a cohort past
 ~1,300 s has no surplus to breed with. Every extinction watched — eleven of them — has one of
-those two signatures. Separately, every absorptive lineage that established (five of them)
-ate the deep water from 20–38 J/m³ to ~4 in about 1,500 s and bust to zero or nearly so;
-nothing damps a consumer here but its food.
+those two signatures. Round 4 showed the second face is removable: at senescence 10,000 s
+both seeds passed through those states and came back, once from 73 individuals with the
+floor closed — and then, with nothing left to kill them, grew until the instrument or the
+budget stopped the run. Separately, every absorptive lineage that established (six of them)
+ate the deep water from 18–38 J/m³ to ~4 in about 1,500–4,000 s and bust to zero or nearly
+so; nothing damps a consumer here but its food.
 
 ## Queued — what to do next, in order
 
-1. **Finish round 4** (fix 2). Launch `d054-s3`, `d054-s4`, `d054-s5` exactly as below, then
-   score all five with `./scripts/read-arm.ps1 -Name d054-s1,d054-s2,d054-s3,d054-s4,d054-s5`
-   against the S1–S7 table in logbook/0039, and write its *Results*. If S2 and S4 hold and
-   S6 fails by bust, go to step 2. If S2 fails, try fix 2's other form (faster matter return —
-   `MatterMixingDiffusivity` is 2 m²/s and has no env var; the lag is the population's, so
-   consider `MatterSinkMetresPerSecond` or a matter analogue of the D051 leak, pre-registered).
-   If S4 fails, the 0.02 world is not self-limiting and irradiance/shading is the next knob.
+1. **Finish round 4** (fix 2) — optional, as a baseline for step 2. Seeds 1 and 2 are scored
+   in logbook/0039's *Results* (n=2: S1, S2, S5 held; S4, S6, S7 failed). Launch `d054-s3`,
+   `d054-s4`, `d054-s5` exactly as below, score all five with
+   `./scripts/read-arm.ps1 -Name d054-s1,d054-s2,d054-s3,d054-s4,d054-s5` against the S1–S7
+   table, and append to 0039's *Results* rather than rewriting them. Expect runaways: budget
+   the wall clock for populations of 6,000–8,000 (0.2× real time when three arms share the
+   machine). The pre-registration's own next step for the S4-failed branch is a limit on
+   producers (irradiance or shading); the owner chose D052 first because it changes what
+   the drought is. Do not add a producer limit until D052 has been run.
 
    ```powershell
    $s = @{ EVOSIM_IRRADIANCE = 200; EVOSIM_CURRENT = 0.05; EVOSIM_MIXING = 0.2;
