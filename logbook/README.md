@@ -101,3 +101,4 @@ are the ones most likely to go unwritten.
 | [0038](0038-a-lighter-world.md) | 2026-08-29 | A lighter world |
 | [0039](0039-a-slower-drought.md) | 2026-08-29 | A slower drought |
 | [0040](0040-right-sizing-the-dish.md) | 2026-08-30 | Right-sizing the dish |
+| [0041](0041-the-sea-digests.md) | 2026-08-31 | The sea digests |

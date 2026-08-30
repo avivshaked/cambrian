@@ -237,7 +237,10 @@ actually verifying it.
   y = 0, while the physics keeps integrating. D049's first buoyancy probe climbed 155 m into it in a
   world whose habitable band is 23.7 m deep, paying upkeep the whole way for a position no different
   from the surface (logbook/0034). D050 stops *upward* net force at y = 0. Anything else that can
-  push a creature up — an effector channel, a current — needs the same question asked of it.
+  push a creature up — an effector channel, a current — needs the same question asked of it. The
+  floor has the same hole downward: the nutrient fields clamp to their last layer but nothing stops
+  a sinking body, and round 5b's last survivors died at −131 m in a 60 m world (logbook/0040). Depth
+  statistics from a dying world include water that does not exist.
 - **The sea floor is a ratchet at mixing 0 only.** `NutrientField.Mix` runs across every interface
   including the floor's, so at any `NutrientMixingDiffusivity` above zero the floor already gives
   back — 20%/s of its excess at 0.2 m²/s. The 80–93% on-floor figures in DESIGN.md §5A.2c and the

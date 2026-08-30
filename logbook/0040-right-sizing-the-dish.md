@@ -136,3 +136,36 @@ survivors at 400 m² leaves ~18 at 100 m², and demographic noise finishes what 
 started; then the dish cannot be shrunk without first softening droughts, and round 6
 (D052's excretion) runs at 400 m² with the ceiling accepted as a censor. If U2 fails, area
 is not the clean rescale the code reading says it is — find what else reads 400.
+
+### Final — round 5b, scored
+
+All three arms **extinct**: `a100-s1` at t=20,280, `a100-s2` at t=23,115, `a200-s1` at
+t=25,139. U1 held (floor silent everywhere). **U2 held** — 643, 1,758 and 1,342 births by
+t=3,000: area is the clean rescale the code reading said, founding is untouched. **U3
+failed, 3 of 3**, and not by the predicted mode: no arm died at a drought bottom. In each,
+births froze with *matter recovered* (top layer 0.37–0.53/m³, nothing blocked) and hundreds
+alive, and the population then sank as one — a100-s2 was at mean depth −55 m by t=8,000
+with 541 alive and its births already over; the last survivors drifted below −100 m, *well
+below the 60 m nutrient field*, ageing at senescence-10,000 rates in water that is
+physically bottomless for a body (the mirror of D050's "the ocean has no top": nothing
+stops a sinking creature at the floor either — the fields clamp, the physics does not). U4
+held trivially, U5 failed, U6 failed (no mutant in any arm — three small worlds produced
+12,469 births against one arrival per ~23,000 at full size).
+
+**What the smaller dish actually showed.** The failure mode is not demographic noise at a
+drought bottom; it is **shading reaching lethal darkness at small absolute numbers**. At
+100 m², 1,400 creatures shade the column like 5,600 at 400 m². The density feedback that
+was supposed to limit the population instead darkens the water; the deep majority stops
+earning, and this world's response to not earning is to sink — passively, irreversibly.
+Shading limits by killing, not by capping, because nothing in a starving producer holds
+its depth. That is why every knob this round has two outcomes and no middle: whenever
+income beats upkeep everywhere, the world runs away; wherever it does not, the losing part
+of the population exits the light forever and takes the lineage with it.
+
+**Round 5's verdict, whole.** T2/T4 falsified (irradiance), U3/U5 falsified (area): **no
+geometric rescale of this world yields a bounded living state.** The missing thing is not a
+size; it is a stabilising response to scarcity — matter coming back where the living are
+(D052, next), or a body that can hold its depth when starving (D049's buoyancy exists but
+floaters died first in 0038's note — unexplained, now more interesting). Per this round's
+own pre-registration, round 6 is D052's excretion at 400 m², ceiling accepted and declared
+as a censor: logbook/0041.
