@@ -106,6 +106,19 @@ namespace Evosim.Core
         public float TissueJoules { get; internal set; }
 
         /// <summary>
+        /// Matter still locked in this body, in <see cref="World.Matter"/>'s units — D048, D052.
+        /// </summary>
+        /// <remarks>
+        /// Set once at birth to what the parent paid for this body's tissue
+        /// (<see cref="RunConfig.MatterPerTissueJoule"/> × tissue) and falls from there as the
+        /// body excretes (<see cref="RunConfig.ExcretionPerJoule"/>); death returns whatever is
+        /// left. Zero for a floor founder — a founder's tissue was never priced in matter, so it
+        /// has none to give back, and both the excretion cap and the death payout read correctly
+        /// with no special case for it.
+        /// </remarks>
+        public float LockedMatter { get; internal set; }
+
+        /// <summary>
         /// What <see cref="SensorChannel.Energy"/> reports: seconds of life left at the current
         /// burn rate — §4.4.
         /// </summary>

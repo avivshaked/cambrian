@@ -94,6 +94,13 @@ namespace Evosim.Sim.EditorTools
             // in, where the floor only ever accumulates.
             float remin = Env("EVOSIM_REMIN", 0f);
 
+            // D052. Matter a living body returns per joule of upkeep it pays, at its own depth —
+            // turnover, rather than the only-at-death return remineralisation gives the floor.
+            // The default is RunConfig's own (0), so a run that does not name this is the world
+            // every earlier number here was measured in, where nothing a living creature took
+            // ever came back until it died.
+            float excretion = Env("EVOSIM_EXCRETION", new RunConfig().ExcretionPerJoule);
+
             // D021's "never again", enforced directly rather than only measured. 0 keeps the
             // floor open forever — today's behaviour, and every earlier run's. A positive value
             // closes it after that many simulated seconds (RunConfig.FloorClosesAfterSeconds), so
@@ -190,6 +197,7 @@ namespace Evosim.Sim.EditorTools
             config.NutrientMixingDiffusivity = mixing;
             config.NutrientRemineralisationPerSecond = remin;
             config.MatterRemineralisationPerSecond = remin;
+            config.ExcretionPerJoule = excretion;
             config.FloorClosesAfterSeconds = floorCloses;
             config.MaximumPopulation = maxPopulation;
             config.SenescenceDoublingSeconds = senescence;
@@ -224,6 +232,7 @@ namespace Evosim.Sim.EditorTools
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
                 " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
                 " · remin " + remin + " /s" +
+                " · excretion " + excretion + " /J" +
                 (floorCloses > 0f ? " · floor closes " + floorCloses + " s" : " · floor open") +
                 " · ceiling " + maxPopulation +
                 " · senescence " + (senescence > 0f ? senescence + " s" : "off") +

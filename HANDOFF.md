@@ -53,8 +53,12 @@ The goal is unchanged. The path was re-sequenced with the owner after round 4:
    logbook/0040: arms `d055-i100`, `d055-i50`, `d055-i25`, seed 1, round-4 world otherwise.
    A probe, not a scored round; its product is the irradiance for round 6. `d054-s1` is the
    already-run 200 dose point.
-2. **Round 6 — D052, the excretion contract**, built and run on the right-sized world, five
-   seeds, the standing success rule, pre-registered as always.
+2. **Round 6 — D052, the excretion contract** — **built 2026-08-30** (suite 348, knob-off
+   bit-identical, `EVOSIM_EXCRETION`); run it on the right-sized world, five seeds, the
+   standing success rule, pre-registered as always. Known issue found during the build,
+   pre-existing, not yet fixed: a stillborn conception orphans its `matterPrice` in
+   `MatterInBodies` (conservation holds, matter unusable) — fix with a test when touching
+   `Conceive` next.
 3. **Fix 3 — damping on the consumer**, only if round 6's chains still bust. Needs its own
    D-entry (biology vs world — the owner's open call).
 4. **The sloped world (D054)** — the destination after the goal: `floorDepth[column]`

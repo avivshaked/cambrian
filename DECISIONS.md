@@ -74,7 +74,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D049](#d049) | A buoyancy cell, passive before controlled | 2026-08-28 | active · built; rescaled by D050 |
 | [D050](#d050) | Lift is a multiple of the sink it cancels, and the ocean has a top | 2026-08-28 | active · fixes D049 units |
 | [D051](#d051) | The floor gives back — remineralisation closes the nutrient cycle | 2026-08-29 | built · redundant with D036 mixing except at mixing 0 |
-| [D052](#d052) | Living bodies give matter back — the excretion contract | 2026-08-29 | decided · not built |
+| [D052](#d052) | Living bodies give matter back — the excretion contract | 2026-08-29 | active · built, unmeasured |
 | [D053](#d053) | Right-sizing the dish — the equilibrium must sit inside the instrument | 2026-08-30 | active |
 | [D054](#d054) | The floor becomes a gradient — a beach, a shelf, and a deep | 2026-08-30 | decided · not designed |
 
@@ -2344,9 +2344,19 @@ consumer), because it addresses the producers' failure that every round has ende
 the consumers cannot be watched for long enough to score in a world whose producers die.
 Pre-registration in the 0036–0039 style before any arm; the world is round 4's.
 
-⚠ Not built at the time of writing. Project inference from general marine ecology; the
-review has not searched nutrient regeneration, and a primary source on new versus
-regenerated production should be added before the numbers here are leaned on.
+⚠ Project inference from general marine ecology; the review has not searched nutrient
+regeneration, and a primary source on new versus regenerated production should be added
+before the numbers here are leaned on.
+
+*Built 2026-08-30* — `RunConfig.ExcretionPerJoule`, `Organism.LockedMatter` (set to the
+conception price at birth, drawn down by excretion, paid out at death; zero for a floor
+founder, which never paid — replacing the old `ParentId` exemption with arithmetic),
+`EVOSIM_EXCRETION` in the header. Knob-off is bit-identical: tissue never changes between
+birth and death, so the remaining `LockedMatter` equals the old death payout exactly. Four
+tests in the D051 shape; suite 348. Found in passing, pre-existing and untouched: a
+stillborn conception (`Admit` returns null) leaves its `matterPrice` credited to
+`MatterInBodies` with no organism to ever pay it back — conservation holds but the matter is
+orphaned in a phantom pool. Unmeasured until round 6 runs.
 
 ### D053
 **Right-sizing the dish — the equilibrium must sit inside the instrument** · 2026-08-30

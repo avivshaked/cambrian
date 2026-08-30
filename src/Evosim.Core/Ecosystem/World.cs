@@ -460,6 +460,24 @@ namespace Evosim.Core
                 EnergyIn += ledger.LightIncome;
                 EnergyOut += ledger.Expenditure + ledger.Wasted;
 
+                // Turnover — D052. A living body gives back a fraction of what it holds, in
+                // proportion to what it spent staying alive this step, at its own depth rather
+                // than only at death. Capped at what is still locked: a body cannot excrete
+                // matter it does not have. LockedMatter is already 0 for a floor founder, so the
+                // cap alone keeps founders from excreting matter they never held.
+                if (Config.ExcretionPerJoule > 0f && creature.LockedMatter > 0f)
+                {
+                    float excreted = Math.Min(
+                        creature.LockedMatter, Config.ExcretionPerJoule * ledger.Upkeep);
+
+                    if (excreted > 0f)
+                    {
+                        Matter.Deposit(creature.HeightY, excreted);
+                        creature.LockedMatter -= excreted;
+                        MatterInBodies -= excreted;
+                    }
+                }
+
                 if (creature.Energy > 0f) continue;
 
                 // Death at exactly zero, not below. A creature carrying negative energy would be
@@ -472,17 +490,16 @@ namespace Evosim.Core
                 // generation zero is the world's first food rather than merely a waste of seeds.
                 Nutrients.Deposit(creature.HeightY, creature.TissueJoules);
 
-                // The matter that tissue cost returns to the layer the body died in, and sinks
-                // from there — which is why the deep is rich and the surface is not. Floor
-                // founders are exempt because they never paid: they are the one way a creature
-                // enters the world without a parent, and crediting their tissue to a pool they
-                // never drew from would create matter out of nothing. Identified by having no
-                // parent rather than by a stored birth kind, which Organism does not keep.
-                float matterBack = Config.MatterPerTissueJoule * creature.TissueJoules;
-                if (matterBack > 0f && creature.ParentId >= 0)
+                // Whatever matter is still locked returns to the layer the body died in, and
+                // sinks from there — which is why the deep is rich and the surface is not.
+                // LockedMatter (D052) is what remains after a lifetime of excretion, or the full
+                // price paid at conception if the knob is off; either way it is already 0 for a
+                // floor founder, which never paid and so never owes anything back.
+                if (creature.LockedMatter > 0f)
                 {
-                    Matter.Deposit(creature.HeightY, matterBack);
-                    MatterInBodies -= matterBack;
+                    Matter.Deposit(creature.HeightY, creature.LockedMatter);
+                    MatterInBodies -= creature.LockedMatter;
+                    creature.LockedMatter = 0f;
                 }
 
                 creature.TissueJoules = 0f;
@@ -602,7 +619,15 @@ namespace Evosim.Core
                 childGenome, body, BirthKind.Reproduction, seed, parent.Id,
                 parent.GenerationDepth + 1, endowment, tissue, parent.HeightY);
 
-            if (child != null) _born.Add(child);
+            if (child != null)
+            {
+                // What the layer was just charged for this body — D052's starting balance, and
+                // (with ExcretionPerJoule at 0) the only value LockedMatter will ever hold, which
+                // is exactly what death paid out before this decision existed.
+                child.LockedMatter = matterPrice;
+                _born.Add(child);
+            }
+
             return true;
         }
 

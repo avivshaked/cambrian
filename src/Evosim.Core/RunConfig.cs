@@ -392,6 +392,33 @@ namespace Evosim.Core
         public float NutrientMixingDiffusivity { get; set; }
 
         /// <summary>
+        /// Matter a living body returns per joule of upkeep it pays — D052.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Turnover, not death.</b> Until D052 matter left a body only once, at death
+        /// (<see cref="MatterPerTissueJoule"/>'s reverse leg), and a body sinks after it dies — so
+        /// nothing a living creature took at the surface ever came back to the surface, and a
+        /// drought there outlasted a lifetime (logbook/0037–0039). This pays a fraction of it back
+        /// continuously, at the body's own depth, in proportion to <c>EnergyLedger.Upkeep</c> —
+        /// the microbial loop at its simplest.
+        /// </para>
+        /// <para>
+        /// <b>Capped at what the body still holds, and the child's price is unchanged.</b> A body
+        /// cannot excrete matter it does not have, so the amount taken each step is
+        /// <c>min(locked, this × upkeep)</c>; death still returns whatever is left. Reproduction
+        /// still prices a child at <see cref="MatterPerTissueJoule"/> per joule of tissue, paid
+        /// from the parent's layer as before — a parent that has excreted most of its own matter
+        /// has not thereby made its children cheaper.
+        /// </para>
+        /// <para>⚠ Unmeasured — no primary source on new versus regenerated production has been
+        /// added to the review yet (D052). Zero by default, so the world is bit-identical until a
+        /// run asks otherwise; <c>EVOSIM_EXCRETION</c> in the header.</para>
+        /// </remarks>
+        [Tunable("world", Unit = "matter/J")]
+        public float ExcretionPerJoule { get; set; }
+
+        /// <summary>
         /// Seconds of life after which a body costs twice as much to keep — DESIGN.md §5A.2, D038.
         /// Zero is an immortal world.
         /// </summary>

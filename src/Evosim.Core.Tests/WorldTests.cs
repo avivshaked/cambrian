@@ -636,5 +636,179 @@ namespace Evosim.Core.Tests
             for (int i = 0; i < layers.Length; i++) layers[i] = world.Matter.StockInLayer(i);
             return layers;
         }
+
+        // ------------------------------------------------------------ D052: excretion
+
+        [Fact]
+        public void ExcretionPerJouleDefaultZeroLeavesLockedMatterUnchangedFromConception()
+        {
+            // Bit-identical to the world before this knob existed: with the rate at 0, a body's
+            // LockedMatter must never move except at conception (set to the price paid) and at
+            // death (drained to 0) — which is exactly what the field held before D052, computed
+            // fresh from TissueJoules at the moment of death rather than tracked across a
+            // lifetime.
+            var config = MatterWorld(perTissueJoule: 0.5f, initialPerCubicMetre: 5f);
+            Assert.Equal(0f, config.ExcretionPerJoule);
+
+            var world = new World(config, seed: 1);
+            for (float t = 0f; t < 300f; t += 1f) world.Step(1f);
+
+            Assert.True(world.Births > 0, "nothing bred, so LockedMatter was never set on anything");
+
+            int checkedCount = 0;
+            foreach (Organism creature in world.Living)
+            {
+                if (creature.ParentId < 0) continue; // founders never held matter to begin with
+
+                Fixtures.AssertClose(
+                    config.MatterPerTissueJoule * creature.TissueJoules, creature.LockedMatter, 1e-3f);
+                checkedCount++;
+            }
+
+            Assert.True(checkedCount > 0, "no reproduction-born creature survived to check");
+        }
+
+        [Fact]
+        public void ExcretionMovesExactlyWhatItDebitsInAQuietStep()
+        {
+            // Isolated from every other mover of matter — sink, mixing and remineralisation are
+            // all at their bit-identical-default of 0 already (MatterWorld does not set them) —
+            // so whatever the field gains and MatterInBodies loses in one step with no births and
+            // no deaths is excretion and nothing else. Reproduction is let run long enough to
+            // give some living creatures a nonzero LockedMatter, then frozen (an overhead no
+            // parent can ever afford) so a birth-free, death-free step can be found and measured.
+            var config = MatterWorld(perTissueJoule: 0.5f, initialPerCubicMetre: 5f);
+            config.ExcretionPerJoule = 0.02f;
+            config.MinimumPopulation = 20;
+
+            var world = new World(config, seed: 3);
+            for (int i = 0; i < 200; i++) world.Step(1f);
+
+            Assert.True(world.Births > 0, "nothing bred, so nothing has locked matter to excrete");
+
+            // Freeze reproduction from here on — the same RunConfig instance the world already
+            // holds, so this reaches Reproduce() on the very next step with no other channel for
+            // a creature to appear or disappear except death.
+            config.PerOffspringOverheadJoules = 1e9f;
+
+            for (int i = 0; i < 500; i++)
+            {
+                long birthsBefore = world.Births, deathsBefore = world.Deaths;
+
+                var lockedBefore = new Dictionary<long, float>();
+                var upkeepBefore = new Dictionary<long, float>();
+                foreach (Organism c in world.Living)
+                {
+                    lockedBefore[c.Id] = c.LockedMatter;
+                    upkeepBefore[c.Id] = c.Lifetime.Upkeep;
+                }
+
+                double matterInBodiesBefore = world.MatterInBodies;
+                double totalMatterBefore = world.Matter.TotalJoules;
+
+                world.Step(1f);
+
+                if (world.Births != birthsBefore || world.Deaths != deathsBefore) continue;
+
+                double expected = 0d;
+                foreach (Organism c in world.Living)
+                {
+                    if (!lockedBefore.TryGetValue(c.Id, out float locked) || locked <= 0f) continue;
+
+                    float upkeepThisStep = c.Lifetime.Upkeep - upkeepBefore[c.Id];
+                    expected += Math.Min(locked, config.ExcretionPerJoule * upkeepThisStep);
+                }
+
+                if (expected <= 0d) continue; // no locked-matter creature paid upkeep this step
+
+                double matterInBodiesFell = matterInBodiesBefore - world.MatterInBodies;
+                double fieldRose = world.Matter.TotalJoules - totalMatterBefore;
+
+                _output.WriteLine(
+                    $"expected {expected:0.######}: MatterInBodies fell {matterInBodiesFell:0.######}, " +
+                    $"field rose {fieldRose:0.######}");
+
+                Assert.True(
+                    Math.Abs(matterInBodiesFell - expected) < 1e-4,
+                    "MatterInBodies did not fall by exactly what excretion moved");
+                Assert.True(
+                    Math.Abs(fieldRose - expected) < 1e-4,
+                    "the field did not gain exactly what excretion moved");
+                return;
+            }
+
+            Assert.Fail("never found a quiet (birth-free, death-free) step with excretion to measure");
+        }
+
+        [Fact]
+        public void MatterIsConservedWithExcretionRunning()
+        {
+            // D052's own copy of D051's guard: excretion is an internal transfer from
+            // MatterInBodies into Matter.TotalJoules, both of which StandingMatter already sums
+            // whole, so this must drift no more than the knob-off case does.
+            var config = MatterWorld(0.5f, 1f);
+            config.ExcretionPerJoule = 0.05f;
+            var world = new World(config, seed: 1);
+
+            double atStart = 0d;
+            for (float t = 0f; t < 400f; t += 1f)
+            {
+                world.Step(1f);
+                if (t == 0f) atStart = world.StandingMatter;
+            }
+
+            double drift = world.StandingMatter - atStart;
+
+            _output.WriteLine(
+                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}), " +
+                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
+
+            Assert.True(
+                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
+                $"matter drifted by {drift} with excretion running — something creates or destroys it");
+        }
+
+        [Fact]
+        public void ExcretionCapsAtWhatTheBodyStillHolds()
+        {
+            // A rate absurd enough to demand, in one step, far more than any body could ever
+            // hold — so the min(locked, rate·upkeep) cap is what actually fires rather than the
+            // formula's uncapped term. LockedMatter must land at exactly 0 and never go negative,
+            // and StandingMatter must still be conserved: the cap means "excrete less than the
+            // formula asks for", not "excrete for free".
+            var config = MatterWorld(perTissueJoule: 0.5f, initialPerCubicMetre: 5f);
+            config.ExcretionPerJoule = 1e6f;
+            var world = new World(config, seed: 4);
+
+            double atStart = 0d;
+            bool everHitZero = false;
+
+            for (float t = 0f; t < 300f; t += 1f)
+            {
+                world.Step(1f);
+                if (t == 0f) atStart = world.StandingMatter;
+
+                foreach (Organism creature in world.Living)
+                {
+                    Assert.True(creature.LockedMatter >= 0f, "LockedMatter went negative — the cap failed");
+                    if (creature.ParentId >= 0 && creature.LockedMatter == 0f) everHitZero = true;
+                }
+            }
+
+            Assert.True(world.Births > 0, "nothing bred, so nothing ever had matter to cap");
+            Assert.True(
+                everHitZero,
+                "no reproduction-born creature's LockedMatter was ever driven to exactly 0 — " +
+                "the cap was never exercised, and this test proves nothing about it");
+
+            double drift = world.StandingMatter - atStart;
+            _output.WriteLine(
+                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}) " +
+                $"at an excretion rate large enough to hit the cap on every locked body");
+
+            Assert.True(
+                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
+                $"matter drifted by {drift} once the excretion cap started firing");
+        }
     }
 }
