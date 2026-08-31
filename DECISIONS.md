@@ -80,6 +80,9 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D055](#d055) | The seabed is a refuge — the floor layer cannot be grazed | 2026-08-31 | active |
 | [D056](#d056) | Mutation rate: fixed within a round, raisable between rounds, never a thermostat | 2026-08-31 | direction · nothing built |
 | [D057](#d057) | A species is a clade within a drift threshold of its founder | 2026-08-31 | decided · instrument, not built |
+| [D058](#d058) | Only the budget ends a run — censored arms cannot pass | 2026-08-31 | active |
+| [D059](#d059) | The ocean gets a floor — D050's mirror, per-column under D054 | 2026-08-31 | decided · not built |
+| [D060](#d060) | The invasion assay — a labeled hand for a mechanism question | 2026-08-31 | decided · instrument, not built |
 
 ---
 
@@ -2361,6 +2364,19 @@ stillborn conception (`Admit` returns null) leaves its `matterPrice` credited to
 `MatterInBodies` with no organism to ever pay it back — conservation holds but the matter is
 orphaned in a phantom pool. Unmeasured until round 6 runs.
 
+*Corrected 2026-08-31, prompted by an independent review:* the orphan is **vacuous as the
+code stands** — `Admit` refuses only a zero-part phenotype, whose tissue and hence matter
+price are exactly zero, so nothing is ever orphaned today. What stands is the *shape* of
+the debt: `Conceive` debits before admission, so any future rejection reason would orphan
+for real. The guard remains as queued — a test forcing admission failure and proving field
+matter, `MatterInBodies`, parent energy and `EnergyOut` all close. Also named by the same
+review, a modelling abstraction this entry should have stated: a living body can excrete
+its entire `LockedMatter` while its tissue is unchanged, so at k = 0.001 an old body has
+fully drained and returns almost nothing at death — the currency behaves as *recyclable
+nutrient content carried by tissue*, not as the matter the tissue is built of. That is the
+microbial-loop regime this contract chose, stated here plainly; a non-excretable
+structural fraction is the alternative if the abstraction ever misleads.
+
 ### D053
 **Right-sizing the dish — the equilibrium must sit inside the instrument** · 2026-08-30
 
@@ -2611,3 +2627,77 @@ Miikkulainen 2002), microbiology's OTU thresholds, and phylogeny-tracking-with-c
 (Dolson & Ofria's systematics work). The review has read none of these primarily; NEAT
 and the systematics paper are the two sources a review round should verify before the
 metric is built.
+
+### D058
+**Only the budget ends a run — censored arms cannot pass** · 2026-08-31
+
+Ratified by the owner from an independent review (owner-provided, 2026-08-31), whose
+argument stands on its own: wall-clock censoring correlates with population, because a
+larger world buys simulated seconds more slowly — so the worlds most likely to carry a
+large chain get the shortest observation windows, and throughput can masquerade as
+persistence. The review also caught what our own record had stretched: round 6's sole
+qualifying chain (`d056-s5`) was scored at a **wall** cut, while 0041's declared
+scored-at-last-sample clause named only *budget* and *ceiling*. The letter of the
+pre-registration did not cover it.
+
+**The rule, from round 7 onward:**
+- A **budget-complete** arm may pass or fail the final persistence endpoint.
+- An **extinction** is a failure.
+- A **wall or ceiling cut is censored**: it may support intermediate mechanism findings,
+  and can never pass the endpoint.
+- A censored arm that looked promising is **rerun alone** to the same simulated-time
+  budget — same seed and config replay identically on the same machine and Unity
+  version, and a solo arm owns the whole machine, so the wall moves out.
+
+Round 7 is dual-scored: the pre-registered W table as written (historical honesty), and
+the stricter completed-budget table beside it. Historical scores stand as recorded;
+under this rule round 6's food-chain count reads as zero confirmed passes and one
+promising censored arm.
+
+### D059
+**The ocean gets a floor — D050's mirror, per-column under D054** · 2026-08-31
+
+The owner ratified that `WorldDepthMetres` names a physical seabed. The hole it closes
+is recorded twice over: round 5b's last survivors died at −131 m in a 60 m world
+(logbook/0040, the CLAUDE.md gotcha), and the review's sharper point against D055 —
+a creature resting at the intended seabed and one fallen seventy metres beneath the
+world read the same field state, so a refuge result cannot currently distinguish
+geography from exile.
+
+**Chosen: clamp net downward force at y = −WorldDepthMetres** — the exact mirror of
+D050's surface rule, which stopped net upward force at y = 0. Creatures stop sinking at
+the seabed and can rest there. No collision plane: resting contact, corpse piles and
+their physics are deferred to D054, where this invariant becomes **`floorDepth[column]`
+— the seabed differs by place under a gradient (the owner's point), and the flat −60 m
+clamp is that invariant's flat-world special case.** Default-off knob in the house
+shape, so every prior world replays bit-identically; switched on only between rounds,
+by pre-registration.
+
+**Lands together with the below-world observables** (they are what make a refuge result
+readable even before the clamp is on): count and share of organisms below
+−`WorldDepthMetres`, the same for absorptives, edible versus physical detritus density
+at mean depth, refuge-layer stock, and mixing flux out of the refuge per report window.
+
+### D060
+**The invasion assay — a labeled hand for a mechanism question** · 2026-08-31
+
+Approved by the owner as a diagnostic. The goal contains two questions the full-world
+rounds currently ask at once: can an established consumer persist in this ecology, and
+can the native evolutionary process discover one often enough? Waiting on a rare
+mutation arrival means most of a ten-hour arm produces no evidence about the damping
+mechanism at all.
+
+**The assay:** save one verified absorptive genome from round 6, introduce the same
+small inoculum into paired worlds — excretion-only against excretion-plus-refuge — at a
+fixed simulated time, same seeds, and measure peak, trough, recovery above a declared
+threshold, resource draw, and descendant persistence at fixed checkpoints. It answers
+"does the refuge stabilise a consumer once present" directly.
+
+**It can never satisfy the endogenous goal** — it is an instrument, exactly as the
+founding floor is: a hand that builds the experimental condition, labeled as such, with
+the endogenous question answered separately by native-mutation rounds. It refines
+D056's contingency ordering: the invasion assay comes **before** any mutation-raising —
+if invasions persist but native arrivals stay late, D056's 5–10× rate runs as a
+separate *discovery* treatment, reported as a different evolutionary regime; if
+invasions fail under the refuge, mutation supply was never the problem and no rate
+change is warranted.

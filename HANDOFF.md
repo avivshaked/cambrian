@@ -92,21 +92,30 @@ The goal is unchanged. The path was re-sequenced with the owner after round 4:
    `runs/<name>.md`) shows `senescence 10000 s · excessDensity 0.02 · floor closes 3000 s ·
    ceiling 8000` before believing anything the arm says.
 
-2. **D052 — the excretion contract.** Decided with the owner on the evening of 2026-08-29,
-   not built. Living bodies return locked matter to their own layer in proportion to upkeep;
-   death returns the rest; `ExcretionPerJoule` defaults to 0; `EVOSIM_EXCRETION` prints in
-   the header. Conservation: debit `MatterInBodies` by exactly what the field is credited,
-   and `MatterIsConservedBecauseNothingCreatesIt` must pass with the knob on. Three tests in
-   the D051 shape (default unchanged, knob works, knob reaches the arithmetic). Then a
-   pre-registered five-seed round in round 4's world (0.02, senescence 10,000, floor 3,000,
-   ceiling 8,000) with the same success rule. This comes **before** fix 3.
+2b. **Fix 3 became D055 (the seabed refuge), built, running as round 7** (`d057-s1..s5`,
+   pre-registered in logbook/0042 with a dated mid-round addendum). The owner ratified
+   three rulings from an independent review while it ran: **D058** (only the budget ends
+   a run — wall/ceiling cuts are censored and cannot pass; round 7 is dual-scored),
+   **D059** (the ocean gets a floor — D050's mirror clamp, per-column under D054, with
+   the below-world observables), **D060** (the invasion assay as a labeled diagnostic,
+   sequenced before any mutation-raising).
 
-3. **Fix 3 — damping on the consumer.** Untried, undesigned. The consumer–resource cycle here
-   has no damping: `AbsorptiveCell` captures at a fixed clearance regardless of density and a
-   lineage grows until the water is empty. Candidates the owner named: a density-dependent
-   capture rate, or the deep water below break-even being less reachable. This needs a
-   D-entry in `DECISIONS.md` (D052 is the next number; `d052`/`d053`/`d054` were *round*
-   names, not decisions) and a pre-registration in the 0036–0039 style before any arm runs.
+3. **Before round 8 — the experiment contract** (bounded repairs, one worker refresh,
+   ratified 2026-08-31; none touch round 7):
+   - run identity into the run directory: exact seed, git commit + dirty flag, worker
+     source hash, timesteps, Unity version, termination reason;
+   - reset all static reporter state at `Run()` start;
+   - split `read-arm.ps1` into a generic parser and per-round scorers (it currently
+     applies D051's P-rules to every round and prints false FAILs);
+   - new columns: edible vs physical detritus density at mean depth, below-world counts
+     (D059), matter flows (locked, excretion flux, conception draw, death return), and
+     the `species` count (D057, in build);
+   - the field-only refuge impulse test (deposit into the refuge, edible layers empty,
+     settle+mix, report flux over time at 0/1/5/10 m) — picks any thicker-refuge dose
+     from measured transport, not the knob's unit;
+   - doc repairs from the review's finding 9: D051's stale `min(1, rate·dt)` text, index
+     rows for D048/D052/D053, README's status block and its `lineage.jsonl` claim (the
+     file is empty — either write events or stop promising them), this file's top.
 
 4. **After the goal** — the queue, absorbed from the two 2026-08-29 proposal documents on
    their removal (2026-08-31; the excretion contract from that list already became D052):
@@ -234,9 +243,9 @@ production) before the D-entry leans on the numbers above.
 
 ## Open decisions for the owner
 
-- Whether fix 3 should change biology (`AbsorptiveCell` capture) or the world (reachability of
-  the deep water) — the two are different D-entries.
-- Whether the 0.02 world's runaway is acceptable to score with a higher ceiling, or whether
-  irradiance should come down first so the world limits itself.
 - The paywalled reading list in `research/LITERATURE-REVIEW.md` §9, which needs the owner's
   institutional access.
+- Pushing: local `main` runs well ahead of `origin/main`; the agent never pushes.
+
+(Resolved since last written: fix 3's biology-vs-world call → D055 (world); the
+ceiling/scoring question → D053 + D058.)

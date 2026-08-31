@@ -86,6 +86,25 @@ claim made from a censored run.
 
 ---
 
+## Addendum, 2026-08-31 — written mid-round, before any scoring
+
+Two rulings arrived while the arms ran (an owner-provided independent review, ratified by
+the owner; DECISIONS.md D058–D060), and are recorded here *before* results so the change
+of reading is dated and visible:
+
+1. **Dual scoring (D058).** The W table below is scored as pre-registered, and a second
+   table beside it applies the stricter rule: only a budget-complete arm can pass; wall
+   and ceiling cuts are censored and cannot pass; a promising censored arm reruns alone.
+2. **The thicker-refuge branch is amended.** The pre-registered response to "W4 fails
+   with W2 holding" was a thicker refuge next. The review exposed a confound this entry
+   did not name: with no physical floor, a consumer fallen below −60 m reads the same
+   field state as one resting on the seabed — so a bust under the refuge could be exile,
+   not weak damping. No thicker-refuge round runs until the below-world observables
+   (D059) can separate the two, and the direct test of damping is D060's invasion assay,
+   not a dose escalation.
+
+---
+
 ## Results
 
 *(written after the arms ran)*
