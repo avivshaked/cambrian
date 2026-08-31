@@ -1770,7 +1770,10 @@ it configures* (logbook/0007, logbook/0008, logbook/0013).
   for Pathak et al. 2019**. So both the engine and the physics backend chosen here have
   direct precedent for rigid-body evolved creatures — this is not an unusual bet.
 - `Physics.simulationMode = Script` — manual stepping, nothing tied to frame rate.
-- Fixed timestep and solver iteration counts, both in the config hash.
+- Fixed timestep and solver iteration counts, both in the config hash. ⚠ *Not yet true as
+  built (2026-08-31): the physics timestep is a compile-time constant outside
+  `RunConfig.Hash()`. Hashing it is queued before the dt sweep (`HANDOFF.md`); until then
+  the run identity record, not the hash, carries dt.*
 
 ### 6.3 Getting work out of 24 cores
 

@@ -70,12 +70,12 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D045](#d045) | A mutation-born joint draws from the same bounds a founder does | 2026-08-28 | active |
 | [D046](#d046) | A link that photosynthesises pays green tissue's upkeep | 2026-08-28 | active · supersedes D043's ceiling |
 | [D047](#d047) | The alphabet stays flat; what was missing is the floor’s report | 2026-08-28 | active |
-| [D048](#d048) | Producers must consume something — nutrient is matter, light is energy | 2026-08-28 | accepted, not yet built |
+| [D048](#d048) | Producers must consume something — nutrient is matter, light is energy | 2026-08-28 | active · built, load-bearing since logbook/0033 |
 | [D049](#d049) | A buoyancy cell, passive before controlled | 2026-08-28 | active · built; rescaled by D050 |
 | [D050](#d050) | Lift is a multiple of the sink it cancels, and the ocean has a top | 2026-08-28 | active · fixes D049 units |
 | [D051](#d051) | The floor gives back — remineralisation closes the nutrient cycle | 2026-08-29 | built · redundant with D036 mixing except at mixing 0 |
-| [D052](#d052) | Living bodies give matter back — the excretion contract | 2026-08-29 | active · built, unmeasured |
-| [D053](#d053) | Right-sizing the dish — the equilibrium must sit inside the instrument | 2026-08-30 | active |
+| [D052](#d052) | Living bodies give matter back — the excretion contract | 2026-08-29 | active · measured — first bounded living worlds (logbook/0041) |
+| [D053](#d053) | Right-sizing the dish — the equilibrium must sit inside the instrument | 2026-08-30 | closed — no geometric rescale bounds this world (logbook/0040) |
 | [D054](#d054) | The floor becomes a gradient — a beach, a shelf, and a deep | 2026-08-30 | decided · not designed |
 | [D055](#d055) | The seabed is a refuge — the floor layer cannot be grazed | 2026-08-31 | active |
 | [D056](#d056) | Mutation rate: fixed within a round, raisable between rounds, never a thermostat | 2026-08-31 | direction · nothing built |
@@ -2233,7 +2233,9 @@ This world built the sink (D036), the mixing (D037), and the deposit (D023/D048)
 omitted the return leg.
 
 **Chosen: a first-order leak from the floor layer into the layer above it, per field.**
-`NutrientField.Remineralise(seconds, ratePerSecond)` moves `min(1, rate·dt)` of the last
+`NutrientField.Remineralise(seconds, ratePerSecond)` moves ~~`min(1, rate·dt)`~~ *(as
+built after review, 2026-08-31 correction of this text: the exact first-order fraction
+`1 − exp(−rate·dt)`, step-size independent, with a composition test)* of the last
 layer's stock up one layer; mixing does the rest of the transport, exactly as it does for
 every other gradient. Two knobs, `NutrientRemineralisationPerSecond` and
 `MatterRemineralisationPerSecond` (both `[Tunable]`, both default 0 — the world is

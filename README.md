@@ -18,16 +18,20 @@ the code.
 The name is the ambition: the Cambrian explosion was a rapid diversification of **body
 plans**, which is what an open-ended ecosystem is being built to produce.
 
-> **Status: the ecosystem runs — creatures earn, spend, reproduce and die, and the world has
-> twice grown a food chain nobody designed.**
+> **Status: the ecosystem runs, and a pre-registered campaign is chasing its first
+> self-sustaining food chain.**
 > Genomes develop into bodies, bodies build into articulations driven by their own evolved
 > brains, and energy is a conserved budget audited to 0.0000% across the whole food web. A
-> finite competed-for sun, currents and mixing, senescence, a matter currency and a buoyancy
-> organ are all in and measured ([`DECISIONS.md`](DECISIONS.md) D023–D050). The open frontier:
-> no world yet holds a full ecology and a food chain at the same time, movement has never paid
-> its energy cost — the cost side of that question is closed, the prize side is open — and
-> throughput now binds every remaining question ([logbook/0025](logbook/0025-something-ate-something.md)
-> onward).
+> finite competed-for sun, currents and mixing, senescence, a matter currency, a buoyancy
+> organ, living excretion and a seabed refuge are all in and measured
+> ([`DECISIONS.md`](DECISIONS.md) D023–D060). Seven scored rounds
+> ([logbook/0036](logbook/0036-the-floor-gives-back.md) onward) have produced the first
+> bounded, living, uncensored worlds and a dozen food chains that all boomed and bust —
+> the campaign's standing goal (a chain verified across seeds, not observed once) is not
+> yet met, and the reason is now precisely characterised: consumer lineages establish by
+> grazing the sea-floor detritus hoard, which nothing yet meters. Movement has never paid
+> its energy cost — the cost side is closed, the prize side is open — and throughput binds
+> every remaining question.
 
 ---
 
@@ -60,9 +64,10 @@ being designed in:
   rigid body drifting on the current, which is what a plant is, without "plant" being defined
   anywhere.
 
-Which of those is the right call is genuinely open. The literature review behind the rest of
-the design has **no coverage of artificial ecosystems or open-ended evolution** — §5A is
-reasoned from first principles and labelled as such.
+Which of those is the right call is genuinely open. §5A was reasoned from first principles
+and labelled as such; review round 3 (2026-08-29, [logbook/0035](logbook/0035-the-neuron-was-priced-in-1994.md))
+has since searched the artificial-ecosystem and open-ended-evolution literature and
+confirmed several of its bets at the primary sources.
 
 ---
 
@@ -73,10 +78,12 @@ locators — `[K12 §2.3, p.7]` resolves to an exact page of an exact paper.
 [`research/`](research/) holds the review those citations came from; §7 lists what the review
 did not establish, and two of its six questions remain only partly answered.
 
-**One large part of the design has no review behind it at all.** The ecosystem — energy, cell
-types, feeding, reproduction — was reasoned from first principles, and open-ended evolution
-and artificial ecosystems have never been searched. `DESIGN.md` §5A says so in the text, and
-settling it is the next round of reading rather than something to discover later.
+**The ecosystem's part of the design was reasoned first and read later.** Energy, cell
+types, feeding and reproduction were built from first principles with §5A saying so in the
+text; review round 3 then searched the open-ended-evolution and artificial-ecosystem
+literature ([`research/LITERATURE-REVIEW.md`](research/LITERATURE-REVIEW.md) §0, round 3)
+and the food-chain campaign's mechanisms since (excretion, the refuge, species accounting)
+are labelled project inference in their D-entries where the review has not yet reached.
 
 The design was written first and the review run against it. That changed three things, one
 of which was a correction to reasoning rather than to a fact:
@@ -175,7 +182,9 @@ runs/                         NOT COMMITTED — simulation output, see below
 ```
 
 **A run is a directory, not a file.** `config.json` holds every tunable and its own hash;
-`lineage.jsonl` gets one row per creature ever born; `stats.jsonl` one row per sample;
+`lineage.jsonl` is reserved for one row per creature ever born — today it is created empty,
+and the compact birth/death event stream that will fill it is queued (`HANDOFF.md`);
+`stats.jsonl` one row per sample;
 `snapshots/` the world state. The two high-volume files are append-only and line-oriented, so
 a run killed halfway leaves every completed row valid and readable — and can be watched live
 by tailing it. Creatures are **rows, not files**: a genome measures ~5 KB and the working
@@ -269,7 +278,7 @@ timings are meaningless. See §M3 in [the spike spec](spikes/01-articulation-bod
 
 `Evosim.Core` — the genome, the development that grows a creature from it, the cell types,
 mutation and serialization — has no `UnityEngine` dependency, so it builds and tests as
-ordinary C# in a few seconds. **No .NET SDK is required:** the script uses a system-wide one
+ordinary C# in under a minute (364 tests as of 2026-08-31). **No .NET SDK is required:** the script uses a system-wide one
 if you have it and otherwise falls back to the complete .NET 8 SDK that ships inside the
 Unity install.
 
@@ -357,8 +366,9 @@ looked like — which is what makes a long run legible.
 design's only recombination operator with no mechanism to fire; several energy-economy
 numbers are still unmeasured (`DESIGN.md` §5A.10 is the honest list — some are now located
 by sweeps, others remain placeholders); and the literature review had never covered
-open-ended evolution or artificial ecosystems when §5A was written — review round 3, which
-searches exactly that literature, is in progress.
+open-ended evolution or artificial ecosystems when §5A was written — review round 3
+(logbook/0035) has since searched exactly that literature, and the campaign mechanisms
+built after it carry their own ⚠ project-inference labels pending round 4.
 
 ---
 
