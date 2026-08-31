@@ -113,8 +113,16 @@ of reading is dated and visible:
    bit-identical by the suite); the hash detected a registry change, which is its job.
    Recorded here so the round's five arms are scored together despite two hash strings.
 
----
-
-## Results
-
-*(written after the arms ran)*
+4. **Mid-round finding, dated before any scoring: the treatment has not yet bound.**
+   s2 completed its budget **byte-identical to round 6's s2** — every table row, 8,308
+   births, 618 alive — and s1 is byte-identical to its round-6 twin through t≈8,900. The
+   knob provably reached the field (wave-1's hash `c09f393aec61e61f` differs from round
+   6's `fc914dbc9095adbb`, and `FloorRefugeMetres` is hashed from the same config object
+   the World is built from; the CLAUDE.md identical-numbers gotcha was applied before
+   concluding). The reading: the refuge alters feeding only in the bottom metre, and no
+   living pool-drawing creature has occupied the bottom metre — living consumers graze
+   the mid-deep water, and only the dying, sinking ones reach the floor layer. s2 is
+   therefore a free control replicate; any divergence from a round-6 twin, watched for
+   from here on, timestamps the first moment a mouth touches the floor layer — most
+   plausibly mid-bust, in D059's exile zone, which would demonstrate the review's
+   confound in the world's own data.
