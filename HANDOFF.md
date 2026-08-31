@@ -161,7 +161,9 @@ The goal is unchanged. The path was re-sequenced with the owner after round 4:
    - **The aquarium** — the minimal view, not the Milestone 8 Theatre: camera, pause and
      speed, organism selection, colour by cell type, lineage identity, energy/matter
      overlays, replay from a snapshot plus events. On the record a human at the screen is
-     the project's best bug-finder (logbook/0005, 0006, 0010).
+     the project's best bug-finder (logbook/0005, 0006, 0010). **Strictly post-goal, all
+     of it, including the sandbox genome-loader** — the owner's ruling (2026-08-31):
+     "find a world that's worth watching before seeing it."
    - **Species accounting** — D057: species ID assigned at birth by descent plus a drift
      threshold from the species' founding genome; pure instrumentation (a `species`
      count column, per-species longevity), rides on the lineage events above and supplies
