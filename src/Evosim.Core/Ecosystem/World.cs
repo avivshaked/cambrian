@@ -239,8 +239,10 @@ namespace Evosim.Core
             Field = new LightField(Light, config.WorldAreaSquareMetres, config.LightLayerMetres);
             Nutrients = new NutrientField(
                 config.WorldAreaSquareMetres, config.LightLayerMetres,
-                config.NutrientSinkMetresPerSecond, config.WorldDepthMetres);
+                config.NutrientSinkMetresPerSecond, config.WorldDepthMetres,
+                config.FloorRefugeMetres);
 
+            // No refuge: nobody grazes matter, it is drawn at conception rather than eaten — D055.
             Matter = new NutrientField(
                 config.WorldAreaSquareMetres, config.LightLayerMetres,
                 config.MatterSinkMetresPerSecond, config.WorldDepthMetres);
@@ -406,7 +408,7 @@ namespace Evosim.Core
 
                 EnergyLedger ledger = Metabolism.StepAt(
                     creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY),
-                    Nutrients.DensityAt(creature.HeightY),
+                    Nutrients.EdibleDensityAt(creature.HeightY),
                     creature.PendingWorkJoules, seconds, creature.Age);
 
                 _ledgers[i] = ledger;
@@ -434,7 +436,7 @@ namespace Evosim.Core
                     // The same work, not more: this replaces the ledger rather than adding to it.
                     ledger = Metabolism.StepAt(
                         creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY),
-                        Nutrients.DensityAt(creature.HeightY) * share,
+                        Nutrients.EdibleDensityAt(creature.HeightY) * share,
                         creature.PendingWorkJoules, seconds, age);
                 }
 

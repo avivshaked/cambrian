@@ -810,5 +810,66 @@ namespace Evosim.Core.Tests
                 Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
                 $"matter drifted by {drift} once the excretion cap started firing");
         }
+
+        // ------------------------------------------------------------ D055: seabed refuge
+
+        [Fact]
+        public void AWorldWithNoFloorRefugeIsBitIdenticalToOneThatNeverHeardOfTheKnob()
+        {
+            // Default 0, and 0 has to mean bit-identical rather than nearly — every result on
+            // file was measured against a fully grazeable floor, and a default that perturbed
+            // anything would mean none of them describe a world that still exists (D031 is why
+            // that is not a thing to do twice deliberately). "Never heard of the knob" and
+            // "explicitly told 0" are the same RunConfig value, so any divergence here is a bug
+            // in how the refuge reaches the field, not in the biology.
+            string Trajectory(RunConfig config)
+            {
+                var world = new World(config, seed: 5);
+                var samples = new System.Text.StringBuilder();
+                for (int i = 0; i < 300; i++)
+                {
+                    world.Step(1f);
+                    samples.AppendLine(WorldStats.Sample(world).ToJson());
+                }
+                return samples.ToString();
+            }
+
+            var unset = new RunConfig { Light = new LightModel(300f, 12f) };
+            var explicitZero = new RunConfig { Light = new LightModel(300f, 12f), FloorRefugeMetres = 0f };
+
+            Assert.Equal(0f, unset.FloorRefugeMetres);
+
+            Assert.Equal(Trajectory(unset), Trajectory(explicitZero));
+        }
+
+        [Fact]
+        public void EnergyIsConservedWithAFloorRefugeRunning()
+        {
+            // D055's own copy of D051's guard: the refuge only changes what Demand/Take will
+            // register, never what Deposit/Settle/Mix/Remineralise move, so §5A.2's audit must
+            // close exactly as it does with the knob off.
+            var config = new RunConfig
+            {
+                MinimumPopulation = 30,
+                MaximumPopulation = 600,
+                FloorRefugeMetres = 1f,
+            };
+            config.Light = new LightModel(400f, 12f);
+            var world = new World(config, seed: 1);
+
+            try { for (int i = 0; i < 300; i++) world.Step(1f); }
+            catch (PopulationRunawayException e) { _output.WriteLine($"stopped: {e.Population} living"); }
+
+            double residual = world.AuditResidual;
+            double scale = Math.Max(1.0, world.EnergyIn);
+
+            _output.WriteLine(
+                $"in {world.EnergyIn:0.###} out {world.EnergyOut:0.###} " +
+                $"standing {world.StandingJoules:0.###} residual {residual:0.######} ({residual / scale:P4})");
+
+            Assert.True(
+                Math.Abs(residual) / scale < 1e-4,
+                $"a floor refuge opened a hole in the energy audit: {residual:0.###} J unaccounted for");
+        }
     }
 }

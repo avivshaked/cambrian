@@ -380,5 +380,97 @@ namespace Evosim.Core.Tests
 
             Assert.Equal(before, field.StockInLayer(0), 12);
         }
+
+        // ------------------------------------------------------------ D055: seabed refuge
+
+        private const float FloorDepth = -4.5f; // within layer 4 of a 5-layer, 1 m field — the floor
+
+        [Fact]
+        public void ARefugeOfZeroLayersIsRefugeNowhere()
+        {
+            // The care note in D055 itself: RefugeLayerCount 0 must not make every layer "at or
+            // past the floor minus zero" read as refuge.
+            var field = new NutrientField(400f, 1f, 0f, 5f); // no refugeMetres argument at all
+            Assert.Equal(0, field.RefugeLayerCount);
+
+            for (int layer = 0; layer < field.LayerCount; layer++)
+                Assert.False(field.IsRefuge(layer), $"layer {layer} read as refuge with the knob unset");
+        }
+
+        [Fact]
+        public void TheRefugeRefusesTheMouthButNotTheInstrument()
+        {
+            // A 5-layer, 1 m-per-layer field with a 1 m refuge buries exactly the floor layer.
+            var field = new NutrientField(400f, 1f, 0f, 5f, refugeMetres: 1f);
+            Assert.Equal(1, field.RefugeLayerCount);
+            Assert.True(field.IsRefuge(field.LayerCount - 1));
+            Assert.False(field.IsRefuge(field.LayerCount - 2), "the layer above the floor must stay edible");
+
+            field.Deposit(FloorDepth, 1000f);
+            float trueDensity = field.DensityAt(FloorDepth);
+
+            // DensityAt keeps reporting what the water actually holds...
+            Assert.True(trueDensity > 0f, "the deposit did not land where the test thinks it did");
+
+            // ...but EdibleDensityAt, which is what a mouth prices, reads zero there.
+            Assert.Equal(0f, field.EdibleDensityAt(FloorDepth));
+
+            // Take refuses outright and leaves the stock untouched.
+            double stockBefore = field.StockInLayer(field.LayerCount - 1);
+            float taken = field.Take(FloorDepth, 500f);
+            Assert.Equal(0f, taken);
+            Assert.Equal(stockBefore, field.StockInLayer(field.LayerCount - 1), 12);
+
+            // Demand never registers, so a competitor sharing the same layer sees no scarcity —
+            // ShareAt returns 1 regardless of how much stock the floor holds or how much was asked.
+            field.ClearDemand();
+            field.Demand(FloorDepth, 10_000f);
+            Assert.Equal(1f, field.ShareAt(FloorDepth));
+        }
+
+        [Fact]
+        public void DepositStillLandsInTheRefuge()
+        {
+            // Deposit, Settle, Mix and Remineralise are untouched by D055 — the refuge is only a
+            // feeding-side rule. A deposit at floor depth must still increase the floor's stock.
+            var field = new NutrientField(400f, 1f, 0f, 5f, refugeMetres: 1f);
+            int floor = field.LayerCount - 1;
+            Assert.True(field.IsRefuge(floor));
+
+            double before = field.StockInLayer(floor);
+            field.Deposit(FloorDepth, 250f);
+
+            Assert.Equal(before + 250f, field.StockInLayer(floor), 6);
+        }
+
+        [Fact]
+        public void MixingStillMovesStockOutOfTheRefugeAndConservesIt()
+        {
+            // The refuge's only exit is physics, not feeding: Mix must still carry detritus from
+            // the buried floor layer into the water above it, exactly as it would with no refuge
+            // at all — D055 changes what Demand/Take see, not what Mix does.
+            var field = new NutrientField(400f, 1f, 0f, 5f, refugeMetres: 1f);
+            int floor = field.LayerCount - 1;
+            int above = floor - 1;
+            Assert.True(field.IsRefuge(floor));
+            Assert.False(field.IsRefuge(above));
+
+            field.Deposit(FloorDepth, 1000f);
+            double floorBefore = field.StockInLayer(floor);
+            double aboveBefore = field.StockInLayer(above);
+            double totalBefore = field.TotalJoules;
+
+            for (int i = 0; i < 2000; i++) field.Mix(0.5f, 2f);
+
+            double floorAfter = field.StockInLayer(floor);
+            double aboveAfter = field.StockInLayer(above);
+
+            _output.WriteLine(
+                $"floor {floorBefore:0.#} -> {floorAfter:0.#}, above {aboveBefore:0.#} -> {aboveAfter:0.#}");
+
+            Assert.True(floorAfter < floorBefore, "mixing never drained the refuge layer");
+            Assert.True(aboveAfter > aboveBefore, "mixing never fed the layer above the refuge");
+            Assert.Equal(totalBefore, field.TotalJoules, 6);
+        }
     }
 }

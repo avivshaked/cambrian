@@ -101,6 +101,12 @@ namespace Evosim.Sim.EditorTools
             // ever came back until it died.
             float excretion = Env("EVOSIM_EXCRETION", new RunConfig().ExcretionPerJoule);
 
+            // D055. Metres of seabed no mouth can reach — the consumer-resource damping fix: the
+            // floor's detritus still arrives, piles and leaks back exactly as before, but feeding
+            // cannot price it. 0 is the world every earlier run measured, where the whole field was
+            // grazeable including the floor layer.
+            float floorRefuge = Env("EVOSIM_FLOOR_REFUGE", new RunConfig().FloorRefugeMetres);
+
             // D053. The world's footprint — the aperture the sun shines through, the volume of
             // every layer, and the denominator of shading all at once, so halving it halves the
             // world's total income and stock at identical per-creature margins. The rescale knob:
@@ -205,6 +211,7 @@ namespace Evosim.Sim.EditorTools
             config.NutrientRemineralisationPerSecond = remin;
             config.MatterRemineralisationPerSecond = remin;
             config.ExcretionPerJoule = excretion;
+            config.FloorRefugeMetres = floorRefuge;
             config.WorldAreaSquareMetres = area;
             config.FloorClosesAfterSeconds = floorCloses;
             config.MaximumPopulation = maxPopulation;
@@ -241,6 +248,7 @@ namespace Evosim.Sim.EditorTools
                 " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
                 " · remin " + remin + " /s" +
                 " · excretion " + excretion + " /J" +
+                " · refuge " + floorRefuge + " m" +
                 " · area " + area + " m2" +
                 (floorCloses > 0f ? " · floor closes " + floorCloses + " s" : " · floor open") +
                 " · ceiling " + maxPopulation +

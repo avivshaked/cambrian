@@ -77,6 +77,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D052](#d052) | Living bodies give matter back — the excretion contract | 2026-08-29 | active · built, unmeasured |
 | [D053](#d053) | Right-sizing the dish — the equilibrium must sit inside the instrument | 2026-08-30 | active |
 | [D054](#d054) | The floor becomes a gradient — a beach, a shelf, and a deep | 2026-08-30 | decided · not designed |
+| [D055](#d055) | The seabed is a refuge — the floor layer cannot be grazed | 2026-08-31 | active |
 
 ---
 
@@ -2435,3 +2436,64 @@ per-column floor.
 the goal's world grows into — unless D052's round fails in a way that regeneration by
 geometry would answer and the contract cannot, in which case this moves up and gets its
 design pass early.
+
+### D055
+**The seabed is a refuge — the floor layer cannot be grazed** · 2026-08-31
+
+This is fix 3, the damping on the consumer, decided by the owner on 2026-08-30 after round 6
+(logbook/0041) left it the only open failure. The consumer–resource cycle here has no
+damping at all: `AbsorptiveCell` captures at a fixed clearance whatever the density, so every
+lineage that establishes eats the deep water from ~27 J/m³ to ~4 and busts — seven rounds,
+seven busts, and in round 6's s3 the bust became the first trophic collapse, the chain
+dragging its whole world down with it. Nothing damps a consumer here but its food, so the
+fix is to give the food a floor it can retreat beneath.
+
+**Chosen: the floor layer of the detritus field (`Nutrients`) cannot be absorbed by
+creatures.** Detritus that has settled onto the seabed is buried beyond the reach of any
+mouth; it re-enters the food web only through the paths that already exist — `Mix` across
+the floor interface (at mixing 0.2 that returns ~20%/s of the floor's excess to the water
+above; CLAUDE.md's ratchet gotcha) and `Remineralise` where it is on. Feeding prices the
+floor layer at zero, and `Demand`/`Take` refuse it outright, so the invariant lives in the
+field, not in whoever happens to call it. `Deposit`, `Settle`, `Mix` and `Remineralise` are
+untouched — matter still arrives, still piles, still leaves by physics. `DensityAt` keeps
+reporting the true density; what feeding reads is a separate edible density, so the
+instruments do not lie about what the water holds.
+
+This is the classic prey-refuge stabiliser: a consumer–resource cycle with an inaccessible
+resource pool cannot be ground to zero, because the pool refills the accessible water at a
+rate set by the gradient, not by the consumer. The bust should soften into a dip — the
+lineage crashes to what the floor's slow release can carry, instead of to nothing.
+
+**The form: a world rule, not biology.** The owner's explicit call, against the alternative
+recorded in the handoff — making `AbsorptiveCell`'s capture density-dependent. A
+density-dependent mouth is a per-creature behaviour the genome should be able to discover
+and tune; hard-coding it would put the damping inside the organism by fiat, and every
+future feeding strategy would sit on top of an invisible curve. A refuge is geography:
+selection stays endogenous, and creatures remain free to evolve any mouth they like against
+a world that simply has one shelf they cannot graze. It also foreshadows D054 exactly — a
+sloped world is refuges and larders *by geography*; this is the flat world's one-metre
+preview of that mechanism.
+
+**The knob: `FloorRefugeMetres`, default 0, off — bit-identical when unset**, in the
+D051/D052 shape. Metres rather than a boolean because the tunable machinery is float-typed
+throughout, because "how thick is the ungrazeable sediment" is the honest physical
+quantity, and because a thicker refuge is the obvious dose if one layer's larder proves too
+small. Layers whose index is within `ceil(refuge / LayerMetres)` of the floor are refuge.
+`EVOSIM_FLOOR_REFUGE` reaches it; the header prints `· refuge X m`. Round 7 runs it at 1 —
+exactly the floor layer.
+
+**Scope, drawn precisely:** the refuge applies to the `Nutrients` field only. The `Matter`
+field is not grazed by anyone — creatures draw it at conception, which is a payment, not a
+meal — and a matter refuge would only create a sterile bottom band for no damping gain.
+Scavenging, when it exists as its own path, is a mouth like any other and meets the same
+refuge.
+
+**Rejected: density-dependent capture** (above — biology by fiat, and it forecloses
+evolution's version). **Rejected: making the deep water less reachable** (the handoff's
+other candidate — e.g. a swimming cost gradient): it damps by distance, which round 5b
+showed this world converts into irreversible sinking deaths, and it would punish the diving
+strategy as such rather than capping the harvest.
+
+⚠ Project inference from general consumer–resource theory (refugia stabilise
+Rosenzweig–MacArthur-type cycles); the literature review has not searched predator–prey
+refuge models. Add a primary source before leaning on the dynamics quantitatively.

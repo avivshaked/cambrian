@@ -52,7 +52,16 @@ namespace Evosim.Core
         /// <summary>Layers in the world. The last one is the floor and detritus piles up there.</summary>
         public int LayerCount { get; }
 
-        public NutrientField(float worldArea, float layerMetres, float sinkMetresPerSecond, float worldDepth)
+        /// <summary>
+        /// Layers, counted up from the floor, that no mouth can reach — D055.
+        /// </summary>
+        /// <remarks>0 when the field was built with no refuge, which is the field's whole history
+        /// before D055 and must stay bit-identical to it.</remarks>
+        public int RefugeLayerCount { get; }
+
+        public NutrientField(
+            float worldArea, float layerMetres, float sinkMetresPerSecond, float worldDepth,
+            float refugeMetres = 0f)
         {
             if (!(worldArea > 0f) || float.IsInfinity(worldArea))
                 throw new ArgumentOutOfRangeException(nameof(worldArea), worldArea, "Must be positive and finite.");
@@ -62,11 +71,14 @@ namespace Evosim.Core
                 throw new ArgumentOutOfRangeException(nameof(sinkMetresPerSecond), sinkMetresPerSecond, "Must be finite and not negative.");
             if (!(worldDepth > 0f) || float.IsInfinity(worldDepth))
                 throw new ArgumentOutOfRangeException(nameof(worldDepth), worldDepth, "Must be positive and finite.");
+            if (!(refugeMetres >= 0f) || float.IsInfinity(refugeMetres))
+                throw new ArgumentOutOfRangeException(nameof(refugeMetres), refugeMetres, "Must be finite and not negative.");
 
             WorldArea = worldArea;
             LayerMetres = layerMetres;
             SinkMetresPerSecond = sinkMetresPerSecond;
             LayerCount = Math.Max(1, (int)Math.Ceiling(worldDepth / layerMetres));
+            RefugeLayerCount = Math.Min(LayerCount, (int)Math.Ceiling(refugeMetres / layerMetres));
 
             for (int i = 0; i < LayerCount; i++)
             {
@@ -75,6 +87,9 @@ namespace Evosim.Core
                 _sinking.Add(0.0);
             }
         }
+
+        /// <summary>Whether a layer is buried beyond any mouth's reach — D055.</summary>
+        public bool IsRefuge(int layer) => layer >= LayerCount - RefugeLayerCount;
 
         /// <summary>Volume of one layer, m³.</summary>
         public float LayerVolume => WorldArea * LayerMetres;
@@ -115,8 +130,29 @@ namespace Evosim.Core
             _stock[LayerOf(heightY)] += joules;
         }
 
-        /// <summary>Energy density of the water at a depth, J/m³ — what a feeding cell reads.</summary>
+        /// <summary>
+        /// Energy density of the water at a depth, J/m³ — what the water physically holds.
+        /// </summary>
+        /// <remarks>
+        /// Truthful regardless of <see cref="RefugeLayerCount"/>: a refuge changes what feeding
+        /// can price, not what the field reports. See <see cref="EdibleDensityAt"/> for the
+        /// version a mouth actually reads — D055.
+        /// </remarks>
         public float DensityAt(float heightY) => (float)(_stock[LayerOf(heightY)] / LayerVolume);
+
+        /// <summary>
+        /// Energy density a feeding cell may actually draw at a depth, J/m³ — D055.
+        /// </summary>
+        /// <remarks>
+        /// Zero inside the refuge, whatever <see cref="DensityAt"/> reports there; identical to it
+        /// everywhere else. This is what <see cref="Demand"/> and <see cref="Take"/> enforce, so
+        /// it is what a caller should price rather than reimplementing the refuge check.
+        /// </remarks>
+        public float EdibleDensityAt(float heightY)
+        {
+            int layer = LayerOf(heightY);
+            return IsRefuge(layer) ? 0f : (float)(_stock[layer] / LayerVolume);
+        }
 
         /// <summary>Discards last step's demand. Call before <see cref="Demand"/>.</summary>
         public void ClearDemand()
@@ -125,10 +161,17 @@ namespace Evosim.Core
         }
 
         /// <summary>Registers what one creature would take at this depth if nothing competed.</summary>
+        /// <remarks>
+        /// Refuses a refuge layer outright — D055. The field enforces its own invariant here so
+        /// no caller can forget it by pricing <see cref="DensityAt"/> instead of
+        /// <see cref="EdibleDensityAt"/>.
+        /// </remarks>
         public void Demand(float heightY, float joules)
         {
             if (!(joules > 0f)) return;
-            _demand[LayerOf(heightY)] += joules;
+            int layer = LayerOf(heightY);
+            if (IsRefuge(layer)) return;
+            _demand[layer] += joules;
         }
 
         /// <summary>
@@ -150,11 +193,18 @@ namespace Evosim.Core
         }
 
         /// <summary>Removes energy from the pool and returns what was actually there to take.</summary>
+        /// <remarks>
+        /// Refuses a refuge layer outright — D055, and the same enforcement <see cref="Demand"/>
+        /// applies. Stock in that layer is not touched, matching <c>ShareAt</c>'s reading of it
+        /// for whoever registered no demand there.
+        /// </remarks>
         public float Take(float heightY, float joules)
         {
             if (!(joules > 0f)) return 0f;
 
             int layer = LayerOf(heightY);
+            if (IsRefuge(layer)) return 0f;
+
             double taken = Math.Min(joules, _stock[layer]);
             if (taken <= 0.0) return 0f;
 

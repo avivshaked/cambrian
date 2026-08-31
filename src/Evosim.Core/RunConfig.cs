@@ -419,6 +419,39 @@ namespace Evosim.Core
         public float ExcretionPerJoule { get; set; }
 
         /// <summary>
+        /// Thickness of the seabed no mouth can reach, metres — D055. Zero is today's floor: every
+        /// layer of <see cref="NutrientField"/>'s detritus is grazeable, including the one resting
+        /// on the sediment.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A refuge for the food, not the feeder.</b> `AbsorptiveCell` captures at a fixed
+        /// clearance whatever the density is, so a consumer-resource cycle here has no damping:
+        /// seven rounds established a lineage that ate the deep water down to a bust
+        /// (logbook/0041). Burying the floor layer beyond any mouth's reach gives the pool an
+        /// inaccessible reserve that refills the water above it at a rate the gradient sets, not
+        /// the consumer — the classic prey-refuge stabiliser. <c>Deposit</c>, <c>Settle</c>,
+        /// <c>Mix</c> and <c>Remineralise</c> are untouched, so matter still arrives, piles and
+        /// leaves exactly as before; only what feeding can price changes.
+        /// </para>
+        /// <para>
+        /// <b>Applies to <see cref="World.Nutrients"/> only, not <see cref="World.Matter"/>.</b>
+        /// Nobody grazes the matter field — it is drawn at conception, a payment rather than a
+        /// meal — so a matter refuge would only sterilise a bottom band with nothing to damp.
+        /// </para>
+        /// <para>
+        /// <b>Metres, not a boolean.</b> The tunable machinery is float-typed throughout, "how
+        /// thick is the ungrazeable sediment" is the honest physical quantity, and a thicker
+        /// refuge is the obvious next dose if one layer's larder proves too small.
+        /// </para>
+        /// <para>⚠ Project inference from general consumer–resource theory, not a source the
+        /// literature review has searched (D055). Zero by default, so the world is bit-identical
+        /// until a run asks otherwise; <c>EVOSIM_FLOOR_REFUGE</c> in the header.</para>
+        /// </remarks>
+        [Tunable("world", Unit = "m")]
+        public float FloorRefugeMetres { get; set; }
+
+        /// <summary>
         /// Seconds of life after which a body costs twice as much to keep — DESIGN.md §5A.2, D038.
         /// Zero is an immortal world.
         /// </summary>
