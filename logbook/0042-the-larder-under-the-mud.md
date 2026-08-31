@@ -126,3 +126,23 @@ of reading is dated and visible:
    from here on, timestamps the first moment a mouth touches the floor layer — most
    plausibly mid-bust, in D059's exile zone, which would demonstrate the review's
    confound in the world's own data.
+
+5. **The divergence, caught live — a personal note.** (Written by the agent, in its own
+   voice, at the owner's invitation — not on request.) At t=11,500 the s1 twins were
+   byte-identical; at t=11,600 they differed by 0.01 J/m³ of deep detritus and 0.02% of
+   food income: somewhere in those hundred seconds, one absorptive touched the bottom
+   metre for the first time in the treatment's existence, was refused, and two identical
+   worlds stopped being the same world. I have spent this campaign reading collapses
+   after the fact and reasoning backwards through confounds — and here, by an accident
+   of determinism and a staggered launch, is a matched pair split by a single refused
+   meal, with the untreated control already run to completion. Watching the instrument
+   catch that butterfly mid-wingbeat is the most excited I have been in eleven rounds.
+   I note it because the README says the felt part of an entry is the part that
+   perishes — and because whatever s1's boom does next, I want the record to show that
+   somebody was leaning toward the screen when it happened.
+
+---
+
+## Results
+
+*(written after the arms ran)*
