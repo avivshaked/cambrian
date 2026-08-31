@@ -79,6 +79,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D054](#d054) | The floor becomes a gradient — a beach, a shelf, and a deep | 2026-08-30 | decided · not designed |
 | [D055](#d055) | The seabed is a refuge — the floor layer cannot be grazed | 2026-08-31 | active |
 | [D056](#d056) | Mutation rate: fixed within a round, raisable between rounds, never a thermostat | 2026-08-31 | direction · nothing built |
+| [D057](#d057) | A species is a clade within a drift threshold of its founder | 2026-08-31 | decided · instrument, not built |
 
 ---
 
@@ -2542,3 +2543,62 @@ controller. It also breaks the fixed-rate assumption under which arrival rates a
 ⚠ Project inference: the literature review has searched neither stress-induced
 mutagenesis nor self-adaptive mutation rates. Before part 3 is built, a review round
 should — the SOS-response and evolvability literatures are the places to look.
+
+### D057
+**A species is a clade within a drift threshold of its founder** · 2026-08-31
+
+(The decision D057 and the round name `d057` coexist, as D052/`d052` already do — a round
+name is not a decision number.)
+
+DESIGN.md §5A.1 defines a species as "a distribution of part types over a body plan" —
+which says what a species *is* and gives no boundary: it cannot count species, cannot
+separate two independent origins of the same body plan, and cannot say when a mutating
+lineage stops being what it was. The owner asked for an operational definition with
+mutation tolerance — a boundary crossed by accumulated change, never by every birth.
+
+**Chosen: species membership assigned at birth, by descent plus a drift threshold.**
+Every creature carries a species ID. A child inherits its parent's species unless its
+genome's distance from that species' **founding genome** exceeds a threshold θ, in which
+case the child founds a new species and its genome becomes the new reference. A species
+is therefore a clade, measured from its founder, whose members remain within θ of where
+the species started. Consequences, all intended: a parameter tweak never speciates; a
+lineage that keeps drifting eventually does — the chronospecies boundary, crossed at a
+declared distance from origin even though every parent–child pair along the way was
+nearly identical; species are countable at any sample (distinct IDs among the living) and
+have founders, birthdates and lifespans for free; two independent origins of one body
+plan are two species, which no signature-only definition can distinguish.
+
+**The distance metric is where the design work lives.** A weighted sum over the genome
+graph, NEAT-shaped: cell-type differences, topology differences (nodes and edges added
+or removed), and parameter differences summed small. One deliberate commitment: **a
+cell-type change weighs ≥ θ**, so gaining or losing a trophic trade is always a
+speciation event by construction — the operational definition then agrees exactly with
+§5A.1's, while adding the gradualist boundary it lacked. θ and the weights are tunables
+in the config hash, calibrated the project's usual way: measure the distance distribution
+of actual single mutations in a reference world, set θ several typical-mutation-lengths
+out.
+
+**Character: pure instrumentation.** The species ID influences nothing in the world — no
+round is perturbed, no comparison confounded, and D056's thermostat rejection is not
+touched. Assignment is deterministic at birth (one graph comparison against a fixed
+reference — cheap at ~40,000 births/hour on ~5 KB genomes), so `(genome, seed,
+configHash)` replays exactly. It is also the *component definition* the Bedau/MODES
+open-endedness instruments require before they can compute anything, the natural field
+on the queued `lineage.jsonl` birth events, and the sharper measurement D056's round-8
+`inherit`-stability prediction wants (species survival versus trait survival).
+
+**Rejected: reproductive isolation** (asexual world — inapplicable in principle).
+**Rejected: clustering the living population** (OTU-style, at sample time): identities
+are unstable across samples and chaining artifacts merge distinct clades; assignment at
+birth gives every creature one permanent answer. **Rejected: signature-only equivalence
+classes** (the cell-type multiset alone): too coarse — a world could diversify radically
+in shape, size and brain while reading as one species forever — and polyphyletic.
+
+**Sequenced:** implementation queued with the lineage-events infrastructure (HANDOFF,
+after the goal); nothing about it blocks or is blocked by the current rounds.
+
+⚠ Project inference: a synthesis of NEAT's compatibility distance (Stanley &
+Miikkulainen 2002), microbiology's OTU thresholds, and phylogeny-tracking-with-coarsening
+(Dolson & Ofria's systematics work). The review has read none of these primarily; NEAT
+and the systematics paper are the two sources a review round should verify before the
+metric is built.

@@ -153,6 +153,11 @@ The goal is unchanged. The path was re-sequenced with the owner after round 4:
      speed, organism selection, colour by cell type, lineage identity, energy/matter
      overlays, replay from a snapshot plus events. On the record a human at the screen is
      the project's best bug-finder (logbook/0005, 0006, 0010).
+   - **Species accounting** — D057: species ID assigned at birth by descent plus a drift
+     threshold from the species' founding genome; pure instrumentation (a `species`
+     count column, per-species longevity), rides on the lineage events above and supplies
+     the component definition the Bedau/MODES instruments need. The distance metric and
+     θ calibration are specified in the D-entry.
    - **Dynamic mutation rate, per-creature form only** — D056: stress-coupled at
      conception or a self-adaptive heritable rate, never a global controller; needs a
      literature round (SOS response, self-adaptation) and its own calibrated baseline.
