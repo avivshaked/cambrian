@@ -103,6 +103,16 @@ of reading is dated and visible:
    (D059) can separate the two, and the direct test of damping is D060's invasion assay,
    not a dose escalation.
 
+3. **Operational note, staggering meets a growing registry.** s4 and s5 (launched as
+   workers freed, per the stagger) print `configHash 3ec383fba0b9c747` where s1–s3 print
+   `c09f393aec61e61f`. Cause, verified at launch: `Evosim.Core` is a shared `file:`
+   package, and between the two waves it gained D057's five default-off species tunables
+   (commit 1b44e44, the only Core change since launch) — new tunables move `Hash()` even
+   at their defaults. A token-by-token diff of the s4 and s1 headers shows exactly two
+   differences: seed and hash. The world is the same (the knob-off path is proven
+   bit-identical by the suite); the hash detected a registry change, which is its job.
+   Recorded here so the round's five arms are scored together despite two hash strings.
+
 ---
 
 ## Results
