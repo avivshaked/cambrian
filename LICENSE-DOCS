@@ -12,8 +12,6 @@ The written work in this repository:
     README.md
     CLAUDE.md
     HANDOFF.md
-    fable-propose.md
-    sol-gpt-propose.md
     research/**            (the literature review and provenance records)
     logbook/**             (dated entries on what was tried and what broke)
     primer/**              (explanatory writing about what was built)

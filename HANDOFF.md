@@ -9,7 +9,10 @@ reasoning is `DECISIONS.md`, the history is `logbook/`, and the operating rules 
 ## The goal that was being pursued
 
 **A self-sustaining world that holds a food chain — verified across seeds, not observed
-once.** Chosen by the owner on 2026-08-29 from the options in `fable-propose.md`. Scored by a
+once.** Chosen by the owner on 2026-08-29 from the options in a written proposal
+(`fable-propose.md`, absorbed into this file's queue and removed on 2026-08-31 together
+with `sol-gpt-propose.md`, an owner-provided independent review — git history holds both
+full texts, including what was already done or rejected). Scored by a
 rule written before each round launched:
 
 > In at least 3 of 5 seeds, with the population floor closed: the producers persist to the end
@@ -105,11 +108,54 @@ The goal is unchanged. The path was re-sequenced with the owner after round 4:
    D-entry in `DECISIONS.md` (D052 is the next number; `d052`/`d053`/`d054` were *round*
    names, not decisions) and a pre-registration in the 0036–0039 style before any arm runs.
 
-4. **After the goal:** `fable-propose.md` §4b–§8 (ballast, excretion contract, added mass,
-   dt sweep, IL2CPP, aquarium) and the infrastructure items from `sol-gpt-propose.md` that
-   were deferred as sound-but-not-on-the-path: typed run manifest with source fingerprint,
-   compact `lineage.jsonl` birth/death events, a Unity boundary smoke test, physics timestep
-   in the config hash. Its three small code points were fixed (commit 403e684).
+4. **After the goal** — the queue, absorbed from the two 2026-08-29 proposal documents on
+   their removal (2026-08-31; the excretion contract from that list already became D052):
+   - **Ballast buoyancy** — reserve-coupled lift (heavier while the energy reserve is full,
+     lighter as it drains), the mechanism cyanobacteria actually use; needs no neurons.
+     Normalise by seconds-of-reserve, not raw joules, or lift couples to body size; run
+     paired seeds against fixed buoyancy; judge by inherited persistence and vertical
+     cycling, never mean depth alone.
+   - **Added mass** — `FluidConfig.AddedMassCoefficient` is 0 in every evolution run and 1
+     in the sandbox and smoke tests. Decide before any arm where swimming is supposed to
+     pay, and before the dt sweep (D028 orders it first). A config-default choice plus
+     re-calibration; D-entry either way.
+   - **The dt sweep** — D028's "only lever that multiplies simulated seconds". Acceptance
+     test already stated: if the audit residual grows, the speed was bought with free
+     energy. First put the physics timestep in the config hash, and hold metabolic seconds
+     fixed or the sweep changes metabolism at the same time.
+   - **IL2CPP** — at the Farm milestone, not before: it is a build backend, and Editor
+     `-batchmode` runs are Mono regardless (settled 2026-08-31).
+   - **Run-integrity infrastructure** (deferred as sound-but-not-on-the-path; three small
+     code points from the same review were fixed in commit 403e684): a typed run manifest
+     that rejects unknown keys and stores the resolved config plus a source fingerprint
+     (git commit, dirty flag, worker fingerprint); a preflight that diffs against a named
+     control arm and refuses an unplanned variable; compact per-organism birth/death
+     events in `lineage.jsonl` — the evolutionary-activity measures round 3 found require
+     a lineage record, and events cost a few MB per hour where full genomes would cost
+     hundreds; a Unity boundary smoke that fails when a requested setting does not reach
+     the arithmetic; a fast/slow test split and CI for Core.
+   - **Sensing before controlled lift** — `Chemical` cannot silently stand for both
+     detrital energy and reproductive matter now that D048 split them; decide the sensor
+     contract (separate channels, or one declared target field) before building it. Then
+     brain-driven lift is the cheapest active vertical strategy and the control any joint
+     must beat.
+   - **The muscle re-test** — only in a world with a moving or spatial prize, never the
+     depth-only world (it rewards passive lift by construction); persistence-aware
+     measures, since co-optimisation undervalues newly-mutated bodies ([MC25]); the
+     untried prize-side option is mating as a reason to travel ([VG05], Gene Pool's
+     second prize).
+   - **The tiling fork, two-sided and pre-registered** — a persistent inherited food chain
+     in depth-only ecology ends the 1-D era on schedule; repeated failure under
+     otherwise-sufficient conditions becomes the evidence that space is the missing
+     ingredient (Hamm & Drossel, round 3). Either outcome moves the decision; the trigger
+     cannot fail silently.
+   - **The aquarium** — the minimal view, not the Milestone 8 Theatre: camera, pause and
+     speed, organism selection, colour by cell type, lineage identity, energy/matter
+     overlays, replay from a snapshot plus events. On the record a human at the screen is
+     the project's best bug-finder (logbook/0005, 0006, 0010).
+   - **Standing methodology debts:** the margin-ratio ≥ 2 preflight should be computed and
+     printed by `run-arm.ps1` rather than remembered; `Mutator.CodeVersion` promises a
+     per-birth record that is recorded nowhere — write it or delete the promise.
 
 ## How the experiments are run — the parts that bite
 
@@ -147,8 +193,10 @@ The goal is unchanged. The path was re-sequenced with the owner after round 4:
   prefix; `scripts/read-arm.ps1`. Core suite: 344 tests, ~1 min.
 - Documents: D051 with its measured addendum; DESIGN.md §0f, §5A.2c, §5A.10; CLAUDE.md
   gotchas (floor ratchet at mixing 0 only; founding window; throughput; ceiling); literature
-  review round 3 (`research/LITERATURE-REVIEW.md` §0, logbook/0035); `fable-propose.md`
-  (the plan the goal came from) and `sol-gpt-propose.md` (an independent review, owner-provided).
+  review round 3 (`research/LITERATURE-REVIEW.md` §0, logbook/0035). The two 2026-08-29
+  proposal documents (`fable-propose.md`, the plan the goal came from, and
+  `sol-gpt-propose.md`, an owner-provided independent review) were absorbed into the
+  queue above and removed on 2026-08-31; git history holds the full texts.
 
 ## A design gap the owner spotted, worth a D-entry before fix 3
 

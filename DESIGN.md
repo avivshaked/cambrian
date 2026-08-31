@@ -1157,9 +1157,11 @@ across rounds 2–4 of the food-chain goal (logbook/0037–0039): a bloom locks 
 surface reservoir into bodies, the surface falls to ~0.01/m³, every conception is refused,
 and the matter comes back only when the bodies die — at depth, after sinking. A real sunlit
 ocean is also nutrient-poor, but most of what its producers take is regenerated in place
-within days by excretion, grazing and leakage; here nothing leaves a living body. The
-*excretion contract* (`fable-propose.md` §4c, `HANDOFF.md`) is the candidate fix and has no
-D-entry yet. Author's inference from general marine ecology; not yet a cited claim.
+within days by excretion, grazing and leakage; here nothing leaves a living body — unless
+the *excretion contract* is on: D052 in `DECISIONS.md`, built (`ExcretionPerJoule`,
+default 0, so this harsher world remains the default) and first measured in round 6
+(logbook/0041), where it produced the project's first bounded, living, uncensored worlds.
+Author's inference from general marine ecology; not yet a cited claim.
 
 **Measured.** A 200 W/m² world at `MatterPerTissueJoule` 0.5 from 1.0/m³:
 
