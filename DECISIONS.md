@@ -2573,7 +2573,16 @@ graph, NEAT-shaped: cell-type differences, topology differences (nodes and edges
 or removed), and parameter differences summed small. One deliberate commitment: **a
 cell-type change weighs ≥ θ**, so gaining or losing a trophic trade is always a
 speciation event by construction — the operational definition then agrees exactly with
-§5A.1's, while adding the gradualist boundary it lacked. θ and the weights are tunables
+§5A.1's, while adding the gradualist boundary it lacked.
+
+**The brain is a fourth term, weighted zero for now** (owner's question, same day).
+Brains are near-selectively-neutral in the current world — movement has never paid and
+perception is partial — so brain drift is mostly neutral noise, and counting it toward a
+founder-anchored threshold would guarantee meaningless speciation by drift. The term
+exists in the metric's structure with its own weight so it can be raised between rounds
+once brains earn selection; at that point behaviorally distinct, morphologically
+identical lineages — biology's cryptic species — become visible to the instrument.
+Raising it is a hashed config change like any other. θ and the weights are tunables
 in the config hash, calibrated the project's usual way: measure the distance distribution
 of actual single mutations in a reference world, set θ several typical-mutation-lengths
 out.
