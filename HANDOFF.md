@@ -55,15 +55,22 @@ The goal is unchanged. The path was re-sequenced with the owner after round 4:
    dies of shading-driven darkness and the sink spiral. **No geometric rescale bounds this
    world.** Two mechanism findings for later: shading limits by killing, not capping; and
    the ocean has no floor for bodies (CLAUDE.md gotcha, −131 m in a 60 m world).
-2. **Round 6 — D052, the excretion contract** — **built 2026-08-30** (suite 348, knob-off
-   bit-identical, `EVOSIM_EXCRETION`), **running as `d056-s1..s5` since the night of
-   2026-08-30/31**: k=0.001 in round 4's world, ceiling declared as censor, pre-registered
-   with dose arithmetic in logbook/0041. Score V1–V7 there when the arms end. Known issue
-   found during the build, pre-existing, not yet fixed: a stillborn conception orphans its
-   `matterPrice` in `MatterInBodies` (conservation holds, matter unusable) — fix with a
-   test when touching `Conceive` next.
-3. **Fix 3 — damping on the consumer**, only if round 6's chains still bust. Needs its own
-   D-entry (biology vs world — the owner's open call).
+2. **Round 6 — D052, the excretion contract: run and scored** (logbook/0041, k=0.001,
+   d056-s1..s5). **The best round yet, goal still not met (V6: 1 of 5).** Excretion gave
+   the project its first bounded, living, uncensored worlds (s2: 618 alive and s4: 2,204
+   alive at t=30,000, floor silent, populations cycling through droughts), three chain
+   establishments in one round (910, 1,430, 320 — vs one per round before), one qualifying
+   chain at a wall cut (s5: 80 samples inherited, 50 alive), and the first trophic
+   collapse (s3: the chain became the majority of its world and took it down). Every chain
+   that boomed still bust — V7 falsified a seventh time. Known issue from the build,
+   pre-existing, still open: a stillborn conception orphans its `matterPrice` in
+   `MatterInBodies` — fix with a test when touching `Conceive` next.
+3. **Fix 3 — damping on the consumer**: now unambiguously the frontier — round 6's chains
+   all bust, and s3 showed a bust can take the whole world with it. Needs its own D-entry
+   and the owner's call: change the biology (`AbsorptiveCell` capture density-dependent) or
+   the world (deep water below break-even less reachable). Also decide the instrument
+   question first: the wall clock is now what censors runs (no arm hit the ceiling) — a
+   5,000–7,000-creature world needs more than 600 min for 30,000 s.
 4. **The sloped world (D054)** — the destination after the goal: `floorDepth[column]`
    architecture, straight slope as the first profile, profile in the config hash, procedural
    generation deferred. Design questions it must answer first are listed in the D-entry.

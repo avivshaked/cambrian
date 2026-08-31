@@ -78,4 +78,46 @@ claim made from it.
 
 ## Results
 
-*(to be written when the arms finish)*
+All five ran. No arm touched the 8,000 ceiling — the censor declared above was never
+needed; the binding instrument turned out to be the **wall clock**, which cut s1 at
+t=24,093 (7,057 alive) and s5 at t=22,721 (4,933 alive), both after the 15,000 s
+interpretability line.
+
+| arm | fate | producers | absorptive chain |
+|---|---|---|---|
+| s1 | wall, t=24,093 | 7,057 and climbing | arrived t≈6,000, **peak 910 at t=13,100**, bust to 5 by t=18,000, no rise |
+| s2 | **budget, t=30,000, 618 alive** | crashed 1,615 → 269 into the dark (−41 m) and **came back** — then cycled 109–1,495 through recurring droughts | none arrived |
+| s3 | extinct t=26,278 | died at −70 to −96 m with matter recovered above | arrived t≈10,000, **1,430 of 2,515 alive at t=16,000** — the majority of the world — ate the deep from 27 to 4 J/m³; the whole ecosystem sank and died together |
+| s4 | **budget, t=30,000, 2,204 alive** | cycled 102–2,204 through six droughts, floor silent | one arrival, at the last sample |
+| s5 | wall, t=22,721 | 4,933 | arrived t≈12,000, peak 320, **inherited for 80 consecutive samples (t=14,800–22,700), 50 alive at the cut** |
+
+### Scored
+
+| # | result |
+|---|---|
+| V1 | **held** — zero floor spawns after t=3,100 in all five |
+| V2 | **held** — 1 of 5 extinct |
+| V3 | **failed on its letter, and the letter was wrong** — every arm has `mat blk` > 1,000 for 94–256 consecutive samples, but with thousands alive that threshold is background noise, not drought; the metric needed to be per capita. The substantive claim it aimed at is better read from V4 and the fates above |
+| V4 | **failed in s3** — the shading-sink spiral still exists (a population dying at −96 m under a recovered surface, births frozen by darkness). But **s2 broke it**: 1,615 → 269 at −41 m, then recovery — the first return from the dark in the project's history. The spiral is no longer always irreversible |
+| V5 | **held** — arrivals in s1, s3, s5 and (at its last sample) s4 |
+| V6 | **failed, 1 of 5** — only s5 satisfies all three clauses (not extinct; inherited ≥20 consecutive samples — it managed 80; ≥10 at the last sample — it had 50). s1's and s3's chains bust before their ends; s2 and s4 never got a chain |
+| V7 | **falsified, seventh time** — 910 → 5 with no rise (s1); s3's chain died with its world; s5 was cut mid-decline at 50 |
+
+**The goal is not met** (V6 failed), and this is the best round the project has run:
+
+1. **The first bounded, living, uncensored worlds.** s2 and s4 completed 30,000 s with the
+   floor silent, populations cycling through recurring droughts between ~100 and ~2,200 —
+   neither runaway nor extinction. Excretion turned the drought from a death sentence into
+   a working brake: matter returns where the living are, fast enough to ride.
+2. **Three chain establishments in one round** (910, 1,430, 320) against one per round in
+   0036–0039 — a steadier detritus rain feeds arrivals as hypothesised.
+3. **The first trophic collapse.** s3's chain became the majority of its world, stripped
+   the deep, and took the producers down with it — the first extinction in which the
+   consumers were structural, not bystanders.
+4. What remains is exactly **fix 3's territory**: every chain that boomed, bust. Nothing
+   damps a consumer but its food, and now the consumer is big enough to matter to the
+   whole world.
+
+The frontier after this round: the consumer bust (fix 3, the owner's open biology-vs-world
+call), and the wall clock as the new binding instrument — a bounded world can run
+30,000 s, but s1 and s5 show 600 minutes no longer covers a 5,000–7,000-creature run.
