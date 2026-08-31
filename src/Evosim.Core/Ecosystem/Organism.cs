@@ -119,6 +119,20 @@ namespace Evosim.Core
         public float LockedMatter { get; internal set; }
 
         /// <summary>
+        /// Which clade this creature belongs to — D057. 0 for every creature whenever
+        /// <see cref="RunConfig.SpeciesDriftThreshold"/> is 0; otherwise assigned once, at birth,
+        /// by <see cref="World"/> and never touched again.
+        /// </summary>
+        /// <remarks>
+        /// <b>Pure instrumentation — D057 is explicit that nothing may read this except a
+        /// report.</b> No branch in <see cref="World"/>'s economy, in <see cref="Mutator"/>, or
+        /// anywhere else consults it; it exists so a run can be asked "how many species" and "how
+        /// long did this one last" after the fact, and for no other reason. Grep for reads of
+        /// this property outside <c>World</c> and a report before trusting a change near it.
+        /// </remarks>
+        public uint SpeciesId { get; internal set; }
+
+        /// <summary>
         /// What <see cref="SensorChannel.Energy"/> reports: seconds of life left at the current
         /// burn rate — §4.4.
         /// </summary>
@@ -175,5 +189,31 @@ namespace Evosim.Core
 
         /// <summary>Born to a parent that could afford it. What a living world produces.</summary>
         Reproduction = 1,
+    }
+
+    /// <summary>
+    /// One entry in <see cref="World"/>'s species registry — D057. The genome a clade is
+    /// measured from, and when it was founded.
+    /// </summary>
+    /// <remarks>
+    /// Holds the founding genome itself rather than a distance summary, because
+    /// <see cref="SpeciesDistance"/> needs the actual genome to compare a new child against and
+    /// nothing cheaper would do. That is affordable only because species are expected to number
+    /// far below the living population — a genome is roughly 5 KB (<see cref="Mutator"/>'s own
+    /// remarks), a species is a clade that persists across many births, and D057 itself expects
+    /// this table to stay small relative to <see cref="World.Living"/>. If a run's species count
+    /// ever approached its creature count, this assumption would need revisiting before the
+    /// registry's memory did.
+    /// </remarks>
+    public readonly struct SpeciesFounder
+    {
+        public Genome Genome { get; }
+        public double FoundedAtSeconds { get; }
+
+        public SpeciesFounder(Genome genome, double foundedAtSeconds)
+        {
+            Genome = genome;
+            FoundedAtSeconds = foundedAtSeconds;
+        }
     }
 }

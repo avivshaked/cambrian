@@ -79,7 +79,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D054](#d054) | The floor becomes a gradient — a beach, a shelf, and a deep | 2026-08-30 | decided · not designed |
 | [D055](#d055) | The seabed is a refuge — the floor layer cannot be grazed | 2026-08-31 | active |
 | [D056](#d056) | Mutation rate: fixed within a round, raisable between rounds, never a thermostat | 2026-08-31 | direction · nothing built |
-| [D057](#d057) | A species is a clade within a drift threshold of its founder | 2026-08-31 | decided · instrument, not built |
+| [D057](#d057) | A species is a clade within a drift threshold of its founder | 2026-08-31 | active · built, θ uncalibrated |
 | [D058](#d058) | Only the budget ends a run — censored arms cannot pass | 2026-08-31 | active |
 | [D059](#d059) | The ocean gets a floor — D050's mirror, per-column under D054 | 2026-08-31 | decided · not built |
 | [D060](#d060) | The invasion assay — a labeled hand for a mechanism question | 2026-08-31 | decided · instrument, not built |
@@ -2621,6 +2621,20 @@ in shape, size and brain while reading as one species forever — and polyphylet
 
 **Sequenced:** implementation queued with the lineage-events infrastructure (HANDOFF,
 after the goal); nothing about it blocks or is blocked by the current rounds.
+
+*Built 2026-08-31, pulled forward by the owner* (no retroactive version exists — every
+round without it is species data lost). `SpeciesDistance` (four weighted terms; nodes,
+edges and neurons matched by list index, the same in-place contract `Mutator` already
+follows, so a mismatch counts as topology rather than being re-aligned; the cell-type
+term is a position-independent multiset so one trophic change reads exactly 1.0),
+`Organism.SpeciesId`, the registry on `World`, five `[Tunable("species")]` knobs
+(`SpeciesDriftThreshold` default 0 = off and bit-identical; brain weight default 0 per
+the amendment), `EVOSIM_SPECIES_THETA`, header token, `species` column appended last.
+Ten tests; suite 354 → 364. θ is uncalibrated: the harness
+(`./scripts/core-test.ps1 -Filter SpeciesCalibration`) measured default-weight
+single-mutation distances at median 1 / p90 3.0 / max 9.4, and an isolated cell-type
+change at 1.0 minimum — θ goes several mutation-lengths out, at or below the cell-type
+weight, chosen in the round that first turns it on.
 
 ⚠ Project inference: a synthesis of NEAT's compatibility distance (Stanley &
 Miikkulainen 2002), microbiology's OTU thresholds, and phylogeny-tracking-with-coarsening

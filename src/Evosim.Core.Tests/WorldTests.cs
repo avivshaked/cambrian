@@ -871,5 +871,184 @@ namespace Evosim.Core.Tests
                 Math.Abs(residual) / scale < 1e-4,
                 $"a floor refuge opened a hole in the energy audit: {residual:0.###} J unaccounted for");
         }
+
+        // ------------------------------------------------------------ D057: species accounting
+
+        [Fact]
+        public void SettingTheDriftThresholdToZeroIsBitIdenticalToNeverHearingOfTheKnob()
+        {
+            // Same shape as AWorldWithNoFloorRefugeIsBitIdenticalToOneThatNeverHeardOfTheKnob:
+            // "never set" and "explicitly 0" are the same RunConfig value, so any divergence in
+            // the trajectory is a bug in how the threshold reaches Admit, not in the biology.
+            string Trajectory(RunConfig config)
+            {
+                var world = new World(config, seed: 5);
+                var samples = new System.Text.StringBuilder();
+                for (int i = 0; i < 300; i++)
+                {
+                    world.Step(1f);
+                    samples.AppendLine(WorldStats.Sample(world).ToJson());
+                }
+                return samples.ToString();
+            }
+
+            var unset = new RunConfig { Light = new LightModel(300f, 12f) };
+            var explicitZero = new RunConfig
+            {
+                Light = new LightModel(300f, 12f),
+                SpeciesDriftThreshold = 0f,
+            };
+
+            Assert.Equal(0f, unset.SpeciesDriftThreshold);
+            Assert.Equal(Trajectory(unset), Trajectory(explicitZero));
+
+            // The fast path itself: with the knob off, nothing is ever compared and every
+            // creature — founder or offspring — reads species 0.
+            var direct = new World(unset, seed: 5);
+            for (int i = 0; i < 60; i++) direct.Step(1f);
+
+            Assert.NotEmpty(direct.Living);
+            Assert.Empty(direct.Species);
+            foreach (Organism creature in direct.Living) Assert.Equal(0u, creature.SpeciesId);
+        }
+
+        [Fact]
+        public void AChildOneSmallParameterMutationAwayStaysInItsParentsSpeciesAtAGenerousThreshold()
+        {
+            var config = new RunConfig
+            {
+                Light = new LightModel(300f, 12f),
+                MinimumPopulation = 20,
+                MaximumPopulation = 400,
+
+                // Generous: even repeated scalar drift across a run this short has no realistic
+                // path to a distance this large.
+                SpeciesDriftThreshold = 20f,
+            };
+
+            // Every operator that could change topology or cell type is switched off, so every
+            // birth here really is "one small parameter mutation" and nothing else — only the
+            // scalar-perturbation operator fires, and lightly (half the default spread).
+            config.Mutation.ScalarChance = 1f;
+            config.Mutation.ScalarStdDev = 0.05f;
+            config.Mutation.AddNodeChance = 0f;
+            config.Mutation.AddEdgeChance = 0f;
+            config.Mutation.RemoveEdgeChance = 0f;
+            config.Mutation.AddNeuronChance = 0f;
+            config.Mutation.RemoveNeuronChance = 0f;
+            config.Mutation.RewireInputChance = 0f;
+            config.Mutation.NeuronOpChance = 0f;
+            config.Mutation.JointTypeChance = 0f;
+            config.Mutation.FlagChance = 0f;
+            config.Mutation.RecursiveLimitChance = 0f;
+            config.Mutation.ShapeChance = 0f;
+            config.Mutation.CellTypeChance = 0f;
+            config.Mutation.BroodSizeChance = 0f;
+            config.Mutation.EndowmentChance = 0f;
+
+            var world = new World(config, seed: 7);
+
+            // Every id's species, recorded the first time it is seen alive — which is always no
+            // later than the step it was born, since Reproduce() runs before EnforceFloor and a
+            // parent that reproduced this step is still in Living when this loop reads it. That
+            // makes a parent's species readable here even on a later step, after it has died.
+            var seenSpecies = new Dictionary<long, uint>();
+            int checkedChildren = 0;
+
+            // With almost every operator switched off, light this generous covers upkeep for
+            // nearly everybody — §5A.7's photosynthetic mat — so a runaway is an ordinary way for
+            // this window to end and not a reason to discard what was already checked.
+            try
+            {
+                for (int i = 0; i < 400; i++)
+                {
+                    world.Step(1f);
+
+                    foreach (Organism creature in world.Living)
+                    {
+                        if (creature.ParentId >= 0 &&
+                            seenSpecies.TryGetValue(creature.ParentId, out uint parentSpecies))
+                        {
+                            Assert.Equal(parentSpecies, creature.SpeciesId);
+                            checkedChildren++;
+                        }
+
+                        seenSpecies[creature.Id] = creature.SpeciesId;
+                    }
+                }
+            }
+            catch (PopulationRunawayException)
+            {
+                // Not the claim under test — see the remark above.
+            }
+
+            Assert.True(checkedChildren > 0, "no reproduction happened in this window to check");
+        }
+
+        [Fact]
+        public void SpeciesIdsReplayIdenticallyForTheSameConfigAndSeed()
+        {
+            RunConfig Config() => new RunConfig
+            {
+                Light = new LightModel(300f, 12f),
+                MinimumPopulation = 20,
+                MaximumPopulation = 300,
+                SpeciesDriftThreshold = 2f,
+            };
+
+            List<(long Id, uint SpeciesId)> Trajectory()
+            {
+                var world = new World(Config(), seed: 11);
+                var rows = new List<(long, uint)>();
+
+                for (int i = 0; i < 300; i++)
+                {
+                    world.Step(1f);
+                    foreach (Organism creature in world.Living) rows.Add((creature.Id, creature.SpeciesId));
+                }
+
+                return rows;
+            }
+
+            List<(long Id, uint SpeciesId)> first = Trajectory();
+            List<(long Id, uint SpeciesId)> second = Trajectory();
+
+            Assert.Equal(first.Count, second.Count);
+            for (int i = 0; i < first.Count; i++)
+            {
+                Assert.Equal(first[i], second[i]);
+            }
+        }
+
+        [Fact]
+        public void FloorFoundersEachGetADistinctSpecies()
+        {
+            var config = new RunConfig
+            {
+                Light = new LightModel(300f, 12f),
+                MinimumPopulation = 10,
+                FloorSpawnsPerStep = 10,
+                SpeciesDriftThreshold = 1f,
+            };
+
+            var world = new World(config, seed: 3);
+            world.Step(1f); // one step is enough for the whole founding cohort to spawn
+
+            Assert.True(world.Living.Count > 1, "need more than one founder to test distinctness");
+
+            var speciesIds = new HashSet<uint>();
+            foreach (Organism creature in world.Living)
+            {
+                // Still all founders, not reproduction — Reproduce() runs before EnforceFloor,
+                // and the population was 0 before this step's floor fired, so nothing could
+                // have reproduced yet.
+                Assert.Equal(0, creature.GenerationDepth);
+                Assert.True(
+                    speciesIds.Add(creature.SpeciesId),
+                    $"species {creature.SpeciesId} repeated among founders");
+            }
+
+            Assert.Equal(world.Living.Count, speciesIds.Count);
+        }
     }
 }

@@ -500,6 +500,90 @@ namespace Evosim.Core
         public float SenescenceDoublingSeconds { get; set; }
 
         /// <summary>
+        /// Drift threshold θ for D057's species boundary — a child founds a new species when its
+        /// <see cref="SpeciesDistance"/> from its parent's species' founding genome exceeds this.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Zero means off, and off means no distance computations run at all</b> — every
+        /// creature is species 0, bit-identical to a build with no species machinery. D057 names
+        /// species accounting pure instrumentation, and that has to hold at the level of
+        /// performance too: a founder lookup and a genome comparison on every birth is not free,
+        /// and a run that never asks the question should not pay for one it never uses.
+        /// </para>
+        /// <para>
+        /// <b>Read against <see cref="SpeciesCellTypeWeight"/>:</b> setting that weight at or
+        /// above this threshold makes a single cell-type-changing mutation alone exceed it, which
+        /// is D057's deliberate commitment — gaining or losing a trophic trade is always a
+        /// speciation event by construction.
+        /// </para>
+        /// <para>⚠ Provisional (D057). Calibrated the project's usual way: measure the
+        /// distribution of single-mutation distances in a reference world and set this several
+        /// typical-mutation-lengths out — see <c>SpeciesCalibration</c> in
+        /// Evosim.Core.Tests, which prints that distribution rather than assuming one.
+        /// <c>EVOSIM_SPECIES_THETA</c> in the header.</para>
+        /// </remarks>
+        [Tunable("species")]
+        public float SpeciesDriftThreshold { get; set; }
+
+        /// <summary>
+        /// Distance per unit of cell-type-multiset difference in <see cref="SpeciesDistance"/> — D057.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="SpeciesDistance"/>'s cell-type term already returns exactly 1.0 for one node
+        /// changing trade — the multiset symmetric difference of one type lost and one type
+        /// gained, halved — so this weight is directly "distance contributed per node that
+        /// changes trade" and can be read off against <see cref="SpeciesDriftThreshold"/> without
+        /// further arithmetic. ⚠ Provisional — §5A.1's cell-type axis has no measured distance of
+        /// its own yet; defaulted equal to the other two weights until a calibration round says
+        /// otherwise.
+        /// </remarks>
+        [Tunable("species")]
+        public float SpeciesCellTypeWeight { get; set; } = 1f;
+
+        /// <summary>
+        /// Distance per unit of node/edge/brain-connectivity difference in
+        /// <see cref="SpeciesDistance"/> — D057.
+        /// </summary>
+        /// <remarks>⚠ Provisional — see <see cref="SpeciesCellTypeWeight"/>.</remarks>
+        [Tunable("species")]
+        public float SpeciesTopologyWeight { get; set; } = 1f;
+
+        /// <summary>
+        /// Distance per unit of normalised continuous body-field difference in
+        /// <see cref="SpeciesDistance"/> — D057.
+        /// </summary>
+        /// <remarks>⚠ Provisional — see <see cref="SpeciesCellTypeWeight"/>.</remarks>
+        [Tunable("species")]
+        public float SpeciesParameterWeight { get; set; } = 1f;
+
+        /// <summary>
+        /// Distance per unit of normalised continuous brain-field difference in
+        /// <see cref="SpeciesDistance"/> — D057, and the owner's amendment to it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Zero by default, and deliberately not equal to the other three weights.</b> Brain
+        /// weights and oscillator parameters are currently close to selectively neutral in this
+        /// world — movement has never paid its energy cost and perception is four of ten sensor
+        /// channels (CLAUDE.md's own state-of-play) — so nothing is holding a connection weight
+        /// anywhere in particular, and an unselected continuous value random-walks. Folded into a
+        /// founder-anchored threshold at any positive weight, that walk would eventually cross it
+        /// on drift alone and call the crossing speciation: a stopwatch on noise, not a boundary.
+        /// </para>
+        /// <para>
+        /// The knob exists to be raised between rounds once brains are worth having and holding.
+        /// At that point it is what lets two lineages sharing one body plan but controlling it
+        /// differently — cryptic species — show up as more than one, which
+        /// <see cref="SpeciesTopologyWeight"/> alone cannot: it already prices a rewired
+        /// connection as present-or-absent, not as how differently two present connections are
+        /// weighted.
+        /// </para>
+        /// </remarks>
+        [Tunable("species")]
+        public float SpeciesBrainWeight { get; set; }
+
+        /// <summary>
         /// A stable digest of everything above — the <c>configHash</c> of §7.
         /// </summary>
         /// <remarks>

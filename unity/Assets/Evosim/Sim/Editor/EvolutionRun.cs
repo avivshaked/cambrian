@@ -107,6 +107,11 @@ namespace Evosim.Sim.EditorTools
             // grazeable including the floor layer.
             float floorRefuge = Env("EVOSIM_FLOOR_REFUGE", new RunConfig().FloorRefugeMetres);
 
+            // D057. Genome-distance drift threshold for species accounting — pure instrumentation,
+            // read by nothing but this report. 0 is the world every earlier run measured, where
+            // species machinery never runs at all and every creature reads species 0.
+            float speciesTheta = Env("EVOSIM_SPECIES_THETA", new RunConfig().SpeciesDriftThreshold);
+
             // D053. The world's footprint — the aperture the sun shines through, the volume of
             // every layer, and the denominator of shading all at once, so halving it halves the
             // world's total income and stock at identical per-creature margins. The rescale knob:
@@ -212,6 +217,7 @@ namespace Evosim.Sim.EditorTools
             config.MatterRemineralisationPerSecond = remin;
             config.ExcretionPerJoule = excretion;
             config.FloorRefugeMetres = floorRefuge;
+            config.SpeciesDriftThreshold = speciesTheta;
             config.WorldAreaSquareMetres = area;
             config.FloorClosesAfterSeconds = floorCloses;
             config.MaximumPopulation = maxPopulation;
@@ -249,6 +255,7 @@ namespace Evosim.Sim.EditorTools
                 " · remin " + remin + " /s" +
                 " · excretion " + excretion + " /J" +
                 " · refuge " + floorRefuge + " m" +
+                " · speciesTheta " + speciesTheta +
                 " · area " + area + " m2" +
                 (floorCloses > 0f ? " · floor closes " + floorCloses + " s" : " · floor open") +
                 " · ceiling " + maxPopulation +
@@ -472,9 +479,15 @@ namespace Evosim.Sim.EditorTools
             double liftHeld = 0d, buoyantDepth = 0d;
             int genMin = int.MaxValue, genMax = 0;
 
+            // D057. Distinct species IDs among the living — pure instrumentation, read nowhere
+            // but here. Among the living rather than World.Species.Count, which also counts
+            // species nobody alive still belongs to.
+            var speciesSeen = new HashSet<uint>();
+
             for (int i = 0; i < world.Living.Count; i++)
             {
                 Organism creature = world.Living[i];
+                speciesSeen.Add(creature.SpeciesId);
 
                 spend += creature.Lifetime.Expenditure;
                 workSpend += creature.Lifetime.Work;
@@ -634,7 +647,8 @@ namespace Evosim.Sim.EditorTools
                 .Field("secondsSinceFloorFired", world.SecondsSinceFloorFired)
                 .Field("generationMin", genMin)
                 .Field("generationMax", genMax)
-                .Field("auditResidual", world.AuditResidual));
+                .Field("auditResidual", world.AuditResidual)
+                .Field("species", speciesSeen.Count));
 
             var c = CultureInfo.InvariantCulture;
 
@@ -717,6 +731,10 @@ namespace Evosim.Sim.EditorTools
                 genMin.ToString(c),
                 genMax.ToString(c),
                 residual.ToString("0.0000", c) + "%",
+
+                // D057. Appended at the end, per every other column here: existing awk scripts
+                // index columns by position, so nothing already written may move.
+                speciesSeen.Count.ToString(c),
             };
 
             LastFloorSpawns = world.FloorSpawns;
@@ -741,6 +759,7 @@ namespace Evosim.Sim.EditorTools
             "**rise m**", "age s", "sun", "**shade %**",
             "**float**", "**flt inh**", "lift", "**flt m**",
             "mat top", "mat deep", "**mat blk**", "**floor**", "gen min", "gen max", "audit",
+            "species",
         };
 
         private static string Header() =>

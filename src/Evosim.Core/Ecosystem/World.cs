@@ -70,6 +70,19 @@ namespace Evosim.Core
         /// </summary>
         private ulong _nextIndex;
 
+        /// <summary>
+        /// Species registry — D057. Founding genome and founding time, keyed by
+        /// <see cref="Organism.SpeciesId"/>. Empty for the life of a run whose
+        /// <see cref="RunConfig.SpeciesDriftThreshold"/> is 0.
+        /// </summary>
+        private readonly Dictionary<uint, SpeciesFounder> _species = new Dictionary<uint, SpeciesFounder>();
+
+        /// <summary>
+        /// Counter behind every species id, assigned in the same world-step order as everything
+        /// else here — D057 — so that <c>(genome, seed, configHash)</c> replays it exactly.
+        /// </summary>
+        private uint _nextSpeciesId;
+
         /// <summary>The seed this world was constructed with. Every creature's seed derives from it.</summary>
         public ulong Seed { get; }
 
@@ -175,6 +188,9 @@ namespace Evosim.Core
         public double ElapsedSeconds { get; private set; }
 
         public IReadOnlyList<Organism> Living => _living;
+
+        /// <summary>Every species ever founded, oldest first by id — D057. See <see cref="SpeciesFounder"/>.</summary>
+        public IReadOnlyDictionary<uint, SpeciesFounder> Species => _species;
 
         /// <summary>Creatures ever created by the floor, and ever born to a parent — D021.</summary>
         public long FloorSpawns { get; private set; }
@@ -619,7 +635,7 @@ namespace Evosim.Core
 
             Organism child = Admit(
                 childGenome, body, BirthKind.Reproduction, seed, parent.Id,
-                parent.GenerationDepth + 1, endowment, tissue, parent.HeightY);
+                parent.GenerationDepth + 1, endowment, tissue, parent.HeightY, parent);
 
             if (child != null)
             {
@@ -675,7 +691,7 @@ namespace Evosim.Core
                 Organism founder = Admit(
                     genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
                     energy: Config.FounderEnergyJoules,
-                    tissue: Metabolism.TissueJoules(body, Config), heightY: height);
+                    tissue: Metabolism.TissueJoules(body, Config), heightY: height, parent: null);
 
                 // A stillborn founder is still an attempt, and counting it keeps the floor's
                 // trickle a trickle. Not counting it would let a step retry until something
@@ -704,9 +720,15 @@ namespace Evosim.Core
         /// and cannot die, occupying a slot against the population floor forever. It is reachable
         /// today: §4.5's extinction-by-shrinking prunes the root as readily as any other node.
         /// </remarks>
+        /// <param name="parent">
+        /// The parent, for <see cref="AssignSpecies"/> — null for a floor founder, which has none.
+        /// Distinct from <paramref name="parentId"/> (which a floor founder also sets to -1)
+        /// because species assignment needs the actual organism, not just its id, to read its
+        /// current <see cref="Organism.SpeciesId"/>.
+        /// </param>
         private Organism Admit(
             Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
-            int generationDepth, float energy, float tissue, float heightY)
+            int generationDepth, float energy, float tissue, float heightY, Organism parent)
         {
             if (phenotype.PartCount == 0)
             {
@@ -741,7 +763,78 @@ namespace Evosim.Core
             // them would let a population manufacture energy by breeding.
             if (kind == BirthKind.Floor) EnergyIn += energy + tissue;
 
+            // D057. After the stillbirth check, not before: a genome that never became a creature
+            // has no species to found or inherit, and computing one would be wasted work on top
+            // of the mutate-and-develop pass that already found it unviable.
+            AssignSpecies(creature, parent);
+
             return creature;
+        }
+
+        /// <summary>
+        /// Assigns <see cref="Organism.SpeciesId"/> at birth — D057. The only place this project
+        /// writes that property; nothing else may read it but a report (Organism's own remarks).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Three cases, in the order D057 states them.</b> The threshold off is the fast path
+        /// its own doc comment promises — species 0, no registry touched, no distance computed.
+        /// A floor founder has no lineage to measure from and simply founds its own. Everyone
+        /// else is compared once against their parent's species' founding genome: within θ,
+        /// inherit; past it, found — the child's own genome becomes the new reference, exactly as
+        /// D057 specifies.
+        /// </para>
+        /// <para>
+        /// Nothing here touches <see cref="Rng"/> or reads <see cref="ElapsedSeconds"/> for
+        /// anything but a founding timestamp, so it changes no draw any other system depends on —
+        /// the whole reason D057 can be pure instrumentation rather than a second thing to keep in
+        /// sync with the mutation stream.
+        /// </para>
+        /// </remarks>
+        private void AssignSpecies(Organism creature, Organism parent)
+        {
+            if (Config.SpeciesDriftThreshold <= 0f)
+            {
+                creature.SpeciesId = 0;
+                return;
+            }
+
+            if (parent == null)
+            {
+                FoundSpecies(creature);
+                return;
+            }
+
+            if (!_species.TryGetValue(parent.SpeciesId, out SpeciesFounder founder))
+            {
+                // Every species that can be read while the threshold is on was itself founded by
+                // this method, so a miss here is a bookkeeping bug — a creature carrying a species
+                // id nothing registered — rather than a data condition callers should absorb.
+                throw new InvalidOperationException(
+                    $"Creature {parent.Id} carries species {parent.SpeciesId}, which has no " +
+                    "founder on record.");
+            }
+
+            float distance = SpeciesDistance.Between(
+                creature.Genome, founder.Genome,
+                Config.SpeciesCellTypeWeight, Config.SpeciesTopologyWeight,
+                Config.SpeciesParameterWeight, Config.SpeciesBrainWeight);
+
+            if (distance > Config.SpeciesDriftThreshold)
+            {
+                FoundSpecies(creature);
+            }
+            else
+            {
+                creature.SpeciesId = parent.SpeciesId;
+            }
+        }
+
+        private void FoundSpecies(Organism creature)
+        {
+            uint id = _nextSpeciesId++;
+            creature.SpeciesId = id;
+            _species[id] = new SpeciesFounder(creature.Genome, ElapsedSeconds);
         }
 
         /// <summary>Creatures that have died, oldest first. Cleared by <see cref="TakeDead"/>.</summary>
