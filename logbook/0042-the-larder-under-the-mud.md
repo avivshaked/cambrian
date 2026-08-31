@@ -7,10 +7,10 @@ arm was launched.
 
 ## The hypothesis
 
-Round 6 (logbook/0041) fixed the producers and left one failure standing: every consumer
+Round 6 ([logbook/0041](0041-the-sea-digests.md)) fixed the producers and left one failure standing: every consumer
 lineage that establishes eats the deep water toward zero and busts — seven rounds, seven
 busts, and in s3 the bust took the whole world with it. Nothing damps a consumer here but
-its food. D055 gives the food a refuge: the floor layer of the detritus field cannot be
+its food. [D055](../DECISIONS.md#d055) gives the food a refuge: the floor layer of the detritus field cannot be
 grazed, and what settles into it re-enters the water only through the mixing that already
 exists.
 
@@ -25,8 +25,9 @@ a chain arrives at all.
 `FloorRefugeMetres` = 1 — exactly the floor layer. Two numbers say what that protects and
 how fast it leaks, so a wrong estimate is visible later. In round 6's s2 at t=30,000 the
 floor layer held **8.8% of ~300 kJ** of world detritus — a refuge stock of ~26 kJ, denser
-than any water layer. But at mixing 0.2 m²/s over 1 m layers, `Mix` moves **20%/s of the
-interface difference**: the refuge is *not* a slow-release larder — a stripped layer above
+than any water layer. The second number, though, deliberately reframes what kind of
+mechanism this is: at mixing 0.2 m²/s over 1 m layers, `Mix` moves **20%/s of the
+interface difference**, so the refuge is *not* a slow-release larder — a stripped layer above
 drains it in tens of seconds. What the refuge actually is, is a **boundary condition**: a
 mouth on the floor earns nothing (today a sunk lineage grazes the pile it lands on), and
 grazing can never invert the bottom gradient — the last metre's stock stays at or above
@@ -55,7 +56,7 @@ declared as a censor exactly as in 0041: a run it ends is scored at its last sam
 | W3 | no trophic collapse: in no arm does the chain exceed 40% of `alive` and the world then go extinct (s3's signature) | `absorpt`, `alive`, footer |
 | W4 | **the bust softens**: no established chain (peak `absorpt` ≥ 100) falls below 10 while its world still lives (round 6: s1 fell 910 → 5; s3's died entirely) | `absorpt` |
 | W5 | a mutant arrives in ≥3 of 5 arms (round-6 rate: 4 of 5) | `absorpt`, `inherit` |
-| W6 | **success, the standing rule read at the last sample:** ≥3 of 5 arms not extinct, `inherit` ≥ 1 for ≥20 consecutive samples, `absorpt` ≥ 10 at the last sample | as 0037's Q5 |
+| W6 | **success, the standing rule read at the last sample:** ≥3 of 5 arms not extinct, `inherit` ≥ 1 for ≥20 consecutive samples, `absorpt` ≥ 10 at the last sample | as [0037](0037-the-net-comes-down.md)'s Q5 |
 | W7 | a lineage that peaks above 100 falls below 20 and rises above 100 again — the eighth attempt | `absorpt` |
 
 **The goal is met if W1, W2 and W6 hold** — with the ceiling-censor caveat attached to any

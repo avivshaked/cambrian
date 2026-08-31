@@ -57,6 +57,68 @@ later is worth less than a scrappy one written the same afternoon.
 Entries about things that failed are worth more than entries about things that worked, and
 are the ones most likely to go unwritten.
 
+## Reading the entries — a key for the newcomer
+
+The entries are written for two audiences at once: agents continuing the work, and humans
+reading the research cold. From [0036](0036-the-floor-gives-back.md) onward the entries
+follow a pre-registration protocol — everything above each entry's *Results* line
+(hypothesis, predictions, what would falsify each, and what either outcome would mean) was
+written and committed **before** the experiment ran, so the git history proves the
+predictions preceded the data. Those entries lean on a shared vocabulary that this section
+defines once, rather than each entry re-explaining it.
+
+**An *arm*** is one experiment: one world configuration and one random seed, run for a
+budget of simulated seconds. Arms are named like `d057-s2` (round `d057`, seed 2) and each
+runs on a ***worker*** — a copy of the Unity project, so several arms can run at once
+without sharing state. Each arm writes a ***run report*** (`runs/<name>.md`, gitignored):
+a header line recording every setting it actually ran with — the settings truth, always
+trusted over the launch command — then one table row per ~100 simulated seconds (a
+***sample***), and a footer saying how the run ended.
+
+**How a run can end.** By its **budget** (the simulated seconds it was asked for — the
+only ending that counts as the world's own answer); by **extinction**; by the **wall
+clock** (a real-time limit on the machine); or by the population **ceiling** (a maximum
+the instrument can afford to simulate, `MaximumPopulation` — a run the ceiling ends is
+called a ***runaway***). The last two are limits of the instrument, not of the world, so a
+run they end is called ***censored***, in the survival-analysis sense: cut short for a
+reason external to what was being measured, so its data is read up to the cut and never
+treated as an outcome. Every pre-registration says in advance how censored runs will be
+scored. One more habit of the entries: "seed" names the RNG seed an arm ran with, and by
+metonymy the arm itself — "three seeds in five died" means three of the five arms.
+
+**The vocabulary of what happens in the water.** The ***population floor*** (no relation
+to the sea floor) is a founding mechanism: while active, it trickles fresh random genomes
+into any world that falls to 40 creatures. "The floor closes at 3,000 s" means it stops
+firing then — after that, a world lives or dies on its own. ***Founding*** is the lottery
+of those first random genomes producing a breeding population at all. A ***drought*** is
+the recurring crisis of this world's economy: producers lock the surface's free matter
+into their bodies, new conceptions are refused for want of matter, and births stop until
+matter returns. A ***chain*** (or *absorptive lineage*) is the food chain's second level:
+creatures carrying absorptive (detritus-eating) tissue inherited from a parent — consumers
+that live on dead matter rather than light, where a ***producer*** lives on light alone. A
+chain ***busts*** when it eats its food column faster than the food returns and collapses.
+***Upkeep*** is the standing energy cost of being a body, per second; ***break-even*** is
+the food density at which an absorptive's intake exactly pays its upkeep — below it,
+eating loses money. And "D051"-style numbers are entries in
+[`DECISIONS.md`](../DECISIONS.md), where the reasoning behind each mechanism lives.
+
+**The report columns the entries quote**, with what each number means:
+
+| column | meaning |
+|---|---|
+| `t`, `alive`, `births` | simulated seconds; living creatures; cumulative births |
+| `absorpt` | living creatures with absorptive (detritus-eating) tissue — the chain's size |
+| `inherit` | of those, how many had an absorptive parent — a lineage, not a fresh mutation |
+| `det deep` | detritus energy density (J/m³) in the deep water — the chain's larder |
+| `mat top` | free matter density at the surface — what conceptions are paid from |
+| `mat blk` | conceptions refused for want of matter since the last row — the drought gauge |
+| `floor` | creatures the population floor spawned since the last row — 0 means the world is on its own |
+| `gen min` / `gen max` | lowest and highest generation alive — `gen min` 0 means founders are still present |
+
+None of this is specification — what the mechanisms *are* lives in
+[`DESIGN.md`](../DESIGN.md) and the reasoning in [`DECISIONS.md`](../DECISIONS.md); this
+key only translates the entries' reporting shorthand.
+
 ## Entries
 
 | # | Date | Entry |

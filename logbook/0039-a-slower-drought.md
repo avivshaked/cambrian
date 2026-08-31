@@ -7,10 +7,10 @@ arm was launched.
 
 ## The hypothesis
 
-logbook/0038 split the trap by density. At `excessDensity` 0.05 and 0.1 a population whose
+[logbook/0038](0038-a-lighter-world.md) split the trap by density. At `excessDensity` 0.05 and 0.1 a population whose
 births stop sinks out of the light within a thousand seconds, and no fertility can save it.
 At 0.02 it sinks slowly enough to stay lit — and died anyway in `d053-s3`, because the
-drought had left it one cohort, and under D038's wear (upkeep ×(1 + age/3000), yield halved
+drought had left it one cohort, and under [D038](../DECISIONS.md#d038)'s wear (upkeep ×(1 + age/3000), yield halved
 at 3,000 s) a cohort past ~1,300 s has no surplus to breed with. The drought was shorter
 than a creature's reproductive life; the cohort it left behind was not.
 
@@ -22,7 +22,7 @@ form, a faster matter return, is held in reserve).
 ## The world
 
 Round 3's world (mixing 0.2, `excessDensity 0.02`, floor closes at 3,000 s, remin 0, the
-D048 reference settings) with two changes, one of them instrumental:
+[D048](../DECISIONS.md#d048) reference settings) with two changes, one of them instrumental:
 
 | setting | value | env var | note |
 |---|---|---|---|
@@ -41,7 +41,7 @@ Arms `d054-s1..s5`, launched as workers free.
 | S3 | after every drought (`mat blk` > 1,000 in a window after t=3,000), `births` moves again within 2,000 s and mean age at that point is below 3,000 s | `mat blk`, `births`, `age s` |
 | S4 | no arm reaches 8,000 — a lit population at 0.02 is limited by its droughts, not by the instrument | run footer |
 | S5 | a mutant arrives (`absorpt` > 0, `inherit` = 0, after t=3,000) in ≥ 2 of 5 arms | `absorpt`, `inherit` |
-| S6 | **success:** ≥ 3 of 5 arms not extinct, with `inherit` ≥ 1 for ≥ 20 consecutive samples and `absorpt` ≥ 10 at the last sample | as 0037's Q5 |
+| S6 | **success:** ≥ 3 of 5 arms not extinct, with `inherit` ≥ 1 for ≥ 20 consecutive samples and `absorpt` ≥ 10 at the last sample | as [0037](0037-the-net-comes-down.md)'s Q5 |
 | S7 | a lineage that peaks above 100 falls below 20 and rises above 100 again | `absorpt` |
 
 **The goal is met if S1, S2, S4 and S6 hold.**
@@ -70,7 +70,7 @@ t=15,000.
 
 **Two of five seeds ran.** Seeds 3–5 were not launched: the owner's instruction on the
 evening of the 29th was to let the running arms finish and start nothing new, and by then
-D052 (the excretion contract) had been decided as the next step regardless of this round's
+[D052](../DECISIONS.md#d052) (the excretion contract) had been decided as the next step regardless of this round's
 outcome. So the scores below are on n=2 and the round is *open*, not scored — HANDOFF.md
 carries the launch command for the other three.
 
@@ -90,6 +90,10 @@ carries the launch command for the other three.
 | 25,500 | 6,497 | 25,757 | 0.001 | 134,157 | −20.3 | 1,273 | 41 |
 | 25,900 | 7,599 | 27,410 | 0.001 | 161,854 | −22.4 | 1,276 | **348** (346 inherited) |
 | 25,998 | **8,004 — RUNAWAY** | | | | | | |
+
+(A blank cell is a value not transcribed from the run report, not a zero and not missing
+data — the report records every column at every sample; the table copies only what the
+argument reads.)
 
 Three things happened here that no earlier arm showed. First, the population **bred straight
 through an eight-thousand-second drought** (t≈2,000–10,000, surface matter at 0.005–0.008/m³

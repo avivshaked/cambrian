@@ -29,9 +29,9 @@ measurement of it — which is a confound, and the control arm exists to carry i
 
 ## The world
 
-D048+D050's reference world with one change, mixing 2 → 0.2. Every arm shares these; the run
-header is the authority and must be checked against this table after launch (logbook/0027,
-0034 — an inherited default has burned three arms):
+[D048](../DECISIONS.md#d048)+[D050](../DECISIONS.md#d050)'s reference world with one change, mixing 2 → 0.2. Every arm shares these; the run
+header is the authority and must be checked against this table after launch ([logbook/0027](0027-the-prize-was-smaller-than-the-entry-fee.md),
+[0034](0034-the-ocean-had-no-top.md) — an inherited default has burned three arms):
 
 | setting | value | env var | note |
 |---|---|---|---|
@@ -57,8 +57,9 @@ machine's limit), `ctl-s3` follows when a slot frees.
 
 Steady 1-D balance above the floor with sink speed v and diffusivity D: sinking flux `v·c`
 down equals diffusive flux `D·dc/dz` up, so `c(z) = c₀·exp(−v·z/D)` with `D/v = 10 m`.
-Water-column stock `W = c₀·A·D/v = 4,000·c₀` J. At the floor, the leak `r·F` equals what
-sinks in from the bottom water, `v·A·c₀`, so `F = v·A·c₀/r = 800·c₀` J at r = 0.01.
+Water-column stock `W = c₀·A·D/v = 4,000·c₀` J, with `A` the world's 400 m² area. At the
+floor, the leak `r·F` — `r` being the remineralisation rate under test, 0.01 s⁻¹ — equals
+what sinks in from the bottom water, `v·A·c₀`, so `F = v·A·c₀/r = 800·c₀` J at r = 0.01.
 
 - **Treatment floor share at steady state: F/(F+W) = 800/4,800 ≈ 17%.**
 - Total detritus T grew at roughly 10 J/s in `d050-heavy` with nobody eating it (52 kJ at
@@ -66,7 +67,9 @@ sinks in from the bottom water, `v·A·c₀`, so `F = v·A·c₀/r = 800·c₀` 
   the floor (the new `det deep` column, 90% of depth) `≈ 10.4·e^(−0.6) ≈ 5.7 J/m³`; at
   T = 100 kJ (t≈10,000) about 21 and 11.4 respectively. Diffusive relaxation over 10 m is
   `L²/D = 500 s`, so the profile is quasi-steady on the run's timescale.
-- **Break-even for `AbsorptiveCell`: 4 W/m³ upkeep ÷ clearance 1 = 4 J/m³**, ×(1 + age/3000)
+- **Break-even for `AbsorptiveCell`: 4 W/m³ upkeep ÷ clearance 1 = 4 J/m³** (clearance is
+  the water an absorptive cell strains, m³ per second per m³ of its own tissue, so upkeep
+  over clearance is the food density at which eating exactly pays), ×(1 + age/3000)
   under senescence wear. **Margin at the bottom water at t≈5,000: 10.4/4 ≈ 2.6** — passes the
   ≥2 rule. At `det deep` it is 1.4 at t≈5,000 and 2.9 at t≈10,000.
 - **Control:** the only stock above the floor is in transit. Deaths at ~10 J/s sink through
@@ -86,10 +89,12 @@ sinks in from the bottom water, `v·A·c₀`, so `F = v·A·c₀/r = 800·c₀` 
 | P3 | treatment | `% on floor` plateaus between 10% and 25% after t≈2,000 | `% on floor` |
 | P4 | treatment | `det deep` ≥ 4 J/m³ by t=5,000 and ≥ 8 by t=10,000 | `det deep` |
 | P5 | treatment | `absorpt` > 0 at some sample after t=3,000 in every seed (a mutant arrives) | `absorpt` |
-| P6 | treatment | **success**: `inherit` ≥ 1 for ≥ 20 consecutive samples (2,000 s) with `floor` = 0 throughout the window, in ≥ 2 of 3 seeds | `inherit`, `floor`, `gen min` read together |
+| P6 | treatment | **success**: `inherit` ≥ 1 for ≥ 20 consecutive samples (2,000 s) with `floor` = 0 throughout the window — no spawns from the *population floor*, the rescue rule that trickles fresh random founders into any world that drops to forty creatures — in ≥ 2 of 3 seeds | `inherit`, `floor`, `gen min` read together |
 | P7 | control | P6's criterion met in ≤ 1 of 3 seeds | same |
 
-**The goal is met if P6 and P7 both hold.** A share is never evidence (logbook/0029): P6 is
+A *sample* is one row of the run report, written every 100 simulated seconds — twenty
+consecutive samples is 2,000 s. The tables quoted in this and later entries show only a
+subset of those rows. **The goal is met if P6 and P7 both hold.** A share is never evidence ([logbook/0029](0029-the-floor-kept-putting-the-muscles-back.md)): P6 is
 read from `inherit` with `floor` silent, not from `absorpt`.
 
 ## The two-sided reading, written before the answer
@@ -163,12 +168,13 @@ P6 false means establishment — the spatial hypothesis.
 
 **What was wrong, in one line:** a decision was built on a code fact that was checked by
 reading the code's structure and not its loop bounds — the same class of error as
-logbook/0019's knobs that reached nothing, in the other direction: a knob that reaches
+[logbook/0019](0019-three-knobs-that-reached-nothing.md)'s knobs that reached nothing, in the other direction: a knob that reaches
 something something else already does.
 
 ### Final — six arms, scored by `read-arm.ps1` against the rule above
 
-All six ran to t=20,000 except `rem-s2`, the largest population, which its six-hour wall
+P1–P4 were settled in the interim section above; this section scores the remaining
+P5–P7. All six ran to t=20,000 except `rem-s2`, the largest population, which its six-hour wall
 budget ended at t≈16,600 (past the t≥10,000 the pre-registration required). No arm hit the
 5,000 ceiling.
 
@@ -213,7 +219,7 @@ absorptive appears after t=3,000) held in all six.
 **The goal, scored honestly:** *a world holds a food chain, replicated* — yes, six seeds,
 four lineages, three of them the world's own mutants. *Self-sustaining* — not shown: the
 producers leaned on the floor in three arms, and no lineage has yet been watched through a
-full boom–bust cycle. Round 2 (logbook/0037) closes the floor and doubles the budget.
+full boom–bust cycle. Round 2 ([logbook/0037](0037-the-net-comes-down.md)) closes the floor and doubles the budget.
 
 **The knob that mattered was mixing.** Nothing in this entry's mechanism did anything; the
 whole result is the world at 0.2 m²/s, which no one had run. The D/v arithmetic in the

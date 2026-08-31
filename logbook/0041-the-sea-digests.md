@@ -7,9 +7,9 @@ arm was launched.
 
 ## The hypothesis
 
-Round 5 (logbook/0040) closed the geometric road: no irradiance and no area gives this
+Round 5 ([logbook/0040](0040-right-sizing-the-dish.md)) closed the geometric road: no irradiance and no area gives this
 world a bounded living state, because its only response to scarcity is a death spiral —
-starving bodies sink out of the light and never return what they took. D052 built the
+starving bodies sink out of the light and never return what they took. [D052](../DECISIONS.md#d052) built the
 missing return: a living body pays matter back **at its own depth**, in proportion to
 upkeep, so a lit population regenerates the surface it feeds on while it is still alive
 to use it.
@@ -17,7 +17,9 @@ to use it.
 **The claim under test: with excretion on, droughts become shorter than a reproductive
 life, and the producer crashes of 0037–0040 do not happen.** The consumer question rides
 along: a steadier surface means a steadier detritus rain, which is the cheap version of
-fix 3 — a lineage's food may stop collapsing under it without any damping being built.
+fix 3 (damping on the consumer — the third of the owner's three candidate answers,
+enumerated in [logbook/0038](0038-a-lighter-world.md)) — a lineage's food may stop collapsing under it without any
+damping being built.
 
 ## The dose, derived honestly
 
@@ -52,7 +54,7 @@ plainly here rather than discovered later.
 | V3 | droughts shorten: no arm has `mat blk` > 1,000 for more than 8 consecutive samples (4,000 s); `d054-s1` carried one of ~16 | `mat blk` |
 | V4 | the crash signature disappears: no arm loses >80% of `alive` in 4,000 s while `mat top` > 0.1 with births frozen (0040's shading-sink spiral) | `alive`, `births`, `mat top` |
 | V5 | a mutant arrives in ≥3 of 5 arms (round-1 rate at full size) | `absorpt`, `inherit` |
-| V6 | **success, the standing rule read at the last sample:** ≥3 of 5 arms not extinct, `inherit` ≥ 1 for ≥20 consecutive samples, `absorpt` ≥ 10 at the last sample | as 0037's Q5 |
+| V6 | **success, the standing rule read at the last sample:** ≥3 of 5 arms not extinct, `inherit` ≥ 1 for ≥20 consecutive samples, `absorpt` ≥ 10 at the last sample | as [0037](0037-the-net-comes-down.md)'s Q5 |
 | V7 | a lineage that peaks above 100 falls below 20 and rises above 100 again — the seventh attempt | `absorpt` |
 
 **The goal is met if V1, V2 and V6 hold** — with the censor caveat above attached to any
@@ -67,7 +69,7 @@ claim made from it.
   limit question (which shading cannot answer — 0040) has become unavoidable.
 - **V2 fails:** excretion did not soften what kills producers, which would mean the crashes
   were never matter-first — the energy/darkness spiral of 0040 is primary, and the next
-  lever is a body that holds its depth (a D049 follow-up), not more matter.
+  lever is a body that holds its depth (a [D049](../DECISIONS.md#d049) follow-up), not more matter.
 - **V6 fails by bust with V2 holding (chains still collapse):** producers fixed, consumers
   still undamped — fix 3 gets its D-entry, with excretion kept.
 - **V7 holds anywhere:** the strongest positive result the project has ever had.
@@ -83,6 +85,10 @@ needed; the binding instrument turned out to be the **wall clock**, which cut s1
 t=24,093 (7,057 alive) and s5 at t=22,721 (4,933 alive), both after the 15,000 s
 interpretability line.
 
+In the fate column, *budget* means the arm completed the full 30,000 simulated seconds it
+was asked for — the clean ending; *wall* means the 600-minute real-time limit cut it
+first, which is a censored run, not an outcome.
+
 | arm | fate | producers | absorptive chain |
 |---|---|---|---|
 | s1 | wall, t=24,093 | 7,057 and climbing | arrived t≈6,000, **peak 910 at t=13,100**, bust to 5 by t=18,000, no rise |
@@ -97,7 +103,7 @@ interpretability line.
 |---|---|
 | V1 | **held** — zero floor spawns after t=3,100 in all five |
 | V2 | **held** — 1 of 5 extinct |
-| V3 | **failed on its letter, and the letter was wrong** — every arm has `mat blk` > 1,000 for 94–256 consecutive samples, but with thousands alive that threshold is background noise, not drought; the metric needed to be per capita. The substantive claim it aimed at is better read from V4 and the fates above |
+| V3 | **failed on its letter, and the letter was wrong** — every arm has `mat blk` > 1,000 for 94–256 consecutive samples, but with thousands alive that threshold is background noise, not drought — a blocked-conception count scales with how many creatures are alive to attempt conception each step, so at thousands alive a raw count sits above any fixed threshold even when no individual is short; the metric needed to be per capita. The substantive claim it aimed at is better read from V4 and the fates above |
 | V4 | **failed in s3** — the shading-sink spiral still exists (a population dying at −96 m under a recovered surface, births frozen by darkness). But **s2 broke it**: 1,615 → 269 at −41 m, then recovery — the first return from the dark in the project's history. The spiral is no longer always irreversible |
 | V5 | **held** — arrivals in s1, s3, s5 and (at its last sample) s4 |
 | V6 | **failed, 1 of 5** — only s5 satisfies all three clauses (not extinct; inherited ≥20 consecutive samples — it managed 80; ≥10 at the last sample — it had 50). s1's and s3's chains bust before their ends; s2 and s4 never got a chain |

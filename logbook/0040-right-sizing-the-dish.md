@@ -9,10 +9,10 @@ is a number for round 6 to use.
 
 ## The hypothesis
 
-logbook/0039 ended with the producers fixed and the world unscoreable: at senescence
+[logbook/0039](0039-a-slower-drought.md) ended with the producers fixed and the world unscoreable: at senescence
 10,000 s nothing kills a lit population at 0.02, and at irradiance 200 its equilibrium —
 which must exist, since light income is a finite rate and matter a finite stock — sits above
-the 8,000-creature ceiling the machine can afford. D053 chooses to scale the world down
+the 8,000-creature ceiling the machine can afford. [D053](../DECISIONS.md#d053) chooses to scale the world down
 rather than chase the equilibrium up.
 
 **The claim under test: lowering irradiance moves the round-4 world's equilibrium below the
@@ -23,7 +23,7 @@ alive, uncensored, at a population the machine can carry.
 ## The world
 
 Round 4's world unchanged — mixing 0.2, `excessDensity` 0.02, senescence 10,000 s, floor
-closes 3,000 s, remin 0, ceiling 8,000, D048 reference settings — except
+closes 3,000 s, remin 0, ceiling 8,000, [D048](../DECISIONS.md#d048) reference settings — except
 **`EVOSIM_IRRADIANCE`: 200 → {100, 50, 25}**, one arm each, seed 1, 30,000 s, 600 min wall.
 Arms `d055-i100`, `d055-i50`, `d055-i25`. Three arms leaves two workers free.
 
@@ -110,7 +110,10 @@ alive at t=16,500 before recovering — seed 1 at 200 was itself a near-death, s
 between 175 and 200 is thinner than the table makes it look.)
 
 What *would* rescale the dish is the knob D053 deferred: **`WorldAreaSquareMetres`** — the
-sun's aperture, every layer's volume, and the denominator of shading at once, so halving it
+sun's aperture, every layer's volume, and the denominator of shading at once (shading is
+the fraction of incoming light the standing population intercepts, computed from the
+creatures' total lit area *per unit world area* — so the same bodies in half the area
+darken the water twice as much), so halving it
 halves total income and total stock at identical per-creature margins. It was a tunable
 already; `EVOSIM_AREA` now reaches it, printed in the header as `· area X m2`.
 
@@ -134,7 +137,7 @@ Round 4's world exactly (irradiance 200, 0.02, senescence 10,000, floor 3,000, c
 smaller dish is the same world with smaller absolute numbers — the drought that left 73
 survivors at 400 m² leaves ~18 at 100 m², and demographic noise finishes what the drought
 started; then the dish cannot be shrunk without first softening droughts, and round 6
-(D052's excretion) runs at 400 m² with the ceiling accepted as a censor. If U2 fails, area
+([D052](../DECISIONS.md#d052)'s excretion) runs at 400 m² with the ceiling accepted as a censor. If U2 fails, area
 is not the clean rescale the code reading says it is — find what else reads 400.
 
 ### Final — round 5b, scored
@@ -147,7 +150,7 @@ births froze with *matter recovered* (top layer 0.37–0.53/m³, nothing blocked
 alive, and the population then sank as one — a100-s2 was at mean depth −55 m by t=8,000
 with 541 alive and its births already over; the last survivors drifted below −100 m, *well
 below the 60 m nutrient field*, ageing at senescence-10,000 rates in water that is
-physically bottomless for a body (the mirror of D050's "the ocean has no top": nothing
+physically bottomless for a body (the mirror of [D050](../DECISIONS.md#d050)'s "the ocean has no top": nothing
 stops a sinking creature at the floor either — the fields clamp, the physics does not). U4
 held trivially, U5 failed, U6 failed (no mutant in any arm — three small worlds produced
 12,469 births against one arrival per ~23,000 at full size).
@@ -165,7 +168,7 @@ of the population exits the light forever and takes the lineage with it.
 **Round 5's verdict, whole.** T2/T4 falsified (irradiance), U3/U5 falsified (area): **no
 geometric rescale of this world yields a bounded living state.** The missing thing is not a
 size; it is a stabilising response to scarcity — matter coming back where the living are
-(D052, next), or a body that can hold its depth when starving (D049's buoyancy exists but
-floaters died first in 0038's note — unexplained, now more interesting). Per this round's
+(D052, next), or a body that can hold its depth when starving ([D049](../DECISIONS.md#d049)'s buoyancy exists but
+floaters died first in [0038](0038-a-lighter-world.md)'s note — unexplained, now more interesting). Per this round's
 own pre-registration, round 6 is D052's excretion at 400 m², ceiling accepted and declared
-as a censor: logbook/0041.
+as a censor: [logbook/0041](0041-the-sea-digests.md).

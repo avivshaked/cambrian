@@ -2,7 +2,7 @@
 
 **2026-08-29**  ·  food-chain goal, round 3 · pre-registered before launch
 
-Same shape as 0036 and 0037: everything above *Results* was written and committed before
+Same shape as [0036](0036-the-floor-gives-back.md) and [0037](0037-the-net-comes-down.md): everything above *Results* was written and committed before
 any arm was launched.
 
 ## The hypothesis
@@ -10,18 +10,22 @@ any arm was launched.
 logbook/0037 ended with six extinctions that read identically: surface matter runs out,
 births freeze, the bodies sink out of the light, and the cohort ages out while the matter
 recovers above it. Starvation is the trigger; **the claim under test is that sinking is what
-makes it irreversible.** At `excessDensity 0.1` (D050's "heavy" world, chosen there because
+makes it irreversible.** At `excessDensity 0.1` ([D050](../DECISIONS.md#d050)'s "heavy" world, chosen there because
 buoyancy is only decisive at that sink) an unfed body falls 1 m in about 10 s of settling
-and is below the photic band within the drought. At 0.02 — D050's "slow" world, where the
+and is below the photic band — the lit surface water where light income can cover upkeep,
+about 24 m deep at this world's 200 W/m² — within the drought. At 0.02 — D050's "slow" world, where the
 same body takes five times longer — a population that stops breeding for a thousand seconds
 should still be in the light when the matter comes back.
 
 The instruction for this stretch is to work through three candidate answers in order until
-one meets the goal; this is the first, and the cheapest: one environment variable.
+one meets the goal — (1) a lighter world (excess density down, so starving bodies stay in
+the light), (2) a slower drought (senescence longer than the matter gap), (3) damping on
+the consumer. Later entries call these "suggestion N" and "fix N" interchangeably; it is
+the same list. This is the first, and the cheapest: one environment variable.
 
 ## The world
 
-Round 2b's world — mixing 0.2, floor closes at 3,000 s, remin 0, the D048 reference
+Round 2b's world — mixing 0.2, floor closes at 3,000 s, remin 0, the [D048](../DECISIONS.md#d048) reference
 settings — with **`EVOSIM_EXCESS_DENSITY` 0.1 → 0.02**. Five seeds, arms `d053-s1..s5`,
 **30,000 s / 600 min wall** (40,000 was never reached in 2b: populations above ~2,000 run
 at a fifth of real time). Headers verified after launch; the settings table is 0037's with
@@ -63,7 +67,9 @@ whose wall budget ends it before t=15,000.
 
 ### Interim — the first extinction has a different signature
 
-`d053-s3` went extinct at t=11,223, and the trace does not read like 0037's:
+`d053-s3` went extinct at t=11,223, and the trace does not read like 0037's. (In the
+table: `mat top` is the free-matter density at the surface, per m³ — what conceptions are
+paid from; `mat blk` is conceptions refused for want of matter since the previous row.)
 
 | t | alive | births | mat top | mat blk | depth m | mean age s |
 |---|---|---|---|---|---|---|
@@ -81,22 +87,27 @@ matter back at 0.285/m³ and nothing blocked. **And births did not resume.** The
 per 500 s before the drought, 74 in the window after it, 3 in the one after that, then
 zero. What the table shows instead is the mean age: 700 s before the drought, 1,300 s a
 thousand seconds after it, 1,800 s a thousand seconds later — the population is one cohort,
-born before the gap the drought opened, ageing together. Under D038's wear (upkeep
+born before the gap the drought opened, ageing together. Under [D038](../DECISIONS.md#d038)'s wear (upkeep
 ×(1 + age/3000), yield halved at 3,000 s) a cohort at 1,300 s in dimming light at −22 m has
 no surplus to breed with, and a population with no births is a cohort by definition. It
 sank slowly and died of age, not of depth. R3 is falsified for this arm. The irreversible
 half of the trap here was **age synchrony**, which is suggestion 2's territory — the drought
 was shorter than the population's reproductive life, but the cohort it produced was not.
 
-Noted in passing: buoyant creatures fell from 157 to 3 over the same window, ahead of the
+Noted in passing: buoyant creatures — those carrying the buoyancy cell [D049](../DECISIONS.md#d049) added, a
+tissue that pays upkeep to cancel part of the body's sink — fell from 157 to 3 over the
+same window, ahead of the
 rest — the floaters died first, not last, which D049/D050 did not predict and this entry
 does not explain.
 
 ### Interim — the second ending is a runaway
 
-`d053-s4` ended at t=10,049 with **5,001 alive: the population ceiling**, after coming
-through a drought of 15,385 blocked conceptions at t=8,000 with births resumed by 9,500
-(R3 held there). Seeds 1, 2 and 5 were at 2,900–4,400 and climbing when this was written.
+`d053-s4` ended at t=10,049 with **5,001 alive: the population ceiling** — a limit on how
+many creatures the machine can afford to simulate, not anything in the world. A run the
+ceiling ends is called a *runaway*, and it is *censored* in the survival-analysis sense:
+cut short for a reason external to what was being measured, so it can never count as an
+outcome. The arm had come through a drought of 15,385 blocked conceptions at t=8,000 with
+births resumed by 9,500 (R3 held there). Seeds 1, 2 and 5 were at 2,900–4,400 and climbing when this was written.
 The lighter world's other face: producers that no longer fall through the drought grow
 until the instrument stops the run — "light is covering upkeep so completely that nothing
 has to do anything", as the footer puts it — and the pre-registration classes that as
@@ -119,7 +130,7 @@ Predictions R1–R6 as above, plus:
 
 **The goal is met if R1, R2, R5 and R7 hold.** If R7 fails too, the density that keeps the
 producers alive is one that also removes the limit on them, and the next question is
-what limits a lit population — shading is meant to (D023) and at 3,000 creatures it was
+what limits a lit population — shading is meant to ([D023](../DECISIONS.md#d023)) and at 3,000 creatures it was
 only 19%.
 
 ### Interim — 3b fails R2 within two arms
@@ -132,7 +143,7 @@ extinction and 3b has two of three, so the round's answer is fixed while seeds 3
 run: **at 0.02 the world runs away, at 0.05 and 0.1 it dies.** Suggestion 1 on its own gives
 no world that can be scored. Which half of the trap is irreversible depends on the density
 — sinking at 0.05 and 0.1, age synchrony at 0.02 — and the second is what suggestion 2
-addresses. Round 4 is logbook/0039.
+addresses. Round 4 is [logbook/0039](0039-a-slower-drought.md).
 
 *Later the same evening:* with round 3's answer fixed, `d053-s1` (t=8,200, 1,614 alive, mean
 age 2,801 s — the age-synchrony signature forming, births frozen) and `d053-s2` (t=6,400,
@@ -172,6 +183,6 @@ one variable turned out to select *which* half of the trap closes. And `d053b-s4
 complete single trace the project owns of a consumer bust: a lineage that arrived by
 mutation, established with no net, and could not stop eating when the water thinned — the
 classic undamped consumer–resource cycle, with the resource recovering only after the
-consumer was gone. Fix 3's target, exactly; and D052's argument that the producers' side has
+consumer was gone. Fix 3's target, exactly; and [D052](../DECISIONS.md#d052)'s argument that the producers' side has
 to be fixed first, because in every other arm the producers died before a consumer could be
 watched this long.

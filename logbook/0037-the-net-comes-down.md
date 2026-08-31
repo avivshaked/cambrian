@@ -2,7 +2,7 @@
 
 **2026-08-29**  ·  food-chain goal, round 2 · pre-registered before launch
 
-Same shape as logbook/0036: everything above *Results* was written and committed before
+Same shape as [logbook/0036](0036-the-floor-gives-back.md): everything above *Results* was written and committed before
 any arm was launched.
 
 ## What round 1 left open
@@ -12,7 +12,7 @@ absorptive lineages, three of them from the world's own mutants — and two thin
 not claim:
 
 1. **Self-sustaining producers.** In three of six arms the producer population fell to
-   exactly `MinimumPopulation` (40) during D048's matter-starvation crash and sat there for
+   exactly `MinimumPopulation` (40) during [D048](../DECISIONS.md#d048)'s matter-starvation crash and sat there for
    thousands of seconds while the floor fed in founders. A world held up by its safety net
    is not sustaining itself, whatever else it does.
 2. **A lineage that survives its own boom.** Every absorptive lineage that bred went from a
@@ -24,12 +24,12 @@ Round 2 removes the net and doubles the clock, and asks both questions of the sa
 
 ## The world
 
-Round 1's world, unchanged — mixing 0.2, the D048+D050 reference settings, `remin 0` (the
+Round 1's world, unchanged — mixing 0.2, the D048+[D050](../DECISIONS.md#d050) reference settings, `remin 0` (the
 knob 0036 measured inert stays off) — plus one thing and one budget:
 
 | setting | value | env var | note |
 |---|---|---|---|
-| **floor closes** | **20 s** | `EVOSIM_FLOOR_CLOSES` | founding takes 2 spawns × 20 steps × 0.5 s = 10 s; anything spawned between 10 and 20 s is a generation-0 replacement indistinguishable from a founder. After that the floor never fires: a crash to zero ends the run as *extinct* |
+| **floor closes** | **20 s** | `EVOSIM_FLOOR_CLOSES` | the floor adds 2 founders per 0.5 s simulation step until the population reaches its forty-creature minimum, so founding takes 2 spawns × 20 steps × 0.5 s = 10 s; anything spawned between 10 and 20 s is a generation-0 replacement indistinguishable from a founder. After that the floor never fires: a crash to zero ends the run as *extinct* |
 | budget | **40,000 s**, 480 min wall | | round 1 hit its 360 min wall on the largest population at t≈16,600; the arrival rate measured there (one mutant per ~23,000 arm-seconds) needs the longer clock |
 | seeds | **1–5**, five arms at once | `EVOSIM_SEED` | the machine's limit; round 1's three seeds were too few to put a rate on anything |
 | irradiance 200 · current 0.05 · mixing 0.2 · senescence 3000 · excess density 0.1 · matter 0.5 · founder float 0.5 · remin 0 | | | as round 1, verified from the header after launch |
@@ -193,7 +193,7 @@ lineages, four busts to zero or nearly so.
    world is a pulse, not a standing structure.
 3. **Founding is a lottery the floor has been running.** Forty random genomes breed in one
    seed of four; the floor's t=0 job was never "place founders", it was "keep drawing
-   until one breeds". D021's "fires at t=0 and never again" describes a world that does
+   until one breeds". [D021](../DECISIONS.md#d021)'s "fires at t=0 and never again" describes a world that does
    not exist yet.
 4. **The instrument worked.** Two pre-registrations, both falsified in the direction that
    taught something, both within a day. `read-arm.ps1` scored every claim above by rule.
