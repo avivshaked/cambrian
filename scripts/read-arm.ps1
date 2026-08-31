@@ -1,18 +1,23 @@
 ﻿<#
 .SYNOPSIS
-  Score an evolution-run report against logbook/0036's pre-registered predictions.
+  Score an evolution-run report against logbook/0036's (D051) pre-registered predictions.
 
 .DESCRIPTION
   logbook/0036-the-floor-gives-back.md was written in two halves on purpose: the
-  predictions (P1-P7) were committed before any arm was launched. This script reads a
-  run report (runs/<Name>.md) and computes, from the data alone, what each prediction's
-  falsifying column actually says — it does not read the logbook file itself, only the
-  arithmetic in the "Predictions, and the column that falsifies each" table.
+  predictions (P1-P7) were committed before any arm was launched. This script reads a run
+  report (runs/<Name>.md) -- via parse-arm.ps1, which does the generic parsing -- and
+  computes, from the data alone, what each prediction's falsifying column actually says.
 
-  Columns are located BY NAME from the table header (line 5 of the report, with '**'
-  stripped), never by position, because older reports (e.g. runs/d050-mix-heavy.md) have
-  fewer columns than newer ones (no 'det deep', no 'remin' in the settings line). Missing
-  columns degrade to "n/a" rather than erroring.
+  This scorer is round 1 (D051) only. Every D051 arm shares one of exactly two
+  configHashes (control `2d8b32a2e8cd7df8`, remin-on treatment `ce72d0fec0bb7398` --
+  verified against every runs/d051-*.md report). Any other configHash means a later
+  round's arm has landed in front of this scorer, whose control/treatment split (by
+  `remin`) and P1-P6 thresholds are round-1-specific and would silently mislabel it --
+  which is exactly what happened before this split: this script printed false P1-P6 FAILs
+  against round 7's D057 arms, because they are not what P1-P6 are about. So the very
+  first thing this script does is check the header's configHash and refuse if it is not
+  one of round 1's. Use scripts/parse-arm.ps1 directly for any other round, or write that
+  round's own scorer against it.
 
   Read-only: this touches nothing under runs/ or unity*/, and writes nothing anywhere.
 
@@ -50,92 +55,29 @@ $ErrorActionPreference = 'Stop'
 $root    = Split-Path -Parent $PSScriptRoot
 $runsDir = Join-Path $root 'runs'
 
+. (Join-Path $PSScriptRoot 'parse-arm.ps1')
+
+# The complete set of configHashes D051's arms were ever run under (runs/d051-*.md, both
+# arm types, verified 2026-08-31). Any report presenting a different hash is not a D051
+# arm -- either a later round reusing the 'd051-*' naming by mistake, or (far more likely
+# given the project's history) a shared-package Core change that moved Hash() under an
+# otherwise-identical world (logbook/0042 addendum §3). Either way this scorer's P1-P6
+# thresholds were not chosen for it.
+$KnownD051Hashes = @{
+    '2d8b32a2e8cd7df8' = 'control'
+    'ce72d0fec0bb7398' = 'treatment'
+}
+
 if (-not $Name -or $Name.Count -eq 0) {
     $files = Get-ChildItem -Path $runsDir -Filter 'd051-*.md' -ErrorAction SilentlyContinue | Sort-Object Name
     $Name = @($files | ForEach-Object { [System.IO.Path]::GetFileNameWithoutExtension($_.Name) })
     if ($Name.Count -eq 0) { Write-Warning "No runs/d051-*.md files found under $runsDir." }
 }
 
-# ---------------------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------------------
-
-# Drop a leading/trailing empty element left by a leading/trailing '|' in a table row,
-# without PowerShell's "N..(N-1)" descending-range trap when the array has 0 or 1 elements.
-function Trim-Edges {
-    param([string[]]$Arr)
-    if (-not $Arr -or $Arr.Count -eq 0) { return @() }
-    $startIdx = 0
-    $endIdx   = $Arr.Count - 1
-    if ($Arr[0] -eq '')  { $startIdx = 1 }
-    if ($Arr[-1] -eq '') { $endIdx = $Arr.Count - 2 }
-    if ($endIdx -lt $startIdx) { return @() }
-    return $Arr[$startIdx..$endIdx]
-}
-
-# A cell may be bold ('**16**'), a percentage ('2.1%'), an em-dash for "not applicable"
-# ('-- ' -- e.g. lift/flt m when float count is 0), or plain. Returns $null, never throws.
-function ConvertTo-Num {
-    param([string]$Raw)
-    if ($null -eq $Raw) { return $null }
-    $v = ($Raw -replace '\*\*', '').Trim()
-    if ($v -eq '' -or $v -eq [char]0x2014 -or $v -eq '-') { return $null }
-    $v = $v -replace '%', ''
-    $v = $v -replace '`', ''
-    $num = [double]0
-    $styles = [System.Globalization.NumberStyles]::Float -bor [System.Globalization.NumberStyles]::AllowLeadingSign
-    if ([double]::TryParse($v, $styles, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$num)) {
-        return $num
-    }
-    return $null
-}
-
-function Get-Setting {
-    param([string]$SettingsLine, [string]$Prefix)
-    $tokens = $SettingsLine -split ' · '
-    $tok = $tokens | Where-Object { $_ -like "$Prefix *" } | Select-Object -First 1
-    if ($tok) { return ($tok -replace "^$Prefix ", '').Trim() }
-    return $null
-}
-
-# Reads a run report and returns the settings line, the name->index column map, and the
-# raw string cells for every data row (line 7 onward, stopping at the first non-'|' line
-# or EOF -- covers both a finished run's trailing prose and an in-progress run's bare
-# EOF-after-last-row).
-function Read-RunReport {
-    param([string]$Path)
-    $lines = Get-Content -Path $Path -Encoding UTF8
-    if ($lines.Count -lt 7) { throw "runs/$([System.IO.Path]::GetFileName($Path)) is too short to be a run report (line 7 = first data row)." }
-
-    $settingsLine = $lines[2]   # line 3
-    $headerLine   = $lines[4]   # line 5
-
-    $headerCells = Trim-Edges (($headerLine.Trim() -split '\|') | ForEach-Object { $_.Trim() })
-    $colNames    = $headerCells | ForEach-Object { $_ -replace '\*\*', '' }
-    $colIndex    = @{}
-    for ($i = 0; $i -lt $colNames.Count; $i++) { $colIndex[$colNames[$i]] = $i }
-
-    $rows = New-Object System.Collections.Generic.List[object]
-    for ($li = 6; $li -lt $lines.Count; $li++) {
-        $line = $lines[$li]
-        if ($null -eq $line -or -not $line.TrimStart().StartsWith('|')) { break }
-        $cells = Trim-Edges (($line.Trim() -split '\|') | ForEach-Object { $_.Trim() })
-        $rows.Add($cells) | Out-Null
-    }
-
-    [PSCustomObject]@{
-        SettingsLine = $settingsLine
-        ColIndex     = $colIndex
-        Rows         = $rows
-    }
-}
-
-function Get-Cell {
-    param($Row, $ColIndex, [string]$ColName)
-    if (-not $ColIndex.ContainsKey($ColName)) { return $null }
-    $idx = $ColIndex[$ColName]
-    if ($idx -ge $Row.Count) { return $null }
-    return $Row[$idx]
+function Format-Num {
+    param($V, [string]$Suffix = '')
+    if ($null -eq $V) { return 'n/a' }
+    return "$([Math]::Round($V, 4))$Suffix"
 }
 
 # Value at a checkpoint t: exact match preferred; if the data doesn't reach that far yet,
@@ -157,12 +99,6 @@ function Get-AtT {
     return [PSCustomObject]@{ Sample = $best; Note = "nearest t=$($best.T)" }
 }
 
-function Format-Num {
-    param($V, [string]$Suffix = '')
-    if ($null -eq $V) { return 'n/a' }
-    return "$([Math]::Round($V, 4))$Suffix"
-}
-
 # ---------------------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------------------
@@ -178,26 +114,34 @@ foreach ($armName in $Name) {
         continue
     }
 
-    $report = Read-RunReport -Path $path
-    $colIndex = $report.ColIndex
-    $hasDetDeep = $colIndex.ContainsKey('det deep')
+    $report = Read-ArmReport -Path $path
 
-    $seed   = Get-Setting $report.SettingsLine 'seed'
-    $mixing = Get-Setting $report.SettingsLine 'mixing'
-    $remin  = Get-Setting $report.SettingsLine 'remin'
+    $configHashRaw = Get-ArmMetaValue -Tokens $report.Metadata -Prefix 'configHash'
+    $configHash    = if ($configHashRaw) { $configHashRaw -replace '`', '' } else { $null }
+
+    if (-not $configHash -or -not $KnownD051Hashes.ContainsKey($configHash)) {
+        Write-Warning "  refused: this scorer belongs to round 1 (D051); arm $armName has configHash $(if ($configHash) { $configHash } else { '(none found)' }) -- use parse-arm.ps1 or write a round scorer."
+        continue
+    }
+
+    $seed   = Get-ArmMetaValue -Tokens $report.Metadata -Prefix 'seed'
+    $mixing = Get-ArmMetaValue -Tokens $report.Metadata -Prefix 'mixing'
+    $remin  = Get-ArmMetaValue -Tokens $report.Metadata -Prefix 'remin'
     $reminNum = if ($remin) { ConvertTo-Num ($remin -replace '/s', '') } else { $null }
     $armType = if ($null -eq $reminNum) { 'unknown' } elseif ($reminNum -eq 0) { 'control' } else { 'treatment' }
 
+    $hasDetDeep = $report.ColumnNames -contains 'det deep'
+
     $samples = foreach ($row in $report.Rows) {
         [PSCustomObject]@{
-            T        = ConvertTo-Num (Get-Cell $row $colIndex 't (s)')
-            Alive    = ConvertTo-Num (Get-Cell $row $colIndex 'alive')
-            FloorPct = ConvertTo-Num (Get-Cell $row $colIndex '% on floor')
-            DetDeep  = ConvertTo-Num (Get-Cell $row $colIndex 'det deep')
-            Absorpt  = ConvertTo-Num (Get-Cell $row $colIndex 'absorpt')
-            Inherit  = ConvertTo-Num (Get-Cell $row $colIndex 'inherit')
-            Floor    = ConvertTo-Num (Get-Cell $row $colIndex 'floor')
-            GenMin   = ConvertTo-Num (Get-Cell $row $colIndex 'gen min')
+            T        = Get-ArmNumericCell $row 't (s)'
+            Alive    = Get-ArmNumericCell $row 'alive'
+            FloorPct = Get-ArmNumericCell $row '% on floor'
+            DetDeep  = Get-ArmNumericCell $row 'det deep'
+            Absorpt  = Get-ArmNumericCell $row 'absorpt'
+            Inherit  = Get-ArmNumericCell $row 'inherit'
+            Floor    = Get-ArmNumericCell $row 'floor'
+            GenMin   = Get-ArmNumericCell $row 'gen min'
         }
     }
     $samples = @($samples | Where-Object { $null -ne $_.T } | Sort-Object T)
@@ -219,7 +163,7 @@ foreach ($armName in $Name) {
         $endedBy = 'log absent'
     }
 
-    Write-Host "  seed $seed  ·  mixing $(if ($mixing) { $mixing } else { 'n/a' })  ·  remin $(if ($remin) { $remin } else { 'n/a' })  ·  arm type: $armType"
+    Write-Host "  seed $seed  ·  mixing $(if ($mixing) { $mixing } else { 'n/a' })  ·  remin $(if ($remin) { $remin } else { 'n/a' })  ·  arm type: $armType  ·  configHash $configHash ($($KnownD051Hashes[$configHash]))"
     Write-Host "  last sample: t=$lastT  alive=$($lastSample.Alive)"
     Write-Host "  ended: $endedBy"
 
