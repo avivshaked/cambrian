@@ -137,6 +137,19 @@ namespace Evosim.Core
         public double MatterInBodies { get; private set; }
 
         /// <summary>
+        /// Everything excretion (D052) has ever moved from bodies into the field, J. Cumulative
+        /// and never decremented — a report reads it as a rate by differencing two samples, the
+        /// same trick <see cref="FloorSpawns"/> already asks of a caller.
+        /// </summary>
+        /// <remarks>
+        /// Internal to the transfer <see cref="StandingMatter"/> already accounts for: this does
+        /// not change what is conserved, only makes the D052 flux itself visible instead of only
+        /// its before-and-after balance — the pre-round-8 experiment contract's excretion flux
+        /// column needed a counter that did not exist yet.
+        /// </remarks>
+        public double ExcretedTotal { get; private set; }
+
+        /// <summary>
         /// Matter the smallest child physically expressible would cost — D048. A strict lower
         /// bound, cached because it depends only on config.
         /// </summary>
@@ -493,6 +506,7 @@ namespace Evosim.Core
                         Matter.Deposit(creature.HeightY, excreted);
                         creature.LockedMatter -= excreted;
                         MatterInBodies -= excreted;
+                        ExcretedTotal += excreted;
                     }
                 }
 

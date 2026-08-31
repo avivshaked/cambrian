@@ -44,6 +44,13 @@ namespace Evosim.Sim.EditorTools
 
         public static void Run()
         {
+            // The pre-round-8 experiment contract's first repair: every static below is
+            // process-lifetime, and -executeMethod exits after one run so it never mattered —
+            // but Evosim/Run from the editor menu does not exit, and a second run in the same
+            // session would otherwise start with the first run's "ever jointed" ids, floor-spawn
+            // count and excretion baseline already in it.
+            ResetStaticReportState();
+
             float irradiance = Env("EVOSIM_IRRADIANCE", 48f);
             float budgetSeconds = Env("EVOSIM_SECONDS", 4000f);
             float wallMinutes = Env("EVOSIM_WALL_MINUTES", 30f);
@@ -273,7 +280,16 @@ namespace Evosim.Sim.EditorTools
             Flush(outPath, report);
 
             var clock = Stopwatch.StartNew();
-            string ending = "budget reached";
+
+            // Two readings of how the run ended: `ending` is the prose the markdown footer
+            // prints, `terminationCode` is D058's own vocabulary (extinct / budget / wall /
+            // ceiling) for run.json, where a script reads it rather than a person. Both start
+            // null rather than defaulted to "budget reached" — the pre-round-8 contract's fix for
+            // the footer reading "budget reached" on an arm the wall clock actually cut, which
+            // made every censored arm look like a completed one to anyone skimming the footer
+            // rather than the header's budget against ElapsedSeconds.
+            string ending = null;
+            string terminationCode = null;
             int metabolicSteps = 0;
             double bestSpeedEver = 0d;
             double bestSpeedAt = 0d;
@@ -298,6 +314,7 @@ namespace Evosim.Sim.EditorTools
                         ending =
                             "extinct at t=" + eco.World.ElapsedSeconds.ToString("0.#") +
                             " s, and the floor could not refill it";
+                        terminationCode = "extinct";
                         report.AppendLine(Row(eco, dir));
                         Flush(outPath, report);
                         break;
@@ -320,16 +337,38 @@ namespace Evosim.Sim.EditorTools
                     // rare enough that a population of thousands is not serialised every sample.
                     if (metabolicSteps % (reportEvery * 10) == 0) Snapshot(dir, eco);
                 }
+
+                // Reached whenever the loop above finished without the extinction break — either
+                // the while condition's left side failed (budget) or its right side did (wall).
+                // D058: only a budget-complete arm may pass the persistence endpoint, so this is
+                // not cosmetic — "wall clock reached" here is what makes a censored arm readable
+                // as censored from the footer alone, rather than requiring a reader to compare
+                // ElapsedSeconds against the header's budget by hand.
+                if (terminationCode == null)
+                {
+                    if (eco.World.ElapsedSeconds >= budgetSeconds)
+                    {
+                        ending = "budget reached";
+                        terminationCode = "budget";
+                    }
+                    else
+                    {
+                        ending = "wall clock reached";
+                        terminationCode = "wall";
+                    }
+                }
             }
             catch (PopulationRunawayException runaway)
             {
                 // D021: not a crash. It locates the generous end of the calibration exactly as
                 // extinction locates the lean end, and culling to fit a compute budget would be
-                // selection performed by us.
+                // selection performed by us. D058 files this the same as a wall cut: censored,
+                // never a pass.
                 ending =
                     "RUNAWAY at t=" + runaway.ElapsedSeconds.ToString("0.#") + " s with " +
                     runaway.Population + " alive — light is covering upkeep so completely that " +
                     "nothing has to do anything";
+                terminationCode = "ceiling";
             }
 
             clock.Stop();
@@ -355,6 +394,8 @@ namespace Evosim.Sim.EditorTools
             Snapshot(dir, eco);
             if (dir != null)
             {
+                WriteRunIdentity(dir, seed, budgetSeconds, wallMinutes, outPath, terminationCode);
+
                 report.AppendLine();
                 report.AppendLine("Genomes: `" + dir.Path + "`");
                 Flush(outPath, report);
@@ -414,6 +455,80 @@ namespace Evosim.Sim.EditorTools
         /// <summary>Ids of every creature ever seen holding lift — D049, same trick as EverJointed.</summary>
         private static readonly HashSet<long> EverBuoyant = new HashSet<long>();
 
+        /// <summary>World.ExcretedTotal as of the previous report row, so a row can show a flux.</summary>
+        /// <remarks>Same delta trick as <see cref="LastFloorSpawns"/> and <see cref="LastMatterBlocks"/>,
+        /// against <see cref="World.ExcretedTotal"/> — a cumulative counter with no cap of its own.</remarks>
+        private static double LastExcretedTotal;
+
+        /// <summary>
+        /// Clears every static above so repeated <c>Evosim/Run</c> invocations in one editor
+        /// session cannot inherit a previous run's history.
+        /// </summary>
+        /// <remarks>
+        /// Pre-round-8 experiment contract, item 1. <c>-executeMethod</c> from the command line
+        /// exits the process after one run, which is every arm this project has launched so far —
+        /// so this was silently correct by accident rather than by design, and the accident breaks
+        /// the moment someone runs the menu item twice without restarting Unity.
+        /// </remarks>
+        private static void ResetStaticReportState()
+        {
+            EverAbsorptive.Clear();
+            EverJointed.Clear();
+            EverBuoyant.Clear();
+            LastFloorSpawns = 0;
+            LastMatterBlocks = 0;
+            LastExcretedTotal = 0;
+        }
+
+        /// <summary>
+        /// Writes <c>run.json</c>: the identity of this run, separate from <c>config.json</c>'s
+        /// resolved tunables — pre-round-8 experiment contract, item 2.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why not just extend config.json.</b> <c>RunConfigJson.Write</c> is generated from
+        /// <see cref="ConfigSchema"/> and runs once, at <see cref="RunDirectory.Create"/>, before
+        /// a single step has been taken — every field it can carry is a <see cref="RunConfig"/>
+        /// tunable, known up front. The termination reason is the opposite of that: unknowable
+        /// until the run stops, and not itself a tunable. Folding it in would mean either writing
+        /// config.json a second time (making it look editable when only the first write is) or
+        /// growing <see cref="RunConfig"/> a field that is not a setting at all. A second
+        /// hand-written file, in the same <see cref="Json"/> style config.json already uses, says
+        /// what it is without either problem.
+        /// </para>
+        /// <para>
+        /// <b>What is missing on purpose.</b> Git commit, dirty flag and worker source hash all
+        /// need shelling out from inside the Editor process, which is its own small design
+        /// question — does a failed shell call block the run, what counts as "the worker", does
+        /// it belong here or in a preflight — and none of that is this item's job. TODO(run
+        /// identity): git commit + dirty flag, worker source fingerprint — HANDOFF.md's
+        /// "Run-integrity infrastructure" queue entry, deliberately deferred alongside them.
+        /// </para>
+        /// </remarks>
+        private static void WriteRunIdentity(
+            RunDirectory dir, ulong seed, float requestedSeconds, float requestedWallMinutes,
+            string outPath, string terminationCode)
+        {
+            var w = new Json.Writer(indent: true);
+            w.BeginObject();
+            w.Field("seed", seed);
+            w.Field("unityVersion", Application.unityVersion);
+            w.Field("physicsDtSeconds", Ecosystem.FixedDt);
+            w.Field("metabolicStepSeconds", Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt);
+            w.Field("requestedSeconds", requestedSeconds);
+            w.Field("requestedWallMinutes", requestedWallMinutes);
+            // Named after the report rather than passed in explicitly: nothing upstream of this
+            // arm carries a name of its own (scripts/run-arm.ps1's -Name only ever becomes the
+            // output path), and RunDirectory.Create already treats this same derivation as the
+            // arm's identity when it names the run directory.
+            w.Field("armName", Path.GetFileNameWithoutExtension(outPath));
+            w.Field("terminationReason", terminationCode);
+            w.EndObject();
+
+            File.WriteAllText(Path.Combine(dir.Path, "run.json"), w.ToString(), Utf8NoBom);
+        }
+
+        private static readonly Encoding Utf8NoBom = new UTF8Encoding(false);
 
         /// <summary>
         /// Write every living creature's genome to <c>snapshots/&lt;t&gt;.jsonl</c>, one per line.
@@ -479,6 +594,18 @@ namespace Evosim.Sim.EditorTools
             double liftHeld = 0d, buoyantDepth = 0d;
             int genMin = int.MaxValue, genMax = 0;
 
+            // D059's below-world observables, pre-round-8 experiment contract item 3. Below
+            // rather than at or below: a creature resting exactly at -WorldDepthMetres is on the
+            // seabed D059 clamps to, not past it, and the whole point of these two counts is to
+            // tell that creature apart from one that fell through a floor the clamp has not been
+            // switched on for yet (D059 ships default-off).
+            int belowWorld = 0, absorptiveBelowWorld = 0;
+
+            // D052's own instrument, summed rather than read once: LockedMatter lives on each
+            // organism, and StandingMatter already folds it into one number with detritus, which
+            // is exactly what this column exists to pull back apart.
+            double matterLocked = 0d;
+
             // D057. Distinct species IDs among the living — pure instrumentation, read nowhere
             // but here. Among the living rather than World.Species.Count, which also counts
             // species nobody alive still belongs to.
@@ -514,11 +641,13 @@ namespace Evosim.Sim.EditorTools
                 // is trying and there is nothing to eat. Founders draw absorptive one time in
                 // four (RandomGenomeOptions.FounderCellTypes), so the first should be false — and
                 // an assumption is exactly what wants checking here.
+                bool creatureAbsorptive = false;
                 foreach (PhenotypePart part in creature.Phenotype.Parts)
                 {
                     if (part.CellTypeId != CellTypeIds.Absorptive) continue;
 
                     absorptive++;
+                    creatureAbsorptive = true;
                     EverAbsorptive.Add(creature.Id);
 
                     // Born into the trade rather than mutated into it. Counted against the ids
@@ -575,6 +704,14 @@ namespace Evosim.Sim.EditorTools
                 // creature is a floor spawn, which is the definition of a world running itself.
                 if (creature.GenerationDepth < genMin) genMin = creature.GenerationDepth;
                 if (creature.GenerationDepth > genMax) genMax = creature.GenerationDepth;
+
+                matterLocked += creature.LockedMatter;
+
+                if (creature.HeightY < -world.Config.WorldDepthMetres)
+                {
+                    belowWorld++;
+                    if (creatureAbsorptive) absorptiveBelowWorld++;
+                }
             }
 
             int alive = world.Living.Count;
@@ -600,6 +737,18 @@ namespace Evosim.Sim.EditorTools
             double workShare = spend > 0d ? workSpend / spend : 0d;
             double residual = world.EnergyIn > 0d ? 100d * world.AuditResidual / world.EnergyIn : 0d;
             double seconds = Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt;
+
+            // Pre-round-8 experiment contract, item 3: what a mouth at the population's own depth
+            // can actually reach — D055's refuge-aware reading, against detritusHere's field-truth
+            // one above — and the floor-layer stock the refuge protects. Both cheap: EdibleDensityAt
+            // and StockInLayer are simple array reads, not a second pass over the population.
+            double edibleHere = world.Nutrients.EdibleDensityAt((float)meanDepth);
+            double refugeStock = world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1);
+
+            // D052's flux, not its balance: MatterInBodies and Matter.TotalJoules already show
+            // what excretion moved by comparing before and after, but neither shows the rate it
+            // moved at. Windowed the same way floorSpawns and conceptionsBlockedByMatter are.
+            double excretedWindow = world.ExcretedTotal - LastExcretedTotal;
 
             // The same sample, as data. Raw numbers and no percentages: a reader can divide, and
             // a stored percentage loses the denominator that says whether it means anything —
@@ -648,7 +797,17 @@ namespace Evosim.Sim.EditorTools
                 .Field("generationMin", genMin)
                 .Field("generationMax", genMax)
                 .Field("auditResidual", world.AuditResidual)
-                .Field("species", speciesSeen.Count));
+                .Field("species", speciesSeen.Count)
+                // Pre-round-8 experiment contract, item 3 — appended after species per the same
+                // rule species itself was added under: existing readers index by position, so
+                // nothing already written may move.
+                .Field("edibleDetritusHere", edibleHere)
+                .Field("belowWorld", belowWorld)
+                .Field("absorptiveBelowWorld", absorptiveBelowWorld)
+                .Field("matterLocked", matterLocked)
+                .Field("refugeJoules", refugeStock)
+                .Field("excretedTotal", world.ExcretedTotal)
+                .Field("excretedWindow", excretedWindow));
 
             var c = CultureInfo.InvariantCulture;
 
@@ -735,10 +894,32 @@ namespace Evosim.Sim.EditorTools
                 // D057. Appended at the end, per every other column here: existing awk scripts
                 // index columns by position, so nothing already written may move.
                 speciesSeen.Count.ToString(c),
+
+                // Pre-round-8 experiment contract, item 3 — same append-only rule, six more.
+                // D055's refuge-aware density at the population's own depth, against `det here`
+                // above (the field-truth reading feeding never sees inside a refuge).
+                edibleHere.ToString("0.####", c),
+                // D059's below-world observables: count, and the same count restricted to
+                // absorptive tissue. Read together with the header's floor knob — nonzero here
+                // with the D059 clamp off is a world with no seabed yet; nonzero with it on is
+                // the clamp failing to hold.
+                belowWorld.ToString(c),
+                absorptiveBelowWorld.ToString(c),
+                // Matter still owed to the field by living bodies — the other half of
+                // StandingMatter from `mat top`/`mat deep`'s free-field reading.
+                matterLocked.ToString("0.###", c),
+                // The floor layer alone, in joules — `% on floor` already reports this as a share
+                // of TotalJoules; this is the same quantity a refuge-transport reading can be
+                // taken against without first re-deriving it from a percentage.
+                refugeStock.ToString("0.#", c),
+                // D052's flux since the last row, not its running total: how much excretion moved
+                // in this window, the same delta shape as `mat blk` and `floor` above.
+                excretedWindow.ToString("0.######", c),
             };
 
             LastFloorSpawns = world.FloorSpawns;
             LastMatterBlocks = world.ConceptionsBlockedByMatter;
+            LastExcretedTotal = world.ExcretedTotal;
 
             if (row.Count != Columns.Length)
             {
@@ -760,6 +941,10 @@ namespace Evosim.Sim.EditorTools
             "**float**", "**flt inh**", "lift", "**flt m**",
             "mat top", "mat deep", "**mat blk**", "**floor**", "gen min", "gen max", "audit",
             "species",
+
+            // Pre-round-8 experiment contract, item 3 — appended after species, per its own
+            // comment above.
+            "det here ed", "below world", "abs below", "mat locked", "refuge J", "excreted",
         };
 
         private static string Header() =>

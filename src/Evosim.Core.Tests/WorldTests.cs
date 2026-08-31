@@ -741,6 +741,71 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void ExcretedTotalIncrementsByExactlyWhatExcretionDebitsFromBodies()
+        {
+            // Same isolation and the same freeze-then-measure shape as
+            // ExcretionMovesExactlyWhatItDebitsInAQuietStep, checked against World.ExcretedTotal
+            // instead of the field and MatterInBodies — the pre-round-8 experiment contract's
+            // excretion-flux column reads this counter as a delta between two samples, and that
+            // delta has to equal the debit exactly or the column would misreport the flux it
+            // exists to show.
+            var config = MatterWorld(perTissueJoule: 0.5f, initialPerCubicMetre: 5f);
+            config.ExcretionPerJoule = 0.02f;
+            config.MinimumPopulation = 20;
+
+            var world = new World(config, seed: 3);
+            for (int i = 0; i < 200; i++) world.Step(1f);
+
+            Assert.True(world.Births > 0, "nothing bred, so nothing has locked matter to excrete");
+
+            // Freeze reproduction from here on, exactly as the sibling test does, so a quiet step
+            // with no other channel for LockedMatter to appear or disappear can be found.
+            config.PerOffspringOverheadJoules = 1e9f;
+
+            for (int i = 0; i < 500; i++)
+            {
+                long birthsBefore = world.Births, deathsBefore = world.Deaths;
+
+                var lockedBefore = new Dictionary<long, float>();
+                var upkeepBefore = new Dictionary<long, float>();
+                foreach (Organism c in world.Living)
+                {
+                    lockedBefore[c.Id] = c.LockedMatter;
+                    upkeepBefore[c.Id] = c.Lifetime.Upkeep;
+                }
+
+                double excretedTotalBefore = world.ExcretedTotal;
+
+                world.Step(1f);
+
+                if (world.Births != birthsBefore || world.Deaths != deathsBefore) continue;
+
+                double expected = 0d;
+                foreach (Organism c in world.Living)
+                {
+                    if (!lockedBefore.TryGetValue(c.Id, out float locked) || locked <= 0f) continue;
+
+                    float upkeepThisStep = c.Lifetime.Upkeep - upkeepBefore[c.Id];
+                    expected += Math.Min(locked, config.ExcretionPerJoule * upkeepThisStep);
+                }
+
+                if (expected <= 0d) continue; // no locked-matter creature paid upkeep this step
+
+                double excretedTotalRose = world.ExcretedTotal - excretedTotalBefore;
+
+                _output.WriteLine(
+                    $"expected {expected:0.######}: ExcretedTotal rose {excretedTotalRose:0.######}");
+
+                Assert.True(
+                    Math.Abs(excretedTotalRose - expected) < 1e-4,
+                    "ExcretedTotal did not rise by exactly what excretion debited from bodies");
+                return;
+            }
+
+            Assert.Fail("never found a quiet (birth-free, death-free) step with excretion to measure");
+        }
+
+        [Fact]
         public void MatterIsConservedWithExcretionRunning()
         {
             // D052's own copy of D051's guard: excretion is an internal transfer from
