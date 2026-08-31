@@ -78,6 +78,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D053](#d053) | Right-sizing the dish — the equilibrium must sit inside the instrument | 2026-08-30 | active |
 | [D054](#d054) | The floor becomes a gradient — a beach, a shelf, and a deep | 2026-08-30 | decided · not designed |
 | [D055](#d055) | The seabed is a refuge — the floor layer cannot be grazed | 2026-08-31 | active |
+| [D056](#d056) | Mutation rate: fixed within a round, raisable between rounds, never a thermostat | 2026-08-31 | direction · nothing built |
 
 ---
 
@@ -2497,3 +2498,47 @@ strategy as such rather than capping the harvest.
 ⚠ Project inference from general consumer–resource theory (refugia stabilise
 Rosenzweig–MacArthur-type cycles); the literature review has not searched predator–prey
 refuge models. Add a primary source before leaning on the dynamics quantitatively.
+
+### D056
+**Mutation rate: fixed within a round, raisable between rounds, never a thermostat** · 2026-08-31
+
+Discussed with the owner while round 7 ran. The consumer-bust question is now studied at
+roughly three chain-establishment events per round — trial count, not arrival, is the
+scarce resource — and the owner asked whether the cell-type mutation rate (0.001 since it
+existed) should rise, or vary dynamically with the condition of the world.
+
+**Settled, in three parts:**
+
+1. **Fixed within any round.** The rate never changes mid-round, and a round that changes
+   it changes nothing else — it is a world parameter like any other, and cross-round
+   comparability is the instrument everything else is read through.
+2. **The contingent lever, named before round 7 answers.** If round 7 lands in its
+   pre-registered "W4 holds but W6 fails" branch (busts soften, chains arrive too late to
+   accumulate twenty samples — logbook/0042), round 8 raises cell-type mutation **5–10×**
+   rather than running longer: earlier arrivals buy the same measurement window without
+   more wall clock, and there is precedent — the first probe chain was found at 20×. Not
+   20× again: mutation churn cuts both ways, mutating established absorptives *out* of
+   the trade, so `inherit` gets noisier and a genuinely persistent lineage can undercount.
+   The round-8 pre-registration must therefore carry an explicit prediction about
+   `inherit` stability, so the churn is measured rather than suffered.
+3. **The dynamic version is queued for after the goal, in per-creature form only.**
+   Stress-induced mutagenesis is real biology (bacterial SOS response, mutator strains
+   under stress), and its honest translation is a *local* rule — an organism conceiving
+   on a thin margin rolls its offspring at a higher rate — or the fully endogenous form,
+   the mutation rate itself a heritable, mutable trait (evolution-strategies
+   self-adaptation). Either keeps selection inside the world. Two caveats recorded now:
+   the coupling may not reach where it is needed, because mutation happens at conception
+   and the most-stressed creatures are exactly the ones not conceiving; and it touches
+   every lineage's heritability at once, so it needs its own calibrated baseline, after
+   the reference ecology passes.
+
+**Rejected: a global condition-driven controller** — the world senses trouble and turns
+up mutation. Same argument as D053's rejected population cap, one level up: a designed
+feedback loop steering evolution's fuel supply *is* the adaptive response the goal
+requires the world to produce, and every downstream result would be about the
+controller. It also breaks the fixed-rate assumption under which arrival rates and
+`inherit` streaks have been interpreted since round 1.
+
+⚠ Project inference: the literature review has searched neither stress-induced
+mutagenesis nor self-adaptive mutation rates. Before part 3 is built, a review round
+should — the SOS-response and evolvability literatures are the places to look.

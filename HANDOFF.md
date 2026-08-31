@@ -153,6 +153,12 @@ The goal is unchanged. The path was re-sequenced with the owner after round 4:
      speed, organism selection, colour by cell type, lineage identity, energy/matter
      overlays, replay from a snapshot plus events. On the record a human at the screen is
      the project's best bug-finder (logbook/0005, 0006, 0010).
+   - **Dynamic mutation rate, per-creature form only** — D056: stress-coupled at
+     conception or a self-adaptive heritable rate, never a global controller; needs a
+     literature round (SOS response, self-adaptation) and its own calibrated baseline.
+     D056 also names the pre-goal contingency: if a round fails on chains arriving too
+     late, the next round raises cell-type mutation 5–10× with an `inherit`-stability
+     prediction attached.
    - **Standing methodology debts:** the margin-ratio ≥ 2 preflight should be computed and
      printed by `run-arm.ps1` rather than remembered; `Mutator.CodeVersion` promises a
      per-birth record that is recorded nowhere — write it or delete the promise.
