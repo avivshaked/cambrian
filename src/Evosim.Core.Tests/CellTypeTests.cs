@@ -455,6 +455,91 @@ namespace Evosim.Core.Tests
                 "bound, so a founder is born already clamped and the draw is a lie.");
         }
 
+        // ---------------------------------------------------------- D062: the satiation cap
+
+        [Fact]
+        public void SatiationAndToeAtZeroReproduceTheOriginalIntakeExactly()
+        {
+            // Default off, and off has to mean bit-identical rather than nearly — every result on
+            // file was measured with unbounded linear clearance, and a default that even nudged
+            // the float rounding would mean none of them describe a world that still exists (the
+            // D052/D055 shape, and D031 is why that is not a thing to do twice deliberately).
+            var cell = new AbsorptiveCell(clearanceRate: 0.7f);
+
+            foreach (float density in new[] { 0f, 3.5f, 27f, 1000f })
+            {
+                var context = new CellContext(seconds: 2.3f, volume: 0.6f, nutrientDensity: density);
+
+                float expected = density * 0.7f * 0.6f * 2.3f;
+                Assert.Equal(expected, cell.Acquire(context).Total);
+            }
+        }
+
+        [Fact]
+        public void TheSatiationCapPlateausIntakeAtHighDensity()
+        {
+            // The mouth's physical limit (D062): beyond the cap, more nutrient density in the
+            // water buys nothing more, because a true type I response cannot exist without a
+            // handling-time plateau ([JKT04]).
+            var cell = new AbsorptiveCell(clearanceRate: 1f, yield: 1f);
+            const float capWattsPerCubicMetre = 5f;
+            const float volume = 2f;
+            const float seconds = 1f;
+
+            // Below the cap: density × clearance (1) = 3 W/m3, under the 5 W/m3 ceiling — unaffected.
+            var below = new CellContext(
+                seconds, volume, nutrientDensity: 3f, satiationWattsPerCubicMetre: capWattsPerCubicMetre);
+            Fixtures.AssertClose(3f * volume * seconds, cell.Acquire(below).Total, 1e-5f);
+
+            // At and beyond the cap: intake is pinned to capWattsPerCubicMetre × volume × seconds,
+            // whatever the density climbs to.
+            foreach (float density in new[] { capWattsPerCubicMetre, 50f, 10_000f })
+            {
+                var context = new CellContext(
+                    seconds, volume, nutrientDensity: density,
+                    satiationWattsPerCubicMetre: capWattsPerCubicMetre);
+
+                float total = cell.Acquire(context).Total;
+                Fixtures.AssertClose(capWattsPerCubicMetre * volume * seconds, total, 1e-4f);
+                _output.WriteLine($"density {density}: intake {total} J (cap {capWattsPerCubicMetre} W/m3)");
+            }
+        }
+
+        [Fact]
+        public void TheClearanceToeHalvesClearanceExactlyAtTheToeDensityAndIsOffAtZero()
+        {
+            // D062's soft type-III toe: clearance is scaled by density / (density + toe), which
+            // by construction is exactly ½ when density equals the toe — the definition the
+            // property doc promises.
+            var cell = new AbsorptiveCell(clearanceRate: 1f, yield: 1f);
+            const float toe = 8f;
+            const float volume = 1f;
+            const float seconds = 1f;
+
+            var atToe = new CellContext(seconds, volume, nutrientDensity: toe, clearanceToeDensity: toe);
+            var noToe = new CellContext(seconds, volume, nutrientDensity: toe, clearanceToeDensity: 0f);
+
+            // With the toe off, intake is the plain type-I rate: density × clearance × volume × seconds.
+            Fixtures.AssertClose(toe, cell.Acquire(noToe).Total, 1e-5f);
+
+            // At density = toe, the toe halves the effective clearance, so intake halves too.
+            Fixtures.AssertClose(toe / 2f, cell.Acquire(atToe).Total, 1e-4f);
+
+            // Well below the toe, intake falls faster than density alone would predict — the
+            // relaxation D062 cites [DBWM05] for. Well above it, the toe factor closes on 1 and
+            // intake converges back toward the plain type-I line.
+            var farBelow = new CellContext(seconds, volume, nutrientDensity: toe * 0.01f, clearanceToeDensity: toe);
+            var farAbove = new CellContext(seconds, volume, nutrientDensity: toe * 1000f, clearanceToeDensity: toe);
+
+            float typeOneFarBelow = toe * 0.01f;
+            float typeOneFarAbove = toe * 1000f;
+
+            Assert.True(cell.Acquire(farBelow).Total < typeOneFarBelow * 0.02f,
+                "far below the toe, intake should have collapsed well past a linear reading");
+            Assert.True(cell.Acquire(farAbove).Total > typeOneFarAbove * 0.99f,
+                "far above the toe, intake should have converged back to the plain type-I rate");
+        }
+
         [Fact]
         public void TheLiftBoundIsInTheHashBecauseItDecidesWhichGenomesExist()
         {

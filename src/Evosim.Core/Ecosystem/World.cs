@@ -286,7 +286,7 @@ namespace Evosim.Core
             Nutrients = new NutrientField(
                 config.WorldAreaSquareMetres, config.LightLayerMetres,
                 config.NutrientSinkMetresPerSecond, config.WorldDepthMetres,
-                config.FloorRefugeMetres);
+                config.FloorRefugeMetres, config.RefugeEdibleFraction);
 
             // No refuge: nobody grazes matter, it is drawn at conception rather than eaten — D055.
             Matter = new NutrientField(

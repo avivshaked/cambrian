@@ -206,7 +206,9 @@ namespace Evosim.Core
                     contact: null,
                     power: part.Power,
                     dof: part.JointType.DofCount(),
-                    lift: part.Lift);
+                    lift: part.Lift,
+                    satiationWattsPerCubicMetre: config.SatiationWattsPerCubicMetre,
+                    clearanceToeDensity: config.ClearanceToeDensity);
 
                 intake += cell.Acquire(context);
                 upkeep += cell.Upkeep(context);

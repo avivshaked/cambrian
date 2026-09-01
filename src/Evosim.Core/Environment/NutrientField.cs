@@ -59,9 +59,18 @@ namespace Evosim.Core
         /// before D055 and must stay bit-identical to it.</remarks>
         public int RefugeLayerCount { get; }
 
+        /// <summary>
+        /// Fraction of a refuge layer's density that feeding can see and take, in [0, 1] —
+        /// arm C's knob on D055. Zero is D055's own refuge: total exclusion.
+        /// </summary>
+        /// <remarks>0 when the field was built with no fraction, which is this field's whole
+        /// history before the knob existed and must stay bit-identical to it. Irrelevant when
+        /// <see cref="RefugeLayerCount"/> is 0 — with no refuge layers, nothing reads it.</remarks>
+        public float RefugeEdibleFraction { get; }
+
         public NutrientField(
             float worldArea, float layerMetres, float sinkMetresPerSecond, float worldDepth,
-            float refugeMetres = 0f)
+            float refugeMetres = 0f, float refugeEdibleFraction = 0f)
         {
             if (!(worldArea > 0f) || float.IsInfinity(worldArea))
                 throw new ArgumentOutOfRangeException(nameof(worldArea), worldArea, "Must be positive and finite.");
@@ -73,12 +82,18 @@ namespace Evosim.Core
                 throw new ArgumentOutOfRangeException(nameof(worldDepth), worldDepth, "Must be positive and finite.");
             if (!(refugeMetres >= 0f) || float.IsInfinity(refugeMetres))
                 throw new ArgumentOutOfRangeException(nameof(refugeMetres), refugeMetres, "Must be finite and not negative.");
+            if (!(refugeEdibleFraction >= 0f) || refugeEdibleFraction > 1f)
+                throw new ArgumentOutOfRangeException(
+                    nameof(refugeEdibleFraction), refugeEdibleFraction,
+                    "Must be in [0, 1]. Above 1 feeding would take more than the refuge holds, " +
+                    "and negative is not a fraction at all.");
 
             WorldArea = worldArea;
             LayerMetres = layerMetres;
             SinkMetresPerSecond = sinkMetresPerSecond;
             LayerCount = Math.Max(1, (int)Math.Ceiling(worldDepth / layerMetres));
             RefugeLayerCount = Math.Min(LayerCount, (int)Math.Ceiling(refugeMetres / layerMetres));
+            RefugeEdibleFraction = refugeEdibleFraction;
 
             for (int i = 0; i < LayerCount; i++)
             {
@@ -90,6 +105,27 @@ namespace Evosim.Core
 
         /// <summary>Whether a layer is buried beyond any mouth's reach — D055.</summary>
         public bool IsRefuge(int layer) => layer >= LayerCount - RefugeLayerCount;
+
+        /// <summary>
+        /// What a refuge layer's stock feeding may currently see and take, J — the arm C
+        /// generalisation of D055's all-or-nothing refuge.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Re-evaluated from the current stock, not tracked as its own ledger.</b> The edible
+        /// share of a refuge layer is <c>RefugeEdibleFraction × _stock[layer]</c> at the instant
+        /// this is called. That is deliberately not an exact per-step bound: two draws against the
+        /// same refuge layer in one step (two feeders at the refuge depth, or a recomputed short-
+        /// larder ledger — see <see cref="World.Metabolise"/>) each see the fraction of what is
+        /// left <i>after</i> the first, so the second can never take more than the edible share of
+        /// the remainder. It cannot be pushed past 100% of the true stock — every <c>Take</c> is
+        /// still capped at <c>_stock[layer]</c> itself — and it is self-limiting the same way
+        /// compound interest is: repeatedly taking a fraction of what remains approaches but never
+        /// reaches zero. A layer with no refuge (<see cref="IsRefuge"/> false) has no such limit at
+        /// all — this method is only ever consulted from inside a refuge branch.
+        /// </para>
+        /// </remarks>
+        private double EdibleStock(int layer) => _stock[layer] * RefugeEdibleFraction;
 
         /// <summary>Volume of one layer, m³.</summary>
         public float LayerVolume => WorldArea * LayerMetres;
@@ -141,17 +177,20 @@ namespace Evosim.Core
         public float DensityAt(float heightY) => (float)(_stock[LayerOf(heightY)] / LayerVolume);
 
         /// <summary>
-        /// Energy density a feeding cell may actually draw at a depth, J/m³ — D055.
+        /// Energy density a feeding cell may actually draw at a depth, J/m³ — D055, generalised
+        /// by <see cref="RefugeEdibleFraction"/>.
         /// </summary>
         /// <remarks>
-        /// Zero inside the refuge, whatever <see cref="DensityAt"/> reports there; identical to it
+        /// <c>RefugeEdibleFraction × DensityAt</c> inside the refuge — zero at the D055 default,
+        /// whatever <see cref="DensityAt"/> reports there; identical to <see cref="DensityAt"/>
         /// everywhere else. This is what <see cref="Demand"/> and <see cref="Take"/> enforce, so
         /// it is what a caller should price rather than reimplementing the refuge check.
         /// </remarks>
         public float EdibleDensityAt(float heightY)
         {
             int layer = LayerOf(heightY);
-            return IsRefuge(layer) ? 0f : (float)(_stock[layer] / LayerVolume);
+            double stock = IsRefuge(layer) ? EdibleStock(layer) : _stock[layer];
+            return (float)(stock / LayerVolume);
         }
 
         /// <summary>Discards last step's demand. Call before <see cref="Demand"/>.</summary>
@@ -162,15 +201,18 @@ namespace Evosim.Core
 
         /// <summary>Registers what one creature would take at this depth if nothing competed.</summary>
         /// <remarks>
-        /// Refuses a refuge layer outright — D055. The field enforces its own invariant here so
-        /// no caller can forget it by pricing <see cref="DensityAt"/> instead of
-        /// <see cref="EdibleDensityAt"/>.
+        /// Refuses a refuge layer outright at <see cref="RefugeEdibleFraction"/> zero — D055.
+        /// The field enforces its own invariant here so no caller can forget it by pricing
+        /// <see cref="DensityAt"/> instead of <see cref="EdibleDensityAt"/>. Above zero, demand
+        /// against a refuge layer is registered exactly like any other layer's — what bounds it
+        /// is <see cref="ShareAt"/> and <see cref="Take"/> reading the edible share of stock
+        /// rather than the whole of it.
         /// </remarks>
         public void Demand(float heightY, float joules)
         {
             if (!(joules > 0f)) return;
             int layer = LayerOf(heightY);
-            if (IsRefuge(layer)) return;
+            if (IsRefuge(layer) && RefugeEdibleFraction <= 0f) return;
             _demand[layer] += joules;
         }
 
@@ -179,7 +221,10 @@ namespace Evosim.Core
         /// </summary>
         /// <remarks>
         /// 1 while the layer holds more than its feeders want, falling as they exhaust it. Valid
-        /// after every <see cref="Demand"/> for the step has been registered.
+        /// after every <see cref="Demand"/> for the step has been registered. Inside a refuge
+        /// layer, "holds" means <see cref="EdibleStock"/> — the fraction of stock feeding can see
+        /// — not the full stock, so competitors can never be told there is more to share than the
+        /// refuge actually exposes.
         /// </remarks>
         public float ShareAt(float heightY)
         {
@@ -187,25 +232,38 @@ namespace Evosim.Core
             double wanted = _demand[layer];
 
             if (wanted <= 0.0) return 1f;
-            double available = _stock[layer];
+            double available = IsRefuge(layer) ? EdibleStock(layer) : _stock[layer];
 
             return available >= wanted ? 1f : (float)(available / wanted);
         }
 
         /// <summary>Removes energy from the pool and returns what was actually there to take.</summary>
         /// <remarks>
-        /// Refuses a refuge layer outright — D055, and the same enforcement <see cref="Demand"/>
-        /// applies. Stock in that layer is not touched, matching <c>ShareAt</c>'s reading of it
-        /// for whoever registered no demand there.
+        /// <para>
+        /// At <see cref="RefugeEdibleFraction"/> zero, refuses a refuge layer outright — D055,
+        /// and the same enforcement <see cref="Demand"/> applies. Stock in that layer is not
+        /// touched, matching <c>ShareAt</c>'s reading of it for whoever registered no demand
+        /// there.
+        /// </para>
+        /// <para>
+        /// Above zero, a refuge layer's cap is <see cref="EdibleStock"/> rather than the full
+        /// stock — the fraction of what remains <i>right now</i>, re-evaluated on every call
+        /// rather than tracked as a separate per-step ledger. That is deliberately the simplest
+        /// correct form and not an exact per-step bound: two draws against the same layer in one
+        /// step each see the edible share of what the first left behind, so repeated taking is
+        /// self-limiting — it approaches but can never reach zero — rather than being metered
+        /// against a fixed per-step allowance. It can never remove more than the full physical
+        /// stock either way, because the edible cap is itself a fraction (≤ 1) of that stock.
+        /// </para>
         /// </remarks>
         public float Take(float heightY, float joules)
         {
             if (!(joules > 0f)) return 0f;
 
             int layer = LayerOf(heightY);
-            if (IsRefuge(layer)) return 0f;
+            double cap = IsRefuge(layer) ? EdibleStock(layer) : _stock[layer];
 
-            double taken = Math.Min(joules, _stock[layer]);
+            double taken = Math.Min(joules, cap);
             if (taken <= 0.0) return 0f;
 
             _stock[layer] -= taken;

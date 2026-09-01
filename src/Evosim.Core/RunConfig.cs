@@ -452,6 +452,98 @@ namespace Evosim.Core
         public float FloorRefugeMetres { get; set; }
 
         /// <summary>
+        /// Fraction of a refuge layer's density that feeding can see and take, in [0, 1] —
+        /// arm C's knob on D055's refuge. Zero is D055's own refuge: total exclusion.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why total exclusion needed a dial.</b> D055 found the hard refuge falsified at both
+        /// ends — it starves establishment (round 7) and starves an already-established consumer
+        /// (the invasion assay, D060) — because this ecology's only evolved consumer is benthic
+        /// and feeds where it sinks, so a refuge that covers the whole floor removes its entire
+        /// feeding ground rather than protecting a reserve. The owner's standing hypothesis
+        /// (logbook/0043) is that the deeper distortion is whole-layer horizontal access, not
+        /// floor access at all — this knob lets that be tested without reopening D055 itself: a
+        /// partial refuge leaves a consumer something to eat on the floor while still holding
+        /// back a reserve the gradient refills.
+        /// </para>
+        /// <para>
+        /// <b>Scope and mechanism, mirroring D055 exactly.</b> Applies to <see cref="NutrientField"/>
+        /// only, via <see cref="NutrientField.RefugeEdibleFraction"/> — <c>Deposit</c>, <c>Settle</c>,
+        /// <c>Mix</c> and <c>Remineralise</c> are untouched, so matter still arrives, piles and
+        /// leaves exactly as before; only what feeding can price changes. Has no effect at all when
+        /// <see cref="FloorRefugeMetres"/> is 0: with no refuge layers, there is nothing for a
+        /// fraction to apply to.
+        /// </para>
+        /// <para>
+        /// <b>Taking is self-limiting, not perfectly conserving across a step.</b> Each call to
+        /// <see cref="NutrientField.Take"/> may remove up to <c>fraction</c> of whatever the layer
+        /// holds <i>at that moment</i>, so repeated draws within one step approach but do not cross
+        /// the edible share of what remains — the simplest form that cannot double-dip, at the cost
+        /// of not being an exact per-step bound. See the class remarks on
+        /// <see cref="NutrientField"/> for the full reasoning.
+        /// </para>
+        /// <para>⚠ Untested against the theory D055's entry cites (Křivan 2013): a partial refuge's
+        /// equilibrium has not been derived the way the total-exclusion case was. Zero by default,
+        /// so the world is bit-identical until a run asks otherwise — the D052/D055 shape;
+        /// <c>EVOSIM_REFUGE_FRACTION</c> in the header.</para>
+        /// </remarks>
+        [Tunable("world")]
+        public float RefugeEdibleFraction { get; set; }
+
+        /// <summary>
+        /// Filter-feeding intake power cap, W per m³ of tissue — D062's satiation plateau. Zero
+        /// is off: an <see cref="AbsorptiveCell"/>'s draw is unbounded, as it always was.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The mouth's physical limit.</b> A true type I functional response is not a
+        /// simplification of a real filter feeder, it is an impossibility: handling time forces a
+        /// plateau on every catalogued type I response in [JKT04]'s 814-response survey. Round 8's
+        /// arm B (D062) adds the plateau this world never had, as a direct answer to the
+        /// recruitment-collapse mechanism logbook/0043 traced through the lineage record: every
+        /// boom grazes the pool below the reproduction break-even before any adult stops surviving.
+        /// </para>
+        /// <para>
+        /// <b>Where it bites.</b> Bounds the effective <c>density × ClearanceRate</c> product — the
+        /// intake power per m³ of tissue — at this ceiling, applied after
+        /// <see cref="ClearanceToeDensity"/>'s toe. See <see cref="AbsorptiveCell.Acquire"/>.
+        /// </para>
+        /// <para>⚠ Unmeasured — a dose chosen by the round that first turns it on. Zero by
+        /// default, so the world is bit-identical until a run asks otherwise; the D052/D055
+        /// shape. <c>EVOSIM_SATIATION</c> in the header.</para>
+        /// </remarks>
+        [Tunable("feeding", Unit = "W/m3")]
+        public float SatiationWattsPerCubicMetre { get; set; }
+
+        /// <summary>
+        /// Density below which filter-feeding clearance relaxes toward zero, J/m³ — D062's
+        /// type-III toe. Zero is off: clearance is the plain type-I rate at every density.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The relaxation-at-low-density stabiliser.</b> [DBWM05] found that a slight
+        /// relaxation toward type III (q=0.1 of the way there) eliminated extinctions in model
+        /// food webs. D062's honest doubt, pre-registered: a pure intake cap
+        /// (<see cref="SatiationWattsPerCubicMetre"/>) slows the boom, but it is this toe — which
+        /// lets the pool escape upward at low density — that may be the half that stops a bust,
+        /// since adults keep grazing at survival rates right through the trough.
+        /// </para>
+        /// <para>
+        /// <b>The exact form.</b> Effective clearance is <c>ClearanceRate × density / (density +
+        /// this)</c> — a soft type-III toe. At density 0 the factor is 0; at density equal to this
+        /// value the factor is exactly ½, which is the toe's own definition (halved at the named
+        /// density); it rises toward 1 as density climbs past the toe. See
+        /// <see cref="AbsorptiveCell.Acquire"/>.
+        /// </para>
+        /// <para>⚠ Unmeasured — a dose chosen by the round that first turns it on. Zero by
+        /// default, so the world is bit-identical until a run asks otherwise; the D052/D055
+        /// shape. <c>EVOSIM_CLEARANCE_TOE</c> in the header.</para>
+        /// </remarks>
+        [Tunable("feeding", Unit = "J/m3")]
+        public float ClearanceToeDensity { get; set; }
+
+        /// <summary>
         /// Seconds of life after which a body costs twice as much to keep — DESIGN.md §5A.2, D038.
         /// Zero is an immortal world.
         /// </summary>

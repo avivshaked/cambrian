@@ -78,6 +78,28 @@ namespace Evosim.Core
         /// </summary>
         public TissueContact Contact { get; }
 
+        /// <summary>
+        /// Filter-feeding intake power cap, W per m³ of tissue — D062. Zero is off: an
+        /// <see cref="AbsorptiveCell"/>'s draw is unbounded, as it always was before D062.
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="RunConfig"/> value, not a per-part one — <c>Evosim.Core</c> has no
+        /// <c>UnityEngine</c> and no notion of a world, so it reaches <see cref="CellType.Acquire"/>
+        /// the same way <see cref="NutrientDensity"/> and <see cref="Irradiance"/> do: packed into
+        /// the context by whoever builds it each step (<see cref="Metabolism"/>), rather than
+        /// handing the cell a config reference of its own.
+        /// </remarks>
+        public float SatiationWattsPerCubicMetre { get; }
+
+        /// <summary>
+        /// Density below which filter-feeding clearance relaxes toward zero, J/m³ — D062's
+        /// type-III toe. Zero is off: clearance is the plain type-I rate at every density, as it
+        /// always was before D062.
+        /// </summary>
+        /// <remarks>Reaches <see cref="CellType.Acquire"/> the same route as
+        /// <see cref="SatiationWattsPerCubicMetre"/> — see its remarks.</remarks>
+        public float ClearanceToeDensity { get; }
+
         public CellContext(
             float seconds,
             float volume,
@@ -87,7 +109,9 @@ namespace Evosim.Core
             TissueContact contact = null,
             float power = 0f,
             int dof = 0,
-            float lift = 0f)
+            float lift = 0f,
+            float satiationWattsPerCubicMetre = 0f,
+            float clearanceToeDensity = 0f)
         {
             Seconds = seconds;
             Volume = volume;
@@ -98,6 +122,8 @@ namespace Evosim.Core
             Irradiance = irradiance;
             NutrientDensity = nutrientDensity;
             Contact = contact;
+            SatiationWattsPerCubicMetre = satiationWattsPerCubicMetre;
+            ClearanceToeDensity = clearanceToeDensity;
         }
     }
 

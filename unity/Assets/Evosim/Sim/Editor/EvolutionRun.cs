@@ -115,6 +115,20 @@ namespace Evosim.Sim.EditorTools
             // grazeable including the floor layer.
             float floorRefuge = Env("EVOSIM_FLOOR_REFUGE", new RunConfig().FloorRefugeMetres);
 
+            // Arm C. Fraction of a refuge layer's density feeding may still see and take — D055's
+            // hard, total-exclusion refuge generalised to a partial one, on the owner's standing
+            // hypothesis that whole-layer horizontal access is the deeper distortion rather than
+            // floor access itself. 0 is D055's own refuge (or, with floorRefuge also 0, no refuge
+            // at all) — the world every earlier run measured.
+            float refugeFraction = Env("EVOSIM_REFUGE_FRACTION", new RunConfig().RefugeEdibleFraction);
+
+            // D062. The satiation cap and its type-III toe — the mouth's physical limit and the
+            // relaxation-at-low-density stabiliser the recruitment-collapse mechanism
+            // (logbook/0043) points at. Both 0 is the world every earlier run measured, in which
+            // AbsorptiveCell's clearance is unbounded and linear at every density.
+            float satiation = Env("EVOSIM_SATIATION", new RunConfig().SatiationWattsPerCubicMetre);
+            float clearanceToe = Env("EVOSIM_CLEARANCE_TOE", new RunConfig().ClearanceToeDensity);
+
             // D057. Genome-distance drift threshold for species accounting — pure instrumentation,
             // read by nothing but this report. 0 is the world every earlier run measured, where
             // species machinery never runs at all and every creature reads species 0.
@@ -280,6 +294,9 @@ namespace Evosim.Sim.EditorTools
             config.MatterRemineralisationPerSecond = remin;
             config.ExcretionPerJoule = excretion;
             config.FloorRefugeMetres = floorRefuge;
+            config.RefugeEdibleFraction = refugeFraction;
+            config.SatiationWattsPerCubicMetre = satiation;
+            config.ClearanceToeDensity = clearanceToe;
             config.SpeciesDriftThreshold = speciesTheta;
             config.WorldAreaSquareMetres = area;
             config.FloorClosesAfterSeconds = floorCloses;
@@ -321,6 +338,9 @@ namespace Evosim.Sim.EditorTools
                 " · remin " + remin + " /s" +
                 " · excretion " + excretion + " /J" +
                 " · refuge " + floorRefuge + " m" +
+                (refugeFraction > 0f ? " at " + refugeFraction + " edible" : "") +
+                (satiation > 0f ? " · satiation " + satiation + " W/m3" : "") +
+                (clearanceToe > 0f ? " · toe " + clearanceToe + " J/m3" : "") +
                 " · speciesTheta " + speciesTheta +
                 " · area " + area + " m2" +
                 (floorCloses > 0f ? " · floor closes " + floorCloses + " s" : " · floor open") +

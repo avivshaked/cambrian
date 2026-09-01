@@ -937,6 +937,137 @@ namespace Evosim.Core.Tests
                 $"a floor refuge opened a hole in the energy audit: {residual:0.###} J unaccounted for");
         }
 
+        // ------------------------------------------------------------ D062: the satiation cap
+
+        [Fact]
+        public void SatiationAndClearanceToeAtDefaultAreBitIdenticalToNeverHearingOfEitherKnob()
+        {
+            // Same shape as AWorldWithNoFloorRefugeIsBitIdenticalToOneThatNeverHeardOfTheKnob:
+            // "never set" and "explicitly 0" are the same RunConfig value, so any divergence in
+            // the trajectory is a bug in how the cap and the toe reach AbsorptiveCell.Acquire via
+            // CellContext, not in the biology.
+            string Trajectory(RunConfig config)
+            {
+                var world = new World(config, seed: 5);
+                var samples = new System.Text.StringBuilder();
+                for (int i = 0; i < 300; i++)
+                {
+                    world.Step(1f);
+                    samples.AppendLine(WorldStats.Sample(world).ToJson());
+                }
+                return samples.ToString();
+            }
+
+            var unset = new RunConfig { Light = new LightModel(300f, 12f) };
+            var explicitZero = new RunConfig
+            {
+                Light = new LightModel(300f, 12f),
+                SatiationWattsPerCubicMetre = 0f,
+                ClearanceToeDensity = 0f,
+            };
+
+            Assert.Equal(0f, unset.SatiationWattsPerCubicMetre);
+            Assert.Equal(0f, unset.ClearanceToeDensity);
+            Assert.Equal(Trajectory(unset), Trajectory(explicitZero));
+        }
+
+        // ------------------------------------------------------------ Arm C: the refuge fraction
+
+        [Fact]
+        public void ARefugeWithFractionZeroIsBitIdenticalToD055sHardRefuge()
+        {
+            // "Never set" and "explicitly 0" are the same RunConfig value for RefugeEdibleFraction,
+            // exactly as they are for FloorRefugeMetres itself (D055) — so a refuge-1 world with the
+            // fraction unset must reproduce what the D055 tests already expect of a hard refuge:
+            // feeding sees nothing in the refuge layer, however much detritus piles up there.
+            string Trajectory(RunConfig config)
+            {
+                var world = new World(config, seed: 5);
+                var samples = new System.Text.StringBuilder();
+                for (int i = 0; i < 300; i++)
+                {
+                    world.Step(1f);
+                    samples.AppendLine(WorldStats.Sample(world).ToJson());
+                }
+                return samples.ToString();
+            }
+
+            var unset = new RunConfig { Light = new LightModel(300f, 12f), FloorRefugeMetres = 1f };
+            var explicitZero = new RunConfig
+            {
+                Light = new LightModel(300f, 12f),
+                FloorRefugeMetres = 1f,
+                RefugeEdibleFraction = 0f,
+            };
+
+            Assert.Equal(0f, unset.RefugeEdibleFraction);
+            Assert.Equal(Trajectory(unset), Trajectory(explicitZero));
+        }
+
+        [Fact]
+        public void TheRefugeFractionExposesExactlyFractionTimesDensityAndCannotBeDoubleDippedInOneCall()
+        {
+            // Field-level, not a live world: an impulse into the floor layer, read back through
+            // exactly the API feeding uses — EdibleDensityAt, Demand/ShareAt, Take.
+            const float worldArea = 100f;
+            const float layerMetres = 1f;
+            const float worldDepth = 10f;
+            const float fraction = 0.3f;
+
+            var field = new NutrientField(
+                worldArea: worldArea, layerMetres: layerMetres, sinkMetresPerSecond: 0f,
+                worldDepth: worldDepth, refugeMetres: 1f, refugeEdibleFraction: fraction);
+
+            float floorHeightY = -(worldDepth - 0.5f); // the refuge layer, whatever the depth
+            field.Deposit(floorHeightY, 10_000f);
+
+            double trueDensity = field.DensityAt(floorHeightY);
+            double edibleDensity = field.EdibleDensityAt(floorHeightY);
+
+            Fixtures.AssertClose((float)(trueDensity * fraction), (float)edibleDensity, 1e-3f);
+
+            // A single Take must never remove more than `fraction` of what the layer held just
+            // before the call — the self-limiting form the RefugeEdibleFraction doc commits to.
+            double preTakeStock = field.StockInLayer(field.LayerCount - 1);
+            float taken = field.Take(floorHeightY, joules: 1_000_000f); // demand far beyond the edible share
+
+            double postTakeStock = field.StockInLayer(field.LayerCount - 1);
+
+            _output.WriteLine(
+                $"pre {preTakeStock:0.###} J, took {taken:0.###} J, post {postTakeStock:0.###} J, " +
+                $"floor at {(1f - fraction) * 100f:0}% or above is untouchable in one call");
+
+            Assert.True(
+                postTakeStock >= preTakeStock * (1.0 - fraction) - 1e-3,
+                $"one Take call removed more than the {fraction:P0} edible share: {preTakeStock} -> {postTakeStock}");
+
+            Fixtures.AssertClose((float)(preTakeStock * fraction), taken, 1e-2f);
+        }
+
+        [Fact]
+        public void TheRefugeFractionIsInertWithNoRefugeLayers()
+        {
+            // FloorRefugeMetres = 0 means no layer is ever a refuge (IsRefuge is false
+            // everywhere), so a positive RefugeEdibleFraction has nothing to apply to — the
+            // field must read exactly as a fully-open one.
+            var field = new NutrientField(
+                worldArea: 100f, layerMetres: 1f, sinkMetresPerSecond: 0f, worldDepth: 10f,
+                refugeMetres: 0f, refugeEdibleFraction: 0.5f);
+
+            Assert.Equal(0, field.RefugeLayerCount);
+
+            float floorHeightY = -9.5f;
+            field.Deposit(floorHeightY, 5_000f);
+
+            Fixtures.AssertClose(field.DensityAt(floorHeightY), field.EdibleDensityAt(floorHeightY), 1e-6f);
+
+            double stockBefore = field.StockInLayer(field.LayerCount - 1);
+            float taken = field.Take(floorHeightY, joules: 1_000_000f); // far more than the stock holds
+
+            Fixtures.AssertClose((float)stockBefore, taken, 1e-3f);
+            Fixtures.AssertClose(0f, (float)field.StockInLayer(field.LayerCount - 1), 1e-3f);
+        }
+
         // ------------------------------------------------------------ D057: species accounting
 
         [Fact]

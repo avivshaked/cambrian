@@ -458,15 +458,44 @@ namespace Evosim.Core
         public override Float3 InspectionColour => new Float3(0.20f, 0.65f, 0.85f);
 
         /// <remarks>
+        /// <para>
         /// Filtering, so nothing is lost in the transfer: what leaves the water is what the cell
         /// keeps. A consumer tears its food up and wastes most of it (§5A.3); a filter feeder does
         /// not, and that difference is most of why the two strategies coexist.
+        /// </para>
+        /// <para>
+        /// <b>D062's two knobs, both applied here and both default-off.</b>
+        /// <see cref="CellContext.ClearanceToeDensity"/> scales <see cref="ClearanceRate"/> down
+        /// by <c>density / (density + toe)</c> — a soft type-III toe: at density 0 the factor is
+        /// 0, at density = toe it is exactly ½ (the toe's own definition), and it rises toward 1
+        /// as density climbs past the toe. <see cref="CellContext.SatiationWattsPerCubicMetre"/>
+        /// then caps the resulting <c>density × clearance</c> product — the intake power per m³
+        /// of tissue — at that ceiling: the handling-time plateau a true type I response cannot
+        /// have (D062). Both are skipped by an <c>if</c> rather than folded into the arithmetic
+        /// unconditionally, so a run that never sets them reproduces the original float rounding
+        /// exactly rather than merely converging on it.
+        /// </para>
         /// </remarks>
-        public override CellIntake Acquire(in CellContext context) =>
-            CellIntake.Food(
-                Math.Max(0f, context.NutrientDensity) * ClearanceRate *
-                Math.Max(0f, context.Volume) * context.Seconds,
-                Yield);
+        public override CellIntake Acquire(in CellContext context)
+        {
+            float density = Math.Max(0f, context.NutrientDensity);
+            float volume = Math.Max(0f, context.Volume);
+
+            float clearance = ClearanceRate;
+            if (context.ClearanceToeDensity > 0f)
+            {
+                clearance *= density / (density + context.ClearanceToeDensity);
+            }
+
+            float wattsPerCubicMetre = density * clearance;
+            if (context.SatiationWattsPerCubicMetre > 0f &&
+                wattsPerCubicMetre > context.SatiationWattsPerCubicMetre)
+            {
+                wattsPerCubicMetre = context.SatiationWattsPerCubicMetre;
+            }
+
+            return CellIntake.Food(wattsPerCubicMetre * volume * context.Seconds, Yield);
+        }
 
         public override void WriteParameters(Json.Writer writer) =>
             writer.Field("clearanceRate", ClearanceRate)
