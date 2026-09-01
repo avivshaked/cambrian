@@ -87,8 +87,11 @@ Rounds 1–7 plus the D060 assay are scored (the table above is the record). Wha
    design criterion is boom-bust wavelength vs domain size [RMF07], the strong refuge
    form is fixed-number ≡ type III feeding [KR13], a satiation cap on clearance is
    physically mandatory anyway [JKT04], and the busts may be cohort cycles no spatial
-   fix addresses (de Roos & Persson — lead; the discriminator needs lineage events,
-   now a pre-round-8 instrument); (b) a D061 design draft — horizontal patches
+   fix addresses (de Roos & Persson — lead; the discriminating measurement needs lineage
+   events, **built 2026-09-01** — one row per birth/death into `lineage.jsonl`, inert by
+   construction, suite 374; workers pick it up at their next refresh); the design draft
+   itself is written: **`fable-propose-d061.md`** (absorb into DECISIONS on ruling, then
+   delete, per the propose-file pattern); (b) a D061 design draft — horizontal patches
    per layer, organism x-position, passive drift on the existing current, local feeding
    and deposit, sideways mixing; (c) round 8 pre-registered with one partial-pantry
    comparison arm (the knob exists: a fractional `EdibleDensityAt` generalisation) so
