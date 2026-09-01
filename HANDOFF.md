@@ -1,6 +1,6 @@
 # Handoff — where to pick up
 
-**Updated 2026-09-01, after round 7 was scored.** This is the one file a new agent should
+**Updated 2026-09-01, after the invasion assay (logbook/0043) was scored.** This is the one file a new agent should
 read first. It says what was being attempted, how far it got, what is queued, and exactly how
 to continue. It is a pointer, not a source of truth: the specification is `DESIGN.md`, the
 reasoning is `DECISIONS.md`, the history is `logbook/`, and the operating rules are
@@ -29,10 +29,20 @@ arm a byte-identical untreated control) and produced the campaign's causal accou
 metre, the densest food anywhere); an unguarded hoard funds booms that exhaust it and
 bust; a locked hoard (the refuge) yields only slow, small chains an order of magnitude
 below the booms. The refuge is falsified as damping — it was an access gate, not a meter
-(the impulse harness measured a 1 m refuge as transport-identical to none). The stabiliser
-the goal needs must let a founder reach concentrated food *and* stop a boom from taking
-all of it. The next steps are ratified: D060's invasion assay (persistence vs
-establishment, separated), then the owner's round-8 fork.
+(the impulse harness measured a 1 m refuge as transport-identical to none). D060's
+invasion assay then ran (logbook/0043, four arms, all budget-complete) and finished the
+job: a verified consumer genome hand-placed into paired worlds **established and boomed
+in both controls and starved to extinction in both refuge worlds, without one
+descendant** — because the evolved consumer is *benthic* (it sinks to the floor in ~900 s
+and feeds there), so the refuge is total exclusion, not a held-back fraction. D055 is
+rejected as a world rule at any floor-covering dose. The split answer to "world problem
+or mutation problem": establishment is a world problem (the on-ramp is the floor pantry),
+arrival is a mutation-supply problem (these seeds never delivered a breeding absorptive
+in 30,000 s; a transplant chain built itself in both). The stabiliser the goal needs must
+let a founder reach concentrated food *and* stop a boom from taking all of it — and the
+owner's hypothesis, on record in 0043, is that the real distortion is **whole-layer
+horizontal access** (a perfectly-stirred layer: no travel, no local depletion, no reason
+movement should ever pay). The round-8 design decision is the owner's, in discussion.
 
 ## What was established, in order (the logbook entries are the record)
 
@@ -45,6 +55,7 @@ establishment, separated), then the owner's round-8 fork.
 | [0040](logbook/0040-right-sizing-the-dish.md) | 5, 5b | D053: irradiance 25–175, then area 100–200 m² | **No geometric rescale bounds this world** — every dimmer sea dies (famine below 150, drought above), 200 runs away; small dishes die of shading-driven darkness and irreversible sinking (−131 m in a 60 m world — the ocean has no floor for bodies). D053 closed |
 | [0041](logbook/0041-the-sea-digests.md) | 6 | D052: excretion k=0.001 | **The first bounded, living, uncensored worlds** (two of five to full budget, floor silent, drought-cycling); three chain establishments in one round; the "first trophic collapse" (s3) — later corrected by round 7. One near-pass at a wall cut. Every boom still bust |
 | [0042](logbook/0042-the-larder-under-the-mud.md) | 7 | D055: refuge 1 m, on round 6's world | **The matched-pair round.** Two arms replayed round 6 byte-identically (refuge never bound); three diverged at establishment. Chains establish through the floor pantry: treated booms 71 and 1-then-dead against controls' 908 and 1,297; s5's late chain grew to 18 on column food alone (the slow path exists). s3's twin died chainless anyway — round 6's collapse was never trophic at bottom. Refuge falsified as damping; scored 0-of-5 under both tables |
+| [0043](logbook/0043-the-transplant.md) | 7.5 (diagnostic) | D060: five copies of a round-6 consumer genome injected at t=8,000 into seeds 2 and 4, refuge 0 vs 1 m — paired, all four budget-complete | **The consumer is benthic** (sank to the floor in ~900 s, both seeds). Controls: established (t=9,700 / 11,300), boomed to 135 / 121, alive at budget (56 / 93) with inherit streaks of 104 / 88 samples. Treatments: starved to extinction on ~13 kJ of forbidden floor stock, zero descendants. D055 rejected as world rule; the arms are diagnostic and cannot count toward the goal |
 
 **The mechanism, in one paragraph.** Surface matter runs out (D048's economy — producers
 strip it), conceptions are refused, births stop. From there one of two things is
@@ -61,29 +72,27 @@ so; nothing damps a consumer here but its food.
 
 ## Queued — the current path, in order
 
-Rounds 1–7 are scored (the table above is the record). What remains, all ratified:
+Rounds 1–7 plus the D060 assay are scored (the table above is the record). What remains:
 
-1. **D060 — the invasion assay, next arm-work on the machine.** Build the inoculation
-   capability first (an instrument: inject a saved genome at a fixed simulated time —
-   round 6's established absorptive genomes are in `runs/d056-*/`), pre-register in the
-   0036-style, then paired arms: excretion-only vs excretion+refuge, same seeds, same
-   inoculum, same introduction time. It answers whether an *established* chain persists
-   on refuge-metered flux — establishment (which round 7 answered) and persistence are
-   different questions. **Workers 2–5 must be refreshed before any new arm** (the round
-   is over; the refresh carries the pre-round-8 instrumentation and will move the config
-   hash again — expected, documented pattern in logbook/0042's addendum 3).
-2. **Optional, the owner's call — s5's solo rerun** (D058's letter for a promising
-   censored arm: 18-sample inherited streak, rising, at its wall cut). Honest cost: no
-   world resumes from a snapshot, so the rerun replays ~10 wall-hours to reach the cut
-   before writing anything new, on the *unrefreshed* wave-2 code for byte-identity.
-3. **The round-8 fork — the owner's decision, taken with D060's answer in hand:**
-   partial pantry access (a refuge that meters rather than locks — the impulse harness
-   says thickness 5–10 m is a real slow larder, but it also widens what establishment
-   cannot reach), or D059's floor clamp first (changes who reaches the pantry at all),
-   or D054's shelf pulled forward (geography as the establishment on-ramp — food and
-   light overlapping at the shallow end). Still open from the build queue: the stillborn
-   `matterPrice` guard test when `Conceive` is next touched (the orphan itself was
-   verified vacuous — D052's corrected addendum).
+1. **The round-8 design — the owner's decision, in active discussion.** The assay
+   answered the mechanism question; the owner then advanced a hypothesis (recorded in
+   0043's Results) that the deep distortion is **whole-layer horizontal access**: every
+   layer is a perfectly-stirred tank, so a creature at the right depth feeds from all
+   400 m² at once — no local depletion, no travel, no spatial asynchrony, which is the
+   regime where consumer–resource theory predicts the widest cycles (paradox of
+   enrichment — inference, uncited) and which also forecloses movement ever paying. The
+   agent's recommendation, awaiting the owner's ruling: (a) a small literature round
+   first (Rosenzweig's paradox of enrichment, Huffaker's patch experiments, prey-refuge
+   fractions) so the design cites evidence; (b) a D061 design draft — horizontal patches
+   per layer, organism x-position, passive drift on the existing current, local feeding
+   and deposit, sideways mixing; (c) round 8 pre-registered with one partial-pantry
+   comparison arm (the knob exists: a fractional `EdibleDensityAt` generalisation) so
+   the world says *which* stabiliser it needed. Owner has ruled on the side questions:
+   s5's solo rerun is **skipped**; pushing all commits including `inocula/` approved.
+2. **Owner decisions still open besides round 8:** none. The stillborn `matterPrice`
+   guard test stays queued for whenever `Conceive` is next touched (the orphan itself
+   was verified vacuous — D052's corrected addendum). Run-identity git/worker
+   fingerprints are still a TODO in `run.json`.
 4. **The sloped world (D054)** — the destination after the goal: `floorDepth[column]`
    architecture, straight slope as the first profile, profile in the config hash, procedural
    generation deferred. Design questions it must answer first are listed in the D-entry.

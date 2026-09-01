@@ -137,3 +137,84 @@ pairs share config hashes as they must, and the checks read:
   first divergence from the *twins* lands exactly at the injection row (s2: 262 alive vs
   259 — five inoculants minus what their competition displaced). The hand moved the world
   at precisely the pre-registered instant and nowhere earlier.
+
+---
+
+## Results
+
+All four arms ran to their full 20,000 s budget — no wall cuts, no ceiling, no
+extinctions. Under [D058](../DECISIONS.md) every arm answers. V2 completed cleanly:
+**both pairs diverged at t=8,900**, nine hundred simulated seconds after injection, and
+V3 held (`floor` = 0 after t=3,100 everywhere).
+
+That t=8,900 number is itself the round's first finding. The transplants were placed at
+−50 m, in the water column. Within ~900 s they were feeding at the floor — in both
+seeds, at the same sample. The consumer this ecology evolved is not a drifting filter
+feeder that happens to visit the bottom; it is **benthic**. It sinks (tissue runs
+0.02 kg/m³ over water), lands on the pile, and eats where it lands.
+
+### The fates
+
+| arm | treatment | lineage established | peak `absorpt` | at t=20,000 | lineage fate |
+|---|---|---|---|---|---|
+| d060-s2r0 | none | t=9,700 | 135 | **56 alive, 56 inherited** | alive, declining |
+| d060-s2r1 | refuge 1 m | never | 5 (the transplants) | 0 | **extinct by t=13,100, zero descendants** |
+| d060-s4r0 | none | t=11,300 | 121 | **93 alive, 90 inherited** | alive, declining |
+| d060-s4r1 | refuge 1 m | never | 5 (the transplants) | 0 | **extinct by t=11,400, zero descendants** |
+
+In both control worlds the five transplants sank, grazed the floor pantry, and founded a
+lineage that boomed past 100. In both treated worlds the same five creatures sank to the
+same floor, sat on ~13 kJ of food they were forbidden to price, and starved — the water
+column at their depth (~0.7–1.3 J/m³) kept them alive for 3–5 thousand seconds but never
+funded a 281 J brood. Not one descendant, in either seed.
+
+### The predictions, scored
+
+| # | prediction | verdict |
+|---|---|---|
+| X1 | transplants alive at first sample | **holds**, all four arms |
+| X2 | `inherit` ≥ 1 by t=10,000 in ≥3 of 4 | **fails** — 1 of 4 (s2r0 at 9,700; s4r0 took until 11,300; the treatments never). Establishment is real but slower than the 2,000 s the pre-registration guessed |
+| X3 | a control booms ≥100 then busts <10 in-budget | **fails** — both controls boomed (135, 121) but ended alive at 56 and 93, declining as the deep larder drew down from ~12 to ~2–4 J/m³. The bust is on its way; 20,000 s did not contain it |
+| X4 | a treated lineage persists (20-sample streak, ≥10 at end) | **fails** — both treated lineages extinct without a descendant |
+| X5 | treated peak < control peak | **holds** trivially, 5 vs 135 and 5 vs 121 |
+
+### The reading
+
+This is the pre-registration's third branch, verbatim: *"one metre of refuge starves
+even an established consumer at these column densities — D055 rejected as a world rule
+at this dose."* The refuge is not a meter, not a damper, and not a stabiliser that
+lacked an on-ramp. For a benthic consumer — the only kind this ecology has ever made —
+it is total exclusion from the only food dense enough to live on.
+
+Three things the paired structure makes unambiguous:
+
+1. **The world can hold a chain; the mutation supply is what never delivered one to
+   seeds 2 and 4.** Round 7 ran these worlds 30,000 s and no absorptive ever bred.
+   Hand one verified genome across the establishment gap and the chain builds itself in
+   both seeds. The owner's question — world problem or mutation problem? — splits
+   cleanly: *establishment* is a world problem (the on-ramp is narrow and the refuge
+   closed it); *arrival* is a mutation-supply problem.
+2. **The controls satisfied the goal-shaped metric at this horizon** — post-injection
+   inherit streaks of 104 and 88 consecutive samples, both far past 20, with 56 and 93
+   alive at the last sample. A transplanted chain in the *unmodified* world outlives the
+   goal rule's bar for as long as we watched. The honest caveat sits beside it: both
+   were declining, the larder under them was nearly eaten, and round 6 says what comes
+   after a peak like that when the run is longer.
+3. **A consumer-free treated world is the owner's oil field.** With the transplants dead
+   and no graze on the deep, s2r1's deep stock climbed monotonically to 30 J/m³ and its
+   world swelled to over a thousand producers — energy burying itself in an ungrazeable
+   floor, exactly the one-way carbon story the refuge was always going to write once
+   nothing could eat it back.
+
+### What this does to the design
+
+D055's knob survives as an instrument; as a *world rule at 1 m* it is falsified twice
+over — round 7 showed it blocks establishment, this round shows it kills established
+consumers too. The design tension it was built to resolve is still real (round 6's
+booms still bust), but the resolution cannot be "close the seabed." The owner's
+hypothesis, raised on seeing these results, is that the deeper distortion is
+**whole-layer access** — a creature at the right depth feeds from the entire horizontal
+extent at once, no travel, no local depletion, which is the perfectly-stirred regime in
+which consumer-resource theory predicts exactly the violent cycling we observe, and
+which also forecloses any reason for movement to pay. That hypothesis, the literature it
+needs, and the round-8 design it implies are the next decision, and it is the owner's.

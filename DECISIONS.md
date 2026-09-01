@@ -77,7 +77,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D052](#d052) | Living bodies give matter back — the excretion contract | 2026-08-29 | active · measured — first bounded living worlds (logbook/0041) |
 | [D053](#d053) | Right-sizing the dish — the equilibrium must sit inside the instrument | 2026-08-30 | closed — no geometric rescale bounds this world (logbook/0040) |
 | [D054](#d054) | The floor becomes a gradient — a beach, a shelf, and a deep | 2026-08-30 | decided · not designed |
-| [D055](#d055) | The seabed is a refuge — the floor layer cannot be grazed | 2026-08-31 | falsified as damping — an access gate, not a meter (logbook/0042); knob kept |
+| [D055](#d055) | The seabed is a refuge — the floor layer cannot be grazed | 2026-08-31 | rejected as world rule at 1 m — starves the benthic consumer outright (logbook/0042, 0043); knob kept as instrument |
 | [D056](#d056) | Mutation rate: fixed within a round, raisable between rounds, never a thermostat | 2026-08-31 | direction · nothing built |
 | [D057](#d057) | A species is a clade within a drift threshold of its founder | 2026-08-31 | active · built, θ uncalibrated |
 | [D058](#d058) | Only the budget ends a run — censored arms cannot pass | 2026-08-31 | active |
@@ -2517,6 +2517,23 @@ strategy as such rather than capping the harvest.
 ⚠ Project inference from general consumer–resource theory (refugia stabilise
 Rosenzweig–MacArthur-type cycles); the literature review has not searched predator–prey
 refuge models. Add a primary source before leaning on the dynamics quantitatively.
+
+**Rejected as a world rule at 1 m** · 2026-09-01. Falsified twice over, once from each
+side. Round 7 (logbook/0042) showed the refuge blocks establishment: chains start by
+grazing the floor pantry, and every treated establishment was strangled at birth. The
+invasion assay (D060, logbook/0043) then showed it kills established consumers too: in
+paired worlds with a verified consumer hand-placed at t=8,000, both control lineages
+established and boomed past 100 while both treated cohorts starved to extinction on top
+of ~13 kJ of forbidden floor stock, without one descendant. The mechanism error was in
+the prey-refuge analogy's premise: the analogy assumes the consumer feeds in the
+*accessible* pool and the refuge protects a *reserve*. This ecology's only evolved
+consumer is benthic — it sinks to the floor within ~900 s and feeds there — so the
+"reserve" is the entire food supply and the refuge is total exclusion, not a fraction
+held back. The knob (`FloorRefugeMetres`) is kept as a built instrument for exclusion
+experiments; it is not a candidate stabiliser at any dose that covers the floor layer,
+which every dose ≥ 1 does. The design tension it addressed remains open, passed to the
+round-8 decision (owner's hypothesis on record in logbook/0043: the deeper distortion is
+whole-layer horizontal access, not floor access).
 
 ### D056
 **Mutation rate: fixed within a round, raisable between rounds, never a thermostat** · 2026-08-31
