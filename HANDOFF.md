@@ -70,6 +70,12 @@ budget stopped the run. Separately, every absorptive lineage that established (s
 ate the deep water from 18–38 J/m³ to ~4 in about 1,500–4,000 s and bust to zero or nearly
 so; nothing damps a consumer here but its food.
 
+**Owner's standing priority (2026-09-01): get the goal met and move on.** This phase has
+been educational but is the less interesting part — bias every choice toward the fastest
+credible pass. Pre-registered contingencies fire without new deliberation (D056's 5×
+discovery rerun if arrival binds); no new side investigations unless they unblock the
+goal; the movement frontier and the aquarium are the destinations waiting behind the pass.
+
 ## Queued — the current path, in order
 
 Rounds 1–7 plus the D060 assay are scored (the table above is the record). What remains:
