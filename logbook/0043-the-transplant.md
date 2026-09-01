@@ -274,6 +274,36 @@ column prefix (the hash differs: three generations of default-off tunables have 
 Core since round 6; the knob-off bit-identity tests are the bridge). Result appended
 when it lands.
 
+**Result.** The replay validated (all 228 captured rows match the original exactly) and
+the answer is emphatic — the natural boom carries the same structure, more violently:
+
+- Absorptive births per 500 s through the boom: **1 → 10 → 107 → 525 → 275 → 18 → 0.**
+  Recruitment collapsed at t≈13,000 — *at the 908 peak* — while deaths in that same
+  window numbered twelve.
+- The entire visible crash, 908 → 5 over the following 5,000 s, happened at **zero
+  births**: a sterile cohort dying on schedule (deaths per 500 s: 129, 145, 98, 118,
+  101, 197). What every report of every round has rendered as "the bust" is the
+  after-image of a recruitment collapse that happened thousands of seconds earlier, at
+  the moment the population looked strongest.
+- The natural chain's median generation gap is **172 s** — seven times faster than the
+  transplant genome's 1,234–1,276 s. Generation time is a genotype property (endowment,
+  body volume); the trap is not. Threshold densities in the round-8 proposal are
+  computed for the transplant genome and must be re-derived per genotype where precision
+  matters.
+
+Seven rounds, seven busts — and now one measured mechanism, confirmed in a transplanted
+chain in two seeds and in the campaign's largest natural chain.
+
+**Instrument note, recorded honestly:** the replay wedged at t=22,700 (~6,100 alive,
+world heading for its ceiling) — log and report silent for 5.7 hours with the process
+alive, the first hang of the campaign, cause unknown. The wall-clock check lives inside
+the frozen loop, so it could never fire; the process was killed by hand. Two lessons:
+the monitor for this replay watched only for endings and compile errors, dropping round
+7's stall rule (report silent 30 min) — reinstate it in every future monitor; and the
+append-only run-directory design did exactly what it was built for — every row written
+before the hang, including the entire boom, survived the kill. Worker 2's Library died
+with the process; refresh before its next arm.
+
 D055's knob survives as an instrument; as a *world rule at 1 m* it is falsified twice
 over — round 7 showed it blocks establishment, this round shows it kills established
 consumers too. The design tension it was built to resolve is still real (round 6's
