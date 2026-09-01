@@ -101,6 +101,29 @@ because lineage events are unwritten. So: **build lineage events first** (alread
 promoted to pre-round-8 in HANDOFF; it also unblocks Q8's treadmill instrument and D057
 species tracking through time).
 
+## Threshold arithmetic (derived from code constants, 2026-09-01)
+
+For the evolved consumer (clearance 1 /s, absorptive upkeep 4 W/m³, tissue 500 J/m³,
+endowment 281.18 J, overhead 25 J, brood 2), intake power is density × volume, so the
+thresholds are densities, independent of body size:
+
+| threshold | density | meaning |
+|---|---|---|
+| survival (young) | **4 J/m³** | upkeep ÷ clearance; below it, slow starvation |
+| survival (senescent) | **8 J/m³** | D038 doubles upkeep at 10,000 s |
+| reproduction (minimum viable) | **≈ 6.7 J/m³** | one 635.6 J brood fundable within a pre-senescent life |
+| reproduction (boom pace) | **≈ 30+ J/m³** | brood in ~500–1,300 s — the observed establishment rate; the floor pantry's 66 J/m³ is deep in this zone |
+
+Observed post-boom deep densities were 2–4 J/m³ — below every line. **The trap band is
+4–7 J/m³** (alive, sterile), and both controls spent their final third in or under it.
+The measured sterile-tail die-off is the arithmetic's cross-check: at 3 J/m³ a blob runs
+a ~0.02 W deficit against a few hundred joules of reserve — hours to die, which is the
+drawn-out death curve the lineage shows. These are necessary-condition bounds (they
+ignore intake competition and conception cadence), marked as derived from code, not
+measured; but they set the **dose target for every arm**: a stabiliser succeeds iff it
+keeps some reachable pool above ≈ 7 J/m³ through the trough — and the natural rain
+already does this for any patch left ungrazed for a while, which is what arm A banks on.
+
 ## The round-8 shape I recommend
 
 Three treatments against the round-6 world, five seeds each where budget allows, after
