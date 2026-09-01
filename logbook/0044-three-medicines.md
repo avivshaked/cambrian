@@ -94,3 +94,11 @@ Fifteen arms, staggered ≤ 4 concurrent on workers 2–7 (below round 7's worst
 interleaved across treatments (`r8a-s1, r8b-s1, r8c-s1, r8a-s2` first) so no treatment is
 hostage to one machine incident. Workers refreshed to carry D061/D062 before wave 1;
 headers verified against this table before any arm is believed. Results appended below.
+
+**Mid-round re-order (2026-09-01, recorded before any B/C arm finished).** Arm A went
+0-for-3 by producer extinction (t=6,478, 6,596, 13,206 — the founding-suppression death,
+dose-generic) and is formally unable to reach 3-of-5. The interleave existed to hedge
+treatments against machine incidents; with A's outcome determined there is nothing left
+to hedge, and the owner's standing priority is the fastest credible pass — so `r8a-s4`
+and `r8a-s5` move to the back of the queue (still run, per this pre-registration; only
+later). No dose, budget or scoring rule changes.
