@@ -116,3 +116,24 @@ A V1 or V3 failure is a build alarm before it is a finding.
 Per [D058](../DECISIONS.md): only budget-complete arms answer; an extinct arm is a
 failure of its world, not of the assay; a wall- or ceiling-cut arm is censored and its
 predictions are read only up to the cut. Results appended below when the arms land.
+
+---
+
+## Mid-round addendum — the instrument verified (t≈8,100, all arms)
+
+All four headers carry the treatment (`inoculate 5 @ 8000 s, 50 m, genome e6f8e4da1edb`),
+pairs share config hashes as they must, and the checks read:
+
+- **V1 holds.** All 79 pre-injection rows in all four arms replay their twins
+  token-for-token on the shared 36 columns (the d060 reports append seven newer columns;
+  the comparison is on the common prefix). One false alarm first: the checking script cut
+  the rows one field wide, keeping the new `species` column against the twin's trailing
+  emptiness, and flagged every row. The instrument was right and the ruler was bent —
+  worth recording because the pre-registration's own rule ("a V1 failure is a build alarm
+  before it is a finding") is what forced the second look.
+- **X1 holds.** `absorpt` = 5 in all four arms at t=8,000 and t=8,100 — the transplants
+  are alive. `inherit` still 0 at 8,100: no descendants yet.
+- **V2 in progress.** Within each seed the pair is still identical at t=8,100, and the
+  first divergence from the *twins* lands exactly at the injection row (s2: 262 alive vs
+  259 — five inoculants minus what their competition displaced). The hand moved the world
+  at precisely the pre-registered instant and nowhere earlier.
