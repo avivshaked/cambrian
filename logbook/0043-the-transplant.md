@@ -263,6 +263,17 @@ What any round-8 stabiliser must now do is stated by the mechanism: keep some fo
 somewhere, above the **reproduction** threshold — above zero is not enough, and above
 the survival threshold is exactly the trap.
 
+**One more replay, launched on the same reasoning** (2026-09-01): correction 1 above
+says round 6's natural booms "should be presumed" to carry the same structure — a
+presumption cheaply convertible to measurement. `d056b-s1` replays round 6's seed 1 (the
+campaign's biggest natural boom, 908 → 5, a full cycle including the mortality crash the
+assay's budget truncated) with the lineage instrument. It answers: does recruitment
+collapse precede the mortality crash in a natural, evolved chain, and by how long?
+Validity check as before — rows must match `d056-s1.md` token-for-token on the shared
+column prefix (the hash differs: three generations of default-off tunables have entered
+Core since round 6; the knob-off bit-identity tests are the bridge). Result appended
+when it lands.
+
 D055's knob survives as an instrument; as a *world rule at 1 m* it is falsified twice
 over — round 7 showed it blocks establishment, this round shows it kills established
 consumers too. The design tension it was built to resolve is still real (round 6's
