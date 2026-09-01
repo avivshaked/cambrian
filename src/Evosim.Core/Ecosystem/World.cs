@@ -63,6 +63,14 @@ namespace Evosim.Core
         private readonly List<Organism> _dead = new List<Organism>();
         private readonly List<Organism> _born = new List<Organism>();
 
+        /// <summary>
+        /// Births and deaths since the last <see cref="DrainLineageEvents"/> — pure
+        /// instrumentation for <c>lineage.jsonl</c> (see <see cref="LineageEvent"/>). Swapped out
+        /// rather than copied-and-cleared on drain, so a report interval with nothing to report
+        /// costs nothing but reading a reference.
+        /// </summary>
+        private List<LineageEvent> _lineageEvents = new List<LineageEvent>();
+
         /// <summary>This step's ledgers, parallel to <c>_living</c>. Reused, never reallocated.</summary>
         private readonly List<EnergyLedger> _ledgers = new List<EnergyLedger>();
 
@@ -548,6 +556,12 @@ namespace Evosim.Core
                 _living.RemoveAt(i);
                 _dead.Add(creature);
                 Deaths++;
+
+                // §5A.6 kills at exactly zero energy and nothing else — Organism.cs's DeathCause
+                // remark ("the only cause the design has") is the reason this reads one constant
+                // rather than branching: senescence (D038) raises upkeep until this fires sooner,
+                // it does not open a second way to die.
+                _lineageEvents.Add(LineageEvent.Death(ElapsedSeconds, creature.Id, DeathCause.Starved));
             }
         }
 
@@ -852,7 +866,55 @@ namespace Evosim.Core
             // of the mutate-and-develop pass that already found it unviable.
             AssignSpecies(creature, parent);
 
+            // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9). After
+            // AssignSpecies, not before, so the row carries the species the birth actually landed
+            // in rather than a default. Stillbirths never reach here — the check above returns
+            // null first — so this is exactly "an id was assigned", which is what a lineage row
+            // means.
+            _lineageEvents.Add(LineageEvent.Birth(
+                ElapsedSeconds, creature.Id, parentId, kind, generationDepth, creature.SpeciesId,
+                HasAbsorptive(phenotype), phenotype.TotalDof > 0));
+
             return creature;
+        }
+
+        /// <summary>
+        /// Whether any part of a developed body is <see cref="CellTypeIds.Absorptive"/> — the same
+        /// test <c>EvolutionRun.cs</c>'s report already applies per creature, reused here rather
+        /// than reinvented so the two never disagree about what "absorptive" means.
+        /// </summary>
+        private static bool HasAbsorptive(Phenotype phenotype)
+        {
+            IReadOnlyList<PhenotypePart> parts = phenotype.Parts;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (parts[i].CellTypeId == CellTypeIds.Absorptive) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Hands over every <see cref="LineageEvent"/> queued since the last call, and forgets
+        /// them — the pre-round-8 instrument's drain API, meant to be called once per report row
+        /// alongside <see cref="TakeDead"/>.
+        /// </summary>
+        /// <remarks>
+        /// Swaps the list out for a fresh one rather than copying into a new list and clearing the
+        /// old one (<see cref="TakeDead"/>'s pattern): draining is on the hot report path and most
+        /// intervals have plenty of events, so a swap avoids copying every element for no reason.
+        /// A quiet interval costs nothing but a reference read via <see cref="Array.Empty{T}"/>.
+        /// <b>Never called by anything in <see cref="World"/> itself</b> — draining only empties a
+        /// list, never touches <see cref="Rng"/>, <see cref="ElapsedSeconds"/> or any economy
+        /// state, so a world stepped with this called every report row and one where it is never
+        /// called at all step through bit-identical trajectories.
+        /// </remarks>
+        public IReadOnlyList<LineageEvent> DrainLineageEvents()
+        {
+            if (_lineageEvents.Count == 0) return Array.Empty<LineageEvent>();
+
+            List<LineageEvent> taken = _lineageEvents;
+            _lineageEvents = new List<LineageEvent>();
+            return taken;
         }
 
         /// <summary>

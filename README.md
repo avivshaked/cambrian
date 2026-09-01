@@ -182,8 +182,8 @@ runs/                         NOT COMMITTED — simulation output, see below
 ```
 
 **A run is a directory, not a file.** `config.json` holds every tunable and its own hash;
-`lineage.jsonl` is reserved for one row per creature ever born — today it is created empty,
-and the compact birth/death event stream that will fill it is queued (`HANDOFF.md`);
+`lineage.jsonl` holds one row per creature ever born and one per death — a compact
+`{"e":"b",...}` / `{"e":"d",...}` pair per event, drained from the world every report row;
 `stats.jsonl` one row per sample;
 `snapshots/` the world state. The two high-volume files are append-only and line-oriented, so
 a run killed halfway leaves every completed row valid and readable — and can be watched live

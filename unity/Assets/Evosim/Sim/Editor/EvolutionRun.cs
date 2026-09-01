@@ -902,6 +902,17 @@ namespace Evosim.Sim.EditorTools
                 .Field("excretedTotal", world.ExcretedTotal)
                 .Field("excretedWindow", excretedWindow));
 
+            // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9): drained
+            // every report row, alongside stats.jsonl, and appended one row per event to
+            // lineage.jsonl through the same JsonlWriter. Drained even when dir is null (no run
+            // directory) so the queue in World never grows for the life of a run that has nowhere
+            // to write it.
+            IReadOnlyList<LineageEvent> lineageEvents = world.DrainLineageEvents();
+            if (dir != null)
+            {
+                for (int i = 0; i < lineageEvents.Count; i++) dir.Lineage.Write(lineageEvents[i].ToJson());
+            }
+
             var c = CultureInfo.InvariantCulture;
 
             // Built column by column rather than through a positional format string. That string
