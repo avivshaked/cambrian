@@ -69,6 +69,22 @@ the single most important thing the literature adds to the raw hypothesis.
 Knobs, all default-off/bit-identical: `HorizontalPatches` (1 = today's world),
 `HorizontalMixingDiffusivity`, `DispersalChancePerStep`, `PerPatchShading` (0/1).
 
+## Measured since first writing (2026-09-01, lineage replays — 0043's final addendum)
+
+The cheap test ran. Both assay controls, replayed with the lineage instrument: consumer
+generation time ≈ 1,250 s (both seeds), the boom is 4–5 generations, and it ends in
+**recruitment collapse at the peak** — last clade births at t=13,938 (s2) and t=16,915
+(s4), thousands of seconds before budget, while the rest of the world bred freely. The
+bust is the cohort trap: the pool is grazed below the *reproduction* break-even while
+every adult clears its *survival* break-even, so the cohort holds its own food down and
+ages out sterile. Three consequences for the arms below: the target is now precise (a
+stabiliser must keep food somewhere above the **reproduction** threshold, not above
+zero); arm B's mechanism must be judged on whether it lifts post-boom density past that
+threshold (a pure intake cap may not — adults' survival grazing is what pins the pool);
+and arm A's asynchrony story is strengthened, because a patch with no consumers recovers
+past the reproduction threshold by rain alone, which is exactly the reseeding source
+[JN97] describes. The goal rule itself needs the recruitment clause (0043, correction 2).
+
 ## The caveat that could void the whole family — and its cheap test
 
 Round 4's sharpest warning: our busts may be **cohort cycles**, not consumer-resource

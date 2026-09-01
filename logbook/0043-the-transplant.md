@@ -221,6 +221,48 @@ config, same hash expected — deterministic twins of scored runs, now writing
 the original token-for-token. This is instrumentation of an already-pre-registered
 condition, not a new treatment; nothing here touches the round-8 fork.
 
+**Results (same day).** Both replays are perfect twins — config hash `1734ee6d195cd439`
+unchanged, zero differing sample rows against the originals — and the lineage record
+rewrites this round's most optimistic reading:
+
+| | s2r0 | s4r0 |
+|---|---|---|
+| clade births (5 inoculants + descendants) | 135 | 122 |
+| generation time (parent birth → child birth), median | 1,234 s | 1,276 s |
+| **last clade birth** | **t=13,938** | **t=16,915** |
+| world (non-clade) births after that instant | thousands | 504 |
+| clade state at budget (t=20,000) | 56 alive, sterile 6,062 s | 93 alive, sterile 3,085 s |
+
+**Both control chains were demographically dead long before the budget.** Recruitment
+ceased at the population peak in both seeds — after which the "decline" the reports
+showed was a sterile cohort aging toward extinction (s4's clade deaths accelerating 5 →
+14 → 10 per thousand seconds; two inoculants dying at ~10,500 s, the senescence knee)
+while the rest of the world bred freely. The boom is ~4–5 generations long, and it ends
+not in a mortality wave but in a **recruitment collapse**: the cohort grazes the pool
+below the *reproduction* break-even (a 562 J brood is unfundable at post-boom densities)
+while every adult still clears its *survival* break-even — so the population pins its own
+food in the gap between the two thresholds: alive, grazing, sterile. Structurally the de
+Roos–Persson cohort trap review round 4 flagged ([LITERATURE-REVIEW.md] §9 item 7); the
+lineage record cannot separate the energy and matter sides of the refused conceptions,
+but both are the same story of at-depth exhaustion under grazing.
+
+Two corrections follow:
+
+1. **This entry's "alive, declining" verdicts on the controls were too kind.** The
+   controls did not show persistence with a downslope; they showed a four-generation
+   boom, then a walking-dead tail. Round 6's booms should be presumed to carry the same
+   hidden structure.
+2. **The standing goal rule has a blind spot, now demonstrated rather than suspected:**
+   `inherit` ≥ 1 with ≥ 10 alive at the last sample is satisfied for thousands of
+   seconds by a lineage whose last birth is long past — s2r0's 104-sample streak was
+   sterile from sample ~60 onward. A rule amendment (an absorptive *birth* within the
+   last N samples) is the owner's to make; every future scoring should report last-birth
+   time alongside the streak either way.
+
+What any round-8 stabiliser must now do is stated by the mechanism: keep some food,
+somewhere, above the **reproduction** threshold — above zero is not enough, and above
+the survival threshold is exactly the trap.
+
 D055's knob survives as an instrument; as a *world rule at 1 m* it is falsified twice
 over — round 7 showed it blocks establishment, this round shows it kills established
 consumers too. The design tension it was built to resolve is still real (round 6's
