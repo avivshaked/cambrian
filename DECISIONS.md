@@ -82,7 +82,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D057](#d057) | A species is a clade within a drift threshold of its founder | 2026-08-31 | active · built, θ uncalibrated |
 | [D058](#d058) | Only the budget ends a run — censored arms cannot pass | 2026-08-31 | active |
 | [D059](#d059) | The ocean gets a floor — D050's mirror, per-column under D054 | 2026-08-31 | decided · not built |
-| [D060](#d060) | The invasion assay — a labeled hand for a mechanism question | 2026-08-31 | decided · instrument, not built |
+| [D060](#d060) | The invasion assay — a labeled hand for a mechanism question | 2026-08-31 | active · built, first use logbook/0043 |
 
 ---
 
@@ -2717,3 +2717,22 @@ if invasions persist but native arrivals stay late, D056's 5–10× rate runs as
 separate *discovery* treatment, reported as a different evolutionary regime; if
 invasions fail under the refuge, mutation supply was never the problem and no rate
 change is warranted.
+
+**Built** · 2026-09-01. `World.Inoculate(genome, count, heightY)` on the floor-founder
+pattern exactly: endowment `FounderEnergyJoules`, `EnergyIn` credited so the audit closes,
+no matter debt, generation 0, no parent — so descendants land in the `inherit` column and
+each inoculant founds its own species under D057 without any new species code. The genome
+is copied verbatim, never mutated: a mutated copy would not be the genome the caller
+verified. Seeds come from the world's own stream (`Rng.SeedFor(Seed, _nextIndex++)`), so a
+run replays from (genome, seed, configHash, inoculation). Timing and dose are hashed
+tunables (`InoculateAtSeconds` default 0 = never, `InoculateCount`, `InoculateDepthMetres`);
+the genome itself is a file, not a number, so its identity is recorded where files are —
+its SHA-256 in the report header and `run.json` — rather than folded into `configHash`.
+Harness fires once at the first metabolic step past the instant, warns loudly on either
+half-configuration (a time with no genome, a genome with no time — the identical-numbers
+gotcha, pre-empted in both directions). Four tests: default-off bit-identical, exact-credit
+audit closure, species founding under θ on/off, same-seed replay. The first inoculum is
+`inocula/d056-s5-absorptive.json` (SHA-256 `e6f8e4da1edb…`), the largest-volume absorptive
+from round 6 s5's final snapshot — notably a **one-part body**: all 50 absorptive genomes
+in that snapshot develop to solitary absorptive blobs, everything else pruned for volume.
+First use pre-registered in logbook/0043.

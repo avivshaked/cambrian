@@ -48,10 +48,13 @@ namespace Evosim.Core
     /// a different world from the embodied one, and results from the two are not interchangeable.
     /// </para>
     /// <para>
-    /// <b>The population floor is the only thing that creates a creature from nothing</b>
-    /// (D021), including at t=0. There is no separate seeding path, so the mechanism that
-    /// repopulates a collapsing world is the same one exercised on the very first step — tested
-    /// continuously rather than once.
+    /// <b>The population floor is the only endogenous thing that creates a creature from
+    /// nothing</b> (D021), including at t=0. There is no separate seeding path, so the mechanism
+    /// that repopulates a collapsing world is the same one exercised on the very first step —
+    /// tested continuously rather than once. <see cref="Inoculate"/> is the one deliberate
+    /// exception, and it is exogenous by design: D060's invasion assay is a labeled hand that
+    /// builds an experimental condition at a chosen instant, never something the world does on
+    /// its own.
     /// </para>
     /// </remarks>
     public sealed class World
@@ -209,6 +212,12 @@ namespace Evosim.Core
         public long FloorSpawns { get; private set; }
         public long Births { get; private set; }
         public long Deaths { get; private set; }
+
+        /// <summary>
+        /// Creatures ever created by <see cref="Inoculate"/> — D060's invasion assay. Zero for the
+        /// life of a run that never calls it.
+        /// </summary>
+        public long Inoculated { get; private set; }
 
         /// <summary>Simulated seconds since the floor last had to intervene.</summary>
         /// <remarks>
@@ -715,6 +724,64 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>
+        /// Injects <paramref name="count"/> copies of <paramref name="genome"/> at
+        /// <paramref name="heightY"/> — D060's invasion assay. A hand that builds the experimental
+        /// condition, labeled as such: the assay can never answer the endogenous question of
+        /// whether the world's own mutation supply finds a consumer, only whether one persists
+        /// once placed. Call it once, at whatever simulated time a pre-registration names.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Follows <see cref="EnforceFloor"/>'s accounting exactly, because an inoculant is a
+        /// second way energy enters the world from nothing — not a third.</b> Each copy is
+        /// admitted with <see cref="RunConfig.FounderEnergyJoules"/>, zero
+        /// <see cref="Organism.LockedMatter"/> (never paid, so it never owes anything back — same
+        /// as a floor founder), generation depth 0 and no parent, so it founds its own species
+        /// under D057 exactly as a floor founder does (<see cref="AssignSpecies"/> branches on
+        /// <c>parent == null</c>, not on <see cref="BirthKind"/>).
+        /// </para>
+        /// <para>
+        /// <b>The genome itself is never mutated.</b> Every copy develops the identical stored
+        /// genome — the point is to introduce a verified lineage rather than wait for one to arrive
+        /// by chance, so a mutated copy would not be the genome the caller verified.
+        /// </para>
+        /// <para>
+        /// <b>Seeds derive from the world's own seed stream</b>, the same
+        /// <c>Rng.SeedFor(Seed, _nextIndex++)</c> a floor spawn draws, so a run replays identically
+        /// from <c>(genome, seed, configHash, inoculation)</c> — nothing here reaches for an
+        /// independent source of randomness. The seed labels the birth (<see
+        /// cref="Organism.BirthSeed"/>) rather than driving anything: there is no mutation to seed
+        /// and <paramref name="heightY"/> is fixed rather than drawn, unlike a floor founder's
+        /// scattered depth.
+        /// </para>
+        /// </remarks>
+        /// <param name="genome">Copied verbatim into every inoculant. Not mutated.</param>
+        /// <param name="count">How many copies to admit. Stillbirths still consume a seed and are
+        /// still counted in <see cref="Inoculated"/>, matching the floor's own accounting.</param>
+        /// <param name="heightY">World height, metres, every copy is placed at.</param>
+        public void Inoculate(Genome genome, int count, float heightY)
+        {
+            if (genome == null) throw new ArgumentNullException(nameof(genome));
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+
+            for (int i = 0; i < count; i++)
+            {
+                ulong seed = Rng.SeedFor(Seed, _nextIndex++);
+
+                Phenotype body = Developer.Develop(genome, Config.Development, null, Config.Shapes);
+
+                Organism creature = Admit(
+                    genome, body, BirthKind.Inoculation, seed, parentId: -1, generationDepth: 0,
+                    energy: Config.FounderEnergyJoules,
+                    tissue: Metabolism.TissueJoules(body, Config), heightY: heightY, parent: null);
+
+                // A stillborn inoculant is still an attempt — see EnforceFloor's identical remark.
+                Inoculated++;
+                if (creature != null) _living.Add(creature);
+            }
+        }
+
         /// <summary>Stillbirths — genomes that developed into no parts at all.</summary>
         /// <remarks>
         /// Worth counting rather than discarding silently. A lineage reaches this by drifting off
@@ -735,10 +802,11 @@ namespace Evosim.Core
         /// today: §4.5's extinction-by-shrinking prunes the root as readily as any other node.
         /// </remarks>
         /// <param name="parent">
-        /// The parent, for <see cref="AssignSpecies"/> — null for a floor founder, which has none.
-        /// Distinct from <paramref name="parentId"/> (which a floor founder also sets to -1)
-        /// because species assignment needs the actual organism, not just its id, to read its
-        /// current <see cref="Organism.SpeciesId"/>.
+        /// The parent, for <see cref="AssignSpecies"/> — null for a floor founder or an inoculant
+        /// (<see cref="Inoculate"/>), neither of which has one. Distinct from
+        /// <paramref name="parentId"/> (which both also set to -1) because species assignment
+        /// needs the actual organism, not just its id, to read its current
+        /// <see cref="Organism.SpeciesId"/>.
         /// </param>
         private Organism Admit(
             Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
@@ -748,11 +816,12 @@ namespace Evosim.Core
             {
                 Stillbirths++;
 
-                // The energy still has to balance. A floor spawn's endowment was never created,
-                // so nothing is owed; an offspring's was already deducted from its parent, so it
-                // leaves the world here and must be recorded as leaving. Its tissue is zero either
-                // way — there is no body to have paid for.
-                if (kind != BirthKind.Floor) EnergyOut += energy;
+                // The energy still has to balance. A floor spawn's and an inoculation's endowment
+                // were never created (see the EnergyIn credit below), so nothing is owed; an
+                // offspring's was already deducted from its parent, so it leaves the world here and
+                // must be recorded as leaving. Its tissue is zero either way — there is no body to
+                // have paid for.
+                if (kind == BirthKind.Reproduction) EnergyOut += energy;
 
                 return null;
             }
@@ -772,10 +841,11 @@ namespace Evosim.Core
                 StandingWatts = Metabolism.StandingWatts(phenotype, Config),
             };
 
-            // Endowment and body are transferred from the parent, and a founder's are created out
-            // of nothing, so only the second is income the world has to account for. Conflating
-            // them would let a population manufacture energy by breeding.
-            if (kind == BirthKind.Floor) EnergyIn += energy + tissue;
+            // Endowment and body are transferred from the parent, and a founder's or an
+            // inoculant's are created out of nothing, so only those two are income the world has
+            // to account for. Conflating any of this with reproduction would let a population
+            // manufacture energy by breeding.
+            if (kind == BirthKind.Floor || kind == BirthKind.Inoculation) EnergyIn += energy + tissue;
 
             // D057. After the stillbirth check, not before: a genome that never became a creature
             // has no species to found or inherit, and computing one would be wasted work on top

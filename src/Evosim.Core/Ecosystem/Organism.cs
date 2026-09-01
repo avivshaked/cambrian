@@ -189,6 +189,14 @@ namespace Evosim.Core
 
         /// <summary>Born to a parent that could afford it. What a living world produces.</summary>
         Reproduction = 1,
+
+        /// <summary>
+        /// Injected by <see cref="World.Inoculate"/> — D060's invasion assay. Shares the floor's
+        /// energy accounting (created from nothing, not owed back), but is never the floor: it is
+        /// a hand building the experimental condition at a chosen instant, not the mechanism that
+        /// keeps a world populated.
+        /// </summary>
+        Inoculation = 2,
     }
 
     /// <summary>

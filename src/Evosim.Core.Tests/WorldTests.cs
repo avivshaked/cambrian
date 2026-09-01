@@ -1115,5 +1115,195 @@ namespace Evosim.Core.Tests
 
             Assert.Equal(world.Living.Count, speciesIds.Count);
         }
+
+        // ------------------------------------------------------------ D060: invasion assay
+
+        /// <summary>The genome the assay injects — a single absorptive box, deterministic to
+        /// develop, in the shape of <c>EnergyKnobTests.Leaf</c>.</summary>
+        private static Genome AbsorptiveBlob()
+        {
+            var g = new Genome();
+            g.Nodes.Add(new MorphNode
+            {
+                CellTypeId = CellTypeIds.Absorptive,
+                ShapeId = ShapeIds.Box,
+                Dimensions = new Float3(0.2f, 0.2f, 0.2f),
+                JointType = JointType.Fixed,
+                JointLimits = Array.Empty<Float2>(),
+                RecursiveLimit = 1,
+                Neurons = Array.Empty<NeuronDef>(),
+            });
+            g.RootIndex = 0;
+            return g;
+        }
+
+        /// <summary>
+        /// Mirrors the one guard EvolutionRun.cs (the harness) wraps <see cref="World.Inoculate"/>
+        /// in: fire once, the first time <see cref="World.ElapsedSeconds"/> crosses
+        /// <see cref="RunConfig.InoculateAtSeconds"/>, and never when that is 0 — D060.
+        /// </summary>
+        private static void MaybeInoculate(World world, RunConfig config, Genome genome, ref bool fired)
+        {
+            if (fired || config.InoculateAtSeconds <= 0f) return;
+            if (world.ElapsedSeconds < config.InoculateAtSeconds) return;
+
+            world.Inoculate(genome, (int)config.InoculateCount, -config.InoculateDepthMetres);
+            fired = true;
+        }
+
+        [Fact]
+        public void InoculateAtSecondsDefaultZeroMeansTheAssayNeverFires()
+        {
+            // Bit-identical to a world that never heard of D060 at all — every result on file
+            // was measured without an inoculation, and a default that fired anything would mean
+            // none of them describe a world that still exists (D031 is why that is not a thing
+            // to do twice deliberately). The guard here is the one EvolutionRun.cs wraps
+            // World.Inoculate in; wiring it up and leaving the knob at its default must be
+            // indistinguishable from never having wired it up at all.
+            string Trajectory(bool wireTheGuard)
+            {
+                var config = new RunConfig { Light = new LightModel(300f, 12f) };
+                Assert.Equal(0f, config.InoculateAtSeconds);
+
+                var world = new World(config, seed: 5);
+                bool fired = false;
+                var samples = new System.Text.StringBuilder();
+
+                for (int i = 0; i < 300; i++)
+                {
+                    world.Step(1f);
+                    if (wireTheGuard) MaybeInoculate(world, config, AbsorptiveBlob(), ref fired);
+                    samples.AppendLine(WorldStats.Sample(world).ToJson());
+                }
+
+                Assert.False(fired, "the guard fired despite InoculateAtSeconds being 0");
+                Assert.Equal(0, world.Inoculated);
+                return samples.ToString();
+            }
+
+            Assert.Equal(Trajectory(wireTheGuard: false), Trajectory(wireTheGuard: true));
+        }
+
+        [Fact]
+        public void InoculateCreditsExactlyWhatItCreatesAndTheAuditStillCloses()
+        {
+            // D060's own copy of D051/D052/D055's guard. An inoculant is income created from
+            // nothing, exactly like a floor founder (World's own remarks on EnergyIn) — so the
+            // credit at the moment of the call must be exact, and §5A.2's audit must still close
+            // across a run that uses it.
+            var config = new RunConfig
+            {
+                MinimumPopulation = 30,
+                MaximumPopulation = 600,
+                Light = new LightModel(300f, 12f),
+            };
+            var world = new World(config, seed: 1);
+
+            for (int i = 0; i < 100; i++) world.Step(1f);
+
+            Genome genome = AbsorptiveBlob();
+            Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
+            float tissue = Metabolism.TissueJoules(body, config);
+            float expectedCredit = 5 * (config.FounderEnergyJoules + tissue);
+
+            double energyInBefore = world.EnergyIn;
+            int livingBefore = world.Living.Count;
+
+            world.Inoculate(genome, count: 5, heightY: -50f);
+
+            Assert.Equal(5, world.Inoculated);
+            Assert.Equal(livingBefore + 5, world.Living.Count);
+            Fixtures.AssertClose(
+                expectedCredit, (float)(world.EnergyIn - energyInBefore), expectedCredit * 1e-4f);
+
+            try { for (int i = 0; i < 300; i++) world.Step(1f); }
+            catch (PopulationRunawayException e) { _output.WriteLine($"stopped: {e.Population} living"); }
+
+            double residual = world.AuditResidual;
+            double scale = Math.Max(1.0, world.EnergyIn);
+
+            _output.WriteLine($"residual {residual:0.######} ({residual / scale:P4})");
+            Assert.True(
+                Math.Abs(residual) / scale < 1e-4,
+                $"an inoculation opened a hole in the energy audit: {residual:0.###} J unaccounted for");
+        }
+
+        [Fact]
+        public void InoculatedCreaturesFoundTheirOwnSpeciesWhenTheDriftThresholdIsOnAndReadZeroWhenItIsOff()
+        {
+            // Same shape as FloorFoundersEachGetADistinctSpecies: an inoculant has no parent, so
+            // AssignSpecies takes the parent == null branch and founds fresh, exactly as a floor
+            // founder does — the species machinery cannot tell the two apart, by D057's own
+            // design (it switches on BirthKind nowhere).
+            Genome genome = AbsorptiveBlob();
+
+            var on = new World(new RunConfig { SpeciesDriftThreshold = 1f }, seed: 3);
+            on.Inoculate(genome, count: 5, heightY: -20f);
+
+            Assert.Equal(5, on.Living.Count);
+            var speciesIds = new HashSet<uint>();
+            foreach (Organism creature in on.Living)
+            {
+                Assert.Equal(-1, creature.ParentId);
+                Assert.Equal(0, creature.GenerationDepth);
+                Assert.True(
+                    speciesIds.Add(creature.SpeciesId),
+                    $"species {creature.SpeciesId} repeated among inoculants");
+            }
+            Assert.Equal(5, speciesIds.Count);
+
+            // Threshold off: the fast path, species 0 for everyone, no registry touched.
+            var off = new World(new RunConfig { SpeciesDriftThreshold = 0f }, seed: 3);
+            off.Inoculate(genome, count: 5, heightY: -20f);
+
+            Assert.Empty(off.Species);
+            foreach (Organism creature in off.Living) Assert.Equal(0u, creature.SpeciesId);
+        }
+
+        [Fact]
+        public void InoculationReplaysIdenticallyForTheSameConfigAndSeed()
+        {
+            // §7. A pre-registered assay is only worth running once per condition if a second
+            // run of the same (genome, seed, configHash) would have told the pre-registration
+            // nothing new.
+            RunConfig Config() => new RunConfig
+            {
+                Light = new LightModel(300f, 12f),
+                MinimumPopulation = 20,
+                MaximumPopulation = 300,
+            };
+
+            string Trajectory()
+            {
+                var world = new World(Config(), seed: 11);
+                var samples = new System.Text.StringBuilder();
+
+                try
+                {
+                    for (int i = 0; i < 100; i++)
+                    {
+                        world.Step(1f);
+                        samples.AppendLine(WorldStats.Sample(world).ToJson());
+                    }
+
+                    world.Inoculate(AbsorptiveBlob(), count: 5, heightY: -30f);
+                    samples.AppendLine($"inoculated:{world.Inoculated}");
+
+                    for (int i = 0; i < 200; i++)
+                    {
+                        world.Step(1f);
+                        samples.AppendLine(WorldStats.Sample(world).ToJson());
+                    }
+                }
+                catch (PopulationRunawayException e)
+                {
+                    samples.AppendLine($"runaway:{e.Population}@{e.ElapsedSeconds:0.#}");
+                }
+
+                return samples.ToString();
+            }
+
+            Assert.Equal(Trajectory(), Trajectory());
+        }
     }
 }

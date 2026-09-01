@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
@@ -177,6 +178,61 @@ namespace Evosim.Sim.EditorTools
             float floatChance = Env("EVOSIM_FOUNDER_FLOAT", 0f);
             float liftCost = Env("EVOSIM_LIFT_COST", 0.05f);
 
+            // D060. The invasion assay: a labeled hand that injects a verified genome once, at a
+            // fixed simulated time, so a consumer lineage can be studied without waiting on the
+            // world's own mutation supply to find one. Empty path is the off state — every earlier
+            // run measured a world that never heard of this, and the three timing/dose knobs
+            // default to RunConfig's own (0, so "never") for exactly that reason. The genome
+            // itself is never a tunable — it is a file, not a number — so its identity is recorded
+            // separately, in the header and run.json, rather than folded into configHash.
+            string inoculatePath = Environment.GetEnvironmentVariable("EVOSIM_INOCULATE");
+            float inoculateAt = Env("EVOSIM_INOCULATE_AT", new RunConfig().InoculateAtSeconds);
+            int inoculateCount = (int)Env("EVOSIM_INOCULATE_COUNT", new RunConfig().InoculateCount);
+            float inoculateDepth = Env("EVOSIM_INOCULATE_DEPTH", new RunConfig().InoculateDepthMetres);
+
+            // Loaded at startup rather than when the assay fires, so a malformed or missing file
+            // fails the run immediately instead of thousands of simulated seconds in — §9's
+            // "loading refuses rather than defaults" applies here exactly as it does to every other
+            // genome this project reads.
+            Genome inoculumGenome = null;
+            string inoculumHash = null;
+            string inoculumHashShort = null;
+
+            if (!string.IsNullOrEmpty(inoculatePath))
+            {
+                byte[] inoculumBytes = File.ReadAllBytes(inoculatePath);
+                inoculumGenome = GenomeJson.Read(Encoding.UTF8.GetString(inoculumBytes));
+
+                using (SHA256 sha256 = SHA256.Create())
+                {
+                    byte[] digest = sha256.ComputeHash(inoculumBytes);
+                    inoculumHash = BitConverter.ToString(digest).Replace("-", "").ToLowerInvariant();
+                }
+
+                inoculumHashShort = inoculumHash.Substring(0, 12);
+            }
+            else if (inoculateAt > 0f)
+            {
+                // The identical-numbers gotcha (CLAUDE.md), caught before it can happen rather
+                // than after: a timing knob set with nothing to inject would silently do nothing,
+                // and every column downstream would read exactly like a world that was never
+                // asked to run the assay at all.
+                Debug.LogWarning(
+                    "EVOSIM_INOCULATE_AT is set but EVOSIM_INOCULATE names no genome file — the " +
+                    "assay will not fire.");
+            }
+
+            if (inoculumGenome != null && inoculateAt <= 0f)
+            {
+                // The same trap mirrored: a genome named with no instant to fire at also runs a
+                // world that reads exactly like one never asked to run the assay.
+                Debug.LogWarning(
+                    "EVOSIM_INOCULATE names a genome file but EVOSIM_INOCULATE_AT is unset or " +
+                    "zero — the assay will not fire.");
+            }
+
+            bool inoculateOn = inoculumGenome != null && inoculateAt > 0f;
+
             string outPath = Environment.GetEnvironmentVariable("EVOSIM_OUT");
             if (string.IsNullOrEmpty(outPath))
             {
@@ -230,6 +286,9 @@ namespace Evosim.Sim.EditorTools
             config.MaximumPopulation = maxPopulation;
             config.SenescenceDoublingSeconds = senescence;
             config.Mutation.CellTypeChance = cellTypeMutation;
+            config.InoculateAtSeconds = inoculateAt;
+            config.InoculateCount = inoculateCount;
+            config.InoculateDepthMetres = inoculateDepth;
             var eco = new Ecosystem(config, seed);
 
             // Named after the report rather than timestamped, so a run's table and its creatures
@@ -273,6 +332,10 @@ namespace Evosim.Sim.EditorTools
                 " · excessDensity " + excessDensity + " kg/m3" +
                 " · matter " + matterPerTissue + "/J from " + initialMatter + "/m3" +
                 " · float " + floatChance + " at " + liftCost + " W/lift" +
+                (inoculateOn
+                    ? " · inoculate " + inoculateCount + " @ " + inoculateAt + " s, " +
+                      inoculateDepth + " m, genome " + inoculumHashShort
+                    : "") +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());
@@ -302,6 +365,17 @@ namespace Evosim.Sim.EditorTools
                     if (!eco.Step()) continue;
 
                     metabolicSteps++;
+
+                    // D060. Fires once — the first metabolic step whose ElapsedSeconds reaches
+                    // the pre-registered instant — and never again, guarded the same way
+                    // FloorClosesAfterSeconds guards its own one-shot transition. Checked before
+                    // the extinction test below, so an assay that lands on an empty world rescues
+                    // it by design rather than being pre-empted by the extinction break.
+                    if (inoculateOn && !AssayFired && eco.World.ElapsedSeconds >= inoculateAt)
+                    {
+                        eco.World.Inoculate(inoculumGenome, inoculateCount, -inoculateDepth);
+                        AssayFired = true;
+                    }
 
                     // Checked every step, not only at a report row: with FloorClosesAfterSeconds
                     // set (or any other way the floor can fail to refill), an empty world would
@@ -394,7 +468,9 @@ namespace Evosim.Sim.EditorTools
             Snapshot(dir, eco);
             if (dir != null)
             {
-                WriteRunIdentity(dir, seed, budgetSeconds, wallMinutes, outPath, terminationCode);
+                WriteRunIdentity(
+                    dir, seed, budgetSeconds, wallMinutes, outPath, terminationCode,
+                    inoculatePath, inoculumHash);
 
                 report.AppendLine();
                 report.AppendLine("Genomes: `" + dir.Path + "`");
@@ -460,6 +536,15 @@ namespace Evosim.Sim.EditorTools
         /// against <see cref="World.ExcretedTotal"/> — a cumulative counter with no cap of its own.</remarks>
         private static double LastExcretedTotal;
 
+        /// <summary>Whether D060's assay has already fired this run — the one-shot guard.</summary>
+        /// <remarks>
+        /// Static for the same reason every other field here is: a second <c>Evosim/Run</c> from
+        /// the editor menu in one session must not inherit the previous run's "already fired"
+        /// state, so it is cleared alongside everything else in <see cref="ResetStaticReportState"/>
+        /// rather than trusted to a fresh local that happens to be correct today.
+        /// </remarks>
+        private static bool AssayFired;
+
         /// <summary>
         /// Clears every static above so repeated <c>Evosim/Run</c> invocations in one editor
         /// session cannot inherit a previous run's history.
@@ -478,6 +563,7 @@ namespace Evosim.Sim.EditorTools
             LastFloorSpawns = 0;
             LastMatterBlocks = 0;
             LastExcretedTotal = 0;
+            AssayFired = false;
         }
 
         /// <summary>
@@ -507,7 +593,8 @@ namespace Evosim.Sim.EditorTools
         /// </remarks>
         private static void WriteRunIdentity(
             RunDirectory dir, ulong seed, float requestedSeconds, float requestedWallMinutes,
-            string outPath, string terminationCode)
+            string outPath, string terminationCode,
+            string inoculatePath, string inoculumHash)
         {
             var w = new Json.Writer(indent: true);
             w.BeginObject();
@@ -523,6 +610,12 @@ namespace Evosim.Sim.EditorTools
             // arm's identity when it names the run directory.
             w.Field("armName", Path.GetFileNameWithoutExtension(outPath));
             w.Field("terminationReason", terminationCode);
+
+            // D060. Null for a run that never named a genome — the timing and dose knobs already
+            // reach config.json and its hash; this is the genome's own identity, which cannot,
+            // because a genome is a file rather than a number.
+            w.Field("inoculateGenomePath", inoculatePath);
+            w.Field("inoculateGenomeHash", inoculumHash);
             w.EndObject();
 
             File.WriteAllText(Path.Combine(dir.Path, "run.json"), w.ToString(), Utf8NoBom);

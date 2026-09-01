@@ -20,6 +20,10 @@ The written work in this repository:
 
 Source code is licensed separately under the MIT License — see LICENSE.
 
+inocula/** is neither prose nor source: it holds evolved genome files, produced
+by this project's own simulations and tracked as experiment inputs (D060). They
+are covered by the MIT License alongside the code that reads them.
+
 
 THE LICENCE
 ───────────

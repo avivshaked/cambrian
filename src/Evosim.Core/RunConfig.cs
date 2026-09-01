@@ -584,6 +584,53 @@ namespace Evosim.Core
         public float SpeciesBrainWeight { get; set; }
 
         /// <summary>
+        /// Simulated seconds at which <see cref="World.Inoculate"/> fires — D060's invasion assay.
+        /// Zero means never; the harness (<c>EVOSIM_INOCULATE_AT</c>) calls it once, the first
+        /// time <see cref="World.ElapsedSeconds"/> crosses this value.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Not a <see cref="World"/> tunable by itself.</b> <see cref="World.Inoculate"/> takes
+        /// the genome, count and depth as explicit arguments rather than reading them off
+        /// <see cref="RunConfig"/>, because a genome is a file, not a number — it has no legal
+        /// value to default to and no way to reach <see cref="Hash"/>. These three fields exist so
+        /// the *timing and dose* of an inoculation are still config, hashed and replayable like
+        /// everything else; the genome's own identity is recorded separately, in the run's own
+        /// header and <c>run.json</c> (D060's built note).
+        /// </para>
+        /// <para>⚠ Zero by default, so the world is bit-identical until a run asks otherwise —
+        /// the D052/D055 shape.</para>
+        /// </remarks>
+        [Tunable("assay", Unit = "s")]
+        public float InoculateAtSeconds { get; set; }
+
+        /// <summary>How many copies <see cref="World.Inoculate"/> admits — D060.</summary>
+        /// <remarks>
+        /// A float rather than matching <see cref="MinimumPopulation"/>,
+        /// <see cref="MaximumPopulation"/> and <see cref="FloorSpawnsPerStep"/>'s <c>int</c> —
+        /// cast to one at the call site instead. Those three predate this decision and are not a
+        /// precedent to break for; the harness's own <c>Env</c> helper parses every knob as a
+        /// float, so a dose this small (D060 calls it "the same small inoculum") is not worth a
+        /// second parsing path just to carry an integer. ⚠ Unmeasured; the default favours a
+        /// handful over a cohort.
+        /// </remarks>
+        [Tunable("assay")]
+        public float InoculateCount { get; set; } = 5f;
+
+        /// <summary>
+        /// Metres below the surface <see cref="World.Inoculate"/> places every copy — D060.
+        /// </summary>
+        /// <remarks>
+        /// Fixed rather than spread, unlike <see cref="FounderDepthSpread"/>: a founder's scatter
+        /// exists so generation zero does not all start in the single best patch of light: an
+        /// inoculant is not generation zero, it is a hand-placed treatment, and the assay's whole
+        /// premise — paired worlds, same seeds, same instant — wants every copy to start at the
+        /// one depth the pre-registration names.
+        /// </remarks>
+        [Tunable("assay", Unit = "m")]
+        public float InoculateDepthMetres { get; set; } = 50f;
+
+        /// <summary>
         /// A stable digest of everything above — the <c>configHash</c> of §7.
         /// </summary>
         /// <remarks>
