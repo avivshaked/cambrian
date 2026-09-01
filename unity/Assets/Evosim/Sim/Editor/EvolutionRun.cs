@@ -134,6 +134,16 @@ namespace Evosim.Sim.EditorTools
             // species machinery never runs at all and every creature reads species 0.
             float speciesTheta = Env("EVOSIM_SPECIES_THETA", new RunConfig().SpeciesDriftThreshold);
 
+            // D061. The patchy world: horizontal cells per layer, the throttled exchange between
+            // them, the metapopulation-style dispersal creatures may pay for, and the endogenous
+            // shading that makes patches unequal without a painted-on constant. K=1 and every
+            // other knob at 0 is the world every earlier run measured — a single, perfectly-mixed
+            // column per layer, exactly D061's own "today's world" baseline.
+            float patches = Env("EVOSIM_PATCHES", new RunConfig().HorizontalPatches);
+            float horizontalMixing = Env("EVOSIM_H_MIXING", new RunConfig().HorizontalMixingDiffusivity);
+            float dispersalChance = Env("EVOSIM_DISPERSAL", new RunConfig().DispersalChancePerStep);
+            float patchShading = Env("EVOSIM_PATCH_SHADING", new RunConfig().PerPatchShading);
+
             // D053. The world's footprint — the aperture the sun shines through, the volume of
             // every layer, and the denominator of shading all at once, so halving it halves the
             // world's total income and stock at identical per-creature margins. The rescale knob:
@@ -298,6 +308,10 @@ namespace Evosim.Sim.EditorTools
             config.SatiationWattsPerCubicMetre = satiation;
             config.ClearanceToeDensity = clearanceToe;
             config.SpeciesDriftThreshold = speciesTheta;
+            config.HorizontalPatches = patches;
+            config.HorizontalMixingDiffusivity = horizontalMixing;
+            config.DispersalChancePerStep = dispersalChance;
+            config.PerPatchShading = patchShading;
             config.WorldAreaSquareMetres = area;
             config.FloorClosesAfterSeconds = floorCloses;
             config.MaximumPopulation = maxPopulation;
@@ -342,6 +356,10 @@ namespace Evosim.Sim.EditorTools
                 (satiation > 0f ? " · satiation " + satiation + " W/m3" : "") +
                 (clearanceToe > 0f ? " · toe " + clearanceToe + " J/m3" : "") +
                 " · speciesTheta " + speciesTheta +
+                (patches > 1f
+                    ? " · patches " + (int)patches + ", h-mix " + horizontalMixing + " m2/s, " +
+                      "disperse " + dispersalChance + ", patchShade " + patchShading
+                    : "") +
                 " · area " + area + " m2" +
                 (floorCloses > 0f ? " · floor closes " + floorCloses + " s" : " · floor open") +
                 " · ceiling " + maxPopulation +
@@ -855,13 +873,70 @@ namespace Evosim.Sim.EditorTools
             // can actually reach — D055's refuge-aware reading, against detritusHere's field-truth
             // one above — and the floor-layer stock the refuge protects. Both cheap: EdibleDensityAt
             // and StockInLayer are simple array reads, not a second pass over the population.
-            double edibleHere = world.Nutrients.EdibleDensityAt((float)meanDepth);
-            double refugeStock = world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1);
+            //
+            // D061: patch 0, explicitly. These columns predate patches and read one column's
+            // worth of the world rather than a population-wide aggregate; at K=1 patch 0 is the
+            // whole world and nothing here changes. "det patch sd" and "patch max share" below
+            // are the columns that carry the cross-patch picture.
+            double edibleHere = world.Nutrients.EdibleDensityAt((float)meanDepth, 0);
+            double refugeStock = world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1, 0);
 
             // D052's flux, not its balance: MatterInBodies and Matter.TotalJoules already show
             // what excretion moved by comparing before and after, but neither shows the rate it
             // moved at. Windowed the same way floorSpawns and conceptionsBlockedByMatter are.
             double excretedWindow = world.ExcretedTotal - LastExcretedTotal;
+
+            // D061. The asynchrony observables — the two readings the old, patch-blind columns
+            // above cannot give, because they only ever look at one column of the world (patch
+            // 0). Both read 0 at K=1, where there is only one patch to compare against itself.
+            int patchesForReport = Math.Max(1, (int)world.Config.HorizontalPatches);
+            double detritusPatchSd = 0d;
+            double patchMaxShare = 0d;
+
+            if (patchesForReport > 1)
+            {
+                // Plain spatial standard deviation of deep-layer detritus density across
+                // patches, population size unweighted — the same 90%-of-depth reading
+                // "det deep"/"mat deep" already take, generalised sideways instead of down. A
+                // world where every patch tracks together reads near 0; a world where some
+                // patches are booming while others are busted reads high.
+                float deepHeight = -(float)world.Config.WorldDepthMetres * 0.9f;
+                var patchDensities = new double[patchesForReport];
+                double meanPatchDensity = 0d;
+
+                for (int p = 0; p < patchesForReport; p++)
+                {
+                    patchDensities[p] = world.Nutrients.DensityAt(deepHeight, p);
+                    meanPatchDensity += patchDensities[p];
+                }
+                meanPatchDensity /= patchesForReport;
+
+                double sumSquares = 0d;
+                for (int p = 0; p < patchesForReport; p++)
+                {
+                    double d = patchDensities[p] - meanPatchDensity;
+                    sumSquares += d * d;
+                }
+                detritusPatchSd = Math.Sqrt(sumSquares / patchesForReport);
+
+                // The largest patch's share of the living population, 0-1 — how concentrated
+                // the world currently is. 1/K is an evenly-spread population; 1 is everyone in
+                // one patch.
+                var patchCounts = new int[patchesForReport];
+                for (int i = 0; i < world.Living.Count; i++)
+                {
+                    int p = world.Living[i].Patch;
+                    if (p >= 0 && p < patchesForReport) patchCounts[p]++;
+                }
+
+                int maxCount = 0;
+                for (int p = 0; p < patchesForReport; p++)
+                {
+                    if (patchCounts[p] > maxCount) maxCount = patchCounts[p];
+                }
+
+                patchMaxShare = alive > 0 ? (double)maxCount / alive : 0d;
+            }
 
             // The same sample, as data. Raw numbers and no percentages: a reader can divide, and
             // a stored percentage loses the denominator that says whether it means anything —
@@ -884,11 +959,11 @@ namespace Evosim.Sim.EditorTools
                 .Field("absorptive", absorptive)
                 .Field("absorptiveInherited", inherited)
                 .Field("detritusJoules", world.Nutrients.TotalJoules)
-                .Field("detritusHere", world.Nutrients.DensityAt((float)meanDepth))
+                .Field("detritusHere", world.Nutrients.DensityAt((float)meanDepth, 0))
                 .Field("detritusOnFloor",
-                    world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1))
+                    world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1, 0))
                 .Field("detritusDeep",
-                    world.Nutrients.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f))
+                    world.Nutrients.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f, 0))
                 .Field("meanHeight", meanDepth)
                 .Field("heightSd", depthSd)
                 .Field("meanRise", alive > 0 ? travelled / alive : 0d)
@@ -899,9 +974,9 @@ namespace Evosim.Sim.EditorTools
                 .Field("buoyantInherited", buoyantInherited)
                 .Field("liftHeld", liftHeld)
                 .Field("buoyantDepth", buoyant > 0 ? buoyantDepth / buoyant : 0d)
-                .Field("matterHere", world.Matter.DensityAt((float)meanDepth))
-                .Field("matterSurface", world.Matter.DensityAt(0f))
-                .Field("matterDeep", world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f))
+                .Field("matterHere", world.Matter.DensityAt((float)meanDepth, 0))
+                .Field("matterSurface", world.Matter.DensityAt(0f, 0))
+                .Field("matterDeep", world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f, 0))
                 .Field("matterStanding", world.StandingMatter)
                 .Field("conceptionsBlockedByMatter", world.ConceptionsBlockedByMatter)
                 .Field("floorSpawns", world.FloorSpawns)
@@ -920,7 +995,10 @@ namespace Evosim.Sim.EditorTools
                 .Field("matterLocked", matterLocked)
                 .Field("refugeJoules", refugeStock)
                 .Field("excretedTotal", world.ExcretedTotal)
-                .Field("excretedWindow", excretedWindow));
+                .Field("excretedWindow", excretedWindow)
+                // D061 — appended after excretedWindow, per the append-only column discipline.
+                .Field("detritusPatchSd", detritusPatchSd)
+                .Field("patchMaxShare", patchMaxShare));
 
             // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9): drained
             // every report row, alongside stats.jsonl, and appended one row per event to
@@ -962,10 +1040,11 @@ namespace Evosim.Sim.EditorTools
                 // Density where the creatures actually are, and how much of the world's detritus
                 // has already fallen past them. Total joules cannot tell "there is no food" from
                 // "the food is forty metres below everything that could eat it", and those two
-                // want opposite responses.
-                "**" + world.Nutrients.DensityAt((float)meanDepth).ToString("0.####", c) + "**",
+                // want opposite responses. D061: patch 0 — see the edibleHere/refugeStock remark
+                // above for why these legacy columns are not redefined as a cross-patch aggregate.
+                "**" + world.Nutrients.DensityAt((float)meanDepth, 0).ToString("0.####", c) + "**",
                 "**" + (world.Nutrients.TotalJoules > 0d
-                    ? 100d * world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1) /
+                    ? 100d * world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1, 0) /
                       world.Nutrients.TotalJoules
                     : 0d).ToString("0.#", c) + "%**",
 
@@ -973,7 +1052,7 @@ namespace Evosim.Sim.EditorTools
                 // reading the matter field takes below. The floor layer is the last 1 m; this is
                 // the water above it, and the prediction under test is that this number
                 // rises once remineralisation leaks matter back out of the floor.
-                "**" + world.Nutrients.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f)
+                "**" + world.Nutrients.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f, 0)
                     .ToString("0.####", c) + "**",
 
                 meanDepth.ToString("0.#", c),
@@ -1004,8 +1083,8 @@ namespace Evosim.Sim.EditorTools
                 // to mistake an empty set for a population at the waterline.
                 buoyant > 0 ? (liftHeld / buoyant).ToString("0.##", c) : "—",
                 buoyant > 0 ? (buoyantDepth / buoyant).ToString("0.#", c) : "—",
-                world.Matter.DensityAt(0f).ToString("0.###", c),
-                world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f)
+                world.Matter.DensityAt(0f, 0).ToString("0.###", c),
+                world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f, 0)
                     .ToString("0.###", c),
                 // Conceptions refused for want of matter rather than energy. Zero means the
                 // mechanism is on and doing nothing, which looks like off in every other column.
@@ -1039,6 +1118,11 @@ namespace Evosim.Sim.EditorTools
                 // D052's flux since the last row, not its running total: how much excretion moved
                 // in this window, the same delta shape as `mat blk` and `floor` above.
                 excretedWindow.ToString("0.######", c),
+
+                // D061 — appended after excretedWindow, per the same append-only rule species
+                // itself was added under. Both read 0 at K=1 (see the computation above).
+                detritusPatchSd.ToString("0.####", c),
+                patchMaxShare.ToString("0.###", c),
             };
 
             LastFloorSpawns = world.FloorSpawns;
@@ -1069,6 +1153,9 @@ namespace Evosim.Sim.EditorTools
             // Pre-round-8 experiment contract, item 3 — appended after species, per its own
             // comment above.
             "det here ed", "below world", "abs below", "mat locked", "refuge J", "excreted",
+
+            // D061 — appended after excreted, per the same append-only rule.
+            "det patch sd", "patch max share",
         };
 
         private static string Header() =>

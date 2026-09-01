@@ -106,6 +106,16 @@ namespace Evosim.Core
         public float TissueJoules { get; internal set; }
 
         /// <summary>
+        /// Which horizontal cell of the world this creature occupies — D061. 0 for every creature
+        /// whenever <see cref="RunConfig.HorizontalPatches"/> is 1 (the field this class carried
+        /// before D061 existed). Set once at birth — <see cref="World"/>'s
+        /// <c>Admit</c> — and changed only by <see cref="World"/>'s dispersal step
+        /// (<see cref="RunConfig.DispersalChancePerStep"/>); an offspring otherwise inherits its
+        /// parent's patch.
+        /// </summary>
+        public int Patch { get; internal set; }
+
+        /// <summary>
         /// Matter still locked in this body, in <see cref="World.Matter"/>'s units — D048, D052.
         /// </summary>
         /// <remarks>

@@ -477,7 +477,7 @@ namespace Evosim.Core
         /// </para>
         /// <para>
         /// <b>Taking is self-limiting, not perfectly conserving across a step.</b> Each call to
-        /// <see cref="NutrientField.Take"/> may remove up to <c>fraction</c> of whatever the layer
+        /// <see cref="NutrientField.Take(float, float, int)"/> may remove up to <c>fraction</c> of whatever the layer
         /// holds <i>at that moment</i>, so repeated draws within one step approach but do not cross
         /// the edible share of what remains — the simplest form that cannot double-dip, at the cost
         /// of not being an exact per-step bound. See the class remarks on
@@ -721,6 +721,110 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("assay", Unit = "m")]
         public float InoculateDepthMetres { get; set; } = 50f;
+
+        /// <summary>
+        /// Horizontal cells per depth layer, K ≥ 1 — D061's patchy world. 1 is today's world:
+        /// every layer a single, perfectly-mixed column.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The mechanism D061 exists to build.</b> Round 7.5 found that every depth layer
+        /// behaves as a perfectly-stirred tank — a creature at the right depth feeds from the
+        /// entire world at once, with no travel and no local depletion — which is the provably
+        /// unstable limit of a consumer-resource system [FM15 p.1, p.19] and forecloses movement
+        /// ever paying. Splitting each layer into K patches gives the world the spatial structure
+        /// real persistence depends on: Huffaker's 120-position universe held three oscillations
+        /// where every simple universe died [HUF58 p.39-41], and eight throttled-bridge islands
+        /// with fewer plants outlived one continuous platform by more than 3× [JN97 p.7].
+        /// </para>
+        /// <para>
+        /// A float used as an int, per this project's standing convention for a knob that is
+        /// conceptually a count (<see cref="InoculateCount"/> makes the same choice, for the same
+        /// reason: the harness's <c>Env</c> helper parses every knob as a float, and a second
+        /// parsing path is not worth adding for one integer). Cast to one at every call site. 1
+        /// by default: every geometry, storage and RNG change D061 makes collapses back to
+        /// today's world exactly, and the guard is bit-identity, not merely "close".
+        /// </para>
+        /// <para>⚠ Unmeasured — round 8 runs K=8, Janssen's number [JN97]. <c>EVOSIM_PATCHES</c>
+        /// in the header.</para>
+        /// </remarks>
+        [Tunable("patches")]
+        public float HorizontalPatches { get; set; } = 1f;
+
+        /// <summary>
+        /// Sideways exchange between adjacent patches within a layer, m²/s — D061. Zero is off:
+        /// no patch ever hears from its neighbour.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Its own knob, deliberately far smaller than <see cref="NutrientMixingDiffusivity"/>.</b>
+        /// The arithmetic that shaped D061: boom-to-bust here runs ≈5,000–8,000 s, the current is
+        /// 0.05 m/s, and a 400 m² world is ~20 m across — anything advected at current speed
+        /// crosses the world in ~400 s, fifteen times inside one cycle. Patches coupled at
+        /// anything near that rate are one pool with extra bookkeeping, so horizontal exchange
+        /// has to be its own slow throttle rather than reusing the vertical rate or the current.
+        /// </para>
+        /// <para>
+        /// The same first-order Fick's-law form <see cref="NutrientField.Mix"/> already uses
+        /// vertically, applied across the ring of patches instead of the stack of layers — see
+        /// <see cref="NutrientField.Mix"/>'s remarks for the geometry (patch width, not layer
+        /// thickness) and the wraparound.
+        /// </para>
+        /// <para>⚠ Unmeasured. Zero by default, so a K&gt;1 world with this off has patches that
+        /// never exchange detritus at all — isolated columns, not merely throttled ones. The
+        /// D052/D055 shape. <c>EVOSIM_H_MIXING</c> in the header.</para>
+        /// </remarks>
+        [Tunable("patches", Unit = "m2/s")]
+        public float HorizontalMixingDiffusivity { get; set; }
+
+        /// <summary>
+        /// Per-metabolic-step probability a creature moves to an adjacent patch — D061. Zero is
+        /// off: nothing ever disperses, whatever <see cref="HorizontalPatches"/> is.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Metapopulation-style movement, not continuous advection</b> — the owner's explicit
+        /// choice, and the regime with the empirical persistence record: throttled bridges
+        /// between islands, not a current strong enough to mix them (D061's rejected
+        /// alternative). A flat per-step chance rather than a rate, because the metabolic step is
+        /// already this world's unit of time for every other per-creature decision (reproduction,
+        /// feeding).
+        /// </para>
+        /// <para>⚠ Unmeasured. Zero by default, so nothing here perturbs a K=1 world (there is
+        /// nowhere to disperse to) or a K&gt;1 world that has not asked for movement. The
+        /// D052/D055 shape. <c>EVOSIM_DISPERSAL</c> in the header.</para>
+        /// </remarks>
+        [Tunable("patches")]
+        public float DispersalChancePerStep { get; set; }
+
+        /// <summary>
+        /// Whether each patch's producers shade only their own column, as 0/1 — D061's
+        /// endogenous inequality. Zero is today's world: one shared canopy pooled across every
+        /// patch.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The mechanism that makes patches unequal without a painted-on constant.</b> D061
+        /// names this the deliberate answer to [HZ13 p.5]'s finding that identical patches buy
+        /// nothing — subdivision alone is the null result, and the patches have to actually
+        /// differ. A crowded patch darkening itself is inequality the creatures generate, the
+        /// first reason a producer has ever had to be somewhere else rather than everywhere the
+        /// light is best.
+        /// </para>
+        /// <para>
+        /// A float rather than a bool, per this project's standing convention for a knob that is
+        /// conceptually binary (<see cref="FloorRefugeMetres"/>'s remark makes the same case): the
+        /// tunable machinery is float-typed throughout, and a second type is not worth adding for
+        /// one on/off switch. Compared against zero at every call site, exactly like
+        /// <see cref="NutrientMixingDiffusivity"/>.
+        /// </para>
+        /// <para>⚠ Unmeasured. Zero by default — bit-identical to a world that pools every
+        /// patch's shading into one shared canopy, which is what every earlier run measured
+        /// whether or not it had ever heard of patches. <c>EVOSIM_PATCH_SHADING</c> in the
+        /// header.</para>
+        /// </remarks>
+        [Tunable("patches")]
+        public float PerPatchShading { get; set; }
 
         /// <summary>
         /// A stable digest of everything above — the <c>configHash</c> of §7.

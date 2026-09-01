@@ -120,6 +120,13 @@ namespace Evosim.Core
         /// </remarks>
         public LightField Field { get; }
 
+        /// <summary>
+        /// Horizontal cells per layer, K ≥ 1 — <see cref="RunConfig.HorizontalPatches"/>, clamped
+        /// the same way the D060/D061-era knobs are (cast to int, floored at 1 so a stray
+        /// fractional or non-positive config value cannot construct a zero-patch field). D061.
+        /// </summary>
+        private int PatchCount => Math.Max(1, (int)Config.HorizontalPatches);
+
         /// <summary>Dead matter in the water, and what feeds on it — §5A.2c.</summary>
         public NutrientField Nutrients { get; }
 
@@ -282,25 +289,41 @@ namespace Evosim.Core
                     "nothing in it can live.", nameof(config));
             }
 
-            Field = new LightField(Light, config.WorldAreaSquareMetres, config.LightLayerMetres);
+            // D061: PatchCount reads Config.HorizontalPatches, so it is valid from this point on
+            // (Config was just assigned above) and every field below is built with the same K.
+            int patchCount = PatchCount;
+
+            Field = new LightField(
+                Light, config.WorldAreaSquareMetres, config.LightLayerMetres,
+                patchCount, config.PerPatchShading > 0f);
+
             Nutrients = new NutrientField(
                 config.WorldAreaSquareMetres, config.LightLayerMetres,
                 config.NutrientSinkMetresPerSecond, config.WorldDepthMetres,
-                config.FloorRefugeMetres, config.RefugeEdibleFraction);
+                config.FloorRefugeMetres, config.RefugeEdibleFraction, patchCount);
 
             // No refuge: nobody grazes matter, it is drawn at conception rather than eaten — D055.
             Matter = new NutrientField(
                 config.WorldAreaSquareMetres, config.LightLayerMetres,
-                config.MatterSinkMetresPerSecond, config.WorldDepthMetres);
+                config.MatterSinkMetresPerSecond, config.WorldDepthMetres,
+                refugeMetres: 0f, refugeEdibleFraction: 0f, patchCount: patchCount);
 
-            // Seeded uniformly and never created again. Everything after this is redistribution:
-            // reproduction takes it out of a layer, death puts it back into one.
+            // Seeded uniformly — across every patch as well as every layer, D061 — and never
+            // created again. Everything after this is redistribution: reproduction takes it out
+            // of a cell, death puts it back into one. Deposit's 3-arg (patch-explicit) overload
+            // is called directly rather than the pre-D061 one, so this loop needs no guard of its
+            // own: it is correct at K=1 (one patch, same total deposited as before D061 existed)
+            // and at K>1 alike.
             if (config.InitialMatterPerCubicMetre > 0f)
             {
-                float perLayer = config.InitialMatterPerCubicMetre * Matter.LayerVolume;
+                float perCell = config.InitialMatterPerCubicMetre * Matter.LayerVolume;
                 for (int i = 0; i < Matter.LayerCount; i++)
                 {
-                    Matter.Deposit(-((i + 0.5f) * Matter.LayerMetres), perLayer);
+                    float depth = -((i + 0.5f) * Matter.LayerMetres);
+                    for (int patch = 0; patch < patchCount; patch++)
+                    {
+                        Matter.Deposit(depth, perCell, patch);
+                    }
                 }
             }
 
@@ -376,6 +399,14 @@ namespace Evosim.Core
             Field.Advance(ElapsedSeconds);
 
             Metabolise(seconds);
+
+            // D061. After Metabolise, so this step's feeding and shading were priced at each
+            // creature's patch as it stood when the step began; before Reproduce, so an
+            // offspring inherits the patch its parent ends this step in rather than the one it
+            // started it in. Skips its own RNG draw entirely when there is nowhere to disperse to
+            // or nothing asks for it — see Disperse's own remarks for the K=1 bit-identity guard.
+            Disperse();
+
             Nutrients.Settle(seconds);
             Matter.Settle(seconds);
 
@@ -386,9 +417,11 @@ namespace Evosim.Core
 
             // Stirred after it sinks, in the same step. The two are opposed — one carries detritus
             // down and the other spreads it back through the column — and whether the world has a
-            // nutrient gradient or a line on the floor is the balance between them (D036).
-            Nutrients.Mix(seconds, Config.NutrientMixingDiffusivity);
-            Matter.Mix(seconds, Config.MatterMixingDiffusivity);
+            // nutrient gradient or a line on the floor is the balance between them (D036). D061
+            // adds a horizontal pass alongside the vertical one, throttled by its own knob — see
+            // NutrientField.Mix's remarks for why it is a separate, far slower rate.
+            Nutrients.Mix(seconds, Config.NutrientMixingDiffusivity, Config.HorizontalMixingDiffusivity);
+            Matter.Mix(seconds, Config.MatterMixingDiffusivity, Config.HorizontalMixingDiffusivity);
             Reproduce();
             EnforceFloor();
             EnforceCeiling();
@@ -439,7 +472,7 @@ namespace Evosim.Core
             for (int i = 0; i < _living.Count; i++)
             {
                 Organism creature = _living[i];
-                Field.Contribute(creature.HeightY, creature.Phenotype.TotalLitArea);
+                Field.Contribute(creature.HeightY, creature.Phenotype.TotalLitArea, creature.Patch);
             }
             Field.Solve();
 
@@ -453,12 +486,12 @@ namespace Evosim.Core
                 Organism creature = _living[i];
 
                 EnergyLedger ledger = Metabolism.StepAt(
-                    creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY),
-                    Nutrients.EdibleDensityAt(creature.HeightY),
+                    creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch),
+                    Nutrients.EdibleDensityAt(creature.HeightY, creature.Patch),
                     creature.PendingWorkJoules, seconds, creature.Age);
 
                 _ledgers[i] = ledger;
-                Nutrients.Demand(creature.HeightY, ledger.PoolDrawn);
+                Nutrients.Demand(creature.HeightY, ledger.PoolDrawn, creature.Patch);
             }
 
             for (int i = _living.Count - 1; i >= 0; i--)
@@ -471,7 +504,7 @@ namespace Evosim.Core
                 float age = creature.Age;
                 creature.Age += seconds;
 
-                float share = Nutrients.ShareAt(creature.HeightY);
+                float share = Nutrients.ShareAt(creature.HeightY, creature.Patch);
                 EnergyLedger ledger = _ledgers[i];
 
                 // Recomputed only when the larder is short. Scaling the stored ledger instead
@@ -481,12 +514,12 @@ namespace Evosim.Core
                 {
                     // The same work, not more: this replaces the ledger rather than adding to it.
                     ledger = Metabolism.StepAt(
-                        creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY),
-                        Nutrients.EdibleDensityAt(creature.HeightY) * share,
+                        creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch),
+                        Nutrients.EdibleDensityAt(creature.HeightY, creature.Patch) * share,
                         creature.PendingWorkJoules, seconds, age);
                 }
 
-                if (ledger.PoolDrawn > 0f) Nutrients.Take(creature.HeightY, ledger.PoolDrawn);
+                if (ledger.PoolDrawn > 0f) Nutrients.Take(creature.HeightY, ledger.PoolDrawn, creature.Patch);
 
                 // Drained here and nowhere else. Both branches above priced the same joules, so
                 // this is the one point at which they stop being owed.
@@ -520,7 +553,7 @@ namespace Evosim.Core
 
                     if (excreted > 0f)
                     {
-                        Matter.Deposit(creature.HeightY, excreted);
+                        Matter.Deposit(creature.HeightY, excreted, creature.Patch);
                         creature.LockedMatter -= excreted;
                         MatterInBodies -= excreted;
                         ExcretedTotal += excreted;
@@ -537,7 +570,7 @@ namespace Evosim.Core
                 // The body becomes detritus where it died — §5A.2c. This is the whole reason
                 // anything other than a plant can live, and the reason the doomed half of
                 // generation zero is the world's first food rather than merely a waste of seeds.
-                Nutrients.Deposit(creature.HeightY, creature.TissueJoules);
+                Nutrients.Deposit(creature.HeightY, creature.TissueJoules, creature.Patch);
 
                 // Whatever matter is still locked returns to the layer the body died in, and
                 // sinks from there — which is why the deep is rich and the surface is not.
@@ -546,7 +579,7 @@ namespace Evosim.Core
                 // floor founder, which never paid and so never owes anything back.
                 if (creature.LockedMatter > 0f)
                 {
-                    Matter.Deposit(creature.HeightY, creature.LockedMatter);
+                    Matter.Deposit(creature.HeightY, creature.LockedMatter, creature.Patch);
                     MatterInBodies -= creature.LockedMatter;
                     creature.LockedMatter = 0f;
                 }
@@ -565,6 +598,71 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>
+        /// Moves creatures between adjacent patches — D061. A metapopulation-style throttle
+        /// rather than continuous advection (D061's rejected alternative): each living creature
+        /// draws once, in list order, and the whole method is skipped whenever there is nowhere
+        /// to disperse to or nothing asks for it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Guarded behind both halves so K=1 stays bit-identical.</b> Even a positive
+        /// <see cref="RunConfig.DispersalChancePerStep"/> draws nothing when
+        /// <see cref="PatchCount"/> is 1 — there is no adjacent patch to move to, and the method
+        /// returns before touching <see cref="Rng"/> at all — so turning that knob on alone
+        /// cannot perturb a K=1 run's trajectory. Symmetrically, K&gt;1 with the chance at its
+        /// default of 0 draws nothing either: patches that never exchange creatures is a
+        /// legitimate D061 configuration in its own right (isolated columns), not an oversight.
+        /// </para>
+        /// <para>
+        /// <b>One seed per creature, one draw, split three ways.</b> Each living creature — walked
+        /// in <c>_living</c>'s own order, which is deterministic for a given population state —
+        /// draws <c>Rng.SeedFor(Seed, _nextIndex++)</c> exactly as a founder or an offspring does,
+        /// and spends a single <see cref="Rng.NextFloat"/> on it: the bottom
+        /// <see cref="RunConfig.DispersalChancePerStep"/>/2 of [0, 1) moves the creature to the
+        /// patch behind it, the next equal-sized slice moves it to the patch ahead, and the
+        /// remainder — everything from the chance upward — leaves it where it was. One float
+        /// split three ways is exactly as unbiased as a chance draw followed by a direction draw
+        /// and costs half the RNG stream.
+        /// </para>
+        /// <para>
+        /// <b>The ring, both directions</b> — <c>(patch + 1) % PatchCount</c> and
+        /// <c>(patch - 1 + PatchCount) % PatchCount</c>, the same wraparound
+        /// <see cref="NutrientField.Mix"/>'s horizontal pass uses, so a creature can reach every
+        /// patch by a sequence of single steps and no patch is architecturally an edge.
+        /// </para>
+        /// <para>
+        /// Run after <see cref="Metabolise"/> and before <see cref="Reproduce"/>: this step's
+        /// feeding and shading were already priced at the patch each creature held when the step
+        /// began, and an offspring conceived this step inherits the patch its parent ends the
+        /// step in.
+        /// </para>
+        /// </remarks>
+        private void Disperse()
+        {
+            if (!(Config.DispersalChancePerStep > 0f) || PatchCount <= 1) return;
+
+            float chance = Config.DispersalChancePerStep;
+            float half = chance * 0.5f;
+            int patches = PatchCount;
+
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+
+                ulong seed = Rng.SeedFor(Seed, _nextIndex++);
+                float draw = new Rng(seed).NextFloat();
+
+                if (draw < half)
+                {
+                    creature.Patch = (creature.Patch - 1 + patches) % patches;
+                }
+                else if (draw < chance)
+                {
+                    creature.Patch = (creature.Patch + 1) % patches;
+                }
+            }
+        }
 
         /// <remarks>
         /// <para>
@@ -620,7 +718,7 @@ namespace Evosim.Core
             // be afforded either, and building one to find that out is the dominant cost in a
             // matter-limited world.
             if (Config.MatterPerTissueJoule > 0f &&
-                Matter.StockInLayer(Matter.LayerOf(parent.HeightY)) < CheapestPossibleChildMatter)
+                Matter.StockInLayer(Matter.LayerOf(parent.HeightY), parent.Patch) < CheapestPossibleChildMatter)
             {
                 ConceptionsBlockedByMatter++;
                 return false;
@@ -653,13 +751,13 @@ namespace Evosim.Core
                 // return is short removes the partial amount and then drops it on the floor, which
                 // leaks matter on every blocked conception — 132 units of 24,000 in a 400 s test,
                 // and it leaks fastest exactly when matter is scarce enough to matter.
-                if (Matter.StockInLayer(Matter.LayerOf(parent.HeightY)) < matterPrice)
+                if (Matter.StockInLayer(Matter.LayerOf(parent.HeightY), parent.Patch) < matterPrice)
                 {
                     ConceptionsBlockedByMatter++;
                     return false;
                 }
 
-                Matter.Take(parent.HeightY, matterPrice);
+                Matter.Take(parent.HeightY, matterPrice, parent.Patch);
                 MatterInBodies += matterPrice;
             }
 
@@ -672,7 +770,8 @@ namespace Evosim.Core
 
             Organism child = Admit(
                 childGenome, body, BirthKind.Reproduction, seed, parent.Id,
-                parent.GenerationDepth + 1, endowment, tissue, parent.HeightY, parent);
+                parent.GenerationDepth + 1, endowment, tissue, parent.HeightY, parent,
+                patch: parent.Patch);
 
             if (child != null)
             {
@@ -722,13 +821,27 @@ namespace Evosim.Core
                 // §5A.2 calibration read as more generous than it is.
                 float height = -rng.Range(0f, Config.FounderDepthSpread);
 
+                // D061. A second, independent seed slot, drawn only when there is more than one
+                // patch to land in — the CLAUDE.md guard: any new Rng draw on a path that runs at
+                // K=1 breaks bit-identity, so this is skipped entirely rather than drawn and
+                // discarded. A separate draw rather than one more call against `rng` above: reusing
+                // it would make where a founder lands depend on how many draws GenomeFactory.Founder
+                // happened to make, coupling two things D061 wants independent of each other.
+                int patch = 0;
+                if (PatchCount > 1)
+                {
+                    ulong patchSeed = Rng.SeedFor(Seed, _nextIndex++);
+                    patch = new Rng(patchSeed).Range(PatchCount);
+                }
+
                 Phenotype body = Developer.Develop(
                     genome, Config.Development, null, Config.Shapes);
 
                 Organism founder = Admit(
                     genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
                     energy: Config.FounderEnergyJoules,
-                    tissue: Metabolism.TissueJoules(body, Config), heightY: height, parent: null);
+                    tissue: Metabolism.TissueJoules(body, Config), heightY: height, parent: null,
+                    patch: patch);
 
                 // A stillborn founder is still an attempt, and counting it keeps the floor's
                 // trickle a trickle. Not counting it would let a step retry until something
@@ -783,12 +896,24 @@ namespace Evosim.Core
             {
                 ulong seed = Rng.SeedFor(Seed, _nextIndex++);
 
+                // D061. Same second-seed-slot pattern as EnforceFloor, for the same reason: drawn
+                // only when there is more than one patch to land in, so a K=1 assay is untouched
+                // and the D060 assay's own guarantees (same seed stream, replays identically) are
+                // extended rather than disturbed.
+                int patch = 0;
+                if (PatchCount > 1)
+                {
+                    ulong patchSeed = Rng.SeedFor(Seed, _nextIndex++);
+                    patch = new Rng(patchSeed).Range(PatchCount);
+                }
+
                 Phenotype body = Developer.Develop(genome, Config.Development, null, Config.Shapes);
 
                 Organism creature = Admit(
                     genome, body, BirthKind.Inoculation, seed, parentId: -1, generationDepth: 0,
                     energy: Config.FounderEnergyJoules,
-                    tissue: Metabolism.TissueJoules(body, Config), heightY: heightY, parent: null);
+                    tissue: Metabolism.TissueJoules(body, Config), heightY: heightY, parent: null,
+                    patch: patch);
 
                 // A stillborn inoculant is still an attempt — see EnforceFloor's identical remark.
                 Inoculated++;
@@ -822,9 +947,16 @@ namespace Evosim.Core
         /// needs the actual organism, not just its id, to read its current
         /// <see cref="Organism.SpeciesId"/>.
         /// </param>
+        /// <param name="patch">
+        /// The horizontal cell this creature is born into — D061. The parent's own patch for a
+        /// reproduction (offspring inherit it, drawn nowhere), and a uniform draw from the
+        /// world's seed stream for a floor founder or an inoculant, guarded behind
+        /// <see cref="PatchCount"/> &gt; 1 at each call site.
+        /// </param>
         private Organism Admit(
             Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
-            int generationDepth, float energy, float tissue, float heightY, Organism parent)
+            int generationDepth, float energy, float tissue, float heightY, Organism parent,
+            int patch)
         {
             if (phenotype.PartCount == 0)
             {
@@ -852,6 +984,7 @@ namespace Evosim.Core
                 TissueJoules = tissue,
                 HeightY = heightY,
                 BirthHeightY = heightY,
+                Patch = patch,
                 StandingWatts = Metabolism.StandingWatts(phenotype, Config),
             };
 
@@ -873,7 +1006,7 @@ namespace Evosim.Core
             // means.
             _lineageEvents.Add(LineageEvent.Birth(
                 ElapsedSeconds, creature.Id, parentId, kind, generationDepth, creature.SpeciesId,
-                HasAbsorptive(phenotype), phenotype.TotalDof > 0));
+                HasAbsorptive(phenotype), phenotype.TotalDof > 0, patch));
 
             return creature;
         }

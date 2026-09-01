@@ -33,6 +33,42 @@ namespace Evosim.Core
     /// it, and for the same reason: feeding one creature at a time in list order would let
     /// whoever the loop reached first eat their fill, making income depend on iteration order.
     /// </para>
+    /// <para>
+    /// <b>D061: storage generalises from per-layer to per-layer-per-patch.</b> Each depth layer
+    /// now holds <see cref="PatchCount"/> horizontally-adjacent columns rather than one perfectly
+    /// mixed slab. Every cell of the field is addressed by <c>(layer, patch)</c> and stored in a
+    /// single flat list, <c>layer * PatchCount + patch</c> — the layer-major layout that keeps a
+    /// layer's patches contiguous, which is what the new horizontal <see cref="Mix"/> pass walks.
+    /// <see cref="Deposit(float, float, int)"/>, <see cref="Settle"/> and <see cref="Remineralise"/> stay strictly
+    /// vertical and within-patch, exactly as before, just repeated <see cref="PatchCount"/> times;
+    /// <see cref="Mix"/> keeps that same vertical behaviour per patch and additionally exchanges
+    /// between horizontally-adjacent patches when asked to.
+    /// </para>
+    /// <para>
+    /// <b>Every public per-depth API now has a patch-index overload.</b> The old, patch-less
+    /// signatures keep working exactly as before when <see cref="PatchCount"/> is 1 — reading and
+    /// writing patch 0, bit-identical to the field's whole history before D061 — and throw
+    /// <see cref="InvalidOperationException"/> when <see cref="PatchCount"/> is above 1, because
+    /// there is then no single honest answer to "which patch". A caller in a K&gt;1 world must
+    /// say which patch it means.
+    /// </para>
+    /// <para>
+    /// <b>Geometry: patches split <see cref="WorldArea"/> equally.</b> Each patch's own
+    /// horizontal area is <c>WorldArea / PatchCount</c>, so <see cref="LayerVolume"/> — used by
+    /// every density read — is now a <i>per-patch</i> volume, and <see cref="PatchWidthMetres"/>
+    /// (the characteristic length horizontal diffusion mixes across) is the square root of a
+    /// patch's own area, <c>sqrt(WorldArea / PatchCount)</c>: the same "treat the footprint as a
+    /// square and take its side" approximation the field otherwise has no shape opinion about,
+    /// chosen because <see cref="Mix"/>'s vertical pass already measures its own diffusion length
+    /// the same way — a layer's thickness — and a horizontal pass wants the equivalent quantity
+    /// for the plane rather than a second, differently-shaped model.
+    /// </para>
+    /// <para>
+    /// <b>The boundary wraps — a ring, not a wall.</b> D061's own reasoning: the world has no
+    /// horizontal walls, and a ring means no patch is architecturally an edge (a linear row would
+    /// make the two end patches special for no ecological reason). Patch <c>PatchCount - 1</c> is
+    /// adjacent to patch 0.
+    /// </para>
     /// </remarks>
     public sealed class NutrientField
     {
@@ -53,6 +89,19 @@ namespace Evosim.Core
         public int LayerCount { get; }
 
         /// <summary>
+        /// Horizontal cells per layer — D061. 1 is this field's whole history before D061: a
+        /// single, perfectly-mixed column per layer.
+        /// </summary>
+        public int PatchCount { get; }
+
+        /// <summary>
+        /// The characteristic horizontal length <see cref="Mix"/>'s horizontal pass diffuses
+        /// across, m — <c>sqrt(WorldArea / PatchCount)</c>. See the class remarks for why this
+        /// shape was chosen. Meaningless (and unused) when <see cref="PatchCount"/> is 1.
+        /// </summary>
+        public float PatchWidthMetres { get; }
+
+        /// <summary>
         /// Layers, counted up from the floor, that no mouth can reach — D055.
         /// </summary>
         /// <remarks>0 when the field was built with no refuge, which is the field's whole history
@@ -70,7 +119,7 @@ namespace Evosim.Core
 
         public NutrientField(
             float worldArea, float layerMetres, float sinkMetresPerSecond, float worldDepth,
-            float refugeMetres = 0f, float refugeEdibleFraction = 0f)
+            float refugeMetres = 0f, float refugeEdibleFraction = 0f, int patchCount = 1)
         {
             if (!(worldArea > 0f) || float.IsInfinity(worldArea))
                 throw new ArgumentOutOfRangeException(nameof(worldArea), worldArea, "Must be positive and finite.");
@@ -87,15 +136,21 @@ namespace Evosim.Core
                     nameof(refugeEdibleFraction), refugeEdibleFraction,
                     "Must be in [0, 1]. Above 1 feeding would take more than the refuge holds, " +
                     "and negative is not a fraction at all.");
+            if (patchCount < 1)
+                throw new ArgumentOutOfRangeException(
+                    nameof(patchCount), patchCount, "A field needs at least one patch — D061's K >= 1.");
 
             WorldArea = worldArea;
             LayerMetres = layerMetres;
             SinkMetresPerSecond = sinkMetresPerSecond;
             LayerCount = Math.Max(1, (int)Math.Ceiling(worldDepth / layerMetres));
+            PatchCount = patchCount;
+            PatchWidthMetres = (float)Math.Sqrt(WorldArea / PatchCount);
             RefugeLayerCount = Math.Min(LayerCount, (int)Math.Ceiling(refugeMetres / layerMetres));
             RefugeEdibleFraction = refugeEdibleFraction;
 
-            for (int i = 0; i < LayerCount; i++)
+            int cells = LayerCount * PatchCount;
+            for (int i = 0; i < cells; i++)
             {
                 _stock.Add(0.0);
                 _demand.Add(0.0);
@@ -103,38 +158,77 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>Flat storage index for a (layer, patch) cell — the layer-major layout the class remarks describe.</summary>
+        private int Cell(int layer, int patch) => layer * PatchCount + patch;
+
+        /// <summary>Throws if <paramref name="patch"/> is not a real patch of this field.</summary>
+        private void ValidatePatch(int patch)
+        {
+            if (patch < 0 || patch >= PatchCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(patch), patch,
+                    $"This field has {PatchCount} patch(es), indexed 0..{PatchCount - 1}.");
+            }
+        }
+
+        /// <summary>
+        /// What every patch-less overload below resolves to. Patch 0 when there is only one
+        /// patch — bit-identical to this field's whole history before D061 — and a refusal
+        /// otherwise, because with more than one patch there is no single honest answer to
+        /// "which patch" and a caller must say.
+        /// </summary>
+        private int SinglePatchOrThrow()
+        {
+            if (PatchCount > 1)
+            {
+                throw new InvalidOperationException(
+                    $"This field has {PatchCount} patches (D061), so a caller must say which one " +
+                    "— use the overload that takes a patch index rather than the pre-D061 signature.");
+            }
+
+            return 0;
+        }
+
         /// <summary>Whether a layer is buried beyond any mouth's reach — D055.</summary>
         public bool IsRefuge(int layer) => layer >= LayerCount - RefugeLayerCount;
 
         /// <summary>
-        /// What a refuge layer's stock feeding may currently see and take, J — the arm C
-        /// generalisation of D055's all-or-nothing refuge.
+        /// What a refuge layer's stock feeding may currently see and take, J, in one patch — the
+        /// arm C generalisation of D055's all-or-nothing refuge.
         /// </summary>
         /// <remarks>
         /// <para>
         /// <b>Re-evaluated from the current stock, not tracked as its own ledger.</b> The edible
-        /// share of a refuge layer is <c>RefugeEdibleFraction × _stock[layer]</c> at the instant
-        /// this is called. That is deliberately not an exact per-step bound: two draws against the
-        /// same refuge layer in one step (two feeders at the refuge depth, or a recomputed short-
-        /// larder ledger — see <see cref="World.Metabolise"/>) each see the fraction of what is
-        /// left <i>after</i> the first, so the second can never take more than the edible share of
-        /// the remainder. It cannot be pushed past 100% of the true stock — every <c>Take</c> is
-        /// still capped at <c>_stock[layer]</c> itself — and it is self-limiting the same way
-        /// compound interest is: repeatedly taking a fraction of what remains approaches but never
-        /// reaches zero. A layer with no refuge (<see cref="IsRefuge"/> false) has no such limit at
-        /// all — this method is only ever consulted from inside a refuge branch.
+        /// share of a refuge layer is <c>RefugeEdibleFraction × _stock[cell]</c> at the instant
+        /// this is called, exactly as before D061 — only the cell being read has gained a patch
+        /// index. That is deliberately not an exact per-step bound: two draws against the same
+        /// refuge cell in one step (two feeders at the refuge depth in the same patch, or a
+        /// recomputed short-larder ledger — see <see cref="World.Metabolise"/>) each see the
+        /// fraction of what is left <i>after</i> the first, so the second can never take more
+        /// than the edible share of the remainder. It cannot be pushed past 100% of the true
+        /// stock either — every <c>Take</c> is still capped at the cell's own stock — and it is
+        /// self-limiting the same way compound interest is. A layer with no refuge
+        /// (<see cref="IsRefuge"/> false) has no such limit at all — this method is only ever
+        /// consulted from inside a refuge branch.
         /// </para>
         /// </remarks>
-        private double EdibleStock(int layer) => _stock[layer] * RefugeEdibleFraction;
+        private double EdibleStock(int layer, int patch) => _stock[Cell(layer, patch)] * RefugeEdibleFraction;
 
-        /// <summary>Volume of one layer, m³.</summary>
-        public float LayerVolume => WorldArea * LayerMetres;
+        /// <summary>
+        /// Volume of one layer <i>in one patch</i>, m³ — <see cref="WorldArea"/> divided equally
+        /// among <see cref="PatchCount"/> patches, times <see cref="LayerMetres"/>. Bit-identical
+        /// to the whole-world layer volume this property reported before D061 when
+        /// <see cref="PatchCount"/> is 1.
+        /// </summary>
+        public float LayerVolume => (WorldArea / PatchCount) * LayerMetres;
 
-        /// <summary>Everything the pool holds, J. Part of §5A.2's audit.</summary>
+        /// <summary>Everything the pool holds, across every layer and every patch, J. Part of §5A.2's audit.</summary>
         /// <remarks>
         /// A double, because a long run accumulates and spends this millions of times and a float
         /// would stop registering small additions long before the run ended — the failure mode
-        /// where an energy audit silently becomes decorative.
+        /// where an energy audit silently becomes decorative. Summing the flat store rather than
+        /// summing per patch: the total does not care how the field is subdivided.
         /// </remarks>
         public double TotalJoules
         {
@@ -146,7 +240,7 @@ namespace Evosim.Core
             }
         }
 
-        /// <summary>The layer a world height falls in, clamped to the world.</summary>
+        /// <summary>The layer a world height falls in, clamped to the world. Patch-independent.</summary>
         /// <remarks>
         /// Clamped rather than extended, because unlike light the pool has to be conserved: a
         /// deposit at a depth with no layer would vanish, and vanished energy is exactly what the
@@ -159,121 +253,157 @@ namespace Evosim.Core
             return layer >= LayerCount ? LayerCount - 1 : layer;
         }
 
-        /// <summary>Adds dead tissue at a depth.</summary>
-        public void Deposit(float heightY, float joules)
+        /// <summary>Adds dead tissue at a depth, in one patch.</summary>
+        public void Deposit(float heightY, float joules, int patch)
         {
             if (!(joules > 0f)) return;
-            _stock[LayerOf(heightY)] += joules;
+            ValidatePatch(patch);
+            _stock[Cell(LayerOf(heightY), patch)] += joules;
         }
 
+        /// <summary>Pre-D061 signature — patch 0 when <see cref="PatchCount"/> is 1, throws otherwise.</summary>
+        public void Deposit(float heightY, float joules) => Deposit(heightY, joules, SinglePatchOrThrow());
+
         /// <summary>
-        /// Energy density of the water at a depth, J/m³ — what the water physically holds.
+        /// Energy density of the water at a depth, in one patch, J/m³ — what the water physically
+        /// holds.
         /// </summary>
         /// <remarks>
         /// Truthful regardless of <see cref="RefugeLayerCount"/>: a refuge changes what feeding
-        /// can price, not what the field reports. See <see cref="EdibleDensityAt"/> for the
-        /// version a mouth actually reads — D055.
+        /// can price, not what the field reports. See <see cref="EdibleDensityAt(float, int)"/>
+        /// for the version a mouth actually reads — D055.
         /// </remarks>
-        public float DensityAt(float heightY) => (float)(_stock[LayerOf(heightY)] / LayerVolume);
+        public float DensityAt(float heightY, int patch)
+        {
+            ValidatePatch(patch);
+            return (float)(_stock[Cell(LayerOf(heightY), patch)] / LayerVolume);
+        }
+
+        /// <summary>Pre-D061 signature — patch 0 when <see cref="PatchCount"/> is 1, throws otherwise.</summary>
+        public float DensityAt(float heightY) => DensityAt(heightY, SinglePatchOrThrow());
 
         /// <summary>
-        /// Energy density a feeding cell may actually draw at a depth, J/m³ — D055, generalised
-        /// by <see cref="RefugeEdibleFraction"/>.
+        /// Energy density a feeding cell may actually draw at a depth, in one patch, J/m³ — D055,
+        /// generalised by <see cref="RefugeEdibleFraction"/>.
         /// </summary>
         /// <remarks>
         /// <c>RefugeEdibleFraction × DensityAt</c> inside the refuge — zero at the D055 default,
-        /// whatever <see cref="DensityAt"/> reports there; identical to <see cref="DensityAt"/>
-        /// everywhere else. This is what <see cref="Demand"/> and <see cref="Take"/> enforce, so
-        /// it is what a caller should price rather than reimplementing the refuge check.
+        /// whatever <see cref="DensityAt(float, int)"/> reports there; identical to
+        /// <see cref="DensityAt(float, int)"/> everywhere else. This is what <see cref="Demand(float, float, int)"/>
+        /// and <see cref="Take(float, float, int)"/> enforce, so it is what a caller should price rather than
+        /// reimplementing the refuge check.
         /// </remarks>
-        public float EdibleDensityAt(float heightY)
+        public float EdibleDensityAt(float heightY, int patch)
         {
+            ValidatePatch(patch);
             int layer = LayerOf(heightY);
-            double stock = IsRefuge(layer) ? EdibleStock(layer) : _stock[layer];
+            double stock = IsRefuge(layer) ? EdibleStock(layer, patch) : _stock[Cell(layer, patch)];
             return (float)(stock / LayerVolume);
         }
 
-        /// <summary>Discards last step's demand. Call before <see cref="Demand"/>.</summary>
+        /// <summary>Pre-D061 signature — patch 0 when <see cref="PatchCount"/> is 1, throws otherwise.</summary>
+        public float EdibleDensityAt(float heightY) => EdibleDensityAt(heightY, SinglePatchOrThrow());
+
+        /// <summary>Discards last step's demand, in every patch. Call before <see cref="Demand(float, float, int)"/>.</summary>
         public void ClearDemand()
         {
             for (int i = 0; i < _demand.Count; i++) _demand[i] = 0.0;
         }
 
-        /// <summary>Registers what one creature would take at this depth if nothing competed.</summary>
+        /// <summary>Registers what one creature would take at this depth and patch if nothing competed.</summary>
         /// <remarks>
         /// Refuses a refuge layer outright at <see cref="RefugeEdibleFraction"/> zero — D055.
         /// The field enforces its own invariant here so no caller can forget it by pricing
-        /// <see cref="DensityAt"/> instead of <see cref="EdibleDensityAt"/>. Above zero, demand
-        /// against a refuge layer is registered exactly like any other layer's — what bounds it
-        /// is <see cref="ShareAt"/> and <see cref="Take"/> reading the edible share of stock
-        /// rather than the whole of it.
+        /// <see cref="DensityAt(float, int)"/> instead of <see cref="EdibleDensityAt(float, int)"/>.
+        /// Above zero, demand against a refuge cell is registered exactly like any other cell's —
+        /// what bounds it is <see cref="ShareAt(float, int)"/> and <see cref="Take(float, float, int)"/> reading the edible
+        /// share of stock rather than the whole of it.
         /// </remarks>
-        public void Demand(float heightY, float joules)
+        public void Demand(float heightY, float joules, int patch)
         {
             if (!(joules > 0f)) return;
+            ValidatePatch(patch);
             int layer = LayerOf(heightY);
             if (IsRefuge(layer) && RefugeEdibleFraction <= 0f) return;
-            _demand[layer] += joules;
+            _demand[Cell(layer, patch)] += joules;
         }
 
+        /// <summary>Pre-D061 signature — patch 0 when <see cref="PatchCount"/> is 1, throws otherwise.</summary>
+        public void Demand(float heightY, float joules) => Demand(heightY, joules, SinglePatchOrThrow());
+
         /// <summary>
-        /// The fraction of its demand a feeder at this depth actually gets, in [0, 1].
+        /// The fraction of its demand a feeder at this depth and patch actually gets, in [0, 1].
         /// </summary>
         /// <remarks>
-        /// 1 while the layer holds more than its feeders want, falling as they exhaust it. Valid
-        /// after every <see cref="Demand"/> for the step has been registered. Inside a refuge
+        /// 1 while the cell holds more than its feeders want, falling as they exhaust it. Valid
+        /// after every <see cref="Demand(float, float, int)"/> for the step has been registered. Inside a refuge
         /// layer, "holds" means <see cref="EdibleStock"/> — the fraction of stock feeding can see
-        /// — not the full stock, so competitors can never be told there is more to share than the
-        /// refuge actually exposes.
+        /// — not the full stock, so competitors sharing that patch can never be told there is more
+        /// to share than the refuge actually exposes. Patches never compete with each other:
+        /// demand and stock are both per-cell.
         /// </remarks>
-        public float ShareAt(float heightY)
+        public float ShareAt(float heightY, int patch)
         {
+            ValidatePatch(patch);
             int layer = LayerOf(heightY);
-            double wanted = _demand[layer];
+            int cell = Cell(layer, patch);
+            double wanted = _demand[cell];
 
             if (wanted <= 0.0) return 1f;
-            double available = IsRefuge(layer) ? EdibleStock(layer) : _stock[layer];
+            double available = IsRefuge(layer) ? EdibleStock(layer, patch) : _stock[cell];
 
             return available >= wanted ? 1f : (float)(available / wanted);
         }
 
-        /// <summary>Removes energy from the pool and returns what was actually there to take.</summary>
+        /// <summary>Pre-D061 signature — patch 0 when <see cref="PatchCount"/> is 1, throws otherwise.</summary>
+        public float ShareAt(float heightY) => ShareAt(heightY, SinglePatchOrThrow());
+
+        /// <summary>Removes energy from one patch's pool and returns what was actually there to take.</summary>
         /// <remarks>
         /// <para>
         /// At <see cref="RefugeEdibleFraction"/> zero, refuses a refuge layer outright — D055,
-        /// and the same enforcement <see cref="Demand"/> applies. Stock in that layer is not
+        /// and the same enforcement <see cref="Demand(float, float, int)"/> applies. Stock in that cell is not
         /// touched, matching <c>ShareAt</c>'s reading of it for whoever registered no demand
         /// there.
         /// </para>
         /// <para>
-        /// Above zero, a refuge layer's cap is <see cref="EdibleStock"/> rather than the full
+        /// Above zero, a refuge cell's cap is <see cref="EdibleStock"/> rather than the full
         /// stock — the fraction of what remains <i>right now</i>, re-evaluated on every call
         /// rather than tracked as a separate per-step ledger. That is deliberately the simplest
-        /// correct form and not an exact per-step bound: two draws against the same layer in one
+        /// correct form and not an exact per-step bound: two draws against the same cell in one
         /// step each see the edible share of what the first left behind, so repeated taking is
         /// self-limiting — it approaches but can never reach zero — rather than being metered
         /// against a fixed per-step allowance. It can never remove more than the full physical
         /// stock either way, because the edible cap is itself a fraction (≤ 1) of that stock.
         /// </para>
         /// </remarks>
-        public float Take(float heightY, float joules)
+        public float Take(float heightY, float joules, int patch)
         {
             if (!(joules > 0f)) return 0f;
 
+            ValidatePatch(patch);
             int layer = LayerOf(heightY);
-            double cap = IsRefuge(layer) ? EdibleStock(layer) : _stock[layer];
+            int cell = Cell(layer, patch);
+            double cap = IsRefuge(layer) ? EdibleStock(layer, patch) : _stock[cell];
 
             double taken = Math.Min(joules, cap);
             if (taken <= 0.0) return 0f;
 
-            _stock[layer] -= taken;
+            _stock[cell] -= taken;
             return (float)taken;
         }
 
-        /// <summary>Moves detritus downward by one step's worth of sinking.</summary>
+        /// <summary>Pre-D061 signature — patch 0 when <see cref="PatchCount"/> is 1, throws otherwise.</summary>
+        public float Take(float heightY, float joules) => Take(heightY, joules, SinglePatchOrThrow());
+
+        /// <summary>
+        /// Moves detritus downward by one step's worth of sinking, independently within every
+        /// patch. Vertical and within-patch only — D061 does not change what this does, only how
+        /// many times over it does it.
+        /// </summary>
         /// <remarks>
         /// <para>
-        /// A fraction of each layer moves down rather than the whole layer moving a distance: with
+        /// A fraction of each cell moves down rather than the whole cell moving a distance: with
         /// layers of fixed thickness, a sink speed slower than one layer per step has nowhere else
         /// to go. The fraction is capped at 1, so a step long enough to cross several layers moves
         /// everything down exactly one and no further — a limitation of the discretisation, and
@@ -296,20 +426,33 @@ namespace Evosim.Core
 
             for (int i = 0; i < _sinking.Count; i++) _sinking[i] = 0.0;
 
-            // The floor keeps what it has: there is nowhere below it.
+            // The floor keeps what it has: there is nowhere below it. Every patch sinks on its
+            // own — no term here ever reads or writes a different patch's cell.
             for (int layer = 0; layer < LayerCount - 1; layer++)
             {
-                _sinking[layer] = _stock[layer] * fraction;
+                for (int patch = 0; patch < PatchCount; patch++)
+                {
+                    int cell = Cell(layer, patch);
+                    _sinking[cell] = _stock[cell] * fraction;
+                }
             }
 
             for (int layer = 0; layer < LayerCount - 1; layer++)
             {
-                _stock[layer] -= _sinking[layer];
-                _stock[layer + 1] += _sinking[layer];
+                for (int patch = 0; patch < PatchCount; patch++)
+                {
+                    int from = Cell(layer, patch);
+                    int to = Cell(layer + 1, patch);
+                    _stock[from] -= _sinking[from];
+                    _stock[to] += _sinking[from];
+                }
             }
         }
 
-        /// <summary>Leaks a fraction of the floor's stock into the layer above it — D051.</summary>
+        /// <summary>
+        /// Leaks a fraction of each patch's floor stock into the layer above it — D051. Vertical
+        /// and within-patch, like <see cref="Settle"/>.
+        /// </summary>
         /// <param name="seconds">Interval to decay over.</param>
         /// <param name="ratePerSecond">
         /// First-order rate constant, s⁻¹. Zero leaves the field exactly as it was.
@@ -337,18 +480,32 @@ namespace Evosim.Core
             if (!(ratePerSecond > 0f) || LayerCount < 2) return;
 
             double fraction = 1.0 - Math.Exp(-ratePerSecond * seconds);
-            double moved = _stock[LayerCount - 1] * fraction;
 
-            _stock[LayerCount - 1] -= moved;
-            _stock[LayerCount - 2] += moved;
+            for (int patch = 0; patch < PatchCount; patch++)
+            {
+                int floorCell = Cell(LayerCount - 1, patch);
+                int aboveCell = Cell(LayerCount - 2, patch);
+
+                double moved = _stock[floorCell] * fraction;
+                _stock[floorCell] -= moved;
+                _stock[aboveCell] += moved;
+            }
         }
 
         /// <summary>
-        /// Stirs detritus between neighbouring layers — DESIGN.md §5A.4, D036.
+        /// Stirs detritus between neighbouring layers within each patch, and — when
+        /// <paramref name="horizontalDiffusivity"/> is above zero — between horizontally
+        /// adjacent patches within each layer — DESIGN.md §5A.4, D036, D061.
         /// </summary>
         /// <param name="seconds">Interval to mix over.</param>
         /// <param name="diffusivity">
-        /// Eddy diffusivity, m²/s. Zero leaves the field exactly as it was.
+        /// Vertical eddy diffusivity, m²/s. Zero leaves the vertical pass a no-op, exactly as
+        /// before D061.
+        /// </param>
+        /// <param name="horizontalDiffusivity">
+        /// Horizontal eddy diffusivity between adjacent patches, m²/s — D061's
+        /// <see cref="RunConfig.HorizontalMixingDiffusivity"/>. Zero (the default, so every
+        /// pre-D061 call site is unaffected) leaves the horizontal pass a no-op.
         /// </param>
         /// <remarks>
         /// <para>
@@ -370,53 +527,113 @@ namespace Evosim.Core
         /// the difference between a deceptive task [K12] and an ordinary one.
         /// </para>
         /// <para>
-        /// <b>Conservative by construction.</b> Every joule that leaves a layer arrives in a
-        /// neighbour, computed as fluxes across the interfaces rather than as a per-layer average —
-        /// so it cannot create or destroy detritus however coarse the timestep, and §5A.2's audit
-        /// never has to trust it. The boundaries are closed: the surface has nothing above it and
-        /// the floor nothing below, and a flux that is not written is a flux that does not exist.
+        /// <b>Conservative by construction, in both passes.</b> Every joule that leaves a cell
+        /// arrives in a neighbour, computed as fluxes across the interfaces rather than as a
+        /// per-cell average — so it cannot create or destroy detritus however coarse the
+        /// timestep, and §5A.2's audit never has to trust it. The vertical boundaries are closed:
+        /// the surface has nothing above it and the floor nothing below. The horizontal boundary
+        /// wraps instead — a ring, D061's own choice, so no patch is architecturally an edge —
+        /// which is still conservative: every flux subtracted from one patch is added to its
+        /// neighbour, the neighbour just happens to be found by wrapping round rather than by
+        /// stopping.
         /// </para>
         /// <para>
-        /// <b>Clamped rather than sub-stepped.</b> Explicit diffusion goes unstable above a
-        /// Courant number of ½ and would oscillate a layer negative — which conservation would
-        /// happily preserve, giving a world with a debt of detritus in one layer and a surplus in
-        /// the next. The mixed fraction is capped there instead. A capped step is a slower stir
-        /// than asked for; an uncapped one is a different physics.
+        /// <b>Clamped rather than sub-stepped, in both passes.</b> Explicit diffusion goes
+        /// unstable above a Courant number of ½ and would oscillate a cell negative — which
+        /// conservation would happily preserve, giving a world with a debt of detritus in one
+        /// cell and a surplus in the next. The mixed fraction is capped there instead. A capped
+        /// step is a slower stir than asked for; an uncapped one is a different physics. The
+        /// horizontal pass uses <see cref="PatchWidthMetres"/> in place of <see cref="LayerMetres"/>
+        /// as its diffusion length — see the class remarks for why that shape was chosen.
+        /// </para>
+        /// <para>
+        /// <b>Bit-identical to the field's whole history before D061</b> when
+        /// <paramref name="horizontalDiffusivity"/> is 0 (the default for every call that predates
+        /// this knob) — the horizontal pass is skipped entirely, and the vertical pass is
+        /// unchanged in every patch when <see cref="PatchCount"/> is 1.
         /// </para>
         /// </remarks>
-        public void Mix(float seconds, float diffusivity)
+        public void Mix(float seconds, float diffusivity, float horizontalDiffusivity = 0f)
         {
-            if (!(diffusivity > 0f) || !(seconds > 0f) || LayerCount < 2) return;
-
-            // Fick's law across each interface, discretised: the flux between neighbours is the
-            // diffusivity times the concentration difference over the layer thickness. Working in
-            // stock rather than concentration is the same equation because every layer has the
-            // same volume, and it keeps the arithmetic in the units the audit is written in.
-            double fraction = diffusivity * seconds / (LayerMetres * LayerMetres);
-            if (fraction > 0.5) fraction = 0.5;
-
-            for (int i = 0; i < _sinking.Count; i++) _sinking[i] = 0.0;
-
-            // _sinking is reused as the flux buffer: it is scratch, cleared at the top of both
-            // methods, and a second array of the same shape would be one more thing to keep in
-            // step with LayerCount.
-            for (int layer = 0; layer < LayerCount - 1; layer++)
+            if (diffusivity > 0f && seconds > 0f && LayerCount >= 2)
             {
-                _sinking[layer] = (_stock[layer] - _stock[layer + 1]) * fraction;
+                double fraction = diffusivity * seconds / (LayerMetres * LayerMetres);
+                if (fraction > 0.5) fraction = 0.5;
+
+                for (int i = 0; i < _sinking.Count; i++) _sinking[i] = 0.0;
+
+                // _sinking is reused as the flux buffer: it is scratch, cleared before each pass
+                // uses it, and a second array of the same shape would be one more thing to keep
+                // in step with LayerCount * PatchCount.
+                for (int layer = 0; layer < LayerCount - 1; layer++)
+                {
+                    for (int patch = 0; patch < PatchCount; patch++)
+                    {
+                        int a = Cell(layer, patch);
+                        int b = Cell(layer + 1, patch);
+                        _sinking[a] = (_stock[a] - _stock[b]) * fraction;
+                    }
+                }
+
+                for (int layer = 0; layer < LayerCount - 1; layer++)
+                {
+                    for (int patch = 0; patch < PatchCount; patch++)
+                    {
+                        int a = Cell(layer, patch);
+                        int b = Cell(layer + 1, patch);
+                        _stock[a] -= _sinking[a];
+                        _stock[b] += _sinking[a];
+                    }
+                }
             }
 
-            for (int layer = 0; layer < LayerCount - 1; layer++)
+            // D061's horizontal pass. Same Fick's-law form as the vertical one above, geometry
+            // from PatchWidthMetres rather than LayerMetres, and the neighbour found by wrapping
+            // round the ring rather than stopping at an edge — see the class remarks.
+            if (horizontalDiffusivity > 0f && seconds > 0f && PatchCount >= 2)
             {
-                _stock[layer] -= _sinking[layer];
-                _stock[layer + 1] += _sinking[layer];
+                double hFraction = horizontalDiffusivity * seconds / (PatchWidthMetres * PatchWidthMetres);
+                if (hFraction > 0.5) hFraction = 0.5;
+
+                for (int i = 0; i < _sinking.Count; i++) _sinking[i] = 0.0;
+
+                for (int layer = 0; layer < LayerCount; layer++)
+                {
+                    for (int patch = 0; patch < PatchCount; patch++)
+                    {
+                        int a = Cell(layer, patch);
+                        int b = Cell(layer, (patch + 1) % PatchCount);
+                        _sinking[a] = (_stock[a] - _stock[b]) * hFraction;
+                    }
+                }
+
+                for (int layer = 0; layer < LayerCount; layer++)
+                {
+                    for (int patch = 0; patch < PatchCount; patch++)
+                    {
+                        int a = Cell(layer, patch);
+                        int b = Cell(layer, (patch + 1) % PatchCount);
+                        _stock[a] -= _sinking[a];
+                        _stock[b] += _sinking[a];
+                    }
+                }
             }
         }
 
-        /// <summary>What one layer holds, J. For reporting and for tests.</summary>
-        public double StockInLayer(int layer) =>
-            layer < 0 || layer >= _stock.Count ? 0.0 : _stock[layer];
+        /// <summary>What one layer in one patch holds, J. For reporting and for tests.</summary>
+        public double StockInLayer(int layer, int patch)
+        {
+            if (layer < 0 || layer >= LayerCount) return 0.0;
+            ValidatePatch(patch);
+            return _stock[Cell(layer, patch)];
+        }
+
+        /// <summary>Pre-D061 signature — patch 0 when <see cref="PatchCount"/> is 1, throws otherwise.</summary>
+        public double StockInLayer(int layer) => StockInLayer(layer, SinglePatchOrThrow());
 
         public override string ToString() =>
-            $"{TotalJoules:0} J over {LayerCount} layers, sinking {SinkMetresPerSecond:0.###} m/s";
+            PatchCount > 1
+                ? $"{TotalJoules:0} J over {LayerCount} layers x {PatchCount} patches, sinking {SinkMetresPerSecond:0.###} m/s"
+                : $"{TotalJoules:0} J over {LayerCount} layers, sinking {SinkMetresPerSecond:0.###} m/s";
     }
 }

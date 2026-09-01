@@ -59,6 +59,13 @@ namespace Evosim.Core
         private readonly List<float> _demand = new List<float>();
         private readonly List<float> _factor = new List<float>();
 
+        // D061. Per-patch shading data, maintained only when PerPatchShading is on — see the
+        // class remarks on why the pooled lists above are always kept regardless, and why that
+        // makes the pre-D061 signatures safe rather than throwing the way NutrientField's do.
+        private readonly List<float[]> _demandByPatch = new List<float[]>();
+        private readonly List<float[]> _factorByPatch = new List<float[]>();
+        private float[] _deepFactorByPatch;
+
         public LightModel Model { get; }
 
         /// <summary>Horizontal area of the world, m². The sun's aperture.</summary>
@@ -75,10 +82,27 @@ namespace Evosim.Core
         /// </remarks>
         public float LayerMetres { get; }
 
+        /// <summary>
+        /// Horizontal cells per layer — D061. 1 is this field's whole history before D061.
+        /// </summary>
+        public int PatchCount { get; }
+
+        /// <summary>
+        /// Whether each patch shades only its own column — D061's endogenous inequality
+        /// (<see cref="RunConfig.PerPatchShading"/>). Off is this field's whole history before
+        /// D061: one shared canopy, every patch's demand pooled into the same per-layer figure.
+        /// </summary>
+        public bool PerPatchShading { get; }
+
+        /// <summary>One patch's own horizontal area, m² — <c>WorldArea / PatchCount</c>.</summary>
+        public float PatchArea => WorldArea / PatchCount;
+
         /// <summary>Total power the world received this step, W. The cap on all photosynthesis.</summary>
         public float IncidentWatts => Model.SurfaceIrradiance * WorldArea;
 
-        public LightField(LightModel model, float worldArea, float layerMetres)
+        public LightField(
+            LightModel model, float worldArea, float layerMetres,
+            int patchCount = 1, bool perPatchShading = false)
         {
             Model = model ?? throw new ArgumentNullException(nameof(model));
 
@@ -96,33 +120,80 @@ namespace Evosim.Core
                     nameof(layerMetres), layerMetres, "Layers must have a thickness.");
             }
 
+            if (patchCount < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(patchCount), patchCount, "A field needs at least one patch — D061's K >= 1.");
+            }
+
             WorldArea = worldArea;
             LayerMetres = layerMetres;
+            PatchCount = patchCount;
+            PerPatchShading = perPatchShading;
+
+            if (PerPatchShading)
+            {
+                _deepFactorByPatch = new float[PatchCount];
+                for (int i = 0; i < PatchCount; i++) _deepFactorByPatch[i] = 1f;
+            }
         }
 
         /// <summary>Which layer a world height falls in. The surface and above are layer 0.</summary>
         private int LayerOf(float heightY) =>
             heightY >= 0f ? 0 : (int)(-heightY / LayerMetres);
 
-        /// <summary>Discards last step's demand. Call before <see cref="Contribute"/>.</summary>
+        private void ValidatePatch(int patch)
+        {
+            if (patch < 0 || patch >= PatchCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(patch), patch,
+                    $"This field has {PatchCount} patch(es), indexed 0..{PatchCount - 1}.");
+            }
+        }
+
+        /// <summary>Discards last step's demand. Call before <see cref="Contribute(float, float, int)"/>.</summary>
         public void Clear()
         {
             _demand.Clear();
             _factor.Clear();
+            _demandByPatch.Clear();
+            _factorByPatch.Clear();
         }
 
-        /// <summary>Registers a creature's shadow at its depth.</summary>
+        /// <summary>Registers a creature's shadow at its depth and patch.</summary>
         /// <param name="heightY">World height, metres. Y is up, so depths are negative.</param>
         /// <param name="litArea">The creature's <see cref="Phenotype.TotalLitArea"/>, m².</param>
-        public void Contribute(float heightY, float litArea)
+        /// <param name="patch">
+        /// Which patch the creature occupies — D061. Always contributes to the pooled, per-layer
+        /// demand (used whenever <see cref="PerPatchShading"/> is off, and by every pre-D061
+        /// caller); additionally contributes to this patch's own demand when
+        /// <see cref="PerPatchShading"/> is on.
+        /// </param>
+        public void Contribute(float heightY, float litArea, int patch)
         {
             if (!(litArea > 0f)) return;
 
             int layer = LayerOf(heightY);
             while (_demand.Count <= layer) _demand.Add(0f);
-
             _demand[layer] += litArea;
+
+            if (!PerPatchShading) return;
+
+            ValidatePatch(patch);
+            while (_demandByPatch.Count <= layer) _demandByPatch.Add(new float[PatchCount]);
+            _demandByPatch[layer][patch] += litArea;
         }
+
+        /// <summary>
+        /// Pre-D061 signature — attributes the shadow to patch 0. Always valid, unlike
+        /// <see cref="NutrientField"/>'s patch-less overloads: with <see cref="PerPatchShading"/>
+        /// off, patch is not consulted at all regardless of <see cref="PatchCount"/>, and with it
+        /// on, "patch 0" is a real and legitimate answer rather than an arbitrary one — a caller
+        /// that does not care which patch its shadow lands in is exactly the pre-D061 caller this
+        /// overload exists for.
+        /// </summary>
+        public void Contribute(float heightY, float litArea) => Contribute(heightY, litArea, 0);
 
         /// <summary>
         /// Works out what fraction of the light each layer's occupants actually get, top down.
@@ -145,6 +216,18 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         public void Solve()
+        {
+            SolvePooled();
+            if (PerPatchShading) SolvePerPatch();
+        }
+
+        /// <summary>
+        /// The field's whole algorithm before D061, untouched: one shared canopy, everybody's
+        /// demand pooled per layer regardless of patch. Always runs, so
+        /// <see cref="IrradianceAt(float)"/> and <see cref="ShadingAt"/> — the pre-D061 readings —
+        /// stay correct and available whatever <see cref="PerPatchShading"/> is.
+        /// </summary>
+        private void SolvePooled()
         {
             _factor.Clear();
 
@@ -196,6 +279,62 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// D061's per-patch pass: the same algorithm as <see cref="SolvePooled"/>, run once per
+        /// patch against that patch's own demand and its own share of the aperture
+        /// (<see cref="PatchArea"/> in place of <see cref="WorldArea"/>) — a crowded patch darkens
+        /// only itself. Only called when <see cref="PerPatchShading"/> is on.
+        /// </summary>
+        private void SolvePerPatch()
+        {
+            _factorByPatch.Clear();
+            _deepFactorByPatch = new float[PatchCount];
+
+            float patchArea = PatchArea;
+            float throughWater = (float)Math.Exp(-LayerMetres / Model.AttenuationDepth);
+            float incidentPerPatch = Model.SurfaceIrradiance * patchArea;
+
+            for (int patch = 0; patch < PatchCount; patch++)
+            {
+                float watts = incidentPerPatch;
+                float unshaded = incidentPerPatch;
+
+                for (int layer = 0; layer < _demandByPatch.Count; layer++)
+                {
+                    while (_factorByPatch.Count <= layer) _factorByPatch.Add(new float[PatchCount]);
+
+                    float area = _demandByPatch[layer][patch];
+
+                    if (!(watts > 0f))
+                    {
+                        _factorByPatch[layer][patch] = 0f;
+                    }
+                    else
+                    {
+                        float fromAbove = watts / unshaded;
+
+                        if (area <= 0f)
+                        {
+                            _factorByPatch[layer][patch] = fromAbove;
+                        }
+                        else
+                        {
+                            double interceptedFraction = InterceptedFraction(area / patchArea);
+                            float share = (float)(interceptedFraction * patchArea / area);
+
+                            _factorByPatch[layer][patch] = fromAbove * share;
+                            watts -= (float)(watts * interceptedFraction);
+                        }
+                    }
+
+                    watts *= throughWater;
+                    unshaded *= throughWater;
+                }
+
+                _deepFactorByPatch[patch] = unshaded > 0f ? watts / unshaded : 0f;
+            }
+        }
+
+        /// <summary>
         /// 1 − e<sup>−x</sup>, computed so that a small <paramref name="x"/> gives a small answer
         /// rather than a wrong one.
         /// </summary>
@@ -242,6 +381,26 @@ namespace Evosim.Core
         {
             int layer = LayerOf(heightY);
             float factor = layer < _factor.Count ? _factor[layer] : _deepFactor;
+
+            return Model.IrradianceAt(heightY) * factor * DayFactor;
+        }
+
+        /// <summary>
+        /// Effective irradiance at a world height and patch after shading, W/m² — D061.
+        /// </summary>
+        /// <remarks>
+        /// Falls back to the pooled, patch-less <see cref="IrradianceAt(float)"/> when
+        /// <see cref="PerPatchShading"/> is off — every organism in a K&gt;1 world reads the same
+        /// shared-canopy irradiance at a given depth unless per-patch shading was explicitly
+        /// asked for, exactly as D061 specifies ("light irradiance itself stays global").
+        /// </remarks>
+        public float IrradianceAt(float heightY, int patch)
+        {
+            if (!PerPatchShading) return IrradianceAt(heightY);
+
+            ValidatePatch(patch);
+            int layer = LayerOf(heightY);
+            float factor = layer < _factorByPatch.Count ? _factorByPatch[layer][patch] : _deepFactorByPatch[patch];
 
             return Model.IrradianceAt(heightY) * factor * DayFactor;
         }
