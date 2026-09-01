@@ -1,6 +1,6 @@
 # Handoff — where to pick up
 
-**Written 2026-08-29, end of the autonomous session.** This is the one file a new agent should
+**Updated 2026-09-01, after round 7 was scored.** This is the one file a new agent should
 read first. It says what was being attempted, how far it got, what is queued, and exactly how
 to continue. It is a pointer, not a source of truth: the specification is `DESIGN.md`, the
 reasoning is `DECISIONS.md`, the history is `logbook/`, and the operating rules are
@@ -19,12 +19,20 @@ rule written before each round launched:
 > of the run, an absorptive lineage is inherited for ≥ 20 consecutive samples, and it is still
 > alive (≥ 10) at the last sample.
 
-**Status: not met.** The failure has been narrowed to one mechanism with two faces, and the
-owner's instruction was to work through three candidate fixes in order until one meets the
-rule. Fix 1 was tested and failed; fix 2 ran on two seeds of five and **fixed the producers'
-extinction but not their runaway**; fix 3 is untried. On 2026-08-30 the owner locked the
-path in *Queued* below: right-size the world first (D053, round 5), then D052 (round 6),
-then fix 3 only if needed, with the sloped world (D054) as the destination after the goal.
+**Status: not met — and for the first time, fully explained.** Seven rounds are scored
+(logbook/0036–0042). Under D058's completed-budget rule the campaign's honest tally is
+**zero confirmed passes, ever** (round 6's single pass rode a wall cut; round 7 scored
+0-of-5). Round 7 — D055's seabed refuge, run against round 6's world — accidentally became
+a matched-pair experiment (deterministic replay + a staggered launch gave every treated
+arm a byte-identical untreated control) and produced the campaign's causal account:
+**consumer chains establish by grazing the sea-floor detritus hoard** (~66 J/m³ in one
+metre, the densest food anywhere); an unguarded hoard funds booms that exhaust it and
+bust; a locked hoard (the refuge) yields only slow, small chains an order of magnitude
+below the booms. The refuge is falsified as damping — it was an access gate, not a meter
+(the impulse harness measured a 1 m refuge as transport-identical to none). The stabiliser
+the goal needs must let a founder reach concentrated food *and* stop a boom from taking
+all of it. The next steps are ratified: D060's invasion assay (persistence vs
+establishment, separated), then the owner's round-8 fork.
 
 ## What was established, in order (the logbook entries are the record)
 
@@ -34,6 +42,9 @@ then fix 3 only if needed, with the sloped world (D054) as the destination after
 | [0037](logbook/0037-the-net-comes-down.md) | 2a, 2b | `FloorClosesAfterSeconds` — the population floor stops firing after founding | The floor had been running the founding lottery (40 random genomes breed in 1 seed of 4) **and** rescuing every matter crash. With it closed at 3,000 s, **3 of 5 seeds go extinct** at their first drought. One mutant chain arose with the net down and bust to zero |
 | [0038](logbook/0038-a-lighter-world.md) | 3, 3b | fix 1: `excessDensity` 0.1 → 0.02, then 0.05 | At 0.02 producers stop dying and **run away** to the population ceiling (uninterpretable); one seed died of **age synchrony** instead. At 0.05 they die as at 0.1. No density gives a scoreable world on its own |
 | [0039](logbook/0039-a-slower-drought.md) | 4 | fix 2: senescence 3,000 → 10,000 s, in the 0.02 world, ceiling 8,000 | **Two of five seeds run; three not launched.** The claim held: producers bred through an 8,000-s drought and **recovered from 73 individuals without the floor** (s1) and from a cohort at mean age 3,400 (s2) — states that were terminal in every earlier round. Both then **ran away** (s1 to the ceiling at t=25,998; s2 at ~6,500 and rising at the budget): a lit population that no longer dies of age has no limit (S4 failed). Consumers unchanged: s2's chain 549 → 3 over 12,000 s, no upturn (S7 falsified, sixth time). See *Queued* |
+| [0040](logbook/0040-right-sizing-the-dish.md) | 5, 5b | D053: irradiance 25–175, then area 100–200 m² | **No geometric rescale bounds this world** — every dimmer sea dies (famine below 150, drought above), 200 runs away; small dishes die of shading-driven darkness and irreversible sinking (−131 m in a 60 m world — the ocean has no floor for bodies). D053 closed |
+| [0041](logbook/0041-the-sea-digests.md) | 6 | D052: excretion k=0.001 | **The first bounded, living, uncensored worlds** (two of five to full budget, floor silent, drought-cycling); three chain establishments in one round; the "first trophic collapse" (s3) — later corrected by round 7. One near-pass at a wall cut. Every boom still bust |
+| [0042](logbook/0042-the-larder-under-the-mud.md) | 7 | D055: refuge 1 m, on round 6's world | **The matched-pair round.** Two arms replayed round 6 byte-identically (refuge never bound); three diverged at establishment. Chains establish through the floor pantry: treated booms 71 and 1-then-dead against controls' 908 and 1,297; s5's late chain grew to 18 on column food alone (the slow path exists). s3's twin died chainless anyway — round 6's collapse was never trophic at bottom. Refuge falsified as damping; scored 0-of-5 under both tables |
 
 **The mechanism, in one paragraph.** Surface matter runs out (D048's economy — producers
 strip it), conceptions are refused, births stop. From there one of two things is
@@ -48,32 +59,31 @@ budget stopped the run. Separately, every absorptive lineage that established (s
 ate the deep water from 18–38 J/m³ to ~4 in about 1,500–4,000 s and bust to zero or nearly
 so; nothing damps a consumer here but its food.
 
-## Queued — the locked plan (owner, 2026-08-30), in order
+## Queued — the current path, in order
 
-The goal is unchanged. The path was re-sequenced with the owner after round 4:
+Rounds 1–7 are scored (the table above is the record). What remains, all ratified:
 
-1. **Round 5 — right-size the dish (D053): run and failed, both halves** (logbook/0040,
-   scored). Irradiance 25–175 all die (famine below ~150, drought above), 200 runs away —
-   the window is empty; area (`EVOSIM_AREA`, added) rescales cleanly but the small dish
-   dies of shading-driven darkness and the sink spiral. **No geometric rescale bounds this
-   world.** Two mechanism findings for later: shading limits by killing, not capping; and
-   the ocean has no floor for bodies (CLAUDE.md gotcha, −131 m in a 60 m world).
-2. **Round 6 — D052, the excretion contract: run and scored** (logbook/0041, k=0.001,
-   d056-s1..s5). **The best round yet, goal still not met (V6: 1 of 5).** Excretion gave
-   the project its first bounded, living, uncensored worlds (s2: 618 alive and s4: 2,204
-   alive at t=30,000, floor silent, populations cycling through droughts), three chain
-   establishments in one round (910, 1,430, 320 — vs one per round before), one qualifying
-   chain at a wall cut (s5: 80 samples inherited, 50 alive), and the first trophic
-   collapse (s3: the chain became the majority of its world and took it down). Every chain
-   that boomed still bust — V7 falsified a seventh time. Known issue from the build,
-   pre-existing, still open: a stillborn conception orphans its `matterPrice` in
-   `MatterInBodies` — fix with a test when touching `Conceive` next.
-3. **Fix 3 — damping on the consumer**: now unambiguously the frontier — round 6's chains
-   all bust, and s3 showed a bust can take the whole world with it. Needs its own D-entry
-   and the owner's call: change the biology (`AbsorptiveCell` capture density-dependent) or
-   the world (deep water below break-even less reachable). Also decide the instrument
-   question first: the wall clock is now what censors runs (no arm hit the ceiling) — a
-   5,000–7,000-creature world needs more than 600 min for 30,000 s.
+1. **D060 — the invasion assay, next arm-work on the machine.** Build the inoculation
+   capability first (an instrument: inject a saved genome at a fixed simulated time —
+   round 6's established absorptive genomes are in `runs/d056-*/`), pre-register in the
+   0036-style, then paired arms: excretion-only vs excretion+refuge, same seeds, same
+   inoculum, same introduction time. It answers whether an *established* chain persists
+   on refuge-metered flux — establishment (which round 7 answered) and persistence are
+   different questions. **Workers 2–5 must be refreshed before any new arm** (the round
+   is over; the refresh carries the pre-round-8 instrumentation and will move the config
+   hash again — expected, documented pattern in logbook/0042's addendum 3).
+2. **Optional, the owner's call — s5's solo rerun** (D058's letter for a promising
+   censored arm: 18-sample inherited streak, rising, at its wall cut). Honest cost: no
+   world resumes from a snapshot, so the rerun replays ~10 wall-hours to reach the cut
+   before writing anything new, on the *unrefreshed* wave-2 code for byte-identity.
+3. **The round-8 fork — the owner's decision, taken with D060's answer in hand:**
+   partial pantry access (a refuge that meters rather than locks — the impulse harness
+   says thickness 5–10 m is a real slow larder, but it also widens what establishment
+   cannot reach), or D059's floor clamp first (changes who reaches the pantry at all),
+   or D054's shelf pulled forward (geography as the establishment on-ramp — food and
+   light overlapping at the shallow end). Still open from the build queue: the stillborn
+   `matterPrice` guard test when `Conceive` is next touched (the orphan itself was
+   verified vacuous — D052's corrected addendum).
 4. **The sloped world (D054)** — the destination after the goal: `floorDepth[column]`
    architecture, straight slope as the first profile, profile in the config hash, procedural
    generation deferred. Design questions it must answer first are listed in the D-entry.

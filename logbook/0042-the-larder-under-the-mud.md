@@ -145,4 +145,104 @@ of reading is dated and visible:
 
 ## Results
 
-*(written after the arms ran)*
+What this round turned into, nobody pre-registered: a **matched-pair experiment**. Because
+the world replays exactly from `(seed, config)` on one machine, and because the refuge
+only changes what happens in the bottom metre, every arm ran *byte-identical to its
+round-6 twin* until the first moment a feeding mouth touched the floor layer — and the
+instant of divergence timestamps exactly when, and in whom, the treatment ever acted.
+Two arms never diverged at all; three diverged at their chains' establishment, and each
+divergence pairs a treated trajectory with a completed untreated control matched to the
+simulated second. The findings below rest on that pairing.
+
+| arm | fate (D058 vocabulary) | twin behaviour | chain |
+|---|---|---|---|
+| s1 | **wall-censored** t=24,366 (600 min), 7,809 alive | diverged t=11,600, mid-establishment | strangled: peak 71 vs control's 908; brief re-attempt (4, 1 inherited) at t≈21,200 died; 2 uninherited at cut |
+| s2 | **budget**, t=30,000, 618 alive | **byte-identical throughout** — refuge never bound | none (two singles, as control) |
+| s3 | **extinct** t=24,416 | diverged t=10,100, at its mutant's arrival | strangled at patient zero: the control's 1,297-strong collapse never began; the world died anyway, ~1,900 s *earlier* than its control, chainless, with 44.5 J/m³ untouched in the deep |
+| s4 | **budget**, t=30,000, 2,204 alive | **byte-identical throughout** — refuge never bound | one arrival at the last sample, as control |
+| s5 | **wall-censored** t=23,573 (600 min), 6,745 alive | diverged t=14,600, two hundred simulated seconds before its control's 80-sample inherited streak began | first establishment strangled (control's 320-peak never came) — then a **late, small re-establishment on water-column food alone**: 18 absorptives, 15 inherited, an 18-consecutive-sample inherited streak, alive and growing at the cut |
+
+### Scored — the pre-registered table
+
+| # | result |
+|---|---|
+| W1 | **held** — `floor` = 0 after t=3,100 in all five arms (verified by column) |
+| W2 | **held** — 1 of 5 extinct (s3) |
+| W3 | **held on its letter, and the letter was answered by the control instead** — no treated chain ever exceeded anything; but the matched pair showed round 6's "trophic collapse" was not what it seemed (finding 3 below) |
+| W4 | **vacuously held, meaningfully void** — no treated chain ever reached the peak-100 threshold that defines "established", so nothing could fall from it. The mechanism inverted the question: the refuge does not soften busts, it prevents establishment |
+| W5 | **held** — a mutant arrived in all five arms |
+| W6 | **failed, 0 of 5** — the closest approach is s5's 18-sample streak, two samples short of the rule's twenty, at a wall cut that D058 rules out of passing regardless |
+| W7 | **falsified, eighth time, in a new way** — nothing peaked high enough to bust |
+
+**The goal is not met**, and for the first time the failure is not a mystery in any
+direction.
+
+### Scored — D058's stricter table, beside it as ratified
+
+| arm | completed-budget reading |
+|---|---|
+| s1 | censored (wall) — cannot pass; no chain regardless |
+| s2 | budget-complete: fail (no chain) |
+| s3 | extinct: fail |
+| s4 | budget-complete: fail (no chain) |
+| s5 | censored (wall) — cannot pass; **the round's one promising censored arm**: an inherited streak of 18 and rising at the cut. D058's letter names the response — a solo rerun to the full budget — with its cost stated honestly: no world can resume from a snapshot, so a rerun replays all ~10 wall-hours to reach the cut before writing anything new. An owner's call, not an automatic launch |
+
+Round 6 re-read under the same rule, for the record: zero confirmed passes, one promising
+censored arm (its s5). The campaign's honest tally across both rounds is therefore
+**zero confirmed passes, ever** — which the matched pairs finally explain.
+
+### What the round found
+
+1. **Establishment runs through the floor pantry.** The floor layer holds the densest
+   food in the world (~8–9% of all detritus in one metre — ~66 J/m³ against a mid-column
+   that peaks near half that). All three treated chains fizzled where their controls
+   boomed: s1's peak 71 against 908 from the same arrival; s3's patient zero died
+   childless where its control's founded a 1,297-strong lineage; s5's establishment
+   window passed with nothing where its control began an 80-sample inherited streak.
+   Every boom this project ever recorded was funded by an unguarded hoard — which also
+   explains, in one stroke, eleven rounds of "arrival without establishment" whenever
+   the hoard was out of reach. The qualification arrived with the last footer: s5's
+   late chain shows **column food alone can fund establishment — slowly and small** (18
+   individuals in the time its control's pantry-fed twin reached 320, in ~30 J/m³ deep
+   water). The pantry is the booster, not the only path; without it, establishment runs
+   an order of magnitude smaller.
+2. **The refuge, as dosed, is an access gate — not a meter.** The impulse harness
+   (RefugeImpulse, built this round) measured it: a 1 m refuge is *transport-identical*
+   to no refuge — `Settle` and `Mix` never consult it, and the floor's stock drains
+   back into the water in seconds at mixing 0.2. D055-at-1m therefore changed nothing
+   about how fast food returns; it only changed *who may eat the pile directly*. A 5 m
+   refuge releases over minutes and a 10 m one holds most of its stock past 6,000 s —
+   thickness does buy a real slow larder, but it also widens the zone establishment
+   cannot reach. The tension between metering the pantry and leaving an on-ramp is now
+   the design problem, stated cleanly.
+3. **Seed 3's "trophic collapse" was never trophic at bottom.** The treated twin's chain
+   was strangled at one individual — and the world died *anyway*, ~1,900 s earlier than
+   its control, by the producers' own drought → darkness → sink spiral, its last
+   survivor ageing out at −78 m in water below the modelled world. Round 6's most
+   dramatic result is hereby corrected: the chain rode a dying world, and if anything
+   its recycling propped the world up slightly longer. Only a matched pair could have
+   shown this.
+4. **Two perfect replicates, for free.** s2 and s4 ran byte-identical to their controls
+   through every row — proof both of same-machine determinism at full ecology scale and
+   of the refuge's pre-arrival inertness (the bit-identity the D055 tests promised,
+   demonstrated in 30,000-second worlds).
+5. **Instrument notes.** The censor that bound was again the wall (s1, at 0.7× real
+   time); no arm approached the 8,000 ceiling. s1's report logs a "fastest creature" of
+   3.32 m/s at t=21,036 — forty times any credible swimming speed, in a 7,000-body
+   crowd; almost certainly a depenetration kick, filed for the aquarium era rather than
+   believed. And the round's addenda already record the two-wave hash split and the
+   mid-round rulings (D058–D060) under which this scoring was performed.
+
+### Where this leaves the campaign
+
+The refuge is falsified *as the damping mechanism* — kept as a knob, rejected as the
+answer. What the round bought instead is the first complete causal account of the
+consumer cycle: chains are born from a windfall (the unguarded pile), boom on it, and
+die by exhausting it — and a world that locks the windfall gets only slow, small chains
+an order of magnitude below the booms (s5's 18 against its control's 320). The
+stabiliser the goal needs must therefore do what neither round 6 nor round 7's worlds
+could: **let a founder reach concentrated food, and stop a boom from taking all of it.**
+The queued instruments point at the next tests — D060's invasion assay (does an
+*established* chain persist on metered flux, separating establishment from persistence)
+and, informed by it, the owner's round-8 fork: partial pantry access, D059's floor
+first, or D054's shelf pulled forward — geography as the on-ramp.

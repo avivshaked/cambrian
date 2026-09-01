@@ -77,7 +77,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D052](#d052) | Living bodies give matter back — the excretion contract | 2026-08-29 | active · measured — first bounded living worlds (logbook/0041) |
 | [D053](#d053) | Right-sizing the dish — the equilibrium must sit inside the instrument | 2026-08-30 | closed — no geometric rescale bounds this world (logbook/0040) |
 | [D054](#d054) | The floor becomes a gradient — a beach, a shelf, and a deep | 2026-08-30 | decided · not designed |
-| [D055](#d055) | The seabed is a refuge — the floor layer cannot be grazed | 2026-08-31 | active |
+| [D055](#d055) | The seabed is a refuge — the floor layer cannot be grazed | 2026-08-31 | falsified as damping — an access gate, not a meter (logbook/0042); knob kept |
 | [D056](#d056) | Mutation rate: fixed within a round, raisable between rounds, never a thermostat | 2026-08-31 | direction · nothing built |
 | [D057](#d057) | A species is a clade within a drift threshold of its founder | 2026-08-31 | active · built, θ uncalibrated |
 | [D058](#d058) | Only the budget ends a run — censored arms cannot pass | 2026-08-31 | active |
