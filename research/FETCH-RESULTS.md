@@ -190,3 +190,107 @@ round 3, with no login of any kind. Candidate discovery ran through four search 
   10.7551/mitpress/1432.003.0032)
 - Notes: 5-page PDF; the shadow-population implementation notes cited in the review are the
   reason this was retrieved.
+
+---
+
+## Round 4 (2026-09-01) — Q9: consumer-resource stability and spatial persistence
+
+All open-access routes; no institutional access; bot-gates respected (recorded, not
+bypassed). Directory names under `papers/` carry the number.
+
+### [40] The stability of ecosystems: a brief overview of the paradox of enrichment
+- Status: OBTAINED
+- Saved as: `40-roy-chattopadhyay-2007-poe-overview/`
+- Source used: https://centaur.reading.ac.uk/36888/1/421.pdf
+- Route: open-access (Univ. of Reading CentAUR repository; also free at the publisher, Indian Academy of Sciences)
+
+### [47] Behavioral refuges and predator–prey coexistence (Křivan 2013)
+- Status: OBTAINED
+- Saved as: `47-krivan-2013-behavioral-refuges/`
+- Source used: https://fix.prf.jcu.cz/~krivan/clanky/Krivan-JTB-2013.pdf
+- Route: open-access (author self-archive, Univ. of South Bohemia)
+
+### [38] Detritus, trophic dynamics and biodiversity (Moore et al. 2004)
+- Status: OBTAINED
+- Saved as: `38-moore-2004-detritus-trophic-dynamics/`
+- Source used: https://rosemondlab.ecology.uga.edu/wp-content/uploads/2014/11/Moore-et-al.-2004-EcolLet.pdf
+- Route: open-access (Rosemond Lab, UGA, self-archive; closed at Wiley)
+
+### [41] Why type I functional responses are exclusive to filter feeders (Jeschke et al. 2004)
+- Status: OBTAINED
+- Saved as: `41-jeschke-2004-type-i-filter-feeders/`
+- Source used: https://www.ruhr-uni-bochum.de/spezzoo/Bilder/pubs/tollrianpu/Jeschke%20et%20al.%202004.pdf
+- Route: open-access (Tollrian lab self-archive, RUB; closed at Cambridge)
+
+### [46] Modeling food-web dynamics: complexity–stability implications (Dunne et al. 2005)
+- Status: OBTAINED
+- Saved as: `46-dunne-2005-modeling-food-web-dynamics/`
+- Source used: https://sfi-edu.s3.amazonaws.com/sfi-edu/production/uploads/sfi-com/dev/uploads/filer/28/4d/284d0e1c-5d54-4aab-8be2-eef835fcc5e5/04-07-021.pdf
+- Route: open-access (SFI Working Paper 2004-07-021, author-permitted; the OUP chapter is closed)
+- Notes: SFI copyright notice permits reposting only with authors' permission — held locally, gitignored, not redistributed.
+
+### [42] Stability of Ecological Systems: A Theoretical Review (Chen et al. 2023)
+- Status: OBTAINED (screened out of synthesis)
+- Saved as: `42-arxiv-stability-ecological-systems-review/`
+- Source used: https://arxiv.org/pdf/2312.07737
+- Route: open-access (arXiv)
+
+### [44] Predator interference and complexity–stability (Mougi 2022)
+- Status: OBTAINED (screened out of synthesis)
+- Saved as: `44-mougi-2022-predator-interference-complexity-stability/`
+- Source used: https://www.nature.com/articles/s41598-022-06524-w.pdf
+- Route: open-access (Scientific Reports, CC BY)
+
+### [50] Experimental studies on predation: dispersion factors (Huffaker 1958)
+- Status: OBTAINED
+- Saved as: `50-huffaker-1958-dispersion-predator-prey/`
+- Source used: http://web.archive.org/web/20170922091029if_/http://hilgardia.ucanr.edu/fileaccess.cfm?article=152469&p=JTWUMP
+- Route: open-access (Hilgardia is OA; the live UC ANR link has rotted — fetched from the Wayback capture of the journal's own file endpoint; landing page https://ucanr.edu/site/hilgardia/abstract?a=hilg.v27n14p343)
+- Notes: PDF page = journal page − 340.
+
+### [51] Mobility promotes and jeopardizes biodiversity (Reichenbach et al. 2007)
+- Status: OBTAINED
+- Saved as: `51-reichenbach-2007-mobility-biodiversity/`
+- Source used: https://arxiv.org/pdf/0709.0217
+- Route: open-access (arXiv author preprint v2; Nature version closed)
+
+### [52] Confronting the paradox of enrichment to the metacommunity perspective (Hauzy et al. 2013)
+- Status: OBTAINED
+- Saved as: `52-hauzy-2013-paradox-enrichment-metacommunity/`
+- Source used: https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0082969&type=printable
+- Route: open-access (PLoS ONE, CC BY)
+
+### [55] Stability of spatially heterogeneous predator–prey systems under eutrophication (Farkas et al. 2015)
+- Status: OBTAINED
+- Saved as: `55-farkas-2015-stability-heterogeneous-eutrophication/`
+- Source used: https://arxiv.org/pdf/1509.03192
+- Route: open-access (arXiv green OA; Springer version closed)
+
+### [57] Metapopulation dynamics of a persisting predator–prey system (Janssen et al. 1997)
+- Status: OBTAINED
+- Saved as: `57-janssen-1997-metapopulation-persisting-predator-prey/`
+- Source used: https://pure.uva.nl/ws/files/3044055/2641_25534y.pdf
+- Route: open-access (UvA-DARE repository)
+
+### [58] Digital Evolution for Ecology Research: A Review (Dolson & Ofria 2021)
+- Status: OBTAINED (supporting, not in synthesis matrix)
+- Saved as: `58-dolson-ofria-2021-digital-evolution-ecology-review/`
+- Source used: https://www.frontiersin.org/journals/ecology-and-evolution/articles/10.3389/fevo.2021.750779/pdf
+- Route: open-access (Frontiers, CC BY)
+
+### [59] Ecology and spatial structure shape phylogenetic signatures (Moreno et al. 2024)
+- Status: OBTAINED (screened out of synthesis — Q8-relevant, not Q9)
+- Saved as: `59-moreno-2024-ecology-spatial-structure-phylogenetic-signatures/`
+- Source used: https://arxiv.org/pdf/2405.07245
+- Route: open-access (arXiv)
+
+### Round 4 — sought, NOT obtained (recorded for the manual-fetch queue)
+- Rosenzweig 1971 (Science, DOI 10.1126/science.171.3969.385) — closed; cited via [40].
+- Rosenzweig & MacArthur 1963 (Am. Nat., DOI 10.1086/282272) — closed.
+- Jansen 1995 (Oikos, DOI 10.2307/3545983) — closed, no repository copy.
+- Jansen 2001 (TPB, DOI 10.1006/tpbi.2000.1506) — nominally bronze at Elsevier; 403 to non-browser clients.
+- Briggs & Hoopes 2004 (TPB, DOI 10.1016/j.tpb.2003.11.001) — closed; NCBI abstract only (PMID 15139366).
+- McNair 1986 (TPB, DOI 10.1016/0040-5809(86)90004-3); Sih 1987 (TPB, DOI 10.1016/0040-5809(87)90019-0); González-Olivares & Ramos-Jiliberto 2003 (Ecol. Model., DOI 10.1016/S0304-3800(03)00131-5) — all closed.
+- Quévreux, Barot & Thébault 2021 (Oikos, DOI 10.1111/oik.07937) — green OA at HAL hal-02570657, but HAL bot-gated (Anubis); top of the manual queue.
+- Taylor 1990; Holyoak & Lawler 1996; Kerr et al. 2002; Ellner et al. 2001; Bonsall et al. 2002; Saxer et al. 2009; Blasius et al. 2020; Abrams & Walters 1996; Beddington 1975; DeAngelis et al. 1975; DeAngelis 1975/1989; Skalski & Gilliam 2001; Rall et al. 2008; Williams & Martinez 2004 — closed at publishers; DOIs in LITERATURE-REVIEW.md §5/§9.
+- Dolson, Pérez, Olson & Ofria 2017 (bioRxiv 10.1101/148973) — OA in principle; bioRxiv CDN returns 5xx to non-browser clients; abstract only.

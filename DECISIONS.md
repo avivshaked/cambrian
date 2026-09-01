@@ -2514,9 +2514,18 @@ other candidate — e.g. a swimming cost gradient): it damps by distance, which 
 showed this world converts into irreversible sinking deaths, and it would punish the diving
 strategy as such rather than capping the harvest.
 
-⚠ Project inference from general consumer–resource theory (refugia stabilise
+~~⚠ Project inference from general consumer–resource theory (refugia stabilise
 Rosenzweig–MacArthur-type cycles); the literature review has not searched predator–prey
-refuge models. Add a primary source before leaning on the dynamics quantitatively.
+refuge models. Add a primary source before leaning on the dynamics quantitatively.~~
+↻ **Searched — review round 4 (2026-09-01), and the theory convicts this entry.** The
+primary source is Křivan 2013 [KR13, `research/LITERATURE-REVIEW.md` §5]: the consumer's
+equilibrium requires the refuge floor *plus* its break-even accessible density
+(R\* = R_c + m/(λ(e−hm)), [KR13 p.2]), so a refuge that covers the feeding ground does
+not stabilise — it removes the consumer, the terminal outcome in González-Olivares &
+Ramos-Jiliberto 2003's progression (cycles → stable point → predator extinction). The
+inference above was not wrong about refuges; it was wrong about *which pool was the
+refuge*: for a benthic consumer the floor layer is the feeding ground, not the reserve.
+Had this warning been resolved before round 7 ran, the assay's answer was on the shelf.
 
 **Rejected as a world rule at 1 m** · 2026-09-01. Falsified twice over, once from each
 side. Round 7 (logbook/0042) showed the refuge blocks establishment: chains start by

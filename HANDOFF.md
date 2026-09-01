@@ -81,9 +81,14 @@ Rounds 1–7 plus the D060 assay are scored (the table above is the record). Wha
    400 m² at once — no local depletion, no travel, no spatial asynchrony, which is the
    regime where consumer–resource theory predicts the widest cycles (paradox of
    enrichment — inference, uncited) and which also forecloses movement ever paying. The
-   agent's recommendation, awaiting the owner's ruling: (a) a small literature round
-   first (Rosenzweig's paradox of enrichment, Huffaker's patch experiments, prey-refuge
-   fractions) so the design cites evidence; (b) a D061 design draft — horizontal patches
+   agent's recommendation, awaiting the owner's ruling: (a) ~~a small literature round
+   first~~ **done — review round 4 (2026-09-01, ten papers into the synthesis, Q9)**,
+   and it sharpened the options: patches must be *unequal* to stabilise [HZ13], the
+   design criterion is boom-bust wavelength vs domain size [RMF07], the strong refuge
+   form is fixed-number ≡ type III feeding [KR13], a satiation cap on clearance is
+   physically mandatory anyway [JKT04], and the busts may be cohort cycles no spatial
+   fix addresses (de Roos & Persson — lead; the discriminator needs lineage events,
+   now a pre-round-8 instrument); (b) a D061 design draft — horizontal patches
    per layer, organism x-position, passive drift on the existing current, local feeding
    and deposit, sideways mixing; (c) round 8 pre-registered with one partial-pantry
    comparison arm (the knob exists: a fractional `EdibleDensityAt` generalisation) so

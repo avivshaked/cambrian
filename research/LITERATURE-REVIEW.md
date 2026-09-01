@@ -31,6 +31,7 @@ history.
 | **1** | 2026-08-02 | Initial — six ranked questions before implementation | 15 | 3 full, 2 partial | DESIGN.md draft 1→3: added §2 (premature convergence), changed §8.2/§8.3 (selection + multi-BC), corrected §5.4 (fluid model diversity cost), §4.4 (effector scheme), §4.1 (reflection flags), §11.2 (exploit checklist), closed §12.1 (encoding) |
 | **2** | 2026-08-02 | New question, raised during implementation: **should morphological and neural complexity carry a metabolic cost?** | 0 new searches — targeted re-reading of the 8 papers already held | **0 new papers.** Extended reading of [L21] (§8.2 p.10, §13 pp.14–16) and [C18] (§2.4 p.8, §3 pp.13/17, §4 p.29); confirmatory passes on [CEA07] §3.4, [TM01] pp.6–8, [K12] §2.2, [CU15] supplementary p.24 | DESIGN.md draft 4→5: added **§5A** (energy economy, endogenous selection), superseded §5.5, demoted §8 to observatory, repurposed §6.3/§6.4. Recorded as `DECISIONS.md` D017 |
 | **3** | 2026-08-29 | §9's backlog, overdue by the review's own protocol: §5A implemented and measured for a month with its literature never searched; the 2025 co-optimisation preprint never followed up; forward snowballing never done; §13.4 quarantine unverified | 4 parallel search sweeps (delegated to subagents — §3.2, §8), plus Semantic Scholar citation API for forward snowballing and CrossRef for verification | **8 new papers retrieved** ([Y94] [MC25] [CO02] [VG05] [GOY23] [ST00] [CB18] [PU16]), ~45 candidates surfaced and screened, ~13 citing works triaged; key claims verified against primary text for [Y94] [MC25] [CO02] [CB18] | **§5A.2's "no precedent for a per-neuron charge" corrected** — [Y94 p.7] is the precedent (DESIGN.md §0e). [CB18] and [PU16] verified and promoted out of §13.4. Q1 sharpened by [MC25]; **Q7 answered in part; Q8 opened and answered in principle** (§2). No DESIGN mechanism changed; the round's findings feed the next decisions rather than rewriting existing ones |
+| **4** | 2026-09-01 | A design decision built on uncited inference was falsified by experiment: D055's seabed refuge — flagged ⚠ uncited in its own entry — blocked consumer establishment (logbook/0042) and starved hand-placed consumers to extinction (logbook/0043), and the pending round-8 stabiliser decision plus the owner's whole-layer-access hypothesis lean on the same untouched literature | 2 parallel sweeps (delegated — §3.7, §8), 9 declared new themes under a new question (Q9); the §3.2 re-run was skipped as vacuous (3 days since round 3) and is so logged | **13 PDFs fetched** (12 new to the corpus), **10 into the synthesis** ([HUF58] [JN97] [RMF07] [FM15] [HZ13] [KR13] [MO04] [JKT04] [DBWM05] [RC07]); ~25 relevant works recorded closed-access; 4 load-bearing claims re-verified by the reviewer against extracted text | **D055's failure is theory-predicted, not anomalous** — [KR13 p.2]: the consumer's equilibrium needs refuge *plus* accessible break-even density, so a refuge covering the feeding ground deletes the consumer (D055 addendum updated). Q9 opened and answered in theory. Three constraints delivered to the pending round-8 decision: patches must be *unequal* [HZ13 p.5], the criterion is a length-scale ratio not a dispersal rate [RMF07 p.5], and the strong refuge form is fixed-number (≡ type III response) not proportional [KR13 p.1–2]. The period-vs-generation discriminator for the bust mechanism is uncomputable from current logs — **lineage events promoted from post-goal to pre-round-8**. No existing DESIGN mechanism changed |
 
 **Round 2 note — no new retrieval.** This round searched nothing. It re-read papers already
 in `research/papers/` against a question that had not been asked in round 1, and the answer
@@ -130,6 +131,7 @@ statistical significance and is reported here as suggestive only.
 | Q6 | What physics exploits should be defended against? | ✅ **Answered** (checklist + two case studies) |
 | Q7 | *(opened round 2, searched round 3)* Does endogenous / energy-based selection have precedent, and what lets such systems hold multiple strategies and trophic structure instead of collapsing to the cheapest trade? | 🟡 **Answered in part.** Precedent is real and primary-sourced: [Y94] (PolyWorld — per-neuron and per-synapse energy charge, behaviour-priced actions), [VG05] (Gene Pool — locomotion pays because food and mates are the only routes to reproduction), [CO02] (Avida — **depletable** resources produce negative frequency-dependent selection and stable coexistence of up to nine strategies; making the same resources unlimited collapses diversity to one genotype). Trophic emergence conditions from the ecology-modelling side: adaptive prey selection [DROSSEL04 — lead], spatial structure and density thresholds [HAMM21 — lead], closed nutrient cycles [GOY23]. What no held source yet shows: trophic levels emerging from *morphology-encoded* feeding on a physically simulated body — that remains this design's own bet |
 | Q8 | *(opened round 3)* What instrument distinguishes adaptive evolution from a treadmill, computable from this project's logs (births with parent ids, deaths, genomes, energy ledgers)? | 🟡 **Answered in principle, not yet implemented.** Bedau–Packard evolutionary activity with the class 1–4 taxonomy (via [BSP98 — lead, unfetched]) is the formal treadmill test; [ST00] supplies an implementation that replaces the "neutral shadow run" with a randomly-permuted shadow population, which fits a system that has no fitness function to switch off. The MODES toolbox ([DOL19 — lead, bot-gated preprint]) is the modern alternative and substitutes a lineage-persistence filter for the shadow. Both need a lineage record, which bears directly on the open `lineage.jsonl` decision |
+| Q9 | *(opened round 4)* What stabilises a consumer–resource interaction against boom-and-bust — and which stabiliser fits a world whose only evolved consumer is a benthic filter feeder on a well-mixed detritus pool? | ✅ **Answered in theory; the world's own answer is the round-8 experiment.** The theory predicted this project's own result before it ran: a refuge covering the consumer's feeding ground does not stabilise, it deletes the consumer — the equilibrium needs the refuge *plus* the consumer's break-even accessible density [KR13 p.2], and increasing hidden prey ends in predator extinction (González-Olivares & Ramos-Jiliberto 2003, abstract — closed). Four stabiliser families with primary sources: **(a) refuge, strong form** — fixed-*number* not proportional, which is mathematically a type III functional response [KR13 p.1–2; Maynard Smith 1974 via KR13]; **(b) spatial structure** — works by asynchrony + limited dispersal (empirically: continuous platform dead in 120 days vs eight throttled islands persisting 393–447+ [JN97 p.7]; Huffaker's 120-position universe [HUF58 p.39–41]), but *subdivision alone is the null result* — dispersal can destabilise (Briggs & Hoopes 2004, abstract — closed), identical patches buy nothing [HZ13 p.5], and the operative criterion is a length-scale ratio: coexistence dies when the boom-bust pattern wavelength outgrows the domain [RMF07 p.5]; a growth *gradient* plus mobile grazer stabilises even type I feeding at unbounded carrying capacity [FM15 p.1, p.19] — this project's light gradient is that geometry, rotated; **(c) feeding relaxation at low density** — a type III toe (q=0.1 suffices in food webs [DBWM05 p.12]), noting an unbounded linear clearance is not even a real type I, which has a satiation plateau by definition [JKT04 p.1]; **(d) donor control** — a flux-fed detritus pool with a mass-action consumer is *globally stable* [MO04 p.7], so the observed busts imply this world's pool is not behaving as donor-controlled (closed-loop recycling feeds back — Quévreux 2021, abstract, bot-gated) and/or the cycles are cohort-structural, not dynamical (de Roos & Persson family — lead). **The discriminator (cycle period vs consumer generation time) needs lineage events, which do not exist yet** |
 
 **PICOC framing.** *Population:* evolved virtual creatures with genetically encoded 3D
 morphology and control. *Intervention:* co-evolution of body and controller under
@@ -272,6 +274,31 @@ with the additional layer that discovery ran through subagents — §7.1.
 
 ---
 
+### 3.7 Round 4 searches (2026-09-01)
+
+Two parallel search subagents (Claude Opus, scoped briefs, read-only web, open-access
+retrieval only — §8), screened and integrated by the reviewing model. **These are new
+questions, so new strings, declared per §3.5 rule 1.** The §3.2 strings were *not* re-run:
+three days had elapsed since round 3, and a date-filtered re-run over that window is
+vacuous — logged here so the skip is a recorded decision rather than an omission.
+
+Sweep 1 — consumer–resource stability theory: *paradox of enrichment; Rosenzweig–MacArthur
+stability; prey refuge predator-prey stability (fixed number vs proportional); donor
+control food web stability; detritus food web dynamics; functional response type I II III
+stability; predator interference Beddington–DeAngelis.*
+
+Sweep 2 — spatial structure and persistence: *Huffaker predator-prey dispersion; spatial
+rescue paradox of enrichment; diffusively coupled patches predator-prey; metapopulation
+predator-prey persistence asynchrony; protist microcosm persistence; Avida spatial
+structure well-mixed comparison; dispersal rate window synchrony; mobility biodiversity
+lattice.*
+
+Retrieval notes with teeth: Hilgardia's own PDF link has rotted and [HUF58] was fetched
+from a Wayback capture of the journal's file endpoint; Elsevier, Wiley, bioRxiv and HAL
+all bot-gated requests this round (403/503/Anubis), which cost the corpus Jansen 2001,
+Bonsall 2002, Dolson 2017's page-level text and Quévreux 2021 despite three of the four
+being nominally free — the manual-fetch queue in §9 grew accordingly.
+
 ## 4. PRISMA flow
 
 *Cumulative through round 1. Later rounds add to these counts rather than replacing them —
@@ -334,6 +361,34 @@ is sometimes miscited as 2003 — the PDF header confirms Artificial Life VIII, 
 is arXiv:2508.17464v2, the accepted-manuscript version for *Artificial Life*, extending an
 ALIFE 2025 paper — cite the journal version once it has volume/page identity.
 
+**Round 4 additions (2026-09-01):**
+
+```
+IDENTIFICATION
+  Candidates surfaced by 2 subagent search sweeps                  ~50
+SCREENING
+  Screened against Q9 (per-theme primaries + leads)                ~35
+RETRIEVAL
+  Targeted for retrieval (open access)                              14
+  Successfully retrieved                                          13/14
+     (Dolson et al. 2017: bioRxiv CDN refuses non-browser clients —
+      abstract only, no page locators)
+  Relevant, recorded closed-access, NOT fetched, NOT bypassed       ~25
+     (incl. Rosenzweig 1971 itself, Jansen 1995, Briggs & Hoopes
+      2004, McNair 1986, Sih 1987, Maynard Smith 1974)
+APPRAISAL
+  Load-bearing claims re-verified by the reviewer vs extracted text   4   [KR13] [MO04] [RMF07] [JN97]
+  Read at targeted passages by sweep agents, locators checked by them 6   [HUF58] [FM15] [HZ13] [RC07] [JKT04] [DBWM05]
+  Fetched, screened OUT of the synthesis                              3   (Chen 2023 GLV review; Mougi 2022; Moreno 2024)
+  ADDED TO SYNTHESIS                                                 10
+```
+
+Metadata notes from round 4: several theme primaries are cited here only through fetched
+secondaries — Rosenzweig 1971 via [RC07 p.3], Maynard Smith 1974 via [KR13 p.1], Briggs &
+Hoopes 2004 via its NCBI abstract — and each such use is marked at the point of citation.
+The DeAngelis-Goldstein-O'Neill 1975 title contains a published typo ("Tropic"), preserved
+in the record because correcting it breaks DOI lookup by title.
+
 ---
 
 ## 5. Synthesis matrix
@@ -351,6 +406,16 @@ ALIFE 2025 paper — cite the journal version once it has volume/page identity.
 | **[VG05]** ⚠ partial *(round 3)* | Locomotion pays under endogenous selection when it is the **only route to reproduction**: food bits are the sole energy inflow and mating requires physical approach; rewarding stillness bifurcated the population into sitters plus a small mobile breeding caste | Gene Pool / swimbots: 2D spring-mass swimmers, energy economy, in-world mating, no fitness function | **Diagnostic** — explains why this design's swimmers never came: depth (the prize here) is reachable without moving; Gene Pool's prizes were not | 📄 Springer chapter (2005), author self-archive | 2D, springs not rigid bodies, sexual selection entangled with the energy result; descriptive, single system |
 | **[CB18]** *(round 3, verified out of §13.4)* | Morphological innovation protection: temporarily shield lineages whose morphology just changed, giving controllers generations to re-adapt; sustains morphological search longer than unprotected baselines | Soft voxel robots, CPPN encodings; protection via nested age layers | **Confirmatory** — the mechanism §2.3 and §8.4 already lean on, now independently verified rather than bibliography-inherited | 📄 Peer-reviewed, *J. R. Soc. Interface*, OA | Soft-body; and [MC25] later shows MIP alone still fails to select for morphological potential — protection helps, it does not solve |
 | **[PU16]** *(round 3, verified out of §13.4)* | A behaviour characterisation unaligned with quality can actively harm search (hardest maze: 2 solutions in 20 runs, worse than plain fitness); the fix is multi-BC, aligned + unaligned | Maze navigation family of graded deception; QD-score proposed here | **Confirmatory, with nuance** — supports §8.3 as written; the paper's own claim is "not just any behavioural diversity succeeds", not "unaligned always fails" | 📄 Peer-reviewed, *Frontiers Robotics & AI*, OA | Maze domain, not embodied creatures; the specific failure threshold is domain-dependent |
+| **[KR13]** *(round 4)* | Consumer equilibrium sits at refuge floor *plus* break-even accessible density (R\* = R_c + m/(λ(e−hm))), stable only above a large critical refuge; a fixed-number refuge ≡ extreme type III response; fixed-number stabilises far more than proportional (Maynard Smith 1974, cited); Gause 1936's yeast **sedimented into a depth refuge** empirically | Gause model (exponential prey growth) chosen to isolate refuge effects from other stabilisers; analytic + numeric | **Explains D055's falsification** — a refuge covering the feeding ground deletes the consumer, exactly as observed in logbook/0043 | 📄 Peer-reviewed, *J. Theor. Biol.*, author OA copy | Behavioural refuge framing; verified by reviewer at the R\* and type-III passages [p.2] |
+| **[MO04]** *(round 4)* | Detritus with density-independent accrual is quintessentially donor-controlled; the two-species detritus chain with mass-action consumer is **globally asymptotically stable** — stability supplied by constant input R, not resource self-limitation; detritus chains feasible at lower input and more resilient than producer chains | Review + Jacobian analysis of detritus food-chain models; 17 authors | **Diagnostic against the design** — this world's pool matches the model's structure yet busts, so either the closed recycling loop breaks donor control or the cycles are not dynamical | 📄 Peer-reviewed, *Ecology Letters*, lab self-archive | Verified by reviewer at the stability passage [p.7]; ODE world — no individuals, no cohorts |
+| **[RC07]** *(round 4)* | Rosenzweig 1971's mechanism verbatim (enrichment → growing limit cycles → extinction); the empirical record is **mostly negative** — most enrichment experiments failed to destabilise; a refuge/invulnerable class makes the interaction donor-controlled and strongly stabilising (Pimm 1982); observed *Daphnia* cycles were once misdiagnosed as enrichment cycles and were developmental-delay cohort cycles | Review, *J. Biosciences* | **Cautionary both ways** — enrichment instability is real in theory, rare in nature; and mislabeling cohort cycles as enrichment cycles is a documented field error this project could repeat | 📄 Peer-reviewed, publisher OA | Secondary source for Rosenzweig 1971 (closed); survey-level |
+| **[JKT04]** *(round 4)* | A true type I response has a **satiation threshold by definition**; 814 responses reviewed, type I exclusive to filter feeders; filter feeders show type III when they relax filtration at low density | Systematic review, 235 studies | **Corrective in principle** — this design's unbounded linear clearance is not a type I response but a physical impossibility; a satiation plateau is not a stabiliser bolt-on, it is what a filter feeder *is* | 📄 Peer-reviewed, *Biol. Reviews*, lab self-archive | Empirical catalogue, not a stability analysis |
+| **[DBWM05]** *(round 4)* | Slight relaxation of consumption at low resource density (q=0.1–0.25 of the way to type III) stabilised chaotic 3-species chains and eliminated extinctions in 10-species webs; refuge-seeking, interference and switching are three implementations of the same relaxation | Food-web dynamical models (Williams & Martinez family), SFI working-paper OA version | **Enabling** — the cheapest stabiliser candidate: a toe on the clearance curve, dose-tunable | 📄 Book chapter (OUP), SFI WP OA | Web-level models; the q result is from the closed EPJ B paper this chapter summarises |
+| **[HUF58]** *(round 4)* | Simple universes: predator always overexploits and goes locally extinct; a 120-position universe with dispersal barriers and prey-only long-range dispersal held **three full oscillations**; refuges must be "reasonably accessible, but not too readily so"; structure sets the oscillation period more than predation intensity does | Physical microcosm, mites on oranges, 3 trays × 40 positions | **Founding empirical anchor for Q9(b)** — and for the owner's whole-layer hypothesis: the failing universes are the well-mixed limit | 📄 *Hilgardia* (OA), fetched via Wayback | Predator still died on the third crash — structure extended, did not guarantee, persistence; author flags his own barriers as double-edged [p.40] |
+| **[JN97]** *(round 4)* | Same species, same lab: one continuous 90-plant system dead in 120 days; eight 10-plant islands with deliberately-throttled bridges persisted 393 and 447+ days **with fewer plants**, no island individually persistent; prey dispersal stabilises, predator dispersal destabilises (Sabelis et al., cited) | Lab metapopulation, two long replicates + perturbation | **The controlled contrast the round-8 design should replicate** — persistence from asynchrony + limited migration, not from more resource | 📄 Peer-reviewed, *Exp. Appl. Acarol.*, UvA-DARE OA | Verified by reviewer at the persistence-times passage [p.7]; two replicates diverged sharply from matched starts — per-seed stochasticity warning |
+| **[RMF07]** *(round 4)* | Coexistence requires *local* interactions; a critical mobility M_c exists (≈4.5×10⁻⁴ lattice fraction/tick in their system) above which biodiversity dies; M_c is **not** universal but the critical pattern *wavelength* is — extinction comes when λ ∝ √M outgrows the domain | Lattice rock-paper-scissors, Nature 2007; arXiv author copy | **Supplies the design criterion** — "how many boom-bust wavelengths fit across the world," computable from measured crash times and drift speeds, replaces any guessed dispersal rate | 📄 Peer-reviewed, *Nature*, green OA | Verified by reviewer at the M_c passage; cyclic 3-species game, not consumer-resource — mechanism transfers, constants do not |
+| **[FM15]** *(round 4)* | In a water column with a prey growth gradient and a fast grazer, **type I feeding at effectively infinite carrying capacity can be stable**; above a critical diffusion the system homogenises to Rosenzweig–MacArthur and is globally unstable; stability depends on habitat size and gradient steepness | PDE plankton model, *Bull. Math. Biol.*, arXiv copy | **The nearest theory to this exact world** — gradient + mobility as stabiliser, with the well-mixed limit explicitly the unstable case | 📄 Peer-reviewed, green OA | Vertical gradient in their geometry (light/growth over depth); transferring it horizontally is this project's inference, marked as such |
+| **[HZ13]** *(round 4)* | Jansen's intermediate-dispersal asynchrony mechanism named and dated; their own high-dispersal averaging mechanism **requires patches to differ in carrying capacity** — even enrichment across identical patches destabilises regardless of dispersal | Two-patch R-M metacommunity, PLoS ONE | **The sharpest constraint on the round-8 design** — subdivision into identical tiles is the null result; patch inequality does the work | 📄 Peer-reviewed, gold OA CC BY | Two-patch numerics; patch-count claim is an extrapolation the paper itself flags |
 
 ---
 
@@ -474,6 +539,73 @@ mechanism's D-entry. [ST00] Standish, "An Ecolab Perspective on the Bedau Evolut
 Statistics," *ALife VII*, 2000 (read: abstract level; arXiv copy held) — the
 permuted-shadow implementation for Q8.
 
+### Round 4 additions (2026-09-01)
+
+*All retrieved from open sources with exact URLs in FETCH-RESULTS.md; none via
+institutional access. Where a claim rests on a closed primary cited through one of these,
+that is marked at the point of use.*
+
+**[KR13]** V. Křivan, "Behavioral refuges and predator–prey coexistence," *J. Theoretical
+Biology* 339:112–121, 2013. DOI `10.1016/j.jtbi.2012.12.016` — 📄 peer-reviewed, author
+self-archive. *The theory that predicted logbook/0043.* Carries the Maynard Smith 1974
+fixed-number-vs-proportional result, the refuge≡type-III equivalence, and the R\* equation
+showing a refuge over the feeding ground deletes the consumer. Reviewer-verified [p.2].
+
+**[MO04]** J. C. Moore et al. (17 authors), "Detritus, trophic dynamics and biodiversity,"
+*Ecology Letters* 7(7):584–600, 2004. DOI `10.1111/j.1461-0248.2004.00606.x` — 📄
+peer-reviewed, lab self-archive. *Why our busts are anomalous:* the flux-fed detritus
+chain with a mass-action consumer is globally stable. Reviewer-verified [p.7].
+
+**[RC07]** S. Roy & J. Chattopadhyay, "The stability of ecosystems: a brief overview of
+the paradox of enrichment," *J. Biosciences* 32(2):421–428, 2007. DOI
+`10.1007/s12038-007-0040-1` — 📄 peer-reviewed, publisher OA. OA proxy for Rosenzweig 1971
+(closed); catalogues the stabilisers and the mostly-negative empirical record.
+
+**[JKT04]** J. M. Jeschke, M. Kopp & R. Tollrian, "Consumer-food systems: why type I
+functional responses are exclusive to filter feeders," *Biological Reviews* 79(2):337–349,
+2004. DOI `10.1017/S1464793103006286` — 📄 peer-reviewed, lab self-archive. A real type I
+response has a satiation plateau by definition; unbounded linear clearance is not one.
+
+**[DBWM05]** J. A. Dunne, U. Brose, R. J. Williams & N. D. Martinez, "Modeling food-web
+dynamics: complexity–stability implications," in *Aquatic Food Webs* (OUP 2005),
+pp.117–129 — 📄 chapter, via SFI Working Paper 2004-07-021 (author-permitted OA). The
+q=0.1 feeding-relaxation result; refuge-seeking, interference and switching unified as one
+stabiliser.
+
+**[HUF58]** C. B. Huffaker, "Experimental studies on predation: Dispersion factors and
+predator-prey oscillations," *Hilgardia* 27(14):343–383, 1958. DOI
+`10.3733/hilg.v27n14p343` — 📄 journal OA, fetched via Wayback (live link rotted). The
+founding patchiness experiment. PDF page = journal page − 340.
+
+**[JN97]** A. Janssen, E. van Gool, R. Lingeman, J. Jacas & G. van de Klashorst,
+"Metapopulation dynamics of a persisting predator–prey system in the laboratory," *Exp.
+Appl. Acarol.* 21:415–430, 1997. DOI `10.1023/A:1018479828913` — 📄 peer-reviewed,
+UvA-DARE OA. The controlled well-mixed-vs-islands contrast. Reviewer-verified [p.7].
+
+**[RMF07]** T. Reichenbach, M. Mobilia & E. Frey, "Mobility promotes and jeopardizes
+biodiversity in rock–paper–scissors games," *Nature* 448:1046–1049, 2007. DOI
+`10.1038/nature06095` — 📄 peer-reviewed, arXiv author copy. The critical-mobility /
+universal-wavelength result. Reviewer-verified.
+
+**[FM15]** J. Z. Farkas, A. Yu. Morozov, E. G. Arashkevich & A. Nikishina, "Revisiting the
+stability of spatially heterogeneous predator–prey systems under eutrophication," *Bull.
+Math. Biol.* 77:1886–1908, 2015. DOI `10.1007/s11538-015-0108-2` — 📄 peer-reviewed,
+arXiv:1509.03192. Gradient + mobile grazer stabilises type I feeding at unbounded K; the
+well-mixed limit is the always-unstable case.
+
+**[HZ13]** C. Hauzy et al., "Confronting the paradox of enrichment to the metacommunity
+perspective," *PLoS ONE* 8(12):e82969, 2013. DOI `10.1371/journal.pone.0082969` — 📄
+peer-reviewed, gold OA. Patch *inequality*, not subdivision, is what dispersal needs to
+stabilise.
+
+**Retrieved in round 4, supporting only (not in the synthesis matrix):** [DO21] Dolson &
+Ofria, "Digital Evolution for Ecology Research: A Review," *Front. Ecol. Evol.* 9:750779,
+2021, DOI `10.3389/fevo.2021.750779` (field map for Q9(b)'s ALife corner; confirms the
+well-mixed-vs-structured persistence experiment has not been run in digital evolution).
+Fetched and screened out: Chen, Wang & Liu 2023 (arXiv:2312.07737, GLV stability review);
+Mougi 2022 (*Sci. Rep.* 12:2464, interference at web level); Moreno, Rodriguez-Papa &
+Dolson 2024 (arXiv:2405.07245, phylogeny instrumentation — relevant to Q8, not Q9).
+
 ---
 
 ## 7. Threats to validity
@@ -524,6 +656,13 @@ permuted-shadow implementation for Q8.
   trophic-conditions leads (Drossel, Hamm, Fritsch) were read at abstract level or via one
   open full text. None of these has yet informed a design mechanism; each must be read in
   full before it does — the same rule `research/early-life/` already applies to itself.
+- **⚠ Round 4 repeats the subagent relay, with a stronger mitigation.** Two scoped sweeps
+  (§3.7) executed discovery, retrieval and first-pass extraction; the reviewer saw reports,
+  not raw result lists, so recall is again unmeasurable. Mitigation: the four claims that
+  carry the round's design impact ([KR13]'s R\*, [MO04]'s stability verdict, [RMF07]'s
+  M_c/wavelength, [JN97]'s persistence times) were re-located and re-read by the reviewer
+  in the extracted `source.md` files; the sweep agents' own syntheses are reproduced in the
+  session record but only reviewer-checked claims entered this document's tables.
 
 ### 7.2 Verification validity
 
@@ -543,11 +682,26 @@ permuted-shadow implementation for Q8.
 
 ### 7.3 Synthesis validity
 
-- **Small n.** Eleven papers inform the synthesis (five from rounds 1–2, six added in
-  round 3); still only three read in full. The round-3 additions were read at targeted
-  passages against specific claims, which is honest for provenance-checking and weaker than
-  full reads for anything else — a round-3 paper could contradict this design somewhere
-  nobody looked.
+- **Small n.** ~~Eleven papers inform the synthesis (five from rounds 1–2, six added in
+  round 3);~~ ↻ **Twenty-one after round 4** (ten added 2026-09-01); still only three read
+  in full. The round-3 and round-4 additions were read at targeted passages against
+  specific claims, which is honest for provenance-checking and weaker than full reads for
+  anything else — a paper admitted this way could contradict this design somewhere nobody
+  looked.
+- **⚠ Round 4's key theme primaries are cited through secondaries.** Rosenzweig 1971,
+  Maynard Smith 1974, Briggs & Hoopes 2004, McNair 1986 and Sih 1987 are all closed-access
+  and enter only via [RC07], [KR13] and an NCBI abstract. The load-bearing *mechanisms*
+  are carried by fetched papers, but the historical attributions are second-hand.
+- **⚠ Two known counterexamples to Q9's spatial answer were surfaced and could not be
+  fetched.** Saxer, Doebeli & Travisano 2009 (*Proc. R. Soc. B* 276:2065) found spatial
+  structure *reducing* diversity where coexistence rests on cross-feeding; Blasius et al.
+  2020 (*Nature* 577:226) ran a **well-mixed** chemostat predator–prey system that
+  persisted ~2,000 days. Both are recorded as threats: well-mixed is not automatically
+  fatal, and structure is not automatically benign. Any round-8 design leaning on Q9(b)
+  should state both.
+- **⚠ McNair 1986's dissent on refuges is unread.** Its abstract claims some refuge
+  formulations *create* large-amplitude oscillations in systems that would otherwise damp.
+  If a refuge-family knob survives into round 8, this paper moves up the fetch queue.
 - **⚠ Substrate mismatch is the dominant threat.** [EA23] and [C18] — the two papers
   driving the largest design changes — both use **soft voxel robots**, while the design
   targets **rigid articulated bodies**. The premature-convergence mechanism and the
@@ -586,6 +740,8 @@ permuted-shadow implementation for Q8.
 | **Round 3** (2026-08-29): search execution | 4 parallel Claude Sonnet subagents (scoped briefs; read-only web; Semantic Scholar + CrossRef public APIs) | User authorised the round and its autonomy level |
 | Round 3: screening, primary-text verification, synthesis, this update | Claude Fable 5 | Screening checkpoints recorded in-document rather than user-gated, at the user's request; paywalled retrievals queued for the user rather than attempted |
 | Round 3: paper retrieval | Claude Fable 5, open-access sources only — **no institutional access used** | — |
+| **Round 4** (2026-09-01): search + retrieval + first-pass extraction | 2 parallel Claude Opus subagents (scoped briefs; read-only web; open-access only; bot-gates respected, not bypassed) | Round run autonomously under the standing goal; the triggering hypothesis (whole-layer access) is the owner's, raised in discussion |
+| Round 4: screening, load-bearing-claim re-verification, synthesis, this update | Claude Fable 5 | Four design-impacting claims re-verified against extracted text before entering any table |
 
 **No citation in this document was generated from model memory.** Every reference
 originates from a tool-call result within the session, and all cited works were retrieved
@@ -602,7 +758,7 @@ set is reconstructible by anyone with equivalent access.
 ## 9. Gaps and recommended next steps
 
 **Answered well enough to build on:** Q1 (with [MC25]'s sharpening), Q3, Q4, Q6, Q7 in its
-precedent half.
+precedent half, Q9 in its theory half (round 4 — the world's own answer is experimental).
 
 **Resolved by round 3, kept for the record:**
 
@@ -644,6 +800,26 @@ precedent half.
    Lessin's thesis, both openly available and never fetched.
 6. **Q5 — controller representation.** Unchanged: only [K12]'s scheme is held; Lessin's
    muscle-drive line remains unexplored.
+7. **NEW (round 4) — cohort cycles as a full theme.** The de Roos & Persson
+   size/stage-structured line (single-generation cycles: one dominant cohort grazes the
+   resource to its own starvation) is the closest published description of this project's
+   observed bust and was surfaced only as a lead. Entry points: Ten Brink & de Roos 2018
+   (*JTB*, OA at PMC6497215); Persson et al. 1998 (*TPB* 54:270). Promote to a searched
+   theme before any stabiliser is declared to have failed — if the cycles are cohort-driven,
+   neither refuges nor patches address the mechanism.
+8. **NEW (round 4) — the Q9 manual-fetch queue** (rough priority): Quévreux, Barot &
+   Thébault 2021 (*Oikos*, green OA at HAL `hal-02570657`, bot-gated — **top of the queue**:
+   nutrient recycling reproducing enrichment instability is the nearest theory to this
+   closed world); Jansen 2001 (*TPB* 59:119, nominally bronze at Elsevier, 403 to
+   non-browsers); McNair 1986 (the refuge dissent — see §7.3); Kerr et al. 2002 (*Nature*
+   418:171, the empirical plate-vs-flask contrast); Saxer 2009 and Blasius 2020 (the two
+   counterexamples in §7.3); Bonsall, French & Hassell 2002; Ellner et al. 2001.
+9. **NEW (round 4) — the discriminating measurement is blocked on instrumentation.**
+   Cycle period vs consumer generation time (and amplitude vs enrichment) separates
+   enrichment cycles from cohort cycles [RC07 p.4's *Daphnia* precedent], but neither is
+   computable from current logs: `lineage.jsonl` is empty and snapshots carry bare genomes
+   with no birth metadata. The lineage-events build is therefore a *pre-round-8
+   instrument*, not post-goal housekeeping — this round's concrete engineering demand.
 
 **Not worth pursuing** on current evidence: deep-RL co-design (DERL, Evolution Gym) and
 CPPN encoding literature, both of which address a different substrate than this project

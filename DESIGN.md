@@ -125,6 +125,20 @@ open-ended-evolution literature that §5A had been specified without.
 | **§13.4 quarantine** | Cheney 2018 and Pugh 2016 load-bearing and never independently verified | Both CrossRef-verified, retrieved, read at the load-bearing passages, promoted to §13.2 as [CB18] and [PU16] | Review round 3, task 2 |
 | *(no section)* | — | Round 3 also holds, in the review rather than here: [CO02] (depletable resources are what sustain multi-strategy coexistence — D023's finite sun as an instance of a general rule) and [VG05] (locomotion pays when it is the only route to reproduction). Neither has changed a mechanism yet; both are expected to inform the next decisions | `research/LITERATURE-REVIEW.md` §5, §6 |
 
+## 0e2. Changelog — review round 4 (2026-09-01)
+
+No mechanism changed. Round 4 of the literature review (`research/LITERATURE-REVIEW.md`
+§0, §3.7) searched the consumer–resource stability and spatial-persistence literature
+after D055's falsification (logbook/0042, 0043), opening and answering Q9 in theory.
+What it holds for this document: the falsified refuge behaved exactly as refuge theory
+predicts when the refuge covers the consumer's feeding ground [KR13 p.2]; a flux-fed
+detritus pool with a mass-action consumer should be globally stable [MO04 p.7], so the
+observed busts indict either the closed recycling loop or cohort structure rather than
+the detritus interaction itself; and three constraints now bind the pending stabiliser
+decision (patch inequality [HZ13 p.5], the wavelength-vs-domain criterion [RMF07 p.5],
+fixed-number-not-proportional refuges [KR13 p.1–2]). Mechanism changes, if any, will
+arrive as D-entries after the owner's round-8 ruling, and will cite these sources.
+
 ## 0f. Changelog — D051 (2026-08-29)
 
 | Change | Was | Now | Why |
