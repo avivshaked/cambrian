@@ -11,6 +11,7 @@ The written work in this repository:
     DECISIONS.md
     README.md
     CLAUDE.md
+    AGENTS.md
     HANDOFF.md
     research/**            (the literature review and provenance records)
     logbook/**             (dated entries on what was tried and what broke)

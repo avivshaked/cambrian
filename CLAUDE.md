@@ -1,6 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this
+repository — and to any other coding agent: `AGENTS.md` points here, and everything below
+is agent-agnostic unless it names a tool. **Durable project knowledge lives in this repo,
+never only in an agent's private memory** — a lesson costs too much to learn twice because
+it was stored somewhere one particular agent on one particular machine could see.
 
 ## What this is
 
@@ -263,6 +267,13 @@ actually verifying it.
   founders simply never age out, so `gen min = 0` persists in a world whose floor stopped firing at
   t=400 and whose traits are entirely inherited. Read `floor` and `*Inherited` together: floor 0 plus
   82-of-88 inherited is a lineage, whatever the generation minimum says.
+- **A wedged sim loop never reaches its own wall-clock check.** The budget and wall checks
+  live inside the metabolic loop, so a hang freezes them too: d056b-s1 sat at t=22,700 with
+  the process alive and the log silent for 5.7 hours (logbook/0043's instrument note — the
+  campaign's first hang, cause unknown). Every monitor watching an arm therefore needs
+  three alternations, not two: error signatures, the `**Ended:**` footer, **and a
+  staleness check on the report file's mtime** (silent > 30 min ⇒ stall alert). After
+  killing a wedged worker, refresh it — the Library dies with the process.
 - **PowerShell scripts need a UTF-8 BOM.** Windows PowerShell reads a BOM-less `.ps1` as ANSI, so
   an em-dash inside a double-quoted string becomes three bytes that terminate the string and the
   file will not parse — the error points at the following token and says nothing about encoding.
@@ -271,6 +282,21 @@ actually verifying it.
   `[uint64]`, which both editions accept.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
+
+## Working with the owner
+
+- **The logbook and primer serve a mixed audience** — agents *and* humans who want to read
+  the research. Dense pre-registration tables are fine; introduce jargon on first use, let
+  prose carry the story, and keep a reader's key current (`logbook/README.md`).
+- **First-person voice is welcome in the record** — the owner invited genuine agent
+  reactions, as the agent's own: honest and brief, never performative (logbook/0042's
+  personal note is the precedent).
+- **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
+  amendments, scope and round design forks, pushes of anything that is not code/prose, and
+  anything irreversible or outward-facing. Instruments, diagnostics, replays of scored
+  conditions, analyses and doc upkeep are agent work. A proposal file
+  (`fable-propose-*.md`) is the vehicle for putting a design in front of the owner:
+  absorbed into DECISIONS.md on ruling, then deleted.
 
 ## Conventions
 
