@@ -206,7 +206,20 @@ Three things the paired structure makes unambiguous:
    floor, exactly the one-way carbon story the refuge was always going to write once
    nothing could eat it back.
 
-### What this does to the design
+### Instrument replays (added 2026-09-01, before launch)
+
+Review round 4 raised a question this round's data cannot answer as recorded: are the
+busts consumer–resource cycles or **cohort cycles** (one dominant generation grazes the
+pool below its own break-even and starves — a mechanism neither refuges nor patches
+address)? The discriminator is cycle period against consumer generation time, which
+needs the birth/death record — and the lineage-events instrument was built *after* the
+arms ran, proven inert (a world drained or undrained steps bit-identically, suite 374).
+
+So the two control arms are replayed as `d060b-s2r0` and `d060b-s4r0`: same seeds, same
+config, same hash expected — deterministic twins of scored runs, now writing
+`lineage.jsonl`. Validity check before any reading: the replay's sample rows must match
+the original token-for-token. This is instrumentation of an already-pre-registered
+condition, not a new treatment; nothing here touches the round-8 fork.
 
 D055's knob survives as an instrument; as a *world rule at 1 m* it is falsified twice
 over — round 7 showed it blocks establishment, this round shows it kills established
