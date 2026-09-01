@@ -83,6 +83,9 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D058](#d058) | Only the budget ends a run — censored arms cannot pass | 2026-08-31 | active |
 | [D059](#d059) | The ocean gets a floor — D050's mirror, per-column under D054 | 2026-08-31 | decided · not built |
 | [D060](#d060) | The invasion assay — a labeled hand for a mechanism question | 2026-08-31 | active · built, first use logbook/0043 |
+| [D061](#d061) | The patchy world — horizontal structure, throttled exchange, endogenous inequality | 2026-09-01 | decided · round 8 arm A, to build |
+| [D062](#d062) | The satiation cap — a filter feeder's mouth gets its physical limit | 2026-09-01 | decided · round 8 arm B, to build |
+| [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · goal rule amended from round 8 |
 
 ---
 
@@ -2762,3 +2765,107 @@ audit closure, species founding under θ on/off, same-seed replay. The first ino
 from round 6 s5's final snapshot — notably a **one-part body**: all 50 absorptive genomes
 in that snapshot develop to solitary absorptive blobs, everything else pruned for volume.
 First use pre-registered in logbook/0043.
+
+### D061
+**The patchy world — horizontal structure, throttled exchange, endogenous inequality** · 2026-09-01
+
+Decided by the owner (three-arm round 8, this as arm A) from the proposal in
+`fable-propose-d061.md`, absorbed here and deleted per the propose-file pattern. The
+hypothesis is the owner's, raised on seeing round 7.5's results: every depth layer is a
+perfectly-stirred tank — a creature at the right depth feeds from the entire 400 m² at
+once, no travel, no local depletion — which breaks the spatial structure real
+consumer–resource persistence depends on, and forecloses movement ever paying.
+
+**The evidence (review round 4, Q9).** The well-mixed limit is the provably unstable
+case: a water column with a growth gradient and a mobile grazer is stable even under
+linear feeding at effectively unbounded carrying capacity, until diffusion crosses a
+critical value and homogenises it into the always-unstable classical model [FM15 p.1,
+p.19]. Empirically: one continuous 90-plant platform died in 120 days while eight islands
+with deliberately throttled bridges — and fewer plants — persisted 393–447+ days, no
+island individually persistent [JN97 p.7]; Huffaker's 120-position universe held three
+oscillations where every simple universe died [HUF58 p.39–41]. Two constraints with
+teeth: subdivision alone is the null result — dispersal can destabilise (Briggs & Hoopes
+2004, abstract) and identical patches buy nothing, the patches must be **unequal**
+[HZ13 p.5]; and the criterion is a length-scale ratio, not a dispersal rate — coexistence
+dies when the boom-bust pattern's wavelength outgrows the domain [RMF07 p.5].
+
+**The arithmetic that shaped the design.** Boom-to-bust here runs ≈5,000–8,000 s; the
+current is 0.05 m/s; a 400 m² world is ~20 m across. Anything advected at current speed
+crosses the world in ~400 s — fifteen times inside one cycle — so patches coupled at
+current speed are one pool with extra bookkeeping. **Horizontal exchange must be its own
+slow knob.**
+
+**The mechanism:**
+1. Each nutrient/matter layer splits into `HorizontalPatches` cells (round 8 runs K=8,
+   Janssen's number). Deposit/Settle stay within-patch; `Mix` generalises sideways under
+   its own `HorizontalMixingDiffusivity`, much smaller than vertical — the throttle.
+2. Organisms gain a patch index. Feeding, deposit, excretion and death-return are local.
+   Movement between patches is a `DispersalChancePerStep` (metapopulation-style, like the
+   throttled bridges), not continuous advection. Offspring are born in the parent's patch.
+3. **Inequality is endogenous:** `PerPatchShading` makes each patch's producers shade only
+   their own column. Crowded patches darken themselves; the creatures generate the
+   heterogeneity that stabilises them — no painted-on constant, and the first reason a
+   producer has ever had to be somewhere else.
+4. The prey/predator dispersal asymmetry (prey dispersal stabilises, predator dispersal
+   destabilises [JN97 p.11]) is left to the physics: detritus already moves by mixing (the
+   reseeding path), consumers sink vertically. If evolution finds horizontal movement
+   worth paying for, the movement frontier finally has a prize.
+
+All knobs default to off (K=1, today's world) — bit-identical in the D052/D055 shape.
+**Dose target from the measured trap (logbook/0043):** a stabiliser succeeds iff some
+reachable pool stays above ≈7 J/m³ (the transplant genotype's reproduction threshold;
+survival is 4, senescent 8 — thresholds are per-genotype, the trap is not) through the
+trough. Natural rain re-arms any patch left ungrazed — which is exactly what arm A banks
+on.
+
+**Rejected within this decision:** patch exchange via the existing current (the
+wavelength arithmetic above); painted-on patch inequality (a constant nobody can defend
+when shading does it endogenously); continuous horizontal advection of creatures (the
+throttled-bridge regime is the one with the empirical persistence record).
+
+### D062
+**The satiation cap — a filter feeder's mouth gets its physical limit** · 2026-09-01
+
+Round 8's arm B, the cohort-trap hedge, decided by the owner alongside D061. The lineage
+record (logbook/0043) shows every bust — transplanted and natural — is a **recruitment
+collapse**: the boom grazes the pool below the reproduction break-even while every adult
+still clears survival, and the cohort pins its own food in that band and ages out
+sterile. A mechanism that softens the drawdown before the trough is therefore a direct
+candidate, and the literature adds that our current mouth is not a simplification but an
+impossibility: a true type I response has a satiation plateau *by definition* — 814
+catalogued responses, type I exclusive to filter feeders, all with the threshold
+[JKT04 p.1] — and slight relaxation of consumption at low resource density (q=0.1 of the
+way to type III) eliminated extinctions in model food webs [DBWM05 p.12].
+
+**The mechanism:** two knobs on `AbsorptiveCell`, both default-off (today's unbounded
+linear clearance, bit-identical):
+- `SatiationWattsPerCubicMetre` — intake per m³ of tissue is capped at this power. The
+  plateau a real filter is forced to by handling time.
+- `ClearanceToeDensity` — below this density, effective clearance scales down smoothly
+  (a type-III toe): the relaxation-at-low-density stabiliser, dose-tunable toward
+  q≈0.1's cheapness.
+
+This touches §5A.1's feeding contract, which is why it is its own D-entry and not a
+sweep parameter. ⚠ The honest doubt, pre-registered: a pure intake cap slows the boom
+but adults' *survival* grazing is what pins the pool in the trap band — the toe, which
+lets the pool escape upward at low density, may be the half that matters.
+
+### D063
+**The recruitment clause — a chain must be breeding, not merely surviving** · 2026-09-01
+
+The goal rule's blind spot was demonstrated, not suspected (logbook/0043): "inherited
+≥ 20 consecutive samples and ≥ 10 alive at the last sample" is satisfied for thousands
+of seconds by a sterile relic — s2's 104-sample streak was sterile from sample ~60,
+recruitment having collapsed at the population peak in every measured boom. The owner
+amended the rule:
+
+> In at least 3 of 5 seeds, with the population floor closed: the producers persist to
+> the end of the run, an absorptive lineage is inherited for ≥ 20 consecutive samples,
+> it is still alive (≥ 10 individuals) at the last sample, **and at least one absorptive
+> birth occurred within the last 20 samples.**
+
+Applied from round 8 onward; earlier rounds' scores stand as recorded (none passed, so
+nothing is retroactively changed by the tightening). Every future scoring reports the
+lineage's last-birth time alongside the streak. The clause is computable two ways —
+`lineage.jsonl` (exact) or a births-in-window read of the absorptive columns — and the
+pre-registration must name which it uses.
