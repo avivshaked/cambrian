@@ -165,3 +165,4 @@ key only translates the entries' reporting shorthand.
 | [0040](0040-right-sizing-the-dish.md) | 2026-08-30 | Right-sizing the dish |
 | [0041](0041-the-sea-digests.md) | 2026-08-31 | The sea digests |
 | [0042](0042-the-larder-under-the-mud.md) | 2026-08-31 | The larder under the mud |
+| [0043](0043-the-transplant.md) | 2026-09-01 | The transplant |
