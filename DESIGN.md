@@ -148,6 +148,14 @@ arrive as D-entries after the owner's round-8 ruling, and will cite these source
 
 ---
 
+## 0g. Changelog — D064 (2026-09-02)
+
+One mechanism added, default-off: excess density now scales with body volume (§5A.1,
+"Heaviness scales with size"), and founder depth is an env knob. Motivation and the
+inference-marked formula are in D064; the failure record that forced it is logbook/0044's
+results. The tunables table gains `NeutralBodyVolume`. Nothing else in this document
+changes; the worlds run before D064 are the rule's large-body limit.
+
 ## 1. Target hardware
 
 | | |
@@ -838,6 +846,15 @@ an Archean question and is why it never paid (logbook/0027, logbook/0030).
 D044's `TissueExcessDensity` — so the thing that needs an organ, a price and a genome field is
 going **up**. `MorphNode.Lift` carries it, evolvable per part and zero on every other cell type
 by validation.
+
+**Heaviness scales with size** — D064. The excess density a body actually carries is
+`TissueExcessDensity × max(0, 1 − (V0/V)^⅔)`, with V the phenotype's total volume and V0
+`FluidConfig.NeutralBodyVolume`: a body at or below V0 holds its depth for free, every cell
+above it costs depth, and large bodies converge to the constant above. Universal across
+guilds, so descent is a priced choice for a detritivore as much as ascent is for a
+producer — size becomes trophic strategy. Stokes-flavoured (small particles effectively do
+not sink) but the ⅔ folding of size into Δρ is this project's simplification, marked as
+inference in D064. V0 = 0 is the world as it was before D064.
 
 **In multiples of the sink it cancels, not in kg/m³** — D050. 1 is neutral buoyancy, 2 rises as
 fast as a bare body falls, and `FluidEnvironment` applies `excessDensity × (1 − lift)`. Absolute
@@ -1685,6 +1702,7 @@ without reaching `RunConfig.Hash()` is two different experiments filed under one
 | Lift upkeep | `BuoyancyCell.WattsPerLiftUnit` | What holding gas costs, per sink-multiple per m³. D050 changed its units and not its value, so it now prices neutral buoyancy at 0.05 W/m³ — about 2% of the cell's own upkeep |
 | Founder lift range | `RandomGenomeOptions.Min/MaxBuoyancyLift` | Which bladders a creature can be born with. Must straddle 1, which is neutral (D050) |
 | Tissue excess density | `FluidConfig.TissueExcessDensity` | The sink every lift is denominated against, so it sets the timescale of all vertical movement. Measured: at 0.02 the organ is nearly inert, at 0.1 it is decisive (logbook/0034) |
+| Neutral body volume | `FluidConfig.NeutralBodyVolume` | The size at or below which a body floats in place (D064). 0 switches the size rule off. Sets where on the size axis the plankton-versus-benthos trade begins |
 
 Two things deliberately **not** tunable, and the distinction matters:
 

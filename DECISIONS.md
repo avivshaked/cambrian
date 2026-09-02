@@ -86,6 +86,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D061](#d061) | The patchy world — horizontal structure, throttled exchange, endogenous inequality | 2026-09-01 | built · round 8: 0-of-5 by producer extinction — a founding cost at this dose (logbook/0044); knobs kept for the movement question |
 | [D062](#d062) | The satiation cap — a filter feeder's mouth gets its physical limit | 2026-09-01 | built · round 8: unanswered — every clean arm ran away before a chain formed (logbook/0044) |
 | [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · earned its keep in round 8: failed the flagship's sterile cohort at the cut (logbook/0044) |
+| [D064](#d064) | Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column | 2026-09-02 | decided · round 10, to build |
 
 ---
 
@@ -2869,3 +2870,65 @@ nothing is retroactively changed by the tightening). Every future scoring report
 lineage's last-birth time alongside the streak. The clause is computable two ways —
 `lineage.jsonl` (exact) or a births-in-window read of the absorptive columns — and the
 pre-registration must name which it uses.
+
+### D064
+**Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column** · 2026-09-02
+
+Owner's design, ruled on the agent's proposal after rounds 8 and 9 scored zero passes
+between them (logbook/0044, 0045). The diagnosis those rounds converged on: every body
+carries the same excess density (D044) whatever its size, so the whole population sinks
+its whole life and holds the photic band only because breeding is concentrated where the
+light is. A matter drought pauses births for ~1,500 s, the standing crowd sinks out of
+the light together, and the world starves in the dark with its larder full — three worlds
+died exactly so, one of them an untreated control. Float tissue (D049) works but selection
+prices it out to ~1% between crises, because a floatless producer breeds cheaper before it
+sinks out; in r9-s2 the literal last survivor was a floater holding at −14.5 m. The
+treatments of rounds 8–9 metered the pantry; the patient was drowning.
+
+**The rule.** Effective excess density scales with body volume:
+
+> ρ_eff(V) = `TissueExcessDensity` × max(0, 1 − (V0 / V)^⅔)
+
+with V the phenotype's `TotalVolume` and V0 a new tunable `FluidConfig.NeutralBodyVolume`.
+At or below V0 a body is neutrally buoyant and holds its depth for free; every added cell
+above it begins to cost depth; as V → ∞ the rule converges to today's constant, so the
+worlds run to date are its large-body limit. Lift (D049/D050) is unchanged and nets against
+the scaled density exactly as before — it simply has something worth buying now. **The rule
+is universal across guilds, at the owner's explicit direction:** a plants-only version
+would leave sinking as a free elevator to the floor larder for precisely the guild that
+wants to descend; universal, descent is a priced choice — an absorber reaches the pantry
+by being *large*, paying the upkeep of the size that sinks it. Size becomes trophic
+strategy: small floaters where the light is, large sinkers where the detritus is, plankton
+against benthos as an emergent and falsifiable prediction. Growth does not exist within a
+lifetime (§5A.6), so V is fixed at birth and "growth" here means evolutionary growth across
+generations, which is what the owner asked for ("only sink when they start to evolve and add
+more matter or more cells").
+
+**Founders anywhere.** `FounderDepthSpread` becomes an env knob (`EVOSIM_FOUNDER_DEPTH`)
+and round 10 sets it to the full water column, so the world stops privileging the surface at
+founding; deep producer founders die of darkness by selection, not by rule, and a small
+absorptive founder scattered deep now *holds position* near the larder instead of
+plummeting past it. Children born beside their parents was the owner's third point and is
+already the code's behaviour (`World` gives offspring the parent's height); recorded so the
+package is complete on paper. x and z remain cosmetic outside patchy worlds — the
+layer-as-stirred-tank limitation (D061's motivation) stands and is not addressed here.
+
+**Marked as inference.** The shape is Stokes-flavoured — small particles effectively do not
+sink, sinking speed rises with size — but Stokes strictly gives velocity ∝ r²·Δρ, and folding
+the size dependence into Δρ with a ⅔ exponent is this project's simplification, chosen so one
+existing mechanism (excess density × drag) carries the whole rule with one knob. No source is
+cited for the exponent; §5A.10's rule applies and a run can vary it.
+
+**Rejected alternatives** (the agent's first draft, superseded by the owner's design):
+lighter tissue for everyone (`TissueExcessDensity` 0.02 → 0.005) — fixes the drowning but
+removes the size trade and dulls the future movement prize; cheaper lift (`WattsPerLiftUnit`
+0.05 → 0.01) — makes insurance affordable but leaves the un-physical size-blind sinking in
+place; mixed-layer turbulence — the honest physics for resuspension, deferred as new
+mechanism mid-campaign, and still the right later replacement if depth-holding proves to
+need more than buoyancy.
+
+**Default-off, bit-identical**: `NeutralBodyVolume` = 0 reproduces today's behaviour exactly
+(suite-enforced), hashed and JSON round-tripped by the two reflection tests, and rendered in
+every run header as `neutralV`/`founderDepth` tokens. Round 10: one package arm × five seeds,
+mutation 0.005 (the D056 discovery regime), no refuge, budget 30,000 s, scored under D063
+unchanged; pre-registered as logbook/0046 before launch.
