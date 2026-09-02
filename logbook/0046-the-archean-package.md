@@ -84,3 +84,46 @@ Five arms, ≤ 5 concurrent machine-wide: `r10-s1..s4` on the refreshed workers 
 (round 9's two stragglers occupy workers 2–3 and are read-only to this round), `r10-s5` as
 the first straggler ends. Headers verified against this table before any arm is believed.
 Results appended below.
+
+---
+
+## Round 10 stopped early; round 10b at area 100 (2026-09-02, owner's ruling)
+
+**What the first 4,000 s said.** V1 and V2 both passed (headers exact; every arm diverged
+from its round-6 twin at t=100). Then the named risk (a) arrived at once in all five seeds:
+mean depth −1.2 to −2.4 m (against −20 m in every earlier world — the rule reached the
+physics decisively, and the population became a surface film), populations of 3,900–5,300
+at t≈3,400–4,600 where round-6 controls held 1,000–1,600, and 300,000–800,000 refused
+conceptions per sample. On that trajectory every seed hits the 8,000 ceiling by t≈6,000–7,000
+and the round censors itself — the reading pre-registered above as "W2 fails by runaway".
+
+**The owner's reading, and the ruling.** The ceiling is an instrument limit, not a world
+outcome; exceeding it is not wrong, only unaffordable (throughput is population). The world
+has real limits — light through shading, matter through D048 — but no mortality other than
+starvation and age, so a bloom overshoots them, and at area 400 the overshoot sits above
+what the machine can simulate. Area is the carrying capacity and the only thing that sets
+one (DESIGN.md §5A.2b), so the same world at 100 m² should hold a quarter of the bodies for
+the same per-square-metre dynamics — the ceiling becomes 32,000-equivalent and the arms run
+about four times faster. Round 5b rejected small dishes (logbook/0040) for "shading-driven
+darkness and irreversible sinking" — under the old physics, where every body sank; D064
+removes exactly that, so the objection is retested rather than deferred to. Owner: *"if we
+can achieve our goal in a smaller aquarium, we can always make it bigger later."*
+
+**Round 10 is censored early by this ruling** — the five arms were stopped at t≈4,200–4,900
+(their reports carry no footer; every completed row stands) and are read as the runaway
+signal above, not as outcomes. Scored: 0 of 5, censored.
+
+**Round 10b.** `r10b-s1..5`: the package exactly as in the table above with one change —
+`EVOSIM_AREA` **100** (was 400). Founders stay at 40, so founding density is 4×; the column
+stays 60 m deep, so the deep volume shrinks with the area. Dose and all other knobs unchanged
+(V0 0.25, founder depth 60, mutation 0.005, no refuge). There is no bit-identical control at
+area 100 — the area binds at t=0 — so the comparison set is round 6's world *per square
+metre*, plus round 5b's area-100 arms as the old-physics reference. V1: headers carry
+`area 100 m2` and the round-10 tokens; V3–V4 unchanged; V2 is replaced by a t=100 diff
+against `r10-sN` (must differ — the area binds from the first step). **Predictions W1–W6
+carry over unchanged**, with one addition: **W7 — the bloom equilibrates below the ceiling**:
+at least 3 of 5 seeds reach budget without runaway, `alive` levelling where canopy closure
+sets it rather than where the instrument does. If W7 fails at area 100 the bloom is not a
+question of dish size and the light economy is the next conversation. Same budget, wall,
+ceiling and scoring rule. Six arms concurrent for a few hours (r9-s5 still finishing on
+worker 3); the five 10b worlds are a quarter the size, so the load is below round 8's.
