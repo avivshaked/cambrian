@@ -1,68 +1,88 @@
-# Proposal: round 10 — stop the drowning
+# Proposal: round 10 — the Archean package (size-dependent buoyancy)
 
-*2026-09-02. Agent proposal for the owner's ruling; absorbed into DECISIONS.md on decision,
-then deleted. Round 9's last two arms are still running, but its verdict is formally
-determined (≤2 of 5) and nothing they do changes the diagnosis below.*
+*2026-09-02, second draft — the first draft's L1/L2/L3 knob levers are superseded by the
+owner's design, which this file makes concrete for ruling. Absorbed into DECISIONS.md on
+decision, then deleted.*
 
-## The diagnosis this proposal rests on
+## The diagnosis (unchanged from draft 1)
 
-Rounds 8 and 9 scored zero passes between them, and the failure analysis
-([0044](logbook/0044-three-medicines.md) results,
-[0045](logbook/0045-the-dose-and-the-dice.md)) converged on a mechanism that none of the
-treatments touched:
+Rounds 8–9: zero passes. Three worlds died with full larders when a matter drought paused
+births and the standing population — uniformly denser than water — sank out of the photic
+band and starved in the dark ([0044](logbook/0044-three-medicines.md) results). Float
+tissue exists and works, but selection prices it out to ~1% between crises because a
+floatless producer breeds cheaper before it sinks out. Chain arrival is drought-gated:
+absorptive mutants appear and cannot breed through the drought that surrounds them.
 
-1. **Every creature is denser than water (`ExcessDensity` 0.02 kg/m³) and sinks its whole
-   life.** The population holds the photic band only because births keep replenishing the
-   top — birth is the only upward flux selection maintains.
-2. **A matter drought pauses births; the standing crowd sinks out of the light in
-   ~1,500 s; the world is then unrecoverable** — creatures starve in the dark while free
-   matter accumulates above them. Three worlds died exactly this way with full larders
-   (r9-s1, r9-s2, control d056-s3; depth means sliding −20→−49, −20→−37, −65→−98 m).
-3. **The buoyancy escape hatch exists and selection throws it away.** Float tissue costs
-   upkeep plus `LiftCost` 0.05 W per unit lift, permanently; a floatless producer breeds
-   cheaper before it sinks out. Founders carry float at 50%; evolved populations hold it
-   at ~1%. In r9-s2 the literal last survivor was a floater holding at −14.5 m — the
-   insurance works, but one insured survivor is not a population.
-4. Downstream of this, **chain arrival is drought-gated, not mutation-gated**: 5× mutation
-   supplied absorptive singletons all round and none could breed through a drought.
+## The owner's design (2026-09-02), in three parts
 
-The treatments of rounds 8–9 metered the larder. The patient was drowning.
+1. **Founders spawn anywhere in the water column** — any (x, y, z) above the floor, not
+   just the top 20 m (`FounderDepthSpread` today). The world stops privileging the
+   surface; deep producer founders die of darkness by selection, not by rule. (x and z
+   remain cosmetic outside patchy worlds — the layer-as-stirred-tank limitation stands and
+   is not addressed here.)
+2. **Neutral buoyancy at founder scale, for every guild; sinking comes with growth.** A
+   small body holds its depth for free. Adding cells and matter adds weight — so growth
+   is what costs you your depth, and holding a large body in the light requires float
+   tissue (or, on the movement frontier, swimming). This applies to absorbers too, at the
+   owner's explicit direction: under a plants-only rule, sinking would remain a free
+   elevator to the floor larder for exactly the guild that wants to descend. Universal,
+   the rule makes descent a priced choice — an absorber reaches the pantry by *growing*,
+   paying the upkeep of the size that sinks it.
+3. **Children born beside their parents** — already the code's behaviour
+   (offspring inherit the parent's height, World.cs `SpawnOffspring`); recorded here so
+   the package is complete on paper.
 
-## The levers (all world rules — the owner's call)
+What this buys, mechanically: the drowning death becomes survivable (the small fraction
+rides out a drought holding the light and refounds); float tissue gains a real
+evolutionary edge (it is the price of *size*, not an insurance policy against a crisis
+selection has never met); size becomes trophic strategy (small floaters up where the
+light is, large sinkers down where the detritus is — plankton versus benthos as an
+emergent, falsifiable prediction); and deep-scattered absorptive founders can hold
+position near the larder, giving establishment an honest shot.
 
-| # | lever | change | mechanism | cost |
-|---|---|---|---|---|
-| L1 | **Lighter tissue** | `EVOSIM_EXCESS_DENSITY` 0.02 → 0.005 | sinking 4× slower; a 1,500 s drought costs ~3 m of depth instead of ~12 — survivable, recoverable | one knob, zero code |
-| L2 | **Cheap float** | `EVOSIM_LIFT_COST` 0.05 → 0.01 | insurance becomes affordable; selection can *keep* float instead of pricing it out between crises — the world stays buoyancy-Darwinian rather than buoyancy-free | one knob, zero code |
-| L3 | **Mixed-layer turbulence** | new mechanism: vertical stirring of passive bodies in the top N m | physically the honest one (real mixed layers resuspend plankton) and preserves depth as a live axis | new code + tests mid-campaign |
+## The proposed contract (for ratification — the formula IS the world rule)
 
-Real plankton use all three: density tricks (L1), gas vacuoles (L2), and turbulence (L3).
+Effective excess density scales with body volume:
 
-## Recommendation
+    rho_eff(V) = TissueExcessDensity * max(0, 1 - (V0 / V)^(2/3))
 
-**Two arms, one round: L1 alone (`r10a`) and L2 alone (`r10b`), five seeds each, scored
-under the unchanged D063 rule; mutation stays at 0.005 (the ratified discovery regime) so
-arrival gets its chances once droughts stop being fatal. No refuge — the pantry meter goes
-back on the shelf until a chain exists to need it.** L3 is the better physics but the
-wrong week for new code; if L1 or L2 passes, L3 can later replace it as the honest
-version of the same fix.
+- `V0` — new tunable `NeutralBodyVolume`: the volume at or below which a body is
+  neutrally buoyant. Proposed default: the volume of a one-cell founder body, so a
+  founder floats in place by construction and every added cell begins to cost.
+- At `V = V0`: neutral. At `V = 8·V0`: 75% of today's excess density. As `V → ∞` the
+  rule converges to today's constant — the current worlds are the large-body limit, so
+  the change is backward-compatible in spirit as well as in code.
+- The ⅔ exponent is a modeling choice shaped by Stokes' law (sinking speed rises with
+  size; small particles effectively do not sink), **marked as inference, not citation**:
+  Stokes strictly gives velocity ∝ r²·Δρ, and folding the size dependence into Δρ with
+  this exponent is our simplification, chosen so one existing mechanism (excess density ×
+  drag) carries the whole rule.
+- Float (`MorphNode.Lift`, D049) is unchanged: lift still nets against weight and is
+  still billed per unit held. It simply has something worth buying now.
+- Config: new knob default-off (`NeutralBodyVolume` = 0 reproduces today's behaviour
+  bit-for-bit; suite-enforced like every prior world knob), env var, header token, hash
+  and JSON round-trip via the two reflection tests.
 
-Why not both knobs in one arm: rounds 8–9 taught (expensively) that a two-mechanism arm
-that fails teaches nothing. One lever per arm, and the failure signatures stay readable.
+## Round-10 design
 
-Named risks, two-sided: (a) a world that no longer drowns may instead **run away** — the
-8,000 ceiling censored four arms in round 8, and weakening the conveyor strengthens
-producer booms; if both arms censor by ceiling, the next conversation is about the light
-economy, not buoyancy. (b) L1 dulls the future movement prize (swimming up matters less
-when nothing sinks fast); L2 keeps it sharp — a swimmer pays for depth control only when
-needed, which is precisely the argument that movement should eventually pay. If the arms
-tie, that tiebreak favours L2.
+One treatment arm set: the package (founders full-column + size-dependent buoyancy),
+five seeds, mutation 0.005 (ratified discovery regime), no refuge (the pantry meter goes
+back on the shelf until a chain exists to need it), budget 30,000 s, wall 600 min,
+scored under the unchanged D063 rule. Controls remain the round-6 arms by bit-identity.
+Pre-registration entry before launch, as always.
+
+Named risks, two-sided, before any data: (a) a world of tiny neutral floaters may bloom
+permanently — runaway to the ceiling, everything censored; canopy shading (logbook/0028)
+should self-limit it, but that is a belief, not a measurement, and if both this and the
+round-8 B arms censor by ceiling the next conversation is about the light economy.
+(b) If chains still fail to arrive with droughts survivable and the larder reachable by
+growth, arrival was gated by something still unmeasured, and the diagnosis reopens.
 
 ## What I need from you
 
-1. A ruling on the round-10 design (L1+L2 as proposed / different doses / L3 instead /
-   something else).
-2. Confirmation that dropping the refuge for round 10 is acceptable — it changes the
-   answer's shape from "the refuge dose was right" to "the world stops drowning", which I
-   read as squarely inside your "get the goal met and move on" priority, but it is a
-   direction change and therefore yours.
+1. Ratify or amend the contract above — especially the formula shape and the `V0`
+   default (one-cell founder volume).
+2. Confirm founders-anywhere applies to the full column above the floor (it interacts
+   with the buoyancy rule as described).
+3. Green-light the round-10 design (single package arm × 5 seeds, refuge shelved,
+   mutation 0.005).
