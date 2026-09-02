@@ -127,3 +127,49 @@ sets it rather than where the instrument does. If W7 fails at area 100 the bloom
 question of dish size and the light economy is the next conversation. Same budget, wall,
 ceiling and scoring rule. Six arms concurrent for a few hours (r9-s5 still finishing on
 worker 3); the five 10b worlds are a quarter the size, so the load is below round 8's.
+
+---
+
+## Round 10b: W7 fails — no dish is small enough (2026-09-02)
+
+V1 held (`area 100 m2` beside the D064 tokens, one new hash `d1e4670ad3928db0`). The five
+worlds were surface films again (−1 to −3 m) and the matter cap arrived on schedule: 85–90%
+of the 6,000 units locked in bodies by t≈4,000. What the smaller dish could not change is
+the divisor. Mean matter per body, every 1,000 s:
+
+| arm | 1k | 2k | 3k | 4k | 5k | 6k |
+|---|---|---|---|---|---|---|
+| s1 | 13.5 | 5.9 | 3.5 | 2.2 | | |
+| s2 | 14.4 | 6.2 | 3.5 | 2.3 | | |
+| s3 | 9.6 | 3.8 | 2.2 | 1.6 | | |
+| s4 | 16.1 | 8.7 | 5.7 | 4.2 | 3.3 | 2.7 |
+| s5 | 14.0 | 8.0 | 4.5 | 2.9 | 2.1 | |
+
+Halving every ~1,100 s in every seed, no floor in sight, and the count — 6,000 ÷ that
+divisor — climbing past 3,000 at t≈5,000 with the bloom still accelerating. Round 10 at
+area 400 had shown the same ratchet (25 → 4.1 units per body over 3,200 s), so the two dish
+sizes agree: **D064 works, and the strategy it makes free is to get small.** The world is
+reproducing real biology — picoplankton dominate nutrient-starved surface water for the same
+surface-to-volume reason — and the computer cannot afford it. **W7 falsified.** The arms are
+read to their last row (stopped at the launch of 10c, or by the ceiling, whichever came
+first) and scored censored: 0 of 5. Chains: singletons only, no inherited birth in any arm.
+
+## Round 10c: the fixed matter cost (D065), pre-registered before launch
+
+The owner's ruling on the agent's recommendation: a body costs a minimum of matter to exist.
+`r10c-s1..5` = the 10b configuration exactly plus `EVOSIM_MATTER_PER_CREATURE` **3**. Dose
+arithmetic, stated first: 6,000 units ÷ (3 + a proportional share now at 1.6–2.7) caps the
+count near 1,100–1,400 bodies whatever the bodies weigh, against the 8,000 ceiling; the
+bloom should level where matter runs out, not where the instrument does. V1: headers carry
+`matter 0.5/J + 3 each from 1/m3` beside the 10b tokens. V2: differs from `r10b-sN` at the
+first conception (the fixed term binds at the first child, not at t=0 — a token-identical
+prefix through founding is expected and is not a failure). V3–V4 as above.
+
+Predictions W1–W6 carry over; W7 is re-posed as **W7′ — the count levels below the
+ceiling** in ≥ 3 of 5 seeds, at or under ~1,500, with matter per body no longer the thing
+that sets it. One more, because this is the first world where a bloom can end without
+killing everyone: **W8 — the first drought resolves by turnover, not by drowning**: after
+the matter cap binds, births resume within one senescence time (10,000 s) as deaths return
+matter, with `depth m` unchanged. If W7′ fails at a fixed cost of 3, the proportional share
+was not the divisor's problem and the diagnosis reopens at the conception price itself.
+Same budget, wall, ceiling, seeds and scoring rule.

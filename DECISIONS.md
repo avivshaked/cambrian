@@ -86,7 +86,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D061](#d061) | The patchy world — horizontal structure, throttled exchange, endogenous inequality | 2026-09-01 | built · round 8: 0-of-5 by producer extinction — a founding cost at this dose (logbook/0044); knobs kept for the movement question |
 | [D062](#d062) | The satiation cap — a filter feeder's mouth gets its physical limit | 2026-09-01 | built · round 8: unanswered — every clean arm ran away before a chain formed (logbook/0044) |
 | [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · earned its keep in round 8: failed the flagship's sterile cohort at the cut (logbook/0044) |
-| [D064](#d064) | Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column | 2026-09-02 | decided · round 10, to build |
+| [D064](#d064) | Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column | 2026-09-02 | built · round 10/10b: the rule reached the physics (surface film, no drowning); the world answered with ever-smaller bodies and ran away (logbook/0046) |
+| [D065](#d065) | The fixed matter cost — a body costs a minimum of matter to exist, so the count cannot ratchet through shrinking | 2026-09-02 | decided · round 10c, to build |
 
 ---
 
@@ -2932,3 +2933,49 @@ need more than buoyancy.
 every run header as `neutralV`/`founderDepth` tokens. Round 10: one package arm × five seeds,
 mutation 0.005 (the D056 discovery regime), no refuge, budget 30,000 s, scored under D063
 unchanged; pre-registered as logbook/0046 before launch.
+
+### D065
+**The fixed matter cost — a body costs a minimum of matter to exist, so the count cannot ratchet through shrinking** · 2026-09-02
+
+Rounds 10 and 10b (logbook/0046) showed D064 working exactly as designed and the world
+answering it with the one strategy the rule makes free: **get small.** Under D064 a small
+body floats in place and, under D048's proportional matter price, costs almost nothing to
+conceive; selection halved mean body matter every ~1,100 s in all ten arms (25 → 4 units per
+body at area 400; 14 → 1.6 at area 100), and the population count — bounded by total matter
+÷ matter per body — rose without a floor toward the instrument ceiling. Shrinking the dish
+(area 400 → 100, the owner's ruling for round 10b) scaled the cap by four and the bodies kept
+dividing it; no dish is small enough against a divisor that goes to zero. The world is not
+wrong — nutrient-starved surface water dominated by ever-smaller cells is what real
+oligotrophic oceans do, for the same surface-to-volume reason — but the computer cannot
+afford it, and the goal rule does not need it.
+
+**The rule.** A child's matter price becomes
+
+> `MatterPerTissueJoule × tissue + MatterPerCreature`
+
+with `RunConfig.MatterPerCreature` a new tunable, units of matter per body, default 0. Real
+cells carry a machinery mass that no shrinking removes; this is that, at its coarsest. The
+fixed term is locked in the body like the proportional one and returns on the same legs —
+excretion (D052) drains it, death deposits it — so the audit closes by construction. The
+cheapest-child early-out and its guard include it. Founders and inoculated creatures follow
+whatever they do today for the proportional term. It also gives D064's size axis the lower
+bound it needs: below some size a body's matter is all overhead, which is where the
+plankton-versus-benthos trade should start.
+
+**Dose for round 10c.** 3 units per body, at area 100: 6,000 units ÷ (3 + a proportional
+share now at 1.6–2.7) caps the count near 1,100–1,400 bodies whatever the bodies weigh,
+against a ceiling of 8,000. Chosen so the bloom is affordable, not so it is small — the
+count should level where matter runs out, well below the instrument.
+
+**Rejected alternatives.** Raising the ceiling (one-part bodies are cheap in physics, but
+8,000 → 20,000 puts a 30,000-s arm past the 10-hour wall for five concurrent seeds);
+lowering `InitialMatterPerCubicMetre` or the area further (both scale the cap without
+touching the divisor — the ratchet continues, only later); a hard body-size floor via
+`MinPartVolume` (a development limit dressed as ecology, and it says nothing about *why*
+small should cost).
+
+**Marked as inference.** The minimum-mass argument is a physical commonplace, uncited here;
+§5A.10 applies and the value is a run knob. Default-off, bit-identical, hashed and
+round-tripped by the reflection tests, rendered in every header as
+`matter <per J>/J + <fixed> each`. Round 10c: the D064 package at area 100 plus this,
+five seeds, scored under D063 unchanged; pre-registered in logbook/0046 before launch.

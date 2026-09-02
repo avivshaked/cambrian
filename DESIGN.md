@@ -156,6 +156,15 @@ inference-marked formula are in D064; the failure record that forced it is logbo
 results. The tunables table gains `NeutralBodyVolume`. Nothing else in this document
 changes; the worlds run before D064 are the rule's large-body limit.
 
+## 0h. Changelog — D065 (2026-09-02)
+
+One term added to D048's conception price, default-off: a child costs
+`MatterPerTissueJoule × tissue + MatterPerCreature`. Motivation in D065 — under D064 the
+world selected for ever-smaller bodies and the population count, bounded only by matter ÷
+matter-per-body, ratcheted toward the instrument ceiling at any dish size (logbook/0046).
+The fixed term is locked and returned on the same legs as the proportional one, so §5A's
+audit closes unchanged. The tunables table gains `MatterPerCreature`.
+
 ## 1. Target hardware
 
 | | |
@@ -1703,6 +1712,7 @@ without reaching `RunConfig.Hash()` is two different experiments filed under one
 | Founder lift range | `RandomGenomeOptions.Min/MaxBuoyancyLift` | Which bladders a creature can be born with. Must straddle 1, which is neutral (D050) |
 | Tissue excess density | `FluidConfig.TissueExcessDensity` | The sink every lift is denominated against, so it sets the timescale of all vertical movement. Measured: at 0.02 the organ is nearly inert, at 0.1 it is decisive (logbook/0034) |
 | Neutral body volume | `FluidConfig.NeutralBodyVolume` | The size at or below which a body floats in place (D064). 0 switches the size rule off. Sets where on the size axis the plankton-versus-benthos trade begins |
+| Fixed matter per body | `RunConfig.MatterPerCreature` | The matter a body costs to exist regardless of size (D065) — the divisor's floor in count = matter ÷ matter-per-body, without which selection for smaller bodies raises the count without bound. 0 is the world before D065 |
 
 Two things deliberately **not** tunable, and the distinction matters:
 
