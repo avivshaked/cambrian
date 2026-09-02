@@ -1,6 +1,6 @@
 # Handoff — where to pick up
 
-**Updated 2026-09-02, after rounds 8–9 scored zero and round 10 (D064) launched.** This is the one file a new agent should
+**Updated 2026-09-02, after round 10c scored (drowning cured, producers stable, no chain) and round 11 launched.** This is the one file a new agent should
 read first. It says what was being attempted, how far it got, what is queued, and exactly how
 to continue. It is a pointer, not a source of truth: the specification is `DESIGN.md`, the
 reasoning is `DECISIONS.md`, the history is `logbook/`, and the operating rules are
@@ -32,9 +32,16 @@ Float tissue works and selection discards it to ~1% between crises. Chain arriva
 drought-gated, not mutation-gated (5× mutation supplied singletons that could not breed).
 The owner's response is **D064** — size-dependent buoyancy: a founder-sized body floats in
 place, growth is what sinks you, universal across guilds so descent is a priced choice for
-detritivores too; plus founders scattered through the full column. Built, suite-green at
-399, pre-registered as logbook/0046, and running as `r10-s1..s4` (s5 queued) at the time of
-writing. The paragraph below is the pre-D064 account and stands as history.
+detritivores too; plus founders scattered through the full column. Built and run as round
+10 (logbook/0046): the drowning is cured, and the world's answer was to shrink — so D065
+(a fixed matter cost per body) bounded the count, and round 10c produced **the campaign's
+first five-of-five stable, uncensored producer worlds**. The goal's first clause is now met
+by construction; the whole remaining problem is the second trophic level, which does not
+arrive because the detritus larder fills at a drizzle (senescence too slow — round 11's
+lever) and sits 50 m below the surface where every mutant is born and, being small, stays
+(surface detritus 0.1–0.5 J/m³ against 9 in the deep; detritus sinks at 0.02 m/s and is
+out of the lit band in twenty minutes — the location gate, the likely round-12 lever). The
+paragraph below is the pre-D064 account and stands as history.
 
 **The account as of round 7, kept for the record.** Seven rounds were scored
 (logbook/0036–0042). Under D058's completed-budget rule the campaign's honest tally is
@@ -75,7 +82,8 @@ movement should ever pay). The round-8 design decision is the owner's, in discus
 | [0043](logbook/0043-the-transplant.md) | 7.5 (diagnostic) | D060: five copies of a round-6 consumer genome injected at t=8,000 into seeds 2 and 4, refuge 0 vs 1 m — paired, all four budget-complete | **The consumer is benthic** (sank to the floor in ~900 s, both seeds). Controls: established (t=9,700 / 11,300), boomed to 135 / 121, alive at budget (56 / 93) with inherit streaks of 104 / 88 samples. Treatments: starved to extinction on ~13 kJ of forbidden floor stock, zero descendants. D055 rejected as world rule; the arms are diagnostic and cannot count toward the goal. Lineage replays then found the **recruitment collapse at the peak** (every boom's bust is a sterile cohort dying on schedule) → D063's clause |
 | [0044](logbook/0044-three-medicines.md) | 8 | D061 patchy world / D062 satiation cap + toe / D055 at a 0.2 edible fraction, 5 seeds each | **0 of 15.** A: producers extinct in all five (founding cost of fragmented pools). B: every clean seed ran away before a chain formed. C: one chain (s1), wedge-censored with a sterile cohort standing — D063 failed it at the cut; s2/s4 replayed their controls full-length (refuge never bound); s3 died whole-world with its larder full. Post-hoc: **the drowning** (depth timelines) |
 | [0045](logbook/0045-the-dose-and-the-dice.md) | 9 | C at fraction 0.4 + mutation 0.005 (both pre-registered contingencies) | ≤ 2 of 5, formally failed mid-round: s1, s2 extinct by the drowning with no chain; s4 survived chainless; s3 (runaway-bound) and s5 were still running when round 10 launched. Lineage dissection falsified the age-structure reading of the births-freeze: deaths are `starved`, populations young — an energy death in the dark |
-| [0046](logbook/0046-the-archean-package.md) | 10 · **running** | D064: `NeutralBodyVolume` 0.25 m³ (founder p90), founder depth 60 m, mutation 0.005, no refuge | pre-registered W1–W6; headers and the no-replay check verified at launch. Score it when the arms end (`./scripts/analyse-arm.ps1 r10-s1 r10-s2 r10-s3 r10-s4 r10-s5`, recruitment clause from `lineage.jsonl`), append Results, update D064's index row |
+| [0046](logbook/0046-the-archean-package.md) | 10, 10b, 10c | D064 (`NeutralBodyVolume` 0.25, founder depth 60, mutation 0.005, no refuge); then area 400 → 100; then D065 (`MatterPerCreature` 3) | **10/10b censored early**: the rule reached the physics (surface film, no drowning) and the world answered by shrinking — matter per body halving every ~1,100 s, the count ratcheting toward the ceiling at any dish size. **10c: 0 of 5 — and five of five producer worlds to budget, uncensored, the first ever.** Drowning cured, count bounded at ~1,500, turnover a drizzle (mean age 13,500–15,500 s), larder crossed the bar only at the end in two seeds, chain never arrived: two gates named, rate and location |
+| [0047](logbook/0047-the-half-life.md) | 11 · **running** | senescence 10,000 → 3,000 on the 10c world (the rate lever) | pre-registered X1–X5. Early: turnover ~3× (X1), larder over 7 J/m³ by t≈10,000 (X2). Score when the arms end (`./scripts/analyse-arm.ps1 r11-s1 r11-s2 r11-s3 r11-s4 r11-s5`; recruitment clause from `lineage.jsonl`); if X4 fails with the larder full, the location gate is next — detritus sink speed, or an absorptive that can afford to be large |
 
 **The mechanism, in one paragraph.** Surface matter runs out (D048's economy — producers
 strip it), conceptions are refused, births stop. From there one of two things is
