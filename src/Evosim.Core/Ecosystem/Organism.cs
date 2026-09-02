@@ -116,11 +116,13 @@ namespace Evosim.Core
         public int Patch { get; internal set; }
 
         /// <summary>
-        /// Matter still locked in this body, in <see cref="World.Matter"/>'s units — D048, D052.
+        /// Matter still locked in this body, in <see cref="World.Matter"/>'s units — D048, D052,
+        /// D065.
         /// </summary>
         /// <remarks>
-        /// Set once at birth to what the parent paid for this body's tissue
-        /// (<see cref="RunConfig.MatterPerTissueJoule"/> × tissue) and falls from there as the
+        /// Set once at birth to the whole price the parent paid for this body
+        /// (<see cref="RunConfig.MatterPerTissueJoule"/> × tissue, plus D065's fixed
+        /// <see cref="RunConfig.MatterPerCreature"/>) and falls from there as the
         /// body excretes (<see cref="RunConfig.ExcretionPerJoule"/>); death returns whatever is
         /// left. Zero for a floor founder — a founder's tissue was never priced in matter, so it
         /// has none to give back, and both the excretion cap and the death payout read correctly

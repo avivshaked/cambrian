@@ -533,6 +533,178 @@ namespace Evosim.Core.Tests
                 $"matter drifted by {drift} with remineralisation running — something creates or destroys it");
         }
 
+        // ------------------------------------------------------------ D065: fixed matter cost
+
+        [Fact]
+        public void MatterIsConservedWithAFixedPerCreatureCost()
+        {
+            // The same guard as MatterIsConservedBecauseNothingCreatesIt, run over the leg D065
+            // adds. The fixed term is charged at conception and has to come back the same way the
+            // proportional one does — through excretion while alive and the death deposit — so
+            // free matter + MatterInBodies (both summed by StandingMatter) must still equal what
+            // the column was seeded with. A fixed term that were charged and not locked would
+            // leak on every birth, and leak fastest in exactly the crowded world it exists to
+            // bound.
+            var config = MatterWorld(0.5f, 1f);
+            config.MatterPerCreature = 3f;
+            var world = new World(config, seed: 1);
+
+            double atStart = 0d;
+            for (float t = 0f; t < 400f; t += 1f)
+            {
+                world.Step(1f);
+                if (t == 0f) atStart = world.StandingMatter;
+            }
+
+            double drift = world.StandingMatter - atStart;
+
+            _output.WriteLine(
+                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}), " +
+                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
+
+            Assert.True(world.Births > 0, "nothing bred, so the fixed term was never charged");
+
+            Assert.True(
+                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
+                $"matter drifted by {drift} with a fixed per-creature cost — something creates or destroys it");
+        }
+
+        [Fact]
+        public void MatterIsStillConservedWithTheFixedCostAndExcretionTogether()
+        {
+            // The two knobs meet on one field: excretion drains LockedMatter, and from D065 that
+            // balance starts higher than the tissue price. Run together because the cap is
+            // min(locked, rate·upkeep) — if the fixed term reached the Take but not LockedMatter,
+            // this is where the mismatch shows as a drift rather than as a wrong number nobody
+            // reads.
+            var config = MatterWorld(0.5f, 1f);
+            config.MatterPerCreature = 3f;
+            config.ExcretionPerJoule = 0.05f;
+            var world = new World(config, seed: 1);
+
+            double atStart = 0d;
+            for (float t = 0f; t < 400f; t += 1f)
+            {
+                world.Step(1f);
+                if (t == 0f) atStart = world.StandingMatter;
+            }
+
+            double drift = world.StandingMatter - atStart;
+
+            _output.WriteLine(
+                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}), " +
+                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
+
+            Assert.True(
+                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
+                $"matter drifted by {drift} with the fixed cost and excretion together");
+        }
+
+        [Fact]
+        public void AChildLocksTheProportionalPricePlusTheFixedOne()
+        {
+            // D065's arithmetic, read off the creatures themselves. Excretion is off, so
+            // LockedMatter cannot have moved since conception and every living child must hold
+            // exactly what it was charged. Founders are skipped: they never paid, so they hold 0
+            // and would drag the assertion onto a creature the rule does not describe.
+            var config = MatterWorld(perTissueJoule: 0.5f, initialPerCubicMetre: 5f);
+            config.MatterPerCreature = 3f;
+            Assert.Equal(0f, config.ExcretionPerJoule);
+
+            var world = new World(config, seed: 1);
+            for (float t = 0f; t < 300f; t += 1f) world.Step(1f);
+
+            Assert.True(world.Births > 0, "nothing bred, so LockedMatter was never set on anything");
+
+            int checkedCount = 0;
+            foreach (Organism creature in world.Living)
+            {
+                if (creature.ParentId < 0) continue;
+
+                Fixtures.AssertClose(
+                    config.MatterPerTissueJoule * creature.TissueJoules + config.MatterPerCreature,
+                    creature.LockedMatter,
+                    1e-3f);
+                checkedCount++;
+            }
+
+            Assert.True(checkedCount > 0, "no reproduction-born creature survived to check");
+        }
+
+        [Fact]
+        public void AFixedCostAloneStillCharges()
+        {
+            // The proportional term at 0 and the fixed term alone: the early-out guard used to
+            // read MatterPerTissueJoule only, so a world priced purely per creature would have
+            // skipped straight past the stock check and bred for free. Every child must hold
+            // exactly the fixed amount, and matter must still be conserved.
+            var config = MatterWorld(perTissueJoule: 0f, initialPerCubicMetre: 5f);
+            config.MatterPerCreature = 2f;
+
+            var world = new World(config, seed: 1);
+            double atStart = 0d;
+            for (float t = 0f; t < 300f; t += 1f)
+            {
+                world.Step(1f);
+                if (t == 0f) atStart = world.StandingMatter;
+            }
+
+            Assert.True(world.Births > 0, "nothing bred");
+
+            int checkedCount = 0;
+            foreach (Organism creature in world.Living)
+            {
+                if (creature.ParentId < 0) continue;
+                Fixtures.AssertClose(2f, creature.LockedMatter, 1e-3f);
+                checkedCount++;
+            }
+
+            Assert.True(checkedCount > 0, "no reproduction-born creature survived to check");
+
+            double drift = world.StandingMatter - atStart;
+            Assert.True(
+                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
+                $"matter drifted by {drift} with only a fixed per-creature cost");
+        }
+
+        [Fact]
+        public void TheCheapestPossibleChildIncludesTheFixedCost()
+        {
+            // CheapestPossibleChildMatter is a private lower bound on any child's price, and the
+            // contract in its own remark is that no conception is refused that the full check
+            // would have allowed. Read here through the only public consequence it has: a layer
+            // holding less than the fixed term alone can afford no child at all, so a world with
+            // no matter in it must block every conception rather than let one through the
+            // early-out. Paired with a zero-fixed-cost control, because a world that blocks
+            // everything for some other reason would pass the first half alone.
+            var barren = MatterWorld(perTissueJoule: 0f, initialPerCubicMetre: 0f);
+            barren.MatterPerCreature = 1f;
+            var blocked = new World(barren, seed: 1);
+            for (float t = 0f; t < 200f; t += 1f) blocked.Step(1f);
+
+            var free = MatterWorld(perTissueJoule: 0f, initialPerCubicMetre: 0f);
+            var unblocked = new World(free, seed: 1);
+            for (float t = 0f; t < 200f; t += 1f) unblocked.Step(1f);
+
+            _output.WriteLine(
+                $"fixed 1 in an empty column: {blocked.Births} births, " +
+                $"{blocked.ConceptionsBlockedByMatter} blocked; " +
+                $"fixed 0: {unblocked.Births} births, {unblocked.ConceptionsBlockedByMatter} blocked");
+
+            Assert.Equal(0f, new RunConfig().MatterPerCreature);
+
+            Assert.True(
+                unblocked.ConceptionsBlockedByMatter == 0,
+                "the control world blocked a conception on matter with both knobs at 0");
+
+            Assert.True(unblocked.Births > 0, "the control world never bred, so it proves nothing");
+
+            Assert.True(
+                blocked.ConceptionsBlockedByMatter > 0,
+                "a column with no matter in it allowed conceptions despite a fixed per-creature cost — " +
+                "the cheapest-child bound does not include the fixed term");
+        }
+
         [Fact]
         public void NutrientRemineralisationPerSecondReachesTheArithmetic()
         {

@@ -197,8 +197,12 @@ namespace Evosim.Core
                         if (rate < cheapestPerCubicMetre) cheapestPerCubicMetre = rate;
                     }
 
+                    // D065's fixed term is added outside the tissue product, not folded into it:
+                    // it is what a body costs *before* anything is proportional to its size, so
+                    // the smallest possible child still cannot be cheaper than this.
                     _cheapestChildMatter = Config.MatterPerTissueJoule *
-                        Config.Development.MinPartVolume * cheapestPerCubicMetre;
+                        Config.Development.MinPartVolume * cheapestPerCubicMetre +
+                        Config.MatterPerCreature;
                 }
 
                 return _cheapestChildMatter;
@@ -717,7 +721,7 @@ namespace Evosim.Core
             // cannot afford the smallest child that could exist, no mutation of this genome can
             // be afforded either, and building one to find that out is the dominant cost in a
             // matter-limited world.
-            if (Config.MatterPerTissueJoule > 0f &&
+            if ((Config.MatterPerTissueJoule > 0f || Config.MatterPerCreature > 0f) &&
                 Matter.StockInLayer(Matter.LayerOf(parent.HeightY), parent.Patch) < CheapestPossibleChildMatter)
             {
                 ConceptionsBlockedByMatter++;
@@ -742,7 +746,10 @@ namespace Evosim.Core
             // parent with sunlight to spare and nothing dissolved in the water around it does not
             // breed. Drawn from the parent's own layer, so success at a depth depletes that
             // depth — the negative feedback the world previously had nowhere at all.
-            float matterPrice = Config.MatterPerTissueJoule * tissue;
+            // D065 adds the fixed term. Two terms, one price: everything downstream — the stock
+            // check, the Take, LockedMatter, and therefore excretion and the death deposit — sees
+            // a single number and carries the fixed part without knowing it is there.
+            float matterPrice = Config.MatterPerTissueJoule * tissue + Config.MatterPerCreature;
 
             if (matterPrice > 0f)
             {

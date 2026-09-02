@@ -207,6 +207,12 @@ namespace Evosim.Sim.EditorTools
             float matterPerTissue = Env("EVOSIM_MATTER_PER_TISSUE", 0f);
             float initialMatter = Env("EVOSIM_MATTER_INITIAL", 1f);
 
+            // D065. What a body costs in matter before any of it is proportional to size. 0 is the
+            // pre-D065 world, where a lineage can buy one more individual by making every
+            // individual smaller and head-count has no ceiling; above 0 the population is bounded
+            // by total matter / (fixed + proportional) however small bodies get.
+            float matterPerCreature = Env("EVOSIM_MATTER_PER_CREATURE", 0f);
+
             // D049. Chance a tail-less founder is born with a gas bladder, and what holding lift
             // costs. 0 is a world where buoyancy has to be *found* by mutation rather than given
             // — which of those happened is most of what D049 is trying to measure, so it shows in
@@ -313,6 +319,7 @@ namespace Evosim.Sim.EditorTools
             config.Genome.MinLinkPower = Math.Min(minPower, maxPower);
             config.Current.Speed = currentSpeed;
             config.MatterPerTissueJoule = matterPerTissue;
+            config.MatterPerCreature = matterPerCreature;
             config.InitialMatterPerCubicMetre = initialMatter;
             config.Genome.FounderFloatChance = floatChance;
             config.FounderDepthSpread = founderDepth;
@@ -387,7 +394,14 @@ namespace Evosim.Sim.EditorTools
                 " · excessDensity " + excessDensity + " kg/m3" +
                 " · neutralV " + neutralVolume + " m3" +
                 " · founderDepth " + founderDepth + " m" +
-                " · matter " + matterPerTissue + "/J from " + initialMatter + "/m3" +
+                // D065's fixed term is rendered unconditionally, even at 0, so every header from
+                // here on has the same shape and a reader never has to know whether a missing
+                // token means "off" or "written before the knob existed". This changes the header
+                // text of a pre-D065 configuration; the world it describes is bit-identical at 0,
+                // but the configHash is not — a new tunable enters ConfigSchema and therefore
+                // Hash(), as it does for every knob this project has added.
+                " · matter " + matterPerTissue + "/J + " + matterPerCreature +
+                " each from " + initialMatter + "/m3" +
                 " · float " + floatChance + " at " + liftCost + " W/lift" +
                 (inoculateOn
                     ? " · inoculate " + inoculateCount + " @ " + inoculateAt + " s, " +

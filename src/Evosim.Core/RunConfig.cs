@@ -325,6 +325,37 @@ namespace Evosim.Core
         [Tunable("world")]
         public float MatterPerTissueJoule { get; set; }
 
+        /// <summary>
+        /// Matter every child costs on top of <see cref="MatterPerTissueJoule"/> × tissue,
+        /// regardless of how small its body is — D065.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A body costs a minimum of matter to exist.</b> Real cells carry a machinery mass —
+        /// genome, membrane, ribosomes — that no amount of shrinking removes, so the price of
+        /// being alive is not proportional to size all the way down to zero. With the price purely
+        /// proportional, a lineage can pay for one more individual by making every individual
+        /// smaller, and the population count ratchets upward without bound while the standing
+        /// tissue stays flat: matter limits mass, and nothing limits number.
+        /// </para>
+        /// <para>
+        /// <b>What the fixed term buys is a ceiling on head-count.</b> With it, the number of
+        /// bodies the world can hold is bounded by total matter / (fixed + proportional), which is
+        /// finite however small bodies get — so selection for miniaturisation runs into a wall
+        /// rather than an open ramp, and crowding becomes a cost a lineage can be selected against.
+        /// </para>
+        /// <para>
+        /// Charged at conception from the parent's own layer, locked into the child's
+        /// <see cref="Organism.LockedMatter"/> alongside the proportional part, and returned by the
+        /// same excretion (<see cref="ExcretionPerJoule"/>) and death legs — the fixed term is not
+        /// a separate substance, only a second term in one price.
+        /// </para>
+        /// <para>⚠ Unmeasured (§5A.10). <b>Zero by default</b>, so every world measured before D065
+        /// is bit-identical; a run that turns it on says so in its own header and config hash.</para>
+        /// </remarks>
+        [Tunable("world")]
+        public float MatterPerCreature { get; set; }
+
         /// <summary>Matter the world starts with, per cubic metre — D048.</summary>
         /// <remarks>
         /// Seeded uniformly through the column and thereafter conserved: reproduction removes it
