@@ -2955,9 +2955,17 @@ afford it, and the goal rule does not need it.
 > `MatterPerTissueJoule × tissue + MatterPerCreature`
 
 with `RunConfig.MatterPerCreature` a new tunable, units of matter per body, default 0. Real
-cells carry a machinery mass that no shrinking removes; this is that, at its coarsest. The
+cells carry a machinery mass that no shrinking removes; this is that, at its coarsest. ~~The
 fixed term is locked in the body like the proportional one and returns on the same legs —
-excretion (D052) drains it, death deposits it — so the audit closes by construction. The
+excretion (D052) drains it, death deposits it — so the audit closes by construction.~~
+**Amended 2026-09-02, before round 12:** the fixed term is *machinery mass* and leaves only
+with the body. Excretion (D052) drains the proportional (tissue) share alone —
+`min(LockedMatter − MatterPerCreature, k × upkeep)` — and death deposits whatever remains,
+fixed term included; the audit still closes by construction. The reason is the owner's
+ruling to raise excretion tenfold (0.001 → 0.01, round 12 arm B, logbook/0048): at that rate
+a body would otherwise excrete its fixed cost within a lifetime, living bodies would hold
+less and less, and the count cap would ratchet again through the back door — the disease
+this entry cured, returning by a second route. Bit-identical at `MatterPerCreature` = 0. The
 cheapest-child early-out and its guard include it. Founders and inoculated creatures follow
 whatever they do today for the proportional term. It also gives D064's size axis the lower
 bound it needs: below some size a body's matter is all overhead, which is where the
