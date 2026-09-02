@@ -411,6 +411,11 @@ namespace Evosim.Core
             // or nothing asks for it — see Disperse's own remarks for the K=1 bit-identity guard.
             Disperse();
 
+            // D066. Beside Disperse and under the same rules: after Metabolise so this step was
+            // priced where the creature stood, before Reproduce so an offspring is born in the
+            // patch its parent ends the step in. Draws nothing at all when the rolls are off.
+            AdvectBodies(seconds);
+
             Nutrients.Settle(seconds);
             Matter.Settle(seconds);
 
@@ -426,6 +431,15 @@ namespace Evosim.Core
             // NutrientField.Mix's remarks for why it is a separate, far slower rate.
             Nutrients.Mix(seconds, Config.NutrientMixingDiffusivity, Config.HorizontalMixingDiffusivity);
             Matter.Mix(seconds, Config.MatterMixingDiffusivity, Config.HorizontalMixingDiffusivity);
+
+            // D066. Carried after it is stirred, in the same step and against the same clock the
+            // bodies feel — diffusion is now the residual and advection the transport. A no-op
+            // unless CurrentField.AdvectFields is on, so every run before D066 is untouched. The
+            // patch width is the field's own, sqrt(area / K), which is what the horizontal Mix
+            // pass above already diffuses across: one geometry, not two.
+            Nutrients.Advect(Config.Current, ElapsedSeconds, seconds, Nutrients.PatchWidthMetres);
+            Matter.Advect(Config.Current, ElapsedSeconds, seconds, Matter.PatchWidthMetres);
+
             Reproduce();
             EnforceFloor();
             EnforceCeiling();
@@ -665,6 +679,74 @@ namespace Evosim.Core
                 {
                     creature.Patch = (creature.Patch + 1) % patches;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Carries creatures sideways with the roll they are in — D066's body half, the
+        /// counterpart of <see cref="NutrientField.Advect"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Off is off.</b> Without <see cref="CurrentField.Rolls"/>, more than one patch and a
+        /// positive speed, this returns before touching <see cref="Rng"/> at all — so every run
+        /// before D066 replays bit for bit, the same guarantee <see cref="Disperse"/> makes for
+        /// D061 and for the same reason: a knob that perturbs the RNG stream when it is off
+        /// invalidates every result on file.
+        /// </para>
+        /// <para>
+        /// <b>One extra draw per creature per step when it is on</b>, split three ways exactly as
+        /// <see cref="Disperse"/> splits its own — the bottom slice crosses to the patch behind,
+        /// the next to the patch ahead, the rest stays. That is the cost of the mechanism and it is
+        /// the same order as dispersal's; it is documented rather than avoided because the
+        /// alternative, reusing dispersal's draw, would make two independent mechanisms correlated
+        /// in a way nobody could see in the output.
+        /// </para>
+        /// <para>
+        /// <b>Both boundaries, and only outward.</b> A creature leaves through the face the water
+        /// is leaving through. Its own right-hand face carries it to <c>k+1</c> when
+        /// <see cref="CurrentField.CrossingDirection"/> there is +1; its left-hand face — the one
+        /// its neighbour <c>k-1</c> owns — carries it to <c>k-1</c> when the direction there is
+        /// -1. Under the roll's alternating parity those two are the same statement: a patch that
+        /// is an up-leg exports at the surface through both faces, and a down-leg imports through
+        /// both, which is exactly what <see cref="NutrientField.Advect"/> does with the stock
+        /// beside it. Asking only about the creature's own face instead would have carried bodies
+        /// one way while the detritus went the other, and D066's whole claim is that the two travel
+        /// together.
+        /// </para>
+        /// </remarks>
+        private void AdvectBodies(float seconds)
+        {
+            CurrentField current = Config.Current;
+            if (current == null || !current.Rolls || PatchCount <= 1 || current.Speed <= 0f) return;
+
+            int patches = PatchCount;
+            float width = Nutrients.PatchWidthMetres;
+            if (!(width > 0f)) return;
+
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+                int patch = creature.Patch;
+                int behind = (patch - 1 + patches) % patches;
+
+                // Outward through the right-hand face, and outward through the left-hand one,
+                // which belongs to the patch behind.
+                double ahead = current.CrossingDirection(creature.HeightY, ElapsedSeconds, patch, patches) > 0
+                    ? current.HorizontalCrossingFraction(
+                        creature.HeightY, ElapsedSeconds, patch, patches, seconds, width)
+                    : 0d;
+
+                double back = current.CrossingDirection(creature.HeightY, ElapsedSeconds, behind, patches) < 0
+                    ? current.HorizontalCrossingFraction(
+                        creature.HeightY, ElapsedSeconds, behind, patches, seconds, width)
+                    : 0d;
+
+                ulong seed = Rng.SeedFor(Seed, _nextIndex++);
+                float draw = new Rng(seed).NextFloat();
+
+                if (draw < back) creature.Patch = behind;
+                else if (draw < back + ahead) creature.Patch = (patch + 1) % patches;
             }
         }
 

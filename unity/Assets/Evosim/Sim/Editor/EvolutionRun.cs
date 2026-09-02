@@ -95,6 +95,22 @@ namespace Evosim.Sim.EditorTools
             float currentSpeed = Env("EVOSIM_CURRENT", 0f);
             float mixing = Env("EVOSIM_MIXING", 0f);
 
+            // D066. The current's own geometry and clock, swept from here for the first time — a
+            // cell deeper than the photic band stirs producers into the dark for half of every
+            // cycle (Sverdrup 1953), which is a real constraint and therefore one an arm has to be
+            // able to vary. Both default to RunConfig's own values, so a run that sets neither is
+            // the field every earlier number was measured in.
+            float currentPeriod = Env("EVOSIM_CURRENT_PERIOD", new RunConfig().Current.PeriodSeconds);
+            float currentCell = Env("EVOSIM_CURRENT_CELL", new RunConfig().Current.CellMetres);
+
+            // D066's own three. Rolls turn the depth-only oscillation into convection cells over
+            // D061's patches; the blink reverses their parity, which is what turns a circulation
+            // into a stirrer; advect carries detritus and matter with the water rather than
+            // leaving them to diffusion. All three off is round 11's world exactly.
+            bool currentRolls = Env("EVOSIM_CURRENT_ROLLS", 0f) > 0.5f;
+            float currentBlink = Env("EVOSIM_CURRENT_BLINK", 0f);
+            bool currentAdvect = Env("EVOSIM_CURRENT_ADVECT", 0f) > 0.5f;
+
             // D051. The floor's return leg: a first-order rate constant, s⁻¹, decaying the floor
             // layer's stock back into the layer above it. One knob for both currencies — the
             // cycle needs energy and matter both to return, and a run comparing them separately
@@ -318,6 +334,11 @@ namespace Evosim.Sim.EditorTools
             config.Genome.MaxLinkPower = maxPower;
             config.Genome.MinLinkPower = Math.Min(minPower, maxPower);
             config.Current.Speed = currentSpeed;
+            config.Current.PeriodSeconds = currentPeriod;
+            config.Current.CellMetres = currentCell;
+            config.Current.Rolls = currentRolls;
+            config.Current.RollBlinkSeconds = currentBlink;
+            config.Current.AdvectFields = currentAdvect;
             config.MatterPerTissueJoule = matterPerTissue;
             config.MatterPerCreature = matterPerCreature;
             config.InitialMatterPerCubicMetre = initialMatter;
@@ -372,7 +393,16 @@ namespace Evosim.Sim.EditorTools
                 " · metabolic step " + (Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt) +
                 " s · seed " + seed + " · idle " + idle + " W/N·m · power " + minPower + "-" + maxPower +
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
-                " · current " + currentSpeed + " m/s · mixing " + mixing + " m2/s" +
+                // D066. The current is three numbers and two switches now, not one number, and a
+                // header that named only the speed would describe five different worlds
+                // identically — which is exactly the failure the run-header rule exists to stop.
+                " · current " + currentSpeed + " m/s over " + currentPeriod + " s in " +
+                currentCell + " m cells" +
+                " · rolls " + (currentRolls
+                    ? currentBlink > 0f ? "blink " + currentBlink + " s" : "steady"
+                    : "off") +
+                " · advect " + (currentAdvect ? "on" : "off") +
+                " · mixing " + mixing + " m2/s" +
                 " · remin " + remin + " /s" +
                 " · excretion " + excretion + " /J" +
                 " · refuge " + floorRefuge + " m" +

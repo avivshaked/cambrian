@@ -43,6 +43,22 @@ namespace Evosim.Sim
         /// <summary><see cref="FluidConfig.PanelsPerAxis"/> that <see cref="DragPanels"/> was built at.</summary>
         public int DragPanelsPerAxis { get; internal set; }
 
+        /// <summary>
+        /// Which of D061's horizontal patches the creature is in — D066. 0 in a world with one
+        /// patch, which is every world before D061.
+        /// </summary>
+        /// <remarks>
+        /// <b>Carried here because the fluid needs it and knows nothing about organisms.</b> With
+        /// D066's rolls the water at a given depth is not the same water everywhere: patch <i>k</i>
+        /// is rising while <i>k+1</i> sinks, so <see cref="FluidEnvironment"/> cannot sample the
+        /// current from a depth alone. The identity lives on the instance rather than on the
+        /// <see cref="Phenotype"/> because a phenotype is a developed body and is shared by every
+        /// creature that develops the same genome. Set when the body is built and refreshed each
+        /// metabolic step by <c>Ecosystem</c>, because a creature's patch changes underneath it —
+        /// dispersal (D061) and advection (D066) both move it.
+        /// </remarks>
+        public int Patch { get; internal set; }
+
         public void Destroy()
         {
             if (Root == null) return;

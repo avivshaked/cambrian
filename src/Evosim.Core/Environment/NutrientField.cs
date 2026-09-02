@@ -620,6 +620,152 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>
+        /// Carries the stock with the water — D066. Does nothing unless
+        /// <see cref="CurrentField.AdvectFields"/> is on.
+        /// </summary>
+        /// <param name="current">The flow, or null for none.</param>
+        /// <param name="seconds">The world's clock, s — where in the flow's own cycle this is.</param>
+        /// <param name="dt">Step length, s.</param>
+        /// <param name="patchWidthMetres">
+        /// Width of one patch, m. <see cref="PatchWidthMetres"/> is the answer for a field built
+        /// over the whole world; it is a parameter so that a caller measuring something else does
+        /// not have to lie to this field about its own geometry.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>Advection, not diffusion, and the difference is the point.</b> <see cref="Mix"/>
+        /// moves stock down a gradient and cannot carry anything against one; this moves stock
+        /// wherever the water goes, uphill included. That is what makes the deep larder reachable:
+        /// detritus that sank is carried back into the light because the water it is in is going
+        /// there, not because there is less detritus up there.
+        /// </para>
+        /// <para>
+        /// <b>Upwind, and conservative by construction.</b> Every move takes a fraction of one
+        /// cell's stock and gives all of it to a neighbour — across a layer interface within a
+        /// patch, or across a patch boundary within a layer — so the total is unchanged to the
+        /// last bit of the arithmetic, at any timestep, and §5A.2's audit never has to trust this
+        /// method. The fraction is <c>min(½, |v|·dt/L)</c>, the same Courant clamp <see cref="Mix"/>
+        /// uses and for a stronger reason: a cell has two faces in each pass, so a clamp at ½ is
+        /// exactly what guarantees a cell is never asked for more than it holds and no stock can
+        /// go negative.
+        /// </para>
+        /// <para>
+        /// <b>Every move is computed from a snapshot and applied afterwards</b>, in both passes,
+        /// so nothing that arrives in a cell can be passed straight on within the same step and
+        /// the result does not depend on which end of the loop the pass started at — the same
+        /// argument, and the same buffer, as <see cref="Settle"/> and <see cref="Mix"/>.
+        /// </para>
+        /// <para>
+        /// <b>Nothing leaves the world.</b> The vertical pass only ever walks interfaces between
+        /// two real layers, and the flow is zero at the waterline and at the bottom of the roll
+        /// cell in any case; the horizontal pass wraps around D061's ring. There is no flux out of
+        /// the top, the bottom or the side, so the only way to lose stock here would be an
+        /// arithmetic one.
+        /// </para>
+        /// <para>
+        /// <b>Every adjacent pair of patches is treated alike</b>, not only the pairs that make up
+        /// a roll. In the analytic field the horizontal flow is continuous across the boundary
+        /// <i>between</i> two rolls — patches 1 and 2 of rolls (0,1) and (2,3) are a down-leg and
+        /// an up-leg facing each other, and water crosses there exactly as it does inside a roll.
+        /// Skipping those boundaries would seal alternate pairs of patches off from each other,
+        /// which is the sealed-pool failure D066 exists to end. The direction comes from the two
+        /// patches' parity via <see cref="CurrentField.CrossingDirection"/>, so it is the same
+        /// convention everywhere.
+        /// </para>
+        /// </remarks>
+        public void Advect(CurrentField current, double seconds, float dt, float patchWidthMetres)
+        {
+            if (current == null || !current.AdvectFields) return;
+            if (!(dt > 0f)) return;
+
+            // ---- vertical, within each patch, across each layer interface
+            if (LayerCount >= 2)
+            {
+                for (int i = 0; i < _sinking.Count; i++) _sinking[i] = 0.0;
+
+                // _sinking[Cell(layer, patch)] is the signed move across the interface *below*
+                // layer — positive downward, so the sign convention matches Settle's, which writes
+                // the same slot for the same interface.
+                for (int layer = 0; layer < LayerCount - 1; layer++)
+                {
+                    float interfaceY = -((layer + 1) * LayerMetres);
+
+                    for (int patch = 0; patch < PatchCount; patch++)
+                    {
+                        double w = current.VelocityAt(interfaceY, seconds, patch, PatchCount).Y;
+                        if (w == 0d) continue;
+
+                        double fraction = Math.Abs(w) * dt / LayerMetres;
+                        if (fraction > 0.5) fraction = 0.5;
+
+                        int upper = Cell(layer, patch);
+                        int lower = Cell(layer + 1, patch);
+
+                        // Upwind: rising water carries what is below it up, sinking water carries
+                        // what is above it down.
+                        _sinking[upper] = w > 0d
+                            ? -_stock[lower] * fraction
+                            : _stock[upper] * fraction;
+                    }
+                }
+
+                for (int layer = 0; layer < LayerCount - 1; layer++)
+                {
+                    for (int patch = 0; patch < PatchCount; patch++)
+                    {
+                        int upper = Cell(layer, patch);
+                        int lower = Cell(layer + 1, patch);
+
+                        _stock[upper] -= _sinking[upper];
+                        _stock[lower] += _sinking[upper];
+                    }
+                }
+            }
+
+            // ---- horizontal, within each layer, across each patch boundary of the ring
+            if (PatchCount >= 2 && patchWidthMetres > 0f)
+            {
+                for (int i = 0; i < _sinking.Count; i++) _sinking[i] = 0.0;
+
+                // _sinking[Cell(layer, patch)] is the signed move across the boundary between
+                // patch and patch+1 — positive toward patch+1, matching CrossingDirection.
+                for (int layer = 0; layer < LayerCount; layer++)
+                {
+                    float midY = -((layer + 0.5f) * LayerMetres);
+
+                    for (int patch = 0; patch < PatchCount; patch++)
+                    {
+                        int direction = current.CrossingDirection(midY, seconds, patch, PatchCount);
+                        if (direction == 0) continue;
+
+                        double fraction = current.HorizontalCrossingFraction(
+                            midY, seconds, patch, PatchCount, dt, patchWidthMetres);
+                        if (fraction <= 0d) continue;
+
+                        int here = Cell(layer, patch);
+                        int next = Cell(layer, (patch + 1) % PatchCount);
+
+                        _sinking[here] = direction > 0
+                            ? _stock[here] * fraction
+                            : -_stock[next] * fraction;
+                    }
+                }
+
+                for (int layer = 0; layer < LayerCount; layer++)
+                {
+                    for (int patch = 0; patch < PatchCount; patch++)
+                    {
+                        int here = Cell(layer, patch);
+                        int next = Cell(layer, (patch + 1) % PatchCount);
+
+                        _stock[here] -= _sinking[here];
+                        _stock[next] += _sinking[here];
+                    }
+                }
+            }
+        }
+
         /// <summary>What one layer in one patch holds, J. For reporting and for tests.</summary>
         public double StockInLayer(int layer, int patch)
         {

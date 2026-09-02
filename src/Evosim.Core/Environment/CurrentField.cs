@@ -144,6 +144,78 @@ namespace Evosim.Core
         [Tunable("current")]
         public float HorizontalRatio { get; set; } = 1f;
 
+        /// <summary>
+        /// Whether the field is organised into convection rolls over D061's patches — D066.
+        /// Default false, which is every run before D066 exactly.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Off, this class is the depth-only oscillation described above</b>: one column, the
+        /// same water everywhere at a given depth, no horizontal structure that anything can be on
+        /// one side of. On, each pair of adjacent patches is one overturning cell — patch <i>k</i>
+        /// rising while <i>k+1</i> sinks — joined by horizontal flow along the surface and along
+        /// the floor. The vertical profile is <c>sin(π·depth/H)</c> with <c>H</c> =
+        /// <see cref="CellMetres"/>, so the flow is exactly zero at the waterline by construction
+        /// (logbook/0022's flying population cannot recur through this term) and exactly zero at
+        /// the bottom of the cell.
+        /// </para>
+        /// <para>
+        /// <b>It needs at least two patches to mean anything.</b> With
+        /// <c>HorizontalPatches</c> = 1 there is no <i>k+1</i> to sink while <i>k</i> rises, so
+        /// this degenerates back to the old field and the code takes the old path — a roll needs a
+        /// neighbour, which is a statement about the world and not about the implementation.
+        /// </para>
+        /// </remarks>
+        [Tunable("current")]
+        public bool Rolls { get; set; }
+
+        /// <summary>
+        /// Seconds between reversals of the roll pattern, s. 0 (the default) never reverses.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>This is the difference between a circulation and a stirrer.</b> A steady roll is a
+        /// set of closed streamlines: a parcel goes round and round its own cell and never leaves
+        /// it, so the world is stirred within each roll and sealed between them — D061's sealed
+        /// pools again, drawn slightly differently. Flipping the parity every so often means the
+        /// parcel that rode up in patch <i>k</i> next rides down in it, streamlines from one
+        /// period do not match the next, and material lines stretch and fold. That is chaotic
+        /// advection — the standard way a smooth, prescribed, laminar flow mixes at all — and it
+        /// costs one <c>floor</c> and a sign.
+        /// </para>
+        /// <para>
+        /// ⚠ Unmeasured (§5A.10). Against the roll's own turnover time: much shorter and the flow
+        /// reverses before a parcel has gone anywhere, much longer and it is a steady roll with an
+        /// occasional surprise.
+        /// </para>
+        /// </remarks>
+        [Tunable("current", Unit = "s")]
+        public float RollBlinkSeconds
+        {
+            get => _rollBlinkSeconds;
+            set => _rollBlinkSeconds = value >= 0f && !float.IsInfinity(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(RollBlinkSeconds), value, "Must be finite and not negative.");
+        }
+
+        private float _rollBlinkSeconds;
+
+        /// <summary>
+        /// Whether the scalar fields — detritus and matter — are advected by this flow as well as
+        /// the bodies. Default false, which is every run before D066.
+        /// </summary>
+        /// <remarks>
+        /// <b>A velocity field is exactly the thing that carries a scalar field</b>, and before
+        /// D066 this one carried only bodies while detritus was left to a separate diffusion
+        /// (<see cref="NutrientField.Mix"/>) on the argument that a corpse is not a physical
+        /// object. Half right: the flow does not know the difference. Kept as its own knob because
+        /// the two are separable questions — a run may want water that moves creatures and a
+        /// larder that only diffuses, which is what every run up to round 11 measured.
+        /// </remarks>
+        [Tunable("current")]
+        public bool AdvectFields { get; set; }
+
         /// <summary>Water velocity at a depth and a time, m/s. Zero when <see cref="Speed"/> is 0.</summary>
         /// <remarks>
         /// A pure function of its arguments, with no state, so two creatures at the same depth in
@@ -186,6 +258,169 @@ namespace Evosim.Core
             float horizontal = _speed * HorizontalRatio * (float)(0.5 * (firstH + secondH));
 
             return new Float3(horizontal, vertical, -horizontal);
+        }
+
+        /// <summary>
+        /// Water velocity at a depth, a time and a patch, m/s — the roll field of D066.
+        /// </summary>
+        /// <param name="heightY">World height, m. Zero is the waterline, negative is down.</param>
+        /// <param name="seconds">The world's clock, s.</param>
+        /// <param name="patch">Which of D061's horizontal cells the sample is in.</param>
+        /// <param name="patchCount">How many there are.</param>
+        /// <remarks>
+        /// <para>
+        /// <b>Falls back to the pre-D066 field, bit for bit</b>, whenever <see cref="Rolls"/> is
+        /// off or there is only one patch — it calls the two-argument overload rather than
+        /// reproducing it, so the two cannot drift apart.
+        /// </para>
+        /// <para>
+        /// <b>The roll.</b> Each pair of adjacent patches is one overturning cell of width 2W and
+        /// depth <c>H</c> = <see cref="CellMetres"/>. The patch-averaged vertical velocity is
+        /// <c>w_k(d,t) = s_k·A(t)·sin(π·d/H)</c> at depth <c>d = -heightY</c>, with the parity
+        /// <c>s_k = +1</c> on even patches and <c>-1</c> on odd ones and <c>A(t)</c> the same pair
+        /// of incommensurate time terms the steady field uses (<see cref="TimeFactor"/>). The
+        /// horizontal is a quarter turn out of phase in depth — <c>cos(π·d/H)</c> — so it is
+        /// largest at the surface and at the bottom of the cell, where an overturning cell has to
+        /// hand its water sideways, and zero in the middle where it is going straight up.
+        /// </para>
+        /// <para>
+        /// <b>Exactly zero at both ends, by test and not by rounding.</b> <c>Math.Sin(Math.PI)</c>
+        /// is 1.2e-16 rather than 0, and a vertical velocity of 1.2e-16 at the waterline is still
+        /// a velocity: integrated over a run it is a slow, invisible, one-directional lift of
+        /// exactly the kind logbook/0022 already paid for once. The endpoints are therefore
+        /// special-cased to zero rather than computed. Below the cell — deeper than <c>H</c> — the
+        /// field is zero: the roll is a surface phenomenon and the water beneath it is still.
+        /// </para>
+        /// <para>
+        /// <b>The horizontal component is the value at this patch's <i>right-hand</i>
+        /// boundary</b>, the one between patch <c>k</c> and <c>k+1</c> — a staggered grid, w at
+        /// cell centres and u at the faces, which is what makes the field conservative when
+        /// <see cref="NutrientField.Advect"/> upwinds across those same faces. A creature in patch
+        /// <c>k</c> feels it as its drag term, which is a coarse-graining and is honest about
+        /// being one: at this resolution a patch has one number for the water beside it.
+        /// </para>
+        /// <para>
+        /// <b>An odd patch count leaves a seam</b> and this does not pretend otherwise. Parity
+        /// alternates around the ring, so with <c>K</c> even every patch's two neighbours are its
+        /// opposites and every boundary is a roll boundary; with <c>K</c> odd, patches
+        /// <c>K-1</c> and <c>0</c> share a parity and the boundary between them is two up-legs (or
+        /// two down-legs) facing each other. The field there is still conservative — stock and
+        /// bodies cross it in a well-defined direction — but it is not a roll. Prefer an even
+        /// <c>K</c>; the seam is reported rather than repaired because repairing it would mean
+        /// either a non-alternating parity (which is not a roll pattern either) or an edge in a
+        /// ring that D061 deliberately has none of.
+        /// </para>
+        /// </remarks>
+        public Float3 VelocityAt(float heightY, double seconds, int patch, int patchCount)
+        {
+            if (!Rolls || patchCount < 2) return VelocityAt(heightY, seconds);
+            if (_speed <= 0f) return Float3.Zero;
+
+            double depth = -(double)heightY;
+            if (depth < 0d || depth > _cellMetres) return Float3.Zero;
+
+            double amplitude = Parity(patch, seconds) * TimeFactor(seconds);
+            double phase = Math.PI * depth / _cellMetres;
+
+            // Exactly zero at the waterline and at the bottom of the cell — see the remarks.
+            double profile = depth <= 0d || depth >= _cellMetres ? 0d : Math.Sin(phase);
+
+            float vertical = (float)(_speed * amplitude * profile);
+            float horizontal = (float)(_speed * HorizontalRatio * amplitude * Math.Cos(phase));
+
+            return new Float3(horizontal, vertical, -horizontal);
+        }
+
+        /// <summary>
+        /// Fraction of what sits in this patch that crosses its right-hand boundary in one step
+        /// — D066's conservative upwind transfer. Zero when <see cref="Rolls"/> is off.
+        /// </summary>
+        /// <param name="heightY">World height, m. Zero is the waterline, negative is down.</param>
+        /// <param name="seconds">The world's clock, s.</param>
+        /// <param name="patch">Which of D061's horizontal cells the sample is in.</param>
+        /// <param name="patchCount">How many there are.</param>
+        /// <param name="dt">Step length, s.</param>
+        /// <param name="patchWidthMetres">Width of one patch, m — the distance to cross.</param>
+        /// <remarks>
+        /// <b>Clamped at ½, the same Courant number <see cref="NutrientField.Mix"/> uses.</b> Each
+        /// cell has two boundaries, so a clamp at ½ is what keeps a cell from being asked for more
+        /// than it holds however coarse the step — the transfer is conservative at any timestep and
+        /// non-negative at any timestep, and neither property depends on anyone choosing dt well.
+        /// The magnitude is the same for a body and for the water beside it, which is the point:
+        /// the two cross together in expectation rather than the detritus staying behind.
+        /// </remarks>
+        public double HorizontalCrossingFraction(
+            float heightY, double seconds, int patch, int patchCount, double dt, float patchWidthMetres)
+        {
+            if (!Rolls || patchCount < 2 || _speed <= 0f) return 0d;
+            if (!(dt > 0d) || !(patchWidthMetres > 0f)) return 0d;
+
+            double u = Math.Abs(VelocityAt(heightY, seconds, patch, patchCount).X);
+            double fraction = u * dt / patchWidthMetres;
+
+            return fraction > 0.5d ? 0.5d : fraction;
+        }
+
+        /// <summary>
+        /// Which way the water crosses the boundary between <paramref name="patch"/> and the patch
+        /// after it: +1 from <c>k</c> to <c>k+1</c>, -1 the other way. 0 when there is no flow.
+        /// </summary>
+        /// <remarks>
+        /// <b>The convention, stated once.</b> In a roll where <c>k</c> is the leg going up and
+        /// <c>k+1</c> the leg coming down, water leaves the up-leg at the surface and returns to it
+        /// along the floor. So in the upper half of the cell (<c>cos(π·d/H) &gt; 0</c>) the flow at
+        /// the boundary runs from the up-leg toward the down-leg, and in the lower half it runs
+        /// back. Both the parity and the amplitude carry a sign — a roll whose amplitude has gone
+        /// negative this half-cycle <i>is</i> the mirror roll — so this is simply the sign of the
+        /// horizontal velocity at that boundary, which is what keeps bodies and stock moving the
+        /// same way.
+        /// </remarks>
+        public int CrossingDirection(float heightY, double seconds, int patch, int patchCount)
+        {
+            if (!Rolls || patchCount < 2 || _speed <= 0f) return 0;
+
+            float u = VelocityAt(heightY, seconds, patch, patchCount).X;
+            return u > 0f ? 1 : u < 0f ? -1 : 0;
+        }
+
+        /// <summary>
+        /// The roll amplitude at a time, dimensionless and signed — the two incommensurate time
+        /// terms of the steady field, without the depth.
+        /// </summary>
+        /// <remarks>
+        /// <b>Not shared with the two-argument overload, and that is deliberate.</b> The steady
+        /// field is <c>sin(ky)·sin(ωt) + sin(k'y + 1)·sin(ω't)</c>, which does not factor into a
+        /// depth times a time: each term pairs its own wavenumber with its own frequency. The roll
+        /// does factor — its depth profile is fixed by the cell geometry and only the amplitude
+        /// moves — so it gets the time halves of those same two terms and the same golden-ratio
+        /// incommensurability, for the same reason: two commensurate terms share a period, the
+        /// field repeats exactly, every parcel returns home, and the mixing switches itself off at
+        /// a timescale nobody chose.
+        /// </remarks>
+        private double TimeFactor(double seconds)
+        {
+            double t = 2.0 * Math.PI * seconds / _periodSeconds;
+            return 0.5 * (Math.Sin(t) + Math.Sin(t * Incommensurate));
+        }
+
+        /// <summary>
+        /// Which way this patch's leg of the roll runs: +1 or -1, alternating with the patch index
+        /// and flipping every <see cref="RollBlinkSeconds"/>.
+        /// </summary>
+        private int Parity(int patch, double seconds)
+        {
+            // Floor, not truncation, so the blink is uniform across a clock that could be handed a
+            // negative time by a test — truncation toward zero would give the interval either side
+            // of t=0 twice the length of every other one.
+            int sign = (patch & 1) == 0 ? 1 : -1;
+
+            if (_rollBlinkSeconds > 0f)
+            {
+                double blink = Math.Floor(seconds / _rollBlinkSeconds);
+                if (Math.Abs(blink % 2d) == 1d) sign = -sign;
+            }
+
+            return sign;
         }
 
         /// <summary>
@@ -249,6 +484,12 @@ namespace Evosim.Core
         public override string ToString() =>
             _speed <= 0f
                 ? "still water"
-                : $"{_speed:0.###} m/s peak, {_cellMetres:0.#} m cells, {_periodSeconds:0.#} s period";
+                : $"{_speed:0.###} m/s peak, {_cellMetres:0.#} m cells, {_periodSeconds:0.#} s period" +
+                  (Rolls
+                      ? _rollBlinkSeconds > 0f
+                          ? $", rolls blinking every {_rollBlinkSeconds:0.#} s"
+                          : ", steady rolls"
+                      : "") +
+                  (AdvectFields ? ", advecting the fields" : "");
     }
 }

@@ -212,6 +212,11 @@ namespace Evosim.Sim
         {
             World = new World(config, seed);
             Fluid = new FluidEnvironment(config.Fluid, config.Shapes, config.Current);
+
+            // D066. The same K the world's fields were built with — read once here rather than per
+            // body per step, because HorizontalPatches cannot change during a run.
+            Fluid.PatchCount = Mathf.Max(1, (int)config.HorizontalPatches);
+
             _parent = parent;
         }
 
@@ -300,6 +305,21 @@ namespace Evosim.Sim
             WorkThisStep = work;
 
             World.Step(seconds);
+
+            // D066. After the world has stepped, because that is where a creature's patch changes
+            // — D061's dispersal and D066's advection both move it, and the physics steps that
+            // follow have to sample the water the creature is actually in. One dictionary lookup
+            // per creature per metabolic step, which is one fiftieth of the physics rate, and only
+            // in a world that has patches at all.
+            if (Fluid.PatchCount > 1)
+            {
+                IReadOnlyList<Organism> after = World.Living;
+
+                for (int i = 0; i < after.Count; i++)
+                {
+                    if (_bodies.TryGetValue(after[i].Id, out Body body)) body.Instance.Patch = after[i].Patch;
+                }
+            }
         }
 
         /// <summary>
@@ -370,6 +390,10 @@ namespace Evosim.Sim
 
             CreatureInstance instance = PhenotypeBuilder.Build(
                 creature.Phenotype, origin, _parent, World.Config.Shapes);
+
+            // D066. So the first physics step after a birth samples the right roll leg rather than
+            // patch 0's — Metabolise refreshes it from then on.
+            instance.Patch = creature.Patch;
 
             Fluid.ApplyAddedMass(instance);
 

@@ -66,6 +66,19 @@ namespace Evosim.Sim
         public double ElapsedSeconds { get; set; }
 
         /// <summary>
+        /// How many of D061's horizontal patches the world has, for <see cref="Current"/>'s rolls
+        /// — D066. 1, the default, is a world with no horizontal structure and the pre-D066 field.
+        /// </summary>
+        /// <remarks>
+        /// Set by the caller from the world's own config, like <see cref="ElapsedSeconds"/>: this
+        /// class is stepped by several harnesses, most of which have no world at all, and a
+        /// harness with one patch and a rolling current gets the depth-only field —
+        /// <see cref="CurrentField.VelocityAt(float, double, int, int)"/> says so, and says it in
+        /// one place.
+        /// </remarks>
+        public int PatchCount { get; set; } = 1;
+
+        /// <summary>
         /// Sets up the scene for water. Call once, before stepping.
         /// </summary>
         /// <param name="selfCollision">
@@ -219,8 +232,11 @@ namespace Evosim.Sim
                     // Relative to the water, not to the world. Sampled here in the gather phase
                     // because it needs the body's position, which is a Transform read and so main
                     // thread only; the compute phase past this point touches no Unity type.
+                    // D066: and at the creature's patch, because with rolls on the water at one
+                    // depth runs up in one patch and down in the next.
                     Float3 water = Current != null
-                        ? Current.VelocityAt(body.transform.position.y, ElapsedSeconds)
+                        ? Current.VelocityAt(
+                            body.transform.position.y, ElapsedSeconds, creature.Patch, PatchCount)
                         : Float3.Zero;
 
                     _velocity[at + i] = body.linearVelocity.ToFloat3() - water;
