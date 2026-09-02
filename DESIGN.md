@@ -165,6 +165,18 @@ matter-per-body, ratcheted toward the instrument ceiling at any dish size (logbo
 The fixed term is locked and returned on the same legs as the proportional one, so §5A's
 audit closes unchanged. The tunables table gains `MatterPerCreature`.
 
+## 0i. Changelog — D066 (2026-09-02)
+
+The current becomes water. `CurrentField` gains convection rolls over D061's patches
+(adjacent columns up and down, joined across the surface and the floor), a blinking parity
+for chaotic advection, and — the missing half — advection of the detritus and matter fields
+by the same flow, conservatively, with diffusion left as the residual. All default-off; the
+2026-08-26 two-standing-wave current is the one-patch, fields-untouched case. Reasoning,
+the flux scheme and the two named risks (Sverdrup's critical depth; founding under fast
+exchange) are in D066; the references it leans on are marked as unverified there and must
+be verified before this document cites them. Currents against ground structures are
+deferred to the sloped world (D054).
+
 ## 1. Target hardware
 
 | | |

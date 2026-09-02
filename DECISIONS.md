@@ -88,6 +88,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · earned its keep in round 8: failed the flagship's sterile cohort at the cut (logbook/0044) |
 | [D064](#d064) | Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column | 2026-09-02 | built · round 10c: the drowning is cured — five of five producer worlds to budget, uncensored, depth held within 3 m through 24,000 s of throttled births (logbook/0046); the chain still does not arrive |
 | [D065](#d065) | The fixed matter cost — a body costs a minimum of matter to exist, so the count cannot ratchet through shrinking | 2026-09-02 | built · round 10c: counts levelled at 1,490–1,610 against a ceiling of 8,000, uncensored (logbook/0046) |
+| [D066](#d066) | Roll cells — the water moves everything, and it stirs: one prescribed flow over patches advects bodies and fields; blinking rolls for chaotic advection | 2026-09-02 | decided · round 12, to build |
 
 ---
 
@@ -2979,3 +2980,79 @@ small should cost).
 round-tripped by the reflection tests, rendered in every header as
 `matter <per J>/J + <fixed> each`. Round 10c: the D064 package at area 100 plus this,
 five seeds, scored under D063 unchanged; pre-registered in logbook/0046 before launch.
+
+### D066
+**Roll cells — the water moves everything, and it stirs** · 2026-09-02
+
+Rounds 10c and 11 (logbook/0046, 0047) left one gate: the larder is full and the eaters
+cannot reach it. Detritus sinks at 0.02 m/s and clears the lit band in twenty minutes; the
+deep holds ~10 J/m³ and the surface 0.2; every absorptive mutant is born small at the
+surface, floats there under D064, and starves above a full pantry. The owner's reading:
+the current was supposed to move creatures on every axis *and* move matter, and does
+neither — and a single uniform flow could not stir in any case, because stirring is
+*differential* motion. "What we need is something that can stir the soup."
+
+**What the current was.** Two depth-only standing waves with provably zero mean (the
+2026-08-26 entry), advecting bodies alone; at speed 0.05 m/s and period 300 s a
+displacement of ≈2.4 m in a 25 m cell — a jiggle. Fields were deliberately left to a
+separate diffusion (`Mix`, 0.2 m²/s) on the argument that a corpse is not a physical object.
+Half right: a scalar field is exactly the thing a velocity field advects. What was true is
+that a one-column oscillation acting on a field amounts to mixing, and at 0.2 m²/s the mixing
+loses to sinking (2,900 s to cross the lit band against 1,200 s).
+
+**The rule.** One prescribed, analytic, divergence-free flow over D061's patches advects
+bodies and the scalar fields (detritus, matter) alike:
+
+- **Structure — convection rolls.** Each roll spans two adjacent patches: patch *k* flows up,
+  patch *k+1* flows down, joined by horizontal flow across the surface and the floor. With a
+  roll of width 2W over patches of width W and a cell of depth H, the stream function
+  ψ = Ψ·sin(πx/2W)·sin(πy/H) gives a patch-averaged vertical velocity w_k(y) = s_k·(Ψ/W)·sin(πy/H)
+  with s_k = ±1 alternating, and a boundary horizontal velocity u(y) = Ψ(π/H)·cos(πy/H) between
+  the patches of a roll (surface-ward in one direction, floor-ward the other). Vertical
+  velocity is zero at y = 0 by construction — the property that prevents logbook/0022's flying
+  population — and zero at the floor. With one patch the rule degenerates to today's pure
+  vertical oscillation with the fields now advected too.
+- **Time — chaotic advection.** Amplitude Ψ(t) carries the existing two incommensurate periods
+  (the golden-ratio pair), and the roll pattern *blinks*: every `RollBlinkSeconds` the parity
+  s_k flips, so a parcel that rode up in patch *k* next rides down in it. Blinking rolls stretch
+  and fold fluid exponentially — Aref's "stirring by chaotic advection" (J. Fluid Mech. 1984)
+  and the oscillating-roll experiments of Solomon & Gollub (1988); **both from memory, to be
+  verified before either enters DESIGN.md**. The stirring the owner asked for does not need
+  turbulence computed; it needs a structured flow that changes in time.
+- **Fields.** Conservative upwind transfer: at each layer interface within a patch, move
+  min(½, |w|·dt/h) of the upwind layer's stock across; at each patch boundary of a roll, per
+  layer, move min(½, |u|·dt/W) of the upwind patch's stock across. Every move takes from one
+  cell and gives to another, so every joule and every unit of matter is conserved exactly, at
+  any timestep; the Courant clamp is the one `Mix` already uses. Diffusion stays as the
+  residual, at its own knob.
+- **Bodies.** Advected by their patch's w_k(y,t) through the existing drag-relative-velocity
+  path; the horizontal crossing between patches uses D061's `Disperse` with per-step
+  probability |u(y)|·dt/W at the creature's depth, so a creature and the detritus beside it
+  cross together in expectation. Nothing in the base world reads x; with patches, x now
+  means which roll leg you are in.
+
+**Cost.** No fluid is simulated. Bodies evaluate an analytic velocity once per body per
+physics step, as today; fields cost O(patches × layers) per metabolic step — a few hundred
+operations for four patches — less than the diffusion pass. The stirred-tank layer, D061's
+motivation, dissolves without a particle being computed: a patch is no longer sealed.
+
+**What it buys.** Detritus carried up into the light and small mutants carried down to the
+larder, in the same parcel; the deep matter reservoir (≈15% of the world's matter, unreachable
+in round 10c) in circulation; light averaged over a cycle for producers — Sverdrup's critical
+depth becomes a real constraint, which is a feature and a named risk; and later, water to swim
+against, where movement has something to pay for.
+
+**Named risks, pre-registered in logbook/0048.** Sverdrup (1953): a cell deeper than the photic
+band stirs producers into the dark for half of every cycle; a 25 m cell against a 24 m band is
+marginal and these bodies carry a 3× light margin — measured, not assumed. Founding: round 8's
+patchy world died of founding cost in eight sealed pools; rolls are the opposite regime, fast
+exchange, and the result does not transfer, but it is checked. **Deferred, at the owner's
+direction:** currents against structures in the ground (the sloped world, D054) — when the
+floor has shape the flow must go around it, and a prescribed roll will not; that is a later
+decision, not this one.
+
+**Config.** `CurrentField` gains `Rolls` (bool, default false), `RollBlinkSeconds` (default 0 =
+steady parity), `AdvectFields` (bool, default false); `Speed`, `PeriodSeconds`, `CellMetres`
+gain env knobs. All defaults reproduce today's world bit for bit (suite-enforced); rendered in
+every header. Round 12: round 11's world plus this, two arms × five seeds — one patch (pure
+vertical stirring, the location gate alone) and four patches (rolls, the stirred soup).
