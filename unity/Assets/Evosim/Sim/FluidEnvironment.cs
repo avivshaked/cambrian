@@ -247,6 +247,23 @@ namespace Evosim.Sim
 
                 int at = _offset[c];
 
+                // D064: size-dependent buoyancy. The excess density a creature feels is scaled by
+                // its whole-body volume — 0 at or below FluidConfig.NeutralBodyVolume, converging
+                // to the configured constant for a large body — so sinking is something a lineage
+                // grows into rather than something every founder is born with. Computed once per
+                // creature and not per part: it is a property of the body, and a limb has no
+                // buoyancy of its own any more than a fish's tail does. The knob defaults to 0, in
+                // which case the multiplication is skipped entirely and every earlier run is
+                // reproduced bit for bit. Lift (D049/D050) is untouched and still nets against the
+                // result below.
+                float creatureExcess = excessDensity;
+
+                if (Config.NeutralBodyVolume > 0f && creature.Phenotype != null)
+                {
+                    creatureExcess *= BuoyancyModel.ExcessDensityFactor(
+                        creature.Phenotype.TotalVolume, Config.NeutralBodyVolume);
+                }
+
                 for (int i = 0; i < creature.Bodies.Length; i++)
                 {
                     ArticulationBody body = creature.Bodies[i];
@@ -280,7 +297,7 @@ namespace Evosim.Sim
                     // with was already a rocket, and no genome value meant "a little lift"
                     // (logbook/0034). This way the organ survives retuning TissueExcessDensity,
                     // which §5.2 flags as unmeasured and expects to change.
-                    float netDensity = excessDensity * (1f - lift);
+                    float netDensity = creatureExcess * (1f - lift);
 
                     // The ocean has a top. Above it light is constant and matter clamps to
                     // layer 0, so every metre gained is physically identical to floating at

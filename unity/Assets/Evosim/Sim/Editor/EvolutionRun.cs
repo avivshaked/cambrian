@@ -187,6 +187,18 @@ namespace Evosim.Sim.EditorTools
             // (logbook/0027) — and above it nothing holds station.
             float excessDensity = Env("EVOSIM_EXCESS_DENSITY", 0f);
 
+            // D064. Body volume at which tissue is neutrally buoyant, m3 — the excess density
+            // above is scaled by max(0, 1 - (V0/V)^(2/3)), so a founder-sized body barely sinks
+            // and a large one feels the full constant. 0 is off and reproduces every pre-D064 run
+            // exactly, which is why the default is 0 rather than anything founder-shaped.
+            float neutralVolume = Env("EVOSIM_NEUTRAL_VOLUME", 0f);
+
+            // How far below the waterline founders are scattered, m. RunConfig's own default,
+            // swept from here because where generation zero starts decides how much of the column
+            // it ever sees — a spread narrower than the habitable band is a hidden choice about
+            // which depths get to compete.
+            float founderDepth = Env("EVOSIM_FOUNDER_DEPTH", new RunConfig().FounderDepthSpread);
+
             // D048. Matter a child's tissue costs, per joule of it, and what the column starts
             // with per cubic metre. 0 is the world as it was before D048 — producers consuming
             // nothing, no negative feedback on occupying the best depth, every run sorting to the
@@ -274,7 +286,11 @@ namespace Evosim.Sim.EditorTools
 
             var config = new RunConfig
             {
-                Fluid = new FluidConfig { TissueExcessDensity = excessDensity },
+                Fluid = new FluidConfig
+                {
+                    TissueExcessDensity = excessDensity,
+                    NeutralBodyVolume = neutralVolume,
+                },
                 Light = new LightModel(irradiance, 12f)
                 {
                     DayNightAmplitude = dayAmplitude,
@@ -299,6 +315,7 @@ namespace Evosim.Sim.EditorTools
             config.MatterPerTissueJoule = matterPerTissue;
             config.InitialMatterPerCubicMetre = initialMatter;
             config.Genome.FounderFloatChance = floatChance;
+            config.FounderDepthSpread = founderDepth;
             config.NutrientMixingDiffusivity = mixing;
             config.NutrientRemineralisationPerSecond = remin;
             config.MatterRemineralisationPerSecond = remin;
@@ -368,6 +385,8 @@ namespace Evosim.Sim.EditorTools
                 " · clearance " + clearance +
                 " · linkPhoto " + linkPhoto +
                 " · excessDensity " + excessDensity + " kg/m3" +
+                " · neutralV " + neutralVolume + " m3" +
+                " · founderDepth " + founderDepth + " m" +
                 " · matter " + matterPerTissue + "/J from " + initialMatter + "/m3" +
                 " · float " + floatChance + " at " + liftCost + " W/lift" +
                 (inoculateOn

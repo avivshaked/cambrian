@@ -112,6 +112,29 @@ namespace Evosim.Core
         [Tunable("fluid")]
         public float TissueExcessDensity { get; set; }
 
+        /// <summary>
+        /// D064. Body volume at which tissue is neutrally buoyant, m³. 0 is off — every body feels
+        /// the full <see cref="TissueExcessDensity"/>, as it did before D064.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Above 0, the excess density a creature feels is scaled by
+        /// <see cref="BuoyancyModel.ExcessDensityFactor"/>: 0 at or below this volume, 0.75 at
+        /// eight times it, and converging to 1 for a large body. Sinking becomes something a body
+        /// grows into rather than something every body is born with, which is what a water column
+        /// does and what §5.2's constant does not.
+        /// </para>
+        /// <para>
+        /// ⚠ Unmeasured, like the density it scales, and the exponent behind it is inference rather
+        /// than a cited result — see <see cref="BuoyancyModel"/>. Calibrate against founder volume:
+        /// this is denominated in the same m³ that <c>Phenotype.TotalVolume</c> reports, so a value
+        /// near a founder's volume makes generation zero neutral and leaves growth to pay for
+        /// itself.
+        /// </para>
+        /// </remarks>
+        [Tunable("fluid", Unit = "m3")]
+        public float NeutralBodyVolume { get; set; }
+
         public static FluidConfig DragOnly => new FluidConfig();
 
         public FluidConfig Clone() => new FluidConfig
@@ -121,6 +144,7 @@ namespace Evosim.Core
             AddedMassCoefficient = AddedMassCoefficient,
             PanelsPerAxis = PanelsPerAxis,
             TissueExcessDensity = TissueExcessDensity,
+            NeutralBodyVolume = NeutralBodyVolume,
         };
 
         public override string ToString() =>
