@@ -150,9 +150,11 @@ divisor — climbing past 3,000 at t≈5,000 with the bloom still accelerating. 
 area 400 had shown the same ratchet (25 → 4.1 units per body over 3,200 s), so the two dish
 sizes agree: **D064 works, and the strategy it makes free is to get small.** The world is
 reproducing real biology — picoplankton dominate nutrient-starved surface water for the same
-surface-to-volume reason — and the computer cannot afford it. **W7 falsified.** The arms are
-read to their last row (stopped at the launch of 10c, or by the ceiling, whichever came
-first) and scored censored: 0 of 5. Chains: singletons only, no inherited birth in any arm.
+surface-to-volume reason — and the computer cannot afford it. **W7 falsified.** The arms
+were stopped at the launch of 10c and are read to their last row — s1 t=5,200 / 3,681 alive
+/ 1.44 units per body; s2 5,200 / 3,412 / 1.58; s3 4,500 / 3,804 / 1.37; s4 6,700 / 2,280 /
+2.43; s5 5,900 / 3,395 / 1.59 — and scored censored: 0 of 5. Chains: singletons only, no
+inherited birth in any arm.
 
 ## Round 10c: the fixed matter cost (D065), pre-registered before launch
 
