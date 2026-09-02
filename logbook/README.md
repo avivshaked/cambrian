@@ -168,3 +168,4 @@ key only translates the entries' reporting shorthand.
 | [0043](0043-the-transplant.md) | 2026-09-01 | The transplant |
 | [0044](0044-three-medicines.md) | 2026-09-01 | Three medicines, one patient |
 | [0045](0045-the-dose-and-the-dice.md) | 2026-09-02 | The dose, and the dice |
+| [0046](0046-the-archean-package.md) | 2026-09-02 | The Archean package |
