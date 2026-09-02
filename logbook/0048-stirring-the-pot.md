@@ -108,3 +108,17 @@ accumulates on the floor as before — the surface larder is the one this round 
 cell-60 arm stands as the Sverdrup measurement. Relaunched arms are named `r12a30-sN` and
 `r12b30-sN`; every other knob, prediction and reading is unchanged. S2's "≥ 4 of 5" now
 applies to the cell-30 arms.
+
+**Second dose change (2026-09-03, on the first cell-30 arm's evidence, before any other cell-30 arm ran past founding).**
+`r12a30-s1` founded normally (409 alive by t=4,600, 1,442 at t=25,100, mean depth -1.5 to -3 m,
+no drowning) - so the cell-30 fix holds - and **S1 fails**: `J/m3 here` at t=10,000-25,000
+sat at 0.06-0.4 J/m3, against a predicted >= 2, while the deep larder rose to 13.6. The
+mechanism is in the roll's shape, not in the seed: w(d) = speed x |A(t)| x sin(pi d / H) is
+zero at the waterline by construction (the anti-0022 property), so at 0.1 m/s and mean |A|
+of ~0.6 the upward leg outruns the 0.02 m/s sink only below d ~ 3.2 m - and the neutral
+film lives at 2-3 m, inside the dead zone the profile leaves at the top. V1 and V4 held
+(header exact, audit 0.0000%), so the pre-registered response fires: **speed 0.1 -> 0.3 m/s**
+for every remaining arm; the delivery depth comes up to ~1 m, the circuit shortens to ~700 s,
+and creatures cross patches every ~30 s. Period stays 6,000. `r12b30-s1`, launched minutes
+earlier at 0.1, is stopped and does not count. Relaunched arms: `r12x-sN` (A at 0.3) and
+`r12y-sN` (B at 0.3); `r12a30-s1` runs to budget as the speed-0.1 record. S1-S5 unchanged.
