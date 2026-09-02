@@ -88,3 +88,23 @@ Ten arms, ≤ 5 concurrent: `r12a-s1..s5` first on the workers round 11 frees (w
 free at writing), `r12b-s1..s5` after, interleaved so neither arm waits on one machine
 incident. Headers verified against the table before any arm is believed. Results appended
 below.
+
+---
+
+**Mid-round dose change (2026-09-02, after the first arm, before any other launched).**
+`r12a-s1` at cell depth 60 m never founded: 40 founders held at ~40 through founding, a
+peak of 186 at t=5,100, 237 births in all and none after t≈7,000, extinct at t=11,203 —
+against round 11's ~485 alive by t=3,000 and ~885 by 6,000. Mean depth sat at −21 to −27 m
+from t=1,100 onward in a world whose photic band ends near 24 m: the full-column rolls
+carry neutral founders round the whole cell, so a producer spends half its life in the
+dark and never funds a brood. Shade was 5–11% and surface matter 0.05–0.8 — neither light
+competition nor drought; darkness by transport. **S2 falsified in its founding form** at
+the first seed, by the signature it named (collapse inside the first 5,000 s — here a
+failure to ever rise). The pre-registered response fires: **cell depth 60 → 30 m** for
+every remaining arm, A and B alike. Producers then spend ~20% of a circuit below the light,
+inside a 3× margin; detritus deposited in the top 30 m recirculates within the lit band
+(the roll's upward leg at ~0.06 m/s outruns the 0.02 m/s sink), and what escapes below 30 m
+accumulates on the floor as before — the surface larder is the one this round is for. The
+cell-60 arm stands as the Sverdrup measurement. Relaunched arms are named `r12a30-sN` and
+`r12b30-sN`; every other knob, prediction and reading is unchanged. S2's "≥ 4 of 5" now
+applies to the cell-30 arms.
