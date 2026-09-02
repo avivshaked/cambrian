@@ -1,6 +1,6 @@
 # Handoff — where to pick up
 
-**Updated 2026-09-01, after the invasion assay (logbook/0043) was scored.** This is the one file a new agent should
+**Updated 2026-09-02, after rounds 8–9 scored zero and round 10 (D064) launched.** This is the one file a new agent should
 read first. It says what was being attempted, how far it got, what is queued, and exactly how
 to continue. It is a pointer, not a source of truth: the specification is `DESIGN.md`, the
 reasoning is `DECISIONS.md`, the history is `logbook/`, and the operating rules are
@@ -16,10 +16,27 @@ full texts, including what was already done or rejected). Scored by a
 rule written before each round launched:
 
 > In at least 3 of 5 seeds, with the population floor closed: the producers persist to the end
-> of the run, an absorptive lineage is inherited for ≥ 20 consecutive samples, and it is still
-> alive (≥ 10) at the last sample.
+> of the run, an absorptive lineage is inherited for ≥ 20 consecutive samples, it is still
+> alive (≥ 10) at the last sample, **and at least one absorptive birth occurred within the
+> last 20 samples** (D063's recruitment clause, applied from round 8 onward).
 
-**Status: not met — and for the first time, fully explained.** Seven rounds are scored
+**Status (2026-09-02): not met. Nine rounds scored, zero confirmed passes; round 10 is
+running on the owner's own design.** Rounds 8 and 9 (logbook/0044, 0045) tested three
+feeding-side stabilisers and a dose-plus-mutation follow-up and scored 0 of 15 and 0 of 5.
+Their post-mortems found the worlds were not starving but **drowning**: every body carries
+the same excess density whatever its size, so the population sinks its whole life and holds
+the photic band only because breeding is concentrated in the light; a matter drought pauses
+births for ~1,500 s, the standing crowd sinks out of the light together, and the world
+starves in the dark with its larder full — three worlds died so, one an untreated control.
+Float tissue works and selection discards it to ~1% between crises. Chain arrival is
+drought-gated, not mutation-gated (5× mutation supplied singletons that could not breed).
+The owner's response is **D064** — size-dependent buoyancy: a founder-sized body floats in
+place, growth is what sinks you, universal across guilds so descent is a priced choice for
+detritivores too; plus founders scattered through the full column. Built, suite-green at
+399, pre-registered as logbook/0046, and running as `r10-s1..s4` (s5 queued) at the time of
+writing. The paragraph below is the pre-D064 account and stands as history.
+
+**The account as of round 7, kept for the record.** Seven rounds were scored
 (logbook/0036–0042). Under D058's completed-budget rule the campaign's honest tally is
 **zero confirmed passes, ever** (round 6's single pass rode a wall cut; round 7 scored
 0-of-5). Round 7 — D055's seabed refuge, run against round 6's world — accidentally became
@@ -55,7 +72,10 @@ movement should ever pay). The round-8 design decision is the owner's, in discus
 | [0040](logbook/0040-right-sizing-the-dish.md) | 5, 5b | D053: irradiance 25–175, then area 100–200 m² | **No geometric rescale bounds this world** — every dimmer sea dies (famine below 150, drought above), 200 runs away; small dishes die of shading-driven darkness and irreversible sinking (−131 m in a 60 m world — the ocean has no floor for bodies). D053 closed |
 | [0041](logbook/0041-the-sea-digests.md) | 6 | D052: excretion k=0.001 | **The first bounded, living, uncensored worlds** (two of five to full budget, floor silent, drought-cycling); three chain establishments in one round; the "first trophic collapse" (s3) — later corrected by round 7. One near-pass at a wall cut. Every boom still bust |
 | [0042](logbook/0042-the-larder-under-the-mud.md) | 7 | D055: refuge 1 m, on round 6's world | **The matched-pair round.** Two arms replayed round 6 byte-identically (refuge never bound); three diverged at establishment. Chains establish through the floor pantry: treated booms 71 and 1-then-dead against controls' 908 and 1,297; s5's late chain grew to 18 on column food alone (the slow path exists). s3's twin died chainless anyway — round 6's collapse was never trophic at bottom. Refuge falsified as damping; scored 0-of-5 under both tables |
-| [0043](logbook/0043-the-transplant.md) | 7.5 (diagnostic) | D060: five copies of a round-6 consumer genome injected at t=8,000 into seeds 2 and 4, refuge 0 vs 1 m — paired, all four budget-complete | **The consumer is benthic** (sank to the floor in ~900 s, both seeds). Controls: established (t=9,700 / 11,300), boomed to 135 / 121, alive at budget (56 / 93) with inherit streaks of 104 / 88 samples. Treatments: starved to extinction on ~13 kJ of forbidden floor stock, zero descendants. D055 rejected as world rule; the arms are diagnostic and cannot count toward the goal |
+| [0043](logbook/0043-the-transplant.md) | 7.5 (diagnostic) | D060: five copies of a round-6 consumer genome injected at t=8,000 into seeds 2 and 4, refuge 0 vs 1 m — paired, all four budget-complete | **The consumer is benthic** (sank to the floor in ~900 s, both seeds). Controls: established (t=9,700 / 11,300), boomed to 135 / 121, alive at budget (56 / 93) with inherit streaks of 104 / 88 samples. Treatments: starved to extinction on ~13 kJ of forbidden floor stock, zero descendants. D055 rejected as world rule; the arms are diagnostic and cannot count toward the goal. Lineage replays then found the **recruitment collapse at the peak** (every boom's bust is a sterile cohort dying on schedule) → D063's clause |
+| [0044](logbook/0044-three-medicines.md) | 8 | D061 patchy world / D062 satiation cap + toe / D055 at a 0.2 edible fraction, 5 seeds each | **0 of 15.** A: producers extinct in all five (founding cost of fragmented pools). B: every clean seed ran away before a chain formed. C: one chain (s1), wedge-censored with a sterile cohort standing — D063 failed it at the cut; s2/s4 replayed their controls full-length (refuge never bound); s3 died whole-world with its larder full. Post-hoc: **the drowning** (depth timelines) |
+| [0045](logbook/0045-the-dose-and-the-dice.md) | 9 | C at fraction 0.4 + mutation 0.005 (both pre-registered contingencies) | ≤ 2 of 5, formally failed mid-round: s1, s2 extinct by the drowning with no chain; s4 survived chainless; s3 (runaway-bound) and s5 were still running when round 10 launched. Lineage dissection falsified the age-structure reading of the births-freeze: deaths are `starved`, populations young — an energy death in the dark |
+| [0046](logbook/0046-the-archean-package.md) | 10 · **running** | D064: `NeutralBodyVolume` 0.25 m³ (founder p90), founder depth 60 m, mutation 0.005, no refuge | pre-registered W1–W6; headers and the no-replay check verified at launch. Score it when the arms end (`./scripts/analyse-arm.ps1 r10-s1 r10-s2 r10-s3 r10-s4 r10-s5`, recruitment clause from `lineage.jsonl`), append Results, update D064's index row |
 
 **The mechanism, in one paragraph.** Surface matter runs out (D048's economy — producers
 strip it), conceptions are refused, births stop. From there one of two things is
@@ -78,9 +98,19 @@ goal; the movement frontier and the aquarium are the destinations waiting behind
 
 ## Queued — the current path, in order
 
-Rounds 1–7 plus the D060 assay are scored (the table above is the record). What remains:
+Rounds 1–9 plus the D060 assay are scored (the table above is the record). What remains:
 
-1. **The round-8 design — the owner's decision, in active discussion.** The assay
+0. **Round 10 is in flight (2026-09-02).** `r10-s1..s4` on workers 4–7; launch `r10-s5`
+   with the same settings block (logbook/0046's table; base env in CLAUDE.md's arm
+   recipe plus `EVOSIM_NEUTRAL_VOLUME 0.25`, `EVOSIM_FOUNDER_DEPTH 60`,
+   `EVOSIM_CELLTYPE_MUTATION 0.005`, no refuge) on the first worker that frees — `r9-s3`
+   (worker 2, runaway-bound) or `r9-s5` (worker 3) — then score 0045 for the record. A
+   monitor with the 32-min content-growth stall rule watches all six; the hang has struck
+   four times (kill only after the 90-s CPU+byte discriminator, then refresh the worker).
+   Score 0046 under D063 when all five end; the two-sided readings in 0046 say what each
+   outcome means and what the next round is in each case (V0 down if the world blooms, V0
+   0.44 if survivors still sink, the cohort trap on its own if chains arrive and bust).
+1. **~~The round-8 design~~ — ruled and run; kept for the reasoning trail.** The assay
    answered the mechanism question; the owner then advanced a hypothesis (recorded in
    0043's Results) that the deep distortion is **whole-layer horizontal access**: every
    layer is a perfectly-stirred tank, so a creature at the right depth feeds from all
@@ -280,7 +310,11 @@ production) before the D-entry leans on the numbers above.
 
 - The paywalled reading list in `research/LITERATURE-REVIEW.md` §9, which needs the owner's
   institutional access.
-- Pushing: local `main` runs well ahead of `origin/main`; the agent never pushes.
+- Pushing: the owner approved pushing code and prose in batches (2026-09-01, "Push all",
+  including `inocula/`); data, run output and weights are never pushed. `main` is pushed
+  through the round-10 launch.
+- The untracked `sol-gpt-2026-08-31-122448-review.md` at the repo root is an owner-provided
+  review; its fate (absorb or delete) is the owner's.
 
 (Resolved since last written: fix 3's biology-vs-world call → D055 (world); the
 ceiling/scoring question → D053 + D058.)
