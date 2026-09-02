@@ -566,8 +566,12 @@ namespace Evosim.Core
                 // cap alone keeps founders from excreting matter they never held.
                 if (Config.ExcretionPerJoule > 0f && creature.LockedMatter > 0f)
                 {
+                    // D065 (amended): the fixed matter cost is machinery mass and leaves only
+                    // with the body. Excretion drains the tissue share alone; death deposits the
+                    // rest. At MatterPerCreature = 0 this is exactly the old expression.
+                    float excretable = Math.Max(0f, creature.LockedMatter - Config.MatterPerCreature);
                     float excreted = Math.Min(
-                        creature.LockedMatter, Config.ExcretionPerJoule * ledger.Upkeep);
+                        excretable, Config.ExcretionPerJoule * ledger.Upkeep);
 
                     if (excreted > 0f)
                     {

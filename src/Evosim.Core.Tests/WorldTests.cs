@@ -601,6 +601,68 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void ExcretionNeverDrainsTheFixedMatterTerm()
+        {
+            // The amendment recorded in the D065 comment above World's excretion block:
+            // excretable = max(0, LockedMatter - MatterPerCreature). The rate here is well above
+            // MatterIsStillConservedWithTheFixedCostAndExcretionTogether's 0.05 — that test only
+            // checks conservation and never demonstrates the tissue share actually hits the
+            // floor — chosen so it is enough to drain a creature's whole tissue share well inside
+            // the run: if the cap were missing or wrong, LockedMatter would run straight through
+            // the fixed term of 3 rather than stopping at it. Sampled every step rather than just
+            // at the end, because a floor that is breached mid-run and happens to recover before
+            // t=600 would pass a final-value check and still be wrong. Conservation is checked
+            // the same way the sibling test does — a floor that leaks would show there before it
+            // showed here.
+            var config = MatterWorld(0.5f, 1f);
+            config.MatterPerCreature = 3f;
+            config.ExcretionPerJoule = 5f;
+
+            var world = new World(config, seed: 1);
+
+            double atStart = 0d;
+            float minLocked = float.MaxValue;
+
+            for (float t = 0f; t < 600f; t += 1f)
+            {
+                world.Step(1f);
+                if (t == 0f) atStart = world.StandingMatter;
+
+                foreach (Organism creature in world.Living)
+                {
+                    if (creature.ParentId < 0) continue; // founders never paid the fixed term
+
+                    Assert.True(
+                        creature.LockedMatter >= config.MatterPerCreature - 1e-4f,
+                        $"a living creature's LockedMatter fell to {creature.LockedMatter} at " +
+                        $"t={t}, below the fixed term of {config.MatterPerCreature} — excretion " +
+                        "drained machinery mass");
+
+                    if (creature.LockedMatter < minLocked) minLocked = creature.LockedMatter;
+                }
+            }
+
+            double drift = world.StandingMatter - atStart;
+
+            _output.WriteLine(
+                $"min LockedMatter observed: {minLocked:0.####} (fixed term " +
+                $"{config.MatterPerCreature}), matter {atStart:0.##} -> {world.StandingMatter:0.##} " +
+                $"(drift {drift:0.######}), {world.Births} births");
+
+            Assert.True(world.Births > 0, "nothing bred, so the fixed term was never charged");
+
+            Assert.True(
+                minLocked < config.MatterPerCreature + 1e-3f,
+                $"LockedMatter never approached the fixed term (min {minLocked} vs fixed " +
+                $"{config.MatterPerCreature}) — this excretion rate never exercised the floor, " +
+                "so the test above proves nothing");
+
+            Assert.True(
+                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
+                $"matter drifted by {drift} while excretion was capped at the fixed term");
+        }
+
+        [Fact]
         public void AChildLocksTheProportionalPricePlusTheFixedOne()
         {
             // D065's arithmetic, read off the creatures themselves. Excretion is off, so
