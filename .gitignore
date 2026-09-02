@@ -156,6 +156,10 @@ spikes/**/results/*.csv
 # `git status` after any such change (logbook/0003).
 artifacts/
 
+# Agent working files — temporary analyses, drafts, intermediate outputs. In-project so
+# no permission prompt blocks autonomous work; gitignored so none of it lands in history.
+scratch/
+
 # Parallel run workers — clones of unity/ created by scripts/new-worker.ps1 so that two
 # batchmode processes never share one Library/. Everything in them is either a copy of
 # unity/ or regenerated, so tracking them would duplicate every script in the repository.

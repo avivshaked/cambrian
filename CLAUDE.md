@@ -97,6 +97,16 @@ will not show up in the usual grep.
 and treats `--headless` as a module path. Fails identically in PowerShell, cmd and bash.
 Don't waste time on it; use the Hub GUI.
 
+**Read a run report** with named columns — never index columns positionally; the table has
+grown columns over time and a positional misread once reported float tissue as the food
+chain (logbook/0044):
+
+```powershell
+./scripts/analyse-arm.ps1 r9-s1 r9-s2                 # status line per arm
+./scripts/analyse-arm.ps1 r9-s1 -Timeline -Every 500 -From 11000 -To 16000 -Columns 'alive','depth m','mat blk'
+./scripts/analyse-arm.ps1 r9-s1 -ListColumns          # the name -> index map
+```
+
 **Test `Evosim.Core`** (fast — the whole suite is well under a second):
 
 ```powershell
