@@ -83,9 +83,9 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D058](#d058) | Only the budget ends a run — censored arms cannot pass | 2026-08-31 | active |
 | [D059](#d059) | The ocean gets a floor — D050's mirror, per-column under D054 | 2026-08-31 | decided · not built |
 | [D060](#d060) | The invasion assay — a labeled hand for a mechanism question | 2026-08-31 | active · built, first use logbook/0043 |
-| [D061](#d061) | The patchy world — horizontal structure, throttled exchange, endogenous inequality | 2026-09-01 | decided · round 8 arm A, to build |
-| [D062](#d062) | The satiation cap — a filter feeder's mouth gets its physical limit | 2026-09-01 | decided · round 8 arm B, to build |
-| [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · goal rule amended from round 8 |
+| [D061](#d061) | The patchy world — horizontal structure, throttled exchange, endogenous inequality | 2026-09-01 | built · round 8: 0-of-5 by producer extinction — a founding cost at this dose (logbook/0044); knobs kept for the movement question |
+| [D062](#d062) | The satiation cap — a filter feeder's mouth gets its physical limit | 2026-09-01 | built · round 8: unanswered — every clean arm ran away before a chain formed (logbook/0044) |
+| [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · earned its keep in round 8: failed the flagship's sterile cohort at the cut (logbook/0044) |
 
 ---
 

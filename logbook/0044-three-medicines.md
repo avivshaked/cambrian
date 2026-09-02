@@ -133,3 +133,78 @@ treatments against machine incidents; with A's outcome determined there is nothi
 to hedge, and the owner's standing priority is the fastest credible pass — so `r8a-s4`
 and `r8a-s5` move to the back of the queue (still run, per this pre-registration; only
 later). No dose, budget or scoring rule changes.
+
+---
+
+## Results (2026-09-02, all fifteen arms accounted for)
+
+**Score: 0 of 15 seeds pass the amended rule. No treatment reaches 1, let alone 3.**
+
+| arm | ending | at end (or cut): alive / absorpt / inherited | scored |
+|---|---|---|---|
+| r8a-s1 | extinct t=6,478.5 | 0 / 0 / 0 | fail |
+| r8a-s2 | extinct t=6,596 | 0 / 0 / 0 | fail |
+| r8a-s3 | extinct t=13,206.5 | 0 / 0 / 0 | fail |
+| r8a-s4 | extinct t=11,259.5 | 0 / 0 / 0 | fail |
+| r8a-s5 | extinct t=19,055 | 0 / 0 / 0 | fail |
+| r8b-s1 | runaway t=7,185 | 7,878 / 1 / 0 | censored |
+| r8b-s2 | **wedged**, killed at t=10,800 | 3,498 / 0 / 0 | censored |
+| r8b-s3 | runaway t=4,099 | 7,500 / 1 / 0 | censored |
+| r8b-s4 | budget | 5 / 0 / 0 | fail |
+| r8b-s5 | wall clock at t=17,800 | 1,746 / 0 / 0 | censored |
+| r8c-s1 | **wedged**, killed at t=21,400 | 4,166 / 45 / 45 | censored; fails even at the cut (below) |
+| r8c-s2 | budget | 618 / 0 / 0 | fail (untreated — see addendum) |
+| r8c-s3 | extinct t=27,068.5 | 0 / 0 / 0 | fail |
+| r8c-s4 | budget | 2,204 / 1 / 0 | fail (untreated — see addendum) |
+| r8c-s5 | runaway t=19,594.5 | 7,672 / 7 / 6 | censored |
+
+The flagship deserves its own line of honesty: at its wedge cut `r8c-s1` still held 45
+inherited absorptives — and its last clade birth was t=16,366, five thousand seconds
+earlier. A sterile cohort standing at parade rest. [D063](../DECISIONS.md)'s recruitment
+clause was added for exactly this shape, and it fails the arm even read-to-cut. Under the
+unamended rule this arm would have *passed* at the cut; the amendment earned its keep in
+its first round.
+
+### The predictions, scored
+
+- **Y1 — falsified.** Arrival was not world-generic: first absorptive breeding happened in
+  exactly one seed of fifteen (`r8c-s1`). B produced only never-breeding singletons; A's
+  producers died before any chain could form.
+- **Y2 — held where testable.** The flagship's trap closed at the *edible* density
+  (≈5.9 J/m³ at the last clade birth, under the ≈7 bar, while the physical pool sat near
+  19); no established chain's recruitment survived a trough with reachable food above the
+  bar, because no other chain established at all.
+- **Y3 — moot.** No chain formed in any patchy world; what A showed instead was a
+  **founding cost**: eight 1/8-size matter pools, slow horizontal mixing and per-patch
+  shading choke the producer lottery before any consumer question is asked. All five seeds
+  died of it. The dose was constant, so this is dose-generic only in the tested corner.
+- **Y4 — unanswerable.** Every clean B world ran away before its first chain; there is no
+  post-establishment minimum to compare. The satiation cap + toe appear to have made the
+  *producer* economy stronger (a suspected founder-recycling effect: toe-starved absorptive
+  founders die early and return their matter in a matter-throttled founding), and B worlds
+  grew ≈8× faster than their twins — self-censoring by ceiling.
+- **Y5 — falsified.** Establishment under C: one seed of five, not two.
+- **Y6 — falsified.** Zero passes. The pre-registration predicted at least one of A or B
+  would pass; neither came close, and each failed *upstream* of its mechanism bet.
+
+### What the round actually taught
+
+The two-sided reading that fits is the fourth one — "all three fail with the trap
+surviving three different medicines, re-read Y2's data first" — with one amendment: the Y2
+re-read (this file's addendum, plus the r9 lineage dissections in
+[0045](0045-the-dose-and-the-dice.md)) found the thresholds were right but the *world
+model behind the treatments* was wrong. The worlds are not dying of larder exhaustion.
+Three of them died with full larders, free matter, and a young population — births freeze
+and the standing crowd, denser than water its whole life, sinks out of the photic band and
+starves in the dark (depth timelines: `r9-s1` −20.9→−48.7 m, `r9-s2` −19.7→−36.7,
+control `d056-s3` −65→−98 in a 24 m world). Birth is the only upward flux selection
+maintains: float tissue exists and works — `r9-s2`'s literal last survivor was a floater
+holding at −14.5 m — but selection prices it out to ~1% between crises because a floatless
+producer breeds cheaper before it sinks out. All three medicines treated the pantry; the
+patient was drowning. *(Post-hoc diagnosis, marked as such: none of this was predicted
+above. It is the round-10 question.)*
+
+Bookkeeping: the round also cost two arms to the hang (occurrences three and four:
+`r8b-s2`, `r8c-s1`), whose kill-and-refresh procedure and content-growth stall rule are
+now in CLAUDE.md's gotchas, tightened again after a false stall alert nearly killed the
+live `r9-s3` (threshold ≥30 min, and the 90-s byte+CPU discriminator before any kill).
