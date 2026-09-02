@@ -69,3 +69,45 @@ about mutation supply and D056's premise needs rereading.
 Five arms, ≤ 5 concurrent machine-wide (round 8's three stragglers still running at
 launch: `r9-s1`/`r9-s2` go first on free workers, the rest as stragglers end). Headers
 verified before any arm is believed. Results appended below.
+
+---
+
+## Results (2026-09-02, all five arms accounted for)
+
+**Score: 0 of 5.** Formally determined mid-round (0-for-3 by the time s4 ended) and
+recorded then in [0044](0044-three-medicines.md)'s addendum; the last two arms changed
+nothing.
+
+| arm | ending | at end (or cut): alive / absorpt / inherited | scored |
+|---|---|---|---|
+| r9-s1 | extinct t=18,847.5 | 0 / 0 / 0 | fail — the drowning, no chain ever |
+| r9-s2 | extinct t=20,433 | 0 / 0 / 0 | fail — the drowning, no chain ever |
+| r9-s3 | runaway t=10,556 | 7,883 / 13 / 3 | censored — round 9's only establishment attempt, cut by the ceiling |
+| r9-s4 | budget | 1,581 / 3 / 0 | fail — survived chainless; three absorptive singletons alive at the end, no inherited birth all run |
+| r9-s5 | wall clock at t=23,500 | 3,388 / 7 / 0 | censored — survived to the cut, chainless |
+
+- **Z1 — falsified.** Chains "arrived" (an inherited absorptive birth) in one seed of five
+  (s3, three inherited at the cut). The 5× dice supplied singletons in every seed and
+  could not buy a single breeding through a drought. Arrival is drought-gated, not
+  mutation-gated; D056's premise failed its first direct test.
+- **Z2 — untestable as posed.** No established chain collapsed, because none established.
+  The one thing the dose *did* show: at 0.4 the edible floor sat at 12–20 J/m³ in the two
+  worlds that died — the larder was full and above the bar the whole time. The trap
+  theory's threshold was never the constraint here.
+- **Z3 — falsified.** Zero passes.
+
+**What the round actually taught** is in 0044's results and addendum, because that is
+where the lineage dissections were written up as they happened: the two extinctions were
+not larder deaths — births froze with free matter at the surface, a young population and
+a full pantry, and the standing crowd sank out of the photic band (−20.9→−48.7 m and
+−19.7→−36.7 m) to starve in the dark. Float tissue was present at ~1% and its carriers were
+the last alive; r9-s2's final survivor was a floater at −14.5 m. That diagnosis became
+[D064](../DECISIONS.md) and round 10 ([0046](0046-the-archean-package.md)). Of the
+pre-registered readings, the honest match is the third: chains did not arrive, and the
+diagnosis reopened at the world rather than at the knob — but not at "the mutant's first
+day" as written; at the water column.
+
+Bookkeeping: s3 wedged once (a false alarm — alive and slow under six-arm load; the monitor
+threshold was raised to 32 min and the discriminator written into CLAUDE.md), and the
+column misread that inflated every in-flight chain report of rounds 8–9 was caught here
+and is recorded in 0044.
