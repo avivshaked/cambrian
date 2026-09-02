@@ -95,6 +95,37 @@ interleaved across treatments (`r8a-s1, r8b-s1, r8c-s1, r8a-s2` first) so no tre
 hostage to one machine incident. Workers refreshed to carry D061/D062 before wave 1;
 headers verified against this table before any arm is believed. Results appended below.
 
+**Mid-round instrument correction (2026-09-02, recorded while three arms still ran).**
+Every in-flight chain status I read before this date was wrong: I was quoting columns 26/27
+(`float` / `flt inh`) as `absorpt` / `inherit` (columns 14/15). With the right columns, **no
+round-8 arm other than the flagship `r8c-s1` ever established an absorptive chain** — the
+"chains" I logged in `r8b-s5`, `r8c-s3` and `r8c-s5` were float-tissue counts. `r8c-s3`'s
+lineage confirms it: twenty absorptive births in the whole run, one inherited (t=4), founders
+all starved by t=501, singleton mutants after. Scoring below uses `lineage.jsonl`, which is
+immune to this mistake.
+
+Three mid-round findings, dated before scoring:
+
+1. **The treatment that never bound.** `r8c-s2` and `r8c-s4` are token-for-token identical
+   to `d056-s2`/`d056-s4` for the full 30,000 s (verified column-by-column at t=15,000; the
+   only diff is the report's new `species` column, empty in the old format). V2's replay
+   property ran to full length because no absorptive ever fed in the refuge layer — so those
+   two arms tested nothing about the refuge. A no-arrival seed is not a treated seed.
+2. **A second disease, seen three times.** `d056-s3` (control!), `r8c-s3` and `r9-s2` all
+   died the same whole-world death: a long matter drought during the producer era (thousands
+   of refused conceptions per sample) ends, **births freeze anyway**, and the population
+   free-falls to zero by deaths alone — with free matter available (mat top ≈ 0.5), zero
+   refused conceptions, and the larder untouched and still growing (refuge J at maximum at
+   extinction). The reading: the drought outlasts the reproductive window of every cohort
+   alive during it; when matter returns, the survivors are uniformly post-reproductive and
+   senescence finishes the world. This killer predates the refuge — it lives in the
+   untreated world — and it also explains failed arrival: absorptive singletons appear
+   during the drought and cannot breed for the same reason nothing else can.
+3. **Arrival is drought-gated, not mutation-gated.** `r9-s2` at 5× cellType mutation drew
+   absorptive mutants repeatedly (singletons throughout) and still never got one inherited
+   birth — the mutants landed in the drought. D056's premise (arrival limited by mutation
+   supply) fails its first direct test; 0045's Z1 should be read with this in hand.
+
 **Mid-round re-order (2026-09-01, recorded before any B/C arm finished).** Arm A went
 0-for-3 by producer extinction (t=6,478, 6,596, 13,206 — the founding-suppression death,
 dose-generic) and is formally unable to reach 3-of-5. The interleave existed to hedge
