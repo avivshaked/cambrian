@@ -272,8 +272,14 @@ actually verifying it.
   the process alive and the log silent for 5.7 hours (logbook/0043's instrument note — the
   campaign's first hang, cause unknown). Every monitor watching an arm therefore needs
   three alternations, not two: error signatures, the `**Ended:**` footer, **and a
-  staleness check on the report file's mtime** (silent > 30 min ⇒ stall alert). After
-  killing a wedged worker, refresh it — the Library dies with the process.
+  staleness check on the report's byte size, not its mtime** — the wedge keeps touching
+  mtime with zero content, which fooled the original mtime rule. Threshold ≥ 30 min: under
+  full machine load a healthy heavy arm can legitimately take > 16 min per table row, which
+  produced a false stall alert that nearly killed a live run. So an alert is a *suspicion*,
+  not a verdict — confirm with the discriminator before killing: sample the report's byte
+  size and the process's cumulative CPU 90 s apart; wedged = zero byte growth **and** high
+  CPU delta (the loop spins without simulating); slow-but-alive = a row appears or CPU is
+  quiet. After killing a wedged worker, refresh it — the Library dies with the process.
 - **PowerShell scripts need a UTF-8 BOM.** Windows PowerShell reads a BOM-less `.ps1` as ANSI, so
   an em-dash inside a double-quoted string becomes three bytes that terminate the string and the
   file will not parse — the error points at the following token and says nothing about encoding.
