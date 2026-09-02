@@ -175,3 +175,55 @@ the matter cap binds, births resume within one senescence time (10,000 s) as dea
 matter, with `depth m` unchanged. If W7′ fails at a fixed cost of 3, the proportional share
 was not the divisor's problem and the diagnosis reopens at the conception price itself.
 Same budget, wall, ceiling, seeds and scoring rule.
+
+---
+
+## Round 10c results (2026-09-02, all five arms at budget)
+
+**Score: 0 of 5 pass D063 — and 5 of 5 producer worlds reached the budget alive and
+uncensored, which no round in this campaign had done before.** V1 held (one hash,
+`7a4a0816d6975a3f`, every token exact).
+
+| arm | ending | alive at end (= peak) | births / deaths | absorptive max / inherited max | depth range t ≥ 6,000 | det deep at end | mean age at end |
+|---|---|---|---|---|---|---|---|
+| r10c-s1 | budget | 1,580 | 2,080 / 595 | 8 / 0 | −5.7 … −2.6 m | 6.7 | 15,543 s |
+| r10c-s2 | budget | 1,510 | 2,301 / 848 | 12 / 0 | −4.5 … −2.1 | 5.7 | 14,306 |
+| r10c-s3 | budget | 1,493 | 2,137 / 709 | 16 / 1 | −7.8 … −5.7 | 6.1 | 14,728 |
+| r10c-s4 | budget | 1,491 | 2,066 / 692 | 12 / 1 | −3.2 … −0.9 | 8.1 | 15,406 |
+| r10c-s5 | budget | 1,607 | 2,747 / 1,245 | 10 / 0 | −3.5 … −0.9 | 8.9 | 13,546 |
+
+- **W1 — held, five of five.** The largest depth excursion after the matter cap bound was
+  ~3 m; the drowning that killed three worlds in rounds 6–9 within 1,500 s of a birth pause
+  did not occur in 24,000 s of throttled births. D064 cured it.
+- **W2 — held, five of five.** Producers persisted to budget in every seed, uncensored.
+- **W3 — falsified.** Float share at t=20,000: 0.5%, 0, 0.2%, 0, 0. The prediction assumed
+  bodies would *grow* and need lift; the world went the other way, and a body under V0 is
+  neutral for free — float is not insurance any more, it is redundant. Correct outcome of
+  the rule, wrong prediction about which side of V0 selection would visit.
+- **W4 — moot.** No absorptive guild established to be measured.
+- **W5 — falsified.** One inherited absorptive individual appeared, once, in s3 and in s4;
+  no lineage. Singleton mutants in every seed, all run, all at the surface.
+- **W6 — falsified.** Zero passes.
+- **W7′ — held, with a creep.** Counts levelled at 1,490–1,610 by the budget — under
+  the ceiling by a factor of five, uncensored, where the matter arithmetic put them — but
+  still rising slowly at the end because the proportional share of the price kept falling
+  toward the fixed floor (6 → 3.7 units per body). The fixed cost does what it was built
+  for; the plateau is the floor's, not the dish's.
+- **W8 — held, five of five, in a weaker form than written.** Births never fully stopped
+  after the cap — they ran at ~50–90 per 1,000 s on turnover, with depth unchanged. The
+  drought resolved by turnover, but the turnover was a drizzle: 595–1,245 deaths in 30,000 s,
+  mean age 13,500–15,500 s at the end. A tiny body at the surface out-earns its wear.
+
+**The reading, from the pre-registered list: "W1–W2 hold, W5 fails."** The drowning is
+cured and arrival is still gated — and this time the gate is measurable. Two gates,
+both visible in the table: **rate** (the larder crossed the ~7 J/m³ breeding bar in two
+seeds only at the very end — s4 8.1, s5 8.9 — because deaths were too few to fill it) and
+**location** (in those two seeds the food was above the bar and no chain came: the mutants
+are born small at the surface, where detritus reads 0.07 J/m³, and a body under V0 cannot
+sink to where it is). Round 11 ([0047](0047-the-half-life.md)) pulls the rate lever and
+leaves the location gate to be read from its result.
+
+What this round is, for the record: the first time the world's producers have been a
+stable, bounded, self-regulating population — no drowning, no runaway, no floor, no wall —
+for a full budget in every seed. The goal's first clause is met by construction now; the
+whole remaining problem is the second trophic level.
