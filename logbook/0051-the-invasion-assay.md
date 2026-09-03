@@ -91,6 +91,27 @@ analyses become scripts).
 - **M4 fails:** the mutation operator turns stomachs back into leaves faster than a line can
   grow; that is a Core question (mutation rates per cell type), not a world one.
 
+## The calculator's prediction, recorded before the assay ended
+
+*Added at t≈7,000 of `r15i-c10`, with the arm's lineage read only to t=6,731 (every
+inoculant had bred exactly once, on its 200 J stake, and nothing since). `scripts/ledger.ps1`
+(the same day's build; D069) on the inoculum at −12 m:*
+
+| clearance | density (J/m³) | net W at birth | lifetime (s) | R0 | first child (s) |
+|---|---|---|---|---|---|
+| 1 | 0.5–10 | −0.007 to +0.013 | 6,300–9,000 | 0 | never |
+| 5 | 1 / 2 / 4 / 7 / 10 | 0.002 / 0.013 / 0.035 / 0.067 / 0.099 | 7,400–14,100 | 0 / 0 / 1 / 1 / 2 | – / – / 950 / 426 / 278 |
+| 10 | 0.5 / 1 / 2 / 4 / 7 / 10 | 0.002 / 0.013 / 0.035 / 0.078 / 0.142 / 0.207 | 7,400–16,700 | 0 / 0 / 1 / 2 / 4 / 6 | – / – / 950 / 362 / 190 / 130 |
+| any, **same shape as a leaf** | any (≤ 12 m) | 0.068 | 9,900 | 2 | 417 |
+
+The body is 0.0022 m³ with a child priced at ~129 J (endowment 103 + overhead 25 + 1 J of
+tissue), so a child costs the same whatever the body earns, and R0 is set by net watts alone.
+**Prediction:** the assay's field at the population's depth reads 0.7–1.4 J/m³, where the
+calculator gives R0 = 0 at every clearance — the lineage should not grow past the founders'
+first children, and M2 should *fail* unless the stomachs sit in water ≥ 2 J/m³ (R0 1) or
+≥ 4 (R0 2, the leaf's figure). M5 is therefore a live test: if the lineage grows anyway, the
+calculator is missing a term the world has.
+
 ## Results
 
 *Appended when the arms end.*
