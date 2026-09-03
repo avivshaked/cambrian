@@ -161,3 +161,58 @@ it. Owner's question of the day, answered here: a steady trickle of founders wou
 produced this result continuously (one stake-funded child each, then starvation), so the
 assay is timed against the calculator's window instead, and the next inoculation goes in
 where and when the timeline says a stomach could breed.
+
+### `r15i-c1` — the control gives the same answer, in water ten times richer
+
+*Ended at budget, 12,000 s in 70.6 min wall (2.8× real time). V1–V4 held: header
+`clearance 1 · inoculate 50 @ 5000 s, 12 m, genome 342f472a7dda · sink 0.002 m/s, matter
+0.002 m/s · vent off`, every other token `r13a-s2`'s; 50 `k:"i"` births at t=5,000 and
+`absorpt` 0 → 50 at that sample; `floor` 0 from t=3,100; audit 0.0000% throughout.*
+
+| measure | `r15i-c1` (clearance 1) | `r15i-c10`, for comparison |
+|---|---|---|
+| inoculants | 50, all dead; lifetimes 5,677–5,813 s (mean 5,743) | 50, all dead; 6,571–6,984 (mean 6,732) |
+| children per inoculant | exactly 1.00 — every one bred once, at once, on its 200 J stake | exactly 1.00 |
+| descendants born | 50 (all generation +1; **no** generation +2) | 51 (one in generation +2) |
+| R0 observed | 0.89 over completed members — the stake again | 0.96 |
+| lineage alive at t=12,000 | 44, the children, aged ~6,900 s | 48 |
+| expressed absorptive among descendants | 98% | 100% |
+| field at the population's depth (−10.5 to −13.7 m) | **2.6–5.3 J/m³** throughout | 1.4 at inoculation, 0.26–0.7 from t=7,000 |
+
+| # | prediction | verdict |
+|---|---|---|
+| M1 | cannot invade at clearance 1: R0 < 1 and extinct or ≤ 5 alive at 12,000 | **R0 clause held** (0.89; zero children from the fifty naturally endowed members); **the alive clause is falsified as written**, by the same artefact that flattered c10 — 44 alive are children born at t≈5,000 who have not yet reached the age their parents died at |
+| M3 | the dose orders the per-capita rate: c10 > c5 > c1 | **falsified** on the pair that ran — c10 and c1 gave the identical figure, one child per inoculant, and that child is the founding stake at both doses; c5 not run |
+| M4 | expression is not the gate | **held** — 98% |
+| M5 | assay and calculator on the same side of 1 | **held** — the table gave R0 = 0 at clearance 1 at every density, and the world gave 0 from every naturally endowed member; the calculator's lifetime band was 6,300–9,000 s, the world's 5,700 — 10% short of the band's floor, which is the matter draw or the drift it does not have |
+
+**What the pair says.** Read the field rows together. The clearance-1 stomachs sat in
+2.6–5.3 J/m³ and the clearance-10 stomachs in 0.26–0.7, and both earned about the same:
+a tenfold gearing bought a tenfold-thinner field, because fifty stomachs at clearance 10
+graze the water at their depth ten times faster than fifty at clearance 1 do, and the
+water was already the bottleneck at 1. Income = density × clearance, and the stomachs set
+the density. That is the consumer–resource point in one line, and it is why the assay
+cannot see the dose (M3) — the dose is absorbed into the field before it reaches the
+ledger. Round 14's clearance-10 arms are showing the same thing at population scale
+(`r14c10-s2`'s line, 45 → 12 in water it thinned to 0.5–0.7 J/m³).
+
+**An instrument note, against the next assay.** Inoculating at t=5,000 and stopping at
+12,000 leaves 7,000 s — one lifetime — so the "alive at" clause reads the children's age,
+not the lineage's establishment, in both arms; M1's and M2's alive clauses were
+unscoreable as pre-registered. An assay that means to score establishment has to run at
+least two lifetimes past the inoculation (to t=20,000 or beyond on this clock), or score
+*generation +2 births* instead of members alive. The calculator, which has no such
+horizon, was the better instrument here: both arms' R0 came out where its table said.
+
+## Verdict
+
+Closed 2026-09-03, two arms of three (`r15i-c5` dropped as redundant with the table; the
+owner can reinstate it). The inoculum — the world's own stomach from `r13a-s2` — cannot
+invade the round-13 world at clearance 1 *or* at clearance 10: one stake-funded child
+each, no naturally endowed member ever reached the breeding gate, at either dose, in
+water the stomachs themselves set. The calculator predicted both outcomes before either
+arm ended (M5 held twice). M4 held twice: expression is not the gate. The dose does not
+order the outcome (M3), because the field absorbs it. What the assay could not score —
+establishment over more than one lifetime — is a design fault of this assay, noted above,
+and the question it leaves is the one round 14 is now answering at population scale:
+whether stomachs and their field can settle anywhere with R0 = 1 and more than ten alive.

@@ -140,7 +140,9 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    Score round 14 into 0050 with the recruitment clause from `lineage.jsonl`. The invasion
    assay (0051): `r15i-c10` scored — it cannot invade at clearance 10 (R0 0.96 on the
    founding stake, one naturally endowed child from 50; the calculator agreed); `r15i-c1`
-   runs as control on w3 (score M1, M3 at 12,000); `r15i-c5` dropped as redundant. The
+   scored — same answer at clearance 1 in water ten times richer (0051 closed: the
+   stomachs set their own field, and the assay's horizon of one lifetime cannot score
+   establishment); `r15i-c5` dropped as redundant. The
    coarse step (0052) is closed: 0.02 screens, 0.01 confirms, 0.05 out, limiter gated —
    w7 is free. Every worker needs `new-worker.ps1` (once per worker, from PowerShell) plus
    the four-file hash check before a launch; the monitor's watch list is
