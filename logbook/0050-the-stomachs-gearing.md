@@ -122,7 +122,7 @@ Headers verified against the table before any arm is believed. Results appended 
 
 ## Results
 
-*Interim, 2026-09-03 evening, updated that night: four arms ended, four
+*Interim, 2026-09-03 evening, updated that night: five arms ended, four
 more launched under the sequential rule (`r14c10-s3`, `r14c10-s4`, `r14c5-s3`, `r14c5-s4`),
 of which two were stopped under the futility rule on the owner's word; seed 5 of each dose
 will not be launched (owner, same ruling: the mechanism is clear and another draw against
@@ -140,6 +140,7 @@ header at launch; V2 — every arm differs from its `r13a-sN` at the t=500 row; 
 | `r14c10-s2` | budget | 1,731 | 155 (8,800–24,200) | **48** (t=14,400) | 0 | 0 | ✓ ✓ ✗ ✗ | **fail** — the campaign's largest line, 48 → 12 → 4 → 0 in water it thinned to 0.4–0.7 J/m³; gone by t=24,400, no second wave by 30,000 |
 | `r14c10-s3` | **stopped at t=14,500** under the futility rule (owner, 2026-09-03 night) | 1,735 | 0 | 0 | 0 | — | ✓ ✗ ✗ · | **fail** — no line by 15,000; the population in the surface film at 0.7 m |
 | `r14c5-s3` | **stopped at t=17,900** under the futility rule | 1,785 | 0 | 0 | 0 | — | ✓ ✗ ✗ · | **fail** — no line by 15,000; surface film at 0.3 m |
+| `r14c5-s4` | budget | 1,846 | 66 (8,000–14,500) | 2 (t=8,600) | 0 | 0 | ✓ ✓ ✗ ✗ | **fail** — a line of 1–2 at −4 m in 0.9 J/m³, below clearance 5's breeding density; gone by t=14,700 |
 
 The two clearance-10 seeds are the first worlds in this campaign to grow an absorptive
 line past twenty members, and both lines are gone or going by the run's second half. The
@@ -158,7 +159,7 @@ The prediction table, so far:
 | # | prediction | standing |
 |---|---|---|
 | M1 | lines form: `inherit` ≥ 1 in ≥ 3 of 5 seeds per arm, ≥ 10 at some sample in one | **c10: held on the ≥ 10 clause** (peaks 22 and 48 in seeds 1–2) but not on the 3-of-5 clause as run — seed 3 stopped without a line, seed 5 not launched; c5: 2 of 4 seeds with a line (peaks 9 and 2), none ≥ 10 |
-| M2 | ≥ 3 of 5 seeds pass in one arm; c10 predicted to pass | **0 of 6 scored** (four to budget, two stopped under the futility rule); the c10 lines fail on the alive clause by overshoot, not by never forming — a third reading the two-sided list did not have |
+| M2 | ≥ 3 of 5 seeds pass in one arm; c10 predicted to pass | **0 of 7 scored** (five to budget, two stopped under the futility rule; `r14c10-s4` running); the c10 lines fail on the alive clause by overshoot, not by never forming — a third reading the two-sided list did not have |
 | M3 | the chain grazes: `J/m3 here` at t > 15,000 below the seed's `r13a-sN`, `det deep` with it | **held where it can be read cleanly**: `r14c10-s2` against `r13a-s2` at matched depth (−10.5 vs −11.5 m), 0.74 against 6.55 J/m³, `det deep` 1.08 against 4.75; `r14c10-s1`'s field fell while its line lived and rebuilt after it died. But `det deep` is lower in the no-line seed `r14c5-s2` too (3.5 against 4.75), and `J/m3 here` is read at the population's depth, which moved between rounds in three of four seeds — so neither column discriminates on its own |
 | M4 | no bloom | **held** in four of four (max 1,858; ceiling 8,000) |
 | M5 | producers persist, ≥ 1,000 | **held** in four of four |
