@@ -50,7 +50,7 @@ namespace Evosim.Sim.EditorTools
     /// </remarks>
     public static class SwimSurvey
     {
-        private const float FixedDt = Ecosystem.FixedDt;
+        private static float FixedDt => Ecosystem.FixedDt;
         private const int Population = 200;
         private const float Seconds = 20f;
         private const float TileSpacing = 100f;

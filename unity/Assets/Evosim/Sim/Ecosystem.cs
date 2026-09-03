@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Evosim.Core;
@@ -38,19 +39,53 @@ namespace Evosim.Sim
     /// </remarks>
     public sealed class Ecosystem
     {
-        /// <summary>Physics timestep. In the config hash (§7).</summary>
-        public const float FixedDt = 0.01f;
+        /// <summary>The metabolic step, seconds. Fixed: the economy runs at 2 Hz whatever the physics does.</summary>
+        public const float MetabolicStepSeconds = 0.5f;
 
         /// <summary>
-        /// Physics steps per metabolic step. 50, so the economy runs at 2 Hz against physics' 100.
+        /// Physics timestep. 0.01 s unless <see cref="ConfigurePhysicsStep"/> was called (env
+        /// <c>EVOSIM_DT</c>); carried in the report header and the run's <c>config.json</c>.
+        /// </summary>
+        public static float FixedDt { get; private set; } = 0.01f;
+
+        /// <summary>
+        /// Physics steps per metabolic step. 50 at the default step, so the economy runs at 2 Hz
+        /// against physics' 100; always <see cref="MetabolicStepSeconds"/> / <see cref="FixedDt"/>.
         /// </summary>
         /// <remarks>
         /// Energy is an integral, so a coarser metabolic clock changes only its quantisation and
         /// not its value — unlike a coarser <i>physics</i> clock, which changes what is physically
         /// possible and hands free energy to anything that finds it (§11.2). The two are not the
-        /// same kind of approximation and only one of them is safe to take.
+        /// same kind of approximation and only one of them is safe to take — which is why the
+        /// physics step is configurable only for a validation against a seed already run at 0.01
+        /// (logbook/0052), and the metabolic step is not configurable at all.
         /// </remarks>
-        public const int StepsPerMetabolicStep = 50;
+        public static int StepsPerMetabolicStep { get; private set; } = 50;
+
+        /// <summary>
+        /// Sets the physics timestep for every <see cref="Ecosystem"/> built afterwards. The
+        /// metabolic step stays at <see cref="MetabolicStepSeconds"/>, so <paramref name="dt"/>
+        /// must divide it exactly (0.01, 0.02, 0.025, 0.05, 0.1, 0.125, 0.25, 0.5).
+        /// </summary>
+        public static void ConfigurePhysicsStep(float dt)
+        {
+            if (!(dt > 0f) || dt > MetabolicStepSeconds)
+            {
+                throw new ArgumentOutOfRangeException(nameof(dt), dt, "Must be in (0, 0.5].");
+            }
+
+            float steps = MetabolicStepSeconds / dt;
+            int rounded = (int)Math.Round(steps);
+            if (rounded < 1 || Math.Abs(steps - rounded) > 1e-4f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(dt), dt,
+                    "Must divide the 0.5 s metabolic step exactly: 0.01, 0.02, 0.025, 0.05, 0.1, 0.125, 0.25 or 0.5.");
+            }
+
+            FixedDt = dt;
+            StepsPerMetabolicStep = rounded;
+        }
 
         /// <summary>Metres between tiled creatures — §6.3.</summary>
         public const float TileSpacing = 100f;
