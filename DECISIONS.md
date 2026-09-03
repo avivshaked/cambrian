@@ -92,7 +92,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D067](#d067) | The vent — an upwelling plume from the floor in one patch, return through the others, superposed on the rolls; returns what the trapdoor takes | 2026-09-03 | built · run as round 13 arm B (logbook/0049), two seeds: producers survive the return flow (M6 held), the deep field falls to the lowest of the round (2.0–2.4 J/m³), no chain forms, matter refusals rise 1.5–5× against the twin. Neither harmful nor load-bearing while absorbers cannot breed; off in round 14 |
 | [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050) running under D069's sequential rule: 0 of 3 scored so far — clearance 10 grows the first 20–48-member lines of the campaign and they graze their field and crash; clearance 5 holds a line of 3–9 |
 | [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
-| [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; literature round on exudation first; screen pre-registered |
+| [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered |
 
 ---
 
@@ -3312,5 +3312,26 @@ harmless or useful, but it is not assumed either way.
 only a confirmation run passes. Not a fourth turn of the same knob: sink speed (D067) and
 gearing (D068) moved where detritus goes and how fast it is eaten; this is the first lever
 on how much there is. And not a number yet — the fraction waits on the review.
+
+**The number, from the review's round 5 (same night; LITERATURE-REVIEW.md Q10).** Percentage
+extracellular release runs 10–20% as a world-ocean general range (Nagata 2000 via [CH20
+p.5]), 13% as a cross-system mean that three fetched papers call a methodological floor
+([BP91], not obtained — reached through [MCP05 p.9], [LS11 p.7], [CH20 p.5]), ~20% flat
+across a 150-fold productivity range [MCP05 p.1, p.9], and 37–41% in oligotrophic water
+[LS11 p.1; CH20 p.1]. It does not vary with cell size (isometric, slope 0.95) or growth
+phase [LS13 p.1], so a flat fraction of intake is literature-faithful in those respects.
+**The screen runs at 0.15**, with a bracket of 0.05 / 0.13 / 0.20 / 0.37 held in reserve if
+the first reading is ambiguous. Three caveats carried from the review: (i) the reference
+point is worse than the proposal said — the measured producer→herbivore step is 13% [ED21
+p.14], and Pauly & Christensen's 10% is a TL2→4 figure [PC95 p.3], so 1% is against 13, not
+10; (ii) real release is highest where light is lowest, at the base of the euphotic layer
+[MCP05 p.8–9], so a fraction-of-intake rule under-delivers in the dim band; the faithful
+alternative is a per-biomass release independent of instantaneous photosynthesis, which
+would have to be floored at what the reserve holds — a world-rule choice the owner has not
+yet made, and the screen starts with fraction-of-intake because the mutants are born where
+producers earn; (iii) exudation alone does not close bacterial demand even in the ocean
+(5–14× short, [LS11 p.8]; [CH20 p.1]), so a failed screen at 0.15 is consistent with the
+literature rather than a refutation of the mechanism. Design impact recorded in the
+review's round table; DESIGN.md's changelog takes the rule when it is built.
 
 *Absorbed from `fable-propose-detritus-flux.md` (2026-09-03), deleted on this ruling.*

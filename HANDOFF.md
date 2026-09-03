@@ -147,7 +147,7 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    energy flux (~0.2 W against a ~17 W producer economy, inferred from `detritus J`'s
    rebuild in `r14c10-s1`), and the proposed lever is exudation. **Ruled: D070**, yes in
    principle, build gated on `r14c10-s1-flux`'s measured income (~0.2 W expected) and
-   `r14c10-s4`'s outcome (crash expected); the literature round on exudation runs first;
+   `r14c10-s4`'s outcome (crash expected); review round 5 is done (PER 10–20%, mean 13%, ~20% flat; the screen runs at 0.15 — D070 carries the numbers and the three caveats);
    the screen is pre-registered in D070. The proposal file is deleted.
    Built meanwhile: the detritus-flux instrument (`det in` / `det out` columns, J per
    window; `World.DetritusDepositedTotal/TakenTotal`; test in `WorldTests`). It changes

@@ -8,10 +8,11 @@ quality-diversity search).
 **Reporting standard:** PRISMA-2020 / PRISMA-S, with an AI-assistance disclosure (§8).
 
 > **Scope honesty up front.** This is a **decision-support review for an engineering
-> project**, not a publication-grade systematic review. After round 3, sixteen retrieved
-> papers are held — three read in full, the rest in part, where "in part" for the round-3
-> additions mostly means *specific claims verified against the primary text* rather than
-> cover-to-cover reading. ~~Round 2 opened a seventh question (endogenous selection,
+> project**, not a publication-grade systematic review. ~~After round 3, sixteen retrieved
+> papers are held — three read in full,~~ ↻ **after round 5, thirty-seven are held** (round
+> 4 added thirteen, round 5 seven), twenty-eight of them informing the synthesis and five
+> read in full — the rest in part, where "in part" mostly means *specific claims verified
+> against the primary text* rather than cover-to-cover reading. ~~Round 2 opened a seventh question (endogenous selection,
 > `DESIGN.md` §5A) that **has never been searched for at all**~~ **Round 3 (2026-08-29)
 > searched it**: §5A is no longer unreviewed design, though the round-3 coverage is
 > breadth-first and single-pass — see §7.1. Section 7 states the limitations without
@@ -32,6 +33,7 @@ history.
 | **2** | 2026-08-02 | New question, raised during implementation: **should morphological and neural complexity carry a metabolic cost?** | 0 new searches — targeted re-reading of the 8 papers already held | **0 new papers.** Extended reading of [L21] (§8.2 p.10, §13 pp.14–16) and [C18] (§2.4 p.8, §3 pp.13/17, §4 p.29); confirmatory passes on [CEA07] §3.4, [TM01] pp.6–8, [K12] §2.2, [CU15] supplementary p.24 | DESIGN.md draft 4→5: added **§5A** (energy economy, endogenous selection), superseded §5.5, demoted §8 to observatory, repurposed §6.3/§6.4. Recorded as `DECISIONS.md` D017 |
 | **3** | 2026-08-29 | §9's backlog, overdue by the review's own protocol: §5A implemented and measured for a month with its literature never searched; the 2025 co-optimisation preprint never followed up; forward snowballing never done; §13.4 quarantine unverified | 4 parallel search sweeps (delegated to subagents — §3.2, §8), plus Semantic Scholar citation API for forward snowballing and CrossRef for verification | **8 new papers retrieved** ([Y94] [MC25] [CO02] [VG05] [GOY23] [ST00] [CB18] [PU16]), ~45 candidates surfaced and screened, ~13 citing works triaged; key claims verified against primary text for [Y94] [MC25] [CO02] [CB18] | **§5A.2's "no precedent for a per-neuron charge" corrected** — [Y94 p.7] is the precedent (DESIGN.md §0e). [CB18] and [PU16] verified and promoted out of §13.4. Q1 sharpened by [MC25]; **Q7 answered in part; Q8 opened and answered in principle** (§2). No DESIGN mechanism changed; the round's findings feed the next decisions rather than rewriting existing ones |
 | **4** | 2026-09-01 | A design decision built on uncited inference was falsified by experiment: D055's seabed refuge — flagged ⚠ uncited in its own entry — blocked consumer establishment (logbook/0042) and starved hand-placed consumers to extinction (logbook/0043), and the pending round-8 stabiliser decision plus the owner's whole-layer-access hypothesis lean on the same untouched literature | 2 parallel sweeps (delegated — §3.7, §8), 9 declared new themes under a new question (Q9); the §3.2 re-run was skipped as vacuous (3 days since round 3) and is so logged | **13 PDFs fetched** (12 new to the corpus), **10 into the synthesis** ([HUF58] [JN97] [RMF07] [FM15] [HZ13] [KR13] [MO04] [JKT04] [DBWM05] [RC07]); ~25 relevant works recorded closed-access; 4 load-bearing claims re-verified by the reviewer against extracted text | **D055's failure is theory-predicted, not anomalous** — [KR13 p.2]: the consumer's equilibrium needs refuge *plus* accessible break-even density, so a refuge covering the feeding ground deletes the consumer (D055 addendum updated). Q9 opened and answered in theory. Three constraints delivered to the pending round-8 decision: patches must be *unequal* [HZ13 p.5], the criterion is a length-scale ratio not a dispersal rate [RMF07 p.5], and the strong refuge form is fixed-number (≡ type III response) not proportional [KR13 p.1–2]. The period-vs-generation discriminator for the bust mechanism is uncomputable from current logs — **lineage events promoted from post-goal to pre-round-8**. No existing DESIGN mechanism changed |
+| **5** | 2026-09-03 | `DECISIONS.md` **D070**, ruled in principle the same day and explicitly gated on this round: the world's producers give nothing to the water while they live, so dead tissue is the detritus pool's only income, the second trophic level is fed at ~1% of primary production (0.2 W against ~17 W) and a consumer line caps out at about six individuals. The proposed world rule — a producer deposits a fraction of photosynthetic intake into the nutrient field each step — needed a *number with a citation* before it could be a rule | 11 web queries in 3 themes, plus the Semantic Scholar graph + batch APIs (10 DOIs screened for open access) and the Figshare API; **the §3.2 strings were not re-run** — 2 days since round 4, a date-filtered re-run is vacuous, logged per §3.5 rule 1 | **7 PDFs fetched, all 7 into the synthesis** ([PC95] [MCP05] [LS11] [LS13] [CH20] [PWAH07] [ED21]); every numeric claim in the tables below was located and re-read by the reviewer in the extracted `source.md`. **6 works recorded bot-gated or closed and not bypassed** — including the field's two canonical sources, Baines & Pace 1991 and Thornton 2014 | **Q10 opened and answered.** The number D070 asked for: percentage extracellular release is **10–20% of primary production as a world-ocean general range** (Nagata 2000, via [CH20 p.5]), a cross-system mean of **13%** ([BP91], reached only through three independent verified secondaries), **~20% and flat** across a 150-fold productivity range [MCP05 p.1, p.9], rising to **37–41%** in oligotrophic water [LS11 p.1; CH20 p.1]. Three corrections to what the design would otherwise have assumed: exudation does **not** scale allometrically with cell size (isometric, slope 0.95 across >7 orders of magnitude of cell volume) and does **not** differ between growth phases [LS13 p.1]; and it is **not** proportional to light — DOCp is irradiance-independent while POCp is not, so real PER is *highest where photosynthesis is lowest* [MCP05 p.1, p.8–9]. Two reference points for the 1% diagnosis: the producer→herbivore step measures **13% (11–17%)** [ED21 p.14], and Pauly & Christensen's famous 10% is measured for **TL2→4 only** [PC95 p.3], so it is the wrong number to compare a producer→consumer step against. No DESIGN mechanism changed; the fraction goes to the owner for D070 |
 
 **Round 2 note — no new retrieval.** This round searched nothing. It re-read papers already
 in `research/papers/` against a question that had not been asked in round 1, and the answer
@@ -132,6 +134,7 @@ statistical significance and is reported here as suggestive only.
 | Q7 | *(opened round 2, searched round 3)* Does endogenous / energy-based selection have precedent, and what lets such systems hold multiple strategies and trophic structure instead of collapsing to the cheapest trade? | 🟡 **Answered in part.** Precedent is real and primary-sourced: [Y94] (PolyWorld — per-neuron and per-synapse energy charge, behaviour-priced actions), [VG05] (Gene Pool — locomotion pays because food and mates are the only routes to reproduction), [CO02] (Avida — **depletable** resources produce negative frequency-dependent selection and stable coexistence of up to nine strategies; making the same resources unlimited collapses diversity to one genotype). Trophic emergence conditions from the ecology-modelling side: adaptive prey selection [DROSSEL04 — lead], spatial structure and density thresholds [HAMM21 — lead], closed nutrient cycles [GOY23]. What no held source yet shows: trophic levels emerging from *morphology-encoded* feeding on a physically simulated body — that remains this design's own bet |
 | Q8 | *(opened round 3)* What instrument distinguishes adaptive evolution from a treadmill, computable from this project's logs (births with parent ids, deaths, genomes, energy ledgers)? | 🟡 **Answered in principle, not yet implemented.** Bedau–Packard evolutionary activity with the class 1–4 taxonomy (via [BSP98 — lead, unfetched]) is the formal treadmill test; [ST00] supplies an implementation that replaces the "neutral shadow run" with a randomly-permuted shadow population, which fits a system that has no fitness function to switch off. The MODES toolbox ([DOL19 — lead, bot-gated preprint]) is the modern alternative and substitutes a lineage-persistence filter for the shadow. Both need a lineage record, which bears directly on the open `lineage.jsonl` decision |
 | Q9 | *(opened round 4)* What stabilises a consumer–resource interaction against boom-and-bust — and which stabiliser fits a world whose only evolved consumer is a benthic filter feeder on a well-mixed detritus pool? | ✅ **Answered in theory; the world's own answer is the round-8 experiment.** The theory predicted this project's own result before it ran: a refuge covering the consumer's feeding ground does not stabilise, it deletes the consumer — the equilibrium needs the refuge *plus* the consumer's break-even accessible density [KR13 p.2], and increasing hidden prey ends in predator extinction (González-Olivares & Ramos-Jiliberto 2003, abstract — closed). Four stabiliser families with primary sources: **(a) refuge, strong form** — fixed-*number* not proportional, which is mathematically a type III functional response [KR13 p.1–2; Maynard Smith 1974 via KR13]; **(b) spatial structure** — works by asynchrony + limited dispersal (empirically: continuous platform dead in 120 days vs eight throttled islands persisting 393–447+ [JN97 p.7]; Huffaker's 120-position universe [HUF58 p.39–41]), but *subdivision alone is the null result* — dispersal can destabilise (Briggs & Hoopes 2004, abstract — closed), identical patches buy nothing [HZ13 p.5], and the operative criterion is a length-scale ratio: coexistence dies when the boom-bust pattern wavelength outgrows the domain [RMF07 p.5]; a growth *gradient* plus mobile grazer stabilises even type I feeding at unbounded carrying capacity [FM15 p.1, p.19] — this project's light gradient is that geometry, rotated; **(c) feeding relaxation at low density** — a type III toe (q=0.1 suffices in food webs [DBWM05 p.12]), noting an unbounded linear clearance is not even a real type I, which has a satiation plateau by definition [JKT04 p.1]; **(d) donor control** — a flux-fed detritus pool with a mass-action consumer is *globally stable* [MO04 p.7], so the observed busts imply this world's pool is not behaving as donor-controlled (closed-loop recycling feeds back — Quévreux 2021, abstract, bot-gated) and/or the cycles are cohort-structural, not dynamical (de Roos & Persson family — lead). **The discriminator (cycle period vs consumer generation time) needs lineage events, which do not exist yet** |
+| Q10 | *(opened round 5)* What fraction of its photosynthetic intake does a producer release to the water while alive; what producer→consumer transfer efficiency should a world be judged against; and is the detritus/microbial route a real path for energy to consumers rather than a leak? | ✅ **Answered, with three corrections to the naive form of the rule.** **(a) The fraction.** Percentage extracellular release (PER = dissolved / [dissolved + particulate] primary production) is a normal, continuous process in all growth phases. World-ocean general range **10–20%** (Nagata 2000 via [CH20 p.5]); cross-system mean **13%**, from 16 lacustrine/marine/estuarine studies ([BP91] — **not obtained**, reached through [MCP05 p.9], [LS11 p.7] and [CH20 p.5], all three of which also flag that its glass-fibre-filter methods *underestimate* release); **22 ± 2%** measured in the Celtic Sea and **~20% flat** across a productivity range from <100 to >15,000 mg C m⁻² d⁻¹ (n = 35, r² = 0.90) [MCP05 p.1, p.9]; **~37%** in the ultraoligotrophic Mediterranean [LS11 p.1]; **40.8 ± 12.2%** (integrated range 28.6–60.1%) in the southern East China Sea [CH20 p.1, p.5]; **10 to >35%** in natural assemblages but only **<1–20%, mean ~2%,** in cultures [LS13 p.1]. **(b) Variation.** With *nutrient status*: contested inside one lab — [LS11 p.7–8] finds the oligotrophic contribution higher yet reports that on their pooled dataset "no overall inverse relationship between PER and total primary production exists", while [MCP05 p.9] finds PER flat from eutrophic to oligotrophic. With *growth phase*: no significant difference across three growth stages in 22 species [LS13 p.1]. With *cell size*: **none** — PER uncorrelated with cell size, cell-specific exudation isometric with cell volume (slope 0.95), so "general allometric models cannot be used to predict exudation" [LS13 p.1]. With *light*: DOCp is roughly constant across irradiance while POCp is strongly light-dependent, so PER rises under low light and peaks (>40–50%) at the *base* of the euphotic layer [MCP05 p.1, p.7, p.8–9]. **(c) The reference point.** Producer→herbivore transfer efficiency averages **13% (11–17%)**, and herbivore→fish **10% (7–12%)** [ED21 p.14]; the conventional ~10% [ED21 p.7] traces to [PC95], whose mean of 140 estimates across 48 trophic models is **for TL2→4 and shows no trend with TL** [PC95 p.1, p.3] — it is not a measurement of the producer→consumer step. Ecosystem-scale estimates span <1%–52% [ED21 p.17]. **(d) The detritus/microbial path is real and large.** Of 138 energy channels deconstructed from 40 community food webs, 20% originate with detritus against 63% with a primary producer, "many of which could be traced back to detritus if the description were complete" [MO04 p.3]; most organic matter available to consumers in the ocean is used and respired by bacteria [PWAH07 p.3], and the larger part of all energy captured by marine photosynthesis is ultimately consumed by microorganisms [PWAH07 p.6]. **The caveat that matters for D070:** exudation alone does not feed that loop even in the real ocean — bacterial carbon demand exceeded dissolved primary production **5- to 14-fold** in the Mediterranean [LS11 p.8] and exceeded total primary production at all non-upwelling East China Sea stations [CH20 p.1]; sloppy feeding, excretion and viral lysis supply the rest [LS11 p.8; ED21 p.10] |
 
 **PICOC framing.** *Population:* evolved virtual creatures with genetically encoded 3D
 morphology and control. *Intervention:* co-evolution of body and controller under
@@ -299,6 +302,66 @@ all bot-gated requests this round (403/503/Anubis), which cost the corpus Jansen
 Bonsall 2002, Dolson 2017's page-level text and Quévreux 2021 despite three of the four
 being nominally free — the manual-fetch queue in §9 grew accordingly.
 
+
+### 3.8 Round 5 searches (2026-09-03)
+
+**No subagents this round.** Discovery, retrieval, extraction and verification were all done
+by the reviewing model directly — which removes round 3's and round 4's relay threat (§7.1)
+at the cost of a narrower search than four parallel sweeps produce. The §3.2 strings were
+*not* re-run: two days had elapsed since round 4, so a date-filtered re-run is vacuous, and
+the skip is logged here as a decision rather than an omission (§3.5 rule 1). **Forward
+snowballing was not performed this round** — the round's anchors were named in the brief and
+the corpus was assembled backwards from their reference lists instead; recorded in §7.1.
+
+Three themes, eleven queries. Web search returned 9–10 result links per query (the tool
+reports links, not database result counts — the §7.1 deviation, unchanged).
+
+Theme A — how much do producers release?
+```
+1. Baines Pace 1991 "percentage extracellular release" phytoplankton dissolved organic
+   carbon Limnology Oceanography
+2. Thornton 2014 "dissolved organic matter" phytoplankton release European Journal of
+   Phycology review PDF
+3. "Baines" "Pace" 1991 "production of dissolved organic matter by phytoplankton" pdf
+   repository free full text
+4. Marañón Cermeño Fernández Rodríguez Zabala 2004 "significance and mechanisms of
+   photosynthetic production of dissolved organic carbon" Limnology Oceanography digital.csic
+5. "percentage extracellular release" phytoplankton review open access Biogeosciences OR
+   Frontiers OR PLOS PER 5-70% nutrient status
+6. Thornton "DOM release by phytoplankton in the contemporary and future ocean" oaktrust OR
+   repository OR researchgate full text pdf 2014
+```
+Theme B — what should 1% be compared against?
+```
+7. Pauly Christensen 1995 Nature "primary production required to sustain global fisheries"
+   transfer efficiency 10%
+8. Eddy Bernhardt Blanchard 2021 "Energy Flow Through Marine Ecosystems: Confronting
+   Transfer Efficiency" pdf repository accepted manuscript
+```
+Theme C — is the detritus/microbial route a real path to consumers?
+```
+9.  Azam 1983 "ecological role of water-column microbes in the sea" pdf mirror site:edu OR
+    site:org full text
+10. "bacterial carbon demand" percentage "of primary production" microbial loop review open
+    access "50%" OR "30-60%" pelagic
+11. "m010p257" OR "Azam" "Fenchel" "Field" "Gray" "Meyer-Reil" "Thingstad" 1983 microbial
+    loop pdf course reading
+```
+
+**Open-access triage by API rather than by guessing.** The Semantic Scholar graph API was
+queried for one title and then in one batch for nine DOIs, reading the `openAccessPdf`
+status field; the Figshare API was queried for the one GREEN record it returned. That record
+turned out to be **link-only metadata pointing back at the publisher DOI** — a green-OA
+listing with no green copy behind it, which is worth knowing about as a retrieval failure
+mode. Three BRONZE records (Wiley, Cell Press) and two publisher hosts (Taylor & Francis,
+Inter-Research) returned 403/401 bot challenges to a non-browser client. None was bypassed.
+
+**Backward snowballing from the fetched set** supplied the round's most useful pointers —
+Nagata 2000's 10–20% range, Karl et al. 1998's ~30% for the North Pacific gyre, Teira et
+al. 2001's 23% for the North Atlantic gyre, Joint & Pomroy 1983's 15% for the Celtic Sea,
+and Thomas 1971's 44% for the Sargasso — each of which is recorded at the point of use as
+*cited through* a fetched paper, never as a primary read.
+
 ## 4. PRISMA flow
 
 *Cumulative through round 1. Later rounds add to these counts rather than replacing them —
@@ -389,6 +452,47 @@ Hoopes 2004 via its NCBI abstract — and each such use is marked at the point o
 The DeAngelis-Goldstein-O'Neill 1975 title contains a published typo ("Tropic"), preserved
 in the record because correcting it breaks DOI lookup by title.
 
+
+**Round 5 additions (2026-09-03):**
+
+```
+IDENTIFICATION
+  Records surfaced by 11 web queries (3 themes)                    ~100 result links
+  Records screened for open access via Semantic Scholar API           10 DOIs + 1 title
+SCREENING
+  Named anchors from the brief, screened against Q10                  ~12
+  Candidates carried forward to retrieval                                9
+RETRIEVAL
+  Targeted for retrieval (open access or green/bronze)                   9
+  Successfully retrieved                                               7/9
+     (Baines & Pace 1991 and Thornton 2014 both bot-gated — see below)
+  Relevant, recorded bot-gated or closed, NOT fetched, NOT bypassed      6
+     (Baines & Pace 1991; Thornton 2014; Nagata 2000; Fogg 1983;
+      Azam et al. 1983; Fenchel 2008 — plus Marañón et al. 2004,
+      Teira et al. 2001, Moran et al. 2022, all Wiley-gated)
+APPRAISAL
+  Every numeric claim located and re-read by the reviewer in the
+  extracted source.md before entering a table                          7   all of them
+  Read in full                                                         2   [LS13] [PWAH07]
+  Read at targeted passages (abstract + results + discussion)          5   [PC95] [MCP05] [LS11] [CH20] [ED21]
+  ADDED TO SYNTHESIS                                                   7
+  Cited but NOT obtained, flagged as such at every use                 1   [BP91]
+```
+
+**Verification:** all 8 round-5 records cross-checked against CrossRef (title, volume,
+issue, pages, year, retraction status) — **no retractions** — and the 7 fetched ones also
+confirmed against their own title pages. Metadata notes from round 5, all three caught by
+reading the PDF rather than the index: **[LS13]'s title is "Exudation of organic carbon by
+marine phytoplankton: dependence on taxon and cell size"** — several indexes, including the
+author's own site listing, transpose it to "Organic carbon exudation in marine phytoplankton:
+dependence on cell size and taxon"; the PDF is authoritative. **[ED21] is the UC eScholarship
+accepted manuscript**, not the version of record, so its PDF pages do **not** correspond to
+*Trends in Ecology & Evolution* 36(1):76–86 — locators here are PDF pages of the AM, and a
+claim needing the journal's pagination must be re-anchored. **[CH20] is Chen, Lai, Shiah &
+Gong**; a search index attributed it to Tsai. **[PWAH07]** is by Pomeroy, Williams, **Azam**
+and Hobbie — three of the six authors of the 1983 paper that named the microbial loop, which
+is the nearest thing to primary provenance obtainable while Inter-Research is bot-gated.
+
 ---
 
 ## 5. Synthesis matrix
@@ -416,6 +520,14 @@ in the record because correcting it breaks DOI lookup by title.
 | **[RMF07]** *(round 4)* | Coexistence requires *local* interactions; a critical mobility M_c exists (≈4.5×10⁻⁴ lattice fraction/tick in their system) above which biodiversity dies; M_c is **not** universal but the critical pattern *wavelength* is — extinction comes when λ ∝ √M outgrows the domain | Lattice rock-paper-scissors, Nature 2007; arXiv author copy | **Supplies the design criterion** — "how many boom-bust wavelengths fit across the world," computable from measured crash times and drift speeds, replaces any guessed dispersal rate | 📄 Peer-reviewed, *Nature*, green OA | Verified by reviewer at the M_c passage; cyclic 3-species game, not consumer-resource — mechanism transfers, constants do not |
 | **[FM15]** *(round 4)* | In a water column with a prey growth gradient and a fast grazer, **type I feeding at effectively infinite carrying capacity can be stable**; above a critical diffusion the system homogenises to Rosenzweig–MacArthur and is globally unstable; stability depends on habitat size and gradient steepness | PDE plankton model, *Bull. Math. Biol.*, arXiv copy | **The nearest theory to this exact world** — gradient + mobility as stabiliser, with the well-mixed limit explicitly the unstable case | 📄 Peer-reviewed, green OA | Vertical gradient in their geometry (light/growth over depth); transferring it horizontally is this project's inference, marked as such |
 | **[HZ13]** *(round 4)* | Jansen's intermediate-dispersal asynchrony mechanism named and dated; their own high-dispersal averaging mechanism **requires patches to differ in carrying capacity** — even enrichment across identical patches destabilises regardless of dispersal | Two-patch R-M metacommunity, PLoS ONE | **The sharpest constraint on the round-8 design** — subdivision into identical tiles is the null result; patch inequality does the work | 📄 Peer-reviewed, gold OA CC BY | Two-patch numerics; patch-count claim is an extrapolation the paper itself flags |
+| **[MCP05]** *(round 5)* | Percentage extracellular release averaged 22 ± 2% in the Celtic Sea and was **flat at ~20% across a productivity range from <100 to >15,000 mg C m⁻² d⁻¹** (log–log slope 0.96, not different from 1; n = 35, r² = 0.90); DOCp is roughly irradiance-**in**dependent while POCp is strongly light-dependent, so PER peaks (>40–50%) at the *base* of the euphotic layer; release is by passive diffusion from intact cells, not overflow and not grazing | ¹⁴C dissolved/particulate primary production, 10 integrated profiles, Celtic Sea summer stratification, plus P–E and 24 h light–dark kinetics; pooled with the authors' eutrophic Ría de Vigo dataset | **Sets the D070 number, and corrects its shape** — a flat fraction of intake is defensible in magnitude but wrong in its light response | 📄 Peer-reviewed, *Mar. Ecol. Prog. Ser.*, author self-archive | Two ecosystems, one lab, one method; the authors themselves ask for ultraoligotrophic replication. Reviewer-verified [p.1, p.7, p.9] |
+| **[LS13]** *(round 5)* | Exudation is **not allometric**: PER uncorrelated with cell size, cell-specific exudation isometric with cell volume (mean slope 0.95) across >7 orders of magnitude; **no significant difference between growth stages**; culture PER averaged only **~2%** of total carbon fixation against 10 to >35% in natural assemblages | 22 species, 5 phyla, 3 growth stages, ¹⁴C exudation in culture | **Simplifying** — the world rule needs no size term and no growth-phase gate; and it warns that a culture-derived number would be ten-fold too low | 📄 Peer-reviewed, *Mar. Ecol. Prog. Ser.*, author self-archive | Cultures, not assemblages — which is exactly why its own 2% must not be used as the world's fraction. Read in full |
+| **[LS11]** *(round 5)* | PER averaged **~37%** along a Mediterranean longitudinal transect with no clear longitudinal pattern; **bacterial carbon demand exceeded dissolved primary production 5- to 14-fold**, so exudation alone cannot feed the microbial loop; reproduces [BP91]'s 13% and its glass-fibre-filter caveat; on their own pooled dataset "no overall inverse relationship between PER and total primary production exists" | ¹⁴C DOCp/POCp, BOUM cruise, three Mediterranean regions; BCD from two published growth-efficiency models | **Caveat-supplying** — the strongest evidence that a producers-only exudation channel will still underfeed a second level, because it does in the ocean too | 📄 Peer-reviewed, *Biogeosciences*, gold OA CC BY | Summer stratification only; BCD is modelled, not measured. Reviewer-verified [p.1, p.2, p.7, p.8] |
+| **[CH20]** *(round 5)* | PER averaged **40.8 ± 12.2%** (integrated range 28.6–60.1%, volumetric 24.9–62.0%), >50% at upwelling stations; carries Nagata 2000's **10–20% world-ocean general range** and [BP91]'s 13%; total primary production could not sustain bacterial carbon demand except at upwelling stations; bacterial growth efficiency 5.7 ± 1.4% | Paired dissolved + particulate primary production, bacterial production and *directly measured* respiration, southern East China Sea | **Corroborating at the high end** — an independent lab, method and ocean basin reaching the same 30–40% oligotrophic figure as [LS11] | 📄 Peer-reviewed, *Front. Mar. Sci.*, gold OA | Brief research report, one cruise; BR measured at a subset of depths and extrapolated. Reviewer-verified [p.1, p.5] |
+| **[PC95]** *(round 5)* | The canonical 10% transfer efficiency: 140 estimates from 48 documented trophic models, whose mean the conventional 10% is "extremely close to", **with no trend of TE with trophic level** — but the estimates are for **TL2 → TL4**, i.e. herbivores/detritivores upward | Global fisheries catch (1988–91) apportioned into 39 groups at fractional trophic levels; Monte Carlo error propagation | **Corrective on the comparison, not on the diagnosis** — D070's "real transfer efficiencies run near 10%" is right about the number and wrong about which step it measures | 📄 Peer-reviewed, *Nature*; Sea Around Us self-archive | Fisheries-oriented; TE distribution is inherited from other modellers' Ecopath models, not measured here. Reviewer-verified [p.1, p.3] |
+| **[ED21]** *(round 5)* | Producer→herbivore transfer efficiency averages **13% (range 11–17%)** and herbivore→fish **10% (7–12%)** in temperate northern-hemisphere systems; ecosystem-scale estimates span **<1%–52%**; exudation and viral lysis are explicitly non-predatory losses that divert production to detritivorous bacteria; lab feeding experiments beat wild ones partly because they *prevent* loss to the microbial loop | Review of production-based, model-based and catch-based transfer-efficiency estimates across ocean biomes | **Supplies the missing reference point** — the producer→level-2 step this world is failing at, measured, which [PC95] does not give | 📄 Peer-reviewed, *Trends Ecol. Evol.*; UC eScholarship accepted manuscript | **Locators are AM PDF pages, not journal pages.** Review, so most figures are inherited from cited work. Reviewer-verified [p.7, p.10, p.11, p.14, p.17] |
+| **[PWAH07]** *(round 5)* | "Most of the organic matter available to consumers in the ocean is used and respired by bacteria"; "the larger part of all energy captured by marine photosynthesis ... is consumed ultimately by microorganisms"; in blue water, where small cells dominate, **only 1–2% of primary production may finally be assimilated by fishes**; microphages (salps, krill) short-circuit the loop and are its most efficient path upward | Narrative review by four of the field's founders, incl. Azam of the 1983 paper that named the microbial loop | **Confirms the path is real and cautions about its length** — a long microbial chain delivers ~1% to top consumers, which is what this world currently gets at level *two* | 📄 Peer-reviewed, *Oceanography* (TOS), gold OA | Deliberately non-quantitative; its numbers are all inherited citations (Ducklow et al. 1986; del Giorgio & Williams 2005). Read in full |
+| **[BP91]** ⚠ **NOT OBTAINED** *(round 5)* | Cross-system mean PER of **13%**, measured PER ranging <1–75% with individual-system means 3–40%, from 16 lacustrine, marine and estuarine studies; PER approximately constant across productivity | Literature synthesis, 16 studies | **The field's default number** — and the one this round could not read | 🔒 Wiley/ASLO, 403 to non-browser clients; the Semantic Scholar GREEN record resolves to link-only Figshare metadata | **Cited only through [MCP05 p.9], [LS11 p.7] and [CH20 p.5]**, all three of which independently report the 13% *and* independently flag that its glass-fibre-filter methods underestimate release. Treat 13% as a probable floor, not a central estimate |
 
 ---
 
@@ -606,6 +718,90 @@ Fetched and screened out: Chen, Wang & Liu 2023 (arXiv:2312.07737, GLV stability
 Mougi 2022 (*Sci. Rep.* 12:2464, interference at web level); Moreno, Rodriguez-Papa &
 Dolson 2024 (arXiv:2405.07245, phylogeny instrumentation — relevant to Q8, not Q9).
 
+
+### Round 5 additions (2026-09-03)
+
+*All retrieved from open sources with exact URLs in FETCH-RESULTS.md; no institutional
+access, no bot-gate bypassed. Page locators are PDF pages of the copy held in
+`research/papers/<n>-<key>/source.md`. Where a claim rests on a source this round could not
+fetch, it is marked* cited through *at the point of use.*
+
+**[PC95]** D. Pauly & V. Christensen, "Primary production required to sustain global
+fisheries," *Nature* 374:255–257, 1995. DOI `10.1038/374255a0` — 📄 peer-reviewed, Sea
+Around Us self-archive. *The 10% rule's actual provenance.* Fig. 2's caption is the load-
+bearing sentence: 140 transfer-efficiency estimates drawn from 48 documented trophic models,
+spanning **TL2 to TL4**, no trend with trophic level, mean "extremely close to" the
+conventional 10%. Read: abstract and Fig. 2 [p.1, p.3].
+
+**[MCP05]** E. Marañón, P. Cermeño & V. Pérez, "Continuity in the photosynthetic production
+of dissolved organic carbon from eutrophic to oligotrophic waters," *Mar. Ecol. Prog. Ser.*
+299:7–17, 2005. DOI `10.3354/meps299007` — 📄 peer-reviewed, author self-archive
+(em.webs.uvigo.es). *The best single number for D070, and the correction to its shape.*
+PER 22 ± 2%, flat at ~20% across a 150-fold productivity range, highest at the dim base of
+the euphotic layer because DOCp barely responds to irradiance while POCp does. Read:
+abstract, results, discussion [p.1, p.7, p.8, p.9, p.10].
+
+**[LS13]** D. C. López-Sandoval, T. Rodríguez-Ramos, P. Cermeño & E. Marañón, "Exudation of
+organic carbon by marine phytoplankton: dependence on taxon and cell size," *Mar. Ecol.
+Prog. Ser.* 477:53–60, 2013. DOI `10.3354/meps10174` — 📄 peer-reviewed, author
+self-archive. *The paper that says the rule can stay simple.* 22 species, 5 phyla, >7 orders
+of magnitude of cell volume: exudation isometric with size, indifferent to growth stage —
+"general allometric models cannot be used to predict exudation". Also the culture-vs-field
+gap: ~2% in culture against 10 to >35% in assemblages. Read in full.
+
+**[LS11]** D. C. López-Sandoval, A. Fernández & E. Marañón, "Dissolved and particulate
+primary production along a longitudinal gradient in the Mediterranean Sea,"
+*Biogeosciences* 8:815–825, 2011. DOI `10.5194/bg-8-815-2011` — 📄 peer-reviewed, gold OA
+CC BY. *The caveat with teeth.* PER ~37% in ultraoligotrophic water, and bacterial carbon
+demand still 5–14× the dissolved primary production — exudation does not feed the microbial
+loop on its own even in the ocean. Read: abstract, discussion, conclusions [p.1, p.2, p.7,
+p.8].
+
+**[CH20]** T.-Y. Chen, C.-C. Lai, F.-K. Shiah & G.-C. Gong, "Dissolved and Particulate
+Primary Production and Subsequent Bacterial C Consumption in the Southern East China Sea,"
+*Front. Mar. Sci.* 7:713, 2020. DOI `10.3389/fmars.2020.00713` — 📄 peer-reviewed, gold OA.
+*Independent corroboration at the high end,* and the carrier of Nagata 2000's 10–20%
+world-ocean range, which is the general figure this round recommends. PER 40.8 ± 12.2%.
+Read: abstract, results, discussion [p.1, p.5].
+
+**[ED21]** T. D. Eddy, J. R. Bernhardt, J. L. Blanchard et al., "Energy Flow Through Marine
+Ecosystems: Confronting Transfer Efficiency," *Trends in Ecology & Evolution* 36(1):76–86,
+2021. DOI `10.1016/j.tree.2020.09.006` — 📄 peer-reviewed, UC eScholarship **accepted
+manuscript** (locators are AM PDF pages, not journal pages). *The reference point [PC95]
+does not provide:* producer→herbivore 13% (11–17%), herbivore→fish 10% (7–12%), whole-
+ecosystem span <1%–52%; and an explicit treatment of exudation as a non-predatory diversion
+into the detrital/microbial channel. Read: abstract, ecosystem-scale processes, estimates
+[p.7, p.10, p.11, p.14, p.17].
+
+**[PWAH07]** L. R. Pomeroy, P. J. leB. Williams, F. Azam & J. E. Hobbie, "The Microbial
+Loop," *Oceanography* 20(2):28–33, 2007. DOI `10.5670/oceanog.2007.45` — ✅ CrossRef-verified
+📄 peer-reviewed,
+gold OA (The Oceanography Society). *The microbial-loop anchor obtainable while
+Inter-Research is bot-gated* — Azam co-authored both this and the 1983 paper that named the
+loop. Most organic matter available to ocean consumers is respired by bacteria; in blue
+water only 1–2% of primary production reaches fishes. Read in full.
+
+**[BP91]** ⚠ **NOT OBTAINED.** S. B. Baines & M. L. Pace, "The production of dissolved
+organic matter by phytoplankton and its importance to bacteria: patterns across marine and
+freshwater systems," *Limnology and Oceanography* 36(6):1078–1090, 1991. DOI
+`10.4319/lo.1991.36.6.1078`. Wiley/ASLO returns 403 to non-browser clients; the Semantic
+Scholar GREEN open-access record resolves to a **Figshare entry containing no file, only a
+link back to the publisher DOI**. Its 13% cross-system mean is used in this document
+**solely through three independently fetched papers** — [MCP05 p.9], [LS11 p.7], [CH20 p.5]
+— which agree on the number and each independently note that its glass-fibre-filter method
+underestimates dissolved release. Top of the round-5 manual-fetch queue (§9).
+
+**Sought and not obtained in round 5** (recorded, not bypassed): Thornton 2014 (*Eur. J.
+Phycol.* 49:20–46, the field's standard review — Taylor & Francis 403s both the PDF and the
+HTML full-text page to non-browser clients, so the widely-quoted "2–10% exponential phase
+rising to 10–60% in stationary phase" figures are **not asserted anywhere in this
+document**); Nagata 2000 (chapter in Kirchman, *Microbial Ecology of the Oceans* — closed;
+its 10–20% range enters via [CH20 p.5]); Fogg 1983 (*Botanica Marina* — closed); Azam et al.
+1983 (*MEPS* 10:257, the microbial-loop paper — Inter-Research bot-gated, 401); Fenchel 2008
+(*JEMBE* 366:99 — closed at Elsevier, no green copy); Marañón et al. 2004 and Teira et al.
+2001 (both *L&O*, Wiley-gated); Moran et al. 2022 (*L&O*, hybrid CC BY-NC but Wiley-gated);
+Cole, Findlay & Pace 1988 (*MEPS* 43:1 — Inter-Research bot-gated).
+
 ---
 
 ## 7. Threats to validity
@@ -663,6 +859,23 @@ Dolson 2024 (arXiv:2405.07245, phylogeny instrumentation — relevant to Q8, not
   M_c/wavelength, [JN97]'s persistence times) were re-located and re-read by the reviewer
   in the extracted `source.md` files; the sweep agents' own syntheses are reproduced in the
   session record but only reviewer-checked claims entered this document's tables.
+- **Round 5 dropped the relay and narrowed the search.** Discovery, retrieval and extraction
+  were done by the reviewing model directly, so no agent report stands between the tables
+  and the raw results — but eleven queries by one reader is a thinner net than four or two
+  parallel sweeps, and the round leaned heavily on anchors *named in the commissioning
+  brief*, which is a form of confirmation risk: the brief listed Baines & Pace, Nagata,
+  Thornton, Fogg, Teira, Marañón, Azam, Fenchel, Lindeman and Pauly & Christensen, and the
+  round largely went and got what it could of that list. Nothing was found that the brief had
+  not anticipated except [ED21] and the [PC95] trophic-level correction.
+- **⚠ Forward snowballing was not performed in round 5.** Backward snowballing from the
+  fetched set was, and is logged in §3.8. The papers most likely to have been missed are
+  post-2015 syntheses citing [BP91] — precisely the layer a forward snowball would surface.
+- **⚠ Round 5's two canonical sources are both unread.** The number this review now carries
+  into a design decision (13%, and the 10–20% range) originates in [BP91] and Nagata 2000,
+  and **neither was obtained**. Three fetched papers agree on the 13%, which is good
+  triangulation on the *value* and no check at all on its *derivation* — the underlying 16
+  studies, their methods and their spread are known here only as three sentences of
+  secondary summary.
 
 ### 7.2 Verification validity
 
@@ -679,13 +892,22 @@ Dolson 2024 (arXiv:2405.07245, phylogeny instrumentation — relevant to Q8, not
   load-bearing entries were verified in round 3** — CrossRef metadata confirmed, open copies
   retrieved and read at the load-bearing passages, promoted to the corpus as [CB18] and
   [PU16]. The remaining §13.4 entries stay quarantined.
+- **↻ Round 5 met this rule better than any previous round, and still not fully.** All
+  eight round-5 records — the seven fetched plus the unfetchable [BP91] — were cross-checked
+  against **CrossRef** (title, volume, issue, pages, year, retraction status; **no
+  retractions**), *and* the seven fetched ones were independently confirmed against their own
+  title pages. That is still one database, not the required two. The cross-check earned its
+  keep in both directions: CrossRef confirmed [PWAH07]'s DOI and pagination, which had been
+  inferred, while the PDFs corrected two search-index errors (§4's metadata notes — a
+  transposed [LS13] title and a misattributed [CH20] first author).
 
 ### 7.3 Synthesis validity
 
 - **Small n.** ~~Eleven papers inform the synthesis (five from rounds 1–2, six added in
-  round 3);~~ ↻ **Twenty-one after round 4** (ten added 2026-09-01); still only three read
-  in full. The round-3 and round-4 additions were read at targeted passages against
-  specific claims, which is honest for provenance-checking and weaker than full reads for
+  round 3);~~ ~~↻ **Twenty-one after round 4** (ten added 2026-09-01);~~ ↻ **Twenty-eight
+  after round 5** (seven added 2026-09-03, of which two were read in full — so five read in
+  full across the whole corpus, up from three). The round-3, round-4 and most round-5
+  additions were read at targeted passages against specific claims, which is honest for provenance-checking and weaker than full reads for
   anything else — a paper admitted this way could contradict this design somewhere nobody
   looked.
 - **⚠ Round 4's key theme primaries are cited through secondaries.** Rosenzweig 1971,
@@ -702,6 +924,24 @@ Dolson 2024 (arXiv:2405.07245, phylogeny instrumentation — relevant to Q8, not
 - **⚠ McNair 1986's dissent on refuges is unread.** Its abstract claims some refuge
   formulations *create* large-amplitude oscillations in systems that would otherwise damp.
   If a refuge-family knob survives into round 8, this paper moves up the fetch queue.
+- **⚠ Round 5's central quantity is contested inside the corpus, and the disagreement is
+  not noise.** Whether PER rises under nutrient limitation is asserted by [LS13 p.1] and by
+  [LS11]'s own cruise data, denied by [MCP05 p.9] across a 150-fold productivity range, and
+  denied again by [LS11 p.7] on its own pooled dataset in the same paragraph that affirms it
+  for the cruise. And **three of the four PER papers obtained come from one laboratory** —
+  Marañón's group at Vigo ([MCP05], [LS11], [LS13]) — which is a real independence problem
+  for a range this review is about to hand to a design decision. [CH20] is the only fully
+  independent field confirmation, and it lands at the high end (40.8%), while the unread
+  [BP91] sits at the low end (13%); the recommended range is therefore bracketed by the two
+  sources this round is *least* able to vouch for.
+- **⚠ A culture number and a field number differ ten-fold and both are correct.** [LS13
+  p.1] measures ~2% in culture; the field assemblages measure 20–40%. Which one a simulated
+  producer resembles is a modelling judgement this review cannot make, and any world rule
+  citing "the literature says 10–20%" is citing the *field* number specifically.
+- **⚠ The 1% comparison in D070 was made against the wrong step.** Pauly & Christensen's
+  10% is TL2→4 [PC95 p.3]; the producer→consumer step is 13% [ED21 p.14]. The diagnosis
+  survives — 1% against 13% is worse, not better — but the citation as originally reached
+  for would not have supported it.
 - **⚠ Substrate mismatch is the dominant threat.** [EA23] and [C18] — the two papers
   driving the largest design changes — both use **soft voxel robots**, while the design
   targets **rigid articulated bodies**. The premature-convergence mechanism and the
@@ -742,6 +982,7 @@ Dolson 2024 (arXiv:2405.07245, phylogeny instrumentation — relevant to Q8, not
 | Round 3: paper retrieval | Claude Fable 5, open-access sources only — **no institutional access used** | — |
 | **Round 4** (2026-09-01): search + retrieval + first-pass extraction | 2 parallel Claude Opus subagents (scoped briefs; read-only web; open-access only; bot-gates respected, not bypassed) | Round run autonomously under the standing goal; the triggering hypothesis (whole-layer access) is the owner's, raised in discussion |
 | Round 4: screening, load-bearing-claim re-verification, synthesis, this update | Claude Fable 5 | Four design-impacting claims re-verified against extracted text before entering any table |
+| **Round 5** (2026-09-03): search, retrieval, extraction, verification, synthesis, this update | Claude Fable 5.1 via subagent — **no search subagents**, one model end to end; open-access only, bot-gates recorded and not bypassed; no institutional access | Round commissioned by the owner with the question fixed by `DECISIONS.md` D070 and the fraction reserved as an owner decision; the review reports a range, it does not set the world rule |
 
 **No citation in this document was generated from model memory.** Every reference
 originates from a tool-call result within the session, and all cited works were retrieved
@@ -758,7 +999,8 @@ set is reconstructible by anyone with equivalent access.
 ## 9. Gaps and recommended next steps
 
 **Answered well enough to build on:** Q1 (with [MC25]'s sharpening), Q3, Q4, Q6, Q7 in its
-precedent half, Q9 in its theory half (round 4 — the world's own answer is experimental).
+precedent half, Q9 in its theory half (round 4 — the world's own answer is experimental),
+Q10 (round 5 — with the independence caveat in §7.3).
 
 **Resolved by round 3, kept for the record:**
 
@@ -820,6 +1062,35 @@ precedent half, Q9 in its theory half (round 4 — the world's own answer is exp
    computable from current logs: `lineage.jsonl` is empty and snapshots carry bare genomes
    with no birth metadata. The lineage-events build is therefore a *pre-round-8
    instrument*, not post-goal housekeeping — this round's concrete engineering demand.
+
+10. **NEW (round 5) — the exudation manual-fetch queue**, in priority order. **[BP91]
+    Baines & Pace 1991** (*L&O* 36:1078, DOI `10.4319/lo.1991.36.6.1078`) — the 13% and its
+    16 underlying studies are currently second-hand; Wiley 403s non-browser clients and the
+    "GREEN" Figshare record is empty. **Thornton 2014** (*Eur. J. Phycol.* 49:20–46, DOI
+    `10.1080/09670262.2013.875596`) — the field's standard review, bronze OA at Taylor &
+    Francis and 403 to non-browser clients on both PDF and HTML; it is the source of the
+    growth-phase figures this document deliberately does **not** assert. **Nagata 2000**
+    (chapter 5 in Kirchman, *Microbial Ecology of the Oceans*) — the 10–20% range this round
+    recommends comes from it via [CH20 p.5] and has never been read at source. Then **Azam
+    et al. 1983** (*MEPS* 10:257) and **Cole, Findlay & Pace 1988** (*MEPS* 43:1), both
+    behind Inter-Research's bot check; **Fenchel 2008**; **Marañón et al. 2004** (*L&O*
+    49:1652 — the eutrophic half of [MCP05]'s pooled dataset, so the 35-point regression is
+    presently half-verified); **Teira et al. 2001** (*L&O* 46:1370); **Karl et al. 1998**;
+    **Moran et al. 2022** (*L&O*, hybrid CC BY-NC, Wiley-gated).
+11. **NEW (round 5) — the light response is an open design question, not just a caveat.**
+    [MCP05 p.1, p.8–9] shows dissolved release roughly independent of irradiance while
+    particulate production is strongly light-dependent. A rule that exudes a fixed fraction
+    of *intake* therefore has the wrong depth profile: in the ocean PER is highest at the
+    dim base of the euphotic layer, which is exactly the depth band this project's consumers
+    occupy. The literature-faithful alternative is a per-biomass release rate that is
+    *independent* of instantaneous photosynthesis. Neither form has been tested here, and
+    the choice belongs with the world rule.
+12. **NEW (round 5) — exudation is one of at least four inputs to the real DOM pool.**
+    [LS11 p.8] and [CH20 p.1] both find bacterial demand exceeding dissolved primary
+    production, closed by sloppy feeding, excretion and viral lysis. If D070's screen fails
+    at a literature-faithful fraction, that is the next family to search — and it maps onto
+    mechanisms this project already has in adjacent form (D052's excretion moves matter, not
+    energy).
 
 **Not worth pursuing** on current evidence: deep-RL co-design (DERL, Evolution Gym) and
 CPPN encoding literature, both of which address a different substrate than this project
