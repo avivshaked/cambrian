@@ -3280,6 +3280,11 @@ gate the build on two readings"):
 1. `r14c10-s1-flux` — `r14c10-s1`'s world at the 0.02 screening step on the build that
    carries `det in` / `det out`. It must read the income at about the inferred 0.2 W with no
    grazer present. If it reads much higher, the diagnosis is wrong and nothing is built.
+   *Read the same night (0050's instrument note): met.* The income is a founding pulse —
+   4.3 W while founders die, 0.57 W at t=15,000 and falling by a third every 2,000 s as the
+   tissue per corpse drops from 87 J to 4.7 — that lands where the 0.01 record put it. A
+   corollary for the rule: a flux riding on intake does not shrink with the body the way
+   a corpse does.
 2. `r14c10-s4` — the richest water any arm has had (−15 m in 7 J/m³). If a larger stock
    turns the crash into a cycle that holds ten, the flux is not the binding constraint and
    the rule is reconsidered before it is built.

@@ -164,6 +164,45 @@ The prediction table, so far:
 | M5 | producers persist, ≥ 1,000 | **held** in four of four |
 | M6 | c10 > c5 at matched seeds | **held** in 2 of 2 pairs so far (22 vs 9; 48 vs 0) |
 
+### Instrument note: the detritus income, measured (`r14c10-s1-flux`)
+
+*Added 2026-09-03 night. D070 gated the exudation build on measuring the income the
+proposal had inferred from a slope. The detritus-flux instrument (`det in` / `det out`,
+joules per window; `World.DetritusDepositedTotal` / `DetritusTakenTotal`) went into the
+build the same night, and `r14c10-s1`'s world was rerun on it at the 0.02 screening step
+for 15,000 s: 31.8 min wall at 7.9× real time, 967 drag impulses limited, audit 0.0000%
+throughout, and the identity held to the joule — the summed windows, in minus out, equal
+the standing stock at every row (19,826.7 J at the end, both ways).*
+
+| phase (s) | gross income (W) | grazed (W) | deaths/s | J of tissue per death | mean alive | mean stomachs |
+|---|---|---|---|---|---|---|
+| 0–3,000 | 4.28 | 2.68 | 0.049 | 87 | 64 | 4.5 (founders) |
+| 3,000–5,000 | 2.45 | 0 | 0.069 | 36 | 256 | 0 |
+| 5,000–8,000 | 1.57 | 0.03 | 0.100 | 16 | 719 | 0 |
+| 8,000–11,000 | 1.12 | 0.04 | 0.128 | 8.8 | 1,233 | 0.8 |
+| 11,000–13,000 | 0.82 | 0.09 | 0.137 | 6.0 | 1,518 | 3.8 |
+| 13,000–15,000 | 0.57 | 0.16 | 0.120 | 4.7 | 1,658 | 4.0 |
+
+Two readings. **The income is a founding pulse that decays.** It is not the death rate
+that falls — that rises from 0.05 to 0.13 per second as the population fills in — but the
+tissue a dead body carries: 87 J when founders die, 4.7 J by t=15,000 and still falling.
+The world selects for small bodies (a cheaper child), and a small body is a small
+corpse. At 15,000 the income was 0.57 W and dropping by a third every 2,000 s; the 0.01
+arm's own record over 14,000–30,000 (net 0.19–0.24 W with about one stomach grazing, 2–3 J
+per death) is where that curve lands. **The gate's first reading is met:** the mature
+income is of the inferred order, a few tenths of a watt, not the watts of the founding
+era, and the ceiling of about six stomachs stands. A single 30,000-s arm on this build
+would put a measured number on the mature phase itself; not run tonight, because the
+0.01 record already gives it and the decision does not turn on the second decimal.
+
+The second reading is a point for the rule: exudation is a fraction of *intake*, and
+intake does not shrink with the body the way a corpse does — a population of tiny
+producers still fixes the same watts per lit area. A flux that rides on intake is immune
+to the selection that has been starving the second level; one that rides on death is not.
+
+*Same-seed butterfly, for the record: this realisation put the population at −4 to −6 m
+where the 0.01 one sat at −15, and grew a line of 2 from t=11,000 — 0052's finding, again.*
+
 **What this is, read with 0051.** The assay showed that fifty stomachs at clearance 10
 graze their water to a tenth of what fifty at clearance 1 leave, and earn the same. Here
 the same thing happens at population scale, from a single mutant: the line grows on the
