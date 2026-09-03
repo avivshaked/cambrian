@@ -115,3 +115,51 @@ refreshed and hash-checked before launch (D067's edit to `EvolutionRun.cs` post-
 last check), headers verified against the table before any arm is believed, a fresh monitor
 on every arm (the round-12 monitor exited with its list empty). Held until the owner frees
 the machine. Results appended below.
+
+## Results — 0 of 5, cut to five arms
+
+*Scored 2026-09-03. Five arms ran, not ten: `r13a-s1..3` and `r13b-s1..2`, all to budget.
+Seeds 4–5 of both arms were never launched — the owner ruled for round 14 (D068) at
+two-thirds of budget, when every arm read `inherit` 0, and the machine holds five. The
+score is on what ran and is labelled so. Wall clock 246–315 min per arm, 1.6–2.0× real
+time. V1–V4 held in every arm (the `r12y-s1` control's header lacks the sink token because
+the token was added to the header after it launched; its config hash equals its twins').*
+
+| # | prediction | result | verdict |
+|---|---|---|---|
+| M1 | larder in the light ≥ 5 J/m³ at 3 of 5 late samples in ≥ 3 seeds; deep below round 12's | `J/m3 here` ≥ 5 at 3 of 5 samples in **`r13a-s2` only** (6.1 / 9.0 / 7.3 / 4.7 / 4.7 at −11 m); the other four read 0.3–1.4 at four of five samples, spiking to 5–7.5 once. `det deep` at 30,000: 2.0–5.6 against 15–19 in every twin; `% on floor` 0.3–0.5% against 2.7% | **half**: the deep larder is gone as predicted; the lit larder exists only where a population stayed at depth |
+| M2 | refusals fall ≥ 5× | `mat blk` (per-100 s window) *rose* against the twin in every arm: 1.4× (a-s1), 1.9× (a-s2), 1.8× (a-s3), 1.5× (b-s1), **5.0×** (b-s2) | **falsified**, in the wrong direction |
+| M3 | no bloom | max `alive` 1,758–1,823; every arm `budget reached` | held |
+| M4 | chains arrive in ≥ 3 of 5; one line ≥ 10 | max `inherit` **0 in every arm**; lineage-confirmed inherited absorptive births 0, 1, 0, 1, 1 — single events, no line. Round 12's `r12y-s3` (3 births over 13,500 s) remains the campaign's only line | **falsified** |
+| M5 | ≥ 3 of 5 pass D063 | 0 of 5 | **falsified** (discovery regime) |
+| M6 | producers survive the vent | `alive` at 10,000: 1,415 and 1,555; mean depth −6.7 → +0.7 m and −3.9 → +1.0 m | **held** — with an instrument note below |
+
+**What happened.** Marine snow did what its physics promised and the biology did not
+follow. The trapdoor is closed: the deep stock fell three- to eightfold and the floor's
+share fivefold. But four of five populations then floated up into a surface film a metre or
+two thick (`depth sd` 1.0–1.6 m by t=20,000 in the vent arms, 2.7 in `r13a-s3`), and the
+field in that film reads 0.3–1.4 J/m³ between the rolls' once-a-period spikes. The one
+population that held mid-water, `r13a-s2` at −11 m, sat in 5–9 J/m³ from t=12,000 to the
+end — above the ~7 bar this entry named — and still formed no line: one inherited
+absorptive birth in 30,000 s. That is the pre-registered "M1 holds, M4 fails" reading, and
+[0050](0050-the-stomachs-gearing.md) reads the ledger to say why: at clearance 1 a stomach
+in 7 J/m³ clears 3 W/m³ against a leaf's ~47 at the surface, so a mutant that swaps a leaf
+for a stomach breeds slower than its siblings whatever the water holds. Marine snow lifted
+the food into the light, where the leaf wins by an order of magnitude, and left the deep
+below the stomach's 4 J/m³ break-even — it removed the one place a stomach could out-earn a
+leaf. M2's reversal fits the same picture: the surface film is where matter is scarcest and
+that is where the populations went.
+
+**The vent (D067's first run).** It returned what the trapdoor takes — the deep field in the
+vent arms is the lowest of the five (2.0–2.4 J/m³ at 30,000) — and producers survived it
+comfortably (M6). It did not put food where the population lives, because the population
+lives in the film, and it doubled to quintupled the matter refusals against the twin. On
+this round's evidence the vent is neither harmful nor load-bearing; it stays off in round
+14 (the simpler world) and is a lever for a world whose absorbers can already breed.
+
+**Instrument note.** Mean depth reads *positive* (+0.4 to +1.0 m) in three arms from
+t≈15,000. D050 stops upward net force at y = 0, but a body's centre can sit above the
+waterline by its own half-extent, and the light and nutrient models treat y ≥ 0 as the
+surface; a population pressed against the ceiling reads as slightly above it. The number is
+a film pressed against the surface, not water that does not exist — but a depth statistic
+above zero should be read as "at the surface" and nothing finer.
