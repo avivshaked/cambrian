@@ -133,8 +133,12 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    `r14c5-s2` fail (no line), `r14c10-s1` fail (line peaked at 22, grazed its field at
    −15 m from 3.3–4.0 to 1.1–1.3 J/m³, gone by t=16,000, no second wave by 30,000),
    `r14c10-s2` (w6) at t=22,800 with its line 48 → 4 in water it thinned to 0.4–0.7.
-   Running: `r14c10-s2`, `r14c10-s3` (w2), `r14c10-s4` (w7), `r14c5-s3` (w5), `r14c5-s4`
-   (w3); seed 5 of each dose not queued (the queue is done). Score each as it ends into
+   `r14c10-s3` (w2) and `r14c5-s3` (w5) were stopped under the futility rule on the
+   owner's word (no line by 15,000, both in the surface film) — those two workers need a
+   refresh before reuse (a killed process takes its Library with it). Running:
+   `r14c10-s2` (w6, ending), `r14c10-s4` (w7, keep to budget: −15 m in 7 J/m³, the
+   richest water yet), `r14c5-s4` (w3, a line of 1–2; stops when the exudation screen
+   needs its worker). Seed 5 of each dose will not be launched (owner). Score each as it ends into
    0050's table (the scoring script's logic is in the table's note: longest inherited run
    from the report's `inherit` column, recruitment from `lineage.jsonl`). The next screen
    after the round is the stabilisers that exist and have not run in this world — clearance toe,

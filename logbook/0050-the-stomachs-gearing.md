@@ -122,9 +122,11 @@ Headers verified against the table before any arm is believed. Results appended 
 
 ## Results
 
-*Interim, 2026-09-03 evening: three arms ended, one at t=22,800, four more launched under
-the sequential rule (`r14c10-s3`, `r14c10-s4`, `r14c5-s3`, `r14c5-s4`); seed 5 of each dose
-not yet queued. Scored against D063 as amended: producers persist · an absorptive line
+*Interim, 2026-09-03 evening, updated that night: three arms ended, one at t=22,800, four
+more launched under the sequential rule (`r14c10-s3`, `r14c10-s4`, `r14c5-s3`, `r14c5-s4`),
+of which two were stopped under the futility rule on the owner's word; seed 5 of each dose
+will not be launched (owner, same ruling: the mechanism is clear and another draw against
+a ceiling of six cannot reach ten — see `fable-propose-detritus-flux.md`). Scored against D063 as amended: producers persist · an absorptive line
 inherited for ≥ 20 consecutive samples · ≥ 10 of it alive at the last sample · an
 absorptive birth within the last 20 samples (from `lineage.jsonl`). V1 verified from each
 header at launch; V2 — every arm differs from its `r13a-sN` at the t=500 row; V3 — `floor`
@@ -136,6 +138,8 @@ header at launch; V2 — every arm differs from its `r13a-sN` at the t=500 row; 
 | `r14c5-s2` | budget | 1,775 | 0 | 0 | 0 | 1 (a mutant, not inherited) | ✓ ✗ ✗ ✓ | **fail** — no line ever; the population lived in the film at −2 to −5 m |
 | `r14c10-s1` | budget | 1,838 | 95 (5,000–14,400) | **22** (t=7,200) | 0 | 3 (mutants, none inherited) | ✓ ✓ ✗ ✓ | **fail** — the line grazed its field and died out by t=16,000 |
 | `r14c10-s2` | running, t=22,800 | 1,700 | 141 (8,800–22,800, open) | **48** (t=14,400) | 4 | 1 | ✓ ✓ · · | heading the same way: 48 → 12 → 4 in water it thinned to 0.4–0.7 J/m³ |
+| `r14c10-s3` | **stopped at t=14,500** under the futility rule (owner, 2026-09-03 night) | 1,735 | 0 | 0 | 0 | — | ✓ ✗ ✗ · | **fail** — no line by 15,000; the population in the surface film at 0.7 m |
+| `r14c5-s3` | **stopped at t=17,900** under the futility rule | 1,785 | 0 | 0 | 0 | — | ✓ ✗ ✗ · | **fail** — no line by 15,000; surface film at 0.3 m |
 
 The two clearance-10 seeds are the first worlds in this campaign to grow an absorptive
 line past twenty members, and both lines are gone or going by the run's second half. The
