@@ -126,3 +126,31 @@ Reading: M6 holds and M7 holds → 0.02 is the screening step and 0.05 is a stre
 M6 holds and M7 fails → 0.05 is usable for screening and the day's speed-up is ~5×. M6 fails →
 the instability is not only in our drag (the articulation solver itself, or buoyancy), and
 the coarse step stops at 0.02.
+
+### `r16dt-05b` — stable, fast, and a different world
+
+*Ended at budget: 15,000 s in 23.3 min wall (10.7× real time; the reference needed ~157 min
+for the same stretch, so ~6.7× faster). The limiter bound 1,768,013 times — about 0.6% of
+body-steps — and no force went non-finite. V1 and V3 held.*
+
+| # | verdict | evidence |
+|---|---|---|
+| M6 | **held** — 0.05 survives with the limiter | budget reached, no NaN, floor 0 after 1,100 |
+| M4 | **held** — near-linear speed-up | 6.7× at 0.05 against a 3.5× bar |
+| M1 / V4 | **falsified** — the audit opened | `audit` 0.0057–0.0101% from t=7,600 to the end (0.0000% at every row before); the reference and `r16dt-02` read 0.0000% throughout |
+| M7 | **held so far** — the divergence is not the overshoot | with the drag stable, the population still rose to the surface by t=2,600 (+0.2 m, `depth sd` 0.7–1.2 m) where the reference held −11 to −14 m with `depth sd` 7–8; the field at the population's depth read 0.2–0.4 J/m³ against 3.5–6.4; refusals 3–4× the reference's. `r16dt-02` tracks the reference on all of these (below) |
+
+Two things need naming. **The audit.** Nothing in the ledger reads the physics step, so a
+step-dependent leak of a hundredth of a percent is a bug by construction — the
+pre-registered reading. It opened at t=7,200, as the population went still in the film
+(`mean m/s` 0.0001 → 0, `max m/s` 0.02 → 0.002), with **zero jointed creatures and zero
+joint work** throughout, so the one term that crosses the two clocks by design — work
+integrated per physics step — is not the path. Round 13's surface populations at +0.4 to
++1.0 m audited clean at 0.01, so a body centre above the waterline is not the path on its
+own either. The leak is steady (0.006–0.010%), not growing, which reads as a one-off
+mis-accounting at t≈7,200 rather than a per-step term. Not chased today: 0.05 is out on M7
+regardless, and the bug is filed here for whoever next runs the audit under a coarse step. **The depth.** A stable 0.05 puts the whole population in the film that
+0.01 keeps at −12 m. The buoyancy–drag balance that sets terminal sink rate is integrated
+per step, and at five times the step the balance lands somewhere else; the limiter, which
+binds 0.6% of the time, is part of that. Whether 0.02 shares any of it is `r16dt-02`
+against `r16dt-01`.
