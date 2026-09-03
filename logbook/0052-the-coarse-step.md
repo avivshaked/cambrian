@@ -80,3 +80,23 @@ Three arms as workers free, after each worker is refreshed with the knob's build
 hash-checked (`Editor/EvolutionRun.cs`, `Ecosystem.cs`, `FluidEnvironment.cs`,
 `PhenotypeBuilder.cs`). `scratch/launch-r16.ps1 -Dt 0.05 -Worker 7`. Results appended
 below.
+
+## Results
+
+**`r16dt-05` — M3 falsified: dt 0.05 crashes at t≈3,600.** V1 held (only the `dt` token
+differed; the config hash was identical to `r13a-s2`'s) and V3/V4 held to the last row.
+Pace was the striking part: t=3,600 in three wall minutes with 540 alive, against ~30 min
+for the same stretch at 0.01. Then the log filled with
+`ArticulationBody.force assign attempt for 'Part00_n0' is not valid. Input force is { NaN,
+NaN, NaN }`, a creature's height went non-finite, `World.Observe` refused it (its guard for
+a diverged solver), and the run exited with return code 1 — no `**Ended:**` footer, the
+report frozen at t=3,600. This is the pre-registered reading for M3 failing: explicit drag
+at a coarse step is unstable for small bodies, and 0.05 is out. Before the crash the world
+had already diverged qualitatively from the reference — the population rose to the surface
+by t=2,100 where the reference held −15 m — but with the arm dead that comparison is moot;
+0.02 stands or falls on M2 against `r16dt-01`.
+
+*Instrument note.* The monitor's error alternation did not include `threw exception` /
+`Exiting without the bug reporter`, so the crash surfaced only when the report was found
+frozen 35 minutes later; both signatures and `non-finite` are in the alternation now. A
+crashed run leaves no footer, so "no footer, process gone" is the third way an arm ends.
