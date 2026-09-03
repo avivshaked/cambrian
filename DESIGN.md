@@ -177,6 +177,21 @@ exchange) are in D066; the references it leans on are marked as unverified there
 be verified before this document cites them. Currents against ground structures are
 deferred to the sloped world (D054).
 
+## 0j. Changelog — D067 (2026-09-03)
+
+The water gets a return path. `CurrentField` gains a vent: a prescribed plume rising from
+the floor to the surface in one patch, the return sinking through every other patch, joined
+by a surface leg and a floor leg around D061's ring — superposed on D066's rolls on the same
+staggered grid, upwind, Courant-clamped, bodies and fields crossing faces by the same
+fractions. It exists because a roll that stops above the photic band's floor is a trapdoor
+for remains (logbook/0048), and a roll that reaches the floor stirs producers into the dark
+(Sverdrup, measured). Four tunables, all default-off (`VentSpeed` 0; `VentPatch`,
+`VentDepthMetres`, `VentLegMetres` unread until it is on), so every earlier run is
+bit-identical; the world refuses a vent whose depth is not its own floor or whose legs are
+not whole layers. Reasoning, the flux arithmetic, the dark-excursion risk and the rejected
+alternatives are in D067. Built and tested; not yet run — round 13 (logbook/0049) tries the
+sink speed of remains first.
+
 ## 1. Target hardware
 
 | | |

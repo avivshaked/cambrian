@@ -114,16 +114,24 @@ goal; the movement frontier and the aquarium are the destinations waiting behind
 
 Rounds 1–9 plus the D060 assay are scored (the table above is the record). What remains:
 
-0. **Round 10 is in flight (2026-09-02).** `r10-s1..s4` on workers 4–7; launch `r10-s5`
-   with the same settings block (logbook/0046's table; base env in CLAUDE.md's arm
-   recipe plus `EVOSIM_NEUTRAL_VOLUME 0.25`, `EVOSIM_FOUNDER_DEPTH 60`,
-   `EVOSIM_CELLTYPE_MUTATION 0.005`, no refuge) on the first worker that frees — `r9-s3`
-   (worker 2, runaway-bound) or `r9-s5` (worker 3) — then score 0045 for the record. A
-   monitor with the 32-min content-growth stall rule watches all six; the hang has struck
-   four times (kill only after the 90-s CPU+byte discriminator, then refresh the worker).
-   Score 0046 under D063 when all five end; the two-sided readings in 0046 say what each
-   outcome means and what the next round is in each case (V0 down if the world blooms, V0
-   0.44 if survivors still sink, the cohort trap on its own if chains arrive and bust).
+0. **Round 13 is pre-registered and not launched (2026-09-03; the owner reserved the
+   machine).** logbook/0049: round 12 arm B's world with `EVOSIM_SINK 0.002` and
+   `EVOSIM_MATTER_SINK 0.002`, five seeds `r13-s1..5`, 30,000 s, ≤ 5 concurrent. The
+   settings block is `r12y-sN`'s (see logbook/0048's table and the launch lines in this
+   session's record: base env plus `EVOSIM_PATCHES 4`, `EVOSIM_CURRENT 0.3`,
+   `EVOSIM_CURRENT_PERIOD 6000`, `EVOSIM_CURRENT_CELL 30`, `EVOSIM_CURRENT_ROLLS 1`,
+   `EVOSIM_CURRENT_BLINK 3000`, `EVOSIM_CURRENT_ADVECT 1`, `EVOSIM_EXCRETION 0.01`,
+   `EVOSIM_NEUTRAL_VOLUME 0.25`, `EVOSIM_FOUNDER_DEPTH 60`, `EVOSIM_MATTER_PER_CREATURE 3`,
+   `EVOSIM_SENESCENCE 3000`, `EVOSIM_AREA 100`, `EVOSIM_MAX_POP 8000`,
+   `EVOSIM_FLOOR_CLOSES 3000`, `EVOSIM_CELLTYPE_MUTATION 0.005`) plus the two sink knobs;
+   pass `-Seed N -Seconds 30000` explicitly — the script's default budget is 40,000. Every
+   worker carries the current Unity files (hash-checked 2026-09-03), but the D067 edit to
+   `EvolutionRun.cs` landed after that check, so refresh with `new-worker.ps1` and verify
+   the four file hashes before launching. Verify V1 from the header (`sink 0.002 m/s,
+   matter 0.002 m/s`, `vent off`), start a fresh monitor (the round-12 one exited empty),
+   score M1–M5 when the arms end. **D067's vent is built (442 tests) and unrun**: it is
+   0049's pre-registered next lever if M1 fails — `EVOSIM_VENT 0.1` on the same world is
+   the first dose to argue about, with the dark excursion as that round's S2.
 1. **~~The round-8 design~~ — ruled and run; kept for the reasoning trail.** The assay
    answered the mechanism question; the owner then advanced a hypothesis (recorded in
    0043's Results) that the deep distortion is **whole-layer horizontal access**: every

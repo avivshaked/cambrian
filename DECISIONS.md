@@ -89,6 +89,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D064](#d064) | Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column | 2026-09-02 | built · round 10c: the drowning is cured — five of five producer worlds to budget, uncensored, depth held within 3 m through 24,000 s of throttled births (logbook/0046); the chain still does not arrive |
 | [D065](#d065) | The fixed matter cost — a body costs a minimum of matter to exist, so the count cannot ratchet through shrinking | 2026-09-02 | built · round 10c: counts levelled at 1,490–1,610 against a ceiling of 8,000, uncensored (logbook/0046) |
 | [D066](#d066) | Roll cells — the water moves everything, and it stirs: one prescribed flow over patches advects bodies and fields; blinking rolls for chaotic advection | 2026-09-02 | built · round 12 (logbook/0048) 0 of 6: the rolls stir fields and bodies and keep producers alive at 30 m cells, but a roll that stops above the floor is a trapdoor for remains — surface detritus 0.2–3 J/m³, deep 15–21; one absorptive line formed and drifted out. Next lever proposed: sink speed of remains |
+| [D067](#d067) | The vent — an upwelling plume from the floor in one patch, return through the others, superposed on the rolls; returns what the trapdoor takes | 2026-09-03 | built, not yet run · round 13's pre-registered next lever after the sink |
 
 ---
 
@@ -3064,3 +3065,65 @@ steady parity), `AdvectFields` (bool, default false); `Speed`, `PeriodSeconds`, 
 gain env knobs. All defaults reproduce today's world bit for bit (suite-enforced); rendered in
 every header. Round 12: round 11's world plus this, two arms × five seeds — one patch (pure
 vertical stirring, the location gate alone) and four patches (rolls, the stirred soup).
+
+---
+
+### D067
+
+**The vent — an upwelling plume that returns what the trapdoor takes** · 2026-09-03
+
+Round 12 (logbook/0048) measured D066's rolls doing everything they were built to do and
+one thing they cannot: a roll that stops above the floor is a trapdoor. Its cell depth is
+30 m because 60 m stirred producers into the dark and killed founding (Sverdrup); at 30 m
+the vertical velocity is zero at the cell's floor by the same construction that zeros it at
+the waterline, and whatever the down leg drops there sinks out at 0.02 m/s for good. The lit
+half of the column stays at 0.2–3 J/m³ while the still half beneath it piles up to 15–21.
+The owner's proposal: **vents at the bottom**. Read as upwelling rather than as
+hydrothermal chemistry — a flow, not a new guild — it is the one thing that closes the loop
+without deepening the roll, and it is how a real ocean feeds its surface from a stagnant
+deep.
+
+**What it is.** A prescribed plume of water rising at `VentSpeed` from the floor to the
+surface in one patch (`VentPatch`), with the return sinking uniformly at
+`VentSpeed / (K − 1)` through every other patch, joined by a surface leg that carries the
+plume's water half to each side around D061's ring and a floor leg that brings it back. It
+is superposed on the roll — two divergence-free prescribed flows add — on the same staggered
+grid: vertical velocity at layer interfaces per patch, horizontal transport at patch faces
+per layer, upwind and clamped at the same Courant ½. The legs are defined by *volume flux*,
+so the fraction of a cell that crosses a face is width-free (`|c_j|·s·dt/L` with
+`c_j = ½ − j/(K−1)` for the j-th face from the plume); the drag a creature feels in a leg is
+the velocity that flux implies through a face one leg thick, which is why the field is told
+the patch width once, by the world, and is not asked to guess it. Bodies and stock cross
+faces by the same fractions, so they travel together in expectation, as under D066. A
+uniform field stays uniform under the vent up to the operator-splitting residual (order the
+Courant number, non-accumulating), and every cell's inflow equals its outflow to 1e-6 — the
+test pins the balance directly rather than through the uniformity.
+
+**What it costs, pre-registered.** The rule since D066 is that water carries bodies. A body
+at the bottom of a roll's down leg is now carried into the return flow, to the floor, along
+it, and up the plume — a dark excursion of roughly `D·(K−1)/s + D/s` seconds per circuit,
+which at 0.1 m/s in four patches is ~1,800 s down and 600 s up. r12a-s1's full-column roll
+killed founding with about half of each circuit dark; the vent's excursion is shorter and
+fixed, and whether it sits inside the producers' 3× light margin is the round's S2, not an
+assumption. A narrower plume lowers the return speed and lengthens the excursion in
+proportion, so only `K` and `VentSpeed` tune it.
+
+**Config** (all `[Tunable]` on `CurrentField`, hashed, saved, refused-not-defaulted on load;
+env `EVOSIM_VENT`, `EVOSIM_VENT_PATCH`, `EVOSIM_VENT_DEPTH`, `EVOSIM_VENT_LEG`; header
+`vent 0.1 m/s in patch 0 from 60 m, legs 1 m` or `vent off`): `VentSpeed` (m/s, 0 = off,
+which is every run before D067 bit for bit, suite-enforced), `VentPatch` (default 0),
+`VentDepthMetres` (default 60; the world refuses a vent whose depth is not its own floor,
+because a plume that stops short of the bottom is the trapdoor again), `VentLegMetres`
+(default 1 = one layer; a whole number of layers or the world refuses; exact continuity
+needs exactly one). One patch is no vent — there is no return patch — and the code takes the
+pre-D067 path. `PatchWidthMetres` on the field is derived, not tunable. Built the same day,
+22 tests, 442 green; **not yet run**: round 13 (logbook/0049) is the sink lever first, and
+the vent is that round's pre-registered next lever if the sink does not bind.
+
+**Rejected here.** A second roll stacked under the first: two prescribed rolls meet at an
+interface where the vertical velocity is zero on both sides, so lifted material crosses it
+upward only by diffusion — the trapdoor moved down 30 m. Deepening the roll to the floor:
+measured, it kills founding (r12a-s1). Exempting bodies from the vent's return flow: it
+would make the vent a field-only pump, which breaks D066's rule that the water carries
+what is in it and would be the first place in the world where a creature and the water
+beside it disagree about where they are going.
