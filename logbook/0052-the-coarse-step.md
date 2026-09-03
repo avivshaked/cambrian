@@ -140,6 +140,26 @@ body-steps — and no force went non-finite. V1 and V3 held.*
 | M1 / V4 | **falsified** — the audit opened | `audit` 0.0057–0.0101% from t=7,600 to the end (0.0000% at every row before); the reference and `r16dt-02` read 0.0000% throughout |
 | M7 | **held so far** — the divergence is not the overshoot | with the drag stable, the population still rose to the surface by t=2,600 (+0.2 m, `depth sd` 0.7–1.2 m) where the reference held −11 to −14 m with `depth sd` 7–8; the field at the population's depth read 0.2–0.4 J/m³ against 3.5–6.4; refusals 3–4× the reference's. `r16dt-02` tracks the reference on all of these (below) |
 
+### `r16dt-02` — tracks the reference, at 3× the pace
+
+*Ended at budget: 15,000 s in 50 min wall (5× real time; the reference's average was 1.6×,
+so ~3.1× faster). Launched before the limiter existed, so its drag is exactly the
+reference's — a cleaner comparison than a limited arm would have been. V1, V3, V4 held;
+`audit` 0.0000% at all 150 rows.*
+
+| t | `alive` 0.02 / ref | `depth m` | `depth sd` | `J/m3 here` | `det deep` | `mat blk` |
+|---|---|---|---|---|---|---|
+| 5,100 | 691 / 779 | −14.1 / −13.1 | 6.7 / 7.1 | 6.6 / 5.2 | 2.3 / 1.8 | 13,026 / 28,312 |
+| 10,100 | 1,425 / 1,472 | −10.9 / −11.2 | 8.1 / 8.1 | 4.9 / 4.4 | 3.6 / 2.8 | 78,076 / 65,445 |
+| 15,000 | 1,720 / 1,661 | −11.1 / −12.0 | 8.1 / 7.7 | 7.3 / 6.1 | 4.8 / 3.9 | 162,236 / 76,682 |
+
+Population within 4–11%, depth within 1 m, spread within 0.5 m, the larder within 25%, the
+deep field 20–30% higher, refusals within 2× (a per-window count that swings 5–10× between
+adjacent samples in every arm). No inherited line in either. Whether these differences are
+the step or the seed's own replay noise is M2, and it waits on `r16dt-01`, launched on the
+same worker as this arm ended. If the repeat lands inside the same distances, 0.02 is the
+screening step.
+
 Two things need naming. **The audit.** Nothing in the ledger reads the physics step, so a
 step-dependent leak of a hundredth of a percent is a bug by construction — the
 pre-registered reading. It opened at t=7,200, as the population went still in the film
