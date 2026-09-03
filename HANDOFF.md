@@ -349,6 +349,18 @@ production) before the D-entry leans on the numbers above.
 
 ## Open decisions for the owner
 
+- **Speed, and the game's clock (owner, 2026-09-03).** "All I want is the ability to
+  simulate faster" — and, separately, a game in which people wait hours for something
+  interesting is not a game. The first is being measured (logbook/0052: `EVOSIM_DT` at
+  0.02 and 0.05 against a seed already run; the metabolic step stays 0.5 s and is not the
+  cost). The second is a world-rule question no timestep answers: at any speed a lifetime is
+  3,000 simulated seconds and a chain has taken tens of thousands to appear. When the game
+  framing becomes the goal, the levers are an ecology that is eventful on a human timescale
+  (shorter lifetimes, faster turnover, more change per generation) and a theatre that runs
+  the farm ahead and jumps to the events — DESIGN.md's farm/theatre split was made for
+  exactly this. A cheap mover for jointless bodies (the deferred "Tier 2" of the 2026-09-03
+  speed discussion: PhysX only for bodies that swim) becomes worth building at that point,
+  not before.
 - The paywalled reading list in `research/LITERATURE-REVIEW.md` §9, which needs the owner's
   institutional access.
 - Pushing: the owner approved pushing code and prose in batches (2026-09-01, "Push all",
