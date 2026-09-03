@@ -675,6 +675,11 @@ namespace Evosim.Sim.EditorTools
         /// against <see cref="World.ExcretedTotal"/> — a cumulative counter with no cap of its own.</remarks>
         private static double LastExcretedTotal;
 
+        /// <summary>The detritus-flux instrument's deltas, against <see cref="World.DetritusDepositedTotal"/>
+        /// and <see cref="World.DetritusTakenTotal"/> — same trick as <see cref="LastExcretedTotal"/>.</summary>
+        private static double LastDetritusDeposited;
+        private static double LastDetritusTaken;
+
         /// <summary>Whether D060's assay has already fired this run — the one-shot guard.</summary>
         /// <remarks>
         /// Static for the same reason every other field here is: a second <c>Evosim/Run</c> from
@@ -702,6 +707,8 @@ namespace Evosim.Sim.EditorTools
             LastFloorSpawns = 0;
             LastMatterBlocks = 0;
             LastExcretedTotal = 0;
+            LastDetritusDeposited = 0;
+            LastDetritusTaken = 0;
             AssayFired = false;
         }
 
@@ -987,6 +994,14 @@ namespace Evosim.Sim.EditorTools
             // moved at. Windowed the same way floorSpawns and conceptionsBlockedByMatter are.
             double excretedWindow = world.ExcretedTotal - LastExcretedTotal;
 
+            // The detritus flux by source, per window: what dead bodies put into the field and
+            // what feeding took out. Nothing else moves joules across the field's boundary, so
+            // `det in - det out` over a window is the change in `detritus J` over it. Round 14's
+            // lines ate a stock whose income had to be read off that column's slope with no
+            // grazer present; these two make it a measurement (fable-propose-detritus-flux).
+            double detritusInWindow = world.DetritusDepositedTotal - LastDetritusDeposited;
+            double detritusOutWindow = world.DetritusTakenTotal - LastDetritusTaken;
+
             // D061. The asynchrony observables — the two readings the old, patch-blind columns
             // above cannot give, because they only ever look at one column of the world (patch
             // 0). Both read 0 at K=1, where there is only one patch to compare against itself.
@@ -1099,7 +1114,13 @@ namespace Evosim.Sim.EditorTools
                 .Field("excretedWindow", excretedWindow)
                 // D061 — appended after excretedWindow, per the append-only column discipline.
                 .Field("detritusPatchSd", detritusPatchSd)
-                .Field("patchMaxShare", patchMaxShare));
+                .Field("patchMaxShare", patchMaxShare)
+                // The detritus-flux instrument — appended after patchMaxShare, per the append-only
+                // column discipline.
+                .Field("detritusDepositedTotal", world.DetritusDepositedTotal)
+                .Field("detritusDepositedWindow", detritusInWindow)
+                .Field("detritusTakenTotal", world.DetritusTakenTotal)
+                .Field("detritusTakenWindow", detritusOutWindow));
 
             // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9): drained
             // every report row, alongside stats.jsonl, and appended one row per event to
@@ -1224,11 +1245,19 @@ namespace Evosim.Sim.EditorTools
                 // itself was added under. Both read 0 at K=1 (see the computation above).
                 detritusPatchSd.ToString("0.####", c),
                 patchMaxShare.ToString("0.###", c),
+
+                // The detritus-flux instrument — appended after patch max share, per the same
+                // append-only rule. Joules per window, not per second: divide by the sample
+                // interval for watts.
+                detritusInWindow.ToString("0.###", c),
+                detritusOutWindow.ToString("0.###", c),
             };
 
             LastFloorSpawns = world.FloorSpawns;
             LastMatterBlocks = world.ConceptionsBlockedByMatter;
             LastExcretedTotal = world.ExcretedTotal;
+            LastDetritusDeposited = world.DetritusDepositedTotal;
+            LastDetritusTaken = world.DetritusTakenTotal;
 
             if (row.Count != Columns.Length)
             {
@@ -1257,6 +1286,9 @@ namespace Evosim.Sim.EditorTools
 
             // D061 — appended after excreted, per the same append-only rule.
             "det patch sd", "patch max share",
+
+            // The detritus-flux instrument — appended after patch max share, per the same rule.
+            "det in", "det out",
         };
 
         private static string Header() =>

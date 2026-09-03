@@ -168,6 +168,27 @@ namespace Evosim.Core
         public double ExcretedTotal { get; private set; }
 
         /// <summary>
+        /// Every joule a dead body has ever put into <see cref="Nutrients"/> — the field's only
+        /// income, since excretion (D052) moves matter and not energy. Cumulative and never
+        /// decremented; a report reads it as a rate by differencing two samples.
+        /// </summary>
+        /// <remarks>
+        /// Added for the detritus-flux instrument (logbook/0050's closing, the
+        /// <c>fable-propose-detritus-flux</c> proposal): round 14's lines ate a stock whose income
+        /// could only be inferred from the slope of <see cref="NutrientField.TotalJoules"/> with no
+        /// grazer on it. With <see cref="DetritusTakenTotal"/> the two are a measurement, and
+        /// <c>DetritusDepositedTotal - DetritusTakenTotal == Nutrients.TotalJoules</c> at every
+        /// step, because settling, mixing, advection and remineralisation all conserve.
+        /// </remarks>
+        public double DetritusDepositedTotal { get; private set; }
+
+        /// <summary>
+        /// Every joule feeding has ever taken out of <see cref="Nutrients"/> — its only outflow.
+        /// Cumulative; see <see cref="DetritusDepositedTotal"/>.
+        /// </summary>
+        public double DetritusTakenTotal { get; private set; }
+
+        /// <summary>
         /// Matter the smallest child physically expressible would cost — D048. A strict lower
         /// bound, cached because it depends only on config.
         /// </summary>
@@ -603,7 +624,10 @@ namespace Evosim.Core
                         creature.PendingWorkJoules, seconds, age);
                 }
 
-                if (ledger.PoolDrawn > 0f) Nutrients.Take(creature.HeightY, ledger.PoolDrawn, creature.Patch);
+                if (ledger.PoolDrawn > 0f)
+                {
+                    DetritusTakenTotal += Nutrients.Take(creature.HeightY, ledger.PoolDrawn, creature.Patch);
+                }
 
                 // Drained here and nowhere else. Both branches above priced the same joules, so
                 // this is the one point at which they stop being owed.
@@ -659,6 +683,7 @@ namespace Evosim.Core
                 // anything other than a plant can live, and the reason the doomed half of
                 // generation zero is the world's first food rather than merely a waste of seeds.
                 Nutrients.Deposit(creature.HeightY, creature.TissueJoules, creature.Patch);
+                if (creature.TissueJoules > 0f) DetritusDepositedTotal += creature.TissueJoules;
 
                 // Whatever matter is still locked returns to the layer the body died in, and
                 // sinks from there — which is why the deep is rich and the surface is not.

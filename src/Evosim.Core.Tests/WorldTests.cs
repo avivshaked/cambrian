@@ -239,6 +239,32 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void DetritusFluxCountersReconcileWithTheField()
+        {
+            // The detritus-flux instrument (fable-propose-detritus-flux): dead tissue is the
+            // field's only income and feeding its only outflow — settling, mixing, advection and
+            // remineralisation all conserve — so the two cumulative counters must bracket the
+            // standing stock exactly, at any moment, in any world. If a future mechanism moves
+            // joules across the field's boundary without touching a counter, this is what fails.
+            var config = new RunConfig { MinimumPopulation = 30, MaximumPopulation = 600 };
+            config.Light = new LightModel(400f, 12f);
+            var world = new World(config, seed: 1);
+
+            try { for (int i = 0; i < 300; i++) world.Step(1f); }
+            catch (PopulationRunawayException e) { _output.WriteLine($"stopped: {e.Population} living"); }
+
+            double deposited = world.DetritusDepositedTotal;
+            double taken = world.DetritusTakenTotal;
+            double standing = world.Nutrients.TotalJoules;
+            _output.WriteLine($"deposited {deposited:0.###} taken {taken:0.###} standing {standing:0.###}");
+
+            Assert.True(deposited > 0, "nothing died in 300 s — the counter was never exercised");
+            Assert.True(
+                Math.Abs(deposited - taken - standing) / Math.Max(1.0, deposited) < 1e-4,
+                $"deposited - taken = {deposited - taken:0.###} J but the field holds {standing:0.###} J");
+        }
+
+        [Fact]
         public void EnergyIsConservedWithRemineralisationRunning()
         {
             // D051: Remineralise is a transfer within Nutrients.TotalJoules, which StandingJoules

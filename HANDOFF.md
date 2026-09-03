@@ -141,7 +141,12 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    satiation (round 8's arm B, D062), floor refuge (D055, rejected twice) — ledger first. Done: `fable-propose-detritus-flux.md` — the ledger says satiation caps
    this body at R0 ≤ 1 and the toe raises its break-even; the constraint is the detritus
    energy flux (~0.2 W against a ~17 W producer economy, inferred from `detritus J`'s
-   rebuild in `r14c10-s1`), and the proposed lever is exudation. Awaiting the owner. The invasion
+   rebuild in `r14c10-s1`), and the proposed lever is exudation. Awaiting the owner.
+   Built meanwhile: the detritus-flux instrument (`det in` / `det out` columns, J per
+   window; `World.DetritusDepositedTotal/TakenTotal`; test in `WorldTests`). It changes
+   `EvolutionRun.cs`, so every worker needs a refresh before its next launch — w4 is
+   refreshed and compile-checked on it; w2, w3, w5, w6, w7 carry the previous build under
+   their running arms. Report readers are named-column, so nothing else changes. The invasion
    assay (0051): `r15i-c10` scored — it cannot invade at clearance 10 (R0 0.96 on the
    founding stake, one naturally endowed child from 50; the calculator agreed); `r15i-c1`
    scored — same answer at clearance 1 in water ten times richer (0051 closed: the

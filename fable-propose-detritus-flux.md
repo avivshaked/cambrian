@@ -101,10 +101,14 @@ exudation config (R0 at the densities the flux would set), then two 0.02-step ar
 
 ## Instruments first (agent work, no ruling needed)
 
-- **The detritus flux by source, per window:** joules deposited into the field from
-  deaths, from exudation (if built), and lost to the sink below the world, as report
-  columns. Today the flux is inferred from a slope; the proposal above rests on that
-  inference, and one column each makes it a measurement.
+- **The detritus flux by source, per window — built (2026-09-03, after this was written).**
+  `World.DetritusDepositedTotal` and `World.DetritusTakenTotal`, report columns `det in`
+  and `det out` (joules per window), JSONL `detritusDeposited*`/`detritusTaken*`. Dead
+  tissue is the field's only income and feeding its only outflow — nothing sinks out of
+  the world; the floor clamps — so `det in − det out` over a window is the change in
+  `detritus J`, and `WorldTests.DetritusFluxCountersReconcileWithTheField` holds that
+  identity. Round 14's running arms predate it; the first arm on the new build reads the
+  flux directly. Exudation, if built, gets its own counter.
 - **The assay's horizon (0051):** inoculate at 5,000 and run to 20,000, or score
   generation +2 births rather than members alive; the current design cannot score
   establishment.
