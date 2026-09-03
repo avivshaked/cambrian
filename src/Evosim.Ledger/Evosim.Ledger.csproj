@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A small command-line tool over Evosim.Core's LedgerForecast — DESIGN.md §5A.2, §5A.6.
+
+    Takes a stored genome and a run's config.json and reports what that one body's energy
+    ledger does in isolation: net income at birth, break-even nutrient density, lifetime and
+    reproduction under the same per-step rules World.Step applies, without a population, a
+    light field or a nutrient pool around it (see LedgerForecast's own remarks).
+
+    net8.0 rather than netstandard2.1, unlike Evosim.Core: this is a console app that never
+    ships inside the Unity package, so it is free to target whatever SDK actually runs it —
+    which on this machine is the one Unity bundles (see scripts/core-test.ps1 and
+    scripts/ledger.ps1).
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>Evosim.Ledger</AssemblyName>
+    <RootNamespace>Evosim.Ledger</RootNamespace>
+    <Nullable>disable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
+  </ItemGroup>
+
+</Project>
