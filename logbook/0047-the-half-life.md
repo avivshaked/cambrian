@@ -73,3 +73,32 @@ pass in the discovery regime (mutation 0.005) and is labelled so.
 Five arms on the workers 10c frees, in seed order; the 10c arms run to budget first — they
 are this round's control and the campaign's first uncensored producer worlds. Headers
 verified before any arm is believed. Results appended below.
+
+---
+
+## Results (2026-09-03): 0 of 5
+
+All five arms reached budget with producers alive (1,573–1,767 at t=30,000), no drowning
+(mean depth −0.3 to −3.5 m throughout), floor 0 after founding, audit 0.0000%. Headers
+verified. No seed produced one inherited absorptive, so the recruitment clause was never
+reached and the lineage files were not needed.
+
+| # | prediction | r11 (s1–s5) | 10c control | verdict |
+|---|---|---|---|---|
+| X1 | deaths per 1,000 s at t=10,000–20,000 ≥ 2.5× 10c; mean age at 20,000 < 5,000 s | 56 / 55 / 104 / 67 / 49 (mean 66); age 8,352 / 8,845 / 7,227 / 7,811 / 9,344 | 22 / 37 / 30 / 27 / 56 (mean 34); age 8,422–11,777 | **falsified** on both clauses: turnover ~1.9×, not 2.5×; ages 7,200–9,300 |
+| X2 | `det deep` ≥ 7 J/m³ by t=15,000 in ≥ 4 of 5 | 9.0 / 6.3 / 7.6 / 10.1 / 10.3 at 15,000 | 5.7 / 4.0 / 3.9 / 5.8 / 6.3 | **holds** (4 of 5) |
+| X3 | no seed below 25% of its plateau | every seed grew monotonically from founding to budget | same | **holds**, vacuously — there was no cohort death to survive |
+| X4 | first inherited absorptive in ≥ 3 of 5 | `inherit` 0 in all five for the whole run; 0–2 mutant absorptives alive at the end | 0 / 1 / 0 / 0 / 0 | **falsified** |
+| X5 | ≥ 3 of 5 pass D063 | 0 of 5 | 0 of 5 | **falsified** |
+
+**What the half-life did and did not do.** The dose reading was wrong in an instructive way:
+wear = 1 + age/3,000 is a slope, not a cliff, and a creature whose light margin is 3× keeps
+breeding at ×3 and ×4 wear. Mean age at t=20,000 came down from ~11,000 s to ~8,000, not to
+under 5,000; turnover roughly doubled instead of tripling. That was enough for X2 — the larder
+crossed the 7 J/m³ bar by t=15,000 in four seeds and stood at 7.9–12.7 at the end, against
+5.7–8.9 in the control — and it changed nothing at the surface, where the mutants are born:
+`J/m3 here` sat at 0.09–0.5 all round. The pre-registered reading for "X2 holds, X4 fails"
+was the location gate, and the round measured it cleanly: the rate side of the chain is
+open and the food is fifty metres below the only creatures that could eat it. D066
+([0048](0048-stirring-the-pot.md)) is the response. The round's five arms are round 12's
+still-water controls.
