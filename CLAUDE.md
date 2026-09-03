@@ -296,6 +296,14 @@ actually verifying it.
   The three scripts in `scripts/` carry BOMs; keep it that way when adding one, since this
   project's scripts are written with prose in them. `[ulong]` is also PowerShell 7-only — use
   `[uint64]`, which both editions accept.
+- **A lineage dissection can answer less than it looks like it can.** `lineage.jsonl` rows carry
+  birth time, parent, kind, generation, species, the expressed `abs`/`jnt` flags and the patch —
+  no depth, volume or energy per creature — and every death reads `starved` because `Starved` is
+  the only `DeathCause` implemented, so cause of death discriminates nothing. `snapshots/` hold
+  each living creature's *genome graph*, not its developed phenotype (a creature can carry an
+  absorptive node it never expressed, and read `abs=0`), and snapshot rows have no id to join
+  against lineage. Depth-by-guild and body-size-by-guild are therefore not measurable from a run's
+  output today; say so rather than proxying (logbook/0048's dissection).
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

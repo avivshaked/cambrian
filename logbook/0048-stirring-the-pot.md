@@ -155,3 +155,33 @@ fields, five seeds, with round 12's x/y arms as the sink-0.02 controls; and roun
 at the two arms running (`r12x-s1`, `r12y-s1`, to budget), since eight more seeds would
 replicate an S1 failure the mechanism already explains. S3 (the famine) is still read from
 `r12y-s1`.
+
+**Arm A's record (`r12x-s1`, budget reached 2026-09-03).** 1,578 alive at t=30,000, mean
+depth −3.6 to −5.6 m, mean age 3,300 → 10,900 s, audit 0.0000% throughout; one mutant
+absorptive alive at the end, none ever inherited. Surface detritus 0.16–0.90 J/m³, deep 16.7,
+floor share 2.1–2.8%. S2 holds for the one seed that ran; S1 and S4 fail. Arm A stops here.
+
+**The first chain since round 8, and how it died (`r12y-s3`, dissected from `lineage.jsonl`
+by a subagent; report in `scratch/`).** One mutant absorptive, id 971, was born at t=6,961 by
+reproduction from a producer parent, on patch 3, in surface water at ~1 J/m³. Its line ran
+four generations — 971 → 1403 → 1741 → 2470, born 6,961 / 8,840 / 10,100 / 13,155 — as a
+strict single-child chain with no branching, every member unjointed, on patch 3, and dead of
+starvation at 7,723 / 8,250 / 8,244 / 9,496 s of age. The last member had no child and died at
+t=22,650; the inherited count never exceeded 3. Twenty-two other absorptives were founders
+(dead within 430 s, childless) and three later mutants (t=15,221–18,018) had no children by
+the copy. Only one `DeathCause` exists in the code (`Starved`), so cause of death carries no
+information here; and the lineage rows carry no per-creature depth, volume or energy — the
+snapshots hold genome graphs, not phenotypes, and cannot be joined to lineage ids.
+
+What the numbers say against the producers born in the same window (n=2,318): the
+absorptives lived *longer* (mean age at death 8,428 s against 6,310) and bred *less* (0.75
+children per creature against 0.93; the population's modal brood is one). The genome that
+ran four generations unchanged carries two photosynthetic nodes beside the absorptive one, so
+the line was a mixotroph, and it neither starved faster nor grew: it drifted out. That is the
+reading the pre-registration called "the gate is inside the mutant", sharpened — at
+0.4–1.2 J/m³ of surface food, eating detritus adds nothing an absorptive can turn into a
+second child, and a line whose members average under one child each is a random walk with
+an absorbing wall at zero. Ten individuals at the last sample need a line whose reproductive
+number is above one, which is a food question before it is a genome question, and the sink
+proposal is aimed at exactly it. The dissection's one measured surprise: absorptives were
+jointed 8 times in 29 against 31 in 3,792 for everyone else — small n, flagged, not read.
