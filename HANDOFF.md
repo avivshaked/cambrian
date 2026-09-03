@@ -116,7 +116,10 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
 
 0. **Round 13 is pre-registered and not launched (2026-09-03; the owner reserved the
    machine).** logbook/0049: round 12 arm B's world with `EVOSIM_SINK 0.002` and
-   `EVOSIM_MATTER_SINK 0.002`, five seeds `r13-s1..5`, 30,000 s, ≤ 5 concurrent. The
+   `EVOSIM_MATTER_SINK 0.002` — arm A `r13a-s1..5`; arm B `r13b-s1..5` adds
+   `EVOSIM_VENT 0.05` (D067, first run). Ten arms interleaved a/b, 30,000 s, ≤ 5
+   concurrent; `scratch/launch-r13.ps1` (gitignored, this machine) launches one arm by
+   name: `./scratch/launch-r13.ps1 -Arm a -Seed 1 -Worker 2`. The
    settings block is `r12y-sN`'s (see logbook/0048's table and the launch lines in this
    session's record: base env plus `EVOSIM_PATCHES 4`, `EVOSIM_CURRENT 0.3`,
    `EVOSIM_CURRENT_PERIOD 6000`, `EVOSIM_CURRENT_CELL 30`, `EVOSIM_CURRENT_ROLLS 1`,
