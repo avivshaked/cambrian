@@ -378,6 +378,21 @@ production) before the D-entry leans on the numbers above.
   exactly this. A cheap mover for jointless bodies (the deferred "Tier 2" of the 2026-09-03
   speed discussion: PhysX only for bodies that swim) becomes worth building at that point,
   not before.
+- **Immigration as a world rule, for when the cell types expand (owner's hypothesis,
+  2026-09-03).** "Having a flux of founders increases the chance that a founder of
+  configuration A finds a good environment to thrive." Plausible as community assembly —
+  propagule pressure is how real islands fill, and a body plan useless at t=0 can be right
+  at t=20,000, which mutation from the resident lineage rediscovers slowly and a trickle of
+  founders samples continuously; the more cell types, the stronger the argument. The
+  floor's bad record (rescuing crashes; founders' children reading as "inherited") is an
+  argument for scoring differently, not against immigration: tag immigrants and their
+  descendants from `lineage.jsonl` (birth kinds and parent links are already there) and
+  score **establishment** — a lineage ≥ 2 generations deep with measured R0 ≥ 1 — rather
+  than presence. Not for the current goal (the assay showed the field, not supply, binds —
+  logbook/0051); when the cell types expand, run the same world with and without a trickle,
+  scored on established lineages net of immigrants, pre-registered. Cheap precursor: a
+  calculator scan of random configurations against a run's field timeline, to see whether
+  any body could have bred anywhere at any time.
 - The paywalled reading list in `research/LITERATURE-REVIEW.md` §9, which needs the owner's
   institutional access.
 - Pushing: the owner approved pushing code and prose in batches (2026-09-01, "Push all",
