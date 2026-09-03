@@ -119,3 +119,59 @@ round, so a worker needs a hash check, not a refresh. `scratch/queue-r14.ps1` wa
 13's five workers and launches the next arm on each as it ends cleanly and hash-checks; it
 appends each arm to the round-13 monitor's watch list, so the same monitor covers both rounds.
 Headers verified against the table before any arm is believed. Results appended below.
+
+## Results
+
+*Interim, 2026-09-03 evening: three arms ended, one at t=22,800, four more launched under
+the sequential rule (`r14c10-s3`, `r14c10-s4`, `r14c5-s3`, `r14c5-s4`); seed 5 of each dose
+not yet queued. Scored against D063 as amended: producers persist · an absorptive line
+inherited for ≥ 20 consecutive samples · ≥ 10 of it alive at the last sample · an
+absorptive birth within the last 20 samples (from `lineage.jsonl`). V1 verified from each
+header at launch; V2 — every arm differs from its `r13a-sN` at the t=500 row; V3 — `floor`
+0 from t=3,100 in all four; V4 — audit 0.0000% at every sample in all four.*
+
+| arm | ended | alive at end | longest inherited run (samples, t) | peak inherited | inherited at end | absorptive births in last 20 samples | clauses | verdict |
+|---|---|---|---|---|---|---|---|---|
+| `r14c5-s1` | budget | 1,747 | **138** (16,300–30,000) | 9 (t=6,700) | 4 | 2 | ✓ ✓ ✗ ✓ | **fail** — on the ≥ 10 alive clause alone |
+| `r14c5-s2` | budget | 1,775 | 0 | 0 | 0 | 1 (a mutant, not inherited) | ✓ ✗ ✗ ✓ | **fail** — no line ever; the population lived in the film at −2 to −5 m |
+| `r14c10-s1` | budget | 1,838 | 95 (5,000–14,400) | **22** (t=7,200) | 0 | 3 (mutants, none inherited) | ✓ ✓ ✗ ✓ | **fail** — the line grazed its field and died out by t=16,000 |
+| `r14c10-s2` | running, t=22,800 | 1,700 | 141 (8,800–22,800, open) | **48** (t=14,400) | 4 | 1 | ✓ ✓ · · | heading the same way: 48 → 12 → 4 in water it thinned to 0.4–0.7 J/m³ |
+
+The two clearance-10 seeds are the first worlds in this campaign to grow an absorptive
+line past twenty members, and both lines are gone or going by the run's second half. The
+shape is the same in each: the line forms in water at 3.3–4.1 J/m³ at the population's
+depth, grows for six to eight thousand seconds, and the field at that depth falls as it
+grows — `r14c10-s1`'s at −15 m from 3.3–4.0 to 1.1–1.3 J/m³ by t=8,000, `r14c10-s2`'s at
+−10.5 m from 4.1 to 0.4–0.7 — until the line is below its own break-even and starves.
+After `r14c10-s1`'s line died the field rebuilt to 2.0–2.2 J/m³ by t=18,000–20,000, and
+no second line formed in the 12,000 s that remained: single mutants appeared from t=22,000
+and none was inherited. One cycle, no second wave. The clearance-5 seed that formed a line
+kept it: 3 to 9 members for the last 13,700 s of the run in 3–7 J/m³ at the population's
+depth, never reaching ten.
+
+The prediction table, so far:
+
+| # | prediction | standing |
+|---|---|---|
+| M1 | lines form: `inherit` ≥ 1 in ≥ 3 of 5 seeds per arm, ≥ 10 at some sample in one | **c10: on track** (2 of 2 seeds, peaks 22 and 48); c5: open (1 of 2, peak 9) |
+| M2 | ≥ 3 of 5 seeds pass in one arm; c10 predicted to pass | **0 of 3 scored**; the c10 lines fail on the alive clause by overshoot, not by never forming — a third reading the two-sided list did not have |
+| M3 | the chain grazes: `J/m3 here` at t > 15,000 below the seed's `r13a-sN`, `det deep` with it | **held where it can be read cleanly**: `r14c10-s2` against `r13a-s2` at matched depth (−10.5 vs −11.5 m), 0.74 against 6.55 J/m³, `det deep` 1.08 against 4.75; `r14c10-s1`'s field fell while its line lived and rebuilt after it died. But `det deep` is lower in the no-line seed `r14c5-s2` too (3.5 against 4.75), and `J/m3 here` is read at the population's depth, which moved between rounds in three of four seeds — so neither column discriminates on its own |
+| M4 | no bloom | **held** in four of four (max 1,858; ceiling 8,000) |
+| M5 | producers persist, ≥ 1,000 | **held** in four of four |
+| M6 | c10 > c5 at matched seeds | **held** in 2 of 2 pairs so far (22 vs 9; 48 vs 0) |
+
+**What this is, read with 0051.** The assay showed that fifty stomachs at clearance 10
+graze their water to a tenth of what fifty at clearance 1 leave, and earn the same. Here
+the same thing happens at population scale, from a single mutant: the line grows on the
+field it found, thins it below break-even, and crashes, with no second wave inside the
+budget. The goal's alive clause is a stability clause, and clearance 10 buys growth
+without stability. Clearance 5 buys a line that neither grows nor dies. The knob that was
+meant to raise income raised it, and the field absorbed the gain — which is the
+consumer–resource answer to "does the gearing pass": not on its own. The stabilisers that
+exist and have never been tried — the clearance toe (`EVOSIM_CLEARANCE_TOE`, type III
+feeding: a stomach in thin water stops grazing before it empties it), the floor refuge
+(`EVOSIM_FLOOR_REFUGE`: a fraction of the field no stomach can reach), satiation — are the
+next screen, and the ledger calculator is the first place to run them. The owner's
+question of the day, whether an oscillating equilibrium is reachable with the current cell
+types, is now an empirical one with a partial answer: one cycle has been seen, and it did
+not come back within 12,000 s; the seed-3 and seed-4 arms will show whether that holds.

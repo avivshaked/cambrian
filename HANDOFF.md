@@ -128,16 +128,17 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    (gitignored, this machine): `r12y-sN`'s block plus the two sink knobs, with
    `-Seconds 30000` baked in because `run-arm.ps1` defaults to 40,000.
 0z. **The speed programme (D069, 2026-09-03) — what is running and what to do with it.**
-   Round 13 scored 0 of 5 (0049). Round 14 runs under the sequential rule: `r14c5-s1` ended
-   (a line of 3–9 members for 138 consecutive samples at −12 m in 3–6 J/m³; 4 alive at
-   30,000, fails the ≥ 10 clause), `r14c5-s2` ended (no line ever; film at −2 to −5 m),
-   `r14c10-s1` (w2), `r14c10-s2` (w6; its line 45 → 12 from t=15,000 to 20,200 while the
-   field at its depth stays 0.5–0.7 J/m³ — grazing itself out) and `r14c5-s3` (w5) running;
-   the detached queue `scratch/queue-next.ps1` launches `r14c10-s3` on w2 when `r14c10-s1`
-   ends. Seeds 4–5 are not queued: whether to run them or go straight to a stabiliser
-   screen (clearance toe, floor refuge, satiation — all existing knobs, none tried) is the
-   owner's call once `r14c10-s2` has shown whether its line crashes, cycles or settles.
-   Score round 14 into 0050 with the recruitment clause from `lineage.jsonl`. The invasion
+   Round 13 scored 0 of 5 (0049). Round 14 runs under the sequential rule; 0050's interim Results
+   table scores it: `r14c5-s1` fail (line of 3–9 for 138 samples, 4 alive at the end),
+   `r14c5-s2` fail (no line), `r14c10-s1` fail (line peaked at 22, grazed its field at
+   −15 m from 3.3–4.0 to 1.1–1.3 J/m³, gone by t=16,000, no second wave by 30,000),
+   `r14c10-s2` (w6) at t=22,800 with its line 48 → 4 in water it thinned to 0.4–0.7.
+   Running: `r14c10-s2`, `r14c10-s3` (w2), `r14c10-s4` (w7), `r14c5-s3` (w5), `r14c5-s4`
+   (w3); seed 5 of each dose not queued (the queue is done). Score each as it ends into
+   0050's table (the scoring script's logic is in the table's note: longest inherited run
+   from the report's `inherit` column, recruitment from `lineage.jsonl`). The next screen
+   after the round is the stabilisers that exist and were never tried — clearance toe,
+   floor refuge, satiation — ledger first, then a proposal file for the owner. The invasion
    assay (0051): `r15i-c10` scored — it cannot invade at clearance 10 (R0 0.96 on the
    founding stake, one naturally endowed child from 50; the calculator agreed); `r15i-c1`
    scored — same answer at clearance 1 in water ten times richer (0051 closed: the
