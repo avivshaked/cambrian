@@ -135,6 +135,18 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    score M1–M5 when the arms end. **D067's vent is built (442 tests) and unrun**: it is
    0049's pre-registered next lever if M1 fails — `EVOSIM_VENT 0.1` on the same world is
    the first dose to argue about, with the dark excursion as that round's S2.
+0b. **After round 13, whatever it scores: calibrate and switch on the species column
+   (owner's request, 2026-09-03).** `SpeciesDriftThreshold` has been 0 in every arm since the
+   column was added, at which `AssignSpecies` gives every creature species 0 — so the
+   `species` column has read "1" in every world and has never counted anything. Steps: run
+   `./scripts/core-test.ps1 -Filter SpeciesCalibration` to print the single-mutation distance
+   distribution; set `EVOSIM_SPECIES_THETA` several typical-mutation-lengths out, per the
+   tunable's remarks in `RunConfig.cs`; record the chosen value and the distribution in a
+   logbook entry; then count round 12 and 13's worlds retrospectively from their
+   `lineage.jsonl` files (parent links and the per-birth species id are there — a
+   dissection script, not a rerun, and a candidate for `scripts/`). From then on every arm
+   carries the threshold and the column is read as diversity. Instrument work, agent-owned;
+   does not touch the goal rule.
 1. **~~The round-8 design~~ — ruled and run; kept for the reasoning trail.** The assay
    answered the mechanism question; the owner then advanced a hypothesis (recorded in
    0043's Results) that the deep distortion is **whole-layer horizontal access**: every
