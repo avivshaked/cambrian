@@ -79,6 +79,13 @@ namespace Evosim.Sim
         public int PatchCount { get; set; } = 1;
 
         /// <summary>
+        /// How many times the per-step drag impulse was capped at the momentum available (see
+        /// the limiter in <see cref="Apply(IReadOnlyList{CreatureInstance}, float)"/>). Zero for
+        /// every run at dt 0.01 so far; a non-zero count is the coarse step's stability at work.
+        /// </summary>
+        public long DragImpulsesLimited { get; private set; }
+
+        /// <summary>
         /// Sets up the scene for water. Call once, before stepping.
         /// </summary>
         /// <param name="selfCollision">
@@ -284,8 +291,50 @@ namespace Evosim.Sim
                 {
                     ArticulationBody body = creature.Bodies[i];
 
-                    body.AddForce(_force[at + i]);
-                    body.AddTorque(_torque[at + i]);
+                    Vector3 dragForce = _force[at + i];
+                    Vector3 dragTorque = _torque[at + i];
+
+                    // Drag is quadratic in speed and applied explicitly, once per step, so it is
+                    // stable only while one step's impulse is smaller than the momentum it acts
+                    // on; past that a step reverses the relative velocity, the next step's force
+                    // is larger, and a few steps later it is NaN (logbook/0052: dt 0.05 died at
+                    // t≈3,600 exactly so). The limiter caps the impulse at the momentum available —
+                    // a step may bring the body to rest relative to the water and no further,
+                    // which is the semi-implicit treatment of quadratic drag. It binds only when
+                    // k·A·|v|·dt/m ≥ 1, which at dt 0.01 needs speeds these worlds never reach, so
+                    // earlier runs are reproduced bit for bit; DragImpulsesLimited counts every
+                    // time it does bind, and the report prints the count so that claim is checked
+                    // per run rather than assumed. Angular momentum is capped the same way against
+                    // the smallest principal inertia, conservatively.
+                    if (stepSeconds > 0f)
+                    {
+                        float forceMagnitude = dragForce.magnitude;
+                        if (forceMagnitude > 0f)
+                        {
+                            float allowed = body.mass * _velocity[at + i].Magnitude / stepSeconds;
+                            if (forceMagnitude > allowed)
+                            {
+                                dragForce *= allowed / forceMagnitude;
+                                DragImpulsesLimited++;
+                            }
+                        }
+
+                        float torqueMagnitude = dragTorque.magnitude;
+                        if (torqueMagnitude > 0f)
+                        {
+                            Vector3 inertia = body.inertiaTensor;
+                            float smallest = Mathf.Min(inertia.x, Mathf.Min(inertia.y, inertia.z));
+                            float allowed = smallest * _spin[at + i].Magnitude / stepSeconds;
+                            if (torqueMagnitude > allowed)
+                            {
+                                dragTorque *= allowed / torqueMagnitude;
+                                DragImpulsesLimited++;
+                            }
+                        }
+                    }
+
+                    body.AddForce(dragForce);
+                    body.AddTorque(dragTorque);
 
                     // Excess weight, applied here rather than in Compute because it does not
                     // depend on velocity — drag does, and the balance of the two is what sets the

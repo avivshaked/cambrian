@@ -100,3 +100,29 @@ by t=2,100 where the reference held −15 m — but with the arm dead that compa
 `Exiting without the bug reporter`, so the crash surfaced only when the report was found
 frozen 35 minutes later; both signatures and `non-finite` are in the alternation now. A
 crashed run leaves no footer, so "no footer, process gone" is the third way an arm ends.
+
+### Amendment: the drag limiter, pre-registered before the rerun
+
+*Written 2026-09-03 after the crash, before `r16dt-05b` launched; `r16dt-02` was at
+t≈6,400 and healthy, running at ~7.8× real time against ~1.1× for the dt 0.01 arms beside
+it (not a like-for-like pace: 750 alive against 1,700).*
+
+The crash is explicit-integration instability, not a limit of the idea: quadratic drag
+applied once per step is stable only while a step's impulse is below the momentum it acts
+on. `FluidEnvironment.Apply` now caps each body's drag impulse at that momentum (force ×
+dt ≤ mass × relative speed; torque × dt ≤ smallest principal inertia × spin) — a step may
+bring a body to rest relative to the water and no further, the semi-implicit treatment of
+quadratic drag. The cap binds only when k·A·|v|·dt/m ≥ 1, and the report's footer now
+prints `Drag impulses limited: N` so "never at dt 0.01" is checked per run rather than
+assumed. Committed as the limiter; every worker needs a refresh before its next arm.
+
+| # | prediction | falsified by |
+|---|---|---|
+| M5 | **the limiter is invisible at 0.01**: `r16dt-01` (and every dt 0.01 arm launched after the limiter) reports `Drag impulses limited: 0` | the footer |
+| M6 | **0.05 survives with the limiter**: `r16dt-05b` reaches 15,000 s with V3/V4 held and a non-zero limiter count | the footer, `**Ended:**` |
+| M7 | **stability and accuracy are separate**: `r16dt-05b` still lies outside `r16dt-01`'s band on depth by t=5,000 (the unlimited 0.05 arm had risen to the surface by t=2,100 where the reference held −15 m), while `r16dt-02` is inside it — if 0.05 lands inside the band once stable, the earlier divergence was the overshoot itself | the comparison table |
+
+Reading: M6 holds and M7 holds → 0.02 is the screening step and 0.05 is a stress test only.
+M6 holds and M7 fails → 0.05 is usable for screening and the day's speed-up is ~5×. M6 fails →
+the instability is not only in our drag (the articulation solver itself, or buoyancy), and
+the coarse step stops at 0.02.

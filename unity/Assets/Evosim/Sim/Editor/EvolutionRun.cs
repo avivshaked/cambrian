@@ -586,6 +586,10 @@ namespace Evosim.Sim.EditorTools
             report.AppendLine("**Ended:** " + ending + ".");
             report.AppendLine();
             report.AppendLine(
+                "Drag impulses limited: " + eco.Fluid.DragImpulsesLimited +
+                " (the coarse-step stabiliser; 0 means every step's drag was applied as computed)");
+            report.AppendLine();
+            report.AppendLine(
                 eco.Steps + " physics steps · " +
                 eco.World.ElapsedSeconds.ToString("0.#") + " simulated seconds · " +
                 eco.World.Births + " births · " +
