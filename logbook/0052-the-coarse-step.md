@@ -160,6 +160,30 @@ the step or the seed's own replay noise is M2, and it waits on `r16dt-01`, launc
 same worker as this arm ended. If the repeat lands inside the same distances, 0.02 is the
 screening step.
 
+### `r16dt-01` — the replay-noise floor, and a limiter that was not invisible
+
+*Ended at budget: 15,000 s in 108 min wall (2.3× real time). Header identical to
+`r13a-s2`'s, config hash included. V2: the t=500 row differs from the reference in the
+last digit (70 vs 71 alive), so PhysX does not replay bit for bit on this machine and the
+noise floor is real but small. Audit 0.0000% throughout.*
+
+| t | `alive` ref / repeat / **0.02** | `depth m` | `depth sd` | `J/m3 here` | `det deep` | `mat blk` |
+|---|---|---|---|---|---|---|
+| 5,100 | 779 / 766 / **691** | −13.1 / −13.7 / **−14.1** | 7.1 / 6.6 / **6.7** | 5.2 / 5.3 / **6.6** | 1.8 / 1.9 / **2.3** | 28k / 22k / **13k** |
+| 10,100 | 1,472 / 1,448 / **1,425** | −11.2 / −11.7 / **−10.9** | 8.1 / 7.7 / **8.1** | 4.4 / 4.7 / **4.9** | 2.8 / 2.9 / **3.6** | 65k / 81k / **78k** |
+| 15,000 | 1,661 / 1,658 / **1,720** | −12.0 / −12.1 / **−11.1** | 7.7 / 7.4 / **8.1** | 6.1 / 6.2 / **7.3** | 3.9 / 4.1 / **4.8** | 77k / 84k / **162k** |
+
+| # | verdict | evidence |
+|---|---|---|
+| M2 | **held for demography, falsified for the fields** — by the pre-registered band | population within 4%, depth within 1 m and spread within 0.7 m at every sample (inside the 10% rule where the two references agree); the larder 18–25% above both references at 5,100 and 15,000, the deep field 17–30% above, refusals 2× at 15,000 — outside the band. 0.02 is a screening step for *whether lines form and persist*, not for reading a larder to better than a quarter |
+| M5 | **falsified** — the limiter was not invisible at 0.01 | `Drag impulses limited: 1,229,232,583` in 1.5 M steps — it bound on most body-steps. The world still matched the reference to within the noise floor on every column, so its effect was negligible, but the design was wrong: it capped the whole torque against the whole angular momentum, and a still body has none, so every drag torque that linear motion produces through off-centre panels was zeroed. `r16dt-05b`'s 1.77 M binds are mostly the same artefact |
+
+**The limiter, corrected (committed after this arm).** Only the component of force or
+torque that *opposes* the existing motion can overshoot and reverse it, so only that
+component is capped, against the momentum along it; the rest passes untouched. A still body
+is then untouched entirely. M5 is re-asked of the next dt 0.01 arm launched with the
+corrected build: its footer must read 0, or a number small enough to name.
+
 Two things need naming. **The audit.** Nothing in the ledger reads the physics step, so a
 step-dependent leak of a hundredth of a percent is a bug by construction — the
 pre-registered reading. It opened at t=7,200, as the population went still in the film
