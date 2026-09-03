@@ -162,8 +162,8 @@ namespace Evosim.Sim.EditorTools
             float clearanceToe = Env("EVOSIM_CLEARANCE_TOE", new RunConfig().ClearanceToeDensity);
 
             // The physics timestep (logbook/0052's validation). 0.01 is every earlier run, bit for
-            // bit; the metabolic step stays 0.5 s and the header's dt token and config.json's
-            // physicsDtSeconds carry whatever was set. Configured here, before any Ecosystem or
+            // bit; the metabolic step stays 0.5 s and the header's dt token and the run-identity
+            // record's physicsDtSeconds carry whatever was set. Configured here, before any Ecosystem or
             // EffectorDriver is built, because both read the step at construction.
             float physicsDt = Env("EVOSIM_DT", Ecosystem.FixedDt);
             Ecosystem.ConfigurePhysicsStep(physicsDt);

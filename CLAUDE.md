@@ -107,6 +107,20 @@ chain (logbook/0044):
 ./scripts/analyse-arm.ps1 r9-s1 -ListColumns          # the name -> index map
 ```
 
+**Ask the ledger before asking a worker** (D069). One body's energy ledger, alone, under
+`World`'s own breeding rule — net watts, break-even density, lifetime, R0 — in seconds and
+without Unity. Use it to screen any knob that touches income or cost before spending a
+day of machine time on it:
+
+```powershell
+./scripts/ledger.ps1 -Genome scratch/some-genome.json -Config runs/r13a-s2/<run>/config.json `
+    -Clearance 1,5,10 -Depth 0,12 -Density 0.5,1,2,4,7,10 -Compare
+./scripts/lineage-invasion.ps1 r15i-c10     # an inoculated lineage's R0, generations, alive-at
+```
+
+A genome file is one JSON line — any row of a run's `snapshots/*.jsonl` will do. What the
+calculator does not have: the matter draw at conception, shading, field depletion, drift.
+
 **Test `Evosim.Core`** (fast — the whole suite is well under a second):
 
 ```powershell

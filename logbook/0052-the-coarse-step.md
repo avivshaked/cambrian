@@ -44,7 +44,7 @@ report's timing, for the speed-up.
 
 | # | check | read from |
 |---|---|---|
-| V1 | header carries `dt=0.02` / `dt=0.05` / `dt=0.01`, `metabolic step 0.5 s`, and every other token equals `r13a-s2`'s (the config hash is Core-side and must be **identical** to `r13a-s2`'s — dt is not in it; `physicsDtSeconds` in config.json is where it lives) | header line 3, config.json |
+| V1 | header carries `dt=0.02` / `dt=0.05` / `dt=0.01`, `metabolic step 0.5 s`, and every other token equals `r13a-s2`'s (the config hash is Core-side and must be **identical** to `r13a-s2`'s — dt is not in it; `physicsDtSeconds` in the run-identity record `EvolutionRun.WriteRunIdentity` writes at the end is where it lives) | header line 3, run identity |
 | V2 | `r16dt-01` is not row-identical to `r13a-s2` past t=0 *or* is — either is a result: identical means PhysX replays on this machine and the noise floor is zero | row diff |
 | V3 | `floor` = 0 after t=3,100 in every arm | `floor` |
 | V4 | audit 0.0000% every sample — a coarser step must not open the energy audit | `audit` |

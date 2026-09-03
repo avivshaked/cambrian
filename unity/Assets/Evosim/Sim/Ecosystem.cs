@@ -44,7 +44,7 @@ namespace Evosim.Sim
 
         /// <summary>
         /// Physics timestep. 0.01 s unless <see cref="ConfigurePhysicsStep"/> was called (env
-        /// <c>EVOSIM_DT</c>); carried in the report header and the run's <c>config.json</c>.
+        /// <c>EVOSIM_DT</c>); carried in the report header and the run-identity record.
         /// </summary>
         public static float FixedDt { get; private set; } = 0.01f;
 

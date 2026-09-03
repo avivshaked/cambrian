@@ -61,6 +61,13 @@ machine holds five arms, the owner ruled for this round, and round 13's chain re
 of five in every arm at two-thirds of budget. It is scored on `r13a-s1..3` and `r13b-s1..2`
 and labelled so.
 
+*Amended 2026-09-03 while the seed-1 arms were at t≈10,000, on the owner's ruling (D069):
+the round runs under the **sequential-seed rule** — seeds 1 and 2 of both arms first, seeds
+3–5 only if an inherited line appears in either — and the **futility stop** — an arm with no
+inherited absorptive by t=15,000 is stopped and scored as failed. Seeds 1–2 were launched
+before the ruling and run to budget regardless. `r14c5-s1`'s early line (seven inherited at
+t=7,000) had faded to zero by t=10,700 when this was written.*
+
 ## Validity checks
 
 | # | check | read from |

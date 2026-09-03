@@ -126,6 +126,22 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    update D067's index row. The launch settings are in `scratch/launch-r13.ps1`
    (gitignored, this machine): `r12y-sN`'s block plus the two sink knobs, with
    `-Seconds 30000` baked in because `run-arm.ps1` defaults to 40,000.
+0z. **The speed programme (D069, 2026-09-03) — what is running and what to do with it.**
+   Round 13 ended (five arms, all to budget, producers everywhere, no inherited line
+   anywhere; scoring against 0049's M1–M6 is the next write-up). Round 14 runs under the
+   sequential rule: `r14c5-s1`, `r14c10-s1`, `r14c5-s2` running, `r14c10-s2` next on a free
+   worker (w4 is refreshed and hash-clean), seeds 3–5 only if a line appears in seeds 1–2;
+   the futility stop (no `inherit` by t=15,000 → stop, scored failed) applies. The invasion
+   assay `r15i-c10` (logbook/0051) runs to 12,000; `r15i-c1` and `r15i-c5` follow on free
+   workers; score with `./scripts/lineage-invasion.ps1 <arm>` and 0051's M1–M5, and compare
+   with the calculator's prediction recorded in 0051. The coarse step `r16dt-05`
+   (logbook/0052) runs to 15,000 on w7; `r16dt-01` and `r16dt-02` follow; score 0052's
+   M1–M4 column by column against `r13a-s2`. Every worker needs a refresh + hash check
+   before its next launch — the knob's build changed `Ecosystem.cs` and `EvolutionRun.cs`
+   (w4, w7 done; w2, w3, w5, w6 pending when their arms end). Launchers:
+   `scratch/launch-r14.ps1`, `launch-r15.ps1`, `launch-r16.ps1`; the monitor's watch list
+   is `$env:TEMP\evosim-watch-arms.txt`. The ledger calculator (`./scripts/ledger.ps1`) is
+   the first thing to run on any proposed knob from now on.
 0a. **Round 14 = D068, the stomach's gearing (logbook/0050).** The ledger, read from the
    code, says an absorptive part at clearance 1 breaks even at 4 J/m³ and clears 3–5 W/m³ in
    the best water any seed offered, against ~47 W/m³ for a leaf at the surface — so a mutant

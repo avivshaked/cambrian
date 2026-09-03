@@ -90,7 +90,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D065](#d065) | The fixed matter cost — a body costs a minimum of matter to exist, so the count cannot ratchet through shrinking | 2026-09-02 | built · round 10c: counts levelled at 1,490–1,610 against a ceiling of 8,000, uncensored (logbook/0046) |
 | [D066](#d066) | Roll cells — the water moves everything, and it stirs: one prescribed flow over patches advects bodies and fields; blinking rolls for chaotic advection | 2026-09-02 | built · round 12 (logbook/0048) 0 of 6: the rolls stir fields and bodies and keep producers alive at 30 m cells, but a roll that stops above the floor is a trapdoor for remains — surface detritus 0.2–3 J/m³, deep 15–21; one absorptive line formed and drifted out. Next lever proposed: sink speed of remains |
 | [D067](#d067) | The vent — an upwelling plume from the floor in one patch, return through the others, superposed on the rolls; returns what the trapdoor takes | 2026-09-03 | built · running as round 13 arm B (logbook/0049), two seeds: M6 held — producers survive the return flow; scored when the arms end |
-| [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050), config only, launches as round 13's workers free |
+| [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050), config only, running under D069's sequential rule |
+| [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051), coarse step running (logbook/0052) |
 
 ---
 
@@ -3174,3 +3175,57 @@ rate also loads the producers and moves any pass further from a natural regime. 
 runs: a line breeding below replacement drifts out at any length. A coarser physics step:
 a different world, every comparison broken, articulated bodies unstable before they are
 fast. Smaller worlds for more seeds: population is the mutant supply.
+
+### D069
+
+**Compute, screen, confirm — the campaign stops learning one number a day from a ten-hour
+physics run** · 2026-09-03
+
+Fourteen rounds took a day each and each asked one question of one lucky mutant. The
+owner's ruling, after a written assessment of where the time goes ("all I want is the
+ability to simulate faster"): build the cheap instruments, adopt the sequential rules, and
+test the coarse step — but not the kinematic fast world (the "Tier 2" of that assessment:
+a Core-only mover replacing PhysX for jointless bodies), which is deferred as likely to be
+overtaken by the physics the world will gain (terrain, particles, structures). Four things,
+all built the same day:
+
+1. **The ledger calculator** (`scripts/ledger.ps1`, `Evosim.Ledger` over
+   `LedgerForecast` in Core, 6 tests). One body's energy ledger integrated alone, in 0.5 s
+   steps with senescence, under exactly `World`'s breeding rule (gate, then price, brood
+   size), at a chosen irradiance, nutrient density, shade and absorptive clearance — no
+   population, no field, no physics. It reports net watts at birth, break-even density,
+   lifetime, R0, time to first child and the matter price of a child, and `-Compare` swaps
+   every stomach for a leaf of the same shape and back. It runs in seconds and screens a
+   knob before a worker touches it. Its first table (logbook/0051) read: a child costs
+   ~129 J whatever the body earns, so R0 is set by net watts alone; the round-13 stomach at
+   clearance 10 has R0 = 0 below 2 J/m³, 2 at 4 (a leaf's figure), 6 at 10.
+2. **The invasion assay** (logbook/0051), on the run's existing inoculation knob: fifty
+   verbatim copies of a genome the world itself produced, dropped into an established
+   world; per-capita growth when rare read from `lineage.jsonl` by
+   `scripts/lineage-invasion.ps1`. Two hours and one worker per dose instead of a day and
+   five; a sample of fifty instead of one.
+3. **Round design rules, from round 15 on.** *Futility:* an arm with no inherited
+   absorptive by t=15,000 is stopped and scored as failed — no line that went on to matter
+   has started later in fourteen rounds. *Sequential seeds:* seeds 1–2 first; 3–5 only if
+   a line appears in either. Applied to round 14 from the moment of ruling (0050's
+   amendment). Both are the owner's, as round-design rules.
+4. **The coarse step** (logbook/0052; `EVOSIM_DT`, Ecosystem.ConfigurePhysicsStep). The
+   physics timestep becomes configurable — the metabolic step stays 0.5 s, one clock, only
+   the integration granularity changes — and is validated against a seed already run: the
+   same world at 0.01 (replay noise), 0.02 and 0.05. D068's rejection of "a coarser physics
+   step" stands as a rejection of *changing the world under a comparison*; measuring the
+   change against a reference is the opposite of that.
+
+**What this is not.** Not a change to the goal rule (D063 as amended), which still scores a
+full run; the screen decides what is worth confirming, and only a confirmation run passes.
+Not a metabolic-step knob: the economy runs once per fifty physics steps and is not the
+cost, and the fields' advection is Courant-limited on that step (0.15 at 0.5 s for 0.3 m/s
+rolls over 1 m layers; 0.75 at 2.5 s, above the ½ clamp). Not a claim that the calculator
+is the world: it has no matter draw, no shading, no field depletion and no drift — 0051's
+M5 tests whether that matters, by running both.
+
+**Rejected here.** A scalar on reported time: simulated time advances only when a step is
+computed and the loop is unthrottled, so a scalar cannot make steps cheaper, only mislabel
+them; applied to the economy alone it makes creatures age and eat at a different rate than
+they sink and drift, and buys nothing. Cloud workers: the owner's money and setup, outside
+what an agent may do alone.
