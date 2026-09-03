@@ -184,6 +184,24 @@ component is capped, against the momentum along it; the rest passes untouched. A
 is then untouched entirely. M5 is re-asked of the next dt 0.01 arm launched with the
 corrected build: its footer must read 0, or a number small enough to name.
 
+### `r16dt-01c` — the corrected limiter is invisible, and the noise floor is wider than one repeat
+
+*5,000 s at dt 0.01 with the corrected limiter, 10.8 min wall. Footer: `Drag impulses
+limited: 68` in 500,000 steps over ~600 bodies — M5 **held** as re-asked (a number small
+enough to name). Audit 0.0000%.*
+
+But at t=5,000 it holds 957 alive against the reference's 779 and the first repeat's 747.
+Sixty-eight capped impulses cannot do that; what can is chaos in founding (the same seed
+produced 93 alive at t=600 in the reference and 40 in the dt 0.05 arm) amplified by
+whatever PhysX's multithreaded solver does differently under a different machine load.
+So the replay-noise floor is not the 4% one pair of runs suggested; on population at
+t=5,000 it is at least 25%, and M2's band has to be drawn from more than one repeat. Two
+more 5,000-s repeats at 0.01 (`r16dt-01d`, `-01e`, ~11 min each) are queued to draw it;
+0.02 and 0.05b are then re-read against that band at t=5,000, which is where every arm
+overlaps. Until then, M2's verdict above stands as provisional: 0.02's population and
+depth were inside the narrow band already, and a wider band can only move the fields'
+verdict toward "inside".
+
 Two things need naming. **The audit.** Nothing in the ledger reads the physics step, so a
 step-dependent leak of a hundredth of a percent is a bug by construction — the
 pre-registered reading. It opened at t=7,200, as the population went still in the film
