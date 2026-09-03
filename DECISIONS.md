@@ -89,7 +89,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D064](#d064) | Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column | 2026-09-02 | built · round 10c: the drowning is cured — five of five producer worlds to budget, uncensored, depth held within 3 m through 24,000 s of throttled births (logbook/0046); the chain still does not arrive |
 | [D065](#d065) | The fixed matter cost — a body costs a minimum of matter to exist, so the count cannot ratchet through shrinking | 2026-09-02 | built · round 10c: counts levelled at 1,490–1,610 against a ceiling of 8,000, uncensored (logbook/0046) |
 | [D066](#d066) | Roll cells — the water moves everything, and it stirs: one prescribed flow over patches advects bodies and fields; blinking rolls for chaotic advection | 2026-09-02 | built · round 12 (logbook/0048) 0 of 6: the rolls stir fields and bodies and keep producers alive at 30 m cells, but a roll that stops above the floor is a trapdoor for remains — surface detritus 0.2–3 J/m³, deep 15–21; one absorptive line formed and drifted out. Next lever proposed: sink speed of remains |
-| [D067](#d067) | The vent — an upwelling plume from the floor in one patch, return through the others, superposed on the rolls; returns what the trapdoor takes | 2026-09-03 | built, not yet run · round 13's pre-registered next lever after the sink |
+| [D067](#d067) | The vent — an upwelling plume from the floor in one patch, return through the others, superposed on the rolls; returns what the trapdoor takes | 2026-09-03 | built · running as round 13 arm B (logbook/0049), two seeds: M6 held — producers survive the return flow; scored when the arms end |
+| [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050), config only, launches as round 13's workers free |
 
 ---
 
@@ -3127,3 +3128,49 @@ measured, it kills founding (r12a-s1). Exempting bodies from the vent's return f
 would make the vent a field-only pump, which breaks D066's rule that the water carries
 what is in it and would be the first place in the world where a creature and the water
 beside it disagree about where they are going.
+
+### D068
+
+**The stomach's gearing — clearance 5 and 10, because a stomach that cannot out-earn a leaf
+never leaves a line** · 2026-09-03
+
+Round 13 (logbook/0049) closed the trapdoor and produced no chain: absorptive mutants
+appeared at one or two per sample in every arm and none left an absorptive child, including
+one sitting in 7–9 J/m³ with conception refusals flat. Two rounds had moved the water under a
+mutant whose budget nobody had read, so it was read from the code. An absorptive part earns
+`density × ClearanceRate` per m³ of tissue against 4 W/m³ of upkeep, and the clearance rate
+has been 1 m³/s per m³ in every round (`EVOSIM_CLEARANCE`), so a stomach breaks even at
+4 J/m³ and clears 3–5 W/m³ in the best water any seed has offered. A photosynthetic part at the
+surface clears about 47 W/m³ (a 0.2 m cube, top face lit, 200 W/m², efficiency 0.05,
+unshaded — an estimate). A mutant that swaps a leaf for a stomach gives up an order of
+magnitude of income on that part, breeds slower than its siblings, and drifts out — which is
+the 0.75 children per member 0048 measured. The gate is relative fitness inside the mutant,
+not the location of the food; marine snow (0049) lifted the food into the light, where the
+leaf wins by ten to one, and left the deep below the stomach's break-even.
+
+**The owner's proposal** was an absorption scalar that converts matter to more energy, with
+the option of charging more upkeep for a more efficient stomach. Mapped onto the code:
+`AbsorptiveCell.Yield` is that scalar and is capped at 1, because above 1 a feeder returns
+more energy than it took from the field — a free-energy source (DESIGN.md §11.2), refused by
+the constructor. `ClearanceRate` is the physical version of the same idea — how much water a
+stomach processes — and is unbounded, listed as unmeasured in §5A.10, and never measured.
+**Ruled (owner, 2026-09-03): raise it.** Round 14 (logbook/0050) runs clearance 5 and 10
+on round 13's arm-A world — 5 is where a stomach in 7 J/m³ matches a leaf at the surface and
+the surface film is at break-even; 10 is where the stomach wins in any water above ~5 J/m³.
+No code changes: the knob and its header token (`clearance N`) exist, so every earlier run
+is untouched. Round 13 is cut from ten arms to the five running, on the same ruling.
+
+**Deferred, not rejected: the evolvable trade-off.** Coupling upkeep to clearance per
+creature only teaches something if the coupling is chosen so that an interior optimum
+depends on local density. Linear coupling leaves break-even fixed at 4 J/m³ and makes the
+scalar a gearing knob (bigger surplus above break-even, bigger loss below); sub-linear
+coupling makes higher clearance strictly better, evolution drives it to the cap, and the cap
+is the parameter. That is a second experiment after the first shows a stomach can win
+anywhere.
+
+**Rejected here.** Yield above 1: free energy. A higher cell-type mutation rate: supply of
+mutants is not the constraint — they arrive at one or two per sample and fail to breed; the
+rate also loads the producers and moves any pass further from a natural regime. Longer
+runs: a line breeding below replacement drifts out at any length. A coarser physics step:
+a different world, every comparison broken, articulated bodies unstable before they are
+fast. Smaller worlds for more seeds: population is the mutant supply.

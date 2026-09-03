@@ -1,6 +1,6 @@
 # Handoff — where to pick up
 
-**Updated 2026-09-03, after round 11 scored (0 of 5: the location gate isolated), with round 12 running (D066 roll cells + excretion 0.01; the first inherited absorptive since round 8 in `r12y-s3`) and round 13 (sink 0.002) proposed to the owner.** This is the one file a new agent should
+**Updated 2026-09-03, with round 13 running (sink 0.002, five arms, no chain at two-thirds of budget; D067's vent running in two of them) and round 14 (D068: clearance 5 and 10 — the stomach's gearing, ruled by the owner) pre-registered and queued behind it.** This is the one file a new agent should
 read first. It says what was being attempted, how far it got, what is queued, and exactly how
 to continue. It is a pointer, not a source of truth: the specification is `DESIGN.md`, the
 reasoning is `DECISIONS.md`, the history is `logbook/`, and the operating rules are
@@ -114,27 +114,31 @@ goal; the movement frontier and the aquarium are the destinations waiting behind
 
 Rounds 1–9 plus the D060 assay are scored (the table above is the record). What remains:
 
-0. **Round 13 is pre-registered and not launched (2026-09-03; the owner reserved the
-   machine).** logbook/0049: round 12 arm B's world with `EVOSIM_SINK 0.002` and
-   `EVOSIM_MATTER_SINK 0.002` — arm A `r13a-s1..5`; arm B `r13b-s1..5` adds
-   `EVOSIM_VENT 0.05` (D067, first run). Ten arms interleaved a/b, 30,000 s, ≤ 5
-   concurrent; `scratch/launch-r13.ps1` (gitignored, this machine) launches one arm by
-   name: `./scratch/launch-r13.ps1 -Arm a -Seed 1 -Worker 2`. The
-   settings block is `r12y-sN`'s (see logbook/0048's table and the launch lines in this
-   session's record: base env plus `EVOSIM_PATCHES 4`, `EVOSIM_CURRENT 0.3`,
-   `EVOSIM_CURRENT_PERIOD 6000`, `EVOSIM_CURRENT_CELL 30`, `EVOSIM_CURRENT_ROLLS 1`,
-   `EVOSIM_CURRENT_BLINK 3000`, `EVOSIM_CURRENT_ADVECT 1`, `EVOSIM_EXCRETION 0.01`,
-   `EVOSIM_NEUTRAL_VOLUME 0.25`, `EVOSIM_FOUNDER_DEPTH 60`, `EVOSIM_MATTER_PER_CREATURE 3`,
-   `EVOSIM_SENESCENCE 3000`, `EVOSIM_AREA 100`, `EVOSIM_MAX_POP 8000`,
-   `EVOSIM_FLOOR_CLOSES 3000`, `EVOSIM_CELLTYPE_MUTATION 0.005`) plus the two sink knobs;
-   pass `-Seed N -Seconds 30000` explicitly — the script's default budget is 40,000. Every
-   worker carries the current Unity files (hash-checked 2026-09-03), but the D067 edit to
-   `EvolutionRun.cs` landed after that check, so refresh with `new-worker.ps1` and verify
-   the four file hashes before launching. Verify V1 from the header (`sink 0.002 m/s,
-   matter 0.002 m/s`, `vent off`), start a fresh monitor (the round-12 one exited empty),
-   score M1–M5 when the arms end. **D067's vent is built (442 tests) and unrun**: it is
-   0049's pre-registered next lever if M1 fails — `EVOSIM_VENT 0.1` on the same world is
-   the first dose to argue about, with the dark excursion as that round's S2.
+0. **Round 13 is running, cut to five arms; round 14 is pre-registered and queued behind
+   it (2026-09-03).** logbook/0049: round 12 arm B's world with `EVOSIM_SINK 0.002` and
+   `EVOSIM_MATTER_SINK 0.002` — `r13a-s1..3` (vent off) and `r13b-s1..2` (`EVOSIM_VENT
+   0.05`, D067's first run), launched 2026-09-03 on w2..w6, V1–V4 verified. Seeds 4 and 5
+   of both arms are **not** launched, on the owner's ruling to move to round 14 (0050
+   records why). Mid-run reading at t ≈ 18,000–20,000: the physics did what 0049 promised
+   (deep field 2–4 J/m³ vs round 12's 9–10, M6 held for the vent) and no chain started in
+   any arm — `inherit` 0 everywhere, refusals higher than round 12's. **Score M1–M6 on the
+   five arms when they end** (recruitment from `lineage.jsonl`), append Results to 0049,
+   update D067's index row. The launch settings are in `scratch/launch-r13.ps1`
+   (gitignored, this machine): `r12y-sN`'s block plus the two sink knobs, with
+   `-Seconds 30000` baked in because `run-arm.ps1` defaults to 40,000.
+0a. **Round 14 = D068, the stomach's gearing (logbook/0050).** The ledger, read from the
+   code, says an absorptive part at clearance 1 breaks even at 4 J/m³ and clears 3–5 W/m³ in
+   the best water any seed offered, against ~47 W/m³ for a leaf at the surface — so a mutant
+   that swaps a leaf for a stomach breeds slower than its siblings and drifts out, whatever
+   the water does. Owner's ruling: raise `EVOSIM_CLEARANCE`. Two arms on round 13's arm-A
+   world: `r14c5-s1..5` (clearance 5) and `r14c10-s1..5` (clearance 10); no code change.
+   `scratch/launch-r14.ps1 -Clearance 5 -Seed 1 -Worker 2` launches one arm;
+   `scratch/queue-r14.ps1` (running in the background from this session) launches the next
+   queued arm on each round-13 worker as it ends cleanly and passes the four-file hash
+   check, and appends the arm to the monitor's watch list. Verify V1 (`clearance 5` /
+   `clearance 10`, `sink 0.002 m/s, matter 0.002 m/s`, `vent off`) before believing an arm.
+   M2 predicts c10 passes; if M1 fails at clearance 10, the pre-registered next step is the
+   per-creature ledger instrument for absorptive individuals, not another world change.
 0b. **After round 13, whatever it scores: calibrate and switch on the species column
    (owner's request, 2026-09-03).** `SpeciesDriftThreshold` has been 0 in every arm since the
    column was added, at which `AssignSpecies` gives every creature species 0 — so the

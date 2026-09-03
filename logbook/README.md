@@ -172,3 +172,4 @@ key only translates the entries' reporting shorthand.
 | [0047](0047-the-half-life.md) | 2026-09-02 | The half-life |
 | [0048](0048-stirring-the-pot.md) | 2026-09-02 | Stirring the pot |
 | [0049](0049-marine-snow.md) | 2026-09-03 | Marine snow |
+| [0050](0050-the-stomachs-gearing.md) | 2026-09-03 | The stomach's gearing |
