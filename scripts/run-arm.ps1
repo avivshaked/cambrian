@@ -57,7 +57,11 @@ $busy = Get-CimInstance Win32_Process -Filter "Name='Unity.exe'" |
     Where-Object { $_.CommandLine -match ([regex]::Escape($proj) + '(?=["\s]|$)') }
 if ($busy) { throw "A Unity process (PID $($busy.ProcessId)) already has $proj open." }
 
-$log = Join-Path $env:TEMP "evosim-$Name.log"
+# Logs live inside the project (scratch/ is gitignored): nothing of a run is written outside
+# the repository, TEMP included — the owner's rule, 2026-09-03.
+$logDir = Join-Path $PSScriptRoot "..\scratch\logs"
+New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+$log = Join-Path $logDir "evosim-$Name.log"
 $out = Join-Path $root "runs/$Name.md"
 
 # Set for this process only; Start-Process inherits it. Restored afterwards so a second arm

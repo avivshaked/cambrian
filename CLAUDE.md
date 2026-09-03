@@ -348,6 +348,12 @@ actually verifying it.
 
 ## Conventions
 
+- **Nothing of the project's is written outside the repository — TEMP included.** Transient
+  files go in `scratch/` (gitignored): Unity run logs (`scratch/logs/`, where
+  `run-arm.ps1` puts them), monitor watch lists, launchers, extracted genomes, compile logs.
+  An agent's own session scratchpad and the Windows temp directory are both outside the
+  project and both off limits (owner's rule, 2026-09-03; the per-arm logs lived in TEMP
+  until then).
 - Simulation output (`runs/`) and spike CSVs are gitignored; `FINDINGS.md` is tracked
   because DESIGN.md links to it.
 - Genomes serialize to **JSON**, not binary — readable, diffable, and hand-written rather than
