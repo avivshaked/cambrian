@@ -95,6 +95,12 @@ namespace Evosim.Sim.EditorTools
             float currentSpeed = Env("EVOSIM_CURRENT", 0f);
             float mixing = Env("EVOSIM_MIXING", 0f);
 
+            // How fast remains and dissolved matter fall. The default is a large-aggregate rate
+            // (0.02 m/s is ~1,700 m/day); the remains of a 0.01 m3 body are marine snow, and
+            // round 12 found rolls that stop above the floor act as a trapdoor at this speed.
+            float nutrientSink = Env("EVOSIM_SINK", new RunConfig().NutrientSinkMetresPerSecond);
+            float matterSink = Env("EVOSIM_MATTER_SINK", new RunConfig().MatterSinkMetresPerSecond);
+
             // D066. The current's own geometry and clock, swept from here for the first time — a
             // cell deeper than the photic band stirs producers into the dark for half of every
             // cycle (Sverdrup 1953), which is a real constraint and therefore one an arm has to be
@@ -345,6 +351,8 @@ namespace Evosim.Sim.EditorTools
             config.Genome.FounderFloatChance = floatChance;
             config.FounderDepthSpread = founderDepth;
             config.NutrientMixingDiffusivity = mixing;
+            config.NutrientSinkMetresPerSecond = nutrientSink;
+            config.MatterSinkMetresPerSecond = matterSink;
             config.NutrientRemineralisationPerSecond = remin;
             config.MatterRemineralisationPerSecond = remin;
             config.ExcretionPerJoule = excretion;
@@ -403,6 +411,7 @@ namespace Evosim.Sim.EditorTools
                     : "off") +
                 " · advect " + (currentAdvect ? "on" : "off") +
                 " · mixing " + mixing + " m2/s" +
+                " · sink " + nutrientSink + " m/s, matter " + matterSink + " m/s" +
                 " · remin " + remin + " /s" +
                 " · excretion " + excretion + " /J" +
                 " · refuge " + floorRefuge + " m" +

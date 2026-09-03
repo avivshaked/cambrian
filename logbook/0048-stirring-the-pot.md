@@ -122,3 +122,36 @@ for every remaining arm; the delivery depth comes up to ~1 m, the circuit shorte
 and creatures cross patches every ~30 s. Period stays 6,000. `r12b30-s1`, launched minutes
 earlier at 0.1, is stopped and does not count. Relaunched arms: `r12x-sN` (A at 0.3) and
 `r12y-sN` (B at 0.3); `r12a30-s1` runs to budget as the speed-0.1 record. S1-S5 unchanged.
+
+**S1 fails at 0.3 m/s too, and the mechanism is the roll's floor, not its top (2026-09-03,
+`r12x-s1` at t=14,600, V1 and V4 held).** Surface detritus came up from 0.06-0.4 to
+0.24-0.53 J/m3 - the dead zone at the top did close - and stopped there, five times short of
+the 2 J/m3 S1 named, while the deep larder rose to 11.7. The budget table says where the
+food went: with the rolls on, the *floor's* share of detritus is 2.2%, against 8.1% in the
+still round-11 world, yet total detritus grows at the same rate and the 54 m reading climbs
+as fast as ever - the remains are piling in the dark half of the column, below the cell and
+above the floor. A roll that stops at 30 m is a trapdoor: on the down leg a parcel reaches
+the cell's floor in ~150 s, where w is zero by the same construction that makes it zero at
+the surface, and the 0.02 m/s sink carries it out of the roll for good. Nothing lifted on
+the up leg was ever below 30 m, so every circuit loses whatever touched the bottom, and the
+surface holds one circuit's worth of fresh deaths and no more. The roll is a conveyor to the
+deep. Raising the speed shortens the circuit without closing the trapdoor, so the
+pre-registered "dose goes up" reading is spent: S1 is falsified by mechanism at both doses,
+and the next lever is a world rule (below), the owner's to choose.
+
+Two levers close the loop, and they are not the same bet. **(i) Stokes for the remains**:
+0.02 m/s is ~1,700 m/day, a large-aggregate rate; the remains of a 0.01 m3 body are marine
+snow at metres per day. At 0.002 m/s the trapdoor leaks ten times slower, remains circulate
+in the lit roll for ~10 circuits, and dissolved matter - which sinks at the same 0.02 and is
+the surface famine's other half - stays where the bodies are. One knob (`EVOSIM_SINK`,
+`EVOSIM_MATTER_SINK`, both added today, header `sink 0.002 m/s, matter 0.002 m/s`). **(ii) A
+second roll below the first** (the reading S2 pre-registered): the lower 30 m rolls too, so
+what falls through the trapdoor is lifted back to the interface, where the upper roll's
+down leg... does not take it - stacked rolls share a zero-w interface, and material crosses
+it upward only by diffusion. (ii) is a geometry change whose delivery to the film is
+uncertain; (i) is the physics D064 already used for bodies, applied to their remains.
+Recommended: round 13 = arm B's world (rolls 0.3 + excretion 0.01) + sink 0.002 for both
+fields, five seeds, with round 12's x/y arms as the sink-0.02 controls; and round 12 stops
+at the two arms running (`r12x-s1`, `r12y-s1`, to budget), since eight more seeds would
+replicate an S1 failure the mechanism already explains. S3 (the famine) is still read from
+`r12y-s1`.
