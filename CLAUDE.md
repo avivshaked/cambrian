@@ -296,6 +296,16 @@ actually verifying it.
   The three scripts in `scripts/` carry BOMs; keep it that way when adding one, since this
   project's scripts are written with prose in them. `[ulong]` is also PowerShell 7-only — use
   `[uint64]`, which both editions accept.
+- **`new-worker.ps1 -Workers 2,3,4` does nothing when run through `powershell -File`.** The
+  comma list arrives as one string, fails to bind to `[int[]]`, and the script exits 1 — which
+  is also its exit code on success, so nothing distinguishes the two. Six workers were "refreshed"
+  this way and every one still carried the previous `EvolutionRun.cs`; the hash check caught it.
+  Call it once per worker from a shell, or from inside PowerShell with a real array. The hash
+  check is not optional.
+- **The species column reads 1 unless `EVOSIM_SPECIES_THETA` is set.** `SpeciesDriftThreshold`
+  defaults to 0, at which `AssignSpecies` gives every creature species 0 — the instrument is
+  off, not reporting one species. Every arm through round 13 ran at 0; calibrate with the
+  `SpeciesCalibration` test's distribution before reading the column as diversity.
 - **A lineage dissection can answer less than it looks like it can.** `lineage.jsonl` rows carry
   birth time, parent, kind, generation, species, the expressed `abs`/`jnt` flags and the patch —
   no depth, volume or energy per creature — and every death reads `starved` because `Starved` is
