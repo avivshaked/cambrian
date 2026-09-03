@@ -168,7 +168,9 @@ budget. The goal's alive clause is a stability clause, and clearance 10 buys gro
 without stability. Clearance 5 buys a line that neither grows nor dies. The knob that was
 meant to raise income raised it, and the field absorbed the gain — which is the
 consumer–resource answer to "does the gearing pass": not on its own. The stabilisers that
-exist and have never been tried — the clearance toe (`EVOSIM_CLEARANCE_TOE`, type III
+exist and have not run in this world — tried once each in round 8's arm B (toe 4, satiation
+20) and rounds 7 and 9 (refuge), all in worlds without rolls, the slow sink or a geared
+stomach — the clearance toe (`EVOSIM_CLEARANCE_TOE`, type III
 feeding: a stomach in thin water stops grazing before it empties it), the floor refuge
 (`EVOSIM_FLOOR_REFUGE`: a fraction of the field no stomach can reach), satiation — are the
 next screen, and the ledger calculator is the first place to run them. The owner's

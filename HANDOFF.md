@@ -137,8 +137,11 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    (w3); seed 5 of each dose not queued (the queue is done). Score each as it ends into
    0050's table (the scoring script's logic is in the table's note: longest inherited run
    from the report's `inherit` column, recruitment from `lineage.jsonl`). The next screen
-   after the round is the stabilisers that exist and were never tried — clearance toe,
-   floor refuge, satiation — ledger first, then a proposal file for the owner. The invasion
+   after the round is the stabilisers that exist and have not run in this world — clearance toe,
+   satiation (round 8's arm B, D062), floor refuge (D055, rejected twice) — ledger first. Done: `fable-propose-detritus-flux.md` — the ledger says satiation caps
+   this body at R0 ≤ 1 and the toe raises its break-even; the constraint is the detritus
+   energy flux (~0.2 W against a ~17 W producer economy, inferred from `detritus J`'s
+   rebuild in `r14c10-s1`), and the proposed lever is exudation. Awaiting the owner. The invasion
    assay (0051): `r15i-c10` scored — it cannot invade at clearance 10 (R0 0.96 on the
    founding stake, one naturally endowed child from 50; the calculator agreed); `r15i-c1`
    scored — same answer at clearance 1 in water ten times richer (0051 closed: the
