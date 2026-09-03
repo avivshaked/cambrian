@@ -155,7 +155,10 @@ foreach ($armName in $Name) {
     $lastT = $lastSample.T
 
     # --- header info ------------------------------------------------------------------
-    $logPath = Join-Path $env:TEMP "evosim-$armName.log"
+    # Logs live in scratch/logs/ since 2026-09-03 (run-arm.ps1); arms launched before that
+    # logged to TEMP, read here as a fallback only.
+    $logPath = Join-Path $PSScriptRoot "..\scratch\logs\evosim-$armName.log"
+    if (-not (Test-Path $logPath)) { $logPath = Join-Path $env:TEMP "evosim-$armName.log" }
     if (Test-Path $logPath) {
         $runaway = Select-String -Path $logPath -Pattern 'PopulationRunaway' -Quiet
         $endedBy = if ($runaway) { 'ceiling/runaway (PopulationRunaway found in log)' } else { 'no runaway found in log' }
