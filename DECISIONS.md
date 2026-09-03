@@ -92,6 +92,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D067](#d067) | The vent — an upwelling plume from the floor in one patch, return through the others, superposed on the rolls; returns what the trapdoor takes | 2026-09-03 | built · run as round 13 arm B (logbook/0049), two seeds: producers survive the return flow (M6 held), the deep field falls to the lowest of the round (2.0–2.4 J/m³), no chain forms, matter refusals rise 1.5–5× against the twin. Neither harmful nor load-bearing while absorbers cannot breed; off in round 14 |
 | [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050) running under D069's sequential rule: 0 of 3 scored so far — clearance 10 grows the first 20–48-member lines of the campaign and they graze their field and crash; clearance 5 holds a line of 3–9 |
 | [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
+| [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; literature round on exudation first; screen pre-registered |
 
 ---
 
@@ -3235,3 +3236,81 @@ computed and the loop is unthrottled, so a scalar cannot make steps cheaper, onl
 them; applied to the economy alone it makes creatures age and eat at a different rate than
 they sink and drift, and buys nothing. Cloud workers: the owner's money and setup, outside
 what an agent may do alone.
+
+### D070
+
+**Exudation — the producers feed the water while they live, because the second trophic
+level is fed at one percent** · 2026-09-03 (ruled in principle; build gated on two readings)
+
+Round 14 (logbook/0050) grew the campaign's first real absorptive lines — 22 and 48
+members at clearance 10 — and both grazed their field below break-even and died back to a
+handful with no second wave inside the budget; clearance 5 held a line of 3–9 that neither
+grew nor died. The reason is one column: `detritus J`, the whole world's standing detritus,
+fell from 9,744 J to 4,215 J while `r14c10-s1`'s line lived and rebuilt at **0.19 W** with no
+grazer on it. Dead tissue is the nutrient field's only income (excretion, D052, moves
+matter, not energy) and feeding its only outflow, so that slope is the income. The ledger
+(D069) says a clearance-10 stomach of the mutant's size needs ~0.03 W to hold R0 = 1, so
+**the flux sustains a standing line of about six**; the booms of 22 and 48 ate stored
+capital, and the goal's alive clause asks for ten. Clearance 5's line of 3–9 is the same
+capacity read from the other dose. Against a producer economy of ~17 W the second level is
+fed at ~1%; real pelagic transfer efficiencies run near 10%, and the difference is that this
+world's producers exude nothing while alive.
+
+The existing stabilisers cannot fix this, and the ledger says so for this body at −12 m,
+clearance 10: satiation 20 W/m³ (round 8's value) caps R0 at 1 at every density — a line
+cannot get from one mutant to ten; satiation 8–12 gives R0 = 0 everywhere, because 103 J of
+the 129 J child price is the endowment and a 0.0022 m³ body capped at 12 W/m³ of tissue
+cannot earn it in a lifetime; the clearance toe (D062) at 1 or 4 J/m³ raises the break-even
+to 0.86 or 1.48 without raising the income; the floor refuge (D055) protects a layer these
+stomachs do not sit in and was rejected twice. None of the three touches the flux, and the
+flux is the constraint.
+
+**The rule, in principle.** A producer deposits a fraction of its photosynthetic intake
+into the nutrient field at its own layer and patch, each step, while it lives — dissolved
+organic matter, the input to the microbial loop. Configurable, default 0 (bit-identical
+until asked), header token, its own counter in the detritus-flux instrument so the first
+arm shows deaths and exudation separately, and visible to the ledger through
+`Metabolism.StepAt` like the toe. The fraction is not set here: a literature round on
+phytoplankton exudation comes first, so the number carries a citation before it is a rule.
+
+**Gated on two readings, both landing within hours of the ruling** (the owner's
+acceptance of the agent's recommendation, verbatim in spirit: "rule yes in principle, and
+gate the build on two readings"):
+
+1. `r14c10-s1-flux` — `r14c10-s1`'s world at the 0.02 screening step on the build that
+   carries `det in` / `det out`. It must read the income at about the inferred 0.2 W with no
+   grazer present. If it reads much higher, the diagnosis is wrong and nothing is built.
+2. `r14c10-s4` — the richest water any arm has had (−15 m in 7 J/m³). If a larger stock
+   turns the crash into a cycle that holds ten, the flux is not the binding constraint and
+   the rule is reconsidered before it is built.
+
+**The screen, pre-registered now.** Ledger the mutant under the exudation config at the
+densities the new flux would set; then two arms at the 0.02 step on the clearance-10 worlds
+that formed lines (seeds 1 and 2), run to 20,000 s so the line is read past two lifetimes,
+with `det in` split by source. Prediction: **an inherited line holds ≥ 10 alive past two
+lifetimes in at least one of the two.** If it does, a confirmation round at 0.01 under D063
+as written; if it does not, exudation is rejected as a world rule and this entry is marked
+so. The producers' own dynamics are read on the same arms: a fraction of intake is a tax on
+growth, and in the light-0.02 world producers have run away before, so the tax may be
+harmless or useful, but it is not assumed either way.
+
+**Rejected alternatives**, each with its reason:
+
+- *Remains that carry a reserve* — raises the flux only by changing what a producer keeps
+  at death, which is the breeding rule; deeper, and moves the producers more than a tax.
+- *A cheaper child* — the endowment is 80% of the price and a 30 J endowment triples the
+  capacity, but it is genome-encoded and a line of six will not evolve it at mutation 0.005
+  in any budget; a world-level cap changes every creature's economics, not the stomachs'.
+- *Relaxing the goal's alive clause to six* — fits the goal to the world; the failure mode
+  this campaign has avoided.
+- *Stopping* — legitimate, and the fallback if the screen fails: the record would say the
+  ecology as configured cannot hold a second trophic level, and why.
+- *Another seed of round 14* — a draw against a ceiling of six cannot reach ten; seed 5 of
+  each dose is not launched (owner, same night).
+
+**What this is not.** Not a change to D063; the screen decides what is worth confirming and
+only a confirmation run passes. Not a fourth turn of the same knob: sink speed (D067) and
+gearing (D068) moved where detritus goes and how fast it is eaten; this is the first lever
+on how much there is. And not a number yet — the fraction waits on the review.
+
+*Absorbed from `fable-propose-detritus-flux.md` (2026-09-03), deleted on this ruling.*

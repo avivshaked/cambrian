@@ -145,7 +145,10 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    satiation (round 8's arm B, D062), floor refuge (D055, rejected twice) — ledger first. Done: `fable-propose-detritus-flux.md` — the ledger says satiation caps
    this body at R0 ≤ 1 and the toe raises its break-even; the constraint is the detritus
    energy flux (~0.2 W against a ~17 W producer economy, inferred from `detritus J`'s
-   rebuild in `r14c10-s1`), and the proposed lever is exudation. Awaiting the owner.
+   rebuild in `r14c10-s1`), and the proposed lever is exudation. **Ruled: D070**, yes in
+   principle, build gated on `r14c10-s1-flux`'s measured income (~0.2 W expected) and
+   `r14c10-s4`'s outcome (crash expected); the literature round on exudation runs first;
+   the screen is pre-registered in D070. The proposal file is deleted.
    Built meanwhile: the detritus-flux instrument (`det in` / `det out` columns, J per
    window; `World.DetritusDepositedTotal/TakenTotal`; test in `WorldTests`). It changes
    `EvolutionRun.cs`, so every worker needs a refresh before its next launch — w4 is
