@@ -114,4 +114,50 @@ calculator is missing a term the world has.
 
 ## Results
 
-*Appended when the arms end.*
+### `r15i-c10` — the stomach cannot invade at clearance 10 in this water
+
+*Ended at budget, 12,000 s in 78 min wall (2.6× real time). V1–V4 held: the inoculation
+fired at t=5,000 exactly, 50 births with `k:"i"`, all 50 expressing the stomach.*
+
+| measure | value |
+|---|---|
+| inoculants | 50, all dead by t=12,000; lifetimes 6,571–6,984 s (mean 6,732) |
+| children per inoculant | exactly 1.00 — every one bred once, immediately, on its 200 J founding stake |
+| descendants born | 51 (50 in generation +1, **1** in generation +2) |
+| R0 observed | 0.96 over completed members — and that figure is the founding stake; the 50 children, born with the genome's own 103 J endowment, produced one child between them |
+| lineage alive at t=12,000 | 48 — the generation +1 children, aged ~7,000 s, on the same clock that killed their parents |
+| expressed absorptive among descendants | 100% |
+| field at the population's depth (−10 m) | 1.4 J/m³ at inoculation, 0.26–0.7 from t=7,000 on |
+
+| # | prediction | verdict |
+|---|---|---|
+| M2 | invades at clearance 10: R0 > 1, ≥ 50 descendants, ≥ 10 alive | **falsified** on the clause that matters — R0 < 1 by a wide margin once the founding stake is discounted; the 51 descendants and 48 alive are the stake and the not-yet-dead, not growth |
+| M4 | expression is not the gate | **held** — 100% |
+| M5 | the assay agrees with the calculator | **held** — the calculator's table, recorded above before the arm ended, gave R0 = 0 and a lifetime of 7,400–9,000 s at 0.5–1 J/m³; observed: one child from fifty naturally-endowed members, lifetimes ~6,700 s |
+| M1, M3 | the control (c1) and the middle dose (c5) | not yet run — see below |
+
+**What happened.** Fifty stomachs arrived in water at 1.4 J/m³, each spent its stake on one
+child at once (the breeding gate is met at admission: 200 J against a ~129 J price), and
+then the hundred of them, with the seven natives already there, grazed the field at their
+depth down to a quarter of a joule per cubic metre — below the clearance-10 break-even of
+0.4. From there a 0.0022 m³ body clears at most a few thousandths of a watt: enough to
+sit, not enough to reach 129 J again before senescence. They died between 6,571 and
+6,984 s of age, in a band of four hundred seconds, which is what a population starving on
+the same clock looks like. The children, born with 103 J rather than 200, never reached
+the gate at all.
+
+This is not a failure to invade so much as an overshoot: the stomachs ate their own
+window. The number that decides the goal is whether the field and the stomach population
+can settle at a density where R0 = 1 with more than ten alive — consumer-resource
+dynamics, not invasion fitness alone — and that is what round 14's clearance-10 arms are
+measuring (`r14c10-s1`'s line of 21 fading in 1 J/m³ water it thinned itself).
+
+**The control and the middle dose.** The calculator's table gives R0 = 0 for this body at
+clearance 1 at every density in the table and at clearance 5 below 4 J/m³, and it has now
+agreed with the assay at clearance 10 on both R0 and lifetime. `r15i-c1` still runs, as
+the control that makes the assay an experiment, when a worker is free after `r14c10-s2`
+and `r16dt-01`; `r15i-c5` is dropped as redundant with the table — the owner can reinstate
+it. Owner's question of the day, answered here: a steady trickle of founders would have
+produced this result continuously (one stake-funded child each, then starvation), so the
+assay is timed against the calculator's window instead, and the next inoculation goes in
+where and when the timeline says a stomach could breed.
