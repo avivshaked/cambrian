@@ -91,7 +91,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D066](#d066) | Roll cells — the water moves everything, and it stirs: one prescribed flow over patches advects bodies and fields; blinking rolls for chaotic advection | 2026-09-02 | built · round 12 (logbook/0048) 0 of 6: the rolls stir fields and bodies and keep producers alive at 30 m cells, but a roll that stops above the floor is a trapdoor for remains — surface detritus 0.2–3 J/m³, deep 15–21; one absorptive line formed and drifted out. Next lever proposed: sink speed of remains |
 | [D067](#d067) | The vent — an upwelling plume from the floor in one patch, return through the others, superposed on the rolls; returns what the trapdoor takes | 2026-09-03 | built · run as round 13 arm B (logbook/0049), two seeds: producers survive the return flow (M6 held), the deep field falls to the lowest of the round (2.0–2.4 J/m³), no chain forms, matter refusals rise 1.5–5× against the twin. Neither harmful nor load-bearing while absorbers cannot breed; off in round 14 |
 | [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050), config only, running under D069's sequential rule |
-| [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051), coarse step running (logbook/0052) |
+| [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
 
 ---
 
@@ -3214,7 +3214,13 @@ all built the same day:
    the integration granularity changes — and is validated against a seed already run: the
    same world at 0.01 (replay noise), 0.02 and 0.05. D068's rejection of "a coarser physics
    step" stands as a rejection of *changing the world under a comparison*; measuring the
-   change against a reference is the opposite of that.
+   change against a reference is the opposite of that. *Outcome (0052, closed 2026-09-03):*
+   PhysX replays bit for bit under one build, so there is no replay noise and any per-step
+   change is a butterfly (±20% population, 4 m depth, half the larder); 0.02 sits inside
+   that wingspan and is the screening step at ~3× the pace; 0.01 confirms; 0.05 is out
+   (crash without a drag limiter, surface migration and an open audit with one). The
+   limiter that makes coarse steps stable engages only above 0.01, so the historical
+   record stays replayable.
 
 **What this is not.** Not a change to the goal rule (D063 as amended), which still scores a
 full run; the screen decides what is worth confirming, and only a confirmation run passes.

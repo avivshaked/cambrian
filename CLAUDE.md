@@ -328,6 +328,16 @@ actually verifying it.
   absorptive node it never expressed, and read `abs=0`), and snapshot rows have no id to join
   against lineage. Depth-by-guild and body-size-by-guild are therefore not measurable from a run's
   output today; say so rather than proxying (logbook/0048's dissection).
+- **PhysX replays bit for bit on this machine, so every per-step change is a butterfly.** Same
+  genome, seed, config *and build* give the same run report to the last decimal (`r16dt-01c` ≡
+  `-01d` ≡ `-01e`, logbook/0052). Change any per-step term — 68 capped drag impulses at dt 0.01,
+  432 at 0.02 — and the same seed becomes a different chaotic realisation: ±20% population, 4 m of
+  depth, half the larder by t=5,000. A per-seed A/B on anything that touches the physics loop
+  therefore cannot separate the change from the realisation; compare distributions across seeds,
+  or hold the difference against that wingspan. `EVOSIM_DT` 0.02 is the screening step (deviations
+  inside the wingspan, ~3× the pace); 0.01 confirms and is the only step at which the historical
+  record replays; 0.05 is out (population migrates into the surface film and the audit opens). The
+  drag limiter engages only above 0.01 for exactly that reason.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

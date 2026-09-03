@@ -249,3 +249,65 @@ regardless, and the bug is filed here for whoever next runs the audit under a co
 per step, and at five times the step the balance lands somewhere else; the limiter, which
 binds 0.6% of the time, is part of that. Whether 0.02 shares any of it is `r16dt-02`
 against `r16dt-01`.
+
+### `r16dt-02b` — the gated limiter at 0.02 engages, and it is a butterfly too
+
+The rerun of the 0.02 arm on the gated build, same seed, same config hash. Footer:
+**432 drag impulses limited** in 750,000 physics steps, 3,383 births, 56.9 min wall
+(4.4× real time, on a machine running five arms; `r16dt-02` did 50 min at 5× on a quieter
+one). Audit 0.0000% at every row, zero jointed creatures and zero joint work throughout —
+the same jointless world as the other arms of this seed.
+
+The limiter engages at 0.02, so `r16dt-02b` is not row-identical to `r16dt-02`. Where the
+two part is the instructive part. The first difference is at t=2,200, in `rise m` at the
+fourth decimal — one capped impulse on one body, somewhere before that row. The first
+difference in a population count is at t=3,000 (244 against 246), and the mean depth is
+half a metre apart from t=3,300. From there the two 0.02 worlds are two realisations:
+
+| t | `r16dt-01` (0.01, reference) | `r16dt-02` (0.02, ungated) | `r16dt-02b` (0.02, gated, 432 binds) |
+|---|---|---|---|
+| 5,000 | 747 alive · −13.9 m · 5.2 J/m³ | 665 · −14.3 m · 6.5 | 608 · −14.6 m · 6.3 |
+| 10,000 | 1,442 · −11.8 m · 4.7 | 1,412 · −10.9 m · 4.9 | 1,370 · −15.0 m · 8.1 |
+| 15,000 | 1,658 · −12.1 m · 6.2 | 1,720 · −11.1 m · 7.3 | 1,719 · −14.9 m · 6.7 |
+
+The gated arm sits 4 m deeper than the ungated one for the second half of the run, with a
+larder up to 70% richer at t=10,000, and ends within one creature of it in population.
+That deviation — between two arms at the *same* step, separated by 432 capped impulses —
+is as large as, and in depth larger than, the deviation between 0.02 and 0.01. It is the
+same finding as `r16dt-01c` against `r16dt-01` at the finer step: a handful of altered
+impulses is a butterfly, and the butterfly's wingspan in this world is about ±20% of the
+population, 4 m of depth and half the larder. 0.02's distance from the reference is inside
+that wingspan, from both sides now.
+
+Two practical readings. First, the limiter *does* bind at 0.02 — 432 times in 15,000 s
+across ~1,700 bodies, one impulse in roughly three million — so it is not a no-op there,
+and it cannot be dropped from the 0.02 build on the grounds that it never fires. Second,
+every 0.02 arm from here runs on the gated build, replays bit for bit under it, and is
+comparable row for row only with other gated 0.02 arms; `r16dt-02` (ungated) is the only
+arm of its kind and stays in the record as that.
+
+## Verdict
+
+Closed 2026-09-03, eight arms (`r16dt-05`, `-05b`, `-02`, `-02b`, `-01`, `-01c`, `-01d`,
+`-01e`; the last three 5,000-s repeats). What 0052 established, in the order it matters:
+
+1. **PhysX replays bit for bit on this machine under one build** (`r16dt-01c` ≡ `-01d` ≡
+   `-01e`). There is no replay noise; every difference between two arms of one seed is a
+   change in the build or the config, amplified by chaos.
+2. **Any per-step change is a butterfly** — 68 capped impulses at 0.01, 432 at 0.02 — and
+   the butterfly's wingspan is ±20% population, 4 m depth, half the larder by t=5,000. A
+   per-seed A/B on anything that touches the physics loop cannot separate the change from
+   the realisation; M2 as pre-registered was unanswerable per seed, and the honest test of
+   a step is distributional, N seeds against N seeds.
+3. **0.02 is the screening step.** Its deviations from 0.01 are inside the wingspan, from
+   both the ungated and the gated side; it runs at ~3× the pace of 0.01 (50–57 min against
+   157 for 15,000 s). 0.01 stays the confirmation step and the step for any world in
+   which swimming or contact is scored — every run before today is replayable only at 0.01,
+   which is why the limiter is gated above it.
+4. **0.05 is out.** It crashes on the explicit drag without the limiter (M3), and with it
+   the population migrates into the surface film that 0.01 keeps at −12 m (M7's reading),
+   with an audit that opens to 0.006–0.010% from t≈7,200 in a jointless, workless world —
+   filed above as a bug, not chased.
+
+D069's fourth item is settled on these terms; the CLAUDE.md gotcha on determinism carries
+the operational rule.

@@ -128,21 +128,25 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    (gitignored, this machine): `r12y-sN`'s block plus the two sink knobs, with
    `-Seconds 30000` baked in because `run-arm.ps1` defaults to 40,000.
 0z. **The speed programme (D069, 2026-09-03) — what is running and what to do with it.**
-   Round 13 ended (five arms, all to budget, producers everywhere, no inherited line
-   anywhere; scoring against 0049's M1–M6 is the next write-up). Round 14 runs under the
-   sequential rule: `r14c5-s1`, `r14c10-s1`, `r14c5-s2` running, `r14c10-s2` next on a free
-   worker (w4 is refreshed and hash-clean), seeds 3–5 only if a line appears in seeds 1–2;
-   the futility stop (no `inherit` by t=15,000 → stop, scored failed) applies. The invasion
-   assay `r15i-c10` (logbook/0051) runs to 12,000; `r15i-c1` and `r15i-c5` follow on free
-   workers; score with `./scripts/lineage-invasion.ps1 <arm>` and 0051's M1–M5, and compare
-   with the calculator's prediction recorded in 0051. The coarse step `r16dt-05`
-   (logbook/0052) runs to 15,000 on w7; `r16dt-01` and `r16dt-02` follow; score 0052's
-   M1–M4 column by column against `r13a-s2`. Every worker needs a refresh + hash check
-   before its next launch — the knob's build changed `Ecosystem.cs` and `EvolutionRun.cs`
-   (w4, w7 done; w2, w3, w5, w6 pending when their arms end). Launchers:
-   `scratch/launch-r14.ps1`, `launch-r15.ps1`, `launch-r16.ps1`; the monitor's watch list
-   is `$env:TEMP\evosim-watch-arms.txt`. The ledger calculator (`./scripts/ledger.ps1`) is
-   the first thing to run on any proposed knob from now on.
+   Round 13 scored 0 of 5 (0049). Round 14 runs under the sequential rule: `r14c5-s1` ended
+   (a line of 3–9 members for 138 consecutive samples at −12 m in 3–6 J/m³; 4 alive at
+   30,000, fails the ≥ 10 clause), `r14c5-s2` ended (no line ever; film at −2 to −5 m),
+   `r14c10-s1` (w2), `r14c10-s2` (w6; its line 45 → 12 from t=15,000 to 20,200 while the
+   field at its depth stays 0.5–0.7 J/m³ — grazing itself out) and `r14c5-s3` (w5) running;
+   the detached queue `scratch/queue-next.ps1` launches `r14c10-s3` on w2 when `r14c10-s1`
+   ends. Seeds 4–5 are not queued: whether to run them or go straight to a stabiliser
+   screen (clearance toe, floor refuge, satiation — all existing knobs, none tried) is the
+   owner's call once `r14c10-s2` has shown whether its line crashes, cycles or settles.
+   Score round 14 into 0050 with the recruitment clause from `lineage.jsonl`. The invasion
+   assay (0051): `r15i-c10` scored — it cannot invade at clearance 10 (R0 0.96 on the
+   founding stake, one naturally endowed child from 50; the calculator agreed); `r15i-c1`
+   runs as control on w3 (score M1, M3 at 12,000); `r15i-c5` dropped as redundant. The
+   coarse step (0052) is closed: 0.02 screens, 0.01 confirms, 0.05 out, limiter gated —
+   w7 is free. Every worker needs `new-worker.ps1` (once per worker, from PowerShell) plus
+   the four-file hash check before a launch; the monitor's watch list is
+   `scratch/evosim-watch-arms.txt`, logs in `scratch/logs/`. Launchers:
+   `scratch/launch-r14.ps1`, `launch-r15.ps1`, `launch-r16.ps1`. The ledger calculator
+   (`./scripts/ledger.ps1`) is the first thing to run on any proposed knob from now on.
 0a. **Round 14 = D068, the stomach's gearing (logbook/0050).** The ledger, read from the
    code, says an absorptive part at clearance 1 breaks even at 4 J/m³ and clears 3–5 W/m³ in
    the best water any seed offered, against ~47 W/m³ for a leaf at the surface — so a mutant
@@ -368,9 +372,9 @@ production) before the D-entry leans on the numbers above.
 
 - **Speed, and the game's clock (owner, 2026-09-03).** "All I want is the ability to
   simulate faster" — and, separately, a game in which people wait hours for something
-  interesting is not a game. The first is being measured (logbook/0052: `EVOSIM_DT` at
-  0.02 and 0.05 against a seed already run; the metabolic step stays 0.5 s and is not the
-  cost). The second is a world-rule question no timestep answers: at any speed a lifetime is
+  interesting is not a game. The first is done as far as a timestep can do it (logbook/0052:
+  `EVOSIM_DT` 0.02 screens at ~3× the pace, 0.01 confirms, 0.05 is out; the metabolic step
+  stays 0.5 s and is not the cost). The second is a world-rule question no timestep answers: at any speed a lifetime is
   3,000 simulated seconds and a chain has taken tens of thousands to appear. When the game
   framing becomes the goal, the levers are an ecology that is eventful on a human timescale
   (shorter lifetimes, faster turnover, more change per generation) and a theatre that runs
