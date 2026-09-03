@@ -306,28 +306,41 @@ namespace Evosim.Sim
                     // time it does bind, and the report prints the count so that claim is checked
                     // per run rather than assumed. Angular momentum is capped the same way against
                     // the smallest principal inertia, conservatively.
+                    // Only the component that OPPOSES the existing motion can overshoot and
+                    // reverse it, so only that component is capped; the rest passes untouched.
+                    // The first version capped the whole vector against the whole momentum, and
+                    // a body at rest has none — so every drag torque that linear motion produces
+                    // through off-centre panels was zeroed, 1.2 billion times in one 15,000 s run
+                    // at dt 0.01 (logbook/0052's r16dt-01). Projecting first makes the limiter
+                    // invisible for a still body and exact for the reversal it exists to stop.
                     if (stepSeconds > 0f)
                     {
-                        float forceMagnitude = dragForce.magnitude;
-                        if (forceMagnitude > 0f)
+                        Vector3 relative = _velocity[at + i].ToVector3();
+                        float speed = relative.magnitude;
+                        if (speed > 0f)
                         {
-                            float allowed = body.mass * _velocity[at + i].Magnitude / stepSeconds;
-                            if (forceMagnitude > allowed)
+                            Vector3 direction = relative / speed;
+                            float opposing = -Vector3.Dot(dragForce, direction);
+                            float allowed = body.mass * speed / stepSeconds;
+                            if (opposing > allowed)
                             {
-                                dragForce *= allowed / forceMagnitude;
+                                dragForce += direction * (opposing - allowed);
                                 DragImpulsesLimited++;
                             }
                         }
 
-                        float torqueMagnitude = dragTorque.magnitude;
-                        if (torqueMagnitude > 0f)
+                        Vector3 spin = _spin[at + i].ToVector3();
+                        float spinRate = spin.magnitude;
+                        if (spinRate > 0f)
                         {
+                            Vector3 axis = spin / spinRate;
+                            float opposing = -Vector3.Dot(dragTorque, axis);
                             Vector3 inertia = body.inertiaTensor;
                             float smallest = Mathf.Min(inertia.x, Mathf.Min(inertia.y, inertia.z));
-                            float allowed = smallest * _spin[at + i].Magnitude / stepSeconds;
-                            if (torqueMagnitude > allowed)
+                            float allowed = smallest * spinRate / stepSeconds;
+                            if (opposing > allowed)
                             {
-                                dragTorque *= allowed / torqueMagnitude;
+                                dragTorque += axis * (opposing - allowed);
                                 DragImpulsesLimited++;
                             }
                         }
