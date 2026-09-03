@@ -202,6 +202,39 @@ overlaps. Until then, M2's verdict above stands as provisional: 0.02's populatio
 depth were inside the narrow band already, and a wider band can only move the fields'
 verdict toward "inside".
 
+### `r16dt-01d` — PhysX replays bit for bit, so "noise" was never noise
+
+*5,000 s at dt 0.01, the same corrected-limiter build as `r16dt-01c`. Its t=5,000 row is
+**identical** to `r16dt-01c`'s in every column: 957 alive, −8.9 m, spread 8.57 m, larder
+2.3267, deep 1.7839, 56,488 refusals.*
+
+So V2's finding is reversed: PhysX does replay exactly on this machine when the build is
+the same, and the "noise floor" measured between the reference and `r16dt-01` was the
+first limiter's 1.2 billion binds, not the solver. The consequences, in order:
+
+- **Every difference between the three 0.01 arms is the build, amplified by chaos.** The
+  corrected limiter's 68 capped impulses moved seed 2 from 779 alive at −13 m in 5 J/m³ to
+  957 at −9 m in 2.3 J/m³ by t=5,000. A perturbation that small is a butterfly, and the
+  world is a chaotic system: any change to any per-step term gives a different realisation
+  of the same seed. Per-seed comparison therefore cannot separate "the step changed the
+  world" from "the step changed the realisation" — M2's band, as pre-registered, is
+  unanswerable per seed. The honest comparison of two steps is distributional: N seeds at
+  each, spread against spread.
+- **On that reading, 0.02 is inside the butterfly.** Its deviations from the reference
+  (population −15% to +4%, depth 1 m, larder +25%) are smaller than the corrected
+  limiter's own (population +23%, depth 4 m, larder −55%) at the same step. dt 0.02
+  changes this world no more than sixty-eight capped impulses do. That is the strongest
+  support a per-seed test can give it, and it is the reading 0052 closes on: **0.02 is
+  the screening step**, at ~3× the pace, with 0.01 kept for confirmation runs and for any
+  world where a swimming or contact question is scored.
+- **The limiter is now gated to steps coarser than 0.01.** With replay exact, the
+  historical record (every run before today, all at 0.01) is reproducible bit for bit
+  under its own config hash only if 0.01 stays untouched, so the limiter engages only above
+  it. At 0.02 it engages; whether it binds there at all is read from the footer of the next
+  0.02 arm.
+- `r16dt-01e` (queued before this was understood) is redundant and confirms determinism a
+  second time; it is left to finish.
+
 Two things need naming. **The audit.** Nothing in the ledger reads the physics step, so a
 step-dependent leak of a hundredth of a percent is a bug by construction — the
 pre-registered reading. It opened at t=7,200, as the population went still in the film
