@@ -313,7 +313,12 @@ namespace Evosim.Sim
                     // through off-centre panels was zeroed, 1.2 billion times in one 15,000 s run
                     // at dt 0.01 (logbook/0052's r16dt-01). Projecting first makes the limiter
                     // invisible for a still body and exact for the reversal it exists to stop.
-                    if (stepSeconds > 0f)
+                    // Gated to steps coarser than 0.01: at 0.01 the corrected limiter bound 68
+                    // times in 5,000 s (logbook/0052's r16dt-01c) — physically negligible, but any
+                    // perturbation is a different realisation of a chaotic world, and every run
+                    // before this limiter existed was made at 0.01. Keeping 0.01 untouched keeps
+                    // the historical record replayable bit for bit under its own config hash.
+                    if (stepSeconds > 0.0100001f)
                     {
                         Vector3 relative = _velocity[at + i].ToVector3();
                         float speed = relative.magnitude;
