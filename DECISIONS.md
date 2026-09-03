@@ -88,7 +88,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · earned its keep in round 8: failed the flagship's sterile cohort at the cut (logbook/0044) |
 | [D064](#d064) | Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column | 2026-09-02 | built · round 10c: the drowning is cured — five of five producer worlds to budget, uncensored, depth held within 3 m through 24,000 s of throttled births (logbook/0046); the chain still does not arrive |
 | [D065](#d065) | The fixed matter cost — a body costs a minimum of matter to exist, so the count cannot ratchet through shrinking | 2026-09-02 | built · round 10c: counts levelled at 1,490–1,610 against a ceiling of 8,000, uncensored (logbook/0046) |
-| [D066](#d066) | Roll cells — the water moves everything, and it stirs: one prescribed flow over patches advects bodies and fields; blinking rolls for chaotic advection | 2026-09-02 | decided · round 12, to build |
+| [D066](#d066) | Roll cells — the water moves everything, and it stirs: one prescribed flow over patches advects bodies and fields; blinking rolls for chaotic advection | 2026-09-02 | built · round 12 (logbook/0048) 0 of 6: the rolls stir fields and bodies and keep producers alive at 30 m cells, but a roll that stops above the floor is a trapdoor for remains — surface detritus 0.2–3 J/m³, deep 15–21; one absorptive line formed and drifted out. Next lever proposed: sink speed of remains |
 
 ---
 

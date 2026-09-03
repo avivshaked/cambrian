@@ -185,3 +185,43 @@ an absorbing wall at zero. Ten individuals at the last sample need a line whose 
 number is above one, which is a food question before it is a genome question, and the sink
 proposal is aimed at exactly it. The dissection's one measured surprise: absorptives were
 jointed 8 times in 29 against 31 in 3,792 for everyone else — small n, flagged, not read.
+
+---
+
+## Results (2026-09-03): 0 of 6
+
+Six arms to budget (arm A: `r12x-s1`; arm B: `r12y-s1..5`), all at speed 0.3 and cell 30;
+headers verified (V1), floor 0 after founding (V3), audit 0.0000% every sample with advection
+on (V4), no wedge (V5). The cell-60 and speed-0.1 arms stand as measurements, not seeds.
+Producers alive at t=30,000 in every arm: 1,578 (A) and 1,696–1,772 (B).
+
+| # | prediction | arm A (x-s1) | arm B (y-s1..5) | verdict |
+|---|---|---|---|---|
+| S1 | surface detritus ≥ 2 J/m³ at t=10,000–20,000, patch sd non-zero and moving | 0.16–0.90; sd 0.4 → 4.4 | film seeds (s1, s3): 0.14–1.03; mid-water seeds (s2, s4, s5): 1.3–3.2, over 2 in about half the samples; sd 0.3 → 5.6 | **falsified** as written (the trapdoor); the stirring itself is real — patch sd rose from ~0.4 to 4–6 J/m³ in every arm |
+| S2 | ≥ 4 of 5 arm-A seeds reach budget alive | 1 of 1 | 5 of 5 | holds on the seeds that ran |
+| S3 | refused conceptions at t > 10,000 fall ≥ 5× against arm A | 105k–189k | s2 34k–65k (3–4×), s4 12k–128k, s5 42k–155k, s3 53k–186k, s1 161k–219k (none) | **falsified**: 1–4×, seed-dependent |
+| S4 | first inherited absorptive in ≥ 3 of 5 seeds in one arm | 0 | 1 of 5 (s3, t=8,840–22,650) | **falsified** |
+| S5 | ≥ 3 of 5 pass D063 | 0 | 0 | **falsified** |
+
+**Two depth regimes in one arm.** Arm B's seeds split at founding and never crossed: s1 and
+s3 formed the surface film every D064 world has formed (mean −2 to −4 m, sd 6–8), while s2,
+s4 and s5 settled at −14 to −15 m — the middle of the roll — with sd 5 and stayed there to
+budget, at 28–36% shade and 1,700–1,780 alive. The mid-water seeds saw 2–3 J/m³ at their
+mean depth for much of the run and produced zero inherited absorptives; the film seeds saw
+under 1 and produced the one line that came and went. So the breeding bar for an absorptive
+line is above 3 J/m³ in stirred water, which agrees with the ~7 J/m³ the deep larder had to
+reach in round 11 (X2) and with the line's economics above. What decides which regime a seed
+falls into is not measured — the founder draw is the obvious candidate — and a per-guild
+depth cannot be read from the lineage (CLAUDE.md's gotcha). Note also that `J/m3 here` is
+the detritus field at the population's *mean* depth in patch 0, not an average over
+creatures; with patch sd at 4–6 it is a coarse proxy, and the mid-water figures are the
+better-founded of the two because that population's spread is narrower.
+
+**What the round established.** The rolls reach the physics and stir the fields (patch sd),
+carry bodies (a mid-water population is impossible in still water under D064), and keep
+producers alive at 30 m cells (S2). They do not deliver the larder to the film, because a
+roll that stops above the floor is a conveyor to the deep. Excretion 0.01 cuts refusals by
+1–4× and does not end the famine (S3). One line formed in the film at ~1 J/m³ and drifted out
+at 0.75 children per member. The round's pre-registered readings point the same way from
+three sides — S1's trapdoor, S3's partial famine, and the line's economics — at the sink
+speed of remains and matter, proposed above as round 13 and awaiting the owner's ruling.
