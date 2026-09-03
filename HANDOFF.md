@@ -1,6 +1,6 @@
 # Handoff — where to pick up
 
-**Updated 2026-09-02, after round 10c scored (drowning cured, producers stable, no chain) and round 11 launched.** This is the one file a new agent should
+**Updated 2026-09-03, after round 11 scored (0 of 5: the location gate isolated), with round 12 running (D066 roll cells + excretion 0.01; the first inherited absorptive since round 8 in `r12y-s3`) and round 13 (sink 0.002) proposed to the owner.** This is the one file a new agent should
 read first. It says what was being attempted, how far it got, what is queued, and exactly how
 to continue. It is a pointer, not a source of truth: the specification is `DESIGN.md`, the
 reasoning is `DECISIONS.md`, the history is `logbook/`, and the operating rules are
@@ -37,11 +37,16 @@ detritivores too; plus founders scattered through the full column. Built and run
 (a fixed matter cost per body) bounded the count, and round 10c produced **the campaign's
 first five-of-five stable, uncensored producer worlds**. The goal's first clause is now met
 by construction; the whole remaining problem is the second trophic level, which does not
-arrive because the detritus larder fills at a drizzle (senescence too slow — round 11's
-lever) and sits 50 m below the surface where every mutant is born and, being small, stays
-(surface detritus 0.1–0.5 J/m³ against 9 in the deep; detritus sinks at 0.02 m/s and is
-out of the lit band in twenty minutes — the location gate, the likely round-12 lever). The
-paragraph below is the pre-D064 account and stands as history.
+arrive because the detritus larder sits 50 m below the surface where every mutant is born
+and, being small, stays. Round 11 (senescence 3,000) opened the rate side — the larder
+crosses the breeding bar by t=15,000 — and isolated the location gate: surface detritus
+0.1–0.5 J/m³ against 8–13 in the deep. Round 12 (D066: convection rolls that advect bodies
+and fields, plus excretion 0.01) is running; its rolls stop at 30 m to keep producers in the
+light and therefore leak remains into the dark, so surface detritus reached only 0.24–0.53,
+and yet one excretion-arm seed produced the first inherited absorptive line since round 8.
+The proposed next lever is the sink speed of remains and matter (0.02 → 0.002 m/s, marine
+snow rather than large aggregates; `EVOSIM_SINK`, `EVOSIM_MATTER_SINK`). The paragraph below
+is the pre-D064 account and stands as history.
 
 **The account as of round 7, kept for the record.** Seven rounds were scored
 (logbook/0036–0042). Under D058's completed-budget rule the campaign's honest tally is
