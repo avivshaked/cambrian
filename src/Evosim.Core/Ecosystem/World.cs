@@ -297,6 +297,8 @@ namespace Evosim.Core
             // (Config was just assigned above) and every field below is built with the same K.
             int patchCount = PatchCount;
 
+            ValidateVent(config, patchCount);
+
             Field = new LightField(
                 Light, config.WorldAreaSquareMetres, config.LightLayerMetres,
                 patchCount, config.PerPatchShading > 0f);
@@ -331,7 +333,71 @@ namespace Evosim.Core
                 }
             }
 
+            // D067. The vent's legs are defined by a volume flux and need no width, but the drag a
+            // creature feels in one is a velocity and does. The field is told once, here, from the
+            // same geometry the fields themselves were built with — sqrt(area / K) — so a world
+            // cannot end up with two patch widths that disagree.
+            config.Current?.SetPatchWidth(Nutrients.PatchWidthMetres);
+
             Seed = seed;
+        }
+
+        /// <summary>
+        /// The three things about a vent that only the world can check — D067.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A <see cref="CurrentField"/> is handed heights and a patch index and nothing else</b>,
+        /// so it cannot discover where the floor is, how many patches there are or how thick a
+        /// layer is. Each of those is load-bearing for the vent: a plume that stops above the floor
+        /// is the trapdoor D067 exists to close, an out-of-range vent patch would silently be some
+        /// other patch, and a leg that is not a whole number of layers makes the flux across a face
+        /// a fraction of a cell that does not exist. So the config states them and the world refuses
+        /// to be built when they disagree, rather than running a different experiment from the one
+        /// the file names.
+        /// </para>
+        /// <para>
+        /// <b>All three are skipped entirely while the vent is off</b>, which is every run before
+        /// D067: the defaults are then simply unread, and a config that never asked for a vent
+        /// cannot be refused because of one.
+        /// </para>
+        /// </remarks>
+        private static void ValidateVent(RunConfig config, int patchCount)
+        {
+            CurrentField current = config.Current;
+            if (current == null || !(current.VentSpeed > 0f)) return;
+
+            if (current.VentPatch >= patchCount)
+            {
+                throw new ArgumentException(
+                    $"Current.VentPatch is {current.VentPatch} but there are only {patchCount} " +
+                    "patches, so the plume would rise in a patch this world does not have. It is " +
+                    "validated rather than wrapped, because a vent that quietly relocates when " +
+                    "HorizontalPatches changes makes two configs name the same world.",
+                    nameof(config));
+            }
+
+            if (current.VentDepthMetres != config.WorldDepthMetres)
+            {
+                throw new ArgumentException(
+                    $"Current.VentDepthMetres is {current.VentDepthMetres} m and WorldDepthMetres " +
+                    $"is {config.WorldDepthMetres} m. The vent draws from the floor and the field " +
+                    "cannot see where the floor is, so the two have to be stated to agree — a " +
+                    "plume that stops short of the bottom is the trapdoor D067 exists to close.",
+                    nameof(config));
+            }
+
+            double layers = current.VentLegMetres / (double)config.LightLayerMetres;
+            if (!(layers >= 1d) || Math.Abs(layers - Math.Round(layers)) > 1e-6d)
+            {
+                throw new ArgumentException(
+                    $"Current.VentLegMetres is {current.VentLegMetres} m, which is not a whole " +
+                    $"number of {config.LightLayerMetres} m layers. Discrete continuity holds only " +
+                    "when a leg is made of whole cells: the flux across a face is a fraction of a " +
+                    "cell's volume, and a leg that ends halfway through a layer makes that " +
+                    "fraction describe nothing. A leg of no layers at all is not a circulation.",
+                    nameof(config));
+            }
         }
 
         /// <summary>
@@ -722,7 +788,14 @@ namespace Evosim.Core
         private void AdvectBodies(float seconds)
         {
             CurrentField current = Config.Current;
-            if (current == null || !current.Rolls || PatchCount <= 1 || current.Speed <= 0f) return;
+            if (current == null || PatchCount <= 1) return;
+
+            // D067. The vent moves bodies along its legs on exactly the same terms the roll moves
+            // them along its own, so the guard asks whether *either* flow is running rather than
+            // only the roll. Speed belongs to the roll and VentSpeed to the vent — a world with a
+            // vent and still water still advects, and a world with neither still draws nothing.
+            bool rolls = current.Rolls && current.Speed > 0f;
+            if (!rolls && !current.VentActive(PatchCount)) return;
 
             int patches = PatchCount;
             float width = Nutrients.PatchWidthMetres;

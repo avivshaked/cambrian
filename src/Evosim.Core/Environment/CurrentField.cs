@@ -216,6 +216,187 @@ namespace Evosim.Core
         [Tunable("current")]
         public bool AdvectFields { get; set; }
 
+        /// <summary>
+        /// Speed of the upwelling plume, m/s — D067. 0 (the default) is no vent, which is every
+        /// run before D067 bit for bit.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The vent is a second prescribed flow superposed on the roll, and its job is the one
+        /// the roll cannot do</b>: a roll of <see cref="CellMetres"/> that stops above the floor is
+        /// a trapdoor — everything that sinks past it stays sunk (logbook/0048). This lifts the deep
+        /// larder into the light in one patch and returns the water uniformly through all the
+        /// others, joined by a horizontal leg along the surface and another along the floor, so the
+        /// loop closes at both ends.
+        /// </para>
+        /// <para>
+        /// <b>It is divergence-free on the same staggered grid the roll uses</b> — <c>w</c> at layer
+        /// interfaces per patch, <c>u</c> at patch faces per layer — and that is what makes it
+        /// arithmetic rather than a source: the plume carries <c>Q = s·A_patch</c> up, each of the
+        /// <c>K−1</c> return patches sinks exactly <c>Q/(K−1)</c>, and the legs carry precisely
+        /// those amounts sideways. A uniform field stirred by it stays uniform.
+        /// </para>
+        /// <para>
+        /// ⚠ Unmeasured (§5A.10). Read it against <see cref="Speed"/> and against what a creature
+        /// can swim, the same way: a plume much faster than the fastest thing alive is a world with
+        /// no signal in it, and one much slower than the sinking rate loses the race to the floor.
+        /// </para>
+        /// </remarks>
+        [Tunable("current", Unit = "m/s")]
+        public float VentSpeed
+        {
+            get => _ventSpeed;
+            set => _ventSpeed = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(VentSpeed), value, "Must be finite and not negative.");
+        }
+
+        private float _ventSpeed;
+
+        /// <summary>Which of D061's patches the plume rises in. Default 0.</summary>
+        /// <remarks>
+        /// <para>
+        /// <b>One patch, not a fraction of every patch.</b> The whole point is that the world is
+        /// not the same everywhere any more: one place where the deep comes back up and the light
+        /// and the larder meet, and <c>K−1</c> places that pay for it by sinking. A vent spread
+        /// evenly over the ring would be a uniform overturning, which moves everything identically
+        /// and therefore separates nothing — the same argument that made the depth-only field a
+        /// conveyor.
+        /// </para>
+        /// <para>
+        /// <b>Validated against the patch count rather than wrapped.</b> <c>patch % K</c> would
+        /// silently relocate the vent whenever someone changed <c>K</c>, and two runs whose configs
+        /// name different vents would be the same world with no way to tell from the file. The
+        /// setter refuses a negative index and <see cref="World"/> refuses one at or past
+        /// <c>HorizontalPatches</c> when the vent is on.
+        /// </para>
+        /// </remarks>
+        [Tunable("current")]
+        public int VentPatch
+        {
+            get => _ventPatch;
+            set => _ventPatch = value >= 0
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(VentPatch), value, "A patch index is not negative.");
+        }
+
+        private int _ventPatch;
+
+        /// <summary>Depth the plume draws from, m — the floor. Default 60.</summary>
+        /// <remarks>
+        /// <b>Stated here and checked against the world, because the field does not know the
+        /// world's depth.</b> A <see cref="CurrentField"/> is handed heights and nothing else, so
+        /// it cannot discover where the bottom is; and a plume that stops short of the floor is
+        /// exactly the trapdoor D067 exists to close, arriving quietly through a config that looks
+        /// fine. So the config states it and <see cref="World"/> refuses to construct if it
+        /// disagrees with <see cref="RunConfig.WorldDepthMetres"/>. The default matches that
+        /// property's own default, so a run that sets neither is consistent by construction.
+        /// </remarks>
+        [Tunable("current", Unit = "m")]
+        public float VentDepthMetres
+        {
+            get => _ventDepthMetres;
+            set => _ventDepthMetres = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(VentDepthMetres), value, "Must be finite and not negative.");
+        }
+
+        private float _ventDepthMetres = 60f;
+
+        /// <summary>Thickness of the surface and floor legs, m. Default 1.</summary>
+        /// <remarks>
+        /// <para>
+        /// <b>It is a layer thickness, not a length scale.</b> The legs are where the plume hands
+        /// its water sideways and where the return water comes back, and on a staggered grid that
+        /// hand-off has to happen inside whole cells or the books do not close: the flux across a
+        /// face is a fraction of a cell's volume, and a leg that ends halfway through a layer makes
+        /// that fraction meaningless. <see cref="World"/> therefore refuses to construct unless
+        /// this is a whole number of <see cref="RunConfig.LightLayerMetres"/>.
+        /// </para>
+        /// <para>
+        /// <b>Exact discrete continuity wants one layer</b>, which is the default and what the
+        /// tests pin. The prescribed vertical velocity is the full <c>±s</c> everywhere between the
+        /// surface and the floor, so a leg two layers thick hands the same total sideways while the
+        /// vertical flux through its inner interface is undiminished, and a uniform field acquires
+        /// a small standing gradient inside the leg. Nothing is created or destroyed — every move
+        /// is still a flux between two named cells — but "uniform stays uniform" is a statement
+        /// about a one-layer leg.
+        /// </para>
+        /// </remarks>
+        [Tunable("current", Unit = "m")]
+        public float VentLegMetres
+        {
+            get => _ventLegMetres;
+            set => _ventLegMetres = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(VentLegMetres), value, "Must be finite and not negative.");
+        }
+
+        private float _ventLegMetres = 1f;
+
+        /// <summary>
+        /// Width of one patch, m — geometry, not a knob. 0 (the default) until a world says.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Not <see cref="TunableAttribute"/>, deliberately.</b> It is
+        /// <c>sqrt(WorldAreaSquareMetres / HorizontalPatches)</c> — both of which are already
+        /// hashed — so making it a tunable would put a derived quantity in the hash and let a
+        /// config name a width its own area and patch count contradict.
+        /// <see cref="World"/>'s constructor sets it from <see cref="NutrientField.PatchWidthMetres"/>
+        /// so there is one geometry rather than two. It is the one piece of state this otherwise
+        /// stateless class holds, so a <see cref="RunConfig"/> shared between two worlds of
+        /// different geometry leaves it describing whichever was built last — the same hazard a
+        /// shared config already carries everywhere else, and the reason a world builds its own.
+        /// </para>
+        /// <para>
+        /// <b>It buys exactly one thing: the vent's horizontal drag term.</b> The legs are defined
+        /// by their volume flux, which is width-free, but the <i>velocity</i> a creature feels in
+        /// one is <c>F_j / (L · A_patch / W) = c_j·s·W/L</c> and that needs a width. While this is
+        /// 0 the drag term is 0 and nothing else changes — the transport, the plume, the return and
+        /// the legs are all unaffected, because none of them is computed from a velocity times a
+        /// width. Horizontal motion is ecologically inert (§6.3) in any case, so a field left at 0
+        /// is a vent whose water pushes nothing sideways and carries everything sideways exactly as
+        /// it should.
+        /// </para>
+        /// <para>
+        /// <b>Set through a method rather than a property setter</b> so the config coverage test
+        /// stays true as written: every settable public property on a <c>[TunableGroup]</c> must be
+        /// declared a tunable, and this one must not be.
+        /// </para>
+        /// </remarks>
+        public float PatchWidthMetres => _patchWidthMetres;
+
+        private float _patchWidthMetres;
+
+        /// <summary>Tells the field how wide a patch is — see <see cref="PatchWidthMetres"/>.</summary>
+        public void SetPatchWidth(float metres)
+        {
+            if (!(metres >= 0f) || float.IsInfinity(metres))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(metres), metres, "A patch width is finite and not negative.");
+            }
+
+            _patchWidthMetres = metres;
+        }
+
+        /// <summary>
+        /// Whether the vent is doing anything at this patch count — D067.
+        /// </summary>
+        /// <remarks>
+        /// <b>Two patches at least, for the same reason a roll needs two.</b> The return flow is
+        /// shared over the <c>K−1</c> patches that are not the vent, and with <c>K</c> = 1 there
+        /// are none of them: a plume with nowhere to return through is a source. So at one patch
+        /// the vent is off and every path takes the pre-D067 branch, which is a statement about the
+        /// world and not about the implementation.
+        /// </remarks>
+        public bool VentActive(int patchCount) => _ventSpeed > 0f && patchCount >= 2;
+
         /// <summary>Water velocity at a depth and a time, m/s. Zero when <see cref="Speed"/> is 0.</summary>
         /// <remarks>
         /// A pure function of its arguments, with no state, so two creatures at the same depth in
@@ -313,6 +494,31 @@ namespace Evosim.Core
         /// </remarks>
         public Float3 VelocityAt(float heightY, double seconds, int patch, int patchCount)
         {
+            Float3 flow = RollOrSteady(heightY, seconds, patch, patchCount);
+            if (!VentActive(patchCount)) return flow;
+
+            double depth = -(double)heightY;
+
+            float w = (float)VentVertical(depth, patch, patchCount);
+            float u = (float)VentHorizontal(depth, patch, patchCount);
+
+            // Both terms already satisfy Z = -X, so their sum does; nothing here needs to restate
+            // the convention.
+            return new Float3(flow.X + u, flow.Y + w, flow.Z - u);
+        }
+
+        /// <summary>
+        /// Everything the field was before D067 — the roll when <see cref="Rolls"/> is on and there
+        /// is a neighbour, the depth-only oscillation otherwise.
+        /// </summary>
+        /// <remarks>
+        /// <b>Extracted verbatim rather than rewritten</b>, so that a vent left off is not merely
+        /// close to the pre-D067 field but the same arithmetic in the same order — which is what
+        /// <c>RollCellTests</c> asserts with <c>==</c> and what makes every measurement on file
+        /// still describe a world that exists.
+        /// </remarks>
+        private Float3 RollOrSteady(float heightY, double seconds, int patch, int patchCount)
+        {
             if (!Rolls || patchCount < 2) return VelocityAt(heightY, seconds);
             if (_speed <= 0f) return Float3.Zero;
 
@@ -329,6 +535,167 @@ namespace Evosim.Core
             float horizontal = (float)(_speed * HorizontalRatio * amplitude * Math.Cos(phase));
 
             return new Float3(horizontal, vertical, -horizontal);
+        }
+
+        /// <summary>
+        /// The roll's own horizontal velocity at this patch's right-hand face, m/s — 0 when the
+        /// rolls are off.
+        /// </summary>
+        /// <remarks>
+        /// <b>The roll's, not the field's.</b> The transport passes must not be fed by the
+        /// two-argument field's horizontal term: it never carried anything (§6.3 makes it drag and
+        /// nothing else), and turning the vent on must not quietly start moving stock round the ring
+        /// by a term that was inert for the whole history of the project. Nor may they be fed by the
+        /// combined <see cref="VelocityAt(float,double,int,int)"/>, which now carries the vent's own
+        /// drag term and would count the legs twice.
+        /// </remarks>
+        private float RollHorizontal(float heightY, double seconds, int patch, int patchCount) =>
+            Rolls && patchCount >= 2 ? RollOrSteady(heightY, seconds, patch, patchCount).X : 0f;
+
+        /// <summary>
+        /// The vent's vertical velocity at a depth, m/s — up in the plume, down everywhere else.
+        /// </summary>
+        /// <remarks>
+        /// <b>Exactly zero at both ends, special-cased rather than computed</b>, for the reason the
+        /// roll's endpoints are: a residual vertical velocity at the waterline is a slow invisible
+        /// lift into a region the world has no top to (logbook/0022, logbook/0034). The plume runs
+        /// at <see cref="VentSpeed"/> and each of the <c>K−1</c> return patches at
+        /// <c>−VentSpeed/(K−1)</c>, so the column integrates to zero net vertical flux across every
+        /// level: what rises in one patch sinks in the others, to the last bit.
+        /// </remarks>
+        private double VentVertical(double depth, int patch, int patchCount)
+        {
+            if (depth <= 0d || depth >= _ventDepthMetres) return 0d;
+
+            return patch == _ventPatch
+                ? _ventSpeed
+                : -(double)_ventSpeed / (patchCount - 1);
+        }
+
+        /// <summary>
+        /// The vent's horizontal drag velocity at this patch's right-hand face, m/s. 0 outside a
+        /// leg, and 0 while <see cref="PatchWidthMetres"/> is 0.
+        /// </summary>
+        /// <remarks>
+        /// <c>u = F_j / (L · A_patch / W) = c_j·s·W/L</c> — the leg's volume flux divided by the
+        /// area of the face it crosses. This is what a creature feels and nothing else: horizontal
+        /// position is ecologically inert (§6.3), so it is drag and orientation, never gain. The
+        /// transport uses <see cref="VentTransportFraction"/> instead, which is width-free and
+        /// therefore cannot disagree with the flux the legs are defined by.
+        /// </remarks>
+        private double VentHorizontal(double depth, int patch, int patchCount)
+        {
+            if (!(_patchWidthMetres > 0f)) return 0d;
+
+            double c = LegCoefficient(depth, patch, patchCount);
+            return c == 0d ? 0d : c * _ventSpeed * _patchWidthMetres / _ventLegMetres;
+        }
+
+        /// <summary>
+        /// The leg coefficient <c>c_j</c> at this patch's right-hand face, signed — 0 between the
+        /// legs.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>This is the whole geometry of the vent, and it is one line of algebra.</b> Number the
+        /// faces round the ring from the plume: face <c>j</c> is the one between patch <c>V+j</c>
+        /// and <c>V+j+1</c>, and the flux through it, positive toward <c>V+j+1</c>, is
+        /// <c>F_j = c_j·Q</c> with <c>Q = s·A_patch</c> and <c>c_j = ½ − j/(K−1)</c>. The plume's
+        /// water therefore leaves it half to each side (<c>c_0 = +½</c>, <c>c_{K−1} = −½</c>), and
+        /// each return patch keeps <c>c_{j−1} − c_j = Q/(K−1)</c> of what passes it — which is
+        /// exactly what it sinks. That identity is the continuity proof; there is nothing else to
+        /// it.
+        /// </para>
+        /// <para>
+        /// <b>The floor leg is the same fluxes negated</b>, because the water comes back along the
+        /// bottom. Its band is <c>D − L ≤ d &lt; D</c> rather than <c>D − L &lt; d ≤ D</c> so that
+        /// the last layer of a world whose depth is a whole number of layers is the leg, which is
+        /// what the mid-height sampling in <see cref="NutrientField.Advect"/> asks for.
+        /// </para>
+        /// <para>
+        /// <b>If the two legs overlap the surface one wins</b> — a leg thicker than half the world
+        /// is not a circulation and the vent is not defined for it; this resolves the case rather
+        /// than pretending it cannot arise.
+        /// </para>
+        /// </remarks>
+        private double LegCoefficient(double depth, int patch, int patchCount)
+        {
+            if (!(_ventLegMetres > 0f)) return 0d;
+
+            double sign;
+            if (depth >= 0d && depth < _ventLegMetres) sign = 1d;
+            else if (depth >= _ventDepthMetres - (double)_ventLegMetres && depth < _ventDepthMetres) sign = -1d;
+            else return 0d;
+
+            int j = (patch - _ventPatch) % patchCount;
+            if (j < 0) j += patchCount;
+
+            return sign * (0.5d - (double)j / (patchCount - 1));
+        }
+
+        /// <summary>
+        /// Fraction of a leg cell's volume that crosses this patch's right-hand face in
+        /// <paramref name="dt"/>, signed. 0 outside a leg and 0 when the vent is off.
+        /// </summary>
+        /// <remarks>
+        /// <b>Width-free, and computed from the flux rather than from a velocity.</b>
+        /// <c>F_j·dt / (A_patch·L) = |c_j|·s·dt/L</c>: the patch area cancels, so this never needs
+        /// to know how wide a patch is and cannot drift away from the flux the legs are defined by.
+        /// Deriving it from <see cref="VentHorizontal"/> and a width instead would make the
+        /// transport depend on a number the field does not really have — and would silently stop
+        /// transporting anything whenever <see cref="PatchWidthMetres"/> had not been set.
+        /// </remarks>
+        private double VentTransportFraction(float heightY, int patch, int patchCount, double dt)
+        {
+            if (!VentActive(patchCount)) return 0d;
+
+            double c = LegCoefficient(-(double)heightY, patch, patchCount);
+            return c == 0d ? 0d : c * _ventSpeed * dt / _ventLegMetres;
+        }
+
+        /// <summary>
+        /// The net signed fraction crossing this patch's right-hand face in <paramref name="dt"/>:
+        /// the roll's and the vent's, added.
+        /// </summary>
+        /// <remarks>
+        /// <b>Added as signed fractions and only then split into a magnitude and a direction</b>,
+        /// because the two flows can oppose each other at the same face and what crosses is the net
+        /// of them. Summing magnitudes instead would move more stock than the water carries and
+        /// would move it in whichever direction happened to win, which is a transport nobody
+        /// specified. <paramref name="dt"/> multiplies both terms, so the <i>sign</i> of this is
+        /// independent of it — which is what lets <see cref="CrossingDirection"/> answer without
+        /// being told a step length.
+        /// </remarks>
+        private double SignedTransportFraction(
+            float heightY, double seconds, int patch, int patchCount, double dt, double widthMetres)
+        {
+            double signed = 0d;
+
+            if (widthMetres > 0d)
+            {
+                float u = RollHorizontal(heightY, seconds, patch, patchCount);
+                if (u != 0f) signed = u * dt / widthMetres;
+            }
+
+            return signed + VentTransportFraction(heightY, patch, patchCount, dt);
+        }
+
+        /// <summary>Magnitude of <see cref="SignedTransportFraction"/>, clamped at ½.</summary>
+        private double HorizontalTransportFraction(
+            float heightY, double seconds, int patch, int patchCount, double dt, double widthMetres)
+        {
+            double fraction = Math.Abs(
+                SignedTransportFraction(heightY, seconds, patch, patchCount, dt, widthMetres));
+
+            return fraction > 0.5d ? 0.5d : fraction;
+        }
+
+        /// <summary>Sign of <see cref="SignedTransportFraction"/>.</summary>
+        private int HorizontalTransportSign(
+            float heightY, double seconds, int patch, int patchCount, double dt, double widthMetres)
+        {
+            double signed = SignedTransportFraction(heightY, seconds, patch, patchCount, dt, widthMetres);
+            return signed > 0d ? 1 : signed < 0d ? -1 : 0;
         }
 
         /// <summary>
@@ -352,13 +719,26 @@ namespace Evosim.Core
         public double HorizontalCrossingFraction(
             float heightY, double seconds, int patch, int patchCount, double dt, float patchWidthMetres)
         {
-            if (!Rolls || patchCount < 2 || _speed <= 0f) return 0d;
-            if (!(dt > 0d) || !(patchWidthMetres > 0f)) return 0d;
+            if (!VentActive(patchCount))
+            {
+                // The pre-D067 path, unchanged — see RollOrSteady's remarks for why it is left
+                // alone rather than folded into the general case below.
+                if (!Rolls || patchCount < 2 || _speed <= 0f) return 0d;
+                if (!(dt > 0d) || !(patchWidthMetres > 0f)) return 0d;
 
-            double u = Math.Abs(VelocityAt(heightY, seconds, patch, patchCount).X);
-            double fraction = u * dt / patchWidthMetres;
+                double u = Math.Abs(VelocityAt(heightY, seconds, patch, patchCount).X);
+                double fraction = u * dt / patchWidthMetres;
 
-            return fraction > 0.5d ? 0.5d : fraction;
+                return fraction > 0.5d ? 0.5d : fraction;
+            }
+
+            // D067. The vent's own term is width-free, so a leg transports whether or not anyone
+            // has told the field how wide a patch is; the roll's is not and is skipped without one,
+            // exactly as it was before.
+            if (!(dt > 0d)) return 0d;
+
+            return HorizontalTransportFraction(
+                heightY, seconds, patch, patchCount, dt, patchWidthMetres);
         }
 
         /// <summary>
@@ -375,12 +755,36 @@ namespace Evosim.Core
         /// horizontal velocity at that boundary, which is what keeps bodies and stock moving the
         /// same way.
         /// </remarks>
+        /// <remarks>
+        /// <para>
+        /// <b>D067 adds a second flow at the same face and this is their net.</b> The vent's legs
+        /// and the roll's limbs can oppose each other, and what crosses is the difference — so the
+        /// direction is the sign of the summed signed fraction rather than of either term.
+        /// </para>
+        /// <para>
+        /// <b>It reads <see cref="PatchWidthMetres"/> rather than being handed a width</b>, which
+        /// is the one place the vent forces this class to hold state. The roll's fraction is
+        /// <c>u·dt/W</c> and the vent's is <c>|c_j|·s·dt/L</c>: <c>dt</c> cancels out of the
+        /// comparison, <c>W</c> does not, so a signature with neither cannot weigh the two. The
+        /// step length is therefore passed as 1 here and the width comes from the world, which
+        /// <see cref="World"/>'s constructor sets from the same
+        /// <see cref="NutrientField.PatchWidthMetres"/> its callers pass to
+        /// <see cref="HorizontalCrossingFraction"/> — one geometry, so the sign and the magnitude
+        /// cannot describe different water. With the vent off nothing reads it and the pre-D067
+        /// path is taken unchanged.
+        /// </para>
+        /// </remarks>
         public int CrossingDirection(float heightY, double seconds, int patch, int patchCount)
         {
-            if (!Rolls || patchCount < 2 || _speed <= 0f) return 0;
+            if (!VentActive(patchCount))
+            {
+                if (!Rolls || patchCount < 2 || _speed <= 0f) return 0;
 
-            float u = VelocityAt(heightY, seconds, patch, patchCount).X;
-            return u > 0f ? 1 : u < 0f ? -1 : 0;
+                float u = VelocityAt(heightY, seconds, patch, patchCount).X;
+                return u > 0f ? 1 : u < 0f ? -1 : 0;
+            }
+
+            return HorizontalTransportSign(heightY, seconds, patch, patchCount, 1d, _patchWidthMetres);
         }
 
         /// <summary>
@@ -482,7 +886,7 @@ namespace Evosim.Core
         }
 
         public override string ToString() =>
-            _speed <= 0f
+            (_speed <= 0f
                 ? "still water"
                 : $"{_speed:0.###} m/s peak, {_cellMetres:0.#} m cells, {_periodSeconds:0.#} s period" +
                   (Rolls
@@ -490,6 +894,7 @@ namespace Evosim.Core
                           ? $", rolls blinking every {_rollBlinkSeconds:0.#} s"
                           : ", steady rolls"
                       : "") +
-                  (AdvectFields ? ", advecting the fields" : "");
+                  (AdvectFields ? ", advecting the fields" : "")) +
+            (_ventSpeed > 0f ? $", vent {_ventSpeed:0.###} m/s in patch {_ventPatch}" : "");
     }
 }

@@ -117,6 +117,16 @@ namespace Evosim.Sim.EditorTools
             float currentBlink = Env("EVOSIM_CURRENT_BLINK", 0f);
             bool currentAdvect = Env("EVOSIM_CURRENT_ADVECT", 0f) > 0.5f;
 
+            // D067's four. The vent is a plume rising from the floor in one patch with the return
+            // sinking through all the others, which is the return path a roll that stops above the
+            // floor does not have (logbook/0048). Speed 0 is off, and off is every run before D067
+            // bit for bit; the depth and the leg default to the world's own floor and one layer,
+            // which is what World's construction-time check demands of them.
+            float vent = Env("EVOSIM_VENT", 0f);
+            float ventPatch = Env("EVOSIM_VENT_PATCH", 0f);
+            float ventDepth = Env("EVOSIM_VENT_DEPTH", new RunConfig().WorldDepthMetres);
+            float ventLeg = Env("EVOSIM_VENT_LEG", new RunConfig().LightLayerMetres);
+
             // D051. The floor's return leg: a first-order rate constant, s⁻¹, decaying the floor
             // layer's stock back into the layer above it. One knob for both currencies — the
             // cycle needs energy and matter both to return, and a run comparing them separately
@@ -345,6 +355,10 @@ namespace Evosim.Sim.EditorTools
             config.Current.Rolls = currentRolls;
             config.Current.RollBlinkSeconds = currentBlink;
             config.Current.AdvectFields = currentAdvect;
+            config.Current.VentSpeed = vent;
+            config.Current.VentPatch = (int)ventPatch;
+            config.Current.VentDepthMetres = ventDepth;
+            config.Current.VentLegMetres = ventLeg;
             config.MatterPerTissueJoule = matterPerTissue;
             config.MatterPerCreature = matterPerCreature;
             config.InitialMatterPerCubicMetre = initialMatter;
@@ -410,6 +424,10 @@ namespace Evosim.Sim.EditorTools
                     ? currentBlink > 0f ? "blink " + currentBlink + " s" : "steady"
                     : "off") +
                 " · advect " + (currentAdvect ? "on" : "off") +
+                " · vent " + (vent > 0f
+                    ? vent + " m/s in patch " + (int)ventPatch + " from " + ventDepth +
+                      " m, legs " + ventLeg + " m"
+                    : "off") +
                 " · mixing " + mixing + " m2/s" +
                 " · sink " + nutrientSink + " m/s, matter " + matterSink + " m/s" +
                 " · remin " + remin + " /s" +
