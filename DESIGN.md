@@ -1909,6 +1909,8 @@ it configures* (logbook/0007, logbook/0008, logbook/0013).
   component opposing existing motion) engages only above 0.01 s, so it never touches a
   replay of the record.
 
+> **Caveat (logbook/0056, 2026-09-04):** the 0.02 step is bimodal on depth — three of six fast-step worlds sat in the surface film at −1 m where their 0.01 seeds sat at −12 to −15 m, and two arms of one seed pair sat 10 m apart. A 0.02 screen answers a mechanism question read within one step; it does not stand in for the 0.01 world, and a confirmation at 0.01 is not optional.
+
 ### 6.3 Getting work out of 24 cores
 
 **Multiple `PhysicsScene`s are not parallelism** — `Simulate()` runs serially on the main

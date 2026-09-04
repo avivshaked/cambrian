@@ -13,8 +13,8 @@ DECISIONS.md when ruled, then deleted.
 2. **Conception was an age queue** (0056): the breeding walk ran oldest-first, and in a
    starved layer the oldest solvent body took the matter every step — 48–62% of plateau
    births to bodies past a lifetime. Fixed behind `EVOSIM_CONCEPTION_ORDER shuffled`,
-   the queue is gone (median parent age 603–1,886 s against 3,778–4,318 s). **And the
-   stomachs did worse, not better** — seed 2's line fell from 81 to 11 while the control's
+   the queue is gone (median parent age 852–2,117 s against 4,318–4,632 s). **And the
+   stomachs did worse, not better** — seed 2's line fell from 81 to 7 while the control's
    held 135; seed 4's clade was 185 against the control's 227. Turnover moved both
    ways (seed 4: 1,471 deaths against the control's 2,764; seed 2: 2,100 against 1,778),
    so the age of the population under a fair draw is a realisation, not a rule.
