@@ -109,4 +109,20 @@ conception-order build, 484 tests) and launched with `-ExpectSimHash f99d69b7952
 every manifest reads that `simHash`, `gitCommit 23a6bd8`, `gitDirty false`, `status
 running`. Headers verified: `conception shuffled` on `r20q-s1` and `r20q-s4`,
 `conception age` on `r20q0-s4`, `dt=0.02`, `sink 0.002 m/s, matter 0.002 m/s`,
-`exudation 0.15`. Monitor running. Results appended below.
+`exudation 0.15`. Monitor running.
+
+**`r20q-s1` censored at t=15,345 — a fault, not a result.** The fluid model handed
+PhysX a NaN force and torque for one part of a jointed body (`FluidEnvironment.Apply`,
+`Part02_n3` of creature 3075), the body's height went non-finite and `World.Observe`
+refused it, as it should. The manifest reads `status error` with the exception as its
+`ending` — the first run to record its own crash — though the error path omits the
+footer's facts (`physicsSteps 0`, `dragImpulsesLimited 0` are placeholders, not readings).
+Censored under the owner's rule (error and fault, not merit). The same seed and config
+would replay the same crash bit for bit, so seed 1 is replaced by **seed 2** — a seed
+with an inherited stomach population in round 18 (91 at 30,000 s) — as `r20q-s2`
+(shuffled, worker 2) with its own control `r20q0-s2` (age, worker 5, refreshed and
+hash-checked). Four arms concurrent. The divergence itself is filed in HANDOFF as a bug
+to chase: a NaN drag force at the 0.02 step in a world that was 1.7% jointed, with the
+drag limiter present — the first physics divergence in a scored run.
+
+Results appended below.

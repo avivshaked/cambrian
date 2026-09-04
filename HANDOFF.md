@@ -50,6 +50,17 @@ is not part of the goal.
    amendment 2: R0 0.72 over completed members, 112 alive at 20,000 s), and the cell-type
    expansion.
 
+## Bugs to chase
+
+- **A NaN drag force at dt 0.02** (`r20q-s1`, t=15,345, logbook/0056): `FluidEnvironment.Apply`
+  handed PhysX `{NaN, NaN, NaN}` for one part of a jointed body and the height went
+  non-finite. First physics divergence in a scored run; 0052 saw crashes only at 0.05
+  without the limiter. Reproduce from the manifest (seed 1, config hash, commit `23a6bd8`,
+  `EVOSIM_CONCEPTION_ORDER shuffled`) — it replays bit for bit — and read the panel maths
+  for a zero-length or zero-area case before blaming the step.
+- **The error manifest omits the footer facts**: `physicsSteps`, `dragImpulsesLimited`
+  and the counts are written as zeros on the error path. Carry the last known values.
+
 ## How the experiments are run — the parts that bite
 
 - Workers are copies `unity-w2..unity-w7`; one arm per worker, **at most five at once**,
