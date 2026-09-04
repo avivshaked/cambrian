@@ -126,7 +126,8 @@ day of machine time on it:
 A genome file is one JSON line — any row of a run's `snapshots/*.jsonl` will do. What the
 calculator does not have: the matter draw at conception, shading, field depletion, drift.
 
-**Test `Evosim.Core`** (fast — the whole suite is well under a second):
+**Test `Evosim.Core`** (the whole suite is a couple of minutes for ~470 tests; the
+development and ecosystem tests are seconds each, so use `-Filter` while iterating):
 
 ```powershell
 ./scripts/core-test.ps1
@@ -138,8 +139,8 @@ empty, only runtimes are present. Unity ships a complete .NET 8 SDK at
 `<Unity>\Editor\Data\DotNetSdk\dotnet.exe`, and `core-test.ps1` finds and uses it. Don't
 install an SDK to work around this, and don't reach for the Unity Test Runner for anything
 that belongs in `Evosim.Core` — running these outside the Editor is the whole point of
-§6.1's no-`UnityEngine` rule, and it is the difference between a one-second feedback loop
-and a thirty-second one.
+§6.1's no-`UnityEngine` rule, and it is the difference between a feedback loop of seconds
+and one that starts with a Unity asset reimport.
 
 ## Architecture
 

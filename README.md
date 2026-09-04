@@ -18,20 +18,21 @@ the code.
 The name is the ambition: the Cambrian explosion was a rapid diversification of **body
 plans**, which is what an open-ended ecosystem is being built to produce.
 
-> **Status: the ecosystem runs, and a pre-registered campaign is chasing its first
-> self-sustaining food chain.**
+> **Status: the ecosystem runs, and it holds a food chain.**
 > Genomes develop into bodies, bodies build into articulations driven by their own evolved
 > brains, and energy is a conserved budget audited to 0.0000% across the whole food web. A
 > finite competed-for sun, currents and mixing, senescence, a matter currency, a buoyancy
-> organ, living excretion and a seabed refuge are all in and measured
-> ([`DECISIONS.md`](DECISIONS.md) D023–D060). Seven scored rounds
-> ([logbook/0036](logbook/0036-the-floor-gives-back.md) onward) have produced the first
-> bounded, living, uncensored worlds and a dozen food chains that all boomed and bust —
-> the campaign's standing goal (a chain verified across seeds, not observed once) is not
-> yet met, and the reason is now precisely characterised: consumer lineages establish by
-> grazing the sea-floor detritus hoard, which nothing yet meters. Movement has never paid
-> its energy cost — the cost side is closed, the prize side is open — and throughput binds
-> every remaining question.
+> organ, living excretion, marine snow and a vent are all in and measured
+> ([`DECISIONS.md`](DECISIONS.md) D023–D071). Eighteen scored rounds
+> ([logbook/0036](logbook/0036-the-floor-gives-back.md) onward) found the constraint one
+> layer at a time — the floor, the drowning, the matter ratchet, the stomach's gearing — and
+> the last of them was the flux: the second trophic level was fed at one percent of the
+> first because producers fed the water only by dying. With exudation (D070) the standing
+> goal is met, 4 of 5 seeds in [logbook/0054](logbook/0054-the-confirmation.md): a
+> connected absorptive clade alive and breeding through two lifetimes, on an inherited
+> producer lineage, floor closed. The failing seed named the next constraint — matter at
+> depth (D071, screening). Movement has never paid its energy cost — the cost side is
+> closed, the prize side is open — and throughput binds every remaining question.
 
 ---
 
