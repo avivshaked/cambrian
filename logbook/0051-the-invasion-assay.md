@@ -216,3 +216,29 @@ order the outcome (M3), because the field absorbs it. What the assay could not s
 establishment over more than one lifetime — is a design fault of this assay, noted above,
 and the question it leaves is the one round 14 is now answering at population scale:
 whether stomachs and their field can settle anywhere with R0 = 1 and more than ten alive.
+
+### Amendment 2: the assay in the leak world (2026-09-04, pre-registered before launch)
+
+Round 18 met the goal rule with founder-descended lines (0054, M2 held in all five seeds):
+the leak kept the founding lottery's stomachs alive, and no line in any seed was rooted in
+a mutant. Whether a *late* stomach can now establish is therefore open, and it is this
+assay's question, asked again in the world that passed. One arm, `r15i-c10-x15`: seed 2,
+clearance 10, `EVOSIM_EXUDATION 0.15`, dt 0.02 (the screening step), 50 copies of the same
+inoculum at t=5,000 and −12 m, **run to 20,000 s** so establishment is read two lifetimes
+past the inoculation (the instrument note above). Launcher `scratch/launch-r15.ps1
+-Exudation 0.15 -Dt 0.02 -Seconds 20000`. This world already carries founder-descended
+stomachs (0053's `r17x-s2` had 66 inherited at t=3,000 at this seed and step), so the
+inoculants are read by their `k:"i"` id, not by the `inherit` column.
+
+| # | prediction | falsified by |
+|---|---|---|
+| A1 | **the inoculants establish**: R0 over completed inoculant lineages > 1, and ≥ 50 descendants born by t=20,000 with ≥ 10 of generation +2 or later | `scripts/lineage-invasion.ps1 r15i-c10-x15` |
+| A2 | **still alive two lifetimes on**: ≥ 10 inoculant descendants alive at t=20,000 | the same |
+| A3 | **matter, not energy, is what binds the late ones too**: the inoculant descendants' mean `netW` in `absorptive.jsonl` at t > 12,000 is positive, and the world's `mat blk` window is > 50,000 by then | `absorptive.jsonl`, `mat blk` |
+
+Readings: A1 and A2 hold — the leak lets a late stomach invade as well as keeping the
+founders' alive, and the goal's silence on how a line arises stops mattering. A1 fails
+with A3 holding — the late stomach earns but cannot conceive for want of matter at −12 m,
+the same constraint 0054 named, and the matter-at-depth proposal is the answer for both.
+A1 fails with A3's first clause failing — the inoculant body does not earn in this water,
+which the ledger under the 0.15 config would have to explain.
