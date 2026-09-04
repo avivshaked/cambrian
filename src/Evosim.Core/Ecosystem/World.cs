@@ -333,6 +333,19 @@ namespace Evosim.Core
         public long Deaths { get; private set; }
 
         /// <summary>
+        /// Creatures killed by <see cref="KillDiverged"/> — bodies the solver blew up. Included in
+        /// <see cref="Deaths"/>, and 0 for every healthy run.
+        /// </summary>
+        /// <remarks>
+        /// An instrument, not a demography. A run whose <c>diverged</c> column ever leaves 0 has
+        /// had a creature removed by arithmetic rather than by selection, and every trait share
+        /// computed after it is missing that lineage for a reason nothing ecological explains. It
+        /// is reported per run precisely so that "one body in seventeen hundred, once" and "the
+        /// physics is unstable at this step" cannot be mistaken for each other.
+        /// </remarks>
+        public long Diverged { get; private set; }
+
+        /// <summary>
         /// Creatures ever created by <see cref="Inoculate"/> — D060's invasion assay. Zero for the
         /// life of a run that never calls it.
         /// </summary>
@@ -822,48 +835,118 @@ namespace Evosim.Core
 
                 if (creature.Energy > 0f) continue;
 
-                // The absorptive log's final row, taken before the death path zeroes anything:
-                // this is the terminal budget, and the reserve it records is the (negative)
-                // overdraft that killed the creature rather than the 0 the next line writes.
-                // Every death in this design reads `starved` (Organism.DeathCause), so cause of
-                // death discriminates nothing — this row is what does.
-                if (creature.HasAbsorptiveTissue) BufferAbsorptiveDeath(creature);
-
-                // Death at exactly zero, not below. A creature carrying negative energy would be
-                // a debt the world has no way to settle, and the §5A.2 audit would never close.
-                EnergyOut += creature.Energy;
-                creature.Energy = 0f;
-
-                // The body becomes detritus where it died — §5A.2c. This is the whole reason
-                // anything other than a plant can live, and the reason the doomed half of
-                // generation zero is the world's first food rather than merely a waste of seeds.
-                Nutrients.Deposit(creature.HeightY, creature.TissueJoules, creature.Patch);
-                if (creature.TissueJoules > 0f) DetritusDepositedTotal += creature.TissueJoules;
-
-                // Whatever matter is still locked returns to the layer the body died in, and
-                // sinks from there — which is why the deep is rich and the surface is not.
-                // LockedMatter (D052) is what remains after a lifetime of excretion, or the full
-                // price paid at conception if the knob is off; either way it is already 0 for a
-                // floor founder, which never paid and so never owes anything back.
-                if (creature.LockedMatter > 0f)
-                {
-                    Matter.Deposit(creature.HeightY, creature.LockedMatter, creature.Patch);
-                    MatterInBodies -= creature.LockedMatter;
-                    creature.LockedMatter = 0f;
-                }
-
-                creature.TissueJoules = 0f;
-
-                _living.RemoveAt(i);
-                _dead.Add(creature);
-                Deaths++;
-
-                // §5A.6 kills at exactly zero energy and nothing else — Organism.cs's DeathCause
-                // remark ("the only cause the design has") is the reason this reads one constant
-                // rather than branching: senescence (D038) raises upkeep until this fires sooner,
-                // it does not open a second way to die.
-                _lineageEvents.Add(LineageEvent.Death(ElapsedSeconds, creature.Id, DeathCause.Starved));
+                // §5A.6 kills at exactly zero energy and nothing else — the ecology has one cause
+                // of death, and senescence (D038) raises upkeep until this fires sooner rather
+                // than opening a second way to die. DeathCause.Diverged is not a second way
+                // either: it is the solver failing, and it enters through KillDiverged below.
+                Bury(creature, i, DeathCause.Starved);
             }
+        }
+
+        /// <summary>
+        /// Removes a creature from the population and settles its books — the only place a body
+        /// leaves the world.
+        /// </summary>
+        /// <param name="creature">The body leaving the population.</param>
+        /// <param name="index">Its position in <c>_living</c>, which the caller already knows.</param>
+        /// <param name="cause">What the lineage row will say.</param>
+        /// <remarks>
+        /// <b>One copy of the deposit logic, reached by both causes.</b> Starvation walks the
+        /// population and finds this at the bottom of the metabolic loop;
+        /// <see cref="KillDiverged"/> arrives from outside <see cref="Step"/> with a body the
+        /// physics has already destroyed. A second copy of "deposit the tissue, return the
+        /// matter, count the death" for the second caller is exactly how the two would come to
+        /// disagree about the audit, and the audit is the one thing here that cannot be allowed
+        /// to drift.
+        /// </remarks>
+        private void Bury(Organism creature, int index, DeathCause cause)
+        {
+            // The absorptive log's final row, taken before the death path zeroes anything:
+            // this is the terminal budget, and the reserve it records is the (negative)
+            // overdraft that killed the creature rather than the 0 the next line writes.
+            // Starvation is the only cause the ecology has, so cause of death discriminates
+            // nothing among these rows — this row is what does.
+            if (creature.HasAbsorptiveTissue) BufferAbsorptiveDeath(creature);
+
+            // Death at exactly zero, not below. A creature carrying negative energy would be
+            // a debt the world has no way to settle, and the §5A.2 audit would never close.
+            // A diverged body is generally solvent, so this is where its whole reserve leaves
+            // the world — the same line, carrying a much larger number.
+            EnergyOut += creature.Energy;
+            creature.Energy = 0f;
+
+            // The body becomes detritus where it died — §5A.2c. This is the whole reason
+            // anything other than a plant can live, and the reason the doomed half of
+            // generation zero is the world's first food rather than merely a waste of seeds.
+            // HeightY is the last height Observe accepted, and Observe refuses a non-finite one
+            // — so this is the last *finite* depth even when the body's own transform is NaN.
+            Nutrients.Deposit(creature.HeightY, creature.TissueJoules, creature.Patch);
+            if (creature.TissueJoules > 0f) DetritusDepositedTotal += creature.TissueJoules;
+
+            // Whatever matter is still locked returns to the layer the body died in, and
+            // sinks from there — which is why the deep is rich and the surface is not.
+            // LockedMatter (D052) is what remains after a lifetime of excretion, or the full
+            // price paid at conception if the knob is off; either way it is already 0 for a
+            // floor founder, which never paid and so never owes anything back.
+            if (creature.LockedMatter > 0f)
+            {
+                Matter.Deposit(creature.HeightY, creature.LockedMatter, creature.Patch);
+                MatterInBodies -= creature.LockedMatter;
+                creature.LockedMatter = 0f;
+            }
+
+            creature.TissueJoules = 0f;
+
+            _living.RemoveAt(index);
+            _dead.Add(creature);
+            Deaths++;
+
+            _lineageEvents.Add(LineageEvent.Death(ElapsedSeconds, creature.Id, cause));
+        }
+
+        /// <summary>
+        /// Kills a creature whose articulation has diverged, as a death rather than as a crash —
+        /// the divergence spec after logbook/0056.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why a death and not an exception.</b> <c>r20q-s1</c> lost 15,345 simulated seconds
+        /// of a 20,000 s arm because one body's articulation exploded: PhysX refused
+        /// <c>{NaN, NaN, NaN}</c> forces for its three parts nine steps running, and then
+        /// <see cref="Observe"/> saw the non-finite height and took the run down. One creature in
+        /// seventeen hundred is not a reason to censor an arm — but it is also not something to
+        /// swallow silently, which is why the count is reported and the harness dumps the body's
+        /// last finite state before calling this.
+        /// </para>
+        /// <para>
+        /// <b>The books still close.</b> The tissue is deposited and the matter returned at
+        /// <see cref="Organism.HeightY"/> — the last height <see cref="Observe"/> accepted, since
+        /// it refuses a non-finite one — so §5A.2's audit and the matter identity see exactly what
+        /// a starvation of the same body would have moved. The physics is what failed; the
+        /// economy is not allowed to lose track of a joule over it.
+        /// </para>
+        /// <para>
+        /// Called from outside <see cref="Step"/>, between physics steps, which is safe for the
+        /// same reason <see cref="Observe"/> is: it touches no <see cref="Rng"/> stream and takes
+        /// no branch any other creature's step depends on.
+        /// </para>
+        /// </remarks>
+        public void KillDiverged(Organism creature)
+        {
+            if (creature == null) throw new ArgumentNullException(nameof(creature));
+
+            int index = _living.IndexOf(creature);
+            if (index < 0)
+            {
+                throw new ArgumentException(
+                    $"Creature {creature.Id} is not living in this world, so there is nothing to " +
+                    "kill. A body that diverged after it had already died means the scene and " +
+                    "the population have come apart.",
+                    nameof(creature));
+            }
+
+            Diverged++;
+            Bury(creature, index, DeathCause.Diverged);
         }
 
         /// <summary>

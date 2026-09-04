@@ -586,6 +586,49 @@ namespace Evosim.Sim
         }
 
         /// <summary>
+        /// The velocities one part held just before the last <c>Physics.Simulate</c> — for the
+        /// divergence dump (the divergence spec, after logbook/0056).
+        /// </summary>
+        /// <param name="creatureIndex">
+        /// Index into the same list passed to <see cref="Apply(IReadOnlyList{CreatureInstance}, float)"/>,
+        /// in the same order.
+        /// </param>
+        /// <param name="partIndex">Index into that creature's <see cref="CreatureInstance.Bodies"/>.</param>
+        /// <returns>False when the slot was never filled — nothing was applied this step.</returns>
+        /// <remarks>
+        /// <b>This is the only surviving copy of the last finite velocities, and it is free.</b> A
+        /// diverged body's own state reads NaN by the time anyone asks it, and PhysX keeps no
+        /// history — but <see cref="Settle"/>'s midpoint rule already needs the pre-step
+        /// velocities, so these two arrays were being written every step long before anything
+        /// wanted them for a post-mortem. Nothing here is read except on the step something
+        /// blows up.
+        /// </remarks>
+        public bool TryLastVelocity(
+            int creatureIndex, int partIndex, out Vector3 velocity, out Vector3 spin)
+        {
+            velocity = Vector3.zero;
+            spin = Vector3.zero;
+
+            if (creatureIndex < 0 || creatureIndex >= _offset.Length || partIndex < 0) return false;
+
+            int j = _offset[creatureIndex] + partIndex;
+            if (j < 0 || j >= _preV.Length) return false;
+
+            velocity = _preV[j];
+            spin = _preW[j];
+            return true;
+        }
+
+        // A NaN guard used to stand here, so that a diverged body could not poison
+        // DissipatedJoules for the rest of the run. It was measured out again: a method call and
+        // two float tests per body per physics step is 1.9 billion of each in a 5,000-creature
+        // world, and it cost about 10% of the wall clock — five times the divergence check it
+        // was protecting. So DissipatedJoules does read NaN after a body diverges, for the
+        // remainder of that run. Nothing an arm reports uses it (only Milestone1Smoke's energy
+        // audit does, and nothing has ever diverged there); the number that says a body was lost
+        // is the report's `diverged` column, which is exact.
+
+        /// <summary>
         /// Centre of mass of a creature, in world space. The quantity DESIGN.md §5.5 measures
         /// fitness on.
         /// </summary>

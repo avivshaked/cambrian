@@ -120,12 +120,15 @@ namespace Evosim.Core
             }
         }
 
-        /// <summary>Short code for <see cref="Cause"/>. Currently one value — Organism.cs's own remark.</summary>
+        /// <summary>
+        /// Short code for <see cref="Cause"/>. Two values: the ecology's one, and the solver's.
+        /// </summary>
         private static string Code(DeathCause cause)
         {
             switch (cause)
             {
                 case DeathCause.Starved: return "starved";
+                case DeathCause.Diverged: return "diverged";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(cause), cause, "New DeathCause, new lineage.jsonl code — add one " +

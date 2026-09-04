@@ -74,7 +74,22 @@ namespace Evosim.Sim.EditorTools
                                 Status = "error",
                                 Reason = "error",
                                 Prose = e.GetType().Name + ": " + e.Message,
+
+                                // The last facts the loop recorded, not zeros. A censored arm's
+                                // manifest is the only machine-readable account of it there will
+                                // ever be, and one that reads "0 physics steps, 0 alive" of a run
+                                // that had simulated 15,345 seconds with 1,707 creatures in it is
+                                // worse than one that omitted the fields (logbook/0056).
                                 SimulatedSeconds = CurrentManifest.LastSimulatedSeconds,
+                                PhysicsSteps = CurrentManifest.LastPhysicsSteps,
+                                Births = CurrentManifest.LastBirths,
+                                Alive = CurrentManifest.LastAlive,
+                                WallClockMinutes = CurrentManifest.LastWallClockMinutes,
+                                TimesRealTime = CurrentManifest.LastSimulatedSeconds /
+                                    Math.Max(1e-9, CurrentManifest.LastWallClockMinutes * 60d),
+                                DragImpulsesLimited = CurrentManifest.LastDragImpulsesLimited,
+                                DriveImpulsesLimited = CurrentManifest.LastDriveImpulsesLimited,
+                                DivergedTotal = CurrentManifest.LastDiverged,
                             });
                     }
                     catch (Exception writeFailure)
@@ -506,6 +521,12 @@ namespace Evosim.Sim.EditorTools
                 CurrentManifestDir = dir;
 
                 WriteRunManifest(dir, manifest, ending: null);
+
+                // Where a diverged body's post-mortem goes — the divergence spec, after
+                // logbook/0056. Beside the run's other output rather than in a directory of its
+                // own, because it belongs to one run and to no other; the subdirectory is created
+                // only if something actually diverges, so a healthy run leaves no trace of this.
+                eco.DivergenceDumpDirectory = Path.Combine(dir.Path, "diverged");
             }
 
             var report = new StringBuilder();
@@ -604,10 +625,27 @@ namespace Evosim.Sim.EditorTools
 
                     metabolicSteps++;
 
-                    // So the error path in Run() can say how far the run got. One field write per
-                    // metabolic step, which is 2 Hz of simulated time — the loop below writes a
-                    // whole markdown row every reportEvery of these.
-                    if (manifest != null) manifest.LastSimulatedSeconds = eco.World.ElapsedSeconds;
+                    // So the error path in Run() can say how far the run got. A handful of field
+                    // writes per metabolic step, which is 2 Hz of simulated time — the loop below
+                    // writes a whole markdown row every reportEvery of these.
+                    //
+                    // All of it, not only the clock: the error manifest used to write zeros for
+                    // physicsSteps, births, aliveAtEnd, wallClockMinutes and dragImpulsesLimited,
+                    // so r20q-s1's run.json said the run had taken no steps and had nobody in it
+                    // at the moment it died with 1,707 creatures alive (logbook/0056). A manifest
+                    // that reports zero and a manifest that reports nothing are both lies; this
+                    // one reports the last thing that was true.
+                    if (manifest != null)
+                    {
+                        manifest.LastSimulatedSeconds = eco.World.ElapsedSeconds;
+                        manifest.LastPhysicsSteps = eco.Steps;
+                        manifest.LastBirths = eco.World.Births;
+                        manifest.LastAlive = eco.World.Living.Count;
+                        manifest.LastDragImpulsesLimited = eco.Fluid.DragImpulsesLimited;
+                        manifest.LastDriveImpulsesLimited = eco.DriveImpulsesLimited;
+                        manifest.LastDiverged = eco.World.Diverged;
+                        manifest.LastWallClockMinutes = clock.Elapsed.TotalMinutes;
+                    }
 
                     // D060. Fires once — the first metabolic step whose ElapsedSeconds reaches
                     // the pre-registered instant — and never again, guarded the same way
@@ -697,6 +735,14 @@ namespace Evosim.Sim.EditorTools
                 "Drag impulses limited: " + eco.Fluid.DragImpulsesLimited +
                 " (the coarse-step stabiliser; 0 means every step's drag was applied as computed)");
             report.AppendLine();
+            // The second coarse-step stabiliser, beside the first: the joint-torque cap
+            // (EffectorDriver.MaxJointAngularVelocity). Both are gated off at dt 0.01, so both
+            // read 0 for every run at the confirming step, and a non-zero count here is the
+            // measure of how much evolved muscle the screening step is refusing to apply.
+            report.AppendLine(
+                "Drive impulses limited: " + eco.DriveImpulsesLimited +
+                " (the joint-torque cap; 0 means every drive torque was applied as computed)");
+            report.AppendLine();
             report.AppendLine(
                 eco.Steps + " physics steps · " +
                 eco.World.ElapsedSeconds.ToString("0.#") + " simulated seconds · " +
@@ -735,6 +781,8 @@ namespace Evosim.Sim.EditorTools
                         TimesRealTime =
                             eco.World.ElapsedSeconds / Math.Max(1e-9, clock.Elapsed.TotalSeconds),
                         DragImpulsesLimited = eco.Fluid.DragImpulsesLimited,
+                        DriveImpulsesLimited = eco.DriveImpulsesLimited,
+                        DivergedTotal = eco.World.Diverged,
                         BestSpeed = bestSpeedEver,
                         BestSpeedAtSeconds = bestSpeedAt,
                     });
@@ -912,8 +960,23 @@ namespace Evosim.Sim.EditorTools
             /// <summary>Why a source fact is missing, or null when nothing is.</summary>
             public string Note;
 
-            /// <summary>Simulated seconds as of the last metabolic step, for the error path.</summary>
+            /// <summary>
+            /// What was true as of the last metabolic step, for the error path.
+            /// </summary>
+            /// <remarks>
+            /// Carried on the manifest rather than recomputed in the catch, because by the time
+            /// the catch runs the only thing in scope is the exception — the ecosystem, the
+            /// world and the clock all belong to <c>RunBody</c>'s frame, which has already
+            /// unwound. These are the facts, copied out while they were still reachable.
+            /// </remarks>
             public double LastSimulatedSeconds;
+            public long LastPhysicsSteps;
+            public long LastBirths;
+            public int LastAlive;
+            public long LastDragImpulsesLimited;
+            public long LastDriveImpulsesLimited;
+            public long LastDiverged;
+            public double LastWallClockMinutes;
         }
 
         /// <summary>How a run stopped. Null while it is still going.</summary>
@@ -929,6 +992,13 @@ namespace Evosim.Sim.EditorTools
             public double WallClockMinutes;
             public double TimesRealTime;
             public long DragImpulsesLimited;
+
+            /// <summary>Drive torques capped — <see cref="Ecosystem.DriveImpulsesLimited"/>.</summary>
+            public long DriveImpulsesLimited;
+
+            /// <summary>Bodies the solver blew up — <see cref="World.Diverged"/>. 0 is healthy.</summary>
+            public long DivergedTotal;
+
             public double BestSpeed;
             public double BestSpeedAtSeconds;
         }
@@ -1114,6 +1184,8 @@ namespace Evosim.Sim.EditorTools
                 w.Field("wallClockMinutes", ending.WallClockMinutes);
                 w.Field("timesRealTime", ending.TimesRealTime);
                 w.Field("dragImpulsesLimited", ending.DragImpulsesLimited);
+                w.Field("driveImpulsesLimited", ending.DriveImpulsesLimited);
+                w.Field("divergedTotal", ending.DivergedTotal);
                 w.Field("bestSpeed", ending.BestSpeed);
                 w.Field("bestSpeedAtSeconds", ending.BestSpeedAtSeconds);
             }
@@ -1686,7 +1758,12 @@ namespace Evosim.Sim.EditorTools
                 // written may move. Living creatures whose developed phenotype carries
                 // photosynthetic tissue, and how many of those had a parent that carried it too.
                 .Field("photosynthetic", photosynthetic)
-                .Field("photosyntheticInherited", photosyntheticInherited));
+                .Field("photosyntheticInherited", photosyntheticInherited)
+                // The divergence count — appended after photosyntheticInherited, per the same
+                // append-only column discipline. A running total, not a window: one body blowing
+                // up at some instant is the whole event, and a column that returned to 0 on the
+                // next sample would hide it from anyone reading the last row.
+                .Field("diverged", world.Diverged));
 
             // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9): drained
             // every report row, alongside stats.jsonl, and appended one row per event to
@@ -1844,6 +1921,13 @@ namespace Evosim.Sim.EditorTools
                 // creatures rather than an accounting error.
                 "**" + photosynthetic.ToString(c) + "**",
                 "**" + photosyntheticInherited.ToString(c) + "**",
+
+                // Bodies the solver blew up — appended after `photo inh`, per the same
+                // append-only rule. Running total, and 0 for every healthy run: this is an
+                // instrument reading beside the audit, not a death rate. Anything above 0 means
+                // a lineage left this world by arithmetic rather than by selection, and the
+                // matching post-mortem is in the run's diverged/ directory.
+                world.Diverged.ToString(c),
             };
 
             LastFloorSpawns = world.FloorSpawns;
@@ -1892,6 +1976,9 @@ namespace Evosim.Sim.EditorTools
 
             // The producer counts — appended after `abs logged`, per the same rule.
             "**photo**", "**photo inh**",
+
+            // The divergence count — appended after `photo inh`, per the same rule.
+            "diverged",
         };
 
         private static string Header() =>

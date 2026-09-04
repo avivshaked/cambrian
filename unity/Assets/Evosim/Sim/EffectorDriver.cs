@@ -82,6 +82,69 @@ namespace Evosim.Sim
         public int Dof => _creature.TotalDof;
 
         /// <summary>
+        /// The most joint angular velocity one step's drive torque may add, in rad/s.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Thirty rad/s is about five revolutions a second — faster than anything [K12] reports a
+        /// creature doing, and far faster than anything that has ever swum here. So the cap does
+        /// not remove a gait; it removes a torque a link could not physically apply. The dump from
+        /// <c>r20q-s1</c> is the measurement: a 143-gram link, inertia of order 1e-5 kg·m2, was
+        /// being driven at about 1.5 N·m — some 1e5 rad/s2, thousands of rad/s added per 0.02 s
+        /// step — and its articulation reached 4e13 rad/s and then NaN inside two seconds of the
+        /// creature's life. Evolved <see cref="PhenotypePart.Power"/> has no upper bound relative
+        /// to the inertia it acts on, and nothing else in the loop notices.
+        /// </para>
+        /// <para>
+        /// <b>Gated to steps coarser than 0.01, exactly like the drag limiter</b>
+        /// (<see cref="FluidEnvironment"/>). Every number this project has published was measured
+        /// at 0.01, and the whole value of that step is that it replays bit for bit under its own
+        /// config hash; a limiter that engaged there would silently make a different world of
+        /// every historical run. At 0.02 it engages, and every bind is counted rather than
+        /// assumed — <see cref="ImpulsesLimited"/>, printed per run, the same discipline
+        /// <c>DragImpulsesLimited</c> is held to.
+        /// </para>
+        /// <para>
+        /// A cap on the torque, never on <c>ArticulationBody.maxJointVelocity</c>: the solver
+        /// would clamp silently and there would be no number to read afterwards, which is the one
+        /// thing a stabiliser in this project may not do.
+        /// </para>
+        /// </remarks>
+        public const float MaxJointAngularVelocity = 30f;
+
+        /// <summary>
+        /// Times a drive torque was capped at <see cref="MaxJointAngularVelocity"/>. Always 0 at
+        /// dt 0.01, where the limiter is gated off.
+        /// </summary>
+        public long ImpulsesLimited { get; private set; }
+
+        /// <summary>Reads the count and zeroes it, so a caller can total it across the population.</summary>
+        /// <remarks>
+        /// Drained rather than summed from outside, because a driver dies with its creature: a
+        /// total taken over the living alone would lose every bind the dead ever made, and this
+        /// count exists to say how often the stabiliser engaged over a whole run.
+        /// </remarks>
+        public long DrainImpulsesLimited()
+        {
+            long n = ImpulsesLimited;
+            ImpulsesLimited = 0;
+            return n;
+        }
+
+        /// <summary>
+        /// Whether <see cref="MaxJointAngularVelocity"/> applies at this driver's timestep.
+        /// </summary>
+        /// <remarks>
+        /// Decided once, in the constructor, from the same threshold and for the same reason the
+        /// drag limiter uses: a comparison per DOF per step would be the identical answer a
+        /// million times over, and the inertia read below is not free.
+        /// </remarks>
+        private readonly bool _limitDrive;
+
+        /// <summary>rad/s of allowance per second — <see cref="MaxJointAngularVelocity"/> / dt.</summary>
+        private readonly float _spinBudgetPerStep;
+
+        /// <summary>
         /// Cumulative mechanical work done by every joint, in joules — DESIGN.md §5A.2.
         /// </summary>
         /// <remarks>
@@ -137,6 +200,12 @@ namespace Evosim.Sim
         {
             _creature = creature;
             _stepSeconds = stepSeconds;
+
+            // The same threshold, to the same bit, as FluidEnvironment's drag limiter: the two
+            // stabilisers must switch on together or "dt 0.01 replays the historical record" is
+            // true of one of them and not the other.
+            _limitDrive = stepSeconds > 0.0100001f;
+            _spinBudgetPerStep = stepSeconds > 0f ? MaxJointAngularVelocity / stepSeconds : 0f;
 
             int dof = Mathf.Max(1, creature.TotalDof);
             _history = new float[dof, SmoothWindow];
@@ -200,12 +269,59 @@ namespace Evosim.Sim
                 Quaternion frame = body.anchorRotation;
                 int offset = _creature.DofOffset[b];
 
+                // The most this link may be asked for on this step: the torque that would add
+                // exactly MaxJointAngularVelocity to its spin, and no more. Against the smallest
+                // principal inertia rather than the inertia about each drive axis — conservative,
+                // and the same choice the drag limiter makes for the same reason: the tensor is
+                // expressed in the body's own inertia frame, and resolving each free axis into it
+                // is arithmetic that buys a tighter bound on a term that exists to be loose.
+                // Read once per driven link per step, and not at all at dt 0.01.
+                float allowed = 0f;
+                if (_limitDrive)
+                {
+                    Vector3 inertia = body.inertiaTensor;
+                    allowed = Mathf.Min(inertia.x, Mathf.Min(inertia.y, inertia.z)) *
+                              _spinBudgetPerStep;
+                }
+
                 Vector3 torque = Vector3.zero;
                 for (int d = 0; d < n; d++)
                 {
                     int idx = offset + d;
                     float smoothed = _runningSum[idx] * inv;
-                    torque += DriveAxis(frame, d) * (smoothed * _torquePerUnit[idx]);
+
+                    // The un-limited path is the original expression, character for character,
+                    // and not a tidier shared one: writing the product through a
+                    // float local and then multiplying changed the last bits of the torque
+                    // under Mono's codegen, and a 300 s default arm that had been reproducing
+                    // runs/r20v-age1.md exactly started differing at t=200 — 0.0633 m/s against
+                    // 0.063, work 27.43 W against 27.45. Nothing was wrong with either number;
+                    // the run was simply a different chaotic realisation, which is precisely
+                    // what dt 0.01 is not allowed to become (logbook/0052). So the branch is
+                    // duplication on purpose, and the duplicate is the one that must not move.
+                    if (!_limitDrive)
+                    {
+                        torque += DriveAxis(frame, d) * (smoothed * _torquePerUnit[idx]);
+                        continue;
+                    }
+
+                    // Per degree of freedom, on the signed magnitude before it is resolved onto
+                    // its axis — so a capped DOF keeps its direction and its sign, and the other
+                    // DOFs of the same joint pass untouched.
+                    float magnitude = smoothed * _torquePerUnit[idx];
+
+                    if (magnitude > allowed)
+                    {
+                        magnitude = allowed;
+                        ImpulsesLimited++;
+                    }
+                    else if (magnitude < -allowed)
+                    {
+                        magnitude = -allowed;
+                        ImpulsesLimited++;
+                    }
+
+                    torque += DriveAxis(frame, d) * magnitude;
                 }
 
                 // A muscle pushes against something. Applying torque to the child alone
@@ -231,6 +347,23 @@ namespace Evosim.Sim
 
             _elapsed += _stepSeconds;
         }
+
+        /// <summary>
+        /// The world-space torque the last <see cref="Drive"/> put on one body, before
+        /// <see cref="Settle"/> clears it — for the divergence dump (the divergence spec, after
+        /// logbook/0056).
+        /// </summary>
+        /// <remarks>
+        /// Read once in the life of a run, between <c>Physics.Simulate</c> and
+        /// <see cref="Settle"/>, when a body has stopped being finite: what the creature was
+        /// asking of its own joints on the step it exploded is the first thing that has to be
+        /// ruled in or out. Zero for the root, for an unjointed part, and for a driver whose
+        /// smoothed signal came out at zero — which is a real answer, not a missing one.
+        /// </remarks>
+        public Vector3 AppliedTorque(int bodyIndex) =>
+            bodyIndex >= 0 && bodyIndex < _pendingTorque.Length
+                ? _pendingTorque[bodyIndex]
+                : Vector3.zero;
 
         /// <summary>
         /// Integrates the work done by the last <see cref="Drive"/>. Call immediately after

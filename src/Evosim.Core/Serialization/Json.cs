@@ -206,6 +206,25 @@ namespace Evosim.Core
                 return this;
             }
 
+            /// <summary>
+            /// A field whose value is JSON that something else already produced.
+            /// </summary>
+            /// <remarks>
+            /// <b>For one case only: embedding a document whose writer is the source of truth for
+            /// its own shape.</b> The divergence dump carries the creature's genome, and
+            /// <see cref="GenomeJson"/> is the one place that knows how a genome is written — a
+            /// second serialiser reached through this class would be a second answer to that
+            /// question, which is how the two come to disagree. Nothing is validated here: pass
+            /// text that is not JSON and the file is not JSON, so the only safe argument is the
+            /// output of a writer in this namespace.
+            /// </remarks>
+            public Writer Raw(string name, string json)
+            {
+                Key(name);
+                _sb.Append(json ?? "null");
+                return this;
+            }
+
             public Writer Value(float value)
             {
                 Separate();

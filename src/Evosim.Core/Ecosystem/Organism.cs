@@ -261,8 +261,25 @@ namespace Evosim.Core
     /// <summary>Why a creature left the population — §5A.6, and the lineage record in §9.</summary>
     public enum DeathCause
     {
-        /// <summary>Ran out of energy. The only cause the design has.</summary>
+        /// <summary>Ran out of energy. The only cause the ecology has.</summary>
         Starved = 0,
+
+        /// <summary>
+        /// The solver diverged: the body's position or a part's velocity stopped being finite,
+        /// and <see cref="World.KillDiverged"/> removed it.
+        /// </summary>
+        /// <remarks>
+        /// <b>Not an ecological cause, and it must never be read as one.</b> Nothing about the
+        /// creature's budget decided this — the articulation exploded and the fluid model relayed
+        /// NaN velocities into NaN drag, which PhysX then refused nine steps running before
+        /// <see cref="World.Observe"/> saw the non-finite height and took the whole run down
+        /// (logbook/0056's censored <c>r20q-s1</c>). A run that reports any of these has lost a
+        /// creature to arithmetic rather than to selection, and the number belongs in the report
+        /// beside the audit for exactly that reason: it is an instrument reading, not a death
+        /// rate. The body is still deposited and its matter still returned, because the world's
+        /// books have to close whatever the solver did.
+        /// </remarks>
+        Diverged = 1,
     }
 
     /// <summary>How a creature entered the population. Never conflated — DESIGN.md §5A.6, D021.</summary>
