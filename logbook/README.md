@@ -179,3 +179,4 @@ key only translates the entries' reporting shorthand.
 | [0054](0054-the-confirmation.md) | 2026-09-04 | The confirmation |
 | [0055](0055-the-dry-deep.md) | 2026-09-04 | The dry deep |
 | [0056](0056-the-queue.md) | 2026-09-04 | The queue |
+| [0057](0057-energy-buys-matter.md) | 2026-09-04 | Energy buys matter |

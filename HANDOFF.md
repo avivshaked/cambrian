@@ -52,13 +52,10 @@ is not part of the goal.
 
 ## The decision in front of the owner
 
-`fable-propose-matter-economy.md` (2026-09-04, after logbook/0055 and 0056): at the
-plateau matter binds and every solvent body has the same fecundity whatever it earns,
-so the energy economy selects only for not starving; the age queue (D072) was the
-accidental route from energy to fecundity and the stomachs' lifeline. Three shapes —
-a stock large enough that light binds first, scarce matter allocated by energy reserve,
-or the queue specified as the rule — with the agent's recommendation (the second,
-screened against the first). Nothing launches until it is ruled.
+Ruled 2026-09-04 as D073 (owner: "proceed with your recommendations"): scarce matter
+goes to the parent with the largest energy reserve (`EVOSIM_CONCEPTION_ORDER reserve`),
+screened against a 3/m³ stock under the age order — logbook/0057. Adoption into the
+reference world is the owner's ruling over the screen.
 
 ## Bugs to chase
 

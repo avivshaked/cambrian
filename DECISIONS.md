@@ -94,7 +94,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
 | [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; **confirmed 2026-09-04** (logbook/0054: 4 of 5 seeds pass D063 at dt 0.01 with exudation 0.15; the failing seed's stomachs were matter-blocked, not starved) · a world rule, DESIGN.md §5A.2c |
 | [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; overtaken by D072 (the contest for each unit was an age queue) |
-| [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · **screened 2026-09-04 (logbook/0056): `shuffled` not adopted** — the queue was the stomachs' lifeline, because in a matter-bound plateau energy buys no fecundity; the real question is in `fable-propose-matter-economy.md` |
+| [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · **screened 2026-09-04 (logbook/0056): `shuffled` not adopted** — the queue was the stomachs' lifeline, because in a matter-bound plateau energy buys no fecundity; ruled as D073 |
+| [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · building · screening (logbook/0057) · adoption is the owner's |
 
 ---
 
@@ -3493,4 +3494,43 @@ by which an energy advantage became a reproductive one in a matter-bound world; 
 it every solvent body has the same fecundity and the small clade drifts out. `age` stays
 the default and the reference world's order. What is actually broken — that energy does
 not buy matter at the plateau, so §5A stops selecting — is put to the owner in
-`fable-propose-matter-economy.md`.
+`fable-propose-matter-economy.md`. *Ruled as D073.*
+
+### D073
+
+**Energy buys matter — scarce matter goes to the parent with the largest energy
+reserve, screened against a stock large enough that light binds first** · 2026-09-04
+(owner: "proceed with your recommendations", on `fable-propose-matter-economy.md`)
+
+Two screens the same day (logbook/0055, 0056) established that at the plateau matter
+binds, nine-tenths of it locked in bodies, and that every solvent body then has the same
+fecundity whatever its energy income: a child's matter is refused or granted without
+reference to the parent's reserve. The energy economy — §5A, the project's premise —
+selects at the plateau only for not starving. The age queue (D072) was the accidental
+route from an energy advantage to a reproductive one, and the stomachs' lifeline;
+removing it took the stomachs with it.
+
+**The rule (B).** A third conception order, `Reserve`: each step the solvent parents
+are walked in descending order of energy surplus above the breeding gate, ties by list
+index, so when a layer's matter covers one child the parent with the most energy to
+spare takes it. Deterministic, no draw. The world's size is unchanged; the energy books
+become the tie-breaker for scarce matter, which is what selection needs. A new rule
+with no source — the review has read nothing that allocates a mineral currency by
+energy reserve — and close to what the age queue did by accident, with the right
+variable. Behind the same knob (`EVOSIM_CONCEPTION_ORDER reserve`); `age` remains the
+default until this is adopted.
+
+**The null (A).** `EVOSIM_MATTER_INITIAL` 3 units/m³ (from 1): a stock three times the
+size, under the age order, to read whether the population then plateaus below the matter
+cap — light binding first, the energy economy deciding who breeds as designed — or
+merely at a larger cap. The cost is the world's size and the machine's pace.
+
+**Screened first** (logbook/0057): seeds 2 and 4 at 0.02, 20,000 s, `reserve` and the
+3/m³ stock as separate arms, against 0056's `age` controls. Adoption into the reference
+world on the owner's ruling over the screen; confirmation at 0.01 under the amended goal
+after that. **Rejected:** specifying the age queue as the design's rule (a longevity
+premium the ecology never argued for); enlarging the free pool by the fixed price or
+excretion (the first changes the world's size, not who wins; the second is already at
+the rate that returns the tissue share in seconds).
+
+*Absorbed from `fable-propose-matter-economy.md` (2026-09-04), deleted on this ruling.*
