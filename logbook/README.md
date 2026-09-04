@@ -175,3 +175,4 @@ key only translates the entries' reporting shorthand.
 | [0050](0050-the-stomachs-gearing.md) | 2026-09-03 | The stomach's gearing |
 | [0051](0051-the-invasion-assay.md) | 2026-09-03 | The invasion assay |
 | [0052](0052-the-coarse-step.md) | 2026-09-03 | The coarse step |
+| [0053](0053-the-leak.md) | 2026-09-04 | The leak |
