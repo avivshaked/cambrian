@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.Text;
 
@@ -573,6 +574,80 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("feeding", Unit = "J/m3")]
         public float ClearanceToeDensity { get; set; }
+
+        /// <summary>
+        /// Fraction of photosynthetic intake a living producer releases into the nutrient field
+        /// each step — D070's exudation. Zero is off: a producer feeds the water only by dying,
+        /// which is every run before this knob existed.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The flux, not the gearing, caps the second trophic level.</b> Round 14
+        /// (logbook/0050) grew the campaign's first absorptive lines and both grazed their field
+        /// below break-even and died back to a handful. The reason is one column: whole-world
+        /// standing detritus fell from 9,744 J to 4,215 J while the line rebuilt at 0.19 W with no
+        /// grazer on it, and dead tissue is the field's only income — so that slope *is* the
+        /// income. The D069 ledger prices a clearance-10 stomach's break-even at ~0.03 W, so the
+        /// flux sustains a standing line of about six against a producer economy of ~17 W. That is
+        /// a producer→consumer transfer of ~1%; the measured step is 13% (11–17%) [ED21 p.14], and
+        /// the difference is that this world's producers exude nothing while they live. D070 adds
+        /// the missing route — dissolved organic matter, the input to the microbial loop.
+        /// </para>
+        /// <para>
+        /// <b>The exact form.</b> Each metabolic step a body deposits <c>this × LightIncome</c> —
+        /// the light it actually kept, after senescence wear — into <see cref="World.Nutrients"/>
+        /// at its own height and patch, and its <see cref="EnergyLedger.Net"/> falls by exactly
+        /// those joules. A flat fraction of intake, with no size term and no growth-phase gate,
+        /// because exudation is isometric in cell volume (slope 0.95) and does not differ between
+        /// growth stages [LS13 p.1]. Not applied to <see cref="EnergyLedger.FoodIncome"/> —
+        /// stomachs do not exude. See <see cref="Metabolism.StepAt"/>.
+        /// </para>
+        /// <para>
+        /// <b>The audit closes by construction.</b> <see cref="World.EnergyIn"/> still counts the
+        /// gross light, and the exuded joules move from a body's reserve into the nutrient field —
+        /// two accounts <see cref="World.StandingJoules"/> already sums whole, so §5A.2's equality
+        /// needs no new term. What it does need is a counter:
+        /// <see cref="World.DetritusExudedTotal"/>, so the detritus-flux instrument shows deaths
+        /// and exudation as separate incomes rather than one slope.
+        /// </para>
+        /// <para>
+        /// <b>Known wrong in shape, deliberately.</b> Real percentage extracellular release is
+        /// roughly *independent* of irradiance while particulate production is not, so PER rises
+        /// under low light and peaks at the base of the euphotic layer [MCP05 p.1, p.8–9]. A
+        /// fraction of intake therefore under-releases exactly where the real ocean releases most.
+        /// Per-biomass release is the open world-rule alternative; fraction-of-intake is built
+        /// first because it is the form D070 ruled on.
+        /// </para>
+        /// <para>⚠ The magnitude has a citation; the dose for *this* world does not. Review round
+        /// 5 (LITERATURE-REVIEW.md Q10) puts real PER at 10–20% of primary production as a
+        /// world-ocean range, a cross-system mean of 13%, ~20% flat across a 150-fold productivity
+        /// range [MCP05 p.1, p.9] and 37–41% in oligotrophic water; D070 screens at 0.15. Zero by
+        /// default, so the world is bit-identical until a run asks otherwise; the D052/D055 shape.
+        /// <c>EVOSIM_EXUDATION</c> in the header.</para>
+        /// <para>
+        /// <b>Refused rather than clamped, at every entry point.</b> Above 1 a producer would
+        /// release more than it took and pay the difference out of its own reserve every step;
+        /// below 0 it would mine the field for free. Neither is a world anybody meant to ask for,
+        /// so the setter throws rather than silently correcting — §9's rule applied to the knob
+        /// itself, which is what makes it hold for a hand-edited <c>config.json</c> and for
+        /// <c>EVOSIM_EXUDATION</c> alike. Same shape as
+        /// <see cref="LightModel.DayNightAmplitude"/>.
+        /// </para>
+        /// </remarks>
+        [Tunable("feeding")]
+        public float ExudationFraction
+        {
+            get => _exudationFraction;
+            set => _exudationFraction = value >= 0f && value <= 1f
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(ExudationFraction), value,
+                    "Must be in [0, 1]. Above 1 a producer releases more than it earns from " +
+                    "light and funds the difference from its reserve; below 0 it draws energy " +
+                    "out of the nutrient field for nothing.");
+        }
+
+        private float _exudationFraction;
 
         /// <summary>
         /// Seconds of life after which a body costs twice as much to keep — DESIGN.md §5A.2, D038.

@@ -168,19 +168,34 @@ namespace Evosim.Core
         public double ExcretedTotal { get; private set; }
 
         /// <summary>
-        /// Every joule a dead body has ever put into <see cref="Nutrients"/> — the field's only
-        /// income, since excretion (D052) moves matter and not energy. Cumulative and never
-        /// decremented; a report reads it as a rate by differencing two samples.
+        /// Every joule a dead body has ever put into <see cref="Nutrients"/> — cumulative and
+        /// never decremented; a report reads it as a rate by differencing two samples.
         /// </summary>
         /// <remarks>
         /// Added for the detritus-flux instrument (logbook/0050's closing, the
         /// <c>fable-propose-detritus-flux</c> proposal): round 14's lines ate a stock whose income
         /// could only be inferred from the slope of <see cref="NutrientField.TotalJoules"/> with no
-        /// grazer on it. With <see cref="DetritusTakenTotal"/> the two are a measurement, and
-        /// <c>DetritusDepositedTotal - DetritusTakenTotal == Nutrients.TotalJoules</c> at every
-        /// step, because settling, mixing, advection and remineralisation all conserve.
+        /// grazer on it. With <see cref="DetritusExudedTotal"/> and
+        /// <see cref="DetritusTakenTotal"/> the three are a measurement, and
+        /// <c>DetritusDepositedTotal + DetritusExudedTotal - DetritusTakenTotal ==
+        /// Nutrients.TotalJoules</c> at every step, because settling, mixing, advection and
+        /// remineralisation all conserve.
         /// </remarks>
         public double DetritusDepositedTotal { get; private set; }
+
+        /// <summary>
+        /// Every joule a *living* body has ever released into <see cref="Nutrients"/> — D070's
+        /// exudation. Cumulative; see <see cref="DetritusDepositedTotal"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Its own counter, not folded into the deposits.</b> D070 exists because dead tissue
+        /// alone feeds the second trophic level at about 1% of primary production, and the whole
+        /// question the first arm has to answer is how much of the field's income the new route
+        /// supplies. One combined counter would show the field's income rise and say nothing about
+        /// which half rose. Zero for the whole life of a run with
+        /// <see cref="RunConfig.ExudationFraction"/> at 0, which is every run before this one.
+        /// </remarks>
+        public double DetritusExudedTotal { get; private set; }
 
         /// <summary>
         /// Every joule feeding has ever taken out of <see cref="Nutrients"/> — its only outflow.
@@ -643,6 +658,17 @@ namespace Evosim.Core
 
                 creature.Energy += ledger.Net;
                 creature.Lifetime += ledger;
+
+                // D070. What the body released to the water this step, put where the body is.
+                // Net already carried the deduction, so this is the other half of a transfer that
+                // is complete only once the field holds it — and it happens *before* the death
+                // check below, so a creature that exudes and then starves in the same step gives
+                // the water both: this step's release, and its tissue.
+                if (ledger.Exuded > 0f)
+                {
+                    Nutrients.Deposit(creature.HeightY, ledger.Exuded, creature.Patch);
+                    DetritusExudedTotal += ledger.Exuded;
+                }
 
                 // Only sunlight is new energy. What was eaten was already in the world — and what
                 // was torn up and not eaten has left it, which is why a food chain shortens.

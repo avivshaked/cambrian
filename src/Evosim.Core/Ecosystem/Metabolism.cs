@@ -52,7 +52,28 @@ namespace Evosim.Core
         /// </remarks>
         public float PoolDrawn { get; }
 
+        /// <summary>
+        /// Joules released into the water while alive — D070's exudation. Never spent, never lost:
+        /// they leave the body and arrive in the nutrient field the same step.
+        /// </summary>
+        /// <remarks>
+        /// <b>Not an expenditure, and the distinction is the audit's.</b>
+        /// <see cref="Expenditure"/> is metabolism — joules that leave the world through
+        /// <c>World.EnergyOut</c> and are held by nobody afterwards. These are still held, by
+        /// <c>World.Nutrients</c>, so counting them as expenditure would debit the world twice for
+        /// one transfer and §5A.2's books would never close. They come out of <see cref="Net"/>
+        /// because the body no longer has them, and <c>World.Metabolise</c> is where they are
+        /// deposited. Zero unless <see cref="RunConfig.ExudationFraction"/> is set, so every run
+        /// before D070 reads a ledger identical to the one it always read.
+        /// </remarks>
+        public float Exuded { get; }
+
         public EnergyLedger(CellIntake intake, float upkeep, float neural, float work)
+            : this(intake, upkeep, neural, work, exuded: 0f)
+        {
+        }
+
+        public EnergyLedger(CellIntake intake, float upkeep, float neural, float work, float exuded)
         {
             LightIncome = intake.FromLight;
             FoodIncome = intake.FromPool;
@@ -60,11 +81,12 @@ namespace Evosim.Core
             Upkeep = upkeep;
             Neural = neural;
             Work = work;
+            Exuded = exuded;
         }
 
         private EnergyLedger(
             float lightIncome, float foodIncome, float poolDrawn,
-            float upkeep, float neural, float work)
+            float upkeep, float neural, float work, float exuded)
         {
             LightIncome = lightIncome;
             FoodIncome = foodIncome;
@@ -72,10 +94,22 @@ namespace Evosim.Core
             Upkeep = upkeep;
             Neural = neural;
             Work = work;
+            Exuded = exuded;
         }
 
         public float Expenditure => Upkeep + Neural + Work;
-        public float Net => Income - Expenditure;
+
+        /// <summary>
+        /// What the body actually keeps this step: income, less metabolism, less what it released
+        /// to the water (D070).
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Exuded"/> subtracts here and nowhere else, which is what makes the knob
+        /// visible to everything that already reads a net — <c>World.Metabolise</c>'s reserve
+        /// update and <see cref="LedgerForecast"/>'s whole-life integration both — without either
+        /// having to know the mechanism exists.
+        /// </remarks>
+        public float Net => Income - Expenditure - Exuded;
 
         /// <summary>Joules taken from the world and kept by nobody — the loss on transfer.</summary>
         public float Wasted => PoolDrawn - FoodIncome;
@@ -84,10 +118,13 @@ namespace Evosim.Core
             new EnergyLedger(
                 a.LightIncome + b.LightIncome, a.FoodIncome + b.FoodIncome,
                 a.PoolDrawn + b.PoolDrawn,
-                a.Upkeep + b.Upkeep, a.Neural + b.Neural, a.Work + b.Work);
+                a.Upkeep + b.Upkeep, a.Neural + b.Neural, a.Work + b.Work,
+                a.Exuded + b.Exuded);
 
         public override string ToString() =>
-            $"+{Income:0.###} −{Expenditure:0.###} = {Net:0.###} J";
+            $"+{Income:0.###} −{Expenditure:0.###}" +
+            (Exuded > 0f ? $" ~{Exuded:0.###}" : "") +
+            $" = {Net:0.###} J";
     }
 
     /// <summary>
@@ -240,9 +277,24 @@ namespace Evosim.Core
                     intake.FromLight / wear, intake.FromPool / wear, intake.PoolDrawn);
             }
 
+            // D070. A fraction of the light this body actually kept goes back into the water as
+            // dissolved organic matter — so it is taken off the intake *after* wear, not before:
+            // an old producer fixes less carbon and therefore releases less of it, which is what
+            // exuding a fraction of intake means. Not applied to FromPool — a stomach's meal was
+            // already somebody else's tissue and re-releasing part of it would be a second,
+            // unasked-for transfer loss on top of CellIntake.PoolDrawn's.
+            //
+            // The world deposits it (World.Metabolise); this only prices it, because a Phenotype
+            // has no idea where it is and Metabolism has no field to deposit into. Net carries
+            // the deduction, which is what makes the knob reach LedgerForecast for free.
+            float exuded = config.ExudationFraction > 0f
+                ? config.ExudationFraction * intake.FromLight
+                : 0f;
+
             return new EnergyLedger(
                 intake, upkeep * wear, neural * wear,
-                Math.Max(0f, workJoules) * config.WorkCostMultiplier);
+                Math.Max(0f, workJoules) * config.WorkCostMultiplier,
+                exuded);
         }
 
         /// <summary>

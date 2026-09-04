@@ -161,6 +161,15 @@ namespace Evosim.Sim.EditorTools
             float satiation = Env("EVOSIM_SATIATION", new RunConfig().SatiationWattsPerCubicMetre);
             float clearanceToe = Env("EVOSIM_CLEARANCE_TOE", new RunConfig().ClearanceToeDensity);
 
+            // D070. The fraction of photosynthetic intake a living producer releases into the
+            // nutrient field — the second income the field has never had, and the reason round
+            // 14's absorptive lines capped out at about six on dead tissue alone (logbook/0050).
+            // 0 is the world every earlier run measured, in which a producer feeds the water only
+            // by dying. Refused outside [0, 1] by RunConfig.ExudationFraction's own setter, so a
+            // typo in an arm's settings block stops the run here rather than producing a world
+            // nobody meant to ask for.
+            float exudation = Env("EVOSIM_EXUDATION", new RunConfig().ExudationFraction);
+
             // The physics timestep (logbook/0052's validation). 0.01 is every earlier run, bit for
             // bit; the metabolic step stays 0.5 s and the header's dt token and the run-identity
             // record's physicsDtSeconds carry whatever was set. Configured here, before any Ecosystem or
@@ -381,6 +390,7 @@ namespace Evosim.Sim.EditorTools
             config.RefugeEdibleFraction = refugeFraction;
             config.SatiationWattsPerCubicMetre = satiation;
             config.ClearanceToeDensity = clearanceToe;
+            config.ExudationFraction = exudation;
             config.SpeciesDriftThreshold = speciesTheta;
             config.HorizontalPatches = patches;
             config.HorizontalMixingDiffusivity = horizontalMixing;
@@ -443,6 +453,7 @@ namespace Evosim.Sim.EditorTools
                 (refugeFraction > 0f ? " at " + refugeFraction + " edible" : "") +
                 (satiation > 0f ? " · satiation " + satiation + " W/m3" : "") +
                 (clearanceToe > 0f ? " · toe " + clearanceToe + " J/m3" : "") +
+                (exudation > 0f ? " · exudation " + exudation : "") +
                 " · speciesTheta " + speciesTheta +
                 (patches > 1f
                     ? " · patches " + (int)patches + ", h-mix " + horizontalMixing + " m2/s, " +
@@ -680,6 +691,10 @@ namespace Evosim.Sim.EditorTools
         private static double LastDetritusDeposited;
         private static double LastDetritusTaken;
 
+        /// <summary>D070's exudation flux, against <see cref="World.DetritusExudedTotal"/> — the
+        /// field's second income, windowed the same way its first is.</summary>
+        private static double LastDetritusExuded;
+
         /// <summary>Whether D060's assay has already fired this run — the one-shot guard.</summary>
         /// <remarks>
         /// Static for the same reason every other field here is: a second <c>Evosim/Run</c> from
@@ -709,6 +724,7 @@ namespace Evosim.Sim.EditorTools
             LastExcretedTotal = 0;
             LastDetritusDeposited = 0;
             LastDetritusTaken = 0;
+            LastDetritusExuded = 0;
             AssayFired = false;
         }
 
@@ -994,13 +1010,17 @@ namespace Evosim.Sim.EditorTools
             // moved at. Windowed the same way floorSpawns and conceptionsBlockedByMatter are.
             double excretedWindow = world.ExcretedTotal - LastExcretedTotal;
 
-            // The detritus flux by source, per window: what dead bodies put into the field and
-            // what feeding took out. Nothing else moves joules across the field's boundary, so
-            // `det in - det out` over a window is the change in `detritus J` over it. Round 14's
-            // lines ate a stock whose income had to be read off that column's slope with no
-            // grazer present; these two make it a measurement (fable-propose-detritus-flux).
+            // The detritus flux by source, per window: what dead bodies put into the field, what
+            // living producers released into it (D070), and what feeding took out. Nothing else
+            // moves joules across the field's boundary, so `det in + det exuded - det out` over a
+            // window is the change in `detritus J` over it. Round 14's lines ate a stock whose
+            // income had to be read off that column's slope with no grazer present; these make it
+            // a measurement (fable-propose-detritus-flux), and keeping exudation in a column of
+            // its own is the whole point of D070's first arm — a combined figure would show the
+            // income rise and say nothing about which half rose.
             double detritusInWindow = world.DetritusDepositedTotal - LastDetritusDeposited;
             double detritusOutWindow = world.DetritusTakenTotal - LastDetritusTaken;
+            double detritusExudedWindow = world.DetritusExudedTotal - LastDetritusExuded;
 
             // D061. The asynchrony observables — the two readings the old, patch-blind columns
             // above cannot give, because they only ever look at one column of the world (patch
@@ -1120,7 +1140,12 @@ namespace Evosim.Sim.EditorTools
                 .Field("detritusDepositedTotal", world.DetritusDepositedTotal)
                 .Field("detritusDepositedWindow", detritusInWindow)
                 .Field("detritusTakenTotal", world.DetritusTakenTotal)
-                .Field("detritusTakenWindow", detritusOutWindow));
+                .Field("detritusTakenWindow", detritusOutWindow)
+                // D070 — appended after detritusTakenWindow, per the append-only column
+                // discipline: existing readers index by position, so nothing already written may
+                // move. Reads 0 for the whole life of a run with EVOSIM_EXUDATION unset.
+                .Field("detritusExudedTotal", world.DetritusExudedTotal)
+                .Field("detritusExudedWindow", detritusExudedWindow));
 
             // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9): drained
             // every report row, alongside stats.jsonl, and appended one row per event to
@@ -1251,6 +1276,12 @@ namespace Evosim.Sim.EditorTools
                 // interval for watts.
                 detritusInWindow.ToString("0.###", c),
                 detritusOutWindow.ToString("0.###", c),
+
+                // D070 — appended after `det out`, per the same append-only rule. The field's
+                // second income, per window: what living producers released. `det in` is what
+                // dead ones did, so the two are readable apart, which is the reading D070's
+                // first arm exists to take. Reads 0 with EVOSIM_EXUDATION unset.
+                detritusExudedWindow.ToString("0.###", c),
             };
 
             LastFloorSpawns = world.FloorSpawns;
@@ -1258,6 +1289,7 @@ namespace Evosim.Sim.EditorTools
             LastExcretedTotal = world.ExcretedTotal;
             LastDetritusDeposited = world.DetritusDepositedTotal;
             LastDetritusTaken = world.DetritusTakenTotal;
+            LastDetritusExuded = world.DetritusExudedTotal;
 
             if (row.Count != Columns.Length)
             {
@@ -1289,6 +1321,9 @@ namespace Evosim.Sim.EditorTools
 
             // The detritus-flux instrument — appended after patch max share, per the same rule.
             "det in", "det out",
+
+            // D070's exudation — appended after `det out`, per the same rule.
+            "det exuded",
         };
 
         private static string Header() =>

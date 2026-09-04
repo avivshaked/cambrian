@@ -265,6 +265,123 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void EnergyIsConservedWithExudationRunning()
+        {
+            // D070: exudation moves joules from a body's reserve into the nutrient field, and
+            // StandingJoules already sums both accounts whole — so §5A.2's equality needs no new
+            // term and this is what proves it rather than asserting it. Run at 0.1, an order
+            // above nothing and below the 0.15 screen, because a leak would show at any dose and
+            // this one guarantees a living producer releases on almost every step.
+            var config = new RunConfig
+            {
+                MinimumPopulation = 30,
+                MaximumPopulation = 600,
+                ExudationFraction = 0.1f,
+            };
+            config.Light = new LightModel(400f, 12f);
+            var world = new World(config, seed: 1);
+
+            try { for (int i = 0; i < 300; i++) world.Step(1f); }
+            catch (PopulationRunawayException e) { _output.WriteLine($"stopped: {e.Population} living"); }
+
+            double residual = world.AuditResidual;
+            double scale = Math.Max(1.0, world.EnergyIn);
+
+            _output.WriteLine(
+                $"in {world.EnergyIn:0.###} out {world.EnergyOut:0.###} " +
+                $"standing {world.StandingJoules:0.###} exuded {world.DetritusExudedTotal:0.###} " +
+                $"residual {residual:0.######} ({residual / scale:P4})");
+
+            Assert.True(
+                world.DetritusExudedTotal > 0,
+                "nothing was exuded in 300 s — the mechanism was never exercised");
+            Assert.True(
+                Math.Abs(residual) / scale < 1e-4,
+                $"exudation opened a hole in the energy audit: {residual:0.###} J unaccounted for");
+        }
+
+        [Fact]
+        public void ExudationLeavesTheWorldBitIdenticalWhenItIsOff()
+        {
+            // The D052/D055 shape, tested rather than claimed: a knob whose default changes any
+            // earlier result silently invalidates every arm this campaign has already scored.
+            // Two worlds from one seed, one built without the property mentioned at all and one
+            // with it set to its own default, must agree on every stat a report reads.
+            var untouched = new World(Config(), seed: 7);
+            var explicitlyOff = new World(Config(exudation: 0f), seed: 7);
+
+            for (int i = 0; i < 200; i++)
+            {
+                untouched.Step(1f);
+                explicitlyOff.Step(1f);
+            }
+
+            _output.WriteLine(
+                $"untouched: {untouched.Living.Count} alive, {untouched.EnergyIn:R} in, " +
+                $"{untouched.Nutrients.TotalJoules:R} detritus");
+
+            Assert.Equal(0d, untouched.DetritusExudedTotal);
+            Assert.Equal(0d, explicitlyOff.DetritusExudedTotal);
+
+            Assert.Equal(untouched.Living.Count, explicitlyOff.Living.Count);
+            Assert.Equal(untouched.Births, explicitlyOff.Births);
+            Assert.Equal(untouched.Deaths, explicitlyOff.Deaths);
+            Assert.Equal(untouched.EnergyIn, explicitlyOff.EnergyIn);
+            Assert.Equal(untouched.EnergyOut, explicitlyOff.EnergyOut);
+            Assert.Equal(untouched.Nutrients.TotalJoules, explicitlyOff.Nutrients.TotalJoules);
+            Assert.Equal(untouched.DetritusDepositedTotal, explicitlyOff.DetritusDepositedTotal);
+            Assert.Equal(untouched.DetritusTakenTotal, explicitlyOff.DetritusTakenTotal);
+            Assert.Equal(untouched.Config.Hash(), explicitlyOff.Config.Hash());
+
+            static RunConfig Config(float? exudation = null)
+            {
+                var config = new RunConfig { MinimumPopulation = 30, MaximumPopulation = 600 };
+                config.Light = new LightModel(400f, 12f);
+                if (exudation.HasValue) config.ExudationFraction = exudation.Value;
+                return config;
+            }
+        }
+
+        [Fact]
+        public void DetritusFluxCountersReconcileWithTheFieldWhileProducersExude()
+        {
+            // The sibling of DetritusFluxCountersReconcileWithTheField, with D070's second income
+            // switched on: the field now has two ways in — dead tissue and living release — and
+            // one way out, so the identity gains a term and nothing else. If exudation deposited
+            // into the field without touching its counter, or touched the counter without
+            // depositing, this is what fails; the audit alone would not, since both mistakes are
+            // internal to StandingJoules.
+            var config = new RunConfig
+            {
+                MinimumPopulation = 30,
+                MaximumPopulation = 600,
+                ExudationFraction = 0.15f,
+            };
+            config.Light = new LightModel(400f, 12f);
+            var world = new World(config, seed: 1);
+
+            try { for (int i = 0; i < 300; i++) world.Step(1f); }
+            catch (PopulationRunawayException e) { _output.WriteLine($"stopped: {e.Population} living"); }
+
+            double deposited = world.DetritusDepositedTotal;
+            double exuded = world.DetritusExudedTotal;
+            double taken = world.DetritusTakenTotal;
+            double standing = world.Nutrients.TotalJoules;
+
+            _output.WriteLine(
+                $"deposited {deposited:0.###} exuded {exuded:0.###} taken {taken:0.###} " +
+                $"standing {standing:0.###}");
+
+            Assert.True(deposited > 0, "nothing died in 300 s — the deposit counter was never exercised");
+            Assert.True(exuded > 0, "nothing was exuded in 300 s — the new counter was never exercised");
+
+            Assert.True(
+                Math.Abs(deposited + exuded - taken - standing) / Math.Max(1.0, deposited + exuded) < 1e-4,
+                $"deposited + exuded - taken = {deposited + exuded - taken:0.###} J but the field " +
+                $"holds {standing:0.###} J");
+        }
+
+        [Fact]
         public void EnergyIsConservedWithRemineralisationRunning()
         {
             // D051: Remineralise is a transfer within Nutrients.TotalJoules, which StandingJoules

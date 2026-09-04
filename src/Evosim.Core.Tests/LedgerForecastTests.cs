@@ -133,6 +133,59 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void RaisingTheExudationFractionNeverRaisesAProducersR0()
+        {
+            // D070 through the pocket calculator (D069). Exudation is a cost to the individual and
+            // a gift to the water, and this method only ever sees the first half — so a producer
+            // that gives more away must breed no more often, never more. The check that matters is
+            // *monotone non-increasing*, not "falls": at a small enough fraction the lifetime
+            // integration can round to the same brood count, and demanding a strict fall would be
+            // a test of the step size rather than of the mechanism.
+            //
+            // If this ever passes with R0 rising, Net has stopped carrying Exuded and the knob is
+            // invisible to every consumer of a ledger, the world's own reserve update included.
+            Genome genome = SingleCellGenome(CellTypeIds.Photosynthetic, broodSize: 1, endowment: 100f);
+
+            int previous = int.MaxValue;
+            float previousNet = float.MaxValue;
+
+            foreach (float fraction in new[] { 0f, 0.05f, 0.13f, 0.15f, 0.2f, 0.37f, 1f })
+            {
+                var config = new RunConfig
+                {
+                    SenescenceDoublingSeconds = 3000f,
+                    ExudationFraction = fraction,
+                };
+
+                Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
+
+                LedgerForecastResult result = LedgerForecast.Forecast(
+                    body, config,
+                    irradianceWattsPerSquareMetre: 200f,
+                    nutrientDensityJoulesPerCubicMetre: 0f,
+                    shadeFraction: 0f,
+                    reproduction: genome.Reproduction);
+
+                _output.WriteLine(
+                    $"exudation {fraction}: {result.NetWattsAtBirth:0.####} W at birth, " +
+                    $"R0={result.ChildrenProduced}, lifetime {result.LifetimeSeconds:0.#} s");
+
+                Assert.True(
+                    result.ChildrenProduced <= previous,
+                    $"R0 rose from {previous} to {result.ChildrenProduced} at fraction {fraction}");
+                Assert.True(
+                    result.NetWattsAtBirth <= previousNet,
+                    $"net at birth rose at fraction {fraction}");
+
+                previous = result.ChildrenProduced;
+                previousNet = result.NetWattsAtBirth;
+            }
+
+            // The far end has to bite, or the sweep proved only that nothing changed.
+            Assert.Equal(0, previous);
+        }
+
+        [Fact]
         public void RejectsAStillbornPhenotype()
         {
             // A phenotype with no parts has nothing to price — the same guard World.Admit applies

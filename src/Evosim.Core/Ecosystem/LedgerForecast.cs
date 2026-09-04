@@ -85,6 +85,18 @@ namespace Evosim.Core
         /// matter stock cannot cover, and this method has no matter field to consult, so it
         /// reports the price and lets the energy rule alone decide whether a birth happens.
         /// </para>
+        /// <para>
+        /// <b>D070's exudation arrives for free, and that is deliberate.</b> This integrates
+        /// <see cref="EnergyLedger.Net"/>, which already has
+        /// <see cref="EnergyLedger.Exuded"/> subtracted, so a producer forecast under a nonzero
+        /// <see cref="RunConfig.ExudationFraction"/> keeps less per step, lives no longer and
+        /// breeds no more often than the fraction allows — without this method knowing the
+        /// mechanism exists. What it cannot see is the other half of the transfer: the joules land
+        /// in a nutrient field this calculation does not have, so a forecast of an exuding
+        /// *producer* is honest while a forecast of the *consumer* eating what it released holds
+        /// the density constant that exudation is supposed to raise. Ask <see cref="World"/> for
+        /// that one.
+        /// </para>
         /// </remarks>
         public static LedgerForecastResult Forecast(
             Phenotype phenotype,

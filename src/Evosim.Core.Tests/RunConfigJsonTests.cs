@@ -35,13 +35,59 @@ namespace Evosim.Core.Tests
                 if (!p.CanWrite) continue;
 
                 var config = new RunConfig();
-                if (p.PropertyType == typeof(float)) p.SetValue(config, (float)p.GetValue(config) + 7.5f);
+
+                // Floats are nudged the way RunConfigTests.NudgeFloat nudges them, and for the
+                // reason recorded there: a tunable may validate its own range, +7.5 is outside
+                // plenty of legitimate ones, and a knob that refuses a nonsense value is doing
+                // its job rather than failing this. RunConfig.ExudationFraction is a fraction and
+                // is the first such knob directly on RunConfig; a fixed nudge would have made
+                // this guard demand that every knob be unbounded, which is the opposite of
+                // "loading refuses rather than defaults". Nothing is skipped: a float that cannot
+                // be moved at all is reported below, since a tunable no run can vary is not one.
+                if (p.PropertyType == typeof(float))
+                {
+                    Assert.True(NudgeFloat(config, p), $"{p.Name} accepted no value but its own");
+                }
                 else if (p.PropertyType == typeof(int)) p.SetValue(config, (int)p.GetValue(config) + 3);
                 else continue;
 
                 RunConfig back = RunConfigJson.Read(RunConfigJson.Write(config));
                 Assert.True(config.Hash() == back.Hash(), $"{p.Name} did not survive the round trip");
             }
+        }
+
+        /// <summary>Moves a float tunable to a different legal value, or reports that it cannot.</summary>
+        /// <remarks>
+        /// A copy of <see cref="RunConfigTests"/>'s helper of the same name, deliberately: the two
+        /// guards are meant to be readable one at a time, and a shared helper would put the rule
+        /// that decides what "nudged" means in a third file neither of them names.
+        /// </remarks>
+        private static bool NudgeFloat(object target, PropertyInfo p)
+        {
+            var original = (float)p.GetValue(target);
+
+            for (float delta = 7.5f; delta > 1e-4f; delta *= 0.5f)
+            {
+                foreach (float candidate in new[] { original + delta, original - delta })
+                {
+                    try
+                    {
+                        p.SetValue(target, candidate);
+                    }
+                    catch (Exception e) when (
+                        e is ArgumentOutOfRangeException ||
+                        e.InnerException is ArgumentOutOfRangeException)
+                    {
+                        continue;
+                    }
+
+                    // A setter is free to clamp rather than throw, and one that clamped back to
+                    // the original would leave this round-tripping a value that never moved.
+                    if ((float)p.GetValue(target) != original) return true;
+                }
+            }
+
+            return false;
         }
 
         [Fact]
