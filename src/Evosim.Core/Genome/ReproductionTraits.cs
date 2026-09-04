@@ -70,6 +70,6 @@ namespace Evosim.Core
         public ReproductionTraits Clone() => this;
 
         public override string ToString() =>
-            $"brood {BroodSize} x {OffspringEndowment:0.#} J";
+            System.FormattableString.Invariant($"brood {BroodSize} x {OffspringEndowment:0.#} J");
     }
 }

@@ -87,6 +87,25 @@ namespace Evosim.Core.Tests
                 }
             }
 
+            // The multiplicative fallback, copied from RunConfigTests.NudgeFloat alongside the
+            // rest of this helper and for the reason recorded there: RunConfig.PhysicsStepSeconds
+            // has a discrete legal set (0.5/n), which an additive search cannot land on.
+            foreach (float candidate in new[] { original * 2f, original * 0.5f })
+            {
+                try
+                {
+                    p.SetValue(target, candidate);
+                }
+                catch (Exception e) when (
+                    e is ArgumentOutOfRangeException ||
+                    e.InnerException is ArgumentOutOfRangeException)
+                {
+                    continue;
+                }
+
+                if ((float)p.GetValue(target) != original) return true;
+            }
+
             return false;
         }
 

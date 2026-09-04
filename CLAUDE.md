@@ -102,6 +102,24 @@ will not show up in the usual grep.
 and treats `--headless` as a module path. Fails identically in PowerShell, cmd and bash.
 Don't waste time on it; use the Hub GUI.
 
+**Stop an arm with `stop-arm.ps1`, never with `Stop-Process`.** Every run writes
+`runs/<arm>/<run>/run.json` before its first step — arm, seed, config hash, and a `source` block
+carrying the git commit, whether the code paths were dirty, and SHA-256 fingerprints of the Core
+and worker source it is actually running — and rewrites it at an orderly end with `status`,
+`reason` and the footer's facts as data. A killed process cannot do that rewrite, so a bare kill
+leaves a manifest that says `running` forever and reads exactly like a crash or a live arm.
+`stop-arm.ps1` writes first and kills second, merging `status: "stopped"`, the reason and
+`stoppedAt` into the same file:
+
+```powershell
+./scripts/stop-arm.ps1 r17-s3 -Reason manual-futility   # or manual-stall, manual-other
+./scripts/stop-arm.ps1 r17-s3 -Reason manual-stall -WhatIf
+```
+
+`run-arm.ps1` prints the worker's `simHash` at launch and again from `run.json`; pass
+`-ExpectSimHash <hash>` to make a mismatch refuse the launch rather than waste a day — the
+by-hand hash check the `new-worker.ps1` gotcha demands, turned into a precondition.
+
 **Read a run report** with named columns — never index columns positionally; the table has
 grown columns over time and a positional misread once reported float tissue as the food
 chain (logbook/0044):

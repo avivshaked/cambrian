@@ -254,7 +254,8 @@ namespace Evosim.Core
             Genome.Reproduction.CostJoules(perOffspringOverheadJoules + TissueJoules);
 
         public override string ToString() =>
-            $"#{Id} gen {GenerationDepth}, {Energy:0.#} J, {Age:0.#} s, {Phenotype.PartCount} parts";
+            FormattableString.Invariant(
+                $"#{Id} gen {GenerationDepth}, {Energy:0.#} J, {Age:0.#} s, {Phenotype.PartCount} parts");
     }
 
     /// <summary>Why a creature left the population — §5A.6, and the lineage record in §9.</summary>

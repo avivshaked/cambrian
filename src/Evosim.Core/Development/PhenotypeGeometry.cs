@@ -96,7 +96,8 @@ namespace Evosim.Core
             public float UnjointedFraction => TotalVolume > 1e-9f ? UnjointedVolume / TotalVolume : 0f;
 
             public override string ToString() =>
-                $"jointed {JointedVolume:0.####} m3, unjointed {UnjointedVolume:0.####} m3 ({UnjointedFraction:P1})";
+                System.FormattableString.Invariant(
+                    $"jointed {JointedVolume:0.####} m3, unjointed {UnjointedVolume:0.####} m3 ({UnjointedFraction:P1})");
         }
 
         /// <summary>

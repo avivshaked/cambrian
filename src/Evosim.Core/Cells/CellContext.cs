@@ -187,7 +187,8 @@ namespace Evosim.Core
                 a.FromLight + b.FromLight, a.FromPool + b.FromPool, a.PoolDrawn + b.PoolDrawn);
 
         public override string ToString() =>
-            $"light {FromLight:0.###} J, food {FromPool:0.###} J of {PoolDrawn:0.###} drawn";
+            System.FormattableString.Invariant(
+                $"light {FromLight:0.###} J, food {FromPool:0.###} J of {PoolDrawn:0.###} drawn");
     }
 
     /// <summary>Tissue in contact with a feeding cell — DESIGN.md §5A.3.</summary>

@@ -933,6 +933,66 @@ namespace Evosim.Core
         public float PerPatchShading { get; set; }
 
         /// <summary>
+        /// The physics timestep the run integrated at, seconds — DESIGN.md §6.2's queued item,
+        /// closed. Must divide the 0.5 s metabolic step exactly.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Recorded here because it is the one setting that changes every number and was in
+        /// no hash.</b> The step is not an implementation detail of the solver: PhysX replays bit
+        /// for bit on one machine, so a run at 0.02 s is a different chaotic realisation of the
+        /// same seed — ±20% population, four metres of depth, half the larder by t=5,000
+        /// (logbook/0052). Two runs at different steps therefore share a <c>configHash</c> and
+        /// disagree about everything, which is §7's failure in the direction it was written to
+        /// catch: the hash exists to <i>detect</i> that two runs differed.
+        /// </para>
+        /// <para>
+        /// <b>Not the mechanism, only the record.</b> Nothing in <c>Evosim.Core</c> integrates
+        /// physics — <c>Evosim.Sim</c>'s <c>Ecosystem.ConfigurePhysicsStep</c> does, and it is
+        /// still the thing the engine is configured from. This carries the same number into the
+        /// hash and into <c>config.json</c>, and enforces the same rule at the setter so a
+        /// hand-edited file cannot name a step the simulator would refuse.
+        /// </para>
+        /// <para>
+        /// <b>Refused rather than clamped</b>, the shape <see cref="ExudationFraction"/> uses and
+        /// for the same reason: a step that does not divide 0.5 would leave the metabolic clock
+        /// running at something other than 2 Hz, which is not a world anybody meant to ask for.
+        /// The legal set is discrete — 0.5/n — so this is one of the few knobs a continuous
+        /// search cannot nudge; <c>RunConfigTests.NudgeFloat</c> halves and doubles for it.
+        /// <c>EVOSIM_DT</c> in the header, where it prints as <c>dt=</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("physics", Unit = "s")]
+        public float PhysicsStepSeconds
+        {
+            get => _physicsStepSeconds;
+            set => _physicsStepSeconds = DividesTheMetabolicStep(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(PhysicsStepSeconds), value,
+                    "Must be in (0, 0.5] and divide the 0.5 s metabolic step exactly: 0.01, " +
+                    "0.02, 0.025, 0.05, 0.1, 0.125, 0.25 or 0.5.");
+        }
+
+        private float _physicsStepSeconds = 0.01f;
+
+        /// <summary>
+        /// The rule <c>Ecosystem.ConfigurePhysicsStep</c> enforces, stated once here so the two
+        /// cannot drift — same bound, same tolerance.
+        /// </summary>
+        private static bool DividesTheMetabolicStep(float dt)
+        {
+            const float metabolicStepSeconds = 0.5f;
+
+            if (!(dt > 0f) || dt > metabolicStepSeconds) return false;
+
+            float steps = metabolicStepSeconds / dt;
+            int rounded = (int)Math.Round(steps);
+
+            return rounded >= 1 && Math.Abs(steps - rounded) <= 1e-4f;
+        }
+
+        /// <summary>
         /// A stable digest of everything above — the <c>configHash</c> of §7.
         /// </summary>
         /// <remarks>

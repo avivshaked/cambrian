@@ -341,7 +341,8 @@ namespace Evosim.Core
         }
 
         public override string ToString() =>
-            $"{NetWattsAtBirth:0.###} W at birth, R0={ChildrenProduced}, " +
-            $"lifetime {LifetimeSeconds:0.#} s{(DiedOfStarvation ? " (starved)" : " (censored)")}";
+            FormattableString.Invariant(
+                $"{NetWattsAtBirth:0.###} W at birth, R0={ChildrenProduced}, lifetime {LifetimeSeconds:0.#} s") +
+            (DiedOfStarvation ? " (starved)" : " (censored)");
     }
 }

@@ -421,6 +421,7 @@ namespace Evosim.Core
         public int OccupiedLayers => _demand.Count;
 
         public override string ToString() =>
-            $"{Model}, {WorldArea:0} m² aperture ({IncidentWatts:0} W), {OccupiedLayers} layers occupied";
+            FormattableString.Invariant(
+                $"{Model}, {WorldArea:0} m² aperture ({IncidentWatts:0} W), {OccupiedLayers} layers occupied");
     }
 }

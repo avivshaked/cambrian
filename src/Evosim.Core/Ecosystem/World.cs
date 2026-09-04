@@ -574,8 +574,9 @@ namespace Evosim.Core
             if (_living.Count <= Config.MaximumPopulation) return;
 
             throw new PopulationRunawayException(
-                $"Population reached {_living.Count}, above the ceiling of " +
-                $"{Config.MaximumPopulation}, at t={ElapsedSeconds:0.#} s after {Births} births. " +
+                FormattableString.Invariant($"Population reached {_living.Count}, above the ceiling of ") +
+                FormattableString.Invariant(
+                    $"{Config.MaximumPopulation}, at t={ElapsedSeconds:0.#} s after {Births} births. ") +
                 "This is §5A.7's photosynthetic mat: light is covering upkeep, so nothing has to " +
                 "do anything and every creature can afford to breed. The ratio in §5A.2 is too " +
                 "generous — lower the surface irradiance or raise cell upkeep. It is not culled, " +
@@ -1367,6 +1368,44 @@ namespace Evosim.Core
             }
 
             _absorptiveDeaths.Add(AbsorptiveSample.For(creature, ElapsedSeconds, dead: true));
+        }
+
+        /// <summary>
+        /// Living creatures whose developed phenotype carries at least one photosynthetic part —
+        /// the producers, counted the way the eaters already are.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The report could count the stomachs and not the leaves</b> (the Sol/GPT review of
+        /// 2026-09-03, finding 2). Every trophic reading this project takes is a ratio with
+        /// producers in the denominator — how many eaters a standing crop of producers supports,
+        /// whether a bloom is the crop growing or the grazers failing — and the denominator was
+        /// never written down. <c>alive</c> is not it: a world can be all leaves, all stomachs or
+        /// a mixture, and those three read identically in every column the report had.
+        /// </para>
+        /// <para>
+        /// <b>Phenotype, not genome.</b> <see cref="Organism.HasPhotosyntheticTissue"/> is set
+        /// once, at <c>Admit</c>, from the parts a body actually developed — so a genome carrying
+        /// a photosynthetic node whose subtree was pruned below <c>minPartVolume</c> is counted
+        /// here as what it grew into rather than what it encodes. That is the exact gap
+        /// logbook/0048's dissection found between <c>snapshots/</c> and the living population.
+        /// </para>
+        /// <para>
+        /// <b>Pure instrumentation</b>, like <see cref="CollectAbsorptiveLog"/>: one pass over
+        /// <c>_living</c> reading a flag, no <see cref="Rng"/>, no clock, no economy state. A
+        /// world whose producers are counted every sample and one where this is never called take
+        /// bit-identical trajectories.
+        /// </para>
+        /// </remarks>
+        public int CountPhotosynthetic()
+        {
+            int count = 0;
+            for (int i = 0; i < _living.Count; i++)
+            {
+                if (_living[i].HasPhotosyntheticTissue) count++;
+            }
+
+            return count;
         }
 
         /// <summary>

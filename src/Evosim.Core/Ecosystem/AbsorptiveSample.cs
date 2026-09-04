@@ -270,7 +270,8 @@ namespace Evosim.Core
         }
 
         public override string ToString() =>
-            $"#{Id} t={ElapsedSeconds:0.#} y={HeightY:0.#} m, {DensityHere:0.###} J/m3, " +
-            $"net {NetWatts:0.####} W{(Dead ? ", dead" : "")}";
+            FormattableString.Invariant(
+                $"#{Id} t={ElapsedSeconds:0.#} y={HeightY:0.#} m, {DensityHere:0.###} J/m3, net {NetWatts:0.####} W") +
+            (Dead ? ", dead" : "");
     }
 }

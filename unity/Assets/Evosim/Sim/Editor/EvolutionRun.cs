@@ -43,7 +43,53 @@ namespace Evosim.Sim.EditorTools
         [MenuItem("Evosim/Run — long evolution run")]
         public static void RunFromMenu() => Run();
 
+        /// <summary>
+        /// Runs an arm, and makes sure the run manifest says how it ended even when it ends by
+        /// throwing.
+        /// </summary>
+        /// <remarks>
+        /// <b>The one thing a manifest must not do is lie by omission.</b> <c>run.json</c> is
+        /// written at creation saying <c>running</c>, and a run that dies on an exception would
+        /// otherwise leave that word standing forever — indistinguishable, months later, from a
+        /// run someone killed and from one still going. This wrapper exists solely to close that
+        /// case: it records <c>status: "error"</c> and then rethrows, so nothing about how the
+        /// Editor reports the failure or what it exits with changes.
+        /// </remarks>
         public static void Run()
+        {
+            try
+            {
+                RunBody();
+            }
+            catch (Exception e)
+            {
+                if (CurrentManifestDir != null && CurrentManifest != null)
+                {
+                    try
+                    {
+                        WriteRunManifest(
+                            CurrentManifestDir, CurrentManifest,
+                            new RunEnding
+                            {
+                                Status = "error",
+                                Reason = "error",
+                                Prose = e.GetType().Name + ": " + e.Message,
+                                SimulatedSeconds = CurrentManifest.LastSimulatedSeconds,
+                            });
+                    }
+                    catch (Exception writeFailure)
+                    {
+                        // Never let the bookkeeping replace the diagnosis: the original exception
+                        // is the one worth propagating.
+                        Debug.LogWarning("run.json not updated: " + writeFailure.Message);
+                    }
+                }
+
+                throw;
+            }
+        }
+
+        private static void RunBody()
         {
             // The pre-round-8 experiment contract's first repair: every static below is
             // process-lifetime, and -executeMethod exits after one run so it never mattered —
@@ -171,9 +217,11 @@ namespace Evosim.Sim.EditorTools
             float exudation = Env("EVOSIM_EXUDATION", new RunConfig().ExudationFraction);
 
             // The physics timestep (logbook/0052's validation). 0.01 is every earlier run, bit for
-            // bit; the metabolic step stays 0.5 s and the header's dt token and the run-identity
-            // record's physicsDtSeconds carry whatever was set. Configured here, before any Ecosystem or
-            // EffectorDriver is built, because both read the step at construction.
+            // bit; the metabolic step stays 0.5 s and the header's dt token, the run-identity
+            // record's physicsDtSeconds and — since DESIGN.md §6.2's queued item was closed —
+            // RunConfig.PhysicsStepSeconds and the config hash all carry whatever was set.
+            // Configured here, before any Ecosystem or EffectorDriver is built, because both read
+            // the step at construction; the config field is set from Ecosystem.FixedDt below.
             float physicsDt = Env("EVOSIM_DT", Ecosystem.FixedDt);
             Ecosystem.ConfigurePhysicsStep(physicsDt);
 
@@ -397,6 +445,15 @@ namespace Evosim.Sim.EditorTools
             config.DispersalChancePerStep = dispersalChance;
             config.PerPatchShading = patchShading;
             config.WorldAreaSquareMetres = area;
+            // DESIGN.md §6.2's queued item, closed: the physics step is now a tunable, so it
+            // reaches config.json and the hash like every other setting. Read back from
+            // Ecosystem.FixedDt rather than from `physicsDt` again — the static above is what the
+            // solver was actually configured with, and taking the number from there makes it
+            // impossible for the hash to record a step the run did not integrate at. Consequence:
+            // every configHash changes across this boundary, as it does for every new tunable, so
+            // headers compare token by token rather than by hash across it (D070's boundary did
+            // the same).
+            config.PhysicsStepSeconds = Ecosystem.FixedDt;
             config.FloorClosesAfterSeconds = floorCloses;
             config.MaximumPopulation = maxPopulation;
             config.SenescenceDoublingSeconds = senescence;
@@ -422,6 +479,23 @@ namespace Evosim.Sim.EditorTools
                 // A run that cannot save its creatures is still a run worth having, and losing
                 // the report as well would be the worse outcome.
                 Debug.LogWarning("no genome directory: " + e.Message);
+            }
+
+            // The run manifest, written at creation rather than only at shutdown (the Sol/GPT
+            // review of 2026-09-03, finding 6). Before the first step, so a killed arm — and
+            // until now that meant every arm anyone ever stopped — still has a record of what it
+            // was, what source built it, and that it was started at all.
+            RunManifest manifest = null;
+            if (dir != null)
+            {
+                manifest = BuildManifest(
+                    seed, budgetSeconds, wallMinutes, outPath, config.Hash(),
+                    inoculatePath, inoculumHash);
+
+                CurrentManifest = manifest;
+                CurrentManifestDir = dir;
+
+                WriteRunManifest(dir, manifest, ending: null);
             }
 
             var report = new StringBuilder();
@@ -511,6 +585,11 @@ namespace Evosim.Sim.EditorTools
                     if (!eco.Step()) continue;
 
                     metabolicSteps++;
+
+                    // So the error path in Run() can say how far the run got. One field write per
+                    // metabolic step, which is 2 Hz of simulated time — the loop below writes a
+                    // whole markdown row every reportEvery of these.
+                    if (manifest != null) manifest.LastSimulatedSeconds = eco.World.ElapsedSeconds;
 
                     // D060. Fires once — the first metabolic step whose ElapsedSeconds reaches
                     // the pre-registered instant — and never again, guarded the same way
@@ -618,9 +697,30 @@ namespace Evosim.Sim.EditorTools
             Snapshot(dir, eco);
             if (dir != null)
             {
-                WriteRunIdentity(
-                    dir, seed, budgetSeconds, wallMinutes, outPath, terminationCode,
-                    inoculatePath, inoculumHash);
+                if (manifest != null)
+                {
+                    // The second of the manifest's two writes: the same document, rewritten with
+                    // how it ended. Everything the footer says, as data — a script reading
+                    // run.json must not have to parse English out of a markdown table.
+                    manifest.LastSimulatedSeconds = eco.World.ElapsedSeconds;
+
+                    WriteRunManifest(dir, manifest, new RunEnding
+                    {
+                        Status = "ended",
+                        Reason = terminationCode,
+                        Prose = ending,
+                        SimulatedSeconds = eco.World.ElapsedSeconds,
+                        PhysicsSteps = eco.Steps,
+                        Births = eco.World.Births,
+                        Alive = eco.World.Living.Count,
+                        WallClockMinutes = clock.Elapsed.TotalMinutes,
+                        TimesRealTime =
+                            eco.World.ElapsedSeconds / Math.Max(1e-9, clock.Elapsed.TotalSeconds),
+                        DragImpulsesLimited = eco.Fluid.DragImpulsesLimited,
+                        BestSpeed = bestSpeedEver,
+                        BestSpeedAtSeconds = bestSpeedAt,
+                    });
+                }
 
                 report.AppendLine();
                 report.AppendLine("Genomes: `" + dir.Path + "`");
@@ -681,6 +781,18 @@ namespace Evosim.Sim.EditorTools
         /// <summary>Ids of every creature ever seen holding lift — D049, same trick as EverJointed.</summary>
         private static readonly HashSet<long> EverBuoyant = new HashSet<long>();
 
+        /// <summary>Ids of every creature ever seen carrying photosynthetic tissue.</summary>
+        /// <remarks>
+        /// The same trick as <see cref="EverAbsorptive"/>, on the other side of the food chain
+        /// (the Sol/GPT review of 2026-09-03, finding 2). The share is contaminated by the
+        /// population floor exactly as the jointed share is — founders draw photosynthetic often
+        /// — so "producers keep arriving" and "producers are being kept" are separated the only
+        /// way this project has ever managed to separate them: by counting creatures whose
+        /// <i>parent</i> also expressed the trade, against the ids ever seen rather than against
+        /// the living, so a lineage that outlived its founder still counts.
+        /// </remarks>
+        private static readonly HashSet<long> EverPhotosynthetic = new HashSet<long>();
+
         /// <summary>World.ExcretedTotal as of the previous report row, so a row can show a flux.</summary>
         /// <remarks>Same delta trick as <see cref="LastFloorSpawns"/> and <see cref="LastMatterBlocks"/>,
         /// against <see cref="World.ExcretedTotal"/> — a cumulative counter with no cap of its own.</remarks>
@@ -730,6 +842,7 @@ namespace Evosim.Sim.EditorTools
             EverAbsorptive.Clear();
             EverJointed.Clear();
             EverBuoyant.Clear();
+            EverPhotosynthetic.Clear();
             LastFloorSpawns = 0;
             LastMatterBlocks = 0;
             LastExcretedTotal = 0;
@@ -738,11 +851,178 @@ namespace Evosim.Sim.EditorTools
             LastDetritusExuded = 0;
             AssayFired = false;
             AbsorptiveRows.Clear();
+            CurrentManifest = null;
+            CurrentManifestDir = null;
+            StartedAtUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>The manifest of the run in progress, so <see cref="Run"/> can finish it after
+        /// an exception. Null before the run directory exists and after
+        /// <see cref="ResetStaticReportState"/>.</summary>
+        private static RunManifest CurrentManifest;
+
+        /// <summary>The directory <see cref="CurrentManifest"/> belongs to.</summary>
+        private static RunDirectory CurrentManifestDir;
+
+        /// <summary>
+        /// Everything <c>run.json</c> knows before the first step: what this arm is, and what
+        /// source produced it.
+        /// </summary>
+        /// <remarks>
+        /// Held rather than written straight out because the same facts are written twice — once
+        /// at creation with <c>status: "running"</c>, once at termination with how it ended. A
+        /// second, independent derivation of the creation half at shutdown is exactly how the two
+        /// writes would come to disagree.
+        /// </remarks>
+        private sealed class RunManifest
+        {
+            public string ArmName;
+            public ulong Seed;
+            public float RequestedSeconds;
+            public float RequestedWallMinutes;
+            public string ConfigHash;
+            public string InoculatePath;
+            public string InoculumHash;
+
+            public string GitCommit;
+            public bool GitDirty;
+            public string CoreHash;
+            public string SimHash;
+            public string WorkerPath;
+            public string RepoRoot;
+
+            /// <summary>Why a source fact is missing, or null when nothing is.</summary>
+            public string Note;
+
+            /// <summary>Simulated seconds as of the last metabolic step, for the error path.</summary>
+            public double LastSimulatedSeconds;
+        }
+
+        /// <summary>How a run stopped. Null while it is still going.</summary>
+        private sealed class RunEnding
+        {
+            public string Status;
+            public string Reason;
+            public string Prose;
+            public double SimulatedSeconds;
+            public long PhysicsSteps;
+            public long Births;
+            public int Alive;
+            public double WallClockMinutes;
+            public double TimesRealTime;
+            public long DragImpulsesLimited;
+            public double BestSpeed;
+            public double BestSpeedAtSeconds;
+        }
+
+        /// <summary>
+        /// Gathers the run's identity and the identity of the source that is about to produce it
+        /// — the Sol/GPT review of 2026-09-03, finding 6.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What this closes.</b> <c>run.json</c> used to be written at orderly shutdown only,
+        /// so a killed arm had none at all, and no run has ever recorded the source it was built
+        /// from. A worker is a copy of <c>unity/</c> made at some past moment
+        /// (<c>scripts/new-worker.ps1</c>), and the copy is silent about when — six workers were
+        /// once "refreshed" and every one still carried the previous <c>EvolutionRun.cs</c>
+        /// (CLAUDE.md). A hash of what the worker is actually running turns that from a thing an
+        /// operator must remember to check into a fact stored beside the numbers.
+        /// </para>
+        /// <para>
+        /// <b>Nothing here may take the run down.</b> Every fact is best-effort: git may not be
+        /// on PATH, the repository root may be unfindable from a worker that lives outside it,
+        /// a directory may be missing. Each failure writes <c>"unknown"</c> and says why in
+        /// <c>note</c> rather than throwing — a run is expensive and a missing provenance field
+        /// is a smaller loss than a run that would not start.
+        /// </para>
+        /// <para>
+        /// <b>The repository root is not derivable from the worker with certainty.</b>
+        /// <c>run-arm.ps1</c> sets <c>EVOSIM_REPO_ROOT</c>; without it this falls back to the
+        /// worker's parent directory, which is where <c>new-worker.ps1</c> puts every worker, and
+        /// says so in <c>note</c> so a reader knows which of the two answered.
+        /// </para>
+        /// </remarks>
+        private static RunManifest BuildManifest(
+            ulong seed, float requestedSeconds, float requestedWallMinutes,
+            string outPath, string configHash, string inoculatePath, string inoculumHash)
+        {
+            var notes = new List<string>();
+
+            // Application.dataPath is <project>/Assets, so its parent is the worker project —
+            // which is what "the worker actually running" means, and is not necessarily the
+            // process's current directory.
+            string workerPath = Path.GetDirectoryName(Application.dataPath);
+
+            string repoRoot = Environment.GetEnvironmentVariable("EVOSIM_REPO_ROOT");
+            if (string.IsNullOrEmpty(repoRoot))
+            {
+                repoRoot = Path.GetFullPath(Path.Combine(workerPath, ".."));
+                notes.Add(
+                    "EVOSIM_REPO_ROOT unset; repo root assumed to be the worker's parent " +
+                    "directory (where new-worker.ps1 puts every worker)");
+            }
+
+            var manifest = new RunManifest
+            {
+                ArmName = Path.GetFileNameWithoutExtension(outPath),
+                Seed = seed,
+                RequestedSeconds = requestedSeconds,
+                RequestedWallMinutes = requestedWallMinutes,
+                ConfigHash = configHash,
+                InoculatePath = inoculatePath,
+                InoculumHash = inoculumHash,
+                WorkerPath = workerPath,
+                RepoRoot = repoRoot,
+            };
+
+            manifest.GitCommit = Git(repoRoot, "rev-parse HEAD", out string commitFailure)?.Trim();
+            if (string.IsNullOrEmpty(manifest.GitCommit))
+            {
+                manifest.GitCommit = "unknown";
+                notes.Add("git rev-parse HEAD failed: " + (commitFailure ?? "no output"));
+            }
+
+            // Code paths only, and named explicitly: runs/, scratch/ and the worker copies are
+            // gitignored so they could not appear here anyway, but a stray note or review file
+            // at the repository root can — and a run is not "built from dirty source" because
+            // somebody left a markdown draft lying around.
+            string porcelain = Git(repoRoot, "status --porcelain -- src unity scripts",
+                out string statusFailure);
+
+            if (statusFailure != null)
+            {
+                notes.Add("git status --porcelain failed: " + statusFailure);
+                manifest.GitDirty = false;
+            }
+            else
+            {
+                manifest.GitDirty = !string.IsNullOrEmpty(porcelain.Trim());
+            }
+
+            string coreRoot = Path.Combine(repoRoot, "src", "Evosim.Core");
+            manifest.CoreHash = HashSourceTree(coreRoot);
+            if (manifest.CoreHash == null)
+            {
+                manifest.CoreHash = "unknown";
+                notes.Add("no .cs found under " + coreRoot);
+            }
+
+            string simRoot = Path.Combine(Application.dataPath, "Evosim");
+            manifest.SimHash = HashSourceTree(simRoot);
+            if (manifest.SimHash == null)
+            {
+                manifest.SimHash = "unknown";
+                notes.Add("no .cs found under " + simRoot);
+            }
+
+            manifest.Note = notes.Count == 0 ? null : string.Join("; ", notes.ToArray());
+            return manifest;
         }
 
         /// <summary>
         /// Writes <c>run.json</c>: the identity of this run, separate from <c>config.json</c>'s
-        /// resolved tunables — pre-round-8 experiment contract, item 2.
+        /// resolved tunables.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -757,42 +1037,213 @@ namespace Evosim.Sim.EditorTools
         /// what it is without either problem.
         /// </para>
         /// <para>
-        /// <b>What is missing on purpose.</b> Git commit, dirty flag and worker source hash all
-        /// need shelling out from inside the Editor process, which is its own small design
-        /// question — does a failed shell call block the run, what counts as "the worker", does
-        /// it belong here or in a preflight — and none of that is this item's job. TODO(run
-        /// identity): git commit + dirty flag, worker source fingerprint — HANDOFF.md's
-        /// "Run-integrity infrastructure" queue entry, deliberately deferred alongside them.
+        /// <b>Called twice, and the second call rewrites rather than appends.</b> That is the one
+        /// place in a run directory where a whole document is replaced — §9's append-only rule is
+        /// about the JSONL files, whose value is that a killed run leaves every completed row
+        /// valid. This file has exactly one row and its whole purpose is to say what state the run
+        /// is in, so it must be replaced; the replacement goes through a temporary file and a move
+        /// so a reader never sees a half-written manifest.
         /// </para>
         /// </remarks>
-        private static void WriteRunIdentity(
-            RunDirectory dir, ulong seed, float requestedSeconds, float requestedWallMinutes,
-            string outPath, string terminationCode,
-            string inoculatePath, string inoculumHash)
+        private static void WriteRunManifest(RunDirectory dir, RunManifest m, RunEnding ending)
         {
             var w = new Json.Writer(indent: true);
             w.BeginObject();
-            w.Field("seed", seed);
+
+            // The creation half. Written identically by both calls, from the same object, so the
+            // two can never disagree about what the run was.
+            w.Field("arm", m.ArmName);
+            w.Field("seed", m.Seed);
             w.Field("unityVersion", Application.unityVersion);
             w.Field("physicsDtSeconds", Ecosystem.FixedDt);
             w.Field("metabolicStepSeconds", Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt);
-            w.Field("requestedSeconds", requestedSeconds);
-            w.Field("requestedWallMinutes", requestedWallMinutes);
-            // Named after the report rather than passed in explicitly: nothing upstream of this
-            // arm carries a name of its own (scripts/run-arm.ps1's -Name only ever becomes the
-            // output path), and RunDirectory.Create already treats this same derivation as the
-            // arm's identity when it names the run directory.
-            w.Field("armName", Path.GetFileNameWithoutExtension(outPath));
-            w.Field("terminationReason", terminationCode);
+            w.Field("requestedSeconds", m.RequestedSeconds);
+            w.Field("requestedWallMinutes", m.RequestedWallMinutes);
+            w.Field("configHash", m.ConfigHash);
 
             // D060. Null for a run that never named a genome — the timing and dose knobs already
             // reach config.json and its hash; this is the genome's own identity, which cannot,
             // because a genome is a file rather than a number.
-            w.Field("inoculateGenomePath", inoculatePath);
-            w.Field("inoculateGenomeHash", inoculumHash);
+            w.Field("inoculateGenomePath", m.InoculatePath);
+            w.Field("inoculateGenomeHash", m.InoculumHash);
+
+            w.BeginObject("source");
+            w.Field("gitCommit", m.GitCommit);
+            w.Field("gitDirty", m.GitDirty);
+            w.Field("coreHash", m.CoreHash);
+            w.Field("simHash", m.SimHash);
+            w.Field("workerPath", m.WorkerPath);
+            w.Field("repoRoot", m.RepoRoot);
+            w.Field("note", m.Note);
             w.EndObject();
 
-            File.WriteAllText(Path.Combine(dir.Path, "run.json"), w.ToString(), Utf8NoBom);
+            w.Field("startedAt", StartedAtUtc);
+
+            if (ending == null)
+            {
+                w.Field("status", "running");
+            }
+            else
+            {
+                w.Field("status", ending.Status);
+                w.Field("reason", ending.Reason);
+                w.Field("ending", ending.Prose);
+                w.Field("endedAt", DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture));
+                w.Field("simulatedSeconds", ending.SimulatedSeconds);
+                w.Field("physicsSteps", ending.PhysicsSteps);
+                w.Field("births", ending.Births);
+                w.Field("aliveAtEnd", ending.Alive);
+                w.Field("wallClockMinutes", ending.WallClockMinutes);
+                w.Field("timesRealTime", ending.TimesRealTime);
+                w.Field("dragImpulsesLimited", ending.DragImpulsesLimited);
+                w.Field("bestSpeed", ending.BestSpeed);
+                w.Field("bestSpeedAtSeconds", ending.BestSpeedAtSeconds);
+            }
+
+            w.EndObject();
+
+            // Written beside the file and moved over it: a reader polling run.json — which
+            // run-arm.ps1 now does, within the first minute of a launch — must never catch a
+            // truncated document. File.Replace when the target exists (the creation write always
+            // made one), File.Move when it does not.
+            string finalPath = Path.Combine(dir.Path, "run.json");
+            string tempPath = finalPath + ".tmp";
+
+            File.WriteAllText(tempPath, w.ToString(), Utf8NoBom);
+
+            if (File.Exists(finalPath)) File.Replace(tempPath, finalPath, null);
+            else File.Move(tempPath, finalPath);
+        }
+
+        /// <summary>
+        /// When this run started, ISO-8601 UTC. Set in <see cref="ResetStaticReportState"/> and
+        /// not at class load, for the same reason every other static here is cleared there: a
+        /// second <c>Evosim/Run</c> from the editor menu would otherwise stamp its manifest with
+        /// the moment the assembly was loaded.
+        /// </summary>
+        private static string StartedAtUtc;
+
+        /// <summary>
+        /// SHA-256 over every <c>.cs</c> under <paramref name="root"/>, or null if there are none.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The algorithm is a contract, not an implementation detail:</b>
+        /// <c>scripts/run-arm.ps1</c> computes the same digest in PowerShell so it can refuse to
+        /// launch against a worker carrying source other than the one an arm expects. Both sides
+        /// hash the same string — for every file, in ordinal order of its path relative to the
+        /// root with <c>/</c> separators: <c>relativePath \n sha256OfBytes \n</c>. Paths are in
+        /// so that moving a file changes the digest; per-file digests are in so that the boundary
+        /// between two files cannot be forged by concatenation.
+        /// </para>
+        /// <para>
+        /// <b>Filtered by extension rather than by search pattern.</b> <c>Directory.GetFiles</c>
+        /// with <c>"*.cs"</c> also matches longer extensions on Windows through 8.3 short names —
+        /// the same quirk that makes <c>*.htm</c> return <c>.html</c> — and a digest that silently
+        /// included <c>.csproj</c> here and not in PowerShell would refuse every launch for a
+        /// reason nobody could see.
+        /// </para>
+        /// </remarks>
+        private static string HashSourceTree(string root)
+        {
+            if (string.IsNullOrEmpty(root) || !Directory.Exists(root)) return null;
+
+            string full = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar);
+            var files = new List<string>();
+
+            foreach (string path in Directory.GetFiles(full, "*", SearchOption.AllDirectories))
+            {
+                if (string.Equals(Path.GetExtension(path), ".cs", StringComparison.OrdinalIgnoreCase))
+                {
+                    files.Add(path);
+                }
+            }
+
+            if (files.Count == 0) return null;
+
+            var relative = new List<string>(files.Count);
+            var byRelative = new Dictionary<string, string>(files.Count, StringComparer.Ordinal);
+
+            foreach (string path in files)
+            {
+                string rel = Path.GetFullPath(path)
+                    .Substring(full.Length + 1)
+                    .Replace(Path.DirectorySeparatorChar, '/')
+                    .Replace('\\', '/');
+
+                relative.Add(rel);
+                byRelative[rel] = path;
+            }
+
+            relative.Sort(StringComparer.Ordinal);
+
+            var manifest = new StringBuilder();
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                foreach (string rel in relative)
+                {
+                    byte[] digest = sha256.ComputeHash(File.ReadAllBytes(byRelative[rel]));
+                    manifest.Append(rel).Append('\n')
+                        .Append(BitConverter.ToString(digest).Replace("-", "").ToLowerInvariant())
+                        .Append('\n');
+                }
+
+                byte[] total = sha256.ComputeHash(
+                    new UTF8Encoding(false).GetBytes(manifest.ToString()));
+
+                return BitConverter.ToString(total).Replace("-", "").ToLowerInvariant();
+            }
+        }
+
+        /// <summary>Runs git in <paramref name="workingDirectory"/> and returns stdout, or null.</summary>
+        /// <remarks>
+        /// Best-effort by design (see <see cref="BuildManifest"/>): git may not be installed, the
+        /// directory may not be a repository, and neither is a reason to lose a run. Read-only
+        /// commands only — this process never changes repository state.
+        /// </remarks>
+        private static string Git(string workingDirectory, string arguments, out string failure)
+        {
+            failure = null;
+
+            try
+            {
+                var info = new ProcessStartInfo("git", arguments)
+                {
+                    WorkingDirectory = workingDirectory,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+
+                using (var process = Process.Start(info))
+                {
+                    string output = process.StandardOutput.ReadToEnd();
+                    string error = process.StandardError.ReadToEnd();
+
+                    // Bounded, because a run must not hang on a prompt: git is read-only here and
+                    // returns immediately, and anything that does not is a fault worth noting
+                    // rather than waiting on.
+                    if (!process.WaitForExit(15000))
+                    {
+                        failure = "timed out";
+                        return null;
+                    }
+
+                    if (process.ExitCode != 0)
+                    {
+                        failure = "exit " + process.ExitCode + ": " + error.Trim();
+                        return null;
+                    }
+
+                    return output;
+                }
+            }
+            catch (Exception e)
+            {
+                failure = e.GetType().Name + ": " + e.Message;
+                return null;
+            }
         }
 
         private static readonly Encoding Utf8NoBom = new UTF8Encoding(false);
@@ -858,6 +1309,12 @@ namespace Evosim.Sim.EditorTools
             double travelled = 0d, age = 0d;
             int jointed = 0, jointedInherited = 0, dof = 0, absorptive = 0, inherited = 0;
             int buoyant = 0, buoyantInherited = 0;
+
+            // The producers, the other half of the trophic reading (the Sol/GPT review of
+            // 2026-09-03, finding 2). The count itself comes from World.CountPhotosynthetic below
+            // — one function, testable without a report — and only the inherited tally is kept
+            // here, because inheritance needs the ids-ever-seen set that lives in this file.
+            int photosyntheticInherited = 0;
             double liftHeld = 0d, buoyantDepth = 0d;
             int genMin = int.MaxValue, genMax = 0;
 
@@ -925,6 +1382,17 @@ namespace Evosim.Sim.EditorTools
                     break;
                 }
 
+                // The leaves, counted the same way and for the same reason as the stomachs above.
+                // Read from the flag World set at Admit rather than from a second walk over the
+                // parts: it is the developed phenotype's answer, taken once when the body was
+                // built, and it is the same flag World.CountPhotosynthetic reads — so `photo` and
+                // `photo inh` cannot come from two different definitions of "producer".
+                if (creature.HasPhotosyntheticTissue)
+                {
+                    EverPhotosynthetic.Add(creature.Id);
+                    if (EverPhotosynthetic.Contains(creature.ParentId)) photosyntheticInherited++;
+                }
+
                 int creatureDof = 0;
                 foreach (PhenotypePart part in creature.Phenotype.Parts)
                 {
@@ -983,6 +1451,11 @@ namespace Evosim.Sim.EditorTools
 
             int alive = world.Living.Count;
             if (alive == 0) genMin = 0;
+
+            // The denominator of every trophic ratio this project takes, finally written down.
+            // World's own function rather than a tally in the loop above, so a test can ask the
+            // world what it holds without building a report.
+            int photosynthetic = world.CountPhotosynthetic();
 
             // Spread, not only the mean, and it is the statistic a migration would show up in.
             // A population that has settled at one good depth and a population sloshing up and
@@ -1189,7 +1662,13 @@ namespace Evosim.Sim.EditorTools
                 // The absorptive log — appended after detritusExudedWindow, per the append-only
                 // column discipline. Rows written to absorptive.jsonl at this sample, the marker
                 // row included; 0 for every run with no absorptive creature alive in it.
-                .Field("absorptiveLogged", absorptiveLogged));
+                .Field("absorptiveLogged", absorptiveLogged)
+                // The producer counts — appended after absorptiveLogged, per the append-only
+                // column discipline: existing readers index by position, so nothing already
+                // written may move. Living creatures whose developed phenotype carries
+                // photosynthetic tissue, and how many of those had a parent that carried it too.
+                .Field("photosynthetic", photosynthetic)
+                .Field("photosyntheticInherited", photosyntheticInherited));
 
             // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9): drained
             // every report row, alongside stats.jsonl, and appended one row per event to
@@ -1333,6 +1812,20 @@ namespace Evosim.Sim.EditorTools
                 // last row. Not the same number as `absorpt`: that counts absorptive parts among
                 // the living, this counts rows on disk.
                 "**" + absorptiveLogged.ToString(c) + "**",
+
+                // The producers — appended after `abs logged`, per the same append-only rule.
+                // Read against `absorpt`: the food chain is a ratio, and until now only its
+                // numerator was written down.
+                //
+                // `photo` and `absorpt` do not partition the population and subtracting one from
+                // `alive` does not give the other. Both count creatures (`absorpt` breaks at the
+                // first absorptive part), but a body can carry both trades and a body can carry
+                // neither — a founder drawn structural, link and neural is neither a producer nor
+                // an eater, and there were five of those in every row of the first arm that ran
+                // this column. So `photo + absorpt ≤ alive + mixotrophs`, and the gap is real
+                // creatures rather than an accounting error.
+                "**" + photosynthetic.ToString(c) + "**",
+                "**" + photosyntheticInherited.ToString(c) + "**",
             };
 
             LastFloorSpawns = world.FloorSpawns;
@@ -1378,6 +1871,9 @@ namespace Evosim.Sim.EditorTools
 
             // The absorptive log — appended after `det exuded`, per the same rule.
             "abs logged",
+
+            // The producer counts — appended after `abs logged`, per the same rule.
+            "**photo**", "**photo inh**",
         };
 
         private static string Header() =>

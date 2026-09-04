@@ -148,6 +148,7 @@ namespace Evosim.Core
         };
 
         public override string ToString() =>
-            $"rho={Density} Cd={DragCoefficient} Ca={AddedMassCoefficient} panels={PanelsPerAxis}²";
+            System.FormattableString.Invariant(
+                $"rho={Density} Cd={DragCoefficient} Ca={AddedMassCoefficient} panels={PanelsPerAxis}²");
     }
 }

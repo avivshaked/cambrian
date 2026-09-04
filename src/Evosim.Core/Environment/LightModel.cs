@@ -235,6 +235,7 @@ namespace Evosim.Core
         // maintained.
 
         public override string ToString() =>
-            $"{SurfaceIrradiance:0} W/m² at surface, 1/e at {AttenuationDepth:0.#} m";
+            FormattableString.Invariant(
+                $"{SurfaceIrradiance:0} W/m² at surface, 1/e at {AttenuationDepth:0.#} m");
     }
 }

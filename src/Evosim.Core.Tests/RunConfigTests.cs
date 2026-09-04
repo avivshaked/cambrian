@@ -230,6 +230,28 @@ namespace Evosim.Core.Tests
                 }
             }
 
+            // The additive search above assumes a knob's legal values form an interval. One does
+            // not: RunConfig.PhysicsStepSeconds must divide the 0.5 s metabolic step, so its legal
+            // set is 0.5/n and no offset of 0.01 by a halving delta lands on a member of it. That
+            // knob is still perfectly variable — 0.02 is the screening step every round 16 arm
+            // ran at — so falling back to a multiplicative move keeps the guard honest rather
+            // than making it demand that every legal set be continuous.
+            foreach (float candidate in new[] { original * 2f, original * 0.5f })
+            {
+                try
+                {
+                    p.SetValue(target, candidate);
+                }
+                catch (Exception e) when (
+                    e is ArgumentOutOfRangeException ||
+                    e.InnerException is ArgumentOutOfRangeException)
+                {
+                    continue;
+                }
+
+                if ((float)p.GetValue(target) != original) return true;
+            }
+
             return false;
         }
 

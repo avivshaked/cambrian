@@ -779,7 +779,9 @@ namespace Evosim.Core
 
         public override string ToString() =>
             PatchCount > 1
-                ? $"{TotalJoules:0} J over {LayerCount} layers x {PatchCount} patches, sinking {SinkMetresPerSecond:0.###} m/s"
-                : $"{TotalJoules:0} J over {LayerCount} layers, sinking {SinkMetresPerSecond:0.###} m/s";
+                ? FormattableString.Invariant(
+                      $"{TotalJoules:0} J over {LayerCount} layers x {PatchCount} patches, sinking {SinkMetresPerSecond:0.###} m/s")
+                : FormattableString.Invariant(
+                      $"{TotalJoules:0} J over {LayerCount} layers, sinking {SinkMetresPerSecond:0.###} m/s");
     }
 }

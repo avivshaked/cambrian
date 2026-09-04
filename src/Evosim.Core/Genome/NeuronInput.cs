@@ -230,8 +230,10 @@ namespace Evosim.Core
             new NeuronInput(kind, neuronIndex, SensorChannel.JointAngle, 0f, weight);
 
         public override string ToString() =>
-            Kind == NeuronInputKind.Constant ? $"const {Constant}"
-          : Kind == NeuronInputKind.Sensor ? $"{Channel}[{Index}] * {Weight}"
-          : $"{Kind}[{Index}] * {Weight}";
+            Kind == NeuronInputKind.Constant
+                ? System.FormattableString.Invariant($"const {Constant}")
+          : Kind == NeuronInputKind.Sensor
+                ? System.FormattableString.Invariant($"{Channel}[{Index}] * {Weight}")
+          : System.FormattableString.Invariant($"{Kind}[{Index}] * {Weight}");
     }
 }

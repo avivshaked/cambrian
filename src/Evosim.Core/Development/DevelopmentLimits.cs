@@ -110,7 +110,9 @@ namespace Evosim.Core
         };
 
         public override string ToString() =>
-            $"maxParts={MaxParts} maxDepth={MaxDepth} " +
-            $"volume={MinPartVolume:0.######}..{MaxPartVolume:0.} thickness>={MinPartHalfExtent:0.###}";
+            System.FormattableString.Invariant($"maxParts={MaxParts} maxDepth={MaxDepth} ") +
+            System.FormattableString.Invariant(
+                $"volume={MinPartVolume:0.######}..{MaxPartVolume:0.} ") +
+            System.FormattableString.Invariant($"thickness>={MinPartHalfExtent:0.###}");
     }
 }

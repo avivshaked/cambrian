@@ -122,9 +122,9 @@ namespace Evosim.Core
                 a.Exuded + b.Exuded);
 
         public override string ToString() =>
-            $"+{Income:0.###} −{Expenditure:0.###}" +
-            (Exuded > 0f ? $" ~{Exuded:0.###}" : "") +
-            $" = {Net:0.###} J";
+            FormattableString.Invariant($"+{Income:0.###} −{Expenditure:0.###}") +
+            (Exuded > 0f ? FormattableString.Invariant($" ~{Exuded:0.###}") : "") +
+            FormattableString.Invariant($" = {Net:0.###} J");
     }
 
     /// <summary>

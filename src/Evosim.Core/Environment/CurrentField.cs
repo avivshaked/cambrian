@@ -885,16 +885,24 @@ namespace Evosim.Core
             return sum / samples;
         }
 
+        // Invariant, not the process culture. Every string this returns reaches a run header, a
+        // log line or a test assertion, and on a machine with a comma decimal separator the
+        // process culture renders "vent 0.1 m/s" as "vent 0,1 m/s" — which changes what a header
+        // says the world was and fails VentTests' assertion for a reason that has nothing to do
+        // with the world. Same rule ConfigSchema.Format() and Json.Writer already follow.
         public override string ToString() =>
             (_speed <= 0f
                 ? "still water"
-                : $"{_speed:0.###} m/s peak, {_cellMetres:0.#} m cells, {_periodSeconds:0.#} s period" +
+                : FormattableString.Invariant(
+                      $"{_speed:0.###} m/s peak, {_cellMetres:0.#} m cells, {_periodSeconds:0.#} s period") +
                   (Rolls
                       ? _rollBlinkSeconds > 0f
-                          ? $", rolls blinking every {_rollBlinkSeconds:0.#} s"
+                          ? FormattableString.Invariant($", rolls blinking every {_rollBlinkSeconds:0.#} s")
                           : ", steady rolls"
                       : "") +
                   (AdvectFields ? ", advecting the fields" : "")) +
-            (_ventSpeed > 0f ? $", vent {_ventSpeed:0.###} m/s in patch {_ventPatch}" : "");
+            (_ventSpeed > 0f
+                ? FormattableString.Invariant($", vent {_ventSpeed:0.###} m/s in patch {_ventPatch}")
+                : "");
     }
 }
