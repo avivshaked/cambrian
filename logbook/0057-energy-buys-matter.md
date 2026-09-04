@@ -68,4 +68,9 @@ age). Controls: 0056's `r20q0-s2` and `r20q0-s4` (age, stock 1, same step). Laun
 
 ## Launch
 
-Appended below once the build lands.
+Launched 2026-09-04 ~18:40 on workers 2–5, refreshed to commit `dff2d59` (the reserve
+build, 491 tests) and launched with `-ExpectSimHash 3f3111cff9e23033`; every manifest
+reads that `simHash`, `gitCommit dff2d59`, `gitDirty false`, `status running`. Headers
+verified: `conception reserve` and `from 1/m3` on `r21b-s2` and `r21b-s4`; `conception
+age` and `from 3/m3` on `r21a-s2` and `r21a-s4`; all `dt=0.02`, `exudation 0.15`,
+`sink 0.002 m/s, matter 0.002 m/s`. Monitor running. Results appended below.
