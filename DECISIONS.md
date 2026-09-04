@@ -92,7 +92,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D067](#d067) | The vent — an upwelling plume from the floor in one patch, return through the others, superposed on the rolls; returns what the trapdoor takes | 2026-09-03 | built · run as round 13 arm B (logbook/0049), two seeds: producers survive the return flow (M6 held), the deep field falls to the lowest of the round (2.0–2.4 J/m³), no chain forms, matter refusals rise 1.5–5× against the twin. Neither harmful nor load-bearing while absorbers cannot breed; off in round 14 |
 | [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050) running under D069's sequential rule: 0 of 3 scored so far — clearance 10 grows the first 20–48-member lines of the campaign and they graze their field and crash; clearance 5 holds a line of 3–9 |
 | [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
-| [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered |
+| [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; both gate readings met 2026-09-04, build started |
 
 ---
 
@@ -3287,7 +3287,10 @@ gate the build on two readings"):
    a corpse does.
 2. `r14c10-s4` — the richest water any arm has had (−15 m in 7 J/m³). If a larger stock
    turns the crash into a cycle that holds ten, the flux is not the binding constraint and
-   the rule is reconsidered before it is built.
+   the rule is reconsidered before it is built. *Read 2026-09-04: met.* No boom at all —
+   61 absorptive births, never more than five alive, a line of two; the five grazed a
+   20,600 J stock down at 0.24 W net. The ceiling read directly. **Gate open; build
+   started.**
 
 **The screen, pre-registered now.** Ledger the mutant under the exudation config at the
 densities the new flux would set; then two arms at the 0.02 step on the clearance-10 worlds

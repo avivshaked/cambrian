@@ -148,9 +148,13 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    rebuild in `r14c10-s1`), and the proposed lever is exudation. **Ruled: D070**, yes in
    principle, build gated on `r14c10-s1-flux`'s measured income — **read, met** (a founding pulse
    decaying to a few tenths of a watt as corpses shrink from 87 to 4.7 J; 0050's instrument
-   note) — and `r14c10-s4`'s outcome (at t=19,900: −15 m in 8 J/m³, stock 20,600 J, three
-   mutant stomachs, none inherited yet; runs to 30,000). When it ends, the gate is open:
-   build from `scratch/exudation-spec.md` (Opus against the spec), then the screen; review round 5 is done (PER 10–20%, mean 13%, ~20% flat; the screen runs at 0.15 — D070 carries the numbers and the three caveats);
+   note) — and `r14c10-s4`'s outcome — **read, met** (no boom in the richest water: 61
+   absorptive births, never more than 5 alive, the stock grazed down at 0.24 W). Round 14
+   closed at 0 of 8 (0050's closing). The gate is open: the build from
+   `scratch/exudation-spec.md` is under way (Opus against the spec, compile and 300-s
+   validation on w4), then the screen at 0.15 on seeds 1 and 2 of clearance 10 at dt
+   0.02 to 20,000 s (`det exuded` split from `det in`); a dissection of `r14c10-s4`'s
+   mutant stomachs (why 61 births made a line of 2 in 4–8 J/m³) is queued; review round 5 is done (PER 10–20%, mean 13%, ~20% flat; the screen runs at 0.15 — D070 carries the numbers and the three caveats);
    the screen is pre-registered in D070. The proposal file is deleted.
    Built meanwhile: the detritus-flux instrument (`det in` / `det out` columns, J per
    window; `World.DetritusDepositedTotal/TakenTotal`; test in `WorldTests`). It changes

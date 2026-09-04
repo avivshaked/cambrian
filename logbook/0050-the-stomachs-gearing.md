@@ -122,7 +122,7 @@ Headers verified against the table before any arm is believed. Results appended 
 
 ## Results
 
-*Interim, 2026-09-03 evening, updated that night: five arms ended, four
+*Final, 2026-09-04: six arms ended, four
 more launched under the sequential rule (`r14c10-s3`, `r14c10-s4`, `r14c5-s3`, `r14c5-s4`),
 of which two were stopped under the futility rule on the owner's word; seed 5 of each dose
 will not be launched (owner, same ruling: the mechanism is clear and another draw against
@@ -140,6 +140,7 @@ header at launch; V2 — every arm differs from its `r13a-sN` at the t=500 row; 
 | `r14c10-s2` | budget | 1,731 | 155 (8,800–24,200) | **48** (t=14,400) | 0 | 0 | ✓ ✓ ✗ ✗ | **fail** — the campaign's largest line, 48 → 12 → 4 → 0 in water it thinned to 0.4–0.7 J/m³; gone by t=24,400, no second wave by 30,000 |
 | `r14c10-s3` | **stopped at t=14,500** under the futility rule (owner, 2026-09-03 night) | 1,735 | 0 | 0 | 0 | — | ✓ ✗ ✗ · | **fail** — no line by 15,000; the population in the surface film at 0.7 m |
 | `r14c5-s3` | **stopped at t=17,900** under the futility rule | 1,785 | 0 | 0 | 0 | — | ✓ ✗ ✗ · | **fail** — no line by 15,000; surface film at 0.3 m |
+| `r14c10-s4` | budget | 1,840 | 90 (21,100–30,000) | 2 (t=23,000) | 2 | 1 | ✓ ✓ ✗ ✓ | **fail** — the richest water of the round (−14.5 m in 4–8 J/m³, stock 20,600 J at t=20,000) and **no boom**: 61 absorptive births across the run, never more than 5 alive, a line of 2; the five graze the stock down at 0.24 W net |
 | `r14c5-s4` | budget | 1,846 | 66 (8,000–14,500) | 2 (t=8,600) | 0 | 0 | ✓ ✓ ✗ ✗ | **fail** — a line of 1–2 at −4 m in 0.9 J/m³, below clearance 5's breeding density; gone by t=14,700 |
 
 The two clearance-10 seeds are the first worlds in this campaign to grow an absorptive
@@ -159,11 +160,11 @@ The prediction table, so far:
 | # | prediction | standing |
 |---|---|---|
 | M1 | lines form: `inherit` ≥ 1 in ≥ 3 of 5 seeds per arm, ≥ 10 at some sample in one | **c10: held on the ≥ 10 clause** (peaks 22 and 48 in seeds 1–2) but not on the 3-of-5 clause as run — seed 3 stopped without a line, seed 5 not launched; c5: 2 of 4 seeds with a line (peaks 9 and 2), none ≥ 10 |
-| M2 | ≥ 3 of 5 seeds pass in one arm; c10 predicted to pass | **0 of 7 scored** (five to budget, two stopped under the futility rule; `r14c10-s4` running); the c10 lines fail on the alive clause by overshoot, not by never forming — a third reading the two-sided list did not have |
+| M2 | ≥ 3 of 5 seeds pass in one arm; c10 predicted to pass | **0 of 8 — falsified** (six to budget, two stopped under the futility rule, seed 5 of each dose not launched); the c10 lines fail on the alive clause by overshoot, not by never forming — a third reading the two-sided list did not have |
 | M3 | the chain grazes: `J/m3 here` at t > 15,000 below the seed's `r13a-sN`, `det deep` with it | **held where it can be read cleanly**: `r14c10-s2` against `r13a-s2` at matched depth (−10.5 vs −11.5 m), 0.74 against 6.55 J/m³, `det deep` 1.08 against 4.75; `r14c10-s1`'s field fell while its line lived and rebuilt after it died. But `det deep` is lower in the no-line seed `r14c5-s2` too (3.5 against 4.75), and `J/m3 here` is read at the population's depth, which moved between rounds in three of four seeds — so neither column discriminates on its own |
 | M4 | no bloom | **held** in four of four (max 1,858; ceiling 8,000) |
 | M5 | producers persist, ≥ 1,000 | **held** in four of four |
-| M6 | c10 > c5 at matched seeds | **held** in 2 of 2 pairs so far (22 vs 9; 48 vs 0) |
+| M6 | c10 > c5 at matched seeds | **held** in 3 of 4 pairs (22 vs 9; 48 vs 0; 0 vs 0 at seed 3, both stopped; 2 vs 2 at seed 4 — a tie) |
 
 ### Instrument note: the detritus income, measured (`r14c10-s1-flux`)
 
@@ -203,6 +204,25 @@ to the selection that has been starving the second level; one that rides on deat
 
 *Same-seed butterfly, for the record: this realisation put the population at −4 to −6 m
 where the 0.01 one sat at −15, and grew a line of 2 from t=11,000 — 0052's finding, again.*
+
+### Closing, 2026-09-04
+
+Round 14 is **0 of 8** and closed. Clearance 10 grew the campaign's first lines past
+twenty (22, 48) and both ate their stock and crashed; clearance 5 held lines of 1–9 that
+never reached ten; three seeds never left the surface film. The last arm, `r14c10-s4`, is
+the one that closes the argument: the richest water of the round, a stock of 20,600 J at
+−14.5 m in 4–8 J/m³, and **no boom** — sixty-one absorptive mutants were born across the
+run and never more than five were alive at once, a line of two at the end. Five stomachs
+at clearance 10 in that water graze about half a watt, the income is a few tenths, and
+the stock fell at 0.24 W net through the last 10,000 s. That is the flux ceiling read
+directly: the water can be rich and the line still cannot be ten, because what refills
+the water is small. Why sixty-one births made a line of two in water where the ledger
+gives the inoculum R0 4–6 is a dissection question (the mutants' bodies are not the
+inoculum's; `snapshots/` hold their genomes) and is queued, not answered here.
+
+D070's second gate reading is met on this: a larger stock did not turn the crash into a
+cycle holding ten. The gate is open; the exudation build starts from
+`scratch/exudation-spec.md`.
 
 **What this is, read with 0051.** The assay showed that fifty stomachs at clearance 10
 graze their water to a tenth of what fifty at clearance 1 leave, and earn the same. Here
