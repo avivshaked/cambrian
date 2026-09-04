@@ -86,6 +86,9 @@ the rule goes to confirmation.
 
 ## Launch
 
-Three arms once the contract-repairs build lands and the workers are refreshed to it;
-the monitor's watch list carrying them; headers and manifests verified before any arm is
-believed. Results appended below.
+Launched 2026-09-04 ~10:30 on workers 2, 3 and 4, refreshed to commit `5c6c035` (the
+contract-repairs build) and launched with `-ExpectSimHash f0dd2b05f865de88`; every
+manifest reads that `simHash`, `gitCommit 5c6c035`, `gitDirty false`, `status running`.
+Headers verified: `dt=0.02`, `sink 0.002 m/s, matter 0.02 m/s` on `r19m-s1` and
+`r19m-s4`, `matter 0.002 m/s` on the control `r19m0-s1`, `exudation 0.15`,
+`clearance 10`, `vent off`. Monitor running over the three. Results appended below.
