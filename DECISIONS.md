@@ -3288,7 +3288,9 @@ gate the build on two readings"):
 2. `r14c10-s4` — the richest water any arm has had (−15 m in 7 J/m³). If a larger stock
    turns the crash into a cycle that holds ten, the flux is not the binding constraint and
    the rule is reconsidered before it is built. *Read 2026-09-04: met.* No boom at all —
-   61 absorptive births, never more than five alive, a line of two; the five grazed a
+   61 absorptive births of which 51 were floor-era founders, six mutants and four
+   inherited after the floor closed, three breeders in the run, never more than five
+   alive, a line of two; the five grazed a
    20,600 J stock down at 0.24 W net. The ceiling read directly. **Gate open; build
    started.**
 

@@ -211,14 +211,26 @@ Round 14 is **0 of 8** and closed. Clearance 10 grew the campaign's first lines 
 twenty (22, 48) and both ate their stock and crashed; clearance 5 held lines of 1–9 that
 never reached ten; three seeds never left the surface film. The last arm, `r14c10-s4`, is
 the one that closes the argument: the richest water of the round, a stock of 20,600 J at
-−14.5 m in 4–8 J/m³, and **no boom** — sixty-one absorptive mutants were born across the
-run and never more than five were alive at once, a line of two at the end. Five stomachs
+−14.5 m in 4–8 J/m³, and **no boom** — sixty-one absorptive births across the run, of which
+(dissection, next morning) fifty-one were founders of the floor era, six were mutants
+born after the floor closed and four were inherited children; three creatures bred in the
+whole run, never more than five stomachs were alive at once, and the line ended at two. Five stomachs
 at clearance 10 in that water graze about half a watt, the income is a few tenths, and
 the stock fell at 0.24 W net through the last 10,000 s. That is the flux ceiling read
 directly: the water can be rich and the line still cannot be ten, because what refills
-the water is small. Why sixty-one births made a line of two in water where the ledger
-gives the inoculum R0 4–6 is a dissection question (the mutants' bodies are not the
-inoculum's; `snapshots/` hold their genomes) and is queued, not answered here.
+the water is small. Why six mutants made a line of two in water where the ledger gives the inoculum R0
+4–6 was dissected the next morning, and the answer is not the bodies: the ledger run on
+two pure stomachs pulled from the run's last snapshot (0.0019 and 0.0031 m³) gives R0 2–6
+across 4–8 J/m³, the inoculum's figures. What the run's outputs cannot say is where those
+stomachs were — `J/m3 here` is patch 0 at the population's mean depth, and a mutant in
+another patch or depth may have sat in half a joule. Two side findings: the inherited
+children that died did so 74–253 s after birth with a 101 J endowment, which no upkeep
+in this world can explain and which no output records the cause of; and one sampled
+mixotroph genome's absorptive subtree is pruned at development by `minPartVolume`
+(0.0001 m³ — its accumulated edge scale takes the part to 5×10⁻⁵), so a genome that reads
+absorptive can develop into a pure leaf. The instrument that answers all three is a
+per-creature ledger row for every living absorptive body — depth, patch, density seen,
+intake, reserve — logged each sample; it is queued behind the exudation build.
 
 D070's second gate reading is met on this: a larger stock did not turn the crash into a
 cycle holding ten. The gate is open; the exudation build starts from
