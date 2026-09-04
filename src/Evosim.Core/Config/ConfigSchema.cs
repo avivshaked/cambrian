@@ -30,8 +30,8 @@ namespace Evosim.Core
         public string Unit { get; }
 
         /// <summary>
-        /// <see cref="float"/>, <see cref="int"/>, <see cref="bool"/>, <c>string[]</c>, or an
-        /// array of some enum — see <see cref="ConfigSchema.EnumElementOf"/>.
+        /// <see cref="float"/>, <see cref="int"/>, <see cref="bool"/>, <c>string[]</c>, an enum,
+        /// or an array of some enum — see <see cref="ConfigSchema.EnumElementOf"/>.
         /// </summary>
         public Type ValueType { get; }
 
@@ -73,6 +73,12 @@ namespace Evosim.Core
                 case int i: return i.ToString(c);
                 case bool b: return b ? "true" : "false";
                 case string[] a: return string.Join(";", a);
+
+                // A scalar enum, by name for the reason the array case below records. It would
+                // fall through to Convert.ToString and produce the same string today; written out
+                // so that the rule is stated where a reader looks for it rather than inherited
+                // from a conversion that is free to change its mind.
+                case Enum single: return single.ToString();
 
                 // By name, never by ordinal — the same rule §9 applies to the file applies here.
                 // An ordinal hash would be unchanged by inserting a member into an enum, which

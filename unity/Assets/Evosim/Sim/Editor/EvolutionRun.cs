@@ -216,6 +216,13 @@ namespace Evosim.Sim.EditorTools
             // nobody meant to ask for.
             float exudation = Env("EVOSIM_EXUDATION", new RunConfig().ExudationFraction);
 
+            // D072. The order World.Reproduce offers the living their turn at conception. `age` is
+            // every earlier run, bit for bit — the birth-ordered walk that made the oldest solvent
+            // body in a matter-starved layer take the matter every step (logbook/0056). `shuffled`
+            // draws a fresh permutation each step from a stream of the world's own, so the same
+            // seed and config still replay. Unset is `age`.
+            ConceptionOrder conceptionOrder = EnvConceptionOrder("EVOSIM_CONCEPTION_ORDER");
+
             // The physics timestep (logbook/0052's validation). 0.01 is every earlier run, bit for
             // bit; the metabolic step stays 0.5 s and the header's dt token, the run-identity
             // record's physicsDtSeconds and — since DESIGN.md §6.2's queued item was closed —
@@ -439,6 +446,7 @@ namespace Evosim.Sim.EditorTools
             config.SatiationWattsPerCubicMetre = satiation;
             config.ClearanceToeDensity = clearanceToe;
             config.ExudationFraction = exudation;
+            config.ConceptionOrder = conceptionOrder;
             config.SpeciesDriftThreshold = speciesTheta;
             config.HorizontalPatches = patches;
             config.HorizontalMixingDiffusivity = horizontalMixing;
@@ -528,6 +536,11 @@ namespace Evosim.Sim.EditorTools
                 (satiation > 0f ? " · satiation " + satiation + " W/m3" : "") +
                 (clearanceToe > 0f ? " · toe " + clearanceToe + " J/m3" : "") +
                 (exudation > 0f ? " · exudation " + exudation : "") +
+                // D072, rendered unconditionally for D065's reason: a reader of a header never
+                // has to work out whether a missing token means "age" or "written before the knob
+                // existed". The world at `age` is bit-identical to every run before it; the
+                // configHash is not, as it is not for any new tunable.
+                " · conception " + (conceptionOrder == ConceptionOrder.Shuffled ? "shuffled" : "age") +
                 " · speciesTheta " + speciesTheta +
                 (patches > 1f
                     ? " · patches " + (int)patches + ", h-mix " + horizontalMixing + " m2/s, " +
@@ -1914,6 +1927,35 @@ namespace Evosim.Sim.EditorTools
                    ulong.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong v)
                 ? v
                 : fallback;
+        }
+
+        /// <summary>
+        /// D072's walk order from the environment: <c>age</c> or <c>shuffled</c>, case-insensitive,
+        /// unset meaning <see cref="ConceptionOrder.Age"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>An unrecognised value stops the run rather than falling back</b>, unlike
+        /// <see cref="Env(string, float)"/>. A float that fails to parse leaves a number a reader
+        /// can still see in the header and disbelieve; a word that fails to parse would silently
+        /// hand back the *other* world, and an arm launched as `shuffled` would produce a queued
+        /// run filed under a header saying so. §9's "loading refuses rather than defaults", applied
+        /// where the cost of defaulting is a mislabelled experiment.
+        /// </remarks>
+        private static ConceptionOrder EnvConceptionOrder(string name)
+        {
+            string raw = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrWhiteSpace(raw)) return ConceptionOrder.Age;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "age": return ConceptionOrder.Age;
+                case "shuffled": return ConceptionOrder.Shuffled;
+
+                default:
+                    throw new ArgumentException(
+                        name + " is '" + raw + "', which is not a conception order. " +
+                        "Known: age, shuffled.");
+            }
         }
     }
 }

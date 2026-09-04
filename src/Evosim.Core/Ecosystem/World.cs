@@ -98,6 +98,38 @@ namespace Evosim.Core
         private ulong _nextIndex;
 
         /// <summary>
+        /// The index <see cref="_conceptionRng"/>'s seed is drawn at — reserved, and never handed
+        /// to <see cref="_nextIndex"/>.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="_nextIndex"/> numbers genomes: a founder, an offspring, an inoculum and a
+        /// patch draw each take the next one. The conception-order stream is not a genome and must
+        /// not advance that counter, because a world that drew one extra index at construction
+        /// would hand every creature after it a different seed and stop replaying the record.
+        /// Reserved at the far end of the range rather than at 0, which is a real genome index on
+        /// the first step of every run.
+        /// </remarks>
+        private const ulong ConceptionOrderIndex = ulong.MaxValue - 1UL;
+
+        /// <summary>
+        /// The stream behind <see cref="ConceptionOrder.Shuffled"/> — D072. Constructed for every
+        /// world and drawn from by none but a shuffled one.
+        /// </summary>
+        /// <remarks>
+        /// Its own stream rather than a share of the per-creature seeds, so that turning the knob
+        /// on changes the walk order and nothing else: under <see cref="ConceptionOrder.Age"/> not
+        /// a single draw is taken from it, and a default run is step for step what it always was.
+        /// </remarks>
+        private readonly Rng _conceptionRng;
+
+        /// <summary>
+        /// Indices into <c>_living</c>, permuted each step under
+        /// <see cref="ConceptionOrder.Shuffled"/>. Reused rather than reallocated, in the manner
+        /// of <c>_ledgers</c> — this runs once per metabolic step for the life of a run.
+        /// </summary>
+        private int[] _conceptionOrder = Array.Empty<int>();
+
+        /// <summary>
         /// Species registry — D057. Founding genome and founding time, keyed by
         /// <see cref="Organism.SpeciesId"/>. Empty for the life of a run whose
         /// <see cref="RunConfig.SpeciesDriftThreshold"/> is 0.
@@ -392,6 +424,11 @@ namespace Evosim.Core
             config.Current?.SetPatchWidth(Nutrients.PatchWidthMetres);
 
             Seed = seed;
+
+            // Built for every world, drawn from only by a shuffled one — see ConceptionOrderIndex.
+            // Constructing an Rng takes no draw from anything else, so an Age world is unchanged
+            // by its existence.
+            _conceptionRng = new Rng(Rng.SeedFor(seed, ConceptionOrderIndex));
         }
 
         /// <summary>
@@ -941,6 +978,16 @@ namespace Evosim.Core
         /// every step just to discover it could not pay for it — the same work, at the cost of
         /// most of the run.
         /// </para>
+        /// <para>
+        /// <b>The order of this walk is a world rule, and until D072 it was an accident.</b>
+        /// <see cref="Conceive"/> draws a child's matter from the parent's own layer at the moment
+        /// that parent is walked, so when a layer's stock covers fewer children than there are
+        /// solvent parents, whoever is walked first takes it. <c>_living</c> is birth-ordered, so
+        /// that was always the oldest — a queue nothing in DESIGN.md asked for, selecting for
+        /// outliving it rather than for fecundity (logbook/0056).
+        /// <see cref="RunConfig.ConceptionOrder"/> names the walk;
+        /// <see cref="ConceptionOrder.Age"/> is the queue and the default, so the record replays.
+        /// </para>
         /// </remarks>
         private void Reproduce()
         {
@@ -949,23 +996,68 @@ namespace Evosim.Core
             // which would make brood size compound within a single step.
             _born.Clear();
 
-            for (int i = 0; i < _living.Count; i++)
+            if (Config.ConceptionOrder == ConceptionOrder.Shuffled)
             {
-                Organism parent = _living[i];
+                PermuteConceptionOrder();
 
-                float gate = parent.ReproductionThreshold(Config.PerOffspringOverheadJoules);
-                if (gate <= 0f || parent.Energy < gate) continue;
-
-                for (int n = 0; n < parent.Genome.Reproduction.BroodSize; n++)
-                {
-                    if (!Conceive(parent)) break;
-                }
+                for (int i = 0; i < _living.Count; i++) Brood(_living[_conceptionOrder[i]]);
+            }
+            else
+            {
+                for (int i = 0; i < _living.Count; i++) Brood(_living[i]);
             }
 
+            // Appended in walk order, so under Shuffled this step's permutation also decides the
+            // order the children sit in for the next one. That is not a second decision to make:
+            // _living's order is only ever read by this walk, and the next step draws a fresh
+            // permutation over whatever order it finds.
             for (int i = 0; i < _born.Count; i++)
             {
                 _living.Add(_born[i]);
                 Births++;
+            }
+        }
+
+        /// <summary>One parent's turn: the solvency gate, then the brood behind it.</summary>
+        /// <remarks>
+        /// Lifted out of <see cref="Reproduce"/> so the two orders share one body and cannot drift
+        /// apart — the walk is what D072 varies, and nothing else is.
+        /// </remarks>
+        private void Brood(Organism parent)
+        {
+            float gate = parent.ReproductionThreshold(Config.PerOffspringOverheadJoules);
+            if (gate <= 0f || parent.Energy < gate) return;
+
+            for (int n = 0; n < parent.Genome.Reproduction.BroodSize; n++)
+            {
+                if (!Conceive(parent)) break;
+            }
+        }
+
+        /// <summary>
+        /// Fills <see cref="_conceptionOrder"/> with a fresh uniformly random permutation of
+        /// <c>_living</c>'s indices — D072, logbook/0056.
+        /// </summary>
+        /// <remarks>
+        /// Fisher–Yates, from <see cref="_conceptionRng"/> alone, so the permutation is a function
+        /// of <c>(seed, config, step count)</c> and a shuffled run replays exactly like every other
+        /// run here (§7). The array grows and is kept; it is never shrunk, because a world that
+        /// halves its population and grows back would otherwise reallocate on every recovery.
+        /// </remarks>
+        private void PermuteConceptionOrder()
+        {
+            int count = _living.Count;
+            if (_conceptionOrder.Length < count) _conceptionOrder = new int[count];
+
+            for (int i = 0; i < count; i++) _conceptionOrder[i] = i;
+
+            for (int i = count - 1; i > 0; i--)
+            {
+                int j = _conceptionRng.Range(i + 1);
+
+                int swap = _conceptionOrder[i];
+                _conceptionOrder[i] = _conceptionOrder[j];
+                _conceptionOrder[j] = swap;
             }
         }
 

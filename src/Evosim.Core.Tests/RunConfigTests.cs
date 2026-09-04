@@ -195,12 +195,37 @@ namespace Evosim.Core.Tests
             {
                 p.SetValue(target, new[] { CellTypeIds.Consumer });
             }
+            else if (p.PropertyType.IsEnum)
+            {
+                // A scalar enum moves to any member that is not the one it already holds — which
+                // is what a two-member enum like ConceptionOrder needs, and what an enum with
+                // twenty members needs just as much. Returns false for an enum with a single
+                // member, so the caller's "exposed no nudgeable tunable" assert still fires rather
+                // than this quietly reporting a hash that never had a chance to change.
+                return NudgeEnum(target, p);
+            }
             else
             {
                 return false;
             }
 
             return true;
+        }
+
+        /// <summary>Moves an enum tunable to a different member, or reports that it cannot.</summary>
+        private static bool NudgeEnum(object target, PropertyInfo p)
+        {
+            object original = p.GetValue(target);
+
+            foreach (object candidate in Enum.GetValues(p.PropertyType))
+            {
+                if (candidate.Equals(original)) continue;
+
+                p.SetValue(target, candidate);
+                if (!p.GetValue(target).Equals(original)) return true;
+            }
+
+            return false;
         }
 
         /// <summary>Moves a float tunable to a different legal value, or reports that it cannot.</summary>
@@ -334,6 +359,7 @@ namespace Evosim.Core.Tests
                 Assert.True(
                     entry.ValueType == typeof(float) || entry.ValueType == typeof(int) ||
                     entry.ValueType == typeof(bool) || entry.ValueType == typeof(string[]) ||
+                    entry.ValueType.IsEnum ||
                     ConfigSchema.EnumElementOf(entry.ValueType) != null,
                     $"{entry.Path} is a {entry.ValueType.Name}, which the file format cannot carry");
             }

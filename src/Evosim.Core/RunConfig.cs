@@ -524,6 +524,38 @@ namespace Evosim.Core
         public float RefugeEdibleFraction { get; set; }
 
         /// <summary>
+        /// The order <see cref="World.Reproduce"/> offers the living their turn at conception —
+        /// D072, logbook/0056. <see cref="Evosim.Core.ConceptionOrder.Age"/> is every run before
+        /// this knob existed.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>An order nobody chose was deciding who breeds.</b> DESIGN.md specifies no order at
+        /// all, and <c>World</c>'s <c>_living</c> is birth-ordered because births append and death
+        /// removes in place. A child's matter is drawn from its parent's own layer at the moment
+        /// that parent is walked, so in a layer whose stock covers one child and whose solvent
+        /// bodies number ten, the oldest takes it every step and a younger body breeds only when
+        /// everyone older is dead or broke. Measured in logbook/0056: median parent age in the
+        /// reference world's plateau 3,352–4,536 s, against 376–558 s during growth, with 48–62%
+        /// of plateau births going to parents older than a whole lifetime.
+        /// </para>
+        /// <para>
+        /// That is the engine doing something the design did not ask for, which is a fault by
+        /// this project's own rule rather than a world rule the record ever chose — and it is a
+        /// selection pressure for outliving the queue rather than for fecundity.
+        /// </para>
+        /// <para>
+        /// <b>Behind a knob, defaulting to the fault.</b> The historical record has to replay, and
+        /// whether the reference world adopts the fix is the owner's ruling on a measured result
+        /// rather than a silent change. <c>EVOSIM_CONCEPTION_ORDER</c> in the header, which always
+        /// carries a <c>conception</c> token so a reader never has to know whether a missing one
+        /// means "age" or "written before the knob existed".
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public ConceptionOrder ConceptionOrder { get; set; } = ConceptionOrder.Age;
+
+        /// <summary>
         /// Filter-feeding intake power cap, W per m³ of tissue — D062's satiation plateau. Zero
         /// is off: an <see cref="AbsorptiveCell"/>'s draw is unbounded, as it always was.
         /// </summary>
@@ -1060,5 +1092,31 @@ namespace Evosim.Core
 
             return hash.ToString("x16", CultureInfo.InvariantCulture);
         }
+    }
+
+    /// <summary>
+    /// The order in which the living are offered their turn at conception — D072, logbook/0056.
+    /// See <see cref="RunConfig.ConceptionOrder"/> for what it decides and
+    /// <see cref="World.Reproduce"/> for where it is spent.
+    /// </summary>
+    /// <remarks>
+    /// Named for what each one is rather than for which is right. Neither is a scoring rule: both
+    /// walk every living body once per step and both let the same solvency gate decide, so the
+    /// only difference is who is asked first when a layer's matter covers fewer children than
+    /// there are parents who want one.
+    /// </remarks>
+    public enum ConceptionOrder
+    {
+        /// <summary>
+        /// Birth order — <c>_living</c>'s own, oldest first. Every run before this knob existed,
+        /// and the default, so the record replays.
+        /// </summary>
+        Age = 0,
+
+        /// <summary>
+        /// A fresh uniformly random permutation of the living each step, from a stream of the
+        /// world's own. Same seed and config, same permutations, same run (§7).
+        /// </summary>
+        Shuffled = 1,
     }
 }

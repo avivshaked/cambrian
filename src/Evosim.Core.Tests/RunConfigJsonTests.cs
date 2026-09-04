@@ -49,11 +49,40 @@ namespace Evosim.Core.Tests
                     Assert.True(NudgeFloat(config, p), $"{p.Name} accepted no value but its own");
                 }
                 else if (p.PropertyType == typeof(int)) p.SetValue(config, (int)p.GetValue(config) + 3);
+
+                // A scalar enum, moved to any member but the one it holds. Skipping enums is how
+                // a knob written by name gets to be in the hash and absent from the file — the
+                // half of the problem this test exists for, and the shape RunConfig.ConceptionOrder
+                // arrives in.
+                else if (p.PropertyType.IsEnum)
+                {
+                    Assert.True(NudgeEnum(config, p), $"{p.Name} has only one member to hold");
+                }
                 else continue;
 
                 RunConfig back = RunConfigJson.Read(RunConfigJson.Write(config));
                 Assert.True(config.Hash() == back.Hash(), $"{p.Name} did not survive the round trip");
             }
+        }
+
+        /// <summary>Moves an enum tunable to a different member, or reports that it cannot.</summary>
+        /// <remarks>
+        /// Copied from <see cref="RunConfigTests"/> for the reason recorded on the float helper
+        /// below: these two guards are meant to be readable one at a time.
+        /// </remarks>
+        private static bool NudgeEnum(object target, PropertyInfo p)
+        {
+            object original = p.GetValue(target);
+
+            foreach (object candidate in Enum.GetValues(p.PropertyType))
+            {
+                if (candidate.Equals(original)) continue;
+
+                p.SetValue(target, candidate);
+                if (!p.GetValue(target).Equals(original)) return true;
+            }
+
+            return false;
         }
 
         /// <summary>Moves a float tunable to a different legal value, or reports that it cannot.</summary>

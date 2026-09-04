@@ -89,6 +89,11 @@ namespace Evosim.Core
                     w.EndArray();
                     break;
 
+                // A scalar enum, by name and as a string, for the same reason the array case
+                // below gives. Written before the Array case because an enum is not an array and
+                // would otherwise reach the throw.
+                case Enum single: w.Field(entry.Key, single.ToString()); break;
+
                 // Enums by name, per §9. An ordinal would silently re-point at a different member
                 // the first time anyone inserts one, and the file would still load.
                 case Array e when ConfigSchema.EnumElementOf(e.GetType()) != null:
@@ -157,6 +162,12 @@ namespace Evosim.Core
                 foreach (JsonNode item in node.Items()) values.Add(item.AsString());
                 return values.ToArray();
             }
+
+            // A scalar enum reads through the same refusal as an array's members: an unknown name
+            // stops the load rather than defaulting, which for RunConfig.ConceptionOrder is the
+            // difference between a run whose walk order is what the file says and one that
+            // silently ran the other order under the file's name.
+            if (entry.ValueType.IsEnum) return ParseEnum(entry, entry.ValueType, node);
 
             Type element = ConfigSchema.EnumElementOf(entry.ValueType);
             if (element != null)
