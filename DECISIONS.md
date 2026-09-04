@@ -93,7 +93,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050) running under D069's sequential rule: 0 of 3 scored so far — clearance 10 grows the first 20–48-member lines of the campaign and they graze their field and crash; clearance 5 holds a line of 3–9 |
 | [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
 | [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; **confirmed 2026-09-04** (logbook/0054: 4 of 5 seeds pass D063 at dt 0.01 with exudation 0.15; the failing seed's stomachs were matter-blocked, not starved) · a world rule, DESIGN.md §5A.2c |
-| [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; the lever must change the pool (price, stock, excretion or a vent source), owner's choice |
+| [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; overtaken by D072 (the contest for each unit was an age queue) |
+| [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · screening (logbook/0056) · adoption is the owner's |
 
 ---
 
@@ -3442,4 +3443,43 @@ every layer reads. A sink speed cannot enlarge the free pool. The stomachs share
 leaves' band and lose the contest for each arriving unit; only a rule that changes the
 free pool — the fixed price, the initial stock, excretion of the tissue share, or the
 vent as a source with burial — can move the refusals, and each grows the producer
-population with it. Owner's choice; `EVOSIM_MATTER_SINK` stays at 0.002.
+population with it. Owner's choice; `EVOSIM_MATTER_SINK` stays at 0.002. *Overtaken the
+same day by D072: the contest for each unit was never a lottery.*
+
+### D072
+
+**Conception order — the breeding walk is shuffled each step, because the world bred
+oldest-first and a young stomach stood behind every older leaf in its layer** ·
+2026-09-04 (agent's fault fix behind a knob, on the owner's "proceed with your
+recommendations"; adoption into the reference world is the owner's ruling on the screen)
+
+0055 left the stomachs contesting a free matter pool of a tenth of the stock with the
+leaves in their own band. Reading the contest in the code (logbook/0056): `World.Reproduce`
+walks the living in list order once per step and each solvent parent draws its child's
+matter from its layer before the next is considered; the list is birth-ordered, so in a
+starved layer the oldest solvent body takes the matter every step and a younger one
+breeds only when everyone older is dead or broke. DESIGN.md specifies no order. By
+CLAUDE.md's rule that is a fault — the engine doing what the design did not ask — and it
+was measured before it was named: in the reference world's plateau the median parent age
+at conception is 3,352–4,536 s with 48–62% of births to bodies past a lifetime, against
+376–558 s during growth when matter is not short. That is why round 18's last stomachs,
+holding four times a child's price, had no children; and it means every plateau since
+D065 has selected producers for outliving the queue rather than for fecundity.
+
+**The rule.** `ConceptionOrder` (`EVOSIM_CONCEPTION_ORDER`): `age` — today's walk, the
+default, bit-identical so the record replays; `shuffled` — a fresh uniform permutation of
+the living each step from a dedicated seeded stream, so same seed and config replay. Not
+a lottery weighted by anything: the design has no basis for weighting, and a uniform
+order is the one that adds no rule. Screened first (logbook/0056: seeds 1 and 4 at 0.02
+with the fix, a seed-4 control, seed 1's control being 0055's), predictions M1–M5 there.
+If M1–M2 hold, the owner is asked to adopt `shuffled` into the reference world and the
+goal is confirmed at 0.01 without the queue.
+
+**Rejected.** Fixing it silently as the default — a butterfly across every recorded run
+with no way to compare. Weighting the draw by energy or size — a world rule with no
+source behind it; if the ecology wants a weighting it can evolve one through brood size
+and endowment, which are already traits. Leaving the age order as a deliberate rule —
+nothing in the literature the review has read models conception as an age queue, and
+the pressure it exerts was never pre-registered or read.
+
+*Proposal absorbed on the owner's delegation; reversible by ruling.*
