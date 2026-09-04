@@ -212,11 +212,57 @@ namespace Evosim.Core
         /// </remarks>
         public NutrientField Matter { get; }
 
-        /// <summary>Total matter in the world, free and locked up. Conserved — D048.</summary>
+        /// <summary>
+        /// Total matter in the world, free and locked up — D048. Conserved until D074's budget is
+        /// opened; after that it is <see cref="MatterInitialTotal"/> plus what has flowed in and
+        /// minus what has been buried.
+        /// </summary>
+        /// <remarks>
+        /// The meaning has not changed — this is still everything the world holds — but it is no
+        /// longer a constant, and anything that asserted its constancy was asserting D048 rather
+        /// than reading an invariant. The invariant that survives is the identity in
+        /// <see cref="MatterInfluxedTotal"/>'s remarks, which reduces to the old one at influx and
+        /// burial 0.
+        /// </remarks>
         public double StandingMatter => Matter.TotalJoules + MatterInBodies;
 
         /// <summary>Matter locked up in living tissue, awaiting its owner's death.</summary>
         public double MatterInBodies { get; private set; }
+
+        /// <summary>
+        /// What <see cref="RunConfig.InitialMatterPerCubicMetre"/> seeded the world with at construction —
+        /// D074. The whole of <see cref="StandingMatter"/> before anything happened.
+        /// </summary>
+        /// <remarks>
+        /// Recorded rather than recomputed, because the seeding loop is the only moment it can be
+        /// read cleanly: one step later the fields have settled and mixed, and while both of those
+        /// conserve, reading a "starting stock" off a world that has already run is the kind of
+        /// inference the audit exists to make unnecessary.
+        /// </remarks>
+        public double MatterInitialTotal { get; }
+
+        /// <summary>
+        /// Every unit of matter D074's influx has ever added to the world. Cumulative and never
+        /// decremented; 0 for the whole life of a run with
+        /// <see cref="RunConfig.MatterInfluxPerSecond"/> at 0, which is every run before it.
+        /// </summary>
+        /// <remarks>
+        /// <b>With <see cref="MatterBuriedTotal"/> this is the matter audit.</b>
+        /// <c>MatterInitialTotal + MatterInfluxedTotal − MatterBuriedTotal ==
+        /// Matter.TotalJoules + MatterInBodies</c> at every step, because everything else matter
+        /// does — settling, mixing, advection, remineralisation, conception locking it away and
+        /// death giving it back — moves it between cells and bodies without creating or destroying
+        /// any. These two counters are the only holes in that wall, which is exactly why they are
+        /// counted separately rather than folded into a single net figure: a net number that
+        /// happens to be right cannot tell a doubled influx from a doubled burial.
+        /// </remarks>
+        public double MatterInfluxedTotal { get; private set; }
+
+        /// <summary>
+        /// Every unit of matter D074's burial has ever removed from the world. Cumulative; see
+        /// <see cref="MatterInfluxedTotal"/> for the identity the two close.
+        /// </summary>
+        public double MatterBuriedTotal { get; private set; }
 
         /// <summary>
         /// Everything excretion (D052) has ever moved from bodies into the field, J. Cumulative
@@ -411,6 +457,7 @@ namespace Evosim.Core
             int patchCount = PatchCount;
 
             ValidateVent(config, patchCount);
+            ValidateMatterInflux(config, patchCount);
 
             Field = new LightField(
                 Light, config.WorldAreaSquareMetres, config.LightLayerMetres,
@@ -445,6 +492,11 @@ namespace Evosim.Core
                     }
                 }
             }
+
+            // D074. The stock the matter identity is measured against, read here because here is
+            // the only place it is unambiguous — see MatterInitialTotal. Before D074 this number
+            // was StandingMatter for the whole life of the run.
+            MatterInitialTotal = Matter.TotalJoules;
 
             // D067. The vent's legs are defined by a volume flux and need no width, but the drag a
             // creature feels in one is a velocity and does. The field is told once, here, from the
@@ -547,6 +599,53 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// Refuses a D074 influx aimed at a vent this world has no room for, before the first step
+        /// rather than at the deposit.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="MatterInflux.Vent"/> reads <see cref="CurrentField.VentPatch"/> and
+        /// <see cref="CurrentField.VentDepthMetres"/> off the same fields D067's plume uses, so a
+        /// config with no <see cref="RunConfig.Current"/> at all has nowhere to name, and a patch
+        /// index past <c>K</c> would either throw inside the deposit or — worse, if anything ever
+        /// wrapped it — put the world's whole matter income in a patch nobody asked for.
+        /// <see cref="ValidateVent"/>'s own patch check does not cover this: it returns early
+        /// while the plume is off, and an influx at the vent's coordinates is a perfectly sensible
+        /// world with no plume in it (a cold seep).
+        /// </para>
+        /// <para>
+        /// Nothing is checked while the influx is 0 or lands at the surface, which is every run
+        /// before D074: a world that never asked for a vent influx cannot be refused because of
+        /// one, the same rule <see cref="ValidateVent"/> follows.
+        /// </para>
+        /// </remarks>
+        private static void ValidateMatterInflux(RunConfig config, int patchCount)
+        {
+            if (!(config.MatterInfluxPerSecond > 0f)) return;
+            if (config.MatterInfluxAt != MatterInflux.Vent) return;
+
+            CurrentField current = config.Current;
+            if (current == null)
+            {
+                throw new ArgumentException(
+                    "MatterInfluxAt is Vent and MatterInfluxPerSecond is " +
+                    $"{config.MatterInfluxPerSecond}, but RunConfig.Current is null, so there is " +
+                    "no vent patch or vent depth to deposit at. The influx borrows D067's " +
+                    "coordinates rather than carrying its own.",
+                    nameof(config));
+            }
+
+            if (current.VentPatch >= patchCount)
+            {
+                throw new ArgumentException(
+                    $"MatterInfluxAt is Vent and Current.VentPatch is {current.VentPatch}, but " +
+                    $"there are only {patchCount} patches. The world's entire matter income would " +
+                    "be deposited in a patch this world does not have.",
+                    nameof(config));
+            }
+        }
+
+        /// <summary>
         /// Reports where a creature is and what it spent moving — DESIGN.md §5A.2, §10 M4.
         /// </summary>
         /// <param name="creature">A living organism of this world.</param>
@@ -628,6 +727,12 @@ namespace Evosim.Core
             // patch its parent ends the step in. Draws nothing at all when the rolls are off.
             AdvectBodies(seconds);
 
+            // D074. Before the field settles, so a unit deposited at the surface starts sinking on
+            // the step it arrives rather than a step later — and, with burial after the whole
+            // transport pass below, so nothing that arrives at the surface can be buried in the
+            // same step it entered the world.
+            DepositMatterInflux(seconds);
+
             Nutrients.Settle(seconds);
             Matter.Settle(seconds);
 
@@ -652,9 +757,121 @@ namespace Evosim.Core
             Nutrients.Advect(Config.Current, ElapsedSeconds, seconds, Nutrients.PatchWidthMetres);
             Matter.Advect(Config.Current, ElapsedSeconds, seconds, Matter.PatchWidthMetres);
 
+            // D074. After everything that moves matter within the world, so what the floor holds
+            // when burial is charged is what settling, mixing and advection actually left there —
+            // and after the influx above, so the deposit is not buried on arrival.
+            BuryMatter(seconds);
+
             Reproduce();
             EnforceFloor();
             EnforceCeiling();
+        }
+
+        /// <summary>
+        /// D074's influx: one step's worth of free matter into the world, at
+        /// <see cref="RunConfig.MatterInfluxAt"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Returns before touching anything at an influx of 0</b>, which is every run before
+        /// D074 — no draw, no deposit, no counter moved, so those worlds are bit-identical. The
+        /// same shape D052's excretion and D070's exudation are written in.
+        /// </para>
+        /// <para>
+        /// <b><see cref="MatterInflux.Surface"/> is a total, not a total per patch.</b> The knob
+        /// says what the world receives, so K patches share one deposit rather than each getting
+        /// one — otherwise raising <c>HorizontalPatches</c> would silently raise the world's
+        /// matter income, and D061's patch count is meant to divide a world rather than multiply
+        /// it.
+        /// </para>
+        /// <para>
+        /// <b><see cref="MatterInflux.Vent"/> reads D067's coordinates rather than carrying its
+        /// own.</b> A second pair of "where is the vent" fields is a second thing to keep in
+        /// agreement with <see cref="RunConfig.WorldDepthMetres"/>, and
+        /// <see cref="ValidateMatterInflux"/> has already refused the world in which those
+        /// coordinates name nothing.
+        /// </para>
+        /// </remarks>
+        private void DepositMatterInflux(float seconds)
+        {
+            float rate = Config.MatterInfluxPerSecond;
+            if (!(rate > 0f)) return;
+
+            double amount = (double)rate * seconds;
+
+            if (Config.MatterInfluxAt == MatterInflux.Vent)
+            {
+                CurrentField vent = Config.Current;
+                float all = (float)amount;
+                if (!(all > 0f)) return;
+
+                Matter.Deposit(-vent.VentDepthMetres, all, vent.VentPatch);
+                MatterInfluxedTotal += all;
+                return;
+            }
+
+            int patches = PatchCount;
+
+            // The float the field is actually handed, not the double it was derived from: what is
+            // counted has to be what was deposited, or the identity in MatterInfluxedTotal's
+            // remarks drifts by a rounding per step and the audit stops being able to catch a real
+            // fault. Deposit's 3-arg overload for D061's reason — correct at K=1 and at K>1 alike.
+            float per = (float)(amount / patches);
+            if (!(per > 0f)) return;
+
+            for (int patch = 0; patch < patches; patch++) Matter.Deposit(0f, per, patch);
+
+            MatterInfluxedTotal += (double)per * patches;
+        }
+
+        /// <summary>
+        /// D074's burial: a fraction of every patch's floor-layer free matter, out of the world
+        /// for good.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Free matter on the floor and nothing else.</b> Not detritus — that is
+        /// <see cref="Nutrients"/>, a different substance with its own floor term in
+        /// <c>Remineralise</c> — and not <see cref="MatterInBodies"/>, because burying the matter
+        /// locked in a living creature would take it out of a body that is still standing on it,
+        /// and the identity would have no way to describe what happened.
+        /// </para>
+        /// <para>
+        /// <b>Counted as the field's own before-and-after</b>, not as <c>Take</c>'s float return.
+        /// <c>Take</c> subtracts a double and hands back a float copy of it, so a floor whose
+        /// stock is smaller than the request would lose slightly more than the counter recorded —
+        /// a rounding, and exactly the kind of rounding an identity asserted "to the rounding"
+        /// stops being able to distinguish from a leak.
+        /// </para>
+        /// <para>
+        /// The fraction is clamped at 1 for a step long enough to ask for more than the floor
+        /// holds; <c>Take</c> caps at the stock anyway, but a clamp says what a whole-floor step
+        /// means rather than leaving it to the cap.
+        /// </para>
+        /// </remarks>
+        private void BuryMatter(float seconds)
+        {
+            float rate = Config.MatterBurialPerSecond;
+            if (!(rate > 0f)) return;
+
+            double fraction = (double)rate * seconds;
+            if (fraction > 1d) fraction = 1d;
+            if (!(fraction > 0d)) return;
+
+            int floor = Matter.LayerCount - 1;
+            float floorY = -((floor + 0.5f) * Matter.LayerMetres);
+
+            for (int patch = 0; patch < PatchCount; patch++)
+            {
+                double before = Matter.StockInLayer(floor, patch);
+                if (!(before > 0d)) continue;
+
+                float wanted = (float)(before * fraction);
+                if (!(wanted > 0f)) continue;
+
+                Matter.Take(floorY, wanted, patch);
+                MatterBuriedTotal += before - Matter.StockInLayer(floor, patch);
+            }
         }
 
         /// <remarks>

@@ -399,6 +399,69 @@ namespace Evosim.Core
         public float MatterRemineralisationPerSecond { get; set; } = 0f;
 
         /// <summary>
+        /// Free matter added to the world every second — D074's influx. Zero is every run before
+        /// it, in which matter is conserved and nothing but death gives any back.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Matter has never had a source.</b> <see cref="InitialMatterPerCubicMetre"/> seeds a
+        /// stock at construction and D048 conserves it from there: reproduction locks it into a
+        /// body, death returns it, and the total never moves. Energy is not run that way — light
+        /// enters at the surface every step and respiration takes it out again — and the asymmetry
+        /// is why a world can hold full stomachs in full water and still refuse them children
+        /// (logbook/0054's failing seed). This is the missing leg, with
+        /// <see cref="MatterBurialPerSecond"/> as its outflow: rivers and dust in at the top,
+        /// sediment out at the bottom, the same open-budget shape §5A.2 already gives the joule.
+        /// </para>
+        /// <para>
+        /// <b>Deposited per metabolic step</b>, this many units times the step's seconds, before
+        /// the field settles — see <see cref="MatterInfluxAt"/> for where. It is not a density:
+        /// scaling the world's area does not scale the influx, because the number is a statement
+        /// about what the world receives rather than about how thick the water is.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "matter/s")]
+        public float MatterInfluxPerSecond { get; set; } = 0f;
+
+        /// <summary>
+        /// Where <see cref="MatterInfluxPerSecond"/> lands — D074. Default
+        /// <see cref="Evosim.Core.MatterInflux.Surface"/>.
+        /// </summary>
+        /// <remarks>
+        /// The two routes matter takes into a real ocean, and they arrive at opposite ends of the
+        /// column: rivers and dust at the top, where the light already is, and hydrothermal supply
+        /// at the bottom, where D067's plume is already carrying water upward. Which one a world
+        /// gets is a world rule, so it is a knob rather than a constant — and at influx 0 both
+        /// members are the same world, bit for bit.
+        /// </remarks>
+        [Tunable("world")]
+        public MatterInflux MatterInfluxAt { get; set; } = MatterInflux.Surface;
+
+        /// <summary>
+        /// The fraction of each patch's floor-layer free matter that leaves the world every
+        /// second — D074's burial. Zero is every run before it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The outflow, and the reason an influx does not simply accumulate.</b> An open budget
+        /// with a source and no sink is a ramp: whatever the influx is, the standing stock grows
+        /// without bound and the matter gate stops binding at some time nobody chose. A
+        /// first-order loss from the floor gives the pool an equilibrium instead — the stock at
+        /// which burial equals influx — and makes the sea floor a place matter can actually be
+        /// lost, which is what sediment is.
+        /// </para>
+        /// <para>
+        /// <b>Free matter only, and only from the floor layer.</b> Never detritus (that is
+        /// <see cref="World.Nutrients"/>' pool and a different substance), and never matter locked in a
+        /// living body (<see cref="World.MatterInBodies"/>) — burying a creature's skeleton out
+        /// from under it while it is still alive would open the matter identity, and the identity
+        /// is the only thing that can catch this mechanism going wrong.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "1/s")]
+        public float MatterBurialPerSecond { get; set; } = 0f;
+
+        /// <summary>
         /// How strongly the water stirs detritus vertically, m²/s — §5A.4, D036.
         /// </summary>
         /// <remarks>
@@ -1135,5 +1198,31 @@ namespace Evosim.Core
         /// spare takes it. Deterministic, and it takes no draw from any stream.
         /// </summary>
         Reserve = 2,
+    }
+
+    /// <summary>
+    /// Where <see cref="RunConfig.MatterInfluxPerSecond"/>'s deposit lands — D074. See
+    /// <see cref="RunConfig.MatterInfluxAt"/> for why it is a knob and
+    /// <see cref="World.Step"/> for when it is spent.
+    /// </summary>
+    /// <remarks>
+    /// Named for the route rather than for the layer, because the layer is a consequence: what a
+    /// world is being told is where its matter comes from, and the depth follows from that. At an
+    /// influx of 0 the two are the same world.
+    /// </remarks>
+    public enum MatterInflux
+    {
+        /// <summary>
+        /// Rivers and dust: the top layer, spread equally over every patch — the deposit arrives
+        /// where the light already is, and has to sink to reach anything deeper.
+        /// </summary>
+        Surface = 0,
+
+        /// <summary>
+        /// A hydrothermal supply: all of it in <see cref="CurrentField.VentPatch"/> at
+        /// <see cref="CurrentField.VentDepthMetres"/>, so it enters at the bottom of the one
+        /// column D067's plume carries upward.
+        /// </summary>
+        Vent = 1,
     }
 }

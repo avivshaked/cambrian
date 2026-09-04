@@ -90,6 +90,8 @@ namespace Evosim.Sim.EditorTools
                                 DragImpulsesLimited = CurrentManifest.LastDragImpulsesLimited,
                                 DriveImpulsesLimited = CurrentManifest.LastDriveImpulsesLimited,
                                 DivergedTotal = CurrentManifest.LastDiverged,
+                                MatterInfluxedTotal = CurrentManifest.LastMatterInfluxed,
+                                MatterBuriedTotal = CurrentManifest.LastMatterBuried,
                             });
                     }
                     catch (Exception writeFailure)
@@ -239,6 +241,18 @@ namespace Evosim.Sim.EditorTools
             // breeding gate, so scarce matter goes to the parent with the most to spare and energy
             // buys fecundity (logbook/0057). Unset is `age`.
             ConceptionOrder conceptionOrder = EnvConceptionOrder("EVOSIM_CONCEPTION_ORDER");
+
+            // D074. The open matter budget: an influx at the top of the step and a burial from the
+            // floor at the bottom of it, so matter has a source and a sink the way energy has light
+            // and respiration. Both at 0 is every earlier run, bit for bit — matter seeded once at
+            // construction and conserved from there (D048), which is why a world can hold full
+            // stomachs in full water and still refuse them children (logbook/0054's failing seed).
+            // `at` names the route rather than the layer: `surface` is rivers and dust over the top
+            // layer of every patch, `vent` is a hydrothermal supply into D067's vent patch at the
+            // vent's own depth. Unset is `surface`, which at influx 0 is the same world as `vent`.
+            float matterInflux = Env("EVOSIM_MATTER_INFLUX", new RunConfig().MatterInfluxPerSecond);
+            MatterInflux matterInfluxAt = EnvMatterInflux("EVOSIM_MATTER_INFLUX_AT");
+            float matterBurial = Env("EVOSIM_MATTER_BURIAL", new RunConfig().MatterBurialPerSecond);
 
             // The physics timestep (logbook/0052's validation). 0.01 is every earlier run, bit for
             // bit; the metabolic step stays 0.5 s and the header's dt token, the run-identity
@@ -464,6 +478,9 @@ namespace Evosim.Sim.EditorTools
             config.ClearanceToeDensity = clearanceToe;
             config.ExudationFraction = exudation;
             config.ConceptionOrder = conceptionOrder;
+            config.MatterInfluxPerSecond = matterInflux;
+            config.MatterInfluxAt = matterInfluxAt;
+            config.MatterBurialPerSecond = matterBurial;
             config.SpeciesDriftThreshold = speciesTheta;
             config.HorizontalPatches = patches;
             config.HorizontalMixingDiffusivity = horizontalMixing;
@@ -567,6 +584,16 @@ namespace Evosim.Sim.EditorTools
                 // writes is the one EnvConceptionOrder reads and a member added later cannot
                 // arrive announcing itself as "age".
                 " · conception " + conceptionOrder.ToString().ToLowerInvariant() +
+                // D074, appended after `conception` and rendered unconditionally for D065's
+                // reason — a header that omitted the token while the budget was closed would make
+                // "no influx" and "written before the budget existed" the same text. The route is
+                // printed even at influx 0, where the two routes are the same world, because the
+                // token describes the settings the run was launched with rather than the world it
+                // happened to produce. Enum name lowered, so the header's vocabulary is the one
+                // EnvMatterInflux reads.
+                " · matter in " + matterInflux + "/s at " +
+                matterInfluxAt.ToString().ToLowerInvariant() +
+                ", burial " + matterBurial + "/s" +
                 " · speciesTheta " + speciesTheta +
                 (patches > 1f
                     ? " · patches " + (int)patches + ", h-mix " + horizontalMixing + " m2/s, " +
@@ -644,6 +671,8 @@ namespace Evosim.Sim.EditorTools
                         manifest.LastDragImpulsesLimited = eco.Fluid.DragImpulsesLimited;
                         manifest.LastDriveImpulsesLimited = eco.DriveImpulsesLimited;
                         manifest.LastDiverged = eco.World.Diverged;
+                        manifest.LastMatterInfluxed = eco.World.MatterInfluxedTotal;
+                        manifest.LastMatterBuried = eco.World.MatterBuriedTotal;
                         manifest.LastWallClockMinutes = clock.Elapsed.TotalMinutes;
                     }
 
@@ -783,6 +812,8 @@ namespace Evosim.Sim.EditorTools
                         DragImpulsesLimited = eco.Fluid.DragImpulsesLimited,
                         DriveImpulsesLimited = eco.DriveImpulsesLimited,
                         DivergedTotal = eco.World.Diverged,
+                        MatterInfluxedTotal = eco.World.MatterInfluxedTotal,
+                        MatterBuriedTotal = eco.World.MatterBuriedTotal,
                         BestSpeed = bestSpeedEver,
                         BestSpeedAtSeconds = bestSpeedAt,
                     });
@@ -873,6 +904,12 @@ namespace Evosim.Sim.EditorTools
         /// field's second income, windowed the same way its first is.</summary>
         private static double LastDetritusExuded;
 
+        /// <summary>D074's two matter fluxes, against <see cref="World.MatterInfluxedTotal"/> and
+        /// <see cref="World.MatterBuriedTotal"/> — the same windowing the detritus fluxes get, and
+        /// for the same reason: the standing stock shows the balance, not the rate.</summary>
+        private static double LastMatterInfluxed;
+        private static double LastMatterBuried;
+
         /// <summary>
         /// Scratch for the absorptive log — <c>absorptive.jsonl</c>, one row per living eater per
         /// sample plus a final row per death (<see cref="AbsorptiveSample"/>).
@@ -915,6 +952,8 @@ namespace Evosim.Sim.EditorTools
             LastDetritusDeposited = 0;
             LastDetritusTaken = 0;
             LastDetritusExuded = 0;
+            LastMatterInfluxed = 0;
+            LastMatterBuried = 0;
             AssayFired = false;
             AbsorptiveRows.Clear();
             CurrentManifest = null;
@@ -976,6 +1015,8 @@ namespace Evosim.Sim.EditorTools
             public long LastDragImpulsesLimited;
             public long LastDriveImpulsesLimited;
             public long LastDiverged;
+            public double LastMatterInfluxed;
+            public double LastMatterBuried;
             public double LastWallClockMinutes;
         }
 
@@ -998,6 +1039,20 @@ namespace Evosim.Sim.EditorTools
 
             /// <summary>Bodies the solver blew up — <see cref="World.Diverged"/>. 0 is healthy.</summary>
             public long DivergedTotal;
+
+            /// <summary>
+            /// D074's budget over the whole run — <see cref="World.MatterInfluxedTotal"/> and
+            /// <see cref="World.MatterBuriedTotal"/>. Both 0 with the budget closed, which is
+            /// every run before it.
+            /// </summary>
+            /// <remarks>
+            /// Written on the error path too, from the manifest's last known values. A censored
+            /// arm's run.json is the only machine-readable account of it there will ever be, and
+            /// two zeros in it would say the world was closed when it was not — logbook/0056's
+            /// lesson, applied to the fields added after it.
+            /// </remarks>
+            public double MatterInfluxedTotal;
+            public double MatterBuriedTotal;
 
             public double BestSpeed;
             public double BestSpeedAtSeconds;
@@ -1186,6 +1241,11 @@ namespace Evosim.Sim.EditorTools
                 w.Field("dragImpulsesLimited", ending.DragImpulsesLimited);
                 w.Field("driveImpulsesLimited", ending.DriveImpulsesLimited);
                 w.Field("divergedTotal", ending.DivergedTotal);
+
+                // D074 — appended after divergedTotal, per the same append-only rule the report's
+                // columns follow. Both 0 for a run with the matter budget closed.
+                w.Field("matterInfluxedTotal", ending.MatterInfluxedTotal);
+                w.Field("matterBuriedTotal", ending.MatterBuriedTotal);
                 w.Field("bestSpeed", ending.BestSpeed);
                 w.Field("bestSpeedAtSeconds", ending.BestSpeedAtSeconds);
             }
@@ -1597,6 +1657,13 @@ namespace Evosim.Sim.EditorTools
             double detritusOutWindow = world.DetritusTakenTotal - LastDetritusTaken;
             double detritusExudedWindow = world.DetritusExudedTotal - LastDetritusExuded;
 
+            // D074's matter flux, per window, in the same shape and for the same reason. `mat top`
+            // and `mat deep` show where the stock is and `mat blk` shows what it refused; neither
+            // says how fast the world is being fed or drained, which is the whole reading an open
+            // budget has to be judged on. Both read 0 for the life of a run with the budget closed.
+            double matterInfluxWindow = world.MatterInfluxedTotal - LastMatterInfluxed;
+            double matterBuriedWindow = world.MatterBuriedTotal - LastMatterBuried;
+
             // D061. The asynchrony observables — the two readings the old, patch-blind columns
             // above cannot give, because they only ever look at one column of the world (patch
             // 0). Both read 0 at K=1, where there is only one patch to compare against itself.
@@ -1763,7 +1830,14 @@ namespace Evosim.Sim.EditorTools
                 // append-only column discipline. A running total, not a window: one body blowing
                 // up at some instant is the whole event, and a column that returned to 0 on the
                 // next sample would hide it from anyone reading the last row.
-                .Field("diverged", world.Diverged));
+                .Field("diverged", world.Diverged)
+                // D074's open matter budget — appended after diverged, per the same append-only
+                // column discipline. Windows first, then the running totals the matter identity is
+                // read from: MatterInitialTotal + influxed − buried == free matter + locked matter.
+                .Field("matterInfluxWindow", matterInfluxWindow)
+                .Field("matterBuriedWindow", matterBuriedWindow)
+                .Field("matterInfluxedTotal", world.MatterInfluxedTotal)
+                .Field("matterBuriedTotal", world.MatterBuriedTotal));
 
             // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9): drained
             // every report row, alongside stats.jsonl, and appended one row per event to
@@ -1928,6 +2002,16 @@ namespace Evosim.Sim.EditorTools
                 // a lineage left this world by arithmetic rather than by selection, and the
                 // matching post-mortem is in the run's diverged/ directory.
                 world.Diverged.ToString(c),
+
+                // D074's open budget — appended after `diverged`, per the same append-only rule.
+                // Units per window, the `det in` / `det out` shape: what the world was given and
+                // what the floor swallowed since the last row. Both read 0 with
+                // EVOSIM_MATTER_INFLUX and EVOSIM_MATTER_BURIAL unset, which is every arm before
+                // this one, and their difference against the movement in `mat top` + `mat deep` is
+                // the reading — a stock that is not moving under an influx that is means the
+                // burial has found its equilibrium.
+                matterInfluxWindow.ToString("0.###", c),
+                matterBuriedWindow.ToString("0.###", c),
             };
 
             LastFloorSpawns = world.FloorSpawns;
@@ -1936,6 +2020,8 @@ namespace Evosim.Sim.EditorTools
             LastDetritusDeposited = world.DetritusDepositedTotal;
             LastDetritusTaken = world.DetritusTakenTotal;
             LastDetritusExuded = world.DetritusExudedTotal;
+            LastMatterInfluxed = world.MatterInfluxedTotal;
+            LastMatterBuried = world.MatterBuriedTotal;
 
             if (row.Count != Columns.Length)
             {
@@ -1979,6 +2065,9 @@ namespace Evosim.Sim.EditorTools
 
             // The divergence count — appended after `photo inh`, per the same rule.
             "diverged",
+
+            // D074's open matter budget — appended after `diverged`, per the same rule.
+            "mat in", "mat buried",
         };
 
         private static string Header() =>
@@ -2048,6 +2137,33 @@ namespace Evosim.Sim.EditorTools
                     throw new ArgumentException(
                         name + " is '" + raw + "', which is not a conception order. " +
                         "Known: age, shuffled, reserve.");
+            }
+        }
+
+        /// <summary>
+        /// D074's influx route from the environment: <c>surface</c> or <c>vent</c>,
+        /// case-insensitive, unset meaning <see cref="MatterInflux.Surface"/>.
+        /// </summary>
+        /// <remarks>
+        /// Refuses an unrecognised value for <see cref="EnvConceptionOrder"/>'s reason, and with a
+        /// sharper edge: the two routes put the world's entire matter income at opposite ends of
+        /// the column, so a typo that fell back to the default would file a vent arm under a
+        /// surface world and nothing downstream could notice.
+        /// </remarks>
+        private static MatterInflux EnvMatterInflux(string name)
+        {
+            string raw = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrWhiteSpace(raw)) return MatterInflux.Surface;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "surface": return MatterInflux.Surface;
+                case "vent": return MatterInflux.Vent;
+
+                default:
+                    throw new ArgumentException(
+                        name + " is '" + raw + "', which is not a matter influx route. " +
+                        "Known: surface, vent.");
             }
         }
     }
