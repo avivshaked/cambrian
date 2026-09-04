@@ -160,7 +160,8 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    **Scored 2026-09-04: 4 of 5 pass** (seeds 2–5; seed 1's line of 58 died to 4 with 537 J
    reserves in 13.7 J/m³ — matter-blocked). Every worker is idle and on commit `7b30c88`'s
    build. Next: the owner's ruling on the matter-at-depth proposal; the invasion assay at
-   0.15 run to two lifetimes; the 0.05 / 0.13 bracket if the owner wants the dose curve; the dissection of `r14c10-s4`'s
+   0.15 is **done** (0051 amendment 2: the late stomach establishes — 18 generations, 112
+   alive at 20,000 s at replacement on energy, reserves under a child's price); the 0.05 / 0.13 bracket if the owner wants the dose curve; the dissection of `r14c10-s4`'s
    stomachs is done (0050's closing): the bodies are fine on the ledger, their whereabouts
    are unrecorded, and children died 74–253 s after birth for no cause any output records —
    the per-creature absorptive log is **built** (`absorptive.jsonl` per run — one row per

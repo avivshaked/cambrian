@@ -242,3 +242,26 @@ with A3 holding — the late stomach earns but cannot conceive for want of matte
 the same constraint 0054 named, and the matter-at-depth proposal is the answer for both.
 A1 fails with A3's first clause failing — the inoculant body does not earn in this water,
 which the ledger under the 0.15 config would have to explain.
+
+**Results (2026-09-04, `r15i-c10-x15` to budget: 20,000 s in 38 min at 8.7× real time;
+header verified — `exudation 0.15`, `dt=0.02`, the inoculation tokens; audit 0.0000%
+throughout).** The late stomach establishes. The 50 inoculants lived 3,724–11,239 s (mean
+9,480, against 6,732 in this world without the leak) and every one bred; their lineage
+ran **18 generations deep** by t=20,000 — 205 descendants born, 102 of them in generation
++2 or later, about eleven births per generation from +3 on — and **112 were alive at the
+end**, at −15 m in 1.6–2.8 J/m³.
+
+| # | prediction | verdict |
+|---|---|---|
+| A1 | R0 > 1 over completed members; ≥ 50 descendants with ≥ 10 in generation +2 or later | **R0 clause falsified as measured** (0.72 over the 143 completed members — the count is dragged by the inoculants' own 1.06 and by early deaths, while 112 of the lineage are still alive and uncounted); **descendants clause held** by a wide margin (205; 102 at +2 or later) |
+| A2 | ≥ 10 inoculant descendants alive at 20,000 | **held** — 112 |
+| A3 | descendants' mean `netW` > 0 at t > 12,000; `mat blk` > 50,000 | **held as worded** (+0.003 W; 300,000 blocked per window) — but read the reserves: the descendants held **48 J** on average, under a child's price, and spent everything they earned on 0.74 children each. They live at replacement on *energy*, the chemostat regime, not blocked with full reserves as `r18x-s1`'s stomachs were. The founder-descended stomachs in the same run sat higher (−6 m) in 5.2 J/m³ with 231 J in reserve and a *negative* net (−0.023 W) — a different, larger-bodied population (0.0054 m³ against the inoculum's 0.0022) |
+
+So the goal's silence on how a line arises stops mattering: in the leak world a stomach
+that arrives late, alone in its kind at its depth, founds a lineage that is still there
+and still breeding two lifetimes on — the answer the original assay could not give at
+either dose (one stake-funded child each, then starvation), given by the same body in the
+same seed with one world rule changed. The lineage holds at about a hundred with ~11
+births per generation and no growth after t≈8,000: replacement, on 1.6–2.8 J/m³ at
+clearance 10, exactly where the ledger's R0 = 1 sits. Whether matter at −15 m would bind
+it if the energy did not is not separable from this run.
