@@ -156,7 +156,11 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    the control `r17x0-s2` none; the leak is 14–20 W against 0.3–0.5 W of corpses and the
    stomachs eat it as it lands. Founder-descended lines, not mutant invasions. The
    confirmation round is logbook/0054 (five seeds, dt 0.01, 30,000 s, exudation 0.15,
-   clearance 10, scored under D063 as amended — the first round that can pass); the dissection of `r14c10-s4`'s
+   clearance 10, scored under D063 as amended — the first round that can pass);
+   **Running since 2026-09-04 ~02:30**: `r18x-s1..s5` on w2–w6 (w7 spare), all workers on
+   commit `7b30c88`'s build; ends in 5–6 h; score with 0054's table (D063's four clauses
+   per seed, recruitment from `lineage.jsonl`, roots from lineage, M6 from
+   `scripts/absorptive-log.ps1`); the dissection of `r14c10-s4`'s
    stomachs is done (0050's closing): the bodies are fine on the ledger, their whereabouts
    are unrecorded, and children died 74–253 s after birth for no cause any output records —
    the per-creature absorptive log is **built** (`absorptive.jsonl` per run — one row per
