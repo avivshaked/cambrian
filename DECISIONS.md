@@ -95,7 +95,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; **confirmed 2026-09-04** (logbook/0054: 4 of 5 seeds pass D063 at dt 0.01 with exudation 0.15; the failing seed's stomachs were matter-blocked, not starved) · a world rule, DESIGN.md §5A.2c |
 | [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; overtaken by D072 (the contest for each unit was an age queue) |
 | [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · **screened 2026-09-04 (logbook/0056): `shuffled` not adopted** — the queue was the stomachs' lifeline, because in a matter-bound plateau energy buys no fecundity; ruled as D073 |
-| [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · building · screening (logbook/0057) · adoption is the owner's |
+| [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0057): neither adopted** — the stomachs bid highest and still breed no more than the leaves; the larger stock triples everything at the same share; the open matter budget is proposed next |
 
 ---
 
@@ -3534,3 +3534,13 @@ excretion (the first changes the world's size, not who wins; the second is alrea
 the rate that returns the tissue share in seconds).
 
 *Absorbed from `fable-propose-matter-economy.md` (2026-09-04), deleted on this ruling.*
+
+**Screened the same evening (logbook/0057): neither adopted.** `reserve` makes the
+stomachs the most solvent bodies in the world (median 218 J above the gate in seed 2
+against the control's −95) and they still breed no more than the leaves — clades 22 and
+64 against 120 and 227 — because a saturated leaf's reserve is of the same order and the
+rule ranks stomachs among the leaves, not above them. The 3/m³ stock binds again at 97%
+locked with the population and the stomachs both tripled at the same share, the age
+queue back at 44–66%, and the pace a third. The reading that reaches past both is the
+owner's: matter is not finite; the world needs an influx and an outflow, and its size
+should be a flow. `fable-propose-open-matter-budget.md`.

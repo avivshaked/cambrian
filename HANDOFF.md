@@ -52,10 +52,12 @@ is not part of the goal.
 
 ## The decision in front of the owner
 
-Ruled 2026-09-04 as D073 (owner: "proceed with your recommendations"): scarce matter
-goes to the parent with the largest energy reserve (`EVOSIM_CONCEPTION_ORDER reserve`),
-screened against a 3/m³ stock under the age order — logbook/0057. Adoption into the
-reference world is the owner's ruling over the screen.
+D073 screened (logbook/0057): neither the reserve order nor a tripled stock changes
+the stomachs' share; energy buys survival only. The owner's reading — matter, like
+energy, is not finite — is written up as `fable-propose-open-matter-budget.md`: an
+influx (surface or vent-base) and burial at the floor, the world's size a flow. Awaits
+the owner's ruling; nothing launches until then. The reference world is unchanged:
+age order, stock 1/m³, exudation 0.15; round 18's pass stands.
 
 ## Bugs to chase
 
