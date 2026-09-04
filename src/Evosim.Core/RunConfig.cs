@@ -545,6 +545,16 @@ namespace Evosim.Core
         /// selection pressure for outliving the queue rather than for fecundity.
         /// </para>
         /// <para>
+        /// <b>And removing it took the stomachs with it</b> — D073, logbook/0057. The queue was
+        /// the accidental route from an energy advantage to a reproductive one, because a body
+        /// that eats well survives longer and a body that survives longer is walked earlier; with
+        /// it gone, every solvent body has the same fecundity whatever its income, and §5A's
+        /// energy economy selects at the plateau only for not starving.
+        /// <see cref="Evosim.Core.ConceptionOrder.Reserve"/> is the same route with the right
+        /// variable: the walk is by energy surplus above the gate, so a reserve is what buys the
+        /// scarce matter.
+        /// </para>
+        /// <para>
         /// <b>Behind a knob, defaulting to the fault.</b> The historical record has to replay, and
         /// whether the reference world adopts the fix is the owner's ruling on a measured result
         /// rather than a silent change. <c>EVOSIM_CONCEPTION_ORDER</c> in the header, which always
@@ -1095,15 +1105,15 @@ namespace Evosim.Core
     }
 
     /// <summary>
-    /// The order in which the living are offered their turn at conception — D072, logbook/0056.
-    /// See <see cref="RunConfig.ConceptionOrder"/> for what it decides and
-    /// <see cref="World.Reproduce"/> for where it is spent.
+    /// The order in which the living are offered their turn at conception — D072, logbook/0056;
+    /// <see cref="Reserve"/> is D073, logbook/0057. See <see cref="RunConfig.ConceptionOrder"/>
+    /// for what it decides and <see cref="World.Reproduce"/> for where it is spent.
     /// </summary>
     /// <remarks>
-    /// Named for what each one is rather than for which is right. Neither is a scoring rule: both
-    /// walk every living body once per step and both let the same solvency gate decide, so the
-    /// only difference is who is asked first when a layer's matter covers fewer children than
-    /// there are parents who want one.
+    /// Named for what each one is rather than for which is right. None of them is a scoring rule:
+    /// all three walk every living body once per step and all three let the same solvency gate
+    /// decide, so the only difference is who is asked first when a layer's matter covers fewer
+    /// children than there are parents who want one.
     /// </remarks>
     public enum ConceptionOrder
     {
@@ -1118,5 +1128,12 @@ namespace Evosim.Core
         /// world's own. Same seed and config, same permutations, same run (§7).
         /// </summary>
         Shuffled = 1,
+
+        /// <summary>
+        /// Descending energy surplus above the breeding gate, ties by list index — D073. Energy
+        /// buys fecundity: when a layer's matter covers one child, the parent with the most to
+        /// spare takes it. Deterministic, and it takes no draw from any stream.
+        /// </summary>
+        Reserve = 2,
     }
 }

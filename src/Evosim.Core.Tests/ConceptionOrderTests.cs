@@ -26,6 +26,13 @@ namespace Evosim.Core.Tests
     /// <see cref="ConceptionOrder.Age"/> the elder takes it every single step and the younger never
     /// breeds at all; under <see cref="ConceptionOrder.Shuffled"/> they split it.
     /// </para>
+    /// <para>
+    /// <see cref="ConceptionOrder.Reserve"/> — D073, logbook/0057 — is asked the same question by
+    /// the same world, with the two contestants no longer equal: one earns more light than the
+    /// other. It has to give the matter to the richer of them and to keep doing it whichever of
+    /// them is older, because the whole point of the rule is that the winner is chosen by the
+    /// energy books rather than by anything the walk knows about age.
+    /// </para>
     /// </remarks>
     public class ConceptionOrderTests
     {
@@ -114,6 +121,49 @@ namespace Evosim.Core.Tests
             Assert.NotEqual(LivingIds(age), LivingIds(shuffled));
         }
 
+        [Fact]
+        public void ReserveReplaysFromTheSameSeedAndConfig()
+        {
+            // §7 again, and easier to keep here than for Shuffled: Reserve takes no draw from any
+            // stream at all — the ranking is a function of the living and their energies — so the
+            // only way it could fail to replay is a tie broken by whatever Array.Sort felt like.
+            // That is the ordering's index fallback, tested rather than argued.
+            var first = new World(Reference(ConceptionOrder.Reserve), seed: 9);
+            var second = new World(Reference(ConceptionOrder.Reserve), seed: 9);
+
+            for (int i = 0; i < 200; i++)
+            {
+                first.Step(1f);
+                second.Step(1f);
+            }
+
+            _output.WriteLine(Describe("first ", first));
+            _output.WriteLine(Describe("second", second));
+
+            AssertSameWorld(first, second);
+        }
+
+        [Fact]
+        public void ReserveIsADifferentWorldFromAge()
+        {
+            // logbook/0007 and logbook/0008's rule, for the third member: a knob that reached
+            // nothing would produce exactly the reassuring agreement this asserts against.
+            var age = new World(Reference(ConceptionOrder.Age), seed: 9);
+            var reserve = new World(Reference(ConceptionOrder.Reserve), seed: 9);
+
+            for (int i = 0; i < 200; i++)
+            {
+                age.Step(1f);
+                reserve.Step(1f);
+            }
+
+            _output.WriteLine(Describe("age    ", age));
+            _output.WriteLine(Describe("reserve", reserve));
+
+            Assert.NotEqual(age.Config.Hash(), reserve.Config.Hash());
+            Assert.NotEqual(LivingIds(age), LivingIds(reserve));
+        }
+
         // ---------------------------------------------------------------------------------
         // 3. The contest.
         // ---------------------------------------------------------------------------------
@@ -173,30 +223,99 @@ namespace Evosim.Core.Tests
             }
         }
 
+        [Theory]
+        [InlineData(ConceptionOrder.Age, true)]
+        [InlineData(ConceptionOrder.Age, false)]
+        [InlineData(ConceptionOrder.Reserve, true)]
+        [InlineData(ConceptionOrder.Reserve, false)]
+        public void OneRichParentAndOnePoorOne(ConceptionOrder order, bool elderIsRicher)
+        {
+            // The same one-unit-of-matter world, with the contestants no longer equal: a plate
+            // that catches roughly three and a half times the light of the leaf beside it, and
+            // earns more each step than a child of its own size costs. Which of the two is older
+            // is varied because that is the whole claim — under Reserve the books decide and the
+            // queue does not, so the answer must not move when the two are inoculated the other
+            // way round.
+            var world = new World(Contest(order), seed: 4);
+
+            world.Inoculate(elderIsRicher ? Plate() : Leaf(), count: 1, heightY: SurfaceY);
+            world.Inoculate(elderIsRicher ? Leaf() : Plate(), count: 1, heightY: SurfaceY);
+            Assert.Equal(2, world.Living.Count);
+
+            Organism elder = world.Living[0];
+            Organism younger = world.Living[1];
+            Organism richer = elderIsRicher ? elder : younger;
+            Organism poorer = elderIsRicher ? younger : elder;
+
+            for (int step = 0; step < Steps; step++)
+            {
+                Exile(world, elder, younger);
+                RestockOneChildsWorth(world);
+                world.Step(StepSeconds);
+            }
+
+            _output.WriteLine(
+                $"{order}, {(elderIsRicher ? "elder" : "younger")} richer: " +
+                $"richer #{richer.Id} {richer.Children} children at {richer.Energy:0.#} J, " +
+                $"poorer #{poorer.Id} {poorer.Children} at {poorer.Energy:0.#} J, " +
+                $"{world.Births} births in all, {world.ConceptionsBlockedByMatter} refused");
+
+            Assert.True(
+                elder.Energy > 0f && younger.Energy > 0f,
+                "a contestant starved; the contest was for energy, not for matter");
+
+            // The plate has to actually be the richer one for the rest to mean anything — a body
+            // that earned no more than its rival would make Reserve's win a coin the test could
+            // not read (CLAUDE.md: prove the change reached the thing it configures).
+            Assert.True(
+                richer.Energy > poorer.Energy,
+                $"the plate held {richer.Energy:0.#} J against the leaf's {poorer.Energy:0.#} J");
+
+            if (order == ConceptionOrder.Age)
+            {
+                // Unchanged by any of it: the queue is walked in birth order and cannot see a
+                // reserve, so the elder takes the matter whether it is the rich one or not.
+                Assert.Equal(Steps, elder.Children);
+                Assert.Equal(0, younger.Children);
+            }
+            else
+            {
+                // D073: the layer's one unit goes to the largest surplus above the gate, every
+                // step, and the poorer body — solvent throughout, and older in half of these
+                // cases — never gets a turn while the richer one still wants it.
+                Assert.Equal(Steps, richer.Children);
+                Assert.Equal(0, poorer.Children);
+            }
+        }
+
         // ---------------------------------------------------------------------------------
         // 4. The knob is a tunable like every other.
         // ---------------------------------------------------------------------------------
 
-        [Fact]
-        public void TheOrderReachesTheHashAndTheFileByName()
+        [Theory]
+        [InlineData(ConceptionOrder.Shuffled)]
+        [InlineData(ConceptionOrder.Reserve)]
+        public void TheOrderReachesTheHashAndTheFileByName(ConceptionOrder order)
         {
             // The two reflection guards cover this generically; these three assertions say what
             // the generic ones mean for an enum, which is the first scalar enum on RunConfig and
-            // therefore the first knob whose file value is a word rather than a number.
+            // therefore the first knob whose file value is a word rather than a number. Every
+            // member but the default is walked, because a member that reached neither the hash nor
+            // the file would be a run filed under a world it did not have.
             var age = new RunConfig();
-            var shuffled = new RunConfig { ConceptionOrder = ConceptionOrder.Shuffled };
+            var named = new RunConfig { ConceptionOrder = order };
 
-            Assert.NotEqual(age.Hash(), shuffled.Hash());
+            Assert.NotEqual(age.Hash(), named.Hash());
 
-            string text = RunConfigJson.Write(shuffled);
+            string text = RunConfigJson.Write(named);
             _output.WriteLine(Line(text, "conceptionOrder"));
 
-            Assert.Contains("\"conceptionOrder\": \"Shuffled\"", text);
+            Assert.Contains("\"conceptionOrder\": \"" + order + "\"", text);
 
             RunConfig back = RunConfigJson.Read(text, out string mismatch);
             Assert.Null(mismatch);
-            Assert.Equal(ConceptionOrder.Shuffled, back.ConceptionOrder);
-            Assert.Equal(shuffled.Hash(), back.Hash());
+            Assert.Equal(order, back.ConceptionOrder);
+            Assert.Equal(named.Hash(), back.Hash());
         }
 
         [Fact]
@@ -213,6 +332,7 @@ namespace Evosim.Core.Tests
             _output.WriteLine(e.Message);
             Assert.Contains("Oldest", e.Message);
             Assert.Contains("Shuffled", e.Message);
+            Assert.Contains("Reserve", e.Message);
         }
 
         // ---------------------------------------------------------------------------------
@@ -317,6 +437,24 @@ namespace Evosim.Core.Tests
                 BroodSize = 1,
                 OffspringEndowment = 0.01f,
             };
+            return g;
+        }
+
+        /// <summary>
+        /// The same leaf spread out: a plate of the same green tissue, wider than it is thick.
+        /// </summary>
+        /// <remarks>
+        /// Income is lit area and lit area is a quarter of the surface (§5A.1), so flattening a
+        /// body buys light faster than it buys the volume it is charged for. This one holds 2.25
+        /// times the leaf's volume — and so costs 2.25 times as much to build a child of — while
+        /// catching 3.5 times the light, which is what makes it richer every step rather than
+        /// merely bigger. A creature selection could plausibly find, rather than a contrivance:
+        /// the shape asymmetry <c>AbsorptiveCell</c>'s remarks describe, used deliberately.
+        /// </remarks>
+        private static Genome Plate()
+        {
+            Genome g = Leaf();
+            g.Nodes[0].Dimensions = new Float3(0.6f, 0.05f, 0.6f);
             return g;
         }
 

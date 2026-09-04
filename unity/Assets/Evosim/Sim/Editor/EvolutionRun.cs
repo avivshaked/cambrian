@@ -220,7 +220,9 @@ namespace Evosim.Sim.EditorTools
             // every earlier run, bit for bit — the birth-ordered walk that made the oldest solvent
             // body in a matter-starved layer take the matter every step (logbook/0056). `shuffled`
             // draws a fresh permutation each step from a stream of the world's own, so the same
-            // seed and config still replay. Unset is `age`.
+            // seed and config still replay. `reserve` is D073: descending energy surplus above the
+            // breeding gate, so scarce matter goes to the parent with the most to spare and energy
+            // buys fecundity (logbook/0057). Unset is `age`.
             ConceptionOrder conceptionOrder = EnvConceptionOrder("EVOSIM_CONCEPTION_ORDER");
 
             // The physics timestep (logbook/0052's validation). 0.01 is every earlier run, bit for
@@ -539,8 +541,11 @@ namespace Evosim.Sim.EditorTools
                 // D072, rendered unconditionally for D065's reason: a reader of a header never
                 // has to work out whether a missing token means "age" or "written before the knob
                 // existed". The world at `age` is bit-identical to every run before it; the
-                // configHash is not, as it is not for any new tunable.
-                " · conception " + (conceptionOrder == ConceptionOrder.Shuffled ? "shuffled" : "age") +
+                // configHash is not, as it is not for any new tunable. Printed as the enum's own
+                // name lowered rather than a ternary per member, so the vocabulary the header
+                // writes is the one EnvConceptionOrder reads and a member added later cannot
+                // arrive announcing itself as "age".
+                " · conception " + conceptionOrder.ToString().ToLowerInvariant() +
                 " · speciesTheta " + speciesTheta +
                 (patches > 1f
                     ? " · patches " + (int)patches + ", h-mix " + horizontalMixing + " m2/s, " +
@@ -1930,8 +1935,8 @@ namespace Evosim.Sim.EditorTools
         }
 
         /// <summary>
-        /// D072's walk order from the environment: <c>age</c> or <c>shuffled</c>, case-insensitive,
-        /// unset meaning <see cref="ConceptionOrder.Age"/>.
+        /// D072's walk order from the environment: <c>age</c>, <c>shuffled</c> or D073's
+        /// <c>reserve</c>, case-insensitive, unset meaning <see cref="ConceptionOrder.Age"/>.
         /// </summary>
         /// <remarks>
         /// <b>An unrecognised value stops the run rather than falling back</b>, unlike
@@ -1950,11 +1955,12 @@ namespace Evosim.Sim.EditorTools
             {
                 case "age": return ConceptionOrder.Age;
                 case "shuffled": return ConceptionOrder.Shuffled;
+                case "reserve": return ConceptionOrder.Reserve;
 
                 default:
                     throw new ArgumentException(
                         name + " is '" + raw + "', which is not a conception order. " +
-                        "Known: age, shuffled.");
+                        "Known: age, shuffled, reserve.");
             }
         }
     }

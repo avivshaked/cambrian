@@ -130,6 +130,22 @@ namespace Evosim.Core
         private int[] _conceptionOrder = Array.Empty<int>();
 
         /// <summary>
+        /// Each living body's energy surplus above its breeding gate, filled once per step under
+        /// <see cref="ConceptionOrder.Reserve"/> — D073, logbook/0057.
+        /// </summary>
+        /// <remarks>
+        /// Indexed by position in <c>_living</c> rather than by rank, because the comparer reads it
+        /// by the index it is handed. Kept and reused for <see cref="_conceptionOrder"/>'s reason.
+        /// </remarks>
+        private float[] _conceptionSurplus = Array.Empty<float>();
+
+        /// <summary>
+        /// <see cref="ConceptionOrder.Reserve"/>'s ordering. Held rather than built each step, in
+        /// the manner of everything else this walk touches.
+        /// </summary>
+        private readonly IComparer<int> _byReserve;
+
+        /// <summary>
         /// Species registry — D057. Founding genome and founding time, keyed by
         /// <see cref="Organism.SpeciesId"/>. Empty for the life of a run whose
         /// <see cref="RunConfig.SpeciesDriftThreshold"/> is 0.
@@ -429,6 +445,34 @@ namespace Evosim.Core
             // Constructing an Rng takes no draw from anything else, so an Age world is unchanged
             // by its existence.
             _conceptionRng = new Rng(Rng.SeedFor(seed, ConceptionOrderIndex));
+
+            // Likewise for every world and used by none but a Reserve one — an object, not a draw.
+            _byReserve = new ReserveComparer(this);
+        }
+
+        /// <summary>
+        /// Descending energy surplus, ties by list index ascending — <see cref="ConceptionOrder.Reserve"/>'s
+        /// order (D073, logbook/0057).
+        /// </summary>
+        /// <remarks>
+        /// The fallback to the index is not tidiness. It makes the comparison a *total* order over
+        /// distinct indices, and a total order has exactly one sorted arrangement whichever sort
+        /// produced it — where two equal surpluses left to tie would be arranged by whatever
+        /// <see cref="Array.Sort{T}(T[], int, int, IComparer{T})"/>'s introsort happens to do this
+        /// runtime. That is the same hazard <see cref="Rng"/> exists for: an algorithm nobody
+        /// promised not to change, standing between a seed and a run.
+        /// </remarks>
+        private sealed class ReserveComparer : IComparer<int>
+        {
+            private readonly World _world;
+
+            public ReserveComparer(World world) => _world = world;
+
+            public int Compare(int a, int b)
+            {
+                int bySurplus = _world._conceptionSurplus[b].CompareTo(_world._conceptionSurplus[a]);
+                return bySurplus != 0 ? bySurplus : a.CompareTo(b);
+            }
         }
 
         /// <summary>
@@ -988,6 +1032,14 @@ namespace Evosim.Core
         /// <see cref="RunConfig.ConceptionOrder"/> names the walk;
         /// <see cref="ConceptionOrder.Age"/> is the queue and the default, so the record replays.
         /// </para>
+        /// <para>
+        /// <b>And the walk is where the energy economy gets its grip, or fails to</b> — D073,
+        /// logbook/0057. Whoever is walked first is the only place a parent's reserve can decide
+        /// anything about its fecundity: the gate below is a threshold, not a ranking, so two
+        /// solvent bodies breed alike however far apart their books are.
+        /// <see cref="ConceptionOrder.Reserve"/> walks them richest first, which is what the
+        /// queue was doing by accident, with age standing in for income.
+        /// </para>
         /// </remarks>
         private void Reproduce()
         {
@@ -996,21 +1048,38 @@ namespace Evosim.Core
             // which would make brood size compound within a single step.
             _born.Clear();
 
-            if (Config.ConceptionOrder == ConceptionOrder.Shuffled)
+            switch (Config.ConceptionOrder)
             {
-                PermuteConceptionOrder();
+                case ConceptionOrder.Shuffled:
+                {
+                    PermuteConceptionOrder();
 
-                for (int i = 0; i < _living.Count; i++) Brood(_living[_conceptionOrder[i]]);
-            }
-            else
-            {
-                for (int i = 0; i < _living.Count; i++) Brood(_living[i]);
+                    for (int i = 0; i < _living.Count; i++) Brood(_living[_conceptionOrder[i]]);
+                    break;
+                }
+
+                case ConceptionOrder.Reserve:
+                {
+                    // Only the solvent are ranked, so this walk is shorter than the other two —
+                    // the ones it leaves out are the ones Brood would have turned away anyway.
+                    int solvent = RankConceptionOrderByReserve();
+
+                    for (int i = 0; i < solvent; i++) Brood(_living[_conceptionOrder[i]]);
+                    break;
+                }
+
+                default:
+                {
+                    // Age, and every run before D072: _living's own birth order, untouched.
+                    for (int i = 0; i < _living.Count; i++) Brood(_living[i]);
+                    break;
+                }
             }
 
-            // Appended in walk order, so under Shuffled this step's permutation also decides the
-            // order the children sit in for the next one. That is not a second decision to make:
-            // _living's order is only ever read by this walk, and the next step draws a fresh
-            // permutation over whatever order it finds.
+            // Appended in walk order, so under Shuffled and Reserve this step's ordering also
+            // decides the order the children sit in for the next one. That is not a second
+            // decision to make: _living's order is only ever read by this walk, and the next step
+            // orders whatever it finds afresh.
             for (int i = 0; i < _born.Count; i++)
             {
                 _living.Add(_born[i]);
@@ -1059,6 +1128,49 @@ namespace Evosim.Core
                 _conceptionOrder[i] = _conceptionOrder[j];
                 _conceptionOrder[j] = swap;
             }
+        }
+
+        /// <summary>
+        /// Fills the front of <see cref="_conceptionOrder"/> with the solvent parents' indices,
+        /// richest first, and returns how many there are — D073, logbook/0057.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Energy buys fecundity.</b> A body's surplus is what it holds above the price of the
+        /// child it is asking for, and the layer's matter goes down that list until it runs out.
+        /// The gate is the one <see cref="Brood"/> applies, computed here once per body and used
+        /// both to reject the insolvent and to rank the rest — the same rule read twice would be
+        /// two rules waiting to disagree.
+        /// </para>
+        /// <para>
+        /// <b>One step's ranking, not a running auction.</b> Every surplus is read before the walk
+        /// begins, so a parent that has just bred — and is now poorer than the body behind it —
+        /// keeps its place for the rest of the step. Re-ranking after each birth would be a
+        /// different world rule and a sort per birth; D073 asked for this one.
+        /// </para>
+        /// </remarks>
+        private int RankConceptionOrderByReserve()
+        {
+            int count = _living.Count;
+            if (_conceptionOrder.Length < count) _conceptionOrder = new int[count];
+            if (_conceptionSurplus.Length < count) _conceptionSurplus = new float[count];
+
+            int solvent = 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                Organism parent = _living[i];
+
+                float gate = parent.ReproductionThreshold(Config.PerOffspringOverheadJoules);
+                if (gate <= 0f || parent.Energy < gate) continue;
+
+                _conceptionSurplus[i] = parent.Energy - gate;
+                _conceptionOrder[solvent++] = i;
+            }
+
+            Array.Sort(_conceptionOrder, 0, solvent, _byReserve);
+
+            return solvent;
         }
 
         /// <summary>
