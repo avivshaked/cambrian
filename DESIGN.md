@@ -214,6 +214,20 @@ under-delivers in dim water (the per-biomass alternative is an open world-rule c
 and exudation alone does not close consumers' demand in the ocean either. The next
 constraint, read from the failing seed's absorptive log, is matter at depth (§5A.2d).
 
+## 0l. Changelog — D069, the coarse step (2026-09-03)
+
+The physics step becomes configurable (`EVOSIM_DT`), validated against a seed already run
+rather than adopted. What the validation found is in §7: PhysX replays bit for bit on one
+machine under one build, so every per-step change — a limiter's few hundred capped
+impulses, a coarser step — is a different chaotic realisation of the same seed, and a
+per-seed A/B cannot tell the step's effect from chance. 0.02 s sits inside that spread and
+is the screening step at ~3× the pace; 0.01 s stays the confirmation step and the only
+one at which the record replays; 0.05 s is out (§6.2). The drag-impulse limiter that
+makes coarse steps stable engages only above 0.01 s. The step is in the header and the
+identity record, not yet in the config hash. The rest of D069 — the ledger calculator, the
+invasion assay, the futility and sequential-seed rules — is instrumentation and process
+and changes no rule of the world.
+
 ## 1. Target hardware
 
 | | |
@@ -1881,10 +1895,19 @@ it configures* (logbook/0007, logbook/0008, logbook/0013).
   for Pathak et al. 2019**. So both the engine and the physics backend chosen here have
   direct precedent for rigid-body evolved creatures — this is not an unusual bet.
 - `Physics.simulationMode = Script` — manual stepping, nothing tied to frame rate.
-- Fixed timestep and solver iteration counts, both in the config hash. ⚠ *Not yet true as
-  built (2026-08-31): the physics timestep is a compile-time constant outside
-  `RunConfig.Hash()`. Hashing it is queued before the dt sweep (`HANDOFF.md`); until then
-  the run identity record, not the hash, carries dt.*
+- Fixed timestep and solver iteration counts, both in the config hash. ⚠ *Partly true as
+  built (2026-09-03, D069): the physics timestep is configurable (`EVOSIM_DT`,
+  `Ecosystem.ConfigurePhysicsStep`; it must divide the 0.5 s metabolic step exactly) and is
+  printed in every run header (`dt=`) and in the run identity record — but it is still
+  outside `RunConfig.Hash()`, so two runs at different steps can share a hash. Compare
+  headers, not hashes, across a step change. Hashing it is queued.* **The step policy
+  (logbook/0052):** 0.01 s is the confirmation step and the only step at which the
+  historical record replays; 0.02 s is the screening step, ~3× the pace, its deviations
+  from 0.01 inside the same-seed butterfly (§7); 0.05 s is rejected — unstable on the
+  explicit drag without a limiter, and with one the population migrates into the surface
+  film and the audit opens. The drag-impulse limiter (`FluidEnvironment`, caps only the
+  component opposing existing motion) engages only above 0.01 s, so it never touches a
+  replay of the record.
 
 ### 6.3 Getting work out of 24 cores
 
@@ -1940,6 +1963,15 @@ Every evaluation defined by `(genome, seed, configHash)`.
 - **Honest caveat:** PhysX is not bitwise deterministic across CPUs, drivers or Unity
   versions. Same-machine same-version replay is reliable in practice; cross-machine is not
   guaranteed. The hash exists so mismatches are *detected*.
+- **Measured on this machine (logbook/0052, 2026-09-03): same-build replay is bit for bit** —
+  three 5,000-s runs of one seed produced identical reports to the last decimal. There is
+  no replay noise. The corollary is the one that matters for every comparison: **any
+  change to any per-step term is a butterfly.** Sixty-eight capped drag impulses at 0.01 s
+  moved the same seed by ±20% in population, 4 m in depth and half the standing food by
+  t=5,000; 432 at 0.02 s did the same. A per-seed before/after on anything that touches the
+  physics loop therefore cannot separate the change from the realisation. The rule: compare
+  distributions across seeds, or hold a difference against the butterfly's own spread; and
+  keep 0.01 s untouched so the record stays replayable (§6.2's step policy).
 
 ---
 
