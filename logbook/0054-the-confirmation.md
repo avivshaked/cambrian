@@ -159,3 +159,34 @@ rate — which are world rules and the owner's.
 Exudation at 0.15 becomes a world rule (D070 confirmed; DESIGN.md §5A.2c). The frontier
 moves to matter at depth — a proposal for the owner follows — and, past that, to 0049's
 reading: movement, in water that moves and feeds.
+
+### Addendum: scored again by connected clade (2026-09-04, after the Sol/GPT review of 2026-09-03)
+
+The review points out that D063's wording scores an aggregate — the `inherit` column
+counts every living absorptive creature whose parent expressed the trait, whatever clade
+it belongs to, and the recruitment clause accepts any absorptive birth — so a set of
+unrelated short-lived clades could add up to a streak, and an unrelated late mutant could
+satisfy recruitment for a sterile cohort. That is right. So the round was scored a second
+time by **connected clade**: a clade begins at an absorptive birth whose parent did not
+express the trait (or at an absorptive founder), membership follows the parent chain
+while the trait is inherited, and the three clauses are asked of *one* clade — alive for
+≥ 20 consecutive samples to the end, ≥ 10 living members at the last sample, an inherited
+absorptive birth within the last 20 samples inside that clade (`scratch/clade-score.py`,
+from `lineage.jsonl`'s birth and death events).
+
+| seed | clades with a living member at 30,000 | the largest clade: root, born | members ever | alive at end | alive-streak (samples) | ≥ 10 from | inherited births in last 20 samples | clade verdict |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 3 | **mutant** 549, t=4,413 | 79 | 2 | 256 | 5,700 | 0 | fail |
+| 2 | 3 | founder 31, t=8 | 287 | 48 | 300 | 800 | 9 | **pass** |
+| 3 | 3 | founder 34, t=9 | 409 | 59 | 300 | 2,100 | 13 | **pass** |
+| 4 | 1 | **mutant** 3936, t=16,265 | 79 | 77 | 138 | 22,100 | 21 | **pass** |
+| 5 | 2 | founder 252, t=2,372 | 1,840 | 221 | 277 | 4,600 | 133 | **pass** |
+
+**4 of 5 holds under the strict reading.** Two things the aggregate hid: seed 4's whole
+line at the end is *one clade rooted in a mutant born at t=16,265* — a late invasion in a
+mature world that reached 77 in 14,000 s — and seed 1's largest clade was mutant-rooted too;
+so M2 ("the lines are founder-descended") is corrected at the clade level: three of the
+four passing seeds are founder-rooted, one is a mutant's. The screen's arms (0053) pass by
+clade as well (46 and 120 in one clade each), and the leak-world assay's largest inoculant
+clade holds 19 alive at 20,000 s with 7 recent inherited births. Whether the clade reading
+is D063's intended one is the owner's to ratify; both readings are now on record and agree.
