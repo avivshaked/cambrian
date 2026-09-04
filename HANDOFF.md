@@ -1,6 +1,6 @@
 # Handoff — where to pick up
 
-**Updated 2026-09-03, after round 13 scored (0 of 5, cut to five arms: the trapdoor closed and the populations floated into a thin surface film; the gate is the stomach's ledger — D068), with round 14 (clearance 5 and 10) running under D069's sequential rule, the invasion assay (logbook/0051) and the coarse-step validation (logbook/0052) running beside it, and the ledger calculator (`scripts/ledger.ps1`) in use.** This is the one file a new agent should
+**Updated 2026-09-04: the goal rule is met.** Round 18 (logbook/0054) passes D063 as amended 4 of 5 at dt 0.01 with exudation 0.15 (D070, a world rule from today, DESIGN.md §5A.2c): inherited absorptive lines of 76–221 at 30,000 s, founder-descended, recruiting, producers at 1,500–1,800, audit closed. The failing seed's stomachs were matter-blocked in the richest water of the round — the next constraint is matter at depth (a proposal for the owner follows). Built this week: the ledger calculator, the invasion assay, the coarse step (0.02 screens, 0.01 confirms), the detritus-flux columns, the exudation knob and the per-creature absorptive log. This is the one file a new agent should
 read first. It says what was being attempted, how far it got, what is queued, and exactly how
 to continue. It is a pointer, not a source of truth: the specification is `DESIGN.md`, the
 reasoning is `DECISIONS.md`, the history is `logbook/`, and the operating rules are
@@ -157,10 +157,10 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    stomachs eat it as it lands. Founder-descended lines, not mutant invasions. The
    confirmation round is logbook/0054 (five seeds, dt 0.01, 30,000 s, exudation 0.15,
    clearance 10, scored under D063 as amended — the first round that can pass);
-   **Running since 2026-09-04 ~02:30**: `r18x-s1..s5` on w2–w6 (w7 spare), all workers on
-   commit `7b30c88`'s build; ends in 5–6 h; score with 0054's table (D063's four clauses
-   per seed, recruitment from `lineage.jsonl`, roots from lineage, M6 from
-   `scripts/absorptive-log.ps1`); the dissection of `r14c10-s4`'s
+   **Scored 2026-09-04: 4 of 5 pass** (seeds 2–5; seed 1's line of 58 died to 4 with 537 J
+   reserves in 13.7 J/m³ — matter-blocked). Every worker is idle and on commit `7b30c88`'s
+   build. Next: the owner's ruling on the matter-at-depth proposal; the invasion assay at
+   0.15 run to two lifetimes; the 0.05 / 0.13 bracket if the owner wants the dose curve; the dissection of `r14c10-s4`'s
    stomachs is done (0050's closing): the bodies are fine on the ledger, their whereabouts
    are unrecorded, and children died 74–253 s after birth for no cause any output records —
    the per-creature absorptive log is **built** (`absorptive.jsonl` per run — one row per

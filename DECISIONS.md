@@ -85,14 +85,14 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D060](#d060) | The invasion assay — a labeled hand for a mechanism question | 2026-08-31 | active · built, first use logbook/0043 |
 | [D061](#d061) | The patchy world — horizontal structure, throttled exchange, endogenous inequality | 2026-09-01 | built · round 8: 0-of-5 by producer extinction — a founding cost at this dose (logbook/0044); knobs kept for the movement question |
 | [D062](#d062) | The satiation cap — a filter feeder's mouth gets its physical limit | 2026-09-01 | built · round 8: unanswered — every clean arm ran away before a chain formed (logbook/0044) |
-| [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · earned its keep in round 8: failed the flagship's sterile cohort at the cut (logbook/0044) |
+| [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · earned its keep in round 8: failed the flagship's sterile cohort at the cut (logbook/0044) · **met 2026-09-04, round 18 (logbook/0054): 4 of 5 seeds, discovery regime, with exudation 0.15 (D070)** |
 | [D064](#d064) | Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column | 2026-09-02 | built · round 10c: the drowning is cured — five of five producer worlds to budget, uncensored, depth held within 3 m through 24,000 s of throttled births (logbook/0046); the chain still does not arrive |
 | [D065](#d065) | The fixed matter cost — a body costs a minimum of matter to exist, so the count cannot ratchet through shrinking | 2026-09-02 | built · round 10c: counts levelled at 1,490–1,610 against a ceiling of 8,000, uncensored (logbook/0046) |
 | [D066](#d066) | Roll cells — the water moves everything, and it stirs: one prescribed flow over patches advects bodies and fields; blinking rolls for chaotic advection | 2026-09-02 | built · round 12 (logbook/0048) 0 of 6: the rolls stir fields and bodies and keep producers alive at 30 m cells, but a roll that stops above the floor is a trapdoor for remains — surface detritus 0.2–3 J/m³, deep 15–21; one absorptive line formed and drifted out. Next lever proposed: sink speed of remains |
 | [D067](#d067) | The vent — an upwelling plume from the floor in one patch, return through the others, superposed on the rolls; returns what the trapdoor takes | 2026-09-03 | built · run as round 13 arm B (logbook/0049), two seeds: producers survive the return flow (M6 held), the deep field falls to the lowest of the round (2.0–2.4 J/m³), no chain forms, matter refusals rise 1.5–5× against the twin. Neither harmful nor load-bearing while absorbers cannot breed; off in round 14 |
 | [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050) running under D069's sequential rule: 0 of 3 scored so far — clearance 10 grows the first 20–48-member lines of the campaign and they graze their field and crash; clearance 5 holds a line of 3–9 |
 | [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
-| [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; built; screen passed on both seeds 2026-09-04 (logbook/0053: lines of 46 and 133 at 20,000 s, control none); confirmation round 0054 running |
+| [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; **confirmed 2026-09-04** (logbook/0054: 4 of 5 seeds pass D063 at dt 0.01 with exudation 0.15; the failing seed's stomachs were matter-blocked, not starved) · a world rule, DESIGN.md §5A.2c |
 
 ---
 
@@ -3305,7 +3305,12 @@ lines at 77 and 83 two lifetimes after reaching ten, minima 10 and 12, 46 and 13
 20,000 s; the control had none; the leak delivered 14–20 W against 0.3–0.5 W of corpses
 and the stomachs ate it as it landed (standing field *lower* than the control's). The lines
 descend from founder-era stomachs that the leak kept alive, not from mutants. Confirmation
-round at 0.01 pre-registered as logbook/0054.* The producers' own dynamics are read on the same arms: a fraction of intake is a tax on
+round at 0.01 pre-registered as logbook/0054.* **Confirmed the same day: 4 of 5 seeds
+pass D063 as amended** — inherited lines of 76–221 at 30,000 s, all founder-descended, all
+recruiting, producers at 1,500–1,800, audit closed. The failing seed's last stomachs held
+537 J in 13.7 J/m³ and had no children: refused conceptions for want of matter at their
+layer, the constraint that follows this one. Exudation at 0.15 is a world rule from this
+date (DESIGN.md §5A.2c, changelog 0k). The producers' own dynamics are read on the same arms: a fraction of intake is a tax on
 growth, and in the light-0.02 world producers have run away before, so the tax may be
 harmless or useful, but it is not assumed either way.
 

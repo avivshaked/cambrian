@@ -45,10 +45,15 @@ Current state: **the ecosystem runs.** Genomes develop into phenotypes, articula
 under their own evolved brains, and `Evosim.Core`'s world charges upkeep, feeds, breeds and
 kills — the energy audit closes at 0.0000% across a food web that has twice assembled itself
 (logbook/0025, 0028). Milestones 2–5 are done, out of the listed order; perception is partial
-(four sensor channels read — `Chemical`, `Energy` and `Flow` do not). The open frontier is
-DECISIONS.md D040–D050: no world yet holds a full ecology and a food chain at once, movement
-has never paid its energy cost (the cost side is closed, the prize side is open), and
-throughput binds every remaining question. Experiments are *arms*, launched with
+(four sensor channels read — `Chemical`, `Energy` and `Flow` do not). **The goal rule (D063) was met on
+2026-09-04** (logbook/0054): with producers exuding 15% of their light intake (D070) the world
+holds inherited absorptive lines of 76–221 to the end of a 30,000-s run in four seeds of
+five, discovery regime. The open frontier: matter at depth (the failing seed's stomachs held
+full reserves in full water and were refused conceptions for want of matter at their layer —
+levers `EVOSIM_EXCRETION`, the matter price, the matter sink, all world rules), whether a
+*late* stomach can invade (the assay at 0.15), and movement, which has never paid its energy
+cost (the cost side is closed, the prize side is open). Throughput still binds: dt 0.02
+screens, 0.01 confirms (logbook/0052). Experiments are *arms*, launched with
 `scripts/run-arm.ps1` against worker copies `unity-w2`..`unity-w7` — never two processes on
 one worker, at most five concurrent arms, and verify every arm's settings from the header its
 run report writes, not from the launch command.

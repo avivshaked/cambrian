@@ -192,6 +192,28 @@ not whole layers. Reasoning, the flux arithmetic, the dark-excursion risk and th
 alternatives are in D067. Built and tested; not yet run — round 13 (logbook/0049) tries the
 sink speed of remains first.
 
+## 0k. Changelog — D070 (2026-09-04)
+
+The producers feed the water while they live. `RunConfig.ExudationFraction`
+(`EVOSIM_EXUDATION`, default 0, bit-identical off): each metabolic step a producer
+deposits that fraction of its post-wear light intake into the nutrient field at its own
+height and patch, taken off its net (`EnergyLedger.Exuded`), so the audit closes by
+construction and the ledger calculator sees it through `Net`. It exists because the
+field's only income had been dead tissue — a founding pulse decaying to a few tenths of a
+watt as the world selects for small bodies — which holds about six clearance-10 stomachs
+at replacement against a goal of ten (logbook/0050, the flux instrument's reading). The
+review's round 5 put the ocean's number beside it: 10–20% of primary production is
+released as dissolved organic matter, mean 13%, ~20% flat across productivity, isometric
+with cell size and phase-independent [MCP05; LS13; LS11; CH20], and the measured
+producer→herbivore transfer step is 13% [ED21] against this world's 1%. Screened at 0.02
+(logbook/0053) and confirmed at 0.01 (logbook/0054): with the fraction at 0.15 the world
+holds inherited absorptive lines of 76–221 at the end of a 30,000-s run in four seeds of
+five, and **D063 as amended is met** in the discovery regime. Caveats carried from the
+review: real release peaks where light is lowest, so a fraction-of-intake rule
+under-delivers in dim water (the per-biomass alternative is an open world-rule choice);
+and exudation alone does not close consumers' demand in the ocean either. The next
+constraint, read from the failing seed's absorptive log, is matter at depth (§5A.2d).
+
 ## 1. Target hardware
 
 | | |
@@ -1184,6 +1206,26 @@ experiment did find is that **at mixing 0.2 the deep water crosses `AbsorptiveCe
 break-even (4 J/m³) by t≈2,300–4,000 in every seed** — the gradient the D/v = 10 m arithmetic
 predicted — which is the first world here whose deep water is worth living in, and is where
 the food-chain question is now being asked.
+
+**The producers leak, and that is the second level's income ✅ implemented, confirmed (D070).**
+Dead tissue was the pool's only income, and the detritus-flux instrument (`det in` / `det
+out` / `det exuded`, `World.DetritusDepositedTotal` and siblings; the identity
+`deposited + exuded − taken == TotalJoules` holds at every step) measured it as a founding
+pulse — 87 J per corpse while founders die, 4.7 J by t=15,000 — decaying to a few tenths
+of a watt, which holds about six stomachs at replacement. `ExudationFraction` routes a
+fraction of each producer's post-wear light intake into the field at its own layer each
+step, off its net. At 0.15 — inside the 10–20% the literature gives for phytoplankton
+[MCP05 p.1, p.9; LS13 p.1; LS11 p.1; CH20 p.1, p.5], flat in cell size and growth phase so
+a flat fraction is faithful in those respects — the leak is 10–29 W against 0.2–0.9 W of
+corpses, the stomachs eat 74–103% of it as it lands, the standing field *falls* (the
+chemostat, not the larder), and inherited absorptive lines of 76–221 persist to the end
+of a 30,000-s run in four seeds of five (logbook/0054). The producers pay it and keep
+their numbers. Two caveats from the review: real release is highest where light is
+lowest [MCP05 p.8–9], so this rule under-delivers in the dim band — a per-biomass release
+independent of instantaneous photosynthesis is the faithful alternative and an open
+choice; and in the ocean exudation is one of several inputs to the dissolved pool and
+does not close bacterial demand alone [LS11 p.8; CH20 p.1]. What the confirmed world
+showed next is in §5A.2d: the stomachs that failed were matter-blocked, not starved.
 
 ### 5A.2d Matter — what the producer consumes ✅ implemented
 
