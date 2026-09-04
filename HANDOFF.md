@@ -153,8 +153,11 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    closed at 0 of 8 (0050's closing). The gate is open: the build from
    `scratch/exudation-spec.md` is under way (Opus against the spec, compile and 300-s
    validation on w4), then the screen at 0.15 on seeds 1 and 2 of clearance 10 at dt
-   0.02 to 20,000 s (`det exuded` split from `det in`); a dissection of `r14c10-s4`'s
-   mutant stomachs (why 61 births made a line of 2 in 4–8 J/m³) is queued; review round 5 is done (PER 10–20%, mean 13%, ~20% flat; the screen runs at 0.15 — D070 carries the numbers and the three caveats);
+   0.02 to 20,000 s (`det exuded` split from `det in`); the dissection of `r14c10-s4`'s
+   stomachs is done (0050's closing): the bodies are fine on the ledger, their whereabouts
+   are unrecorded, and children died 74–253 s after birth for no cause any output records —
+   the next instrument is a per-creature ledger row for living absorptives (depth, patch,
+   density seen, intake, reserve, per sample), queued behind the build; review round 5 is done (PER 10–20%, mean 13%, ~20% flat; the screen runs at 0.15 — D070 carries the numbers and the three caveats);
    the screen is pre-registered in D070. The proposal file is deleted.
    Built meanwhile: the detritus-flux instrument (`det in` / `det out` columns, J per
    window; `World.DetritusDepositedTotal/TakenTotal`; test in `WorldTests`). It changes

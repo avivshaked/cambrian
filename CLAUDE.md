@@ -325,7 +325,9 @@ actually verifying it.
   no depth, volume or energy per creature — and every death reads `starved` because `Starved` is
   the only `DeathCause` implemented, so cause of death discriminates nothing. `snapshots/` hold
   each living creature's *genome graph*, not its developed phenotype (a creature can carry an
-  absorptive node it never expressed, and read `abs=0`), and snapshot rows have no id to join
+  absorptive node it never expressed, and read `abs=0` — one concrete route: the node's accumulated
+  edge scale takes its part below `minPartVolume` and development prunes the subtree, so a mixotroph
+  genome develops into a pure leaf; seen in `r14c10-s4`'s snapshot), and snapshot rows have no id to join
   against lineage. Depth-by-guild and body-size-by-guild are therefore not measurable from a run's
   output today; say so rather than proxying (logbook/0048's dissection).
 - **PhysX replays bit for bit on this machine, so every per-step change is a butterfly.** Same
