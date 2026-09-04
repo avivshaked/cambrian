@@ -104,4 +104,9 @@ Launcher `scratch/launch-r20.ps1`; workers refreshed to the build and launched w
 
 ## Launch
 
-Appended below once the build lands.
+Launched 2026-09-04 ~13:40 on workers 2, 3 and 4, refreshed to commit `23a6bd8` (the
+conception-order build, 484 tests) and launched with `-ExpectSimHash f99d69b7952a4285`;
+every manifest reads that `simHash`, `gitCommit 23a6bd8`, `gitDirty false`, `status
+running`. Headers verified: `conception shuffled` on `r20q-s1` and `r20q-s4`,
+`conception age` on `r20q0-s4`, `dt=0.02`, `sink 0.002 m/s, matter 0.002 m/s`,
+`exudation 0.15`. Monitor running. Results appended below.
