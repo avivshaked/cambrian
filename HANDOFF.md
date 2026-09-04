@@ -52,12 +52,12 @@ is not part of the goal.
 
 ## The decision in front of the owner
 
-D073 screened (logbook/0057): neither the reserve order nor a tripled stock changes
-the stomachs' share; energy buys survival only. The owner's reading — matter, like
-energy, is not finite — is written up as `fable-propose-open-matter-budget.md`: an
-influx (surface or vent-base) and burial at the floor, the world's size a flow. Awaits
-the owner's ruling; nothing launches until then. The reference world is unchanged:
-age order, stock 1/m³, exudation 0.15; round 18's pass stands.
+D074 ruled (owner, 2026-09-04: "let us see what happens when matter does not lock"):
+the open matter budget — surface influx and floor burial — building
+(`scratch/open-budget-spec.md`, after the divergence build `scratch/divergence-spec.md`
+lands) and pre-registered as logbook/0058. Adoption into the reference world is the
+owner's ruling over the screen. The reference world is unchanged meanwhile: age order,
+stock 1/m³, exudation 0.15; round 18's pass stands.
 
 ## Bugs to chase
 
