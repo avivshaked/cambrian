@@ -85,7 +85,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D060](#d060) | The invasion assay — a labeled hand for a mechanism question | 2026-08-31 | active · built, first use logbook/0043 |
 | [D061](#d061) | The patchy world — horizontal structure, throttled exchange, endogenous inequality | 2026-09-01 | built · round 8: 0-of-5 by producer extinction — a founding cost at this dose (logbook/0044); knobs kept for the movement question |
 | [D062](#d062) | The satiation cap — a filter feeder's mouth gets its physical limit | 2026-09-01 | built · round 8: unanswered — every clean arm ran away before a chain formed (logbook/0044) |
-| [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · earned its keep in round 8: failed the flagship's sterile cohort at the cut (logbook/0044) · **met 2026-09-04, round 18 (logbook/0054): 4 of 5 seeds, discovery regime, with exudation 0.15 (D070)** |
+| [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · earned its keep in round 8: failed the flagship's sterile cohort at the cut (logbook/0044) · **met 2026-09-04, round 18 (logbook/0054): 4 of 5 seeds, discovery regime, with exudation 0.15 (D070)** · amended the same day (owner): one connected clade, held ≥ 10 through the last two lifetimes; producers scored as an inherited photosynthetic line |
 | [D064](#d064) | Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column | 2026-09-02 | built · round 10c: the drowning is cured — five of five producer worlds to budget, uncensored, depth held within 3 m through 24,000 s of throttled births (logbook/0046); the chain still does not arrive |
 | [D065](#d065) | The fixed matter cost — a body costs a minimum of matter to exist, so the count cannot ratchet through shrinking | 2026-09-02 | built · round 10c: counts levelled at 1,490–1,610 against a ceiling of 8,000, uncensored (logbook/0046) |
 | [D066](#d066) | Roll cells — the water moves everything, and it stirs: one prescribed flow over patches advects bodies and fields; blinking rolls for chaotic advection | 2026-09-02 | built · round 12 (logbook/0048) 0 of 6: the rolls stir fields and bodies and keep producers alive at 30 m cells, but a roll that stops above the floor is a trapdoor for remains — surface detritus 0.2–3 J/m³, deep 15–21; one absorptive line formed and drifted out. Next lever proposed: sink speed of remains |
@@ -2877,6 +2877,25 @@ nothing is retroactively changed by the tightening). Every future scoring report
 lineage's last-birth time alongside the streak. The clause is computable two ways —
 `lineage.jsonl` (exact) or a births-in-window read of the absorptive columns — and the
 pre-registration must name which it uses.
+
+**Amendment 2026-09-04 (owner's ruling, after the Sol/GPT review of 2026-09-03 and
+logbook/0054's addendum).** The rule scores **one connected clade**, not the aggregate: a
+clade begins at an absorptive birth whose parent did not express the trait, or at an
+absorptive founder; membership follows the parent chain while the trait is inherited; and
+the clauses are asked of that clade — alive for ≥ 20 consecutive samples to the end, ≥ 10
+living members at the last sample, an inherited absorptive birth inside the clade within
+the last 20 samples — plus two additions: **(a) stability** — the clade holds ≥ 10 living
+members through the last two lifetimes (the last 6,000 s), not only at the final sample;
+**(b) the producers are scored as a lineage** — an inherited photosynthetic line alive at
+the end with a photosynthetic birth in the last 20 samples, read from the `photo` /
+`photo inh` columns, not from `alive`. Not added, deliberately: a mutant-origin clause. The
+owner's reading of the bar is "the minimum state from which we can move on", and a
+founder-rooted clade the world has sustained for 30,000 s is that state; whether a late
+stomach can establish was answered on its own (0051 amendment 2; 0054's seed 4). Round 18
+(0054) is the first pass under this wording: 4 of 5 by clade, minima over the last two
+lifetimes 48 / 41 / 24 / 127; the producer clause is read from the columns the
+contract-repairs build adds and is recorded when they exist. `scratch/clade-score.py` is
+the scorer until it moves into `scripts/`.
 
 ### D064
 **Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column** · 2026-09-02

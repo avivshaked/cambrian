@@ -190,3 +190,8 @@ four passing seeds are founder-rooted, one is a mutant's. The screen's arms (005
 clade as well (46 and 120 in one clade each), and the leak-world assay's largest inoculant
 clade holds 19 alive at 20,000 s with 7 recent inherited births. Whether the clade reading
 is D063's intended one is the owner's to ratify; both readings are now on record and agree.
+
+*Ruled the same day: the connected-clade reading is D063's, with a stability clause (the
+clade ≥ 10 through the last two lifetimes — minima here 48, 41, 24, 127) and the producers
+scored as an inherited photosynthetic lineage. Round 18 stands as the first pass under the
+amended rule, 4 of 5; the producer clause is recorded when the `photo` columns exist.*
