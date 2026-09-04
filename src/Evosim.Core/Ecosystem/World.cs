@@ -74,6 +74,22 @@ namespace Evosim.Core
         /// <summary>This step's ledgers, parallel to <c>_living</c>. Reused, never reallocated.</summary>
         private readonly List<EnergyLedger> _ledgers = new List<EnergyLedger>();
 
+        /// <summary>
+        /// Final rows for absorptive creatures that have died since the last
+        /// <see cref="CollectAbsorptiveLog"/> — the one place a dead creature's terminal budget
+        /// survives long enough to be written.
+        /// </summary>
+        /// <remarks>
+        /// A queue rather than a write, for <see cref="LineageEvent"/>'s reason: §6.1 forbids
+        /// <c>UnityEngine</c> here and nothing in this assembly touches disk. Values, not
+        /// references — a reference would either keep a dead body alive or read fields the death
+        /// path has already zeroed.
+        /// </remarks>
+        private readonly List<AbsorptiveSample> _absorptiveDeaths = new List<AbsorptiveSample>();
+
+        /// <summary>Death rows dropped because the buffer was full — see <see cref="AbsorptiveLogRowCap"/>.</summary>
+        private int _absorptiveDeathsDropped;
+
         private long _nextId;
         /// <summary>
         /// Counter behind every per-creature seed. Mixed with <see cref="Seed"/> rather than used
@@ -605,10 +621,20 @@ namespace Evosim.Core
             {
                 Organism creature = _living[i];
 
+                float density = Nutrients.EdibleDensityAt(creature.HeightY, creature.Patch);
+
                 EnergyLedger ledger = Metabolism.StepAt(
                     creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch),
-                    Nutrients.EdibleDensityAt(creature.HeightY, creature.Patch),
-                    creature.PendingWorkJoules, seconds, creature.Age);
+                    density, creature.PendingWorkJoules, seconds, creature.Age);
+
+                // The absorptive log's capture, taken where the number is — one field write, on
+                // the pass that already read it, and only for the creatures the file records
+                // (AbsorptiveSample). It has to be here rather than at report time: the field is
+                // emptied by Take, settled, mixed and advected between this instant and the next
+                // sample, so asking again later would produce a plausible density that is not the
+                // one this creature was priced against. The rationed branch below overwrites it
+                // with what it actually re-priced.
+                if (creature.HasAbsorptiveTissue) creature.LastDensityHere = density;
 
                 _ledgers[i] = ledger;
                 Nutrients.Demand(creature.HeightY, ledger.PoolDrawn, creature.Patch);
@@ -632,11 +658,25 @@ namespace Evosim.Core
                 // is not for anything with a bite rate that saturates.
                 if (share < 1f)
                 {
+                    float rationed =
+                        Nutrients.EdibleDensityAt(creature.HeightY, creature.Patch) * share;
+
                     // The same work, not more: this replaces the ledger rather than adding to it.
                     ledger = Metabolism.StepAt(
                         creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch),
-                        Nutrients.EdibleDensityAt(creature.HeightY, creature.Patch) * share,
-                        creature.PendingWorkJoules, seconds, age);
+                        rationed, creature.PendingWorkJoules, seconds, age);
+
+                    // What the world actually fed it, replacing the appetite pass's unrationed
+                    // reading. Already share-multiplied — AbsorptiveSample.DensityHere says so,
+                    // because a reader that multiplied again would halve a scarce world twice.
+                    if (creature.HasAbsorptiveTissue) creature.LastDensityHere = rationed;
+                }
+
+                if (creature.HasAbsorptiveTissue)
+                {
+                    creature.LastShare = share;
+                    creature.LastLedger = ledger;
+                    creature.LastStepSeconds = seconds;
                 }
 
                 if (ledger.PoolDrawn > 0f)
@@ -699,6 +739,13 @@ namespace Evosim.Core
                 }
 
                 if (creature.Energy > 0f) continue;
+
+                // The absorptive log's final row, taken before the death path zeroes anything:
+                // this is the terminal budget, and the reserve it records is the (negative)
+                // overdraft that killed the creature rather than the 0 the next line writes.
+                // Every death in this design reads `starved` (Organism.DeathCause), so cause of
+                // death discriminates nothing — this row is what does.
+                if (creature.HasAbsorptiveTissue) BufferAbsorptiveDeath(creature);
 
                 // Death at exactly zero, not below. A creature carrying negative energy would be
                 // a debt the world has no way to settle, and the §5A.2 audit would never close.
@@ -997,6 +1044,13 @@ namespace Evosim.Core
                 // is exactly what death paid out before this decision existed.
                 child.LockedMatter = matterPrice;
                 _born.Add(child);
+
+                // Realised fecundity, counted where a birth actually happens rather than
+                // reconstructed later from lineage.jsonl's parent column — the absorptive log
+                // has to carry it per row, and a stillbirth (Admit returning null) is not a
+                // child however much energy it cost. Pure instrumentation: nothing branches on it.
+                parent.Children++;
+                parent.LastChildSeconds = ElapsedSeconds;
             }
 
             return true;
@@ -1205,6 +1259,24 @@ namespace Evosim.Core
                 StandingWatts = Metabolism.StandingWatts(phenotype, Config),
             };
 
+            // One pass over the parts, at the one moment a body is built. Growth does not exist
+            // (§5A.6), so none of these three can change afterwards — and the alternative is the
+            // per-creature per-step loop the absorptive log would otherwise need just to decide
+            // whether to record a creature at all.
+            float absorptiveVolume = 0f;
+            bool photosynthetic = false;
+            IReadOnlyList<PhenotypePart> admitted = phenotype.Parts;
+            for (int i = 0; i < admitted.Count; i++)
+            {
+                string cellTypeId = admitted[i].CellTypeId;
+                if (cellTypeId == CellTypeIds.Absorptive) absorptiveVolume += admitted[i].Volume;
+                else if (cellTypeId == CellTypeIds.Photosynthetic) photosynthetic = true;
+            }
+
+            creature.AbsorptiveVolume = absorptiveVolume;
+            creature.HasAbsorptiveTissue = HasAbsorptive(phenotype);
+            creature.HasPhotosyntheticTissue = photosynthetic;
+
             // Endowment and body are transferred from the parent, and a founder's or an
             // inoculant's are created out of nothing, so only those two are income the world has
             // to account for. Conflating any of this with reproduction would let a population
@@ -1265,6 +1337,105 @@ namespace Evosim.Core
             List<LineageEvent> taken = _lineageEvents;
             _lineageEvents = new List<LineageEvent>();
             return taken;
+        }
+
+        /// <summary>
+        /// Most rows one call to <see cref="CollectAbsorptiveLog"/> will produce for the living,
+        /// and the depth of the death-row buffer.
+        /// </summary>
+        /// <remarks>
+        /// <b>A cap, not a knob.</b> A stomach bloom of tens of thousands would make this file the
+        /// largest thing a run writes — one row per eater per sample against
+        /// <c>lineage.jsonl</c>'s one row per creature ever — and the reading the instrument
+        /// exists for (where were they, what did they see, what did they earn) is served by two
+        /// thousand of them as well as by all of them. It is deliberately not a
+        /// <see cref="RunConfig"/> tunable: it changes nothing about the world, so it has no
+        /// business in <c>configHash</c>.
+        /// </remarks>
+        public const int AbsorptiveLogRowCap = 2000;
+
+        /// <summary>
+        /// Buffers one creature's final <see cref="AbsorptiveSample"/> — called from the death
+        /// path in <c>Metabolise</c>, before anything is zeroed.
+        /// </summary>
+        private void BufferAbsorptiveDeath(Organism creature)
+        {
+            if (_absorptiveDeaths.Count >= AbsorptiveLogRowCap)
+            {
+                _absorptiveDeathsDropped++;
+                return;
+            }
+
+            _absorptiveDeaths.Add(AbsorptiveSample.For(creature, ElapsedSeconds, dead: true));
+        }
+
+        /// <summary>
+        /// Appends one row per living creature with absorptive tissue, then every death row
+        /// buffered since the last call, and returns how many rows were left out.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The living are enumerated, the dead are drained</b>, and the asymmetry is the whole
+        /// shape of the instrument: a living creature can be re-read at the next sample, and a
+        /// dead one has exactly one moment at which its terminal budget exists. Meant to be called
+        /// once per report row, beside <see cref="DrainLineageEvents"/> and
+        /// <see cref="TakeDead"/>.
+        /// </para>
+        /// <para>
+        /// <b>The first <see cref="AbsorptiveLogRowCap"/> by id.</b> <c>_living</c> is appended to
+        /// and removed from in place and ids come from a monotonic counter, so list order is id
+        /// order and taking the head of the list is taking the oldest eaters — the ones with a
+        /// history worth reading — rather than an arbitrary slice.
+        /// </para>
+        /// <para>
+        /// <b>Pure instrumentation.</b> Reads world state and empties one buffer; touches no
+        /// <see cref="Rng"/>, no clock and no economy state, so a world whose log is collected
+        /// every sample and one where this is never called take bit-identical trajectories.
+        /// </para>
+        /// </remarks>
+        /// <param name="into">
+        /// Rows are appended; the list is not cleared first. A creature born since the last
+        /// metabolic step has no ledger yet and is left out rather than written as zeros — see the
+        /// comment on the skip.
+        /// </param>
+        /// <returns>
+        /// Living creatures past the cap, plus death rows dropped because the buffer was full. Zero
+        /// in every run that has never had <see cref="AbsorptiveLogRowCap"/> eaters at once.
+        /// </returns>
+        public int CollectAbsorptiveLog(List<AbsorptiveSample> into)
+        {
+            if (into == null) throw new ArgumentNullException(nameof(into));
+
+            int written = 0;
+            int truncated = _absorptiveDeathsDropped;
+            _absorptiveDeathsDropped = 0;
+
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+                if (!creature.HasAbsorptiveTissue) continue;
+
+                // Born since the last metabolic step, so it has no ledger and no density yet.
+                // Skipped rather than written as zeros: 0 J/m³ is a real density and 0 W is a
+                // real budget, and a row of them would be indistinguishable from a starving
+                // creature in empty water — the exact trap `flt m`'s em-dash was added after. It
+                // appears at the next sample, one step old, with everything real.
+                if (creature.LastStepSeconds <= 0f) continue;
+
+                if (written >= AbsorptiveLogRowCap)
+                {
+                    truncated++;
+                    continue;
+                }
+
+                into.Add(AbsorptiveSample.For(creature, ElapsedSeconds, dead: false));
+                written++;
+            }
+
+            for (int i = 0; i < _absorptiveDeaths.Count; i++) into.Add(_absorptiveDeaths[i]);
+            _absorptiveDeaths.Clear();
+
+            return truncated;
         }
 
         /// <summary>

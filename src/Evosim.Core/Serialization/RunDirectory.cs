@@ -15,6 +15,7 @@ namespace Evosim.Core
     ///   config.json      settings, seed, hash. Written once, meant to be read and edited
     ///   lineage.jsonl    one row per creature ever born
     ///   stats.jsonl      one row per sample interval
+    ///   absorptive.jsonl one row per living eater per sample, plus a final row per death
     ///   snapshots/       world state, one file per save point
     /// </code>
     /// </para>
@@ -43,6 +44,18 @@ namespace Evosim.Core
         /// <summary>One row per sample interval.</summary>
         public JsonlWriter Stats { get; }
 
+        /// <summary>
+        /// One row per living creature with absorptive tissue per sample, plus one final row for
+        /// each such creature that dies — <see cref="AbsorptiveSample"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Its own file rather than more columns on <c>stats.jsonl</c>.</b> A stats row is one
+        /// sample of the whole world; this is one row per creature per sample, and the two cannot
+        /// share a shape. Empty for the life of a run in which nothing absorptive ever lives,
+        /// which is most runs before the invasion assay.
+        /// </remarks>
+        public JsonlWriter Absorptive { get; }
+
         public string SnapshotsPath => System.IO.Path.Combine(Path, "snapshots");
 
         private RunDirectory(string path, RunConfig config)
@@ -61,6 +74,13 @@ namespace Evosim.Core
             // what you watch a long run through and a buffered tail shows nothing.
             Lineage = new JsonlWriter(System.IO.Path.Combine(path, "lineage.jsonl"), flushEachRow: false);
             Stats = new JsonlWriter(System.IO.Path.Combine(path, "stats.jsonl"), flushEachRow: true);
+
+            // Buffered like Lineage, not flushed like Stats: a bloom writes it a thousand rows at
+            // a time and it is read after the fact, not tailed. scripts/absorptive-log.ps1 reads
+            // through JsonlWriter's own FileShare.ReadWrite path, so a live run is still readable
+            // up to the last flush.
+            Absorptive = new JsonlWriter(
+                System.IO.Path.Combine(path, "absorptive.jsonl"), flushEachRow: false);
         }
 
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
@@ -123,6 +143,7 @@ namespace Evosim.Core
         {
             Lineage?.Dispose();
             Stats?.Dispose();
+            Absorptive?.Dispose();
         }
     }
 

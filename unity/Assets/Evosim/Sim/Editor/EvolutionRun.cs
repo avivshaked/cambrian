@@ -695,6 +695,17 @@ namespace Evosim.Sim.EditorTools
         /// field's second income, windowed the same way its first is.</summary>
         private static double LastDetritusExuded;
 
+        /// <summary>
+        /// Scratch for the absorptive log — <c>absorptive.jsonl</c>, one row per living eater per
+        /// sample plus a final row per death (<see cref="AbsorptiveSample"/>).
+        /// </summary>
+        /// <remarks>
+        /// Reused and cleared rather than allocated per sample, the same way <c>World</c>'s own
+        /// ledger list is: a bloom hands this two thousand structs a row, and a fresh list every
+        /// sample would be two thousand structs of garbage every sample for the life of a run.
+        /// </remarks>
+        private static readonly List<AbsorptiveSample> AbsorptiveRows = new List<AbsorptiveSample>();
+
         /// <summary>Whether D060's assay has already fired this run — the one-shot guard.</summary>
         /// <remarks>
         /// Static for the same reason every other field here is: a second <c>Evosim/Run</c> from
@@ -726,6 +737,7 @@ namespace Evosim.Sim.EditorTools
             LastDetritusTaken = 0;
             LastDetritusExuded = 0;
             AssayFired = false;
+            AbsorptiveRows.Clear();
         }
 
         /// <summary>
@@ -1074,6 +1086,34 @@ namespace Evosim.Sim.EditorTools
                 patchMaxShare = alive > 0 ? (double)maxCount / alive : 0d;
             }
 
+            // The absorptive log (fable's absorptive-log spec, after logbook/0050's dissection):
+            // one row per living eater, plus the final row of every eater that has died since the
+            // last sample. Collected on the same cadence and by the same rule as the lineage drain
+            // above — including when dir is null, so the death buffer inside World never grows for
+            // the life of a run with nowhere to write it.
+            AbsorptiveRows.Clear();
+            int absorptiveTruncated = world.CollectAbsorptiveLog(AbsorptiveRows);
+            int absorptiveLogged = 0;
+
+            if (dir != null)
+            {
+                for (int i = 0; i < AbsorptiveRows.Count; i++)
+                {
+                    dir.Absorptive.Write(AbsorptiveRows[i].ToJson());
+                    absorptiveLogged++;
+                }
+
+                // The marker row, only when something was left out. Counted in `abs logged` with
+                // the rest, because that column reports rows written to the file and a reader
+                // counting lines per sample must be able to reproduce it exactly.
+                if (absorptiveTruncated > 0)
+                {
+                    dir.Absorptive.Write(
+                        AbsorptiveSample.TruncatedRowJson(world.ElapsedSeconds, absorptiveTruncated));
+                    absorptiveLogged++;
+                }
+            }
+
             // The same sample, as data. Raw numbers and no percentages: a reader can divide, and
             // a stored percentage loses the denominator that says whether it means anything —
             // "food 100%" over two joules and over two hundred thousand are the same column.
@@ -1145,7 +1185,11 @@ namespace Evosim.Sim.EditorTools
                 // discipline: existing readers index by position, so nothing already written may
                 // move. Reads 0 for the whole life of a run with EVOSIM_EXUDATION unset.
                 .Field("detritusExudedTotal", world.DetritusExudedTotal)
-                .Field("detritusExudedWindow", detritusExudedWindow));
+                .Field("detritusExudedWindow", detritusExudedWindow)
+                // The absorptive log — appended after detritusExudedWindow, per the append-only
+                // column discipline. Rows written to absorptive.jsonl at this sample, the marker
+                // row included; 0 for every run with no absorptive creature alive in it.
+                .Field("absorptiveLogged", absorptiveLogged));
 
             // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9): drained
             // every report row, alongside stats.jsonl, and appended one row per event to
@@ -1282,6 +1326,13 @@ namespace Evosim.Sim.EditorTools
                 // dead ones did, so the two are readable apart, which is the reading D070's
                 // first arm exists to take. Reads 0 with EVOSIM_EXUDATION unset.
                 detritusExudedWindow.ToString("0.###", c),
+
+                // The absorptive log — appended after `det exuded`, per the same append-only
+                // rule. Rows written to absorptive.jsonl at this sample (the truncation marker
+                // counted), which is one per living eater plus one per eater that died since the
+                // last row. Not the same number as `absorpt`: that counts absorptive parts among
+                // the living, this counts rows on disk.
+                "**" + absorptiveLogged.ToString(c) + "**",
             };
 
             LastFloorSpawns = world.FloorSpawns;
@@ -1324,6 +1375,9 @@ namespace Evosim.Sim.EditorTools
 
             // D070's exudation — appended after `det out`, per the same rule.
             "det exuded",
+
+            // The absorptive log — appended after `det exuded`, per the same rule.
+            "abs logged",
         };
 
         private static string Header() =>

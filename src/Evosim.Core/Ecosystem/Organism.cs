@@ -145,6 +145,83 @@ namespace Evosim.Core
         public uint SpeciesId { get; internal set; }
 
         /// <summary>
+        /// Whether any part of the developed body is <see cref="CellTypeIds.Absorptive"/> —
+        /// cached at birth by <see cref="World"/>'s <c>Admit</c>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Cached because the body cannot change.</b> There is no growth in this design
+        /// (§5A.6), so a creature's cell types are fixed from birth to death, and the alternative
+        /// is a loop over every part of every living creature on every metabolic step purely to
+        /// decide whether an instrument should record it. Cached once, at the one moment the body
+        /// is built, alongside the tissue price and the standing cost.
+        /// </remarks>
+        public bool HasAbsorptiveTissue { get; internal set; }
+
+        /// <summary>
+        /// Whether any part is <see cref="CellTypeIds.Photosynthetic"/> — cached with
+        /// <see cref="HasAbsorptiveTissue"/>, and what makes an eater a mixotroph rather than a
+        /// pure stomach.
+        /// </summary>
+        public bool HasPhotosyntheticTissue { get; internal set; }
+
+        /// <summary>Volume of <see cref="CellTypeIds.Absorptive"/> tissue alone, m³. Cached at birth.</summary>
+        /// <remarks>
+        /// Separate from <see cref="Phenotype.TotalVolume"/> because a mixotroph's mouth is the
+        /// part of it that eats: the D062 clearance model prices intake per cubic metre of
+        /// absorptive tissue, so this is the number a break-even reading has to be taken against
+        /// and the whole body is not.
+        /// </remarks>
+        public float AbsorptiveVolume { get; internal set; }
+
+        /// <summary>Children this creature has actually produced — §5A.6's <c>Conceive</c>.</summary>
+        /// <remarks>
+        /// <b>Realised fecundity, not brood size.</b> <see cref="ReproductionTraits.BroodSize"/>
+        /// is what a genome asks for; this is what it could afford, which is the only one of the
+        /// two that bears on whether a lineage persists. Pure instrumentation — nothing in the
+        /// economy branches on it.
+        /// </remarks>
+        public int Children { get; internal set; }
+
+        /// <summary>
+        /// World time the last child was born, s — <see cref="float.NaN"/> until there is one.
+        /// </summary>
+        /// <remarks>
+        /// NaN rather than 0 or -1: t=0 is a real instant and a negative sentinel is a number a
+        /// reader will average. Serialized as JSON <c>null</c> (<see cref="AbsorptiveSample"/>).
+        /// </remarks>
+        public double LastChildSeconds { get; internal set; } = double.NaN;
+
+        /// <summary>
+        /// The nutrient density the last metabolic step actually priced this creature's food at,
+        /// J/m³ — captured by <c>World.Metabolise</c> for <see cref="AbsorptiveSample"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Captured rather than recomputed, and this is the point of the instrument.</b> The
+        /// world knows the density, the share and the whole ledger at the instant it charges a
+        /// creature for a step; asking again later would mean a second evaluation of
+        /// <see cref="Metabolism.StepAt"/> per creature per sample, against a different field
+        /// state, producing a plausible number that is not the one the creature was fed on.
+        /// Written only for creatures with <see cref="HasAbsorptiveTissue"/> — everything else
+        /// reads the zero it was born with, and nothing logs it.
+        /// </remarks>
+        public float LastDensityHere { get; internal set; }
+
+        /// <summary>The demand-share the field granted at the last step, 0–1.</summary>
+        public float LastShare { get; internal set; }
+
+        /// <summary>The last metabolic step's ledger, whole. See <see cref="LastDensityHere"/>.</summary>
+        public EnergyLedger LastLedger { get; internal set; }
+
+        /// <summary>Length of the step <see cref="LastLedger"/> covers, s. 0 before the first.</summary>
+        /// <remarks>
+        /// Stored rather than assumed, because the harness sets the metabolic step from
+        /// <c>EVOSIM_DT</c> and a watt figure divided by the wrong step is off by whatever factor
+        /// that knob moved — which is exactly the kind of plausible-looking error §7's
+        /// reproducibility rule exists to make impossible.
+        /// </remarks>
+        public float LastStepSeconds { get; internal set; }
+
+        /// <summary>
         /// What <see cref="SensorChannel.Energy"/> reports: seconds of life left at the current
         /// burn rate — §4.4.
         /// </summary>

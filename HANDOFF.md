@@ -157,8 +157,10 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    prediction: a line ≥ 10 alive two lifetimes after its first inherited sample); the dissection of `r14c10-s4`'s
    stomachs is done (0050's closing): the bodies are fine on the ledger, their whereabouts
    are unrecorded, and children died 74–253 s after birth for no cause any output records —
-   the next instrument is a per-creature ledger row for living absorptives (depth, patch,
-   density seen, intake, reserve, per sample), queued behind the build; review round 5 is done (PER 10–20%, mean 13%, ~20% flat; the screen runs at 0.15 — D070 carries the numbers and the three caveats);
+   the per-creature absorptive log is **built** (`absorptive.jsonl` per run — one row per
+   living absorptive creature per sample plus a death row; reader
+   `scripts/absorptive-log.ps1 <arm>`; column `abs logged`; 6 tests). The three 0053 arms
+   predate it; the first arm on this build reads where every stomach sits and what it earns; review round 5 is done (PER 10–20%, mean 13%, ~20% flat; the screen runs at 0.15 — D070 carries the numbers and the three caveats);
    the screen is pre-registered in D070. The proposal file is deleted.
    Built meanwhile: the detritus-flux instrument (`det in` / `det out` columns, J per
    window; `World.DetritusDepositedTotal/TakenTotal`; test in `WorldTests`). It changes
