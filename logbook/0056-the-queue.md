@@ -126,3 +126,83 @@ to chase: a NaN drag force at the 0.02 step in a world that was 1.7% jointed, wi
 drag limiter present — the first physics divergence in a scored run.
 
 Results appended below.
+
+## Results
+
+Four arms to budget, manifests `status ended`, `reason budget`; V1–V3 held (headers as
+pre-registered, `floor` 0 from t=3,100, audit 0.0000% throughout). V4 held: both `age`
+controls reproduce the queue — median parent age 4,318 s and 4,632 s in the plateau,
+52–54% of births to bodies past 3,500 s.
+
+| arm | order | depth at end | alive | deaths by 20,000 | absorpt | largest clade at end · min last 6,000 s · recent births | median parent age, plateau | `mat blk` mean/window t > 10,000 | mean age at end |
+|---|---|---|---|---|---|---|---|---|---|
+| r20q-s2 | shuffled | −11.4 m | 1,820 | 2,100 | 7 | 7 · 7 · 0 → **fail** | **2,117 s** (29% > 3,500) | 178,000 | 7,231 s |
+| r20q0-s2 | age | −1.4 m | 1,801 | 1,778 | 135 | 120 · 81 · 17 → pass | 4,318 s (52%) | 257,000 | 9,364 s |
+| r20q-s4 | shuffled | −0.9 m | 1,811 | 1,471 | 189 | 185 · 134 · 21 → pass | **852 s** (23%) | 187,000 | 8,912 s |
+| r20q0-s4 | age | −0.9 m | 1,774 | 2,764 | 234 | 227 · 200 · 54 → pass | 4,632 s (54%) | 211,000 | 5,889 s |
+
+Seed 2's stomach line under the shuffled order rose to 81 at 6,000 s and then fell
+without interruption — 45 at 10,000, 18 at 16,000, 7 at the end, no inherited birth in
+the last 20 samples. `absorptive.jsonl` says why: from t=10,000 the living stomachs' mean
+net was negative (−0.04 to −0.10 W) while the field at their depth *rose* from 2.7 to
+6.1 J/m³. Food was not short. The stomachs were old — senescence had raised their
+upkeep past their income — and were not being replaced, because under a fair draw an
+old solvent stomach has one chance in a hundred and eighty of the layer's next unit.
+Under the age order the same stomach, being the oldest solvent body in its layer, had
+the next unit outright.
+
+**The predictions:**
+
+| # | prediction | result |
+|---|---|---|
+| M1 | median parent age < 1,000 s in the plateau and < half the control's | **half held**: 852 s and 2,117 s against 4,632 s and 4,318 s — less than half the control's in both, under 1,000 in one. The queue is gone; the shuffled worlds still breed older than growth-phase worlds because their bodies are older |
+| M2 | a clade ≥ 10, stable, larger than the same seed's control's | **falsified in both**: 7 against 120 (seed 2), 185 against 227 (seed 4) |
+| M3 | refusals within a factor of two of the control's | held (0.69× and 0.89×) |
+| M4 | producers persist, younger | `photo inh` held (1,812 and 1,616, no ceiling); *younger* falsified in seed 4 (8,912 s against 5,889) and held in seed 2 (7,231 against 9,364) — the age effect is a realisation, not a rule |
+| M5 | `alive` within the wingspan | held (+1% and +2%) |
+
+Also read, and not predicted: seed 4's shuffled arm made 1,471 deaths against the
+control's 2,764 at the same population, seed 2's 2,100 against 1,778 — turnover is not
+consistently changed either way.
+
+## Verdict
+
+**The queue was real, and it was the stomachs' lifeline.** Removing it costs the
+stomachs in both seeds. The mechanism is not subtle once it is seen: when matter binds,
+every solvent body has the same fecundity whatever its energy income, because a child's
+matter is refused or granted without reference to the parent's reserve. A stomach
+earning three times a leaf's net has no more children than the leaf. The age queue was
+the only thing in the world that turned an energy advantage into a reproductive one —
+a long-lived body reaches the front — and the stomachs under the leak are long-lived.
+Take the queue away and the stomach line is a small clade with the leaves' fecundity,
+and drift or senescence takes it.
+
+That reading reaches further than the stomachs. At the plateau the energy economy —
+§5A, the thing the project is built on — selects only for not starving; fecundity is
+set by the matter economy, which has one rule and no way for a better body to earn more
+of it. The pre-registration's second reading ("the contest was fair and the stomachs
+still lost — 0055's levers on the pool are next") is half right: the pool's levers would
+enlarge the world without changing who wins, and excretion is already at the rate that
+returns the tissue share in tens of seconds. What has to change is whether energy buys
+matter. That is a world rule and it is put to the owner in
+`fable-propose-matter-economy.md` (three shapes: a stock large enough that light binds
+first; scarce matter allocated by energy reserve; or the age queue specified as the rule
+it accidentally was).
+
+`shuffled` is **not adopted**; `age` stays the default and the reference world's order
+until the owner rules, and D072 is marked so. The fault stands as diagnosed — the design
+still specifies no order — but the fix that adds no rule turns out to remove the one
+selective pressure the plateau had.
+
+**A caveat on the screening step, found on the way.** Three of this session's six
+fast-step worlds sat in the surface film (−0.3 to −1.5 m) where their fine-step
+counterparts sat at −12 to −15 m: `r19m0-s1`, `r20q0-s2`, and both seed-4 arms here;
+the two seed-2 arms of one pair sat 10 m apart. 0052 checked population and depth per
+seed and found deviations inside the wingspan; it did not see this, because the film is
+a bimodal outcome rather than a deviation, and a film world is a different ecology. A
+0.02 screen still answers a mechanism question read within one step, as this one did
+and 0055 did; a confirmation at 0.01 is not optional, and CLAUDE.md's gotcha now says
+so.
+
+Closed 2026-09-04. Arms `r20q-s2`, `r20q0-s2`, `r20q-s4`, `r20q0-s4` (`r20q-s1`
+censored above); negative result on merit, uncensored.

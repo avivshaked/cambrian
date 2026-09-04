@@ -386,7 +386,13 @@ actually verifying it.
   or hold the difference against that wingspan. `EVOSIM_DT` 0.02 is the screening step (deviations
   inside the wingspan, ~3× the pace); 0.01 confirms and is the only step at which the historical
   record replays; 0.05 is out (population migrates into the surface film and the audit opens). The
-  drag limiter engages only above 0.01 for exactly that reason.
+  drag limiter engages only above 0.01 for exactly that reason. **0.02 is bimodal on depth**: three
+  of six fast-step worlds on 2026-09-04 sat in the surface film at −1 m where their 0.01 seeds sat
+  at −12 to −15 m, and the two arms of one seed pair sat 10 m apart (logbook/0056). 0052's
+  wingspan check did not see this. A 0.02 screen answers a mechanism question read within one
+  step; it does not stand in for the 0.01 world, and a 0.02 result about depth, light or the film
+  is not a result. One 0.02 arm also diverged — a NaN drag force at t=15,345 (`r20q-s1`) — the
+  first physics divergence in a scored run; a run whose manifest reads `status error` is censored.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

@@ -94,7 +94,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
 | [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; **confirmed 2026-09-04** (logbook/0054: 4 of 5 seeds pass D063 at dt 0.01 with exudation 0.15; the failing seed's stomachs were matter-blocked, not starved) · a world rule, DESIGN.md §5A.2c |
 | [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; overtaken by D072 (the contest for each unit was an age queue) |
-| [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · screening (logbook/0056) · adoption is the owner's |
+| [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · **screened 2026-09-04 (logbook/0056): `shuffled` not adopted** — the queue was the stomachs' lifeline, because in a matter-bound plateau energy buys no fecundity; the real question is in `fable-propose-matter-economy.md` |
 
 ---
 
@@ -3483,3 +3483,14 @@ nothing in the literature the review has read models conception as an age queue,
 the pressure it exerts was never pre-registered or read.
 
 *Proposal absorbed on the owner's delegation; reversible by ruling.*
+
+**Screened the same day (logbook/0056): `shuffled` not adopted.** The queue is gone
+under the fix (median parent age 852 s and 2,117 s in the plateau against 4,632 s and
+4,318 s in the controls) and the stomachs lose in both seeds: seed 2's line fell from 81
+to 7 with no recent births against the control's 120; seed 4's clade 185 against 227.
+The age queue was a longevity premium the design never chose and it was the only route
+by which an energy advantage became a reproductive one in a matter-bound world; without
+it every solvent body has the same fecundity and the small clade drifts out. `age` stays
+the default and the reference world's order. What is actually broken — that energy does
+not buy matter at the plateau, so §5A stops selecting — is put to the owner in
+`fable-propose-matter-economy.md`.

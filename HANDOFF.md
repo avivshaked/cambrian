@@ -50,6 +50,16 @@ is not part of the goal.
    amendment 2: R0 0.72 over completed members, 112 alive at 20,000 s), and the cell-type
    expansion.
 
+## The decision in front of the owner
+
+`fable-propose-matter-economy.md` (2026-09-04, after logbook/0055 and 0056): at the
+plateau matter binds and every solvent body has the same fecundity whatever it earns,
+so the energy economy selects only for not starving; the age queue (D072) was the
+accidental route from energy to fecundity and the stomachs' lifeline. Three shapes —
+a stock large enough that light binds first, scarce matter allocated by energy reserve,
+or the queue specified as the rule — with the agent's recommendation (the second,
+screened against the first). Nothing launches until it is ruled.
+
 ## Bugs to chase
 
 - **A NaN drag force at dt 0.02** (`r20q-s1`, t=15,345, logbook/0056): `FluidEnvironment.Apply`
@@ -88,10 +98,9 @@ is not part of the goal.
 
 - **A vent that adds matter, paired with burial at the floor** — filed as a future
   experiment (owner, 2026-09-04), in D071's deferred list; after the screen.
-- **The matter lever (after 0055).** Four world rules can enlarge the free pool; the
-  agent's reading is that the vent-as-source with burial is the principled one and the
-  fixed price or initial stock the cheapest screen, and that any of them needs the
-  ceiling raised with it.
+- **The matter economy (after 0055 and 0056)** — see the section above and the
+  proposal file. Overtakes the pool levers as the question: enlarging the pool changes
+  the world's size, not who wins.
 - **The next scored goal** — held; 0055 has read.
 - **Speed, and the game's clock (owner, 2026-09-03).** The timestep has done what a
   timestep can (0052). A game that is eventful on a human timescale is a world-rule
