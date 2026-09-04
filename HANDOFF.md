@@ -30,25 +30,20 @@ is not part of the goal.
 
 ## Queued — the current path, in order
 
-1. **The contract repairs build** (`scratch/contract-repairs-spec.md`, Opus agent on
-   `unity-w7`): invariant-culture formatting plus a de-DE test; `photo` / `photo inh`
-   report columns after `abs logged`; a run manifest `run.json` written at creation and
-   rewritten at termination, with `source{gitCommit, gitDirty, coreHash, simHash}`;
-   `scripts/stop-arm.ps1 <arm> -Reason manual-futility|manual-stall|manual-other` as the
-   only sanctioned external stop; `run-arm.ps1 -ExpectSimHash`; `RunConfig.PhysicsStepSeconds`
-   in the config hash (every hash changes again). Review the diff, run the suite, compile
-   on w7, run the two validation arms the spec names, commit, then add `stop-arm.ps1` to
-   CLAUDE.md's commands and check the stale "deferred" comment at `EvolutionRun.cs` ~L776.
-2. **The matter screen** ([logbook/0055](logbook/0055-the-dry-deep.md), pre-registered):
-   `scratch/launch-r19.ps1 -Seed 1|4 -Worker N` and the control
-   `-Seed 1 -MatterSink 0.002`, at dt 0.02, 20,000 s, on workers refreshed to the new
-   build. Predictions M1–M5 in the entry. Holds → D071 adopted into the reference world
-   and confirmed at 0.01, five seeds; fails → D071 marked, primer 06's dry-deep section
-   struck.
+1. **The contract repairs build landed** (commit `5c6c035`): manifest, `stop-arm.ps1`,
+   `-ExpectSimHash`, `photo` columns, invariant culture, the step in the hash. Every
+   config hash changed across it. Remaining: a photosynthetic flag on lineage rows so the
+   producer clause's birth half can be read (`scripts/clade-score.ps1` says so).
+2. **The matter screen** ([logbook/0055](logbook/0055-the-dry-deep.md)) **read 2026-09-04:
+   not adopted.** The free matter pool is 10% of the stock at any sink speed; the lever
+   must change the pool. The next lever is a world rule (price, initial stock, excretion,
+   or the vent as a source with burial) and is the owner's; every option grows the
+   producer population, so it is chosen together with `EVOSIM_MAX_POP`.
 3. **Round 18's producer clause** was scored from `alive` because the `photo` columns did
    not exist; once they do, either note it in 0054 or re-read one seed.
-4. **Move `scratch/clade-score.py` into `scripts/`** as PowerShell with a BOM, or keep
-   python and say so in CLAUDE.md; it is the goal's scorer and lives in a gitignored dir.
+4. **The scorer is `scripts/clade-score.ps1`** (all five clauses; producer birth half
+   pending the lineage flag). `scratch/matter-profile.py` reads `matterHere` from
+   `stats.jsonl`, which the table does not carry — worth a `mat here` column.
 5. **The next scored goal: held by the owner** until the screen answers. Candidates the
    record names: movement that pays (the prize side — DECISIONS.md D040–D050, 0049's
    reading), late invasion (the assay at 0.15 run two lifetimes past inoculation, 0051's
@@ -82,7 +77,11 @@ is not part of the goal.
 
 - **A vent that adds matter, paired with burial at the floor** — filed as a future
   experiment (owner, 2026-09-04), in D071's deferred list; after the screen.
-- **The next scored goal** — held until 0055 reads.
+- **The matter lever (after 0055).** Four world rules can enlarge the free pool; the
+  agent's reading is that the vent-as-source with burial is the principled one and the
+  fixed price or initial stock the cheapest screen, and that any of them needs the
+  ceiling raised with it.
+- **The next scored goal** — held; 0055 has read.
 - **Speed, and the game's clock (owner, 2026-09-03).** The timestep has done what a
   timestep can (0052). A game that is eventful on a human timescale is a world-rule
   question: shorter lifetimes, faster turnover, a theatre that runs the farm ahead and

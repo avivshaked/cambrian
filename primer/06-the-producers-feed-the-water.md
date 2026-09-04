@@ -178,10 +178,18 @@ and every refused conception below them — a hundred thousand and more per hund
 window in every mature world of the round — is a stomach asking for matter that is up in the
 leaves.
 
-The rule that follows lets the two sinks differ, which nothing in their design ever forbade:
+~~The rule that follows lets the two sinks differ, which nothing in their design ever forbade:
 matter is a mineral currency and detritus is organic energy, and they may fall at different
 speeds. That is ruled and screening as this is written, not confirmed; if it fails, D071
-will say so and this paragraph will be struck rather than rewritten.
+will say so and this paragraph will be struck rather than rewritten.~~
+
+Struck the same day ([logbook 0055](../logbook/0055-the-dry-deep.md)). The screen showed
+that the sink speed was never the lever: nine-tenths of the world's matter is locked in
+bodies at maturity, at either speed, and the remaining tenth spread over the whole column
+is the thin reading every layer gives. The column is dry from top to bottom, and the
+stomachs sit in the leaves' own band and lose the contest for each unit that arrives. What
+can change that is a rule that changes the size of the free pool — and every such rule also
+grows the producers, so it is a decision about how big the world is, which is the owner's.
 
 ## The butterfly
 
@@ -210,10 +218,10 @@ these worlds is jointed by inheritance rather than by advantage. Perception read
 channels of the seven the design specifies. A stomach that can smell the field it is drifting
 past is a different animal from one that waits for the leak to land on it.
 
-And the matter question is a screen, not a rule. The chain was built on an energy economy
-that balances to the last joule and a matter economy that was measured for the first time
-this week. Whether the deep can be wetted without stripping the surface is the next thing the
-world will be asked, and the record will carry the answer either way.
+And the matter question is open. The chain was built on an energy economy that balances to
+the last joule and a matter economy that was measured for the first time this week, and the
+measurement says the world is as large as its matter allows and no larger. Whether to make
+it larger, and how, is the next thing the owner will be asked.
 
 ## Sources
 
@@ -239,8 +247,8 @@ world will be asked, and the record will carry the answer either way.
 - **The demand-side / supply-side framing of the three stabilisers.** The ledger's numbers are
   reproducible; the framing is the author's.
 - **The matter cap as the true population plateau.** The arithmetic is in D071 and is ours;
-  it reinterprets a number that two earlier decisions read differently, and it is screening,
-  not confirmed, as this is written.
+  it reinterprets a number that two earlier decisions read differently. The cap held up in
+  the screen; the lever D071 proposed for it did not.
 - **"Everything is signal."** The bit-for-bit replay is measured; the operational rule drawn
   from it is the project's own, in [`DESIGN.md` §7](../DESIGN.md).
 - **The ruling that a mutant root is not required.** A design choice by the owner, not a

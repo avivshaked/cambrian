@@ -93,7 +93,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050) running under D069's sequential rule: 0 of 3 scored so far — clearance 10 grows the first 20–48-member lines of the campaign and they graze their field and crash; clearance 5 holds a line of 3–9 |
 | [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
 | [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; **confirmed 2026-09-04** (logbook/0054: 4 of 5 seeds pass D063 at dt 0.01 with exudation 0.15; the failing seed's stomachs were matter-blocked, not starved) · a world rule, DESIGN.md §5A.2c |
-| [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · screen first (seeds 1 and 4 at 0.02, clade-scored), adopted only if it holds |
+| [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; the lever must change the pool (price, stock, excretion or a vent source), owner's choice |
 
 ---
 
@@ -3429,3 +3429,17 @@ vent community living on chemistry is a new cell type and belongs with the cell-
 expansion.
 
 *Absorbed from `fable-propose-matter-at-depth.md` (2026-09-04), deleted on this ruling.*
+
+**Screened the same day (logbook/0055): not adopted.** M1 falsified in both seeds
+(minima 0.147 and 0.151 at −54 m against the prediction's 0.3; at the population's own
+depth 0.10–0.15 units/m³ in the treatment arms, 0.14 in the control, 0.08 in round 18),
+M5 falsified (population inside the wingspan of the control's), M2 short, M3 unreadable
+in seed 1 (no stomach population survived the founding at this realisation) and held in
+seed 4 (a mutant-rooted clade of 67 against the control's 46). The cap arithmetic above
+stands; the lever does not: 90% of the stock is locked in bodies at maturity in every
+arm at every sink speed, and the free 10% spread over the column is the ~0.1 units/m³
+every layer reads. A sink speed cannot enlarge the free pool. The stomachs share the
+leaves' band and lose the contest for each arriving unit; only a rule that changes the
+free pool — the fixed price, the initial stock, excretion of the tissue share, or the
+vent as a source with burial — can move the refusals, and each grows the producer
+population with it. Owner's choice; `EVOSIM_MATTER_SINK` stays at 0.002.

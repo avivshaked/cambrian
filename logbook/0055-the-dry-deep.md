@@ -92,3 +92,79 @@ manifest reads that `simHash`, `gitCommit 5c6c035`, `gitDirty false`, `status ru
 Headers verified: `dt=0.02`, `sink 0.002 m/s, matter 0.02 m/s` on `r19m-s1` and
 `r19m-s4`, `matter 0.002 m/s` on the control `r19m0-s1`, `exudation 0.15`,
 `clearance 10`, `vent off`. Monitor running over the three. Results appended below.
+
+## Results
+
+All three arms ran to budget at 6.5–7.8× real time; every manifest reads `status ended`,
+`reason budget`. V1–V5 held: headers as pre-registered, `floor` 0 from t=3,100, audit
+0.0000% on every sample, `photo inh` above 900 from t=10,000 in all three.
+
+One thing the pre-registration did not anticipate: **seed 1's treatment arm never had a
+stomach population.** Its nine founding stomachs died out by t=4,100 while the world was
+still under forty bodies — the founding lottery at this realisation (0052: a step change
+is a butterfly, and 0.02 is a different draw of seed 1 from the 0.01 record). M3 is
+unreadable for that seed; its matter predictions still read. The control, the same seed
+at the same step, held a founder-rooted clade of 46 at the end, in a population that sat
+at −1 m — a surface-film world, where the treatment's sat at −15 m.
+
+**The matter readings.** `mat deep` is the density at −54 m; the reading that matters is
+`matterHere`, the density at the population's mean depth, which is in `stats.jsonl` and
+not in the table (`scratch/matter-profile.py`). Units/m³; means over t ≥ 10,000:
+
+| arm | matter sink | depth | `matterHere` mean · min · last | `mat deep` mean · min · last | `mat locked` at end | `mat blk` mean/window | alive at end |
+|---|---|---|---|---|---|---|---|
+| r19m-s1 | 0.02 | −15 m | 0.150 · 0.033 · 0.106 | 0.380 · 0.147 · 0.210 | 5,429 | 109,600 | 1,707 |
+| r19m-s4 | 0.02 | −12.6 m | 0.101 · 0.076 · 0.093 | 0.246 · 0.151 · 0.225 | 5,383 | 90,300 | 1,659 |
+| r19m0-s1 (control) | 0.002 | −1 m | 0.137 · 0.038 · 0.038 | 0.402 · 0.232 · 0.290 | 5,032 | 173,900 | 1,571 |
+| r18x-s1 (0.01, for scale) | 0.002 | −14 m | 0.083 · 0.001 · 0.082 | 0.097 · 0.044 · 0.076 | — | — | 1,834 at 30,000 |
+| r18x-s4 (0.01, for scale) | 0.002 | −12.5 m | 0.076 · 0.049 · 0.095 | 0.094 · 0.044 · 0.078 | — | — | 1,828 at 30,000 |
+
+**Clades** (`scripts/clade-score.ps1`, all five clauses): r19m-s1 — no clade (a two-member
+mutant line at the end); r19m-s4 — largest clade mutant-rooted (born t=10,967), 67 alive
+at 20,000 s, 39 inherited births in the last 20 samples, but it reached ten only at
+t=15,200, so its minimum over the last 6,000 s is 7 and the stability clause reads
+unstable by the letter; a second clade of 40 beside it, aggregate 107. Control — founder-
+rooted clade of 46, stable (minimum 30), 18 recent births.
+
+**The predictions:**
+
+| # | prediction | result |
+|---|---|---|
+| M1 | `mat deep` ≥ 0.3 at every sample after 10,000 in both treatment arms | **falsified** — minima 0.147 and 0.151; the control's is 0.232. At the population's own depth the treatment reads 0.10–0.15, the control 0.14, round 18 0.08 |
+| M2 | `mat blk` below half the control's | **not held** — 0.63× (s1) and 0.52× (s4) of the control's mean; s4 is at the boundary, s1 well short |
+| M3 | a clade ≥ 10 in both, larger than the control's | s1 unreadable (no stomach population); s4 held — 67 against the control's 46, though not stable by the letter |
+| M4 | `mat top` below round 18's, producers ≥ 1,000, no ceiling | held (0.017 and 0.017 at the end against 0.096 / 0.107; `photo inh` 1,699 and 1,546) |
+| M5 | `alive` above the control's by more than the wingspan | **falsified** — +8.7% and +5.6%, inside ±20% |
+
+## Verdict
+
+**The rule does not do what D071 said it would, and the reason is in the `mat locked`
+column.** At maturity 5,380–5,430 of the world's 6,000 units are in bodies — 90% — in the
+treatment arms as in the control and in round 18. The free pool is the other 570–620
+units, spread over 6,000 m³ of water: about 0.1 units/m³, which is what `matterHere` reads
+in every arm at every step from 0.01 to 0.02 and at either sink speed. A sink speed moves
+that 10% around the column; it cannot make it larger, and the treatment arms locked
+*more* than the control (more bodies), leaving less free. The deep is not dry because
+matter fails to reach it. **The whole column is dry**, and the stomachs sit in the same
+band as the leaves (−12 to −15 m), so every unit of matter that arrives in their layer
+is contested with a leaf that earns more — which is the refusal count, unchanged.
+
+D071's arithmetic on the cap was right and its lever was wrong. The constraint is the
+size of the free pool, and only a rule that changes it can move the stomachs' refusals:
+the fixed matter price per body (`EVOSIM_MATTER_PER_CREATURE`, 3 units of the ~3.5 a
+child costs), the initial stock (`EVOSIM_MATTER_INITIAL`), excretion of the tissue share
+(`EVOSIM_EXCRETION`, at most ~15% of the locked pool under D065's contract), or an open
+budget — the vent as a source paired with burial, the owner's deferred experiment. All
+four are world rules; the choice is the owner's. What this screen adds to that choice: a
+population plateau of ~1,800 at 90% locked means any lever that frees matter also grows
+the producer population toward the ceiling and the machine's throughput, so the lever
+and `EVOSIM_MAX_POP` have to be chosen together.
+
+The rule is **not adopted**; `EVOSIM_MATTER_SINK` stays at 0.002 in the reference
+world. D071 is marked so, and the primer's dry-deep paragraph on this rule is struck as
+that chapter promised. One secondary reading stands on its own: the fast step's seed-4
+world grew a *mutant-rooted* clade of 67 in 9,000 s under exudation — the second such
+clade after 0054's seed 4 — so late invasion under the leak is not rare.
+
+Closed 2026-09-04. Arms `r19m-s1`, `r19m-s4`, `r19m0-s1`; negative result on merit,
+uncensored.
