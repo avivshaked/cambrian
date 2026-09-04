@@ -28,6 +28,14 @@ is not part of the goal.
 - Futility stops are negative results on merit, not censored; censoring is for error and
   fault only (owner, D069).
 
+## The path, ruled (D075, owner 2026-09-04: "lock it in")
+
+Round 22 write-up → D074 adoption and dose (owner) → the vent shape screened → the
+adopted open world confirmed at 0.01 under D063 as amended → **movement that pays**
+(wire `Chemical`, `Flow`, `Energy`; a movement clause; fine step only) with **the
+theatre** built in parallel by a separate agent → predation → the cell types and
+immigration → the archive and the islands.
+
 ## Queued — the current path, in order
 
 1. **The contract repairs build landed** (commit `5c6c035`): manifest, `stop-arm.ps1`,

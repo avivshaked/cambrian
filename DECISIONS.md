@@ -96,7 +96,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; overtaken by D072 (the contest for each unit was an age queue) |
 | [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · **screened 2026-09-04 (logbook/0056): `shuffled` not adopted** — the queue was the stomachs' lifeline, because in a matter-bound plateau energy buys no fecundity; ruled as D073 |
 | [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0057): neither adopted** — the stomachs bid highest and still breed no more than the leaves; the larger stock triples everything at the same share; the open matter budget follows as D074 |
-| [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · building · screening (logbook/0058) · adoption is the owner's |
+| [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · screening (logbook/0058) · adoption is the owner's |
+| [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
 
 ---
 
@@ -3586,3 +3587,38 @@ burial of detritus (changes the energy budget the leak was tuned against); a sou
 follows the population (hands the contested resource to whoever already wins).
 
 *Absorbed from `fable-propose-open-matter-budget.md` (2026-09-04), deleted on this ruling.*
+
+### D075
+
+**The path after the open budget — movement that pays first, on the vent's stage, with
+the theatre built in parallel; then predation, the cell types, the archive** ·
+2026-09-04 (owner: "agreed. lock it in.")
+
+The goal rule's bar was "the minimum state from which we can move on" (D063's
+amendment). Once an open-budget world confirms at the fine step under the amended goal,
+that bar is met as meant: producers, a breeding second trophic level, and a matter
+budget that flows rather than locks. The order after that, ruled now so the record
+carries it:
+
+1. **Movement that pays.** The cost side of locomotion has been closed since piece 04;
+   the prize side never existed because nothing was anywhere worth going. In the vent
+   world (D074's second shape) matter arrives at one place and rises, so a body that
+   finds the plume earns children. Needs: the three unread sensor channels wired —
+   `Chemical`, `Flow`, `Energy` (DESIGN.md §4.5; four of seven read today) — and a
+   scored clause for a lineage whose income depends on where it goes. Fine step only:
+   the fast step under-drives muscle (logbook/0059), so a movement round costs 5–10 h
+   per seed. Pre-registered as its own round when the perception build lands.
+2. **The theatre** (`Evosim.Theatre`, DESIGN.md §6.1): replay, gallery, charts from
+   stored genomes. Built in parallel by a separate agent from the start of item 1,
+   because it touches nothing the farm runs on and it is the owner's game thread.
+3. **Predation** — a consumer cell type eating living tissue; after movement, because
+   the design says it needs perception to be worth attempting (§5A's table).
+4. **The cell-type expansion**, a vent community living on chemistry among them, with
+   the owner's immigration hypothesis screened alongside (D060's assay, scored on
+   establishment).
+5. **The archive and the islands** — MAP-Elites and the farm's Milestone 4.
+
+Before item 1: round 22 (logbook/0058) is written up, D074's adoption and dose are put
+to the owner, the vent shape is screened, and the adopted world is confirmed at 0.01
+under D063 as amended. Nothing in this entry changes a world rule; it fixes the order
+of the questions.
