@@ -59,16 +59,15 @@ lands) and pre-registered as logbook/0058. Adoption into the reference world is 
 owner's ruling over the screen. The reference world is unchanged meanwhile: age order,
 stock 1/m³, exudation 0.15; round 18's pass stands.
 
-## Bugs to chase
+## Bugs — fixed 2026-09-04 (logbook/0059)
 
-- **A NaN drag force at dt 0.02** (`r20q-s1`, t=15,345, logbook/0056): `FluidEnvironment.Apply`
-  handed PhysX `{NaN, NaN, NaN}` for one part of a jointed body and the height went
-  non-finite. First physics divergence in a scored run; 0052 saw crashes only at 0.05
-  without the limiter. Reproduce from the manifest (seed 1, config hash, commit `23a6bd8`,
-  `EVOSIM_CONCEPTION_ORDER shuffled`) — it replays bit for bit — and read the panel maths
-  for a zero-length or zero-area case before blaming the step.
-- **The error manifest omits the footer facts**: `physicsSteps`, `dragImpulsesLimited`
-  and the counts are written as zeros on the error path. Carry the last known values.
+- The `r20q-s1` divergence was a newborn's 143-gram link kicked by ~3,000 rad/s in one
+  0.02-s step, no joint velocity cap anywhere. Now: a non-finite body is dumped and
+  killed as a counted `Diverged` death (audit closes, `diverged` column), and a drive
+  impulse limiter at steps above 0.01 caps each DOF at 30 rad/s per step, counted as
+  `driveImpulsesLimited`. The error manifest carries the last known facts. **Caveat that
+  outlives the fix:** at 0.02 the cap binds ~10⁵ times per run, so the fast step
+  under-drives joints; swimming is read at 0.01 only (0052, now load-bearing).
 
 ## How the experiments are run — the parts that bite
 

@@ -391,8 +391,14 @@ actually verifying it.
   at −12 to −15 m, and the two arms of one seed pair sat 10 m apart (logbook/0056). 0052's
   wingspan check did not see this. A 0.02 screen answers a mechanism question read within one
   step; it does not stand in for the 0.01 world, and a 0.02 result about depth, light or the film
-  is not a result. One 0.02 arm also diverged — a NaN drag force at t=15,345 (`r20q-s1`) — the
-  first physics divergence in a scored run; a run whose manifest reads `status error` is censored.
+  is not a result. One 0.02 arm also diverged — a newborn's
+  143-gram link spun up by thousands of rad/s in one step (`r20q-s1`, logbook/0059). Since then a
+  non-finite body is dumped to `runs/<arm>/<run>/diverged/` and killed as a counted `Diverged`
+  death (read the `diverged` column; a run with any is read with that caveat), and at steps above
+  0.01 a drive impulse limiter caps each joint at 30 rad/s per step and counts its binds as
+  `driveImpulsesLimited` — about 10⁵ per 0.02 run, so **the fast step under-drives evolved
+  muscle; anything about swimming or joints is read at 0.01 only.** A run whose manifest reads
+  `status error` is censored.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

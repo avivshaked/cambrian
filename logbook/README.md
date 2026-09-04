@@ -181,3 +181,4 @@ key only translates the entries' reporting shorthand.
 | [0056](0056-the-queue.md) | 2026-09-04 | The queue |
 | [0057](0057-energy-buys-matter.md) | 2026-09-04 | Energy buys matter |
 | [0058](0058-the-open-budget.md) | 2026-09-04 | The open budget |
+| [0059](0059-the-newborns-spin.md) | 2026-09-04 | The newborn's spin |
