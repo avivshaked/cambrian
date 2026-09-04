@@ -151,10 +151,12 @@ Rounds 1–9 plus the D060 assay are scored (the table above is the record). Wha
    note) — and `r14c10-s4`'s outcome — **read, met** (no boom in the richest water: 61
    absorptive births, never more than 5 alive, the stock grazed down at 0.24 W). Round 14
    closed at 0 of 8 (0050's closing). The knob is built (commit `0d15e6f`, 464 tests,
-   compile-checked, validated) and **the screen is running (logbook/0053)**: `r17x-s1`
-   (w4) and `r17x-s2` (w5) at exudation 0.15, `r17x0-s2` (w2) as the control, all at dt
-   0.02, clearance 10, 20,000 s; score against 0053's V1–V4 and M1–M5 (M3 is D070's
-   prediction: a line ≥ 10 alive two lifetimes after its first inherited sample); the dissection of `r14c10-s4`'s
+   compile-checked, validated) and **the screen passed (logbook/0053)**: `r17x-s1` and `r17x-s2` hold inherited lines of
+   46 and 133 at 20,000 s (77 and 83 two lifetimes after reaching ten, never below 10/12),
+   the control `r17x0-s2` none; the leak is 14–20 W against 0.3–0.5 W of corpses and the
+   stomachs eat it as it lands. Founder-descended lines, not mutant invasions. The
+   confirmation round is logbook/0054 (five seeds, dt 0.01, 30,000 s, exudation 0.15,
+   clearance 10, scored under D063 as amended — the first round that can pass); the dissection of `r14c10-s4`'s
    stomachs is done (0050's closing): the bodies are fine on the ledger, their whereabouts
    are unrecorded, and children died 74–253 s after birth for no cause any output records —
    the per-creature absorptive log is **built** (`absorptive.jsonl` per run — one row per

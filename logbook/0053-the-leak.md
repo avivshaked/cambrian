@@ -88,3 +88,70 @@ Compare headers token by token, not by hash, across this boundary.
 Three arms on w2, w4, w5, all refreshed to commit `0d15e6f` and hash-checked, with the
 monitor's watch list carrying them. Headers verified before any arm is believed. Results
 appended below.
+
+## Results
+
+*2026-09-04, all three arms to budget (39.5 / 54.4 / 53.5 min wall at 6–8× real time; 122 /
+201 drag impulses limited on the treated arms). V1 held on every header; V2 — the two
+seed-2 arms differ at t=500; V3 — `floor` 0 from 3,100 in all three; V4 — audit 0.0000% at
+every row, and `det in + det exuded − det out` summed over the run equals the final
+`detritus J` to the tenth of a joule in all three (5,524.0 / 10,491.9 / 15,486.8).*
+
+| arm | exudation | alive at 20,000 | inherited line | ≥ 10 from | at two lifetimes after | never below | at 20,000 | absorptive births in last 20 samples | D063's clauses |
+|---|---|---|---|---|---|---|---|---|---|
+| `r17x-s1` | 0.15 | 1,571 | every sample from t=2,400 (177 of 177) | 4,100 | **77** (t=10,100) | 10 | **46** | 18 | ✓ ✓ ✓ ✓ |
+| `r17x-s2` | 0.15 | 1,801 | every sample from t=500 (196 of 196) | 1,600 | **83** (t=7,600) | 12 | **133** | 19 | ✓ ✓ ✓ ✓ |
+| `r17x0-s2` | 0 | 1,789 | none, ever | — | — | — | 0 | 0 | ✓ ✗ ✗ ✗ |
+
+The flux, t > 10,000, watts per arm:
+
+| arm | corpses (`det in`) | leak (`det exuded`) | eaten (`det out`) | field at the population's depth | population's depth |
+|---|---|---|---|---|---|
+| `r17x-s1` | 0.46 | **13.9** | 14.7 | 0.19 J/m³ | −0.6 m |
+| `r17x-s2` | 0.27 | **20.1** | 20.3 | 0.94 | −1.4 |
+| `r17x0-s2` | 0.39 | 0 | 0.01 | 0.79 | +1.8 |
+
+| # | prediction | verdict |
+|---|---|---|
+| M1 | the leak is the income, ≥ 3× the corpses at t > 10,000 | **held**, by 30–75× — and the producer economy behind it is ~90–135 W of light intake, not the ~17 W the proposal estimated, so 15% is a far larger leak than planned |
+| M2 | the field rises against the control | **falsified as worded, and instructively**: the standing field at the population's depth is *lower* in the treated arms (0.19 and 0.94 J/m³ against 0.79) and the stock plateaus at 5–10 kJ rather than growing, because the stomachs eat the leak as fast as it lands (`det out` ≈ `det exuded` in both). High flux, low standing stock — the chemostat, not the larder. The prediction confused the two; the reading that matters is the flux row above |
+| M3 | **D070's prediction**: an inherited line ≥ 10 alive two lifetimes after it first reached ten, in at least one treated arm | **held in both** — 77 and 83 at that mark, minima 10 and 12 since, 46 and 133 at the end |
+| M4 | producers pay and persist: alive within 30% of the control, ≥ 1,000, no ceiling | **held** — 1,571 and 1,801 against 1,789; no arm near 8,000 |
+| M5 | the audit closes with the new transfer running | **held** — 0.0000% at every row of every arm |
+
+**What happened.** With the leak on, the stomachs the founding lottery drew never died
+out. In seed 2 an inherited line existed from the fifth sample and passed ten at t=1,600;
+in seed 1 from t=2,400 and ten at t=4,100 — before the floor closed in both, and the
+lines then ran unbroken to the end without it. Seed 1's line fell to exactly ten at
+t=8,000 while its field read 1.8 J/m³, then climbed to 77 by t=10,000 as the field was
+eaten back to a tenth of a joule: a consumer–resource oscillation with a floor, the
+oscillating equilibrium the owner asked about on 2026-09-03, seen for the first time.
+Seed 2's line grew almost monotonically to 133. The control on the same build and seed
+had no inherited stomach at any sample.
+
+Two things the result is not. It is **not a mutant invasion**: the lines descend from
+founder-era absorptive founders (39 roots in seed 1, 26 in seed 2, against two mutant
+roots each); the leak fed the founders' stomachs from the first sample and they bred.
+D063 does not say how a line arises and its floor-closed clause is met (the floor shut
+at 3,000 s and the lines ran 16,000–18,500 s without it), so this scores — but the
+confirmation round will be read with that in view, and the invasion assay (0051) at
+0.15 would show whether a *late* stomach can now establish too. And it is **a screening
+pass, not a pass**: 0.02 is the screening step (0052), and D063 scores full runs at
+0.01 — which is the confirmation round D070 pre-registered.
+
+**What the leak did to the world.** Both treated populations live in the film (−0.6 and
+−1.4 m), as the control does (+1.8), so the leak lands in the film and that is where the
+stomachs are — the round-13 world with a second trophic level living in its surface.
+The producers paid 15% of intake and kept their numbers. The standing field is thinner
+than in any round-14 arm, and the second level is larger than in any of them: the income
+was the constraint, as D070 said, and the standing stock was never the measure of it.
+
+**A number to carry.** 15% of ~100 W is 14–20 W of leak, and 46–133 stomachs of 0.002–0.003
+m³ at clearance 10 ate it all at 0.2–0.9 J/m³. The bracket 0.05 / 0.13 is now the
+interesting direction, not 0.37: a smaller leak would show where the line's size stops
+tracking the flux.
+
+## Verdict
+
+D070's screen passes on both seeds. The confirmation round — five seeds at dt 0.01,
+30,000 s, exudation 0.15, clearance 10, scored under D063 as amended — is logbook/0054.

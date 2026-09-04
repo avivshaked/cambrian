@@ -92,7 +92,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D067](#d067) | The vent — an upwelling plume from the floor in one patch, return through the others, superposed on the rolls; returns what the trapdoor takes | 2026-09-03 | built · run as round 13 arm B (logbook/0049), two seeds: producers survive the return flow (M6 held), the deep field falls to the lowest of the round (2.0–2.4 J/m³), no chain forms, matter refusals rise 1.5–5× against the twin. Neither harmful nor load-bearing while absorbers cannot breed; off in round 14 |
 | [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050) running under D069's sequential rule: 0 of 3 scored so far — clearance 10 grows the first 20–48-member lines of the campaign and they graze their field and crash; clearance 5 holds a line of 3–9 |
 | [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
-| [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; both gate readings met 2026-09-04, build started |
+| [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; built; screen passed on both seeds 2026-09-04 (logbook/0053: lines of 46 and 133 at 20,000 s, control none); confirmation round 0054 running |
 
 ---
 
@@ -3300,7 +3300,12 @@ that formed lines (seeds 1 and 2), run to 20,000 s so the line is read past two 
 with `det in` split by source. Prediction: **an inherited line holds ≥ 10 alive past two
 lifetimes in at least one of the two.** If it does, a confirmation round at 0.01 under D063
 as written; if it does not, exudation is rejected as a world rule and this entry is marked
-so. The producers' own dynamics are read on the same arms: a fraction of intake is a tax on
+so. *Screened 2026-09-04 (logbook/0053): the prediction held in both seeds — inherited
+lines at 77 and 83 two lifetimes after reaching ten, minima 10 and 12, 46 and 133 at
+20,000 s; the control had none; the leak delivered 14–20 W against 0.3–0.5 W of corpses
+and the stomachs ate it as it landed (standing field *lower* than the control's). The lines
+descend from founder-era stomachs that the leak kept alive, not from mutants. Confirmation
+round at 0.01 pre-registered as logbook/0054.* The producers' own dynamics are read on the same arms: a fraction of intake is a tax on
 growth, and in the light-0.02 world producers have run away before, so the tax may be
 harmless or useful, but it is not assumed either way.
 
