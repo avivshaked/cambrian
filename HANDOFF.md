@@ -408,6 +408,11 @@ production) before the D-entry leans on the numbers above.
 
 ## Open decisions for the owner
 
+- **Future experiment — a vent that adds matter (owner, 2026-09-04).** An open matter
+  budget: a source at the vent's base paired with burial at the floor, so the world's size
+  is set by flow, not stock. Filed in `fable-propose-matter-at-depth.md` as lever 6, after
+  the closed-loop fix (matter sink decoupled from the detritus sink) has been screened.
+
 - **Speed, and the game's clock (owner, 2026-09-03).** "All I want is the ability to
   simulate faster" — and, separately, a game in which people wait hours for something
   interesting is not a game. The first is done as far as a timestep can do it (logbook/0052:

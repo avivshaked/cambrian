@@ -63,6 +63,19 @@ them was ever about energy.
    other side; and matter is conserved, so it is a permanent change to the world's size.
 5. **A matter price that the stomach pays from where its food is, not where it sits.**
    A new rule, and a wrong one: matter is where it is.
+6. **A vent that adds matter, paired with burial at the floor** — *filed as a future
+   experiment (owner, 2026-09-04)*. The ocean's open budget: a source at the vent's base
+   and a sink where matter reaches the sediment, so the world's size is set by the balance
+   of two flows rather than by a conserved stock. Real hydrothermal vents are a small part
+   of the ocean's nutrient supply (most deep nutrient is remineralised sinking material,
+   returned by upwelling), but as a world rule it is defensible and it would make D067's
+   vent load-bearing for the first time. Two consequences to design around: without the
+   burial sink the population runs to the ceiling; and matter injected at the plume's base
+   rides the plume to the surface, where the leaves take it first, so it helps the deep only
+   where the return flow sinks — which is why lever 1 comes first regardless. One rule, two
+   knobs, both default off, screened by the budget arithmetic before any arm. A true vent
+   community (energy from chemistry, not light) is a new cell type and belongs with the
+   cell-type expansion, not here.
 
 ## What I am asking the owner to rule on
 
