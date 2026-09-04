@@ -130,6 +130,29 @@ chain (logbook/0044):
 ./scripts/analyse-arm.ps1 r9-s1 -ListColumns          # the name -> index map
 ```
 
+**Score a run by connected clade** (D063 as amended, logbook/0054's addendum) with
+`scripts/clade-score.ps1` — the goal rule's `inherit` column is an aggregate across every
+absorptive lineage in the world at once, so a set of unrelated short-lived clades can sum to
+a passing streak and an unrelated late mutant can satisfy recruitment for a sterile cohort.
+The clade scorer instead walks `lineage.jsonl`'s parent chains, finds the one connected
+clade with the most members alive at the run's last sample, and asks D063's three original
+clauses of that clade alone. It streams the file rather than loading it (a live run's
+`lineage.jsonl` can run into the hundreds of MB) and started as a straight port of
+`scratch/clade-score.py`. It now also carries the two clauses the owner's ruling added the
+same day: the stability clause (the scored clade holds ≥ 10 members at every sample in the
+last two lifetimes, t ≥ t_last − 6,000 — validated against the 48/41/24/127 minima
+logbook/0054's addendum records for round 18's four passing seeds) and the producer-lineage
+clause, read from the report's own `photo` / `photo inh` columns by header name and printed
+as `photo: column absent` rather than failed on an older report that lacks them. The
+producer clause is population-only: `photo inh` ≥ 10 at the last sample and at every one of
+the last 20 samples, not the amendment's full wording — `lineage.jsonl` carries `abs` and
+`jnt` per birth but no photosynthetic flag, so "a photosynthetic birth in the last 20
+samples" cannot be read from it and is not checked.
+
+```powershell
+./scripts/clade-score.ps1 r18x-s1 r18x-s2 r18x-s3 r18x-s4 r18x-s5
+```
+
 **Ask the ledger before asking a worker** (D069). One body's energy ledger, alone, under
 `World`'s own breeding rule — net watts, break-even density, lifetime, R0 — in seconds and
 without Unity. Use it to screen any knob that touches income or cost before spending a
