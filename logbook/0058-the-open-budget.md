@@ -67,4 +67,15 @@ Launcher `scratch/launch-r22.ps1`; workers refreshed to the build and launched w
 
 ## Launch
 
-Appended below once the build lands.
+**Amendment before launch.** The build's 300-s validation arm read burial at ~4.5
+units/s against an influx of 0.6 in a founding world, because the floor layer holds
+several hundred free units before any body has locked them: at 0.01/s the stock drains
+by ~4 units/s until the population grows, so the founding may run short of matter and
+the first ten thousand seconds are the transient, not the equilibrium. The pre-registered
+doses stand (M1's downward reading covers it), and one hedge arm is added: `r22ob-s2`,
+influx 0.6 with burial **0.002**/s, so the round reads the equilibrium's dependence on
+the outflow as well as the inflow. Five arms.
+
+Launched 2026-09-04 ~22:30 on workers 2–6, refreshed to commit `1ce2e71` (the open
+budget build, 508 tests) and launched with `-ExpectSimHash c43976d3d71f1f52`. Headers
+and manifests verified below; monitor running. Results appended below.
