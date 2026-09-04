@@ -236,6 +236,13 @@ D070's second gate reading is met on this: a larger stock did not turn the crash
 cycle holding ten. The gate is open; the exudation build starts from
 `scratch/exudation-spec.md`.
 
+*On the two stopped arms (2026-09-04): the Sol/GPT review of 2026-09-03 proposed reporting
+them as censored, screen-negative, rather than failed. The owner reaffirmed the rule as
+ruled: an arm stopped for futility is stopped because it is expected to fail on the
+merits, the stop saves time, and the result is a negative result; censoring is for error
+or a fault in the experiment, and an arm that could only be reported as censored should
+not be stopped. The labels above stand.*
+
 **What this is, read with 0051.** The assay showed that fifty stomachs at clearance 10
 graze their water to a tenth of what fifty at clearance 1 leave, and earn the same. Here
 the same thing happens at population scale, from a single mutant: the line grows on the

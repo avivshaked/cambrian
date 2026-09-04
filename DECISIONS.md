@@ -93,6 +93,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050) running under D069's sequential rule: 0 of 3 scored so far — clearance 10 grows the first 20–48-member lines of the campaign and they graze their field and crash; clearance 5 holds a line of 3–9 |
 | [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
 | [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; **confirmed 2026-09-04** (logbook/0054: 4 of 5 seeds pass D063 at dt 0.01 with exudation 0.15; the failing seed's stomachs were matter-blocked, not starved) · a world rule, DESIGN.md §5A.2c |
+| [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · screen first (seeds 1 and 4 at 0.02, clade-scored), adopted only if it holds |
 
 ---
 
@@ -3209,7 +3210,13 @@ all built the same day:
    absorptive by t=15,000 is stopped and scored as failed — no line that went on to matter
    has started later in fourteen rounds. *Sequential seeds:* seeds 1–2 first; 3–5 only if
    a line appears in either. Applied to round 14 from the moment of ruling (0050's
-   amendment). Both are the owner's, as round-design rules.
+   amendment). Both are the owner's, as round-design rules. *Reaffirmed 2026-09-04 against the
+   Sol/GPT review's proposal to report futility-stopped arms as censored: the owner's
+   reading is that an arm is stopped under the rule because it is expected to fail on the
+   merits, so the stop saves time and the result is a negative result — censoring it would
+   prime the record; censoring is for arms that fail through error or a fault in the
+   experiment itself. If a stop could only be reported as censored, the arm should not be
+   stopped.*
 4. **The coarse step** (logbook/0052; `EVOSIM_DT`, Ecosystem.ConfigurePhysicsStep). The
    physics timestep becomes configurable — the metabolic step stays 0.5 s, one clock, only
    the integration granularity changes — and is validated against a seed already run: the
@@ -3355,3 +3362,51 @@ literature rather than a refutation of the mechanism. Design impact recorded in 
 review's round table; DESIGN.md's changelog takes the rule when it is built.
 
 *Absorbed from `fable-propose-detritus-flux.md` (2026-09-03), deleted on this ruling.*
+
+### D071
+
+**Matter at depth — the matter sink decoupled from the detritus sink, because the
+population plateau was the matter cap and the deep was dry** · 2026-09-04 (ruled; screen
+first)
+
+Round 18 (logbook/0054) met D063 4 of 5 and its failing seed named the next constraint:
+the last stomachs sat at −15 m in 13.7 J/m³, earning +0.08 W each with 537 J in reserve —
+four times a child's price — and had no children. Refused, not starved. Every mature world
+in the round refused 100,000–290,000 conceptions per 100-s window for want of matter, and
+the largest clade's size at the end tracked the free matter at depth across the five seeds.
+The arithmetic: 6,000 units of matter in the world (1/m³ over 100 m² × 60 m, conserved
+since D048), ~5,500 locked in bodies at maturity, ~3.5 per child from the parent's own
+layer, so about 1,900 bodies can exist — which is the 1,700–1,850 plateau every round since
+D065 has shown and read as carrying capacity. Producers alone fill it; a stomach at −15 m
+conceives only when a corpse's matter sinks past it, and round 13 (D067's marine snow)
+slowed the matter sink from 0.02 to 0.002 m/s together with the detritus sink, so matter
+released at the producers' layer is re-locked there before it goes down: ~6,500 s to reach
+−15 m instead of ~650. The slow detritus sink is what keeps the exudate near the stomachs;
+the slow matter sink is what keeps the matter away from them.
+
+**The rule.** `EVOSIM_MATTER_SINK` returns to 0.02 m/s (D048's default) while `EVOSIM_SINK`
+stays at 0.002: matter and detritus fall at different speeds, as they may — one is a
+mineral currency and the other is organic energy, and nothing in D048 or D067 tied them
+beyond convenience. No code; it changes where the matter is, not how much there is, and
+conservation stands. **Screened first**, at the 0.02 step on the two matter-starved seeds
+(1 and 4), 20,000 s, scored by connected clade (0054's addendum): prediction, `mat deep`
+≥ 0.3 units/m³ at t > 10,000 and a clade ≥ 10 at the end in both; adopted into the
+reference world only if it holds, and read for the cost — a surface stripped of matter
+faster presses on the producers' recruitment at the top.
+
+**Rejected or deferred.** Matter excretion up (`EVOSIM_EXCRETION`): real but small — the
+fixed 3 units per body are never excretable under D065's contract, so at most ~15% of the
+locked pool can move this way; a second lever. The fixed matter price down or the initial
+matter up: both change the producer world wholesale (a population near 3,800) and the
+second is a permanent change to the world's size; not for this question. A price paid from
+where the food is rather than where the body sits: wrong — matter is where it is.
+**Deferred as a future experiment (owner, 2026-09-04): a vent that adds matter, paired
+with burial at the floor** — the ocean's open budget, the world's size set by two flows
+rather than a conserved stock; it would make D067's vent load-bearing for the first time,
+needs the burial sink or the population runs to the ceiling, and injects matter at the
+plume's base where it rides to the surface and the leaves take it first, so it helps the
+deep only where the return flow sinks — which is why this rule comes first regardless. A
+vent community living on chemistry is a new cell type and belongs with the cell-type
+expansion.
+
+*Absorbed from `fable-propose-matter-at-depth.md` (2026-09-04), deleted on this ruling.*

@@ -1,6 +1,6 @@
 # Handoff — where to pick up
 
-**Updated 2026-09-04: the goal rule is met.** Round 18 (logbook/0054) passes D063 as amended 4 of 5 at dt 0.01 with exudation 0.15 (D070, a world rule from today, DESIGN.md §5A.2c): inherited absorptive lines of 76–221 at 30,000 s, founder-descended, recruiting, producers at 1,500–1,800, audit closed. The failing seed's stomachs were matter-blocked in the richest water of the round — the next constraint is matter at depth — `fable-propose-matter-at-depth.md` (the population plateau of ~1,800 is the matter cap; round 13 slowed the matter sink with the detritus sink; the proposed screen is `EVOSIM_MATTER_SINK` back to 0.02 with `EVOSIM_SINK` kept at 0.002). Built this week: the ledger calculator, the invasion assay, the coarse step (0.02 screens, 0.01 confirms), the detritus-flux columns, the exudation knob and the per-creature absorptive log. This is the one file a new agent should
+**Updated 2026-09-04: the goal rule is met.** Round 18 (logbook/0054) passes D063 as amended 4 of 5 at dt 0.01 with exudation 0.15 (D070, a world rule from today, DESIGN.md §5A.2c): inherited absorptive lines of 76–221 at 30,000 s, founder-descended, recruiting, producers at 1,500–1,800, audit closed. The failing seed's stomachs were matter-blocked in the richest water of the round — the next constraint is matter at depth — **D071, ruled 2026-09-04**: the population plateau of ~1,800 is the matter cap, round 13 slowed the matter sink with the detritus sink, and the screen is `EVOSIM_MATTER_SINK` 0.02 with `EVOSIM_SINK` 0.002 on seeds 1 and 4 at 0.02, clade-scored (logbook/0055, after the run-identity manifest lands). Built this week: the ledger calculator, the invasion assay, the coarse step (0.02 screens, 0.01 confirms), the detritus-flux columns, the exudation knob and the per-creature absorptive log. This is the one file a new agent should
 read first. It says what was being attempted, how far it got, what is queued, and exactly how
 to continue. It is a pointer, not a source of truth: the specification is `DESIGN.md`, the
 reasoning is `DECISIONS.md`, the history is `logbook/`, and the operating rules are
@@ -410,8 +410,10 @@ production) before the D-entry leans on the numbers above.
 
 - **Future experiment — a vent that adds matter (owner, 2026-09-04).** An open matter
   budget: a source at the vent's base paired with burial at the floor, so the world's size
-  is set by flow, not stock. Filed in `fable-propose-matter-at-depth.md` as lever 6, after
-  the closed-loop fix (matter sink decoupled from the detritus sink) has been screened.
+  is set by flow, not stock. Recorded in D071's deferred list; after D071's screen.
+- **The primer's ecology chapter (owner, 2026-09-04: yes).** Written after the contract
+  repairs land; the reference world is frozen when D071's screen reads.
+- **The next scored goal: held (owner, 2026-09-04)** until D071's screen answers.
 
 - **Speed, and the game's clock (owner, 2026-09-03).** "All I want is the ability to
   simulate faster" — and, separately, a game in which people wait hours for something
