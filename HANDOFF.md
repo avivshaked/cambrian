@@ -81,10 +81,10 @@ reading. Alternatives on the table: burial 0.02, or influx 0.3. The surface shap
 recommended. The reference world is unchanged until the ruling: age order, stock 1/m³,
 exudation 0.15; round 18's pass stands.
 
-**Ready for implementing agents once the open world confirms** (D075):
-`scratch/perception-spec.md` (Chemical, Energy, Flow wired; a config-gated pool so the
-default replays bit for bit; the smoke test extended to seven channels; `spd`/`food`
-columns for the movement round; the §4.4 mask as a separable item) and
+**The perception build landed 2026-09-05** (commit `e59f6af`, [logbook/0062](logbook/0062-the-senses-answer.md)):
+Chemical, Energy and Flow answer; the pool is `EVOSIM_SENSE_CHEMICAL|ENERGY|FLOW`,
+default off, bit-identical replay proven; the §4.4 mask built (~21% faster); `spd`/`food`
+columns for the movement round. Still ready for an implementing agent:
 `scratch/theatre-spec.md` (a rendered world replay with a built-in identity check
 against the recorded rows, a creature id on snapshot rows, a single-creature mode).
 Both are built on read-only surveys in the same directory.

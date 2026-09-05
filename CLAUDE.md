@@ -399,6 +399,20 @@ actually verifying it.
   `driveImpulsesLimited` — about 10⁵ per 0.02 run, so **the fast step under-drives evolved
   muscle; anything about swimming or joints is read at 0.01 only.** A run whose manifest reads
   `status error` is censored.
+- **Every worker compiles `src/Evosim.Core` from the main tree.** `unity-wN/Packages/manifest.json`
+  points at `file:../../src/Evosim.Core`, so `new-worker.ps1` copies only `Assets/`,
+  `ProjectSettings/` and `Packages/`; a Core edit in the main tree reaches every worker launched
+  after it, whatever its `Assets/` carry, and the manifest's `coreHash` records which. A round
+  cannot be held on one build once Core has moved (round 24's fifth seed runs on the perception
+  build for this reason, 0061); land Core changes between rounds or accept and record the split.
+- **`scratch/simhash.py` is not the hash.** It agreed with `EvolutionRun.HashSourceTree` on every
+  tree through 1ce2e71 and disagreed on e59f6af's (`93ef4e96…` against the C#'s and
+  `run-arm.ps1`'s `30b96bf6…`), which cost one refused launch. Take the expected hash from a
+  manifest the build has written (`runs/<arm>/<run>/run.json`, `source.simHash`) or from
+  `run-arm.ps1`'s own printout; the python is a convenience until its divergence is found.
+- **Adding a tunable makes every older `config.json` unreadable by the new build** — §9's
+  refuse-rather-than-default rule on a missing group. `ledger.ps1 -Config` against a run written
+  before the tunable throws; take the genome from the old run and the config from a new one.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
