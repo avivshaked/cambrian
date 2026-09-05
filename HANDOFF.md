@@ -35,7 +35,7 @@ adopted open world confirmed at 0.01 under D063 as amended → **movement that p
 (wire `Chemical`, `Flow`, `Energy`; a movement clause; fine step only) with **the
 theatre** built in parallel by a separate agent → **shared space and the physical
 footprint (D076, owner 2026-09-05: "a world without contact can't work"; the spike
-measured the cost 2026-09-05, [logbook/0064](logbook/0064-the-crowd-costs-nothing.md): none; the constraints are packing and a horizontal boundary rule — the footprint proposal is being drafted from `scratch/footprint-survey.md`)** → predation (on contact; the encounter
+measured the cost 2026-09-05, [logbook/0064](logbook/0064-the-crowd-costs-nothing.md): none; the constraints are packing and a horizontal boundary rule — **`fable-propose-footprint.md` puts the world rules to the owner: a literal 4 × 10 × 10 m ring 60 m deep, patches as regions read from position, periodic horizontal wrap, a restoring top and bottom, newborns beside the parent, one re-screen with the dose and the surface fix folded in**) → predation (on contact; the encounter
 rule withdrawn) → the cell types and immigration → the archive and the islands.
 
 ## Queued — the current path, in order
