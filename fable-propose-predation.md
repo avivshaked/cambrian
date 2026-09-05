@@ -4,6 +4,11 @@
 order). Built on `scratch/predation-survey.md` (read-only, cited to file and line) and on
 DESIGN.md §5A.3. Absorbed into DECISIONS.md on ruling, then deleted.*
 
+> **Superseded in part, 2026-09-05 (D076).** The owner ruled the fork by direction the
+> same day: shared physical space (A); the encounter rule (B) is withdrawn. This file
+> stays as the record of the bite's rules (sections "The rules", items 1 and 3–8 carry
+> over to contact) and is rewritten on shared space once the spike's numbers are in.
+
 ## What is already decided, and what is already built
 
 The design settles more than I expected. Predation is a behaviour, not a body type: one

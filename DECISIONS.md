@@ -98,6 +98,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0057): neither adopted** — the stomachs bid highest and still breed no more than the leaves; the larger stock triples everything at the same share; the open matter budget follows as D074 |
 | [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · **adopted 2026-09-05 in the vent shape at 0.6/s (owner); confirmation at 0.01 pre-registered as logbook/0061** |
 | [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
+| [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · the cost measured first (`scratch/shared-space-spike-spec.md`); the footprint and predation rules follow as proposals |
 
 ---
 
@@ -3657,3 +3658,34 @@ Before item 1: round 22 (logbook/0058) is written up, D074's adoption and dose a
 to the owner, the vent shape is screened, and the adopted world is confirmed at 0.01
 under D063 as amended. Nothing in this entry changes a world rule; it fixes the order
 of the questions.
+
+### D076
+
+**Shared space: creatures share one volume and can touch.** Ruled as a direction by the
+owner, 2026-09-05: "a world without contact can't work, esp. if we plan on converting the
+current matter into literal particles down the line, or some combination of particles and
+ambient matter."
+
+**The fact behind it.** Creatures have been tiled 100 m apart on mutually ignoring
+collision layers since Milestone 1 (§6.3), and nothing in the world has ever touched
+anything else; the ecological coordinates are depth and patch only. DESIGN.md §5A.8 had
+recorded tiling as already repurposed into spatial partitioning; corrected the same day
+to "not yet". The predation proposal (`fable-propose-predation.md`) had put a fork to the
+owner — shared physical space, or an encounter rule drawing contacts from the seed by
+local tissue density — and recommended the encounter rule on throughput grounds. **The
+encounter rule is withdrawn** on this ruling: it was a throughput hedge, and a world that
+will carry matter as particles needs contact to be physical, because absorption by
+touch, shading by standing in the way, and a corpse sinking past a body are all contact.
+
+**What it entails, to be ruled separately once measured.** The footprint becomes
+physical (today's `EVOSIM_AREA` 100 m² would put thousands of bodies in a 10 × 10 × 60 m
+column); patches become regions and the current becomes horizontal transport; the
+population a world can hold at the fine step drops by an amount not yet known, which
+likely moves the island model forward in D075's path; corpses and large detritus become
+physical bodies (logbook/0022's rejection of a physical corpse rested on tiling and is
+reversed by this). **Measured first:** a spike in the pattern of spike 01
+(`scratch/shared-space-spike-spec.md`) — one shared volume, collisions on, 250–2,000
+real creatures with the fluid on, at three footprints, against today's tiling — run on a
+quiet machine after round 24's arms end. The footprint proposal and the rewritten
+predation proposal carry its numbers. D075's order is amended by this: shared space and
+the physical footprint go before predation.
