@@ -26,8 +26,9 @@ the leak) and a live bite reading a `TissueContact` — but the metabolic step h
 
 ## The fact the proposal turns on: creatures cannot meet
 
-Creatures are tiled on a lattice 100 m apart on mutually ignoring collision layers
-(`Ecosystem.cs:93`, `PhenotypeBuilder.cs:97`; §6.3). Horizontal position is real in the
+Creatures are tiled on a lattice 100 m apart (`Ecosystem.cs:93`; §6.3) on one shared
+collision layer, kept apart by distance alone (the spike's smoke, 2026-09-05; the survey's
+"mutually ignoring layers" was spike 01's arrangement, not the ecosystem's). Horizontal position is real in the
 physics and inert in the ecology; the ecological coordinates are depth and patch. Nothing
 in the world has ever touched anything else. DESIGN.md §5A.8's table says tiling was
 repurposed into spatial partitioning so that creatures can meet; that is the intent, and

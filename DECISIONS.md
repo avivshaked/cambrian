@@ -3666,8 +3666,9 @@ owner, 2026-09-05: "a world without contact can't work, esp. if we plan on conve
 current matter into literal particles down the line, or some combination of particles and
 ambient matter."
 
-**The fact behind it.** Creatures have been tiled 100 m apart on mutually ignoring
-collision layers since Milestone 1 (§6.3), and nothing in the world has ever touched
+**The fact behind it.** Creatures have been tiled 100 m apart since Milestone 1 (§6.3) — on one shared
+collision layer, kept apart by distance alone, as the shared-space spike's smoke found
+the same day (the ignoring layers were spike 01's), and nothing in the world has ever touched
 anything else; the ecological coordinates are depth and patch only. DESIGN.md §5A.8 had
 recorded tiling as already repurposed into spatial partitioning; corrected the same day
 to "not yet". The predation proposal (`fable-propose-predation.md`) had put a fork to the
