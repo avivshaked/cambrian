@@ -96,7 +96,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; overtaken by D072 (the contest for each unit was an age queue) |
 | [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · **screened 2026-09-04 (logbook/0056): `shuffled` not adopted** — the queue was the stomachs' lifeline, because in a matter-bound plateau energy buys no fecundity; ruled as D073 |
 | [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0057): neither adopted** — the stomachs bid highest and still breed no more than the leaves; the larger stock triples everything at the same share; the open matter budget follows as D074 |
-| [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · **adopted 2026-09-05 in the vent shape at 0.6/s (owner); confirmation at 0.01 pre-registered as logbook/0061** |
+| [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · **adopted 2026-09-05 in the vent shape at 0.6/s (owner); confirmation at 0.01 (logbook/0061): 3 of 5 at the threshold, not round 18's 4; the stock still grows at the dose and the plume lifts every population to the waterline — surface fix and dose correction put to the owner before re-confirming** |
 | [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
 | [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · the cost measured first (`scratch/shared-space-spike-spec.md`); the footprint and predation rules follow as proposals |
 
@@ -3623,6 +3623,17 @@ in patch 0 from 60 m, legs 1 m). Confirmation at dt 0.01, five seeds, 30,000 s, 
 D063 as amended, pre-registered as logbook/0061; the dose is corrected on that reading
 if the stock does not level. The surface shape is rejected. The closed world (round 18's
 pass) stays in the record as the control.
+
+**Confirmed at 0.01 at the goal rule's threshold and not at round 18's bar (logbook/0061,
+2026-09-05): 3 of 5** (stable connected absorptive clades of 90–267 in seeds 3, 4, 5; seed
+1's 413-strong clade is a late mutant that fails the stability clause, seed 2's line never
+reached ten). No runaway (3,100–3,900 alive), burial 43–49% of the influx, the queue weak
+(1,100–1,800 s). **Two faults, both the owner's:** the stock grew 35–41% over the last
+third in every seed, so the dose is too high (burial 0.02 or influx 0.3); and every
+population sits at −0.6 to +1.5 m — the plume lifts bodies to the waterline and the
+force-free region above it keeps them (the "no top" hole, opened by a current). The
+recommendation on record: fix the surface and the dose, then re-run the confirmation on
+the corrected world, rather than adopt a world with a known hole as the reference.
 
 ### D075
 

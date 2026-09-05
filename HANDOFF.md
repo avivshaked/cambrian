@@ -63,9 +63,11 @@ rule withdrawn) → the cell types and immigration → the archive and the islan
 
 ## The decision in front of the owner
 
+**Round 24 read 2026-09-05 ([logbook/0061](logbook/0061-the-open-world-at-the-fine-step.md)): 3 of 5 at D063's threshold, not round 18's 4 of 5.** Two faults for the owner's ruling before the confirmation is re-run: (1) **the surface** — every population sits at −0.6 to +1.5 m because the vent's plume lifts bodies to the waterline and the region above it is force-free (D050 zeroes buoyancy there, the return flow is zero at depth ≤ 0): make the region above y = 0 restoring, or stop the plume short of the surface; (2) **the dose** — the stock grew 35–41% over the last third in every seed: burial 0.02 or influx 0.3. Recommendation: fix both, re-confirm at 0.01, five seeds. Movement columns: `jointed` 0 in every arm, so nothing to read yet.
+
 **Ruled 2026-09-05: D074 adopted in the vent shape at 0.6/s** (owner, "agreed, proceed
 with your recommendations"); the confirmation at 0.01 is [logbook/0061](logbook/0061-the-open-world-at-the-fine-step.md),
-running. The perception build (`scratch/perception-spec.md`) was started the same day in
+read above. The perception build (`scratch/perception-spec.md`) was started the same day in
 parallel, on the owner's agreement that the waiting goes and the order stays; a predation
 proposal is being drafted for the ruling after movement is read. The paragraph below is
 the state of the question as it was put. D074 was screened twice: [logbook/0058](logbook/0058-the-open-budget.md) (surface influx, sink
