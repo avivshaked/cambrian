@@ -84,8 +84,11 @@ exudation 0.15; round 18's pass stands.
 **The perception build landed 2026-09-05** (commit `e59f6af`, [logbook/0062](logbook/0062-the-senses-answer.md)):
 Chemical, Energy and Flow answer; the pool is `EVOSIM_SENSE_CHEMICAL|ENERGY|FLOW`,
 default off, bit-identical replay proven; the §4.4 mask built (~21% faster); `spd`/`food`
-columns for the movement round. Still ready for an implementing agent:
-`scratch/theatre-spec.md` (a rendered world replay with a built-in identity check
+columns for the movement round. **The theatre's first cut landed the same day**
+(commits `1392ccd`..`7b39e7d`, [logbook/0063](logbook/0063-the-theatre-opens.md)): `Evosim/Rebuild
+Theatre Scene`, point the runner at a run directory, press Play; identity against the
+recording 10 of 10 samples headless; **nothing rendered has been seen — the owner opens
+`Theatre.unity` and looks.** The spec was `scratch/theatre-spec.md` (a rendered world replay with a built-in identity check
 against the recorded rows, a creature id on snapshot rows, a single-creature mode).
 Both are built on read-only surveys in the same directory.
 

@@ -185,3 +185,4 @@ key only translates the entries' reporting shorthand.
 | [0060](0060-the-outflow.md) | 2026-09-05 | The outflow |
 | [0061](0061-the-open-world-at-the-fine-step.md) | 2026-09-05 | The open world at the fine step |
 | [0062](0062-the-senses-answer.md) | 2026-09-05 | The senses answer |
+| [0063](0063-the-theatre-opens.md) | 2026-09-05 | The theatre opens |
