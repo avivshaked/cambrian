@@ -187,3 +187,4 @@ key only translates the entries' reporting shorthand.
 | [0062](0062-the-senses-answer.md) | 2026-09-05 | The senses answer |
 | [0063](0063-the-theatre-opens.md) | 2026-09-05 | The theatre opens |
 | [0064](0064-the-crowd-costs-nothing.md) | 2026-09-05 | The crowd costs nothing |
+| [0065](0065-the-first-shared-water.md) | 2026-09-05 | The first shared water |
