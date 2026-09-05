@@ -78,4 +78,65 @@ the outflow as well as the inflow. Five arms.
 
 Launched 2026-09-04 ~22:30 on workers 2–6, refreshed to commit `1ce2e71` (the open
 budget build, 508 tests) and launched with `-ExpectSimHash c43976d3d71f1f52`. Headers
-and manifests verified below; monitor running. Results appended below.
+and manifests verified (every one `simHash c43976d3…`, `gitCommit 1ce2e71`, `gitDirty
+false`); monitor running.
+
+## Results
+
+Five arms to budget, manifests `status ended`, `reason budget`, `divergedTotal 0`; V1–V4
+held (headers as pre-registered, `floor` 0 from t=3,100, audit 0.0000% throughout, the
+matter identity to the rounding at every sample). Every population sat in the surface
+film (0 to −3.6 m at the end) — the fast step's bimodality (0056), here in all five.
+
+| arm | influx · burial | alive at end | deaths | absorpt (share) | standing matter at 20,000 (10,000) | buried/window t > 10,000 | `matterHere` mean t > 10,000 | largest clade · min last 6,000 s | median parent age, plateau (> 3,500 s) |
+|---|---|---|---|---|---|---|---|---|---|
+| r22o-s2 | 0.6 · 0.01 | 4,068 | 1,683 | 98 (2.4%) | 13,285 (8,581) | 13.0 of 60 | 0.125 | 72 · 18 stable | 5,260 s (66%) |
+| r22o-s4 | 0.6 · 0.01 | 4,263 | 3,208 | 40 (0.9%) | 13,462 (8,028) | 5.7 of 60 | 0.056 | 18 · 4 unstable | 1,684 s (29%) |
+| r22o2-s2 | 1.2 · 0.01 | 7,727 | 6,609 | 307 (4.0%) | 24,380 (13,534) | 11.6 of 120 | 0.103 | 142 · 140 stable | 2,572 s (33%) |
+| r22o2-s4 | 1.2 · 0.01 | 6,932 | 4,384 | 375 (5.4%) | 23,102 (12,865) | 17.6 of 120 | 0.102 | 244 · 177 stable | 4,086 s (54%) |
+| r22ob-s2 | 0.6 · 0.002 | 5,320 | 3,067 | 273 (5.1%) | 16,808 (11,024) | 2.2 of 60 | 0.071 | 162 · 158 stable | 1,504 s (30%) |
+| r20q0-s2 (control) | closed | 1,801 | 1,778 | 135 (7.5%) | 6,000 | — | 0.137 | 120 · 81 | 4,318 s (52%) |
+| r20q0-s4 (control) | closed | 1,774 | 2,764 | 234 (13.2%) | 6,000 | — | — | 227 · 200 | 4,632 s (54%) |
+
+**The predictions:**
+
+| # | prediction | result |
+|---|---|---|
+| M1 | the stock finds an equilibrium at 0.6/s | **falsified upward** — burial took a fifth or less of the influx at every dose and the stock grew linearly, 8,600 → 13,300 at 0.6/s, to 24,400 at 1.2/s; no equilibrium in sight |
+| M2 | the column is wet (`matterHere` ≥ 0.3) | **falsified** — 0.06–0.13, the closed world's reading |
+| M3 | the queue weakens (median parent age < 2,000 s) | mixed — 1,504 and 1,684 s in two arms, 2,572–5,260 in three |
+| M4 | a stable clade ≥ 10 in every arm | held in four of five (72, 142, 244, 162); seed 4 at 0.6 has a mutant clade of 18, unstable |
+| M5 | the size is a flow | **held** — doubling the influx raised the population by 90% and 63%, and `mat locked` with it (12,455 → 23,864; 13,047 → 21,875) |
+| M6 | matter turns over (buried > 1,500 at 0.6/s) | held — 4,715 and 4,538 buried; the hedge arm's 1,192 is the weaker dose |
+
+## Verdict
+
+**When matter does not lock, the world grows at the influx rate, and nothing in the
+world stops it.** The population is a flow — that much the owner asked to see and it is
+seen: 4,000 bodies at 0.6/s, 7,000–7,700 at 1.2/s, against 1,800 closed, and the 1.2
+arms were a few hundred seconds from the 8,000 ceiling. But the flow has no outflow to
+balance it. Burial at the floor took 5–18 units per window against 60–120 arriving, at
+every dose, because **the matter never reaches the floor**: it arrives at the surface,
+the leaves at the surface lock it within a step, and what a death releases at −1 m
+sinks at 0.002 m/s — eight hours of simulated time to the floor, longer than the run.
+The free pool sat at 400–1,200 units whatever the influx (the closed world's ~600),
+the column read as dry as before, and the queue held wherever the population was old.
+Burial and the population are connected only by the matter sink, and at 0.002 m/s they
+are not connected at all.
+
+The stomachs' share **fell** in the open world — 0.9–5.4% against the closed world's
+7.5–13.2% — because the influx lands where the leaves are. A surface source feeds the
+first trophic level; it is the ocean's dust, not its upwelling.
+
+**The dose correction, and the next screen.** The outflow has to see what the inflow
+built. Two levers do that without a new rule: the matter sink at 0.02 m/s (D071's
+value, harmless alone in 0055 because there was nothing free to sink — here there is a
+dead body's matter to carry down in 3,000 s instead of 30,000), and the influx at the
+vent's base (D074's second shape), where the plume lifts it through the deep before the
+leaves see it. Round 23 (logbook/0060) screens both together and apart, at 0.6/s and
+burial 0.01/s, seeds 2 and 4. The open budget is not adopted or rejected on this round:
+its flow side is confirmed and its balance side is untested until the sink connects
+them. Both remain the owner's ruling.
+
+Closed 2026-09-05. Arms `r22o-s2`, `r22o-s4`, `r22o2-s2`, `r22o2-s4`, `r22ob-s2`;
+uncensored.

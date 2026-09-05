@@ -96,7 +96,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; overtaken by D072 (the contest for each unit was an age queue) |
 | [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · **screened 2026-09-04 (logbook/0056): `shuffled` not adopted** — the queue was the stomachs' lifeline, because in a matter-bound plateau energy buys no fecundity; ruled as D073 |
 | [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0057): neither adopted** — the stomachs bid highest and still breed no more than the leaves; the larger stock triples everything at the same share; the open matter budget follows as D074 |
-| [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · screening (logbook/0058) · adoption is the owner's |
+| [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002; dose corrected in logbook/0060** · adoption is the owner's |
 | [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
 
 ---
@@ -3587,6 +3587,17 @@ burial of detritus (changes the energy budget the leak was tuned against); a sou
 follows the population (hands the contested resource to whoever already wins).
 
 *Absorbed from `fable-propose-open-matter-budget.md` (2026-09-04), deleted on this ruling.*
+
+**Screened 2026-09-05 (logbook/0058): the flow side holds, the balance side does
+not yet.** The population is a flow — 4,000 bodies at 0.6/s, 7,000–7,700 at 1.2/s
+against 1,800 closed — but burial took a fifth or less of the influx at every dose and
+the stock grew linearly toward the ceiling, because matter arriving at the surface is
+locked by the leaves within a step and a dead body's matter at −1 m takes eight hours to
+sink to the floor at 0.002 m/s. The column stayed dry (0.06–0.13 units/m³) and the
+stomachs' share fell (0.9–5.4% against 7.5–13%): a surface source feeds the leaves. Dose
+correction screened as logbook/0060: the matter sink at 0.02 m/s so the outflow sees
+what the inflow built, and the vent shape so the influx reaches the deep first. Not
+adopted, not rejected; the owner's ruling follows that screen.
 
 ### D075
 
