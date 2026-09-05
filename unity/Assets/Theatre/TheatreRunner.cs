@@ -221,8 +221,25 @@ namespace Evosim.Theatre
 
             if (Water != null)
             {
-                Water.Show(
-                    _replay.Record.Config.WorldDepthMetres, WaterExtentMetres, Ecosystem.TileSpacing);
+                RunConfig water = _replay.Record.Config;
+
+                // D077. A recording of a shared-space run has a literal box, so the theatre draws
+                // that box and the K-1 seams inside it rather than a lattice grid — the patch
+                // width from the world's own fields (sqrt(area / K)), never recomputed here. A
+                // tiled recording gets the grid it always got.
+                if (water.SharedSpace)
+                {
+                    int patches = Mathf.Max(1, (int)water.HorizontalPatches);
+
+                    Water.ShowBox(
+                        water.WorldDepthMetres,
+                        Mathf.Sqrt(water.WorldAreaSquareMetres / patches),
+                        patches);
+                }
+                else
+                {
+                    Water.Show(water.WorldDepthMetres, WaterExtentMetres, Ecosystem.TileSpacing);
+                }
             }
 
             if (SeekToSeconds > 0f) BeginSeek(SeekToSeconds);

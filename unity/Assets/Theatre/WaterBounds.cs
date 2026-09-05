@@ -13,12 +13,13 @@ namespace Evosim.Theatre
     /// detritus sinks). Two grids give a viewer the one axis that means something.
     /// </para>
     /// <para>
-    /// <b>Patch boundaries are not drawn, because they are not boundaries.</b> D061's horizontal
-    /// patches are an index carried on each creature and on each field cell — <c>Organism.Patch</c>
-    /// — not a region of space: a creature's patch and its lattice tile are unrelated, and two
-    /// creatures side by side on screen may be in different patches. Drawing lines between them
-    /// would be inventing geometry the simulation does not have. The patch a selected creature is
-    /// in is in the overlay instead, where it is a fact rather than a picture.
+    /// <b>In a tiled world, patch boundaries are not drawn, because they are not boundaries.</b>
+    /// D061's horizontal patches are an index carried on each creature and on each field cell —
+    /// <c>Organism.Patch</c> — not a region of space: a creature's patch and its lattice tile are
+    /// unrelated, and two creatures side by side on screen may be in different patches. Drawing
+    /// lines between them would be inventing geometry the simulation does not have. The patch a
+    /// selected creature is in is in the overlay instead, where it is a fact rather than a
+    /// picture.
     /// </para>
     /// <para>
     /// <b>Likewise the horizontal extent is the lattice, not the world.</b>
@@ -27,17 +28,33 @@ namespace Evosim.Theatre
     /// the same world's bodies are spread over kilometres of lattice. The grid therefore spans
     /// where the creatures are, and says nothing about the column's area.
     /// </para>
+    /// <para>
+    /// <b>Both of those stop being true under <c>RunConfig.SharedSpace</c></b> (D077), and
+    /// <see cref="ShowBox"/> is what the theatre draws then: the box is literal — K patches of
+    /// <c>sqrt(area / K)</c> metres side by side on a ring, x in [0, K·W), z in [0, W) — and the
+    /// K−1 lines between them are boundaries a creature actually crosses. The far seam (x = K·W
+    /// back to x = 0) is the same line as x = 0 and is drawn as the box's own end face; a body
+    /// that leaves there reappears at the other, which no still picture can show.
+    /// </para>
     /// </remarks>
     public sealed class WaterBounds : MonoBehaviour
     {
         public Color SurfaceColour = new Color(0.45f, 0.75f, 0.95f, 0.5f);
         public Color FloorColour = new Color(0.55f, 0.45f, 0.30f, 0.5f);
 
+        /// <summary>Where a patch seam is drawn: x = k·W, for k in 1..K−1 — D077.</summary>
+        public Color SeamColour = new Color(0.95f, 0.85f, 0.45f, 0.55f);
+
         private float _depth;
         private float _extent;
         private float _spacing;
         private Material _material;
         private bool _ready;
+
+        /// <summary>The box, when the run has one — D077. Zero width means "no box, draw a grid".</summary>
+        private float _boxLength;
+        private float _boxWidth;
+        private int _patches;
 
         /// <summary>
         /// Sets the water up from a loaded run.
@@ -50,6 +67,29 @@ namespace Evosim.Theatre
             _depth = Mathf.Max(0.1f, depthMetres);
             _extent = Mathf.Max(spacingMetres, extentMetres);
             _spacing = Mathf.Max(1f, spacingMetres);
+            _boxWidth = 0f;
+            _boxLength = 0f;
+            _patches = 1;
+            _ready = true;
+        }
+
+        /// <summary>
+        /// Draws D077's actual box — the water the run was simulated in — and its patch seams.
+        /// </summary>
+        /// <param name="depthMetres"><c>RunConfig.WorldDepthMetres</c>. The box runs from y = 0 to −D.</param>
+        /// <param name="patchWidthMetres">W = sqrt(area / K), the side of one patch.</param>
+        /// <param name="patches">K. K−1 seams are drawn; the K-th is the box's own end face.</param>
+        public void ShowBox(float depthMetres, float patchWidthMetres, int patches)
+        {
+            _depth = Mathf.Max(0.1f, depthMetres);
+            _patches = Mathf.Max(1, patches);
+            _boxWidth = Mathf.Max(0.1f, patchWidthMetres);
+            _boxLength = _boxWidth * _patches;
+
+            // A grid pitch that gives a legible number of lines whatever the box is: a 10 m patch
+            // wants metres, a 100 m one does not.
+            _spacing = Mathf.Max(1f, Mathf.Round(_boxWidth / 5f));
+            _extent = Mathf.Max(_boxLength, _boxWidth);
             _ready = true;
         }
 
@@ -79,6 +119,16 @@ namespace Evosim.Theatre
             GL.PushMatrix();
             GL.Begin(GL.LINES);
 
+            if (_boxWidth > 0f) Box();
+            else Lattice();
+
+            GL.End();
+            GL.PopMatrix();
+        }
+
+        /// <summary>Two grids spanning where the tiled creatures are — the pre-D077 picture.</summary>
+        private void Lattice()
+        {
             Grid(0f, SurfaceColour);
             Grid(-_depth, FloorColour);
 
@@ -92,9 +142,60 @@ namespace Evosim.Theatre
                     GL.Vertex3(x, -_depth, z);
                 }
             }
+        }
 
-            GL.End();
-            GL.PopMatrix();
+        /// <summary>D077's box: the surface, the floor, the four vertical edges, the seams.</summary>
+        private void Box()
+        {
+            BoxGrid(0f, SurfaceColour);
+            BoxGrid(-_depth, FloorColour);
+
+            // The four corners, so the box reads as a volume.
+            GL.Color(new Color(SurfaceColour.r, SurfaceColour.g, SurfaceColour.b, 0.35f));
+            Vertical(0f, 0f);
+            Vertical(_boxLength, 0f);
+            Vertical(0f, _boxWidth);
+            Vertical(_boxLength, _boxWidth);
+
+            // The K−1 patch seams, full height and in their own colour: under SharedSpace these
+            // are regions a creature is in and crosses, not indices. The K-th seam is the box's
+            // own end face, already drawn — and it is the same line as x = 0, because the ring
+            // wraps there.
+            GL.Color(SeamColour);
+            for (int k = 1; k < _patches; k++)
+            {
+                float x = k * _boxWidth;
+
+                GL.Vertex3(x, 0f, 0f);
+                GL.Vertex3(x, 0f, _boxWidth);
+                GL.Vertex3(x, -_depth, 0f);
+                GL.Vertex3(x, -_depth, _boxWidth);
+                Vertical(x, 0f);
+                Vertical(x, _boxWidth);
+            }
+        }
+
+        private void Vertical(float x, float z)
+        {
+            GL.Vertex3(x, 0f, z);
+            GL.Vertex3(x, -_depth, z);
+        }
+
+        private void BoxGrid(float y, Color colour)
+        {
+            GL.Color(colour);
+
+            for (float x = 0f; x <= _boxLength + 0.001f; x += _spacing)
+            {
+                GL.Vertex3(x, y, 0f);
+                GL.Vertex3(x, y, _boxWidth);
+            }
+
+            for (float z = 0f; z <= _boxWidth + 0.001f; z += _spacing)
+            {
+                GL.Vertex3(0f, y, z);
+                GL.Vertex3(_boxLength, y, z);
+            }
         }
 
         private void Grid(float y, Color colour)

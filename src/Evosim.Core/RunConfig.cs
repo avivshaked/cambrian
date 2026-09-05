@@ -273,6 +273,42 @@ namespace Evosim.Core
         [Tunable("world", Unit = "m")]
         public float WorldDepthMetres { get; set; } = 60f;
 
+        /// <summary>
+        /// Whether creatures share one literal volume — D077's footprint world. False is every
+        /// run before D077: the tiled lattice, the inherited patch index and the two transport
+        /// lotteries, unchanged to the character.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>One switch over six rules, because they are one world.</b> True makes the box
+        /// literal — <see cref="HorizontalPatches"/> regions of
+        /// <c>sqrt(WorldAreaSquareMetres / K)</c> metres side by side on a ring,
+        /// <see cref="WorldDepthMetres"/> deep — and with it: a creature's patch is read from
+        /// where its root actually is rather than inherited at birth; the horizontal boundary is
+        /// periodic, so a body that leaves the box is translated back in at the far face;
+        /// <see cref="DispersalChancePerStep"/>'s lottery and D066's body-transport lottery are
+        /// retired, because bodies now change patch by being moved; and a newborn is placed
+        /// beside its parent, overlap-free, rather than on a lattice a hundred metres away.
+        /// A birth with nowhere to go is a counted <i>crowded</i> stillbirth
+        /// (<see cref="World.CrowdedStillbirths"/>).
+        /// </para>
+        /// <para>
+        /// <b>False is not "the same world with the geometry switched off".</b> It is the
+        /// historical record: the two retired lotteries draw from the RNG stream, so a world that
+        /// skipped them would not replay, and placement changes where every body starts. The two
+        /// branches are therefore whole worlds, and only the false one is bit-identical to what
+        /// is on file.
+        /// </para>
+        /// <para>
+        /// The physical placement rule is <c>Evosim.Sim</c>'s — §6.1 forbids
+        /// <c>UnityEngine</c> here and a box is a set of coordinates — so <see cref="World"/>
+        /// asks an <see cref="IBodyPlacement"/> for room and knows nothing else about it.
+        /// <c>EVOSIM_SHARED_SPACE</c> in the header.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public bool SharedSpace { get; set; }
+
         /// <summary>How fast dead matter falls, m/s — §5A.2c, §5A.4.</summary>
         /// <remarks>
         /// The rate that decides whether the deep is a niche or a graveyard. Fast, and everything

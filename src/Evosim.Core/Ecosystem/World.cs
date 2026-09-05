@@ -112,6 +112,20 @@ namespace Evosim.Core
         private const ulong ConceptionOrderIndex = ulong.MaxValue - 1UL;
 
         /// <summary>
+        /// The index D077's placement stream is seeded at — reserved beside
+        /// <see cref="ConceptionOrderIndex"/> and never handed to <see cref="_nextIndex"/>.
+        /// </summary>
+        /// <remarks>
+        /// Declared here rather than where it is used because this is the register of reserved
+        /// indices: the stream itself belongs to <c>Evosim.Sim</c>'s <c>Ecosystem</c>, which owns
+        /// the coordinates a placement is drawn in, and two files each picking their own "far end
+        /// of the range" is how two streams end up being one. Placement draws from its own stream
+        /// for <see cref="ConceptionOrderIndex"/>'s reason: where a body lands must not change
+        /// which genome anything else is given.
+        /// </remarks>
+        public const ulong PlacementIndex = ulong.MaxValue - 2UL;
+
+        /// <summary>
         /// The stream behind <see cref="ConceptionOrder.Shuffled"/> — D072. Constructed for every
         /// world and drawn from by none but a shuffled one.
         /// </summary>
@@ -369,6 +383,30 @@ namespace Evosim.Core
         public double ElapsedSeconds { get; private set; }
 
         public IReadOnlyList<Organism> Living => _living;
+
+        /// <summary>
+        /// Who decides whether a body has room to exist — D077. Null in every tiled world, and in
+        /// every test that has no coordinates to offer.
+        /// </summary>
+        /// <remarks>
+        /// Read only when <see cref="RunConfig.SharedSpace"/> is on, so a world that has one
+        /// attached and the switch off is the world on file, unchanged. See
+        /// <see cref="IBodyPlacement"/> for why the world asks rather than knows.
+        /// </remarks>
+        public IBodyPlacement Placement { get; set; }
+
+        /// <summary>
+        /// Births refused for want of room — D077's crowded stillbirth. 0 unless
+        /// <see cref="RunConfig.SharedSpace"/> is on.
+        /// </summary>
+        /// <remarks>
+        /// A separate count from <see cref="Stillbirths"/>, which is a development failure: this
+        /// one is a world that is full, and the two would be read for completely different things.
+        /// The parent keeps its energy and its matter — nothing was built — so a crowded refusal
+        /// is a birth that did not happen rather than one that failed, and no lineage row is
+        /// written for it.
+        /// </remarks>
+        public long CrowdedStillbirths { get; private set; }
 
         /// <summary>Every species ever founded, oldest first by id — D057. See <see cref="SpeciesFounder"/>.</summary>
         public IReadOnlyDictionary<uint, SpeciesFounder> Species => _species;
@@ -707,6 +745,13 @@ namespace Evosim.Core
 
             ElapsedSeconds += seconds;
             SecondsSinceFloorFired += seconds;
+
+            // D077. Before anything reads a patch — before the light is advanced, before feeding,
+            // before conception — because in a shared volume a patch is a region and a creature is
+            // in whichever one its body is in. Nothing is drawn from the RNG stream here: this
+            // replaces two lotteries (Disperse, AdvectBodies) with a read of where things already
+            // are, which is the whole of D077's second rule.
+            ReadPatchesFromPositions();
 
             // Before anything reads the light, and from the absolute clock rather than a delta —
             // a sun advanced by accumulating steps drifts out of phase with the world that is
@@ -1206,8 +1251,35 @@ namespace Evosim.Core
         /// step in.
         /// </para>
         /// </remarks>
+        /// <summary>
+        /// Sets every living creature's patch from where its body is — D077's second rule.
+        /// </summary>
+        /// <remarks>
+        /// A whole-population pass once per metabolic step, which is 2 Hz against the physics'
+        /// 100, and one dictionary lookup per creature inside the placer. It costs what
+        /// <see cref="Disperse"/> cost and draws nothing, where <see cref="Disperse"/> drew once
+        /// per creature per step.
+        /// </remarks>
+        private void ReadPatchesFromPositions()
+        {
+            if (!Config.SharedSpace || Placement == null) return;
+
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+                creature.Patch = Placement.PatchOf(creature);
+            }
+        }
+
         private void Disperse()
         {
+            // D077. Retired, not merely disabled: with the box literal a creature's patch is read
+            // from where its root is, and a lottery that moved the index without moving the body
+            // would put a creature in one patch's water while it swam in another's. Returned from
+            // before the draw, so nothing is taken from the RNG stream — the same guard the K=1
+            // case below makes, for the same reason.
+            if (Config.SharedSpace) return;
+
             if (!(Config.DispersalChancePerStep > 0f) || PatchCount <= 1) return;
 
             float chance = Config.DispersalChancePerStep;
@@ -1267,6 +1339,12 @@ namespace Evosim.Core
         /// </remarks>
         private void AdvectBodies(float seconds)
         {
+            // D077. Retired for Disperse's reason: in a shared volume the water already carries
+            // bodies — FluidEnvironment applies the current's horizontal drag to every part every
+            // physics step — so a second, index-level transport would be the same flow counted
+            // twice, once as a force and once as a lottery. Before any draw.
+            if (Config.SharedSpace) return;
+
             CurrentField current = Config.Current;
             if (current == null || PatchCount <= 1) return;
 
@@ -1514,19 +1592,39 @@ namespace Evosim.Core
             // a single number and carries the fixed part without knowing it is there.
             float matterPrice = Config.MatterPerTissueJoule * tissue + Config.MatterPerCreature;
 
+            // Checked before taking, not by taking. NutrientField.Take is a partial-take API:
+            // it removes min(asked, stock) and returns that. Calling it and bailing when the
+            // return is short removes the partial amount and then drops it on the floor, which
+            // leaks matter on every blocked conception — 132 units of 24,000 in a 400 s test,
+            // and it leaks fastest exactly when matter is scarce enough to matter.
+            if (matterPrice > 0f &&
+                Matter.StockInLayer(Matter.LayerOf(parent.HeightY), parent.Patch) < matterPrice)
+            {
+                ConceptionsBlockedByMatter++;
+                return false;
+            }
+
+            // D077. The last gate, and deliberately after every solvency check and before the
+            // first thing that is spent: a body with nowhere to go costs the parent nothing, so
+            // the order is "can it be afforded, then can it be placed", never the reverse. A
+            // refusal here is a crowded stillbirth — counted, and otherwise as though the parent
+            // had simply not bred this step. Last also so that a successful reservation is always
+            // followed by a Commit or a Release: nothing between here and Admit can refuse.
+            //
+            // Skipped for a body of no parts: Admit is about to call that stillborn for the older
+            // reason (§4.5's extinction-by-shrinking), and reserving room for a body that will
+            // never exist would leave a reservation to be released again for nothing.
+            int childPatch = parent.Patch;
+            bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
+
+            if (shared && !Placement.TryReserveOffspring(parent, body, out childPatch))
+            {
+                CrowdedStillbirths++;
+                return false;
+            }
+
             if (matterPrice > 0f)
             {
-                // Checked before taking, not by taking. NutrientField.Take is a partial-take API:
-                // it removes min(asked, stock) and returns that. Calling it and bailing when the
-                // return is short removes the partial amount and then drops it on the floor, which
-                // leaks matter on every blocked conception — 132 units of 24,000 in a 400 s test,
-                // and it leaks fastest exactly when matter is scarce enough to matter.
-                if (Matter.StockInLayer(Matter.LayerOf(parent.HeightY), parent.Patch) < matterPrice)
-                {
-                    ConceptionsBlockedByMatter++;
-                    return false;
-                }
-
                 Matter.Take(parent.HeightY, matterPrice, parent.Patch);
                 MatterInBodies += matterPrice;
             }
@@ -1541,7 +1639,17 @@ namespace Evosim.Core
             Organism child = Admit(
                 childGenome, body, BirthKind.Reproduction, seed, parent.Id,
                 parent.GenerationDepth + 1, endowment, tissue, parent.HeightY, parent,
-                patch: parent.Patch);
+                patch: childPatch);
+
+            // D077. The reservation belongs to a creature now, or to nobody. Admit cannot
+            // actually refuse a body with parts, so the Release below is a belt rather than a
+            // brace — and it is the branch that keeps the invariant true by construction instead
+            // of by reading Admit.
+            if (shared)
+            {
+                if (child != null) Placement.Commit(child.Id);
+                else Placement.Release();
+            }
 
             if (child != null)
             {
@@ -1604,8 +1712,12 @@ namespace Evosim.Core
                 // discarded. A separate draw rather than one more call against `rng` above: reusing
                 // it would make where a founder lands depend on how many draws GenomeFactory.Founder
                 // happened to make, coupling two things D061 wants independent of each other.
+                // D077. The draw is retired in a shared volume — a founder's patch is wherever
+                // the placement below put it, and drawing an index as well would give the world
+                // two answers to the same question. Written as one condition rather than nested,
+                // so the tiled branch is the same expression it has always been.
                 int patch = 0;
-                if (PatchCount > 1)
+                if (!Config.SharedSpace && PatchCount > 1)
                 {
                     ulong patchSeed = Rng.SeedFor(Seed, _nextIndex++);
                     patch = new Rng(patchSeed).Range(PatchCount);
@@ -1614,11 +1726,30 @@ namespace Evosim.Core
                 Phenotype body = Developer.Develop(
                     genome, Config.Development, null, Config.Shapes);
 
+                bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
+
+                // D077. A world with no room left refuses a founder exactly as it refuses a
+                // birth, and the attempt is still counted — for the trickle's sake, per the
+                // remark below, and because a floor that retried until something fitted would be
+                // packing the world rather than sampling it.
+                if (shared && !Placement.TryReserveFounder(body, height, out patch))
+                {
+                    CrowdedStillbirths++;
+                    FloorSpawns++;
+                    continue;
+                }
+
                 Organism founder = Admit(
                     genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
                     energy: Config.FounderEnergyJoules,
                     tissue: Metabolism.TissueJoules(body, Config), heightY: height, parent: null,
                     patch: patch);
+
+                if (shared)
+                {
+                    if (founder != null) Placement.Commit(founder.Id);
+                    else Placement.Release();
+                }
 
                 // A stillborn founder is still an attempt, and counting it keeps the floor's
                 // trickle a trickle. Not counting it would let a step retry until something
@@ -1677,8 +1808,10 @@ namespace Evosim.Core
                 // only when there is more than one patch to land in, so a K=1 assay is untouched
                 // and the D060 assay's own guarantees (same seed stream, replays identically) are
                 // extended rather than disturbed.
+                // D077. Retired in a shared volume for EnforceFloor's reason, and written the
+                // same way so the two paths cannot drift apart.
                 int patch = 0;
-                if (PatchCount > 1)
+                if (!Config.SharedSpace && PatchCount > 1)
                 {
                     ulong patchSeed = Rng.SeedFor(Seed, _nextIndex++);
                     patch = new Rng(patchSeed).Range(PatchCount);
@@ -1686,11 +1819,26 @@ namespace Evosim.Core
 
                 Phenotype body = Developer.Develop(genome, Config.Development, null, Config.Shapes);
 
+                bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
+
+                if (shared && !Placement.TryReserveFounder(body, heightY, out patch))
+                {
+                    CrowdedStillbirths++;
+                    Inoculated++;
+                    continue;
+                }
+
                 Organism creature = Admit(
                     genome, body, BirthKind.Inoculation, seed, parentId: -1, generationDepth: 0,
                     energy: Config.FounderEnergyJoules,
                     tissue: Metabolism.TissueJoules(body, Config), heightY: heightY, parent: null,
                     patch: patch);
+
+                if (shared)
+                {
+                    if (creature != null) Placement.Commit(creature.Id);
+                    else Placement.Release();
+                }
 
                 // A stillborn inoculant is still an attempt — see EnforceFloor's identical remark.
                 Inoculated++;

@@ -194,6 +194,15 @@ namespace Evosim.Sim
         private readonly List<CreatureInstance> _instances = new List<CreatureInstance>();
         private readonly List<long> _instanceIds = new List<long>();
 
+        /// <summary>The living articulations, read-only — for a harness that needs positions.</summary>
+        /// <remarks>
+        /// The list itself, not a copy: it is rebuilt on every birth and death, so a caller must
+        /// read it within one step rather than hold it. Exposed for the shared-space smoke, which
+        /// has to ask where two hundred bodies are on every physics step; the run itself never
+        /// uses it.
+        /// </remarks>
+        public IReadOnlyList<CreatureInstance> Instances => _instances;
+
         /// <summary>Ids whose creature has died, scratch for <see cref="Reconcile"/>.</summary>
         /// <remarks>
         /// A set rather than a list, because it is built from every body and then has every
@@ -340,7 +349,17 @@ namespace Evosim.Sim
             public bool Settled;
 
             /// <summary>Lattice slot this creature occupies, returned to the pool when it dies.</summary>
+            /// <remarks>−1 in a shared volume, where there is no lattice — D077.</remarks>
             public int Tile;
+
+            /// <summary>
+            /// Radius of the sphere that holds the whole body — <see cref="SharedVolume.BoundingRadius"/>.
+            /// </summary>
+            /// <remarks>
+            /// Computed once, at the build, because growth does not exist (§5A.6) and a body's
+            /// size cannot change afterwards. 0 in a tiled world, where nothing asks.
+            /// </remarks>
+            public float Radius;
         }
 
         public Ecosystem(RunConfig config, ulong seed = 1, Transform parent = null)
@@ -352,8 +371,83 @@ namespace Evosim.Sim
             // body per step, because HorizontalPatches cannot change during a run.
             Fluid.PatchCount = Mathf.Max(1, (int)config.HorizontalPatches);
 
+            // D077. The world's floor, so the restoring boundary knows where the bottom is. Set
+            // whatever SharedSpace says: SurfaceRestoringFraction is its own knob and the bottom
+            // is a vertical rule, readable without the box.
+            Fluid.WorldDepthMetres = config.WorldDepthMetres;
+
+            if (config.SharedSpace)
+            {
+                // The patch width from the fields themselves — sqrt(area / K) — rather than
+                // recomputed here. One derivation: a world with two answers for how wide a patch
+                // is would price the ecology against one and place bodies against the other.
+                Volume = new SharedVolume(
+                    Fluid.PatchCount, World.Nutrients.PatchWidthMetres,
+                    config.WorldDepthMetres, seed);
+
+                World.Placement = Volume;
+
+                Physics.ContactEvent += OnContactEvent;
+                _countingContacts = true;
+            }
+
             _parent = parent;
         }
+
+        private bool _countingContacts;
+
+        /// <summary>
+        /// The engine's own contact report, summed into <see cref="ContactPairs"/>.
+        /// </summary>
+        /// <remarks>
+        /// Raised by PhysX rather than dispatched as a MonoBehaviour message, which is what makes
+        /// it readable in <c>-batchmode</c> against a scene that is not playing — the spike's
+        /// second counter, promoted to the only one because it is the one that cannot silently
+        /// read zero (logbook/0064). Interlocked because the event can arrive on a worker thread.
+        /// </remarks>
+        private void OnContactEvent(
+            PhysicsScene scene, Unity.Collections.NativeArray<ContactPairHeader>.ReadOnly headers)
+        {
+            long pairs = 0;
+            for (int i = 0; i < headers.Length; i++) pairs += headers[i].pairCount;
+
+            System.Threading.Interlocked.Add(ref _contactPairs, pairs);
+        }
+
+        private long _contactPairs;
+
+        /// <summary>
+        /// The box, when there is one — D077. Null in a tiled world, which is every run before
+        /// D077 and every run with <c>EVOSIM_SHARED_SPACE</c> unset.
+        /// </summary>
+        public SharedVolume Volume { get; }
+
+        /// <summary>Living creatures whose root is above the waterline, at the last sample.</summary>
+        /// <remarks>
+        /// The instrument the surface question needed before the fix could be judged
+        /// (logbook/0061): the vent's plume lifts bodies and above y = 0 nothing acted on them, so
+        /// "the population sits at +1 m" was an inference from the code rather than a count. One
+        /// comparison per creature per metabolic step, against a position <see cref="CheckFinite"/>
+        /// has already read — it reads and does not act, so it is bit-identical by construction and
+        /// is counted in the tiled world too.
+        /// </remarks>
+        public int AboveSurface { get; private set; }
+
+        /// <summary>Bodies translated at a seam, running total. 0 unless shared — D077.</summary>
+        public long Wraps => Volume != null ? Volume.Wraps : 0L;
+
+        /// <summary>Births refused for want of room, running total. 0 unless shared — D077.</summary>
+        public long Crowded => World.CrowdedStillbirths;
+
+        /// <summary>Contact pairs the engine has reported, running total. 0 unless shared.</summary>
+        /// <remarks>
+        /// From <c>Physics.ContactEvent</c> rather than from <c>OnCollisionStay</c>: the engine
+        /// raises it itself, where the MonoBehaviour message depends on the editor dispatching
+        /// physics messages to a scene that is not playing. The spike learned the harder half of
+        /// this — the event needs <c>Collider.providesContacts</c>, which defaults off, and
+        /// without it PhysX resolves the contact and tells nobody (logbook/0064).
+        /// </remarks>
+        public long ContactPairs => System.Threading.Interlocked.Read(ref _contactPairs);
 
         /// <summary>
         /// Advances physics one step, and the economy once every
@@ -381,6 +475,14 @@ namespace Evosim.Sim
 
             Fluid.Apply(_instances, FixedDt);
             Physics.Simulate(FixedDt);
+
+            // D077. Immediately after the solver, so nothing ever reads a position outside the
+            // box: the ring is periodic and a body that has crossed a face is on the other side
+            // of the world, not outside it. Before Settle, which reads velocities and not
+            // positions, so the order between the two is a matter of the rule's wording rather
+            // than of arithmetic.
+            if (Volume != null) WrapAtTheSeams();
+
             Fluid.Settle(_instances);
 
             for (int i = 0; i < _order.Count; i++) _order[i].Driver.Settle();
@@ -457,6 +559,44 @@ namespace Evosim.Sim
                 }
 
                 HandleDivergence(i);
+            }
+        }
+
+        /// <summary>
+        /// Puts every body that has left the box back in at the opposite face — D077's third rule.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The whole articulation, by its root.</b> <c>ArticulationBody.TeleportRoot</c> moves
+        /// the root and every part hanging off it in one call and leaves the solver's velocities
+        /// alone, which is what a periodic boundary means: a creature swimming out of the x = 0
+        /// face keeps swimming, in the same direction and at the same speed, having arrived at
+        /// x = K·W. Setting <c>transform.position</c> instead would move one part out of its own
+        /// articulation.
+        /// </para>
+        /// <para>
+        /// One Transform read per creature per physics step, on top of the per-part reads
+        /// <see cref="FluidEnvironment.Apply"/> already makes for drag — the cheapest place to
+        /// notice, since a body that has left the box must not be integrated outside it even
+        /// once, and the metabolic cadence is fifty steps too slow for that.
+        /// </para>
+        /// <para>
+        /// ⚠ The rotation handed back is the one just read, unchanged. Reading it costs the same
+        /// Transform access as the position, and <c>TeleportRoot</c> has no position-only
+        /// overload.
+        /// </para>
+        /// </remarks>
+        private void WrapAtTheSeams()
+        {
+            for (int i = 0; i < _order.Count; i++)
+            {
+                ArticulationBody[] bodies = _order[i].Instance.Bodies;
+                if (bodies == null || bodies.Length == 0) continue;
+
+                ArticulationBody root = bodies[0];
+                Transform t = root.transform;
+
+                if (Volume.TryWrap(t.position, out Vector3 wrapped)) root.TeleportRoot(wrapped, t.rotation);
             }
         }
 
@@ -642,6 +782,12 @@ namespace Evosim.Sim
             double fastest = 0d;
             double work = 0d;
             int counted = 0;
+            int above = 0;
+
+            // D077. A fresh census of what is where, before the world steps and therefore before
+            // anything reads a patch or conceives into a gap. Emptied and refilled rather than
+            // maintained incrementally: every body has moved since the last one.
+            Volume?.Begin();
 
             IReadOnlyList<Organism> living = World.Living;
 
@@ -649,6 +795,13 @@ namespace Evosim.Sim
             {
                 Organism creature = living[i];
                 if (!_bodies.TryGetValue(creature.Id, out Body body)) continue;
+
+                // The root, as CheckFinite left it a few lines ago — free, and the position D077's
+                // rules are all denominated in.
+                Vector3 root = body.LastRootPosition;
+                if (root.y > 0f) above++;
+
+                Volume?.Note(creature.Id, root, body.Radius);
 
                 Vector3 centre = FluidEnvironment.CentreOfMass(body.Instance);
 
@@ -669,7 +822,14 @@ namespace Evosim.Sim
 
                 if (body.Settled)
                 {
-                    double speed = Vector3.Distance(centre, body.PreviousCentre) / seconds;
+                    // D077. On a ring, across the shorter arc: a body translated at a seam has
+                    // moved a patch-ring's width in one metabolic step, and differencing its raw
+                    // coordinates reports that as a swim. Written as a branch rather than folded
+                    // into one expression so the tiled world's arithmetic is the character-for-
+                    // character expression every run on file was measured with.
+                    double speed = (Volume != null
+                        ? Volume.ShortestDistance(centre, body.PreviousCentre)
+                        : Vector3.Distance(centre, body.PreviousCentre)) / seconds;
                     speedSum += speed;
                     counted++;
                     if (speed > fastest) fastest = speed;
@@ -677,8 +837,9 @@ namespace Evosim.Sim
                     // The motility instrument. CheckFinite read this position a few lines ago,
                     // so the whole cost is a subtraction and a branch per creature per metabolic
                     // step — one fiftieth of the physics rate.
-                    double rootSpeed =
-                        Vector3.Distance(body.LastRootPosition, body.PreviousRoot) / seconds;
+                    double rootSpeed = (Volume != null
+                        ? Volume.ShortestDistance(body.LastRootPosition, body.PreviousRoot)
+                        : Vector3.Distance(body.LastRootPosition, body.PreviousRoot)) / seconds;
 
                     if (body.Instance.TotalDof > 0)
                     {
@@ -701,6 +862,7 @@ namespace Evosim.Sim
             MeanSpeed = counted > 0 ? speedSum / counted : 0d;
             MaxSpeed = fastest;
             WorkThisStep = work;
+            AboveSurface = above;
 
             World.Step(seconds);
 
@@ -758,7 +920,7 @@ namespace Evosim.Sim
                 // it made since the last metabolic step would go with it.
                 DriveImpulsesLimited += body.Driver.DrainImpulsesLimited();
 
-                _freeTiles.Push(body.Tile);
+                if (body.Tile >= 0) _freeTiles.Push(body.Tile);
                 body.Instance.Destroy();
                 _bodies.Remove(id);
             }
@@ -785,10 +947,42 @@ namespace Evosim.Sim
             // Tiled on a lattice rather than placed at the parent, because §6.3 keeps creatures
             // apart and two overlapping articulations would depenetrate — which is a force, and
             // one logbook/0007 measured a creature learning to farm.
-            int tile = _freeTiles.Count > 0 ? _freeTiles.Pop() : _nextTile++;
-            int side = 64;
-            var origin = new Vector3(
-                (tile % side) * TileSpacing, creature.HeightY, (tile / side) * TileSpacing);
+            //
+            // D077 replaces the lattice with the box: the spot was chosen and reserved when the
+            // birth was decided, one metabolic step ago and with no Physics.Simulate since, so
+            // nothing has moved into it. The lattice stays for the tiled world, which is every
+            // run on file.
+            int tile = -1;
+            Vector3 origin;
+            float radius = 0f;
+
+            if (Volume != null)
+            {
+                radius = SharedVolume.BoundingRadius(creature.Phenotype);
+
+                if (!Volume.TryTakePlacement(creature.Id, out origin))
+                {
+                    // A body nobody reserved a spot for. Within one shared-space run this cannot
+                    // happen — every admission goes through the placer — so rather than invent a
+                    // position, take a lattice slot far from the box and say so: an overlapping
+                    // spawn is a force in the physics, and a silent one is worse than a loud
+                    // creature standing a kilometre away.
+                    tile = _freeTiles.Count > 0 ? _freeTiles.Pop() : _nextTile++;
+                    origin = new Vector3(
+                        (tile % 64) * TileSpacing, creature.HeightY, (tile / 64) * TileSpacing);
+
+                    Debug.LogWarning(
+                        $"Creature {creature.Id} was admitted into a shared volume with no " +
+                        "reserved placement — built on the lattice instead.");
+                }
+            }
+            else
+            {
+                tile = _freeTiles.Count > 0 ? _freeTiles.Pop() : _nextTile++;
+                int side = 64;
+                origin = new Vector3(
+                    (tile % side) * TileSpacing, creature.HeightY, (tile / side) * TileSpacing);
+            }
 
             CreatureInstance instance = PhenotypeBuilder.Build(
                 creature.Phenotype, origin, _parent, World.Config.Shapes);
@@ -817,7 +1011,22 @@ namespace Evosim.Sim
                 Drive = new float[Mathf.Max(1, brain.TotalDof)],
                 PreviousCentre = FluidEnvironment.CentreOfMass(instance),
                 Tile = tile,
+                Radius = radius,
             };
+
+            // D077. Contact reporting is opt-in per collider and defaults off — without it PhysX
+            // resolves a contact and tells nobody, which is how the spike's first contact-check
+            // cell read zero pairs while its physics time rose six-fold (logbook/0064). Switched
+            // on only where the crowd is real, so a tiled run pays nothing for an instrument that
+            // would read zero anyway.
+            if (Volume != null)
+            {
+                for (int b = 0; b < instance.Bodies.Length; b++)
+                {
+                    Collider collider = instance.Bodies[b].GetComponent<Collider>();
+                    if (collider != null) collider.providesContacts = true;
+                }
+            }
 
             // The one silent failure in this wiring: Brain indexes drive by walking every part in
             // order, EffectorDriver indexes it through CreatureInstance.DofOffset, which skips the
@@ -841,6 +1050,12 @@ namespace Evosim.Sim
 
         public void DestroyAll()
         {
+            if (_countingContacts)
+            {
+                Physics.ContactEvent -= OnContactEvent;
+                _countingContacts = false;
+            }
+
             foreach (KeyValuePair<long, Body> entry in _bodies) entry.Value.Instance.Destroy();
 
             _bodies.Clear();

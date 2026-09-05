@@ -92,6 +92,12 @@ namespace Evosim.Sim.EditorTools
                                 DivergedTotal = CurrentManifest.LastDiverged,
                                 MatterInfluxedTotal = CurrentManifest.LastMatterInfluxed,
                                 MatterBuriedTotal = CurrentManifest.LastMatterBuried,
+                                Wraps = CurrentManifest.LastWraps,
+                                Crowded = CurrentManifest.LastCrowdedTotal,
+                                ContactPairsPerStep = CurrentManifest.LastPhysicsSteps > 0
+                                    ? CurrentManifest.LastContactPairsTotal /
+                                        (double)CurrentManifest.LastPhysicsSteps
+                                    : 0d,
                             });
                     }
                     catch (Exception writeFailure)
@@ -285,6 +291,19 @@ namespace Evosim.Sim.EditorTools
             // creature earns, not how many the world holds.
             float area = Env("EVOSIM_AREA", new RunConfig().WorldAreaSquareMetres);
 
+            // D077. The footprint made literal: K patches of sqrt(area/K) metres side by side on
+            // a ring, WorldDepthMetres deep, a periodic horizontal boundary, patches read from
+            // position and newborns placed beside their parents. Off is every run before D077,
+            // bit for bit — see RunConfig.SharedSpace for why the two branches are whole worlds
+            // and not one world with a switch.
+            bool sharedSpace = Env("EVOSIM_SHARED_SPACE", 0f) > 0.5f;
+
+            // D077's other half, on its own knob so the boundary can be read without the box:
+            // how hard the water pushes a body back in above the surface and below the floor, as
+            // a fraction of the excess density that sets the sink rate. 0 is D050's clamp exactly.
+            float surfaceRestore = Env(
+                "EVOSIM_SURFACE_RESTORE", new RunConfig().Fluid.SurfaceRestoringFraction);
+
             // D021's "never again", enforced directly rather than only measured. 0 keeps the
             // floor open forever — today's behaviour, and every earlier run's. A positive value
             // closes it after that many simulated seconds (RunConfig.FloorClosesAfterSeconds), so
@@ -451,6 +470,7 @@ namespace Evosim.Sim.EditorTools
                 {
                     TissueExcessDensity = excessDensity,
                     NeutralBodyVolume = neutralVolume,
+                    SurfaceRestoringFraction = surfaceRestore,
                 },
                 Light = new LightModel(irradiance, 12f)
                 {
@@ -508,6 +528,7 @@ namespace Evosim.Sim.EditorTools
             config.DispersalChancePerStep = dispersalChance;
             config.PerPatchShading = patchShading;
             config.WorldAreaSquareMetres = area;
+            config.SharedSpace = sharedSpace;
             // DESIGN.md §6.2's queued item, closed: the physics step is now a tunable, so it
             // reaches config.json and the hash like every other setting. Read back from
             // Ecosystem.FixedDt rather than from `physicsDt` again — the static above is what the
@@ -573,6 +594,24 @@ namespace Evosim.Sim.EditorTools
                 eco.DivergenceDumpDirectory = Path.Combine(dir.Path, "diverged");
             }
 
+            // D077's header token, built from the world the run actually constructed rather than
+            // from the environment it was launched with: the patch width is the fields' own
+            // sqrt(area / K) (World's constructor hands it to the current field too), so the
+            // header cannot describe a box the simulation does not have. Rendered unconditionally
+            // for D065's reason — a reader must never have to work out whether a missing token
+            // means "tiled" or "written before the box existed".
+            float patchWidth = eco.World.Nutrients.PatchWidthMetres;
+            string spaceToken = sharedSpace
+                ? "shared " + Math.Max(1, (int)patches) + "x" +
+                  patchWidth.ToString("0.###", CultureInfo.InvariantCulture) + "x" +
+                  patchWidth.ToString("0.###", CultureInfo.InvariantCulture) + " m, depth " +
+                  config.WorldDepthMetres + ", wrap"
+                : "tiled " + Ecosystem.TileSpacing + " m";
+
+            // The table's shape, fixed before the header names it: D077 appends one column per
+            // patch, so the width is a function of the config.
+            ConfigureColumns(config);
+
             var report = new StringBuilder();
             report.AppendLine("# Evolution run — " + irradiance.ToString("0") + " W/m2");
             report.AppendLine();
@@ -627,6 +666,9 @@ namespace Evosim.Sim.EditorTools
                       "disperse " + dispersalChance + ", patchShade " + patchShading
                     : "") +
                 " · area " + area + " m2" +
+                // D077 — appended after `area`, which is the setting the box is derived from.
+                " · space " + spaceToken +
+                " · surface restore " + surfaceRestore +
                 (floorCloses > 0f ? " · floor closes " + floorCloses + " s" : " · floor open") +
                 " · ceiling " + maxPopulation +
                 " · senescence " + (senescence > 0f ? senescence + " s" : "off") +
@@ -709,6 +751,9 @@ namespace Evosim.Sim.EditorTools
                         manifest.LastDiverged = eco.World.Diverged;
                         manifest.LastMatterInfluxed = eco.World.MatterInfluxedTotal;
                         manifest.LastMatterBuried = eco.World.MatterBuriedTotal;
+                        manifest.LastWraps = eco.Wraps;
+                        manifest.LastCrowdedTotal = eco.Crowded;
+                        manifest.LastContactPairsTotal = eco.ContactPairs;
                         manifest.LastWallClockMinutes = clock.Elapsed.TotalMinutes;
                     }
 
@@ -808,6 +853,17 @@ namespace Evosim.Sim.EditorTools
                 "Drive impulses limited: " + eco.DriveImpulsesLimited +
                 " (the joint-torque cap; 0 means every drive torque was applied as computed)");
             report.AppendLine();
+            // D077's three, in the footer beside the two stabilisers and rendered for every run
+            // for the same reason the header token is: "tiled" is an answer, not an absence.
+            report.AppendLine(
+                "Shared space: " + (config.SharedSpace ? "on" : "off") +
+                " · wraps " + eco.Wraps +
+                " · crowded stillbirths " + eco.Crowded +
+                " · contact pairs per physics step " +
+                (eco.Volume != null && eco.Steps > 0
+                    ? (eco.ContactPairs / (double)eco.Steps).ToString("0.####", CultureInfo.InvariantCulture)
+                    : "—"));
+            report.AppendLine();
             report.AppendLine(
                 eco.Steps + " physics steps · " +
                 eco.World.ElapsedSeconds.ToString("0.#") + " simulated seconds · " +
@@ -852,6 +908,11 @@ namespace Evosim.Sim.EditorTools
                         MatterBuriedTotal = eco.World.MatterBuriedTotal,
                         BestSpeed = bestSpeedEver,
                         BestSpeedAtSeconds = bestSpeedAt,
+                        SharedSpace = config.SharedSpace,
+                        Wraps = eco.Wraps,
+                        Crowded = eco.Crowded,
+                        ContactPairsPerStep =
+                            eco.Steps > 0 ? eco.ContactPairs / (double)eco.Steps : 0d,
                     });
                 }
 
@@ -946,6 +1007,20 @@ namespace Evosim.Sim.EditorTools
         private static double LastMatterInfluxed;
         private static double LastMatterBuried;
 
+        /// <summary>D077's three shared-space counters as of the previous row.</summary>
+        /// <remarks>
+        /// Windowed for the same reason the fluxes above are: <c>wraps</c> and <c>crowded</c> are
+        /// rates — how much of the population is crossing a seam, how often a birth cannot be
+        /// placed — and a running total buries a change in a number that only ever goes up.
+        /// <c>contacts</c> is a mean per physics step and needs the step count as well, since the
+        /// report row is written every <c>reportEvery</c> metabolic steps and the pairs arrive
+        /// every physics step.
+        /// </remarks>
+        private static long LastWraps;
+        private static long LastCrowded;
+        private static long LastContactPairs;
+        private static long LastContactSteps;
+
         /// <summary>
         /// Scratch for the absorptive log — <c>absorptive.jsonl</c>, one row per living eater per
         /// sample plus a final row per death (<see cref="AbsorptiveSample"/>).
@@ -990,6 +1065,11 @@ namespace Evosim.Sim.EditorTools
             LastDetritusExuded = 0;
             LastMatterInfluxed = 0;
             LastMatterBuried = 0;
+            LastWraps = 0;
+            LastCrowded = 0;
+            LastContactPairs = 0;
+            LastContactSteps = 0;
+            Columns = BaseColumns;
             AssayFired = false;
             LastSnapshotSeconds = double.NaN;
             AbsorptiveRows.Clear();
@@ -1062,6 +1142,11 @@ namespace Evosim.Sim.EditorTools
             public double LastMatterInfluxed;
             public double LastMatterBuried;
             public double LastWallClockMinutes;
+
+            /// <summary>D077's shared-space facts as of the last metabolic step.</summary>
+            public long LastWraps;
+            public long LastCrowdedTotal;
+            public long LastContactPairsTotal;
         }
 
         /// <summary>How a run stopped. Null while it is still going.</summary>
@@ -1077,6 +1162,12 @@ namespace Evosim.Sim.EditorTools
             public double WallClockMinutes;
             public double TimesRealTime;
             public long DragImpulsesLimited;
+
+            /// <summary>D077. Both 0 in a tiled world, and the contact mean is per physics step.</summary>
+            public bool SharedSpace;
+            public long Wraps;
+            public long Crowded;
+            public double ContactPairsPerStep;
 
             /// <summary>Drive torques capped — <see cref="Ecosystem.DriveImpulsesLimited"/>.</summary>
             public long DriveImpulsesLimited;
@@ -1292,6 +1383,14 @@ namespace Evosim.Sim.EditorTools
                 w.Field("matterBuriedTotal", ending.MatterBuriedTotal);
                 w.Field("bestSpeed", ending.BestSpeed);
                 w.Field("bestSpeedAtSeconds", ending.BestSpeedAtSeconds);
+
+                // D077 — appended after bestSpeedAtSeconds, per the same append-only rule. The
+                // switch is written beside the counts because 0 wraps with the box off and 0
+                // wraps with it on are different facts.
+                w.Field("sharedSpace", ending.SharedSpace);
+                w.Field("wraps", ending.Wraps);
+                w.Field("crowded", ending.Crowded);
+                w.Field("contactPairsPerStep", ending.ContactPairsPerStep);
             }
 
             w.EndObject();
@@ -1555,10 +1654,23 @@ namespace Evosim.Sim.EditorTools
             // species nobody alive still belongs to.
             var speciesSeen = new HashSet<uint>();
 
+            // D077. Alive per patch — one column each. The instrument the footprint world is read
+            // through: with patches as regions, "the population is in one patch" and "the
+            // population is spread" are different worlds that `alive` alone cannot tell apart,
+            // and a patch that empties and refills is the metapopulation behaviour D061 went
+            // looking for. Allocated per row rather than kept: a row is written every
+            // reportEvery metabolic steps, and K is at most a handful.
+            var alivePerPatch = new int[Math.Max(1, (int)world.Config.HorizontalPatches)];
+
             for (int i = 0; i < world.Living.Count; i++)
             {
                 Organism creature = world.Living[i];
                 speciesSeen.Add(creature.SpeciesId);
+
+                if (creature.Patch >= 0 && creature.Patch < alivePerPatch.Length)
+                {
+                    alivePerPatch[creature.Patch]++;
+                }
 
                 spend += creature.Lifetime.Expenditure;
                 workSpend += creature.Lifetime.Work;
@@ -1744,6 +1856,13 @@ namespace Evosim.Sim.EditorTools
             double matterInfluxWindow = world.MatterInfluxedTotal - LastMatterInfluxed;
             double matterBuriedWindow = world.MatterBuriedTotal - LastMatterBuried;
 
+            // D077's three windows. The contact mean needs the physics steps the pairs arrived
+            // over, not the metabolic ones: pairs are reported every Physics.Simulate.
+            long wrapsWindow = eco.Wraps - LastWraps;
+            long crowdedWindow = eco.Crowded - LastCrowded;
+            long contactPairsWindow = eco.ContactPairs - LastContactPairs;
+            long contactSteps = eco.Volume != null ? eco.Steps - LastContactSteps : 0L;
+
             // D061. The asynchrony observables — the two readings the old, patch-blind columns
             // above cannot give, because they only ever look at one column of the world (patch
             // 0). Both read 0 at K=1, where there is only one patch to compare against itself.
@@ -1833,7 +1952,9 @@ namespace Evosim.Sim.EditorTools
             // The same sample, as data. Raw numbers and no percentages: a reader can divide, and
             // a stored percentage loses the denominator that says whether it means anything —
             // "food 100%" over two joules and over two hundred thousand are the same column.
-            dir?.Stats.WriteRow(w => w
+            dir?.Stats.WriteRow(w =>
+            {
+                w
                 .Field("t", world.ElapsedSeconds)
                 .Field("alive", alive)
                 .Field("births", world.Births)
@@ -1937,7 +2058,30 @@ namespace Evosim.Sim.EditorTools
                 .Field("foodJointed", foodJointedCount > 0 ? foodJointed / foodJointedCount : 0d)
                 .Field("foodJointedCount", foodJointedCount)
                 .Field("foodRigid", foodRigidCount > 0 ? foodRigid / foodRigidCount : 0d)
-                .Field("foodRigidCount", foodRigidCount));
+                .Field("foodRigidCount", foodRigidCount)
+                // D077 — appended after foodRigidCount, per the same append-only column
+                // discipline. Windows and running totals both, because the markdown carries the
+                // window and a reader of the last row wants the total. `contactPairsPerStep` is
+                // the mean over the window and 0 with the instrument off, which is why
+                // `sharedSpace` is written beside it: 0 pairs and no instrument are different
+                // facts and a number alone cannot say which this is.
+                .Field("sharedSpace", world.Config.SharedSpace)
+                .Field("aboveSurface", eco.AboveSurface)
+                .Field("wraps", eco.Wraps)
+                .Field("wrapsWindow", wrapsWindow)
+                .Field("crowded", eco.Crowded)
+                .Field("crowdedWindow", crowdedWindow)
+                .Field("contactPairs", eco.ContactPairs)
+                .Field("contactPairsPerStep",
+                    contactSteps > 0 ? contactPairsWindow / (double)contactSteps : 0d);
+
+                // One entry per patch, as an array rather than K numbered fields: the count is a
+                // config setting and a reader that walks the array cannot mistake p3 in a
+                // four-patch world for p3 in an eight-patch one.
+                w.BeginArray("alivePerPatch");
+                for (int p = 0; p < alivePerPatch.Length; p++) w.Value(alivePerPatch[p]);
+                w.EndArray();
+            });
 
             // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9): drained
             // every report row, alongside stats.jsonl, and appended one row per event to
@@ -2124,7 +2268,21 @@ namespace Evosim.Sim.EditorTools
                     ? (speedRigidSum / speedRigidSamples).ToString("0.#####", c) : "—",
                 foodJointedCount > 0 ? (foodJointed / foodJointedCount).ToString("0.####", c) : "—",
                 foodRigidCount > 0 ? (foodRigid / foodRigidCount).ToString("0.####", c) : "—",
+
+                // D077 — appended after `food rig`, per the same append-only rule. `above` is a
+                // count now; `wraps` and `crowded` are per window, the `floor` / `mat blk` shape,
+                // because both are rates and a running total buries a change. `contacts` is the
+                // mean number of contact pairs per physics step over the window, and an em-dash
+                // in a tiled world: the instrument is off there, and a 0 would read as "nothing
+                // touched" (CLAUDE.md's species column, which reads 1 when it is off).
+                "**" + eco.AboveSurface.ToString(c) + "**",
+                wrapsWindow.ToString(c),
+                "**" + crowdedWindow.ToString(c) + "**",
+                contactSteps > 0 ? (contactPairsWindow / (double)contactSteps).ToString("0.###", c) : "—",
             };
+
+            // The per-patch populations, last, so everything before them keeps its index.
+            for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));
 
             LastFloorSpawns = world.FloorSpawns;
             LastMatterBlocks = world.ConceptionsBlockedByMatter;
@@ -2134,6 +2292,10 @@ namespace Evosim.Sim.EditorTools
             LastDetritusExuded = world.DetritusExudedTotal;
             LastMatterInfluxed = world.MatterInfluxedTotal;
             LastMatterBuried = world.MatterBuriedTotal;
+            LastWraps = eco.Wraps;
+            LastCrowded = eco.Crowded;
+            LastContactPairs = eco.ContactPairs;
+            LastContactSteps = eco.Steps;
 
             if (row.Count != Columns.Length)
             {
@@ -2145,8 +2307,20 @@ namespace Evosim.Sim.EditorTools
             return "| " + string.Join(" | ", row) + " |";
         }
 
-        /// <summary>Column headers. The single source of the table's shape — see <c>Row</c>.</summary>
-        private static readonly string[] Columns =
+        /// <summary>
+        /// Column headers. The single source of the table's shape — see <c>Row</c>.
+        /// </summary>
+        /// <remarks>
+        /// A field rather than a constant since D077, because the last K of the columns are one
+        /// per patch and K is a run setting. <see cref="ConfigureColumns"/> sets it once, before
+        /// the header is written; <see cref="BaseColumns"/> is what it is built from and never
+        /// changes. Everything is still appended and nothing already written ever moves, so a
+        /// reader that indexes by position keeps working — but the count now depends on the
+        /// config, which is why <c>analyse-arm.ps1</c> reads by name (CLAUDE.md).
+        /// </remarks>
+        private static string[] Columns;
+
+        private static readonly string[] BaseColumns =
         {
             "t (s)", "alive", "births", "deaths", "**jointed**", "jointed %", "**jnt inh**", "mean dof",
             "mean m/s", "max m/s", "work J/s", "work share", "**food %**", "**absorpt**", "**inherit**",
@@ -2183,7 +2357,39 @@ namespace Evosim.Sim.EditorTools
 
             // D075 item 1's movement instrument — appended after `mat buried`, per the same rule.
             "**spd jnt**", "**spd rig**", "**food jnt**", "**food rig**",
+
+            // D077's shared space — appended after `food rig`, per the same rule. `above` and
+            // `below world` are the surface pair (logbook/0061's instrument); `wraps` and
+            // `crowded` are per window; `contacts` is a mean per physics step over the window and
+            // is an em-dash in a tiled world, where the instrument is off rather than reading
+            // zero — the distinction CLAUDE.md's species column exists to warn about. The
+            // per-patch populations follow, one column per patch, and are the only part of this
+            // table whose width depends on the config.
+            "above", "wraps", "crowded", "contacts",
         };
+
+        /// <summary>
+        /// Fixes the table's shape for this run: the base columns plus one per patch.
+        /// </summary>
+        /// <remarks>
+        /// Called once, before the header is written and before the first row. The per-patch
+        /// columns are appended for every run, K = 1 included, so the shape depends on exactly
+        /// one setting and a reader never has to work out whether a missing <c>p0</c> means one
+        /// patch or a report written before D077 — the same rule the header tokens follow.
+        /// </remarks>
+        private static void ConfigureColumns(RunConfig config)
+        {
+            int patches = Math.Max(1, (int)config.HorizontalPatches);
+            var columns = new string[BaseColumns.Length + patches];
+
+            Array.Copy(BaseColumns, columns, BaseColumns.Length);
+            for (int p = 0; p < patches; p++)
+            {
+                columns[BaseColumns.Length + p] = "p" + p.ToString(CultureInfo.InvariantCulture);
+            }
+
+            Columns = columns;
+        }
 
         /// <summary>
         /// The run's sensor pool as the header prints it — <c>jointangle,jointrate,up,depth</c>
