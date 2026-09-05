@@ -65,4 +65,10 @@ workers refreshed and launched with `-ExpectSimHash`; four concurrent.
 
 ## Launch
 
-Appended below.
+Launched 2026-09-05 ~02:15 on workers 2–5 at commit `1ce2e71` (the open-budget build;
+no code change for this round), `-ExpectSimHash c43976d3d71f1f52`; every manifest reads
+that `simHash`, `gitDirty false`, `status running`. Headers verified: `sink 0.002 m/s,
+matter 0.02 m/s` on all four; `matter in 0.6/s at surface, burial 0.01/s` with `vent off`
+on `r23s-s2`/`r23s-s4`; `matter in 0.6/s at vent, burial 0.01/s` with `vent 0.05 m/s in
+patch 0 from 60 m, legs 1 m` on `r23v-s2`/`r23v-s4`. Monitor running. Results appended
+below.
