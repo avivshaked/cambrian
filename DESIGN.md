@@ -2097,6 +2097,13 @@ runs/<runId>/
 
 Genomes as **JSON** — readable, diffable, git-friendly, small.
 
+A **snapshot row carries the organism's `id` as its first field** — the same integer
+`lineage.jsonl` uses — so a stored genome joins the record of what happened to the creature
+that carried it ([D075](DECISIONS.md#d075) item 2, the theatre's join). The id belongs to the
+row and not to the genome, which is a recipe shared by every creature that develops it;
+`GenomeJson.FormatVersion` is 4 from that change, and a format-3 snapshot is refused rather
+than read without ids.
+
 ---
 
 ## 10. Milestones

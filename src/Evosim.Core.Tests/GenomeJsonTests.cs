@@ -179,5 +179,50 @@ namespace Evosim.Core.Tests
             _output.WriteLine($"mean compact genome: {mean:0} bytes");
             _output.WriteLine($"at 40,000 births/hour, whole genomes cost {mean * 40000 / 1e6:0.#} MB/hour");
         }
+
+        // ------------------------------------------------- the snapshot row's creature id (D075)
+
+        [Fact]
+        public void TheCreatureIdIsTheFirstFieldAndSurvivesTheRoundTrip()
+        {
+            // First, and literally: a reader scanning a large snapshot for one creature should
+            // not have to parse a whole genome to find out whose it is.
+            Genome g = GenomeFactory.Random(new Rng(7));
+            string row = GenomeJson.Write(g, indent: false, id: 4821L);
+
+            Assert.StartsWith("{\"id\":4821,\"format\":", row);
+            Assert.Equal(4821L, GenomeJson.ReadId(row));
+
+            // The genome is unchanged by carrying one: the id belongs to the organism, and the
+            // same recipe is shared by every creature that develops it.
+            Assert.Equal(GenomeJson.Write(g), GenomeJson.Write(GenomeJson.Read(row)));
+        }
+
+        [Fact]
+        public void ARowWithNoIdReadsNoId()
+        {
+            // A genome on its own — a founder pool entry, an inoculum, a fixture — belongs to no
+            // organism, and must not come back claiming to be creature 0.
+            string row = GenomeJson.Write(GenomeFactory.Random(new Rng(8)));
+
+            Assert.DoesNotContain("\"id\":", row);
+            Assert.Equal(GenomeJson.NoId, GenomeJson.ReadId(row));
+        }
+
+        [Fact]
+        public void TheFormatBeforeTheIdIsRefusedByName()
+        {
+            // §9's refuse-rather-than-default rule, at the file level: a format-3 snapshot has no
+            // ids to join on, and reading it anyway would produce a viewer full of anonymous
+            // creatures that looked exactly like a viewer full of identified ones.
+            string text = GenomeJson.Write(GenomeFactory.Random(new Rng(9)))
+                .Replace($"\"format\":{GenomeJson.FormatVersion}", "\"format\":3");
+
+            FormatException e = Assert.Throws<FormatException>(() => GenomeJson.Read(text));
+
+            _output.WriteLine(e.Message);
+            Assert.Contains("3", e.Message);
+            Assert.Contains(GenomeJson.FormatVersion.ToString(), e.Message);
+        }
     }
 }

@@ -1471,7 +1471,15 @@ namespace Evosim.Sim.EditorTools
 
             using (var writer = new JsonlWriter(path, flushEachRow: false))
             {
-                foreach (Organism creature in eco.World.Living) writer.WriteGenome(creature.Genome);
+                // D075 item 2: the organism's id first, so a snapshot row joins lineage.jsonl.
+                // Written through GenomeJson rather than through JsonlWriter.WriteGenome, which
+                // takes a genome and knows nothing about whose it is — a genome is a recipe and
+                // is shared by every creature that develops it, which is exactly why the id
+                // belongs on the row and not in the genome.
+                foreach (Organism creature in eco.World.Living)
+                {
+                    writer.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
+                }
             }
         }
 

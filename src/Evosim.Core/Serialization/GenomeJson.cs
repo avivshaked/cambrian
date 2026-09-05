@@ -43,14 +43,34 @@ namespace Evosim.Core
         /// and §9's rule is that loading refuses rather than defaults: a genome that loads with
         /// one field silently zeroed is a different creature wearing the original's identity.
         /// </remarks>
-        public const int FormatVersion = 3;
+        /// <remarks>
+        /// 4 — the theatre's join (D075 item 2): a snapshot row may carry the organism's
+        /// <c>id</c>, the same integer <c>lineage.jsonl</c> uses, as its first field. The genome
+        /// itself is unchanged, so a format-3 row would in fact parse — and it is refused anyway,
+        /// because the id is exactly what a reader of a snapshot now expects to be able to join
+        /// on, and "the file loaded but every creature in it is anonymous" is the silent-default
+        /// failure §9 exists to prevent, one level up.
+        /// </remarks>
+        public const int FormatVersion = 4;
 
-        public static string Write(Genome genome, bool indent = false)
+        /// <summary>Written for a row that carries no organism id.</summary>
+        public const long NoId = -1;
+
+        /// <param name="genome">The recipe to write.</param>
+        /// <param name="indent">Pretty-print. A row of a <c>.jsonl</c> file must not be indented.</param>
+        /// <param name="id">
+        /// The organism this genome belongs to — <see cref="Evosim.Core.Organism.Id"/>, and the
+        /// same integer <c>lineage.jsonl</c> carries. Written as the row's first field when it is
+        /// not <see cref="NoId"/>, and omitted otherwise: a genome on its own (a founder pool
+        /// entry, an inoculum, a test fixture) belongs to no organism and must not pretend to.
+        /// </param>
+        public static string Write(Genome genome, bool indent = false, long id = NoId)
         {
             if (genome == null) throw new ArgumentNullException(nameof(genome));
 
             var w = new Json.Writer(indent);
             w.BeginObject();
+            if (id != NoId) w.Field("id", id);
             w.Field("format", FormatVersion);
             w.Field("root", genome.RootIndex);
 
@@ -80,7 +100,9 @@ namespace Evosim.Core
             {
                 throw new FormatException(
                     $"Genome is format {format}, this build reads {FormatVersion}. There is no " +
-                    "migration path: re-run, or check out the revision that wrote it.");
+                    "migration path: re-run, or check out the revision that wrote it. " +
+                    "(Format 4 added the snapshot row's creature id, so a format-3 snapshot " +
+                    "cannot be joined to lineage.jsonl and is refused rather than read blind.)");
             }
 
             var genome = new Genome
@@ -100,6 +122,22 @@ namespace Evosim.Core
             genome.GlobalBrain = brain.ToArray();
 
             return genome;
+        }
+
+        /// <summary>
+        /// The organism id on a row, or <see cref="NoId"/> when the row carries none.
+        /// </summary>
+        /// <remarks>
+        /// Separate from <see cref="Read"/> rather than returned beside the genome, because the
+        /// id is not part of the genome and a <see cref="Genome"/> that carried one would be a
+        /// creature rather than a recipe — the distinction §9 keeps, and the reason two creatures
+        /// can share a genome at all. The row is parsed twice by a caller that wants both; a
+        /// snapshot is read once, off the hot path.
+        /// </remarks>
+        public static long ReadId(string text)
+        {
+            JsonNode root = Json.Parse(text);
+            return root.Has("id") ? (long)root["id"].AsDouble() : NoId;
         }
 
         // ---------------------------------------------------------------- nodes
