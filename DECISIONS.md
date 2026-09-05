@@ -98,7 +98,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0057): neither adopted** — the stomachs bid highest and still breed no more than the leaves; the larger stock triples everything at the same share; the open matter budget follows as D074 |
 | [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · **adopted 2026-09-05 in the vent shape at 0.6/s (owner); confirmation at 0.01 (logbook/0061): 3 of 5 at the threshold, not round 18's 4; the stock still grows at the dose and the plume lifts every population to the waterline — surface fix and dose correction put to the owner before re-confirming** |
 | [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
-| [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · the cost measured first (`scratch/shared-space-spike-spec.md`); the footprint and predation rules follow as proposals |
+| [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · **cost measured 2026-09-05 (logbook/0064): none — shared/tiled 0.88–1.12×, real time to ~2,900 bodies; the constraints are packing and a boundary rule** · the footprint and predation rules follow as proposals |
 
 ---
 
@@ -3701,3 +3701,11 @@ real creatures with the fluid on, at three footprints, against today's tiling �
 quiet machine after round 24's arms end. The footprint proposal and the rewritten
 predation proposal carry its numbers. D075's order is amended by this: shared space and
 the physical footprint go before predation.
+
+**Measured 2026-09-05 (logbook/0064): shared space costs nothing.** Shared against tiled
+at 250–2,000 real bodies with the fluid on: 0.88–1.12×, the width of repeat noise, the
+same with and without contacts; real time holds to ~2,900 bodies either way, and the
+step is 56% our drag loop, 33% the solver. The constraints are elsewhere: **packing**
+(2,000 founders do not fit in today's 10 × 10 × 60 m; 20 × 20 does) and **a horizontal
+boundary rule** (bodies leave an unbounded box on the current in seconds). The footprint
+proposal decides both; the throughput objection is closed.

@@ -35,8 +35,7 @@ adopted open world confirmed at 0.01 under D063 as amended → **movement that p
 (wire `Chemical`, `Flow`, `Energy`; a movement clause; fine step only) with **the
 theatre** built in parallel by a separate agent → **shared space and the physical
 footprint (D076, owner 2026-09-05: "a world without contact can't work"; the spike
-`scratch/shared-space-spike-spec.md` measures the cost on a quiet machine after round
-24; the island model likely moves up with it)** → predation (on contact; the encounter
+measured the cost 2026-09-05, [logbook/0064](logbook/0064-the-crowd-costs-nothing.md): none; the constraints are packing and a horizontal boundary rule — the footprint proposal is being drafted from `scratch/footprint-survey.md`)** → predation (on contact; the encounter
 rule withdrawn) → the cell types and immigration → the archive and the islands.
 
 ## Queued — the current path, in order
