@@ -188,3 +188,4 @@ key only translates the entries' reporting shorthand.
 | [0063](0063-the-theatre-opens.md) | 2026-09-05 | The theatre opens |
 | [0064](0064-the-crowd-costs-nothing.md) | 2026-09-05 | The crowd costs nothing |
 | [0065](0065-the-first-shared-water.md) | 2026-09-05 | The first shared water |
+| [0066](0066-one-box.md) | 2026-09-06 | One box |
