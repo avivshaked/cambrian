@@ -96,7 +96,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; overtaken by D072 (the contest for each unit was an age queue) |
 | [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · **screened 2026-09-04 (logbook/0056): `shuffled` not adopted** — the queue was the stomachs' lifeline, because in a matter-bound plateau energy buys no fecundity; ruled as D073 |
 | [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0057): neither adopted** — the stomachs bid highest and still breed no more than the leaves; the larger stock triples everything at the same share; the open matter budget follows as D074 |
-| [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · adoption of the vent shape and its dose are the owner's |
+| [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · **adopted 2026-09-05 in the vent shape at 0.6/s (owner); confirmation at 0.01 pre-registered as logbook/0061** |
 | [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
 
 ---
@@ -3613,6 +3613,15 @@ vent shape (influx at the vent's base, D067's vent on, matter sink 0.02, burial 
 and choose the dose — 0.6/s as screened, 0.6/s with burial 0.02, or 0.3/s. Recommended:
 the screened dose for the 0.01 confirmation, five seeds, 30,000 s, the ceiling as the
 censor; the dose corrected on that reading. The surface shape is not recommended.
+
+**Adopted 2026-09-05 in the vent shape, at the screened dose** (owner: "agreed, proceed
+with your recommendations", on 0060's verdict and the recommendation above). The
+reference world's matter rule is now: influx 0.6 units/s at the vent's base, burial
+0.01/s of the floor layer's free matter, matter sink 0.02 m/s, D067's vent on (0.05 m/s
+in patch 0 from 60 m, legs 1 m). Confirmation at dt 0.01, five seeds, 30,000 s, under
+D063 as amended, pre-registered as logbook/0061; the dose is corrected on that reading
+if the stock does not level. The surface shape is rejected. The closed world (round 18's
+pass) stays in the record as the control.
 
 ### D075
 

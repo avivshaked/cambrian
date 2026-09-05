@@ -60,8 +60,12 @@ immigration → the archive and the islands.
 
 ## The decision in front of the owner
 
-**Adopt the open matter budget in the vent shape, and choose its dose.** D074 was
-screened twice: [logbook/0058](logbook/0058-the-open-budget.md) (surface influx, sink
+**Ruled 2026-09-05: D074 adopted in the vent shape at 0.6/s** (owner, "agreed, proceed
+with your recommendations"); the confirmation at 0.01 is [logbook/0061](logbook/0061-the-open-world-at-the-fine-step.md),
+running. The perception build (`scratch/perception-spec.md`) was started the same day in
+parallel, on the owner's agreement that the waiting goes and the order stays; a predation
+proposal is being drafted for the ruling after movement is read. The paragraph below is
+the state of the question as it was put. D074 was screened twice: [logbook/0058](logbook/0058-the-open-budget.md) (surface influx, sink
 0.002: the size is a flow, burial never sees the influx) and
 [logbook/0060](logbook/0060-the-outflow.md) (sink 0.02, surface vs vent: the vent
 connects the outflow, burying 43–50% of the influx against the surface's 16%, and wets
