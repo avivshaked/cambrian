@@ -79,6 +79,18 @@ namespace Evosim.Sim
         public int PatchCount { get; set; } = 1;
 
         /// <summary>
+        /// How deep the water is, metres — <see cref="RunConfig.WorldDepthMetres"/>. Where the
+        /// bottom half of D077's restoring boundary acts.
+        /// </summary>
+        /// <remarks>
+        /// Set by the caller from the world's own config, like <see cref="PatchCount"/> above and
+        /// for the same reason: several harnesses step this class with no world at all. Read only
+        /// when <see cref="FluidConfig.SurfaceRestoringFraction"/> is above 0, so a harness that
+        /// leaves it at the 60 m default and the fraction at 0 is unaffected.
+        /// </remarks>
+        public float WorldDepthMetres { get; set; } = 60f;
+
+        /// <summary>
         /// How many times the per-step drag impulse was capped at the momentum available (see
         /// the limiter in <see cref="Apply(IReadOnlyList{CreatureInstance}, float)"/>). Zero for
         /// every run at dt 0.01 so far; a non-zero count is the coarse step's stability at work.
@@ -273,6 +285,16 @@ namespace Evosim.Sim
             // ---- apply (main thread)
             float excessDensity = Config.TissueExcessDensity;
 
+            // D077's restoring boundary, read once per Apply rather than per part. The magnitude
+            // is the *configured* excess density and not the size-scaled one a body actually
+            // feels: FluidConfig.NeutralBodyVolume makes a small body neutral, and a restoring
+            // force scaled the same way would be zero for exactly the founder-sized bodies that
+            // most need bringing back — the surface would still be a ratchet for everything under
+            // the neutral volume. This is the world's rule about its own boundary, not a property
+            // of the body at it. See FluidConfig.SurfaceRestoringFraction.
+            float restoringFraction = Config.SurfaceRestoringFraction;
+            float restoringDensity = restoringFraction * excessDensity;
+
             for (int c = 0; c < creatures.Count; c++)
             {
                 CreatureInstance creature = creatures[c];
@@ -398,7 +420,24 @@ namespace Evosim.Sim
                     // nothing that the first D049 probe climbed 96 m into. A real body stops
                     // rising when it emerges, because the water it displaces runs out; this is
                     // that, at its coarsest. Sinking across the line is untouched.
-                    if (netDensity < 0f && body.transform.position.y >= 0f) netDensity = 0f;
+                    //
+                    // D077. D050's clamp holds a floater at the line and does nothing to a body
+                    // that arrived above it with momentum of its own — the vent's plume put round
+                    // 24's populations over the top and nothing brought them back (logbook/0061).
+                    // With SurfaceRestoringFraction above 0 the region above the surface, and the
+                    // rock below the floor, push back at no more than the rate a bare body sinks.
+                    // The branch below is the original expression to the character, because at
+                    // fraction 0 the record has to replay bit for bit; the two are not merged
+                    // into one signed formula for exactly that reason.
+                    if (restoringFraction > 0f)
+                    {
+                        netDensity = Restore(
+                            netDensity, body.transform.position.y, restoringDensity, WorldDepthMetres);
+                    }
+                    else if (netDensity < 0f && body.transform.position.y >= 0f)
+                    {
+                        netDensity = 0f;
+                    }
 
                     if (netDensity != 0f)
                     {
@@ -419,6 +458,58 @@ namespace Evosim.Sim
             }
 
             _pendingStep = stepSeconds > 0f ? stepSeconds : 0f;
+        }
+
+        /// <summary>
+        /// D077's top and bottom: what a body's net density becomes once it is out of the water.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Above y = 0, a body that is not already sinking is given
+        /// <paramref name="restoringDensity"/> — a downward net density, so it falls back at no
+        /// more than the terminal rate a bare body sinks at. Below −D, a body that is not already
+        /// rising is given the mirror. A body already heading back into the water is left alone in
+        /// both cases: the boundary restores, it does not hold.
+        /// </para>
+        /// <para>
+        /// <b>"Not already sinking" includes a body with exactly zero net density, and that is the
+        /// case the rule exists for.</b> D064's <c>NeutralBodyVolume</c> makes every body under
+        /// that volume exactly neutral, and the reference world sets it at 0.25 m³ — most of the
+        /// population. A rule written as <c>netDensity &lt; 0</c> would leave every one of those
+        /// bodies untouched above the waterline: carried over the top by the vent's plume, coasting
+        /// to a stop, and staying there forever, which is precisely the ratchet logbook/0061 found
+        /// and D077 rule 4 was ruled to close. Measured, in the first <c>fp-smoke</c> arm at
+        /// <c>&lt;</c>: 2,055 of 2,227 living creatures above the surface at t = 3,000, mean height
+        /// +0.8 m. The bar is therefore <c>&lt;=</c>, which is D077's own wording ("above y = 0 …
+        /// a body is restored") rather than a specialisation of it.
+        /// </para>
+        /// <para>
+        /// <b>At y = 0 exactly this is D050's clamp</b>, so a neutral body floating at the
+        /// waterline still feels nothing and still floats; only a body strictly above is pulled
+        /// under. The rule extends D050 rather than replacing it, and it is continuous with it at
+        /// the one point they share.
+        /// </para>
+        /// <para>
+        /// Static and pure, so the Sim smoke can assert its sign and its continuity without a
+        /// scene — <c>Evosim.Core</c> cannot see PhysX and this is the one term of the buoyancy
+        /// step that is worth testing on its own.
+        /// </para>
+        /// </remarks>
+        public static float Restore(
+            float netDensity, float heightY, float restoringDensity, float worldDepthMetres)
+        {
+            // Off is D050's clamp, said here as well as at the call site. The call site does not
+            // reach this function at a fraction of 0 — it takes the original expression, so that
+            // the record replays byte for byte — but a pure function that returned a *different*
+            // answer at 0 than the branch beside it would be a trap for the next reader and for
+            // the smoke that tests it. The two agree by construction.
+            if (!(restoringDensity > 0f)) return netDensity < 0f && heightY >= 0f ? 0f : netDensity;
+
+            if (netDensity <= 0f && heightY > 0f) return restoringDensity;
+            if (netDensity <= 0f && heightY == 0f) return 0f;
+            if (netDensity >= 0f && heightY < -worldDepthMetres) return -restoringDensity;
+
+            return netDensity;
         }
 
         /// <summary>

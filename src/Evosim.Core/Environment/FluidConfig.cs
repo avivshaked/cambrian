@@ -135,6 +135,40 @@ namespace Evosim.Core
         [Tunable("fluid", Unit = "m3")]
         public float NeutralBodyVolume { get; set; }
 
+        /// <summary>
+        /// D077. How hard the water pushes a body back into the world at the top and the bottom,
+        /// as a fraction of <see cref="TissueExcessDensity"/>. 0 is D050's clamp exactly — every
+        /// run before D077, bit for bit.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The ocean's top was a ratchet and this is the return leg.</b> D050 stopped a buoyant
+        /// body's <i>upward</i> net force at y = 0, which keeps a floater at the waterline but does
+        /// nothing to a body that arrived above it with momentum of its own — the vent's plume
+        /// carried round 24's populations over the line and nothing brought them back
+        /// (logbook/0061). Above 0 this gives such a body a downward net density of
+        /// <c>f × TissueExcessDensity</c>, so it falls back at no more than the rate a bare body
+        /// sinks; below <c>-WorldDepthMetres</c> a body with positive net density gets the mirror
+        /// and rises at no more than the same rate. At y = 0 exactly the clamp is D050's, so a
+        /// floating body still floats and the rule is continuous with the one it extends.
+        /// </para>
+        /// <para>
+        /// <b>The configured excess density and not the size-scaled one a body actually feels.</b>
+        /// <see cref="NeutralBodyVolume"/> makes a small body neutral, and a restoring force scaled
+        /// the same way would be zero for exactly the founder-sized bodies that most need bringing
+        /// back — the surface would still be a ratchet for everything below the neutral volume.
+        /// This is the world's rule about its own boundary, not a property of the body at it.
+        /// </para>
+        /// <para>
+        /// ⚠ Unmeasured (§5A.10), like the density it is denominated in.
+        /// <c>EVOSIM_SURFACE_RESTORE</c> in the header. It is a separate knob from
+        /// <see cref="RunConfig.SharedSpace"/> deliberately: the boundary is a vertical rule and
+        /// can be read alone.
+        /// </para>
+        /// </remarks>
+        [Tunable("fluid")]
+        public float SurfaceRestoringFraction { get; set; }
+
         public static FluidConfig DragOnly => new FluidConfig();
 
         public FluidConfig Clone() => new FluidConfig
@@ -145,6 +179,7 @@ namespace Evosim.Core
             PanelsPerAxis = PanelsPerAxis,
             TissueExcessDensity = TissueExcessDensity,
             NeutralBodyVolume = NeutralBodyVolume,
+            SurfaceRestoringFraction = SurfaceRestoringFraction,
         };
 
         public override string ToString() =>
