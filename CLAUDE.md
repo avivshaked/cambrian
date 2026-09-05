@@ -167,6 +167,30 @@ day of machine time on it:
 A genome file is one JSON line — any row of a run's `snapshots/*.jsonl` will do. What the
 calculator does not have: the matter draw at conception, shading, field depletion, drift.
 
+**Watch a run** (D075's first cut). The theatre is a separate program from the farm: it reads
+a run directory and writes nothing into it. Open `unity/Assets/Scenes/Theatre.unity` in the
+Editor (rebuild it with `Evosim/Rebuild Theatre Scene`), put a run directory — or the arm
+directory above it — in the Theatre Runner's `Run Directory`, and press Play. **Mode B** rebuilds
+the world from `config.json` plus `run.json`'s seed and step and steps it with rendering on; the
+HUD's identity check compares `alive`, `births`, `deaths`, `auditResidual` and `meanHeight`
+against the run's own `stats.jsonl` at every sample, so a viewer knows whether they are watching
+the run or a cousin of it. **Mode A** grows one genome from a snapshot row and drives it under its
+own brain, alone, with no economy. Both refuse a run this build did not record unless
+`Allow Source Mismatch` is ticked, in which case the overlay says it is not a faithful replay.
+
+Keys: `Space` pause, `[` `]` pace, `K` seek, `C` colour, `F` follow, `R` reload, `H` hide,
+click to select; fly with `WASD`+`QE`, right-drag to look, wheel for speed. `EVOSIM_THEATRE_RUN`,
+`EVOSIM_THEATRE_GENOME`, `EVOSIM_THEATRE_SEEK` and `EVOSIM_THEATRE_OVERRIDE` set the same fields
+from a script. Both modes also run headless, which is how they are tested:
+
+```powershell
+$env:EVOSIM_THEATRE_RUN = "$PWD/runs/th-ref"
+Start-Process -FilePath $unity -Wait -NoNewWindow -ArgumentList @(
+    '-projectPath', "$PWD/unity-w6", '-batchmode', '-quit', '-nographics',
+    '-executeMethod', 'Evosim.Theatre.EditorTools.TheatreIdentityCheck.Run',
+    '-logFile', "$PWD/scratch/logs/theatre-identity.log")
+```
+
 **Test `Evosim.Core`** (the whole suite is a couple of minutes for ~470 tests; the
 development and ecosystem tests are seconds each, so use `-Filter` while iterating):
 
@@ -204,6 +228,12 @@ plugin and collide with the same code compiled from source.
 `-executeMethod Evosim.Sim.EditorTools.SandboxSceneBuilder.Run`. Scene YAML merges badly and
 cannot be reviewed in a diff; a script that rebuilds it can.
 
+`unity/Assets/Evosim/Theatre/` — `Evosim.Theatre` and `Evosim.Theatre.Editor`, D075's first
+cut: replay of a recorded world with the identity check on screen, one creature under its own
+brain, the overlay, a free-fly camera. It references `Evosim.Sim` and `Evosim.Core` and nothing
+references it — §6.1's separation, enforced by the asmdef. Charts, the gallery and §5.4's fluid
+validation harness are not built.
+
 `spikes/01-articulation-body/` — a standalone Unity project, **disposable by design**. It
 answers one question: can `ArticulationBody` support the evaluation loop at scale? It can;
 see `results/FINDINGS.md` and DESIGN.md §11.1. Don't build features into it.
@@ -227,7 +257,8 @@ Five assemblies (DESIGN.md §6.1). The load-bearing split:
 - **`Evosim.Core`** — genome, development, mutation, MAP-Elites archive. No `UnityEngine`.
 - **`Evosim.Sim`** — phenotype builder, environments, evaluator, tiling. Unity.
 - **`Evosim.Farm`** — headless orchestration, island model.
-- **`Evosim.Theatre`** — replay, gallery, charts, fluid validation harness.
+- **`Evosim.Theatre`** — replay, gallery, charts, fluid validation harness. Replay exists
+  (above); the rest does not.
 
 Two structural principles that are easy to violate:
 
@@ -413,6 +444,19 @@ actually verifying it.
 - **Adding a tunable makes every older `config.json` unreadable by the new build** — §9's
   refuse-rather-than-default rule on a missing group. `ledger.ps1 -Config` against a run written
   before the tunable throws; take the genome from the old run and the config from a new one.
+  The same rule now bites genome files: the snapshot id took `GenomeJson.FormatVersion` to 4, so
+  every stored `format":3` genome in `scratch/` (the inocula among them) is refused by this build
+  and by `ledger.ps1 -Genome`. The genome fields did not change across that bump — only the
+  optional id was added — so an inoculum can be brought forward by re-extracting it from a new
+  snapshot, which is the one route that cannot quietly mislabel a creature.
+- **Editing the theatre invalidates every earlier recording's replay.** `simHash` is a digest of
+  every `.cs` under `Assets/Evosim`, and the theatre lives there — so changing a HUD label makes
+  the theatre refuse every run recorded before that change, with `simHash ... recorded, ... here`.
+  That is the honest reading of the recorded number, not a fault in it: the run was made by
+  different source. In practice, freeze the theatre before recording anything you want to replay
+  faithfully, or watch it under `Allow Source Mismatch` and read the banner. It is also worth
+  knowing that a theatre-only difference does not change the world: `th-ref` replayed 10 of 10
+  samples identically under the override with only the theatre's files differing.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

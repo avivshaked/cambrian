@@ -1,0 +1,17 @@
+{
+    "name": "Evosim.Theatre",
+    "rootNamespace": "Evosim.Theatre",
+    "references": [
+        "Evosim.Core",
+        "Evosim.Sim"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
