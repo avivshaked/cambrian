@@ -20,8 +20,8 @@ namespace Evosim.Core
     /// that are wired to a constant zero, and — worse — it would do so invisibly: a neuron
     /// reading an unimplemented channel is indistinguishable from a neuron with a dead input,
     /// and both look exactly like a slightly worse creature. So new sensor references are drawn
-    /// from here instead, and adding a channel to the simulator means adding one line to this
-    /// array.
+    /// from a list instead — <see cref="DefaultPool"/>, or the run's own
+    /// <see cref="RunConfig.SensorPool"/> where a round has opened one of the later channels.
     /// </para>
     /// <para>
     /// <b>This is a promise made in <c>Evosim.Core</c> about code that lives in
@@ -36,10 +36,42 @@ namespace Evosim.Core
     public static class SensorChannels
     {
         /// <summary>
-        /// Channels a simulator is expected to answer today. Founder generation and mutation
-        /// draw sensor references only from here.
+        /// Channels a simulator is expected to answer today — every one of them measured by the
+        /// Milestone 1 smoke test rather than promised here.
         /// </summary>
+        /// <remarks>
+        /// <b>This is no longer the same list as the one mutation draws from.</b> It was, for as
+        /// long as the two questions had the same answer: a channel the simulator answers is a
+        /// channel worth drawing. Perception for movement separates them — <c>Chemical</c>,
+        /// <c>Energy</c> and <c>Flow</c> are answered here from the day they were wired, and
+        /// whether a *population* may acquire them is a property of the run rather than of the
+        /// code, because turning them on changes which channel a given RNG draw yields and every
+        /// run in the historical record would stop replaying. What may be drawn is
+        /// <see cref="RunConfig.SensorPool"/>; what is answered is this.
+        /// </remarks>
         public static readonly SensorChannel[] Implemented =
+        {
+            SensorChannel.JointAngle,
+            SensorChannel.JointAngularVelocity,
+            SensorChannel.OrientationUp,
+            SensorChannel.Depth,
+            SensorChannel.Chemical,
+            SensorChannel.Energy,
+            SensorChannel.Flow,
+        };
+
+        /// <summary>
+        /// The pool a run draws from with every sense knob off — the four channels every run
+        /// before <c>EVOSIM_SENSE_*</c> existed drew from, in the order it drew them in.
+        /// </summary>
+        /// <remarks>
+        /// <b>The order is the identity requirement, not a style.</b> <see cref="Rng.Pick{T}"/>
+        /// takes one draw and indexes the array with it, so a pool of the same length in the same
+        /// order consumes the same draw and returns the same channel — which is what makes a
+        /// default-configuration run bit-identical to the record across this change. Anything
+        /// enabled is appended after <see cref="SensorChannel.Depth"/> for the same reason.
+        /// </remarks>
+        public static readonly SensorChannel[] DefaultPool =
         {
             SensorChannel.JointAngle,
             SensorChannel.JointAngularVelocity,
@@ -81,12 +113,19 @@ namespace Evosim.Core
             }
         }
 
-        /// <summary>Draws a channel and a valid index for it.</summary>
-        public static NeuronInput RandomSensor(Rng rng, float weight)
+        /// <summary>Draws a channel and a valid index for it, from the run's own pool.</summary>
+        /// <param name="rng">The stream the draw comes from.</param>
+        /// <param name="weight">The connection strength the new input carries.</param>
+        /// <param name="pool">
+        /// What this run lets a genome reach for — <see cref="RunConfig.SensorPool"/>. Null means
+        /// <see cref="DefaultPool"/>, which is what every caller outside a world gets and what
+        /// every run before the sense knobs existed had.
+        /// </param>
+        public static NeuronInput RandomSensor(Rng rng, float weight, SensorChannel[] pool = null)
         {
             if (rng == null) throw new ArgumentNullException(nameof(rng));
 
-            SensorChannel channel = rng.Pick(Implemented);
+            SensorChannel channel = rng.Pick(pool ?? DefaultPool);
             return NeuronInput.FromSensor(channel, rng.Range(channel.IndexCount()), weight);
         }
     }

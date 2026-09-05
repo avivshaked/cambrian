@@ -1493,7 +1493,8 @@ namespace Evosim.Core
             ulong seed = Rng.SeedFor(Seed, _nextIndex++);
 
             Genome childGenome = Mutator.Mutate(
-                parent.Genome, new Rng(seed), Config.Mutation, Config.CellTypes, Config.Genome);
+                parent.Genome, new Rng(seed), Config.Mutation, Config.CellTypes, Config.Genome,
+                Config.SensorPool());
 
             Phenotype body = Developer.Develop(
                 childGenome, Config.Development, null, Config.Shapes);
@@ -1590,7 +1591,7 @@ namespace Evosim.Core
                 ulong seed = Rng.SeedFor(Seed, _nextIndex++);
                 var rng = new Rng(seed);
 
-                Genome genome = GenomeFactory.Founder(rng, Config.Genome);
+                Genome genome = GenomeFactory.Founder(rng, Config.Genome, Config.SensorPool());
 
                 // Placed through the lit zone rather than at the surface. Starting everything at
                 // depth zero would hand generation zero the best light in the world and make the

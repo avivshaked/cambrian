@@ -361,6 +361,27 @@ namespace Evosim.Sim.EditorTools
             // default to RunConfig's own (0, so "never") for exactly that reason. The genome
             // itself is never a tunable — it is a file, not a number — so its identity is recorded
             // separately, in the header and run.json, rather than folded into configHash.
+            // Perception for movement (D075 item 1). Three switches over what a genome in this
+            // run may *draw*, not over what the simulator answers: CreatureSensors reports all
+            // seven channels from the day they were wired, and these decide which of them
+            // founders and mutation can reach for. They have to be knobs rather than a code
+            // change because a longer draw pool consumes the same RNG draw and returns a
+            // different channel — turn one on and no run in the historical record replays.
+            // Off is every arm before this one, bit for bit.
+            bool senseChemical = Env("EVOSIM_SENSE_CHEMICAL", 0f) > 0.5f;
+            bool senseEnergy = Env("EVOSIM_SENSE_ENERGY", 0f) > 0.5f;
+            bool senseFlow = Env("EVOSIM_SENSE_FLOW", 0f) > 0.5f;
+
+            // The three squash scales those channels are normalised against. All three are
+            // unmeasured (§5A.10) and all three are therefore knobs — see RunConfig for what
+            // each one means and why a constant rather than something the genome can move.
+            float chemicalHalfScale = Env(
+                "EVOSIM_CHEMICAL_HALF_SCALE", new RunConfig().ChemicalHalfScaleJoulesPerCubicMetre);
+            float energyFullScale = Env(
+                "EVOSIM_ENERGY_FULL_SCALE", new RunConfig().EnergyFullScaleSeconds);
+            float flowFullScale = Env(
+                "EVOSIM_FLOW_FULL_SCALE", new RunConfig().FlowFullScaleMetresPerSecond);
+
             string inoculatePath = Environment.GetEnvironmentVariable("EVOSIM_INOCULATE");
             float inoculateAt = Env("EVOSIM_INOCULATE_AT", new RunConfig().InoculateAtSeconds);
             int inoculateCount = (int)Env("EVOSIM_INOCULATE_COUNT", new RunConfig().InoculateCount);
@@ -500,6 +521,12 @@ namespace Evosim.Sim.EditorTools
             config.MaximumPopulation = maxPopulation;
             config.SenescenceDoublingSeconds = senescence;
             config.Mutation.CellTypeChance = cellTypeMutation;
+            config.SenseChemical = senseChemical;
+            config.SenseEnergy = senseEnergy;
+            config.SenseFlow = senseFlow;
+            config.ChemicalHalfScaleJoulesPerCubicMetre = chemicalHalfScale;
+            config.EnergyFullScaleSeconds = energyFullScale;
+            config.FlowFullScaleMetresPerSecond = flowFullScale;
             config.InoculateAtSeconds = inoculateAt;
             config.InoculateCount = inoculateCount;
             config.InoculateDepthMetres = inoculateDepth;
@@ -618,6 +645,15 @@ namespace Evosim.Sim.EditorTools
                 " · matter " + matterPerTissue + "/J + " + matterPerCreature +
                 " each from " + initialMatter + "/m3" +
                 " · float " + floatChance + " at " + liftCost + " W/lift" +
+                // D075 item 1, rendered unconditionally for D065's reason: a reader of a header
+                // must never have to work out whether a missing token means "the four channels"
+                // or "written before perception existed". Built from config.SensorPool() rather
+                // than from the three booleans, so the token cannot disagree with what founders
+                // and mutation are actually drawing from — the failure this project has twice
+                // paid for is a setting that never reached the thing it configured.
+                " · senses " + SensesToken(config) +
+                " · sense scale chem " + chemicalHalfScale + " J/m3, energy " + energyFullScale +
+                " s, flow " + flowFullScale + " m/s" +
                 (inoculateOn
                     ? " · inoculate " + inoculateCount + " @ " + inoculateAt + " s, " +
                       inoculateDepth + " m, genome " + inoculumHashShort
@@ -1458,6 +1494,11 @@ namespace Evosim.Sim.EditorTools
             double spend = 0d, workSpend = 0d, depth = 0d, light = 0d, food = 0d;
             double travelled = 0d, age = 0d;
             int jointed = 0, jointedInherited = 0, dof = 0, absorptive = 0, inherited = 0;
+
+            // The movement instrument's field half (D075 item 1). Counted separately from
+            // `jointed` because the denominators differ the moment a creature is skipped.
+            double foodJointed = 0d, foodRigid = 0d;
+            int foodJointedCount = 0, foodRigidCount = 0;
             int buoyant = 0, buoyantInherited = 0;
 
             // The producers, the other half of the trophic reading (the Sol/GPT review of
@@ -1556,6 +1597,16 @@ namespace Evosim.Sim.EditorTools
                     if (EverJointed.Contains(creature.ParentId)) jointedInherited++;
                 }
                 dof += creatureDof;
+
+                // The water each guild is actually sitting in — the other half of the movement
+                // instrument. Read at the creature's own height and patch, and *edible* rather
+                // than the field's own reading, because what a mouth may draw is the only sense
+                // in which one body's water is better than another's. `spd jnt` says the animals
+                // move; this says whether moving took them anywhere worth being.
+                double foodHere = world.Nutrients.EdibleDensityAt(creature.HeightY, creature.Patch);
+
+                if (creatureDof > 0) { foodJointed += foodHere; foodJointedCount++; }
+                else { foodRigid += foodHere; foodRigidCount++; }
 
                 // Counted the same way and for the same reason as joints and feeding: a share is
                 // contaminated by whatever the founder draw happens to be, and only the inherited
@@ -1744,6 +1795,12 @@ namespace Evosim.Sim.EditorTools
                 }
             }
 
+            // The window's motility, and the window emptied — accumulated per metabolic step by
+            // Ecosystem, because a speed read at one instant of a stroke cycle is a phase.
+            eco.DrainMotility(
+                out double speedJointedSum, out long speedJointedSamples,
+                out double speedRigidSum, out long speedRigidSamples);
+
             // The same sample, as data. Raw numbers and no percentages: a reader can divide, and
             // a stored percentage loses the denominator that says whether it means anything —
             // "food 100%" over two joules and over two hundred thousand are the same column.
@@ -1837,7 +1894,21 @@ namespace Evosim.Sim.EditorTools
                 .Field("matterInfluxWindow", matterInfluxWindow)
                 .Field("matterBuriedWindow", matterBuriedWindow)
                 .Field("matterInfluxedTotal", world.MatterInfluxedTotal)
-                .Field("matterBuriedTotal", world.MatterBuriedTotal));
+                .Field("matterBuriedTotal", world.MatterBuriedTotal)
+                // The movement instrument (D075 item 1) — appended after matterBuriedTotal, per
+                // the same append-only column discipline. Mean root speed over the window and
+                // mean edible density at the sample, jointed against jointless. Each mean comes
+                // with the count it was taken over, so a reader can tell an empty guild from a
+                // stationary one — the markdown prints an em-dash for the first, and a stored 0
+                // for "no such creature" is the trap the `flt m` column was written after.
+                .Field("speedJointed", speedJointedSamples > 0 ? speedJointedSum / speedJointedSamples : 0d)
+                .Field("speedJointedSamples", speedJointedSamples)
+                .Field("speedRigid", speedRigidSamples > 0 ? speedRigidSum / speedRigidSamples : 0d)
+                .Field("speedRigidSamples", speedRigidSamples)
+                .Field("foodJointed", foodJointedCount > 0 ? foodJointed / foodJointedCount : 0d)
+                .Field("foodJointedCount", foodJointedCount)
+                .Field("foodRigid", foodRigidCount > 0 ? foodRigid / foodRigidCount : 0d)
+                .Field("foodRigidCount", foodRigidCount));
 
             // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9): drained
             // every report row, alongside stats.jsonl, and appended one row per event to
@@ -2012,6 +2083,18 @@ namespace Evosim.Sim.EditorTools
                 // burial has found its equilibrium.
                 matterInfluxWindow.ToString("0.###", c),
                 matterBuriedWindow.ToString("0.###", c),
+
+                // D075 item 1's movement instrument — appended after `mat buried`, per the same
+                // append-only rule. Root speed over the window, and the edible density each guild
+                // is sitting in at the sample. Em-dash and not 0 where the guild is empty, for
+                // `flt m`'s reason: a reader scanning these must not be able to mistake "no
+                // jointed creature alive" for "the swimmers are stationary".
+                speedJointedSamples > 0
+                    ? (speedJointedSum / speedJointedSamples).ToString("0.#####", c) : "—",
+                speedRigidSamples > 0
+                    ? (speedRigidSum / speedRigidSamples).ToString("0.#####", c) : "—",
+                foodJointedCount > 0 ? (foodJointed / foodJointedCount).ToString("0.####", c) : "—",
+                foodRigidCount > 0 ? (foodRigid / foodRigidCount).ToString("0.####", c) : "—",
             };
 
             LastFloorSpawns = world.FloorSpawns;
@@ -2068,7 +2151,43 @@ namespace Evosim.Sim.EditorTools
 
             // D074's open matter budget — appended after `diverged`, per the same rule.
             "mat in", "mat buried",
+
+            // D075 item 1's movement instrument — appended after `mat buried`, per the same rule.
+            "**spd jnt**", "**spd rig**", "**food jnt**", "**food rig**",
         };
+
+        /// <summary>
+        /// The run's sensor pool as the header prints it — <c>jointangle,jointrate,up,depth</c>
+        /// plus whatever is switched on, in the order a draw walks them.
+        /// </summary>
+        /// <remarks>
+        /// Named per channel rather than by <c>ToString()</c> so the header's vocabulary is a
+        /// decision rather than a consequence of an enum member's spelling, and lower-case and
+        /// comma-separated so a script can split it. Read from the pool itself: the token and the
+        /// draw cannot disagree, because there is only one list.
+        /// </remarks>
+        private static string SensesToken(RunConfig config)
+        {
+            SensorChannel[] pool = config.SensorPool();
+            var names = new string[pool.Length];
+
+            for (int i = 0; i < pool.Length; i++)
+            {
+                switch (pool[i])
+                {
+                    case SensorChannel.JointAngle: names[i] = "jointangle"; break;
+                    case SensorChannel.JointAngularVelocity: names[i] = "jointrate"; break;
+                    case SensorChannel.OrientationUp: names[i] = "up"; break;
+                    case SensorChannel.Depth: names[i] = "depth"; break;
+                    case SensorChannel.Chemical: names[i] = "chemical"; break;
+                    case SensorChannel.Energy: names[i] = "energy"; break;
+                    case SensorChannel.Flow: names[i] = "flow"; break;
+                    default: names[i] = pool[i].ToString().ToLowerInvariant(); break;
+                }
+            }
+
+            return string.Join(",", names);
+        }
 
         private static string Header() =>
             "| " + string.Join(" | ", Columns) + " |" + Environment.NewLine +

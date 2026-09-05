@@ -1082,6 +1082,143 @@ namespace Evosim.Core
         private float _physicsStepSeconds = 0.01f;
 
         /// <summary>
+        /// Whether a genome in this run may draw <see cref="SensorChannel.Chemical"/> — the smell
+        /// of food in the water at a part, §4.4.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The channel is answered whether this is on or off; what this decides is who may
+        /// reach for it.</b> <c>CreatureSensors</c> reports a real density from the day it was
+        /// wired, so a hand-authored genome carrying the input reads a real number in any run.
+        /// This gates <see cref="SensorPool"/>, which is what founder generation and mutation
+        /// draw from — and that is the gate that has to exist, because a longer pool consumes the
+        /// same RNG draw and returns a different channel, so every run in the historical record
+        /// would stop replaying the moment the drawable set changed.
+        /// </para>
+        /// <para>
+        /// Off by default, the shape every knob here ships in: the world is bit-identical until a
+        /// round asks otherwise, and the <c>configHash</c> is not. <c>EVOSIM_SENSE_CHEMICAL</c>,
+        /// and the header's <c>senses</c> token lists what the pool actually holds.
+        /// </para>
+        /// </remarks>
+        [Tunable("sense")]
+        public bool SenseChemical
+        {
+            get => _senseChemical;
+            set { _senseChemical = value; _sensorPool = null; }
+        }
+
+        /// <summary>
+        /// Whether a genome in this run may draw <see cref="SensorChannel.Energy"/> — its own
+        /// reserve, as seconds of life left. See <see cref="SenseChemical"/> for what the gate is.
+        /// </summary>
+        [Tunable("sense")]
+        public bool SenseEnergy
+        {
+            get => _senseEnergy;
+            set { _senseEnergy = value; _sensorPool = null; }
+        }
+
+        /// <summary>
+        /// Whether a genome in this run may draw <see cref="SensorChannel.Flow"/> — the water's
+        /// velocity relative to a part, per axis. See <see cref="SenseChemical"/>.
+        /// </summary>
+        [Tunable("sense")]
+        public bool SenseFlow
+        {
+            get => _senseFlow;
+            set { _senseFlow = value; _sensorPool = null; }
+        }
+
+        private bool _senseChemical;
+        private bool _senseEnergy;
+        private bool _senseFlow;
+        private SensorChannel[] _sensorPool;
+
+        /// <summary>
+        /// Edible density that reads as half scale on <see cref="SensorChannel.Chemical"/>, J/m³.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ Unmeasured (§5A.10). The squash is <c>x / (x + k)</c> with this as <c>k</c>: it
+        /// reads exactly ½ at <c>k</c>, is 0 in empty water, and approaches 1 without ever
+        /// arriving. The alternative — a linear clamp at some ceiling — makes a gradient sensor
+        /// saturate in rich water, which is blind exactly where the food is; the same argument
+        /// <c>CreatureSensors.FullScaleRadPerSecond</c>'s remark makes for a constant, with
+        /// the added point that this field spans two decades (0.3–100 J/m³ across the round-23
+        /// reports) and no linear scale keeps resolution across both ends of that.
+        /// </remarks>
+        [Tunable("sense", Unit = "J/m3")]
+        public float ChemicalHalfScaleJoulesPerCubicMetre { get; set; } = 10f;
+
+        /// <summary>
+        /// Reserve that reads as full scale on <see cref="SensorChannel.Energy"/>, seconds.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ Unmeasured (§5A.10). The squash is <c>tanh(seconds / k)</c>, so a creature holding a
+        /// whole senescence scale of reserve reads as sated and one about to starve reads near 0.
+        /// §4.4 rejects a hard threshold — a creature that only notices hunger at some line has no
+        /// reason to act before it — but a squash still needs a scale, and 3,000 s is the one the
+        /// world already uses for a lifetime.
+        /// </remarks>
+        [Tunable("sense", Unit = "s")]
+        public float EnergyFullScaleSeconds { get; set; } = 3000f;
+
+        /// <summary>
+        /// Relative water speed that reads as full scale on <see cref="SensorChannel.Flow"/>, m/s.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ Unmeasured (§5A.10). Per axis, clamped to [-1, 1]. A constant for
+        /// <c>CreatureSensors.FullScaleRadPerSecond</c>'s reason — dividing by anything the
+        /// genome or the timestep can move makes what a creature perceives depend on it — and 0.3
+        /// m/s because that is the reference world's own current speed, so a body drifting with the
+        /// water reads near 0 and one swimming across it reads a fraction of full scale.
+        /// </remarks>
+        [Tunable("sense", Unit = "m/s")]
+        public float FlowFullScaleMetresPerSecond { get; set; } = 0.3f;
+
+        /// <summary>
+        /// What a genome in this run may draw a sensor reference from — the four channels of every
+        /// run before the sense knobs existed, plus whichever of them is switched on.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Appended in enum order, never inserted.</b> <c>Chemical</c>, <c>Energy</c> and
+        /// <c>Flow</c> follow <see cref="SensorChannel.Depth"/>, so at the default this array is
+        /// <see cref="SensorChannels.DefaultPool"/> element for element, one draw of
+        /// <see cref="Rng.Pick{T}"/> consumes what it always consumed, and the founder and
+        /// mutation streams are unchanged. That is the replay requirement, and it is why the pool
+        /// is a list rather than a filter applied afterwards.
+        /// </para>
+        /// <para>
+        /// Cached, and the cache is dropped by each setter rather than by a revision counter:
+        /// this is read once per sensor draw, which is tens of times per birth.
+        /// </para>
+        /// </remarks>
+        public SensorChannel[] SensorPool()
+        {
+            if (_sensorPool != null) return _sensorPool;
+
+            if (!_senseChemical && !_senseEnergy && !_senseFlow)
+            {
+                _sensorPool = SensorChannels.DefaultPool;
+                return _sensorPool;
+            }
+
+            int extra = (_senseChemical ? 1 : 0) + (_senseEnergy ? 1 : 0) + (_senseFlow ? 1 : 0);
+            var pool = new SensorChannel[SensorChannels.DefaultPool.Length + extra];
+
+            Array.Copy(SensorChannels.DefaultPool, pool, SensorChannels.DefaultPool.Length);
+
+            int at = SensorChannels.DefaultPool.Length;
+            if (_senseChemical) pool[at++] = SensorChannel.Chemical;
+            if (_senseEnergy) pool[at++] = SensorChannel.Energy;
+            if (_senseFlow) pool[at] = SensorChannel.Flow;
+
+            _sensorPool = pool;
+            return _sensorPool;
+        }
+
+        /// <summary>
         /// The rule <c>Ecosystem.ConfigurePhysicsStep</c> enforces, stated once here so the two
         /// cannot drift — same bound, same tolerance.
         /// </summary>

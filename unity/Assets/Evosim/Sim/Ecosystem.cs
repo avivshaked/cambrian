@@ -118,6 +118,55 @@ namespace Evosim.Sim
         /// <summary>Joules the population's joints did this metabolic step.</summary>
         public double WorkThisStep { get; private set; }
 
+        /// <summary>
+        /// Root speed of the living, m/s, summed over every metabolic step since the last
+        /// <see cref="DrainMotility"/> and split by whether the body has a joint.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The prize side of the movement question, which the ledger has never been able to
+        /// read.</b> The cost of swimming is closed — <c>EffectorDriver</c> bills the work — and
+        /// what has never been measured is whether the animals that pay it end up anywhere
+        /// better. A mean over the whole population cannot answer that, for logbook/0029's
+        /// reason: jointed bodies are a minority and the majority sets the mean. So the split is
+        /// the instrument, and the reading is <c>food jnt</c> against <c>food rig</c> with
+        /// <c>spd jnt</c> non-trivial.
+        /// </para>
+        /// <para>
+        /// Accumulated over the report window rather than sampled at the row, because a speed
+        /// taken at one instant of a stroke cycle is a phase, not a speed.
+        /// </para>
+        /// </remarks>
+        private double _jointedSpeedSum;
+        private double _rigidSpeedSum;
+        private long _jointedSpeedSamples;
+        private long _rigidSpeedSamples;
+
+        /// <summary>
+        /// Root speed summed over the window and the number of creature-steps it was summed over,
+        /// jointed and jointless separately; the window is emptied.
+        /// </summary>
+        /// <remarks>
+        /// Sums and counts rather than two means, so the caller can tell an empty guild from a
+        /// stationary one — a mean of 0 is a real speed and a world with no swimmer in it has no
+        /// swimming speed at all. The report prints an em-dash for the first and a number for the
+        /// second.
+        /// </remarks>
+        public void DrainMotility(
+            out double jointedSum, out long jointedSamples,
+            out double rigidSum, out long rigidSamples)
+        {
+            jointedSum = _jointedSpeedSum;
+            jointedSamples = _jointedSpeedSamples;
+            rigidSum = _rigidSpeedSum;
+            rigidSamples = _rigidSpeedSamples;
+
+            _jointedSpeedSum = 0d;
+            _rigidSpeedSum = 0d;
+            _jointedSpeedSamples = 0L;
+            _rigidSpeedSamples = 0L;
+        }
+
         /// <summary>Joules drag took out of the population, over the run.</summary>
         public double DissipatedJoules => Fluid.DissipatedJoules;
 
@@ -260,6 +309,19 @@ namespace Evosim.Sim
             public double WorkAtLastStep;
 
             public Vector3 PreviousCentre;
+
+            /// <summary>
+            /// Where the root part stood at the previous metabolic step — the motility
+            /// instrument's baseline.
+            /// </summary>
+            /// <remarks>
+            /// The root rather than the centre of mass, and separate from
+            /// <see cref="PreviousCentre"/> rather than folded into it: the centre moves when a
+            /// creature folds up without going anywhere, and "did the animal travel" is the
+            /// question the movement round asks. Free — <see cref="CheckFinite"/> has already
+            /// read the position this is differenced against.
+            /// </remarks>
+            public Vector3 PreviousRoot;
 
             /// <summary>
             /// False until this creature has completed one whole metabolic step.
@@ -611,10 +673,28 @@ namespace Evosim.Sim
                     speedSum += speed;
                     counted++;
                     if (speed > fastest) fastest = speed;
+
+                    // The motility instrument. CheckFinite read this position a few lines ago,
+                    // so the whole cost is a subtraction and a branch per creature per metabolic
+                    // step — one fiftieth of the physics rate.
+                    double rootSpeed =
+                        Vector3.Distance(body.LastRootPosition, body.PreviousRoot) / seconds;
+
+                    if (body.Instance.TotalDof > 0)
+                    {
+                        _jointedSpeedSum += rootSpeed;
+                        _jointedSpeedSamples++;
+                    }
+                    else
+                    {
+                        _rigidSpeedSum += rootSpeed;
+                        _rigidSpeedSamples++;
+                    }
                 }
 
                 body.Settled = true;
                 body.PreviousCentre = centre;
+                body.PreviousRoot = body.LastRootPosition;
                 work += interval;
             }
 
@@ -727,7 +807,13 @@ namespace Evosim.Sim
                 Creature = creature,
                 Driver = new EffectorDriver(instance, FixedDt),
                 Brain = brain,
-                Sensors = new CreatureSensors(instance, World.Config.WorldDepthMetres),
+                // The world it can perceive, and only the channels its own brain reads —
+                // CreatureSensors' remarks on §4.4's requirement mask. The organism is handed
+                // over as an IReserveSource rather than as itself, so that the one thing
+                // perception needs from the account is the only thing it can reach.
+                Sensors = new CreatureSensors(
+                    instance, World.Config.WorldDepthMetres, World.Nutrients, creature,
+                    brain.SensorMask, World.Config),
                 Drive = new float[Mathf.Max(1, brain.TotalDof)],
                 PreviousCentre = FluidEnvironment.CentreOfMass(instance),
                 Tile = tile,

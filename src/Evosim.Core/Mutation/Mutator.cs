@@ -42,7 +42,7 @@ namespace Evosim.Core
 
         public static Genome Mutate(
             Genome parent, Rng rng, MutationRates rates = null, CellTypeRegistry cellTypes = null,
-            RandomGenomeOptions genome = null)
+            RandomGenomeOptions genome = null, SensorChannel[] sensorPool = null)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (rng == null) throw new ArgumentNullException(nameof(rng));
@@ -65,12 +65,12 @@ namespace Evosim.Core
             // codebase ever produced a GlobalBrain reference: founders draw sensors and
             // same-node links only, and mutation could not change an input's kind. Implementing
             // one dead knob is what made a second latent fault reachable (logbook/0019).
-            MutateNeuronSet(child.GlobalBrain, null, child, rng, rates, out NeuronDef[] brain);
+            MutateNeuronSet(child.GlobalBrain, null, child, rng, rates, sensorPool, out NeuronDef[] brain);
             child.GlobalBrain = brain;
 
             for (int n = 0; n < child.Nodes.Count; n++)
             {
-                MutateNode(child, child.Nodes[n], rng, rates, cellTypes, genome);
+                MutateNode(child, child.Nodes[n], rng, rates, cellTypes, genome, sensorPool);
             }
 
             if (rng.Chance(rates.AddNodeChance) && child.Nodes.Count < rates.MaxNodes)
@@ -115,7 +115,7 @@ namespace Evosim.Core
 
         private static void MutateNode(
             Genome g, MorphNode node, Rng rng, MutationRates rates, CellTypeRegistry cellTypes,
-            RandomGenomeOptions genome)
+            RandomGenomeOptions genome, SensorChannel[] sensorPool)
         {
             node.Dimensions = new Float3(
                 PerturbPositive(node.Dimensions.X, rng, rates),
@@ -168,7 +168,7 @@ namespace Evosim.Core
                 node.Edges.Add(RandomEdgeTo(g, rng));
             }
 
-            MutateNeuronSet(node.Neurons, node, g, rng, rates, out NeuronDef[] neurons);
+            MutateNeuronSet(node.Neurons, node, g, rng, rates, sensorPool, out NeuronDef[] neurons);
             node.Neurons = neurons;
         }
 
@@ -399,14 +399,14 @@ namespace Evosim.Core
 
         private static void MutateNeuronSet(
             NeuronDef[] neurons, MorphNode owner, Genome g, Rng rng, MutationRates rates,
-            out NeuronDef[] result)
+            SensorChannel[] sensorPool, out NeuronDef[] result)
         {
             var list = new List<NeuronDef>(neurons);
 
             for (int i = list.Count - 1; i >= 0; i--)
             {
                 if (rng.Chance(rates.RemoveNeuronChance)) { list.RemoveAt(i); continue; }
-                MutateNeuron(list[i], rng, rates);
+                MutateNeuron(list[i], rng, rates, sensorPool);
             }
 
             if (rng.Chance(rates.AddNeuronChance))
@@ -429,7 +429,8 @@ namespace Evosim.Core
             RepairInputs(result, owner, g, rng);
         }
 
-        private static void MutateNeuron(NeuronDef neuron, Rng rng, MutationRates rates)
+        private static void MutateNeuron(
+            NeuronDef neuron, Rng rng, MutationRates rates, SensorChannel[] sensorPool)
         {
             neuron.Frequency = PerturbPositive(neuron.Frequency, rng, rates);
             neuron.Amplitude = Perturb(neuron.Amplitude, rng, rates);
@@ -451,7 +452,7 @@ namespace Evosim.Core
                     : input.Constant;
 
                 neuron.Inputs[i] = rng.Chance(rates.RewireInputChance)
-                    ? Rewire(input, constant, weight, rng)
+                    ? Rewire(input, constant, weight, rng, sensorPool)
                     : new NeuronInput(input.Kind, input.Index, input.Channel, constant, weight);
             }
         }
@@ -483,13 +484,14 @@ namespace Evosim.Core
         /// which makes rewiring look harmful and get selected out before it has been tried.
         /// </para>
         /// </remarks>
-        private static NeuronInput Rewire(NeuronInput input, float constant, float weight, Rng rng)
+        private static NeuronInput Rewire(
+            NeuronInput input, float constant, float weight, Rng rng, SensorChannel[] sensorPool)
         {
             var kind = (NeuronInputKind)rng.Range(KindCount);
 
             if (kind == NeuronInputKind.Sensor)
             {
-                NeuronInput drawn = SensorChannels.RandomSensor(rng, weight);
+                NeuronInput drawn = SensorChannels.RandomSensor(rng, weight, sensorPool);
                 return new NeuronInput(kind, drawn.Index, drawn.Channel, constant, weight);
             }
 

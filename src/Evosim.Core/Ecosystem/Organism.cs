@@ -3,6 +3,23 @@ using System;
 namespace Evosim.Core
 {
     /// <summary>
+    /// A reserve a sensor can read — what <see cref="SensorChannel.Energy"/> reports, §4.4.
+    /// </summary>
+    /// <remarks>
+    /// <b>An interface rather than the <see cref="Organism"/> itself, and for one reason.</b> The
+    /// simulator's sampler wants the organism and gets it; the Milestone 1 smoke test wants a
+    /// reserve it can move between samples, and it cannot build one — <see cref="Organism.Energy"/>
+    /// is <c>internal set</c> so that nothing outside the world's own economy can pay a creature,
+    /// which is a rule worth keeping. So the seam is one property wide, <see cref="Organism"/>
+    /// implements it by already having it, and the test supplies a stand-in that varies.
+    /// </remarks>
+    public interface IReserveSource
+    {
+        /// <summary>Seconds of life left at the current burn rate; <c>+∞</c> at zero burn.</summary>
+        float SecondsOfReserve { get; }
+    }
+
+    /// <summary>
     /// One living creature and its account — DESIGN.md §5A.2, §5A.6.
     /// </summary>
     /// <remarks>
@@ -10,7 +27,7 @@ namespace Evosim.Core
     /// creature is not evaluated and scored — it is solvent or it is not, and solvency is the only
     /// thing about it that changes.
     /// </remarks>
-    public sealed class Organism
+    public sealed class Organism : IReserveSource
     {
         /// <summary>Identity within a run. Also the row key in <c>lineage.jsonl</c> (§9).</summary>
         public long Id { get; internal set; }

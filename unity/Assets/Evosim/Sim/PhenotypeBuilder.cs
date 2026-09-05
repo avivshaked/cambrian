@@ -59,6 +59,35 @@ namespace Evosim.Sim
         /// </remarks>
         public int Patch { get; internal set; }
 
+        /// <summary>
+        /// Water velocity relative to each part, world axes, m/s — what
+        /// <see cref="SensorChannel.Flow"/> reads. Null unless something asked for it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Written by the drag pass, which computes this quantity anyway.</b>
+        /// <see cref="FluidEnvironment.Apply(System.Collections.Generic.IReadOnlyList{CreatureInstance}, float)"/>
+        /// needs the body's velocity relative to the water to compute a drag force, and used to
+        /// throw it away afterwards. A lateral line is that same number, so recomputing it would
+        /// be a second <c>CurrentField.VelocityAt</c> and a second Transform read per part per
+        /// step for a value already in hand.
+        /// </para>
+        /// <para>
+        /// <b>On the creature rather than in an array indexed by slot.</b> The environment's own
+        /// flat arrays are indexed by the creature's position in the list it was last stepped
+        /// with, and <c>Ecosystem.Reconcile</c> rebuilds that order on every birth and death — so
+        /// slot <i>i</i> is a different creature from one step to the next, and a sampler reading
+        /// by slot would occasionally read another animal's water. This dies with the body it
+        /// describes.
+        /// </para>
+        /// <para>
+        /// <b>Null by default and allocated only by a creature that reads the channel</b>
+        /// (<c>CreatureSensors</c>, from its brain's requirement mask), so a world where nothing
+        /// senses flow pays one null test per part per step and no memory at all.
+        /// </para>
+        /// </remarks>
+        public Float3[] RelativeVelocity { get; internal set; }
+
         public void Destroy()
         {
             if (Root == null) return;

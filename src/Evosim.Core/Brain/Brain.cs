@@ -91,6 +91,38 @@ namespace Evosim.Core
         /// <summary>Total actuated degrees of freedom — the length <c>drive</c> must be.</summary>
         public int TotalDof { get; }
 
+        /// <summary>
+        /// Which sensor channels any neuron in this creature actually references — bit
+        /// <c>1 &lt;&lt; (int)</c><see cref="SensorChannel"/> per channel, DESIGN.md §4.4's
+        /// requirement mask.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>§4.4 says sensors are evaluated on demand rather than per channel per part, and
+        /// until this existed nothing was.</b> Every channel was computed for every part on every
+        /// physics step whether or not a single neuron read it — which is §5A.9's measured
+        /// bottleneck, and it grew by three quarters the day the three unread channels were
+        /// wired. This is the whole mask: computed once at birth by walking the inputs the brain
+        /// was built from, and read by the simulator's sampler to decide what not to compute.
+        /// </para>
+        /// <para>
+        /// <b>Skipping a value nobody reads is bit-identical by construction</b>, which is the
+        /// only reason it can be turned on unconditionally: an input that references a channel
+        /// sets that channel's bit, and nothing else in the creature can reach the sampler.
+        /// The global brain is walked too — a global neuron's sensor input is repaired to a
+        /// constant by <c>Mutator.RepairInputs</c> and so cannot arise from evolution, but a
+        /// hand-authored genome may carry one and a mask that under-reports is a silent zero.
+        /// </para>
+        /// </remarks>
+        public int SensorMask { get; }
+
+        /// <summary>Every channel, for a caller that wants no mask at all — the smoke test.</summary>
+        public const int AllSensorChannels = -1;
+
+        /// <summary>True when some neuron reads <paramref name="channel"/>.</summary>
+        public static bool MaskReads(int mask, SensorChannel channel) =>
+            (mask & (1 << (int)channel)) != 0;
+
         /// <summary>Neurons in this creature, body and global brain together.</summary>
         public int NeuronCount => _previous.Length;
 
@@ -99,8 +131,9 @@ namespace Evosim.Core
 
         private Brain(
             NeuronDef[][] neurons, int[] offset, int[] parent, int[] firstChild,
-            int[] dofStart, int[] dofCount, int totalNeurons, int totalDof)
+            int[] dofStart, int[] dofCount, int totalNeurons, int totalDof, int sensorMask)
         {
+            SensorMask = sensorMask;
             _neurons = neurons;
             _offset = offset;
             _parent = parent;
@@ -173,8 +206,30 @@ namespace Evosim.Core
             offset[parts] = cursor;
             cursor += neurons[parts].Length;
 
+            // The requirement mask, taken on the way past rather than in a second walk: every
+            // neuron group is already in hand, and this runs once per birth.
+            int sensorMask = 0;
+            for (int group = 0; group < neurons.Length; group++)
+            {
+                NeuronDef[] set = neurons[group];
+                for (int n = 0; n < set.Length; n++)
+                {
+                    NeuronInput[] inputs = set[n].Inputs;
+                    if (inputs == null) continue;
+
+                    for (int i = 0; i < inputs.Length; i++)
+                    {
+                        if (inputs[i].Kind == NeuronInputKind.Sensor)
+                        {
+                            sensorMask |= 1 << (int)inputs[i].Channel;
+                        }
+                    }
+                }
+            }
+
             return new Brain(
-                neurons, offset, parent, firstChild, dofStart, dofCount, cursor, dofCursor);
+                neurons, offset, parent, firstChild, dofStart, dofCount, cursor, dofCursor,
+                sensorMask);
         }
 
         /// <summary>

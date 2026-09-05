@@ -347,7 +347,8 @@ namespace Evosim.Core
     /// </remarks>
     public static class GenomeFactory
     {
-        public static Genome Random(Rng rng, RandomGenomeOptions options = null)
+        public static Genome Random(
+            Rng rng, RandomGenomeOptions options = null, SensorChannel[] sensorPool = null)
         {
             if (rng == null) throw new ArgumentNullException(nameof(rng));
             options = options ?? RandomGenomeOptions.Default;
@@ -379,12 +380,12 @@ namespace Evosim.Core
 
             for (int i = 0; i < bodyCount; i++)
             {
-                genome.Nodes.Add(RandomBodyCell(rng, options));
+                genome.Nodes.Add(RandomBodyCell(rng, options, sensorPool));
             }
 
             for (int i = 0; i < linkCount; i++)
             {
-                genome.Nodes.Add(RandomLinkCell(rng, options));
+                genome.Nodes.Add(RandomLinkCell(rng, options, sensorPool));
             }
 
             for (int i = 0; i < bodyCount; i++)
@@ -442,7 +443,8 @@ namespace Evosim.Core
         /// judgement about what deserves to exist, which is the whole thing §5A removes.
         /// </para>
         /// </remarks>
-        public static Genome Founder(Rng rng, RandomGenomeOptions options = null)
+        public static Genome Founder(
+            Rng rng, RandomGenomeOptions options = null, SensorChannel[] sensorPool = null)
         {
             if (rng == null) throw new ArgumentNullException(nameof(rng));
             options = options ?? RandomGenomeOptions.Default;
@@ -458,7 +460,7 @@ namespace Evosim.Core
                 },
             };
 
-            MorphNode body = RandomBodyCell(rng, options);
+            MorphNode body = RandomBodyCell(rng, options, sensorPool);
 
             // Drawn from the earning types only. Structural and Link acquire nothing, so a
             // founder built from them starves with certainty rather than probably — see
@@ -481,7 +483,7 @@ namespace Evosim.Core
 
             if (rng.Chance(options.FounderTailChance))
             {
-                MorphNode tail = RandomLinkCell(rng, options);
+                MorphNode tail = RandomLinkCell(rng, options, sensorPool);
                 genome.Nodes.Add(tail);
 
                 // One edge, square onto a face, no reflection and no tilt. A bilateral pair or a
@@ -505,7 +507,7 @@ namespace Evosim.Core
                 // A bladder instead of a tail — the Archean answer to the same question the tail
                 // is the Cambrian answer to. Mutually exclusive with the tail rather than stacked,
                 // so a founder is a blob, a flagellate, or a float, and the three are comparable.
-                MorphNode bladder = RandomBodyCell(rng, options);
+                MorphNode bladder = RandomBodyCell(rng, options, sensorPool);
                 bladder.CellTypeId = CellTypeIds.Buoyancy;
                 bladder.JointType = JointType.Fixed;
                 bladder.JointLimits = Array.Empty<Float2>();
@@ -530,7 +532,8 @@ namespace Evosim.Core
         /// <summary>
         /// A body cell: it feeds or it is structure, and it cannot move against its parent.
         /// </summary>
-        private static MorphNode RandomBodyCell(Rng rng, RandomGenomeOptions options)
+        private static MorphNode RandomBodyCell(
+            Rng rng, RandomGenomeOptions options, SensorChannel[] sensorPool)
         {
             var node = new MorphNode
             {
@@ -545,7 +548,7 @@ namespace Evosim.Core
                 RecursiveLimit = rng.Range(options.MinRecursiveLimit, options.MaxRecursiveLimit + 1),
             };
 
-            node.Neurons = RandomNeurons(rng, options);
+            node.Neurons = RandomNeurons(rng, options, sensorPool);
             return node;
         }
 
@@ -559,7 +562,8 @@ namespace Evosim.Core
         /// recursion duplicates a segment's muscle and its nerve together, which is what makes
         /// a repeated limb arrive with a working central pattern generator instead of a dead one.
         /// </remarks>
-        private static MorphNode RandomLinkCell(Rng rng, RandomGenomeOptions options)
+        private static MorphNode RandomLinkCell(
+            Rng rng, RandomGenomeOptions options, SensorChannel[] sensorPool)
         {
             var node = new MorphNode
             {
@@ -582,12 +586,13 @@ namespace Evosim.Core
                 limits[d] = new Float2(-magnitude, magnitude);
             }
             node.JointLimits = limits;
-            node.Neurons = RandomNeurons(rng, options);
+            node.Neurons = RandomNeurons(rng, options, sensorPool);
 
             return node;
         }
 
-        private static NeuronDef[] RandomNeurons(Rng rng, RandomGenomeOptions options)
+        private static NeuronDef[] RandomNeurons(
+            Rng rng, RandomGenomeOptions options, SensorChannel[] sensorPool)
         {
             int count = rng.Range(options.MinNeuronsPerNode, options.MaxNeuronsPerNode + 1);
             var neurons = new NeuronDef[count];
@@ -621,7 +626,7 @@ namespace Evosim.Core
                     // aim, so locomotion has negative expected value and the world deletes it.
                     // A founder that can read depth has something to steer by (D033).
                     inputs[a] = rng.Chance(0.5f)
-                        ? SensorChannels.RandomSensor(rng, rng.Gaussian(0f, 1f))
+                        ? SensorChannels.RandomSensor(rng, rng.Gaussian(0f, 1f), sensorPool)
                         : NeuronInput.FromNeuron(NeuronInputKind.SameNode, rng.Range(count), rng.Gaussian(0f, 1f));
                 }
                 neurons[i].Inputs = inputs;
@@ -762,7 +767,8 @@ namespace Evosim.Core
             int minParts = 3,
             int maxAttempts = 32,
             int maxBuriedPairs = 0,
-            float maxUnjointedOverlap = 0.005f)
+            float maxUnjointedOverlap = 0.005f,
+            SensorChannel[] sensorPool = null)
         {
             Genome last = null;
             Genome bestSoFar = null;
@@ -770,7 +776,7 @@ namespace Evosim.Core
 
             for (int attempt = 0; attempt < maxAttempts; attempt++)
             {
-                last = Random(rng, options);
+                last = Random(rng, options, sensorPool);
                 Phenotype developed = Developer.Develop(last, limits);
 
                 if (developed.PartCount < minParts || developed.TotalDof == 0) continue;

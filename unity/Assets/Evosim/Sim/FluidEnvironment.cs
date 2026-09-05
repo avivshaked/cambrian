@@ -247,6 +247,16 @@ namespace Evosim.Sim
                         : Float3.Zero;
 
                     _velocity[at + i] = body.linearVelocity.ToFloat3() - water;
+
+                    // The lateral line, taken from the drag pass rather than recomputed —
+                    // CreatureInstance.RelativeVelocity's remarks say why it lives on the
+                    // creature and why this is a null test rather than a second array. The store
+                    // is the same value the line above computed, so nothing here changes what the
+                    // solver is handed.
+                    if (creature.RelativeVelocity != null && i < creature.RelativeVelocity.Length)
+                    {
+                        creature.RelativeVelocity[i] = _velocity[at + i];
+                    }
                 }
             }
 

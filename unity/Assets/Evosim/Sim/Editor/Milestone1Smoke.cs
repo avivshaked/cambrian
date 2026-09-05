@@ -1088,17 +1088,78 @@ namespace Evosim.Sim.EditorTools
         /// §4.4 says a body recovers direction from. A one-part creature cannot show that, so the
         /// check needs a creature with several.
         /// </para>
+        /// <para>
+        /// <b>The three later channels needed a world, and that is why this harness has one.</b>
+        /// <see cref="SensorChannel.Chemical"/>, <see cref="SensorChannel.Energy"/> and
+        /// <see cref="SensorChannel.Flow"/> report the water, the account and the current, and a
+        /// creature driven in an empty tank would read a flat zero from all three however
+        /// correctly they were wired — which is the exact failure this check exists to catch,
+        /// arriving as a false one. So the harness gains a nutrient field with a deliberate
+        /// vertical gradient, a current with a real speed, and a reserve the test moves between
+        /// samples. None of it is a world; all of it is the minimum that makes the assertion mean
+        /// something.
+        /// </para>
         /// </remarks>
+        /// <summary>
+        /// A reserve the test can move — see <see cref="IReserveSource"/> for why this exists
+        /// rather than a stand-in <see cref="Organism"/>.
+        /// </summary>
+        private sealed class TestReserve : IReserveSource
+        {
+            public float Seconds { get; set; }
+
+            public float SecondsOfReserve => Seconds;
+        }
+
         private static bool CheckSensors(StringBuilder report)
         {
             FluidEnvironment.ConfigureScene(selfCollision: true);
 
-            var fluid = new FluidEnvironment(new FluidConfig { AddedMassCoefficient = 1f });
             var config = new RunConfig();
             var limits = DevelopmentLimits.Default;
 
+            // Water that moves, so Flow has something to report. Still water would make the
+            // lateral line read the body's own velocity alone, which is not nothing but is not
+            // the channel either — and a current is what the reference world actually has.
+            var current = new CurrentField { Speed = 0.3f };
+
+            var fluid = new FluidEnvironment(
+                new FluidConfig { AddedMassCoefficient = 1f }, config.Shapes, current)
+            {
+                PatchCount = 1,
+            };
+
+            // A field with a deliberate vertical gradient, at a layer thickness fine enough that
+            // parts of one creature fall in different layers. Without that, Chemical is constant
+            // across a small body and the check below could not tell a working smell from a
+            // hardwired one — which is the whole point of asserting variation rather than
+            // finiteness.
+            const float layerMetres = 0.25f;
+            var nutrients = new NutrientField(
+                worldArea: 100f, layerMetres: layerMetres, sinkMetresPerSecond: 0f,
+                worldDepth: config.WorldDepthMetres);
+
+            for (int layer = 0; layer < nutrients.LayerCount; layer++)
+            {
+                nutrients.Deposit(-(layer + 0.5f) * layerMetres, 5f * (layer + 1), 0);
+            }
+
+            // The reserve, moved by the test between samples. Organism.Energy is internal-set so
+            // that nothing outside the world's economy can pay a creature — a rule worth keeping —
+            // so what CreatureSensors takes is the one-property seam Organism satisfies by
+            // already having it, and this is a stand-in that varies. It starts at infinity, which
+            // is a real state (a creature at zero burn) and the one case the channel has to answer
+            // before the tanh rather than through Brain's NaN/Inf guard.
+            var reserve = new TestReserve { Seconds = float.PositiveInfinity };
+
             report.AppendLine();
             report.AppendLine("### Sensors — DESIGN.md §4.4");
+            report.AppendLine();
+            report.AppendLine(
+                "Channels the simulator answers: " + SensorChannels.Implemented.Length +
+                ". What a run at these settings lets a genome draw: " +
+                new RunConfig().SensorPool().Length +
+                " (the rest wait on `EVOSIM_SENSE_*`).");
             report.AppendLine();
             report.AppendLine("| channel | min | max | spread | verdict |");
             report.AppendLine("|---|---|---|---|---|");
@@ -1114,7 +1175,14 @@ namespace Evosim.Sim.EditorTools
 
             var driver = new EffectorDriver(creature, FixedDt);
             var brain = Brain.For(phenotype, genome.GlobalBrain);
-            var sensors = new CreatureSensors(creature, config.WorldDepthMetres);
+
+            // Brain.AllSensorChannels, not this brain's own mask: the mask exists so a creature
+            // pays for nothing it does not read, and this check is asking what the simulator can
+            // answer rather than what one genome happens to reference.
+            var sensors = new CreatureSensors(
+                creature, config.WorldDepthMetres, nutrients, reserve,
+                Brain.AllSensorChannels, config);
+
             var drive = new float[Mathf.Max(1, brain.TotalDof)];
 
             int channels = SensorChannels.Implemented.Length;
@@ -1129,6 +1197,12 @@ namespace Evosim.Sim.EditorTools
 
             for (int s = 0; s < steps; s++)
             {
+                // Down from infinity to nearly nothing over the run, so Energy varies and both
+                // ends of the squash are exercised.
+                reserve.Seconds = s == 0
+                    ? float.PositiveInfinity
+                    : config.EnergyFullScaleSeconds * (1f - (float)s / steps);
+
                 sensors.Sample();
 
                 for (int c = 0; c < channels; c++)
@@ -1159,6 +1233,10 @@ namespace Evosim.Sim.EditorTools
                 brain.Step(FixedDt, drive, sensors);
                 driver.Drive(drive);
 
+                // The water's own clock, as Ecosystem advances it — a current sampled at a
+                // standing time is a constant, and Flow would read one number forever.
+                fluid.ElapsedSeconds = s * (double)FixedDt;
+
                 fluid.Apply(creature, FixedDt);
                 Physics.Simulate(FixedDt);
                 fluid.Settle(creature);
@@ -1185,8 +1263,9 @@ namespace Evosim.Sim.EditorTools
 
             report.AppendLine();
             report.AppendLine(ok
-                ? "Every channel in `SensorChannels.Implemented` varies over the run or across " +
-                  "the body. A channel listed there and unhandled reads a flat zero and fails here."
+                ? "All " + channels + " channels in `SensorChannels.Implemented` vary over the " +
+                  "run or across the body. A channel listed there and unhandled reads a flat " +
+                  "zero and fails here."
                 : "**FAIL** — a channel Core promises is implemented reads a constant. Mutation " +
                   "will keep drawing it, and a neuron wired to it is a dead input that nothing " +
                   "else would report.");

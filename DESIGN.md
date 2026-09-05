@@ -502,6 +502,18 @@ bacteria manage it, which is some indication of how basic the missing capability
 | **Flow** | Water velocity relative to this part, per axis | A lateral line: currents (§5A.4), and something large moving before it arrives |
 | **Depth** | How deep this part is, as a fraction of the world's depth | The axis the whole environment is structured along — and the only way to know it at night |
 
+**Implemented, as of D075 item 1:** joint angle, joint angular velocity, orientation-vs-up,
+depth, chemical, energy and flow — all seven answered by `CreatureSensors`. Contact, damage and
+the photosensor triple still read zero. Three normalisation constants have no measured value and
+are therefore run tunables, ⚠ unmeasured (§5A.10): `ChemicalHalfScaleJoulesPerCubicMetre`
+(10 J/m³, the density reading ½ under `x/(x+k)`), `EnergyFullScaleSeconds` (3,000 s, the tanh
+scale) and `FlowFullScaleMetresPerSecond` (0.3 m/s, full scale per axis). Which of the seven a
+*population* may acquire is a separate switch — `SenseChemical`, `SenseEnergy`, `SenseFlow`, all
+off — because founder and mutation draws index into the drawable list, so lengthening it changes
+which channel a given seed yields and the historical record stops replaying (§7). Flow reads the
+relative velocity the drag pass computed on the previous physics step; a newborn's first step
+reads zero.
+
 **Depth is not redundant with the photosensor, and the reason is the night.** Irradiance is a
 usable depth proxy only while the sun is up; once §5A.4's diurnal cycle exists, light at night
 says nothing about depth at all. This channel is what makes **diel vertical migration**
@@ -547,7 +559,9 @@ neuron ever references is a static property of a developed phenotype, so the bui
 requirement mask once and the step loop evaluates only what is in it. Cost then scales with what
 evolution actually uses rather than with what is declared, and adding a channel costs nothing
 until something reads it. This matters because §5A.9's measured bottleneck is a per-part
-per-step loop already, and the mask is what stops perception becoming a second one.
+per-step loop already, and the mask is what stops perception becoming a second one. Built with
+D075 item 1: `Brain.SensorMask` is the mask, taken at birth from the inputs the brain was
+assembled from, and `CreatureSensors.Sample` skips what is not in it.
 
 **Damage is readable on every part, not only on links.** Once creatures eat each other
 (§5A.3), being bitten is the most consequential thing that happens to a body cell, and a
