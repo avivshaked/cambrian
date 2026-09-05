@@ -67,4 +67,11 @@ and 0060's vent arms for the fast-step comparison of seeds 2 and 4.
 
 ## Launch
 
-Appended below.
+Seeds 1-4 launched 2026-09-05 ~12:47 on workers 2-5 at commit `60094c0` (the open-budget
+build's code, `simHash c43976d3d71f1f52`, unchanged since 1ce2e71; prose commits since),
+`-ExpectSimHash` on each; every manifest reads that `simHash`, `gitDirty false`,
+`physicsDtSeconds 0.01`, `status running`. Headers verified as V1 on all four: `dt=0.01`,
+`sink 0.002 m/s, matter 0.02 m/s`, `matter in 0.6/s at vent, burial 0.01/s`, `vent 0.05
+m/s in patch 0 from 60 m, legs 1 m`, `conception age`, `exudation 0.15`. Seed 5 follows on
+worker 6 when the perception build's validation releases it. Monitor running. Results
+appended below.
