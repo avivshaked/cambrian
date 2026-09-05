@@ -1639,7 +1639,7 @@ trade turned out to be at parity with photosynthesis (logbook/0024).
 | Section | Status |
 |---|---|
 | **§5.5 Fitness (water)** | ❌ **Superseded.** There is no fitness function. Displacement becomes an observable, not an objective |
-| **§6.3 Tiling** | ⚠ **Repurposed.** Tiling isolated simultaneous independent evaluations. An ecosystem is one shared world where creatures must be able to meet, so tiling becomes spatial partitioning rather than isolation |
+| **§6.3 Tiling** | ⚠ **To be repurposed — not yet.** Tiling isolated simultaneous independent evaluations. An ecosystem is one shared world where creatures must be able to meet, so tiling should become spatial partitioning rather than isolation. *As built (2026-09-05): creatures are still tiled 100 m apart on mutually ignoring collision layers (`Ecosystem.TileSpacing`, `PhenotypeBuilder`) and have never touched; the ecological coordinates are depth and patch only. How they meet is the ruling `fable-propose-predation.md` asks for.* |
 | **§6.4 Throughput** | ⚠ **Unit changed.** Evaluations per second stops being meaningful. The unit is simulated seconds per wall-clock second at a given population |
 | **§8 MAP-Elites** | ⚠ **Demoted.** It was the selector, and it existed to solve a problem exogenous fitness creates (§2). Under endogenous selection its innovation-protection role is served by ecological niches. Retained as an **observatory** — an archive recording what lived and what it looked like — which costs little and is what makes a long run legible |
 | **§10 Milestones** | ⚠ Milestone 6 (sensors, photosensors) moves from last to load-bearing; foraging is target-following with the target being food |
