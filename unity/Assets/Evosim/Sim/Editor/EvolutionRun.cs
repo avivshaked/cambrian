@@ -991,11 +991,19 @@ namespace Evosim.Sim.EditorTools
             LastMatterInfluxed = 0;
             LastMatterBuried = 0;
             AssayFired = false;
+            LastSnapshotSeconds = double.NaN;
             AbsorptiveRows.Clear();
             CurrentManifest = null;
             CurrentManifestDir = null;
             StartedAtUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
         }
+
+        /// <summary>
+        /// Simulated time of the last snapshot written, so the shutdown does not write the same
+        /// population a second time. NaN before the first, and cleared with every other static
+        /// here — a second <c>Evosim/Run</c> in one editor session starts at t=0 again.
+        /// </summary>
+        private static double LastSnapshotSeconds = double.NaN;
 
         /// <summary>The manifest of the run in progress, so <see cref="Run"/> can finish it after
         /// an exception. Null before the run directory exists and after
@@ -1462,6 +1470,19 @@ namespace Evosim.Sim.EditorTools
         private static void Snapshot(RunDirectory dir, Ecosystem eco)
         {
             if (dir == null) return;
+
+            // Once per instant. The loop takes a snapshot every tenth report row and the shutdown
+            // takes one more, so a run whose budget lands exactly on a snapshot boundary wrote the
+            // same population twice into the same file — JsonlWriter appends, so th-ref's t=1000
+            // snapshot held 88 rows for 44 creatures. Every row was valid and every id joined,
+            // which is why it went unnoticed: the only reader that could tell was one counting a
+            // population, and it would have counted double.
+            //
+            // Compared against the elapsed time rather than against the file's existence: two
+            // metabolic steps half a second apart floor to the same file name, and a File.Exists
+            // guard would silently drop the final population of a run that ended at t=1000.5.
+            if (eco.World.ElapsedSeconds == LastSnapshotSeconds) return;
+            LastSnapshotSeconds = eco.World.ElapsedSeconds;
 
             // .jsonl, not RunDirectory's .json: the file holds one genome per line, and a
             // reader that trusts the extension would fail on the second line rather than the
