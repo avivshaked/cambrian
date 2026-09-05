@@ -228,11 +228,15 @@ plugin and collide with the same code compiled from source.
 `-executeMethod Evosim.Sim.EditorTools.SandboxSceneBuilder.Run`. Scene YAML merges badly and
 cannot be reviewed in a diff; a script that rebuilds it can.
 
-`unity/Assets/Evosim/Theatre/` — `Evosim.Theatre` and `Evosim.Theatre.Editor`, D075's first
-cut: replay of a recorded world with the identity check on screen, one creature under its own
-brain, the overlay, a free-fly camera. It references `Evosim.Sim` and `Evosim.Core` and nothing
-references it — §6.1's separation, enforced by the asmdef. Charts, the gallery and §5.4's fluid
-validation harness are not built.
+`unity/Assets/Theatre/` — `Evosim.Theatre` and `Evosim.Theatre.Editor`, D075's first cut:
+replay of a recorded world with the identity check on screen, one creature under its own brain,
+the overlay, a free-fly camera. It references `Evosim.Sim` and `Evosim.Core` and nothing
+references it — §6.1's separation, enforced by the asmdef. **It sits beside `Assets/Evosim/`
+rather than inside it because `simHash` is a digest of every `.cs` under `Assets/Evosim`**: with
+the theatre in there, editing a HUD label made every earlier recording refuse to replay and made
+every refreshed worker report a new build to the farm's identity record, neither of which had
+anything to do with the simulation. Charts, the gallery and §5.4's fluid validation harness are
+not built.
 
 `spikes/01-articulation-body/` — a standalone Unity project, **disposable by design**. It
 answers one question: can `ArticulationBody` support the evaluation loop at scale? It can;
@@ -449,14 +453,17 @@ actually verifying it.
   and by `ledger.ps1 -Genome`. The genome fields did not change across that bump — only the
   optional id was added — so an inoculum can be brought forward by re-extracting it from a new
   snapshot, which is the one route that cannot quietly mislabel a creature.
-- **Editing the theatre invalidates every earlier recording's replay.** `simHash` is a digest of
-  every `.cs` under `Assets/Evosim`, and the theatre lives there — so changing a HUD label makes
-  the theatre refuse every run recorded before that change, with `simHash ... recorded, ... here`.
-  That is the honest reading of the recorded number, not a fault in it: the run was made by
-  different source. In practice, freeze the theatre before recording anything you want to replay
-  faithfully, or watch it under `Allow Source Mismatch` and read the banner. It is also worth
-  knowing that a theatre-only difference does not change the world: `th-ref` replayed 10 of 10
-  samples identically under the override with only the theatre's files differing.
+- **`simHash` is a property of a checkout, not of a commit.** It hashes the bytes of every `.cs`
+  under `Assets/Evosim` on disk, and this working tree is mixed: `EffectorDriver.cs`,
+  `EmbodiedRun.cs` and `ThroughputSurvey.cs` are CRLF while everything beside them is LF, which
+  `core.autocrlf=true` hides from `git diff` completely. So two checkouts of the same commit can
+  carry different `simHash`es, and a hash cannot be reconstructed from history with
+  `git archive` (it applies the checkout conversion; `git show` does not). Compare a recorded
+  `simHash` against a tree on disk, never against a commit.
+- **Anything under `Assets/Evosim` is simulation source, whatever it does.** The theatre spent one
+  commit inside it and made every earlier recording unreplayable, because a HUD label is a `.cs`
+  file under that root and `simHash` cannot tell a viewer from a solver. Presentation, tooling and
+  anything else that does not decide a trajectory goes beside it (`Assets/Theatre/`), not in it.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

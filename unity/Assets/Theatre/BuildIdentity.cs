@@ -28,13 +28,14 @@ namespace Evosim.Theatre
     /// anyone replays their own recording.
     /// </para>
     /// <para>
-    /// <b>A theatre edit changes <c>simHash</c>.</b> The theatre lives under
-    /// <c>Assets/Evosim/</c>, which is the tree <c>simHash</c> covers, so changing a HUD label
-    /// makes every run recorded before that change refuse to play faithfully. That is the honest
-    /// reading of the recorded number and not a fault in it — but it is why the override exists,
-    /// and why <see cref="Difference"/> names which of the two hashes moved: a <c>coreHash</c>
-    /// difference is certainly a different world, a <c>simHash</c>-only difference may be a
-    /// different viewer.
+    /// <b>The theatre is deliberately outside the tree <c>simHash</c> covers.</b> The digest is
+    /// taken over <c>Assets/Evosim</c>; the theatre lives at <c>Assets/Theatre</c>, so editing a
+    /// HUD label cannot refuse a recording and cannot make a refreshed worker report a new build
+    /// to the farm's identity record. It sat inside for one commit and did both. What that buys
+    /// is that a difference reported here is a difference in simulation source and nothing else —
+    /// which is what makes refusing on it worth doing. <see cref="Difference"/> still names which
+    /// of the two hashes moved, because a <c>coreHash</c> difference and a <c>simHash</c> one are
+    /// different halves of the build.
     /// </para>
     /// </remarks>
     public static class BuildIdentity
@@ -58,7 +59,12 @@ namespace Evosim.Theatre
         public static string CoreHash() =>
             HashSourceTree(Path.Combine(RepositoryRoot(), "src", "Evosim.Core")) ?? "unknown";
 
-        /// <summary>SHA-256 over this project's <c>Assets/Evosim</c>, or "unknown".</summary>
+        /// <summary>
+        /// SHA-256 over this project's <c>Assets/Evosim</c>, or "unknown" — the simulation source
+        /// only, which is what <c>EvolutionRun</c> and <c>run-arm.ps1</c> hash and therefore what
+        /// a recorded <c>simHash</c> can be compared against. The theatre's own tree is not in it,
+        /// by design (see the class remarks).
+        /// </summary>
         public static string SimHash() =>
             HashSourceTree(Path.Combine(Application.dataPath, "Evosim")) ?? "unknown";
 
