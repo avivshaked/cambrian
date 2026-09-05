@@ -30,7 +30,7 @@ is not part of the goal.
 
 ## The path, ruled (D075, owner 2026-09-04: "lock it in")
 
-Round 22 write-up → D074 adoption and dose (owner) → the vent shape screened → the
+Rounds 22 and 23 written up → **D074 adoption and dose (owner, now)** → the
 adopted open world confirmed at 0.01 under D063 as amended → **movement that pays**
 (wire `Chemical`, `Flow`, `Energy`; a movement clause; fine step only) with **the
 theatre** built in parallel by a separate agent → predation → the cell types and
@@ -60,12 +60,27 @@ immigration → the archive and the islands.
 
 ## The decision in front of the owner
 
-D074 ruled (owner, 2026-09-04: "let us see what happens when matter does not lock"):
-the open matter budget — surface influx and floor burial — building
-(`scratch/open-budget-spec.md`, after the divergence build `scratch/divergence-spec.md`
-lands) and pre-registered as logbook/0058. Adoption into the reference world is the
-owner's ruling over the screen. The reference world is unchanged meanwhile: age order,
-stock 1/m³, exudation 0.15; round 18's pass stands.
+**Adopt the open matter budget in the vent shape, and choose its dose.** D074 was
+screened twice: [logbook/0058](logbook/0058-the-open-budget.md) (surface influx, sink
+0.002: the size is a flow, burial never sees the influx) and
+[logbook/0060](logbook/0060-the-outflow.md) (sink 0.02, surface vs vent: the vent
+connects the outflow, burying 43–50% of the influx against the surface's 16%, and wets
+the deep at 0.6 units/m³; neither balances at 0.6/s in 20,000 s; the stomachs' share is
+unmoved by the wet deep; the fast sink drains the starting stock and founding nearly
+failed once). The recommendation in 0060's verdict: adopt influx at the vent's base with
+D067's vent on, matter sink 0.02, burial 0.01, at 0.6/s, and confirm at 0.01 under D063 as
+amended (five seeds, 30,000 s, the ceiling as the censor), correcting the dose on that
+reading. Alternatives on the table: burial 0.02, or influx 0.3. The surface shape is not
+recommended. The reference world is unchanged until the ruling: age order, stock 1/m³,
+exudation 0.15; round 18's pass stands.
+
+**Ready for implementing agents once the open world confirms** (D075):
+`scratch/perception-spec.md` (Chemical, Energy, Flow wired; a config-gated pool so the
+default replays bit for bit; the smoke test extended to seven channels; `spd`/`food`
+columns for the movement round; the §4.4 mask as a separable item) and
+`scratch/theatre-spec.md` (a rendered world replay with a built-in identity check
+against the recorded rows, a creature id on snapshot rows, a single-creature mode).
+Both are built on read-only surveys in the same directory.
 
 ## Bugs — fixed 2026-09-04 (logbook/0059)
 

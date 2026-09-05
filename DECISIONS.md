@@ -96,7 +96,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; overtaken by D072 (the contest for each unit was an age queue) |
 | [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · **screened 2026-09-04 (logbook/0056): `shuffled` not adopted** — the queue was the stomachs' lifeline, because in a matter-bound plateau energy buys no fecundity; ruled as D073 |
 | [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0057): neither adopted** — the stomachs bid highest and still breed no more than the leaves; the larger stock triples everything at the same share; the open matter budget follows as D074 |
-| [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002; dose corrected in logbook/0060** · adoption is the owner's |
+| [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · adoption of the vent shape and its dose are the owner's |
 | [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
 
 ---
@@ -3598,6 +3598,21 @@ stomachs' share fell (0.9–5.4% against 7.5–13%): a surface source feeds the 
 correction screened as logbook/0060: the matter sink at 0.02 m/s so the outflow sees
 what the inflow built, and the vent shape so the influx reaches the deep first. Not
 adopted, not rejected; the owner's ruling follows that screen.
+
+**Dose correction screened 2026-09-05 (logbook/0060): the vent connects the outflow,
+the surface does not, and neither balances at 0.6/s.** With the matter sink at 0.02,
+influx at the vent's base sat in the deep at 0.6 units/m³ and the vent arms buried 43–50%
+of the influx against the surface arms' 16% (no better than at sink 0.002: leaves lock a
+surface source before it sinks, whatever the sink). Every arm still grew at the influx
+rate with no equilibrium in 20,000 s. The sink at 0.02 also drained the initial stock to
+the floor and buried it within 6,000 s, so founding ran on the floor's forty and nearly
+failed in one arm. The stomachs' share did not move with the wet deep (4.0% vs 3.6%,
+8.0% vs 8.2%): the contest at the surface, not the supply below (D073's finding, a third
+time). Stable absorptive clades in all four. **The question to the owner:** adopt the
+vent shape (influx at the vent's base, D067's vent on, matter sink 0.02, burial 0.01)
+and choose the dose — 0.6/s as screened, 0.6/s with burial 0.02, or 0.3/s. Recommended:
+the screened dose for the 0.01 confirmation, five seeds, 30,000 s, the ceiling as the
+censor; the dose corrected on that reading. The surface shape is not recommended.
 
 ### D075
 
