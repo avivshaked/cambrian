@@ -3749,3 +3749,14 @@ box, the founding minimum, per-patch populations, contacts, the stock's slope). 
 the 0.01 confirmation on five seeds under D063 as amended; that world, if it holds, is
 the reference world, and the movement round and the predation proposal run on it.
 **D074's dose** is set by this screen, not by 0061's reading alone.
+
+**Rule 4 amended before the screen (2026-09-05, the build's measurement):** "restored at
+no more than the founder sink rate" was the proposal's error — the founder sink is ~2 mm/s
+and the plume lifts at 50 mm/s, so the boundary as written left 1,634 of 2,245 bodies
+parked at the waterline (`fp-smoke`). The rule is now the physics: **out of the water a
+body feels its whole weight** (no buoyant support above y = 0; the drag model still damps
+the fall to about a metre a second), and the mirror below the floor as a placeholder for a
+real sea bed. With it, `above` reads 0 at every sample and the same world sits at −8 m
+(`fp-smoke2`). A founder placed exactly on the floor now bounces at ~1 m/s in the first
+seconds, so `bestSpeed` in a shared world's founding is not locomotion; founding a metre off
+the floor, or a real floor collider, is the fix and is the owner's.

@@ -75,4 +75,21 @@ boundary, 0.02) and 0061's five seeds at 0.01. Launcher `scratch/launch-r25.ps1`
 
 ## Launch
 
-Appended below.
+**Amendment before launch.** The build's own smoke (`fp-smoke`) showed rule 4 as the
+proposal wrote it — restoring at no more than the founder sink rate — leaves 1,634 of
+2,245 bodies parked at the waterline: the founder sink is ~2 mm/s and the plume lifts at
+50 mm/s. The rule was corrected to the physics before anything was launched (D077's
+amendment note; commit `78cb35c`): out of the water a body feels its whole weight, damped
+by the drag model to about a metre a second. The re-run smoke reads `above` 0 at every
+sample and the population at −8 m where the tiled world sits at −14 m. Two caveats the
+build recorded: a founder placed exactly on the floor bounces at ~1 m/s in the first
+seconds, so `max m/s` in founding is not locomotion; and one patch ran thin (p3 = 1 at
+t=3,000 in the smoke) — the plume's doing, read here as M5's per-patch columns. The
+predictions stand as written.
+
+Launched 2026-09-06 ~00:20 on workers 2–6 at commit `78cb35c`, `simHash c27c23c0aa3b0b9e`,
+`-ExpectSimHash` on each; every manifest reads that hash, `gitDirty false`, `status
+running`. Headers verified as V1 on all five: `dt=0.02`, `space shared 4x10x10 m, depth
+60, wrap`, `surface restore 1`, `area 400`, `matter in 0.6/s at vent` (`0.3/s` on the `h`
+arms), `burial 0.01/s`, `from 1/m3` (`0.25/m3` on `r25q-s2`), the vent tokens. Monitor
+running. Results appended below.
