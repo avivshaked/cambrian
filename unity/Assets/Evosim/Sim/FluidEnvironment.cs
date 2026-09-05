@@ -285,15 +285,28 @@ namespace Evosim.Sim
             // ---- apply (main thread)
             float excessDensity = Config.TissueExcessDensity;
 
-            // D077's restoring boundary, read once per Apply rather than per part. The magnitude
-            // is the *configured* excess density and not the size-scaled one a body actually
-            // feels: FluidConfig.NeutralBodyVolume makes a small body neutral, and a restoring
-            // force scaled the same way would be zero for exactly the founder-sized bodies that
-            // most need bringing back — the surface would still be a ratchet for everything under
-            // the neutral volume. This is the world's rule about its own boundary, not a property
-            // of the body at it. See FluidConfig.SurfaceRestoringFraction.
+            // D077's restoring boundary, read once per Apply rather than per part.
+            //
+            // The magnitude is the body's *whole* weight, not its excess over the water it
+            // displaces. Above the waterline there is no water: the upthrust that makes a body
+            // very nearly weightless in this world is simply gone, and what is left is mass x g.
+            // The net density that expresses that is PhenotypeBuilder.DensityKgPerM3, because the
+            // force below is netDensity x (mass / DensityKgPerM3) x g — so passing the water's
+            // own density back in recovers the full weight exactly. The first build read D077
+            // rule 4's "restore" as the founder sink rate, ~2 mm/s; the vent's plume lifts at
+            // 50 mm/s, twenty-eight times harder, and the arm measured the surface still
+            // ratcheting with the rule on (logbook/0065, scratch/footprint-build-report.md).
+            // The owner's ruling of 2026-09-05: the spec's strength was the error, and the honest
+            // physics is a body out of the water falling under its own weight.
+            //
+            // Not the *size-scaled* excess a body actually feels in water either, and for the
+            // same reason twice over: FluidConfig.NeutralBodyVolume makes a small body exactly
+            // neutral, and a boundary scaled that way would be zero for precisely the
+            // founder-sized bodies that most need bringing back. This is the world's rule about
+            // its own boundary, not a property of the body at it.
+            // See FluidConfig.SurfaceRestoringFraction.
             float restoringFraction = Config.SurfaceRestoringFraction;
-            float restoringDensity = restoringFraction * excessDensity;
+            float restoringDensity = restoringFraction * PhenotypeBuilder.DensityKgPerM3;
 
             for (int c = 0; c < creatures.Count; c++)
             {
@@ -465,23 +478,33 @@ namespace Evosim.Sim
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Above y = 0, a body that is not already sinking is given
-        /// <paramref name="restoringDensity"/> — a downward net density, so it falls back at no
-        /// more than the terminal rate a bare body sinks at. Below −D, a body that is not already
-        /// rising is given the mirror. A body already heading back into the water is left alone in
-        /// both cases: the boundary restores, it does not hold.
+        /// Above y = 0 a body feels at least <paramref name="restoringDensity"/> downward, and
+        /// the call site sets that to the water's own density times
+        /// <see cref="FluidConfig.SurfaceRestoringFraction"/> — which is the body's full weight,
+        /// because out of the water there is no upthrust left to cancel it. At a fraction of 1 a
+        /// body above the line falls at g, damped only by §5.2's drag, and reaches the surface in
+        /// under a second from any height this world produces. Below −D it feels the mirror.
         /// </para>
         /// <para>
-        /// <b>"Not already sinking" includes a body with exactly zero net density, and that is the
-        /// case the rule exists for.</b> D064's <c>NeutralBodyVolume</c> makes every body under
+        /// <b>The floor's half is a placeholder for a real floor.</b> A sea bed is solid: it
+        /// stops a body, it does not fling it back with the weight it arrived with. Nothing in
+        /// this build models contact with the ground, so the cheapest rule that keeps a body in
+        /// the world is the surface's rule with its sign flipped, and that is what this is. It
+        /// makes −D a stiff bouncer rather than a bed, and it should be replaced by a collider
+        /// the day the floor becomes somewhere a creature can rest.
+        /// </para>
+        /// <para>
+        /// <b>The rule catches a body with exactly zero net density, and that is the case it
+        /// exists for.</b> D064's <c>NeutralBodyVolume</c> makes every body under
         /// that volume exactly neutral, and the reference world sets it at 0.25 m³ — most of the
         /// population. A rule written as <c>netDensity &lt; 0</c> would leave every one of those
         /// bodies untouched above the waterline: carried over the top by the vent's plume, coasting
         /// to a stop, and staying there forever, which is precisely the ratchet logbook/0061 found
         /// and D077 rule 4 was ruled to close. Measured, in the first <c>fp-smoke</c> arm at
         /// <c>&lt;</c>: 2,055 of 2,227 living creatures above the surface at t = 3,000, mean height
-        /// +0.8 m. The bar is therefore <c>&lt;=</c>, which is D077's own wording ("above y = 0 …
-        /// a body is restored") rather than a specialisation of it.
+        /// +0.8 m. The rule is therefore unconditional above the line, which is D077's own
+        /// wording ("above y = 0 … a body is restored") rather than a specialisation of it, and
+        /// the <c>&lt;=</c> at y = 0 keeps the neutral body in the clamp rather than out of it.
         /// </para>
         /// <para>
         /// <b>At y = 0 exactly this is D050's clamp</b>, so a neutral body floating at the
@@ -505,9 +528,14 @@ namespace Evosim.Sim
             // the smoke that tests it. The two agree by construction.
             if (!(restoringDensity > 0f)) return netDensity < 0f && heightY >= 0f ? 0f : netDensity;
 
-            if (netDensity <= 0f && heightY > 0f) return restoringDensity;
+            // Above the line, at least the restoring density downward — never less than the
+            // body would have felt in water. Mathf.Max rather than a return, so that a body
+            // that is already heavy is not *slowed* by emerging: air offers less upthrust than
+            // water, never more, and the rule has to be monotone in netDensity or a body at
+            // +0.001 kg/m3 falls five hundred times slower than the neutral one beside it.
+            if (heightY > 0f) return Mathf.Max(netDensity, restoringDensity);
             if (netDensity <= 0f && heightY == 0f) return 0f;
-            if (netDensity >= 0f && heightY < -worldDepthMetres) return -restoringDensity;
+            if (heightY < -worldDepthMetres) return Mathf.Min(netDensity, -restoringDensity);
 
             return netDensity;
         }

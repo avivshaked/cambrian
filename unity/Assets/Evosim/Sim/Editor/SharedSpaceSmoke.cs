@@ -34,10 +34,11 @@ namespace Evosim.Sim.EditorTools
     /// </para>
     /// <para>
     /// <b>The excess density is deliberately not the reference world's.</b> At 0.02 kg/m³ a body
-    /// sinks at under 2 mm/s and would take four minutes of simulated time to climb back half a
-    /// metre — a boundary test that ran for twenty seconds and saw nothing would be measuring its
-    /// own patience. 0.5 kg/m³ puts the same rule on a timescale a smoke can watch, and Part 1 is
-    /// what checks the rule itself, at any density.
+    /// sinks at under 2 mm/s and drifts nowhere in twenty seconds, so a box test at that density
+    /// would be measuring its own patience rather than the world's rules. A higher one puts
+    /// ordinary sinking on a timescale a smoke can watch. The restoring boundary itself no longer
+    /// depends on it at all — since the 2026-09-05 ruling it pushes at the body's whole weight —
+    /// and Part 1 checks that rule on its own, at any density.
     /// </para>
     /// </remarks>
     public static class SharedSpaceSmoke
@@ -70,15 +71,14 @@ namespace Evosim.Sim.EditorTools
         /// How near the floor a body pushed under it has to end up, metres.
         /// </summary>
         /// <remarks>
-        /// <b>The two boundaries are not symmetric, and the reason is inertia rather than the
-        /// rule.</b> Above the surface both a buoyant body (restored) and a heavy one (its own
-        /// weight) are pushed the same way, so a body pushed up crosses y = 0 and keeps going
-        /// down: it returns and stays. Below the floor the sign flips at the boundary itself — a
-        /// heavy body is pushed up while it is under −D and pulled down the moment it is over it —
-        /// so −D is an equilibrium a body oscillates about, damped only by §5.2's drag. Measured
-        /// here: an amplitude of order two tenths of a metre at 2 kg/m³, with the sample landing
-        /// wherever in the cycle step 2,000 falls. What the rule promises is that the body is
-        /// <i>held</i> at the floor, not that it is at rest on it, so that is what is asserted.
+        /// <b>The floor is a bouncer, not a bed.</b> Under −D a body is pushed up by its whole
+        /// weight; the moment it is over −D that force stops and the water it is in is very
+        /// nearly neutral, so it coasts up, decelerating on drag alone, and settles somewhere
+        /// above the floor rather than on it. This bound is what "back in the world and staying
+        /// there" is measured against; the excursion below the floor at the end of the run should
+        /// be zero, and the band is here so that a body caught mid-crossing is not read as a
+        /// failure. The floor's rule is a placeholder for a real collider — see
+        /// <c>FluidConfig.SurfaceRestoringFraction</c>.
         /// </remarks>
         private const float FloorBandMetres = 0.5f;
 
@@ -100,13 +100,16 @@ namespace Evosim.Sim.EditorTools
         private const int Founders = 200;
 
         /// <summary>
-        /// See the class remarks: fast enough that a half-metre return happens inside the run.
+        /// See the class remarks: fast enough that a body <i>settles</i> inside the run.
         /// </summary>
         /// <remarks>
         /// D048's own calibration table gives 0.0089 m/s at 0.1 kg/m³ and is linear at these
-        /// speeds, so this is a fifth of a metre a second for a founder-shaped body — and the
-        /// slowest body measured in this smoke still covers four tenths of a metre in the eighteen
-        /// seconds left after the displacement, against a quarter-metre displacement.
+        /// speeds, so this is a fifth of a metre a second for a founder-shaped body. It no longer
+        /// sets how fast a displaced body comes home — since the 2026-09-05 ruling the boundary
+        /// pushes at the body's whole weight, which is three orders of magnitude larger and
+        /// returns a body in well under a second — but it is still what decides where a body
+        /// drifts once it is back in the water, and a world in which nothing sinks at all would
+        /// make the box's other assertions vacuous.
         /// </remarks>
         private const float ExcessDensity = 2f;
 
@@ -154,54 +157,68 @@ namespace Evosim.Sim.EditorTools
             report.AppendLine();
 
             const float depth = 60f;
-            const float excess = 0.02f;
+
+            // The restoring density is now the water's own density times the fraction — a body
+            // out of the water feels mass x g, so the net density that expresses it is the one
+            // the mass was assigned with. 1,000 kg/m3 is a fraction of 1; the pure function does
+            // not care what the number means, but the cases below are only honest at the scale
+            // the call site actually passes.
+            const float weight = 1000f;
 
             bool ok = true;
 
             // Off is off: at fraction 0 the restoring density is 0, and every case has to return
             // exactly what D050's clamp returns — negative net density zeroed at or above the
             // surface, everything else untouched.
-            ok &= Check(report, "off, buoyant above the line  -> 0 (D050)",
+            ok &= Check(report, "off, buoyant above the line   -> 0 (D050)",
                 FluidEnvironment.Restore(-0.5f, 4f, 0f, depth), 0f);
-            ok &= Check(report, "off, buoyant at the line     -> 0 (D050)",
+            ok &= Check(report, "off, buoyant at the line      -> 0 (D050)",
                 FluidEnvironment.Restore(-0.5f, 0f, 0f, depth), 0f);
-            ok &= Check(report, "off, buoyant below the line  -> unchanged",
+            ok &= Check(report, "off, buoyant below the line   -> unchanged",
                 FluidEnvironment.Restore(-0.5f, -1f, 0f, depth), -0.5f);
-            ok &= Check(report, "off, heavy below the floor   -> unchanged",
+            ok &= Check(report, "off, heavy below the floor    -> unchanged",
                 FluidEnvironment.Restore(0.5f, -80f, 0f, depth), 0.5f);
 
-            // On: above the surface a body that would rise is pushed down at the sink density,
-            // below the floor a body that would sink is pushed up at the same magnitude, and the
-            // point they share is D050's clamp.
-            ok &= Check(report, "on,  buoyant above the line  -> +f x excess (down)",
-                FluidEnvironment.Restore(-0.5f, 4f, excess, depth), excess);
-            ok &= Check(report, "on,  buoyant at the line     -> 0 (continuity with D050)",
-                FluidEnvironment.Restore(-0.5f, 0f, excess, depth), 0f);
-            ok &= Check(report, "on,  buoyant below the line  -> unchanged",
-                FluidEnvironment.Restore(-0.5f, -1f, excess, depth), -0.5f);
-            ok &= Check(report, "on,  heavy below the floor   -> -f x excess (up)",
-                FluidEnvironment.Restore(0.5f, -80f, excess, depth), -excess);
-            ok &= Check(report, "on,  heavy at the floor      -> unchanged",
-                FluidEnvironment.Restore(0.5f, -60f, excess, depth), 0.5f);
-            ok &= Check(report, "on,  heavy above the line    -> unchanged (already coming back)",
-                FluidEnvironment.Restore(0.5f, 4f, excess, depth), 0.5f);
-            ok &= Check(report, "on,  buoyant under the floor -> unchanged (already coming back)",
-                FluidEnvironment.Restore(-0.5f, -80f, excess, depth), -0.5f);
+            // On: above the surface a body feels its whole weight downward, below the floor the
+            // mirror upward, and the one point the two rules share is D050's clamp.
+            ok &= Check(report, "on,  buoyant above the line   -> +f x weight (down)",
+                FluidEnvironment.Restore(-0.5f, 4f, weight, depth), weight);
+            ok &= Check(report, "on,  buoyant at the line      -> 0 (continuity with D050)",
+                FluidEnvironment.Restore(-0.5f, 0f, weight, depth), 0f);
+            ok &= Check(report, "on,  buoyant below the line   -> unchanged",
+                FluidEnvironment.Restore(-0.5f, -1f, weight, depth), -0.5f);
+            ok &= Check(report, "on,  heavy below the floor    -> -f x weight (up)",
+                FluidEnvironment.Restore(0.5f, -80f, weight, depth), -weight);
+            ok &= Check(report, "on,  heavy at the floor       -> unchanged",
+                FluidEnvironment.Restore(0.5f, -60f, weight, depth), 0.5f);
 
-            // Half a fraction is half a restoring force: the knob is a fraction of the sink rate
-            // and not a switch.
-            ok &= Check(report, "half strength above the line -> half",
-                FluidEnvironment.Restore(-0.5f, 4f, 0.5f * excess, depth), 0.5f * excess);
+            // Monotone, which is the whole reason the rule is a max and not a return. A body
+            // already sinking above the line is out of the water too, and it does not get to
+            // fall five hundred times slower than the neutral one beside it because its own
+            // excess density happened to be positive. It falls at its weight, or at more than
+            // its weight if it somehow had more.
+            ok &= Check(report, "on,  heavy above the line     -> +f x weight, not its excess",
+                FluidEnvironment.Restore(0.5f, 4f, weight, depth), weight);
+            ok &= Check(report, "on,  heavier than its weight  -> unchanged (never reduced)",
+                FluidEnvironment.Restore(2f * weight, 4f, weight, depth), 2f * weight);
+            ok &= Check(report, "on,  buoyant under the floor  -> -f x weight, not its lift",
+                FluidEnvironment.Restore(-0.5f, -80f, weight, depth), -weight);
+            ok &= Check(report, "on,  lighter than its weight  -> unchanged (never reduced)",
+                FluidEnvironment.Restore(-2f * weight, -80f, weight, depth), -2f * weight);
+
+            // Half a fraction is half the weight: the knob is a fraction and not a switch.
+            ok &= Check(report, "half strength above the line  -> half",
+                FluidEnvironment.Restore(-0.5f, 4f, 0.5f * weight, depth), 0.5f * weight);
 
             // The case D064's neutral volume makes the common one, and the one the first
             // fp-smoke arm failed on: a body with exactly zero net density is not "already
             // coming back", it is stuck, and the boundary has to move it.
-            ok &= Check(report, "on,  neutral above the line   -> +f x excess (down)",
-                FluidEnvironment.Restore(0f, 4f, excess, depth), excess);
-            ok &= Check(report, "on,  neutral below the floor  -> -f x excess (up)",
-                FluidEnvironment.Restore(0f, -80f, excess, depth), -excess);
+            ok &= Check(report, "on,  neutral above the line   -> +f x weight (down)",
+                FluidEnvironment.Restore(0f, 4f, weight, depth), weight);
+            ok &= Check(report, "on,  neutral below the floor  -> -f x weight (up)",
+                FluidEnvironment.Restore(0f, -80f, weight, depth), -weight);
             ok &= Check(report, "on,  neutral at the line      -> 0 (continuity with D050)",
-                FluidEnvironment.Restore(0f, 0f, excess, depth), 0f);
+                FluidEnvironment.Restore(0f, 0f, weight, depth), 0f);
             ok &= Check(report, "off, neutral above the line   -> 0 (D050)",
                 FluidEnvironment.Restore(0f, 4f, 0f, depth), 0f);
             ok &= Check(report, "off, neutral below the floor  -> unchanged",
@@ -474,7 +491,7 @@ namespace Evosim.Sim.EditorTools
                 // count that made it all the way inside is a reading rather than a bar.
                 report.AppendLine(
                     "- " + returnedDown + " of " + pushedDown.Count +
-                    " pushed below are fully inside; the rest are oscillating about the floor");
+                    " pushed below are fully inside; any remainder is still crossing back");
 
                 ok &= Within(report, "everything pushed below is held at the floor",
                     worstDown, FloorBandMetres);

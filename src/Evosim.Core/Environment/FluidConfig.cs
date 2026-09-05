@@ -136,9 +136,9 @@ namespace Evosim.Core
         public float NeutralBodyVolume { get; set; }
 
         /// <summary>
-        /// D077. How hard the water pushes a body back into the world at the top and the bottom,
-        /// as a fraction of <see cref="TissueExcessDensity"/>. 0 is D050's clamp exactly — every
-        /// run before D077, bit for bit.
+        /// D077. How hard the world pushes a body back at the top and the bottom, as a fraction
+        /// of the body's own weight. 1 is a body out of the water falling at g; 0 is D050's clamp
+        /// exactly — every run before D077, bit for bit.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -146,21 +146,38 @@ namespace Evosim.Core
         /// body's <i>upward</i> net force at y = 0, which keeps a floater at the waterline but does
         /// nothing to a body that arrived above it with momentum of its own — the vent's plume
         /// carried round 24's populations over the line and nothing brought them back
-        /// (logbook/0061). Above 0 this gives such a body a downward net density of
-        /// <c>f × TissueExcessDensity</c>, so it falls back at no more than the rate a bare body
-        /// sinks; below <c>-WorldDepthMetres</c> a body with positive net density gets the mirror
-        /// and rises at no more than the same rate. At y = 0 exactly the clamp is D050's, so a
-        /// floating body still floats and the rule is continuous with the one it extends.
+        /// (logbook/0061). Above y = 0 this gives such a body <c>f ×</c> its full weight
+        /// downward — <i>mass × g</i>, with no buoyancy term at all, because above the waterline
+        /// there is no water to displace and the upthrust that makes a body near-weightless in
+        /// this world is simply gone. Drag still damps the fall (§5.2), so what it reaches is a
+        /// terminal speed of order a metre a second rather than free fall. At y = 0 exactly the
+        /// clamp is D050's, so a floating body still floats and the rule is continuous with the
+        /// one it extends.
         /// </para>
         /// <para>
-        /// <b>The configured excess density and not the size-scaled one a body actually feels.</b>
-        /// <see cref="NeutralBodyVolume"/> makes a small body neutral, and a restoring force scaled
-        /// the same way would be zero for exactly the founder-sized bodies that most need bringing
-        /// back — the surface would still be a ratchet for everything below the neutral volume.
-        /// This is the world's rule about its own boundary, not a property of the body at it.
+        /// <b>The first build read the rule as the founder <i>sink</i> rate and it was too weak
+        /// to work.</b> That is about 2 mm/s; D067's vent lifts at 50 mm/s, twenty-eight times
+        /// harder, and the arm measured 1,634 of 2,245 creatures still above the line at
+        /// t = 3,000 with the rule on. Ruled by the owner on 2026-09-05: the strength was the
+        /// spec's error, not the measurement's.
         /// </para>
         /// <para>
-        /// ⚠ Unmeasured (§5A.10), like the density it is denominated in.
+        /// <b>Below <c>-WorldDepthMetres</c> the mirror, and that half is a placeholder.</b> A
+        /// body under the floor is pushed up by <c>f ×</c> its weight, which keeps it in the
+        /// world but makes the floor a stiff bouncer rather than a bed to rest on. A real sea
+        /// floor is a collider; nothing in this build models one, and this is the cheapest rule
+        /// that keeps the world closed until something does.
+        /// </para>
+        /// <para>
+        /// <b>Weight, and not the size-scaled excess a body actually feels in water.</b>
+        /// <see cref="NeutralBodyVolume"/> makes a small body neutral, and a restoring force
+        /// scaled that way would be zero for exactly the founder-sized bodies that most need
+        /// bringing back — the surface would still be a ratchet for everything below the neutral
+        /// volume. This is the world's rule about its own boundary, not a property of the body
+        /// at it.
+        /// </para>
+        /// <para>
+        /// ⚠ Unmeasured (§5A.10).
         /// <c>EVOSIM_SURFACE_RESTORE</c> in the header. It is a separate knob from
         /// <see cref="RunConfig.SharedSpace"/> deliberately: the boundary is a vertical rule and
         /// can be read alone.
