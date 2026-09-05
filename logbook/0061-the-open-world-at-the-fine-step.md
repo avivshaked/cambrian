@@ -147,7 +147,13 @@ the stomachs' share ran 0.4–10.6% across seeds on nothing but the seed. Two wo
 options for the owner: make the region above the waterline restoring (a body above y =
 0 gets its gravity back until it is under), or stop the plume short of the surface so it
 spreads under the film. Either is a per-step change and a butterfly; the record's replay
-is unaffected only at the default.
+is unaffected only at the default. The spread says how much of each population is
+up there: at the last sample seeds 2 and 5 read mean height +1.2 and +1.5 m with a
+standard deviation of 0.85 and 0.24 m — the whole population above the waterline, to
+within a body length — while seeds 1, 3 and 4 read −1.4, +0.8 and +0.2 m with
+deviations of 6–8 m, a population split between the surface and the deep, a handful
+below the floor. A column counting bodies above y = 0 is specified with the fix
+(`scratch/surface-spec.md`), so the next round reads this directly.
 
 *The goal rule.* Three seeds hold stable, connected absorptive clades of 90–267 through
 the last two lifetimes, which is what D063 asks; two do not. The record notes the
