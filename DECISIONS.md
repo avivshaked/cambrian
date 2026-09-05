@@ -99,6 +99,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · **adopted 2026-09-05 in the vent shape at 0.6/s (owner); confirmation at 0.01 (logbook/0061): 3 of 5 at the threshold, not round 18's 4; the stock still grows at the dose and the plume lifts every population to the waterline — surface fix and dose correction put to the owner before re-confirming** |
 | [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
 | [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · **cost measured 2026-09-05 (logbook/0064): none — shared/tiled 0.88–1.12×, real time to ~2,900 bodies; the constraints are packing and a boundary rule** · the footprint and predation rules follow as proposals |
+| [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · building (`scratch/footprint-spec.md`) · screen at 0.02 then confirmation at 0.01 |
 
 ---
 
@@ -3709,3 +3710,42 @@ step is 56% our drag loop, 33% the solver. The constraints are elsewhere: **pack
 (2,000 founders do not fit in today's 10 × 10 × 60 m; 20 × 20 does) and **a horizontal
 boundary rule** (bodies leave an unbounded box on the current in seconds). The footprint
 proposal decides both; the throughput objection is closed.
+
+### D077
+
+**The footprint world.** Ruled by the owner 2026-09-05 ("proceed" on
+`fable-propose-footprint.md`, absorbed here and deleted), together with the two rulings
+logbook/0061 put up: the surface fix and the dose.
+
+**The rules.** (1) The box is literal: K = 4 patches of W = 10 m side by side on a ring,
+depth 60 m, `WorldAreaSquareMetres` = 400 (the config's default), which the spike
+(logbook/0064) showed holds 4,000 founder-sized bodies at 17% fill where today's 100 m²
+jams at 2,000. (2) A patch is a region: a creature's patch is read from its root's x each
+metabolic step; the inherited index, the dispersal lottery and the body-transport lottery
+of `EVOSIM_CURRENT_ADVECT` are retired — bodies change patch because water or muscle
+moves them. The fields keep their per-patch structure and their own transport. (3) The
+horizontal boundary is periodic: x around the ring, z across the width, by translating
+the articulation at the seam; seam contacts are unseen and the record says so. Walls and
+a restoring current were rejected. (4) The world gets a top and a bottom: above y = 0 and
+below y = −D a body is restored at no more than the founder sink rate (D050's clamp is
+the y = 0 limit of the rule; D050 asked that every future upward push get this question,
+and the vent's plume did not — 0061). (5) A newborn is placed beside its parent, overlap-
+free, from a dedicated RNG stream; a birth that cannot be placed is a counted *crowded*
+stillbirth. The lattice is retired. (6) Contacts and per-patch populations are counted.
+
+**Why it is one decision.** `WorldAreaSquareMetres` is the sun's aperture and the
+denominator of every density the ecology reads (`scratch/footprint-survey.md`), so the
+number that sets the packing sets every concentration; a separate physical scale factor
+was rejected as the same fiction as tiling in a harder-to-see form. Quadrupling the area
+quadruples the aperture and the initial stock and dilutes the influx, so every rule tuned
+since D048 is re-read once, in one screen, with 0061's dose correction and surface fix
+folded in rather than screened three times.
+
+**Build:** everything behind `EVOSIM_SHARED_SPACE` (default off, the record replays byte
+for byte), the restoring boundary behind `EVOSIM_SURFACE_RESTORE` on its own. **Screen:**
+dt 0.02, seeds 2 and 4, influx 0.6 and 0.3, initial stock 1 and 0.25 per m³, read within
+one step (`above`/`below` 0 after founding, mean height below −5 m, no body outside the
+box, the founding minimum, per-patch populations, contacts, the stock's slope). **Then**
+the 0.01 confirmation on five seeds under D063 as amended; that world, if it holds, is
+the reference world, and the movement round and the predation proposal run on it.
+**D074's dose** is set by this screen, not by 0061's reading alone.
