@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  Score a run's connected clade against the goal rule (D063 as amended, DECISIONS.md).
+  Score a run's connected clades against the goal rule (D063 as amended, DECISIONS.md).
 
 .DESCRIPTION
   A port of scratch/clade-score.py (gitignored) into scripts/, per D063's amendment note
@@ -9,56 +9,99 @@
 
   A clade begins at an absorptive birth whose parent did not express the trait (or at an
   absorptive founder, parent id -1); membership follows the parent chain forward while the
-  trait is inherited. Among the clades with a living member at the run's last sample, the
-  one with the most members alive at that sample is scored -- ties keep whichever root was
-  found first while walking birth ids in ascending order (scratch/clade-score.py's own
-  tie-break: it compares only the "alive at end" figure, not the full record, so cons/recent
-  never break a tie). The three original D063 clauses are then asked of that one clade:
-  alive for >= 20 consecutive samples ending at the last sample, >= 10 living members at the
-  last sample, and at least one inherited absorptive birth within the last 20 samples.
+  trait is inherited.
 
-  The two clauses the owner's 2026-09-04 ruling added on top of that are implemented as
-  follows:
+  **Every clade is scored, not only the largest** (2026-09-06; the Sol/GPT review of that
+  night, item 1 of scratch/review-2026-09-06-response.md). D063 asks whether *a* connected
+  clade meets the bar, so the seed PASSES when any clade with a living member at the last
+  sample meets every clause:
 
-  (a) Stability -- the scored clade holds >= 10 living members at every report sample with
-  t >= t_last - 6,000 (the last two lifetimes). Printed as "min last 6,000 s = N" plus a
-  stable/unstable verdict. If no clade has a living member at the last sample, this clause
-  is printed as unread rather than guessed at.
+    1. alive for >= 20 consecutive samples ending at the last sample;
+    2. >= 10 living members at the last sample;
+    3. at least one inherited absorptive birth inside the clade within the last 20 samples;
+    4. stability (2026-09-04 amendment) -- >= 10 living members at every report sample with
+       t >= t_last - 6,000 (the last two lifetimes).
 
-  (b) Producer lineage -- read from the report's own `photo` / `photo inh` columns by
-  header name (present only from the contract-repairs build onward; printed as
-  "photo: column absent" and left unread, not failed, when either is missing). Only the
-  population half of the clause is checked here: `photo inh` >= 10 at the last sample and
-  at every one of the last 20 samples. The amendment's other half -- "a photosynthetic
-  birth in the last 20 samples" -- is NOT checked, because lineage.jsonl rows carry an
-  `abs` (absorptive) and a `jnt` (jointed) flag but no photosynthetic flag to read a birth
-  from; a PASS on this clause is reported as population-only for that reason.
+  Scoring the largest clade alone, as this script did until 2026-09-06, can only ever
+  under-report: a world in which a smaller clade holds the bar was recorded as a failure.
+
+  Output, per arm, is five lines, each prefixed with the arm name so a grep still works:
+
+    <arm>: PASS | ... passing clade ...      (or FAIL | ... best failing clade ...)
+    <arm>: clades with a living member ... | largest: ...
+    <arm>: photo (owner's wording): ...
+    <arm>: photo (>=10, two lifetimes): ...
+    <arm>: photo inh (population column): ...
+
+  The **largest** line is the line this script printed before the change, byte for byte,
+  including its own three-clause "-> clade PASS/fail" token and its stability segment. It is
+  kept so logbook/0054's addendum reproduces: round 18's four passing seeds print minima
+  48 / 41 / 24 / 127 over the last two lifetimes. Read the first line for the verdict; read
+  the second for continuity with the record.
+
+  When no clade passes, the first line names the clade that fails the fewest clauses; ties
+  go to the clade with the most living members at the last sample, then to the lowest root
+  id. The largest clade is chosen exactly as scratch/clade-score.py chose it -- strictly
+  greater "alive at end" while walking clades in insertion order, so ties keep the first
+  root found.
+
+  **The producer clause (D063's (b)) is reported three ways and changes no verdict.** The
+  owner's wording is "an inherited photosynthetic line alive at the end with a
+  photosynthetic birth in the last 20 samples"; the threshold has not been ruled, so all
+  three readings print side by side and the ruling can pick one without a rebuild:
+
+  (a) "owner's wording" -- some photosynthetic clade has a living member at the last sample
+      *and* an inherited photosynthetic birth (parent photosynthetic) inside that same clade
+      within the last 20 samples. The "with" in the owner's wording binds the two, so they
+      are asked of one clade; the detail text also prints the world-wide counts, so the
+      looser two-conjunct reading is visible in the same line.
+
+  (b) ">=10, two lifetimes" -- some photosynthetic clade holds >= 10 living members at every
+      sample with t >= t_last - 6,000 *and* has an inherited photosynthetic birth within the
+      last 20 samples. This is the reading the 2026-09-06 review recommended.
+
+  Both (a) and (b) read a `"pho":0|1` field on lineage birth rows (1 when the newborn
+  expresses photosynthesis), written from the Sim build that adds it. Every run recorded
+  before that build has no such field, and both lines then print `flag absent` --
+  "photo lineage: flag absent" -- rather than a failure. The field is found by name
+  anywhere on the row, so its position among `abs`, `jnt` and `pt` does not matter, and a
+  row without it (a death row, or an older birth row) parses normally.
+
+  (c) "photo inh (population column)" -- the population-only reading this script has printed
+      since 2026-09-04, unchanged: the report's `photo inh` column >= 10 at the last sample
+      and at every one of the last 20 samples. Printed as "column absent" on a report
+      written before the contract-repairs build added the columns.
 
   Reads runs/<arm>.md for the sample table -- t (s) is the join key -- and
   runs/<arm>/<newest run>/lineage.jsonl for birth and death events (the newest directory
-  under runs/<arm>/, same convention as stop-arm.ps1 and lineage-invasion.ps1; the python
-  instead takes glob.glob(...)[0], whose order is unspecified -- this only differs from the
-  python if an arm ever has more than one run directory). Every report column this script
-  reads (`inherit`, `photo`, `photo inh`) is looked up by the report's own header row, not
-  by position -- CLAUDE.md's standing warning against positional column reads
-  (logbook/0044). lineage.jsonl can run into the hundreds of MB, so it is streamed line by
-  line and each line is pulled apart with a regex against the fixed field order
-  LineageEvent.ToJson() writes, rather than loaded whole or parsed through ConvertFrom-Json.
-  Both files are opened with FileShare.ReadWrite so a live run's own writer is not disturbed.
+  under runs/<arm>/, same convention as stop-arm.ps1 and lineage-invasion.ps1). Every report
+  column this script reads (`inherit`, `photo`, `photo inh`) is looked up by the report's
+  own header row, not by position -- CLAUDE.md's standing warning against positional column
+  reads (logbook/0044). lineage.jsonl can run into the hundreds of MB, so it is streamed
+  line by line and pulled apart with one anchored regex plus two IndexOf lookups, rather
+  than loaded whole or parsed through ConvertFrom-Json. Both files are opened with
+  FileShare.ReadWrite so a live run's own writer is not disturbed.
 
 .PARAMETER Arm
-  One or more arm names (runs/<Arm>.md plus runs/<Arm>/<newest run>/lineage.jsonl).
+  One or more arm names (<RunsRoot>/<Arm>.md plus <RunsRoot>/<Arm>/<newest run>/lineage.jsonl).
+
+.PARAMETER RunsRoot
+  Directory holding the arm reports and arm directories. Defaults to the repository's
+  runs/. The fixture tests under scripts/tests/clade-score/ point it at synthetic runs.
 
 .EXAMPLE
   ./scripts/clade-score.ps1 r18x-s1 r18x-s2 r18x-s3 r18x-s4 r18x-s5
 #>
 param(
     [Parameter(Mandatory, Position = 0, ValueFromRemainingArguments = $true)]
-    [string[]]$Arm
+    [string[]]$Arm,
+
+    [string]$RunsRoot
 )
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
+if (-not $RunsRoot) { $RunsRoot = Join-Path $repo 'runs' }
 
 # ---------------------------------------------------------------------------------------
 # runs/<arm>.md -- the header row ("| t (s) | ..."), by name -> column index, and
@@ -92,18 +135,24 @@ function Read-Report([string]$Path) {
 }
 
 # ---------------------------------------------------------------------------------------
-# lineage.jsonl -- id -> birth record (t, p, k, abs) and id -> death time. Streamed with a
-# StreamReader opened ReadWrite so a live run's own writer is not disturbed (same as
-# scripts/lineage-invasion.ps1); parsed with a regex against the fixed field order
-# LineageEvent.ToJson() writes -- e, t, id, p, k, g, s, abs, jnt, pt for a birth; e, t, id, c
-# for a death -- instead of ConvertFrom-Json, which is too slow at hundreds of MB.
+# lineage.jsonl -- id -> birth record (t, p, k, abs, pho) and id -> death time. Streamed
+# with a StreamReader opened ReadWrite so a live run's own writer is not disturbed (same as
+# scripts/lineage-invasion.ps1).
+#
+# One anchored regex reads the fields whose order LineageEvent.ToJson() fixes at the head
+# of the row -- e, t, id, then p and k on a birth. `abs` and `pho` are then found by name
+# with IndexOf, not by position: `pho` is a later addition and the build is free to write
+# it anywhere among abs/jnt/pt, and a regex that assumed a position would silently drop
+# every birth row the day the field moved. HasPho records whether the flag was seen at all,
+# which is what separates "no photosynthetic lineage" from "this run predates the flag".
 # ---------------------------------------------------------------------------------------
 function Read-Lineage([string]$Path) {
     $birthOut = @{}
     $deathOut = @{}
+    $sawPho = $false
     $fs = [System.IO.File]::Open($Path, 'Open', 'Read', 'ReadWrite')
     $reader = New-Object System.IO.StreamReader($fs)
-    $rx = [regex]'"e":"(?<e>[bd])","t":(?<t>[0-9.]+),"id":(?<id>\d+)(?:,"p":(?<p>-?\d+),"k":"(?<k>[a-z])","g":\d+,"s":\d+,"abs":(?<abs>[01]))?'
+    $rx = [regex]'"e":"(?<e>[bd])","t":(?<t>[0-9.]+),"id":(?<id>\d+)(?:,"p":(?<p>-?\d+),"k":"(?<k>[a-z])")?'
     try {
         while ($null -ne ($line = $reader.ReadLine())) {
             $m = $rx.Match($line)
@@ -111,13 +160,25 @@ function Read-Lineage([string]$Path) {
             $id = [int64]$m.Groups['id'].Value
             $t = [double]$m.Groups['t'].Value
             if ($m.Groups['e'].Value -eq 'b') {
-                if ($m.Groups['p'].Success) {
-                    $birthOut[$id] = [pscustomobject]@{
-                        t   = $t
-                        p   = [int64]$m.Groups['p'].Value
-                        k   = $m.Groups['k'].Value
-                        abs = [int]$m.Groups['abs'].Value
-                    }
+                if (-not $m.Groups['p'].Success) { continue }
+
+                $abs = 0
+                $ia = $line.IndexOf('"abs":')
+                if ($ia -ge 0) { $abs = [int]::Parse($line.Substring($ia + 6, 1)) }
+
+                $pho = 0
+                $ip = $line.IndexOf('"pho":')
+                if ($ip -ge 0) {
+                    $pho = [int]::Parse($line.Substring($ip + 6, 1))
+                    $sawPho = $true
+                }
+
+                $birthOut[$id] = [pscustomobject]@{
+                    t   = $t
+                    p   = [int64]$m.Groups['p'].Value
+                    k   = $m.Groups['k'].Value
+                    abs = $abs
+                    pho = $pho
                 }
             } else {
                 $deathOut[$id] = $t
@@ -127,7 +188,7 @@ function Read-Lineage([string]$Path) {
         $reader.Close()
         $fs.Close()
     }
-    return @{ Birth = $birthOut; Death = $deathOut }
+    return @{ Birth = $birthOut; Death = $deathOut; HasPho = $sawPho }
 }
 
 # Count of $Members alive at time $T: born by $T, not yet dead (or dead only after $T).
@@ -141,19 +202,58 @@ function Get-AliveAt($Members, [double]$T, $Birth, $Death) {
     return $c
 }
 
-# Connected clades from $Birth: root -> ordered List[int64] of member ids. Both dictionaries
-# are [ordered] because the caller's tie-break (Get-AliveAt equal at the last sample) keeps
-# whichever clade is iterated first, and that order must match scratch/clade-score.py's dict
-# insertion order -- ascending birth-id order of the first absorptive descendant reached.
-function Get-Clades($Birth) {
+# Alive count of $Members at every sample, in one pass over the members rather than one
+# pass per sample: each member contributes a contiguous run of samples (born by t, dead
+# after t), so a difference array plus a prefix sum gives the whole series. The predicate is
+# Get-AliveAt's, exactly -- this is the same numbers, computed in O(members log samples)
+# instead of O(members x samples), which is what makes scoring every clade affordable.
+function Get-AliveSeries($Members, [int[]]$Samples, $Birth, $Death) {
+    $n = $Samples.Count
+    $diff = New-Object 'int[]' ($n + 1)
+    foreach ($m in $Members) {
+        $bt = $Birth[$m].t
+        $dt = if ($Death.ContainsKey($m)) { $Death[$m] } else { 1e12 }
+
+        # First index with Samples[i] >= bt (the member is alive from here).
+        $lo = 0; $hi = $n
+        while ($lo -lt $hi) {
+            $mid = [int][math]::Floor(($lo + $hi) / 2)
+            if ($Samples[$mid] -lt $bt) { $lo = $mid + 1 } else { $hi = $mid }
+        }
+        $iLo = $lo
+
+        # First index with Samples[i] >= dt (exclusive end: dead at and after here).
+        $lo = 0; $hi = $n
+        while ($lo -lt $hi) {
+            $mid = [int][math]::Floor(($lo + $hi) / 2)
+            if ($Samples[$mid] -lt $dt) { $lo = $mid + 1 } else { $hi = $mid }
+        }
+        $iHi = $lo
+
+        if ($iHi -gt $iLo) { $diff[$iLo]++; $diff[$iHi]-- }
+    }
+    $out = New-Object 'int[]' $n
+    $run = 0
+    for ($i = 0; $i -lt $n; $i++) { $run += $diff[$i]; $out[$i] = $run }
+    return , $out
+}
+
+# Connected clades from $Birth over one expressed trait ('abs' or 'pho'): root -> ordered
+# List[int64] of member ids. A clade begins at a birth expressing the trait whose parent did
+# not express it, or at a founder (parent id -1) that expresses it; membership follows the
+# parent chain forward while the trait is inherited. Both dictionaries are [ordered] because
+# the largest-clade tie-break keeps whichever clade is iterated first, and that order must
+# match scratch/clade-score.py's dict insertion order -- ascending birth-id order of the
+# first trait-expressing descendant reached.
+function Get-Clades($Birth, [string]$Trait) {
     $ids = $Birth.Keys | Sort-Object
     $root = [ordered]@{}
     foreach ($i in $ids) {
         $b = $Birth[$i]
-        if ($b.abs -ne 1) { continue }
+        if ($b.$Trait -ne 1) { continue }
         $p = $b.p
         $pb = if ($Birth.ContainsKey($p)) { $Birth[$p] } else { $null }
-        if ($p -eq -1 -or $null -eq $pb -or $pb.abs -ne 1) {
+        if ($p -eq -1 -or $null -eq $pb -or $pb.$Trait -ne 1) {
             $root[$i] = $i
         } else {
             $root[$i] = if ($root.Contains($p)) { $root[$p] } else { $p }
@@ -168,108 +268,229 @@ function Get-Clades($Birth) {
     return $clades
 }
 
+# Inherited births inside $Members within the last 2,000 s (D063's "last 20 samples", at the
+# report's 100 s sampling interval) -- the newborn expresses $Trait and so did its parent.
+# O(members), so it is cheap enough to ask of every clade before deciding which to measure.
+function Get-RecentInherited($Members, [double]$Last, $Birth, [string]$Trait) {
+    $recent = 0
+    foreach ($m in $Members) {
+        $bm = $Birth[$m]
+        if ($bm.t -gt ($Last - 2000) -and $bm.p -ne -1) {
+            $pb = if ($Birth.ContainsKey($bm.p)) { $Birth[$bm.p] } else { $null }
+            if ($null -ne $pb -and $pb.$Trait -eq 1) { $recent++ }
+        }
+    }
+    return $recent
+}
+
+# Everything the clauses need about one clade, from one alive-series pass plus one pass over
+# the members' birth records. $Trait selects which flag "inherited" means. Every loop in here
+# is over the sample axis, so it is called only for the handful of clades that survive the
+# cheap O(members) filter above -- a world can carry thousands of dead clades, and measuring
+# each of them across 300 samples is the difference between three seconds and three minutes.
+function Measure-Clade($Members, [int[]]$Samples, $Birth, $Death, [string]$Trait) {
+    $n = $Samples.Count
+    $last = $Samples[$n - 1]
+    $series = Get-AliveSeries $Members $Samples $Birth $Death
+    $atEnd = $series[$n - 1]
+
+    # Consecutive samples with >= 1 alive, counting back from the last sample.
+    $cons = 0
+    for ($i = $n - 1; $i -ge 0; $i--) {
+        if ($series[$i] -ge 1) { $cons++ } else { break }
+    }
+
+    # first sample at which >= 10 were alive, and the minimum alive from there on.
+    $first10 = $null
+    $minSince = $null
+    for ($i = 0; $i -lt $n; $i++) {
+        if ($null -eq $first10 -and $series[$i] -ge 10) { $first10 = $Samples[$i] }
+        if ($null -ne $first10) {
+            if ($null -eq $minSince -or $series[$i] -lt $minSince) { $minSince = $series[$i] }
+        }
+    }
+
+    # Stability (D063 amendment 2026-09-04): the minimum alive over the last two lifetimes.
+    $stabilityMin = $null
+    for ($i = 0; $i -lt $n; $i++) {
+        if ($Samples[$i] -ge ($last - 6000)) {
+            if ($null -eq $stabilityMin -or $series[$i] -lt $stabilityMin) { $stabilityMin = $series[$i] }
+        }
+    }
+
+    $recent = Get-RecentInherited $Members $last $Birth $Trait
+    $firstT = $null
+    foreach ($m in $Members) {
+        $bm = $Birth[$m]
+        if ($null -eq $firstT -or $bm.t -lt $firstT) { $firstT = $bm.t }
+    }
+
+    return [pscustomobject]@{
+        AtEnd = $atEnd; Cons = $cons; Recent = $recent
+        First10 = $first10; MinSince = $minSince; StabilityMin = $stabilityMin
+        FirstT = $firstT; N = $Members.Count; Members = $Members
+    }
+}
+
 foreach ($a in $Arm) {
-    $reportPath = Join-Path $repo "runs/$a.md"
+    $reportPath = Join-Path $RunsRoot "$a.md"
     $report = Read-Report $reportPath
     $header = $report.Header
     $rows = $report.Rows
-    $samples = @($rows.Keys | Sort-Object)
-    $last = $samples[-1]
+    $samples = [int[]]@($rows.Keys | Sort-Object)
+    $last = $samples[$samples.Count - 1]
 
-    $armDir = Join-Path $repo "runs/$a"
+    $armDir = Join-Path $RunsRoot $a
     $runDir = Get-ChildItem -LiteralPath $armDir -Directory -ErrorAction SilentlyContinue |
         Sort-Object Name | Select-Object -Last 1
-    if (-not $runDir) { throw "No run directory under runs/$a." }
+    if (-not $runDir) { throw "No run directory under $armDir." }
     $lineagePath = Join-Path $runDir.FullName 'lineage.jsonl'
 
     $lineage = Read-Lineage $lineagePath
     $birth = $lineage.Birth
     $death = $lineage.Death
 
-    $clades = Get-Clades $birth
+    # -------------------------------------------------------------------------------
+    # Every absorptive clade with a living member at the last sample, against all four
+    # clauses. The largest is tracked separately, on scratch/clade-score.py's own
+    # tie-break (strictly greater "alive at end", first root found wins a tie).
+    # -------------------------------------------------------------------------------
+    $clades = Get-Clades $birth 'abs'
+    $largest = $null
+    $scored = New-Object System.Collections.Generic.List[object]
 
-    $best = $null
     foreach ($rt in $clades.Keys) {
         $mem = $clades[$rt]
-        $atEnd = Get-AliveAt $mem $last $birth $death
-        if ($atEnd -eq 0) { continue }
+        if ((Get-AliveAt $mem $last $birth $death) -eq 0) { continue }
+        $s = Measure-Clade $mem $samples $birth $death 'abs'
 
-        # Consecutive samples with >= 1 alive, counting back from the last sample.
-        $cons = 0
-        for ($si = $samples.Count - 1; $si -ge 0; $si--) {
-            if ((Get-AliveAt $mem $samples[$si] $birth $death) -ge 1) { $cons++ } else { break }
-        }
+        $fails = New-Object System.Collections.Generic.List[string]
+        if ($s.Cons -lt 20) { $fails.Add("streak $($s.Cons) < 20") }
+        if ($s.AtEnd -lt 10) { $fails.Add("alive at end $($s.AtEnd) < 10") }
+        if ($s.Recent -lt 1) { $fails.Add('no inherited absorptive birth in the last 20 samples') }
+        if ($s.StabilityMin -lt 10) { $fails.Add("stability min $($s.StabilityMin) < 10") }
 
-        # Inherited absorptive births within the last 2,000 s (D063's "last 20 samples", at
-        # the report's 100 s sampling interval).
-        $recent = 0
-        foreach ($m in $mem) {
-            $bm = $birth[$m]
-            if ($bm.t -gt ($last - 2000) -and $bm.p -ne -1) {
-                $pb = if ($birth.ContainsKey($bm.p)) { $birth[$bm.p] } else { $null }
-                if ($null -ne $pb -and $pb.abs -eq 1) { $recent++ }
-            }
+        $rec = [pscustomobject]@{
+            Rt = [int64]$rt; Rk = $birth[$rt].k; Stats = $s
+            Fails = $fails; FailCount = $fails.Count
         }
+        $scored.Add($rec)
 
-        $firstT = ($mem | ForEach-Object { $birth[$_].t } | Measure-Object -Minimum).Minimum
-        $rk = $birth[$rt].k
-        $n = $mem.Count
-
-        $ge10 = New-Object System.Collections.Generic.List[int]
-        foreach ($t in $samples) {
-            if ((Get-AliveAt $mem $t $birth $death) -ge 10) { $ge10.Add($t) }
-        }
-        $first10 = if ($ge10.Count -gt 0) { $ge10[0] } else { $null }
-        $minSince = $null
-        if ($ge10.Count -gt 0) {
-            foreach ($t in $samples) {
-                if ($t -ge $ge10[0]) {
-                    $alive = Get-AliveAt $mem $t $birth $death
-                    if ($null -eq $minSince -or $alive -lt $minSince) { $minSince = $alive }
-                }
-            }
-        }
-
-        # Tie-break matches scratch/clade-score.py exactly: strictly-greater "alive at end"
-        # only. Ties keep the first clade found -- cons/recent are never consulted.
-        if ($null -eq $best -or $atEnd -gt $best.AtEnd) {
-            $best = [pscustomobject]@{
-                AtEnd = $atEnd; Cons = $cons; Recent = $recent; Rt = $rt; Rk = $rk
-                FirstT = $firstT; N = $n; First10 = $first10; MinSince = $minSince
-                Members = $mem
-            }
-        }
+        if ($null -eq $largest -or $s.AtEnd -gt $largest.Stats.AtEnd) { $largest = $rec }
     }
 
-    $livingClades = 0
-    foreach ($cladeMembers in $clades.Values) {
-        if ((Get-AliveAt $cladeMembers $last $birth $death) -gt 0) { $livingClades++ }
-    }
+    $livingClades = $scored.Count
 
     if (-not $header.ContainsKey('inherit')) { throw "no 'inherit' column in $reportPath" }
     $inheritAtEnd = $rows[$last][$header['inherit']]
 
-    # ---------------------------------------------------------------------------------
-    # (a) Stability clause (D063 amendment, 2026-09-04): the scored clade holds >= 10
-    # living members at every sample in the last two lifetimes (t >= t_last - 6,000).
-    # ---------------------------------------------------------------------------------
-    if ($null -ne $best) {
-        $stabilityWindow = @($samples | Where-Object { $_ -ge ($last - 6000) })
-        $stabilityMin = $null
-        foreach ($t in $stabilityWindow) {
-            $alive = Get-AliveAt $best.Members $t $birth $death
-            if ($null -eq $stabilityMin -or $alive -lt $stabilityMin) { $stabilityMin = $alive }
-        }
-        $stableVerdict = if ($stabilityMin -ge 10) { 'stable' } else { 'unstable' }
-        $stabilitySeg = "stability: min last 6000 s = $stabilityMin -> $stableVerdict"
+    # -------------------------------------------------------------------------------
+    # Line 1 -- the verdict. PASS if any clade meets every clause. Otherwise the clade
+    # that fails fewest, ties to the most living members at the last sample, then to
+    # the lowest root id, so the choice does not move between runs of the script.
+    # -------------------------------------------------------------------------------
+    $passing = @($scored | Where-Object { $_.FailCount -eq 0 } |
+        Sort-Object @{ Expression = { $_.Stats.AtEnd }; Descending = $true },
+                    @{ Expression = { $_.Rt }; Descending = $false })
+
+    if ($passing.Count -gt 0) {
+        $w = $passing[0]
+        $verdictLine = "{0}: PASS | passing clade: root {1} (kind {2}, born {3}), {4} alive at end, min last 6000 s = {5}, alive-streak {6} samples, inherited births in last 20 samples {7} | {8} of {9} living clades pass | aggregate inherit@end {10}" -f `
+            $a, $w.Rt, $w.Rk, $w.Stats.FirstT, $w.Stats.AtEnd, $w.Stats.StabilityMin,
+            $w.Stats.Cons, $w.Stats.Recent, $passing.Count, $livingClades, $inheritAtEnd
+    } elseif ($scored.Count -gt 0) {
+        $ranked = @($scored | Sort-Object @{ Expression = { $_.FailCount }; Descending = $false },
+                                          @{ Expression = { $_.Stats.AtEnd }; Descending = $true },
+                                          @{ Expression = { $_.Rt }; Descending = $false })
+        $w = $ranked[0]
+        $why = ($w.Fails -join '; ')
+        $verdictLine = "{0}: FAIL | best clade: root {1} (kind {2}, born {3}), {4} alive at end, min last 6000 s = {5}, alive-streak {6} samples, inherited births in last 20 samples {7} | fails {8} of 4: {9} | 0 of {10} living clades pass | aggregate inherit@end {11}" -f `
+            $a, $w.Rt, $w.Rk, $w.Stats.FirstT, $w.Stats.AtEnd, $w.Stats.StabilityMin,
+            $w.Stats.Cons, $w.Stats.Recent, $w.FailCount, $why, $livingClades, $inheritAtEnd
     } else {
-        $stabilitySeg = 'stability: unread (no absorptive clade alive at the last sample)'
+        $verdictLine = "{0}: FAIL | no absorptive clade alive at the last sample | aggregate inherit@end {1}" -f `
+            $a, $inheritAtEnd
     }
 
-    # ---------------------------------------------------------------------------------
-    # (b) Producer-lineage clause (D063 amendment): population half only -- see
-    # .DESCRIPTION for why the birth half cannot be read from lineage.jsonl today.
-    # ---------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------
+    # Line 2 -- the largest clade, in the format this script printed before every clade
+    # was scored, so logbook/0054's addendum reproduces from it. Its "-> clade" token is
+    # still the three original clauses only, with stability as its own segment, exactly
+    # as recorded.
+    # -------------------------------------------------------------------------------
+    if ($null -ne $largest) {
+        $s = $largest.Stats
+        $first10Str = if ($null -eq $s.First10) { 'None' } else { "$($s.First10)" }
+        $minSinceStr = if ($null -eq $s.MinSince) { 'None' } else { "$($s.MinSince)" }
+        $cladeVerdict = if ($s.Cons -ge 20 -and $s.AtEnd -ge 10 -and $s.Recent -ge 1) { 'PASS' } else { 'fail' }
+        $stableVerdict = if ($s.StabilityMin -ge 10) { 'stable' } else { 'unstable' }
+        $stabilitySeg = "stability: min last 6000 s = $($s.StabilityMin) -> $stableVerdict"
+
+        $largestLine = "{0}: clades with a living member at {1}: {2} | largest: root {3} (kind {4}, born {5}), {6} members ever, {7} alive at end, alive-streak {8} samples, first>=10 at {9}, min since {10}, inherited births in last 20 samples {11} -> clade {12} | aggregate inherit@end {13} | {14}" -f `
+            $a, $last, $livingClades, $largest.Rt, $largest.Rk, $s.FirstT, $s.N, $s.AtEnd,
+            $s.Cons, $first10Str, $minSinceStr, $s.Recent, $cladeVerdict, $inheritAtEnd, $stabilitySeg
+    } else {
+        $largestLine = "{0}: clades with a living member at {1}: {2} | no absorptive clade alive at the last sample -> clade unread | aggregate inherit@end {3} | stability: unread (no absorptive clade alive at the last sample)" -f `
+            $a, $last, $livingClades, $inheritAtEnd
+    }
+
+    # -------------------------------------------------------------------------------
+    # Lines 3 and 4 -- the producer clause read from the lineage flag, two ways. Neither
+    # changes the verdict; the owner's ruling picks one.
+    # -------------------------------------------------------------------------------
+    if ($lineage.HasPho) {
+        $phoClades = Get-Clades $birth 'pho'
+        $phoScored = New-Object System.Collections.Generic.List[object]
+        foreach ($rt in $phoClades.Keys) {
+            $mem = $phoClades[$rt]
+            if ((Get-AliveAt $mem $last $birth $death) -eq 0 -and
+                (Get-RecentInherited $mem $last $birth 'pho') -eq 0) { continue }
+            $s = Measure-Clade $mem $samples $birth $death 'pho'
+            $phoScored.Add([pscustomobject]@{ Rt = [int64]$rt; Stats = $s })
+        }
+
+        $phoAlive = @($phoScored | Where-Object { $_.Stats.AtEnd -gt 0 })
+        $phoAliveMax = 0
+        foreach ($c in $phoAlive) { if ($c.Stats.AtEnd -gt $phoAliveMax) { $phoAliveMax = $c.Stats.AtEnd } }
+        $phoRecentTotal = 0
+        foreach ($c in $phoScored) { $phoRecentTotal += $c.Stats.Recent }
+
+        # (a) owner's wording: one clade, alive at the end, with an inherited
+        # photosynthetic birth in the last 20 samples.
+        $ownerHit = @($phoScored | Where-Object { $_.Stats.AtEnd -ge 1 -and $_.Stats.Recent -ge 1 } |
+            Sort-Object @{ Expression = { $_.Stats.AtEnd }; Descending = $true },
+                        @{ Expression = { $_.Rt }; Descending = $false })
+        if ($ownerHit.Count -gt 0) {
+            $h = $ownerHit[0]
+            $ownerSeg = "held -- clade root {0} (born {1}), {2} alive at end, {3} inherited photosynthetic births in the last 20 samples" -f `
+                $h.Rt, $h.Stats.FirstT, $h.Stats.AtEnd, $h.Stats.Recent
+        } else {
+            $ownerSeg = 'failed'
+        }
+        $ownerSeg = "$ownerSeg (world-wide: photosynthetic clades alive at the last sample {0}, largest {1}; inherited photosynthetic births in the last 20 samples {2})" -f `
+            $phoAlive.Count, $phoAliveMax, $phoRecentTotal
+
+        # (b) >= 10 through the last two lifetimes, plus the same recent birth.
+        $tenHit = @($phoScored | Where-Object { $_.Stats.StabilityMin -ge 10 -and $_.Stats.Recent -ge 1 } |
+            Sort-Object @{ Expression = { $_.Stats.StabilityMin }; Descending = $true },
+                        @{ Expression = { $_.Rt }; Descending = $false })
+        if ($tenHit.Count -gt 0) {
+            $h = $tenHit[0]
+            $tenSeg = "held -- clade root {0} (born {1}), min last 6000 s = {2}, {3} alive at end, {4} inherited photosynthetic births in the last 20 samples" -f `
+                $h.Rt, $h.Stats.FirstT, $h.Stats.StabilityMin, $h.Stats.AtEnd, $h.Stats.Recent
+        } else {
+            $bestTen = 0
+            foreach ($c in $phoScored) { if ($c.Stats.StabilityMin -gt $bestTen) { $bestTen = $c.Stats.StabilityMin } }
+            $tenSeg = "failed (best photosynthetic clade min over the last 6000 s = $bestTen)"
+        }
+    } else {
+        $ownerSeg = 'flag absent | photo lineage: flag absent (no "pho" field on lineage birth rows -- run recorded before the flag existed)'
+        $tenSeg = 'flag absent | photo lineage: flag absent'
+    }
+
+    # -------------------------------------------------------------------------------
+    # Line 5 -- the population-only column reading, unchanged since 2026-09-04.
+    # -------------------------------------------------------------------------------
     if ($header.ContainsKey('photo') -and $header.ContainsKey('photo inh')) {
         $phIdx = $header['photo inh']
         $last20 = if ($samples.Count -le 20) { $samples } else { $samples[($samples.Count - 20)..($samples.Count - 1)] }
@@ -278,28 +499,18 @@ foreach ($a in $Arm) {
             $photoInhVals = @($last20 | ForEach-Object { [double]$rows[$_][$phIdx] })
             $photoInhMin = ($photoInhVals | Measure-Object -Minimum).Minimum
             $producerPop = ($photoInhAtEnd -ge 10) -and ($photoInhMin -ge 10)
-            $producerVerdict = if ($producerPop) { 'PASS (population only -- birth half unread)' } else { 'fail' }
-            $producerSeg = "producer: photo inh at end = $photoInhAtEnd, min over last 20 = $photoInhMin -> $producerVerdict"
+            $popVerdict = if ($producerPop) { 'held' } else { 'failed' }
+            $popSeg = "$popVerdict -- photo inh at end = $photoInhAtEnd, min over last 20 = $photoInhMin"
         } catch {
-            $producerSeg = "producer: photo inh column present but not numeric in $reportPath -> unread"
+            $popSeg = "unread -- photo inh column present but not numeric in $reportPath"
         }
     } else {
-        $producerSeg = 'photo: column absent -> producer clause unread'
+        $popSeg = 'column absent'
     }
 
-    if ($null -ne $best) {
-        $first10Str = if ($null -eq $best.First10) { 'None' } else { "$($best.First10)" }
-        $minSinceStr = if ($null -eq $best.MinSince) { 'None' } else { "$($best.MinSince)" }
-        $verdict = if ($best.Cons -ge 20 -and $best.AtEnd -ge 10 -and $best.Recent -ge 1) { 'PASS' } else { 'fail' }
-
-        $line = "{0}: clades with a living member at {1}: {2} | largest: root {3} (kind {4}, born {5}), {6} members ever, {7} alive at end, alive-streak {8} samples, first>=10 at {9}, min since {10}, inherited births in last 20 samples {11} -> clade {12} | aggregate inherit@end {13}" -f `
-            $a, $last, $livingClades, $best.Rt, $best.Rk, $best.FirstT, $best.N, $best.AtEnd, $best.Cons, $first10Str, $minSinceStr, $best.Recent, $verdict, $inheritAtEnd
-    } else {
-        $line = "{0}: clades with a living member at {1}: {2} | no absorptive clade alive at the last sample -> clade unread | aggregate inherit@end {3}" -f `
-            $a, $last, $livingClades, $inheritAtEnd
-    }
-
-    $line = "$line | $stabilitySeg | $producerSeg"
-
-    Write-Output $line
+    Write-Output $verdictLine
+    Write-Output $largestLine
+    Write-Output ("{0}: photo (owner's wording): {1}" -f $a, $ownerSeg)
+    Write-Output ("{0}: photo (>=10, two lifetimes): {1}" -f $a, $tenSeg)
+    Write-Output ("{0}: photo inh (population column): {1}" -f $a, $popSeg)
 }

@@ -135,20 +135,25 @@ chain (logbook/0044):
 `scripts/clade-score.ps1` — the goal rule's `inherit` column is an aggregate across every
 absorptive lineage in the world at once, so a set of unrelated short-lived clades can sum to
 a passing streak and an unrelated late mutant can satisfy recruitment for a sterile cohort.
-The clade scorer instead walks `lineage.jsonl`'s parent chains, finds the one connected
-clade with the most members alive at the run's last sample, and asks D063's three original
-clauses of that clade alone. It streams the file rather than loading it (a live run's
-`lineage.jsonl` can run into the hundreds of MB) and started as a straight port of
-`scratch/clade-score.py`. It now also carries the two clauses the owner's ruling added the
-same day: the stability clause (the scored clade holds ≥ 10 members at every sample in the
-last two lifetimes, t ≥ t_last − 6,000 — validated against the 48/41/24/127 minima
-logbook/0054's addendum records for round 18's four passing seeds) and the producer-lineage
-clause, read from the report's own `photo` / `photo inh` columns by header name and printed
-as `photo: column absent` rather than failed on an older report that lacks them. The
-producer clause is population-only: `photo inh` ≥ 10 at the last sample and at every one of
-the last 20 samples, not the amendment's full wording — `lineage.jsonl` carries `abs` and
-`jnt` per birth but no photosynthetic flag, so "a photosynthetic birth in the last 20
-samples" cannot be read from it and is not checked.
+The clade scorer instead walks `lineage.jsonl`'s parent chains, builds every connected
+clade with a living member at the run's last sample, and asks all of D063's clauses of each:
+the 20-sample streak to the end, ≥ 10 alive at the last sample, an inherited absorptive
+birth inside the clade in the last 20 samples, and the stability clause (≥ 10 members at
+every sample in the last two lifetimes, t ≥ t_last − 6,000). A seed passes when any one
+clade meets every clause (changed 2026-09-06 after the Sol/GPT review; until then only the
+largest clade was asked, which can only under-report — no historical verdict moved, and
+round 18's minima still print 48/41/24/127). It names the passing clade, or the best
+failing one with its failed clauses, and still prints the largest clade's line for
+continuity. It streams the file rather than loading it (a live run's `lineage.jsonl` can
+run into the hundreds of MB). The producer clause prints three readings and none of them
+decides the verdict yet: the owner's wording (an inherited photosynthetic line alive at the
+end with an inherited photosynthetic birth in the last 20 samples), the ≥ 10-through-two-
+lifetimes reading, and the population-only column reading (`photo inh` ≥ 10 at the last
+sample and each of the last 20). The first two need the `pho` flag on lineage birth rows
+(`scratch/photo-flag-spec.md`, built after D078) and print `flag absent` on every run
+recorded before it; the third prints `column absent` on a report older than the `photo`
+columns. Fixture tests live in `scripts/tests/clade-score/` (`run-tests.ps1`); run them
+after touching the scorer.
 
 ```powershell
 ./scripts/clade-score.ps1 r18x-s1 r18x-s2 r18x-s3 r18x-s4 r18x-s5
