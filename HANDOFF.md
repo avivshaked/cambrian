@@ -67,8 +67,9 @@ than tuned around. Round 27 therefore runs on as a screen rather than a scored c
    `b9baef1`). A seed passes when any connected clade meets every clause; the report names
    it and still prints the largest. Re-scored: round 18 stands at 4 of 5 with its minima
    unchanged, and no historical verdict moved.
-3. **A photosynthetic flag on lineage birth rows**, so the producer clause's birth half can
-   be read. It goes in the Sim build behind D078, validated by an unchanged tiled replay.
+3. **A photosynthetic flag on lineage birth rows** (done 2026-09-06: `pho` on every birth
+   row, Core change; `pho-a` identical to `jobs-a` over 3,001 digests, the tiled replay
+   unmoved). Runs before it print `flag absent` in the scorer's producer readings.
 4. **A current-build round-18 check**: seed 1 for 3,000 s on the D078 build against
    r18x-s1's first 3,000 s. If it replays, the historical five stand as one world; if not,
    0070 records a different control build.

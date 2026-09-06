@@ -1967,10 +1967,12 @@ namespace Evosim.Core
             // AssignSpecies, not before, so the row carries the species the birth actually landed
             // in rather than a default. Stillbirths never reach here — the check above returns
             // null first — so this is exactly "an id was assigned", which is what a lineage row
-            // means.
+            // means. The photosynthetic flag is the same local the pass above computed for
+            // Organism.HasPhotosyntheticTissue, passed rather than recomputed, so a row and the
+            // creature it describes can never disagree about what the body is made of.
             _lineageEvents.Add(LineageEvent.Birth(
                 ElapsedSeconds, creature.Id, parentId, kind, generationDepth, creature.SpeciesId,
-                HasAbsorptive(phenotype), phenotype.TotalDof > 0, patch));
+                HasAbsorptive(phenotype), phenotype.TotalDof > 0, photosynthetic, patch));
 
             return creature;
         }

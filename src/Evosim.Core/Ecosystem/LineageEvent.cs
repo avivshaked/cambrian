@@ -64,6 +64,15 @@ namespace Evosim.Core
         public bool HasJoint { get; }
 
         /// <summary>
+        /// Birth only — whether any part of the developed body is
+        /// <see cref="CellTypeIds.Photosynthetic"/>, the same phenotype test that sets
+        /// <see cref="Organism.HasPhotosyntheticTissue"/>. D063's producer clause asks for an
+        /// inherited photosynthetic line, and a parent chain can only be walked from a flag the
+        /// birth row carries.
+        /// </summary>
+        public bool HasPhotosynthetic { get; }
+
+        /// <summary>
         /// Birth only — the horizontal cell the creature was born into, <see cref="Organism.Patch"/>
         /// — D061. Always 0 whenever <see cref="RunConfig.HorizontalPatches"/> is 1, and only
         /// meaningful above that; carried unconditionally because it is one small int and a
@@ -77,7 +86,8 @@ namespace Evosim.Core
         private LineageEvent(
             LineageEventKind kind, double elapsedSeconds, long id, long parentId,
             BirthKind birthKind, int generationDepth, uint speciesId,
-            bool hasAbsorptive, bool hasJoint, int patch, DeathCause cause)
+            bool hasAbsorptive, bool hasJoint, bool hasPhotosynthetic, int patch,
+            DeathCause cause)
         {
             Kind = kind;
             ElapsedSeconds = elapsedSeconds;
@@ -88,22 +98,24 @@ namespace Evosim.Core
             SpeciesId = speciesId;
             HasAbsorptive = hasAbsorptive;
             HasJoint = hasJoint;
+            HasPhotosynthetic = hasPhotosynthetic;
             Patch = patch;
             Cause = cause;
         }
 
         public static LineageEvent Birth(
             double elapsedSeconds, long id, long parentId, BirthKind birthKind,
-            int generationDepth, uint speciesId, bool hasAbsorptive, bool hasJoint, int patch) =>
+            int generationDepth, uint speciesId, bool hasAbsorptive, bool hasJoint,
+            bool hasPhotosynthetic, int patch) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
-                speciesId, hasAbsorptive, hasJoint, patch, default);
+                speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch, default);
 
         public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
             new LineageEvent(
                 LineageEventKind.Death, elapsedSeconds, id, parentId: -1, birthKind: default,
-                generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false, patch: 0,
-                cause: cause);
+                generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
+                hasPhotosynthetic: false, patch: 0, cause: cause);
 
         /// <summary>One-letter code for <see cref="BirthKind"/> — "f" floor, "r" reproduction, "i" inoculation.</summary>
         private static string Code(BirthKind kind)
@@ -157,6 +169,7 @@ namespace Evosim.Core
                     .Field("s", (long)SpeciesId)
                     .Field("abs", HasAbsorptive ? 1 : 0)
                     .Field("jnt", HasJoint ? 1 : 0)
+                    .Field("pho", HasPhotosynthetic ? 1 : 0)
                     .Field("pt", Patch);
             }
             else

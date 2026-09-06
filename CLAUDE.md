@@ -149,9 +149,9 @@ run into the hundreds of MB). The producer clause prints three readings and none
 decides the verdict yet: the owner's wording (an inherited photosynthetic line alive at the
 end with an inherited photosynthetic birth in the last 20 samples), the ≥ 10-through-two-
 lifetimes reading, and the population-only column reading (`photo inh` ≥ 10 at the last
-sample and each of the last 20). The first two need the `pho` flag on lineage birth rows
-(`scratch/photo-flag-spec.md`, built after D078) and print `flag absent` on every run
-recorded before it; the third prints `column absent` on a report older than the `photo`
+sample and each of the last 20). The first two read the `pho` flag on lineage birth rows
+(built 2026-09-06, after D078; `coreHash bff3d696…` onward) and print `flag absent` on
+every run recorded before it; the third prints `column absent` on a report older than the `photo`
 columns. Fixture tests live in `scripts/tests/clade-score/` (`run-tests.ps1`); run them
 after touching the scorer.
 
@@ -409,7 +409,8 @@ actually verifying it.
   off, not reporting one species. Every arm through round 13 ran at 0; calibrate with the
   `SpeciesCalibration` test's distribution before reading the column as diversity.
 - **A lineage dissection can answer less than it looks like it can.** `lineage.jsonl` rows carry
-  birth time, parent, kind, generation, species, the expressed `abs`/`jnt` flags and the patch —
+  birth time, parent, kind, generation, species, the expressed `abs`/`jnt`/`pho` flags (`pho`
+  from 2026-09-06's build only) and the patch —
   no depth, volume or energy per creature — and every death reads `starved` because `Starved` is
   the only `DeathCause` implemented, so cause of death discriminates nothing. `snapshots/` hold
   each living creature's *genome graph*, not its developed phenotype (a creature can carry an
