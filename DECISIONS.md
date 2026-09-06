@@ -3772,4 +3772,6 @@ ran at half real time into the wall); the placeholder floor produced three newbo
 divergences at 60 m; at 1/m³ the box's 24,000 starting units set the world's size at
 4,000–6,000 and the influx only its slope. **Put to the owner for the 0.01 confirmation:**
 influx 0.3, starting stock 0.25/m³ (unscreened together; each read alone), and a real
-floor collider at −60 m before it (`scratch/floor-spec.md`).
+floor collider at −60 m before it (`scratch/floor-spec.md`). **Ruled 2026-09-06 (owner: "love it. go ahead"):** the real floor is built first, then the
+confirmation at 0.01 on five seeds at influx 0.3 and stock 0.25/m³, pre-registered as
+logbook/0067; the crowd is read there before any rule is spent on it.
