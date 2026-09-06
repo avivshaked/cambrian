@@ -150,4 +150,4 @@ question) answered as a by-product: yes, and it takes 10,000–20,000 s.
 The confirmation is re-run at influx 0.6 as logbook/0068, the dose the diagnostic held on,
 with M4 loosened to the slope that world actually shows and M5 asking that no seed crash.
 
-Closed 2026-09-07. Arms `r26-s1` … `r26-s5`, `r26d-s4` (diagnostic, not scored); uncensored.
+Closed 2026-09-06. Arms `r26-s1` … `r26-s5`, `r26d-s4` (diagnostic, not scored); uncensored.

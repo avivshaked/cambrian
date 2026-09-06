@@ -60,7 +60,8 @@ param(
     [float]$WallMinutes = 600,
     [uint64]$Seed = 1,   # not [ulong]: that accelerator is PowerShell 7 only
     [string]$ExpectSimHash,
-    [int]$WaitForManifestMinutes = 10
+    [int]$WaitForManifestMinutes = 10,
+    [string[]]$UnityArgs = @()   # extra Unity command-line switches, e.g. '-job-worker-count','1'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -179,6 +180,7 @@ foreach ($k in $Settings.Keys) {
 
 $a = @('-projectPath', $proj, '-batchmode', '-quit', '-nographics',
        '-executeMethod', 'Evosim.Sim.EditorTools.EvolutionRun.Run', '-logFile', $log)
+if ($UnityArgs.Count -gt 0) { $a += $UnityArgs }
 
 Write-Host "$Name -> worker $Worker ($proj)"
 Write-Host "  seed $Seed, $Seconds s, $WallMinutes min wall"
@@ -186,6 +188,7 @@ foreach ($k in $Settings.Keys) { Write-Host "  $k = $($Settings[$k])" }
 Write-Host "  log $log"
 Write-Host "  out $out"
 Write-Host "  worker simHash $simHash"
+if ($UnityArgs.Count -gt 0) { Write-Host "  unity args $($UnityArgs -join ' ')" }
 
 $launchedAt = (Get-Date).ToUniversalTime()
 $process = Start-Process -FilePath $unity -ArgumentList $a -NoNewWindow -PassThru

@@ -1988,6 +1988,18 @@ Every evaluation defined by `(genome, seed, configHash)`.
   physics loop therefore cannot separate the change from the realisation. The rule: compare
   distributions across seeds, or hold a difference against the butterfly's own spread; and
   keep 0.01 s untouched so the record stays replayable (§6.2's step policy).
+- **Amended 2026-09-06 (logbook/0069): the measurement above was a property of the tiled
+  world.** With creatures sharing one volume (D077) and touching, six runs of one
+  `(genome, seed, configHash)` on one build and one worker gave six realisations, each pair
+  identical for ~148,000 steps and then parting by one or two ulp in one body's velocity
+  where touching bodies were solved in a different order. Unity's *Enhanced Determinism*,
+  sleep, broadphase and scratch-buffer settings do not remove it; running the physics step
+  with no job-system worker threads does (identical over 300,000 steps, 593 contact pairs
+  per step). PhysX's documented thread-count independence does not hold in this build for
+  articulations in contact. **The rule (D078): the physics step runs single-threaded
+  (`EVOSIM_PHYSICS_JOBS` 0, recorded in the manifest and the header), and a replay-identity
+  validation is run in the shared world with the state digest, never only in the tiled one.**
+  Every shared-world run before D078 (logbook/0065–0068) is one realisation of its seed.
 
 ---
 

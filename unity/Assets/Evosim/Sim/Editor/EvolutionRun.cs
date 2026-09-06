@@ -127,6 +127,13 @@ namespace Evosim.Sim.EditorTools
             int reportEvery = (int)Env("EVOSIM_REPORT_EVERY", 200f);
             ulong seed = EnvULong("EVOSIM_SEED", 1UL);
 
+            // The state digest — scratch/digest-spec.md. A runner setting like the wall budget,
+            // deliberately *not* a RunConfig tunable: it changes nothing the world does, so it
+            // must not reach config.json or its hash, and a run with the digest on has to stay
+            // hash-compatible with the same run without it. 0 is off, which is every run so far.
+            long digestEvery = (long)Env("EVOSIM_DIGEST_EVERY", 0f);
+            List<long> digestDumpSteps = EnvSteps("EVOSIM_DIGEST_DUMP_STEPS");
+
             // The two halves of what a joint costs to own before it does anything. §5A.10 marks
             // both unmeasured, and LinkCell's own documentation names the failure at each end:
             // "too low and capacity is effectively free again, too high and nothing can afford to
@@ -592,6 +599,31 @@ namespace Evosim.Sim.EditorTools
                 // own, because it belongs to one run and to no other; the subdirectory is created
                 // only if something actually diverges, so a healthy run leaves no trace of this.
                 eco.DivergenceDumpDirectory = Path.Combine(dir.Path, "diverged");
+
+                // The digest goes beside them, and only when asked for: without a run directory
+                // there is nowhere to write it, and a digest written somewhere else would be a
+                // file nobody could match to the run that produced it.
+                if (digestEvery > 0)
+                {
+                    eco.EnableDigest(dir.Path, digestEvery, digestDumpSteps);
+
+                    Debug.Log(
+                        "digest: every " + digestEvery + " physics steps into " +
+                        Path.Combine(dir.Path, "digest.jsonl") +
+                        (digestDumpSteps.Count > 0
+                            ? "; per-body dump at steps " +
+                              string.Join(",", digestDumpSteps.ConvertAll(s => s.ToString(CultureInfo.InvariantCulture)))
+                            : "; no per-body dump"));
+                }
+                else if (digestDumpSteps.Count > 0)
+                {
+                    // The trap the inoculum pair already fell into once: half a setting arrives,
+                    // the run looks exactly like one nobody asked anything of, and the absence is
+                    // discovered after the machine time is spent.
+                    Debug.LogWarning(
+                        "EVOSIM_DIGEST_DUMP_STEPS is set but EVOSIM_DIGEST_EVERY is 0 — the " +
+                        "digest is off and nothing will be dumped.");
+                }
             }
 
             // D077's header token, built from the world the run actually constructed rather than
@@ -2481,6 +2513,40 @@ namespace Evosim.Sim.EditorTools
                    float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float v)
                 ? v
                 : fallback;
+        }
+
+        /// <summary>
+        /// A comma-separated list of physics step numbers from the environment — the digest's
+        /// dump steps. Unset or empty gives an empty list, never null.
+        /// </summary>
+        /// <remarks>
+        /// <b>An entry that will not parse stops the run</b>, for <see cref="EnvConceptionOrder"/>'s
+        /// reason: a typo that was silently dropped would produce a run with no dump at the one
+        /// step the dump was launched for, and the only evidence would be the missing file.
+        /// </remarks>
+        private static List<long> EnvSteps(string name)
+        {
+            var steps = new List<long>();
+            string raw = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrWhiteSpace(raw)) return steps;
+
+            foreach (string piece in raw.Split(','))
+            {
+                string trimmed = piece.Trim();
+                if (trimmed.Length == 0) continue;
+
+                if (!long.TryParse(
+                        trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out long step))
+                {
+                    throw new ArgumentException(
+                        name + " contains '" + trimmed + "', which is not a physics step number. " +
+                        "Expected a comma-separated list of integers, e.g. 140000,140100.");
+                }
+
+                steps.Add(step);
+            }
+
+            return steps;
         }
 
         // A float loses exactness above 2^24, and a seed is exactly the kind of value where a

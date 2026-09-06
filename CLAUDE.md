@@ -434,6 +434,19 @@ actually verifying it.
   `driveImpulsesLimited` — about 10⁵ per 0.02 run, so **the fast step under-drives evolved
   muscle; anything about swimming or joints is read at 0.01 only.** A run whose manifest reads
   `status error` is censored.
+- **The shared world does not replay unless the physics step runs on one thread.** Same
+  genome, seed, config and build on the same worker gave six realisations of one world, every
+  pair identical for ~148,000 steps and then parting in one body's velocity by one or two ulp
+  where touching bodies were solved in a different order; Unity's *Enhanced Determinism*,
+  sleep, broadphase and scratch-buffer settings change nothing, and `-job-worker-count 0`
+  restores identity over 300,000 steps (logbook/0069). PhysX documents thread-count
+  independence; this build with articulations in contact does not have it. The tiled world's
+  replays (`r16dt-01c/d/e`, `fp-replay*`, `fl-replay`) never reached the fork because no two
+  creatures ever shared a solver island, so **a replay-identity validation in the tiled world
+  says nothing about the shared one** — validate shared-world changes with the state digest
+  (`EVOSIM_DIGEST_EVERY`, `scripts/digest-diff.py`) on a zero-worker pair. Every shared-world
+  run before the fix (0065–0068) is one realisation of its seed; the theatre's World mode
+  re-simulating one of them watches a cousin from t≈1,500.
 - **Every worker compiles `src/Evosim.Core` from the main tree.** `unity-wN/Packages/manifest.json`
   points at `file:../../src/Evosim.Core`, so `new-worker.ps1` copies only `Assets/`,
   `ProjectSettings/` and `Packages/`; a Core edit in the main tree reaches every worker launched

@@ -1,6 +1,6 @@
 # 0068 — The shared world, fed
 
-*2026-09-07. Pre-registered before launch. The confirmation of D077's world under D063 as
+*2026-09-06. Pre-registered before launch. The confirmation of D077's world under D063 as
 amended, re-run at the dose the diagnostic held on: dt 0.01, 30,000 s, five seeds, influx
 0.6/s, starting stock 0.25/m³. Owner: "good" on the plan (re-run at 0.6 if the diagnostic
 holds).*
@@ -60,10 +60,10 @@ As 0067's V1–V3, with `matter in 0.6/s at vent` in V1.
 
 ## Launch
 
-Seeds 4 and 5 launched 2026-09-07 ~01:30 on workers 5 and 6 at commit `a268311`
+Seeds 4 and 5 launched 2026-09-06 15:38 local on workers 5 and 6 at commit `a268311`
 (`simHash 1f5455f4851591d0`, the floor build, unchanged since 0067), `-ExpectSimHash` on
 each; both manifests read that hash, `gitDirty false`, `physicsDtSeconds 0.01`, `status
 running`; headers verified as V1 (`matter in 0.6/s at vent`, `space shared 4x10x10 m,
-depth 60, wrap, bed`, `from 0.25/m3`, the rest as 0067's). Seed 3 launched ~04:30 on worker 4, seed 2 ~05:30 on worker 3, seed 1 ~06:30 on worker 2
+depth 60, wrap, bed`, `from 0.25/m3`, the rest as 0067's). Seed 3 launched 18:30 on worker 4, seed 2 18:46 on worker 3, seed 1 19:24 on worker 2
 as 0067's arms ended, the same hash and checks (seed 1's header and manifest verified at
 launch). Five concurrent. Monitor running. Results appended below.

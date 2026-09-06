@@ -100,6 +100,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
 | [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · **cost measured 2026-09-05 (logbook/0064): none — shared/tiled 0.88–1.12×, real time to ~2,900 bodies; the constraints are packing and a boundary rule** · the footprint and predation rules follow as proposals |
 | [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5; costs: the plume's crowd, the placeholder floor** · **the floor real 2026-09-06 (`a268311`)** · confirmation at 0.01 at influx 0.3 / stock 0.25 **failed 2 of 5 (logbook/0067: the lean dose starves the stomachs)** · re-run at influx 0.6 (logbook/0068) running |
+| [D078](#d078) | Single-threaded physics by default — the shared world replays only with no job-system worker threads; `EVOSIM_PHYSICS_JOBS` 0, recorded in manifest and header; shared-world changes validated by the state digest | 2026-09-06 | adopted by the agent as an instrument decision (a reproducibility invariant restored; owner may reverse for throughput) · cost measured at 120–180 bodies +19% wall (logbook/0069) · build pending |
 
 ---
 
@@ -3787,7 +3788,7 @@ in the top metre crossing the waterline and falling back at the rule's terminal 
 repeatedly. `bestSpeed` during a shared world's founding is that, not locomotion. A
 founder draw kept a metre under the surface would end it; a world rule, the owner's.
 
-**Confirmation at the lean dose failed, 2026-09-07 (logbook/0067): 2 of 5.** Influx 0.3
+**Confirmation at the lean dose failed, 2026-09-06 (logbook/0067): 2 of 5.** Influx 0.3
 with stock 0.25/m³ — two doses read alone at the fast step, combined on cost grounds —
 starved every founder stomach line by t≈6,000 (the free matter in the bottom layer, the
 bodies in the return flow at 20 m seeing 0.1 units/m³); one seed starved to one survivor,
@@ -3795,5 +3796,47 @@ one recovered without stomachs, three grew mutant stomach lines at the vent's fl
 t=9,000–22,000, two of them in time to be stable. The physics held (no divergence with the
 real floor, crossings ≤ 0.4%, no crowd). The diagnostic `r26d-s4` at influx 0.6 held a
 founder-rooted clade of 195 and 1,633 bodies through 20,000 s. **Re-run at influx 0.6**
-(logbook/0068, five seeds, launched 2026-09-07). By-product: a stomach lineage evolves at
+(logbook/0068, five seeds, launched 2026-09-06). By-product: a stomach lineage evolves at
 the vent's floor from nothing, repeatedly — the late-invasion question answered.
+
+### D078
+
+**Single-threaded physics by default.** Agent decision, 2026-09-06, restoring an invariant
+the design states (§7: everything reproducible from `genome + seed + configHash`) rather
+than making a world rule; the owner may reverse it for throughput, and the record will say
+which runs ran which way.
+
+**What was found (logbook/0069).** Round 27's seed 4 and the diagnostic that justified the
+round were the same world on the same build and worker, and read differently from t=1,500.
+Six runs of that world on `unity-w7` gave six realisations. Unity's *Enhanced Determinism*
+(whose documented purpose is exactly island independence), a zero sleep threshold, the
+sweep-and-prune broadphase and a sixteen-fold scratch buffer changed nothing. A per-step
+state digest, built for the purpose, put the first difference at step 147,778 in one
+creature's velocity, one to two ulp, spreading by contact through a crowded pocket; with
+one job-system worker the fork came later (step ~184,700), with none it never came in
+300,000 steps. The tiled world's replays never reached the fork because no two creatures
+ever shared a solver island — the guarantee logbook/0052 measured was the tiled world's.
+
+**The rule.** (1) The physics step runs with no job-system worker threads:
+`EVOSIM_PHYSICS_JOBS` (a runner setting like the wall budget, not a tunable — it must not
+enter `config.json` or its hash, or every stored config becomes unreadable under §9),
+default 0, set through `JobsUtility.JobWorkerCount` at run start, the value read back
+recorded in `run.json` (`physicsJobWorkers`) and as the header token `physics jobs N`. The
+theatre's World mode sets the same value from the run's manifest and says on the overlay
+when a manifest predates the field. (2) A change to the shared-world path is validated by a
+zero-worker replay pair compared with the state digest (`EVOSIM_DIGEST_EVERY`,
+`scripts/digest-diff.py`), not only by the tiled replay. (3) The drag loop, the project's
+own `Parallel.For` on .NET threads and the larger half of the step, is untouched; only the
+solver serialises. Cost at 120–180 bodies: +19% wall (6.42 against 5.39 minutes per 3,000
+s); at the round's population it is measured by the first round run under the rule.
+
+**What it does not do.** It does not make any run before it reproducible: 0065, 0066, 0067
+and 0068 are read as they were — one realisation per seed, compared across seeds, which is
+how every round has been read since the butterfly rule (0052). It does not touch the
+tiled world, which never depended on the thread count.
+
+**Rejected.** Recording every body's pose for the theatre instead of re-simulating (the
+theatre would then play a video, and the identity check — the thing that tells a viewer
+they are watching the run — would have nothing to check); leaving the shared world
+irreproducible and dropping §7's claim (the claim is what makes a replay a replay, and the
+cost of keeping it is a fifth of the wall time at small populations).

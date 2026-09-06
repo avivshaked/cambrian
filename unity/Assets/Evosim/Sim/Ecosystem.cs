@@ -574,10 +574,233 @@ namespace Evosim.Sim
 
             Steps++;
 
+            // The state digest — scratch/digest-spec.md. One null test per physics step when it
+            // is off, which is every run that does not set EVOSIM_DIGEST_EVERY: the instrument
+            // reads the solver and writes a file, and touches nothing the world will read back.
+            // Placed after Settle rather than immediately after Physics.Simulate because neither
+            // Settle writes to a body — both only read velocities to integrate work — so this is
+            // the same state the solver left, with the step counter already advanced to name it.
+            if (_digest != null) Digest();
+
             if (Steps % StepsPerMetabolicStep != 0) return false;
 
             Metabolise();
             return true;
+        }
+
+        // ---- the state digest (scratch/digest-spec.md)
+
+        /// <summary>Floats recorded per part: position 3, rotation 4, linear 3, angular 3.</summary>
+        /// <remarks>
+        /// The spec's prose says "the same ten floats" while enumerating thirteen; the enumeration
+        /// is what is implemented, because dropping any of the four quantities would make the
+        /// digest blind to a divergence that shows up first in the one dropped.
+        /// </remarks>
+        private const int DigestFloatsPerPart = 13;
+
+        private JsonlWriter _digest;
+        private JsonlWriter _digestBodies;
+        private string _digestDirectory;
+        private long _digestEvery;
+        private HashSet<long> _digestDumpSteps;
+
+        // Reused, because the digest runs inside the step loop and a per-value BitConverter
+        // allocation is 13 arrays per part per digest. Buffer.BlockCopy gives the raw bits
+        // without unsafe code, which neither Sim asmdef allows.
+        private readonly long[] _digestId = new long[1];
+        private readonly byte[] _digestIdBytes = new byte[8];
+        private readonly float[] _digestPart = new float[DigestFloatsPerPart];
+        private readonly byte[] _digestPartBytes = new byte[DigestFloatsPerPart * 4];
+
+        /// <summary>
+        /// Turns the per-step digest on, writing into an existing run directory.
+        /// </summary>
+        /// <param name="runDirectory">The run's own directory; <c>digest.jsonl</c> goes in it.</param>
+        /// <param name="everySteps">Physics steps between digests. 0 or less leaves it off.</param>
+        /// <param name="dumpSteps">Steps at which to also write a row per living body, or null.</param>
+        public void EnableDigest(string runDirectory, long everySteps, IEnumerable<long> dumpSteps)
+        {
+            if (string.IsNullOrEmpty(runDirectory))
+            {
+                throw new ArgumentException("A run directory is required.", nameof(runDirectory));
+            }
+
+            if (everySteps <= 0) return;
+
+            _digestDirectory = runDirectory;
+            _digestEvery = everySteps;
+
+            _digestDumpSteps = null;
+            if (dumpSteps != null)
+            {
+                var set = new HashSet<long>(dumpSteps);
+                if (set.Count > 0) _digestDumpSteps = set;
+            }
+
+            // Flushed each row: this file exists to be diffed against another run's, and a run
+            // stopped or wedged part-way through is exactly the case it is read in.
+            _digest = new JsonlWriter(Path.Combine(runDirectory, "digest.jsonl"), flushEachRow: true);
+        }
+
+        /// <summary>One digest row, and the per-body dump on the steps that asked for one.</summary>
+        private void Digest()
+        {
+            bool due = Steps == 1 || Steps % _digestEvery == 0;
+            bool dump = _digestDumpSteps != null && _digestDumpSteps.Contains(Steps);
+            if (!due && !dump) return;
+
+            // FNV-1a 64, over the raw bits of every living body's state in World.Living order —
+            // which is the order Reconcile built _order in.
+            ulong hash = 14695981039346656037UL;
+            long first = -1;
+            int counted = 0;
+
+            for (int i = 0; i < _order.Count; i++)
+            {
+                Body body = _order[i];
+                ArticulationBody[] bodies = body.Instance.Bodies;
+                if (bodies == null || bodies.Length == 0) continue;
+
+                long id = body.Creature.Id;
+                if (first < 0) first = id;
+                counted++;
+
+                _digestId[0] = id;
+                Buffer.BlockCopy(_digestId, 0, _digestIdBytes, 0, 8);
+                hash = Fnv1a(hash, _digestIdBytes, 8);
+
+                for (int b = 0; b < bodies.Length; b++)
+                {
+                    ReadPartState(bodies[b], _digestPart);
+                    Buffer.BlockCopy(_digestPart, 0, _digestPartBytes, 0, DigestFloatsPerPart * 4);
+                    hash = Fnv1a(hash, _digestPartBytes, DigestFloatsPerPart * 4);
+                }
+            }
+
+            string hex = hash.ToString("x16", System.Globalization.CultureInfo.InvariantCulture);
+            long step = Steps;
+            double t = step * (double)FixedDt;
+            int bodyCount = counted;
+            long firstId = first;
+
+            _digest.WriteRow(w => w
+                .Field("step", step)
+                .Field("t", t)
+                .Field("bodies", bodyCount)
+                .Field("hash", hex)
+                .Field("first", firstId));
+
+            if (dump) DumpBodies();
+        }
+
+        /// <summary>One row per living creature: every number the digest hashed, in the clear.</summary>
+        private void DumpBodies()
+        {
+            if (_digestBodies == null)
+            {
+                _digestBodies = new JsonlWriter(
+                    Path.Combine(_digestDirectory, "digest-bodies.jsonl"), flushEachRow: true);
+            }
+
+            for (int i = 0; i < _order.Count; i++)
+            {
+                Body body = _order[i];
+                ArticulationBody[] bodies = body.Instance.Bodies;
+                if (bodies == null || bodies.Length == 0) continue;
+
+                var links = new StringBuilder();
+                links.Append('[');
+                for (int b = 1; b < bodies.Length; b++)
+                {
+                    if (b > 1) links.Append(',');
+                    links.Append(PartStateJson(bodies[b]));
+                }
+                links.Append(']');
+
+                var w = new Json.Writer(indent: false);
+                w.BeginObject();
+                w.Field("step", Steps);
+                w.Field("id", body.Creature.Id);
+                w.Raw("root", PartStateJson(bodies[0]));
+                w.Raw("links", links.ToString());
+                w.Field("sleeping", bodies[0].IsSleeping());
+
+                // PhysX reports contacts as pairs to a scene-wide callback, not per body, so
+                // there is no cheap per-body count to read — the spec allows 0 and this is it.
+                w.Field("contacts", 0);
+                w.EndObject();
+
+                _digestBodies.Write(w.ToString());
+            }
+        }
+
+        /// <summary>
+        /// One part's thirteen numbers, in the order the hash takes them.
+        /// </summary>
+        /// <remarks>
+        /// Velocities come off the <see cref="ArticulationBody"/>; the pose has to come off the
+        /// Transform, which is the only place Unity exposes an articulation link's world pose —
+        /// <c>Physics.Simulate</c> writes it back on every step whatever
+        /// <c>Physics.autoSyncTransforms</c> is set to, and reading it syncs nothing. It is the
+        /// same read <see cref="CheckFinite"/> and the divergence dump already make.
+        /// </remarks>
+        private static void ReadPartState(ArticulationBody part, float[] into)
+        {
+            Transform t = part.transform;
+            Vector3 p = t.position;
+            Quaternion r = t.rotation;
+            Vector3 v = part.linearVelocity;
+            Vector3 w = part.angularVelocity;
+
+            into[0] = p.x; into[1] = p.y; into[2] = p.z;
+            into[3] = r.x; into[4] = r.y; into[5] = r.z; into[6] = r.w;
+            into[7] = v.x; into[8] = v.y; into[9] = v.z;
+            into[10] = w.x; into[11] = w.y; into[12] = w.z;
+        }
+
+        /// <summary>The same thirteen numbers as a JSON array, round-trip formatted.</summary>
+        /// <remarks>
+        /// "R" so two dumps can be diffed to the bit. A non-finite component goes in as a quoted
+        /// string for the divergence dump's reason — JSON cannot represent one, and a file that
+        /// throws while recording a divergence records nothing.
+        /// </remarks>
+        private string PartStateJson(ArticulationBody part)
+        {
+            ReadPartState(part, _digestPart);
+
+            var sb = new StringBuilder(192);
+            sb.Append('[');
+
+            for (int i = 0; i < DigestFloatsPerPart; i++)
+            {
+                if (i > 0) sb.Append(',');
+                float v = _digestPart[i];
+
+                if (float.IsNaN(v) || float.IsInfinity(v))
+                {
+                    sb.Append('"')
+                      .Append(v.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                      .Append('"');
+                }
+                else
+                {
+                    sb.Append(v.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                }
+            }
+
+            sb.Append(']');
+            return sb.ToString();
+        }
+
+        private static ulong Fnv1a(ulong hash, byte[] bytes, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                hash ^= bytes[i];
+                hash *= 1099511628211UL;
+            }
+
+            return hash;
         }
 
         /// <summary>
@@ -1147,6 +1370,14 @@ namespace Evosim.Sim
             // the editor harnesses build several worlds in one process — and a leaked floor would
             // sit in the next world's water, colliding with it.
             Floor?.Destroy();
+
+            // The digest's files close with the world that wrote them. Left null afterwards, so a
+            // harness that builds a second world in the same process has to ask for it again
+            // rather than inherit the first world's file handle.
+            _digest?.Dispose();
+            _digest = null;
+            _digestBodies?.Dispose();
+            _digestBodies = null;
 
             _bodies.Clear();
             _instances.Clear();
