@@ -94,7 +94,9 @@ def report(path):
                 findings.append((first_n, f'"which is why/what/where": "{s[:60]}..."'))
             if s.endswith('?') and not s.startswith('"'):
                 findings.append((first_n, f'rhetorical question: "{s[:60]}..."'))
-            if n_words <= 4 and s.endswith('.') and not re.search(r'\b(is|are|was|were|has|have|had|do|does|did)\b', s, re.I):
+            is_date = re.match(r'^\*?\d{4}-\d{2}-\d{2}', s) is not None
+            if n_words <= 4 and s.endswith('.') and not is_date and \
+                    not re.search(r'\b(is|are|was|were|has|have|had|do|does|did)\b', s, re.I):
                 findings.append((first_n, f'fragment as punchline: "{s}"'))
             low = s.lower()
             for w in INTENSIFIERS:
