@@ -99,7 +99,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · **adopted 2026-09-05 in the vent shape at 0.6/s (owner); confirmation at 0.01 (logbook/0061): 3 of 5 at the threshold, not round 18's 4; the stock still grows at the dose and the plume lifts every population to the waterline — surface fix and dose correction put to the owner before re-confirming** |
 | [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
 | [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · **cost measured 2026-09-05 (logbook/0064): none — shared/tiled 0.88–1.12×, real time to ~2,900 bodies; the constraints are packing and a boundary rule** · the footprint and predation rules follow as proposals |
-| [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · building (`scratch/footprint-spec.md`) · screen at 0.02 then confirmation at 0.01 |
+| [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5; costs: the plume's crowd, the placeholder floor** · confirmation at 0.01 pending the owner's dose, stock and floor |
 
 ---
 
@@ -3760,3 +3760,16 @@ real sea bed. With it, `above` reads 0 at every sample and the same world sits a
 (`fp-smoke2`). A founder placed exactly on the floor now bounces at ~1 m/s in the first
 seconds, so `bestSpeed` in a shared world's founding is not locomotion; founding a metre off
 the floor, or a real floor collider, is the fix and is the owner's.
+
+**Screened 2026-09-06 (logbook/0065): the footprint world works.** The top is a top
+(crossings of ≤ 0.3%, not residence); every population in the water at 15–31 m; founding
+safe in five of five; at influx 0.3 the stock levelled (+3%, +5%) for the first time in
+the record; stable stomach clades in five of five, D063 in four, and in one arm a stomach
+lineage that evolved from nothing at t=12,161 at the vent's base and reached 642.
+Contact at 2,000–13,600 pairs per step with the audit closed. Costs: the plume's conveyor
+packs bodies into its convergence (`crowded` refusals 2–37× births; the 6,000-body worlds
+ran at half real time into the wall); the placeholder floor produced three newborn
+divergences at 60 m; at 1/m³ the box's 24,000 starting units set the world's size at
+4,000–6,000 and the influx only its slope. **Put to the owner for the 0.01 confirmation:**
+influx 0.3, starting stock 0.25/m³ (unscreened together; each read alone), and a real
+floor collider at −60 m before it (`scratch/floor-spec.md`).
