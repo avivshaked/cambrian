@@ -94,3 +94,60 @@ One **diagnostic** arm, not scored, launched on the freed worker: `r26d-s4`, the
 world at influx 0.6 with stock 0.25/m³ — the combination `r25q-s2` held 3,100 bodies on at
 the fast step — for 20,000 s at 0.01, to separate the dose from the step before the next
 round is designed.
+
+## Results
+
+Five arms to budget, `divergedTotal` 0 in all five (the floor's whole point, met), audit
+0.0000% at every sample, `floor` 0 from t=3,100, the matter identity to the unit; V1–V3
+held. The interim note above overstated one thing: seeds 1–3 did not crash. Their
+populations never fell below 88% of their running maximum after t=6,000; seed 5 fell to
+42% and seed 4 to nothing.
+
+| arm | t last | alive | absorpt | largest clade · min last 6,000 s | D063 | mean height t > 10,000 | `above` max (% of alive) | standing 20k → 30k | `crowded` / births | contacts/step t > 10,000 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| r26-s1 | 30,000 | 2,017 | 525 | 268 · 41 (root born 21,641) | pass | −20.2 m | 0.41% | +34% | 5,633 / 5,147 | 530 |
+| r26-s2 | 30,000 | 1,772 | 155 | 71 · 19 (root born 15,867) | pass | −19.9 m | 0.29% | +36% | 4,684 / 4,805 | 449 |
+| r26-s3 | 30,000 | 1,931 | 46 | 46 · **8** (root born 9,387; ≥ 10 only from 25,300) | **fail** (stability) | −20.4 m | 0.37% | +41% | 6,054 / 3,797 | 645 |
+| r26-s4 | 30,000 | **1** | 0 | — | **fail** (dead) | −21 m | 0 | drained | 70 / 783 | ~0 |
+| r26-s5 | 30,000 | 929 | 0 | — | **fail** (no stomach) | −19.4 m | 0.22% | +42% | 1,872 / 2,056 | 133 |
+| r26d-s4 (diagnostic, influx 0.6) | 20,000 | 1,633 | 195 | 195 · 29 (root born 253) | pass (at 20,000) | −13.2 m | 0.20% | +25% (16k → 20k) | 7,510 / 3,204 | 690 |
+
+**The predictions:**
+
+| # | prediction | result |
+|---|---|---|
+| M1 | D063 in ≥ 4 of 5 | **falsified — 2 of 5.** Seed 4 starved to one survivor; seed 5 recovered from a crash without a stomach; seed 3's line reached ten too late to be stable. Both passes are late mutant clades that arrived after t=15,000 |
+| M2 | the top and the floor hold | **held** — `above` ≤ 0.41% of alive at any sample; `below` 0 everywhere; no divergence |
+| M3 | the populations live in the water | **held** — −19 to −21 m in all five |
+| M4 | the stock levels (≤ +15%) | **falsified** — +34% to +42% in the four living worlds: the stock the drain had cut to ~4,500 was being rebuilt by the influx |
+| M5 | 1,500–5,000 alive, no wall | held in three; 929 and 1 in the other two; no wall stop (a lean world is cheap) |
+| M6 | founding survives | **held** — 40 at every sample to 6,000 in all five |
+| M7 | the crowd falls below births by 15,000 | falsified as written in all five, but the crowd itself is gone: `crowded` per window ran 3–19 against thousands at the fast step — the lean world never packed |
+| M8 | contacts 100–5,000 per step | held on the mean (133–645); the minimum dips to single digits when a population thins |
+
+## Verdict
+
+**The lean dose does not feed the world.** At influx 0.3 with a quarter of the starting
+stock, the founders' stomach lines died in every seed by t≈6,000 — the free matter sat in
+the bottom layer where the vent delivers it and the sink carries it, and a body in the
+return flow at 20 m saw 0.1 units/m³ and could not breed. What happened next depended on
+the seed: one world starved to nothing, one crashed to 58 and came back as a producer
+lawn, and three carried on at 1,800–2,000 producers until a mutant stomach line found the
+vent's floor — at t=15,867, 21,641 and 9,387 — and grew to 71, 268 and 46. Two of those
+arrived in time to be stable and the round scores 2 of 5. The world's physics held
+throughout: no divergence with the real floor, the top and bottom crossed by a fraction of
+a percent, no crowd, no wall. The diagnostic at influx 0.6 on the same seed that died held
+1,633 bodies and a founder-rooted stomach clade of 195 through 20,000 s.
+
+**Two readings for the record.** First, the failure is mine: the pre-registration
+combined two doses each of which had been read alone, on cost grounds, and the
+combination is what starved; the two-sided readings did not write the downward case for
+M4. Second, the lean world says something the fed one cannot: **a stomach lineage
+evolves at the vent's floor from nothing, repeatedly** — three times in three seeds, and
+once more in 0065's `r25q-s2` — which is the invasion assay (D075's "late stomach"
+question) answered as a by-product: yes, and it takes 10,000–20,000 s.
+
+The confirmation is re-run at influx 0.6 as logbook/0068, the dose the diagnostic held on,
+with M4 loosened to the slope that world actually shows and M5 asking that no seed crash.
+
+Closed 2026-09-07. Arms `r26-s1` … `r26-s5`, `r26d-s4` (diagnostic, not scored); uncensored.

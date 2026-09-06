@@ -99,7 +99,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · **adopted 2026-09-05 in the vent shape at 0.6/s (owner); confirmation at 0.01 (logbook/0061): 3 of 5 at the threshold, not round 18's 4; the stock still grows at the dose and the plume lifts every population to the waterline — surface fix and dose correction put to the owner before re-confirming** |
 | [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
 | [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · **cost measured 2026-09-05 (logbook/0064): none — shared/tiled 0.88–1.12×, real time to ~2,900 bodies; the constraints are packing and a boundary rule** · the footprint and predation rules follow as proposals |
-| [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5; costs: the plume's crowd, the placeholder floor** · **the floor real 2026-09-06 (`a268311`)** · confirmation at 0.01 (logbook/0067) launched 2026-09-06 |
+| [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5; costs: the plume's crowd, the placeholder floor** · **the floor real 2026-09-06 (`a268311`)** · confirmation at 0.01 at influx 0.3 / stock 0.25 **failed 2 of 5 (logbook/0067: the lean dose starves the stomachs)** · re-run at influx 0.6 (logbook/0068) running |
 
 ---
 
@@ -3786,3 +3786,14 @@ move, and with the surface rule off it drops to 0.35 m/s; it is a buoyant founde
 in the top metre crossing the waterline and falling back at the rule's terminal speed,
 repeatedly. `bestSpeed` during a shared world's founding is that, not locomotion. A
 founder draw kept a metre under the surface would end it; a world rule, the owner's.
+
+**Confirmation at the lean dose failed, 2026-09-07 (logbook/0067): 2 of 5.** Influx 0.3
+with stock 0.25/m³ — two doses read alone at the fast step, combined on cost grounds —
+starved every founder stomach line by t≈6,000 (the free matter in the bottom layer, the
+bodies in the return flow at 20 m seeing 0.1 units/m³); one seed starved to one survivor,
+one recovered without stomachs, three grew mutant stomach lines at the vent's floor at
+t=9,000–22,000, two of them in time to be stable. The physics held (no divergence with the
+real floor, crossings ≤ 0.4%, no crowd). The diagnostic `r26d-s4` at influx 0.6 held a
+founder-rooted clade of 195 and 1,633 bodies through 20,000 s. **Re-run at influx 0.6**
+(logbook/0068, five seeds, launched 2026-09-07). By-product: a stomach lineage evolves at
+the vent's floor from nothing, repeatedly — the late-invasion question answered.

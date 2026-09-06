@@ -64,5 +64,6 @@ Seeds 4 and 5 launched 2026-09-07 ~01:30 on workers 5 and 6 at commit `a268311`
 (`simHash 1f5455f4851591d0`, the floor build, unchanged since 0067), `-ExpectSimHash` on
 each; both manifests read that hash, `gitDirty false`, `physicsDtSeconds 0.01`, `status
 running`; headers verified as V1 (`matter in 0.6/s at vent`, `space shared 4x10x10 m,
-depth 60, wrap, bed`, `from 0.25/m3`, the rest as 0067's). Seeds 1–3 follow as 0067's arms
-end; their launch is appended here. Monitor running.
+depth 60, wrap, bed`, `from 0.25/m3`, the rest as 0067's). Seed 3 launched ~04:30 on worker 4, seed 2 ~05:30 on worker 3, seed 1 ~06:30 on worker 2
+as 0067's arms ended, the same hash and checks (seed 1's header and manifest verified at
+launch). Five concurrent. Monitor running. Results appended below.
