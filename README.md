@@ -311,6 +311,46 @@ Get-Content $log | Select-String 'Milestone 1 smoke' -Context 0,140
 `Library/` corrupt it. A cold run is several minutes of silence either way, so tail the log
 in a second terminal (`Get-Content $log -Wait -Tail 5`) rather than guessing.
 
+### 6. Watch a world: the theatre
+
+The theatre (logbook/0063) is the project's viewer. **It is the simulation, not a video.**
+A run directory stores its configuration, its seed, samples every hundred seconds and
+the genomes of the living at each snapshot — never positions. The theatre rebuilds the
+world from the configuration and the seed and runs the same simulation again, live, with
+a camera in it. Because the physics replays bit for bit on one machine and one build, the
+live world reproduces the recorded one, and at every sample the theatre compares its own
+counts and audit against the recorded row and says, in red, if anything differs. A run
+recorded on a different build is refused by name; ticking `Allow Source Mismatch` plays it
+anyway under a banner saying it is not a faithful replay.
+
+1. Open the project at `unity/` in the Unity Editor. Experiment arms run on the worker
+   copies (`unity-w2` …), so they are unaffected — but never run a `-batchmode` command
+   against `unity/` while the Editor has it open.
+2. Open `Assets/Scenes/Theatre.unity`. If it looks empty or broken, run the menu item
+   `Evosim > Rebuild Theatre Scene` and open it again.
+3. Select `Theatre Runner` in the Hierarchy. In the Inspector set `Mode` to `World` and
+   put a run directory in `Run Directory` — an arm directory such as `runs/r27-s4` (its
+   newest run is taken) or the dated directory inside it.
+4. Optional: `Seek To Seconds` runs the world unrendered to that simulated second, then
+   renders from there. `K` triggers it again later.
+5. Press Play.
+
+Keys: `Space` pause · `[` `]` halve / double the pace · `K` seek · `C` colour mode
+(cell type, reserve) · left-click a creature to select and follow it, `F` follow / free,
+`Esc` deselect · `H` hide the overlay · `R` reload. Camera: `WASD` with `Q`/`E` for down
+and up, right-drag to look, wheel for speed, `Shift` to boost. The overlay shows simulated
+time, pace, counts, mean depth, the audit, and the identity check against the recording.
+
+**One creature.** Set `Mode` to `Solo`, point `Genome Path` at any `snapshots/*.jsonl`
+file and choose `Genome Row` or `Genome Id`; press Play. The creature is grown, wired
+to its own brain and sensors, and placed in the reference water at `Solo Depth Metres`.
+`T` swaps the brain for a test sine so you can see what the brain adds; `G` lets its
+reserve run down; `Solo Smell Density` lays food in front of its nose.
+
+The theatre lives under `Assets/Theatre/`, outside the tree the simulation hash covers,
+so editing it never refuses an old recording. It cannot yet start a fresh, unrecorded
+world from a configuration alone; that is a small addition if wanted.
+
 ### Troubleshooting
 
 | Symptom | Cause |
