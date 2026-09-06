@@ -135,5 +135,18 @@ thread-independence does not hold.
 
 ## The long confirmation
 
-*`det6-a` / `det6-b`: the same zero-thread world to 10,000 s, about 1,000 bodies. Results
-appended when they land.*
+`det6-a` and `det6-b` ran the same zero-thread world to 10,000 s, a million physics steps,
+with the state digest taken every hundred steps. The two are identical on all 10,001
+digests and on every one of the 100 statistics samples. The world peaked at 518 bodies and
+ended with 318, fewer than the thousand I expected when I pre-registered the pair, so the
+long confirmation is a long one rather than a big one. The population it did carry was in
+contact throughout, at about 44 touching pairs per step by the end.
+
+The cost was lower than the short probes suggested. The first run took 28.6 wall minutes
+and the second 25.2, against 2.6 minutes per 1,000 s at the default fifteen threads in the
+short pairs, so at this population the single-threaded solver runs at about the same pace.
+The round-sized cost, at two to three thousand bodies, is what round 28 will measure
+(logbook/0070).
+
+The D078 build follows from here: the zero-thread setting becomes the default, recorded in
+every manifest and header, and the same digest comparison is the check that it landed.
