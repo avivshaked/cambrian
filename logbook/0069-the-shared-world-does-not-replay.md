@@ -1,120 +1,139 @@
 # 0069 — The shared world does not replay
 
-*2026-09-06. An instrument note, written while round 27 (logbook/0068) runs. Not a round;
-nothing here is scored. Agent work throughout, no world rule touched.*
+*2026-09-06. An instrument note written while round 27 (logbook/0068) runs. Nothing here
+is scored and no world rule was touched. Rewritten the same evening after the owner read the
+first draft and could not follow it; the reader's key in `README.md` now carries the terms
+this entry needs.*
 
-## What was noticed
+## In one paragraph
 
-Round 27's seed 4 (`r27-s4`) and the diagnostic that justified the round (`r26d-s4`) are
-the same world: same seed, same build (`simHash 1f5455f4…`, `coreHash 52eb6496…`), same
-`config.json` (hash `ca86fa92`), same worker copy (`unity-w5`), differing only in the
-seconds budget (30,000 against 20,000), which is not a tunable. The record says two such
-runs are one run: PhysX replays bit for bit on this machine (logbook/0052, `r16dt-01c` ≡
-`-01d` ≡ `-01e`), and every build since has been validated by replay identity. Yet at
-t=25,900 `r27-s4` read zero stomachs where `r26d-s4` had held a stable clade of 195 to
-20,000. The rows were compared: **identical through t=1,400, different from t=1,500** in
-forty fields at once, the differences at the fifth significant figure and growing — the
-signature of one changed bit amplified by chaos, not of a changed rule.
+Until this week, running the simulation twice with the same seed and settings gave the same
+world twice, down to the last decimal. That property is called **replay**, and a lot rests
+on it: the theatre re-simulates a recorded run rather than playing a video, so it can only
+show you *the* run if the physics comes out the same each time. Today I found that the new
+shared-space world — creatures living in one box and bumping into each other — does **not**
+replay. Two runs of the same seed agree for the first 1,400 seconds and then drift apart into
+two different worlds. The cause is not our code. It is the way Unity spreads the physics work
+across CPU threads: when two touching bodies are solved in a different order, one velocity
+comes out different in its last binary digit, and the world amplifies that speck into a
+different history. Turning the extra threads off makes the runs identical again. That is
+what we will do from now on, at a modest cost in speed. Every shared-world run before today
+is therefore one roll of the dice for its seed, which is how the rounds were already being
+read, so no result changes; only the promise of replay was false for those runs.
 
-## The probes
+## How it was noticed
 
-`scratch/launch-det.ps1`: 0068's world, seed 4, dt 0.01, 3,000 s, run on `unity-w7` one at
-a time (5.4 wall-minutes each). `scripts/compare-det.py` reports the first stats sample at
-which two arms differ. Every pair is the same inputs on the same build on the same worker.
+Round 27's seed 4 (`r27-s4`) is the same world as the diagnostic run that justified the round
+(`r26d-s4`): same seed, same code, same settings file, even the same worker copy of the Unity
+project. The only difference is how long each was told to run, which does not affect the
+physics. The diagnostic had held a stable stomach clade of 195 creatures at 20,000 s. The
+round's run had zero stomachs at 25,900 s. Comparing the two runs sample by sample, they
+agree exactly through t=1,400 and differ from t=1,500 onward, in forty columns at once, with
+differences in the fifth significant figure that then grow. That is the fingerprint of one
+tiny numerical difference amplified by chaos, not of a rule behaving differently.
 
-| pair | physics settings | identical through | first difference |
+## Testing it on purpose
+
+To separate a fluke from a property, I ran the same world (seed 4, 3,000 s) again and again
+on a spare worker, one run at a time, changing one physics setting between pairs.
+`scripts/compare-det.py` reports the first sample at which two runs differ.
+
+| pair | what was changed | agree through | differ from |
 |---|---|---|---|
-| `r26d-s4` / `r27-s4` | the round's (enhanced determinism off) | 1,400 | 1,500 |
-| `det0-a` / `r26d-s4` | the round's | 1,400 | 1,500 |
-| `det0-a` / `det0-b` | the round's | 1,500 | 1,600 |
-| `det1-a` / `det1-b` | **enhanced determinism on** | 1,500 | 1,600 |
-| `det1-a` / `det0-a` | on against off | 1,500 | 1,600 |
-| `det2-a` / `det2-b` | on, **sleep threshold 0, sweep-and-prune broadphase, scratch buffer 64** | 1,300 | 1,400 |
+| `r26d-s4` / `r27-s4` | nothing — the round's own settings | 1,400 s | 1,500 s |
+| `det0-a` / `det0-b` | nothing | 1,500 s | 1,600 s |
+| `det1-a` / `det1-b` | Unity's *Enable Enhanced Determinism* turned on | 1,500 s | 1,600 s |
+| `det2-a` / `det2-b` | also: no sleeping bodies, a different broadphase, a 16× larger scratch buffer | 1,300 s | 1,400 s |
 
-Six runs of one world, six realisations. Unity's *Enable Enhanced Determinism* — the
-setting whose documented purpose is to make an island's simulation independent of the
-other islands in the scene — changes nothing, and neither does removing sleep, changing
-the broadphase or enlarging PhysX's scratch buffer (the three settings together moved the
-trajectory from t=500, as they should, and the pair still parted). The divergence is not
-random in time: every pair holds for 140,000–150,000 physics steps, through a thousand
-seconds of creature–creature contact (from t≈500; 47 pairs per step by 1,400), and parts in
-the same two hundred seconds — when the population is about 110 and the newborn crowd
-begins (`crowded` per window 8 → 54 between 1,300 and 1,400).
+Six runs of one world gave six different worlds. *Enhanced Determinism* is the Unity
+setting whose stated purpose is to make simulation results independent of what else is in
+the scene; it changed nothing. Neither did the other three settings (they moved the
+trajectory from t=500 on, as any physics change would, but the pairs still parted).
 
-**What the tiled world's replays covered.** `r16dt-01c/d/e`, `fp-replay2/3` and
-`fl-replay` are all tiled: creatures 100 m apart on one layer, never touching, every body
-its own solver island. The shared world was validated for *zero divergences* on a 20,000-s
-run (0066's floor addendum) and never for identity against a second run of itself. The
-guarantee was never tested where it now fails.
+Two things stood out. First, the divergence is not random in time: every pair holds for
+roughly 140,000–150,000 physics steps and parts in the same two hundred seconds, which is
+when the population reaches about 110 and newborns begin to be refused for want of room
+(the "crowded" count jumps from 8 to 54 per window between 1,300 and 1,400 s). Something
+about a crowd triggers it. Second, the runs that proved replay in the past were all in the
+old **tiled** world, where each creature sat 100 m from every other and nothing ever
+touched. Bodies that never touch are solved independently by the physics engine; bodies
+that touch are solved together, as a group the engine calls an **island**. The shared world
+had been checked for having *no exploding bodies* on a long run, and never for replaying
+against a second run of itself. The guarantee had never been tested where it now fails.
 
-## The audit
+## Was it our code?
 
-A read-only audit of the shared-space path (`SharedVolume`, `SeaFloor`, `Ecosystem`,
-`FluidEnvironment`, `CreatureInstance`, `PhenotypeBuilder`, `EvolutionRun`, the placement
-seam in `World`) found no nondeterminism in the C#: no clocks, no random source outside
-`Rng`, no physics queries, no iteration over reference-keyed or string-keyed hashes
-(`_bodies` and `_departed` are keyed by `long`), one `Parallel.For` whose iterations write
-disjoint slots and which the tiled path shares, the one unstable sort given a total order,
-`DestroyImmediate` in batch mode so actor removal happens at a defined point, and a contact
-handler that only counts (`Interlocked.Add` on two longs; nothing in the simulation reads
-them). What it named as amplifiers — one RNG draw per placement attempt, the per-step sort
-of parents by surplus, the hard branches at the waterline, a crowded refusal turning a
-birth into a stillbirth — turn one changed bit into a different world within a metabolic
-step, which is why the first *visible* difference is forty fields at once.
+A read-only audit of everything the shared world added — the box, the sea floor, newborn
+placement, the wrap at the box's edges, the surface rule, the contact counter — found
+nothing that could differ between two runs with the same inputs: no clocks, no random
+numbers outside the seeded generator, no lookups whose order changes from process to
+process, and the one parallel loop in the drag calculation writes each body's result to its
+own slot and is shared with the tiled world, which replays. What the audit did find were
+*amplifiers*: one random draw per placement attempt, a per-step ranking of parents by
+energy, a hard rule at the waterline. Each turns a one-bit difference into a different
+world within a single metabolic step, which is why the first *visible* difference is forty
+columns at once rather than one.
 
-## The digest
+## Finding the exact step
 
-The stats rows are sampled every 100 s and cannot say which step or which body parted
-first, so an instrument was built for it (`scratch/digest-spec.md`, report
-`scratch/digest-build-report.md`): `EVOSIM_DIGEST_EVERY N` writes one FNV-1a hash of every
-living body's pose and velocities, in `World.Living` order, every N physics steps to
-`digest.jsonl`; `EVOSIM_DIGEST_DUMP_STEPS` writes every body's thirteen floats at named
-steps; `scripts/digest-diff.py` finds the first differing step, body and value. Off by
-default; with it off the tiled replay `fl-replay2` matches `fl-replay` on every field, and
-with it on (`fl-replay-dg2`) it still does — the instrument reads and does not act. Every
-100 steps it is free; every step costs 5% of wall time. The build is `simHash 2c964296…`
-(a `.cs` under `Assets/Evosim` changed; `coreHash` unchanged, round 27's workers untouched).
+The run reports sample every 100 s and cannot say which physics step, or which body, went
+first. So an instrument was built for it: the **state digest**. Every N physics steps it
+writes one hash of every living body's position, orientation and velocities (a hash is a
+short fingerprint of a set of numbers; if two runs' fingerprints agree, the numbers agree).
+At chosen steps it can also dump every body's raw numbers. It is off by default
+(`EVOSIM_DIGEST_EVERY`), and with it on or off the tiled world still replays exactly, so it
+reads and does not act. `scripts/digest-diff.py` compares two runs' digests.
 
-**Where the runs part.** `det3-a` / `det3-b` (digest every step): identical through step
-147,777 and different at **147,778 (t=1,477.78 s)**, in **one creature (id 38) and only in
-its velocities** — root `vel.x` −0.07242366 against −0.0724236444, one to two ulp — with
-every position and rotation in the world still bit-identical. It spreads by contact: three
-bodies at the next step, four by 147,785, all mutual neighbours 0.4–0.6 m apart in one
-crowded pocket. All six digested runs share the hash `9c176deb07b9664b` at step 147,700
-and fall into four states by 147,800 — a fork with few branches, not noise.
+With a digest every step, two runs of the world (`det3-a`, `det3-b`) agree through step
+147,777 and differ at **step 147,778 (t=1,477.78 s)**, in **one creature, and only in its
+velocity**: its root moved at −0.07242366 m/s in one run and −0.0724236444 m/s in the
+other. That is a difference of one or two **ulp** — one *unit in the last place*, the
+smallest change a floating-point number can hold — while every position and orientation of
+every body in the world is still bit for bit the same. The difference spreads by touch: one
+body at that step, three at the next, four within seven steps, all neighbours 0.4–0.6 m
+apart in one crowded pocket. All six digested runs share one fingerprint at step 147,700
+and hold four different ones by 147,800: a fork with a few branches, not noise.
 
-**With one job-system worker** (`-job-worker-count 1`, `det4-a` / `det4-b`; the log
-confirms `JobSystem: Creating JobQueue using job-worker-count value 1`): the pair holds
-longer — identical through step 184,600 — and still parts, at 184,700 (t=1,847 s). And
-`det4-a` matches `det3-a` (fifteen workers) through step 151,000, past the step at which
-`det3-a` and `det3-b` had already parted: whatever the fork is, the number of threads
-changes how often it is reached, not whether.
+## Finding the cause
 
-**With no job-system workers** (`-job-worker-count 0`, `det5-a` / `det5-b`; the log
-confirms `job-worker-count value 0`): **identical over all 300,000 steps** — every digest
-hash and every one of the 30 stats samples, to t=3,000, with 593 contact pairs per step at
-the end. The shared world replays when the physics step runs on one thread.
+Unity runs physics on a pool of **job worker threads** — extra CPU threads that share out
+the work. This machine has 16 logical cores and Unity used 15 workers. The engine's maker,
+NVIDIA, documents that PhysX results do not depend on the number of threads. Two more pairs
+tested that claim by launching Unity with fewer workers:
 
-## Reading
+| pair | job worker threads | agree through | differ from |
+|---|---|---|---|
+| `det3-a` / `det3-b` | 15 (the default) | step 147,777 | step 147,778 |
+| `det4-a` / `det4-b` | 1 | step 184,600 | step 184,700 |
+| `det5-a` / `det5-b` | **0** — all physics on the main thread | **all 300,000 steps** | never |
 
-The cause is Unity's threading of the physics step, not the project's code and not a
-setting Unity exposes in its physics panel. PhysX's own documentation says the result does
-not depend on the number of worker threads; in this build, with articulated bodies in
-contact, it does — one to two ulp in one body's velocity at a fork that arrives whenever
-touching bodies are solved in a different order, more often with more threads (fifteen
-workers: ~148,000 steps; one: ~185,000; none: never in 300,000). The tiled world never
-reached the fork because no two creatures ever shared an island. So the record's replay
-guarantee (logbook/0052) was a property of the tiled world, and every shared-world run to
-date — 0065, 0066, 0067, 0068's round 27 and its diagnostic — is one realisation of its
-seed, not reproducible from `(genome, seed, configHash)`. Nothing in how the rounds were
-*read* changes: a seed was already one draw, compared across seeds, and the fast-step
-butterfly rule (CLAUDE.md) already said as much. What changes is what a replay *is*: the
-theatre's World mode re-simulates from the seed, and on a shared-world run its identity
-check will pass to t≈1,500 and then watch a cousin — until the physics runs single-threaded
-there too.
+With no worker threads, the two runs are identical to the end, with 593 pairs of touching
+bodies per step by then. With one worker the fork comes later; with fifteen, sooner. So the
+number of threads decides how often the fork is reached, and zero threads means never. In
+this build, with articulated creatures pressing on each other, the documented
+thread-independence does not hold.
 
-**The cost**, on this world at 120–180 bodies: 6.42 wall-minutes for 3,000 s against 5.39
-with fifteen workers (+19%) and 5.78 with one. The drag loop, 56% of the step (0064), is
-the project's own `Parallel.For` on .NET threads and is untouched; only the solver's third
-serialises. A 10,000-s pair (`det6-a` / `det6-b`, to ~1,000 bodies) measures it at scale
-and confirms identity over a longer run; results below.
+## What it means
+
+- **The record's replay guarantee (logbook/0052) was a property of the tiled world.**
+  Every shared-world run to date — the screen (0065), the box build (0066), the lean
+  confirmation (0067), round 27 and its diagnostic (0068) — is one realisation of its seed.
+- **No round's reading changes.** A seed was already treated as one draw and compared
+  across seeds; the fast-step butterfly rule in CLAUDE.md said as much. What was false was
+  the promise that a given seed could be re-run and watched.
+- **The theatre.** Its World mode re-simulates a run from its seed and checks itself against
+  the run's own statistics as it goes. On a shared-world run recorded before today it will
+  agree to about t=1,500 and then quietly follow a cousin, and its identity check will say
+  so. Runs made from now on, with the physics single-threaded, will replay.
+- **The fix, D078:** the physics step runs with no job worker threads by default. The
+  setting is recorded in each run's manifest and header so a reader can see which way a run
+  was made. Changes to the shared world are validated with the digest on a zero-thread pair,
+  not only with a tiled replay. The drag calculation, which is more than half of each step
+  and runs on the project's own threads, is unaffected; only the physics solver becomes
+  single-threaded. Measured at 120–180 bodies, a 3,000-s run took 6.4 minutes instead of
+  5.4. The cost at a full round's population is being measured below.
+
+## The long confirmation
+
+*`det6-a` / `det6-b`: the same zero-thread world to 10,000 s, about 1,000 bodies. Results
+appended when they land.*

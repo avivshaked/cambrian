@@ -57,6 +57,34 @@ later is worth less than a scrappy one written the same afternoon.
 Entries about things that failed are worth more than entries about things that worked, and
 are the ones most likely to go unwritten.
 
+## How to write an entry so a human can read it
+
+The entries are read by agents continuing the work and by people reading the research cold,
+and the second reader is the one an entry fails first (the owner could not follow 0069's
+first draft, 2026-09-06). The rules, in order of how often they are broken:
+
+1. **Open with the story in one paragraph, in plain words.** What was found, why it
+   matters, what changes. A reader who stops there should still have the point.
+2. **Introduce every term of art on first use**, in the sentence that uses it — a run, a
+   worker, an ulp, a thread, an island — or link to the key below. An arm name or a column
+   name is not an explanation.
+3. **Say what a number means before quoting it.** "Identical through step 147,777" tells
+   the reader nothing until they know a step is 0.01 s of simulated time and a run has
+   three million of them.
+4. **Prose carries the argument; tables hold the numbers.** A table without a sentence
+   before it saying what to look for is a data dump. Pre-registration tables (predictions
+   and what would falsify them) are the exception and stay dense by design.
+5. **One idea per sentence.** Long dashed sentences that bundle a fact, its caveat and its
+   evidence read as notes-to-self; split them.
+6. **Name the cause, the evidence and the consequence separately** — what happened, how
+   we know, what we do about it — rather than folding all three into one clause.
+7. **Do not restate the specification.** Link to `DESIGN.md` or `DECISIONS.md`; explain
+   only what the reader needs to follow *this* entry.
+
+The pre-registration protocol (below) is unchanged by any of this: the hypothesis,
+predictions and falsifiers are still written before the run, and the *Results* and
+*Verdict* sections still answer them one by one.
+
 ## Reading the entries — a key for the newcomer
 
 The entries are written for two audiences at once: agents continuing the work, and humans
@@ -101,6 +129,19 @@ chain ***busts*** when it eats its food column faster than the food returns and 
 the food density at which an absorptive's intake exactly pays its upkeep — below it,
 eating loses money. And "D051"-style numbers are entries in
 [`DECISIONS.md`](../DECISIONS.md), where the reasoning behind each mechanism lives.
+
+**The vocabulary of reproducibility** (from [0069](0069-the-shared-world-does-not-replay.md)
+onward). A ***physics step*** is one tick of the physics engine, 0.01 simulated seconds at
+the fine step (a 30,000-s run is three million of them); a ***metabolic step*** is the
+half-second at which the economy (upkeep, feeding, breeding) is settled. ***Replay*** is
+the property that two runs with the same seed, settings and build are the same run to the
+last decimal; a ***realisation*** is one run of a seed when replay does not hold — one
+roll of the dice, not *the* outcome of that seed. An ***ulp*** (unit in the last place) is
+the smallest change a floating-point number can hold, the size of difference at which two
+runs first part. Unity solves bodies that touch together, as an ***island***, on a pool of
+***job worker threads***; the ***state digest*** (`EVOSIM_DIGEST_EVERY`) is the instrument
+that fingerprints every body's position and velocity every N steps so two runs can be
+compared to the step and body where they first differ.
 
 **The report columns the entries quote**, with what each number means:
 
