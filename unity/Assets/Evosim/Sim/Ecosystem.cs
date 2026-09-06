@@ -89,6 +89,57 @@ namespace Evosim.Sim
             StepsPerMetabolicStep = rounded;
         }
 
+        /// <summary>
+        /// The most job worker threads this process can be given — the job system's own ceiling,
+        /// which is a property of the machine and cannot be raised.
+        /// </summary>
+        public static int JobWorkerMaximum => Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerMaximumCount;
+
+        /// <summary>
+        /// Sets how many job worker threads the physics solver may spread a step over, and
+        /// returns the count the job system reports afterwards — D078, logbook/0069.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why this is a knob at all.</b> The shared-space world does not replay at the
+        /// default fifteen workers: two runs of one seed, config and build agree for about
+        /// 148,000 steps and then part in one body's velocity by an ulp, where two touching
+        /// bodies were solved in a different order. At zero workers — all physics on the main
+        /// thread — the same pair is identical over 300,000 steps. PhysX documents results that
+        /// do not depend on the thread count; this build, with articulations in contact, does
+        /// not have that property.
+        /// </para>
+        /// <para>
+        /// <b>It is a runner setting, not a tunable.</b> It changes no rule the world obeys, so
+        /// it must not reach <c>config.json</c> or its hash — every stored config would become
+        /// unreadable under §9's refuse-rather-than-default rule for a knob that decides nothing
+        /// about the ecology. What it does decide is whether a recording can be watched again,
+        /// which is why the value read back is written into the run manifest and the header.
+        /// </para>
+        /// <para>
+        /// <b>Clamped rather than refused.</b> The job system throws outside
+        /// [0, <see cref="JobWorkerMaximum"/>], and a run is too expensive to lose to a number
+        /// somebody typed one too large. The caller records what came back, not what it asked
+        /// for, so a clamp is visible in the manifest rather than silent.
+        /// </para>
+        /// <para>
+        /// <b>Call it before the world is built.</b> The setting is process-wide and takes effect
+        /// on the next job scheduled; setting it mid-run would leave a run that was two different
+        /// solvers and one header.
+        /// </para>
+        /// </remarks>
+        public static int ConfigurePhysicsJobWorkers(int requested)
+        {
+            int max = Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerMaximumCount;
+            int clamped = requested < 0 ? 0 : requested > max ? max : requested;
+
+            Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount = clamped;
+
+            // Read back rather than returned from the local: the job system is free to disagree,
+            // and the number worth recording is the one it will actually run with.
+            return Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount;
+        }
+
         /// <summary>Metres between tiled creatures — §6.3.</summary>
         public const float TileSpacing = 100f;
 

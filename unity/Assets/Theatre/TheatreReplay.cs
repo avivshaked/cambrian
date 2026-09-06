@@ -65,6 +65,24 @@ namespace Evosim.Theatre
         /// <summary>How this build differs from the recorded one, or null.</summary>
         public string SourceDifference { get; private set; }
 
+        /// <summary>
+        /// Why the thread count makes this less than a replay, or null when it does not — D078,
+        /// logbook/0069.
+        /// </summary>
+        /// <remarks>
+        /// Set when the run's manifest does not say how many job worker threads its physics ran
+        /// on, which is every run recorded before D078. Such a run was made at the old default,
+        /// where the shared world forks from itself after about 148,000 steps whatever this
+        /// process does, so nothing here can make the replay faithful and the overlay has to say
+        /// so. A tiled recording is unaffected — nothing ever touches, so no two bodies were ever
+        /// solved together — but the manifest cannot be trusted to say which the run was without
+        /// reading the config, so the caveat is worded for the case that matters.
+        /// </remarks>
+        public string ThreadCaveat { get; private set; }
+
+        /// <summary>Job worker threads this replay's physics is running on.</summary>
+        public int PhysicsJobWorkers { get; private set; }
+
         /// <summary>The last census taken, refreshed every metabolic step.</summary>
         public WorldCensus Census;
 
@@ -87,6 +105,7 @@ namespace Evosim.Theatre
         private int _nextSample;
         private SimulationMode _previousMode;
         private Vector3 _previousGravity;
+        private int _previousJobWorkers;
         private bool _sceneConfigured;
 
         // Drained at each sample and discarded, exactly where EvolutionRun drains them. Not
@@ -142,6 +161,26 @@ namespace Evosim.Theatre
             // Before the Ecosystem, not after: Ecosystem and EffectorDriver both read the step at
             // construction, and a replay at the wrong step is a different chaotic realisation.
             Ecosystem.ConfigurePhysicsStep(replay.Record.PhysicsDtSeconds);
+
+            // D078, for the same reason and in the same place. The thread count is the second
+            // thing a shared-world replay depends on and the first that nobody thought to record:
+            // set from the run's own manifest, so a recording made at 0 is re-run at 0.
+            replay._previousJobWorkers = Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount;
+
+            if (replay.Record.PhysicsJobWorkers.HasValue)
+            {
+                replay.PhysicsJobWorkers =
+                    Ecosystem.ConfigurePhysicsJobWorkers(replay.Record.PhysicsJobWorkers.Value);
+            }
+            else
+            {
+                // The old default, which is what the run was made at and what this process starts
+                // at: left alone rather than forced to a number, so nothing here pretends to know
+                // more than the manifest does.
+                replay.PhysicsJobWorkers = replay._previousJobWorkers;
+                replay.ThreadCaveat =
+                    "physics threads unrecorded — not a faithful replay after the first contact fork";
+            }
 
             replay._previousMode = Physics.simulationMode;
             replay._previousGravity = Physics.gravity;
@@ -350,6 +389,7 @@ namespace Evosim.Theatre
 
             Physics.simulationMode = _previousMode;
             Physics.gravity = _previousGravity;
+            Ecosystem.ConfigurePhysicsJobWorkers(_previousJobWorkers);
             _sceneConfigured = false;
         }
     }

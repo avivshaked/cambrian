@@ -1983,7 +1983,11 @@ but it is not infinite, and the brain graph is the term most likely to consume i
 
 ## 7. Reproducibility
 
-Every evaluation defined by `(genome, seed, configHash)`.
+Every evaluation defined by `(genome, seed, configHash)` for the world's rules, and by the
+manifest's `simHash`, `coreHash` and `physicsJobWorkers` for its realisation (amended
+2026-09-06: two runs of one `(genome, seed, configHash)` on different builds, or on one build
+at different physics thread counts, are different trajectories; the manifest is the run's
+complete identity, and `configHash` names the world it obeys).
 
 - Seeded PRNG per evaluation, stored with the result. No ambient randomness.
 - `configHash` covers timestep, solver iterations, fluid constants, caps, Unity version.
@@ -2006,8 +2010,8 @@ Every evaluation defined by `(genome, seed, configHash)`.
   where touching bodies were solved in a different order. Unity's *Enhanced Determinism*,
   sleep, broadphase and scratch-buffer settings do not remove it; running the physics step
   with no job-system worker threads does (identical over 300,000 steps, 593 contact pairs
-  per step). PhysX's documented thread-count independence does not hold in this build for
-  articulations in contact. **The rule (D078): the physics step runs single-threaded
+  per step; then over 1,000,000 steps, `det6`). PhysX's documented thread-count independence
+  does not hold in this build for articulations in contact. **The rule (D078): the physics step runs single-threaded
   (`EVOSIM_PHYSICS_JOBS` 0, recorded in the manifest and the header), and a replay-identity
   validation is run in the shared world with the state digest, never only in the tiled one.**
   Every shared-world run before D078 (logbook/0065–0068) is one realisation of its seed.

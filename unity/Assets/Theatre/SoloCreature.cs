@@ -82,6 +82,7 @@ namespace Evosim.Theatre
         private World _water;
         private SimulationMode _previousMode;
         private Vector3 _previousGravity;
+        private int _previousJobWorkers;
         private bool _sceneConfigured;
 
         /// <summary>Reserve seconds a fed creature holds. Constant unless <see cref="Starving"/>.</summary>
@@ -128,7 +129,14 @@ namespace Evosim.Theatre
 
             solo._previousMode = Physics.simulationMode;
             solo._previousGravity = Physics.gravity;
+            solo._previousJobWorkers = Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount;
             Physics.simulationMode = SimulationMode.Script;
+
+            // D078. One body cannot share a solver island with anything, so the thread count
+            // cannot change what happens here — which is the reason to set it rather than to
+            // leave it: the theatre configures the solver the way a run does, in both modes, and
+            // a setting that is right by accident in one of them is a thing waiting to be wrong.
+            Ecosystem.ConfigurePhysicsJobWorkers(0);
             FluidEnvironment.ConfigureScene(selfCollision: true);
             solo._sceneConfigured = true;
 
@@ -411,6 +419,7 @@ namespace Evosim.Theatre
 
             Physics.simulationMode = _previousMode;
             Physics.gravity = _previousGravity;
+            Ecosystem.ConfigurePhysicsJobWorkers(_previousJobWorkers);
             _sceneConfigured = false;
         }
     }

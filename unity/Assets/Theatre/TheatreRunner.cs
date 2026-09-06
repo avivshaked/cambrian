@@ -217,6 +217,8 @@ namespace Evosim.Theatre
             Debug.Log(
                 $"[Theatre] {_replay.Record.ArmName} seed {_replay.Record.Seed}, " +
                 $"dt {_replay.Record.PhysicsDtSeconds}, config {_replay.Record.ConfigHash}, " +
+                $"physics jobs {_replay.PhysicsJobWorkers}" +
+                (_replay.ThreadCaveat != null ? " (" + _replay.ThreadCaveat + ")" : "") + ", " +
                 (_replay.Faithful ? "same source as the recording" : "SOURCE DIFFERS: " + _replay.SourceDifference));
 
             if (Water != null)
@@ -594,11 +596,21 @@ namespace Evosim.Theatre
                 $"<b>{r.ArmName ?? "run"}</b>  seed {r.Seed}  dt {r.PhysicsDtSeconds}  " +
                 $"config {Shorten(r.ConfigHash)}", _text);
 
+            // D078. The thread count rides on the faithfulness line rather than on one of its own,
+            // because it decides the same question: is this the run, or a cousin of it? A run
+            // recorded before the manifest carried the count was made at the old default, where
+            // the shared world forks from itself after about 148,000 steps — so that case can
+            // never read green however well the hashes match.
+            string threadNote = _replay.ThreadCaveat ??
+                "physics jobs " + _replay.PhysicsJobWorkers + ", as recorded";
+
             GUILayout.Label(
-                _replay.Faithful
-                    ? "<color=#9fe6a0>same source as the recording — this is the run</color>"
+                _replay.Faithful && _replay.ThreadCaveat == null
+                    ? "<color=#9fe6a0>same source as the recording — this is the run (" +
+                      threadNote + ")</color>"
                     : "<color=#ff8080><b>NOT A FAITHFUL REPLAY</b> — " +
-                      _replay.SourceDifference + "</color>",
+                      (_replay.SourceDifference ?? "the build matches the recording") +
+                      "; " + threadNote + "</color>",
                 _text);
 
             GUILayout.Space(6f);

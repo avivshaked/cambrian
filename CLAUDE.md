@@ -533,6 +533,8 @@ actually verifying it.
   enums serialize by name, not ordinal. A genome that loads with one field silently defaulted is
   a different creature wearing the original's identity, measured and filed under the stored
   genome with nothing downstream able to notice.
-- Every evaluation must be reproducible from `(genome, seed, configHash)`. PhysX is not
-  bitwise deterministic across machines or Unity versions, so the hash exists to *detect*
-  mismatches rather than to promise portability.
+- Every evaluation must be reproducible from `(genome, seed, configHash)` plus the manifest's
+  `simHash`, `coreHash` and `physicsJobWorkers` (D078: the shared world replays at 0 worker
+  threads only, and a build change is a different realisation). PhysX is not bitwise
+  deterministic across machines or Unity versions, so the hashes exist to *detect* mismatches
+  rather than to promise portability.

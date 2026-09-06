@@ -82,6 +82,8 @@ namespace Evosim.Theatre.EditorTools
                     $"  arm {replay.Record.ArmName}, seed {replay.Record.Seed}, " +
                     $"dt {replay.Record.PhysicsDtSeconds}, config {replay.Record.ConfigHash}\n" +
                     $"  source: {(replay.Faithful ? "identical to the recording" : replay.SourceDifference)}\n" +
+                    $"  physics jobs: {replay.PhysicsJobWorkers}" +
+                    $"{(replay.ThreadCaveat != null ? " — " + replay.ThreadCaveat : ", as recorded")}\n" +
                     $"  {replay.Record.Samples.Count} recorded samples, last at " +
                     $"t={replay.RecordedThroughSeconds:0.#} s; replaying to t={target:0.#} s");
 

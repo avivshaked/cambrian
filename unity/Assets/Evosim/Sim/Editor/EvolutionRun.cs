@@ -134,6 +134,14 @@ namespace Evosim.Sim.EditorTools
             long digestEvery = (long)Env("EVOSIM_DIGEST_EVERY", 0f);
             List<long> digestDumpSteps = EnvSteps("EVOSIM_DIGEST_DUMP_STEPS");
 
+            // D078, logbook/0069 — the same kind of setting for the same reason: it decides
+            // nothing about the ecology and everything about whether the recording can be watched
+            // again. 0 is the default and puts the whole physics step on the main thread, which is
+            // the only setting at which the shared world replays. The process default (31 on this
+            // machine, JobWorkerMaximumCount) is what every run before this build had, and is
+            // still reachable by asking for it.
+            int requestedJobWorkers = (int)Env("EVOSIM_PHYSICS_JOBS", 0f);
+
             // The two halves of what a joint costs to own before it does anything. §5A.10 marks
             // both unmeasured, and LinkCell's own documentation names the failure at each end:
             // "too low and capacity is effectively free again, too high and nothing can afford to
@@ -558,6 +566,30 @@ namespace Evosim.Sim.EditorTools
             config.InoculateAtSeconds = inoculateAt;
             config.InoculateCount = inoculateCount;
             config.InoculateDepthMetres = inoculateDepth;
+
+            // Before the world, because the setting is process-wide and takes effect on the next
+            // job scheduled: a world built at one thread count and stepped at another would be a
+            // run whose header described neither half.
+            int physicsJobWorkers = Ecosystem.ConfigurePhysicsJobWorkers(requestedJobWorkers);
+            int jobWorkerMaximum = Ecosystem.JobWorkerMaximum;
+
+            if (physicsJobWorkers != requestedJobWorkers)
+            {
+                // Never silently: the whole point of the knob is that a reader can tell which
+                // solver produced a run, and a request that did not land is exactly the case a
+                // manifest reading "0" would misreport if it recorded the request.
+                Debug.LogWarning(
+                    "EVOSIM_PHYSICS_JOBS asked for " + requestedJobWorkers +
+                    " job worker threads and the job system reports " + physicsJobWorkers +
+                    " (maximum " + jobWorkerMaximum + "). The run records what it reports.");
+            }
+
+            Debug.Log(
+                "physics jobs: " + physicsJobWorkers + " worker threads of a maximum " +
+                jobWorkerMaximum + (physicsJobWorkers == 0
+                    ? " — the whole physics step on the main thread, which is where the shared world replays"
+                    : " — the shared world is not expected to replay above 0"));
+
             var eco = new Ecosystem(config, seed);
 
             // Named after the report rather than timestamped, so a run's table and its creatures
@@ -587,7 +619,7 @@ namespace Evosim.Sim.EditorTools
             {
                 manifest = BuildManifest(
                     seed, budgetSeconds, wallMinutes, outPath, config.Hash(),
-                    inoculatePath, inoculumHash);
+                    inoculatePath, inoculumHash, physicsJobWorkers, jobWorkerMaximum);
 
                 CurrentManifest = manifest;
                 CurrentManifestDir = dir;
@@ -736,6 +768,13 @@ namespace Evosim.Sim.EditorTools
                     ? " · inoculate " + inoculateCount + " @ " + inoculateAt + " s, " +
                       inoculateDepth + " m, genome " + inoculumHashShort
                     : "") +
+                // D078, rendered unconditionally for D065's reason and appended last before the
+                // hash, per the header's append-only convention. The number is the one the job
+                // system reported, not the one asked for, so a header cannot claim a solver the
+                // run did not use. It does not enter the configHash: it is a runner setting, and
+                // the world it produces at 0 and at 15 obeys the same rules — it is only the
+                // realisation that differs.
+                " · physics jobs " + physicsJobWorkers +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());
@@ -1156,6 +1195,13 @@ namespace Evosim.Sim.EditorTools
             public string InoculatePath;
             public string InoculumHash;
 
+            /// <summary>
+            /// D078. The count the job system reported after it was set, and the machine's
+            /// ceiling — not what the environment asked for.
+            /// </summary>
+            public int PhysicsJobWorkers;
+            public int JobWorkerMaximum;
+
             public string GitCommit;
             public bool GitDirty;
             public string CoreHash;
@@ -1266,7 +1312,8 @@ namespace Evosim.Sim.EditorTools
         /// </remarks>
         private static RunManifest BuildManifest(
             ulong seed, float requestedSeconds, float requestedWallMinutes,
-            string outPath, string configHash, string inoculatePath, string inoculumHash)
+            string outPath, string configHash, string inoculatePath, string inoculumHash,
+            int physicsJobWorkers, int jobWorkerMaximum)
         {
             var notes = new List<string>();
 
@@ -1293,6 +1340,8 @@ namespace Evosim.Sim.EditorTools
                 ConfigHash = configHash,
                 InoculatePath = inoculatePath,
                 InoculumHash = inoculumHash,
+                PhysicsJobWorkers = physicsJobWorkers,
+                JobWorkerMaximum = jobWorkerMaximum,
                 WorkerPath = workerPath,
                 RepoRoot = repoRoot,
             };
@@ -1378,6 +1427,14 @@ namespace Evosim.Sim.EditorTools
             w.Field("unityVersion", Application.unityVersion);
             w.Field("physicsDtSeconds", Ecosystem.FixedDt);
             w.Field("metabolicStepSeconds", Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt);
+
+            // D078, written beside the step because it is the same kind of fact: what the solver
+            // was configured with, which config.json cannot carry and without which a shared-world
+            // recording cannot be told apart from a run that will never replay. The value is the
+            // one the job system reported, and the ceiling beside it so a reader of a manifest
+            // from another machine can see what 0 and 15 meant there.
+            w.Field("physicsJobWorkers", m.PhysicsJobWorkers);
+            w.Field("jobWorkerMaximum", m.JobWorkerMaximum);
             w.Field("requestedSeconds", m.RequestedSeconds);
             w.Field("requestedWallMinutes", m.RequestedWallMinutes);
             w.Field("configHash", m.ConfigHash);

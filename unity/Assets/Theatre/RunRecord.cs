@@ -63,6 +63,21 @@ namespace Evosim.Theatre
         /// <summary>Set when <c>run.json</c>'s step and <c>config.json</c>'s disagree.</summary>
         public string StepDisagreement { get; private set; }
 
+        /// <summary>
+        /// How many job worker threads the physics step was spread over, or null when the run was
+        /// recorded before the manifest carried it — D078, logbook/0069.
+        /// </summary>
+        /// <remarks>
+        /// Null is not "zero". A shared-space run recorded at the old default parts from any
+        /// re-run of itself after about 148,000 steps, whatever this replay is configured with,
+        /// so the two cases have to stay distinguishable and the viewer has to be told which one
+        /// it is watching.
+        /// </remarks>
+        public int? PhysicsJobWorkers { get; private set; }
+
+        /// <summary>The job-worker ceiling of the machine that recorded the run, or null.</summary>
+        public int? JobWorkerMaximum { get; private set; }
+
         public string ArmName { get; private set; }
         public string ConfigHash { get; private set; }
         public string UnityVersion { get; private set; }
@@ -112,6 +127,19 @@ namespace Evosim.Theatre
             record.ConfigHash = manifest.OptionalString("configHash", null);
             record.UnityVersion = manifest.OptionalString("unityVersion", null);
             record.Status = manifest.OptionalString("status", "unknown");
+
+            // Optional on purpose: every run recorded before D078 has no such field, and refusing
+            // them would make the theatre useless on the whole record to date. Absent stays absent
+            // — the replay decides what to do about it and the overlay says which case it is.
+            if (manifest.Has("physicsJobWorkers"))
+            {
+                record.PhysicsJobWorkers = manifest["physicsJobWorkers"].AsInt();
+            }
+
+            if (manifest.Has("jobWorkerMaximum"))
+            {
+                record.JobWorkerMaximum = manifest["jobWorkerMaximum"].AsInt();
+            }
 
             if (manifest.Has("source"))
             {

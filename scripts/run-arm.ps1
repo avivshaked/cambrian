@@ -233,6 +233,16 @@ if ($WaitForManifestMinutes -gt 0) {
         Write-Host "    gitCommit $($manifest.source.gitCommit)$(if ($manifest.source.gitDirty) { ' (DIRTY)' })"
         Write-Host "    simHash   $($manifest.source.simHash)"
         Write-Host "    coreHash  $($manifest.source.coreHash)"
+
+        # D078. Printed with the other identity lines because it is one: the shared world replays
+        # at 0 job worker threads and not above it, so this is the difference between a recording
+        # that can be watched again and one that cannot. Null on a manifest written before the
+        # field existed, and said as such rather than shown as a blank.
+        if ($null -ne $manifest.physicsJobWorkers) {
+            Write-Host "    physics jobs $($manifest.physicsJobWorkers) of a maximum $($manifest.jobWorkerMaximum)"
+        } else {
+            Write-Host "    physics jobs unrecorded (run.json written before D078)"
+        }
         if ($manifest.source.note) { Write-Warning "run.json note: $($manifest.source.note)" }
 
         if ($manifest.source.simHash -ne $simHash) {

@@ -97,18 +97,20 @@ and hold four different ones by 147,800: a fork with a few branches, not noise.
 ## Finding the cause
 
 Unity runs physics on a pool of **job worker threads** — extra CPU threads that share out
-the work. This machine has 16 logical cores and Unity used 15 workers. The engine's maker,
+the work. This machine has 32 logical threads and Unity's default is 31 workers (a figure I
+first wrote down as 15; the D078 build read the true ceiling from the job system). The
+engine's maker,
 NVIDIA, documents that PhysX results do not depend on the number of threads. Two more pairs
 tested that claim by launching Unity with fewer workers:
 
 | pair | job worker threads | agree through | differ from |
 |---|---|---|---|
-| `det3-a` / `det3-b` | 15 (the default) | step 147,777 | step 147,778 |
+| `det3-a` / `det3-b` | 31 (the default) | step 147,777 | step 147,778 |
 | `det4-a` / `det4-b` | 1 | step 184,600 | step 184,700 |
 | `det5-a` / `det5-b` | **0** — all physics on the main thread | **all 300,000 steps** | never |
 
 With no worker threads, the two runs are identical to the end, with 593 pairs of touching
-bodies per step by then. With one worker the fork comes later; with fifteen, sooner. So the
+bodies per step by then. With one worker the fork comes later; with thirty-one, sooner. So the
 number of threads decides how often the fork is reached, and zero threads means never. In
 this build, with articulated creatures pressing on each other, the documented
 thread-independence does not hold.
@@ -143,7 +145,7 @@ so the long confirmation is a long one rather than a big one. The population it 
 contact throughout, at about 44 touching pairs per step by the end.
 
 The cost was lower than the short probes suggested. The first run took 28.6 wall minutes
-and the second 25.2. The short pairs at the default fifteen threads had taken 2.6 minutes
+and the second 25.2. The short pairs at the default thread count had taken 2.6 minutes
 per 1,000 s, so at this population the single-threaded solver runs at about the same pace.
 The round-sized cost, at two to three thousand bodies, is what round 28 will measure
 (logbook/0070).
