@@ -190,3 +190,4 @@ key only translates the entries' reporting shorthand.
 | [0065](0065-the-first-shared-water.md) | 2026-09-05 | The first shared water |
 | [0066](0066-one-box.md) | 2026-09-06 | One box |
 | [0067](0067-the-shared-world-at-the-fine-step.md) | 2026-09-06 | The shared world at the fine step |
+| [0068](0068-the-shared-world-fed.md) | 2026-09-07 | The shared world, fed |
