@@ -72,3 +72,25 @@ that hash, `gitDirty false`, `physicsDtSeconds 0.01`, `status running`. Headers 
 as V1 on all five: `dt=0.01`, `space shared 4x10x10 m, depth 60, wrap, bed` (the floor
 build's token), `surface restore 1`, `area 400`, `matter in 0.3/s at vent, burial 0.01/s`,
 `from 0.25/m3`, the vent tokens. Monitor running. Results appended below.
+
+## Interim, 2026-09-06 evening: seed 4 is dead
+
+`r26-s4` ran to budget in nine hours because there was nothing left to simulate: 389
+alive at t=4,000, then 400 starvation deaths in the next 2,000 s, 11 alive at 12,000, one
+at 26,000, no stomach after 12,000. The audit closed throughout and nothing diverged; the
+world simply starved. The matter side says why: 400,000 conceptions refused for matter by
+t=4,000 with 2,000 units free in the world — free in the bottom layer, where the vent
+delivers it and the sink carries it (`mat deep` 0.16–0.2 against `mat top` 0.06), while
+the population sat at −15 to −31 m in the return flow and saw 0.1 units/m³. With the
+stock at a quarter and the influx at half, the world's arrivals were locked by whoever
+sat on the vent's floor and everyone else could not breed; senescence did the rest.
+`r26-s5` crashed from 182 to 58 by t=10,000 and is recovering at 409 with no stomach;
+seeds 1–3 are at t=4,600–7,100 with 1–5 stomachs and the crash's shape ahead of them.
+The pre-registration read each dose alone (0.3 at stock 1/m³; 0.25/m³ at 0.6) and the
+combination is what fails; M4's downward case was not written and is being read now.
+
+The scored arms run to their budgets (D069: a futility stop is a result, not a censor).
+One **diagnostic** arm, not scored, launched on the freed worker: `r26d-s4`, the same
+world at influx 0.6 with stock 0.25/m³ — the combination `r25q-s2` held 3,100 bodies on at
+the fast step — for 20,000 s at 0.01, to separate the dose from the step before the next
+round is designed.
