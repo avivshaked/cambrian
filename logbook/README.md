@@ -234,3 +234,4 @@ key only translates the entries' reporting shorthand.
 | [0067](0067-the-shared-world-at-the-fine-step.md) | 2026-09-06 | The shared world at the fine step |
 | [0068](0068-the-shared-world-fed.md) | 2026-09-06 | The shared world, fed |
 | [0069](0069-the-shared-world-does-not-replay.md) | 2026-09-06 | The shared world does not replay |
+| [0070](0070-the-good-world-with-one-change.md) | 2026-09-06 | The good world with one change: contact |

@@ -101,6 +101,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · **cost measured 2026-09-05 (logbook/0064): none — shared/tiled 0.88–1.12×, real time to ~2,900 bodies; the constraints are packing and a boundary rule** · the footprint and predation rules follow as proposals |
 | [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5; costs: the plume's crowd, the placeholder floor** · **the floor real 2026-09-06 (`a268311`)** · confirmation at 0.01 at influx 0.3 / stock 0.25 **failed 2 of 5 (logbook/0067: the lean dose starves the stomachs)** · re-run at influx 0.6 (logbook/0068) running |
 | [D078](#d078) | Single-threaded physics by default — the shared world replays only with no job-system worker threads; `EVOSIM_PHYSICS_JOBS` 0, recorded in manifest and header; shared-world changes validated by the state digest | 2026-09-06 | adopted by the agent as an instrument decision (a reproducibility invariant restored; owner may reverse for throughput) · cost measured at 120–180 bodies +19% wall (logbook/0069) · build pending |
+| [D079](#d079) | One change at a time from the last good world — round 18's closed world is the base; the first change is shared space (D077's box, real floor, restoring top) under D078's single-threaded physics; the open budget and the vent return afterwards, each earning its place | 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 |
 
 ---
 
@@ -3840,3 +3841,34 @@ theatre would then play a video, and the identity check — the thing that tells
 they are watching the run — would have nothing to check); leaving the shared world
 irreproducible and dropping §7's claim (the claim is what makes a replay a replay, and the
 cost of keeping it is a fifth of the wall time at small populations).
+
+### D079
+
+**One change at a time from the last good world.** Ruled by the owner 2026-09-06
+("agreed. proceed with that idea"), on the reading of round 27's seed 4 (logbook/0068,
+0069).
+
+**Why.** The last world that met the goal rule is round 18's closed world (logbook/0054,
+D070): four seeds of five, tiled, and it replays. Every world since stacked a change on it
+for a reason of its own — the open matter budget for matter at depth (D074), the vent
+shape for the outflow, shared space for contact (D076, D077), the restoring top and the
+real floor for the holes the vent opened — and none of the compound worlds has met the
+rule at round 18's bar: three of five in round 24, two of five in round 26, and round 27's
+first seed failed on a boom-and-bust of its stomach line that one flipped bit decided
+(0069). A world whose outcome hinges on one bit is on a knife edge, and tuning its dose
+further would not tell us which of the five changes put it there.
+
+**The rule.** (1) The base is round 18's world exactly (`scratch/launch-r18.ps1`: closed
+budget, vent off, stock 1/m³, area 100, exudation 0.15, clearance 10, dt 0.01). (2) Each
+round adds one change and asks D063 as amended of it; a change that costs the rule is read,
+not tuned around. (3) The first change is shared space as D077 defines it — the box, the
+periodic wrap, placement beside the parent, the restoring top, the real floor — under D078's
+single-threaded physics so the round replays. Area stays 100 (the box is 4 × 5 × 5 m, 60 m
+deep; round 18's 1,500–1,850 bodies fill it at under 10%, where the spike held). (4) The open
+budget and the vent return afterwards, one at a time, each on the world that held the rule
+before it. (5) The fed world's readings (0065–0068) stand as they are; they are not thrown
+away, they are re-ordered.
+
+**What it changes elsewhere.** The movement round (D075's first item) waits for a shared
+world that holds the rule; its draft pre-registration is rewritten on whichever world that
+is. The predation proposal likewise.
