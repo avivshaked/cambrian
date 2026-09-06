@@ -98,6 +98,32 @@ namespace Evosim.Sim
             _rng = new Rng(Rng.SeedFor(seed, World.PlacementIndex));
         }
 
+        /// <summary>
+        /// The sea bed, once there is one — <c>scratch/floor-spec.md</c> rule 2. Null leaves the
+        /// depth a body is offered untouched, which is the pre-floor behaviour.
+        /// </summary>
+        /// <remarks>
+        /// Set by <c>Ecosystem</c> immediately after the box is built, rather than taken as a
+        /// constructor argument: the geometry test in <c>SharedSpaceSmoke</c> builds a volume with
+        /// no scene at all, and a placer that needed a GameObject to exist could not be tested
+        /// without one.
+        /// </remarks>
+        public SeaFloor Floor { get; set; }
+
+        /// <summary>
+        /// The shallowest y a body of <paramref name="radius"/> may be placed at, given the bed.
+        /// </summary>
+        /// <remarks>
+        /// <b>Nothing is placed in the floor.</b> A body built interpenetrating a static collider
+        /// is the one initial condition the solver cannot resolve without an impulse, and the
+        /// mirror it replaces produced three newborn divergences within a metre of 60 m in
+        /// <c>r25q-s2</c>. So the placer, not the physics, is what keeps them apart: every founder,
+        /// inoculant and newborn is put with its whole bounding sphere clear of the rock, plus
+        /// <c>SeaFloor.ClearanceMetres</c>.
+        /// </remarks>
+        private float LowestPlacement(float radius) =>
+            Floor != null ? Floor.MinimumPlacementY(radius) : float.NegativeInfinity;
+
         /// <summary>K — <see cref="RunConfig.HorizontalPatches"/>, floored at 1.</summary>
         public int PatchCount { get; }
 
@@ -334,7 +360,7 @@ namespace Evosim.Sim
                 : creature.Patch;
         }
 
-        public bool TryReserveOffspring(Organism parent, Phenotype child, out int patch)
+        public bool TryReserveOffspring(Organism parent, Phenotype child, ref float heightY, out int patch)
         {
             patch = parent != null ? parent.Patch : 0;
             if (parent == null || child == null) return false;
@@ -348,10 +374,17 @@ namespace Evosim.Sim
             // an ecological fact.
             if (!_known.TryGetValue(parent.Id, out Occupant at))
             {
-                return TryReserveFounder(child, parent.HeightY, out patch);
+                return TryReserveFounder(child, ref heightY, out patch);
             }
 
             float distance = at.Radius + radius;
+
+            // A parent resting on the bed is at its parent's depth minus nothing, and its child's
+            // sphere is the child's own size: put beside a parent lying on the rock, a larger
+            // newborn would be half inside it. Raised only, and only as far as it takes — the
+            // ordinary body, metres off the bottom, is placed at exactly its parent's depth, which
+            // is the depth the parent's income was earned at.
+            float y = Mathf.Max(at.Position.y, LowestPlacement(radius));
 
             for (int attempt = 0; attempt < AttemptBudget; attempt++)
             {
@@ -363,13 +396,19 @@ namespace Evosim.Sim
 
                 var candidate = new Vector3(
                     WrapAxis(at.Position.x + distance * Mathf.Cos(angle), LengthMetres),
-                    at.Position.y,
+                    y,
                     WrapAxis(at.Position.z + distance * Mathf.Sin(angle), PatchWidthMetres));
 
                 if (!Free(candidate, radius)) { Rejections++; continue; }
 
                 Reserve(candidate, radius);
                 patch = PatchOf(candidate.x);
+
+                // Only when the bed actually moved it. The height the world admits the child at
+                // has to be the height its body is built at, or the economy charges one layer for
+                // a creature living in another (IBodyPlacement.TryReserveOffspring).
+                if (y > heightY) heightY = y;
+
                 return true;
             }
 
@@ -377,12 +416,19 @@ namespace Evosim.Sim
             return false;
         }
 
-        public bool TryReserveFounder(Phenotype body, float heightY, out int patch)
+        public bool TryReserveFounder(Phenotype body, ref float heightY, out int patch)
         {
             patch = 0;
             if (body == null) return false;
 
             float radius = BoundingRadius(body);
+
+            // The founder draw runs to RunConfig.FounderDepthSpread, which the reference world
+            // sets to the world's own depth — so the lottery offers depths inside the rock, and
+            // used to place bodies there. Clamped rather than redrawn: a redraw would change the
+            // depth distribution founding is calibrated on (§5A.2), where a clamp only moves the
+            // handful of bodies that were about to be buried.
+            float y = Mathf.Max(heightY, LowestPlacement(radius));
 
             for (int attempt = 0; attempt < AttemptBudget; attempt++)
             {
@@ -390,12 +436,15 @@ namespace Evosim.Sim
                 // founder lottery's business (RunConfig.FounderDepthSpread) and the horizontal
                 // position is this one's.
                 var candidate = new Vector3(
-                    _rng.Range(0f, LengthMetres), heightY, _rng.Range(0f, PatchWidthMetres));
+                    _rng.Range(0f, LengthMetres), y, _rng.Range(0f, PatchWidthMetres));
 
                 if (!Free(candidate, radius)) { Rejections++; continue; }
 
                 Reserve(candidate, radius);
                 patch = PatchOf(candidate.x);
+
+                if (y > heightY) heightY = y;
+
                 return true;
             }
 

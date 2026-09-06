@@ -33,22 +33,33 @@ namespace Evosim.Core
         /// </summary>
         /// <param name="parent">The parent, already alive and therefore already somewhere.</param>
         /// <param name="child">The developed body, for the size the room has to hold.</param>
+        /// <param name="heightY">
+        /// In, the depth the child would be admitted at — its parent's. Out, the depth it is
+        /// actually placed at, which the implementation may only ever <b>raise</b>: a world with a
+        /// solid sea bed cannot put a body inside the rock, and a parent resting on the floor has
+        /// to breed beside itself rather than below itself (<c>scratch/floor-spec.md</c>, rule 2).
+        /// Untouched in the ordinary case, so nothing but a body against the bed sees a difference.
+        /// </param>
         /// <param name="patch">
         /// The patch the reserved position falls in — D077 reads a patch from a position rather
         /// than inheriting an index, so this is what the child is admitted with.
         /// </param>
         /// <returns>False when the neighbourhood is full: a crowded stillbirth.</returns>
-        bool TryReserveOffspring(Organism parent, Phenotype child, out int patch);
+        bool TryReserveOffspring(Organism parent, Phenotype child, ref float heightY, out int patch);
 
         /// <summary>
         /// Reserves room anywhere in the world for a body that has no parent — a floor founder
         /// (<c>World.EnforceFloor</c>) or an inoculant (<c>World.Inoculate</c>).
         /// </summary>
         /// <param name="body">The developed body, for its size.</param>
-        /// <param name="heightY">The depth it was drawn at; only x and z are free.</param>
+        /// <param name="heightY">
+        /// In, the depth it was drawn at; only x and z are free. Out, the depth it is actually
+        /// placed at — raised, and never lowered, when the draw would have put the body in the
+        /// sea bed. See <see cref="TryReserveOffspring"/>.
+        /// </param>
         /// <param name="patch">The patch the reserved position falls in.</param>
         /// <returns>False when the world is too full to admit it.</returns>
-        bool TryReserveFounder(Phenotype body, float heightY, out int patch);
+        bool TryReserveFounder(Phenotype body, ref float heightY, out int patch);
 
         /// <summary>
         /// The patch a living creature's body is actually in — D077's "a patch is a region".

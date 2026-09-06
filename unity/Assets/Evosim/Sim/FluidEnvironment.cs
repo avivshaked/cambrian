@@ -91,6 +91,28 @@ namespace Evosim.Sim
         public float WorldDepthMetres { get; set; } = 60f;
 
         /// <summary>
+        /// Whether the world has a real sea bed under it — <c>Evosim.Sim.SeaFloor</c>, D077's
+        /// floor made a collider. False is the mirror: the surface's restoring rule with its sign
+        /// flipped, which is what the bottom had until 2026-09-06.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The two must never both act.</b> A collider that stops a body <i>and</i> a term that
+        /// throws it back up is a trampoline with rock in it — the body would be pushed off the
+        /// bed by the fluid step and caught by the solver on the same frame, at whatever rate the
+        /// fraction dictates. So when there is a bed, the fraction governs the surface only, and
+        /// <see cref="Restore"/> is told so.
+        /// </para>
+        /// <para>
+        /// Set by <c>Ecosystem</c> when <c>RunConfig.SharedSpace</c> is on, which is the one
+        /// condition under which a floor collider exists — a tiled world has no shared coordinates
+        /// to put one at, so its bottom is still the mirror and is unchanged. False by default,
+        /// so every harness that steps this class with no world at all keeps the rule it had.
+        /// </para>
+        /// </remarks>
+        public bool FloorIsSolid { get; set; }
+
+        /// <summary>
         /// How many times the per-step drag impulse was capped at the momentum available (see
         /// the limiter in <see cref="Apply(IReadOnlyList{CreatureInstance}, float)"/>). Zero for
         /// every run at dt 0.01 so far; a non-zero count is the coarse step's stability at work.
@@ -445,7 +467,8 @@ namespace Evosim.Sim
                     if (restoringFraction > 0f)
                     {
                         netDensity = Restore(
-                            netDensity, body.transform.position.y, restoringDensity, WorldDepthMetres);
+                            netDensity, body.transform.position.y, restoringDensity,
+                            WorldDepthMetres, floorRestores: !FloorIsSolid);
                     }
                     else if (netDensity < 0f && body.transform.position.y >= 0f)
                     {
@@ -486,12 +509,16 @@ namespace Evosim.Sim
         /// under a second from any height this world produces. Below −D it feels the mirror.
         /// </para>
         /// <para>
-        /// <b>The floor's half is a placeholder for a real floor.</b> A sea bed is solid: it
-        /// stops a body, it does not fling it back with the weight it arrived with. Nothing in
-        /// this build models contact with the ground, so the cheapest rule that keeps a body in
-        /// the world is the surface's rule with its sign flipped, and that is what this is. It
-        /// makes −D a stiff bouncer rather than a bed, and it should be replaced by a collider
-        /// the day the floor becomes somewhere a creature can rest.
+        /// <b>The floor's half was a placeholder and is now switched off by a real floor.</b> A
+        /// sea bed is solid: it stops a body, it does not fling it back with the weight it arrived
+        /// with. Until 2026-09-06 nothing modelled contact with the ground, so the bottom got the
+        /// surface's rule with its sign flipped — a stiff bouncer rather than a bed, which cost a
+        /// founder's <c>bestSpeed</c> at founding and three newborn divergences at 60 m in
+        /// <c>r25q-s2</c>. <c>SeaFloor</c> is the collider that replaces it, and
+        /// <paramref name="floorRestores"/> is how this function is told: false leaves everything
+        /// below the waterline to the rock and the water, and the fraction then governs the
+        /// surface alone. True is the old rule, which is still what a tiled world has, because a
+        /// tiled world has no shared coordinates to put a collider at.
         /// </para>
         /// <para>
         /// <b>The rule catches a body with exactly zero net density, and that is the case it
@@ -518,8 +545,14 @@ namespace Evosim.Sim
         /// step that is worth testing on its own.
         /// </para>
         /// </remarks>
+        /// <param name="floorRestores">
+        /// Whether the bottom half of the rule acts. False where the world has a
+        /// <see cref="SeaFloor"/> — see the remarks. Defaults to true, which is the rule as it
+        /// stood before the collider and the rule a tiled world still has.
+        /// </param>
         public static float Restore(
-            float netDensity, float heightY, float restoringDensity, float worldDepthMetres)
+            float netDensity, float heightY, float restoringDensity, float worldDepthMetres,
+            bool floorRestores = true)
         {
             // Off is D050's clamp, said here as well as at the call site. The call site does not
             // reach this function at a fraction of 0 — it takes the original expression, so that
@@ -535,7 +568,15 @@ namespace Evosim.Sim
             // +0.001 kg/m3 falls five hundred times slower than the neutral one beside it.
             if (heightY > 0f) return Mathf.Max(netDensity, restoringDensity);
             if (netDensity <= 0f && heightY == 0f) return 0f;
-            if (heightY < -worldDepthMetres) return Mathf.Min(netDensity, -restoringDensity);
+
+            // The bottom half, and only where there is no rock to do the job. With a SeaFloor
+            // under the box this is dead: a body at the bed is held by a contact constraint, and
+            // adding an upward density on top of that would be the mirror acting through the
+            // collider — the trampoline FloorIsSolid exists to prevent.
+            if (floorRestores && heightY < -worldDepthMetres)
+            {
+                return Mathf.Min(netDensity, -restoringDensity);
+            }
 
             return netDensity;
         }

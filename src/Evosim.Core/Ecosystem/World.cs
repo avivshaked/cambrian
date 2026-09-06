@@ -1615,9 +1615,17 @@ namespace Evosim.Core
             // reason (§4.5's extinction-by-shrinking), and reserving room for a body that will
             // never exist would leave a reservation to be released again for nothing.
             int childPatch = parent.Patch;
+
+            // The depth the child is admitted at. Its parent's, as it has always been, and the
+            // placer may raise it — a parent resting on a solid sea bed breeds beside itself, not
+            // into the rock (scratch/floor-spec.md rule 2). A local rather than the expression
+            // inline at Admit so that the height the body is built at and the height the economy
+            // charges are the same number; in the tiled world nothing touches it and the
+            // expression is parent.HeightY exactly, as before.
+            float childHeight = parent.HeightY;
             bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
 
-            if (shared && !Placement.TryReserveOffspring(parent, body, out childPatch))
+            if (shared && !Placement.TryReserveOffspring(parent, body, ref childHeight, out childPatch))
             {
                 CrowdedStillbirths++;
                 return false;
@@ -1638,7 +1646,7 @@ namespace Evosim.Core
 
             Organism child = Admit(
                 childGenome, body, BirthKind.Reproduction, seed, parent.Id,
-                parent.GenerationDepth + 1, endowment, tissue, parent.HeightY, parent,
+                parent.GenerationDepth + 1, endowment, tissue, childHeight, parent,
                 patch: childPatch);
 
             // D077. The reservation belongs to a creature now, or to nobody. Admit cannot
@@ -1704,6 +1712,13 @@ namespace Evosim.Core
                 // Placed through the lit zone rather than at the surface. Starting everything at
                 // depth zero would hand generation zero the best light in the world and make the
                 // §5A.2 calibration read as more generous than it is.
+                //
+                // The draw runs to the full spread, which in the reference world is the world's
+                // own depth (EVOSIM_FOUNDER_DEPTH 60 in a 60 m world), so a founder can be drawn
+                // at the very bottom. The placer raises it clear of a solid sea bed when there is
+                // one — see IBodyPlacement.TryReserveFounder — rather than the draw being narrowed
+                // here, because how much room a body needs is a fact about the body and the
+                // world's geometry, neither of which Core has.
                 float height = -rng.Range(0f, Config.FounderDepthSpread);
 
                 // D061. A second, independent seed slot, drawn only when there is more than one
@@ -1732,7 +1747,7 @@ namespace Evosim.Core
                 // birth, and the attempt is still counted — for the trickle's sake, per the
                 // remark below, and because a floor that retried until something fitted would be
                 // packing the world rather than sampling it.
-                if (shared && !Placement.TryReserveFounder(body, height, out patch))
+                if (shared && !Placement.TryReserveFounder(body, ref height, out patch))
                 {
                     CrowdedStillbirths++;
                     FloorSpawns++;
@@ -1821,7 +1836,13 @@ namespace Evosim.Core
 
                 bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
 
-                if (shared && !Placement.TryReserveFounder(body, heightY, out patch))
+                // Per copy, not per call: the placer may raise one inoculant clear of the sea bed
+                // and the next must still be asked for the depth the caller named. The assay's
+                // own guarantee is that every copy is put at heightY, and a copy that cannot be
+                // is a fact about the floor rather than a new depth for the whole cohort.
+                float placedHeight = heightY;
+
+                if (shared && !Placement.TryReserveFounder(body, ref placedHeight, out patch))
                 {
                     CrowdedStillbirths++;
                     Inoculated++;
@@ -1831,7 +1852,7 @@ namespace Evosim.Core
                 Organism creature = Admit(
                     genome, body, BirthKind.Inoculation, seed, parentId: -1, generationDepth: 0,
                     energy: Config.FounderEnergyJoules,
-                    tissue: Metabolism.TissueJoules(body, Config), heightY: heightY, parent: null,
+                    tissue: Metabolism.TissueJoules(body, Config), heightY: placedHeight, parent: null,
                     patch: patch);
 
                 if (shared)

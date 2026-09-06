@@ -137,19 +137,46 @@ namespace Evosim.Core.Tests
 
             private readonly Dictionary<long, int> _patches = new Dictionary<long, int>();
 
-            public bool TryReserveOffspring(Organism parent, Phenotype child, out int patch)
+            /// <summary>
+            /// A floor the placer will not put a body through, or 0 for "no bed at all".
+            /// </summary>
+            /// <remarks>
+            /// Stands in for <c>SharedVolume</c>'s clamp against the sea-bed collider: what the
+            /// interface promises Core is that <c>heightY</c> may come back <i>raised</i> and
+            /// never lowered, and that whatever comes back is the height the creature is admitted
+            /// at. Both of those are Core's to check; how many centimetres of clearance a real
+            /// body needs is not.
+            /// </remarks>
+            /// <remarks>
+            /// Negative infinity, not 0, and the difference is not cosmetic: a default of 0 is a
+            /// bed at the waterline, which raises every founder into the brightest water in the
+            /// world and turns a placement stub into a §5A.7 photosynthetic mat. It did, the
+            /// first time this was written — <c>ACrowdedBirthCostsItsParentNothingAndIsCounted</c>
+            /// ran away to 415 creatures.
+            /// </remarks>
+            public float MinimumHeightY = float.NegativeInfinity;
+
+            public float LastOfferedHeightY;
+
+            public bool TryReserveOffspring(Organism parent, Phenotype child, ref float heightY, out int patch)
             {
                 patch = Patch;
+                LastOfferedHeightY = heightY;
                 if (!Room) return false;
+
+                if (heightY < MinimumHeightY) heightY = MinimumHeightY;
 
                 Reserved++;
                 return true;
             }
 
-            public bool TryReserveFounder(Phenotype body, float heightY, out int patch)
+            public bool TryReserveFounder(Phenotype body, ref float heightY, out int patch)
             {
                 patch = Patch;
+                LastOfferedHeightY = heightY;
                 if (!Room) return false;
+
+                if (heightY < MinimumHeightY) heightY = MinimumHeightY;
 
                 Reserved++;
                 return true;
@@ -276,6 +303,57 @@ namespace Evosim.Core.Tests
             Assert.Equal(expected, world.StandingMatter, 4);
 
             Assert.True(energy >= 0d);
+        }
+
+        [Fact]
+        public void NobodyIsAdmittedBelowTheHeightThePlacerHandedBack()
+        {
+            // The floor build's Core-side contract (scratch/floor-spec.md rule 2): where the world
+            // has a solid sea bed, the placer raises a body clear of it — and the height the body
+            // is *built* at has to be the height the economy charges, or a creature would eat the
+            // light and the matter of a layer its body is not in. The world may never lower it.
+            //
+            // The bed here is at −40 m in a 60 m world, which no draw and no parent can be below
+            // by accident: the founder spread runs to 60, so the floor lottery reliably offers
+            // depths under it, and every child of a founder inherits its parent's.
+            const float bed = -40f;
+
+            var config = new RunConfig
+            {
+                Light = new LightModel(400f, 12f),
+                SharedSpace = true,
+                WorldDepthMetres = 60f,
+                FounderDepthSpread = 60f,
+                MinimumPopulation = 20,
+                MaximumPopulation = 400,
+            };
+
+            var placement = new StubPlacement { Room = true, MinimumHeightY = bed };
+            var world = new World(config, seed: 11) { Placement = placement };
+
+            for (int i = 0; i < 200; i++) world.Step(1f);
+
+            Assert.True(world.Births > 0);
+            Assert.NotEmpty(world.Living);
+
+            // The offers have to have included some the clamp actually bit on, or the assertion
+            // below is true of a world where nothing was ever raised.
+            Assert.True(placement.Reserved > 0);
+
+            float deepest = 0f;
+            foreach (Organism creature in world.Living)
+            {
+                if (creature.HeightY < deepest) deepest = creature.HeightY;
+            }
+
+            _output.WriteLine(
+                $"bed {bed} m, deepest living creature {deepest:0.###} m, " +
+                $"births {world.Births}, reserved {placement.Reserved}");
+
+            // Nothing sank on its own — World.Observe only moves a creature when a body reports a
+            // new height, and there is no body here — so every living height is one the placer
+            // handed back, and none of them is in the rock.
+            Assert.True(deepest >= bed, $"a creature was admitted at {deepest} m, below the bed at {bed} m");
         }
 
         [Fact]

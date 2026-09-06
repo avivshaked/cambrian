@@ -605,7 +605,11 @@ namespace Evosim.Sim.EditorTools
                 ? "shared " + Math.Max(1, (int)patches) + "x" +
                   patchWidth.ToString("0.###", CultureInfo.InvariantCulture) + "x" +
                   patchWidth.ToString("0.###", CultureInfo.InvariantCulture) + " m, depth " +
-                  config.WorldDepthMetres + ", wrap"
+                  config.WorldDepthMetres + ", wrap, " +
+                  // The bed, read off the Ecosystem rather than off the config: it is built or not
+                  // built by the constructor, and a header that inferred it from SharedSpace would
+                  // still say "bed" on the day something stops it being built.
+                  (eco.Floor != null ? "bed" : "no bed")
                 : "tiled " + Ecosystem.TileSpacing + " m";
 
             // The table's shape, fixed before the header names it: D077 appends one column per
@@ -862,6 +866,11 @@ namespace Evosim.Sim.EditorTools
                 " · contact pairs per physics step " +
                 (eco.Volume != null && eco.Steps > 0
                     ? (eco.ContactPairs / (double)eco.Steps).ToString("0.####", CultureInfo.InvariantCulture)
+                    : "—") +
+                " · sea bed " + (eco.Floor != null ? "collider at -" + eco.Volume.DepthMetres + " m" : "none") +
+                " · floor pairs per physics step " +
+                (eco.Floor != null && eco.Steps > 0
+                    ? (eco.FloorContactPairs / (double)eco.Steps).ToString("0.####", CultureInfo.InvariantCulture)
                     : "—"));
             report.AppendLine();
             report.AppendLine(
@@ -1019,6 +1028,7 @@ namespace Evosim.Sim.EditorTools
         private static long LastWraps;
         private static long LastCrowded;
         private static long LastContactPairs;
+        private static long LastFloorContactPairs;
         private static long LastContactSteps;
 
         /// <summary>
@@ -1068,6 +1078,7 @@ namespace Evosim.Sim.EditorTools
             LastWraps = 0;
             LastCrowded = 0;
             LastContactPairs = 0;
+            LastFloorContactPairs = 0;
             LastContactSteps = 0;
             Columns = BaseColumns;
             AssayFired = false;
@@ -1861,7 +1872,13 @@ namespace Evosim.Sim.EditorTools
             long wrapsWindow = eco.Wraps - LastWraps;
             long crowdedWindow = eco.Crowded - LastCrowded;
             long contactPairsWindow = eco.ContactPairs - LastContactPairs;
+            long floorContactPairsWindow = eco.FloorContactPairs - LastFloorContactPairs;
             long contactSteps = eco.Volume != null ? eco.Steps - LastContactSteps : 0L;
+
+            // The bed's own share, counted apart from the crowd's: a floor pair is one body lying
+            // on rock and a creature pair is two animals meeting. Reported only where there is a
+            // bed to lie on, which is exactly where there is a box.
+            long floorSteps = eco.Floor != null ? contactSteps : 0L;
 
             // D061. The asynchrony observables — the two readings the old, patch-blind columns
             // above cannot give, because they only ever look at one column of the world (patch
@@ -2073,7 +2090,13 @@ namespace Evosim.Sim.EditorTools
                 .Field("crowdedWindow", crowdedWindow)
                 .Field("contactPairs", eco.ContactPairs)
                 .Field("contactPairsPerStep",
-                    contactSteps > 0 ? contactPairsWindow / (double)contactSteps : 0d);
+                    contactSteps > 0 ? contactPairsWindow / (double)contactSteps : 0d)
+                // The sea bed's pairs, appended after the crowd's — scratch/floor-spec.md rule 3.
+                // Written for every run: 0 with no floor is the same shape as `sharedSpace` beside
+                // it, and the flag is what says which of the two facts a 0 is.
+                .Field("floorContactPairs", eco.FloorContactPairs)
+                .Field("floorContactPairsPerStep",
+                    floorSteps > 0 ? floorContactPairsWindow / (double)floorSteps : 0d);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -2279,6 +2302,7 @@ namespace Evosim.Sim.EditorTools
                 wrapsWindow.ToString(c),
                 "**" + crowdedWindow.ToString(c) + "**",
                 contactSteps > 0 ? (contactPairsWindow / (double)contactSteps).ToString("0.###", c) : "—",
+                floorSteps > 0 ? (floorContactPairsWindow / (double)floorSteps).ToString("0.###", c) : "—",
             };
 
             // The per-patch populations, last, so everything before them keeps its index.
@@ -2295,6 +2319,7 @@ namespace Evosim.Sim.EditorTools
             LastWraps = eco.Wraps;
             LastCrowded = eco.Crowded;
             LastContactPairs = eco.ContactPairs;
+            LastFloorContactPairs = eco.FloorContactPairs;
             LastContactSteps = eco.Steps;
 
             if (row.Count != Columns.Length)
@@ -2366,6 +2391,13 @@ namespace Evosim.Sim.EditorTools
             // per-patch populations follow, one column per patch, and are the only part of this
             // table whose width depends on the config.
             "above", "wraps", "crowded", "contacts",
+
+            // The sea bed — scratch/floor-spec.md rule 3, appended after `contacts` per the same
+            // rule. `contacts` is creature-creature pairs only; this is pairs against the floor
+            // collider, so a benthic crowd is visible instead of being summed into the other. An
+            // em-dash where there is no bed, for `contacts`' own reason: 0 pairs and no floor are
+            // different facts and a number alone cannot say which.
+            "floor con",
         };
 
         /// <summary>

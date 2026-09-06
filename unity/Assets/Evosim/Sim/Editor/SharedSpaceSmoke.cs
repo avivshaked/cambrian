@@ -28,9 +28,21 @@ namespace Evosim.Sim.EditorTools
     /// <para>
     /// <b>Part 3</b> is the box with real bodies in it: two hundred founders in the screen's own
     /// 4 × 10 × 10 × 60 m volume, two thousand physics steps at dt 0.01, with twenty of them
-    /// pushed out through the top and the bottom to see whether the water brings them back. What
+    /// pushed out through the top and into the bed to see whether the world brings them back. What
     /// it asserts is D077's rules, in the order they are numbered: nothing outside the box, the
-    /// top and bottom restore, contacts are counted, and no body is left non-finite.
+    /// top restores, the bed holds, contacts are counted, and no body is left non-finite.
+    /// </para>
+    /// <para>
+    /// <b>The bed is a collider now</b> (<c>scratch/floor-spec.md</c>, <see cref="SeaFloor"/>), so
+    /// what Part 3 asks of the bottom changed with it. It used to ask whether a spring threw a
+    /// body back into the world; it now asks the two things a bed has to be true of: <b>nothing is
+    /// ever placed inside it</b> — every founder's bounding sphere is clear of the rock the step
+    /// its body is built — and <b>a body put inside it by hand comes out and stays out</b>. The
+    /// second is slower than it looks, and deliberately: <c>Physics.defaultMaxDepenetrationVelocity</c>
+    /// is 0.02 m/s in this project (<see cref="FluidEnvironment.MaxDepenetrationVelocity"/>,
+    /// because depenetration is a free-energy source a creature can learn to farm), so an
+    /// interpenetration takes fifty seconds a metre to resolve. <see cref="UnderMetres"/> is sized
+    /// against that cap rather than against the bed.
     /// </para>
     /// <para>
     /// <b>The excess density is deliberately not the reference world's.</b> At 0.02 kg/m³ a body
@@ -52,8 +64,24 @@ namespace Evosim.Sim.EditorTools
         /// <summary>How many are pushed through each face.</summary>
         private const int Displaced = 10;
 
-        /// <summary>How far out of the world they are pushed, metres.</summary>
+        /// <summary>How far above the surface they are pushed, metres.</summary>
         private const float OutMetres = 0.25f;
+
+        /// <summary>How far into the sea bed the other ten are pushed, metres.</summary>
+        /// <remarks>
+        /// <b>Ten centimetres, and the number is about the depenetration cap rather than about the
+        /// bed.</b> A body teleported inside a static collider is an initial condition no solver
+        /// can fix instantly, and this project caps the fix at 0.02 m/s on purpose
+        /// (<see cref="FluidEnvironment.MaxDepenetrationVelocity"/>): a separating velocity the
+        /// solver invents is free energy, and logbook/0007 measured a creature farming it. So the
+        /// rock pushes a buried body out at five centimetres a second and no faster. Ten
+        /// centimetres is ten times the default contact offset — unambiguously inside — and clears
+        /// in about five seconds, which is inside the run. Twenty-five centimetres, the figure the
+        /// surface uses, would take twelve and a half seconds against a body that is also being
+        /// pulled down at <see cref="ExcessDensity"/>, and a smoke that failed on that would be
+        /// reporting the cap.
+        /// </remarks>
+        private const float UnderMetres = 0.1f;
 
         /// <summary>
         /// How far past the boundary a body is still allowed to be at the end, metres.
@@ -68,19 +96,17 @@ namespace Evosim.Sim.EditorTools
         private const float ReturnTolerance = 0.05f;
 
         /// <summary>
-        /// How near the floor a body pushed under it has to end up, metres.
+        /// How far below −D a body is still allowed to be at the end, metres.
         /// </summary>
         /// <remarks>
-        /// <b>The floor is a bouncer, not a bed.</b> Under −D a body is pushed up by its whole
-        /// weight; the moment it is over −D that force stops and the water it is in is very
-        /// nearly neutral, so it coasts up, decelerating on drag alone, and settles somewhere
-        /// above the floor rather than on it. This bound is what "back in the world and staying
-        /// there" is measured against; the excursion below the floor at the end of the run should
-        /// be zero, and the band is here so that a body caught mid-crossing is not read as a
-        /// failure. The floor's rule is a placeholder for a real collider — see
-        /// <c>FluidConfig.SurfaceRestoringFraction</c>.
+        /// <b>The floor is a bed now, not a bouncer</b> (<see cref="SeaFloor"/>), so this is a
+        /// contact tolerance rather than a band a body hovers in. A root at rest on the bed sits
+        /// <i>above</i> −D by whatever the lowest part of its body reaches down to, and the only
+        /// way to be under it at all is to be mid-way out of an interpenetration we created. Ten
+        /// centimetres — the push itself — is therefore the bound: a body that has not moved is a
+        /// failure and a body that has come most of the way is not.
         /// </remarks>
-        private const float FloorBandMetres = 0.5f;
+        private const float BedBandMetres = 0.1f;
 
         /// <summary>
         /// How far outside the box, in metres, is read as "the wrap has not run yet" rather than
@@ -224,6 +250,22 @@ namespace Evosim.Sim.EditorTools
             ok &= Check(report, "off, neutral below the floor  -> unchanged",
                 FluidEnvironment.Restore(0f, -80f, 0f, depth), 0f);
 
+            // With a real sea bed the bottom half of the rule is retired and the fraction governs
+            // the surface alone (scratch/floor-spec.md rule 1). These are the cases that would
+            // make a trampoline if both acted: rock holding a body down while the water threw it
+            // back up. The surface is untouched by the change, which is the other half of the
+            // claim and is why it is asserted here rather than assumed.
+            ok &= Check(report, "bed, heavy below the floor    -> unchanged (the rock holds it)",
+                FluidEnvironment.Restore(0.5f, -80f, weight, depth, floorRestores: false), 0.5f);
+            ok &= Check(report, "bed, buoyant below the floor  -> unchanged",
+                FluidEnvironment.Restore(-0.5f, -80f, weight, depth, floorRestores: false), -0.5f);
+            ok &= Check(report, "bed, neutral below the floor  -> unchanged",
+                FluidEnvironment.Restore(0f, -80f, weight, depth, floorRestores: false), 0f);
+            ok &= Check(report, "bed, above the line           -> +f x weight, as before",
+                FluidEnvironment.Restore(-0.5f, 4f, weight, depth, floorRestores: false), weight);
+            ok &= Check(report, "bed, at the line              -> 0 (D050), as before",
+                FluidEnvironment.Restore(-0.5f, 0f, weight, depth, floorRestores: false), 0f);
+
             report.AppendLine();
             return ok;
         }
@@ -289,10 +331,22 @@ namespace Evosim.Sim.EditorTools
             // The one that matters: rejection-sampled placements do not overlap. Founders drawn
             // from the reference world's own options, so the radii are the ones logbook/0064
             // measured rather than a convenient fiction.
+            //
+            // With a bed under the box (scratch/floor-spec.md rule 2) the depth is no longer free
+            // either: the draw here runs the full 60 m of a 60 m world, exactly as the reference
+            // world's EVOSIM_FOUNDER_DEPTH does, so the deep end of it lands inside the rock and
+            // every one of those has to come back raised.
+            SeaFloor bed = SeaFloor.Build(volume);
+            volume.Floor = bed;
+
             var config = new RunConfig();
             var placed = new System.Collections.Generic.List<Vector3>();
             var radii = new System.Collections.Generic.List<float>();
             int refused = 0;
+            int raised = 0;
+            float deepestSphere = 0f;
+            float worstIntoTheBed = 0f;
+            int misreported = 0;
 
             for (int i = 0; i < Founders; i++)
             {
@@ -301,17 +355,30 @@ namespace Evosim.Sim.EditorTools
                 Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
                 if (body.PartCount == 0) continue;
 
-                float height = -rng.Range(0f, 60f);
+                float drawn = -rng.Range(0f, 60f);
+                float height = drawn;
 
-                if (!volume.TryReserveFounder(body, height, out int _)) { refused++; continue; }
+                if (!volume.TryReserveFounder(body, ref height, out int _)) { refused++; continue; }
+
+                if (height > drawn) raised++;
 
                 // Commit is what actually occupies the space; a reservation nobody claims is a
                 // birth that did not happen, and the next placement must be free to use the spot.
                 volume.Commit(i);
                 volume.TryTakePlacement(i, out Vector3 at);
 
+                float radius = SharedVolume.BoundingRadius(body);
+
+                // The depth handed back to the world has to be the depth the body was actually put
+                // at, or the economy charges one layer for a creature living in another.
+                if (Mathf.Abs(at.y - height) > 1e-4f) misreported++;
+
+                float bottom = at.y - radius;
+                deepestSphere = Mathf.Min(deepestSphere, bottom);
+                worstIntoTheBed = Mathf.Max(worstIntoTheBed, bed.TopY - bottom);
+
                 placed.Add(at);
-                radii.Add(SharedVolume.BoundingRadius(body));
+                radii.Add(radius);
             }
 
             float worst = 0f;
@@ -334,12 +401,43 @@ namespace Evosim.Sim.EditorTools
                     : "—") + " per body), hash cell " +
                 volume.CellMetres.ToString("0.###", CultureInfo.InvariantCulture) + " m");
 
+            report.AppendLine(
+                "- bed at y=" + bed.TopY.ToString("0.##", CultureInfo.InvariantCulture) +
+                " m, BoxCollider " + bed.Collider.size.x.ToString("0.##", CultureInfo.InvariantCulture) +
+                " x " + bed.Collider.size.y.ToString("0.##", CultureInfo.InvariantCulture) +
+                " x " + bed.Collider.size.z.ToString("0.##", CultureInfo.InvariantCulture) +
+                " m, layer " + bed.Root.layer + ", material " +
+                (bed.Collider.sharedMaterial == null ? "project default" : bed.Collider.sharedMaterial.name) +
+                ", providesContacts " + bed.Collider.providesContacts);
+
+            report.AppendLine(
+                "- " + raised + " of " + placed.Count + " founders were drawn inside the rock and " +
+                "raised clear; deepest bounding sphere now reaches " +
+                deepestSphere.ToString("0.####", CultureInfo.InvariantCulture) + " m");
+
             ok &= Same(report, "overlapping pairs", overlaps, 0);
             if (overlaps > 0)
             {
                 report.AppendLine(
                     "  worst overlap " + worst.ToString("0.####", CultureInfo.InvariantCulture) + " m");
             }
+
+            // Rule 2: nothing is placed in the floor. Not "few" and not "on average" — the whole
+            // bounding sphere of every body, clear of the rock.
+            ok &= Same(report, "founders whose sphere reaches into the bed",
+                Mathf.Max(0f, worstIntoTheBed), 0f);
+
+            ok &= Same(report, "founders placed at a depth other than the one reported", misreported, 0);
+
+            // And the raising has to have happened, or the line above is true of a world in which
+            // the bed was never consulted.
+            bool anyRaised = raised > 0;
+            report.AppendLine(
+                (anyRaised ? "- ok   " : "- FAIL ") + "the clamp was exercised: " + raised + " raised");
+            ok &= anyRaised;
+
+            bed.Destroy();
+            volume.Floor = null;
 
             report.AppendLine();
             return ok;
@@ -410,6 +508,18 @@ namespace Evosim.Sim.EditorTools
                 var pushedUp = new System.Collections.Generic.List<CreatureInstance>();
                 var pushedDown = new System.Collections.Generic.List<CreatureInstance>();
 
+                // Rule 2, measured on real articulations rather than on reserved spheres: every
+                // body is checked against the bed the first step it exists, which is the step
+                // after Ecosystem.Build placed it and before any physics has moved it.
+                var seen = new System.Collections.Generic.HashSet<EntityId>();
+                int placedChecked = 0;
+                float worstBuiltIntoTheBed = 0f;
+
+                // How far under the bed anything got, at any step, after the displacement — the
+                // bound the spec names is −D − radius, and this is the number it is read against.
+                float deepestPartEver = 0f;
+                int clearedAtStep = -1;
+
                 for (int step = 1; step <= Steps; step++)
                 {
                     eco.Step();
@@ -428,7 +538,45 @@ namespace Evosim.Sim.EditorTools
 
                         worstOutside = Mathf.Max(worstOutside, over);
                         if (over > OutsideTolerance) outsideEver++;
+
+                        // The first sight of a body is the one that says whether it was *placed*
+                        // in the rock. Everything after that is the physics, which is what the
+                        // rest of this part is about.
+                        if (instance.Root != null && seen.Add(instance.Root.GetEntityId()))
+                        {
+                            placedChecked++;
+
+                            float radius = SharedVolume.BoundingRadius(instance.Phenotype);
+                            worstBuiltIntoTheBed = Mathf.Max(
+                                worstBuiltIntoTheBed, eco.Floor.TopY - (p.y - radius));
+                        }
                     }
+
+                    if (step <= DisplaceAt) continue;
+
+                    // The displaced ten, on their way out of the rock. Roots only: what "under the
+                    // floor" means for a body is where its root is, which is what every other
+                    // depth reading in this project is denominated in.
+                    float deepestNow = 0f;
+
+                    for (int i = 0; i < pushedDown.Count; i++)
+                    {
+                        // A displaced body can starve and be destroyed mid-run — Returned() has
+                        // the same guard, and for the same reason: a dead body is not under the
+                        // bed in any sense the instrument cares about.
+                        if (pushedDown[i].Root == null) continue;
+
+                        ArticulationBody[] bodies = pushedDown[i].Bodies;
+                        if (bodies == null || bodies.Length == 0) continue;
+
+                        float y = bodies[0].transform.position.y;
+                        if (float.IsNaN(y) || float.IsInfinity(y)) continue;
+
+                        deepestNow = Mathf.Max(deepestNow, eco.Floor.TopY - y);
+                    }
+
+                    deepestPartEver = Mathf.Max(deepestPartEver, deepestNow);
+                    if (clearedAtStep < 0 && deepestNow <= 0f) clearedAtStep = step;
                 }
 
                 int aboveNow = 0, belowNow = 0;
@@ -464,10 +612,23 @@ namespace Evosim.Sim.EditorTools
                 report.AppendLine(
                     "- displaced at step " + DisplaceAt + ": " + pushedUp.Count + " to y=+" +
                     OutMetres + ", " + pushedDown.Count + " to y=-" +
-                    (config.WorldDepthMetres + OutMetres) + "; back inside by step " + Steps +
-                    ": " + returnedUp + " and " + returnedDown + " (deepest excursion left " +
+                    (config.WorldDepthMetres + UnderMetres) + " (inside the bed); back inside by " +
+                    "step " + Steps + ": " + returnedUp + " and " + returnedDown +
+                    " (deepest excursion left " +
                     Mathf.Max(worstUp, worstDown).ToString("0.###", CultureInfo.InvariantCulture) +
                     " m past a face)");
+                report.AppendLine(
+                    "- the buried ten: deepest any root was under the bed after the push " +
+                    deepestPartEver.ToString("0.####", CultureInfo.InvariantCulture) +
+                    " m, all clear of it by step " +
+                    (clearedAtStep >= 0 ? clearedAtStep.ToString(CultureInfo.InvariantCulture) : "never") +
+                    " (depenetration is capped at " + FluidEnvironment.MaxDepenetrationVelocity +
+                    " m/s — see UnderMetres)");
+                report.AppendLine(
+                    "- the bed: " + eco.FloorContactPairs + " floor contact pairs (" +
+                    (eco.FloorContactPairs / (double)eco.Steps).ToString("0.####", CultureInfo.InvariantCulture) +
+                    " per physics step), counted apart from the " + eco.ContactPairs +
+                    " creature-creature pairs");
                 report.AppendLine(
                     "- centre-of-mass census at the end: " + aboveNow + " above the surface, " +
                     belowNow + " below the floor");
@@ -484,17 +645,23 @@ namespace Evosim.Sim.EditorTools
                 ok &= Same(report, "bodies actually pushed below", pushedDown.Count, Displaced);
 
                 // Above the surface: back inside and staying there, because nothing up there
-                // pushes a body the other way (see FloorBandMetres).
+                // pushes a body the other way.
                 ok &= Same(report, "of those, back inside from above", returnedUp, pushedUp.Count);
 
-                // Below the floor: held in a band about −D rather than resting on it, and the
-                // count that made it all the way inside is a reading rather than a bar.
-                report.AppendLine(
-                    "- " + returnedDown + " of " + pushedDown.Count +
-                    " pushed below are fully inside; any remainder is still crossing back");
+                // Rule 2 on the real bodies: nothing was *built* inside the rock. This is the one
+                // the three r25q-s2 divergences were newborns of.
+                ok &= Same(report, "bodies built with their sphere in the bed",
+                    Mathf.Max(0f, worstBuiltIntoTheBed), 0f);
+                report.AppendLine("- " + placedChecked + " bodies were checked as they were built");
 
-                ok &= Within(report, "everything pushed below is held at the floor",
-                    worstDown, FloorBandMetres);
+                // Out of the bed and staying out. Both halves: everything is back inside at the
+                // end, and nothing ever got further in than the push itself — a body that sank
+                // *through* rock would show here as a deeper excursion, not as a slow return.
+                ok &= Same(report, "of those, back out of the bed", returnedDown, pushedDown.Count);
+                ok &= Within(report, "deepest any buried root ever got under the bed",
+                    deepestPartEver, UnderMetres + 1e-3f);
+                ok &= Within(report, "excursion left under the bed at the end",
+                    worstDown, BedBandMetres);
 
                 // The direction, not only the arrival: a body that is still out but is nearer than
                 // it was has been restored, and this is what would fail if the sign were wrong.
@@ -502,7 +669,17 @@ namespace Evosim.Sim.EditorTools
                     Mathf.Max(worstUp, worstDown), OutMetres);
 
                 ok &= Same(report, "`above` as the report reads it", eco.AboveSurface, 0);
+                ok &= Same(report, "below the floor, centre of mass", belowNow, 0);
                 ok &= Same(report, "diverged", (int)eco.World.Diverged, 0);
+
+                // The bed has to be reporting: ten bodies resting on it that produce no pairs
+                // would mean the collider is on a layer nothing hits, or providesContacts is off,
+                // or the split is filing floor pairs as creature pairs.
+                bool bedTouched = eco.FloorContactPairs > 0;
+                report.AppendLine(
+                    (bedTouched ? "- ok   " : "- FAIL ") + "the bed reports contacts: " +
+                    eco.FloorContactPairs + " pairs");
+                ok &= bedTouched;
 
                 // The crowd has to be real: two hundred bodies in six thousand cubic metres that
                 // never touch would mean the colliders or the contact report are off.
@@ -579,13 +756,15 @@ namespace Evosim.Sim.EditorTools
             return over;
         }
 
-        /// <summary>Pushes some bodies out through the top and the bottom, to see them come back.</summary>
+        /// <summary>
+        /// Pushes ten bodies above the surface and ten into the sea bed, to see them come back.
+        /// </summary>
         private static void Displace(
             Ecosystem eco,
             System.Collections.Generic.List<CreatureInstance> up,
             System.Collections.Generic.List<CreatureInstance> down)
         {
-            float floor = -eco.Volume.DepthMetres - OutMetres;
+            float floor = -eco.Volume.DepthMetres - UnderMetres;
 
             foreach (CreatureInstance instance in eco.Instances)
             {

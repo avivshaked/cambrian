@@ -29,6 +29,16 @@ namespace Evosim.Theatre
     /// where the creatures are, and says nothing about the column's area.
     /// </para>
     /// <para>
+    /// <b>Under <c>RunConfig.SharedSpace</c> the floor is a solid thing and is drawn as one.</b>
+    /// D077's bottom was a restoring force — a rule, with nothing there — and a wire grid was an
+    /// honest picture of it. Since <c>scratch/floor-spec.md</c> the bed is a static collider a body
+    /// rests on (<c>Evosim.Sim.SeaFloor</c>), so it is filled rather than drawn as lines, and the
+    /// grid is kept over the fill as a scale reference rather than as the floor itself. What is
+    /// filled is the box's own footprint, x in [0, K·W), z in [0, W): the collider overhangs that
+    /// by <c>SeaFloor.SeamMarginMetres</c> so a body caught mid-wrap has rock under it, and drawing
+    /// the overhang would put sea bed where there is no water.
+    /// </para>
+    /// <para>
     /// <b>Both of those stop being true under <c>RunConfig.SharedSpace</c></b> (D077), and
     /// <see cref="ShowBox"/> is what the theatre draws then: the box is literal — K patches of
     /// <c>sqrt(area / K)</c> metres side by side on a ring, x in [0, K·W), z in [0, W) — and the
@@ -41,6 +51,16 @@ namespace Evosim.Theatre
     {
         public Color SurfaceColour = new Color(0.45f, 0.75f, 0.95f, 0.5f);
         public Color FloorColour = new Color(0.55f, 0.45f, 0.30f, 0.5f);
+
+        /// <summary>
+        /// The sea bed's fill, drawn under the box's floor grid — <c>scratch/floor-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// Darker than <see cref="FloorColour"/> so the grid still reads on top of it. Only the
+        /// box has one: in a tiled world the floor is a rule about a number and not a place, and
+        /// filling a plane there would draw a sea bed the run does not have.
+        /// </remarks>
+        public Color BedColour = new Color(0.28f, 0.23f, 0.16f, 1f);
 
         /// <summary>Where a patch seam is drawn: x = k·W, for k in 1..K−1 — D077.</summary>
         public Color SeamColour = new Color(0.95f, 0.85f, 0.45f, 0.55f);
@@ -112,11 +132,25 @@ namespace Evosim.Theatre
 
                 _material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
                 _material.SetInt("_ZWrite", 0);
+
+                // Two-sided, for the bed: the free-fly camera can go under the world, and a
+                // back-face-culled quad would leave a hole to fall through with nothing in it.
+                // Harmless for the lines, which have no facing.
+                _material.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
             }
 
             _material.SetPass(0);
 
             GL.PushMatrix();
+
+            // The bed first and the lines after, so the grid and the seams read on top of it.
+            if (_boxWidth > 0f)
+            {
+                GL.Begin(GL.QUADS);
+                Bed();
+                GL.End();
+            }
+
             GL.Begin(GL.LINES);
 
             if (_boxWidth > 0f) Box();
@@ -173,6 +207,17 @@ namespace Evosim.Theatre
                 Vertical(x, 0f);
                 Vertical(x, _boxWidth);
             }
+        }
+
+        /// <summary>The sea bed, filled — one quad across the box's footprint at y = −D.</summary>
+        private void Bed()
+        {
+            GL.Color(BedColour);
+
+            GL.Vertex3(0f, -_depth, 0f);
+            GL.Vertex3(_boxLength, -_depth, 0f);
+            GL.Vertex3(_boxLength, -_depth, _boxWidth);
+            GL.Vertex3(0f, -_depth, _boxWidth);
         }
 
         private void Vertical(float x, float z)

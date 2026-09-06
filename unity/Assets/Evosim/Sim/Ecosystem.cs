@@ -387,6 +387,22 @@ namespace Evosim.Sim
 
                 World.Placement = Volume;
 
+                // The sea bed, before anything is placed: SharedVolume asks it how much clearance
+                // a body needs, and the very first floor spawn of the run has to get the answer.
+                Floor = SeaFloor.Build(Volume, parent);
+                Volume.Floor = Floor;
+
+                if (Floor != null)
+                {
+                    _floorEntityId = Floor.ColliderEntityId;
+                    _hasFloor = true;
+                }
+
+                // And with rock under the box, the restoring mirror below −D is retired: two
+                // things holding the same boundary is a trampoline. FluidEnvironment.FloorIsSolid
+                // says why at length.
+                Fluid.FloorIsSolid = Floor != null;
+
                 Physics.ContactEvent += OnContactEvent;
                 _countingContacts = true;
             }
@@ -405,22 +421,77 @@ namespace Evosim.Sim
         /// second counter, promoted to the only one because it is the one that cannot silently
         /// read zero (logbook/0064). Interlocked because the event can arrive on a worker thread.
         /// </remarks>
+        /// <remarks>
+        /// <b>A body resting on the bed is not two animals meeting</b>, and the pairs are split so
+        /// that a benthic crowd shows up as itself rather than swamping the number the crowding
+        /// question is asked of. Split per <i>pair</i> rather than per header: a header names the
+        /// two bodies, and a static collider has no <c>Rigidbody</c> or <c>ArticulationBody</c> to
+        /// be named by, so <c>bodyInstanceID</c> cannot be trusted to identify the floor. The pair
+        /// carries the colliders' own instance ids, which the floor definitely has one of. The
+        /// extra work is one comparison per contact pair per step — the solver has already done
+        /// far more to produce it.
+        /// </remarks>
         private void OnContactEvent(
             PhysicsScene scene, Unity.Collections.NativeArray<ContactPairHeader>.ReadOnly headers)
         {
+            EntityId floorId = _floorEntityId;
+            bool hasFloor = _hasFloor;
             long pairs = 0;
-            for (int i = 0; i < headers.Length; i++) pairs += headers[i].pairCount;
+            long floorPairs = 0;
 
-            System.Threading.Interlocked.Add(ref _contactPairs, pairs);
+            for (int i = 0; i < headers.Length; i++)
+            {
+                ContactPairHeader header = headers[i];
+                int count = (int)header.pairCount;
+
+                // No floor in this world: every pair is a creature pair and there is nothing to
+                // ask of any of them. This is also the tiled path, where the event is not even
+                // subscribed.
+                if (!hasFloor) { pairs += count; continue; }
+
+                for (int j = 0; j < count; j++)
+                {
+                    ContactPair pair = header.GetContactPair(j);
+
+                    if (pair.colliderEntityId.Equals(floorId) ||
+                        pair.otherColliderEntityId.Equals(floorId))
+                    {
+                        floorPairs++;
+                    }
+                    else
+                    {
+                        pairs++;
+                    }
+                }
+            }
+
+            if (pairs != 0) System.Threading.Interlocked.Add(ref _contactPairs, pairs);
+            if (floorPairs != 0) System.Threading.Interlocked.Add(ref _floorContactPairs, floorPairs);
         }
 
         private long _contactPairs;
+        private long _floorContactPairs;
+
+        /// <summary>The sea bed's collider id, cached for the contact callback.</summary>
+        /// <remarks>
+        /// Paired with <see cref="_hasFloor"/> rather than compared against <c>EntityId.None</c>:
+        /// "there is no bed" is a fact about this world and not a value a collider might happen to
+        /// have, and the callback runs on a worker thread where a wrong answer is invisible.
+        /// </remarks>
+        private readonly EntityId _floorEntityId;
+
+        private readonly bool _hasFloor;
 
         /// <summary>
         /// The box, when there is one — D077. Null in a tiled world, which is every run before
         /// D077 and every run with <c>EVOSIM_SHARED_SPACE</c> unset.
         /// </summary>
         public SharedVolume Volume { get; }
+
+        /// <summary>
+        /// The sea bed under the box — <c>scratch/floor-spec.md</c>. Null in a tiled world.
+        /// </summary>
+        public SeaFloor Floor { get; }
 
         /// <summary>Living creatures whose root is above the waterline, at the last sample.</summary>
         /// <remarks>
@@ -448,6 +519,20 @@ namespace Evosim.Sim
         /// without it PhysX resolves the contact and tells nobody (logbook/0064).
         /// </remarks>
         public long ContactPairs => System.Threading.Interlocked.Read(ref _contactPairs);
+
+        /// <summary>
+        /// Contact pairs against the sea bed, running total. 0 unless there is one — D077's floor.
+        /// </summary>
+        /// <remarks>
+        /// Kept out of <see cref="ContactPairs"/> rather than added to it: <see cref="ContactPairs"/>
+        /// answers "how crowded is the water", which the placement budget and the crowded
+        /// stillbirth count are read against, and a population settled on the bottom would inflate
+        /// it by a body-count's worth of pairs that are nothing to do with each other. This one
+        /// answers a different question — how much of the population is on the floor — and is the
+        /// only reading of it the report has, since depth-by-guild is not measurable
+        /// (CLAUDE.md's lineage-dissection gotcha).
+        /// </remarks>
+        public long FloorContactPairs => System.Threading.Interlocked.Read(ref _floorContactPairs);
 
         /// <summary>
         /// Advances physics one step, and the economy once every
@@ -1057,6 +1142,11 @@ namespace Evosim.Sim
             }
 
             foreach (KeyValuePair<long, Body> entry in _bodies) entry.Value.Instance.Destroy();
+
+            // The bed goes with them. It is a GameObject in a scene that outlives this object —
+            // the editor harnesses build several worlds in one process — and a leaked floor would
+            // sit in the next world's water, colliding with it.
+            Floor?.Destroy();
 
             _bodies.Clear();
             _instances.Clear();

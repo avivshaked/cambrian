@@ -162,11 +162,19 @@ namespace Evosim.Core
         /// spec's error, not the measurement's.
         /// </para>
         /// <para>
-        /// <b>Below <c>-WorldDepthMetres</c> the mirror, and that half is a placeholder.</b> A
-        /// body under the floor is pushed up by <c>f ×</c> its weight, which keeps it in the
-        /// world but makes the floor a stiff bouncer rather than a bed to rest on. A real sea
-        /// floor is a collider; nothing in this build models one, and this is the cheapest rule
-        /// that keeps the world closed until something does.
+        /// <b>The fraction governs the surface only where the world has a real sea bed.</b> Until
+        /// 2026-09-06 the bottom got the surface's rule with its sign flipped: a body under
+        /// <c>-WorldDepthMetres</c> was pushed up by <c>f ×</c> its weight, which kept it in the
+        /// world and made the floor a stiff bouncer rather than a bed. That was named a
+        /// placeholder in D077's rule-4 amendment and it cost what a spring costs — a founder
+        /// drawn on the floor bounced at ~1 m/s in the first seconds (so <c>bestSpeed</c> at
+        /// founding was not locomotion), and three newborns at 60 m in <c>r25q-s2</c> diverged
+        /// outright (logbook/0065, <c>runs/r25q-s2/*/diverged/</c>). Under
+        /// <see cref="RunConfig.SharedSpace"/> the floor is now a static collider
+        /// (<c>Evosim.Sim.SeaFloor</c>) and the mirror is gone: a body rests on rock rather than
+        /// being thrown off it. In a tiled world there is no collider — nothing there has a
+        /// position to collide at — so the mirror is still what keeps a sinking body in the world,
+        /// and it is unchanged.
         /// </para>
         /// <para>
         /// <b>Weight, and not the size-scaled excess a body actually feels in water.</b>
