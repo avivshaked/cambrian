@@ -130,6 +130,26 @@ the food density at which an absorptive's intake exactly pays its upkeep — bel
 eating loses money. And "D051"-style numbers are entries in
 [`DECISIONS.md`](../DECISIONS.md), where the reasoning behind each mechanism lives.
 
+**The vocabulary of the open, shared world** (from [0060](0060-the-outflow.md) onward).
+Matter — the stuff bodies are built from, distinct from energy — now enters and leaves the
+world instead of being fixed. ***Influx*** is the rate new matter arrives, the "dose";
+the ***vent*** is the point on the sea floor where it arrives, and the ***plume*** is the
+upward current the vent drives, which lifts bodies as well as matter. ***Stock*** (or
+*standing matter*) is the total free matter in the water at a moment; the ***matter
+sink*** is the speed at which free matter settles toward the floor, and ***burial*** is
+the fraction of floor-layer matter removed from the world each second — the outflow that
+lets the stock level off. A ***patch*** is one of the world's spatial regions; since the
+shared box (D077) it is a literal 10 × 10 m zone read from a body's position. A
+***crowded stillbirth*** (the `crowded` column) is a birth refused because no free space
+could be found beside the parent. The ***goal rule*** is D063 in `DECISIONS.md`, the
+pass/fail criterion a world must meet — in brief, one connected stomach lineage alive and
+breeding to the end of a 30,000-s run, scored per seed — and "4 of 5" means four seeds
+passed it. ***simHash*** and ***coreHash*** are fingerprints of the exact source code a
+run was built from (the Unity side and the `Evosim.Core` side), so two runs can be known to
+share a build. The ***fine step*** is dt 0.01 s, the step at which results count; the
+***fast step*** (0.02) is a screening step, three times quicker and less trustworthy on
+depth and movement.
+
 **The vocabulary of reproducibility** (from [0069](0069-the-shared-world-does-not-replay.md)
 onward). A ***physics step*** is one tick of the physics engine, 0.01 simulated seconds at
 the fine step (a 30,000-s run is three million of them); a ***metabolic step*** is the
