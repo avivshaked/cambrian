@@ -228,6 +228,11 @@ identity record, not yet in the config hash. The rest of D069 — the ledger cal
 invasion assay, the futility and sequential-seed rules — is instrumentation and process
 and changes no rule of the world.
 
+## 0m. Changelog — status text corrected (2026-09-06)
+
+§5A's status line and the milestone table's rows 6 and 8 said less had been built than has
+been; they were corrected to match the tree, and no rule of the world changed.
+
 ## 1. Target hardware
 
 | | |
@@ -819,8 +824,14 @@ oscillation detector at 30 Hz. Proposed compromise for Milestone 2 measurement:
 
 ## 5A. Ecosystem: energy, food webs and endogenous selection
 
-**Status: specification, not yet implemented.** Nothing in this section has been built or
-measured. It supersedes §5.5, and changes the role of §6.3, §6.4 and §8 — see §5A.8.
+**Status: most of this section runs the world.** Energy, matter, detritus, the nutrient
+field, upkeep, feeding, breeding and death are built and measured, and the goal rule of
+[D063](DECISIONS.md#d063) was met on 2026-09-04 (logbook/0054). Producers feed the water
+while they live ([D070](DECISIONS.md#d070)). Matter enters at the vent and leaves by
+burial, so the world's size is a flow ([D074](DECISIONS.md#d074)). Creatures share one box
+and touch ([D077](DECISIONS.md#d077)). Not built: predation and the `Consumer` cell's live
+bite (§5A.3), the cell-type expansion, and the archive. This section supersedes §5.5, and
+changes the role of §6.3, §6.4 and §8 — see §5A.8.
 
 Lettered rather than renumbered because `§4.2`-style locators appear throughout this
 document, in `DECISIONS.md`, and in code comments, and renumbering would silently invalidate
@@ -2134,9 +2145,9 @@ because they are physics, and physics does not care how selection happens.
 | **4** ✅ | World: current field, light/depth gradient, nutrient particles and absorption | A creature that survives by drifting into food, and one that doesn't |
 | | ~~⚠ **The join is done; the work term must wait for 6.**~~ **Superseded.** The deferral was correct on the day: billing work under one shared test sine exterminated every jointed creature in sixty seconds ([D029](DECISIONS.md#d029), logbook/0015), because a uniform flap yields no net thrust. [D030](DECISIONS.md#d030) then built the brain evaluator, work has been billed in every embodied run since, and the current field arrived with [D036](DECISIONS.md#d036)/[D037](DECISIONS.md#d037). Kept because the lesson generalises: a cost is only meaningful once its benefit is reachable | |
 | **5** ✅ | Life cycle: death returns tissue to the nutrient pool, reproduction on an energy threshold, mutation on reproduction | **A population that persists without intervention.** The first open-ended run, and where it stops being a project and becomes fun — reached, and verifiable since the floor report ([D047](DECISIONS.md#d047)): worlds exist whose floor goes silent and stays silent (logbook/0033) |
-| **6** ⚠ *partial* | Perception: photosensors, evolvable colour, closed-loop brain graph (§4.3, §4.4) | Directed foraging — a creature that moves *toward* something. The loop is closed and four channels read ([D033](DECISIONS.md#d033)); photosensors, colour and the `Chemical`/`Energy`/`Flow` channels do not exist |
+| **6** ⚠ *partial* | Perception: photosensors, evolvable colour, closed-loop brain graph (§4.3, §4.4) | Directed foraging — a creature that moves *toward* something. The loop is closed and all seven of §4.4's channels are answered by `CreatureSensors` ([D033](DECISIONS.md#d033), [D075](DECISIONS.md#d075) item 1, logbook/0062); photosensors, evolvable colour, contact and damage do not exist |
 | **7** | Food web: `Consumer` cells, carrion, predation, attack and defence | Trophic levels, or clear evidence of why not (§5A.7) |
-| **8** | Theatre: replay, gallery, charts, lineage, export, **fluid validation harness (§5.4)** | Showpiece + research instrument |
+| **8** ⚠ *partial* | Theatre: replay, gallery, charts, lineage, export, **fluid validation harness (§5.4)** | Showpiece + research instrument. Replay with the identity check on screen is built ([D075](DECISIONS.md#d075) item 2, logbook/0063); the gallery, the charts and the fluid validation harness are not |
 | **9** | Land: contact, gravity | Deferred. Water first, and the ecosystem is a water design |
 
 **Milestone 3 is the pivot.** Everything before it is a simulator; everything after it is a

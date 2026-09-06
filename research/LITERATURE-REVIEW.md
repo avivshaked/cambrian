@@ -1016,6 +1016,35 @@ Q10 (round 5 — with the independence caveat in §7.3).
 4. ~~**Forward snowballing from [EA23] and [C18]**.~~ Done, with the two field-shape findings
    recorded in §7.1.
 
+**Re-prioritised 2026-09-06.** The items below keep their numbers, because other sections
+of this document and `FETCH-RESULTS.md` cite them by number. This paragraph sets the order
+the next round reads them in. Three questions are in front of the project, and each one
+sends the round to items that are already on the list. No paper was added, no round row
+touched, and no claim changed.
+
+- **First, the open-flow matter balance.** Matter enters the world at a vent and leaves by
+  burial (DECISIONS.md D074), and no round has yet watched the standing stock level off and
+  stay level; D079 now returns that budget to the world one change at a time. What the round
+  needs from the literature: what sets the equilibrium between a source and a sink, how long
+  a system takes to reach one, and what a late equilibrium looks like in the field. Item 4
+  holds the nearest sources and item 8's recycling entries sit beside them. Item 4's own
+  trigger is gone. It asked to be read before the remineralisation decision, which was ruled
+  and then measured redundant (D051, logbook/0036), and the mechanism that replaced it was
+  decided on this review's round 5 (D070). Read item 4 for the balance question instead.
+- **Second, contact feeding.** Creatures share one box and touch (D077), and predation on
+  contact is a proposal in front of the owner. What the round needs: consumer–resource
+  coexistence when eating requires contact, what handling time does to it, and how much of a
+  prey's tissue a predator actually gets. Item 7's cohort-cycle theme is the closest held
+  line, and item 8's Kerr 2002 plate-versus-flask contrast is the closest empirical one.
+- **Third, movement-assisted foraging.** Movement has never paid its energy cost here, and
+  the prize side is the next scored question after the goal (DECISIONS.md D075). What the
+  round needs: what a mover earns over a drifter when the food is patchy. Items 5 and 6
+  cover the encoding half. The ecology half has no held source yet, so it is the one place
+  the next round will have to search rather than read.
+
+Items 1, 2, 3, 9, 10, 11 and 12 keep their standing and are read as the three questions
+need them.
+
 **Open, in priority order:**
 
 1. **Read [MC25] in full**, and decide what it means for §2.3/§8.4 *under endogenous
@@ -1038,6 +1067,9 @@ Q10 (round 5 — with the independence caveat in §7.3).
    [GOY23] (held), Drossel/McKane/Quince 2004 (arXiv q-bio/0401025), Hamm & Drossel 2021
    (Sci Rep, OA), Fritsch et al. 2021 (arXiv 1905.06855). These are what the mechanism's
    acceptance criteria should be checked against.
+   *2026-09-06: the remineralisation decision was ruled and then measured redundant (D051,
+   logbook/0036), so this item's trigger is now the open-flow matter balance above, and it
+   is the first thing the next round reads.*
 5. **Q2 — Sims reproduction.** Unchanged from round 2: Krčah's GECCO'07 reimplementation and
    Lessin's thesis, both openly available and never fetched.
 6. **Q5 — controller representation.** Unchanged: only [K12]'s scheme is held; Lessin's
@@ -1050,7 +1082,7 @@ Q10 (round 5 — with the independence caveat in §7.3).
    theme before any stabiliser is declared to have failed — if the cycles are cohort-driven,
    neither refuges nor patches address the mechanism.
 8. **NEW (round 4) — the Q9 manual-fetch queue** (rough priority): Quévreux, Barot &
-   Thébault 2021 (*Oikos*, green OA at HAL `hal-02570657`, bot-gated — **top of the queue**:
+   Thébault 2021 (*Oikos*, green OA at HAL `hal-02570657`, bot-gated — **top of the queue** for the balance question:
    nutrient recycling reproducing enrichment instability is the nearest theory to this
    closed world); Jansen 2001 (*TPB* 59:119, nominally bronze at Elsevier, 403 to
    non-browsers); McNair 1986 (the refuge dissent — see §7.3); Kerr et al. 2002 (*Nature*

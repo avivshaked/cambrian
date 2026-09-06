@@ -323,6 +323,12 @@ counts and audit against the recorded row and says, in red, if anything differs.
 recorded on a different build is refused by name; ticking `Allow Source Mismatch` plays it
 anyway under a banner saying it is not a faithful replay.
 
+One caveat, found on 2026-09-06 (D078, logbook/0069). A run made in the shared-space world
+before the physics was put on a single thread does not replay. Two runs of one seed agree for
+about 1,500 simulated seconds and then part. The theatre will follow a cousin of such a run
+rather than the run, and its identity check is what tells you so. Runs made on D078's build,
+with the physics on one thread, replay.
+
 1. Open the project at `unity/` in the Unity Editor. Experiment arms run on the worker
    copies (`unity-w2` …), so they are unaffected — but never run a `-batchmode` command
    against `unity/` while the Editor has it open.
@@ -386,9 +392,9 @@ selection happens.
 | 3 | Metabolism: per-part upkeep, neural cost, energy as a running balance | **A creature that starves** — the first thing here that can fail on its own | ✅ |
 | 4 | World: current field, light and depth gradient, drifting nutrients | A creature that survives by drifting into food, and one that doesn't | ✅ |
 | 5 | Life cycle: death returns tissue to the water, reproduction on surplus | **A population that persists without intervention** | ✅ |
-| 6 | Perception: photosensors, evolvable colour, closed-loop brain graph | Directed foraging — a creature that moves *toward* something | ← partial: the loop is closed and four channels read; photosensors, colour, `Chemical`/`Energy`/`Flow` do not exist |
-| 7 | Food web: predation, carrion, attack and defence | Trophic levels, or clear evidence of why not | ← partial: carrion and detritivory work, and a food chain has assembled twice; contact predation waits on shared space |
-| 8 | Theatre: replay, gallery, charts, lineage, fluid validation harness | Showpiece and research instrument | |
+| 6 | Perception: photosensors, evolvable colour, closed-loop brain graph | Directed foraging — a creature that moves *toward* something | ← partial: the loop is closed and all seven sensor channels read; photosensors, colour, contact and damage do not exist |
+| 7 | Food web: predation, carrion, attack and defence | Trophic levels, or clear evidence of why not | ← partial: carrion and detritivory work, and a food chain has assembled twice; shared space is built, and contact predation is a proposal in front of the owner |
+| 8 | Theatre: replay, gallery, charts, lineage, fluid validation harness | Showpiece and research instrument | ← partial: replay with the identity check works; the gallery, the charts and the fluid validation harness do not exist |
 | 9 | Land: contact, gravity | Deferred — the ecosystem is a water design | |
 
 Milestones 2–5 completed out of the listed order — the ecosystem work of `DECISIONS.md`

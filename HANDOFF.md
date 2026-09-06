@@ -1,152 +1,125 @@
-# Handoff — where to pick up
+# Handoff: where to pick up
 
-*Rewritten 2026-09-04 from the current state, replacing four layered revisions. The
-record is the logbook and DECISIONS.md; this file only says where things stand and what
-is queued.*
+*Rewritten 2026-09-06 from the current state. What happened is in the logbook, and why it was
+chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things stand.*
 
-## Status
+## Where things stand
 
-**The standing goal is met.** D063, as amended 2026-09-04: in ≥ 3 of 5 seeds with the
-population floor closed, one *connected* absorptive clade is alive for ≥ 20 consecutive
-samples to the end, holds ≥ 10 living members through the last two lifetimes (6,000 s),
-and has an inherited absorptive birth inside the clade in the last 20 samples, on an
-inherited photosynthetic lineage. Round 18 ([logbook/0054](logbook/0054-the-confirmation.md))
-passes 4 of 5 at dt 0.01, 30,000 s, with exudation 0.15 (D070) — a discovery-regime pass
-(cell-type mutation 0.005), labelled so. Three of the four clades trace to founder-era
-stomachs the leak kept alive; one is mutant-rooted. The owner ruled that the root's origin
-is not part of the goal.
+The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
+asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive
+samples to the end of a 30,000-s run. It must hold 10 or more members through the last two
+lifetimes (6,000 s) and still be breeding. It must do so in at least 3 of 5 seeds, with the
+population floor closed, on an inherited photosynthetic lineage. Round 18
+([logbook/0054](logbook/0054-the-confirmation.md)) passed 4 of 5, at dt 0.01, with exudation
+0.15 (D070), in the discovery regime and in a closed matter world. That world still replays,
+and we have gone back to it. Every round since stacked a change on it; here is what each found.
 
-**What the pass taught, in one line each:**
+| entry | what it found |
+|---|---|
+| [logbook/0055](logbook/0055-the-dry-deep.md) | A faster matter sink does not wet the deep. About 90% of the world's matter is locked in bodies whatever the sink does, so D071's lever was the wrong one. Not adopted |
+| [logbook/0056](logbook/0056-the-queue.md) | The world bred oldest-first, an artefact of a list order nothing had specified, and the stomachs had come to depend on it |
+| [logbook/0057](logbook/0057-energy-buys-matter.md) | Letting energy bid for matter, and tripling the stock, each changed the world's size and not who wins it. Neither adopted |
+| [logbook/0058](logbook/0058-the-open-budget.md) | With matter flowing in at the surface the population becomes a flow. The leaves lock it within a step, so almost nothing reaches burial |
+| [logbook/0059](logbook/0059-the-newborns-spin.md) | A newborn's link in r20q-s1 spun up in one step. A non-finite body is now dumped and counted as a divergence, and a drive limiter caps each joint above dt 0.01 |
+| [logbook/0060](logbook/0060-the-outflow.md) | Matter delivered at the vent's base (D067) does reach burial: 43–50% of the influx against the surface's 16%. Neither shape balanced at 0.6/s |
+| [logbook/0061](logbook/0061-the-open-world-at-the-fine-step.md) | The open world scored 3 of 5 at the fine step. The stock kept growing, and every population sat at the waterline, because the plume lifts bodies through a top that was not there |
+| [logbook/0062](logbook/0062-the-senses-answer.md) | The perception build. All seven sensor channels answer, and the replay stayed bit-identical |
+| [logbook/0063](logbook/0063-the-theatre-opens.md) | The theatre's first cut. It re-simulates a recorded run and checks itself against the recording as it goes |
+| [logbook/0064](logbook/0064-the-crowd-costs-nothing.md) | The shared-space spike. Contact between creatures costs nothing measurable at 250 to 2,000 bodies |
+| [logbook/0065](logbook/0065-the-first-shared-water.md) | D077's box screened at the fast step and worked: 4 of 5, and a stomach lineage evolved at the vent. Its costs were the plume's crowd, a springy placeholder floor, and the size of the world |
+| [logbook/0066](logbook/0066-one-box.md) | The build record for D077: the box, the wrap, the restoring top, the real sea bed, newborns placed beside the parent |
+| [logbook/0067](logbook/0067-the-shared-world-at-the-fine-step.md) | 2 of 5. The lean dose starved the founders' stomachs, and a mutant stomach line then evolved at the vent's floor in three seeds of three |
+| [logbook/0068](logbook/0068-the-shared-world-fed.md) | The same world fed at influx 0.6/s. Four arms are still running tonight, and r27-s4 is the one that has ended |
 
-- The second trophic level was fed at ~1% of the first because producers fed the water
-  only by dying; real producers leak 10–20% of production while alive (D070, review round 5).
-- The population plateau every round since D065 read as carrying capacity is the matter
-  cap: ~6,000 units, ~5,500 locked, so ~1,900 bodies (D071).
-- The physics replays bit for bit on one build; any per-step change is a butterfly, so
-  0.02 screens (~3×), 0.01 confirms, and a per-seed A/B of anything in the physics loop is
-  unanswerable ([logbook/0052](logbook/0052-the-coarse-step.md), DESIGN.md §7).
-- Futility stops are negative results on merit, not censored; censoring is for error and
-  fault only (owner, D069).
+[logbook/0069](logbook/0069-the-shared-world-does-not-replay.md) then reframed all of it: the
+shared world does not replay. Six runs of one seed on one build gave six different worlds.
+They part at step 147,778 by one or two ulp, where touching bodies were solved in a different
+thread order. Turning Unity's job worker threads off restores identity over 300,000 steps,
+and over the million steps of det6-a and det6-b. D078 makes single-threaded physics the
+default and records it in every manifest. No round's reading changes, since a seed was already
+read as one draw ([logbook/0052](logbook/0052-the-coarse-step.md)); the false promise was that
+a shared-world seed could be re-run and watched.
 
-## The path, ruled (D075, owner 2026-09-04: "lock it in")
+## The path, ruled
 
-Rounds 22 and 23 written up → **D074 adoption and dose (owner, now)** → the
-adopted open world confirmed at 0.01 under D063 as amended → **movement that pays**
-(wire `Chemical`, `Flow`, `Energy`; a movement clause; fine step only) with **the
-theatre** built in parallel by a separate agent → **shared space and the physical
-footprint (D076, owner 2026-09-05: "a world without contact can't work"; the spike
-measured the cost 2026-09-05, [logbook/0064](logbook/0064-the-crowd-costs-nothing.md): none; the constraints are packing and a horizontal boundary rule — **ruled as D077, 2026-09-05 ("proceed"): a literal 4 × 10 × 10 m ring 60 m deep, patches as regions read from position, periodic horizontal wrap, a restoring top and bottom, newborns beside the parent; built 2026-09-06 ([logbook/0066](logbook/0066-one-box.md), commits `686561e`..`78cb35c`, behind `EVOSIM_SHARED_SPACE` and `EVOSIM_SURFACE_RESTORE`, the record replaying byte for byte at the defaults); **the screen [logbook/0065](logbook/0065-the-first-shared-water.md) read 2026-09-06: the footprint world works — the top holds, populations at 15–31 m, founding safe, the stock levels at influx 0.3, stomach clades 5 of 5 and D063 4 of 5, a stomach lineage evolved at the vent's base; costs: the plume's crowd (refusals 2–37× births, 6,000-body worlds at half real time), the placeholder floor (3 newborn divergences). Ruled 2026-09-06 ("love it. go ahead"): the floor built as a collider (`a268311`, 0066's addendum; zero divergences on the 20,000-s replay that had three), then the confirmation [logbook/0067](logbook/0067-the-shared-world-at-the-fine-step.md) at 0.01 at influx 0.3, stock 0.25/m³ — **read 2026-09-06: 2 of 5, the lean dose starves the founders' stomachs (one seed dead, one without stomachs, three re-evolved stomach lines at the vent's floor); the physics held**; the diagnostic at influx 0.6 held, and the re-run [logbook/0068](logbook/0068-the-shared-world-fed.md) at 0.6 is running on five seeds**; **found 2026-09-06 while it ran ([logbook/0069](logbook/0069-the-shared-world-does-not-replay.md)): the shared world does not replay — same seed, build and worker gave six realisations, parting by one ulp where touching bodies are solved in a different thread order; no job-system workers restores identity over 300,000 steps; D078 makes single-threaded physics the default (build pending), and every shared run before it is one realisation of its seed**; **ruled 2026-09-06 (D079): one change at a time from round 18's closed world, shared space first, under single-threaded physics — logbook/0070 is that round**) → predation (on contact; the encounter
-rule withdrawn) → the cell types and immigration → the archive and the islands.
+D079 (owner, 2026-09-06: "agreed. proceed with that idea"): go back to round 18's world and
+add one change at a time, asking D063 of each. A change that costs the rule is read rather
+than tuned around. Round 27 therefore runs on as a screen rather than a scored condition.
 
-## Queued — the current path, in order
+1. **Shared space**, round 28, pre-registered as
+   [logbook/0070](logbook/0070-the-good-world-with-one-change.md). Round 18's closed world
+   plus D077's box, wrap, placement, restoring top and real floor (`EVOSIM_SHARED_SPACE` and
+   `EVOSIM_SURFACE_RESTORE`), under D078's single-threaded physics. Five seeds at dt 0.01 for
+   30,000 s on workers 2–6 as round 27's arms end, plus a 10,000-s replay probe, r28p-s1.
+2. **The open matter budget** (D074), then the vent, one at a time, each on the world that
+   held the rule before it.
+3. **Movement that pays** (D075's first item), rewritten on whichever world holds. Its cost
+   side closed long ago and its prize side has never existed; the channels it needs are
+   built, and the decisions behind it are D040–D050.
+4. **Predation on contact** in D076's world; the proposal is in front of the owner.
+5. **The cell types and immigration**, then the archive and the islands.
 
-1. **The contract repairs build landed** (commit `5c6c035`): manifest, `stop-arm.ps1`,
-   `-ExpectSimHash`, `photo` columns, invariant culture, the step in the hash. Every
-   config hash changed across it. Remaining: a photosynthetic flag on lineage rows so the
-   producer clause's birth half can be read (`scripts/clade-score.ps1` says so).
-2. **The matter screen** ([logbook/0055](logbook/0055-the-dry-deep.md)) **read 2026-09-04:
-   not adopted.** The free matter pool is 10% of the stock at any sink speed; the lever
-   must change the pool. The next lever is a world rule (price, initial stock, excretion,
-   or the vent as a source with burial) and is the owner's; every option grows the
-   producer population, so it is chosen together with `EVOSIM_MAX_POP`.
-3. **Round 18's producer clause** was scored from `alive` because the `photo` columns did
-   not exist; once they do, either note it in 0054 or re-read one seed.
-4. **The scorer is `scripts/clade-score.ps1`** (all five clauses; producer birth half
-   pending the lineage flag). `scratch/matter-profile.py` reads `matterHere` from
-   `stats.jsonl`, which the table does not carry — worth a `mat here` column.
-5. **The next scored goal: held by the owner** until the screen answers. Candidates the
-   record names: movement that pays (the prize side — DECISIONS.md D040–D050, 0049's
-   reading), late invasion (the assay at 0.15 run two lifetimes past inoculation, 0051's
-   amendment 2: R0 0.72 over completed members, 112 alive at 20,000 s), and the cell-type
-   expansion.
+## Queued, in order
 
-## The decision in front of the owner
+1. **The D078 build** is being built on worker 7 against `scratch/physics-jobs-spec.md`. It
+   lands, with a zero-worker digest pair as its check, before round 28 launches.
+2. **The scorer** scores every clade rather than the largest (done 2026-09-06, commit
+   `b9baef1`). A seed passes when any connected clade meets every clause; the report names
+   it and still prints the largest. Re-scored: round 18 stands at 4 of 5 with its minima
+   unchanged, and no historical verdict moved.
+3. **A photosynthetic flag on lineage birth rows**, so the producer clause's birth half can
+   be read. It goes in the Sim build behind D078, validated by an unchanged tiled replay.
+4. **A current-build round-18 check**: seed 1 for 3,000 s on the D078 build against
+   r18x-s1's first 3,000 s. If it replays, the historical five stand as one world; if not,
+   0070 records a different control build.
+5. **Round 27's results** report the late total-matter slope against the influx, and the
+   agreement between influx and burial over the last two lifetimes, as numbers.
+6. **Run identity** in DESIGN.md section 7 and CLAUDE.md gains the build's `simHash` and the
+   physics worker count, both read from the manifest, once D078 has landed.
+7. **The movement pre-registration** gains a second layer: an active-versus-clamped assay on
+   saved members of the jointed clade.
+8. **A `mat here` column** in the run report: the matter density a body sees is in the
+   statistics file and not in the table.
 
-**Round 24 read 2026-09-05 ([logbook/0061](logbook/0061-the-open-world-at-the-fine-step.md)): 3 of 5 at D063's threshold, not round 18's 4 of 5.** Two faults for the owner's ruling before the confirmation is re-run: (1) **the surface** — every population sits at −0.6 to +1.5 m because the vent's plume lifts bodies to the waterline and the region above it is force-free (D050 zeroes buoyancy there, the return flow is zero at depth ≤ 0): make the region above y = 0 restoring, or stop the plume short of the surface; (2) **the dose** — the stock grew 35–41% over the last third in every seed: burial 0.02 or influx 0.3. Recommendation: fix both, re-confirm at 0.01, five seeds. The fix and its instrument are specified in `scratch/surface-spec.md` (option A, a restoring region above the waterline, recommended; option B, the plume capped short of the surface; an `above` column first), to build after the ruling and after the spike's matrix has the machine. Movement columns: `jointed` 0 in every arm, so nothing to read yet.
+## The decisions in front of the owner
 
-**Ruled 2026-09-05: D074 adopted in the vent shape at 0.6/s** (owner, "agreed, proceed
-with your recommendations"); the confirmation at 0.01 is [logbook/0061](logbook/0061-the-open-world-at-the-fine-step.md),
-read above. The perception build (`scratch/perception-spec.md`) was started the same day in
-parallel, on the owner's agreement that the waiting goes and the order stays; a predation
-proposal is being drafted for the ruling after movement is read. The paragraph below is
-the state of the question as it was put. D074 was screened twice: [logbook/0058](logbook/0058-the-open-budget.md) (surface influx, sink
-0.002: the size is a flow, burial never sees the influx) and
-[logbook/0060](logbook/0060-the-outflow.md) (sink 0.02, surface vs vent: the vent
-connects the outflow, burying 43–50% of the influx against the surface's 16%, and wets
-the deep at 0.6 units/m³; neither balances at 0.6/s in 20,000 s; the stomachs' share is
-unmoved by the wet deep; the fast sink drains the starting stock and founding nearly
-failed once). The recommendation in 0060's verdict: adopt influx at the vent's base with
-D067's vent on, matter sink 0.02, burial 0.01, at 0.6/s, and confirm at 0.01 under D063 as
-amended (five seeds, 30,000 s, the ceiling as the censor), correcting the dose on that
-reading. Alternatives on the table: burial 0.02, or influx 0.3. The surface shape is not
-recommended. The reference world is unchanged until the ruling: age order, stock 1/m³,
-exudation 0.15; round 18's pass stands.
+- **The producer threshold** is unsettled. D063's amendment asks for one living inherited
+  member with a recent photosynthetic birth; the scorer substituted 10 members through two
+  lifetimes. Both will be printed, and the ruling picks one.
+- **A late resource-balance rule** needs its own decision, with a tolerance: what a levelled
+  stock means as a number.
+- **Multithreaded physics** may be allowed for labelled screens; D078 keeps the setting
+  adjustable and recorded, so it needs only a sentence.
+- **Predation on contact**, in `fable-propose-predation.md`: the injury pool with fixed
+  geometry, dt 0.01 from the first screen, stable contact keys, an internal matter reserve.
+- **Extending a passing seed past 30,000 s**, to see whether the balance holds.
+- **The maintenance assay**, a multi-genome inoculum with cell-type mutation off: a good
+  instrument for after round 28, and one the owner should scope.
 
-**The perception build landed 2026-09-05** (commit `e59f6af`, [logbook/0062](logbook/0062-the-senses-answer.md)):
-Chemical, Energy and Flow answer; the pool is `EVOSIM_SENSE_CHEMICAL|ENERGY|FLOW`,
-default off, bit-identical replay proven; the §4.4 mask built (~21% faster); `spd`/`food`
-columns for the movement round. **The theatre's first cut landed the same day**
-(commits `1392ccd`..`7b39e7d`, [logbook/0063](logbook/0063-the-theatre-opens.md)): `Evosim/Rebuild
-Theatre Scene`, point the runner at a run directory, press Play; identity against the
-recording 10 of 10 samples headless; **nothing rendered has been seen — the owner opens
-`Theatre.unity` and looks.** The spec was `scratch/theatre-spec.md` (a rendered world replay with a built-in identity check
-against the recorded rows, a creature id on snapshot rows, a single-creature mode).
-Both are built on read-only surveys in the same directory.
+## How the experiments are run
 
-## Bugs — fixed 2026-09-04 (logbook/0059)
+CLAUDE.md holds the commands and the gotchas. This is where each tool sits.
 
-- The `r20q-s1` divergence was a newborn's 143-gram link kicked by ~3,000 rad/s in one
-  0.02-s step, no joint velocity cap anywhere. Now: a non-finite body is dumped and
-  killed as a counted `Diverged` death (audit closes, `diverged` column), and a drive
-  impulse limiter at steps above 0.01 caps each DOF at 30 rad/s per step, counted as
-  `driveImpulsesLimited`. The error manifest carries the last known facts. **Caveat that
-  outlives the fix:** at 0.02 the cap binds ~10⁵ times per run, so the fast step
-  under-drives joints; swimming is read at 0.01 only (0052, now load-bearing).
-
-## How the experiments are run — the parts that bite
-
-- Workers are copies `unity-w2..unity-w7`; one arm per worker, **at most five at once**,
-  launched with `scripts/run-arm.ps1`, logs in `scratch/logs/`. After any change under
-  `unity/Assets`, `scripts/new-worker.ps1 -Workers N` once per worker (it exits 1 on
-  success) and the hash check; from the manifest build on, `run-arm.ps1 -ExpectSimHash`.
-- **Every setting is verified from the run header, never from the launch command**, and
-  from the manifest's `simHash` once it exists.
-- Read reports with `scripts/analyse-arm.ps1` by column name (`-ListColumns`); never
-  positionally. `mat blk`, `floor` and the `det in/out/exuded` columns are per-window
-  deltas. Pass `-Columns` as a real array from inside PowerShell — through `pwsh -File`
-  the comma list arrives as one string and every cell reads `?`.
-- `scripts/ledger.ps1` before a worker (D069); `scripts/absorptive-log.ps1 <arm>` for what
-  each stomach earned and where; `scripts/lineage-invasion.ps1` for an inoculated lineage.
-- The monitor is `scratch/monitor-r13.sh` over `scratch/evosim-watch-arms.txt`; it exits
-  when the list is empty and must be restarted after the list is set. Stall rule and the
-  wedge discriminator are in CLAUDE.md's gotchas.
-- Throughput is population: ~1,800 bodies at dt 0.01 with five arms sharing the machine
-  is 5–6 h per 30,000 s; dt 0.02 is ~3× that pace. `MaximumPopulation` (8,000 in the
-  reference world) ends a run as a runaway, censored.
-- The Bash tool mangles long heredocs (quotes, backslashes); write scripts and prose with
-  the Write tool, apply edits with a small python file, and delete it.
+| | |
+|---|---|
+| workers | arms run on `unity-w2..unity-w7`, one per worker, at most five at once; after a change under `unity/Assets`, run `scripts/new-worker.ps1 -Workers N` once per worker and check the hash |
+| launching | `scripts/run-arm.ps1` with `-ExpectSimHash`, logs in `scratch/logs/`; end an arm with `stop-arm.ps1` and never with a kill; read every setting back from the run header and the manifest, never from the launch command |
+| reading | `scripts/analyse-arm.ps1` by column name (`-ListColumns`), never positionally, passing `-Columns` as a real array from inside PowerShell, since through `pwsh -File` the comma list arrives as one string and every cell reads `?`; `mat blk`, `floor` and the `det in/out/exuded` columns are per-window deltas; `matterHere` is in `stats.jsonl` and not in the table; `lineage.jsonl` holds one row per birth and carries no photosynthetic flag yet, while the report's `photo` columns carry the producer population |
+| scoring | `scripts/clade-score.ps1` for D063, `scripts/absorptive-log.ps1 <arm>` for what a stomach earned, `scripts/lineage-invasion.ps1` for an inoculated lineage, and `scripts/ledger.ps1` (D069) before a worker |
+| monitoring | `scratch/monitor-r13.sh` over `scratch/evosim-watch-arms.txt`; it exits when the list is empty and must be restarted after the list is set |
+| throughput | about 1,800 bodies at dt 0.01 with five arms sharing the machine is five to six hours per 30,000 s; single-threaded physics cost nothing measurable at 500 bodies (0069) and is unmeasured at a round's population (0070 budgets a quarter); the ceiling (`MaximumPopulation`, `EVOSIM_MAX_POP`) ends a run as a censored runaway |
 
 ## Open decisions for the owner
 
-- **A vent that adds matter, paired with burial at the floor** — filed as a future
-  experiment (owner, 2026-09-04), in D071's deferred list; after the screen.
-- **The matter economy (after 0055 and 0056)** — see the section above and the
-  proposal file. Overtakes the pool levers as the question: enlarging the pool changes
-  the world's size, not who wins.
-- **The next scored goal** — held; 0055 has read.
-- **Speed, and the game's clock (owner, 2026-09-03).** The timestep has done what a
-  timestep can (0052). A game that is eventful on a human timescale is a world-rule
-  question: shorter lifetimes, faster turnover, a theatre that runs the farm ahead and
-  jumps to events. A cheap mover for jointless bodies becomes worth building then, not
-  before.
-- **Immigration as a world rule when the cell types expand (owner's hypothesis,
-  2026-09-03).** Score establishment (a lineage ≥ 2 generations deep with R0 ≥ 1), tag
-  immigrants from `lineage.jsonl`, run with and without a trickle, pre-registered.
-- The paywalled reading list in `research/LITERATURE-REVIEW.md` §9 needs the owner's
-  institutional access.
-- Pushing: code and prose in batches is approved (2026-09-01); data, run output and
-  weights are never pushed. `main` is pushed through 0055's pre-registration.
-- The untracked `sol-gpt-2026-08-31-122448-review.md` at the repo root is the owner's;
-  absorb or delete is their call. The 2026-09-03 review was evaluated in session: findings
-  1, 2, 6, 7 adopted or building; 3 rejected with the owner's reasoning in D069; 4 and 5
-  overtaken.
+- **Speed, and the game's clock** (owner, 2026-09-03). The timestep has done what it can. A
+  world eventful on a human timescale is a world-rule question: shorter lifetimes, faster
+  turnover, a theatre that runs the farm ahead and jumps to events.
+- **Immigration as a world rule when the cell types expand** (owner's hypothesis,
+  2026-09-03). Score establishment, tag the immigrants, run with and without a trickle.
+- **The paywalled reading list** in `research/LITERATURE-REVIEW.md` needs the owner's
+  institutional access. Its queue was re-prioritised on 2026-09-06 around the open-flow
+  matter balance, contact feeding, and movement-assisted foraging.
+- **Pushing code and prose** in batches is approved (2026-09-01); data, output and weights never.
+- **The three untracked review files at the repo root** are the owner's to absorb or delete.
+  The 2026-09-06 review was answered in `scratch/review-2026-09-06-response.md`, whose agreed
+  items make up the queue above.
