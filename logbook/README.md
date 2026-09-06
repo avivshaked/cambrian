@@ -76,6 +76,14 @@ written and committed **before** the experiment ran, so the git history proves t
 predictions preceded the data. Those entries lean on a shared vocabulary that this section
 defines once, rather than each entry re-explaining it.
 
+**The vocabulary of the work itself.** A ***milestone*** is one of the numbered stages of
+the build plan in [`DESIGN.md`](../DESIGN.md), so "Milestone 3" names a place in the plan
+and not a date. A ***spike*** is a throwaway project built to answer one question and then
+abandoned; there has been one, and it asked whether Unity's physics engine could carry the
+evaluation loop at the scale this project needs. A ***round*** is a set of arms launched
+together to answer one question, numbered in order, and its number is the first half of
+each arm's name.
+
 **An *arm*** is one experiment: one world configuration and one random seed, run for a
 budget of simulated seconds. Arms are named like `d057-s2` (round `d057`, seed 2) and each
 runs on a ***worker*** — a copy of the Unity project, so several arms can run at once

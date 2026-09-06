@@ -21,6 +21,26 @@ nothing about this project. Every term of art is introduced in the sentence that
 uses it, or linked to the glossary in `logbook/README.md`. A run's name, a column's name
 or a setting's name is never an explanation.
 
+An acronym is spelled out the first time it appears, and the spelling-out has to be in
+words the newcomer already has. "A compositional pattern-producing network, or CPPN, is a
+small mathematical function. Give it a point in space and it returns whether there is body
+material there." Expanding an acronym into more jargon teaches nobody anything, so when the
+expansion is itself technical, say what the thing does as well. The same goes for a person's
+name used as a label: *Sims-style* means Karl Sims's 1994 encoding, and the entry that first
+says it has to say so.
+
+The project's own labels are terms of art too, and being ours makes them harder to notice
+rather than easier. A milestone number, a round number, a spike, an arm, a worker, a column
+heading: a newcomer has no way to guess what any of them mean, and they are the words most
+likely to slip through unglossed. Gloss the label where the piece first uses it, and add it
+to the key when a later piece will need it.
+
+The test is mechanical, and it is the one thing in this guide a checker cannot do for you.
+Read the piece as though you had never seen the project, and stop at the first word you
+could not define. That word is a defect in the piece, not a gap in the reader. If the term
+will come up again in later entries, add it to the key in `logbook/README.md` as well as
+glossing it here.
+
 **Personality is welcome, content is not negotiable.** A joke that is true and short, an
 aside that teaches something, an admission of what you expected and how it felt to be
 wrong: all of these belong in the logbook and the primer, and a book will need them. They
@@ -83,9 +103,16 @@ Their density is deliberate.
 - **Bold is for the two or three words that begin a list item or a decision**, and rarely
   elsewhere. No bold lead-ins that end in a colon or a full stop. No bold sentences.
 - **Dashes.** At most one em dash per paragraph. Use commas, full stops or parentheses
-  instead. En dashes stay in ranges (1,400–1,500).
+  instead. En dashes stay in ranges (1,400–1,500). The em dash in a logbook entry's title
+  line is the format `logbook/README.md` prescribes and never counts against a piece. A
+  header below the title may carry one only where it separates a run or round label from
+  what happened, as in "Round 2b — results". A header that uses one to weld two ideas
+  together is two headers, or one statement.
 - **Headers** only in a piece longer than about five hundred words, and at most three
   levels deep. A header is a statement, not a label.
+- **No horizontal rules.** A rule between two sections says only that a section ended,
+  which the header underneath it already says. Delete them. A piece that seems to need a
+  break where no header belongs usually has a paragraph doing two jobs.
 - **Links** to `DESIGN.md`, `DECISIONS.md` and other entries instead of restating them.
   The logbook is never a source of truth (its README says why).
 
@@ -170,10 +197,17 @@ the author will do:
 4. **When a sentence's meaning is unclear, keep it and flag it.** Do not guess at what
    the author meant. Put the sentence in a list at the end of the commit message with
    the file and line, for the owner.
-5. **One file per commit**, the commit message naming the file and the checker's before
+5. **A rewrite replaces the original, and never sits beside it.** While the review is
+   open, draft it next to the entry as `NNNN-v2-slug.md`. Once the owner has approved it,
+   put the new text into the original file and delete the draft in the same commit, so the
+   entry number, the index in `logbook/README.md` and every link into the entry stay as
+   they were, and the git history holds the old text. Two files never carry one entry
+   number. Run both checks against the final file, taking the original from git for the
+   preservation check.
+6. **One file per commit**, the commit message naming the file and the checker's before
    and after counts. `DESIGN.md` and `DECISIONS.md` get a dated note at the top saying
    they were restyled and that the git history holds the originals.
-6. **The checker is a flagger, not a judge.** A piece passes when a newcomer can follow
+7. **The checker is a flagger, not a judge.** A piece passes when a newcomer can follow
    it, which the checker cannot measure. Read the piece aloud once before committing; the
    sentences that make you run out of breath are the ones to split.
 
@@ -184,6 +218,12 @@ python scripts/style-check.py logbook/0069-the-shared-world-does-not-replay.md
 python scripts/style-check.py logbook/*.md DECISIONS.md          # a report per file
 python scripts/style-check.py --preserved old.md new.md          # what a rewrite lost
 ```
+
+It reads prose only. Fenced blocks, tables and headers are skipped, so its em-dash figure
+counts paragraphs and its findings say nothing about your titles; header dashes are counted
+and reported on their own line, with the entry title exempt. Terms left unexplained, a
+header that labels rather than states, and a piece a newcomer cannot follow are all
+invisible to it. A file with zero findings is a file that has passed the countable half.
 
 It reports, per file: words; sentences over thirty words (with line numbers); em dashes
 per hundred words and paragraphs with more than one; bold lead-ins ending in a colon or

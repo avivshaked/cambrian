@@ -5,12 +5,19 @@
 
 Counts the tells STYLE.md §5 lists: long sentences, em-dash density, bold lead-ins,
 "not X but Y" closers, "which is why", rhetorical questions, code-heavy paragraphs,
-intensifiers and machine-only words, deep headers. Fenced code blocks and tables are
+intensifiers and machine-only words, deep headers, and em dashes in headers, which the
+prose count cannot see (an entry's title line is exempt). Fenced code blocks and tables are
 skipped for the prose checks; pre-registration blocks are not special-cased, because the
 checker cannot know where they start — read its report with that in mind.
 """
 import re
 import sys
+
+# The record is full of characters cp1252 cannot encode. Without this, a report that
+# quotes one dies with UnicodeEncodeError the moment stdout is a file rather than a
+# console, which is what happens whenever the sweep is redirected.
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 INTENSIFIERS = [
     'exactly', 'precisely', 'quietly', 'simply', 'genuinely', 'honest', 'honestly',
@@ -23,6 +30,8 @@ MACHINE_WORDS = [
     'sits at the heart', 'a hard truth',
 ]
 LONG_SENTENCE = 30
+# A logbook entry's title line, whose em dash logbook/README.md prescribes.
+ENTRY_TITLE = re.compile(r'^#\s+\d{4}\s+—')
 
 
 def prose_lines(text):
@@ -52,6 +61,17 @@ def paragraphs(lines):
         yield para
 
 
+LIST_MARKER = re.compile(r'^\s*(?:\d{1,2}\.|[-*+])\s+')
+
+
+def strip_marker(line):
+    """A list item's bullet or ordinal is not a sentence, so drop it before the prose
+    checks. It only counts as a marker when it starts the line: inside a sentence,
+    "Milestone 2. On this evidence" is prose.
+    """
+    return LIST_MARKER.sub('', line.strip())
+
+
 def sentences(text):
     text = re.sub(r'`[^`]*`', 'CODE', text)
     text = re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', text)
@@ -65,13 +85,21 @@ def report(path):
     findings = []
     words_total = 0
     dashes_total = 0
+    header_dashes = 0
     for para in paragraphs(lines):
         first_n = para[0][0]
-        joined = ' '.join(l.strip() for _, l in para)
+        joined = ' '.join(strip_marker(l) for _, l in para)
         if joined.startswith('#'):
             depth = len(joined) - len(joined.lstrip('#'))
             if depth > 3:
                 findings.append((first_n, 'header deeper than three levels'))
+            # STYLE.md 4: an entry title's dash is logbook/README.md's format and exempt.
+            # Every other header dash is flagged, because the checker cannot tell a round
+            # label from two ideas welded together.
+            if not ENTRY_TITLE.match(joined):
+                for _ in range(joined.count('—')):
+                    header_dashes += 1
+                    findings.append((first_n, 'em dash in a header: "%s"' % joined[:60]))
             continue
         words = len(re.findall(r"[A-Za-z0-9'’]+", joined))
         words_total += words
@@ -106,7 +134,9 @@ def report(path):
                 if re.search(r'\b' + re.escape(w) + r'\b', low):
                     findings.append((first_n, f'machine word "{w}": "{s[:60]}..."'))
     per_hundred = 100.0 * dashes_total / max(words_total, 1)
-    print(f'{path}: {words_total} words, {dashes_total} em dashes ({per_hundred:.1f} per 100 words), {len(findings)} findings')
+    print(f'{path}: {words_total} words, {dashes_total} em dashes in prose '
+          f'({per_hundred:.1f} per 100 words), {header_dashes} in headers, '
+          f'{len(findings)} findings')
     for n, f in sorted(findings):
         print(f'  L{n}: {f}')
 
@@ -123,6 +153,10 @@ TOKEN_RES = [
 
 
 def tokens(text):
+    # Drop the fence delimiter lines first. Without this the inline-code regex pairs the
+    # backticks of an opening fence with those of the closing one and swallows the block,
+    # so a rewrite that keeps the block verbatim is still reported as having lost it.
+    text = chr(10).join(l for l in text.split(chr(10)) if not l.strip().startswith('```'))
     out = set()
     for r in TOKEN_RES:
         out.update(m.group(0) for m in re.finditer(r, text))
