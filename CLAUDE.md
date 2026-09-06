@@ -23,9 +23,10 @@ drifts and then none of it can be trusted.
 | [`logbook/`](logbook/) | *What happened, and when* — dated entries on what was tried and what broke. Never a source of truth: it links to the documents above rather than restating them, and is the only one allowed to be out of date |
 | [`primer/`](primer/) | *What the thing is, and why it is interesting* — explanatory prose for a reader, written after a mechanism works. Also never a source of truth. Anything it asserts that is not traceable to a cited source must be marked as inference, in the text and in its sources table |
 | `CLAUDE.md` (this file) | *What will bite you* |
+| [`STYLE.md`](STYLE.md) | *How we write* — the voice, the shape of a piece, the tells to avoid, and the rules for restyling what exists. Applies to every prose file here, this one included |
 
 **Two licences.** Code is MIT ([`LICENSE`](LICENSE)); the prose — `DESIGN.md`,
-`DECISIONS.md`, `README.md`, this file, and everything under `research/`, `logbook/` and
+`DECISIONS.md`, `README.md`, `STYLE.md`, this file, and everything under `research/`, `logbook/` and
 `primer/` — is CC BY 4.0
 ([`LICENSE-DOCS`](LICENSE-DOCS)). New files land under whichever applies; if you add a
 directory that is neither clearly code nor clearly prose, say which it is in `LICENSE-DOCS`
@@ -482,9 +483,10 @@ actually verifying it.
 
 ## Working with the owner
 
-- **The logbook and primer serve a mixed audience** — agents *and* humans who want to read
-  the research. Dense pre-registration tables are fine; introduce jargon on first use, let
-  prose carry the story, and keep a reader's key current (`logbook/README.md`).
+- **Every piece of prose follows [`STYLE.md`](STYLE.md)** — the logbook and primer serve
+  agents *and* humans who want to read the research, and the record is meant to become a
+  book. Run `python scripts/style-check.py <file>` before committing prose; keep the
+  reader's key current (`logbook/README.md`).
 - **First-person voice is welcome in the record** — the owner invited genuine agent
   reactions, as the agent's own: honest and brief, never performative (logbook/0042's
   personal note is the precedent).

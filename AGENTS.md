@@ -6,4 +6,5 @@ were each paid for once. The documents it indexes (`DESIGN.md`, `DECISIONS.md`,
 `HANDOFF.md`, `logbook/`) are the project's actual memory; nothing an agent needs lives
 outside this repo.
 
-Start with `HANDOFF.md` for where work currently stands.
+Start with `HANDOFF.md` for where work currently stands. Anything you write in prose
+follows [`STYLE.md`](STYLE.md).
