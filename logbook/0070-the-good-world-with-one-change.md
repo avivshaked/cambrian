@@ -94,6 +94,37 @@ clause will be read from a photosynthetic flag on lineage rows that the round-28
 adds. Round 18's five seeds are re-scored under the new script before this round is
 read, so both sit under one scorer.
 
+## The control replays on this build
+
+The review asked whether round 18's five seeds, recorded on a build from 2026-09-04, are
+still the same world on the build this round runs. They are, at least for the first
+3,000 s. `r18chk-s1` is seed 1 under the round-18 launcher on the round-28 build, with the
+single-threaded physics and the lineage flag, and it matches `r18x-s1`'s recording on all
+30 samples to 3,000 s.
+The tiled world never depended on the thread count, so this is the expected answer, and
+now it is a measured one. The historical five stand as the control without a same-build
+control group.
+
+The check cost one file. PowerShell variable names are not case-sensitive, so the name
+parameter I added to the launcher was the same variable as its internal one. The run
+launched as `r18x-s1`, into the historical arm's directory, and overwrote its report file
+before I saw it. The run directory, with every sample and every lineage row, was never
+touched. The report was rebuilt from that data (`scratch/rebuild-report.py`, calibrated
+on `r18x-s2`, where 6 cells in 14,700 differ by rounding), says so in its first line, and
+re-scores identically. The check's own run now lives under `r18chk-s1`; its manifest still
+says `r18x-s1`, because that is the name it was launched under.
+
 ## Launch
 
-*Appended at launch: build, hashes, times, headers verified.*
+The build is commit `95d2091` (D078 at `d2b59ac`, the lineage flag at `95d2091`), simHash
+`63fbf5f7ea60cb32…`, coreHash `bff3d696…`, configHash `841c4266cc314b6b`. Every arm is
+launched with `-ExpectSimHash` and its header carries every V1 token, checked at launch.
+The manifests read the tree as dirty because the owner's other session has an uncommitted
+edit to `scripts/style-check.py`; nothing under the simulation's source is uncommitted,
+and the fingerprints say so. The arms start as round 27's workers free up, at most five
+arms on the machine at once, so the round launches over several hours rather than at
+once.
+
+| arm | worker | launched (local) | digest | note |
+|---|---|---|---|---|
+| `r28-s1` | 7 | 2026-09-06 23:49 | every 100 steps | first, on the worker the build freed |

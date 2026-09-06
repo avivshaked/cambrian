@@ -70,9 +70,9 @@ than tuned around. Round 27 therefore runs on as a screen rather than a scored c
 3. **A photosynthetic flag on lineage birth rows** (done 2026-09-06: `pho` on every birth
    row, Core change; `pho-a` identical to `jobs-a` over 3,001 digests, the tiled replay
    unmoved). Runs before it print `flag absent` in the scorer's producer readings.
-4. **A current-build round-18 check**: seed 1 for 3,000 s on the D078 build against
-   r18x-s1's first 3,000 s. If it replays, the historical five stand as one world; if not,
-   0070 records a different control build.
+4. **A current-build round-18 check** (done 2026-09-06: `r18chk-s1` matches `r18x-s1` on
+   all 30 samples to 3,000 s, so the historical five stand as the control; 0070 records
+   it, and the report file the check overwrote by mistake was rebuilt from the run's data).
 5. **Round 27's results** report the late total-matter slope against the influx, and the
    agreement between influx and burial over the last two lifetimes, as numbers.
 6. **Run identity** in DESIGN.md section 7 and CLAUDE.md gains the build's `simHash` and the
