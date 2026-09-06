@@ -66,4 +66,9 @@ Controls: 0061's five seeds (the same open world, tiled, no top, 0.01) and 0065'
 
 ## Launch
 
-Appended below.
+Launched 2026-09-06 ~13:30 on workers 2–6 at commit `a268311` (the floor build; `simHash
+1f5455f4851591d0`, `coreHash 52eb6496…`), `-ExpectSimHash` on each; every manifest reads
+that hash, `gitDirty false`, `physicsDtSeconds 0.01`, `status running`. Headers verified
+as V1 on all five: `dt=0.01`, `space shared 4x10x10 m, depth 60, wrap, bed` (the floor
+build's token), `surface restore 1`, `area 400`, `matter in 0.3/s at vent, burial 0.01/s`,
+`from 0.25/m3`, the vent tokens. Monitor running. Results appended below.

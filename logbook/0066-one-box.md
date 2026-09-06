@@ -56,3 +56,24 @@ measured — not a cost ratio for shared space, a cost of the crowd the vent mak
 A founder placed exactly on the floor now bounces at ~1 m/s in the first seconds, so
 `max m/s` during founding is the floor's rule, not locomotion; founding a metre off the
 floor, or a real floor collider, is the owner's fix.
+
+## Addendum, 2026-09-06: the floor is real
+
+Commit `a268311` (`scratch/floor-build-report.md`): a static box collider with its top
+face at exactly y = −D, 50 × 2 × 20 m at the screen's settings (the ring with 5 m past
+each seam), on the creatures' layer with the project's default material (no bounce), and
+the restoring mirror below the floor retired for the shared branch. Placement may only
+*raise* a body: every founder, inoculant and newborn is lifted until its bounding sphere
+clears the bed by 5 cm, so a parent on the bed breeds beside itself. `floor con` counts
+floor pairs apart from creature pairs. Tiled replay identity held (20 rows, 0 differing
+cells); the shared smoke placed 200 founders with none in the rock and pushed ten into it
+and ten above the surface, all back. The full 20,000-s replay of `r25q-s2`'s settings
+diverged **zero** times against the recorded three, tracking the original within a few
+percent of population and 2 m of depth. Wall clock within 3%.
+
+One reading of mine corrected by the build: the ~1 m/s speed in a shared world's first
+seconds was never the floor. With the bed in it does not move (1.06 m/s at t=5 s in both
+builds); with the surface rule off it drops to 0.35. A buoyant founder drawn in the top
+metre crosses the waterline, loses its buoyancy, falls back at the rule's terminal speed,
+and repeats. Founding's `bestSpeed` is that ring, not locomotion; keeping the founder
+draw a metre under the surface would end it and is a world rule for the owner.
