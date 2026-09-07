@@ -180,3 +180,4 @@ the round launches over several hours rather than at once.
 | `r28-s3` | 4 | 2026-09-07 02:48 | off | on `r27-s3`'s worker, refreshed first |
 | `r28-s4` | 3 | 2026-09-07 06:34 | off | on `r27-s2`'s worker, refreshed first |
 | `r28-s5` | 2 | 2026-09-07 06:37 | off | on `r27-s1`'s worker, refreshed first; the probe `r28p-s1` waits for the first free worker |
+| `r28p-s1` | 7 | 2026-09-07 10:22 | every 100 steps | the replay probe, seed 1 for 10,000 s, on the worker `r28-s1` freed; same build, tree clean |
