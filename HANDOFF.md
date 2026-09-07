@@ -5,6 +5,9 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 
 ## Where things stand
 
+The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
+2026-09-07 after a pair-by-pair review; the git history holds every original.
+
 The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
 asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive
 samples to the end of a 30,000-s run. It must hold 10 or more members through the last two
