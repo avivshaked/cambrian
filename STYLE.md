@@ -190,24 +190,30 @@ the author will do:
    rewrite with the same meaning. `scripts/style-check.py --preserved old.md new.md`
    lists the tokens that vanished; the list must be empty or every item explained in the
    commit message.
-2. **Pre-registration blocks are copied verbatim.** In the logbook, everything an entry
-   says it wrote before the run (hypothesis, predictions, falsifiers, two-sided readings,
-   validity checks, the launch note) is not rewritten. Add the plain opening paragraph
-   above it and restyle the results and verdict below it.
+2. **Pre-registration tables are copied verbatim.** In the logbook, the predictions,
+   their falsifiers and the validity checks are not rewritten: a prediction that changes
+   wording after the run is a different prediction. The prose around them (the
+   hypothesis, the two-sided readings, the launch note) may be restyled sentence by
+   sentence, provided every condition, outcome and fact survives and a second reader
+   checks the pair for meaning. Add the plain opening paragraph above the block and
+   restyle the results and verdict below it. (Ruled 2026-09-07 at the retrofit's review:
+   the drafts had recast every two-sided-readings block and launch note, the reviewers
+   found no change of meaning, and restoring sixty blocks bought nothing.)
 3. **Superseded text stays superseded.** Strike-throughs, "superseded by" notes and
    dated corrections are kept. History is not tidied.
 4. **When a sentence's meaning is unclear, keep it and flag it.** Do not guess at what
    the author meant. Put the sentence in a list at the end of the commit message with
    the file and line, for the owner.
 5. **A rewrite replaces the original, and never sits beside it.** While the review is
-   open, draft it next to the entry as `NNNN-v2-slug.md`. Once the owner has approved it,
-   put the new text into the original file and delete the draft in the same commit, so the
+   open, draft it next to the entry as `NNNN-v2-slug.md`. Once the owner, or the reviewer the
+   owner has delegated, has approved it, put the new text into the original file and delete the draft in the same commit, so the
    entry number, the index in `logbook/README.md` and every link into the entry stay as
    they were, and the git history holds the old text. Two files never carry one entry
    number. Run both checks against the final file, taking the original from git for the
    preservation check.
-6. **One file per commit**, the commit message naming the file and the checker's before
-   and after counts. `DESIGN.md` and `DECISIONS.md` get a dated note at the top saying
+6. **One file per commit, or one reviewed batch per commit** with every file named in the
+   message, together with the checker's before and after counts and the reviewer's
+   findings. `DESIGN.md` and `DECISIONS.md` get a dated note at the top saying
    they were restyled and that the git history holds the originals.
 7. **The checker is a flagger, not a judge.** A piece passes when a newcomer can follow
    it, which the checker cannot measure. Read the piece aloud once before committing; the

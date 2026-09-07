@@ -5,12 +5,12 @@ and what the numbers were on the day.
 
 This is the fifth document in the set described in [`CLAUDE.md`](../CLAUDE.md). The other
 four describe the system as it *currently stands*. This one describes how it got there, and
-it is the only one that is allowed to be out of date — because it is history, and history
-doesn't drift.
+it is the only one allowed to be out of date, because it is history, and history doesn't
+drift.
 
 ## The rule that keeps this honest
 
-**The logbook is never a source of truth.**
+The logbook is never a source of truth.
 
 If an entry needs to state a design fact, it links to [`DESIGN.md`](../DESIGN.md) or quotes
 it. It does not restate it in friendlier words. The moment an entry starts explaining what
@@ -19,7 +19,7 @@ and then neither document can be trusted.
 
 An entry may freely describe what the system did **on the day it was written**, including
 things that were true then and are wrong now. That is the point. Superseded entries are
-never edited to match the present — a later entry supersedes an earlier one, exactly as in
+never edited to match the present. A later entry supersedes an earlier one, just as in
 [`DECISIONS.md`](../DECISIONS.md).
 
 ## How this differs from the other documents
@@ -30,8 +30,8 @@ never edited to match the present — a later entry supersedes an earlier one, e
 | [`DECISIONS.md`](../DECISIONS.md) | conclusions — what we chose, and what we rejected |
 | **`logbook/`** | **process — what we did, what happened, what it cost** |
 
-`DECISIONS.md` says *we rejected pooling*. The logbook says *we spent an afternoon
-building a benchmark, misread it by a factor of thirty, caught it by cross-referencing two
+`DECISIONS.md` says *we rejected pooling*. The logbook says *we spent an afternoon building
+a benchmark and misread it by a factor of thirty. We caught it by cross-referencing two
 measurements that disagreed, and only then found out pooling was unnecessary.*
 
 Both are worth keeping. Neither substitutes for the other.
@@ -49,124 +49,134 @@ chronology; the date goes in the header.
 ...prose...
 ```
 
-Write entries the **day something happens**, not later. The specific details — which run it
-was, what the number actually was, what it felt like to be wrong — are perishable within
-about a week, and they are the entire value of the thing. A tidy entry written a month
-later is worth less than a scrappy one written the same afternoon.
+Write entries on the **day something happens**, rather than later. The specific details are
+perishable within about a week. They are also the entire value of the thing: which run it
+was, what the number actually was, what it felt like to be wrong. A tidy entry written a
+month later is worth less than a scrappy one written the same afternoon.
 
 Entries about things that failed are worth more than entries about things that worked, and
 are the ones most likely to go unwritten.
 
 ## How to write an entry
 
-The rules are in [`STYLE.md`](../STYLE.md), and `scripts/style-check.py` counts the
-habits it warns against. The short form: open with the point in one plain paragraph;
-tell it in the order it happened, in the first person; define every term where it first
-appears or link to the key below; say what a number means before quoting it; one idea
-per sentence. The pre-registration blocks (hypothesis, predictions, falsifiers, the
-two-sided readings) are written before the run and never edited after it.
+The rules are in [`STYLE.md`](../STYLE.md), and `scripts/style-check.py` counts the habits
+it warns against.
 
-## Reading the entries — a key for the newcomer
+The short form: open with the point in one plain paragraph, and tell it in the order it
+happened, in the first person. Define every term where it first appears, or link to the key
+below. Say what a number means before quoting it, and keep one idea per sentence.
+
+The pre-registration blocks are written before the run and never edited after it. Those are
+the hypothesis, the predictions, the falsifiers and the two-sided readings.
+
+## Reading the entries, a key for the newcomer
 
 The entries are written for two audiences at once: agents continuing the work, and humans
-reading the research cold. From [0036](0036-the-floor-gives-back.md) onward the entries
-follow a pre-registration protocol — everything above each entry's *Results* line
-(hypothesis, predictions, what would falsify each, and what either outcome would mean) was
-written and committed **before** the experiment ran, so the git history proves the
-predictions preceded the data. Those entries lean on a shared vocabulary that this section
-defines once, rather than each entry re-explaining it.
+reading the research cold.
 
-**The vocabulary of the work itself.** A ***milestone*** is one of the numbered stages of
-the build plan in [`DESIGN.md`](../DESIGN.md), so "Milestone 3" names a place in the plan
-and not a date. A ***spike*** is a throwaway project built to answer one question and then
-abandoned; there has been one, and it asked whether Unity's physics engine could carry the
-evaluation loop at the scale this project needs. A ***round*** is a set of arms launched
-together to answer one question, numbered in order, and its number is the first half of
-each arm's name.
+From [0036](0036-the-floor-gives-back.md) onward the entries follow a pre-registration
+protocol. Everything above each entry's *Results* line was written and committed **before**
+the experiment ran, so the git history proves the predictions preceded the data. That covers
+the hypothesis, the predictions, what would falsify each, and what either outcome would
+mean.
 
-**An *arm*** is one experiment: one world configuration and one random seed, run for a
-budget of simulated seconds. Arms are named like `d057-s2` (round `d057`, seed 2) and each
-runs on a ***worker*** — a copy of the Unity project, so several arms can run at once
-without sharing state. Each arm writes a ***run report*** (`runs/<name>.md`, gitignored):
-a header line recording every setting it actually ran with — the settings truth, always
-trusted over the launch command — then one table row per ~100 simulated seconds (a
-***sample***), and a footer saying how the run ended.
+Those entries lean on a shared vocabulary, which this section defines once rather than
+having each entry re-explain it.
 
-**How a run can end.** By its **budget** (the simulated seconds it was asked for — the
-only ending that counts as the world's own answer); by **extinction**; by the **wall
-clock** (a real-time limit on the machine); or by the population **ceiling** (a maximum
-the instrument can afford to simulate, `MaximumPopulation` — a run the ceiling ends is
-called a ***runaway***). The last two are limits of the instrument, not of the world, so a
-run they end is called ***censored***, in the survival-analysis sense: cut short for a
-reason external to what was being measured, so its data is read up to the cut and never
-treated as an outcome. Every pre-registration says in advance how censored runs will be
-scored. One more habit of the entries: "seed" names the RNG seed an arm ran with, and by
-metonymy the arm itself — "three seeds in five died" means three of the five arms.
+First, the vocabulary of the work itself.
 
-**The vocabulary of what happens in the water.** The ***population floor*** (no relation
-to the sea floor) is a founding mechanism: while active, it trickles fresh random genomes
-into any world that falls to 40 creatures. "The floor closes at 3,000 s" means it stops
-firing then — after that, a world lives or dies on its own. ***Founding*** is the lottery
-of those first random genomes producing a breeding population at all. A ***drought*** is
-the recurring crisis of this world's economy: producers lock the surface's free matter
-into their bodies, new conceptions are refused for want of matter, and births stop until
-matter returns. A ***chain*** (or *absorptive lineage*) is the food chain's second level:
-creatures carrying absorptive (detritus-eating) tissue inherited from a parent — consumers
-that live on dead matter rather than light, where a ***producer*** lives on light alone. A
-chain ***busts*** when it eats its food column faster than the food returns and collapses.
-***Upkeep*** is the standing energy cost of being a body, per second; ***break-even*** is
-the food density at which an absorptive's intake exactly pays its upkeep — below it,
-eating loses money. And "D051"-style numbers are entries in
-[`DECISIONS.md`](../DECISIONS.md), where the reasoning behind each mechanism lives.
+| term | what it means |
+|---|---|
+| ***milestone*** | one of the numbered stages of the build plan in [`DESIGN.md`](../DESIGN.md), so "Milestone 3" names a place in the plan and not a date |
+| ***spike*** | a throwaway project built to answer one question and then abandoned. There has been one, and it asked whether Unity's physics engine could carry the evaluation loop at the scale this project needs |
+| ***round*** | a set of arms launched together to answer one question, numbered in order; its number is the first half of each arm's name |
+| ***arm*** | one experiment: one world configuration and one random seed, run for a budget of simulated seconds. Arms are named like `d057-s2`, which is round `d057`, seed 2 |
+| ***worker*** | a copy of the Unity project, so several arms can run at once without sharing state |
+| ***run report*** | `runs/<name>.md`, gitignored: a header line recording every setting the arm actually ran with — the settings truth, always trusted over the launch command — then one table row per ~100 simulated seconds, and a footer saying how the run ended |
+| ***sample*** | one of those table rows |
 
-**The vocabulary of the open, shared world** (from [0060](0060-the-outflow.md) onward).
-Matter — the stuff bodies are built from, distinct from energy — now enters and leaves the
-world instead of being fixed. ***Influx*** is the rate new matter arrives, the "dose";
-the ***vent*** is the point on the sea floor where it arrives, and the ***plume*** is the
-upward current the vent drives, which lifts bodies as well as matter. ***Stock*** (or
-*standing matter*) is the total free matter in the water at a moment; the ***matter
-sink*** is the speed at which free matter settles toward the floor, and ***burial*** is
-the fraction of floor-layer matter removed from the world each second — the outflow that
-lets the stock level off. A ***patch*** is one of the world's spatial regions; since the
-shared box (D077) it is a literal 10 × 10 m zone read from a body's position. A
-***crowded stillbirth*** (the `crowded` column) is a birth refused because no free space
-could be found beside the parent. The ***goal rule*** is D063 in `DECISIONS.md`, the
-pass/fail criterion a world must meet — in brief, one connected stomach lineage alive and
-breeding to the end of a 30,000-s run, scored per seed — and "4 of 5" means four seeds
-passed it. ***simHash*** and ***coreHash*** are fingerprints of the exact source code a
-run was built from (the Unity side and the `Evosim.Core` side), so two runs can be known to
-share a build. The ***fine step*** is dt 0.01 s, the step at which results count; the
-***fast step*** (0.02) is a screening step, three times quicker and less trustworthy on
-depth and movement.
+A run can end in four ways.
 
-**The vocabulary of reproducibility** (from [0069](0069-the-shared-world-does-not-replay.md)
-onward). A ***physics step*** is one tick of the physics engine, 0.01 simulated seconds at
-the fine step (a 30,000-s run is three million of them); a ***metabolic step*** is the
-half-second at which the economy (upkeep, feeding, breeding) is settled. ***Replay*** is
-the property that two runs with the same seed, settings and build are the same run to the
-last decimal; a ***realisation*** is one run of a seed when replay does not hold — one
-roll of the dice, not *the* outcome of that seed. An ***ulp*** (unit in the last place) is
-the smallest change a floating-point number can hold, the size of difference at which two
-runs first part. Unity solves bodies that touch together, as an ***island***, on a pool of
-***job worker threads***; the ***state digest*** (`EVOSIM_DIGEST_EVERY`) is the instrument
-that fingerprints every body's position and velocity every N steps so two runs can be
-compared to the step and body where they first differ.
+| ending | what it means |
+|---|---|
+| **budget** | the simulated seconds it was asked for, and the only ending that counts as the world's own answer |
+| **extinction** | nothing left alive |
+| **wall clock** | a real-time limit on the machine |
+| **ceiling** | the population maximum the instrument can afford to simulate, `MaximumPopulation`; a run the ceiling ends is called a ***runaway*** |
 
-**The report columns the entries quote**, with what each number means:
+The last two are limits of the instrument rather than of the world, so a run they end is
+called ***censored***. That is the survival-analysis sense of the word: cut short for a
+reason external to what was being measured. Its data is read up to the cut and never treated
+as an outcome. Every pre-registration says in advance how censored runs will be scored.
+
+One more habit of the entries. The word "seed" names the RNG seed an arm ran with, and by
+metonymy the arm itself, so "three seeds in five died" means three of the five arms.
+
+Next, the vocabulary of what happens in the water.
+
+| term | what it means |
+|---|---|
+| ***population floor*** | a founding mechanism, with no relation to the sea floor: while active, it trickles fresh random genomes into any world that falls to 40 creatures. "The floor closes at 3,000 s" means it stops firing then, and after that a world lives or dies on its own |
+| ***founding*** | the lottery of those first random genomes producing a breeding population at all |
+| ***drought*** | the recurring crisis of this world's economy. Producers lock the surface's free matter into their bodies, new conceptions are refused for want of matter, and births stop until matter returns |
+| ***chain*** (or *absorptive lineage*) | the food chain's second level: creatures carrying absorptive, detritus-eating tissue inherited from a parent, consumers that live on dead matter rather than light |
+| ***stomach*** | the same creatures as the *chain*, named for the tissue: an absorptive lineage is a stomach line, and "the stomachs" are its living members |
+| ***producer*** | a creature that lives on light alone |
+| a chain ***busts*** | it eats its food column faster than the food returns, and collapses |
+| ***upkeep*** | the standing energy cost of being a body, per second |
+| ***break-even*** | the food density at which an absorptive's intake just pays its upkeep. Below it, eating loses money |
+| a "D051"-style number | an entry in [`DECISIONS.md`](../DECISIONS.md), where the reasoning behind each mechanism lives |
+
+Then the vocabulary of the open, shared world, from [0060](0060-the-outflow.md) onward.
+Matter is the stuff bodies are built from, distinct from energy, and it now enters and
+leaves the world instead of being fixed.
+
+| term | what it means |
+|---|---|
+| ***influx*** | the rate new matter arrives, the "dose" |
+| ***vent*** | the point on the sea floor where it arrives |
+| ***plume*** | the upward current the vent drives, which lifts bodies as well as matter |
+| ***stock*** (or *standing matter*) | the total free matter in the water at a moment |
+| ***matter sink*** | the speed at which free matter settles toward the floor |
+| ***burial*** | the fraction of floor-layer matter removed from the world each second, the outflow that lets the stock level off |
+| ***patch*** | one of the world's spatial regions; since the shared box (D077) it is a literal 10 × 10 m zone read from a body's position |
+| ***crowded stillbirth*** | the `crowded` column: a birth refused because no free space could be found beside the parent |
+| ***goal rule*** | D063 in `DECISIONS.md`, the pass/fail criterion a world must meet. In brief: one connected stomach lineage alive and breeding to the end of a 30,000-s run, scored per seed, so "4 of 5" means four seeds passed it |
+| ***simHash*** and ***coreHash*** | fingerprints of the exact source code a run was built from, the Unity side and the `Evosim.Core` side, so two runs can be known to share a build |
+| ***fine step*** | dt 0.01 s, the step at which results count |
+| ***fast step*** | 0.02, a screening step, three times quicker and less trustworthy on depth and movement |
+
+Last, the vocabulary of reproducibility, from
+[0069](0069-the-shared-world-does-not-replay.md) onward.
+
+| term | what it means |
+|---|---|
+| ***physics step*** | one tick of the physics engine, 0.01 simulated seconds at the fine step; a 30,000-s run is three million of them |
+| ***metabolic step*** | the half-second at which the economy of upkeep, feeding and breeding is settled |
+| ***replay*** | the property that two runs with the same seed, settings and build are the same run to the last decimal |
+| ***realisation*** | one run of a seed when replay does not hold: one roll of the dice rather than *the* outcome of that seed |
+| ***ulp*** | unit in the last place, the smallest change a floating-point number can hold, and the size of difference at which two runs first part |
+| ***island*** | a group of bodies that touch, which Unity solves together |
+| ***job worker threads*** | the pool of extra CPU threads Unity solves those islands on |
+| ***state digest*** | `EVOSIM_DIGEST_EVERY`, the instrument that fingerprints every body's position and velocity every N steps, so two runs can be compared to the step and body where they first differ |
+
+These are the report columns the entries quote, with what each number means.
 
 | column | meaning |
 |---|---|
 | `t`, `alive`, `births` | simulated seconds; living creatures; cumulative births |
 | `absorpt` | living creatures with absorptive (detritus-eating) tissue — the chain's size |
 | `inherit` | of those, how many had an absorptive parent — a lineage, not a fresh mutation |
+| `clearance` | how much water a creature filters per second per unit of absorptive tissue, the stomach's gearing (D060, logbook/0050); `clearance 10` in a header is that setting |
+| `exudation` | the share of a producer's light intake it releases into the water while alive, food for the chain (D070); `exudation 0.15` in a header is that setting |
 | `det deep` | detritus energy density (J/m³) in the deep water — the chain's larder |
 | `mat top` | free matter density at the surface — what conceptions are paid from |
 | `mat blk` | conceptions refused for want of matter since the last row — the drought gauge |
 | `floor` | creatures the population floor spawned since the last row — 0 means the world is on its own |
 | `gen min` / `gen max` | lowest and highest generation alive — `gen min` 0 means founders are still present |
 
-None of this is specification — what the mechanisms *are* lives in
-[`DESIGN.md`](../DESIGN.md) and the reasoning in [`DECISIONS.md`](../DECISIONS.md); this
+None of this is specification. What the mechanisms *are* lives in
+[`DESIGN.md`](../DESIGN.md), and the reasoning in [`DECISIONS.md`](../DECISIONS.md). This
 key only translates the entries' reporting shorthand.
 
 ## Entries
