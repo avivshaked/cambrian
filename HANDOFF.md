@@ -126,17 +126,19 @@ Captured 2026-09-07 from the three outside reviews (logbook/0071), in no order o
 Captured 2026-09-07 from the Astra review (its response file at the root has the verdicts and
 the running status), in the order they are done:
 
-16. **Feeding allocation and the stillbirth charge** (the review's R1 and R2). Availability
+16. **Feeding allocation and the stillbirth charge** (the review's R1 and R2; done
+    2026-09-07, commit `1fb3752`; `r28chk-s1` identical to `r28-s1` over 3,001 digest steps). Availability
     frozen for the consumption pass, a short take fed back to the ledger, a zero-part body
     refused before any charge, an orphaned-matter invariant, and `stillbirths` and
     `mat orphan` in the statistics and the table; tests for reordered identical feeders,
     a capped take, and a stillbirth under D065's fixed term. Neither branch fired in any
     scored world (the response file has the measurements), so the fix is expected to replay
     the record bit for bit, proved on a zero-worker digest pair against `r28-s1`'s digest.
-17. **The scorer's window** (R4): an upper bound at the last sample, the interval read from
+17. **The scorer's window** (R4; done 2026-09-07, same commit): an upper bound at the last sample, the interval read from
     the sample axis rather than assumed to be 100 s, and a completed-manifest gate that
     prints *provisional* on a running arm; a fixture for each.
-18. **One Unity and script build, landed between rounds because it moves `simHash`**:
+18. **One Unity and script build** (done 2026-09-07; compiled on worker 7, the other workers
+    refreshed after round 28's arms end, so the next launch reports a new `simHash`):
     inoculation counted in `Ecosystem`'s reconciliation revision; the theatre refuses a
     recording with an inoculation and compares the Unity version as well as the hashes;
     `EvolutionRun.Env` refuses a malformed value instead of defaulting; `new-worker.ps1`
@@ -144,11 +146,13 @@ the running status), in the order they are done:
     `finally`; the lineage writer is flushed on every orderly end (r25-s2 lost 38 ids to its
     wall); the digest's cadence and dump settings are written beside the digest; the digest
     and determinism comparisons exit nonzero on a mismatch.
-19. **The research registry**: the disclosure sentence, [CB18] and [PU16]'s retrieval
-    records, round 4's count, the scope of Q1's answer, the framing of Q10's rule.
-20. **The predation proposal consolidated** into one operative design for the owner.
-21. **The movement draft**: the right denominator (8 of 930), the sensing-versus-acquisition
-    seam stated, added mass named as off.
+19. **The research registry** (done 2026-09-07, commit `cad91a2`): the disclosure sentence,
+    [CB18] and [PU16]'s retrieval records, round 4's count, the scope of Q1's answer, the
+    framing of Q10's rule.
+20. **The predation proposal consolidated** into one operative design for the owner (done
+    2026-09-07; `fable-propose-predation.md` is one text again).
+21. **The movement draft** (done 2026-09-07): the right denominator (8 of 930), the
+    sensing-versus-acquisition seam stated, added mass named as off.
 22. **A fresh seed batch** once the rules and instruments are stable, so the conclusion is
     checked beyond the five founding lotteries every round has reused (owner's call on when).
 

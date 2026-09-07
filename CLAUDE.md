@@ -155,7 +155,11 @@ lifetimes reading, and the population-only column reading (`photo inh` ≥ 10 at
 sample and each of the last 20). The first two read the `pho` flag on lineage birth rows
 (built 2026-09-06, after D078; `coreHash bff3d696…` onward) and print `flag absent` on
 every run recorded before it; the third prints `column absent` on a report older than the `photo`
-columns. Fixture tests live in `scripts/tests/clade-score/` (`run-tests.ps1`); run them
+columns. The verdict line ends `PROVISIONAL` on an arm whose manifest still says
+`running` (the lineage runs ahead of the report by up to a sample, and a birth after the
+last sample does not recruit) and `no manifest` on a fixture; the recruitment window is
+20 sampling intervals read from the report, bounded at the last sample (2026-09-07).
+Fixture tests live in `scripts/tests/clade-score/` (`run-tests.ps1`); run them
 after touching the scorer.
 
 ```powershell
@@ -497,6 +501,11 @@ actually verifying it.
   wrongly. Turning it on is a per-step change, so it is a new realisation of every seed, and it
   is a world rule: the owner's call, before the movement round is pre-registered (raised by the
   outside review of 2026-08-31; captured 2026-09-07).
+- **`stillb` and `mat orphan` read 0 in a healthy run, and the second is an invariant.** From
+  the 2026-09-07 build the table carries the stillbirth total and the matter the ledger says
+  is in bodies less what the living hold. A nonzero `mat orphan` means matter was charged to a
+  body that does not exist, which is what happened for every stillbirth between D065 and
+  2026-09-07 (none occurred in a scored world; DESIGN §0p).
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.

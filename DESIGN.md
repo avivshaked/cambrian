@@ -242,6 +242,19 @@ are in the manifest, as the bullet says. §5A's currency table still gave matter
 which D074's burial falsified. Both corrected after the outside reviews were captured
 (logbook/0071). No rule of the world changed.
 
+## 0p. Changelog — the feeding allocation priced from frozen availability; a stillbirth charged no matter (2026-09-07)
+
+§5A.2c's proportional share was computed from the live stock while the consumption pass
+was still taking from it, so a meal earlier in the walk changed the price of a meal later,
+and a mouth under the satiation cap (D062) was credited its planned draw when the water
+gave less. Both were found by the Astra review's probes and fixed the same day: the field's
+availability is frozen once per step after the demand pass, every share and rationed density
+is priced from it, a rationed draw is capped at its share of the demand, and a take that
+comes up short is fed back into the ledger. A body of no parts is charged no matter (D065's
+fixed term had no body to sit in and was never returned). No rule of the world changed: the
+code now does what §5A.2c said. Neither branch had fired in any scored world, and the fixed
+Core replays `r28-s1` bit for bit over 3,001 digest steps (`r28chk-s1`).
+
 ## 0o. Changelog — three more status corrections (2026-09-07, from the Astra review)
 
 §5A.8's tiling row said creatures had never touched, which was true on 2026-09-05 and false
