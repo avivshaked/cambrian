@@ -104,7 +104,9 @@ Their density is deliberate.
   elsewhere. No bold lead-ins that end in a colon or a full stop. No bold sentences.
 - **Dashes.** At most one em dash per paragraph. Use commas, full stops or parentheses
   instead. En dashes stay in ranges (1,400–1,500). The em dash in a logbook entry's title
-  line is the format `logbook/README.md` prescribes and never counts against a piece. A
+  line is the format `logbook/README.md` prescribes and never counts against a piece; a
+  numbered primer piece's title (`# 01 — …`) is the same format and is equally exempt,
+  and the checker exempts both. A
   header below the title may carry one only where it separates a run or round label from
   what happened, as in "Round 2b — results". A header that uses one to weld two ideas
   together is two headers, or one statement.
@@ -230,3 +232,11 @@ per hundred words and paragraphs with more than one; bold lead-ins ending in a c
 stop; "not X but Y" and "X, not Y" closers; "which is why/what/where"; rhetorical
 questions; paragraphs with more than two code identifiers; the intensifiers and
 machine-only words from §5; and headers deeper than three levels. It never edits a file.
+
+A bibliography defeats it. The checker splits sentences at a full stop followed by a
+capital, so every author initial in a reference line reads as a sentence of one word and is
+reported as a fragment: "**[EA23]** L." and "Eguiarte-Morett and W." are one citation, not
+two mistakes. The title, journal, volume and pages that follow then read as one over-long
+sentence, for the same reason. A file whose remaining findings are all of that shape has
+passed. Say so where the file is handed over, rather than breaking the references to quiet
+the tool.

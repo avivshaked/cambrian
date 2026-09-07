@@ -30,8 +30,9 @@ MACHINE_WORDS = [
     'sits at the heart', 'a hard truth',
 ]
 LONG_SENTENCE = 30
-# A logbook entry's title line, whose em dash logbook/README.md prescribes.
-ENTRY_TITLE = re.compile(r'^#\s+\d{4}\s+—')
+# A logbook entry's title (four digits) or a primer piece's (two): both formats their READMEs
+# prescribe, both exempt.
+ENTRY_TITLE = re.compile(r'^#\s+\d{2,4}\s+—')
 
 
 def prose_lines(text):
@@ -42,7 +43,9 @@ def prose_lines(text):
         if s.startswith('```'):
             fenced = not fenced
             continue
-        if fenced or s.startswith('|') or s.startswith('<'):
+        # Blockquotes are somebody else's words, kept verbatim under STYLE.md 8.1. We do
+        # not restyle a quotation, so there is nothing useful to report about one.
+        if fenced or s.startswith('|') or s.startswith('<') or s.startswith('>'):
             continue
         yield i, line
 
@@ -122,7 +125,7 @@ def report(path):
                 findings.append((first_n, f'"which is why/what/where": "{s[:60]}..."'))
             if s.endswith('?') and not s.startswith('"'):
                 findings.append((first_n, f'rhetorical question: "{s[:60]}..."'))
-            is_date = re.match(r'^\*?\d{4}-\d{2}-\d{2}', s) is not None
+            is_date = re.match(r'^\*{0,2}\d{4}-\d{2}-\d{2}', s) is not None
             if n_words <= 4 and s.endswith('.') and not is_date and \
                     not re.search(r'\b(is|are|was|were|has|have|had|do|does|did)\b', s, re.I):
                 findings.append((first_n, f'fragment as punchline: "{s}"'))
