@@ -130,3 +130,5 @@ once.
 | `r28-s1` | 7 | 2026-09-06 23:49 | every 100 steps | first, on the worker the build freed |
 | `r28-s2` | 6 | 2026-09-07 02:05 | off | on `r27-s5`'s worker, refreshed first |
 | `r28-s3` | 4 | 2026-09-07 02:48 | off | on `r27-s3`'s worker, refreshed first |
+| `r28-s4` | 3 | 2026-09-07 06:34 | off | on `r27-s2`'s worker, refreshed first |
+| `r28-s5` | 2 | 2026-09-07 06:37 | off | on `r27-s1`'s worker, refreshed first; the probe `r28p-s1` waits for the first free worker |
