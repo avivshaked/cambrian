@@ -183,5 +183,12 @@ s. At this population, then, the single-threaded solver runs at about the same p
 The round-sized cost, at two to three thousand bodies, is what round 28 will measure
 (logbook/0070).
 
+*Added 2026-09-07.* The big confirmation came with round 28. Its replay probe `r28p-s1` ran
+seed 1 of the shared box for 10,000 s beside the scored arm `r28-s1`, both with the physics on
+one thread, and the two are identical on all 10,001 digests and all 100 samples at about
+1,700 bodies and 745 touching pairs per step (logbook/0070's M7). The probe took 108 wall
+minutes for its 10,000 s with four other arms on the machine, and the scored arm 632 minutes
+for 30,000 s, which is inside the budget 0070 set.
+
 The D078 build follows from here. The zero-thread setting becomes the default, recorded in
 every manifest and header, and the same digest comparison is the check that it landed.

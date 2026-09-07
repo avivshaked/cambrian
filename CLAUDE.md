@@ -447,7 +447,8 @@ actually verifying it.
   pair identical for ~148,000 steps and then parting in one body's velocity by one or two ulp
   where touching bodies were solved in a different order; Unity's *Enhanced Determinism*,
   sleep, broadphase and scratch-buffer settings change nothing, and `-job-worker-count 0`
-  restores identity over 300,000 steps (logbook/0069). PhysX documents thread-count
+  restores identity over 300,000 steps (logbook/0069), then over 1,000,000 steps at a full
+  round's population (`r28p-s1` ≡ `r28-s1`, logbook/0070). PhysX documents thread-count
   independence; this build with articulations in contact does not have it. The tiled world's
   replays (`r16dt-01c/d/e`, `fp-replay*`, `fl-replay`) never reached the fork because no two
   creatures ever shared a solver island, so **a replay-identity validation in the tiled world
