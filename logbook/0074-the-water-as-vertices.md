@@ -95,6 +95,20 @@ realisation at the screening step says nothing about the world. A passing seed r
 10,000 s next, and the round itself screens five seeds at the fast step before anything runs
 at 0.01. That is what the owner asked for: fail fast where it is appropriate.
 
+## The second screen, and the second fix
+
+Seed 2 ran 10,000 s at the fast step with sideways mixing on, and bred once. The forty
+founders stood in water with the matter density at the layer's normal value, the gate
+refused every conception, and the world dwindled to one body. The arithmetic was in front
+of me the whole time and I had not done it. A child costs 8 to 16 units of matter at these
+prices, which is the locked matter per living body in every run on file. The old cell was
+5 m by 5 m by 1 m and held 25 units at the seeded density, so a parent in fresh water could
+afford one child. A 1 m kernel reaches 4.2 m³ and 4 units. No founder could ever afford a
+child from the seeded water, and seed 1 had bred only on the fat vertices its dead founders
+left behind. The matter field now reads through its own kernel of 1.8 m, whose reach of
+24.4 m³ is the old cell's volume to within 3%, so the gate binds where it bound in the base
+world and the thing the round changes is the detritus. Seed 2 runs again.
+
 ## A note of my own
 
 The owner designed this field in five lines of a chat message at eleven at night, with the

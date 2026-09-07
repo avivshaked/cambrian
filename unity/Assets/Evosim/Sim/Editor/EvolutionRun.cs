@@ -378,6 +378,7 @@ namespace Evosim.Sim.EditorTools
             // tunables with the same defaults, so a header names them whatever the model.
             MatterField fieldModel = EnvFieldModel("EVOSIM_FIELD");
             float fieldKernel = Env("EVOSIM_FIELD_KERNEL", new RunConfig().FieldKernelMetres);
+            float fieldMatterKernel = Env("EVOSIM_FIELD_MATTER_KERNEL", new RunConfig().FieldMatterKernelMetres);
             float fieldMerge = Env("EVOSIM_FIELD_MERGE", new RunConfig().FieldMergeMetres);
             int fieldCap = (int)Env("EVOSIM_FIELD_CAP", new RunConfig().FieldVertexCap);
             float fieldQuantum = Env("EVOSIM_FIELD_QUANTUM", new RunConfig().FieldVertexJoules);
@@ -596,6 +597,7 @@ namespace Evosim.Sim.EditorTools
             config.WorkCostMultiplier = workCost;
             config.FieldModel = fieldModel;
             config.FieldKernelMetres = fieldKernel;
+            config.FieldMatterKernelMetres = fieldMatterKernel;
             config.FieldMergeMetres = fieldMerge;
             config.FieldVertexCap = fieldCap;
             config.FieldVertexJoules = fieldQuantum;
@@ -835,7 +837,7 @@ namespace Evosim.Sim.EditorTools
                 // unconditionally for the same reason: `field cells` and "written before the
                 // vertex field existed" must not read the same.
                 " · field " + fieldModel.ToString().ToLowerInvariant() +
-                " h=" + fieldKernel + " merge=" + fieldMerge + " cap=" + fieldCap + " q=" + fieldQuantum +
+                " h=" + fieldKernel + " mh=" + fieldMatterKernel + " merge=" + fieldMerge + " cap=" + fieldCap + " q=" + fieldQuantum +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());

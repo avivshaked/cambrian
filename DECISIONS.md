@@ -4216,6 +4216,17 @@ scale everywhere, which the chemical sense has never had to read.
    see if we can fail fast before running a long simulation." D079's one-change rule bends
    again, for the reason D082's note gives.
 
+**Amended the same night: the matter field has its own reach.** The second screen, seed 2
+for 10,000 s at the fast step, bred once and died to one body, with the matter density at
+the population normal and the matter gate refusing every conception. A child costs 8 to 16
+units of matter at these prices; the old cell held 25 at the seeded density; a 1 m kernel
+reaches 4.2 m³ and 4 units. Seed 1 had bred only on the matter its dead founders left as fat
+vertices. `FieldMatterKernelMetres` (1.8 m, a reach of 24.4 m³, the cell's volume to within
+3%) is the matter field's kernel from this build, so the gate binds where it bound in the
+base world and the change the round reads is the detritus. The detritus kernel stays 1 m.
+Rejected: more seeded matter (a different budget, D048's stock), and a conception that
+widens its search when short (a second rule for one gate).
+
 **Withdrawn.** The motility proposal's halo (option A, my recommendation of that afternoon)
 was a one-number sketch of this field's behaviour near a body; it is retired unbuilt. Its
 finer field (B) is this field at a coarser resolution without transport; its encounter

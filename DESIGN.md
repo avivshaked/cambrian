@@ -255,8 +255,10 @@ burial removes whole vertices from the floor. `RunConfig.FieldModel` selects it;
 `Cells`, is `NutrientField` unchanged, so every recorded config still describes its world.
 Both implement `IMatterField`, and `World` reads through it: a `FieldPoint` carries a position
 and a patch, and each field reads the half it understands. A vertex world requires
-`SharedSpace`. Why, and what was rejected: D083. What it answers: §0r's diagnosis, which
-stands as written. A still body now eats a hole in its own water and a moving body leaves
+`SharedSpace`. The matter field reads through its own kernel, `FieldMatterKernelMetres`
+(1.8 m, the old cell's volume), so conception's matter gate binds where it bound in the cell
+world; the detritus kernel is 1 m. Why, and what was rejected: D083. What it answers: §0r's
+diagnosis, which stands as written. A still body now eats a hole in its own water and a moving body leaves
 it, and the chemical sense reads a gradient inside a patch for the first time.
 
 ## 0r. Changelog — review round 6: how nature bootstrapped movement and sensing, and why this world cannot (2026-09-07)

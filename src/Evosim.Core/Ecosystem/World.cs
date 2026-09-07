@@ -554,11 +554,13 @@ namespace Evosim.Core
                     config.FieldKernelMetres, config.FieldMergeMetres, config.FieldVertexCap,
                     config.FieldVertexJoules, Rng.SeedFor(seed, DetritusFieldIndex));
 
+                // Its own reach: the cell's volume, so the matter gate binds where it bound in
+                // the base world (RunConfig.FieldMatterKernelMetres).
                 Matter = new VertexField(
                     config.WorldAreaSquareMetres, config.LightLayerMetres,
                     config.MatterSinkMetresPerSecond, config.WorldDepthMetres,
                     0f, 0f, patchCount,
-                    config.FieldKernelMetres, config.FieldMergeMetres, config.FieldVertexCap,
+                    config.FieldMatterKernelMetres, config.FieldMergeMetres, config.FieldVertexCap,
                     config.FieldVertexJoules, Rng.SeedFor(seed, MatterFieldIndex));
             }
             else

@@ -611,6 +611,27 @@ namespace Evosim.Core
         public float FieldKernelMetres { get; set; } = 1f;
 
         /// <summary>
+        /// The matter field's own reach, m — how far a conception gathers matter from, and the
+        /// reach of the matter density a report reads (D083, amended the same night).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The base world's headroom, kept.</b> A child costs 8 to 16 units of matter at
+        /// round 29's prices, and a cell 5 m by 5 m by 1 m held 25 at the seeded density, so
+        /// the gate in <c>World.Conceive</c> had headroom for one child in fresh water. The
+        /// detritus kernel of 1 m reaches 4.2 m³, which is 4 units at the same density, and the
+        /// first screen on seed 2 bred nothing in 10,000 s for that reason alone: every founder
+        /// stood in water that could never afford its child (logbook/0074). At 1.8 m the reach is
+        /// 24.4 m³, the cell's volume to within 3%, so the matter gate binds where it bound in
+        /// the base world and the change the round reads is the detritus, not the matter.
+        /// </para>
+        /// <para>⚠ Unmeasured (§5A.10), like the detritus kernel; it is the cell's volume, not a
+        /// measured gathering radius.</para>
+        /// </remarks>
+        [Tunable("field", Unit = "m")]
+        public float FieldMatterKernelMetres { get; set; } = 1.8f;
+
+        /// <summary>
         /// Where <see cref="VertexField.Cull"/> starts merging nearest pairs when the count is
         /// over <see cref="FieldVertexCap"/>, m — it widens from here toward the kernel (D083).
         /// </summary>

@@ -522,7 +522,12 @@ actually verifying it.
   position; the report's `vtx` column prints `detritus/matter` counts against
   `FieldVertexCap`, and the per-depth columns (`det deep`, `mat here`, `refuge J`) are the
   same layer-and-patch bins as before, summed over vertices. Every config written before
-  this build lacks the `field` group and is refused by it, per the tunable rule above.
+  this build lacks the `field` group and is refused by it, per the tunable rule above. **The
+  two fields read through different kernels**: detritus at `FieldKernelMetres` (1 m, 4.2 m³),
+  matter at `FieldMatterKernelMetres` (1.8 m, 24.4 m³, the old cell's volume). The first
+  seed-2 screen ran both at 1 m and bred once in 10,000 s, because a child costs 8 to 16
+  units of matter and a 1 m kernel reaches 4 at the seeded density; a vertex world whose
+  founders never breed should be read at `mat blk` against `mat here` before anything else.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.
