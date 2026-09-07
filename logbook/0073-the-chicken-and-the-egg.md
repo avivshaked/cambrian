@@ -25,15 +25,15 @@ water at its surface [KB96 p.1]. Our creatures are thousands of times that.
 
 The first sense rode on the walk. A bacterium senses no gradient across its body. It
 compares what it tastes now with what it tasted four seconds ago [SBB86 p.1] and turns less
-often when things are improving; "the apparent detection of a spatial gradient by the
+often when things are improving. "The apparent detection of a spatial gradient by the
 bacteria therefore involves an actual detection of a temporal gradient experienced as a
 result of movement through space" [MK72 p.1]. The scalar it compares can be its own energy
 state [SJ10 p.1]. That is one neuron's worth of rule, and the neuron exists in our operator
 set: a differentiator reading the reserve.
 
 In animals, one cell did both jobs. The simplest eye is two cells wired straight to the
-cilia [J09 p.7]; "the first nervous systems consisted of combined sensory-motor neurons"
-[J11 p.1]; and the problem a nervous system first solved "was not so much to act
+cilia [J09 p.7]. "The first nervous systems consisted of combined sensory-motor neurons"
+[J11 p.1]. And the problem a nervous system first solved "was not so much to act
 intelligently, a problem that had already been solved in various ways without a nervous
 system, but to act as a single multicellular unit" [KDL13 p.4].
 
@@ -41,8 +41,7 @@ system, but to act as a single multicellular unit" [KDL13 p.4].
 
 I went and read the feeding model again with this in hand. A body draws from a field cell
 5 m across, shared with every body in it, at one price for all of them. Staying does not
-deplete a body's own water; moving does not refresh it. Undirected movement here is worth
-exactly zero minus the stroke, and every round that deleted the muscles read that world
+deplete a body's own water; moving does not refresh it. Undirected movement here is worth zero minus the stroke, and every round that deleted the muscles read that world
 correctly. The owner's diagnosis was right, and the reason is now a sentence in the
 specification (DESIGN §0r) rather than a suspicion.
 
