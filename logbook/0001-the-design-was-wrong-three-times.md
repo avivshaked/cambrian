@@ -2,99 +2,116 @@
 
 **2026-08-02**  ·  Design phase, before any code
 
-The plan was: write the design document, then run a literature review, then check one
-against the other. The expectation was that the review would mostly confirm the design and
-add citations to it.
+I wrote the design document first and then ran a literature review to check it against the
+field. I expected the review to confirm the design and hang citations on it. It overturned
+the design three times. Two of the three were things I had never heard of and could have
+looked up. The third was worse. It was a piece of reasoning I invented on the spot, which
+sounded right and was wrong. No fact-check would have caught it, because it was not a fact.
 
-It overturned it three times. Two were factual gaps. One was worse — a piece of reasoning
-that was wrong in a way no fact-check would have caught, because it wasn't a fact.
+## 1. The hardest part of the project was missing from the document
 
----
+The premise of this project is that a creature's body and its brain evolve together. The
+brain is a controller: a network that reads the creature's senses and drives its joints. A
+mutation can change the shape of the body, the wiring of the controller, or both at once.
+Draft 1 said that this was the point of the project, and then said nothing about why it is
+hard.
 
-## 1. The failure mode that wasn't in the document
+The literature is unambiguous. Evolving the two together is pathological. Every creature
+gets a score for how well it does the task, and that score is called its fitness. Selection
+is the mechanic that keeps the high scorers to breed from and throws the rest away. Now
+change the shape of the body. The controller that was tuned to the old body no longer fits
+it, the offspring scores worse, and selection discards it. That happens even when the new
+body is the better one. So morphology, meaning the shape of the body, stops changing after a
+few dozen generations, while controllers keep improving. Fitness climbs the whole time. It
+looks like progress right up until you notice that every creature has the same shape.
 
-Draft 1 described body–brain co-evolution as the whole point of the project and then said
-nothing about why it is hard. The literature is unambiguous: it is *pathological*. A
-morphological mutation invalidates the controller that was co-adapted to the old body, the
-offspring performs worse, selection discards it — and this happens even when the new body is
-better. Morphology stagnates within a few dozen generations while controllers keep
-improving, which looks like progress right up until you notice every creature has the same
-shape.
+That finding is now [`DESIGN.md`](../DESIGN.md) §2, and it decides the search architecture.
+MAP-Elites keeps an archive with one slot for each type of body, and in each slot the best
+creature found so far with that body. The name is short for multi-dimensional archive of
+phenotypic elites, and an elite is whatever currently occupies a slot. A mutant with a novel
+shape is only ever ranked against the other occupants of its own slot, never against the
+best creature in the world. Without §2 that choice reads as a preference among search
+algorithms. With §2 it is the only thing keeping a new body alive long enough to be judged.
 
-This is now [`DESIGN.md`](../DESIGN.md) §2, and it drives the entire search architecture.
-MAP-Elites isn't in this project because quality-diversity is fashionable; it's there because
-a mutant with a novel body needs to compete only within its own morphological cell, never
-against the global champion. Without §2 that choice looks like a preference. With it, it's
-forced.
+What bothers me about this correction is that the draft was not vague about the problem. It
+did not mention the problem. A confident, detailed, internally consistent document had a
+hole in it where the hardest part of the project lives, and nothing inside the document
+could have shown me that. Only evidence from outside it could.
 
-**What's uncomfortable about this one:** the draft wasn't vague about the problem. It didn't
-mention the problem. A confident, detailed, internally coherent document had a hole in it
-exactly where the hardest part of the project lives, and nothing internal to the document
-could have revealed that. Only outside evidence could.
+## 2. I invented a trade-off that had already been tested
 
-## 2. The wrong cost model — my own reasoning, not a citation
-
-Draft 2 considered using a cheap fluid model — drag proportional to surface area, no added
-mass — and reasoned:
+Draft 2 considered a cheap fluid model: drag proportional to a body part's surface area,
+and no added mass. Added mass is the water a body has to shove aside and drag along with it
+as it accelerates. Leaving it out makes the simulation faster and the swimming less real. I
+reasoned:
 
 > That's fine for goal #1 (something nice to watch). It only compromises goal #2 (scientific
 > accuracy).
 
-That sentence is wrong, and it's wrong in a way that is worth recording, because it wasn't a
-misremembered fact. It was a plausible-sounding trade-off invented on the spot and never
-tested.
+That sentence is wrong, and I want it on the page, because it was not a misremembered fact.
+I invented the trade-off while writing and never tested it.
 
-Corucci et al. [C18 §4, p.28] ran it. Simplified fluid dynamics doesn't cost you accuracy
-while preserving spectacle — it **collapses morphological variety**. The paper describes
-anatomical uniformity: no fish shapes, no squid shapes, just a gallery of similar medusoid
-blobs, because without added mass there is no selective advantage to any of the body plans
-that make real swimmers interesting to look at.
+Corucci et al. had already run the experiment [C18 §4, p.28]. A simplified fluid model does
+not trade accuracy for spectacle. It collapses the variety of body shapes instead. Their
+swimmers came out anatomically uniform: no fish shapes, no squid shapes, a gallery of
+similar medusoid blobs, meaning jellyfish-shaped. Without added mass there is no selective
+advantage to any of the body plans that make real swimmers worth watching.
 
-So the cheap model was failing hardest at the goal it was supposedly safe for. Visual
-variety was the *entire* point. Added mass moved from "nice to have, Milestone 6" to
-Milestone 3.
+So the cheap model was failing hardest at the goal it was supposed to be safe for. Visual
+variety was the thing I wanted most. Added mass moved from "nice to have, Milestone 6" to
+Milestone 3. The milestones are the numbered stages of the build plan, so that is a move
+from late to early.
 
-**The general lesson, which I expect to need again:** the claims most likely to be wrong are
-not the ones citing something and getting it slightly off. They're the confident bridging
-sentences with no citation at all — the ones that sound like reasoning and are actually just
-fluent. Those are invisible to a citation check, because there's nothing to check.
+I expect to need the general lesson again. A claim that cites a source and gets it slightly
+off is the easy kind of error to find. The dangerous kind is the confident bridging sentence
+with no citation at all, the one that sounds like reasoning and is only fluent. A citation
+check cannot see it, because there is nothing to check.
 
-## 3. A threat that dissolved on inspection
+## 3. The CPPN threat dissolved once I read the comparisons
 
-CPPN-NEAT looked like it might force a genome rewrite before a line was written. It's the
-encoding that produced most of the striking modern results, and this project had committed
-to Sims-style recursive graphs.
+CPPN-NEAT looked as though it might force a rewrite of the genome, the description a
+creature is grown from, before I had written a line of code. It is two things bolted
+together. A compositional pattern-producing network, or CPPN, is a small mathematical
+function. Give it a point in space and it returns whether there is body material there, so
+evaluating it everywhere draws a creature the way a formula draws a shape. NEAT, short for
+neuroevolution of augmenting topologies, is the algorithm that evolves those functions,
+growing them from simple to complicated. Together they produced most of the striking modern
+results in this field. This project had already committed to Sims-style recursive graphs,
+meaning Karl Sims's 1994 encoding. A genome there is a small diagram of body-part
+descriptions joined by arrows, and following the arrows, sometimes back into a part already
+visited, grows the creature.
 
-Reading every published encoding comparison instead of the famous results: the CPPN
-advantage is confined to **soft-body** phenotypes, where a pattern-generating function
-across a voxel grid is a natural fit. On rigid articulated bodies, direct and recursive
-encodings win or tie [L21 Table 6, p.18]. The threat wasn't real for this project's
-phenotype.
+An encoding is the rule that turns a genome into a body, so I read every published
+comparison of encodings instead of the famous demonstrations. The CPPN advantage turns out
+to be confined to soft-bodied creatures, which are built from a grid of small deformable
+cubes called voxels. A function evaluated over a grid is a natural fit there. On rigid
+bodies with joints, direct and recursive encodings win or tie [L21 Table 6, p.18]. The
+threat was not real for the kind of creature this project builds.
 
-The same read fixed a terminology error I'd been carrying: Sims' encoding is **indirect**, not
-direct. One graph node can unfold into many body parts through recursion. Getting that
-backwards had made the CPPN comparison look more lopsided than it is.
+The same reading fixed a piece of vocabulary I had been getting wrong. Sims' encoding is
+indirect. I had been calling it direct. One node in the graph unfolds into many body parts
+through recursion, and that is what makes an encoding indirect. Having it backwards had made
+the CPPN comparison look more lopsided than it is.
 
----
-
-## What this cost, and whether it was worth it
+## What the review cost, and why it earned that back
 
 The review took substantially longer than writing the design did. It also produced
 [`research/LITERATURE-REVIEW.md`](../research/LITERATURE-REVIEW.md), whose §7 says plainly
-what it didn't establish — two of six questions are still only partially answered.
+what it did not establish: two of its six questions are still only partly answered.
 
-Worth it. Correction 1 would have surfaced eventually, but the way it
-surfaces without the literature is: build everything, run it for a week, watch morphology
-flatline, and have no idea whether the bug is in the mutation operator, the fitness function,
-the physics, or the idea. Correction 2 would probably never have surfaced at all — a gallery
-of similar-looking blobs reads as "evolution is hard", not as "the fluid model is
-suppressing the diversity you're trying to produce."
+It was worth it. Correction 1 would have surfaced on its own eventually, and I can picture
+how. I would have built the whole thing and run it for a week. Then I would have watched
+morphology flatten out. The fault could have been in the code that mutates a genome, in how
+fitness was scored, in the physics, or in the idea itself. Nothing in the run would have
+told me which. Correction 2 would probably never have surfaced at all. A gallery of
+similar-looking blobs reads as evolution being hard. It does not read as a fluid model
+suppressing the diversity you are trying to produce.
 
-The order also mattered. Design first, *then* review, meant there was something specific
-enough to be wrong. A review conducted first would have produced a summary of the field and
-no collisions.
+The order of the two mattered too. Writing the design first meant there was something
+specific enough to be wrong. A review conducted first would have produced a summary of the
+field and no collisions.
 
----
-
-**See also:** [`DESIGN.md`](../DESIGN.md) §0/§0b changelogs record all three revisions with
-citations. [`DECISIONS.md`](../DECISIONS.md) D009 covers the spike-before-research ordering.
+The three revisions are recorded with their citations in [`DESIGN.md`](../DESIGN.md)'s §0
+and §0b changelogs. [`DECISIONS.md`](../DECISIONS.md) D009 covers the spike-before-research
+ordering, a spike being a throwaway project built to answer one question before the real
+work starts.

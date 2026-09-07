@@ -1,20 +1,31 @@
 # 0049 — Marine snow
 
-*2026-09-03. Pre-registered before launch; results appended after. Round 13: one treatment,
-five seeds, the owner's ruling on the trapdoor of [0048](0048-stirring-the-pot.md). Written
-while the machine is reserved for other work; nothing launches until the owner frees it.*
+**2026-09-03**  ·  food-chain goal, round 13 · pre-registered before launch, results appended
+after
+
+Round 12's rolls carried the food down through the bottom of the pot. This round slowed the
+falling by a factor of ten, so that a dead body's remains would drift in the light like
+marine snow instead of dropping out of it. The physics did what it promised. The deep stock
+fell three- to eightfold. Then four of five populations floated up into a surface film a
+metre or two thick, and sat in water that held almost nothing. No line of eaters formed in
+any arm.
+
+The round is one treatment across five seeds, on the owner's ruling about the trapdoor in
+[0048](0048-stirring-the-pot.md). It was written while the machine was reserved for other
+work, with nothing launching until the owner freed it.
 
 ## Where round 12 left the patient
 
 Round 12 stirred the soup and the ingredient fell through the bottom of the pot. The rolls
-reach the physics — patch-to-patch detritus spread went from ~0.4 to 4–6 J/m³, bodies ride
-the water (three seeds held a whole population at −15 m, which still water under D064
-cannot do), and producers survive 30 m cells. But a roll that stops above the floor is a
-trapdoor: what the down leg drops below 30 m sinks out at 0.02 m/s and never returns, so the
-lit half of the column stays at 0.2–3 J/m³ while the still half beneath it piles up to
-15–21. One absorptive line formed in the film at ~1 J/m³ and drifted out at 0.75 children
-per member; three mid-water seeds at 2–3 J/m³ formed none. The bar for a line is above 3,
-and round 11 put the larder's own bar near 7.
+do reach the physics. Patch-to-patch detritus spread went from ~0.4 to 4–6 J/m³. Bodies ride
+the water, since three seeds held a whole population at −15 m where still water under D064
+cannot. Producers survive 30 m cells.
+
+A roll that stops above the floor is still a trapdoor. What the down leg drops below 30 m
+sinks out at 0.02 m/s and never returns. The lit half of the column stays at 0.2–3 J/m³,
+while the still half beneath it piles up to 15–21. One absorptive line formed in the film at
+~1 J/m³ and drifted out at 0.75 children per member. Three mid-water seeds at 2–3 J/m³
+formed none. The bar for a line is above 3, and round 11 put the larder's own bar near 7.
 
 ## The treatment
 
@@ -23,41 +34,52 @@ and round 11 put the larder's own bar near 7.
 | **A** (`r13a-s1..5`) | `EVOSIM_SINK` **0.002** · `EVOSIM_MATTER_SINK` **0.002** (both were 0.02) | **marine snow**: remains and dissolved matter fall ten times slower, so a parcel makes ~10 circuits of the lit roll before the trapdoor takes it instead of one, and the matter the surface famine is short of stays where the deaths are |
 | **B** (`r13b-s1..5`) | arm A + `EVOSIM_VENT` **0.05** (patch 0, depth 60, legs 1 m — [D067](../DECISIONS.md)) | **the vent**: what the trapdoor still takes comes back up the plume; the deep larder round 12 piled up (15–21 J/m³) is spread through the lit roll within the first few thousand seconds |
 
-*Amended 2026-09-03, before launch, on the owner's ruling: the vent runs in parallel rather
-than as the next round, because it is the pre-registered next lever either way and running
-both saves a day for five arms of machine time. A vent-only arm at sink 0.02 is deliberately
-not run — it isolates the vent's share, which is the question after a pass, not before one.*
+Amended on 2026-09-03, before launch, on the owner's ruling. The vent runs in parallel
+rather than as the next round, because it is the pre-registered next lever either way.
+Running both saves a day for five arms of machine time. A vent-only arm at sink 0.02 is
+deliberately not run. It would isolate the vent's share, which is the question after a pass
+rather than before one.
 
-**Dose arithmetic, stated first.** 0.02 m/s is ~1,700 m/day — a rate for large aggregates.
-The remains of a 0.01 m³ body are marine snow, which falls metres per day, so 0.002 m/s
-(~170 m/day) is still generous by an order of magnitude; it is chosen as one decade, not as
-a measurement. The trapdoor's leak rate scales with the sink speed at the roll's floor, where
-the roll's own vertical velocity is zero by construction, so the surface stock should rise
-by something like the same factor until another sink binds — grazing by the producers'
-matter draw at conception, or the floor. Both fields are slowed together because they are
-the same physics; D052's excretion returns matter *dissolved*, and a dissolved field that
-sinks at 0.02 m/s is what makes the surface a permanent famine (0048's S3: excretion 0.01
-cut refusals only 1–4×). Budget 30,000 s, wall 600 min, ceiling 8,000, area 100, seeds 1–5.
-Controls: round 12's arm B (`r12y-s1..5`), the same world at sink 0.02.
+The dose arithmetic, stated first. A sink of 0.02 m/s is ~1,700 m/day, which is a rate for
+large aggregates. The remains of a 0.01 m³ body are marine snow, falling metres per day. So
+0.002 m/s (~170 m/day) is still generous by an order of magnitude. It is chosen as one
+decade rather than as a measurement.
 
-The knobs exist (`EVOSIM_SINK`, `EVOSIM_MATTER_SINK`; header `sink 0.002 m/s, matter
-0.002 m/s`), defaults unchanged, so every earlier run is untouched.
+The trapdoor's leak rate scales with the sink speed at the roll's floor, where the roll's
+own vertical velocity is zero by construction. So the surface stock should rise by something
+like the same factor, until another sink binds. The candidates are grazing, through the
+producers' matter draw at conception, and the floor.
 
-**Arm B's dose, stated first.** The plume rises through one patch of four, 25 m² of a 100 m²
-floor, so at 0.05 m/s it lifts 1.25 m³/s of deep water; at round 12's 15–20 J/m³ that is
-~20 J/s into the surface leg, about the rate at which deaths rain detritus into the column
-now (~1,700 bodies of ~70 J living ~8,000 s). The vent therefore doubles the surface supply
-rather than swamping it, and turns the whole column over in ~80 min, so the deep larder
-round 12 accumulated is spread through the lit roll early in the run. At 0.1 m/s the column
-would turn over every 40 min — a well-mixed world, closer to the full-column roll that
-killed founding — so 0.05 is the first dose and 0.1 the pre-registered escalation. The cost
-is a dark excursion for bodies: the return sinks through the other three patches at a third
-of the plume speed, ~0.017 m/s, and a body it captures at the roll's floor spends ~3,600 s
-descending and ~1,200 s riding the plume back — half a lifetime in the dark. Producers live
-inside the upper roll, whose own vertical velocities are ten times the return's, so they are
-exposed only where the roll's flow goes to zero: at the surface, where the return pushes
-them back into the roll (harmless), and at 30 m, where it pushes them out (fatal). Round 12's
-populations sat at −3 to −15 m with spreads of 5–8 m, so few reach 30 m; how few is M6.
+Both fields are slowed together because they are the same physics. D052's excretion returns
+matter *dissolved*, and a dissolved field that sinks at 0.02 m/s is what makes the surface a
+permanent famine. That is 0048's S3, where excretion 0.01 cut refusals only 1–4×. Budget
+30,000 s, wall 600 min, ceiling 8,000, area 100, seeds 1–5. The controls are round 12's arm
+B (`r12y-s1..5`), the same world at sink 0.02.
+
+The knobs exist as `EVOSIM_SINK` and `EVOSIM_MATTER_SINK`, with defaults unchanged, so every
+earlier run is untouched.
+
+The header prints them as `sink 0.002 m/s, matter 0.002 m/s`.
+
+Arm B's dose, stated first as well. The plume rises through one patch of four, 25 m² of a
+100 m² floor, so at 0.05 m/s it lifts 1.25 m³/s of deep water. At round 12's 15–20 J/m³ that
+is ~20 J/s into the surface leg. That is about the rate at which deaths rain detritus into
+the column now, with ~1,700 bodies of ~70 J living ~8,000 s.
+
+The vent therefore doubles the surface supply rather than swamping it, and turns the whole
+column over in ~80 min. The deep larder round 12 accumulated is spread through the lit roll
+early in the run. At 0.1 m/s the column would turn over every 40 min. That is a well-mixed
+world, closer to the full-column roll that killed founding, so 0.05 is the first dose and
+0.1 the pre-registered escalation.
+
+The cost is a dark excursion for bodies. The return sinks through the other three patches at
+a third of the plume speed, ~0.017 m/s. A body it captures at the roll's floor spends ~3,600
+s descending and ~1,200 s riding the plume back, which is half a lifetime in the dark.
+Producers live inside the upper roll, whose own vertical velocities are ten times the
+return's, so they are exposed only where the roll's flow goes to zero. That is at the
+surface, where the return pushes them back into the roll and is harmless, and at 30 m, where
+it pushes them out and is fatal. Round 12's populations sat at −3 to −15 m with spreads of
+5–8 m, so few reach 30 m, and how few is M6.
 
 ## Validity checks
 
@@ -71,9 +93,11 @@ populations sat at −3 to −15 m with spreads of 5–8 m, so few reach 30 m; h
 
 ## Predictions
 
-Scored under D063 unchanged, recruitment clause from `lineage.jsonl`; a pass is a pass in the
-discovery regime (mutation 0.005) and is labelled so. `J/m3 here` is the field at the
-population's mean depth in patch 0 (0048's instrument note); read it with `det patch sd`.
+The round is scored under D063 unchanged, with the recruitment clause from `lineage.jsonl`.
+A pass is a pass in the discovery regime, at mutation 0.005, and is labelled so.
+
+`J/m3 here` is the field at the population's mean depth in patch 0, per 0048's instrument
+note, and it is read together with `det patch sd`.
 
 | # | prediction | falsified by |
 |---|---|---|
@@ -84,7 +108,7 @@ population's mean depth in patch 0 (0048's instrument note); read it with `det p
 | M5 | **the round's answer**: ≥ 3 of 5 seeds pass D063 in at least one arm. Written honestly: the pre-registration predicts **B passes and A does not** — A lifts the surface by keeping remains up, B also lifts the deep larder that is already there, and the bar is ~7 J/m³ — and would count A passing alone as the more useful result (the simpler world suffices) | the scoring table |
 | M6 | **producers survive the vent** (arm B's Sverdrup risk): `alive` ≥ 1,000 by t=10,000 in ≥ 4 of 5 arm-B seeds, and mean `depth m` at t > 5,000 stays above −20 m; falsified by the signature that killed the 60 m roll — a population that never rises, or a collapse inside the first 5,000 s | `alive`, `depth m` |
 
-M1–M4 are read per arm.
+M1 to M4 are read per arm.
 
 ## The two-sided readings
 
@@ -109,21 +133,30 @@ M1–M4 are read per arm.
 
 ## Launch
 
-Ten arms, ≤ 5 concurrent, interleaved so both arms have early seeds: `r13a-s1`, `r13b-s1`,
-`r13a-s2`, `r13b-s2`, `r13a-s3` in the first batch, the rest as workers free. Workers
-refreshed and hash-checked before launch (D067's edit to `EvolutionRun.cs` post-dates the
-last check), headers verified against the table before any arm is believed, a fresh monitor
-on every arm (the round-12 monitor exited with its list empty). Held until the owner frees
-the machine. Results appended below.
+Ten arms, at most 5 concurrent, interleaved so that both arms have early seeds.
 
-## Results — 0 of 5, cut to five arms
+| batch | arms |
+|---|---|
+| first | `r13a-s1`, `r13b-s1`, `r13a-s2`, `r13b-s2`, `r13a-s3` |
+| then | the rest, as workers free |
 
-*Scored 2026-09-03. Five arms ran, not ten: `r13a-s1..3` and `r13b-s1..2`, all to budget.
-Seeds 4–5 of both arms were never launched — the owner ruled for round 14 (D068) at
-two-thirds of budget, when every arm read `inherit` 0, and the machine holds five. The
-score is on what ran and is labelled so. Wall clock 246–315 min per arm, 1.6–2.0× real
-time. V1–V4 held in every arm (the `r12y-s1` control's header lacks the sink token because
-the token was added to the header after it launched; its config hash equals its twins').*
+Workers are refreshed and hash-checked before launch, since D067's edit to `EvolutionRun.cs`
+post-dates the last check. Headers are verified against the table before any arm is
+believed, and every arm gets a fresh monitor, because the round-12 monitor exited with its
+list empty. The round is held until the owner frees the machine, and results are appended
+below.
+
+## Results: 0 of 5, cut to five arms
+
+Scored on 2026-09-03. Five arms ran rather than ten, `r13a-s1..3` and `r13b-s1..2`, all to
+budget. Wall clock was 246–315 min per arm, at 1.6–2.0× real time.
+
+Seeds 4 and 5 of both arms were never launched. The owner ruled for round 14 (D068) at
+two-thirds of budget, when every arm read `inherit` 0, and the machine holds five. The score
+is on what ran and is labelled so.
+
+V1 to V4 held in every arm. The `r12y-s1` control's header lacks the sink token, because the
+token was added to the header after it launched, and its config hash equals its twins'.
 
 | # | prediction | result | verdict |
 |---|---|---|---|
@@ -134,32 +167,36 @@ the token was added to the header after it launched; its config hash equals its 
 | M5 | ≥ 3 of 5 pass D063 | 0 of 5 | **falsified** (discovery regime) |
 | M6 | producers survive the vent | `alive` at 10,000: 1,415 and 1,555; mean depth −6.7 → +0.7 m and −3.9 → +1.0 m | **held** — with an instrument note below |
 
-**What happened.** Marine snow did what its physics promised and the biology did not
-follow. The trapdoor is closed: the deep stock fell three- to eightfold and the floor's
-share fivefold. But four of five populations then floated up into a surface film a metre or
-two thick (`depth sd` 1.0–1.6 m by t=20,000 in the vent arms, 2.7 in `r13a-s3`), and the
-field in that film reads 0.3–1.4 J/m³ between the rolls' once-a-period spikes. The one
-population that held mid-water, `r13a-s2` at −11 m, sat in 5–9 J/m³ from t=12,000 to the
-end — above the ~7 bar this entry named — and still formed no line: one inherited
-absorptive birth in 30,000 s. That is the pre-registered "M1 holds, M4 fails" reading, and
-[0050](0050-the-stomachs-gearing.md) reads the ledger to say why: at clearance 1 a stomach
-in 7 J/m³ clears 3 W/m³ against a leaf's ~47 at the surface, so a mutant that swaps a leaf
-for a stomach breeds slower than its siblings whatever the water holds. Marine snow lifted
-the food into the light, where the leaf wins by an order of magnitude, and left the deep
-below the stomach's 4 J/m³ break-even — it removed the one place a stomach could out-earn a
-leaf. M2's reversal fits the same picture: the surface film is where matter is scarcest and
-that is where the populations went.
+Marine snow did what its physics promised, and the biology did not follow. The trapdoor is
+closed: the deep stock fell three- to eightfold and the floor's share fivefold. Four of five
+populations then floated up into a surface film a metre or two thick. `depth sd` was 1.0–1.6
+m by t=20,000 in the vent arms, and 2.7 in `r13a-s3`. The field in that film reads 0.3–1.4
+J/m³ between the rolls' once-a-period spikes.
 
-**The vent (D067's first run).** It returned what the trapdoor takes — the deep field in the
-vent arms is the lowest of the five (2.0–2.4 J/m³ at 30,000) — and producers survived it
-comfortably (M6). It did not put food where the population lives, because the population
-lives in the film, and it doubled to quintupled the matter refusals against the twin. On
-this round's evidence the vent is neither harmful nor load-bearing; it stays off in round
-14 (the simpler world) and is a lever for a world whose absorbers can already breed.
+The one population that held mid-water was `r13a-s2` at −11 m. It sat in 5–9 J/m³ from
+t=12,000 to the end, above the ~7 bar this entry named, and still formed no line. It managed
+one inherited absorptive birth in 30,000 s.
 
-**Instrument note.** Mean depth reads *positive* (+0.4 to +1.0 m) in three arms from
-t≈15,000. D050 stops upward net force at y = 0, but a body's centre can sit above the
-waterline by its own half-extent, and the light and nutrient models treat y ≥ 0 as the
-surface; a population pressed against the ceiling reads as slightly above it. The number is
-a film pressed against the surface, not water that does not exist — but a depth statistic
+That is the pre-registered reading where M1 holds and M4 fails, and
+[0050](0050-the-stomachs-gearing.md) reads the ledger to say why. At clearance 1 a stomach
+in 7 J/m³ clears 3 W/m³, against a leaf's ~47 at the surface. A mutant that swaps a leaf for
+a stomach therefore breeds slower than its siblings, whatever the water holds. Marine snow
+lifted the food into the light, where the leaf wins by an order of magnitude, and left the
+deep below the stomach's 4 J/m³ break-even. It removed the one place a stomach could
+out-earn a leaf. M2's reversal fits the same picture, because the surface film is where
+matter is scarcest and that is where the populations went.
+
+This was the vent's first run, under D067. It returned what the trapdoor takes, since the
+deep field in the vent arms is the lowest of the five, at 2.0–2.4 J/m³ at 30,000. Producers
+survived it comfortably (M6). It did not put food where the population lives, because the
+population lives in the film, and it doubled to quintupled the matter refusals against the
+twin. On this round's evidence the vent is neither harmful nor load-bearing. It stays off in
+round 14, which is the simpler world, and it is a lever for a world whose absorbers can
+already breed.
+
+There is one instrument note. Mean depth reads *positive*, at +0.4 to +1.0 m, in three arms
+from t≈15,000. D050 stops upward net force at y = 0, but a body's centre can sit above the
+waterline by its own half-extent. The light and nutrient models treat y ≥ 0 as the surface,
+so a population pressed against the ceiling reads as slightly above it. The number is a film
+pressed against the surface rather than water that does not exist. Still, a depth statistic
 above zero should be read as "at the surface" and nothing finer.

@@ -2,92 +2,101 @@
 
 **2026-08-02**  ·  Milestone 1
 
-Second report from a human looking at the sandbox: the movement *"looks almost biological"* —
-good — but there are *"boxes inside boxes (on occasion), which is physically impossible for one
-solid box to move inside another."*
+A human looked at the sandbox for the second time. The movement *"looks almost biological"*,
+which is good. But there are *"boxes inside boxes (on occasion), which is physically
+impossible for one solid box to move inside another."* Right again, and again in seconds.
 
-Right again, and again in seconds.
+Nearly seven creatures in ten had a part buried inside another part. Three separate causes
+were responsible, and the third one could not be fixed by any rule about how a creature is
+built. It could only be caught by looking at the creature afterwards.
 
-## Partly by design, mostly not
+## Some of it is deliberate and most of it was not
 
-Overlap at joints is deliberate. [`DESIGN.md`](../DESIGN.md) §4.2: *"Overlap at joints
-permitted. Sims allowed it; enforcing non-overlap kills too many viable genomes."* Self-collision
-is off for the same reason. So parts touching and interpenetrating slightly is expected, and a
-16-part creature legitimately reads as a small clump.
+Overlap at joints is on purpose. [`DESIGN.md`](../DESIGN.md) §4.2 says: *"Overlap at joints
+permitted. Sims allowed it; enforcing non-overlap kills too many viable genomes."*
+Self-collision is off for the same reason. So parts touching and interpenetrating a little
+is expected, and a 16-part creature legitimately reads as a small clump.
 
-A part whose **centre** is inside another part is well past that, and it was happening a lot.
+A part whose centre is inside another part is well past that, and it was happening a lot.
 
-## Measuring before fixing
+## Measure before fixing
 
-The temptation was to guess a cause and fix it. Instead:
+The temptation was to guess a cause and fix it. Instead I built a measurement.
 [`PhenotypeGeometry.BuriedPartPairs`](../src/Evosim.Core/Development/PhenotypeGeometry.cs)
-counts pairs where one part's centre lies inside the other's box — crude, cheap, and pure maths,
-so it runs in the headless Core suite over hundreds of genomes in milliseconds.
+counts the pairs where one part's centre lies inside the other's box. It is crude, cheap and
+pure arithmetic, so it runs in the headless Core suite over hundreds of genomes in
+milliseconds.
 
-Baseline: **69.7%** of 400 random creatures had at least one buried part. 1,832 pairs in total.
+The baseline: 69.7% of 400 random creatures had at least one buried part, and 1,832 pairs in
+all.
 
-That number is why guessing would have gone badly, because the first two fixes barely dented it.
+That number is why guessing would have gone badly, because the first two fixes barely dented
+it.
 
-## Cause one: unbounded edge rotation
+## The first cause was rotation with no bound
 
-Edge orientations were drawn uniformly from all of SO(3). The child is placed so its anchor
-meets the parent's anchor, and then rotated about that contact point — so a large rotation
-swings the child's body straight through the parent, and half a turn puts it entirely inside.
+Edge orientations were drawn uniformly from all of SO(3), which is to say from every
+rotation possible in three dimensions. The child is placed so that its anchor meets the
+parent's anchor, and it is then rotated about that contact point. A large rotation swings
+the child's body straight through the parent, and half a turn puts it entirely inside.
 
-Bounded to ±50°. Also stopped handing the same face to two edges of one node, which was placing
-two children in the same spot.
+I bounded the rotation to ±50°, and stopped the generator handing the same face to two edges
+of one node, which had been placing two children in the same spot.
 
-**69.7% → still 69.7%.** Neither was the dominant cause.
+The buried-part figure stayed at 69.7%. Neither of those was the dominant cause.
 
-## Cause two: reflecting about the wrong axis
+## The second cause was reflecting about the wrong axis
 
 This one is properly interesting.
 
-Mirroring moves a point only if the point has a component on the mirrored axis. A child attached
-to the parent's +Y face sits at about `(0, d, 0)`. Mirror it about X: `(0, d, 0)`. **The same
-place.** The mirrored copy is exactly coincident with the original.
+Mirroring moves a point only if the point has a component on the mirrored axis. A child
+attached to the parent's +Y face sits at about `(0, d, 0)`. Mirror that about X and it is
+still `(0, d, 0)`, which is the same place. The mirrored copy lands on top of the original.
 
-The generator chose the reflection axis independently of the attachment axis, so two thirds of
-its reflections produced coincident twins rather than pairs.
+The generator chose the reflection axis independently of the attachment axis, so two thirds
+of its reflections produced coincident twins instead of pairs.
 
-What makes this nasty is the failure mode. The creature has the right number of parts, all in
-plausible positions, and it moves. It simply looks less symmetric than it should. Nothing
-announces that half the parts are inside the other half. It is the same class as
-[0005](0005-the-creatures-were-swimming-in-vacuum.md): a bug whose output is entirely plausible.
+What makes this nasty is the failure mode. The creature has the right number of parts, all
+in plausible positions, and it moves. It just looks less symmetric than it ought to. Nothing
+announces that half the parts are inside the other half. It is the same class of bug as
+[0005](0005-the-creatures-were-swimming-in-vacuum.md), whose output was also entirely
+plausible.
 
-Reflection axis now matches the attachment axis. **69.7% → 55.5%.**
+The reflection axis now matches the attachment axis. That took the figure from 69.7% to
+55.5%.
 
-## Cause three: no local rule can fix it
+## The third cause cannot be fixed by any local rule
 
-The remainder is structural. A node with edges on opposite faces places a child exactly where
-its own parent already sits — the chain grows +X, and an edge on −X points straight back into
-the previous segment. Recursion means one edge does this at every level.
+The remainder is structural. A node with edges on opposite faces places a child right where
+its own parent already sits. The chain grows along +X, and an edge on −X points straight
+back into the previous segment. Recursion means one edge does this at every level.
 
-No constraint on a single edge can see that, because it depends on the path taken to reach the
-node. It is only visible once the genome is grown.
+No constraint on a single edge can see that, because it depends on the path taken to reach
+the node. It becomes visible only once the genome has been grown into a creature.
 
-So the filter moved to the developed creature: `GenomeFactory.RandomViable` now rejects
-phenotypes with buried parts and retries, keeping the least-bad candidate rather than failing.
-**55.5% → 0.0%** over 400 samples.
+So the filter moved to the developed creature. `GenomeFactory.RandomViable` now rejects
+phenotypes with buried parts and retries, keeping the least-bad candidate rather than
+failing outright. That took 55.5% to 0.0% over 400 samples.
 
-## Why this is not just cosmetic
+## Why this is not cosmetic
 
-At Milestone 2 fluid forces are computed per part. Two coincident parts collect drag and thrust
-twice for one body's worth of volume — a stack of parts in one place is free propulsion.
+At Milestone 2 the fluid forces are computed per part. Two coincident parts collect drag and
+thrust twice over for one body's worth of volume, so a stack of parts in one place is free
+propulsion.
 
-That is the exploit class in [`DESIGN.md`](../DESIGN.md) §11.2, and unlike most entries on that
-list, this one does not need the search to be clever. It is lying around waiting. Finding it now,
-because someone said "that looks impossible", is much better than finding it as a leaderboard
-full of shimmering blobs.
+That is the exploit class in [`DESIGN.md`](../DESIGN.md) §11.2, and unlike most entries on
+that list this one does not need the search to be clever. It is lying around waiting to be
+found. Finding it now, because somebody said "that looks impossible", is far better than
+finding it later as a leaderboard full of shimmering blobs.
 
-## An honest cost
+## What the fix costs
 
-Filtering on the grown creature biases the initial population toward simpler bodies: a
+Filtering on the grown creature biases the initial population toward simpler bodies. A
 complicated creature has more part pairs and therefore more chances to bury one. Across the
-twelve sandbox seeds, part counts fell noticeably, with only two creatures still in double
+twelve sandbox seeds part counts fell noticeably, with only two creatures still in double
 figures.
 
-That trades against §2, which is explicitly about protecting morphological variety. The filter
-is defensible for an *initial population* — nothing prevents mutation from exploring buried
-configurations later — but "we quietly made the starting creatures simpler" is exactly the kind
-of thing that is invisible six months on. Recorded here so it is not.
+That trades against §2, which is about protecting morphological variety. The filter is
+defensible for an initial population, because nothing stops mutation exploring buried
+configurations later. But "we made the starting creatures simpler" is the kind of decision
+that becomes invisible six months on, so it is recorded here.

@@ -1,32 +1,49 @@
 # 0058 — The open budget
 
-*2026-09-04. Pre-registered before launch. D074's screen: matter with an influx at the
-surface and a burial at the floor, the world's size a flow, on the two seeds 0056
-controlled, at two doses.*
+**2026-09-04**  ·  screen for D074 · pre-registered before launch, results appended after
+
+Matter was given the shape energy already has, in at the top and out at the bottom. The
+world's size became a flow, from 1,800 bodies closed to 7,700 at the higher dose. Nothing in
+the world balanced it. Burial took a fifth or less of the influx at every dose. Matter
+arriving at the surface is locked by the leaves within a step and never reaches the floor.
 
 ## Why this round exists
 
-Three screens on one day (0055–0057) established that a conserved matter stock locks
-97% of itself in bodies, sets the population by arithmetic, and thereby sets every
-solvent body's fecundity to the same value whatever it earns — so the energy economy
-selects only for not starving. The owner's reading: matter, like energy, is not finite;
-there is a constant influx of both. D074 gives matter the shape energy already has: in
-at the top, out at the bottom, the standing stock an equilibrium of the two.
+Three screens on one day, 0055 to 0057, established that a conserved matter stock locks 97%
+of itself in bodies and sets the population by arithmetic. That in turn sets every solvent
+body's fecundity to the same value whatever it earns, so the energy economy selects only for
+not starving.
+
+The owner's reading was this.
+
+> matter, like energy, is not finite; there is a constant influx of both.
+
+D074 gives matter the shape energy already has: in at the top, out at the bottom, with the
+standing stock an equilibrium of the two.
 
 ## The rules under test
 
-`EVOSIM_MATTER_INFLUX` units/s spread over the surface layer of every patch;
-`EVOSIM_MATTER_BURIAL` 0.01/s of each patch's floor-layer free matter removed. Two
-doses of influx, 0.6/s (the dose that should hold about today's stock) and 1.2/s.
-Everything else the reference world's: age order, stock 1/m³ at start, exudation 0.15,
-sinks 0.002.
+The inflow is `EVOSIM_MATTER_INFLUX`, in units per second, spread over the surface layer of
+every patch. The outflow is `EVOSIM_MATTER_BURIAL`, which removes 0.01/s of each patch's
+floor-layer free matter.
+
+Two doses of influx are screened: 0.6/s, the dose that should hold about today's stock, and
+1.2/s. Everything else is the reference world's, at age order, stock 1/m³ at start, exudation
+0.15 and sinks 0.002.
 
 ## The arms
 
-Four, at dt 0.02, 20,000 s: `r22o-s2`, `r22o-s4` (influx 0.6); `r22o2-s2`, `r22o2-s4`
-(influx 1.2). Controls: 0056's `r20q0-s2` and `r20q0-s4` (closed budget, same step).
-Launcher `scratch/launch-r22.ps1`; workers refreshed to the build and launched with
-`-ExpectSimHash`; up to five concurrent with the divergence replay.
+Four arms, at dt 0.02 for 20,000 s.
+
+| arms | influx |
+|---|---|
+| `r22o-s2`, `r22o-s4` | 0.6/s |
+| `r22o2-s2`, `r22o2-s4` | 1.2/s |
+
+The controls are 0056's `r20q0-s2` and `r20q0-s4`, the closed budget at the same step.
+
+The launcher is `scratch/launch-r22.ps1`. Workers were refreshed to the build and launched
+with `-ExpectSimHash`, up to five concurrent alongside the divergence replay.
 
 ## Validity checks
 
@@ -50,43 +67,61 @@ Launcher `scratch/launch-r22.ps1`; workers refreshed to the build and launched w
 
 ## The two-sided readings
 
-- **M1–M2 hold:** the world has a matter cycle; whatever M4–M5 say, the rule goes to the
-  owner for adoption and the dose is set from the equilibrium read.
-- **M1 fails upward (the stock runs away):** burial is too weak against the influx at
-  this floor stock — the floor holds less than the dose assumed; halve the influx or
-  double the burial, one arm, before anything else.
-- **M1 fails downward (the stock drains):** the floor holds more than assumed and burial
-  outruns the influx; the reverse correction.
-- **M2 fails with M1 holding:** the leaves take the influx at the surface before it
-  sinks and the column below is as dry as before; the vent shape (D074's second
-  screen) delivers it from below instead.
-- **M3 fails:** arriving matter is still contested by the whole column at once; the
-  queue is not about supply.
-- **M5 fails:** the population is not set by the flow — something else caps it at ~1,800
-  (light, or the ceiling's shadow); read `mat locked` against the standing stock.
+- If M1 and M2 hold, the world has a matter cycle. Whatever M4 and M5 say, the rule goes to
+  the owner for adoption, and the dose is set from the equilibrium read.
+
+- If M1 fails upward and the stock runs away, burial is too weak against the influx at this
+  floor stock, because the floor holds less than the dose assumed. Halve the influx or
+  double the burial, in one arm, before anything else.
+
+- If M1 fails downward and the stock drains, the floor holds more than assumed and burial
+  outruns the influx. The correction is the reverse one.
+
+- If M2 fails while M1 holds, the leaves take the influx at the surface before it sinks and
+  the column below is as dry as before. The vent shape, D074's second screen, delivers it
+  from below instead.
+
+- If M3 fails, arriving matter is still contested by the whole column at once, and the queue
+  is about something other than supply.
+
+- If M5 fails, the population is not set by the flow, and something else caps it at about
+  1,800: light, or the ceiling's shadow. Read `mat locked` against the standing stock.
 
 ## Launch
 
-**Amendment before launch.** The build's 300-s validation arm read burial at ~4.5
-units/s against an influx of 0.6 in a founding world, because the floor layer holds
-several hundred free units before any body has locked them: at 0.01/s the stock drains
-by ~4 units/s until the population grows, so the founding may run short of matter and
-the first ten thousand seconds are the transient, not the equilibrium. The pre-registered
-doses stand (M1's downward reading covers it), and one hedge arm is added: `r22ob-s2`,
-influx 0.6 with burial **0.002**/s, so the round reads the equilibrium's dependence on
-the outflow as well as the inflow. Five arms.
+One amendment came before launch. The build's 300-s validation arm read burial at about 4.5
+units/s against an influx of 0.6 in a founding world. The floor layer holds several hundred
+free units before any body has locked them. At 0.01/s the stock therefore drains by about 4
+units per second until the population grows. The founding may run short of matter, and the
+first ten thousand seconds are the transient rather than the equilibrium.
 
-Launched 2026-09-04 ~22:30 on workers 2–6, refreshed to commit `1ce2e71` (the open
-budget build, 508 tests) and launched with `-ExpectSimHash c43976d3d71f1f52`. Headers
-and manifests verified (every one `simHash c43976d3…`, `gitCommit 1ce2e71`, `gitDirty
-false`); monitor running.
+The pre-registered doses stand, since M1's downward reading covers this, and one hedge arm
+is added. It is `r22ob-s2`, influx 0.6 with burial 0.002/s. That lets the round read the
+equilibrium's dependence on the outflow as well as on the inflow, and it makes five arms in
+all.
+
+Launched on 2026-09-04 at about 22:30 on workers 2 to 6, refreshed to the open-budget build
+at 508 tests.
+
+| what | value |
+|---|---|
+| commit | `1ce2e71` |
+| launch guard | `-ExpectSimHash c43976d3d71f1f52` |
+| every manifest | `simHash c43976d3…`, `gitCommit 1ce2e71`, `gitDirty false` |
+
+Headers and manifests were verified, and a monitor runs over the arms.
 
 ## Results
 
-Five arms to budget, manifests `status ended`, `reason budget`, `divergedTotal 0`; V1–V4
-held (headers as pre-registered, `floor` 0 from t=3,100, audit 0.0000% throughout, the
-matter identity to the rounding at every sample). Every population sat in the surface
-film (0 to −3.6 m at the end) — the fast step's bimodality (0056), here in all five.
+All five arms reached budget, and every manifest reads `status ended` with `reason budget`.
+
+Each of them also reads `divergedTotal 0`.
+
+Checks V1 to V4 held: headers as pre-registered, `floor` 0 from t=3,100, audit 0.0000%
+throughout, and the matter identity closing to the rounding at every sample.
+
+Every population sat in the surface film, between 0 and −3.6 m at the end. That is the fast
+step's bimodality from 0056, here in all five arms.
 
 | arm | influx · burial | alive at end | deaths | absorpt (share) | standing matter at 20,000 (10,000) | buried/window t > 10,000 | `matterHere` mean t > 10,000 | largest clade · min last 6,000 s | median parent age, plateau (> 3,500 s) |
 |---|---|---|---|---|---|---|---|---|---|
@@ -98,7 +133,7 @@ film (0 to −3.6 m at the end) — the fast step's bimodality (0056), here in a
 | r20q0-s2 (control) | closed | 1,801 | 1,778 | 135 (7.5%) | 6,000 | — | 0.137 | 120 · 81 | 4,318 s (52%) |
 | r20q0-s4 (control) | closed | 1,774 | 2,764 | 234 (13.2%) | 6,000 | — | — | 227 · 200 | 4,632 s (54%) |
 
-**The predictions:**
+Here is how the predictions came out.
 
 | # | prediction | result |
 |---|---|---|
@@ -111,32 +146,42 @@ film (0 to −3.6 m at the end) — the fast step's bimodality (0056), here in a
 
 ## Verdict
 
-**When matter does not lock, the world grows at the influx rate, and nothing in the
-world stops it.** The population is a flow — that much the owner asked to see and it is
-seen: 4,000 bodies at 0.6/s, 7,000–7,700 at 1.2/s, against 1,800 closed, and the 1.2
-arms were a few hundred seconds from the 8,000 ceiling. But the flow has no outflow to
-balance it. Burial at the floor took 5–18 units per window against 60–120 arriving, at
-every dose, because **the matter never reaches the floor**: it arrives at the surface,
-the leaves at the surface lock it within a step, and what a death releases at −1 m
-sinks at 0.002 m/s — eight hours of simulated time to the floor, longer than the run.
-The free pool sat at 400–1,200 units whatever the influx (the closed world's ~600),
-the column read as dry as before, and the queue held wherever the population was old.
-Burial and the population are connected only by the matter sink, and at 0.002 m/s they
+When matter does not lock, the world grows at the influx rate, and nothing in the world
+stops it.
+
+The population is a flow, and that is the thing the owner asked to see. The numbers are
+4,000 bodies at 0.6/s and 7,000 to 7,700 at 1.2/s, against 1,800 closed. The 1.2 arms were a
+few hundred seconds from the 8,000 ceiling.
+
+The flow has no outflow to balance it. Burial at the floor took 5 to 18 units per window
+against 60 to 120 arriving, at every dose, because the matter never reaches the floor. It
+arrives at the surface, the leaves at the surface lock it within a step, and what a death
+releases at −1 m sinks at 0.002 m/s. That is eight hours of simulated time to the floor,
+longer than the run.
+
+So the free pool sat at 400 to 1,200 units whatever the influx, against the closed world's
+600 or so. The column read as dry as before, and the queue held wherever the population was
+old. Burial and the population are connected only by the matter sink, and at 0.002 m/s they
 are not connected at all.
 
-The stomachs' share **fell** in the open world — 0.9–5.4% against the closed world's
-7.5–13.2% — because the influx lands where the leaves are. A surface source feeds the
-first trophic level; it is the ocean's dust, not its upwelling.
+The stomachs' share fell in the open world, to between 0.9 and 5.4% against the closed
+world's 7.5 to 13.2%. The influx lands where the leaves are. A surface source feeds the
+first trophic level. It is the ocean's dust rather than its upwelling.
 
-**The dose correction, and the next screen.** The outflow has to see what the inflow
-built. Two levers do that without a new rule: the matter sink at 0.02 m/s (D071's
-value, harmless alone in 0055 because there was nothing free to sink — here there is a
-dead body's matter to carry down in 3,000 s instead of 30,000), and the influx at the
-vent's base (D074's second shape), where the plume lifts it through the deep before the
-leaves see it. Round 23 (logbook/0060) screens both together and apart, at 0.6/s and
-burial 0.01/s, seeds 2 and 4. The open budget is not adopted or rejected on this round:
-its flow side is confirmed and its balance side is untested until the sink connects
-them. Both remain the owner's ruling.
+That gives the dose correction and the next screen. The outflow has to see what the inflow
+built, and two levers do that without a new rule.
 
-Closed 2026-09-05. Arms `r22o-s2`, `r22o-s4`, `r22o2-s2`, `r22o2-s4`, `r22ob-s2`;
-uncensored.
+The first is the matter sink at 0.02 m/s, D071's value. It was harmless alone in 0055,
+because there was nothing free to sink. Here there is a dead body's matter to carry down in
+3,000 s instead of 30,000.
+
+The second is the influx at the vent's base, D074's second shape, where the plume lifts it
+through the deep before the leaves see it.
+
+Round 23 (logbook/0060) screens both together and apart, at influx 0.6/s and burial 0.01/s,
+on seeds 2 and 4. The open budget is neither adopted nor rejected on this round: its flow
+side is confirmed and its balance side is untested until the sink connects them. Both remain
+the owner's ruling.
+
+Closed on 2026-09-05. The arms were r22o-s2, r22o-s4, r22o2-s2, r22o2-s4 and r22ob-s2, and
+the round is uncensored.

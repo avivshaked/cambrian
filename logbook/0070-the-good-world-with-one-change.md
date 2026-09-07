@@ -1,40 +1,64 @@
 # 0070 — The good world with one change: contact
 
-*2026-09-06. Pre-registered before launch, before D078's build has landed. The first round
-under D079: round 18's closed world, the last one that met the goal rule, with one change
-added and everything else held. Owner: "agreed. proceed with that idea."*
-
-## In one paragraph
+**2026-09-06**  ·  the first round under D079 · pre-registered before launch
 
 Round 18's world (logbook/0054) met the goal rule in four seeds of five, and it still
-replays. Every world since stacked a change on it, and none met the rule as well. So we go
-back to that world and add one thing: creatures share one box and can touch. If the rule
-still holds, contact is free and the next change can come. If it fails, we will know which
-change costs the rule, which no compound round could tell us. The round also runs with the
-physics on one thread, so for the first time a shared world can be re-run and watched.
+replays. Every world since stacked a change on it, and none met the rule as well.
+
+So this round goes back to that world and adds one thing: creatures share one box and can
+touch. If the rule still holds, contact is free and the next change can come. If it fails,
+we will know which change costs the rule, which no compound round could tell us.
+
+The round also runs with the physics on one thread, so for the first time a shared world can
+be re-run and watched.
+
+It is pre-registered before D078's build has landed. The owner's ruling was short.
+
+> agreed. proceed with that idea.
 
 ## What is held and what changes
 
-Held: every setting of `scratch/launch-r18.ps1` (closed matter budget, vent off, starting
-stock 1/m³, area 100 m², exudation 0.15, clearance 10, senescence 3,000 s, the floor
-closing at 3,000 s, dt 0.01), 30,000 s, five seeds. Changed: `EVOSIM_SHARED_SPACE 1` and
-`EVOSIM_SURFACE_RESTORE 1`, which together are D077's world — one box of four 5 × 5 m
-patches on a ring, 60 m deep, periodic wrap, newborns placed beside the parent, a top that
-gives a body above the waterline its weight back, and a real sea bed. The restoring top is
-not strictly part of "contact", and it will matter: in round 18 seed 3's population sat at
-+0.4 m, above the water, because that world had no top. D079 folds it into the package
-because the box needs a lid, and this entry reads it separately where it can (M2, M3). Under
-D078 the physics step runs single-threaded, recorded in the header as `physics jobs 0`.
+Everything in `scratch/launch-r18.ps1` is held. That is the closed matter budget, the vent
+off, starting stock 1/m³, area 100 m², exudation 0.15 and clearance 10. It is also
+senescence 3,000 s, the floor closing at 3,000 s, and dt 0.01, over 30,000 s and five seeds.
+
+Two settings change, `EVOSIM_SHARED_SPACE 1` and `EVOSIM_SURFACE_RESTORE 1`, and together
+they are D077's world. That is one box of four 5 × 5 m patches on a ring, 60 m deep, with a
+periodic wrap and newborns placed beside the parent. It has a top that gives a body above
+the waterline its weight back, and a real sea bed.
+
+The restoring top is not strictly part of contact, and it will matter. In round 18 seed 3's
+population sat at +0.4 m, above the water, because that world had no top. D079 folds the top
+into the package because the box needs a lid, and this entry reads it separately where it
+can, in M2 and M3.
+
+Under D078 the physics step runs single-threaded, recorded in the header as
+`physics jobs 0`.
 
 ## The arms
 
-`r28-s1` … `r28-s5`, dt 0.01, 30,000 s, on workers 2–6 as round 27's arms end, launched with
-`scratch/launch-r28.ps1 -ExpectSimHash <D078 build>`. Wall budget 1,200 minutes (round 18
-ran 30,000 s in about six hours; single-threaded physics is expected to add a quarter at
-this population). Controls: round 18's five seeds (`r18x-s1` … `r18x-s5`: alive at the end
-1,834 / 1,722 / 1,818 / 1,828 / 1,490; inherited stomachs 4 / 91 / 103 / 76 / 221; mean
-height −14.4 / −9.4 / +0.4 / −12.5 / −2.0 m). One replay probe: `r28p-s1`, seed 1 for 10,000 s
-with the digest on, against `r28-s1`'s first 10,000 s; both carry `EVOSIM_DIGEST_EVERY 100`.
+The arms are `r28-s1` to `r28-s5`, at dt 0.01 for 30,000 s, on workers 2 to 6 as round 27's
+arms end.
+
+They launch with `scratch/launch-r28.ps1 -ExpectSimHash <D078 build>`, one arm per worker.
+
+The wall budget is 1,200 minutes. Round 18 ran 30,000 s in about six hours, and
+single-threaded physics is expected to add a quarter at this population.
+
+The controls are round 18's five seeds.
+
+| control | alive at the end | inherited stomachs | mean height |
+|---|---|---|---|
+| `r18x-s1` | 1,834 | 4 | −14.4 m |
+| `r18x-s2` | 1,722 | 91 | −9.4 m |
+| `r18x-s3` | 1,818 | 103 | +0.4 m |
+| `r18x-s4` | 1,828 | 76 | −12.5 m |
+| `r18x-s5` | 1,490 | 221 | −2.0 m |
+
+One replay probe runs beside them. It is `r28p-s1`, seed 1 for 10,000 s with the digest on,
+read against the first 10,000 s of its arm.
+
+Both of them carry `EVOSIM_DIGEST_EVERY 100`.
 
 ## Validity checks
 
@@ -59,71 +83,95 @@ with the digest on, against `r28-s1`'s first 10,000 s; both carry `EVOSIM_DIGEST
 
 ## The two-sided readings
 
-- **M1 holds:** contact costs the good world nothing. The next round adds the open matter
-  budget in the vent shape (D074) to this world, and the movement round is pre-registered
-  on whichever of the two holds.
-- **M1 fails with M2–M6 holding:** the package costs the rule. Read which clause fails and
-  in which seeds against round 18's same seeds. The first follow-up candidate is the same
-  box with creature collisions switched off, which separates contact from the rest of the
-  package. The width of the box goes to the owner, since area is a light budget and a
-  wider box is a different world.
-- **M3 fails:** the box changes the ecology beyond contact — shading, depth, the lid. Read
-  the height distribution against round 18's, seed by seed; if the seeds that lived at the
-  surface in round 18 are the ones that moved, the lid is the cause and is read as such.
-- **M5 fails:** bodies pack without a plume; the box at area 100 is too small for this
+- If M1 holds, contact costs the good world nothing. The next round adds the open matter
+  budget in the vent shape (D074) to this world, and the movement round is pre-registered on
+  whichever of the two holds.
+
+- If M1 fails while M2 to M6 hold, the package costs the rule. Read which clause fails and in
+  which seeds, against round 18's same seeds. The first follow-up candidate is the same box
+  with creature collisions switched off, which separates contact from the rest of the
+  package. The width of the box goes to the owner, since area is a light budget and a wider
+  box is a different world.
+
+- If M3 fails, the box changes the ecology beyond contact, through shading, depth or the lid.
+  Read the height distribution against round 18's, seed by seed. If the seeds that lived at
+  the surface in round 18 are the ones that moved, the lid is the cause and is read as such.
+
+- If M5 fails, bodies pack without a plume. The box at area 100 is then too small for this
   population, and the owner rules on width.
-- **M7 fails:** D078's build does not do what 0069 measured; nothing in this round is read
+
+- If M7 fails, D078's build does not do what 0069 measured, and nothing in this round is read
   until it does.
 
 ## Amendments before launch
 
-*2026-09-06, late evening, after the Sol/GPT review of the same night
-(`sol-gpt-2026-09-06-220754-review.md`; my response is in `scratch/`).* Three changes,
-made before any arm was launched. The replay probe grows from 3,000 s to 10,000 s. It
-starts on the free worker while `r28-s1` runs, so the longer probe costs nothing, and
-`det6` (0069) had only reached 518 bodies. Without it the full population's replay would
-go unmeasured. The probe and `r28-s1` both take the digest at every hundred steps, which the
-launcher did not provide for until tonight. M4 reads the scored clade rather than the
-aggregate count, the loophole D063's amendment closed. The review is also right that the
-treatment is a package, as the section above says. The reading for an M1 fail now names
-the collisions-off control as the first candidate.
+Three changes were made before any arm was launched, on the late evening of 2026-09-06. They
+follow the Sol/GPT review of the same night (`sol-gpt-2026-09-06-220754-review.md`; my
+response is in `scratch/`).
 
-The scorer also changed tonight. It now evaluates every connected clade and passes a seed
-when any one qualifies, rather than asking the clauses of the largest alone. The producer
-clause will be read from a photosynthetic flag on lineage rows that the round-28 build
-adds. Round 18's five seeds are re-scored under the new script before this round is
-read, so both sit under one scorer.
+The replay probe grows from 3,000 s to 10,000 s. It starts on the free worker while `r28-s1`
+runs, so the longer probe costs nothing, and `det6` (0069) had only reached 518 bodies.
+Without the longer probe the full population's replay would go unmeasured. The probe and its
+arm both take the digest at every hundred steps, which the launcher did not provide for
+until tonight.
+
+M4 reads the scored clade rather than the aggregate count, which is the loophole D063's
+amendment closed.
+
+The review is also right that the treatment is a package, as the section above says. The
+reading for an M1 fail now names the collisions-off control as the first candidate.
+
+The scorer changed tonight as well. It now evaluates every connected clade and passes a seed
+when any one qualifies, rather than asking the clauses of the largest alone.
+
+The producer clause will be read from a photosynthetic flag on lineage rows that the
+round-28 build adds. Round 18's five seeds are re-scored under the new script before this
+round is read, so both sit under one scorer.
 
 ## The control replays on this build
 
 The review asked whether round 18's five seeds, recorded on a build from 2026-09-04, are
-still the same world on the build this round runs. They are, at least for the first
-3,000 s. `r18chk-s1` is seed 1 under the round-18 launcher on the round-28 build, with the
-single-threaded physics and the lineage flag, and it matches `r18x-s1`'s recording on all
-30 samples to 3,000 s.
-The tiled world never depended on the thread count, so this is the expected answer, and
-now it is a measured one. The historical five stand as the control without a same-build
-control group.
+still the same world on the build this round runs. They are, at least for the first 3,000 s.
+
+The arm `r18chk-s1` is seed 1 under the round-18 launcher on the round-28 build, with the
+single-threaded physics and the lineage flag. It matches `r18x-s1`'s recording on all 30
+samples to 3,000 s.
+
+The tiled world never depended on the thread count, so this is the expected answer, and now
+it is a measured one. The historical five stand as the control without a same-build control
+group.
 
 The check cost one file. PowerShell variable names are not case-sensitive, so the name
 parameter I added to the launcher was the same variable as its internal one. The run
 launched as `r18x-s1`, into the historical arm's directory, and overwrote its report file
-before I saw it. The run directory, with every sample and every lineage row, was never
-touched. The report was rebuilt from that data (`scratch/rebuild-report.py`, calibrated
-on `r18x-s2`, where 6 cells in 14,700 differ by rounding), says so in its first line, and
-re-scores identically. The check's own run now lives under `r18chk-s1`; its manifest still
-says `r18x-s1`, because that is the name it was launched under.
+before I saw it.
+
+The run directory, with every sample and every lineage row, was never touched. The report
+was rebuilt from that data by `scratch/rebuild-report.py`, calibrated on `r18x-s2`, where 6
+cells in 14,700 differ by rounding. It says so in its first line, and it re-scores
+identically.
+
+The check's own run now lives under `r18chk-s1`. Its manifest still says `r18x-s1`, because
+that is the name it was launched under.
 
 ## Launch
 
-The build is commit `95d2091` (D078 at `d2b59ac`, the lineage flag at `95d2091`), simHash
-`63fbf5f7ea60cb32…`, coreHash `bff3d696…`, configHash `841c4266cc314b6b`. Every arm is
-launched with `-ExpectSimHash` and its header carries every V1 token, checked at launch.
-The manifests read the tree as dirty because the owner's other session has an uncommitted
-edit to `scripts/style-check.py`; nothing under the simulation's source is uncommitted,
-and the fingerprints say so. The arms start as round 27's workers free up, at most five
-arms on the machine at once, so the round launches over several hours rather than at
-once.
+| what | value |
+|---|---|
+| commit | `95d2091` (D078 at `d2b59ac`, the lineage flag at `95d2091`) |
+| simHash | `63fbf5f7ea60cb32…` |
+| coreHash | `bff3d696…` |
+| configHash | `841c4266cc314b6b` |
+
+Every arm is launched with `-ExpectSimHash`, and its header carries every V1 token, checked
+at launch.
+
+The manifests read the tree as dirty, because the owner's other session has an uncommitted
+edit to `scripts/style-check.py`. Nothing under the simulation's source is uncommitted, and
+the fingerprints say so.
+
+The arms start as round 27's workers free up, at most five arms on the machine at once, so
+the round launches over several hours rather than at once.
 
 | arm | worker | launched (local) | digest | note |
 |---|---|---|---|---|

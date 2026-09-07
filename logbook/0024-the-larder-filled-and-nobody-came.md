@@ -2,42 +2,50 @@
 
 **2026-08-27**  ·  Milestone 4
 
-[Entry 0023](0023-nothing-died-of-old-age.md) gave the world mortality. This entry is about what
-mortality produced, which is food — and about a recommendation I made twice and had to withdraw
-twice, both times because a measurement said something other than what the reasoning did.
+[Entry 0023](0023-nothing-died-of-old-age.md) gave the world mortality. This entry is about
+what mortality produced, which is food. It is also about a recommendation I made twice and
+had to withdraw twice, both times because a measurement said something other than the
+reasoning did.
 
 ## The wrong next step, caught by reading the design
 
-Asked what to do next, I recommended building MAP-Elites. DESIGN §8 says, in a callout at the top
-of the section:
+Asked what to do next, I recommended building MAP-Elites. That is an archive holding the
+best creature found in each cell of a grid of body shapes. A novel body therefore competes
+against others like it rather than against the world's champion. DESIGN §8 says, in a
+callout at the top of the section:
 
 > ⚠ **Demoted by §5A.** MAP-Elites was the *selector*… Under endogenous selection its
 > innovation-protection role passes to **ecological niches — spatial and trophic** — maintained by
 > the depth/light gradient and cell-type mutation.
 
-So the question was never "build the archive". It was whether those two niches work, which is a
-claim about the world and therefore measurable. CLAUDE.md says this in as many words — *several
-obvious-seeming ideas were already tested against the literature and rejected* — and the cost of
-not reading first would have been an archive over a world with one occupied cell.
+So the question was never "build the archive". It was whether those two niches work, which
+is a claim about the world and therefore measurable. CLAUDE.md says this in as many words:
+*several obvious-seeming ideas were already tested against the literature and rejected*. The
+cost of not reading first would have been an archive over a world with one occupied cell.
 
 ## Senescence filled the water with corpses
 
-Nutrient density where creatures actually live, before and after [0023](0023-nothing-died-of-old-age.md):
+Nutrient density where creatures actually live, before and after
+[0023](0023-nothing-died-of-old-age.md):
 
 | | still + immortal | current + mixing | + senescence |
 |---|---|---|---|
 | density at the population's depth | 0 | 0.18 J/m³ | **2.1 – 4.3 J/m³** |
 
 Against an absorptive break-even of `upkeep / clearance = 4 / 0.5 = 8 J/m³`. A gap that was
-forty-fourfold in [0022](0022-the-conveyor-belt-and-the-thin-soup.md) closed to two- or fourfold,
-without anybody touching a cell parameter. This is the mechanism the human predicted before any of
-it was built — *"the world should have more and more material as entities die… then animals that
-consume the dead matter should start to be more common"* — and the first half of it now works.
+forty-fourfold in [0022](0022-the-conveyor-belt-and-the-thin-soup.md) closed to two- or
+fourfold, without anybody touching a cell parameter. This is the mechanism the human
+predicted before any of it was built:
+
+> *the world should have more and more material as entities die… then animals that consume the
+> dead matter should start to be more common*
+
+The first half of it now works.
 
 ## The ordering problem
 
-The second half does not, and the reason is a timing collision between two mechanisms that were
-each correct on their own.
+The second half does not, and the reason is a timing collision between two mechanisms that
+were each correct on their own.
 
 | t | event | density |
 |---|---|---|
@@ -47,10 +55,10 @@ each correct on their own.
 | 9,500 | break-even crossed | **8.21 J/m³** |
 | 15,000 | | **12.27 J/m³** |
 
-**The floor is the only fast source of absorptive creatures, and D021 makes it fire only to hold
-the population up — so it goes silent exactly when the world succeeds, seven thousand seconds
-before the larder is worth entering.** The world switches off its supply of consumers at the moment
-it starts producing food for them.
+The floor is the only fast source of absorptive creatures, and D021 makes it fire only to
+hold the population up. So it goes silent when the world succeeds, seven thousand seconds
+before the larder is worth entering. The world switches off its supply of consumers at the
+moment it starts producing food for them.
 
 The other route is cell-type mutation, and it is slow. Measured rather than estimated, in
 `TrophicInvasionTests`:
@@ -76,21 +84,23 @@ t=13500   alive 1661  absorptive 1  10.62 J/m3   food 0.12%
 t=13750   alive 1720  absorptive 0  11.10 J/m3   food 0.09%
 ```
 
-**The first non-zero food income in this project's history**, rising monotonically over four
-consecutive samples. Two separate arrivals survived a thousand seconds and more. The niche opened
-and was entered.
+That is the first non-zero food income in this project's history, rising monotonically over
+four consecutive samples. Two separate arrivals survived a thousand seconds and more. The
+niche opened and was entered.
 
 And the count never once reached two. That is a different failure from starving, and a much
 narrower one.
 
-Incidentally, the same run: **gen min 27, gen max 49**, 8,699 births, the floor silent since
+Incidentally, the same run: gen min 27, gen max 49, 8,699 births, the floor silent since
 t≈2,700. Whatever else is wrong, that world is alive.
 
 ## The recommendation that the measurement killed
 
-From *never two*, I reasoned to a margin problem. A creature exactly at break-even survives forever
-and never breeds, because §5A.6 pays for offspring out of surplus — so the world producing 10 J/m³
-against a break-even of 8 gives a 25% margin, and I proposed raising `ClearanceRate` to widen it.
+From *never two*, I reasoned to a margin problem. A creature sitting at break-even survives
+forever and never breeds, because §5A.6 pays for offspring out of surplus. So the world
+producing 10 J/m³ against a break-even of 8 gives a 25% margin, and I proposed raising
+`ClearanceRate` to widen it.
+
 Both `clearanceRate` and `upkeepWattsPerCubicMetre` are ⚠ unmeasured in §5A.10, so it was a
 legitimate knob to set rather than a fudge.
 
@@ -101,37 +111,39 @@ Then I measured it, in `TrophicMarginTests`, before changing anything:
 | photosynthetic | −2 m, full sun | 1.063 W | **470 s** |
 | absorptive | −2 m, 10 J/m³ | 1.000 W | **500 s** |
 
-**Parity — 1.06×.** At the density this world now produces, eating the dead is as good a living as
-photosynthesis in the light. There is no margin problem, the knob did not need setting, and the
-diagnosis I had reasoned my way to was wrong.
+The two trades are at parity, 1.06× apart. At the density this world now produces, eating
+the dead is as good a living as photosynthesis in the light. There is no margin problem, the
+knob did not need setting, and the diagnosis I had reasoned my way to was wrong.
 
-Break-even was still the wrong number to have been quoting, and that part stands: 8 J/m³ is where
-the trade stops losing money, not where it starts being worth doing. But the world had already
-walked past it.
+Break-even was still the wrong number to have been quoting, and that part stands. A density
+of 8 J/m³ is where the trade stops losing money rather than where it starts being worth
+doing. But the world had already walked past it.
 
-## So what is it?
+## Nothing established, and two reasons it might not have
 
-Two candidates remain and they are cleanly separable:
+Two candidates remain, and they are cleanly separable.
 
-- **Arrival-limited.** The niche opened at t≈9,500 and the run ended at 15,019 — about one
-  arrival's worth of opportunity at one per 5,128 births. Nothing established because nothing had
-  time to.
-- **Establishment-limited.** Arrivals cannot found a lineage for a reason not yet identified.
+The first is that arrivals are too rare. The niche opened at t≈9,500 and the run ended at
+15,019, which is about one arrival's worth of opportunity at one per 5,128 births. Nothing
+established because nothing had time to.
 
-`EVOSIM_CELLTYPE_MUTATION` now exists to tell them apart: raise the arrival rate twentyfold and the
-first hypothesis predicts a trophic level, the second predicts a parade of solitary creatures that
-never become two. That run is going.
+The second is that an arrival cannot found a lineage at all, for a reason not yet
+identified.
+
+`EVOSIM_CELLTYPE_MUTATION` now exists to tell them apart. Raise the arrival rate twentyfold:
+the first hypothesis predicts a trophic level, and the second predicts a parade of solitary
+creatures that never become two. That run is going.
 
 ## The pattern
 
 0023 was a defect written down in the right words under the wrong heading.
 
-This one is simpler and more embarrassing: **twice in one session I proposed a change and the
-measurement I ran to justify it said no.** MAP-Elites — the design already ruled it out and I had
-not read the section. Clearance — parity at 1.06×, against a margin story I found completely
+This one is simpler and more embarrassing. Twice in one session I proposed a change, and the
+measurement I ran to justify it said no. MAP-Elites: the design had already ruled it out and
+I had not read the section. Clearance: parity at 1.06×, against a margin story I found
 convincing until it produced a number.
 
-Both were caught, and both were caught the same way, which is the part worth keeping: *the
-measurement came before the change, not after it.* The cost of being wrong here was two test files
-and no edits to the simulation. There is no version of this session in which I was right about
-either, only versions in which I found out earlier or later.
+Both were caught, and both were caught the same way. *The measurement came before the change
+rather than after it.* The cost of being wrong here was two test files and no edits to the
+simulation. There is no version of this session in which I was right about either, only
+versions in which I found out earlier or later.

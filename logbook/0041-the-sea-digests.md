@@ -2,48 +2,56 @@
 
 **2026-08-31**  ·  food-chain goal, round 6 · pre-registered before launch
 
-Same shape as 0036–0040: everything above *Results* was written and committed before any
-arm was launched.
+Same shape as 0036–0040: everything above *Results* was written and committed before any arm
+was launched.
 
 ## The hypothesis
 
-Round 5 ([logbook/0040](0040-right-sizing-the-dish.md)) closed the geometric road: no irradiance and no area gives this
-world a bounded living state, because its only response to scarcity is a death spiral —
-starving bodies sink out of the light and never return what they took. [D052](../DECISIONS.md#d052) built the
-missing return: a living body pays matter back **at its own depth**, in proportion to
-upkeep, so a lit population regenerates the surface it feeds on while it is still alive
-to use it.
+Round 5 ([logbook/0040](0040-right-sizing-the-dish.md)) closed the geometric road. No
+irradiance and no area gives this world a bounded living state. Its only response to
+scarcity is a death spiral: starving bodies sink out of the light and never return what they
+took.
 
-**The claim under test: with excretion on, droughts become shorter than a reproductive
-life, and the producer crashes of 0037–0040 do not happen.** The consumer question rides
-along: a steadier surface means a steadier detritus rain, which is the cheap version of
-fix 3 (damping on the consumer — the third of the owner's three candidate answers,
-enumerated in [logbook/0038](0038-a-lighter-world.md)) — a lineage's food may stop collapsing under it without any
-damping being built.
+[D052](../DECISIONS.md#d052) built the missing return. A living body pays matter back **at
+its own depth**, in proportion to upkeep. A lit population therefore regenerates the surface
+it feeds on while it is still alive to use it.
 
-## The dose, derived honestly
+The claim under test: **with excretion on, droughts become shorter than a reproductive life,
+and the producer crashes of 0037–0040 do not happen.**
 
-`ExcretionPerJoule` has never run. The value is picked by arithmetic on estimated
-mid-round numbers, stated here so a wrong estimate is visible later: a producer at
-equilibrium holds ~2.5 matter locked (0.5/J × ~5 J tissue) and pays ~5 W upkeep, so a rate
-k drains a body in ~0.5/k seconds; death flux at a ~3,000 s effective lifetime is
-~0.0008 matter/s against excretion flux 5k. **k = 0.001** gives a body-matter turnover of
-~500 s and a regenerated:death return ratio of ~6:1 — the microbial-loop regime, where
-most of what producers take comes back in place within a fraction of a lifetime. The
-estimates are ±3×; the two-sided reading covers both misses.
+The consumer question rides along. A steadier surface means a steadier detritus rain. That
+is the cheap version of fix 3, damping on the consumer, the third of the owner's three
+candidate answers enumerated in [logbook/0038](0038-a-lighter-world.md). A lineage's food
+may stop collapsing under it without any damping being built.
+
+## The dose, derived plainly
+
+`ExcretionPerJoule` has never run. The value is picked by arithmetic on estimated mid-round
+numbers, stated here so a wrong estimate is visible later.
+
+A producer at equilibrium holds ~2.5 matter locked, at 0.5/J × ~5 J tissue, and pays ~5 W
+upkeep. A rate k therefore drains a body in ~0.5/k seconds. Death flux at a ~3,000 s
+effective lifetime is ~0.0008 matter/s against an excretion flux of 5k.
+
+**k = 0.001** gives a body-matter turnover of ~500 s and a regenerated-to-death return ratio of
+~6:1. That is the microbial-loop regime, where most of what producers take comes back in
+place within a fraction of a lifetime. The estimates are ±3×, and the two-sided reading
+covers both misses.
 
 ## The world
 
-Round 4's exactly (irradiance 200, area 400, mixing 0.2, excessDensity 0.02, senescence
-10,000, floor closes 3,000, remin 0, ceiling 8,000) **plus `EVOSIM_EXCRETION` 0.001**.
+Round 4's world, at irradiance 200, area 400, mixing 0.2 and excessDensity 0.02. Senescence
+10,000, floor closing at 3,000, remin 0, ceiling 8,000, **plus `EVOSIM_EXCRETION` 0.001**.
+
 Five seeds, arms `d056-s1..s5`, 30,000 s, 600 min wall, all five workers.
 
-**Declared before launch: the ceiling is accepted as a censor.** Round 4 showed this world
-runs away at 200 W/m² and round 5 showed no honest way to stop that from outside the
-ecology. A run the ceiling ends is scored **at its last sample** — producers that persist
-to a censoring count as persisting, and the chain criterion is read at the last sample
-whether the run ended by budget or by ceiling. This weakens the success rule and is said
-plainly here rather than discovered later.
+Declared before launch: **the ceiling is accepted as a censor.** Round 4 showed this world
+runs away at 200 W/m². Round 5 showed no clean way to stop that from outside the ecology.
+
+A run the ceiling ends is scored **at its last sample**. Producers that persist to a
+censoring count as persisting, and the chain criterion is read at the last sample whether
+the run ended by budget or by ceiling. This weakens the success rule, and it is said plainly
+here rather than discovered later.
 
 ## Predictions, and the column that falsifies each
 
@@ -57,8 +65,8 @@ plainly here rather than discovered later.
 | V6 | **success, the standing rule read at the last sample:** ≥3 of 5 arms not extinct, `inherit` ≥ 1 for ≥20 consecutive samples, `absorpt` ≥ 10 at the last sample | as [0037](0037-the-net-comes-down.md)'s Q5 |
 | V7 | a lineage that peaks above 100 falls below 20 and rises above 100 again — the seventh attempt | `absorpt` |
 
-**The goal is met if V1, V2 and V6 hold** — with the censor caveat above attached to any
-claim made from it.
+The goal is met if V1, V2 and V6 hold, with the censor caveat above attached to any claim
+made from it.
 
 ## The two-sided reading, written before the answer
 
@@ -76,18 +84,16 @@ claim made from it.
 
 **Uninterpretable, and to be reported as such:** an arm ended by its wall before t=15,000.
 
----
-
 ## Results
 
-All five ran. No arm touched the 8,000 ceiling — the censor declared above was never
-needed; the binding instrument turned out to be the **wall clock**, which cut s1 at
-t=24,093 (7,057 alive) and s5 at t=22,721 (4,933 alive), both after the 15,000 s
+All five arms ran, and no arm touched the 8,000 ceiling, so the censor declared above was
+never needed. The binding instrument turned out to be the **wall clock**. It cut s1 at
+t=24,093 with 7,057 alive, and s5 at t=22,721 with 4,933 alive, both after the 15,000 s
 interpretability line.
 
 In the fate column, *budget* means the arm completed the full 30,000 simulated seconds it
-was asked for — the clean ending; *wall* means the 600-minute real-time limit cut it
-first, which is a censored run, not an outcome.
+was asked for, which is the clean ending. *Wall* means the 600-minute real-time limit cut it
+first, which is a censored run rather than an outcome.
 
 | arm | fate | producers | absorptive chain |
 |---|---|---|---|
@@ -103,27 +109,25 @@ first, which is a censored run, not an outcome.
 |---|---|
 | V1 | **held** — zero floor spawns after t=3,100 in all five |
 | V2 | **held** — 1 of 5 extinct |
-| V3 | **failed on its letter, and the letter was wrong** — every arm has `mat blk` > 1,000 for 94–256 consecutive samples, but with thousands alive that threshold is background noise, not drought — a blocked-conception count scales with how many creatures are alive to attempt conception each step, so at thousands alive a raw count sits above any fixed threshold even when no individual is short; the metric needed to be per capita. The substantive claim it aimed at is better read from V4 and the fates above |
+| V3 | **failed on its letter, and the letter was wrong** — every arm has `mat blk` > 1,000 for 94–256 consecutive samples, but with thousands alive that threshold is background noise rather than drought — a blocked-conception count scales with how many creatures are alive to attempt conception each step, so at thousands alive a raw count sits above any fixed threshold even when no individual is short; the metric needed to be per capita. The substantive claim it aimed at is better read from V4 and the fates above |
 | V4 | **failed in s3** — the shading-sink spiral still exists (a population dying at −96 m under a recovered surface, births frozen by darkness). But **s2 broke it**: 1,615 → 269 at −41 m, then recovery — the first return from the dark in the project's history. The spiral is no longer always irreversible |
 | V5 | **held** — arrivals in s1, s3, s5 and (at its last sample) s4 |
 | V6 | **failed, 1 of 5** — only s5 satisfies all three clauses (not extinct; inherited ≥20 consecutive samples — it managed 80; ≥10 at the last sample — it had 50). s1's and s3's chains bust before their ends; s2 and s4 never got a chain |
 | V7 | **falsified, seventh time** — 910 → 5 with no rise (s1); s3's chain died with its world; s5 was cut mid-decline at 50 |
 
-**The goal is not met** (V6 failed), and this is the best round the project has run:
+The goal is not met, since V6 failed, and this is the best round the project has run.
 
-1. **The first bounded, living, uncensored worlds.** s2 and s4 completed 30,000 s with the
-   floor silent, populations cycling through recurring droughts between ~100 and ~2,200 —
-   neither runaway nor extinction. Excretion turned the drought from a death sentence into
-   a working brake: matter returns where the living are, fast enough to ride.
-2. **Three chain establishments in one round** (910, 1,430, 320) against one per round in
-   0036–0039 — a steadier detritus rain feeds arrivals as hypothesised.
-3. **The first trophic collapse.** s3's chain became the majority of its world, stripped
-   the deep, and took the producers down with it — the first extinction in which the
-   consumers were structural, not bystanders.
-4. What remains is exactly **fix 3's territory**: every chain that boomed, bust. Nothing
-   damps a consumer but its food, and now the consumer is big enough to matter to the
-   whole world.
+1. The first bounded, living, uncensored worlds. s2 and s4 completed 30,000 s with the floor silent. Populations cycled through recurring droughts between ~100 and ~2,200, neither runaway nor extinction. Excretion turned the drought from a death sentence into a working
+   brake: matter returns where the living are, fast enough to ride.
+2. Three chain establishments in one round, at 910, 1,430 and 320, against one per round in
+   0036–0039. A steadier detritus rain feeds arrivals as hypothesised.
+3. The first trophic collapse. s3's chain became the majority of its world, stripped the deep,
+   and took the producers down with it. It is the first extinction in which the consumers
+   were structural rather than bystanders.
+4. What remains is fix 3's territory. Every chain that boomed, bust. Nothing damps a consumer
+   but its food, and now the consumer is big enough to matter to the whole world.
 
-The frontier after this round: the consumer bust (fix 3, the owner's open biology-vs-world
-call), and the wall clock as the new binding instrument — a bounded world can run
-30,000 s, but s1 and s5 show 600 minutes no longer covers a 5,000–7,000-creature run.
+The frontier after this round has two parts. One is the consumer bust, which is fix 3 and
+the owner's open biology-against-world call. The other is the wall clock as the new binding
+instrument. A bounded world can run 30,000 s, and s1 and s5 show that 600 minutes no longer
+covers a 5,000–7,000-creature run.

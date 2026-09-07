@@ -1,33 +1,43 @@
 # 0060 — The outflow
 
-*2026-09-05. Pre-registered before launch. D074's dose correction: the open budget with
-the matter sink fast enough for burial to see what the influx built, and the influx at
-the vent's base so the deep sees it first.*
+**2026-09-05**  ·  D074's dose correction · pre-registered before launch, results appended after
+
+The open budget got its outflow, and only one shape of it worked. Matter delivered at the
+vent's base sits in the deep where burial can reach it, and those arms buried three times
+what the surface arms buried with the same sink. Matter delivered at the surface is locked
+by the leaves before it sinks, at either sink speed. At this dose neither shape balances,
+since every arm was still growing at the influx rate when the run ended.
 
 ## Why this round exists
 
-0058 showed the world's size is a flow and that the flow has no working outflow: matter
-arrives at the surface, the leaves lock it within a step, and a dead body's matter at
-−1 m sinks at 0.002 m/s — eight hours to the floor, where burial waits. Burial took a
-fifth or less of the influx at every dose and the stock grew toward the ceiling. Two
-levers connect the outflow to the population without a new rule: the matter sink at
-0.02 m/s (D048's default; D071's screen found it harmless alone because nothing was
-free to sink), and the influx at the vent's base (D074's second shape), where D067's
-plume lifts it through the deep before the leaves see it.
+0058 showed that the world's size is a flow, and that the flow has no working outflow.
+Matter arrives at the surface, the leaves lock it within a step, and a dead body's matter at
+−1 m sinks at 0.002 m/s. That is eight hours to the floor, where burial waits. Burial took a
+fifth or less of the influx at every dose, and the stock grew toward the ceiling.
+
+Two levers connect the outflow to the population without a new rule. The first is the matter
+sink at 0.02 m/s, D048's default, which D071's screen found harmless alone because nothing
+was free to sink. The second is the influx at the vent's base, D074's second shape, where
+D067's plume lifts it through the deep before the leaves see it.
 
 ## The arms
 
-Reference world, dt 0.02, 20,000 s, influx 0.6/s, burial 0.01/s, age order, four arms:
+The reference world runs at dt 0.02 for 20,000 s, with influx 0.6/s, burial 0.01/s and the
+age order. Four arms:
 
 | arm | influx at | matter sink | vent |
 |---|---|---|---|
 | `r23s-s2`, `r23s-s4` | surface | **0.02** | off |
 | `r23v-s2`, `r23v-s4` | **vent** | **0.02** | on (D067: 0.05 m/s, patch 0, from 60 m, legs 1 m) |
 
-Controls: 0058's `r22o-s2` / `r22o-s4` (surface, sink 0.002, vent off) and 0056's
-closed `r20q0-s2` / `r20q0-s4`. The vent arms change two things at once (the plume and
-the source); the surface arms isolate the sink. Launcher `scratch/launch-r23.ps1`;
-workers refreshed and launched with `-ExpectSimHash`; four concurrent.
+The controls are 0058's `r22o-s2` and `r22o-s4`, at surface influx with the sink at 0.002
+and the vent off.
+
+Beside them sit 0056's closed-budget arms, `r20q0-s2` and `r20q0-s4`.
+
+The vent arms change two things at once, the plume and the source, and the surface arms
+isolate the sink. The launcher is `scratch/launch-r23.ps1`, and workers were refreshed and
+launched with `-ExpectSimHash`, four concurrent.
 
 ## Validity checks
 
@@ -50,34 +60,53 @@ workers refreshed and launched with `-ExpectSimHash`; four concurrent.
 
 ## The two-sided readings
 
-- **M1–M2 hold:** the budget balances; with M3–M4 the vent shape is the open world to
-  put to the owner for adoption and confirm at 0.01 — the ocean's upwelling, not its
-  dust. With M3 holding and M4 failing, the deep is wet and the stomachs still do not
-  gain: the contest, not the supply, and D073's finding stands in the open world too.
-- **M1 fails with the sink at 0.02:** the floor is not where the matter goes even at
-  ten times the sink — read where it is (the field by layer) before another dose.
-- **M2 fails upward with M1 holding:** burial keeps pace proportionally and the stock
-  still grows — the dose is simply high; halve the influx.
-- **M6 fails upward (the ceiling):** the arm is censored and the dose halved.
-- **M5 fails in the vent arms only:** the plume's return flow is where the stomachs
-  were (round 13's reading, D067) and it carries them off the source; a spatial
-  question the movement round inherits.
+- If M1 and M2 hold, the budget balances. With M3 and M4 alongside them, the vent shape is
+  the open world to put to the owner for adoption and to confirm at 0.01. That shape is the
+  ocean's upwelling rather than its dust.
+
+- If M3 holds and M4 fails, the deep is wet and the stomachs still do not gain. The binding
+  thing is the contest rather than the supply, and D073's finding stands in the open world
+  too.
+
+- If M1 fails with the sink at 0.02, the floor is not where the matter goes even at ten
+  times
+  the sink. Read where it is, from the field by layer, before trying another dose.
+
+- If M2 fails upward while M1 holds, burial keeps pace proportionally and the stock still
+  grows. The dose is then too high, and the influx is halved.
+
+- If M6 fails upward into the ceiling, the arm is censored and the dose halved.
+
+- If M5 fails in the vent arms only, the plume's return flow is where the stomachs were,
+  which is round 13's reading under D067. The flow then carries them off the source. That is
+  a
+  spatial question the movement round inherits.
 
 ## Launch
 
-Launched 2026-09-05 ~02:15 on workers 2–5 at commit `1ce2e71` (the open-budget build;
-no code change for this round), `-ExpectSimHash c43976d3d71f1f52`; every manifest reads
-that `simHash`, `gitDirty false`, `status running`. Headers verified: `sink 0.002 m/s,
-matter 0.02 m/s` on all four; `matter in 0.6/s at surface, burial 0.01/s` with `vent off`
-on `r23s-s2`/`r23s-s4`; `matter in 0.6/s at vent, burial 0.01/s` with `vent 0.05 m/s in
-patch 0 from 60 m, legs 1 m` on `r23v-s2`/`r23v-s4`. Monitor running. Results appended
-below.
+Launched on 2026-09-05 at about 02:15 on workers 2 to 5, at the open-budget build, with no
+code change for this round.
+
+| what | value |
+|---|---|
+| commit | `1ce2e71` |
+| launch guard | `-ExpectSimHash c43976d3d71f1f52` |
+| every manifest | that `simHash`, `gitDirty false`, `status running` |
+| header, all four | `sink 0.002 m/s, matter 0.02 m/s` |
+| header, surface arms | `matter in 0.6/s at surface, burial 0.01/s` with `vent off` on `r23s-s2` and `r23s-s4` |
+| header, vent arms | `matter in 0.6/s at vent, burial 0.01/s` with `vent 0.05 m/s in patch 0 from 60 m, legs 1 m` on `r23v-s2` and `r23v-s4` |
+
+A monitor runs over the four. Results are appended below.
 
 ## Results
 
-Four arms to budget, manifests `status ended`, `reason budget`, `divergedTotal 0`; V1–V3
-held (headers as pre-registered, `floor` 0 from t=3,100, audit 0.0000% at every sample,
-the matter identity to the unit at every sample: 6,000 + 12,000 in − buried = standing).
+All four arms reached budget, and every manifest reads `status ended` with `reason budget`.
+
+Each of them also reads `divergedTotal 0`.
+
+Checks V1 to V3 held: headers as pre-registered, `floor` 0 from t=3,100, and audit 0.0000%
+at every sample. The matter identity closed to the unit at every sample, at 6,000 plus
+12,000 in minus buried equals standing.
 
 | arm | shape | alive at end | deaths | absorpt (share) | standing at 20,000 (15,000) | buried/window, t ≥ 15,000 (of 60) | `mat deep` mean t > 10,000 | `matterHere` mean t > 10,000 | depth at end | largest clade · min last 6,000 s | median parent age, plateau |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -88,7 +117,7 @@ the matter identity to the unit at every sample: 6,000 + 12,000 in − buried = 
 | r22o-s2 (0058) | surface, sink 0.002 | 4,068 | 1,683 | 98 (2.4%) | 13,285 | 13.0 | — | 0.125 | film | 72 · 18 | 5,260 s |
 | r22o-s4 (0058) | surface, sink 0.002 | 4,263 | 3,208 | 40 (0.9%) | 13,462 | 5.7 | — | 0.056 | film | 18 · 4 | 1,684 s |
 
-**The predictions:**
+Here is how the predictions came out.
 
 | # | prediction | result |
 |---|---|---|
@@ -99,57 +128,73 @@ the matter identity to the unit at every sample: 6,000 + 12,000 in − buried = 
 | M5 | a stable clade in every arm | **held** — minima 42, 29, 99, 82 over the last 6,000 s |
 | M6 | `alive` between 1,800 and 4,300 | **held** — 2,305 to 3,493 |
 
-**Not pre-registered, and the round's largest fact: the drain.** The sink at 0.02 m/s
-carried the initial 6,000 units to the floor within 3,000 s, and burial at 1%/s of the
-floor's free matter removed 75–117 units per window against 60 arriving until t≈6,000:
-the free pool fell from 4,800 to 500 (surface) or 1,000–1,300 (vent) before any body could
-lock it. Founding ran through that on the floor's forty and nearly failed in `r23s-s4`,
-which fell to 21 alive at t=4,000, a thousand seconds after the floor closed, with no
-stomach left; its absorptive line re-evolved from a leaf lineage at t=12,360 and is the
-234-strong clade the scorer passes. 0058's "M1 fails downward" reading, arriving one
+The round's largest fact was not pre-registered, and it is a drain. The sink at 0.02 m/s
+carried the initial 6,000 units to the floor within 3,000 s. Burial at 1% per second of the
+floor's free matter then removed 75 to 117 units per window against 60 arriving, until about
+t=6,000. The free pool fell from 4,800 to 500 in the surface arms, and to 1,000 or 1,300 in
+the vent arms. It went before any body could lock it.
+
+Founding ran through that on the floor's forty, and nearly failed in `r23s-s4`. That arm
+fell to 21 alive at t=4,000, a thousand seconds after the floor closed, with no stomach
+left. Its absorptive line re-evolved from a leaf lineage at t=12,360, and it is the
+234-strong clade the scorer passes. That is 0058's "M1 fails downward" reading arriving one
 round late: the outflow this round connected is one that eats the starting stock first.
 
-**The world is still growing, at the influx rate.** No arm reached a plateau. From
-t≈6,000 every population rose linearly at 0.13–0.19 bodies per second, which is the
-arithmetic of 0.6 units/s at about 3.5 units per body less what burial takes; deaths lag
-a lifetime behind. Where it levels depends on mortality catching up, which 20,000 s did
-not show. The queue weakened everywhere — median parent age in the plateau 580–1,163 s
-against the closed world's 4,300–4,600 — because matter now arrives continuously rather
-than being released by a death.
+The world is also still growing, at the influx rate, and no arm reached a plateau. From
+about t=6,000 every population rose linearly at 0.13 to 0.19 bodies per second. That is the
+arithmetic of 0.6 units/s at about 3.5 units per body, less what burial takes, with deaths
+lagging a lifetime behind. Where it levels depends on mortality catching up, which 20,000 s
+did not show.
 
-**The two vent populations rose into the film.** `r23v-s2` sat at −9 m at t=6,000 and
-−0.4 m at the end; `r23v-s4` at −2.5 m and 0.2 m. The surface arms sat at −15 and −6 m.
-Two readings, unresolved at this step: the fast step's bimodality (0056; all five of
-0058's arms were in the film), or the plume itself, which advects bodies as well as
-matter (`EVOSIM_CURRENT_ADVECT 1`) and lifts whatever sits over patch 0. The 0.01
-confirmation separates them; a 0.02 result about depth is not a result (CLAUDE.md).
+The queue weakened everywhere, to a median parent age in the plateau of 580 to 1,163 s
+against the closed world's 4,300 to 4,600. Matter now arrives continuously rather than being
+released by a death.
+
+The two vent populations rose into the film. Arm `r23v-s2` sat at −9 m at t=6,000 and −0.4 m
+at the end. Arm `r23v-s4` sat at −2.5 m and then 0.2 m, where the surface arms sat at −15
+and −6 m.
+
+Two readings of that are unresolved at this step. One is the fast step's bimodality (0056),
+given that all five of 0058's arms were in the film. The other is the plume itself, which
+advects bodies as well as matter under `EVOSIM_CURRENT_ADVECT 1` and lifts whatever sits
+over patch 0. The 0.01 confirmation separates them, and a 0.02 result about depth is not a
+result (CLAUDE.md).
 
 ## Verdict
 
-**The vent connects the outflow; the surface does not; and at this dose neither
-balances.** Matter delivered at the vent's base sits in the deep at 0.6 units/m³ where
-burial can reach it, and the vent arms buried 2.5–3× what the surface arms did with the
-same sink, with the standing stock's growth slowed to +21% over the last quarter. Matter
-delivered at the surface is locked by the leaves before it sinks, at 0.02 m/s exactly as
-at 0.002: the sink was never the lever there. But every arm still grows at the influx
-rate, so the stock has no equilibrium in 20,000 s at 0.6/s with burial 0.01/s, and the
-world would reach the ceiling somewhere past 30,000 s.
+The vent connects the outflow. The surface does not. At this dose, neither balances.
 
-**The stomachs did not gain from a wet deep, because they were not in it.** M4 is
-falsified on both seeds with the deep three to four times wetter under the vent, and
-D073's finding stands a third time: the contest at the surface, not the supply below,
-sets the stomachs' share. What would let a stomach live where the matter is — a body
-that can find it, and a reason to stay — is the movement round's question, and this
-round's wet deep is the stage D075 asked for.
+Matter delivered at the vent's base sits in the deep at 0.6 units/m³ where burial can reach
+it. The vent arms buried 2.5 to 3 times what the surface arms did with the same sink, with
+the standing stock's growth slowed to +21% over the last quarter. Matter delivered at the
+surface is locked by the leaves before it sinks, at 0.02 m/s as much as at 0.002. The sink
+was never the lever there.
 
-**What goes to the owner.** Adoption of the open budget in the vent shape (D074 as
-corrected: influx at the vent's base, D067's vent on, matter sink 0.02, burial 0.01)
-as the reference world's matter rule, and its dose. Three doses on the table: 0.6/s as
-screened (the flow the owner asked to see; founding survived the drain in four of four,
-narrowly in one); 0.6/s with burial 0.02/s (tightens the balance, doubles the drain);
-0.3/s (halves both the growth and what the founding has). The recommendation is the
-screened dose for the 0.01 confirmation, five seeds, 30,000 s, with the ceiling as the
-censor and the drain read at the fine step; the dose is corrected on that reading, not
-on this one. The surface shape is not recommended at any dose.
+Every arm still grows at the influx rate. The stock has no equilibrium in 20,000 s at 0.6/s
+with burial 0.01/s, and the world would reach the ceiling somewhere past 30,000 s.
 
-Closed 2026-09-05. Arms `r23s-s2`, `r23s-s4`, `r23v-s2`, `r23v-s4`; uncensored.
+The stomachs did not gain from a wet deep, because they were not in it. M4 is falsified on
+both seeds, with the deep three to four times wetter under the vent. D073's finding stands a
+third time: the contest at the surface sets the stomachs' share, and the supply below does
+not.
+
+What would let a stomach live where the matter is, a body that can find it and a reason to
+stay, is the movement round's question. This round's wet deep is the stage D075 asked for.
+
+What goes to the owner is adoption of the open budget in the vent shape, as D074 corrected.
+That is influx at the vent's base, D067's vent on, matter sink 0.02 and burial 0.01, as the
+reference world's matter rule, with its dose.
+
+| dose | what it buys |
+|---|---|
+| 0.6/s as screened | the flow the owner asked to see; founding survived the drain in four of four, narrowly in one |
+| 0.6/s with burial 0.02/s | tightens the balance, doubles the drain |
+| 0.3/s | halves both the growth and what the founding has |
+
+The recommendation is the screened dose for the 0.01 confirmation, over five seeds and
+30,000 s. The ceiling is the censor, and the drain is read at the fine step. The dose is
+corrected on that reading rather than on this one. The surface shape is not recommended at
+any dose.
+
+Closed on 2026-09-05. The arms were r23s-s2, r23s-s4, r23v-s2 and r23v-s4, and the round is
+uncensored.

@@ -2,27 +2,30 @@
 
 **2026-08-29**  ·  food-chain goal, round 4 · pre-registered before launch
 
-Same shape as 0036–0038: everything above *Results* was written and committed before any
-arm was launched.
+Same shape as 0036–0038: everything above *Results* was written and committed before any arm
+was launched.
 
 ## The hypothesis
 
-[logbook/0038](0038-a-lighter-world.md) split the trap by density. At `excessDensity` 0.05 and 0.1 a population whose
-births stop sinks out of the light within a thousand seconds, and no fertility can save it.
-At 0.02 it sinks slowly enough to stay lit — and died anyway in `d053-s3`, because the
-drought had left it one cohort, and under [D038](../DECISIONS.md#d038)'s wear (upkeep ×(1 + age/3000), yield halved
-at 3,000 s) a cohort past ~1,300 s has no surplus to breed with. The drought was shorter
-than a creature's reproductive life; the cohort it left behind was not.
+[logbook/0038](0038-a-lighter-world.md) split the trap by density. At `excessDensity` 0.05
+and 0.1 a population whose births stop sinks out of the light within a thousand seconds, and
+no fertility can save it.
 
-**The claim under test: at 0.02, a senescence scale longer than the drought lets the
-post-drought cohort breed again, and the population that survives the drought survives.**
-This is suggestion 2 of the three the owner set out, taken in its cheaper form (the other
-form, a faster matter return, is held in reserve).
+At 0.02 it sinks slowly enough to stay lit, and it died anyway in `d053-s3`. The drought had
+left it one cohort. Under [D038](../DECISIONS.md#d038)'s wear, upkeep ×(1 + age/3000) with
+yield halved at 3,000 s, a cohort past ~1,300 s has no surplus to breed with. The drought
+was shorter than a creature's reproductive life, and the cohort it left behind was not.
+
+The claim under test is this. At 0.02, **a senescence scale longer than the drought lets the
+post-drought cohort breed again**, so the population that survives the drought survives.
+This is suggestion 2 of the three the owner set out, taken in its cheaper form. The other
+form, a faster matter return, is held in reserve.
 
 ## The world
 
-Round 3's world (mixing 0.2, `excessDensity 0.02`, floor closes at 3,000 s, remin 0, the
-[D048](../DECISIONS.md#d048) reference settings) with two changes, one of them instrumental:
+Round 3's world, with mixing 0.2, `excessDensity 0.02`, the floor closing at 3,000 s, remin
+0 and the [D048](../DECISIONS.md#d048) reference settings, and with two changes, one of them
+instrumental:
 
 | setting | value | env var | note |
 |---|---|---|---|
@@ -44,7 +47,7 @@ Arms `d054-s1..s5`, launched as workers free.
 | S6 | **success:** ≥ 3 of 5 arms not extinct, with `inherit` ≥ 1 for ≥ 20 consecutive samples and `absorpt` ≥ 10 at the last sample | as [0037](0037-the-net-comes-down.md)'s Q5 |
 | S7 | a lineage that peaks above 100 falls below 20 and rises above 100 again | `absorpt` |
 
-**The goal is met if S1, S2, S4 and S6 hold.**
+The goal is met if S1, S2, S4 and S6 hold.
 
 ## The two-sided reading, written before the answer
 
@@ -64,17 +67,15 @@ Arms `d054-s1..s5`, launched as workers free.
 **Uninterpretable, and to be reported as such:** a wall budget that ends an arm before
 t=15,000.
 
----
-
 ## Results
 
-**Two of five seeds ran.** Seeds 3–5 were not launched: the owner's instruction on the
-evening of the 29th was to let the running arms finish and start nothing new, and by then
-[D052](../DECISIONS.md#d052) (the excretion contract) had been decided as the next step regardless of this round's
-outcome. So the scores below are on n=2 and the round is *open*, not scored — HANDOFF.md
-carries the launch command for the other three.
+Two of five seeds ran. Seeds 3–5 were not launched. The owner's instruction on the evening
+of the 29th was to let the running arms finish and start nothing new. By then
+[D052](../DECISIONS.md#d052), the excretion contract, had been decided as the next step
+regardless of this round's outcome. So the scores below are on n=2 and the round is *open*
+rather than scored. HANDOFF.md carries the launch command for the other three.
 
-### d054-s1 — survived a drought, survived a sink, ran away
+### d054-s1: survived a drought, survived a sink, ran away
 
 | t | alive | births | mat top | mat blk | depth m | mean age s | absorpt |
 |---|---|---|---|---|---|---|---|
@@ -91,32 +92,38 @@ carries the launch command for the other three.
 | 25,900 | 7,599 | 27,410 | 0.001 | 161,854 | −22.4 | 1,276 | **348** (346 inherited) |
 | 25,998 | **8,004 — RUNAWAY** | | | | | | |
 
-(A blank cell is a value not transcribed from the run report, not a zero and not missing
-data — the report records every column at every sample; the table copies only what the
-argument reads.)
+A blank cell is a value not transcribed from the run report, and it is neither a zero nor
+missing data. The report records every column at every sample, and the table copies only
+what the argument reads.
 
-Three things happened here that no earlier arm showed. First, the population **bred straight
-through an eight-thousand-second drought** (t≈2,000–10,000, surface matter at 0.005–0.008/m³
-and 25,000–69,000 conceptions refused per window) — births rose the whole time and mean age
-stayed near 1,000 s. That is the hypothesis working: at senescence 10,000 the cohort a
-drought leaves behind is still fertile. Second, the population then **crashed with matter
-available and nothing blocked** — 1,685 to 73 between t=12,000 and 16,000 — and the depth
-column says why: eight thousand seconds of slow sinking had carried the mean to −26 m, the
-edge of the photic band, and from there it fell to −40 m. At 0.02 the sink is not fast enough
-to close the trap inside a drought, but a long enough drought sinks the population anyway.
-Third — and this is the round's finding — **it came back without the floor.** The 73
-survivors were the shallow ones (buoyant count rose 5 → 44 while the rest died), mean depth
-jumped to −20 and then −13 m, mean age fell to 622 s, and the population went from 73 to
-2,343 in 4,000 s. `floor` was 0 throughout. Every one of round 2b's and round 3's extinctions
-passed through a state like t=16,000 here and none recovered; this one did, because the
-survivors could still breed at 3,300 s of age.
+Three things happened here that no earlier arm showed.
 
-Then the runaway: the recovered population hit the 8,000 ceiling at t=25,998 — growing by
-1,650 births per 400 s with the top layer at 0.001/m³ and 134,000–162,000 refusals per window,
-so the matter it bred on was below the top layer — carrying a mutant chain that had gone
-from 41 to 348 in the last 400 s. Censored two samples into its boom.
+First, the population **bred straight through an eight-thousand-second drought**, at
+t≈2,000–10,000. Surface matter sat at 0.005–0.008/m³, with 25,000–69,000 conceptions refused
+per window. Births rose the whole time and mean age stayed near 1,000 s. That is the
+hypothesis working: at senescence 10,000 the cohort a drought leaves behind is still
+fertile.
 
-### d054-s2 — never fell below 350; the consumer bust, slowly
+Second, the population then **crashed with matter available and nothing blocked**, from
+1,685 to 73 between t=12,000 and 16,000, and the depth column says why. Eight thousand
+seconds of slow sinking had carried the mean to −26 m, the edge of the photic band, and from
+there it fell to −40 m. At 0.02 the sink is not fast enough to close the trap inside a
+drought, and a long enough drought sinks the population anyway.
+
+Third, and this is the round's finding, it came back without the floor. The 73 survivors
+were the shallow ones, with the buoyant count rising 5 → 44 while the rest died. Mean depth
+jumped to −20 and then −13 m, and mean age fell to 622 s. The population went from 73 to
+2,343 in 4,000 s, with `floor` at 0 throughout. Every one of round 2b's and round 3's
+extinctions passed through a state like t=16,000 here and none recovered. This one did,
+because the survivors could still breed at 3,300 s of age.
+
+What followed was the runaway: the recovered population hit the 8,000 ceiling at t=25,998,
+growing by 1,650 births per 400 s. The top layer was at 0.001/m³ with 134,000–162,000
+refusals per window, so the matter it bred on was below the top layer. It was carrying a
+mutant chain that had gone from 41 to 348 in the last 400 s, and it was censored two samples
+into its boom.
+
+### d054-s2: never fell below 350, and the consumer bust came slowly
 
 | t | alive | births | mat top | depth m | mean age s | absorpt (inherited) | det deep J/m³ |
 |---|---|---|---|---|---|---|---|
@@ -129,21 +136,27 @@ from 41 to 348 in the last 400 s. Censored two samples into its boom.
 | 29,000 | 6,436 | | 0.000 | −20.1 | 2,628 | 3 (2) | 8.6 |
 | 30,000 | budget | | | | | | |
 
-Seed 2's crash was the long-low kind: the population sat at 350–440 from t≈6,000 to 13,000
-with mean age at 3,391 s at t=7,000 — a cohort well past the age that killed `d053-s3`, and
-at a mean depth of −40 m, which is below the light — **and kept breeding**, 800 births across
-the low phase, so that by t=13,000 the mean age was back to 1,930 s. Under wear
-×(1 + age/3000) that cohort would have had nothing; under ×(1 + age/10000) it had enough.
-(A mean depth of −40 m with births continuing says the population was two-part, a shallow
-fertile few and a deep sinking many; the mean hides that, and the trace has no depth
-histogram to show it.) A mutant arrived at t≈7,000 in the low phase, established by 13,000,
-and ran the fullest consumer arc the project has: 43 to 549 in 4,000 s, deep water 18 → 4.4
-J/m³, then a decline of **12,000 s** — 145 at 22,500, a plateau near 110 for two thousand
-seconds, 38 at 26,000, 3 at 29,000 — with the water rebuilding beneath it (3.9 → 8.6, twice
-break-even) only as the lineage died. No upturn at any point. Meanwhile the producers, lit
-and no longer dying of age, climbed from 1,517 to 6,436 between t=17,000 and 29,000 with the
-top layer at 0.000–0.012/m³ — a runaway in progress that the budget ended before the ceiling
-could.
+Seed 2's crash was the long-low kind. The population sat at 350–440 from t≈6,000 to 13,000,
+with mean age at 3,391 s at t=7,000. That is a cohort well past the age that killed
+`d053-s3`, at a mean depth of −40 m, which is below the light.
+
+**And it kept breeding**, 800 births across the low phase, so that by t=13,000 the mean age was
+back to 1,930 s. Under wear ×(1 + age/3000) that cohort would have had nothing. Under
+×(1 + age/10000) it had enough.
+
+A mean depth of −40 m with births continuing says the population was two-part, a shallow
+fertile few and a deep sinking many. The mean hides that, and the trace has no depth
+histogram to show it.
+
+A mutant arrived at t≈7,000 in the low phase and established by 13,000. It then ran the
+fullest consumer arc the project has. It went 43 to 549 in 4,000 s, took the deep water 18 →
+4.4 J/m³, then declined over **12,000 s**. That is 145 at 22,500, a plateau near 110 for two
+thousand seconds, 38 at 26,000 and 3 at 29,000. The water rebuilt beneath it from 3.9 to
+8.6, twice break-even, only as the lineage died. There was no upturn at any point.
+
+Meanwhile the producers, lit and no longer dying of age, climbed from 1,517 to 6,436 between
+t=17,000 and 29,000. The top layer was at 0.000–0.012/m³. That is a runaway in progress,
+which the budget ended before the ceiling could.
 
 ### Scored against the pre-registration (n=2)
 
@@ -157,18 +170,22 @@ could.
 | S6 | **failed** — s1 censored with 348 alive (2 samples into the boom); s2 at 3 by t=29,000 |
 | S7 | **falsified, sixth time** — 549 → 3 with no rise; the plateau at ~110 (t≈22,500–25,000) is the closest any lineage has come to holding, and it did not |
 
-**What round 4 established, on two seeds.** The claim under test holds: with senescence at
-10,000 s the cohort a drought leaves behind can breed, and producer populations that would
-have died in every earlier round came back — once from 73 individuals, without the floor.
-Age synchrony was the irreversible half at 0.02, and it is removable. What it uncovers is the
-S4 branch of the two-sided reading, exactly as written: **a lit population at 0.02 that no
-longer dies of age is not limited by anything** — both seeds ran away, one to the ceiling and
-one to the budget, with the surface stripped to zero and nothing in the world able to stop
-them; shading at 24% (s1, t=12,000) did not. And the consumer half is unchanged: the fullest
-bust yet, slower than `d053b-s4`'s (12,000 s against 5,500 — the same senescence that saves
-producers also lets a starving consumer linger) but the same shape. The pre-registration's
-own next step for this branch is the limit on producers; the owner's decided next step is
-D052, which changes what the surface drought *is* — under an excretion contract a lit
-population regenerates its own surface, so the drought, the sink through it, and the runaway
-that follows a population that has nothing to lose to it are all a different question. Seeds
-3–5 of this round remain worth running as a baseline for that.
+What round 4 established, on two seeds: the claim under test holds. With senescence at
+10,000 s the cohort a drought leaves behind can breed. Producer populations that would have
+died in every earlier round came back, once from 73 individuals and without the floor. Age
+synchrony was the irreversible half at 0.02, and it is removable.
+
+What it uncovers is the S4 branch of the two-sided reading, as written. A lit population at
+0.02 that no longer dies of age is not limited by anything. Both seeds ran away, one to the
+ceiling and one to the budget, with the surface stripped to zero and nothing in the world
+able to stop them. Shading at 24%, in s1 at t=12,000, did not.
+
+And the consumer half is unchanged. The bust was the fullest yet, and slower than
+`d053b-s4`'s, at 12,000 s against 5,500, since the same senescence that saves producers also
+lets a starving consumer linger. The shape was the same.
+
+The pre-registration's own next step for this branch is the limit on producers. The owner's
+decided next step is D052, which changes what the surface drought *is*. Under an excretion
+contract a lit population regenerates its own surface. So the drought, the sink through it,
+and the runaway that follows a population with nothing to lose to it are all a different
+question. Seeds 3–5 of this round remain worth running as a baseline for that.

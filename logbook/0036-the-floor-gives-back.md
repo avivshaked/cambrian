@@ -2,36 +2,45 @@
 
 **2026-08-29**  ·  D051 · food-chain goal, acceptance experiment
 
-This entry is written in two halves on purpose. The first half — everything above
-*Results* — was written and committed **before any arm was launched**, and is the
-pre-registration: the world, the arithmetic, the numbers each arm is predicted to show, the
-column that falsifies each prediction, and what counts as success. The second half is what
-happened. If the two halves disagree, the first one was wrong, and that is the record.
+This entry is written in two halves on purpose. The first half, everything above *Results*,
+was written and committed **before any arm was launched**. It is the pre-registration: the
+world, the arithmetic, the numbers each arm is predicted to show, the column that falsifies
+each prediction, and what counts as success. The second half is what happened. If the two
+halves disagree, the first one was wrong, and saying so is what this logbook is for.
 
 ## What is being tested
 
 [D051](../DECISIONS.md#d051): detritus that reaches the sea floor now leaks back into the
-water above it at a first-order rate. The goal it serves is the one chosen for this stretch of
-autonomous work — *a self-sustaining world that holds a food chain, verified rather than
-observed once* — and the question is narrow: **does closing the nutrient cycle let an
-absorptive lineage persist by inheritance, in a world where it otherwise dies out by
-t≈1,200?**
+water above it at a first-order rate.
+
+The goal it serves is the one chosen for this stretch of autonomous work, *a self-sustaining
+world that holds a food chain, verified rather than observed once*. The question is narrow:
+whether closing the nutrient cycle lets an absorptive lineage persist by inheritance, in a
+world where it otherwise dies out by t≈1,200.
 
 ## Why this world, and not the reference one
 
-Reading every run header in `runs/` before choosing: **only two mixings have ever been run,
-0 and 2 m²/s.** At 2, the column is uniform and the floor holds 0.2–7% of detritus — a leak
-from it can do nothing. At 0, the floor holds 66–76% and nothing carries what it returns
-upward — the leak would build a two-layer pile. The mechanism only has something to act on
-in between, where sinking wins in the column and mixing lifts what the floor gives back over
-a length scale of D/v metres. That regime is unmeasured, so this experiment is also the first
-measurement of it — which is a confound, and the control arm exists to carry it.
+Reading every run header in `runs/` before choosing turns up one fact. **Only two mixings
+have ever been run, 0 and 2 m²/s.**
+
+At 2, the column is uniform and the floor holds 0.2–7% of detritus, so a leak from it can do
+nothing. At 0, the floor holds 66–76% and nothing carries what it returns upward, so the
+leak would build a two-layer pile.
+
+The mechanism only has something to act on in between. There, sinking wins in the column and
+mixing lifts what the floor gives back over a length scale of D/v metres. That regime is
+unmeasured, so this experiment is also the first measurement of it. That is a confound, and
+the control arm exists to carry it.
 
 ## The world
 
-[D048](../DECISIONS.md#d048)+[D050](../DECISIONS.md#d050)'s reference world with one change, mixing 2 → 0.2. Every arm shares these; the run
-header is the authority and must be checked against this table after launch ([logbook/0027](0027-the-prize-was-smaller-than-the-entry-fee.md),
-[0034](0034-the-ocean-had-no-top.md) — an inherited default has burned three arms):
+[D048](../DECISIONS.md#d048) and [D050](../DECISIONS.md#d050)'s reference world with one
+change, mixing 2 → 0.2.
+
+Every arm shares these settings. The run header is the authority and must be checked against
+this table after launch, since an inherited default has burned three arms
+([logbook/0027](0027-the-prize-was-smaller-than-the-entry-fee.md),
+[0034](0034-the-ocean-had-no-top.md)):
 
 | setting | value | env var | note |
 |---|---|---|---|
@@ -45,39 +54,54 @@ header is the authority and must be checked against this table after launch ([lo
 | remineralisation | **0 (control) / 0.01 s⁻¹ (treatment)** | `EVOSIM_REMIN` | the variable; sets both the nutrient and the matter rate |
 | budget | 20,000 s, 360 min wall | | |
 
-**Defaults that do not appear in the header and matter here:** nutrient sink 0.02 m/s;
-`MatterMixingDiffusivity` stays at 2 — `EVOSIM_MIXING` sets only the nutrient field's
-diffusivity, so matter remains uniform and matter remineralisation is inert in every arm;
-layer 1 m, depth 60 m, area 400 m², so the floor layer is 400 m³; cell-type mutation 0.001.
+Some defaults do not appear in the header and matter here. Nutrient sink is 0.02 m/s, and
+cell-type mutation is 0.001. Layers are 1 m in a 60 m depth over an area of 400 m², so the
+floor layer is 400 m³.
 
-Six arms: `d051-ctl-s{1,2,3}` and `d051-rem-s{1,2,3}`, seeds 1–3. Five run at once (the
-machine's limit), `ctl-s3` follows when a slot frees.
+`MatterMixingDiffusivity` stays at 2, because `EVOSIM_MIXING` sets only the nutrient field's
+diffusivity, so matter remains uniform and matter remineralisation is inert in every arm.
 
-## The arithmetic — the margin pre-flight, done before launch
+Six arms run: `d051-ctl-s{1,2,3}` and `d051-rem-s{1,2,3}`, seeds 1–3.
 
-Steady 1-D balance above the floor with sink speed v and diffusivity D: sinking flux `v·c`
-down equals diffusive flux `D·dc/dz` up, so `c(z) = c₀·exp(−v·z/D)` with `D/v = 10 m`.
-Water-column stock `W = c₀·A·D/v = 4,000·c₀` J, with `A` the world's 400 m² area. At the
-floor, the leak `r·F` — `r` being the remineralisation rate under test, 0.01 s⁻¹ — equals
-what sinks in from the bottom water, `v·A·c₀`, so `F = v·A·c₀/r = 800·c₀` J at r = 0.01.
+Five run at once, which is the machine's limit, and `ctl-s3` follows when a slot frees.
 
-- **Treatment floor share at steady state: F/(F+W) = 800/4,800 ≈ 17%.**
+## The arithmetic: the margin pre-flight, done before launch
+
+Take a steady 1-D balance above the floor, with sink speed v and diffusivity D. Sinking flux
+`v·c` down equals diffusive flux `D·dc/dz` up.
+
+So the profile is `c(z) = c₀·exp(−v·z/D)` with `D/v = 10 m`.
+
+The water-column stock is `W = c₀·A·D/v = 4,000·c₀` J, where `A` is the world's 400 m² area.
+
+At the floor, the leak `r·F` equals what sinks in from the bottom water, `v·A·c₀`.
+
+The rate under test is `r`, at 0.01 s⁻¹, so `F = v·A·c₀/r = 800·c₀` J at r = 0.01.
+
+- Treatment floor share at steady state: F/(F+W) = 800/4,800 ≈ **17%**.
+
 - Total detritus T grew at roughly 10 J/s in `d050-heavy` with nobody eating it (52 kJ at
-  t=4,800). At T = 50 kJ, `c₀ = T/4,800 ≈ 10.4 J/m³` in the bottom water layer; 6 m above
-  the floor (the new `det deep` column, 90% of depth) `≈ 10.4·e^(−0.6) ≈ 5.7 J/m³`; at
-  T = 100 kJ (t≈10,000) about 21 and 11.4 respectively. Diffusive relaxation over 10 m is
-  `L²/D = 500 s`, so the profile is quasi-steady on the run's timescale.
-- **Break-even for `AbsorptiveCell`: 4 W/m³ upkeep ÷ clearance 1 = 4 J/m³** (clearance is
-  the water an absorptive cell strains, m³ per second per m³ of its own tissue, so upkeep
-  over clearance is the food density at which eating exactly pays), ×(1 + age/3000)
-  under senescence wear. **Margin at the bottom water at t≈5,000: 10.4/4 ≈ 2.6** — passes the
-  ≥2 rule. At `det deep` it is 1.4 at t≈5,000 and 2.9 at t≈10,000.
-- **Control:** the only stock above the floor is in transit. Deaths at ~10 J/s sink through
-  each 1 m layer with a 50 s residence, so a layer holds at most ~500 J ≈ 1.25 J/m³ even if
+  t=4,800). At T = 50 kJ, `c₀ = T/4,800 ≈ 10.4 J/m³` in the bottom water layer.
+
+  Six metres above the floor, which is the new `det deep` column at 90% of depth, that is
+  `≈ 10.4·e^(−0.6) ≈ 5.7 J/m³`. At T = 100 kJ (t≈10,000) the two are about 21 and 11.4.
+
+  Diffusive relaxation over 10 m is `L²/D = 500 s`, so the profile is quasi-steady on the
+  run's timescale.
+
+- Break-even for `AbsorptiveCell` is **4 W/m³ upkeep ÷ clearance 1 = 4 J/m³**, times
+  (1 + age/3000) under senescence wear. Clearance is the water an absorptive cell strains,
+  in m³ per second per m³ of its own tissue. Upkeep over clearance is therefore the food
+  density at which eating breaks even.
+
+  Margin at the bottom water at t≈5,000 is **10.4/4 ≈ 2.6**, which passes the ≥2 rule. At
+  `det deep` it is 1.4 at t≈5,000 and 2.9 at t≈10,000.
+
+- In the control, the only stock above the floor is in transit. Deaths at ~10 J/s sink through
+  each 1 m layer with a 50 s residence. So a layer holds at most ~500 J ≈ 1.25 J/m³, even if
   every death happened above it. Margin < 1 everywhere except the floor layer itself.
-- **Arrival:** births run 0.5–0.7/s in these worlds; at cell-type mutation 0.001 and roughly
-  half of births in the bottom 10 m, an absorptive mutant arises *where the food is* about
-  once per 3,000–4,000 s — two to six per 20,000 s arm. This is the thin part of the
+
+- Arrival: births run 0.5–0.7/s in these worlds. Roughly half of births are in the bottom 10 m. At cell-type mutation 0.001, an absorptive mutant arises *where the food is* about once per 3,000–4,000 s. That is two to six per 20,000 s arm. This is the thin part of the
   prediction, and it is why the failure case is written out below.
 
 ## Predictions, and the column that falsifies each
@@ -92,10 +116,16 @@ what sinks in from the bottom water, `v·A·c₀`, so `F = v·A·c₀/r = 800·c
 | P6 | treatment | **success**: `inherit` ≥ 1 for ≥ 20 consecutive samples (2,000 s) with `floor` = 0 throughout the window — no spawns from the *population floor*, the rescue rule that trickles fresh random founders into any world that drops to forty creatures — in ≥ 2 of 3 seeds | `inherit`, `floor`, `gen min` read together |
 | P7 | control | P6's criterion met in ≤ 1 of 3 seeds | same |
 
-A *sample* is one row of the run report, written every 100 simulated seconds — twenty
+A *sample* is one row of the run report, written every 100 simulated seconds, so twenty
 consecutive samples is 2,000 s. The tables quoted in this and later entries show only a
-subset of those rows. **The goal is met if P6 and P7 both hold.** A share is never evidence ([logbook/0029](0029-the-floor-kept-putting-the-muscles-back.md)): P6 is
-read from `inherit` with `floor` silent, not from `absorpt`.
+subset of those rows.
+
+The goal is met if P6 and P7 both hold.
+
+A share is never evidence ([logbook/0029](0029-the-floor-kept-putting-the-muscles-back.md)),
+so P6 is read from `inherit` with `floor` silent.
+
+It is not read from `absorpt`.
 
 ## The two-sided reading, written before the answer
 
@@ -114,15 +144,13 @@ read from `inherit` with `floor` silent, not from `absorpt`.
 (`PopulationRunawayException` ends the run), a floor that keeps firing past t≈1,000
 (`floor` column), or a wall budget that ends an arm before t≈10,000.
 
----
-
 ## Results
 
-### Interim, at t≈4,000–5,300 of 20,000 — P1 is already false, and the reason is in the code
+### Interim, at t≈4,000–5,300 of 20,000: P1 is already false, and the reason is in the code
 
 Written while the arms were still running, because the finding does not depend on how they
-end. The readout (`scripts/read-arm.ps1`, which scores the predictions above by rule) at the
-first look:
+end. The readout is `scripts/read-arm.ps1`, which scores the predictions above by rule, and
+at the first look it said this:
 
 | arm | remin | `% on floor` at t=2,000 → end | `det deep` max | first t ≥ 4 J/m³ |
 |---|---|---|---|---|
@@ -132,51 +160,64 @@ first look:
 | rem-s2 | 0.01 | 4.6% → 6.8% (t=3,800) | 9.57 | 2,300 |
 | rem-s3 | 0.01 | 4.0% → 6.8% (t=5,300) | 7.29 | 3,800 |
 
-**P1 is falsified** — the control's floor share is 5–7% and flat, not rising past 50% — and
-**P2 is falsified with it**: the control's deep water reached 4 J/m³ at seed 1 and 9.5 at
-seed 2, on the same samples and to within 1% of the treatment's. Same seed, same world,
-knob on or off: the floor share differs by 0.2 points and `det deep` by 0.04 J/m³. The knob
-reached the arithmetic (the unit test proves it, and the numbers are not identical) and the
-arithmetic does not matter.
+P1 is falsified: the control's floor share is 5–7% and flat rather than rising past 50%. P2
+is falsified with it. The control's deep water reached 4 J/m³ at seed 1 and 9.5 at seed 2,
+on the same samples and to within 1% of the treatment's.
 
-**Why: `Mix` already exchanges across the floor interface.** `NutrientField.Mix` runs Fick's
-law over every interface `layer < LayerCount − 1`, which includes the one between the floor
-layer and the water above it — the code's own doc comment says *"this is the world's only
-return path for energy"* and it was right. At 0.2 m²/s over 1 m layers that is a 20%/s
-exchange of the floor's excess; D051's leak is 1%/s of the floor's stock. The premise
-*"`Settle` pays into the floor and nothing pays out"* is true at mixing exactly 0 — the world
-§5A.2c's 80–93% was measured in, and the world `d050-heavy`'s 66% was measured in — and false
-at any mixing above it. Two readers, one of them a code-reconnaissance pass that quoted
-`Mix`'s loop bounds, looked at that method and did not notice that the loop reaches the
-floor. The reconnaissance report actually said the opposite of the doc comment: it called the
-floor's only debit path "a creature resident in the bottom layer".
+Same seed, same world, knob on or off: the floor share differs by 0.2 points and `det deep`
+by 0.04 J/m³. The knob reached the arithmetic, which the unit test proves and the
+non-identical numbers confirm, and the arithmetic does not matter.
 
-So the pre-flight arithmetic was right about the *column* — D/v = 10 m gives a gradient, and
-the deep water does cross break-even by t≈2,300–4,000 in every arm — and wrong about the
-*floor*, which the diffusion already empties. Remineralisation as built is redundant with
-mixing wherever mixing is on, and where mixing is off it would feed only the one layer above
-the floor. Its distinguishable regime is `mixing ≲ 0.01 m²/s`, which no design decision has
-asked for.
+Why: `Mix` already exchanges across the floor interface.
 
-**What the arms still test.** P1–P4 are settled. P5, P6 and P7 are not, and they are the
-goal's question: the deep water is now above break-even in five worlds with five seeds,
-which is the condition no earlier arm reached before its absorptive founders were gone. With
-control and treatment indistinguishable, the six arms are six replicates of the same world
-rather than a comparison, and the readout's P6 count across all six is what the goal is
-scored on. The pre-registered two-sided reading stands: P5 false means arrival, P5 true and
-P6 false means establishment — the spatial hypothesis.
+`NutrientField.Mix` runs Fick's law over every interface `layer < LayerCount − 1`, which
+includes the one between the floor layer and the water above it. The code's own doc comment
+says
+*"this is the world's only return path for energy"*, and it was right.
 
-**What was wrong, in one line:** a decision was built on a code fact that was checked by
-reading the code's structure and not its loop bounds — the same class of error as
-[logbook/0019](0019-three-knobs-that-reached-nothing.md)'s knobs that reached nothing, in the other direction: a knob that reaches
-something something else already does.
+At 0.2 m²/s over 1 m layers that is a 20%/s exchange of the floor's excess, and D051's leak
+is 1%/s of the floor's stock.
 
-### Final — six arms, scored by `read-arm.ps1` against the rule above
+The premise *"`Settle` pays into the floor and nothing pays out"* is true at mixing 0 and
+false at any mixing above it. Mixing 0 is the world §5A.2c's 80–93% was measured in, and the
+world `d050-heavy`'s 66% was measured in.
 
-P1–P4 were settled in the interim section above; this section scores the remaining
-P5–P7. All six ran to t=20,000 except `rem-s2`, the largest population, which its six-hour wall
-budget ended at t≈16,600 (past the t≥10,000 the pre-registration required). No arm hit the
-5,000 ceiling.
+Two readers, one of them a code-reconnaissance pass that quoted `Mix`'s loop bounds, looked
+at that method and did not notice that the loop reaches the floor. The reconnaissance report
+said the opposite of the doc comment: it called the floor's only debit path "a creature
+resident in the bottom layer".
+
+So the pre-flight arithmetic was right about the *column*. D/v = 10 m gives a gradient, and
+the deep water does cross break-even by t≈2,300–4,000 in every arm. It was wrong about the
+*floor*, which the diffusion already empties.
+
+Remineralisation as built is redundant with mixing wherever mixing is on, and where mixing
+is off it would feed only the one layer above the floor. Its distinguishable regime is
+`mixing ≲ 0.01 m²/s`, which no design decision has asked for.
+
+What the arms still test: P1–P4 are settled. P5, P6 and P7 are not, and they are the goal's
+question. The deep water is now above break-even in five worlds with five seeds, which is
+the condition no earlier arm reached before its absorptive founders were gone.
+
+With control and treatment indistinguishable, the six arms are six replicates of the same
+world rather than a comparison. The readout's P6 count across all six is what the goal is
+scored on. The pre-registered two-sided reading stands: P5 false means arrival, and P5 true
+with P6 false means establishment, the spatial hypothesis.
+
+What was wrong, in one line: a decision was built on a code fact that was checked by reading
+the code's structure rather than its loop bounds. That is the same class of error as
+[logbook/0019](0019-three-knobs-that-reached-nothing.md)'s knobs that reached nothing, in
+the other direction, since this is a knob that reaches something something else already
+does.
+
+### Final: six arms, scored by `read-arm.ps1` against the rule above
+
+P1–P4 were settled in the interim section above, and this section scores the remaining
+P5–P7.
+
+All six ran to t=20,000 except `rem-s2`, the largest population, whose six-hour wall budget
+ended it at t≈16,600. That is past the t≥10,000 the pre-registration required. No arm hit
+the 5,000 ceiling.
 
 | arm | remin | `det deep` max | first absorptive after t=3,000 | origin | peak absorptives (inherited) | P6 window | at t=20,000 |
 |---|---|---|---|---|---|---|---|
@@ -187,41 +228,57 @@ budget ended at t≈16,600 (past the t≥10,000 the pre-registration required). 
 | rem-s2 | 0.01 | 37.3 | t=4,600 | floor top-ups during crashes, none bred; a mutant present as 3 individuals from t≈16,900 | 12 (1) | none · FAIL | 3 (0 inherited) at t=17,300, wall budget |
 | rem-s3 | 0.01 | 35.6 | t=5,300 | **mutation** at 7 J/m³, did not breed | 16 (0) | none · FAIL | 0 |
 
-**By the rule written before launch: P6 holds in 2 of 6 arms, P7 is moot.** Two of three
-controls pass and no treatment does, which with the knob measured inert (above) is the seed
-lottery and nothing else — the two treatments that "failed" P6 include the arm with the
-largest lineage of the round, which simply arrived too late for twenty samples. P5 (an
-absorptive appears after t=3,000) held in all six.
+By the rule written before launch, P6 holds in 2 of 6 arms and P7 is moot. Two of three
+controls pass and no treatment does, which with the knob measured inert is the seed lottery
+and nothing else. The two treatments that "failed" P6 include the arm with the largest
+lineage of the round, which arrived too late for twenty samples. P5, an absorptive appearing
+after t=3,000, held in all six.
 
-**By the goal's spirit, three readings, kept separate:**
+By the goal's spirit there are three readings, kept separate.
 
-1. **Arrival by mutation happens, and it happens at depth.** Four arms grew an inherited
-   absorptive lineage; three of the four (`ctl-s2`, `ctl-s3`, `rem-s1`) came from a
-   cell-type mutant born into a producer population with the floor silent, not from a
-   founder. Five mutants were seen in all (`rem-s3`'s at 7 J/m³ and two of `rem-s1`'s did not
-   breed; the ones that bred met 30–38 J/m³). Across ~116,000 arm-seconds that is one mutant
-   per ~23,000 s, and roughly three in five of those established — the arrival rate the
-   pre-flight guessed at (one per 3,000–4,000 s) was optimistic by 6×, because most births
-   are in the lit band, not the bottom ten metres.
-2. **Establishment is a boom.** Every lineage that bred went from a handful to hundreds in
-   1,000–1,500 s and drew the deep water down from 22–38 J/m³ to 3–13 in the same time. The
-   two that had time to finish the arc (`ctl-s1`, `ctl-s3`) crashed to 0 and 4; the two
-   still rising at t=20,000 (`ctl-s2`, `rem-s1`) had not yet reached the top of theirs.
-   **Whether a bust ends at zero or oscillates is the open question**, and 20,000 s did not
-   answer it: `ctl-s1`'s deep water had rebuilt from 3 to 15 J/m³ by the end with no
+1. Arrival by mutation happens, and it happens at depth. Four arms grew an inherited absorptive
+   lineage. Three of the four came from a cell-type mutant born into a producer population
+   with the floor silent, rather than from a founder.
+
+   Two of those are `ctl-s2` and `ctl-s3`.
+
+   The third is `rem-s1`.
+
+   Five mutants were seen in all. Two of `rem-s1`'s did not breed and neither did `rem-s3`'s
+   at 7 J/m³, and the ones that bred met 30–38 J/m³.
+
+   Across ~116,000 arm-seconds that is one mutant per ~23,000 s, and roughly three in five
+   of those established. The arrival rate the pre-flight guessed at, one per 3,000–4,000 s,
+   was optimistic by 6×. Most births are in the lit band rather than the bottom ten metres.
+
+2. Establishment is a boom. Every lineage that bred went from a handful to hundreds in
+   1,000–1,500 s. Each drew the deep water down from 22–38 J/m³ to 3–13 in the same time.
+
+   The two that had time to finish the arc, `ctl-s1` and `ctl-s3`, crashed to 0 and 4.
+
+   The two still rising at t=20,000 were `ctl-s2` and `rem-s1`, which had not yet reached
+   the top of theirs.
+
+   Whether a bust ends at zero or oscillates is the open question, and 20,000 s did not
+   answer it. `ctl-s1`'s deep water had rebuilt from 3 to 15 J/m³ by the end with no
    absorptive left to use it.
-3. **The population floor is still load-bearing for the producers.** `ctl-s1`, `ctl-s2` and
-   `rem-s2` all fell to exactly 40 for thousands of seconds (t≈4,600–9,500) — the D048
-   matter-starvation crash — and the floor held them there. A world whose producers need
-   the safety net is not yet self-sustaining whatever its absorptives do, and that is the
-   first thing the next round has to find out.
 
-**The goal, scored honestly:** *a world holds a food chain, replicated* — yes, six seeds,
-four lineages, three of them the world's own mutants. *Self-sustaining* — not shown: the
-producers leaned on the floor in three arms, and no lineage has yet been watched through a
-full boom–bust cycle. Round 2 ([logbook/0037](0037-the-net-comes-down.md)) closes the floor and doubles the budget.
+3. The population floor is still load-bearing for the producers. The two controls `ctl-s1` and
+   `ctl-s2` fell to 40 for thousands of seconds, at t≈4,600–9,500, and the floor held them
+   there.
 
-**The knob that mattered was mixing.** Nothing in this entry's mechanism did anything; the
+   So did `rem-s2`. That fall is the D048 matter-starvation crash.
+
+   A world whose producers need the safety net is not yet self-sustaining whatever its
+   absorptives do, and that is the first thing the next round has to find out.
+
+The goal, scored plainly, comes to this. *A world holds a food chain, replicated*: yes, six
+seeds, four lineages, three of them the world's own mutants. *Self-sustaining*: not shown,
+because the producers leaned on the floor in three arms, and no lineage has yet been watched
+through a full boom–bust cycle. Round 2 ([logbook/0037](0037-the-net-comes-down.md)) closes
+the floor and doubles the budget.
+
+The knob that mattered was mixing. Nothing in this entry's mechanism did anything, and the
 whole result is the world at 0.2 m²/s, which no one had run. The D/v arithmetic in the
-pre-flight — a 10 m gradient above the floor — was correct, and it is the reason the deep
-water was worth living in for the first time.
+pre-flight, a 10 m gradient above the floor, was correct. It is the reason the deep water
+was worth living in for the first time.

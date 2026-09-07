@@ -1,27 +1,46 @@
 # 0065 — The first shared water
 
-*2026-09-05. Pre-registered before launch, and before the build it depends on has
-landed (`scratch/footprint-spec.md`; the header tokens below are the spec's and are
-verified against the build's own rendering at launch). D077's screen: the footprint world
-at the fast step, with 0061's surface fix and dose correction folded in.*
+**2026-09-05**  ·  screen for D077 · pre-registered before launch, results appended after
+
+The footprint world works as designed. It is the first world here where the top is a top,
+where the stock can level, and where a stomach lineage evolves at the place the matter
+arrives. It costs a crowd, though. The plume's conveyor packs bodies into its convergence
+zones, placement refusals ran up to 37 times the births, and two arms met the wall clock
+instead of the budget.
+
+This was pre-registered before the build it depends on had landed
+(`scratch/footprint-spec.md`). The header tokens below are the spec's, and each was verified
+against the build's own rendering at launch.
 
 ## Why this round exists
 
-Three findings arrived on one day. Round 24 (0061) confirmed the open budget at the goal
-rule's threshold and found the world's top open: the vent's plume ratchets every
-population to the waterline and above it, and the stock still grows at the dose. The
-spike (0064) found that shared space costs nothing and that today's 10 × 10 m footprint
-cannot pack the populations the world runs. D077 rules all of it as one world: a literal
-box of four 10 × 10 m regions on a ring, 60 m deep, patches read from position, a
-periodic horizontal wrap, a restoring top and bottom, newborns beside the parent. Every
-density is re-read against area 400, so every rule tuned since D048 is screened once
+Three findings arrived on one day.
+
+Round 24 (0061) confirmed the open budget at the goal rule's threshold, and found the
+world's top open. The vent's plume ratchets every population to the waterline and above it,
+and the stock still grows at the dose.
+
+The spike (0064) found that shared space costs nothing, and that today's 10 × 10 m footprint
+cannot pack the populations the world runs.
+
+D077 rules all of it as one world. That world is a literal box of four 10 × 10 m regions on
+a ring, 60 m deep, with patches read from position. It has a periodic horizontal wrap, a
+restoring top and bottom, and newborns beside the parent.
+
+Every density is re-read against area 400, so every rule tuned since D048 is screened once
 here, with the dose on the table.
 
 ## The arms
 
-dt **0.02**, 20,000 s, the reference world (D074 vent shape: influx at the vent's base,
-burial 0.01/s, matter sink 0.02, D067's vent on) with `EVOSIM_SHARED_SPACE 1`,
-`EVOSIM_SURFACE_RESTORE 1`, `EVOSIM_AREA 400`, ceiling 8,000:
+The arms run at dt 0.02 for 20,000 s, on the reference world in D074's vent shape. That is
+influx at the vent's base, burial 0.01/s, matter sink 0.02, and D067's vent on.
+
+| setting | what it does |
+|---|---|
+| `EVOSIM_SHARED_SPACE 1` | one volume rather than a lattice |
+| `EVOSIM_SURFACE_RESTORE 1` | a restoring top and bottom |
+| `EVOSIM_AREA 400` | the footprint's area |
+| ceiling 8,000 | the runaway censor |
 
 | arm | seed | influx | initial stock |
 |---|---|---|---|
@@ -31,9 +50,11 @@ burial 0.01/s, matter sink 0.02, D067's vent on) with `EVOSIM_SHARED_SPACE 1`,
 | `r25h-s4` | 4 | **0.3** | 1/m³ |
 | `r25q-s2` | 2 | 0.6 | **0.25/m³** (the drain hedge) |
 
-Controls: 0060's `r23v-s2` / `r23v-s4` (the same world tiled, area 100, no restoring
-boundary, 0.02) and 0061's five seeds at 0.01. Launcher `scratch/launch-r25.ps1`;
-`-ExpectSimHash` from the build's own manifest; five concurrent.
+The controls are 0060's `r23v-s2` and `r23v-s4`, which are the same world tiled at area 100
+with no restoring boundary at 0.02, and 0061's five seeds at 0.01.
+
+The launcher is `scratch/launch-r25.ps1`, with `-ExpectSimHash` taken from the build's own
+manifest, five concurrent.
 
 ## Validity checks
 
@@ -58,53 +79,72 @@ boundary, 0.02) and 0061's five seeds at 0.01. Launcher `scratch/launch-r25.ps1`
 
 ## The two-sided readings
 
-- **M1–M2 hold:** the hole is closed and the vent's populations live in the water; with
-  M4 the dose is chosen (0.3 if it levels, 0.6 if 0.3 starves the flow) and the 0.01
+- If M1 and M2 hold, the hole is closed and the vent's populations live in the water. With
+  M4 the dose is chosen, 0.3 if it levels and 0.6 if 0.3 starves the flow, and the 0.01
   confirmation launches on that world.
-- **M1 fails:** the restoring rule leaks (read `above` against `wraps` and the plume's
-  patch); the fraction or the rule is wrong before anything else is read.
-- **M2 fails with M1 holding:** the populations sit under the film by choice, not by
-  the ratchet — light is the reason and the film is the vent world's ecology; the
-  movement round inherits the question.
-- **M3 fails:** the drain is worse in the bigger box (24,000 units to bury); the hedge
-  arm's stock 0.25 is the reading, and the initial stock falls with the area.
-- **M5 fails:** the stomachs do not follow the matter even when the patch is a place;
-  the contest at the surface again, and the movement round is where they get the legs
-  to follow it.
-- **M7 fails on `crowded`:** the box is too small for the flow at this dose; W = 15.
+
+- If M1 fails, the restoring rule leaks. Read `above` against `wraps` and the plume's patch:
+  either the fraction or the rule is wrong, before anything else is read.
+
+- If M2 fails while M1 holds, the populations sit under the film by choice rather than by the
+  ratchet. Light is then the reason, the film is the vent world's ecology, and the movement
+  round inherits the question.
+
+- If M3 fails, the drain is worse in the bigger box, with 24,000 units to bury. The hedge
+  arm's stock of 0.25 is the reading, and the initial stock falls with the area.
+
+- If M5 fails, the stomachs do not follow the matter even when the patch is a place. That is
+  the contest at the surface again, and the movement round is where they get the legs to
+  follow it.
+
+- If M7 fails on `crowded`, the box is too small for the flow at this dose, and W = 15.
 
 ## Launch
 
-**Amendment before launch.** The build's own smoke (`fp-smoke`) showed rule 4 as the
-proposal wrote it — restoring at no more than the founder sink rate — leaves 1,634 of
-2,245 bodies parked at the waterline: the founder sink is ~2 mm/s and the plume lifts at
-50 mm/s. The rule was corrected to the physics before anything was launched (D077's
-amendment note; commit `78cb35c`): out of the water a body feels its whole weight, damped
-by the drag model to about a metre a second. The re-run smoke reads `above` 0 at every
-sample and the population at −8 m where the tiled world sits at −14 m. Two caveats the
-build recorded: a founder placed exactly on the floor bounces at ~1 m/s in the first
-seconds, so `max m/s` in founding is not locomotion; and one patch ran thin (p3 = 1 at
-t=3,000 in the smoke) — the plume's doing, read here as M5's per-patch columns. The
-predictions stand as written.
+One amendment came before launch. The build's own smoke test, `fp-smoke`, showed that rule 4
+as the proposal wrote it left 1,634 of 2,245 bodies parked at the waterline. The proposal
+restored at no more than the founder sink rate, and the founder sink is about 2 mm/s where
+the plume lifts at 50 mm/s.
 
-Launched 2026-09-06 ~00:20 on workers 2–6 at commit `78cb35c`, `simHash c27c23c0aa3b0b9e`,
-`-ExpectSimHash` on each; every manifest reads that hash, `gitDirty false`, `status
-running`. Headers verified as V1 on all five: `dt=0.02`, `space shared 4x10x10 m, depth
-60, wrap`, `surface restore 1`, `area 400`, `matter in 0.6/s at vent` (`0.3/s` on the `h`
-arms), `burial 0.01/s`, `from 1/m3` (`0.25/m3` on `r25q-s2`), the vent tokens. Monitor
-running. Results appended below.
+The rule was corrected to the physics before anything was launched, in D077's amendment note
+at commit `78cb35c`. Out of the water a body feels its whole weight, damped by the drag
+model to about a metre a second. The re-run smoke reads `above` 0 at every sample, with the
+population at −8 m where the tiled world sits at −14 m.
+
+The build recorded two caveats. A founder placed on the floor bounces at about 1 m/s in the
+first seconds, so `max m/s` in founding is not locomotion. And one patch ran thin, at p3 = 1
+by t=3,000 in the smoke, which is the plume's doing and is read here as M5's per-patch
+columns. The predictions stand as written.
+
+Launched on 2026-09-06 at about 00:20 on workers 2 to 6, with `-ExpectSimHash` on each.
+
+| what | value |
+|---|---|
+| commit | `78cb35c` |
+| every manifest | `simHash c27c23c0aa3b0b9e`, `gitDirty false`, `status running` |
+| header, all five | `dt=0.02`, `space shared 4x10x10 m, depth 60, wrap`, `surface restore 1`, `area 400` |
+| header, matter | `matter in 0.6/s at vent` (`0.3/s` on the `h` arms), `burial 0.01/s`, `from 1/m3` (`0.25/m3` on `r25q-s2`), the vent tokens |
+
+A monitor runs over the five. Results are appended below.
 
 ## Results
 
-Three arms to budget; the two seed-2 arms stopped by the 600-minute wall at t=19,800
-(`r25-s2`) and t=16,200 (`r25h-s2`) — populations of 5,700–6,000 in a contact world run
-at half real time at the fast step, and the launcher's wall budget was sized for the
-tiled world. Both are read to their last sample as budget stops (D069: a stop on merit is
-a result), with the caveat. `divergedTotal` 0 in four; 3 in `r25q-s2`, all newborn
-stomach-bearing bodies one to thirteen seconds old at the floor (`diverged/*.json`), where
-the placeholder floor rule pushes back on anything a hair below 60 m and the vent
-delivers the matter the stomachs live on. Audit 0.0000% at every sample, `floor` 0 from
-t=3,100, the matter identity to the unit, V1–V3 held.
+Three of the arms reached budget. The two seed-2 arms stopped at the 600-minute wall, at
+t=19,800 in `r25-s2` and t=16,200 in `r25h-s2`.
+
+Those were populations of 5,700 to 6,000 in a contact world running at half real time at the
+fast step. The launcher's wall budget was sized for the tiled world. Both are read to their
+last sample as budget stops, since D069 says a stop on merit is a result, with that caveat
+noted.
+
+The count `divergedTotal` is 0 in four arms and 3 in `r25q-s2`.
+
+All three were newborn stomach-bearing bodies one to thirteen seconds old at the floor, and
+each is dumped to `diverged/*.json`. The placeholder floor rule pushes back on anything a
+hair below 60 m, and the vent delivers there the matter the stomachs live on.
+
+The audit read 0.0000% at every sample, `floor` was 0 from t=3,100, the matter identity
+closed to the unit, and V1 to V3 held.
 
 | arm | influx · stock | t last | alive | absorpt | largest clade · min last 6,000 s | D063 | mean height t > 10,000 | `above` max after 3,000 | standing, last quarter | `crowded` / births | contacts/step t > 10,000 | end |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -115,7 +155,7 @@ t=3,100, the matter identity to the unit, V1–V3 held.
 | r25q-s2 | 0.6 · 0.25 | 20,000 | 3,142 | 643 | 642 · 17 (root born 12,161) | pass | −15.8 m | 4 | +22% | 14,139 / 6,148 | 2,050 | budget |
 | r23v-s2 / r23v-s4 (0060, tiled, area 100) | 0.6 · 1 | 20,000 | 2,781 / 2,305 | 110 / 185 | 109 / 106 | pass / pass | −0.4 / +0.2 m | — | +21% / +22% | — | — | budget |
 
-**The predictions:**
+Here is how the predictions came out.
 
 | # | prediction | result |
 |---|---|---|
@@ -128,44 +168,70 @@ t=3,100, the matter identity to the unit, V1–V3 held.
 | M7 | placement and contact work: `crowded` < 1% of births, `contacts` > 0 | **half falsified** — contacts 2,000–13,600 pairs per step; `crowded` refusals ran 2–37× the births, the flow packing bodies into the plume's convergence |
 | M8 | no runaway (1,500–8,000 alive) | held — 3,142 to 6,018; no ceiling; two arms met the wall instead |
 
-**Not pre-registered.** The population is no longer set by the influx. Every 1/m³ arm
-locked 14,000–17,000 units by t=4,000 out of a starting stock of 24,000 (area 400 × 60 m
-× 1/m³), and grew on that to 3,200–6,000 bodies; the quarter-stock arm started with 6,000
-units, held 3,100 bodies, and its stock still grew 22% on 0.6/s. In the big box the
-starting stock is the world's size and the influx is its slope. Seed 2's worlds are twice
-seed 4's on the same rules — the seed's lineages, not the dose — and they cost the wall.
+One reading was not pre-registered: the population is no longer set by the influx.
+
+Every 1/m³ arm locked 14,000 to 17,000 units by t=4,000, out of a starting stock of 24,000.
+That stock is area 400 by 60 m at 1/m³, and the arms grew on it to between 3,200 and 6,000
+bodies. The quarter-stock arm started with 6,000 units, held 3,100 bodies, and its stock
+still grew 22% on 0.6/s.
+
+In the big box the starting stock is the world's size and the influx is its slope. Seed 2's
+worlds are twice seed 4's on the same rules, which is the seed's lineages rather than the
+dose, and they cost the wall.
 
 ## Verdict
 
-**The footprint world works, and it is the first world in the record where the top is a
-top, the stock can level, and a stomach lineage evolves where the matter arrives.** The
-hole is closed: crossings, not residence. Every population lives in the water at 15–30 m.
-Founding is safe. At influx 0.3 the stock levelled (+3%, +5%) with the population still
-growing, which is what an open budget was meant to do. Stable stomach clades in five of
-five, D063 in four; in `r25q-s2` the founders' stomach line died at t≈1,900 and a new one
-evolved at 12,161 and reached 642 by the end, living at the vent's base — the first
-stomach invasion the record holds that arrived where the food is rather than surviving
-where it was born. Contact happens at thousands of pairs per step and the audit closes.
+The footprint world works as designed. It is the first world here where the top is a top,
+where the stock can level, and where a stomach lineage evolves at the place the matter
+arrives.
 
-**Three costs, all real.** (1) **The crowd.** The plume's conveyor packs bodies into its
-convergence zones; `crowded` refusals ran 2–37× the births and contacts reached 13,600
-pairs per step, and that crowd — not shared space itself, which 0064 measured at nothing —
-is what ran the 6,000-body worlds at half real time into the wall. A refusal costs
-nothing (the parent keeps what it did not spend), so it is a carrying capacity in space,
-the first the world has had; but it makes the fine step expensive. (2) **The floor is a
-spring.** Three divergences in one arm, all newborn stomachs at 60 m, where the
-placeholder pushes back and the stomachs' niche is. (3) **The size.** At 1/m³ the box
-holds 24,000 units and the world grows to 4,000–6,000 bodies before the influx matters;
-the quarter-stock world is 3,000 bodies and runs at the pace the confirmation can afford.
+The hole is closed, and what is left is crossings rather than residence. Every population
+lives in the water at 15 to 30 m, and founding is safe. At influx 0.3 the stock levelled, at
++3% and +5%, with the population still growing. An open budget was meant to do that.
 
-**For the owner, before the 0.01 confirmation.** The dose: influx **0.3**, the arm that
-levelled. The starting stock: **0.25/m³** — an unscreened combination (0.3 was read at
-1/m³; 0.25 at 0.6), recommended on the two readings separately and on cost (a 3,000-body
-world at 0.01 is a day; a 6,000-body contact world is four). The floor: **a real sea bed,
-a collider at −60 m**, before the confirmation; D077 called the mirror a placeholder and
-the divergences are its bill (`scratch/floor-spec.md`). Not recommended now: a wider box
-or a slower vent for the crowd — the crowd is the vent's ecology, and the confirmation
-should read it before a rule is spent on it.
+Stable stomach clades came in five of five, and D063 in four. In `r25q-s2` the founders'
+stomach line died at about t=1,900. A new one evolved at 12,161 and reached 642 by the end,
+living at the vent's base. That is the first stomach invasion here that arrived where the
+food is rather than surviving where it was born.
 
-Closed 2026-09-06. Arms `r25-s2`, `r25-s4`, `r25h-s2`, `r25h-s4`, `r25q-s2`; the two
-seed-2 arms wall-stopped at 19,800 and 16,200 s, read to their last sample; uncensored.
+Contact happens at thousands of pairs per step, and the audit closes.
+
+Three costs come with all of that, and every one of them is real.
+
+The first is the crowd. The plume's conveyor packs bodies into its convergence zones.
+Placement refusals ran 2 to 37 times the births, and contacts reached 13,600 pairs per step.
+That crowd is what ran the 6,000-body worlds at half real time into the wall. Shared space
+itself is not the cost, since 0064 measured that at nothing.
+
+A refusal costs nothing, because the parent keeps what it did not spend, so `crowded` is a
+carrying capacity in space, the first the world has had. It also makes the fine step
+expensive.
+
+The second cost is the floor, which is a spring. Three divergences landed in one arm, all
+newborn stomachs at 60 m, where the placeholder pushes back and where the stomachs' niche
+is.
+
+The third is the size. At 1/m³ the box holds 24,000 units, and the world grows to between
+4,000 and 6,000 bodies before the influx matters. The quarter-stock world is 3,000 bodies
+and runs at the pace the confirmation can afford.
+
+Three things go to the owner before the 0.01 confirmation.
+
+| what | recommendation |
+|---|---|
+| the dose | influx **0.3**, the arm that levelled |
+| the starting stock | **0.25/m³**, an unscreened combination: 0.3 was read at 1/m³, and 0.25 at 0.6 |
+| the floor | **a real sea bed, a collider at −60 m**, before the confirmation |
+
+The stock is recommended on the two readings separately and on cost. A 3,000-body world at
+0.01 is a day, and a 6,000-body contact world is four.
+
+The floor is D077's own placeholder, called a mirror when it was written, and the
+divergences are its bill (`scratch/floor-spec.md`).
+
+Two things are not recommended now: a wider box, or a slower vent for the crowd. The crowd
+is the vent's ecology, and the confirmation should read it before a rule is spent on it.
+
+Closed on 2026-09-06. The arms were r25-s2, r25-s4, r25h-s2, r25h-s4 and r25q-s2. The two
+seed-2 arms were wall-stopped at 19,800 and 16,200 s and read to their last sample, and the
+round is uncensored.
