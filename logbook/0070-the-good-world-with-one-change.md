@@ -181,3 +181,69 @@ the round launches over several hours rather than at once.
 | `r28-s4` | 3 | 2026-09-07 06:34 | off | on `r27-s2`'s worker, refreshed first |
 | `r28-s5` | 2 | 2026-09-07 06:37 | off | on `r27-s1`'s worker, refreshed first; the probe `r28p-s1` waits for the first free worker |
 | `r28p-s1` | 7 | 2026-09-07 10:22 | every 100 steps | the replay probe, seed 1 for 10,000 s, on the worker `r28-s1` freed; same build, tree clean |
+
+## Results
+
+*2026-09-07.* All five arms ended on their budget of 30,000 s, in 549 to 764 minutes of
+wall clock each, with the machine carrying four or five arms throughout. The replay probe
+ended earlier in the day. The readings are in `scratch/r28-results.md`; the verdicts come
+from `scripts/clade-score.ps1` as fixed the same afternoon (its recruitment window is now
+bounded at the last sample, which changes nothing for a completed run) and the rest from
+`stats.jsonl`.
+
+The validity checks held. V1's ten tokens were checked at every launch. V2: the floor was
+silent after 3,100 s in every arm. The energy audit stayed within a quarter of a joule on
+worlds that turned over millions, and standing matter read 6,000 at every sample of every
+seed. V3: every manifest reads `ended`, `budget`, the launched `simHash`, `physicsJobWorkers
+0` and `diverged 0`. The one token that reads otherwise is `gitDirty`, true in all five for
+the reason the launch section gives: an uncommitted edit outside the simulation's source.
+
+| # | reading | verdict |
+|---|---|---|
+| M1 | 3 of 5. `r28-s2` passes (clade of 30 at the end, minimum 29), `r28-s3` (75, minimum 51) and `r28-s4` (128, minimum 106, 28 recruits in the last window). `r28-s1` fails on stability, a late clade of 3, as its round-18 counterpart did. `r28-s5` fails on recruitment: a clade of 17, stable through the last two lifetimes, whose last inherited birth was at 21,408 s | **fails** at the bar of 4 |
+| M2 | `above` at most 0.06% to 0.17% of `alive` after 3,000 s; `below` 0 in every arm | holds |
+| M3 | `alive` at 30,000 s is 0.96, 1.06, 0.98, 0.98 and 1.20 of the same seed's round-18 value | holds |
+| M4 | the scored clade holds 10 or more at the last sample in 4 of 5 (30, 75, 128, 17; seed 1's holds 3) | holds |
+| M5 | `crowded` per window at or above the window's births in 35, 43, 30, 46 and 42 of the 149 windows after 15,000 s, in seeds 1 to 5 | **fails as written**, in every seed |
+| M6 | contacts per physics step over t > 10,000: means of 972, 1,344, 914, 1,163 and 1,216; the lowest window 287, the highest 2,606 | holds |
+| M7 | `r28p-s1` identical to `r28-s1` on all 10,001 digests to step 1,000,000, at about 1,700 bodies | holds |
+| M8 | `alive` never below 40 to 6,000 s in any arm | holds |
+
+Read seed by seed against round 18, the three passes and the seed-1 failure match, and
+seed 5 does not. In round 18 that seed carried 221 inherited stomachs at the end and passed
+with the widest margin of the five. Here it carries 20. Its stomach line grew to 439
+members ever and was stable at 17 through the last 6,000 s, and it stopped breeding at
+21,408 s. The two inherited absorptive births after 28,000 s belong to a younger clade of
+fewer than ten. That is a sterile cohort of survivors, the shape the recruitment clause was
+written against in round 8 (logbook/0044), and the clause did its job. This is one
+realisation of one seed. The butterfly's spread (0052) is wide enough that a single seed's
+reversal cannot be laid at contact's door on its own. The same caution cut the other way in
+round 27, whose seed 4 turned on one bit (0069).
+
+M5 fails as written in every seed, in a fifth to a third of the late windows, while the
+patches stay within 12% of each other in every arm and the populations sit at round 18's.
+Bodies pack, and the packing refuses two to six conceptions per birth over a run, without
+starving the world of births. Depth tells the same story: every population sat 6 to 12 m
+below the surface after 10,000 s, where round 18's spread from 0.4 m above the water to
+14.4 m below it. The lid explains seed 3, which lived above the waterline in round 18 and
+lives at 6.5 m under it here, and M3 says the compression changed the size of nothing.
+
+## Verdict
+
+As pre-registered: M1 fails while M2, M3, M4, M6, M7 and M8 hold, and M5 fails as written.
+The package costs the rule at round 18's bar of four seeds in five. Under D063's own bar of
+three it holds, and the difference between the two bars is now a concrete question rather
+than a naming one; it is on the owner's list from the Astra review of the same day.
+
+The two-sided readings say what follows, and both of the things they name are the owner's.
+The first follow-up candidate is this box with creature collisions switched off, which
+separates contact from the rest of the package (the lid, the bed, the wrap, the placement).
+And the width of the box goes to the owner, because M5 says bodies pack at area 100 and a
+wider box is a different light budget. D079's second rule holds either way: a change that
+costs the rule is read, not tuned around, so the open budget does not return to this world
+yet and the movement pre-registration waits on the ruling.
+
+What the round did settle is the instrument. A shared world of 1,800 bodies in contact
+replays bit for bit to a million steps on one physics thread, the box holds its top and
+its bed, and contact costs the population nothing it can be measured to cost. The rule
+moved by one seed, and that seed's stomach line died of old age with its numbers intact.

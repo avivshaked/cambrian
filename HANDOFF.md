@@ -8,18 +8,19 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
-**Round 28 is running (logbook/0070), read as arms land.** As of 2026-09-07 12:30: `r28-s1`
-ended (FAIL on stability, as its round-18 counterpart did; every other prediction held),
-`r28-s3` ended (PASS, clade 75 with a minimum of 51), the replay probe `r28p-s1` ended
-(M7 holds: identical to `r28-s1` on all 10,001 digests to 1,000,000 steps at about 1,700
-bodies), and `r28-s2`, `r28-s4`, `r28-s5` are running on workers 6, 3 and 2. Readings so far
-are in `scratch/r28-results.md`. For each arm that ends: `python3 scratch/score-r28.py <arm>`
-and `./scripts/clade-score.ps1 <arm>`, add its row to that file; when all five are in, write
-0070's Results and Verdict under STYLE.md (M1 at the round's bar of 4 of 5; read M5, the
-crowd prediction, across all five before drawing anything, since it fails as written in
-20–25% of windows in both arms so far while the patches stay even), update D079's index row
-and this file, push, and send one notification. The two-sided readings in 0070 say what
-follows each outcome; the movement pre-registration is rewritten on whichever world holds.
+**Round 28 is read (logbook/0070, 2026-09-07): 3 of 5, below round 18's bar of 4.** Seeds
+2, 3 and 4 pass (clades of 30, 75 and 128 at the end) and seed 1 fails on stability as it did
+in round 18; seed 5, round 18's widest pass, fails on recruitment with a stable clade of 17
+that stopped breeding at 21,408 s. Every other prediction held except M5: bodies pack in a
+fifth to a third of the late windows in every seed, with patches even and populations at
+round 18's. The replay probe matched its arm on all 10,001 digests. Nothing runs on the
+machine; workers 2 to 7 are free, and 7 carries the 2026-09-07 build (the others are
+refreshed before the next launch, and the next launch reports a new `simHash`). **What
+follows is the owner's ruling**, as 0070's two-sided readings say: the same box with
+creature collisions off (separates contact from the rest of the package), the width of the
+box (M5), and which bar a round is held to (D063's three of five, at which this round holds,
+or round 18's four). Until then no arm is launched; the movement pre-registration
+(`scratch/movement-prereg-draft.md`) waits on the same ruling.
 
 The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
 asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive
@@ -178,6 +179,14 @@ the running status), in the order they are done:
   noted under D063.
 - **Whether the absence of CI is a choice.** The suite runs by hand before a launch; nothing
   says whether that is the standing decision.
+
+Raised 2026-09-07 by round 28's reading (logbook/0070):
+
+- **The collisions-off control**: the same box, lid, bed, wrap and placement with
+  creature-creature collisions off, five seeds at dt 0.01. It is the pre-registered first
+  follow-up to an M1 failure and separates contact from the rest of D077's package.
+- **The width of the box.** M5 failed in every seed at area 100: a wider box is a different
+  light budget, so the width is a world rule.
 
 Raised 2026-09-07 by the Astra review (its response file has the measurements):
 

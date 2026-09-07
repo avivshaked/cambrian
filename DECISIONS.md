@@ -101,7 +101,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · **cost measured 2026-09-05 (logbook/0064): none — shared/tiled 0.88–1.12×, real time to ~2,900 bodies; the constraints are packing and a boundary rule** · the footprint and predation rules follow as proposals |
 | [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5, the two seed-2 arms wall-censored (noted 2026-09-07); costs: the plume's crowd, the placeholder floor** · **the floor real 2026-09-06 (`a268311`)** · confirmation at 0.01 at influx 0.3 / stock 0.25 **failed 2 of 5 (logbook/0067: the lean dose starves the stomachs)** · re-run at influx 0.6 **read 2026-09-07 (logbook/0068): 3 of 5 under D063 as amended, below the round's bar of 4; the stock grew 44–53% over the last third in every seed; one realisation per seed (0069)** · superseded as the path by D079: the fed world is a screen, and the box returns to round 18's closed world (logbook/0070) |
 | [D078](#d078) | Single-threaded physics by default — the shared world replays only with no job-system worker threads; `EVOSIM_PHYSICS_JOBS` 0, recorded in manifest and header; shared-world changes validated by the state digest | 2026-09-06 | adopted by the agent as an instrument decision (a reproducibility invariant restored; owner may reverse for throughput) · cost measured at 120–180 bodies +19% wall (logbook/0069) · **built 2026-09-06**: `EVOSIM_PHYSICS_JOBS` default 0, manifest `physicsJobWorkers`/`jobWorkerMaximum`, header `physics jobs N`, theatre sets it from the manifest; `jobs-a` ≡ `jobs-b` over 3,001 digests at the default, `jobs-15` parts at step 152,500, tiled replay unmoved, theatre identity 30 of 30 on a shared recording; this machine's ceiling is 31 workers, not 15 |
-| [D079](#d079) | One change at a time from the last good world — round 18's closed world is the base; the first change is shared space (D077's box, real floor, restoring top) under D078's single-threaded physics; the open budget and the vent return afterwards, each earning its place | 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 |
+| [D079](#d079) | One change at a time from the last good world — round 18's closed world is the base; the first change is shared space (D077's box, real floor, restoring top) under D078's single-threaded physics; the open budget and the vent return afterwards, each earning its place | 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 · **round 28 read 2026-09-07 (logbook/0070): 3 of 5 under D063 as amended, below round 18's bar of 4; seeds 2, 3, 4 pass and seed 1 fails as in round 18; seed 5's stomach line stable at 17 and sterile from 21,408 s; M5 (no crowd) fails in every seed; the collisions-off control and the box's width are the owner's rulings** |
 | [D080](#d080) | Non-commercial terms: PolyForm Noncommercial 1.0.0 for code and the genomes, CC BY-NC 4.0 for prose, commercial licences on request, contributions carry a relicensing grant | 2026-09-07 | ruled (owner: "lets apply the changes to the license") · supersedes D015 |
 
 ---
@@ -3929,6 +3929,17 @@ away, they are re-ordered.
 **What it changes elsewhere.** The movement round (D075's first item) waits for a shared
 world that holds the rule; its draft pre-registration is rewritten on whichever world that
 is. The predation proposal likewise.
+
+**Round 28 read, 2026-09-07 (logbook/0070).** The first change, shared space under
+single-threaded physics, met D063 as amended in three seeds of five against round 18's four.
+The three passes and the seed-1 failure match round 18 seed for seed; seed 5's stomach line
+held 17 members through the last two lifetimes and stopped breeding at 21,408 s, a sterile
+cohort. The no-crowd prediction failed as written in every seed while populations and patch
+balance matched round 18's. By rule 2 the change is read, not tuned around: the open budget
+does not return yet. The pre-registered follow-ups are both the owner's: the same box with
+creature collisions off, which separates contact from the lid, the bed, the wrap and the
+placement; and the box's width. The bar itself is also in front of the owner (D063's note
+of the same date): at D063's three of five the round holds.
 
 **Note, 2026-09-07 (from the outside review of 2026-09-06, logbook/0071).** When the open
 budget returns to this world, the starting inventory and the ongoing influx are two changes,
