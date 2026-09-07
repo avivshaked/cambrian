@@ -155,6 +155,27 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void ATakeOfTheWholeReachableStockIsNotRefusedForWantOfPasses()
+        {
+            // The fourth screen's fault: the fill stopped after eight passes, and a conception
+            // priced close to everything in reach across dozens of vertices of very unequal
+            // weight ran out of passes and was refused as short. A dense cloud of small quanta
+            // in a box round the mouth, asked for all but a rounding of what the gate reads.
+            VertexField field = Field();
+            field.Emit(60.0, new Float3(10f, -10f, 2.5f), new Float3(1.5f, 1.5f, 1.5f));
+            FieldPoint p = P(10f, -10f, 2.5f);
+            Assert.True(field.Count > 60, "the cloud should be many vertices");
+
+            double reachable = field.ReachableStock(p);
+            Assert.True(reachable > 5.0);
+
+            float asked = (float)(reachable * (1.0 - 1e-6));
+            float taken = field.Take(p, asked);
+            Assert.True(taken >= asked * (1f - 1e-4f), $"took {taken} of {asked}");
+            Assert.True(MinMass(field) >= 0.0);
+        }
+
+        [Fact]
         public void EveryOperatorConservesTheTotal()
         {
             VertexField field = Field(sink: 0.01f);

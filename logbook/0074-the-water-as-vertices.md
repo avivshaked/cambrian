@@ -121,6 +121,9 @@ vertices in reach in proportion to their weight, and a vertex at the mouth weigh
 of times one at the edge, so the near vertex was asked for more than it held, capped, and
 the rest was never asked of the others. The gate had promised the sum of what was in reach;
 the take delivered less; conception booked the price. Matter from nothing, at every birth.
+The seed-1 screen had done the same, 13,742 units standing at 3,000 s in a world seeded
+with 6,000, so its 891 bodies were bought partly with matter that did not exist, and what I
+wrote above about its dead founders' fat vertices is at most half the reason it bred.
 
 The take now fills: what a capped vertex could not give is handed on to the vertices with
 room, in proportion, until the ask is met or nothing in reach is left, so it delivers what
@@ -128,6 +131,31 @@ the gate promised. Conception books what was taken, refuses a take short by more
 rounding and puts the matter back, and counts the refusal. And the table prints the matter
 identity as a residual beside the energy audit, so the next fault of this kind is one
 column wide. Seed 2 runs a third time.
+
+## The fourth screen
+
+Seed 2 ran again on the fixed build, and the new column did its job: `mat resid` printed 0
+on every row, and locked matter climbed to 5,131 units by 2,900 s inside a world that holds
+6,000. The matter identity holds, and the world is richer than I expected. At 2,900 s it
+held 613 bodies against 265 in round 29's seed 2 at the same age. The inherited stomach line
+was 27 against 25. The matter gate refused about a hundred conceptions for every birth,
+where the cell world refused ten. Both readings say the same thing: matter is the ceiling,
+and the vertex world lets a parent in a fat patch of it breed faster while a parent in thin
+water waits. The matter field's vertices fell from 48,000 to 7,600 as bodies took whole
+quanta and returned them where they died, which is the field clustering where the living
+have been. The detritus stood at 18,000 J and rising, exudate arriving faster than the
+stomachs took it; in the cell world at this age it had turned. Whether the loop closes is
+a question for the round rather than the screen.
+
+The other column found a fourth fault, smaller than the three before it. `mat short`
+counted 403 refusals against 618 births. The fill loop stopped after eight passes, and a
+pass caps at most the vertices it overfills, so a price close to the whole reachable stock
+across thirty vertices ran out of passes and was refused. The bound is the neighbour count
+now, which is exact. A test asks a mouth in a dense cloud for all but a rounding of what the
+gate reads and checks that it gets it. On the eight-pass build the test takes 8.27 J of
+8.62 J and fails. The refusals it removes were biased against the parents nearest the edge
+of affordability, so the fix is not cosmetic. The screen runs on to 10,000 s under the old
+bound, since a process carries the Core it compiled; its reading stands with that caveat.
 
 ## A note of my own
 

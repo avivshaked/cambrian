@@ -4240,7 +4240,10 @@ rounding, returns the matter and drops the reservation, and counts it
 (`ConceptionsShortOfMatter`, the table's `mat short`). The table gains `mat resid`, D074's
 identity as a residual, printed for the reason `audit` is: the fault was visible only in
 the statistics file. The energy audit never opened; the matter identity is a second audit,
-and it now has a column.
+and it now has a column. The fill's first cut stopped after eight passes, and the fourth
+screen counted 403 takes refused as short against 618 births by 2,900 s: a price close to
+the whole reachable stock across thirty vertices needs a pass per vertex it caps. The bound
+is now the neighbour count, which is exact, and the refusal counter is what found it.
 
 **Withdrawn.** The motility proposal's halo (option A, my recommendation of that afternoon)
 was a one-number sketch of this field's behaviour near a body; it is retired unbuilt. Its

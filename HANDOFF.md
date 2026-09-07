@@ -21,9 +21,16 @@ construction. The owner ruled the water into vertices (D083, logbook/0074): detr
 free matter are now sets of vertices holding joules at positions, read through a 1 m
 kernel, so a still body eats a hole in its own water and a moving body leaves it. Built,
 tested (549 Core tests, the audit and the matter identity closing on a vertex world) and
-smoked the same night; the first smoke found the cull collapsing the field and the rule was
-changed to a budget. D082 (the price of a bud) is folded into the same build. Round 30 is
-the vertex world with D082's prices, pre-registered when round 29 reads.
+smoked the same night. Three fast-step screens on worker 7 found three faults in turn and
+each was fixed and committed: the cull collapsing the field (merging is now a cap-only
+rule), the matter gate unable to afford a child from a 1 m kernel (the matter field reads
+through its own 1.8 m kernel), and a take delivering less than its gate promised while
+conception booked the price (the take fills, conception books what was taken, and the table
+prints `mat resid` beside `audit`). A fourth screen, `r30v-s2t`, runs seed 2 for 10,000 s
+at dt 0.02 on the fixed build; read `mat resid` 0 and `mat short` 0 before anything else.
+D082 (the price of a bud) is folded into the same build. Round 30 is the vertex world with
+D082's prices, pre-registered when round 29 reads; the draft is
+`scratch/round30-prereg-draft.md`.
 
 The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
 asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive

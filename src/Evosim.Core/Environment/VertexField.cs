@@ -673,9 +673,13 @@ namespace Evosim.Core
 
             double remaining = joules;
 
-            // Four passes cover any practical case: each pass either delivers the remainder
-            // or caps at least one vertex, and a vertex capped once weighs nothing after.
-            for (int pass = 0; pass < 8 && remaining > 1e-12; pass++)
+            // Each pass either delivers the remainder or caps at least one vertex, and a
+            // vertex capped once weighs nothing after, so n passes always finish. The build
+            // before this one stopped at eight, and a conception priced close to the whole
+            // reachable stock across thirty vertices ran out of passes and was refused as
+            // short: 325 refusals against 461 births by 2,300 s of the fourth seed-2 screen
+            // (logbook/0074). The bound is the count, not a constant.
+            for (int pass = 0; pass <= n && remaining > 1e-12; pass++)
             {
                 double total = 0.0;
                 for (int k = 0; k < n; k++)
