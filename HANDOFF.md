@@ -26,8 +26,11 @@ each was fixed and committed: the cull collapsing the field (merging is now a ca
 rule), the matter gate unable to afford a child from a 1 m kernel (the matter field reads
 through its own 1.8 m kernel), and a take delivering less than its gate promised while
 conception booked the price (the take fills, conception books what was taken, and the table
-prints `mat resid` beside `audit`). A fourth screen, `r30v-s2t`, runs seed 2 for 10,000 s
-at dt 0.02 on the fixed build; read `mat resid` 0 and `mat short` 0 before anything else.
+prints `mat resid` beside `audit`). The fourth screen, `r30v-s2t`, ran seed 2 for 10,000 s
+at dt 0.02: `mat resid` 0 throughout, 1,567 alive at the end, the detritus loop closed, a
+stomach line of 20 that fails the scorer on stability alone (0074). It also found the fill's
+eight-pass bound refusing takes as short; the bound is the neighbour count from 312e9b5, and
+`r30v-s1u` screens seed 1 on that build.
 D082 (the price of a bud) is folded into the same build. Round 30 is the vertex world with
 D082's prices, pre-registered when round 29 reads; the draft is
 `scratch/round30-prereg-draft.md`.

@@ -157,6 +157,19 @@ gate reads and checks that it gets it. On the eight-pass build the test takes 8.
 of affordability, so the fix is not cosmetic. The screen runs on to 10,000 s under the old
 bound, since a process carries the Core it compiled; its reading stands with that caveat.
 
+The screen ran its 10,000 s and ended on budget. `mat resid` read 0 on every row and the
+energy audit 0.0000%, so the two identities held together for the first time in a vertex
+world. It held 1,567 bodies at the end against 1,359 in round 29's seed 2, and 5,735 of
+the 6,000 units of matter were locked in bodies against 5,198. Both worlds sit at the
+matter ceiling, and the vertex world reached it sooner. The detritus loop closed, with the stomachs
+taking the exudate as fast as it arrived from 5,000 s on and 7 kJ standing at the end
+against 19 kJ in the cell world. The stomach line itself was thinner: 20 inherited at the
+end and a peak of 30, where the cell world's seed peaked at 75, and the clade scorer fails
+it on the stability clause alone. One realisation at the screening step; the round reads
+five. The short-take count stopped at 509 after 6,000 s, once the matter field had
+coarsened to a few thousand vertices and a mouth no longer reached eight to cap. Seed 1 runs
+on the fixed build while round 29 finishes.
+
 ## A note of my own
 
 The owner designed this field in five lines of a chat message at eleven at night, with the
