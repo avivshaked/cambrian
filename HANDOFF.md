@@ -8,6 +8,19 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
+**Round 28 is running (logbook/0070), read as arms land.** As of 2026-09-07 12:30: `r28-s1`
+ended (FAIL on stability, as its round-18 counterpart did; every other prediction held),
+`r28-s3` ended (PASS, clade 75 with a minimum of 51), the replay probe `r28p-s1` ended
+(M7 holds: identical to `r28-s1` on all 10,001 digests to 1,000,000 steps at about 1,700
+bodies), and `r28-s2`, `r28-s4`, `r28-s5` are running on workers 6, 3 and 2. Readings so far
+are in `scratch/r28-results.md`. For each arm that ends: `python3 scratch/score-r28.py <arm>`
+and `./scripts/clade-score.ps1 <arm>`, add its row to that file; when all five are in, write
+0070's Results and Verdict under STYLE.md (M1 at the round's bar of 4 of 5; read M5, the
+crowd prediction, across all five before drawing anything, since it fails as written in
+20–25% of windows in both arms so far while the patches stay even), update D079's index row
+and this file, push, and send one notification. The two-sided readings in 0070 say what
+follows each outcome; the movement pre-registration is rewritten on whichever world holds.
+
 The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
 asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive
 samples to the end of a 30,000-s run. It must hold 10 or more members through the last two
