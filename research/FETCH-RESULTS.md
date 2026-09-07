@@ -2,9 +2,16 @@
 
 This is the registry of what was retrieved, and of **where each copy came from**. PDFs are not committed to the repo, for copyright reasons, so this file is the reproducibility record. Anyone with equivalent access can rebuild the source set from the URLs below.
 
+Each entry also carries the SHA-256 of the PDF that was read (added 2026-09-07, HANDOFF
+item 23, on the Astra review's point that a gitignored corpus needs a way to tell the file
+a rebuild fetches from the file the review cited). A rebuilt copy whose hash differs is a
+different version of the paper, and a page-anchored claim against it is unverified until
+the page is checked. Seven round-4 entries have no PDF on disk and say so.
+
 ### [14] Virtual Creature Morphology – A Review
 - Status: OBTAINED
 - Saved as: `14-lai-2021-virtual-creature-morphology-review.pdf`
+- SHA-256: `a9e5cc41ecb9907b0f25e997972ffa1cfcf504107aced2190e2ffd94d29d8d7f` (`14-lai-2021-virtual-creature-morphology-review.pdf`, 25,903,829 bytes)
 - Source used: https://research.gold.ac.uk/id/eprint/30008/1/review_virtualcreatures_cameraready.pdf
 - Route: open-access (Goldsmiths Research Online institutional repository)
 - Notes: Published Version, Creative Commons Attribution-NonCommercial 4.0. Landing page:
@@ -16,6 +23,7 @@ This is the registry of what was retrieved, and of **where each copy came from**
 ### [3] Premature convergence in morphology and control co-evolution: a study
 - Status: OBTAINED
 - Saved as: `03-eguiarte-morett-2023-premature-convergence.pdf`
+- SHA-256: `1200caa6e2e1d0099d5ca8ca97c93fbef073af11ac51df2590ff2954b6d83a54` (`03-eguiarte-morett-2023-premature-convergence.pdf`, 2,173,568 bytes)
 - Source used: https://journals.sagepub.com/doi/10.1177/10597123231198497 (PDF via
   https://journals.sagepub.com/doi/epub/10.1177/10597123231198497 reader)
 - Route: open-access (SAGE: the article itself carries an "Open access" badge on the journal page,
@@ -30,6 +38,7 @@ This is the registry of what was retrieved, and of **where each copy came from**
 ### [27] Evolving Soft Locomotion in Aquatic and Terrestrial Environments
 - Status: OBTAINED
 - Saved as: `27-corucci-2018-evolving-soft-locomotion.pdf`
+- SHA-256: `0431f58296df2b4ad7468a7691e17a3707790d163572f5c117689cc44480bfd8` (`27-corucci-2018-evolving-soft-locomotion.pdf`, 4,578,548 bytes)
 - Source used: https://meclab.w3.uvm.edu/papers/2018_SoRo_Corucci.pdf
 - Route: open-access (Josh Bongard's Morphology, Evolution & Cognition Lab, UVM, self-archived)
 - Notes: Linked from the lab's publications list at https://jbongard.github.io/papers. Title
@@ -39,6 +48,7 @@ This is the registry of what was retrieved, and of **where each copy came from**
 ### [9] Recent Developments in the Evolution of Morphologies and Controllers for Physically Simulated Creatures
 - Status: OBTAINED
 - Saved as: `09-taylor-massey-2001-recent-developments.pdf`
+- SHA-256: `73b2cfc1677b2bd6559a72a725cebea8d3dd5f3e97bdde7991cea1f996f01c65` (`09-taylor-massey-2001-recent-developments.pdf`, 207,969 bytes)
 - Source used: https://www.tim-taylor.com/papers/taylor2001recent.pdf
 - Route: open-access (author's personal site, listed as "author preprint")
 - Notes: Landing/details page at https://www.tim-taylor.com/paper-details/taylor2001recent.html
@@ -48,6 +58,7 @@ This is the registry of what was retrieved, and of **where each copy came from**
 ### [12] Evolving Virtual Creatures and Catapults
 - Status: OBTAINED
 - Saved as: `12-chaumont-egli-adami-2007-catapults.pdf`
+- SHA-256: `06556b7a35bfb26ea5937c210a06e2a172c8314e24dcb0cdae282a5318cc95ab` (`12-chaumont-egli-adami-2007-catapults.pdf`, 262,770 bytes)
 - Source used: https://web.archive.org/web/20181016165055/http://adamilab.msu.edu/wp-content/uploads/Reprints/2007/Chaumontetal2007.pdf
 - Route: open-access (Wayback Machine archive of the Adami Lab's own reprint)
 - Notes: The live adamilab.msu.edu link now redirects to the lab's newer site, which no longer
@@ -57,6 +68,7 @@ This is the registry of what was retrieved, and of **where each copy came from**
 ### [5] Solving Deceptive Tasks in Robot Body-Brain Co-evolution by Searching for Behavioral Novelty
 - Status: OBTAINED
 - Saved as: `05-krcah-2012-solving-deceptive-tasks.pdf`
+- SHA-256: `fc9e347a818ac6766a3f566a5bb222a8ad52506a35a4199d38d6271ade2bb8a1` (`05-krcah-2012-solving-deceptive-tasks.pdf`, 612,625 bytes)
 - Source used: https://link.springer.com/chapter/10.1007/978-3-642-23363-0_7 → "Download to read
   the full chapter text" link (chapter-only PDF, 20 pp., not the full book)
 - Route: institutional (university subscription access via SpringerLink)
@@ -81,6 +93,7 @@ This is the registry of what was retrieved, and of **where each copy came from**
 ### [19] Robots that can adapt like animals
 - Status: OBTAINED
 - Saved as: `19-cully-clune-tarapore-mouret-2015-robots-that-can-adapt.pdf`
+- SHA-256: `ff088dfdb1a7d96a2edc85aa2ab8e4995498a025289be947582c057c3b22a99b` (`19-cully-clune-tarapore-mouret-2015-robots-that-can-adapt.pdf`, 27,003,540 bytes)
 - Source used: https://arxiv.org/pdf/1407.3501 (arXiv:1407.3501v4)
 - Route: open-access (arXiv preprint)
 - Notes: Verified via the arXiv abstract page (https://arxiv.org/abs/1407.3501): exact title,
@@ -91,6 +104,7 @@ This is the registry of what was retrieved, and of **where each copy came from**
 ### [28] Re-examination of Swimming Motion of Virtually Evolved Creature Based on Fluid Dynamics
 - Status: OBTAINED
 - Saved as: `28-usami-2007-swimming-motion-fluid-dynamics.pdf`
+- SHA-256: `96befff25bf5e6a4b1887aeef8ddc13b6d0f13b2964e0855646093b61b7cf74b` (`28-usami-2007-swimming-motion-fluid-dynamics.pdf`, 972,087 bytes)
 - Source used: https://link.springer.com/chapter/10.1007/978-3-540-74913-4_19 → "Download to
   read the full chapter text" link (chapter-only PDF, 10 pp., not the full LNCS proceedings
   volume)
@@ -120,6 +134,7 @@ round 3, with no login of any kind. Candidate discovery ran through four search 
 ### [29] PolyWorld: Life in a New Context
 - Status: OBTAINED
 - Saved as: `29-yaeger-1994-polyworld.pdf`
+- SHA-256: `010e76c3cd843ae0c78adbd430e78fcb78a815406a57c85eb209e4c8d3ff4c2b` (`29-yaeger-1994-polyworld.pdf`, 4,656,564 bytes)
 - Source used: https://shinyverse.org/larryy/Yaeger.ALife3.pdf
 - Route: open-access (author's personal site, Larry Yaeger's self-archive)
 - Notes: Artificial Life III proceedings chapter (Addison-Wesley 1994, pp. 263–298); pre-DOI.
@@ -129,6 +144,7 @@ round 3, with no login of any kind. Candidate discovery ran through four search 
 ### [30] Evolutionary Brain-Body Co-Optimization Consistently Fails to Select for Morphological Potential
 - Status: OBTAINED
 - Saved as: `30-mertan-cheney-2025-morphological-potential.pdf`
+- SHA-256: `a9902f448391dffeff69895d78b43b2230ee03c96702962e56bdfef23559386a` (`30-mertan-cheney-2025-morphological-potential.pdf`, 8,704,062 bytes)
 - Source used: https://arxiv.org/pdf/2508.17464
 - Route: open-access (arXiv, v2 of 2026-08-12, the author's accepted manuscript for *Artificial
   Life*, extending an ALIFE 2025 conference paper)
@@ -139,6 +155,7 @@ round 3, with no login of any kind. Candidate discovery ran through four search 
 ### [31] Evolution of Stable Ecosystems in Populations of Digital Organisms
 - Status: OBTAINED
 - Saved as: `31-cooper-ofria-2002-stable-ecosystems.pdf`
+- SHA-256: `74748867d59c06a24a87beace6b4bfc3347c0492b2e43813d84f09dfbe6f5bd3` (`31-cooper-ofria-2002-stable-ecosystems.pdf`, 123,267 bytes)
 - Source used: https://cse.msu.edu/~ofria/pubs/2002CooperOfria.pdf
 - Route: open-access (Charles Ofria's MSU publications page)
 - Notes: Artificial Life VIII proceedings (MIT Press 2002, pp. 227–232); no DOI assigned
@@ -148,6 +165,7 @@ round 3, with no login of any kind. Candidate discovery ran through four search 
 ### [32] GenePool: Exploring the Interaction Between Natural Selection and Sexual Selection
 - Status: OBTAINED
 - Saved as: `32-ventrella-2005-genepool.pdf`
+- SHA-256: `73af456e75a458bcbe32f2afeb3731345afd3fd2c2b2da020a3326faa74fed0c` (`32-ventrella-2005-genepool.pdf`, 122,666 bytes)
 - Source used: https://www.ventrella.com/Alife/GenePool.pdf
 - Route: open-access (author's personal site, Jeffrey Ventrella's self-archive)
 - Notes: Chapter in *Artificial Life Models in Software*, Springer 2005; DOI of the Springer
@@ -156,6 +174,7 @@ round 3, with no login of any kind. Candidate discovery ran through four search 
 ### [33] Closed ecosystems extract energy through self-organized nutrient cycles
 - Status: OBTAINED
 - Saved as: `33-goyal-2023-nutrient-cycles.pdf`
+- SHA-256: `45653639e603a2dea60c89d35d697e39772fef2daadd459a7d513fa32544412c` (`33-goyal-2023-nutrient-cycles.pdf`, 4,041,726 bytes)
 - Source used: https://arxiv.org/pdf/2305.19102
 - Route: open-access (arXiv preprint of PNAS 120(52) e2309387120, DOI 10.1073/pnas.2309387120)
 - Notes: The PNAS version of record is paywalled; the arXiv twin was used. If a page-anchored
@@ -164,6 +183,7 @@ round 3, with no login of any kind. Candidate discovery ran through four search 
 ### [34] An Ecolab Perspective on the Bedau Evolutionary Statistics
 - Status: OBTAINED
 - Saved as: `34-standish-2000-ecolab-bedau-statistics.pdf`
+- SHA-256: `f907da546cc9e66d7fe57c5e4f9b20a774ecae0efde62e9c7ee458a9258b7790` (`34-standish-2000-ecolab-bedau-statistics.pdf`, 462,461 bytes)
 - Source used: https://arxiv.org/pdf/nlin/0004026
 - Route: open-access (arXiv preprint; published in Artificial Life VII, MIT Press, DOI
   10.7551/mitpress/1432.003.0032)
@@ -173,12 +193,14 @@ round 3, with no login of any kind. Candidate discovery ran through four search 
 ### [36] Scalable co-optimization of morphology and control in embodied machines (Cheney et al. 2018)
 - Status: OBTAINED (round 3; entry written 2026-09-07 after the Astra review found it missing)
 - Saved as: `36-cheney-2018-scalable-cooptimization/` (extracted text only)
+- SHA-256: `ec75ed5670641b271a45297862b1ada057c6d96b983ca525809d86e1bee40f98` (`36-cheney-2018-scalable-cooptimization.pdf`, 4,252,571 bytes)
 - Source used: not recorded at retrieval; DOI 10.1098/rsif.2017.0937 (CrossRef-verified, open access at the publisher and on arXiv); the review's entry says the arXiv copy was read
 - Route: open-access
 
 ### [37] Quality Diversity: A New Frontier for Evolutionary Computation (Pugh, Soros & Stanley 2016)
 - Status: OBTAINED (round 3; entry written 2026-09-07 after the Astra review found it missing)
 - Saved as: `37-pugh-2016-quality-diversity-frontier/` (extracted text only)
+- SHA-256: `958a7bc41660a4613152d40b20da12e53343f01da0cc035d02b603793199d0d2` (`37-pugh-2016-quality-diversity-frontier.pdf`, 1,425,379 bytes)
 - Source used: not recorded at retrieval; DOI 10.3389/frobt.2016.00040 (CrossRef-verified, gold open access at Frontiers)
 - Route: open-access
 
@@ -189,30 +211,35 @@ All open-access routes, with no institutional access, and bot-gates respected ra
 ### [40] The stability of ecosystems: a brief overview of the paradox of enrichment
 - Status: OBTAINED
 - Saved as: `40-roy-chattopadhyay-2007-poe-overview/`
+- SHA-256: `f6f80cba75ee64e68dcf78c1b3b01dbaada79b9ee99ba6a8d156425f7193e6ab` (`40-roy-chattopadhyay-2007-poe-overview.pdf`, 102,052 bytes)
 - Source used: https://centaur.reading.ac.uk/36888/1/421.pdf
 - Route: open-access (Univ. of Reading CentAUR repository; also free at the publisher, Indian Academy of Sciences)
 
 ### [47] Behavioral refuges and predator–prey coexistence (Křivan 2013)
 - Status: OBTAINED
 - Saved as: `47-krivan-2013-behavioral-refuges/`
+- SHA-256: `ac5e938f611f78182851d8700433398667686749b0aec40df4b1ac52771f8c0d` (`47-krivan-2013-behavioral-refuges.pdf`, 523,050 bytes)
 - Source used: https://fix.prf.jcu.cz/~krivan/clanky/Krivan-JTB-2013.pdf
 - Route: open-access (author self-archive, Univ. of South Bohemia)
 
 ### [38] Detritus, trophic dynamics and biodiversity (Moore et al. 2004)
 - Status: OBTAINED
 - Saved as: `38-moore-2004-detritus-trophic-dynamics/`
+- SHA-256: `d2cf015d80a759e10ffea46445126594f31a420555ea9228cf0dacf188b7c57d` (`38-moore-2004-detritus-trophic-dynamics.pdf`, 431,945 bytes)
 - Source used: https://rosemondlab.ecology.uga.edu/wp-content/uploads/2014/11/Moore-et-al.-2004-EcolLet.pdf
 - Route: open-access (Rosemond Lab, UGA, self-archive; closed at Wiley)
 
 ### [41] Why type I functional responses are exclusive to filter feeders (Jeschke et al. 2004)
 - Status: OBTAINED
 - Saved as: `41-jeschke-2004-type-i-filter-feeders/`
+- SHA-256: `26eff94fae2fae4665f22caacfaf669037e6064b7713a5846caacbeaa17f2a3f` (`41-jeschke-2004-type-i-filter-feeders.pdf`, 257,992 bytes)
 - Source used: https://www.ruhr-uni-bochum.de/spezzoo/Bilder/pubs/tollrianpu/Jeschke%20et%20al.%202004.pdf
 - Route: open-access (Tollrian lab self-archive, RUB; closed at Cambridge)
 
 ### [46] Modeling food-web dynamics: complexity–stability implications (Dunne et al. 2005)
 - Status: OBTAINED
 - Saved as: `46-dunne-2005-modeling-food-web-dynamics/`
+- SHA-256: `d952840a7f4f2378e87152e7994badf0939b5b49c0787b7f440b82984124df74` (`46-dunne-2005-modeling-food-web-dynamics.pdf`, 263,350 bytes)
 - Source used: https://sfi-edu.s3.amazonaws.com/sfi-edu/production/uploads/sfi-com/dev/uploads/filer/28/4d/284d0e1c-5d54-4aab-8be2-eef835fcc5e5/04-07-021.pdf
 - Route: open-access (SFI Working Paper 2004-07-021, author-permitted; the OUP chapter is closed)
 - Notes: SFI copyright notice permits reposting only with authors' permission, so it is held locally, gitignored and not redistributed.
@@ -220,18 +247,21 @@ All open-access routes, with no institutional access, and bot-gates respected ra
 ### [42] Stability of Ecological Systems: A Theoretical Review (Chen et al. 2023)
 - Status: OBTAINED (screened out of synthesis)
 - Saved as: `42-arxiv-stability-ecological-systems-review/`
+- SHA-256: `342bbbc26e473656abb0342dfcbe8ec0c8144f49d6f5b58e8aedb46c05764d2d` (`42-arxiv-stability-ecological-systems-review.pdf`, 8,846,096 bytes)
 - Source used: https://arxiv.org/pdf/2312.07737
 - Route: open-access (arXiv)
 
 ### [44] Predator interference and complexity–stability (Mougi 2022)
 - Status: OBTAINED (screened out of synthesis)
 - Saved as: `44-mougi-2022-predator-interference-complexity-stability/`
+- SHA-256: `3cd0818e6b3e3b4dfd5ddfe7f427fcea7658a9dae8c648007bef808ca00ace5c` (`44-mougi-2022-predator-interference-complexity-stability.pdf`, 1,282,516 bytes)
 - Source used: https://www.nature.com/articles/s41598-022-06524-w.pdf
 - Route: open-access (Scientific Reports, CC BY)
 
 ### [50] Experimental studies on predation: dispersion factors (Huffaker 1958)
 - Status: OBTAINED
 - Saved as: `50-huffaker-1958-dispersion-predator-prey/`
+- SHA-256: `f8f54ac4ff9de7d64a04fffe165b6d8b458a31084fff251bf20392aa6fb75585` (`50-huffaker-1958-dispersion-predator-prey.pdf`, 29,645,608 bytes)
 - Source used: http://web.archive.org/web/20170922091029if_/http://hilgardia.ucanr.edu/fileaccess.cfm?article=152469&p=JTWUMP
 - Route: open-access (Hilgardia is OA; the live UC ANR link has rotted, so this was fetched from the Wayback capture of the journal's own file endpoint; landing page https://ucanr.edu/site/hilgardia/abstract?a=hilg.v27n14p343)
 - Notes: PDF page = journal page − 340.
@@ -239,36 +269,42 @@ All open-access routes, with no institutional access, and bot-gates respected ra
 ### [51] Mobility promotes and jeopardizes biodiversity (Reichenbach et al. 2007)
 - Status: OBTAINED
 - Saved as: `51-reichenbach-2007-mobility-biodiversity/`
+- SHA-256: `3f232260ff9e1ac845225621f4c7b74af4a4c8671c99fa1495ecc8c3f4e1c5df` (`51-reichenbach-2007-mobility-biodiversity.pdf`, 366,261 bytes)
 - Source used: https://arxiv.org/pdf/0709.0217
 - Route: open-access (arXiv author preprint v2; Nature version closed)
 
 ### [52] Confronting the paradox of enrichment to the metacommunity perspective (Hauzy et al. 2013)
 - Status: OBTAINED
 - Saved as: `52-hauzy-2013-paradox-enrichment-metacommunity/`
+- SHA-256: `c666a8ae04ddd7e271c4051e21528dfbfd608c2c9ba1a0d4e45f36eeeec7a05b` (`52-hauzy-2013-paradox-enrichment-metacommunity.pdf`, 551,792 bytes)
 - Source used: https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0082969&type=printable
 - Route: open-access (PLoS ONE, CC BY)
 
 ### [55] Stability of spatially heterogeneous predator–prey systems under eutrophication (Farkas et al. 2015)
 - Status: OBTAINED
 - Saved as: `55-farkas-2015-stability-heterogeneous-eutrophication/`
+- SHA-256: `bc654440a77e3c4e0524637b826bfce61370294e5a3f78a1fd276f1fa6f6a43c` (`55-farkas-2015-stability-heterogeneous-eutrophication.pdf`, 540,051 bytes)
 - Source used: https://arxiv.org/pdf/1509.03192
 - Route: open-access (arXiv green OA; Springer version closed)
 
 ### [57] Metapopulation dynamics of a persisting predator–prey system (Janssen et al. 1997)
 - Status: OBTAINED
 - Saved as: `57-janssen-1997-metapopulation-persisting-predator-prey/`
+- SHA-256: `92c173b90753ae2527848b7e20e79ea5cf8c2a76cd9dcc360e2dae31575f520c` (`57-janssen-1997-metapopulation-persisting-predator-prey.pdf`, 632,202 bytes)
 - Source used: https://pure.uva.nl/ws/files/3044055/2641_25534y.pdf
 - Route: open-access (UvA-DARE repository)
 
 ### [58] Digital Evolution for Ecology Research: A Review (Dolson & Ofria 2021)
 - Status: OBTAINED (supporting, not in synthesis matrix)
 - Saved as: `58-dolson-ofria-2021-digital-evolution-ecology-review/`
+- SHA-256: `46ea5d10e78fd916099efe1440daf8b5d46fa22872913a068d7f6fbc4aef4b57` (`58-dolson-ofria-2021-digital-evolution-ecology-review.pdf`, 1,370,292 bytes)
 - Source used: https://www.frontiersin.org/journals/ecology-and-evolution/articles/10.3389/fevo.2021.750779/pdf
 - Route: open-access (Frontiers, CC BY)
 
 ### [59] Ecology and spatial structure shape phylogenetic signatures (Moreno et al. 2024)
 - Status: OBTAINED (screened out of synthesis: Q8-relevant rather than Q9)
 - Saved as: `59-moreno-2024-ecology-spatial-structure-phylogenetic-signatures/`
+- SHA-256: `e14928c6f075c49fa7fe48d67eae4cb564fb1f5a19c2abcac345e2a90ec27cf0` (`59-moreno-2024-ecology-spatial-structure-phylogenetic-signatures.pdf`, 6,941,530 bytes)
 - Source used: https://arxiv.org/pdf/2405.07245
 - Route: open-access (arXiv)
 
@@ -294,6 +330,7 @@ reserved for Baines & Pace 1991 and released**; see the not-obtained list.
 ### [61] Primary production required to sustain global fisheries (Pauly & Christensen 1995)
 - Status: OBTAINED
 - Saved as: `61-pauly-christensen-1995-ppr/`
+- SHA-256: `c052da2e548821d40a92e3bac85ad0d4c834c054191e65fd7ba668dfe4457a1c` (`61-pauly-christensen-1995-ppr.pdf`, 3,962,117 bytes)
 - Source used: http://api.seaaroundus.org/wp-content/uploads/2015/04/PrimaryProductionRequiredToSustainGlobalFisheries.pdf
 - Route: open-access (Sea Around Us project self-archive; *Nature* version closed)
 - Notes: DOI `10.1038/374255a0`, *Nature* 374:255–257, CrossRef-verified. 4-page PDF.
@@ -303,6 +340,7 @@ reserved for Baines & Pace 1991 and released**; see the not-obtained list.
 ### [62] Continuity in the photosynthetic production of DOC from eutrophic to oligotrophic waters (Marañón, Cermeño & Pérez 2005)
 - Status: OBTAINED
 - Saved as: `62-maranon-2005-doc-continuity/`
+- SHA-256: `21ca8d315bfe06dc5e6195e6d59b11732769e4543dc5998deadf36f161fbc1be` (`62-maranon-2005-doc-continuity.pdf`, 364,341 bytes)
 - Source used: https://em.webs.uvigo.es/m299p007.pdf
 - Route: open-access (author's own site, Emilio Marañón, Universidade de Vigo; Inter-Research
   version bot-gated)
@@ -313,6 +351,7 @@ reserved for Baines & Pace 1991 and released**; see the not-obtained list.
 ### [63] Exudation of organic carbon by marine phytoplankton: dependence on taxon and cell size (López-Sandoval et al. 2013)
 - Status: OBTAINED
 - Saved as: `63-lopez-sandoval-2013-exudation-cell-size/`
+- SHA-256: `738cadd8791cf5402ae29d1f64249ab636a37c0e1a8da10511243d3e76ade82a` (`63-lopez-sandoval-2013-exudation-cell-size.pdf`, 210,212 bytes)
 - Source used: https://em.webs.uvigo.es/lopez-sandoval_et_al_2013.pdf
 - Route: open-access (same author site; Inter-Research version bot-gated)
 - Notes: DOI `10.3354/meps10174`, *MEPS* 477:53–60, CrossRef-verified. **The title on the
@@ -324,6 +363,7 @@ reserved for Baines & Pace 1991 and released**; see the not-obtained list.
 ### [64] Dissolved and particulate primary production along a longitudinal gradient in the Mediterranean Sea (López-Sandoval, Fernández & Marañón 2011)
 - Status: OBTAINED
 - Saved as: `64-lopez-sandoval-2011-dissolved-primary-production-mediterranean/`
+- SHA-256: `25375a5e5eb69466f978c9bec28a5b71f42f33e7cdc605b99d6d3412652ec083` (`64-lopez-sandoval-2011-dissolved-primary-production-mediterranean.pdf`, 610,327 bytes)
 - Source used: https://bg.copernicus.org/articles/8/815/2011/bg-8-815-2011.pdf
 - Route: open-access (Copernicus, gold OA CC BY 3.0)
 - Notes: DOI `10.5194/bg-8-815-2011`, *Biogeosciences* 8:815–825, CrossRef-verified.
@@ -331,6 +371,7 @@ reserved for Baines & Pace 1991 and released**; see the not-obtained list.
 ### [65] The Microbial Loop (Pomeroy, Williams, Azam & Hobbie 2007)
 - Status: OBTAINED
 - Saved as: `65-pomeroy-2007-microbial-loop/`
+- SHA-256: `9a890a752a0a31b3116e840585cbcc1a7910466451f28fbc411ca6254c4425bf` (`65-pomeroy-2007-microbial-loop.pdf`, 311,793 bytes)
 - Source used: https://tos.org/oceanography/assets/docs/20-2_pomeroy.pdf
 - Route: open-access (The Oceanography Society, gold OA)
 - Notes: DOI `10.5670/oceanog.2007.45`, *Oceanography* 20(2):28–33, CrossRef-verified (the
@@ -342,6 +383,7 @@ reserved for Baines & Pace 1991 and released**; see the not-obtained list.
 ### [66] Energy Flow Through Marine Ecosystems: Confronting Transfer Efficiency (Eddy et al. 2021)
 - Status: OBTAINED (accepted manuscript, **not** the version of record)
 - Saved as: `66-eddy-2021-transfer-efficiency/`
+- SHA-256: `2cfd76fca6d9fc2d8c509f6819d27cc0b041a95aab01340fae985b9d892eb832` (`66-eddy-2021-transfer-efficiency.pdf`, 1,409,017 bytes)
 - Source used: https://escholarship.org/content/qt4923w0fc/qt4923w0fc.pdf
 - Route: open-access (UC eScholarship green OA; Cell Press PDF 403s non-browser clients)
 - Notes: DOI `10.1016/j.tree.2020.09.006`, *Trends Ecol. Evol.* 36(1):76–86,
@@ -351,6 +393,7 @@ reserved for Baines & Pace 1991 and released**; see the not-obtained list.
 ### [67] Dissolved and Particulate Primary Production and Subsequent Bacterial C Consumption in the Southern East China Sea (Chen et al. 2020)
 - Status: OBTAINED
 - Saved as: `67-chen-2020-doc-bacterial-consumption-ecs/`
+- SHA-256: `8a6bf98130916130a13c490f0aa5384ae9264afb4f90d1297de008cb1744d26a` (`67-chen-2020-doc-bacterial-consumption-ecs.pdf`, 1,635,635 bytes)
 - Source used: https://www.frontiersin.org/journals/marine-science/articles/10.3389/fmars.2020.00713/pdf
 - Route: open-access (Frontiers, gold OA)
 - Notes: DOI `10.3389/fmars.2020.00713`, *Front. Mar. Sci.* 7:713, CrossRef-verified.

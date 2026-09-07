@@ -163,7 +163,8 @@ the running status), in the order they are done:
     source count reworded. Still queued, on priority and not on need: **a checksum table
     for the research sources** (SHA-256 of each PDF under `research/papers/` beside its
     retrieval record), so a future rebuild of the corpus can tell the file it fetched from
-    the file that was read. An hour's work, after the movement round is launched.
+    the file that was read. Done 2026-09-07, after round 29 launched: every entry in
+    `research/FETCH-RESULTS.md` carries its PDF's SHA-256 and size, or says no PDF is on disk.
 
 ## The decisions in front of the owner
 
