@@ -235,3 +235,9 @@ is the vent's ecology, and the confirmation should read it before a rule is spen
 Closed on 2026-09-06. The arms were r25-s2, r25-s4, r25h-s2, r25h-s4 and r25q-s2. The two
 seed-2 arms were wall-stopped at 19,800 and 16,200 s and read to their last sample, and the
 round is uncensored.
+
+*Correction, 2026-09-07, from the Astra review.* By the logbook's own definition (its README,
+under *censored*), a wall-clock ending is a limit of the instrument, so the two seed-2 arms
+are censored at 19,800 and 16,200 s, and this round's four of five is a screen's reading at
+the cut rather than a completed confirmation. The table's rows stand as what was observed to
+the last sample.

@@ -190,6 +190,11 @@ direction-dependent. A plate drags far more water broadside than edge-on, and th
 anisotropy is part of what makes flapping work. A known limitation, recorded rather than
 hidden.
 
+One more thing is not hidden but is easy to miss. Every evolutionary run recorded so far has
+had added mass switched off: `addedMassCoefficient` reads 0 in every configuration in the
+record, so the worlds of chapters 5 and 6 swam on drag alone. The term is built and waits on
+a ruling, because switching it on changes the physics of every seed (logbook/0071).
+
 ## What it looks like
 
 Twelve random genomes, driven by a phase-offset sine wave, no evolution whatsoever, measured

@@ -99,7 +99,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · **adopted 2026-09-05 in the vent shape at 0.6/s (owner); confirmation at 0.01 (logbook/0061): 3 of 5 at the threshold, not round 18's 4; the stock still grows at the dose and the plume lifts every population to the waterline — surface fix and dose correction put to the owner before re-confirming** |
 | [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
 | [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · **cost measured 2026-09-05 (logbook/0064): none — shared/tiled 0.88–1.12×, real time to ~2,900 bodies; the constraints are packing and a boundary rule** · the footprint and predation rules follow as proposals |
-| [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5; costs: the plume's crowd, the placeholder floor** · **the floor real 2026-09-06 (`a268311`)** · confirmation at 0.01 at influx 0.3 / stock 0.25 **failed 2 of 5 (logbook/0067: the lean dose starves the stomachs)** · re-run at influx 0.6 **read 2026-09-07 (logbook/0068): 3 of 5 under D063 as amended, below the round's bar of 4; the stock grew 44–53% over the last third in every seed; one realisation per seed (0069)** · superseded as the path by D079: the fed world is a screen, and the box returns to round 18's closed world (logbook/0070) |
+| [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5, the two seed-2 arms wall-censored (noted 2026-09-07); costs: the plume's crowd, the placeholder floor** · **the floor real 2026-09-06 (`a268311`)** · confirmation at 0.01 at influx 0.3 / stock 0.25 **failed 2 of 5 (logbook/0067: the lean dose starves the stomachs)** · re-run at influx 0.6 **read 2026-09-07 (logbook/0068): 3 of 5 under D063 as amended, below the round's bar of 4; the stock grew 44–53% over the last third in every seed; one realisation per seed (0069)** · superseded as the path by D079: the fed world is a screen, and the box returns to round 18's closed world (logbook/0070) |
 | [D078](#d078) | Single-threaded physics by default — the shared world replays only with no job-system worker threads; `EVOSIM_PHYSICS_JOBS` 0, recorded in manifest and header; shared-world changes validated by the state digest | 2026-09-06 | adopted by the agent as an instrument decision (a reproducibility invariant restored; owner may reverse for throughput) · cost measured at 120–180 bodies +19% wall (logbook/0069) · **built 2026-09-06**: `EVOSIM_PHYSICS_JOBS` default 0, manifest `physicsJobWorkers`/`jobWorkerMaximum`, header `physics jobs N`, theatre sets it from the manifest; `jobs-a` ≡ `jobs-b` over 3,001 digests at the default, `jobs-15` parts at step 152,500, tiled replay unmoved, theatre identity 30 of 30 on a shared recording; this machine's ceiling is 31 workers, not 15 |
 | [D079](#d079) | One change at a time from the last good world — round 18's closed world is the base; the first change is shared space (D077's box, real floor, restoring top) under D078's single-threaded physics; the open budget and the vent return afterwards, each earning its place | 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 |
 | [D080](#d080) | Non-commercial terms: PolyForm Noncommercial 1.0.0 for code and the genomes, CC BY-NC 4.0 for prose, commercial licences on request, contributions carry a relicensing grant | 2026-09-07 | ruled (owner: "lets apply the changes to the license") · supersedes D015 |
@@ -530,6 +530,16 @@ reverse. Octopus against vertebrate, settled by selection.
 **Rejected: forcing every creature to carry neural tissue.** A photosynthetic blob needs no
 neurons, and charging it for them charges most of the world for a capability it never uses.
 Plants have no neurons, and that is a strategy rather than an oversight.
+
+**Note, 2026-09-07 (from the Astra review).** The `GlobalBrain` array survived this
+decision: it is legal, mutable, stepped by `Brain` and billed by nothing, since `Metabolism`
+prices neurons per part. In the record it is idle rather than exploited. Three genomes in
+five at the end of a run carry one or two global neurons with constant inputs (r18x-s1:
+2,210 of 3,668; r28-s1: 1,121 of 1,769), and only 2 and 18 genomes respectively have a
+local neuron reading one. An unbilled neuron would be worth about 0.06 W against a median
+absorptive upkeep of 0.27 W. The treatment is the owner's: remove the array from new
+genomes, bill it at the undiscounted rate, or map it to tissue. Each is a new realisation
+of every seed, and stored genomes must stay readable through it.
 
 ---
 
@@ -2402,6 +2412,10 @@ nutrient content carried by tissue*, not as the matter the tissue is built of. T
 microbial-loop regime this contract chose, stated here plainly; a non-excretable
 structural fraction is the alternative if the abstraction ever misleads.
 
+**Note, 2026-09-07.** The reading above of a bodyless offspring as harmless held only while
+the matter price was proportional to tissue. D065's fixed term made it reachable; see D065's
+note of the same date.
+
 ### D053
 **Right-sizing the dish — the equilibrium must sit inside the instrument** · 2026-08-30
 
@@ -2929,6 +2943,11 @@ shares, and all of it holding after the last stomach clade's origin. Round 27 me
 first two (logbook/0068: the stock rose at 49–70% of the influx); the other two are not yet
 measured.
 
+**Note, 2026-09-07 (from the Astra review).** Two thresholds are in use without names: this
+rule's three of five, and round 18's four of five, which D079 adopts a change against.
+"Failed the round" has meant either. The owner is asked to name them (the goal and the
+reference bar are the candidates) or fold them; the scorer's count serves both meanwhile.
+
 ### D064
 **Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column** · 2026-09-02
 
@@ -3044,6 +3063,14 @@ small should cost).
 round-tripped by the reflection tests, rendered in every header as
 `matter <per J>/J + <fixed> each`. Round 10c: the D064 package at area 100 plus this,
 five seeds, scored under D063 unchanged; pre-registered in logbook/0046 before launch.
+
+**Note, 2026-09-07 (from the Astra review).** The fixed term made D052's reassurance about
+bodyless offspring false: `Reproduce` charges `MatterPerCreature` before `Admit` refuses a
+zero-part body, nothing returns it, and `StandingMatter` cannot see it because it adds the
+same counter the charge raised. Measured exposure in the scored worlds is nil: 0 stillbirths
+in 35,380 mutations of round 28's final genomes, and the locked-matter column inside what
+living bodies alone can hold. The fix, refusing a zero-part body before any charge, is
+queued with an orphaned-matter invariant and a `stillbirths` column (HANDOFF item 16).
 
 ### D066
 **Roll cells — the water moves everything, and it stirs** · 2026-09-02
@@ -3294,6 +3321,12 @@ computed and the loop is unthrottled, so a scalar cannot make steps cheaper, onl
 them; applied to the economy alone it makes creatures age and eat at a different rate than
 they sink and drift, and buys nothing. Cloud workers: the owner's money and setup, outside
 what an agent may do alone.
+
+**Note, 2026-09-07 (from the Astra review).** The futility clause's premise, that no line
+which went on to matter started after 15,000 s, was contradicted by round 26
+(logbook/0067): two passing clades were rooted at 15,867 and 21,641 s. The clause also does
+not say whether "appeared" means ever born, alive at the cut, or established. It stays as
+written until the owner retires or narrows it; no arm has been stopped by it since.
 
 ### D070
 

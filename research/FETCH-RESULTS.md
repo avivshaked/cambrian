@@ -170,6 +170,18 @@ round 3, with no login of any kind. Candidate discovery ran through four search 
 - Notes: 5-page PDF; the shadow-population implementation notes cited in the review are the
   reason this was retrieved.
 
+### [36] Scalable co-optimization of morphology and control in embodied machines (Cheney et al. 2018)
+- Status: OBTAINED (round 3; entry written 2026-09-07 after the Astra review found it missing)
+- Saved as: `36-cheney-2018-scalable-cooptimization/` (extracted text only)
+- Source used: not recorded at retrieval; DOI 10.1098/rsif.2017.0937 (CrossRef-verified, open access at the publisher and on arXiv); the review's entry says the arXiv copy was read
+- Route: open-access
+
+### [37] Quality Diversity: A New Frontier for Evolutionary Computation (Pugh, Soros & Stanley 2016)
+- Status: OBTAINED (round 3; entry written 2026-09-07 after the Astra review found it missing)
+- Saved as: `37-pugh-2016-quality-diversity-frontier/` (extracted text only)
+- Source used: not recorded at retrieval; DOI 10.3389/frobt.2016.00040 (CrossRef-verified, gold open access at Frontiers)
+- Route: open-access
+
 ## Round 4 (2026-09-01) asked Q9: consumer-resource stability and spatial persistence
 
 All open-access routes, with no institutional access, and bot-gates respected rather than bypassed. Directory names under `papers/` carry the number.

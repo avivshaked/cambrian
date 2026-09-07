@@ -33,8 +33,9 @@ Four things it said had not been captured until today.
   `addedMassCoefficient` 0. DESIGN §5.4 promotes added mass to Milestone 3 on the finding
   that a simplified fluid collapses body-plan diversity. That is now a gotcha in
   CLAUDE.md and a question in front of the owner before the movement round.
-- **DESIGN §7** claimed the config hash covered the timestep and the Unity version. It never
-  did, since they are in the manifest, and it is corrected today.
+- **DESIGN §7** claimed the config hash covered the timestep and the Unity version. The
+  Unity version never was; the timestep has been since 2026-09-04, which the morning's
+  correction got wrong and the Astra review's probe put right the same evening.
 - **Three instruments** went into HANDOFF's queue. They are a contract test at the Unity
   boundary, the transactional guard test D052 queued, and round 18 committed as a reference
   rather than living only as a launcher script and five gitignored directories.

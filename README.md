@@ -9,7 +9,7 @@ budget**: they earn it from sunlight, drifting nutrients, or each other, and the
 tissue, on thinking, and on every movement they make. Run out and you die. Accumulate a
 surplus and you reproduce.
 
-**There is no fitness function.** Nothing is scored, and nothing is being taught to swim. If
+**There is no fitness function.** No creature is scored, and nothing is being taught to swim. If
 swimming is what keeps a creature alive it will appear on its own — and if something else
 appears instead, that is the more interesting answer. A creature made only of rigid feeding
 cells is a plant; one that eats plants is a herbivore; the word "species" appears nowhere in
@@ -23,7 +23,7 @@ plans**, which is what an open-ended ecosystem is being built to produce.
 > brains, and energy is a conserved budget audited to 0.0000% across the whole food web. A
 > finite competed-for sun, currents and mixing, senescence, a matter currency, a buoyancy
 > organ, living excretion, marine snow and a vent are all in and measured
-> ([`DECISIONS.md`](DECISIONS.md) D023–D079). Twenty-eight scored rounds
+> ([`DECISIONS.md`](DECISIONS.md) D023–D079). Twenty-eight rounds, each read by a person against a rule written down before launch,
 > ([logbook/0036](logbook/0036-the-floor-gives-back.md) onward) found the constraint one
 > layer at a time — the floor, the drowning, the matter ratchet, the stomach's gearing — and
 > the last of them was the flux: the second trophic level was fed at one percent of the
@@ -212,8 +212,9 @@ exact source URL for every paper, so anyone with equivalent access can rebuild t
 | **Disk** | ~15 GB for the Editor |
 | **Git** | any recent version |
 
-**There are no other dependencies.** No package manager, no lockfile, no third-party
-libraries — the spike uses only Unity's built-in physics. Nothing to `npm install` or
+**There are no other dependencies.** No third-party libraries: the spike and the project use
+only Unity's built-in physics, and the only lockfile is Unity's own
+`unity/Packages/packages-lock.json`. Nothing to `npm install` or
 `pip install`.
 
 ### 1. Install Unity
@@ -242,6 +243,9 @@ stray email addresses, Unity build output and oversized files — see
 [`scripts/githooks/pre-commit`](scripts/githooks/pre-commit).
 
 ### 3. Run the spike
+
+The spike is disposable and answered its question in August (`results/FINDINGS.md`); skip
+to step 4 if you want the project itself.
 
 Auto-detects your Editor rather than hardcoding a path:
 
@@ -282,7 +286,7 @@ timings are meaningless. See §M3 in [the spike spec](spikes/01-articulation-bod
 
 `Evosim.Core` — the genome, the development that grows a creature from it, the cell types,
 mutation and serialization — has no `UnityEngine` dependency, so it builds and tests as
-ordinary C# in under a minute (364 tests as of 2026-08-31). **No .NET SDK is required:** the script uses a system-wide one
+ordinary C# in under a minute (531 tests as of 2026-09-07). **No .NET SDK is required:** the script uses a system-wide one
 if you have it and otherwise falls back to the complete .NET 8 SDK that ships inside the
 Unity install.
 

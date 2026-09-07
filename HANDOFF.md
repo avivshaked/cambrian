@@ -77,8 +77,9 @@ than tuned around. Round 27 therefore runs on as a screen rather than a scored c
 
 ## Queued, in order
 
-1. **The D078 build** is being built on worker 7 against `scratch/physics-jobs-spec.md`. It
-   lands, with a zero-worker digest pair as its check, before round 28 launches.
+1. **The D078 build** (done 2026-09-06, commit `d2b59ac`): `physicsJobWorkers` in the
+   manifest, the count set per launch, identity proven on a zero-worker digest pair over
+   300,000 steps (0069) and then 1,000,000 at a full round's population (0070).
 2. **The scorer** scores every clade rather than the largest (done 2026-09-06, commit
    `b9baef1`). A seed passes when any connected clade meets every clause; the report names
    it and still prints the largest. Re-scored: round 18 stands at 4 of 5 with its minima
@@ -122,6 +123,35 @@ Captured 2026-09-07 from the three outside reviews (logbook/0071), in no order o
     right world, not that the world is legible; one session in the Editor before it carries a
     reading.
 
+Captured 2026-09-07 from the Astra review (its response file at the root has the verdicts and
+the running status), in the order they are done:
+
+16. **Feeding allocation and the stillbirth charge** (the review's R1 and R2). Availability
+    frozen for the consumption pass, a short take fed back to the ledger, a zero-part body
+    refused before any charge, an orphaned-matter invariant, and `stillbirths` and
+    `mat orphan` in the statistics and the table; tests for reordered identical feeders,
+    a capped take, and a stillbirth under D065's fixed term. Neither branch fired in any
+    scored world (the response file has the measurements), so the fix is expected to replay
+    the record bit for bit, proved on a zero-worker digest pair against `r28-s1`'s digest.
+17. **The scorer's window** (R4): an upper bound at the last sample, the interval read from
+    the sample axis rather than assumed to be 100 s, and a completed-manifest gate that
+    prints *provisional* on a running arm; a fixture for each.
+18. **One Unity and script build, landed between rounds because it moves `simHash`**:
+    inoculation counted in `Ecosystem`'s reconciliation revision; the theatre refuses a
+    recording with an inoculation and compares the Unity version as well as the hashes;
+    `EvolutionRun.Env` refuses a malformed value instead of defaulting; `new-worker.ps1`
+    refuses a worker with a Unity process; `run-arm.ps1` restores its settings in a
+    `finally`; the lineage writer is flushed on every orderly end (r25-s2 lost 38 ids to its
+    wall); the digest's cadence and dump settings are written beside the digest; the digest
+    and determinism comparisons exit nonzero on a mismatch.
+19. **The research registry**: the disclosure sentence, [CB18] and [PU16]'s retrieval
+    records, round 4's count, the scope of Q1's answer, the framing of Q10's rule.
+20. **The predation proposal consolidated** into one operative design for the owner.
+21. **The movement draft**: the right denominator (8 of 930), the sensing-versus-acquisition
+    seam stated, added mass named as off.
+22. **A fresh seed batch** once the rules and instruments are stable, so the conclusion is
+    checked beyond the five founding lotteries every round has reused (owner's call on when).
+
 ## The decisions in front of the owner
 
 - **The producer threshold** is unsettled. D063's amendment asks for one living inherited
@@ -145,6 +175,19 @@ Captured 2026-09-07 from the three outside reviews (logbook/0071), in no order o
 - **Whether the absence of CI is a choice.** The suite runs by hand before a launch; nothing
   says whether that is the standing decision.
 
+Raised 2026-09-07 by the Astra review (its response file has the measurements):
+
+- **The global brain** (D019's note of 2026-09-07). `Genome.GlobalBrain` is legal, mutable,
+  stepped and billed by nothing. Idle in the record: three genomes in five carry one or two
+  constant-input global neurons and almost none is read by a local neuron. Remove it from
+  new genomes, bill it undiscounted, or map it to tissue; each is a new realisation of every
+  seed.
+- **Three of five against four of five.** D063's goal is three seeds; round 18's four is the
+  bar D079 adopts a change against. Name them (the goal, the reference bar) or fold them.
+- **The futility clause of D069.** Its premise (no line that mattered started after 15,000 s)
+  was contradicted by round 26's passes rooted at 15,867 and 21,641 s (0067). Retire or
+  narrow it, and say whether "appeared" means ever born, alive at the cut, or established.
+
 ## How the experiments are run
 
 CLAUDE.md holds the commands and the gotchas. This is where each tool sits.
@@ -153,10 +196,10 @@ CLAUDE.md holds the commands and the gotchas. This is where each tool sits.
 |---|---|
 | workers | arms run on `unity-w2..unity-w7`, one per worker, at most five at once; after a change under `unity/Assets`, run `scripts/new-worker.ps1 -Workers N` once per worker and check the hash |
 | launching | `scripts/run-arm.ps1` with `-ExpectSimHash`, logs in `scratch/logs/`; end an arm with `stop-arm.ps1` and never with a kill; read every setting back from the run header and the manifest, never from the launch command |
-| reading | `scripts/analyse-arm.ps1` by column name (`-ListColumns`), never positionally, passing `-Columns` as a real array from inside PowerShell, since through `pwsh -File` the comma list arrives as one string and every cell reads `?`; `mat blk`, `floor` and the `det in/out/exuded` columns are per-window deltas; `matterHere` is in `stats.jsonl` and not in the table; `lineage.jsonl` holds one row per birth and carries no photosynthetic flag yet, while the report's `photo` columns carry the producer population |
+| reading | `scripts/analyse-arm.ps1` by column name (`-ListColumns`), never positionally, passing `-Columns` as a real array from inside PowerShell, since through `pwsh -File` the comma list arrives as one string and every cell reads `?`; `mat blk`, `floor` and the `det in/out/exuded` columns are per-window deltas; `matterHere` is in `stats.jsonl` and not in the table; `lineage.jsonl` holds one row per birth with the `pho` flag from the 2026-09-06 build onward (older runs print `flag absent` in the scorer), while the report's `photo` columns carry the producer population |
 | scoring | `scripts/clade-score.ps1` for D063, `scripts/absorptive-log.ps1 <arm>` for what a stomach earned, `scripts/lineage-invasion.ps1` for an inoculated lineage, and `scripts/ledger.ps1` (D069) before a worker |
 | monitoring | `scratch/monitor-r13.sh` over `scratch/evosim-watch-arms.txt`; it exits when the list is empty and must be restarted after the list is set |
-| throughput | about 1,800 bodies at dt 0.01 with five arms sharing the machine is five to six hours per 30,000 s; single-threaded physics cost nothing measurable at 500 bodies (0069) and is unmeasured at a round's population (0070 budgets a quarter); the ceiling (`MaximumPopulation`, `EVOSIM_MAX_POP`) ends a run as a censored runaway |
+| throughput | about 1,800 bodies at dt 0.01 with five arms sharing the machine is five to six hours per 30,000 s; single-threaded physics cost nothing measurable in 0069's confirmation at 518 bodies, though its short probes at 120 to 400 bodies read about 15% with a spread as wide as the gap, and it is unmeasured at a round's population (0070 budgets a quarter); the ceiling (`MaximumPopulation`, `EVOSIM_MAX_POP`) ends a run as a censored runaway |
 
 ## Open decisions for the owner
 
@@ -169,6 +212,8 @@ CLAUDE.md holds the commands and the gotchas. This is where each tool sits.
   institutional access. Its queue was re-prioritised on 2026-09-06 around the open-flow
   matter balance, contact feeding, and movement-assisted foraging.
 - **Pushing code and prose** in batches is approved (2026-09-01); data, output and weights never.
-- **The three untracked review files at the repo root** are the owner's to absorb or delete.
-  The 2026-09-06 review was answered in `scratch/review-2026-09-06-response.md`, whose agreed
-  items make up the queue above.
+- **The Astra review of 2026-09-07** (`gpt-astra-2026-09-07-1316-review.md`) is answered in
+  `gpt-astra-2026-09-07-1316-review-response.md`, which carries the verdict on every point
+  and the status of the work it queued (items 16 to 22 above). Both files are the owner's to
+  absorb or delete when that work is done. The three earlier reviews were captured and
+  removed on 2026-09-07 (logbook/0071).

@@ -1,6 +1,9 @@
 # Spike 01 — `ArticulationBody` at scale
 
-**Status:** Specified, not implemented (Unity Editor not yet installed)
+**Status:** Done, August 2026 (`results/FINDINGS.md`). The text below is the specification as
+written before the Editor was installed; the measurements answered it. The solver
+parallelism it infers from scaling is qualified by D078: the shared world replays only with
+the physics on one thread.
 **Blocks:** Milestones 1–4. This is risk 11.1 in [`../../DESIGN.md`](../../DESIGN.md).
 **Expected effort:** ~1 day
 **Disposable:** yes — this code is thrown away once the question is answered.

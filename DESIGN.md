@@ -224,7 +224,7 @@ per-seed A/B cannot tell the step's effect from chance. 0.02 s sits inside that 
 is the screening step at ~3× the pace; 0.01 s stays the confirmation step and the only
 one at which the record replays; 0.05 s is out (§6.2). The drag-impulse limiter that
 makes coarse steps stable engages only above 0.01 s. The step is in the header and the
-identity record, not yet in the config hash. The rest of D069 — the ledger calculator, the
+identity record, not yet in the config hash *(it entered the hash the next day, commit `5c6c035`)*. The rest of D069 — the ledger calculator, the
 invasion assay, the futility and sequential-seed rules — is instrumentation and process
 and changes no rule of the world.
 
@@ -235,10 +235,21 @@ been; they were corrected to match the tree, and no rule of the world changed.
 
 ## 0n. Changelog — two more status corrections (2026-09-07)
 
-§7's bullet on what `configHash` covers overstated it (the timestep and the Unity version
-were never in the hash; they are in the manifest), and §5A's currency table still gave
-matter no sink, which D074's burial falsified. Both corrected after the outside reviews
-were captured (logbook/0071). No rule of the world changed.
+§7's bullet on what `configHash` covers was corrected in the morning to say the timestep was
+outside the hash, which was wrong (it has been a tunable since 2026-09-04), and corrected
+again in the evening after the Astra review's probe; the Unity version and the worker count
+are in the manifest, as the bullet says. §5A's currency table still gave matter no sink,
+which D074's burial falsified. Both corrected after the outside reviews were captured
+(logbook/0071). No rule of the world changed.
+
+## 0o. Changelog — three more status corrections (2026-09-07, from the Astra review)
+
+§5A.8's tiling row said creatures had never touched, which was true on 2026-09-05 and false
+from D077's build the next day; the row is annotated. §5A.6 said the per-offspring overhead
+is what tells one brood of four from four broods of one; it is paid per offspring and cannot,
+and the paragraph now names the gate as what does. §9 describes the original archive layout
+and not the run directory that was built; it carries a status note. No rule of the world
+changed.
 
 ## 1. Target hardware
 
@@ -1467,10 +1478,12 @@ where `overhead` is a world constant (§5A.10) and **not** evolvable — a creat
 to set its own overhead would set it to zero, and every lineage would converge on the largest
 brood it could express.
 
-The overhead term is load-bearing, not bookkeeping. Without it, cost is strictly proportional
-to energy invested, and one brood of four is indistinguishable from four broods of one — same
-energy, same offspring, differing only in timing. Brood size would then select for nothing.
-The overhead is what separates them, and what makes r/K selection an axis the world can
+The overhead term is load-bearing, not bookkeeping, though not for the reason this paragraph
+gave until 2026-09-07. It is paid per offspring, so one brood of four and four broods of one
+pay it four times each. What separates them is the gate (`Organism.ReproductionThreshold`),
+which asks a parent to hold the whole brood's price at once: a brood of four waits longer,
+risks more of its reserve, and breeds in bursts. The overhead is what makes an offspring cost
+more than the energy it carries, and so what makes r/K selection an axis the world can
 explore: the same surplus buys one well-provisioned offspring or eight feeble ones, and which
 wins is a property of the environment rather than something written in here.
 
@@ -1671,7 +1684,7 @@ trade turned out to be at parity with photosynthesis (logbook/0024).
 | Section | Status |
 |---|---|
 | **§5.5 Fitness (water)** | ❌ **Superseded.** There is no fitness function. Displacement becomes an observable, not an objective |
-| **§6.3 Tiling** | ⚠ **To be repurposed — not yet.** Tiling isolated simultaneous independent evaluations. An ecosystem is one shared world where creatures must be able to meet, so tiling should become spatial partitioning rather than isolation. *As built (2026-09-05): creatures are still tiled 100 m apart on one shared collision layer, kept apart by distance alone (`Ecosystem.TileSpacing`; the ignoring layers were spike 01's, not the ecosystem's — measured by the shared-space spike's smoke, 2026-09-05), and have never touched; the ecological coordinates are depth and patch only. How they meet is the ruling `fable-propose-predation.md` asks for.* |
+| **§6.3 Tiling** | ⚠ **To be repurposed — not yet.** Tiling isolated simultaneous independent evaluations. An ecosystem is one shared world where creatures must be able to meet, so tiling should become spatial partitioning rather than isolation. *As built (2026-09-05): creatures are still tiled 100 m apart on one shared collision layer, kept apart by distance alone (`Ecosystem.TileSpacing`; the ignoring layers were spike 01's, not the ecosystem's — measured by the shared-space spike's smoke, 2026-09-05), and have never touched; the ecological coordinates are depth and patch only. How they meet is the ruling `fable-propose-predation.md` asks for. Superseded 2026-09-06: D077's shared box is built and bodies touch (logbook/0066); kept as the state at 2026-09-05.* |
 | **§6.4 Throughput** | ⚠ **Unit changed.** Evaluations per second stops being meaningful. The unit is simulated seconds per wall-clock second at a given population |
 | **§8 MAP-Elites** | ⚠ **Demoted.** It was the selector, and it existed to solve a problem exogenous fitness creates (§2). Under endogenous selection its innovation-protection role is served by ecological niches. Retained as an **observatory** — an archive recording what lived and what it looked like — which costs little and is what makes a long run legible |
 | **§10 Milestones** | ⚠ Milestone 6 (sensors, photosensors) moves from last to load-bearing; foraging is target-following with the target being food |
@@ -1997,12 +2010,13 @@ at different physics thread counts, are different trajectories; the manifest is 
 complete identity, and `configHash` names the world it obeys).
 
 - Seeded PRNG per evaluation, stored with the result. No ambient randomness.
-- `configHash` covers the tunables on `RunConfig` and the cell-type registry, and nothing
-  else. The physics timestep (`EVOSIM_DT`), the Unity version, Unity's physics settings and
-  the job-worker count are *not* in it; they are in the manifest (`physicsDtSeconds`,
-  `unityVersion`, `simHash`, `physicsJobWorkers`), which is why the manifest, not the hash,
-  is a run's complete identity (corrected 2026-09-07; §0l had already said the step was
-  outside the hash).
+- `configHash` covers every tunable on `RunConfig`, the physics step among them
+  (`PhysicsStepSeconds`, set from `EVOSIM_DT` before the config is written, in the hash
+  since 2026-09-04), and the cell-type and shape registries. The Unity version, Unity's
+  physics settings and the job-worker count are *not* in it; they are in the manifest
+  (`unityVersion`, `simHash`, `physicsJobWorkers`), which is why the manifest, not the hash,
+  is a run's complete identity (corrected twice on 2026-09-07: the morning's correction put
+  the step outside the hash, and the Astra review's probe put it back inside).
 - **Honest caveat:** PhysX is not bitwise deterministic across CPUs, drivers or Unity
   versions. Same-machine same-version replay is reliable in practice; cross-machine is not
   guaranteed. The hash exists so mismatches are *detected*.
@@ -2120,6 +2134,12 @@ algorithms that preserve one while losing the other (e.g. ME scores 0 on genetic
 ---
 
 ## 9. Persistence and data
+
+> *Status, 2026-09-07: the layout below is the design's original plan for a MAP-Elites farm
+> and is not what was built. A run today is a directory `runs/<arm>/<run>/` holding
+> `config.json`, `run.json`, `lineage.jsonl`, `stats.jsonl`, `absorptive.jsonl`,
+> `digest.jsonl` when enabled, and `snapshots/`, as CLAUDE.md's conventions and
+> `RunDirectory` describe. The archive files below return with the observatory (§5A.8).*
 
 ```
 runs/<runId>/

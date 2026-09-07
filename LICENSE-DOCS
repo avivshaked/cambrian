@@ -16,6 +16,7 @@ The written work in this repository:
     HANDOFF.md
     COMMERCIAL.md
     CONTRIBUTING.md
+    fable-propose-*.md     (proposals in front of the owner)
     research/**            (the literature review and provenance records)
     logbook/**             (dated entries on what was tried and what broke)
     primer/**              (explanatory writing about what was built)
