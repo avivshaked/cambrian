@@ -363,6 +363,15 @@ namespace Evosim.Sim.EditorTools
             // per-step term, so any nonzero value is a new realisation of every seed.
             float addedMass = Env("EVOSIM_ADDED_MASS", 0f);
 
+            // D082 (2026-09-07). The price of a bud: what a neuron, one of its inputs and a
+            // joule of mechanical work cost. All three are RunConfig tunables since 5A.2 and
+            // none had a launch knob, so every recorded world ran at their defaults (0.05 W,
+            // 0.01 W, 1), which is what the fallbacks keep. Unmeasured all three (5A.10); the
+            // price round sets them from the ledger and the record.
+            float neuronCost = Env("EVOSIM_NEURON_COST", new RunConfig().NeuralCostPerNeuronWatts);
+            float connectionCost = Env("EVOSIM_CONNECTION_COST", new RunConfig().NeuralCostPerConnectionWatts);
+            float workCost = Env("EVOSIM_WORK_COST", new RunConfig().WorkCostMultiplier);
+
             // D064. Body volume at which tissue is neutrally buoyant, m3 — the excess density
             // above is scaled by max(0, 1 - (V0/V)^(2/3)), so a founder-sized body barely sinks
             // and a large one feels the full constant. 0 is off and reproduces every pre-D064 run
@@ -572,6 +581,9 @@ namespace Evosim.Sim.EditorTools
             config.ChemicalHalfScaleJoulesPerCubicMetre = chemicalHalfScale;
             config.EnergyFullScaleSeconds = energyFullScale;
             config.FlowFullScaleMetresPerSecond = flowFullScale;
+            config.NeuralCostPerNeuronWatts = neuronCost;
+            config.NeuralCostPerConnectionWatts = connectionCost;
+            config.WorkCostMultiplier = workCost;
             config.InoculateAtSeconds = inoculateAt;
             config.InoculateCount = inoculateCount;
             config.InoculateDepthMetres = inoculateDepth;
@@ -800,6 +812,10 @@ namespace Evosim.Sim.EditorTools
                 // read the same for "added mass off" and "written before the knob existed", and
                 // every world through round 28 is the first of those.
                 " · addedMass " + addedMass +
+                // D082, appended after `addedMass` per the same convention and rendered
+                // unconditionally for D065's reason: every world through round 29 ran at the
+                // defaults, and a header without the token would not say so.
+                " · neuron " + neuronCost + " W + " + connectionCost + " W/input, work x" + workCost +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());

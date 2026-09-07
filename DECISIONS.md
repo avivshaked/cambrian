@@ -104,6 +104,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D079](#d079) | One change at a time from the last good world — round 18's closed world is the base; the first change is shared space (D077's box, real floor, restoring top) under D078's single-threaded physics; the open budget and the vent return afterwards, each earning its place | 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 · **round 28 read 2026-09-07 (logbook/0070): 3 of 5 under D063 as amended, below round 18's bar of 4; seeds 2, 3, 4 pass and seed 1 fails as in round 18; seed 5's stomach line stable at 17 and sterile from 21,408 s; M5 (no crowd) fails in every seed; the collisions-off control and the box's width are the owner's rulings** · **amended 2026-09-07 (D081): the base becomes round 28's contact world** |
 | [D080](#d080) | Non-commercial terms: PolyForm Noncommercial 1.0.0 for code and the genomes, CC BY-NC 4.0 for prose, commercial licences on request, contributions carry a relicensing grant | 2026-09-07 | ruled (owner: "lets apply the changes to the license") · supersedes D015 |
 | [D081](#d081) | Six rulings on round 28's reading — two named bars (the goal, the reference); the contact world is the base; the path is movement, predation, then the open budget; added mass on and the global brain removed in the movement build; the futility clause narrowed to screens | 2026-09-07 | ruled (owner, by question) · amends D063's reading, D069, D075, D079 |
+| [D082](#d082) | The price of a bud: the neuron and its inputs about tenfold cheaper, and the stroke's work billed at a fraction, in a price round after round 29 reads; round 29 is the control at today's price | 2026-09-07 | ruled (owner, by question) · the numbers are set by the ledger and the record in the round's pre-registration |
 
 ---
 
@@ -4075,3 +4076,53 @@ evening, and the owner then said to continue.
 ledger's help". The ledger prices energy and added mass is an inertial term, so it cannot;
 logbook/0072 sets 0.5, the sphere's coefficient, and says why. The movement build landed
 the same evening (DESIGN §0q) and round 29 is pre-registered as 0072.
+
+---
+
+### D082
+**The price of a bud** · 2026-09-07
+
+Put by the owner while round 29 ran, in their words: "i think the cost must be low for
+selection not to remove these early buds of movement and brains." The record agrees. A
+neuron costs 0.05 W standing and 0.01 W per input (`RunConfig.NeuralCost*`, both marked
+unmeasured in DESIGN §5A.10), a founder's jointed part carries one to three of them, and
+the median stomach in round 28 netted about 0.03 W on an upkeep of about 0.27 W. One neuron
+is a fifth of a body's upkeep and twice its profit, and its joint's work is billed on top,
+joule for joule. A creature born with a sensing neuron wired to a joint starts poorer than
+its rigid sibling and must close that gap by feeding better before it breeds, which is the
+shape of every round in which the muscles were deleted (logbook/0017, 0027).
+
+**Ruled.**
+
+1. **Round 29 runs to its end at today's prices** and is the control for the price round.
+   Its first prediction (0072's M1) is whether the senses survive at this price, and that
+   reading is worth the day. Rejected: stopping it to relaunch cheaper (loses the control,
+   breaks D079's one-change rule a second time, and the number would be a guess) and
+   leaving the price alone until round 29 says the senses were lost (a day to learn what the
+   ledger says in a minute).
+2. **The neuron and its inputs come down about tenfold**, to the order of 0.005 W and
+   0.001 W, so a neuron is about 2% of a body's upkeep rather than 20%. The ledger sets the
+   exact figure before the round is pre-registered (D069): the price at which a round-28
+   stomach carrying a founder's neurons still breeds. Not zero: the design's reason for the
+   charge stands, a brain that costs nothing grows without limit (§5A.2), and logbook/0031's
+   lesson is that a muscle paid for is a muscle that does nothing.
+3. **The stroke's work is billed at a fraction as well.** `RunConfig.WorkCostMultiplier`
+   has existed since §5A.2 at its default of 1 (unmeasured, §5A.10) and no launcher has ever
+   set it; it is exposed as `EVOSIM_WORK_COST` and stays 1 by default so that every recorded
+   world replays. The owner
+   chose this over neurons alone: the bud is the pair, a neuron and the muscle it moves. The
+   cost of choosing it is stated here rather than hidden: cheaper work cheapens useless
+   flapping exactly as much as useful swimming, so the round that tests it reads the two
+   guilds' feeding against each other (0072's M3) and not the jointed count alone. The
+   fraction is set from the record, not the ledger, which prices energy at rest: round 28's
+   founders' work against their spending in the first 3,000 s says what a stroke cost a
+   body that still had a joint.
+4. **The precedent is not contradicted.** The linear per-neuron charge has PolyWorld's
+   precedent [Y94, p.7]; its value there is not this world's, and DESIGN §5A.10 lists it as
+   unmeasured. Lowering the number changes no rule.
+
+The price round is pre-registered when round 29 is read, on whichever base that reading
+leaves. Neither knob is new to Core: `NeuralCostPerNeuronWatts`, `NeuralCostPerConnectionWatts`
+and `WorkCostMultiplier` are tunables already, hashed and serialised; the build exposes them
+at launch (`EVOSIM_NEURON_COST`, `EVOSIM_CONNECTION_COST`, `EVOSIM_WORK_COST`) and prints
+them in the header, which moves `simHash` and not `coreHash`.

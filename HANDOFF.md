@@ -66,10 +66,14 @@ round 28) set the base and the order.
    realisation of every seed. The draft is `scratch/movement-prereg-draft.md`; it is
    rewritten for this world before launch, with the ledger setting the added-mass
    coefficient and the active-versus-clamped assay (queue item 7) beside it.
-3. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
-   brain can be selected for, right after movement.
-4. **The open matter budget** (D074) and the vent, when a round shows the larder binds.
-5. **The cell types and immigration**, then the archive and the islands.
+3. **The price round** (D082, owner 2026-09-07): the neuron and its inputs about tenfold
+   cheaper and the stroke's work billed at a fraction, on the base round 29's reading
+   leaves, with round 29 as the control. The ledger sets the neuron price and round 28's
+   early windows set the work fraction; the three launch knobs land between the rounds.
+4. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
+   brain can be selected for, right after movement pays.
+5. **The open matter budget** (D074) and the vent, when a round shows the larder binds.
+6. **The cell types and immigration**, then the archive and the islands.
 
 Two bars are named from D081 on: *the goal* (D063's 3 of 5) and *the reference* (the base
 world's own count). A change joins the base only at the reference; a round that meets the
