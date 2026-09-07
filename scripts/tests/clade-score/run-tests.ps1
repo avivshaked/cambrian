@@ -82,6 +82,18 @@ $cases = @(
             'photo inh (population column): held -- photo inh at end = 12, min over last 20 = 12'
         )
         Absent = @("photo (owner's wording): held", "photo (owner's wording): failed")
+    },
+    @{
+        Case = 'future-birth'
+        Arm = 'fx-future-birth'
+        Expect = @(
+            'fx-future-birth: FAIL | best clade: root 2000',
+            '14 alive at end, min last 6000 s = 14',
+            'inherited births in last 20 samples 0',
+            'fails 1 of 4: no inherited absorptive birth in the last 20 samples',
+            'no manifest'
+        )
+        Absent = @('fx-future-birth: PASS', 'PROVISIONAL')
     }
 )
 

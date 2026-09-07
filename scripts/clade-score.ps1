@@ -268,14 +268,26 @@ function Get-Clades($Birth, [string]$Trait) {
     return $clades
 }
 
-# Inherited births inside $Members within the last 2,000 s (D063's "last 20 samples", at the
-# report's 100 s sampling interval) -- the newborn expresses $Trait and so did its parent.
-# O(members), so it is cheap enough to ask of every clade before deciding which to measure.
-function Get-RecentInherited($Members, [double]$Last, $Birth, [string]$Trait) {
+# The report's sampling interval, from its last two rows. The reports have always been
+# sampled every 100 s, and the fixtures copy that, but the cadence is a launch setting and
+# the window must follow it rather than assume it.
+function Get-SampleInterval([int[]]$Samples) {
+    if ($Samples.Count -lt 2) { return 100 }
+    return $Samples[$Samples.Count - 1] - $Samples[$Samples.Count - 2]
+}
+
+# Inherited births inside $Members within the last 20 samples, i.e. in ($Last - $Window,
+# $Last] -- the newborn expresses $Trait and so did its parent. Bounded above as well as
+# below: a live run's lineage runs ahead of its report by up to a sample, and a birth after
+# the last sample must not recruit for a window that has not seen it (the Astra review's
+# R4, 2026-09-07). $Window is 20 sampling intervals read from the sample axis, not an
+# assumed 2,000 s. O(members), so it is cheap enough to ask of every clade before deciding
+# which to measure.
+function Get-RecentInherited($Members, [double]$Last, [double]$Window, $Birth, [string]$Trait) {
     $recent = 0
     foreach ($m in $Members) {
         $bm = $Birth[$m]
-        if ($bm.t -gt ($Last - 2000) -and $bm.p -ne -1) {
+        if ($bm.t -gt ($Last - $Window) -and $bm.t -le $Last -and $bm.p -ne -1) {
             $pb = if ($Birth.ContainsKey($bm.p)) { $Birth[$bm.p] } else { $null }
             if ($null -ne $pb -and $pb.$Trait -eq 1) { $recent++ }
         }
@@ -291,6 +303,7 @@ function Get-RecentInherited($Members, [double]$Last, $Birth, [string]$Trait) {
 function Measure-Clade($Members, [int[]]$Samples, $Birth, $Death, [string]$Trait) {
     $n = $Samples.Count
     $last = $Samples[$n - 1]
+    $window = 20 * (Get-SampleInterval $Samples)
     $series = Get-AliveSeries $Members $Samples $Birth $Death
     $atEnd = $series[$n - 1]
 
@@ -318,7 +331,7 @@ function Measure-Clade($Members, [int[]]$Samples, $Birth, $Death, [string]$Trait
         }
     }
 
-    $recent = Get-RecentInherited $Members $last $Birth $Trait
+    $recent = Get-RecentInherited $Members $last $window $Birth $Trait
     $firstT = $null
     foreach ($m in $Members) {
         $bm = $Birth[$m]
@@ -345,6 +358,23 @@ foreach ($a in $Arm) {
         Sort-Object Name | Select-Object -Last 1
     if (-not $runDir) { throw "No run directory under $armDir." }
     $lineagePath = Join-Path $runDir.FullName 'lineage.jsonl'
+
+    # The manifest's status decides whether this is a reading or a verdict. A running arm's
+    # report and lineage are both live, so its line is provisional; a run with no manifest
+    # (a fixture, or a run older than the manifest) says so. The clauses are computed the
+    # same way either way -- only the label changes.
+    $manifestPath = Join-Path $runDir.FullName 'run.json'
+    $standing = ''
+    if (-not (Test-Path -LiteralPath $manifestPath)) {
+        $standing = ' | no manifest'
+    } else {
+        $manifestText = [System.IO.File]::ReadAllText($manifestPath)
+        $m = [regex]::Match($manifestText, '"status"\s*:\s*"([^"]+)"')
+        $status = if ($m.Success) { $m.Groups[1].Value } else { 'unknown' }
+        if ($status -ne 'ended' -and $status -ne 'stopped') {
+            $standing = " | PROVISIONAL: manifest status $status, the report and the lineage are still being written"
+        }
+    }
 
     $lineage = Read-Lineage $lineagePath
     $birth = $lineage.Birth
@@ -411,6 +441,7 @@ foreach ($a in $Arm) {
         $verdictLine = "{0}: FAIL | no absorptive clade alive at the last sample | aggregate inherit@end {1}" -f `
             $a, $inheritAtEnd
     }
+    $verdictLine += $standing
 
     # -------------------------------------------------------------------------------
     # Line 2 -- the largest clade, in the format this script printed before every clade
@@ -444,7 +475,7 @@ foreach ($a in $Arm) {
         foreach ($rt in $phoClades.Keys) {
             $mem = $phoClades[$rt]
             if ((Get-AliveAt $mem $last $birth $death) -eq 0 -and
-                (Get-RecentInherited $mem $last $birth 'pho') -eq 0) { continue }
+                (Get-RecentInherited $mem $last (20 * (Get-SampleInterval $samples)) $birth 'pho') -eq 0) { continue }
             $s = Measure-Clade $mem $samples $birth $death 'pho'
             $phoScored.Add([pscustomobject]@{ Rt = [int64]$rt; Stats = $s })
         }

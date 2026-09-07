@@ -74,6 +74,13 @@ namespace Evosim.Core
     {
         private readonly List<double> _stock = new List<double>();
         private readonly List<double> _demand = new List<double>();
+
+        // What each cell held when the consumption pass began -- the figure every share and
+        // every rationed density in that pass is priced from, so that a meal taken earlier in
+        // the walk cannot change the price of a meal taken later (the Astra review's R1,
+        // 2026-09-07). Empty until FreezeAvailability has been called for the step.
+        private readonly List<double> _available = new List<double>();
+        private bool _frozen;
         private readonly List<double> _sinking = new List<double>();
 
         /// <summary>Horizontal area of the world, m².</summary>
@@ -305,9 +312,60 @@ namespace Evosim.Core
         public float EdibleDensityAt(float heightY) => EdibleDensityAt(heightY, SinglePatchOrThrow());
 
         /// <summary>Discards last step's demand, in every patch. Call before <see cref="Demand(float, float, int)"/>.</summary>
+        /// <remarks>Also thaws <see cref="FreezeAvailability"/>: a new step registers new demand
+        /// and freezes again before anyone is fed.</remarks>
         public void ClearDemand()
         {
             for (int i = 0; i < _demand.Count; i++) _demand[i] = 0.0;
+            _frozen = false;
+        }
+
+        /// <summary>
+        /// Fixes what every cell has to give for the consumption pass that follows. Call after
+        /// the last <see cref="Demand(float, float, int)"/> of the step and before the first
+        /// <see cref="ShareAt(float, int)"/> or <see cref="Take(float, float, int)"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Before this existed, <see cref="ShareAt(float, int)"/> and the rationed density were
+        /// read from the live stock, which each <see cref="Take(float, float, int)"/> in the same
+        /// pass had already reduced. Two identical feeders demanding 10 J each of a 10 J cell
+        /// got 5 J and 1.25 J, in admission order, and 3.75 J stayed in the water with both
+        /// still hungry. With availability frozen, each gets the share the demand pass promised.
+        /// </para>
+        /// <para>
+        /// Anything deposited during the pass -- exudation, a corpse -- raises the live stock
+        /// and so the cap on a take, but not what is shared out; it is food next step. In a
+        /// step where every cell holds more than its feeders want, nothing here changes any
+        /// number, which is the whole recorded history of the scored worlds.
+        /// </para>
+        /// </remarks>
+        public void FreezeAvailability()
+        {
+            while (_available.Count < _stock.Count) _available.Add(0.0);
+
+            for (int layer = 0; layer < LayerCount; layer++)
+            {
+                for (int patch = 0; patch < PatchCount; patch++)
+                {
+                    int cell = Cell(layer, patch);
+                    _available[cell] = IsRefuge(layer) ? EdibleStock(layer, patch) : _stock[cell];
+                }
+            }
+
+            _frozen = true;
+        }
+
+        /// <summary>
+        /// The edible density a rationed feeder is re-priced at: what the cell held when the
+        /// consumption pass began, per cubic metre. Valid only after <see cref="FreezeAvailability"/>.
+        /// </summary>
+        public float FrozenEdibleDensityAt(float heightY, int patch)
+        {
+            ValidatePatch(patch);
+            if (!_frozen) throw new InvalidOperationException("FreezeAvailability has not been called this step.");
+            int layer = LayerOf(heightY);
+            return (float)(_available[Cell(layer, patch)] / LayerVolume);
         }
 
         /// <summary>Registers what one creature would take at this depth and patch if nothing competed.</summary>
@@ -350,7 +408,12 @@ namespace Evosim.Core
             double wanted = _demand[cell];
 
             if (wanted <= 0.0) return 1f;
-            double available = IsRefuge(layer) ? EdibleStock(layer, patch) : _stock[cell];
+
+            // Frozen for the pass when the world has frozen it; the live stock otherwise, which
+            // is what a caller outside the world's step (a test, a ledger probe) sees.
+            double available = _frozen
+                ? _available[cell]
+                : (IsRefuge(layer) ? EdibleStock(layer, patch) : _stock[cell]);
 
             return available >= wanted ? 1f : (float)(available / wanted);
         }

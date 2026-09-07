@@ -100,6 +100,24 @@ namespace Evosim.Core
         public float Expenditure => Upkeep + Neural + Work;
 
         /// <summary>
+        /// This ledger with its pool draw replaced by what the field actually gave, the food
+        /// income scaled down in the same ratio. Everything else is unchanged.
+        /// </summary>
+        /// <remarks>
+        /// A creature is credited only what was taken from the water. Before 2026-09-07 the
+        /// ledger kept its planned income when <c>NutrientField.Take</c> returned less than it
+        /// asked for, and the difference was energy created from nothing (the Astra review's
+        /// R1). Conversion is linear in the amount drawn, so scaling is exact.
+        /// </remarks>
+        public EnergyLedger WithPoolDrawn(float poolDrawn)
+        {
+            if (!(poolDrawn < PoolDrawn) || PoolDrawn <= 0f) return this;
+            float scale = poolDrawn / PoolDrawn;
+            return new EnergyLedger(
+                LightIncome, FoodIncome * scale, poolDrawn, Upkeep, Neural, Work, Exuded);
+        }
+
+        /// <summary>
         /// What the body actually keeps this step: income, less metabolism, less what it released
         /// to the water (D070).
         /// </summary>

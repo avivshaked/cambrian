@@ -32,6 +32,10 @@
     pho-absent      the same world with no `"pho"` field on any row, as every run recorded
                     before the flag existed. Both lineage readings print "flag absent"; the
                     column reading still holds.
+    future-birth    clade B as in smaller-passes, but its three recruits are born at
+                    t=11,000, after the report's last sample at 10,000 -- the shape of a
+                    live run whose lineage is ahead of its report. They must not count:
+                    the seed FAILS on recruitment (the Astra review's R4).
 
   Samples run 100..10,000 s at the report's 100 s interval, so "the last 20 samples" is
   t > 8,000 and "the last two lifetimes" is t >= 4,000 -- the same windows the real reports
@@ -175,3 +179,14 @@ $rows.AddRange((New-Cohort -1 9000 10 100 $null 0 $null))
 New-Case 'pho-absent' 'fx-pho-absent' $rows 17 12
 
 Write-Host "fixtures written to $fixtures"
+
+# ---------------------------------------------------------------------------------------
+# 5. future-birth -- clade B holds 14 throughout and its only recruits are born after the
+#    last sample. Recruitment must read 0 and the seed must FAIL.
+# ---------------------------------------------------------------------------------------
+$rows = New-Object System.Collections.Generic.List[string]
+$rows.Add((New-BirthRow 200 2000 -1 'f' 1 $null))
+$rows.AddRange((New-Cohort 2000 2001 13 250 $null 1 $null))
+$rows.AddRange((New-Cohort 2000 2014 3 11000 $null 1 $null))
+$rows.AddRange((New-Cohort -1 9000 10 100 $null 0 $null))
+New-Case 'future-birth' 'fx-future-birth' $rows 14 $null

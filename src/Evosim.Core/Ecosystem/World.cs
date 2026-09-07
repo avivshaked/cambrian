@@ -328,6 +328,30 @@ namespace Evosim.Core
         public double DetritusTakenTotal { get; private set; }
 
         /// <summary>
+        /// Takes that returned less than the ledger asked for, running total. Zero by
+        /// construction while availability is frozen for the consumption pass and every
+        /// rationed draw is capped at its share; a nonzero count means the allocation has a
+        /// hole, and the creature was credited what it got rather than what it planned.
+        /// </summary>
+        public long PoolShortTakes { get; private set; }
+
+        /// <summary>
+        /// The matter the living actually hold, summed body by body. Equal to
+        /// <see cref="MatterInBodies"/> whenever nothing has been charged for a body that does
+        /// not exist -- the invariant the Astra review's R2 found broken (2026-09-07). O(n): an
+        /// instrument for tests and diagnostics, not for the step.
+        /// </summary>
+        public double MatterInLivingBodies
+        {
+            get
+            {
+                double sum = 0.0;
+                for (int i = 0; i < _living.Count; i++) sum += _living[i].LockedMatter;
+                return sum;
+            }
+        }
+
+        /// <summary>
         /// Matter the smallest child physically expressible would cost — D048. A strict lower
         /// bound, cached because it depends only on config.
         /// </summary>
@@ -997,6 +1021,10 @@ namespace Evosim.Core
                 Nutrients.Demand(creature.HeightY, ledger.PoolDrawn, creature.Patch);
             }
 
+            // Every share and every rationed price in the pass below is taken from what the
+            // cells hold now, not from what earlier meals in the same walk leave behind.
+            Nutrients.FreezeAvailability();
+
             for (int i = _living.Count - 1; i >= 0; i--)
             {
                 Organism creature = _living[i];
@@ -1016,12 +1044,21 @@ namespace Evosim.Core
                 if (share < 1f)
                 {
                     float rationed =
-                        Nutrients.EdibleDensityAt(creature.HeightY, creature.Patch) * share;
+                        Nutrients.FrozenEdibleDensityAt(creature.HeightY, creature.Patch) * share;
 
                     // The same work, not more: this replaces the ledger rather than adding to it.
                     ledger = Metabolism.StepAt(
                         creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch),
                         rationed, creature.PendingWorkJoules, seconds, age);
+
+                    // A share is a fraction of the demand, and scaling the density delivers
+                    // exactly that only for an intake linear in density. A saturating mouth
+                    // (the satiation cap, D062) re-saturates at the rationed density and would
+                    // draw its whole demand whatever its share, so the cell would be overdrawn
+                    // and the last feeders' takes would come up short. The allowance is the
+                    // bound the demand pass promised, and no feeder draws past it.
+                    float allowance = share * _ledgers[i].PoolDrawn;
+                    if (ledger.PoolDrawn > allowance) ledger = ledger.WithPoolDrawn(allowance);
 
                     // What the world actually fed it, replacing the appetite pass's unrationed
                     // reading. Already share-multiplied — AbsorptiveSample.DensityHere says so,
@@ -1029,16 +1066,27 @@ namespace Evosim.Core
                     if (creature.HasAbsorptiveTissue) creature.LastDensityHere = rationed;
                 }
 
+                if (ledger.PoolDrawn > 0f)
+                {
+                    float taken = Nutrients.Take(creature.HeightY, ledger.PoolDrawn, creature.Patch);
+                    DetritusTakenTotal += taken;
+
+                    // Credited what it got. Take is a partial-take API and returns what was
+                    // there; a ledger that kept its planned income when the water gave less
+                    // was creating energy (the Astra review's R1). Unreachable while the
+                    // allowance above holds, and counted so that a hole shows rather than hides.
+                    if (taken < ledger.PoolDrawn)
+                    {
+                        PoolShortTakes++;
+                        ledger = ledger.WithPoolDrawn(taken);
+                    }
+                }
+
                 if (creature.HasAbsorptiveTissue)
                 {
                     creature.LastShare = share;
                     creature.LastLedger = ledger;
                     creature.LastStepSeconds = seconds;
-                }
-
-                if (ledger.PoolDrawn > 0f)
-                {
-                    DetritusTakenTotal += Nutrients.Take(creature.HeightY, ledger.PoolDrawn, creature.Patch);
                 }
 
                 // Drained here and nowhere else. Both branches above priced the same joules, so
@@ -1597,7 +1645,15 @@ namespace Evosim.Core
             // return is short removes the partial amount and then drops it on the floor, which
             // leaks matter on every blocked conception — 132 units of 24,000 in a 400 s test,
             // and it leaks fastest exactly when matter is scarce enough to matter.
-            if (matterPrice > 0f &&
+            // A body of no parts is a stillbirth (§4.5's extinction-by-shrinking; Admit counts
+            // it and settles the energy). It is charged no matter: the fixed term (D065) is
+            // machinery mass with no body to sit in, and charging it here put it into
+            // MatterInBodies with no owner and no death to return it -- the Astra review's R2
+            // (2026-09-07). The energy rule is unchanged: the parent pays the endowment and the
+            // overhead, and both leave the world in Admit, exactly as before.
+            bool stillborn = body.PartCount == 0;
+
+            if (!stillborn && matterPrice > 0f &&
                 Matter.StockInLayer(Matter.LayerOf(parent.HeightY), parent.Patch) < matterPrice)
             {
                 ConceptionsBlockedByMatter++;
@@ -1631,7 +1687,7 @@ namespace Evosim.Core
                 return false;
             }
 
-            if (matterPrice > 0f)
+            if (!stillborn && matterPrice > 0f)
             {
                 Matter.Take(parent.HeightY, matterPrice, parent.Patch);
                 MatterInBodies += matterPrice;
@@ -1640,8 +1696,10 @@ namespace Evosim.Core
             parent.Energy -= price;
 
             // Endowment and tissue are transferred and stay in the world; the overhead is burned.
-            // It is what makes brood size a trait selection can act on at all (§5A.6) — without
-            // it, one brood of four and four broods of one are indistinguishable.
+            // It is paid per offspring, so it does not by itself tell one brood of four from four
+            // broods of one (corrected 2026-09-07); the gate above does, by asking the parent to
+            // hold the whole brood's price at once. What the overhead does is make an offspring
+            // cost more than the energy it carries (§5A.6).
             EnergyOut += Config.PerOffspringOverheadJoules;
 
             Organism child = Admit(
