@@ -29,7 +29,7 @@ and we have gone back to it. Every round since stacked a change on it; here is w
 | [logbook/0065](logbook/0065-the-first-shared-water.md) | D077's box screened at the fast step and worked: 4 of 5, and a stomach lineage evolved at the vent. Its costs were the plume's crowd, a springy placeholder floor, and the size of the world |
 | [logbook/0066](logbook/0066-one-box.md) | The build record for D077: the box, the wrap, the restoring top, the real sea bed, newborns placed beside the parent |
 | [logbook/0067](logbook/0067-the-shared-world-at-the-fine-step.md) | 2 of 5. The lean dose starved the founders' stomachs, and a mutant stomach line then evolved at the vent's floor in three seeds of three |
-| [logbook/0068](logbook/0068-the-shared-world-fed.md) | The same world fed at influx 0.6/s. Four arms are still running tonight, and r27-s4 is the one that has ended |
+| [logbook/0068](logbook/0068-the-shared-world-fed.md) | The same world fed at influx 0.6/s: 3 of 5 pass D063 as amended, below the round's bar of 4, and the stock grew 44–53% over the last third in every seed. The fed world is a screen |
 
 [logbook/0069](logbook/0069-the-shared-world-does-not-replay.md) then reframed all of it: the
 shared world does not replay. Six runs of one seed on one build gave six different worlds.
@@ -73,8 +73,8 @@ than tuned around. Round 27 therefore runs on as a screen rather than a scored c
 4. **A current-build round-18 check** (done 2026-09-06: `r18chk-s1` matches `r18x-s1` on
    all 30 samples to 3,000 s, so the historical five stand as the control; 0070 records
    it, and the report file the check overwrote by mistake was rebuilt from the run's data).
-5. **Round 27's results** report the late total-matter slope against the influx, and the
-   agreement between influx and burial over the last two lifetimes, as numbers.
+5. **Round 27's results** (done 2026-09-07, logbook/0068): over the last two lifetimes the
+   stock rose at 49–70% of the influx in every seed, and burial carried the rest.
 6. **Run identity** in DESIGN.md section 7 and CLAUDE.md gains the build's `simHash` and the
    physics worker count, both read from the manifest, once D078 has landed.
 7. **The movement pre-registration** gains a second layer: an active-versus-clamped assay on
