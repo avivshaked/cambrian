@@ -256,3 +256,4 @@ key only translates the entries' reporting shorthand.
 | [0071](0071-three-outside-reviews.md) | 2026-09-07 | Three outside reviews |
 | [0072](0072-the-round-that-asks-whether-moving-pays.md) | 2026-09-07 | The round that asks whether moving pays |
 | [0073](0073-the-chicken-and-the-egg.md) | 2026-09-07 | The chicken and the egg |
+| [0074](0074-the-water-as-vertices.md) | 2026-09-07 | The water as vertices |

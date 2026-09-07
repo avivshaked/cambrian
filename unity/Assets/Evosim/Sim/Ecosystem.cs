@@ -1177,7 +1177,9 @@ namespace Evosim.Sim
                 // hand. Drained rather than read, so the same bind cannot be counted twice.
                 DriveImpulsesLimited += body.Driver.DrainImpulsesLimited();
 
-                World.Observe(creature, centre.y, interval);
+                // D083: the whole centre, so a vertex field feeds the body where it is. The
+                // cell field reads only the height, as it always did.
+                World.Observe(creature, centre.ToFloat3(), interval);
 
                 if (body.Settled)
                 {

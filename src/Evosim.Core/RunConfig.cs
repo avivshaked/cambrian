@@ -583,6 +583,62 @@ namespace Evosim.Core
         public float FloorRefugeMetres { get; set; }
 
         /// <summary>
+        /// How the water holds what is dissolved and suspended in it — D083. <see cref="MatterField.Cells"/>
+        /// is every recorded run: one number per layer and patch. <see cref="MatterField.Vertices"/>
+        /// is a set of vertices each holding joules at a position, read through a kernel.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Cells price a body's water at the cell's number</b>, so a body that stays does not
+        /// deplete its own water and one that moves does not refresh it; undirected movement earns
+        /// nothing and selection deletes the muscles (DESIGN §0r). Vertices give a body a hole to
+        /// eat and to leave, and give the field a gradient at the kernel's scale. Requires
+        /// <see cref="SharedSpace"/>: a vertex is somewhere, and so must the bodies be.
+        /// </para>
+        /// <para>Default Cells, so every launcher on file still describes the world it ran.</para>
+        /// </remarks>
+        [Tunable("field")]
+        public MatterField FieldModel { get; set; } = MatterField.Cells;
+
+        /// <summary>Reach of a mouth and of a density read, m — the kernel's support (D083).</summary>
+        /// <remarks>
+        /// Larger is smoother and less local; smaller is noisier and needs more vertices to read
+        /// cleanly. A read fluctuates as <c>1/√n</c> in the vertices it covers; at 1 m over water
+        /// seeded at <see cref="FieldVertexJoules"/> per vertex the kernel holds about thirty.
+        /// ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("field", Unit = "m")]
+        public float FieldKernelMetres { get; set; } = 1f;
+
+        /// <summary>
+        /// Where <see cref="VertexField.Cull"/> starts merging nearest pairs when the count is
+        /// over <see cref="FieldVertexCap"/>, m — it widens from here toward the kernel (D083).
+        /// </summary>
+        /// <remarks>Nothing merges below the cap: a deposit joins the nearest vertex within the
+        /// kernel, and vertices that drift together stay two. ⚠ Unmeasured (§5A.10).</remarks>
+        [Tunable("field", Unit = "m")]
+        public float FieldMergeMetres { get; set; } = 0.25f;
+
+        /// <summary>
+        /// The count <see cref="VertexField.Cull"/> merges down toward, per field (D083).
+        /// </summary>
+        /// <remarks>A budget on the bill rather than on the physics: over it, the merge radius
+        /// widens toward the kernel until the count fits, which coarsens the field where it is
+        /// densest. The report's <c>vtx</c> column says how close a run sits to it.</remarks>
+        [Tunable("field")]
+        public int FieldVertexCap { get; set; } = 100000;
+
+        /// <summary>
+        /// Joules in one emitted vertex — what the vent and the surface influx found a vertex
+        /// with — and the mass the seeded lattice is spaced for (D083).
+        /// </summary>
+        /// <remarks>At <see cref="InitialMatterPerCubicMetre"/> 1 the default spaces the seed
+        /// lattice at 0.5 m, some fifty thousand vertices in a 10 by 10 by 60 m column.
+        /// ⚠ Unmeasured (§5A.10).</remarks>
+        [Tunable("field", Unit = "J")]
+        public float FieldVertexJoules { get; set; } = 0.125f;
+
+        /// <summary>
         /// Fraction of a refuge layer's density that feeding can see and take, in [0, 1] —
         /// arm C's knob on D055's refuge. Zero is D055's own refuge: total exclusion.
         /// </summary>
@@ -1383,6 +1439,16 @@ namespace Evosim.Core
     /// world is being told is where its matter comes from, and the depth follows from that. At an
     /// influx of 0 the two are the same world.
     /// </remarks>
+    /// <summary>How <see cref="RunConfig.FieldModel"/> holds the water's stock — D083.</summary>
+    public enum MatterField
+    {
+        /// <summary>One number per layer and patch: every recorded run.</summary>
+        Cells = 0,
+
+        /// <summary>Vertices holding joules at positions, read through a kernel — <see cref="VertexField"/>.</summary>
+        Vertices = 1,
+    }
+
     public enum MatterInflux
     {
         /// <summary>

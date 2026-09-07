@@ -65,7 +65,7 @@ namespace Evosim.Sim
         private readonly float _worldDepthMetres;
 
         /// <summary>The field a nose smells — <c>World.Nutrients</c>, or null in a harness.</summary>
-        private readonly NutrientField _nutrients;
+        private readonly IMatterField _nutrients;
 
         /// <summary>The creature's own account, for <see cref="SensorChannel.Energy"/>.</summary>
         private readonly IReserveSource _reserve;
@@ -123,7 +123,7 @@ namespace Evosim.Sim
         public CreatureSensors(
             CreatureInstance creature,
             float worldDepthMetres,
-            NutrientField nutrients,
+            IMatterField nutrients,
             IReserveSource reserve,
             int sensorMask,
             RunConfig config)
@@ -211,7 +211,11 @@ namespace Evosim.Sim
                     int patch = _creature.Patch;
                     if (patch < 0 || patch >= _nutrients.PatchCount) patch = 0;
 
-                    float density = _nutrients.EdibleDensityAt(t.position.y, patch);
+                    // At the part's own position — D083. A cell field reads the height and the
+                    // patch out of this and nothing else, as it always did; a vertex field reads
+                    // the position, which is what gives the smell a gradient inside a patch for
+                    // the first time.
+                    float density = _nutrients.EdibleDensityAt(new FieldPoint(t.position.ToFloat3(), patch));
 
                     // x / (x + k): 0 in empty water, ½ at the half-scale, and it never quite
                     // arrives at 1. A linear clamp would saturate in rich water, which is blind

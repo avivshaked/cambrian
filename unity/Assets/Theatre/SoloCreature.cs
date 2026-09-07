@@ -159,7 +159,7 @@ namespace Evosim.Theatre
 
             if (smellDensity > 0f)
             {
-                NutrientField field = solo._water.Nutrients;
+                IMatterField field = solo._water.Nutrients;
                 float volume = field.LayerVolume;
 
                 for (int layer = 0; layer < field.LayerCount; layer++)

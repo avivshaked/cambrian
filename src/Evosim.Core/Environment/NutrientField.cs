@@ -70,7 +70,7 @@ namespace Evosim.Core
     /// adjacent to patch 0.
     /// </para>
     /// </remarks>
-    public sealed class NutrientField
+    public sealed class NutrientField : IMatterField
     {
         private readonly List<double> _stock = new List<double>();
         private readonly List<double> _demand = new List<double>();
@@ -458,6 +458,27 @@ namespace Evosim.Core
 
         /// <summary>Pre-D061 signature — patch 0 when <see cref="PatchCount"/> is 1, throws otherwise.</summary>
         public float Take(float heightY, float joules) => Take(heightY, joules, SinglePatchOrThrow());
+
+        // ------------------------------------------------------------------ IMatterField, D083
+        //
+        // A point is read as its depth and its patch index and nothing else, so a world running
+        // on cells is the arithmetic every recorded run was measured with: the horizontal
+        // position a point may carry is ignored here, and FieldPoint.At's NaN in x and z is
+        // never looked at.
+
+        public void Deposit(FieldPoint at, float joules) => Deposit(at.HeightY, joules, at.Patch);
+        public float DensityAt(FieldPoint at) => DensityAt(at.HeightY, at.Patch);
+        public float EdibleDensityAt(FieldPoint at) => EdibleDensityAt(at.HeightY, at.Patch);
+        public void Demand(FieldPoint at, float joules) => Demand(at.HeightY, joules, at.Patch);
+        public float FrozenEdibleDensityAt(FieldPoint at) => FrozenEdibleDensityAt(at.HeightY, at.Patch);
+        public float ShareAt(FieldPoint at) => ShareAt(at.HeightY, at.Patch);
+        public float Take(FieldPoint at, float joules) => Take(at.HeightY, joules, at.Patch);
+
+        /// <summary>The cell's whole stock — what conception's matter gate has always compared a price against.</summary>
+        public double ReachableStock(FieldPoint at) => StockInLayer(LayerOf(at.HeightY), at.Patch);
+
+        /// <summary>Nothing to merge: a cell is a cell.</summary>
+        public void Cull() { }
 
         /// <summary>
         /// Moves detritus downward by one step's worth of sinking, independently within every

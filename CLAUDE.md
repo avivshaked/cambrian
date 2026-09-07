@@ -511,6 +511,18 @@ actually verifying it.
   is in bodies less what the living hold. A nonzero `mat orphan` means matter was charged to a
   body that does not exist, which is what happened for every stillbirth between D065 and
   2026-09-07 (none seen in the checks made on the scored worlds; DESIGN §0p).
+- **A vertex world needs positions, and a Core-only one has almost none.** From D083
+  (2026-09-07) `EVOSIM_FIELD vertices` replaces the two cell fields with `VertexField`, which
+  feeds a body at its centre of mass and refuses a point that carries only a depth and a
+  patch. The world therefore refuses the tiled mode (`SharedSpace` false), and in a Core-only
+  test with no placer every body sits at its patch's centre, so every deposit merges into a
+  handful of vertices (20 vertices holding 14,644 J in `VertexFieldTests`) and the field reads
+  nothing like the farm's. Read a vertex field's shape from a run, never from a Core test. A
+  deposit that lands within `FieldMergeMetres` of a vertex joins it and the vertex keeps its
+  position; the report's `vtx` column prints `detritus/matter` counts against
+  `FieldVertexCap`, and the per-depth columns (`det deep`, `mat here`, `refuge J`) are the
+  same layer-and-patch bins as before, summed over vertices. Every config written before
+  this build lacks the `field` group and is refused by it, per the tunable rule above.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.

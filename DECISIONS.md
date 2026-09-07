@@ -104,7 +104,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D079](#d079) | One change at a time from the last good world — round 18's closed world is the base; the first change is shared space (D077's box, real floor, restoring top) under D078's single-threaded physics; the open budget and the vent return afterwards, each earning its place | 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 · **round 28 read 2026-09-07 (logbook/0070): 3 of 5 under D063 as amended, below round 18's bar of 4; seeds 2, 3, 4 pass and seed 1 fails as in round 18; seed 5's stomach line stable at 17 and sterile from 21,408 s; M5 (no crowd) fails in every seed; the collisions-off control and the box's width are the owner's rulings** · **amended 2026-09-07 (D081): the base becomes round 28's contact world** |
 | [D080](#d080) | Non-commercial terms: PolyForm Noncommercial 1.0.0 for code and the genomes, CC BY-NC 4.0 for prose, commercial licences on request, contributions carry a relicensing grant | 2026-09-07 | ruled (owner: "lets apply the changes to the license") · supersedes D015 |
 | [D081](#d081) | Six rulings on round 28's reading — two named bars (the goal, the reference); the contact world is the base; the path is movement, predation, then the open budget; added mass on and the global brain removed in the movement build; the futility clause narrowed to screens | 2026-09-07 | ruled (owner, by question) · amends D063's reading, D069, D075, D079 |
-| [D082](#d082) | The price of a bud: the neuron and its inputs about tenfold cheaper, and the stroke's work billed at a fraction, in a price round after round 29 reads; round 29 is the control at today's price | 2026-09-07 | ruled (owner, by question) · the numbers are set by the ledger and the record in the round's pre-registration |
+| [D082](#d082) | The price of a bud: the neuron and its inputs about tenfold cheaper, and the stroke's work billed at a fraction, in a price round after round 29 reads; round 29 is the control at today's price | 2026-09-07 | ruled (owner, by question) · the numbers are set by the ledger and the record in the round's pre-registration · **folded into round 30 with D083 the same night; round 29 stays the price control** |
+| [D083](#d083) | The water as vertices: detritus and free matter become vertices holding joules at positions, read through a kernel, so a still body eats a hole and a moving body leaves it; the vent founds vertices and the floor buries them; the cell field stays behind a switch for the record | 2026-09-07 | ruled (owner: "it's settled") · built and tested the same night; the halo proposal withdrawn · round 30 is the vertex world with D082's prices, round 29 the price control, round 28 the world control |
 
 ---
 
@@ -4126,3 +4127,102 @@ leaves. Neither knob is new to Core: `NeuralCostPerNeuronWatts`, `NeuralCostPerC
 and `WorkCostMultiplier` are tunables already, hashed and serialised; the build exposes them
 at launch (`EVOSIM_NEURON_COST`, `EVOSIM_CONNECTION_COST`, `EVOSIM_WORK_COST`) and prints
 them in the header, which moves `simHash` and not `coreHash`.
+
+**Folded into round 30 the same night (D083).** The price round and the vertex world run
+as one build, with round 29 as the price control and round 28 as the world control. The
+reason is the one the withdrawn motility proposal gave. The ledger has already measured what
+the price does to a still body, so the price is not a confound in the reading that matters,
+which is whether a moving stomach out-eats a still one. And a bud needs both to be visible
+in one round. D079's one-change rule bends a second time, and D083 says so.
+
+### D083
+**The water as vertices** · 2026-09-07
+
+The two fields that hold what is dissolved and suspended in the water, detritus and free
+matter, become sets of vertices that each hold joules at a position and are read through a
+kernel. The cell field stays in the code behind a switch that defaults to it, so every
+recorded run still describes its world. The owner ruled it in one evening, in their words.
+"What if instead of having cells with values, we'd have verteces with values, and any point
+between the verteces will be an average of them? ... bodies could become verteces rather
+than contribute to a cell's value." "Creatures that stay in one place will depleat their
+field." "Vents that currently add nutrients should instead add verteces (on some kind of
+probabilty), and same should go for locking out verteces on the bottom." "It's settled. We
+are moving to a vertcies field nutrients world."
+
+**Why.** DESIGN §0r's diagnosis, from review round 6: a body here fed from a cell 1 m by
+5 m at the cell's one price, so staying did not deplete a body's own water and moving did
+not refresh it, and undirected movement earned nothing by construction. The literature says
+that is the one thing an early world must not do (research Q11). The motility proposal put
+a per-body depletion halo in front of the owner as the cheap sketch of the physics; the
+owner asked for the physics itself, and it is the road D076 already named ("literal
+particles down the line"). The vertex field also gives the water a gradient at the kernel's
+scale everywhere, which the chemical sense has never had to read.
+
+**Ruled and built.**
+
+1. **Vertices carry amounts, not values.** A vertex holds joules. The density at a point is
+   the sum over vertices within reach of joules times a kernel weight, with the kernel
+   normalised to unit integral over its reach (Wendland's C2 on a support of
+   `FieldKernelMetres`, 1 m), so a read is a mass density that integrates back to the mass
+   it was read from. Every operation is a transfer, so §5A.2's audit holds by construction.
+   Rejected: values on vertices with an average between them, the owner's first wording,
+   because a take from an average has no single place to subtract from and a merge of two
+   averages loses whatever their volumes did not agree on; the audit would open.
+2. **Feeding is the frozen-availability rule over the neighbours** (the Astra review's R1).
+   A body's demand is spread over the vertices in reach in proportion to edible mass times
+   kernel weight; each vertex freezes what it has to give; a body's share is the weighted
+   mean of its neighbours' shares; its take is spread in proportion to weight times share.
+   Summed over every body at a vertex, the takes cannot exceed what it froze.
+   `VertexFieldTests` asks this of thirty mouths a third of a metre apart.
+3. **A deposit joins the nearest vertex within the kernel and founds one only where there
+   is none.** A corpse and an exudate land in the water that is there, and moving a deposit
+   onto the nearest sample of that water moves it by less than the kernel resolves. The
+   first build merged any two vertices that drifted within a quarter metre, and the smoke
+   showed the mixing walk feeding that rule until the seeded lattice had collapsed from
+   48,000 vertices to 744 in 200 s and the matter gate was refusing conceptions in water
+   that was full on average (logbook/0074). Merging is a budget rule only: over
+   `FieldVertexCap` (100,000), the nearest pairs merge from `FieldMergeMetres` (0.25 m)
+   outward to the kernel. A vertex eaten to nothing is dropped.
+4. **The water moves the vertices.** They sink at the field's sink speed, ride the current at
+   the velocity the bodies feel as drag (the roll's, the vent's), and diffuse by a seeded
+   random walk of variance twice the diffusivity times the step, reflected at the waterline
+   and the floor: the standard Lagrangian form of eddy mixing. Each field has its own
+   random stream (`World.DetritusFieldIndex`, `World.MatterFieldIndex`), so a field knob
+   perturbs no other draw. Rejected: a fixed lattice with the stock moved between vertices,
+   which I recommended to myself for an hour because it cannot cluster; it is a fine grid
+   under another name, and not the world the owner named.
+5. **The vent and the surface influx found vertices.** The influx banks joules and founds one
+   vertex per whole quantum (`FieldVertexJoules`, 0.125 J) at a random position in the
+   plume's bottom layer or along the surface; what is counted is what was founded. Burial
+   removes each vertex resting on the floor with probability rate times step, whole. The
+   floor refuge stays a zone: a vertex within it is edible at the refuge fraction.
+6. **Reads for the record stay.** The report's per-depth columns are the same layer-and-patch
+   bins, summed over vertices; the conception gate compares a price against the edible mass
+   in reach; the chemical sense reads the kernel at each part's position, which on a cell
+   world is the arithmetic it always was. A `vtx` column prints the two counts.
+7. **A vertex world needs shared space.** The world refuses `FieldModel Vertices` without
+   `SharedSpace`, because a vertex is somewhere and the tiled world has no horizontal
+   coordinate for a body. `World.Observe` takes the centre of mass whole; `Organism` carries
+   `X` and `Z`; `FieldPoint` carries a position and a patch, and each field reads the half
+   it understands.
+8. **Granularity is bought with count, and the bill is small.** A kernel read fluctuates as
+   one over the square root of the vertices it covers; the defaults put about thirty in a
+   kernel of seeded water, a 17% noise on a read. A pass over a hundred thousand vertices is
+   a few million distance checks per metabolic step against physics at a hundred a second.
+   The smoke's pace is in logbook/0074; the count is read from `vtx` against the cap.
+9. **Round 30 is the vertex world with D082's prices** in one build, on the base round 29's
+   reading leaves, with round 29 as the price control and round 28 as the world control.
+   The owner's instruction: "follow your recommendations ... try fast step worlds first to
+   see if we can fail fast before running a long simulation." D079's one-change rule bends
+   again, for the reason D082's note gives.
+
+**Withdrawn.** The motility proposal's halo (option A, my recommendation of that afternoon)
+was a one-number sketch of this field's behaviour near a body; it is retired unbuilt. Its
+finer field (B) is this field at a coarser resolution without transport; its encounter
+feeding (C) paid speed for its own sake.
+
+**What it changes.** Every seed under this build is a new realisation. A config written
+before it lacks the `field` group and is refused by it, and its configs by older builds.
+Matter refusals may rise where a crowd eats its own matter, and the round reads `mat blk`
+against births. The kernel, the merge radius, the cap and the quantum join §5A.10's
+unmeasured list.

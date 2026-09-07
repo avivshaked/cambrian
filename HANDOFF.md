@@ -17,9 +17,13 @@ line now says `CENSORED` for a run that ends short of its budget. Round 28 read 
 (0070) and is the base world by D081. Then the owner asked how nature solved the chicken
 and egg of movement and sensing; review round 6 answered it the same night (research §0,
 Q11; logbook/0073), and the answer is that this world cannot bootstrap movement by
-construction, so `fable-propose-motility.md` is in front of the owner with three world
-rules, pros, cons and a recommendation. D082 (the price of a bud) is ruled and its knobs
-are built.
+construction. The owner ruled the water into vertices (D083, logbook/0074): detritus and
+free matter are now sets of vertices holding joules at positions, read through a 1 m
+kernel, so a still body eats a hole in its own water and a moving body leaves it. Built,
+tested (549 Core tests, the audit and the matter identity closing on a vertex world) and
+smoked the same night; the first smoke found the cull collapsing the field and the rule was
+changed to a budget. D082 (the price of a bud) is folded into the same build. Round 30 is
+the vertex world with D082's prices, pre-registered when round 29 reads.
 
 The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
 asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive
@@ -71,10 +75,12 @@ round 28) set the base and the order.
    realisation of every seed. The draft is `scratch/movement-prereg-draft.md`; it is
    rewritten for this world before launch, with the ledger setting the added-mass
    coefficient and the active-versus-clamped assay (queue item 7) beside it.
-3. **The price round** (D082, owner 2026-09-07): the neuron and its inputs about tenfold
-   cheaper and the stroke's work billed at a fraction, on the base round 29's reading
-   leaves, with round 29 as the control. The ledger sets the neuron price and round 28's
-   early windows set the work fraction; the three launch knobs land between the rounds.
+3. **The vertex world with the price of a bud** (D083 and D082, owner 2026-09-07): the
+   water as vertices, so that blind movement pays by what it refreshes, and the neuron and
+   its inputs about tenfold cheaper, in one build on the base round 29's reading leaves.
+   Round 29 is the price control and round 28 the world control. Fast-step screens first
+   (`scratch/launch-r30.ps1 -Dt 0.02`), the confirming round at 0.01. The work fraction is
+   set from round 28's early windows in the pre-registration.
 4. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
    brain can be selected for, right after movement pays.
 5. **The open matter budget** (D074) and the vent, when a round shows the larder binds.
@@ -198,11 +204,6 @@ the running status), in the order they are done:
   says whether that is the standing decision.
 
 Raised 2026-09-07 by review round 6 (logbook/0073), and the next thing to rule:
-
-- **How undirected movement gets to pay** (`fable-propose-motility.md`): a per-body
-  depletion halo refreshed by diffusion and relative flow, a finer horizontal field, or
-  encounter feeding; the proposal recommends the halo, and asks whether it runs alone or
-  with D082's prices.
 
 Raised 2026-09-07 by round 28's reading (logbook/0070), and still open after D081:
 

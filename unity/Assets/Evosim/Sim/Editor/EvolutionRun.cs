@@ -372,6 +372,16 @@ namespace Evosim.Sim.EditorTools
             float connectionCost = Env("EVOSIM_CONNECTION_COST", new RunConfig().NeuralCostPerConnectionWatts);
             float workCost = Env("EVOSIM_WORK_COST", new RunConfig().WorkCostMultiplier);
 
+            // D083 (2026-09-07). The water as vertices: EVOSIM_FIELD `cells` (every recorded
+            // run, the default) or `vertices`; the kernel's reach, the merge radius, the cap on
+            // the count and the quantum an emitted vertex carries. All four are RunConfig
+            // tunables with the same defaults, so a header names them whatever the model.
+            MatterField fieldModel = EnvFieldModel("EVOSIM_FIELD");
+            float fieldKernel = Env("EVOSIM_FIELD_KERNEL", new RunConfig().FieldKernelMetres);
+            float fieldMerge = Env("EVOSIM_FIELD_MERGE", new RunConfig().FieldMergeMetres);
+            int fieldCap = (int)Env("EVOSIM_FIELD_CAP", new RunConfig().FieldVertexCap);
+            float fieldQuantum = Env("EVOSIM_FIELD_QUANTUM", new RunConfig().FieldVertexJoules);
+
             // D064. Body volume at which tissue is neutrally buoyant, m3 — the excess density
             // above is scaled by max(0, 1 - (V0/V)^(2/3)), so a founder-sized body barely sinks
             // and a large one feels the full constant. 0 is off and reproduces every pre-D064 run
@@ -584,6 +594,11 @@ namespace Evosim.Sim.EditorTools
             config.NeuralCostPerNeuronWatts = neuronCost;
             config.NeuralCostPerConnectionWatts = connectionCost;
             config.WorkCostMultiplier = workCost;
+            config.FieldModel = fieldModel;
+            config.FieldKernelMetres = fieldKernel;
+            config.FieldMergeMetres = fieldMerge;
+            config.FieldVertexCap = fieldCap;
+            config.FieldVertexJoules = fieldQuantum;
             config.InoculateAtSeconds = inoculateAt;
             config.InoculateCount = inoculateCount;
             config.InoculateDepthMetres = inoculateDepth;
@@ -816,6 +831,11 @@ namespace Evosim.Sim.EditorTools
                 // unconditionally for D065's reason: every world through round 29 ran at the
                 // defaults, and a header without the token would not say so.
                 " · neuron " + neuronCost + " W + " + connectionCost + " W/input, work x" + workCost +
+                // D083, appended after the prices per the same convention and rendered
+                // unconditionally for the same reason: `field cells` and "written before the
+                // vertex field existed" must not read the same.
+                " · field " + fieldModel.ToString().ToLowerInvariant() +
+                " h=" + fieldKernel + " merge=" + fieldMerge + " cap=" + fieldCap + " q=" + fieldQuantum +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());
@@ -1906,7 +1926,9 @@ namespace Evosim.Sim.EditorTools
                 // than the field's own reading, because what a mouth may draw is the only sense
                 // in which one body's water is better than another's. `spd jnt` says the animals
                 // move; this says whether moving took them anywhere worth being.
-                double foodHere = world.Nutrients.EdibleDensityAt(creature.HeightY, creature.Patch);
+                // At the creature's own point (D083): the cell field reads the height and the
+                // patch out of it, as it always did; the vertex field reads the position.
+                double foodHere = world.Nutrients.EdibleDensityAt(creature.Point);
 
                 if (creatureDof > 0) { foodJointed += foodHere; foodJointedCount++; depthJointed += creature.HeightY; }
                 else { foodRigid += foodHere; foodRigidCount++; depthRigid += creature.HeightY; }
@@ -2264,7 +2286,14 @@ namespace Evosim.Sim.EditorTools
                 // matterOrphaned, per the same rule.
                 .Field("sensing", sensing)
                 .Field("depthJointed", foodJointedCount > 0 ? depthJointed / foodJointedCount : 0d)
-                .Field("depthRigid", foodRigidCount > 0 ? depthRigid / foodRigidCount : 0d);
+                .Field("depthRigid", foodRigidCount > 0 ? depthRigid / foodRigidCount : 0d)
+                // D083, appended after depthRigid per the same rule: how many vertices each
+                // field holds, and how many merges it has made. 0 on a cell field.
+                .Field("detritusVertices", world.Nutrients is VertexField dv ? dv.Count : 0)
+                .Field("matterVertices", world.Matter is VertexField mv ? mv.Count : 0)
+                .Field("verticesMerged",
+                    (world.Nutrients is VertexField dm ? dm.Merged : 0L) +
+                    (world.Matter is VertexField mm ? mm.Merged : 0L));
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -2484,6 +2513,11 @@ namespace Evosim.Sim.EditorTools
                 foodJointedCount > 0 ? (depthJointed / foodJointedCount).ToString("0.##", c) : "—",
                 foodRigidCount > 0 ? (depthRigid / foodRigidCount).ToString("0.##", c) : "—",
                 world.Matter.DensityAt((float)meanDepth, 0).ToString("0.###", c),
+
+                // D083's vertex counts, `detritus/matter`.
+                world.Nutrients is VertexField rowDetritus && world.Matter is VertexField rowMatter
+                    ? rowDetritus.Count.ToString(c) + "/" + rowMatter.Count.ToString(c)
+                    : "—",
             };
 
             // The per-patch populations, last, so everything before them keeps its index.
@@ -2590,6 +2624,10 @@ namespace Evosim.Sim.EditorTools
             // The movement round (D081, logbook/0072) — appended after `mat orphan`, per the same
             // rule. See the row for what each is.
             "**sense**", "dep jnt", "dep rig", "mat here",
+
+            // D083 — appended after `mat here`, per the same rule: living vertices in the
+            // detritus and the matter field, `detritus/matter`; an em-dash on a cell field.
+            "vtx",
         };
 
         /// <summary>
@@ -2691,6 +2729,25 @@ namespace Evosim.Sim.EditorTools
                 // A locked output file must not take the run down with it — the run is the
                 // expensive part and the numbers are still in the log.
             }
+        }
+
+        /// <summary>
+        /// D083's field model from the environment: `cells` or `vertices`, case-insensitive;
+        /// unset is Cells. Anything else stops the launch, for <see cref="Env(string, float)"/>'s reason.
+        /// </summary>
+        private static MatterField EnvFieldModel(string name)
+        {
+            string raw = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrEmpty(raw)) return MatterField.Cells;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "cells": return MatterField.Cells;
+                case "vertices": return MatterField.Vertices;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is neither 'cells' nor 'vertices'.");
         }
 
         private static float Env(string name, float fallback)

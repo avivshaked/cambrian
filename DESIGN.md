@@ -242,6 +242,23 @@ are in the manifest, as the bullet says. §5A's currency table still gave matter
 which D074's burial falsified. Both corrected after the outside reviews were captured
 (logbook/0071). No rule of the world changed.
 
+## 0s. Changelog — the water as vertices (2026-09-07, D083)
+
+§5A.2c's two stocks, detritus and free matter, gain a second representation. `VertexField`
+holds each as a set of vertices carrying joules at positions in D077's box. The density at
+a point is the kernel-weighted sum of the vertices within `FieldKernelMetres` (Wendland C2,
+unit integral, 1 m). Feeding demands, freezes, shares and takes over those vertices under
+§0p's frozen-availability rule. A deposit joins the nearest vertex in reach or founds one.
+The vertices sink, ride the current at the velocity the bodies feel, and diffuse by a seeded
+random walk. The vent and the surface influx found vertices of `FieldVertexJoules`, and
+burial removes whole vertices from the floor. `RunConfig.FieldModel` selects it; the default,
+`Cells`, is `NutrientField` unchanged, so every recorded config still describes its world.
+Both implement `IMatterField`, and `World` reads through it: a `FieldPoint` carries a position
+and a patch, and each field reads the half it understands. A vertex world requires
+`SharedSpace`. Why, and what was rejected: D083. What it answers: §0r's diagnosis, which
+stands as written. A still body now eats a hole in its own water and a moving body leaves
+it, and the chemical sense reads a gradient inside a patch for the first time.
+
 ## 0r. Changelog — review round 6: how nature bootstrapped movement and sensing, and why this world cannot (2026-09-07)
 
 No mechanism changes. Round 6 of the literature review (research §0, Q11) answered the
@@ -1273,6 +1290,14 @@ It had not bitten only because the density was always zero. `NutrientField` hold
 layer, feeding removes them, and demand above supply is shared proportionally exactly as light
 is.
 
+**The stock has two representations, and a body's water is local in the second (D083, §0s).**
+`NutrientField` keeps one number per layer and patch, which is every recorded run. `VertexField`
+keeps the same joules on vertices at positions and reads a density through a 1 m kernel, so a
+body that stays eats the vertices around it down and a body that moves reaches vertices it has
+not eaten; the difference is what pays undirected movement (§0r, research Q11), and the kernel
+gives the chemical sense a gradient inside a patch. Both are stocks, both share by §0p's frozen
+availability, and both close the audit; `RunConfig.FieldModel` picks one.
+
 **Detritus sinks, and that is what makes the deep a niche rather than only a dark place.** Light
 falls off downward; food falls *toward* the dark. The two gradients oppose, so neither strategy
 wins everywhere — and nobody arranged it. It follows from photosynthesis needing the surface and
@@ -1894,6 +1919,7 @@ without reaching `RunConfig.Hash()` is two different experiments filed under one
 | Scavenge rate | `ConsumerCell.ScavengeRate` | Water searched for carrion. Separate from bite rate because they fail differently |
 | Carrion / grazing / predation yield | `ConsumerCell.*Yield` | Fraction kept per target type. Carrion highest — the predator valley's bridge (§5A.3) |
 | Founder stake | `RunConfig.FounderEnergyJoules` | The only energy besides sunlight created from nothing |
+| Field kernel, merge radius, vertex cap, vertex quantum | `RunConfig.Field*` | How finely the water is sampled in a vertex world (D083): a mouth's reach and a read's noise, the budget on the count, and the mass a vent founds a vertex with. All four unmeasured |
 | **Spending** | | |
 | Basal upkeep, per type | `CellType.UpkeepWattsPerCubicMetre` | What tissue costs to keep alive. Never zero (§5A.1) |
 | Idle actuator cost | `LinkCell.IdleWattsPerNewtonMetre` | What capacity costs whether or not it is used |

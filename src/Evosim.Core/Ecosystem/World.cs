@@ -126,6 +126,15 @@ namespace Evosim.Core
         public const ulong PlacementIndex = ulong.MaxValue - 2UL;
 
         /// <summary>
+        /// The streams behind D083's two vertex fields — where an emitted vertex lands, which
+        /// floor vertex is buried, and every step of the mixing walk. Their own, so a field knob
+        /// perturbs no other draw in the world; constructed for every vertex world and drawn from
+        /// by nothing in a cell world.
+        /// </summary>
+        public const ulong DetritusFieldIndex = ulong.MaxValue - 3UL;
+        public const ulong MatterFieldIndex = ulong.MaxValue - 4UL;
+
+        /// <summary>
         /// The stream behind <see cref="ConceptionOrder.Shuffled"/> — D072. Constructed for every
         /// world and drawn from by none but a shuffled one.
         /// </summary>
@@ -206,7 +215,7 @@ namespace Evosim.Core
         private int PatchCount => Math.Max(1, (int)Config.HorizontalPatches);
 
         /// <summary>Dead matter in the water, and what feeds on it — §5A.2c.</summary>
-        public NutrientField Nutrients { get; }
+        public IMatterField Nutrients { get; }
 
         /// <summary>The world's stock of matter, by depth layer — D048.</summary>
         /// <remarks>
@@ -224,7 +233,7 @@ namespace Evosim.Core
         /// exists to catch.
         /// </para>
         /// </remarks>
-        public NutrientField Matter { get; }
+        public IMatterField Matter { get; }
 
         /// <summary>
         /// Total matter in the world, free and locked up — D048. Conserved until D074's budget is
@@ -525,16 +534,46 @@ namespace Evosim.Core
                 Light, config.WorldAreaSquareMetres, config.LightLayerMetres,
                 patchCount, config.PerPatchShading > 0f);
 
-            Nutrients = new NutrientField(
-                config.WorldAreaSquareMetres, config.LightLayerMetres,
-                config.NutrientSinkMetresPerSecond, config.WorldDepthMetres,
-                config.FloorRefugeMetres, config.RefugeEdibleFraction, patchCount);
+            if (config.FieldModel == MatterField.Vertices)
+            {
+                // D083. A vertex is somewhere, so the bodies must be too: the tiled world has no
+                // horizontal coordinates for a body to feed at, and defaulting them would put
+                // every creature at its patch's centre and call that a position.
+                if (!config.SharedSpace)
+                {
+                    throw new ArgumentException(
+                        "FieldModel is Vertices but SharedSpace is false. The vertex field reads " +
+                        "a body's position, which only the shared volume has.",
+                        nameof(config));
+                }
 
-            // No refuge: nobody grazes matter, it is drawn at conception rather than eaten — D055.
-            Matter = new NutrientField(
-                config.WorldAreaSquareMetres, config.LightLayerMetres,
-                config.MatterSinkMetresPerSecond, config.WorldDepthMetres,
-                refugeMetres: 0f, refugeEdibleFraction: 0f, patchCount: patchCount);
+                Nutrients = new VertexField(
+                    config.WorldAreaSquareMetres, config.LightLayerMetres,
+                    config.NutrientSinkMetresPerSecond, config.WorldDepthMetres,
+                    config.FloorRefugeMetres, config.RefugeEdibleFraction, patchCount,
+                    config.FieldKernelMetres, config.FieldMergeMetres, config.FieldVertexCap,
+                    config.FieldVertexJoules, Rng.SeedFor(seed, DetritusFieldIndex));
+
+                Matter = new VertexField(
+                    config.WorldAreaSquareMetres, config.LightLayerMetres,
+                    config.MatterSinkMetresPerSecond, config.WorldDepthMetres,
+                    0f, 0f, patchCount,
+                    config.FieldKernelMetres, config.FieldMergeMetres, config.FieldVertexCap,
+                    config.FieldVertexJoules, Rng.SeedFor(seed, MatterFieldIndex));
+            }
+            else
+            {
+                Nutrients = new NutrientField(
+                    config.WorldAreaSquareMetres, config.LightLayerMetres,
+                    config.NutrientSinkMetresPerSecond, config.WorldDepthMetres,
+                    config.FloorRefugeMetres, config.RefugeEdibleFraction, patchCount);
+
+                // No refuge: nobody grazes matter, it is drawn at conception rather than eaten — D055.
+                Matter = new NutrientField(
+                    config.WorldAreaSquareMetres, config.LightLayerMetres,
+                    config.MatterSinkMetresPerSecond, config.WorldDepthMetres,
+                    refugeMetres: 0f, refugeEdibleFraction: 0f, patchCount: patchCount);
+            }
 
             // Seeded uniformly — across every patch as well as every layer, D061 — and never
             // created again. Everything after this is redistribution: reproduction takes it out
@@ -542,7 +581,13 @@ namespace Evosim.Core
             // is called directly rather than the pre-D061 one, so this loop needs no guard of its
             // own: it is correct at K=1 (one patch, same total deposited as before D061 existed)
             // and at K>1 alike.
-            if (config.InitialMatterPerCubicMetre > 0f)
+            if (Matter is VertexField matterVertices)
+            {
+                // D083. A lattice holding the same total the cells would, spaced for one quantum
+                // per vertex; nothing here when the density is 0, exactly like the cells.
+                matterVertices.SeedUniform(config.InitialMatterPerCubicMetre);
+            }
+            else if (config.InitialMatterPerCubicMetre > 0f)
             {
                 float perCell = config.InitialMatterPerCubicMetre * Matter.LayerVolume;
                 for (int i = 0; i < Matter.LayerCount; i++)
@@ -550,7 +595,8 @@ namespace Evosim.Core
                     float depth = -((i + 0.5f) * Matter.LayerMetres);
                     for (int patch = 0; patch < patchCount; patch++)
                     {
-                        Matter.Deposit(depth, perCell, patch);
+                        // The cell field's own signature: this branch is the cells' alone.
+                        ((NutrientField)Matter).Deposit(depth, perCell, patch);
                     }
                 }
             }
@@ -761,6 +807,27 @@ namespace Evosim.Core
             creature.PendingWorkJoules += workJoules;
         }
 
+        /// <summary>
+        /// <see cref="Observe(Organism, float, float)"/> with the whole centre of mass — D083.
+        /// The vertex field feeds a body where it is; the cell field reads only the height.
+        /// </summary>
+        public void Observe(Organism creature, Float3 centre, float workJoules)
+        {
+            Observe(creature, centre.Y, workJoules);
+
+            if (float.IsNaN(centre.X) || float.IsInfinity(centre.X) ||
+                float.IsNaN(centre.Z) || float.IsInfinity(centre.Z))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(centre), centre,
+                    $"Creature {creature.Id} has a non-finite horizontal position, so the solver " +
+                    "has already diverged.");
+            }
+
+            creature.X = centre.X;
+            creature.Z = centre.Z;
+        }
+
         /// <summary>Advances the world by one step.</summary>
         /// <param name="seconds">Step length. Large steps are fine — this is not a solver.</param>
         public void Step(float seconds)
@@ -831,6 +898,12 @@ namespace Evosim.Core
             // and after the influx above, so the deposit is not buried on arrival.
             BuryMatter(seconds);
 
+            // D083. After every pass that moves or removes a vertex, so what a body reads next
+            // step is a field whose drifted-together vertices are one and whose count fits its
+            // budget. A cell field has nothing to do here.
+            Nutrients.Cull();
+            Matter.Cull();
+
             Reproduce();
             EnforceFloor();
             EnforceCeiling();
@@ -868,13 +941,44 @@ namespace Evosim.Core
 
             double amount = (double)rate * seconds;
 
+            // D083. Vertices are founded rather than joules deposited: whole quanta, at random
+            // positions inside the plume's bottom layer or along the surface, from the field's
+            // own stream. What is counted is what was emitted; the remainder waits in the
+            // field's bank and is not yet in the world.
+            if (Matter is VertexField vertices)
+            {
+                float width = Matter.PatchWidthMetres;
+                float half = 0.5f * Matter.LayerMetres;
+                float emitted;
+
+                if (Config.MatterInfluxAt == MatterInflux.Vent)
+                {
+                    CurrentField plume = Config.Current;
+                    emitted = vertices.Emit(
+                        amount,
+                        new Float3((plume.VentPatch + 0.5f) * width, -plume.VentDepthMetres + half, 0.5f * width),
+                        new Float3(0.5f * width, half, 0.5f * width));
+                }
+                else
+                {
+                    float length = width * PatchCount;
+                    emitted = vertices.Emit(
+                        amount,
+                        new Float3(0.5f * length, 0f, 0.5f * width),
+                        new Float3(0.5f * length, 0f, 0.5f * width));
+                }
+
+                MatterInfluxedTotal += emitted;
+                return;
+            }
+
             if (Config.MatterInfluxAt == MatterInflux.Vent)
             {
                 CurrentField vent = Config.Current;
                 float all = (float)amount;
                 if (!(all > 0f)) return;
 
-                Matter.Deposit(-vent.VentDepthMetres, all, vent.VentPatch);
+                ((NutrientField)Matter).Deposit(-vent.VentDepthMetres, all, vent.VentPatch);
                 MatterInfluxedTotal += all;
                 return;
             }
@@ -888,7 +992,8 @@ namespace Evosim.Core
             float per = (float)(amount / patches);
             if (!(per > 0f)) return;
 
-            for (int patch = 0; patch < patches; patch++) Matter.Deposit(0f, per, patch);
+            NutrientField cells = (NutrientField)Matter;
+            for (int patch = 0; patch < patches; patch++) cells.Deposit(0f, per, patch);
 
             MatterInfluxedTotal += (double)per * patches;
         }
@@ -927,6 +1032,14 @@ namespace Evosim.Core
             if (fraction > 1d) fraction = 1d;
             if (!(fraction > 0d)) return;
 
+            // D083. Each vertex resting on the floor leaves whole with this probability: the
+            // same expected rate as the cells' fraction, one vertex at a time.
+            if (Matter is VertexField vertices)
+            {
+                MatterBuriedTotal += vertices.BuryFloor(fraction);
+                return;
+            }
+
             int floor = Matter.LayerCount - 1;
             float floorY = -((floor + 0.5f) * Matter.LayerMetres);
 
@@ -938,7 +1051,7 @@ namespace Evosim.Core
                 float wanted = (float)(before * fraction);
                 if (!(wanted > 0f)) continue;
 
-                Matter.Take(floorY, wanted, patch);
+                ((NutrientField)Matter).Take(floorY, wanted, patch);
                 MatterBuriedTotal += before - Matter.StockInLayer(floor, patch);
             }
         }
@@ -1002,7 +1115,7 @@ namespace Evosim.Core
             {
                 Organism creature = _living[i];
 
-                float density = Nutrients.EdibleDensityAt(creature.HeightY, creature.Patch);
+                float density = Nutrients.EdibleDensityAt(creature.Point);
 
                 EnergyLedger ledger = Metabolism.StepAt(
                     creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch),
@@ -1018,7 +1131,7 @@ namespace Evosim.Core
                 if (creature.HasAbsorptiveTissue) creature.LastDensityHere = density;
 
                 _ledgers[i] = ledger;
-                Nutrients.Demand(creature.HeightY, ledger.PoolDrawn, creature.Patch);
+                Nutrients.Demand(creature.Point, ledger.PoolDrawn);
             }
 
             // Every share and every rationed price in the pass below is taken from what the
@@ -1035,7 +1148,7 @@ namespace Evosim.Core
                 float age = creature.Age;
                 creature.Age += seconds;
 
-                float share = Nutrients.ShareAt(creature.HeightY, creature.Patch);
+                float share = Nutrients.ShareAt(creature.Point);
                 EnergyLedger ledger = _ledgers[i];
 
                 // Recomputed only when the larder is short. Scaling the stored ledger instead
@@ -1044,7 +1157,7 @@ namespace Evosim.Core
                 if (share < 1f)
                 {
                     float rationed =
-                        Nutrients.FrozenEdibleDensityAt(creature.HeightY, creature.Patch) * share;
+                        Nutrients.FrozenEdibleDensityAt(creature.Point) * share;
 
                     // The same work, not more: this replaces the ledger rather than adding to it.
                     ledger = Metabolism.StepAt(
@@ -1068,7 +1181,7 @@ namespace Evosim.Core
 
                 if (ledger.PoolDrawn > 0f)
                 {
-                    float taken = Nutrients.Take(creature.HeightY, ledger.PoolDrawn, creature.Patch);
+                    float taken = Nutrients.Take(creature.Point, ledger.PoolDrawn);
                     DetritusTakenTotal += taken;
 
                     // Credited what it got. Take is a partial-take API and returns what was
@@ -1111,7 +1224,7 @@ namespace Evosim.Core
                 // the water both: this step's release, and its tissue.
                 if (ledger.Exuded > 0f)
                 {
-                    Nutrients.Deposit(creature.HeightY, ledger.Exuded, creature.Patch);
+                    Nutrients.Deposit(creature.Point, ledger.Exuded);
                     DetritusExudedTotal += ledger.Exuded;
                 }
 
@@ -1136,7 +1249,7 @@ namespace Evosim.Core
 
                     if (excreted > 0f)
                     {
-                        Matter.Deposit(creature.HeightY, excreted, creature.Patch);
+                        Matter.Deposit(creature.Point, excreted);
                         creature.LockedMatter -= excreted;
                         MatterInBodies -= excreted;
                         ExcretedTotal += excreted;
@@ -1190,7 +1303,7 @@ namespace Evosim.Core
             // generation zero is the world's first food rather than merely a waste of seeds.
             // HeightY is the last height Observe accepted, and Observe refuses a non-finite one
             // — so this is the last *finite* depth even when the body's own transform is NaN.
-            Nutrients.Deposit(creature.HeightY, creature.TissueJoules, creature.Patch);
+            Nutrients.Deposit(creature.Point, creature.TissueJoules);
             if (creature.TissueJoules > 0f) DetritusDepositedTotal += creature.TissueJoules;
 
             // Whatever matter is still locked returns to the layer the body died in, and
@@ -1200,7 +1313,7 @@ namespace Evosim.Core
             // floor founder, which never paid and so never owes anything back.
             if (creature.LockedMatter > 0f)
             {
-                Matter.Deposit(creature.HeightY, creature.LockedMatter, creature.Patch);
+                Matter.Deposit(creature.Point, creature.LockedMatter);
                 MatterInBodies -= creature.LockedMatter;
                 creature.LockedMatter = 0f;
             }
@@ -1610,7 +1723,7 @@ namespace Evosim.Core
             // be afforded either, and building one to find that out is the dominant cost in a
             // matter-limited world.
             if ((Config.MatterPerTissueJoule > 0f || Config.MatterPerCreature > 0f) &&
-                Matter.StockInLayer(Matter.LayerOf(parent.HeightY), parent.Patch) < CheapestPossibleChildMatter)
+                Matter.ReachableStock(parent.Point) < CheapestPossibleChildMatter)
             {
                 ConceptionsBlockedByMatter++;
                 return false;
@@ -1654,7 +1767,7 @@ namespace Evosim.Core
             bool stillborn = body.PartCount == 0;
 
             if (!stillborn && matterPrice > 0f &&
-                Matter.StockInLayer(Matter.LayerOf(parent.HeightY), parent.Patch) < matterPrice)
+                Matter.ReachableStock(parent.Point) < matterPrice)
             {
                 ConceptionsBlockedByMatter++;
                 return false;
@@ -1689,7 +1802,7 @@ namespace Evosim.Core
 
             if (!stillborn && matterPrice > 0f)
             {
-                Matter.Take(parent.HeightY, matterPrice, parent.Patch);
+                Matter.Take(parent.Point, matterPrice);
                 MatterInBodies += matterPrice;
             }
 
@@ -1989,6 +2102,12 @@ namespace Evosim.Core
                 HeightY = heightY,
                 BirthHeightY = heightY,
                 Patch = patch,
+
+                // D083. Beside the parent until the simulator reports where the body actually
+                // is, and at the patch's centre for a body with no parent — the cell field never
+                // reads these, and in a shared volume the next Observe overwrites them.
+                X = parent != null ? parent.X : (patch + 0.5f) * Nutrients.PatchWidthMetres,
+                Z = parent != null ? parent.Z : 0.5f * Nutrients.PatchWidthMetres,
                 StandingWatts = Metabolism.StandingWatts(phenotype, Config),
             };
 

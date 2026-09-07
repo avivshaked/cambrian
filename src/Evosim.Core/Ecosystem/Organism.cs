@@ -132,6 +132,19 @@ namespace Evosim.Core
         /// </summary>
         public int Patch { get; internal set; }
 
+        /// <summary>Position along the ring, m — D083. Read from the simulator with the height.</summary>
+        /// <remarks>
+        /// The patch centre until the simulator has reported, and in a world with no physics for
+        /// its whole life. The cell field never reads it; the vertex field reads nothing else.
+        /// </remarks>
+        public float X { get; internal set; }
+
+        /// <summary>Position across the box, m — D083. See <see cref="X"/>.</summary>
+        public float Z { get; internal set; }
+
+        /// <summary>Where this creature feeds, deposits and is priced — the one address both fields read.</summary>
+        public FieldPoint Point => new FieldPoint(new Float3(X, HeightY, Z), Patch);
+
         /// <summary>
         /// Matter still locked in this body, in <see cref="World.Matter"/>'s units — D048, D052,
         /// D065.

@@ -493,7 +493,7 @@ namespace Evosim.Core.Tests
         /// </remarks>
         private static void RestockOneChildsWorth(World world)
         {
-            NutrientField matter = world.Matter;
+            NutrientField matter = (NutrientField)world.Matter;
 
             for (int layer = 0; layer < matter.LayerCount; layer++)
             {
