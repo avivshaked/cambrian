@@ -215,7 +215,12 @@ the author will do:
    message, together with the checker's before and after counts and the reviewer's
    findings. `DESIGN.md` and `DECISIONS.md` get a dated note at the top saying
    they were restyled and that the git history holds the originals.
-7. **The checker is a flagger, not a judge.** A piece passes when a newcomer can follow
+7. **Rulings on the guide are made where the work is and recorded here.** The owner
+   authorised the reviewing agent on 2026-09-07 to make style rulings alone once it
+   understood what the prose is for, and to persist them in this file. A ruling is a
+   dated sentence in the section it changes, with the reason, so a later reader can tell a
+   rule from a habit and can reverse it knowingly.
+8. **The checker is a flagger, not a judge.** A piece passes when a newcomer can follow
    it, which the checker cannot measure. Read the piece aloud once before committing; the
    sentences that make you run out of breath are the ones to split.
 
