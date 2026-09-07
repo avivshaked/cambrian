@@ -6,7 +6,7 @@ Each entry also carries the SHA-256 of the PDF that was read (added 2026-09-07, 
 item 23, on the Astra review's point that a gitignored corpus needs a way to tell the file
 a rebuild fetches from the file the review cited). A rebuilt copy whose hash differs is a
 different version of the paper, and a page-anchored claim against it is unverified until
-the page is checked. Seven round-4 entries have no PDF on disk and say so.
+the page is checked. Every one of the thirty-seven has a PDF on disk.
 
 ### [14] Virtual Creature Morphology – A Review
 - Status: OBTAINED
