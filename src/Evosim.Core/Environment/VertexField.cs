@@ -99,6 +99,8 @@ namespace Evosim.Core
         // ---- reusable neighbourhood buffers
         private readonly List<int> _nb = new List<int>();
         private readonly List<double> _nbW = new List<double>();
+        private readonly List<double> _nbCap = new List<double>();
+        private readonly List<double> _nbTake = new List<double>();
         private readonly int[] _ix = new int[3];
         private readonly int[] _iz = new int[3];
 
@@ -628,36 +630,87 @@ namespace Evosim.Core
             return total > 0.0 ? (float)(weighted / total) : 1f;
         }
 
+        /// <summary>
+        /// Removes joules from the vertices in reach and returns what was actually taken:
+        /// <c>min(joules, what is reachable)</c>, to a rounding.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Spread by weight, then filled.</b> The first pass allocates in proportion to
+        /// frozen availability times kernel weight times share, which is the allocation the
+        /// frozen-availability rule is exact under. A vertex at the mouth carries a weight
+        /// hundreds of times a vertex at the edge, so that pass can ask a vertex for more than
+        /// it holds while its neighbours hold plenty; the first build stopped there, delivered
+        /// less than <see cref="ReachableStock"/> had promised, and <c>World.Conceive</c> booked
+        /// the whole price into the body — 20,000 units of matter standing in a world seeded
+        /// with 6,000 by 3,000 s of the second seed-2 screen (logbook/0074). The passes below
+        /// hand the shortfall on to the vertices that still have room, in proportion, until it
+        /// is delivered or nothing in reach is left, so a take delivers what the gate promised.
+        /// </para>
+        /// <para>
+        /// For a feeder under the frozen rule the extra passes can draw past a vertex's promise
+        /// to a later feeder, which then comes up short at that vertex; its take is capped at
+        /// the live mass, the world counts the short take and credits what was taken (the Astra
+        /// review's R1), and nothing is created either way.
+        /// </para>
+        /// </remarks>
         public float Take(FieldPoint at, float joules)
         {
             if (!(joules > 0f)) return 0f;
             Gather(Validated(at));
 
-            double total = 0.0;
-            for (int k = 0; k < _nb.Count; k++)
-            {
-                Offer(_nb[k], out double available, out double share);
-                total += available * _nbW[k] * share;
-            }
+            int n = _nb.Count;
+            if (n == 0) return 0f;
 
-            if (total <= 0.0) return 0f;
+            while (_nbCap.Count < n) { _nbCap.Add(0.0); _nbTake.Add(0.0); }
 
-            double taken = 0.0;
-            for (int k = 0; k < _nb.Count; k++)
+            for (int k = 0; k < n; k++)
             {
                 int j = _nb[k];
-                Offer(j, out double available, out double share);
-                double want = joules * (available * _nbW[k] * share / total);
-                if (want <= 0.0) continue;
+                _nbCap[k] = Edible(j) * _m[j];
+                _nbTake[k] = 0.0;
+            }
 
-                // Never past what the vertex physically holds for a mouth right now: a deposit
-                // mid-pass raised the live mass, an earlier take lowered it, and the frozen
-                // figure is a promise about the pass, not about this instant.
-                double cap = Edible(j) * _m[j];
-                double t = want < cap ? want : cap;
+            double remaining = joules;
+
+            // Four passes cover any practical case: each pass either delivers the remainder
+            // or caps at least one vertex, and a vertex capped once weighs nothing after.
+            for (int pass = 0; pass < 8 && remaining > 1e-12; pass++)
+            {
+                double total = 0.0;
+                for (int k = 0; k < n; k++)
+                {
+                    if (_nbTake[k] >= _nbCap[k]) continue;
+                    Offer(_nb[k], out double available, out double share);
+                    total += available * _nbW[k] * share;
+                }
+
+                if (total <= 0.0) break;
+
+                double delivered = 0.0;
+                for (int k = 0; k < n; k++)
+                {
+                    if (_nbTake[k] >= _nbCap[k]) continue;
+                    Offer(_nb[k], out double available, out double share);
+                    double want = remaining * (available * _nbW[k] * share / total);
+                    if (want <= 0.0) continue;
+
+                    double room = _nbCap[k] - _nbTake[k];
+                    double t = want < room ? want : room;
+                    _nbTake[k] += t;
+                    delivered += t;
+                }
+
+                if (delivered <= 0.0) break;
+                remaining -= delivered;
+            }
+
+            double taken = 0.0;
+            for (int k = 0; k < n; k++)
+            {
+                double t = _nbTake[k];
                 if (t <= 0.0) continue;
-
-                _m[j] -= t;
+                _m[_nb[k]] -= t;
                 taken += t;
             }
 

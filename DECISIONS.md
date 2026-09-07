@@ -4227,6 +4227,21 @@ base world and the change the round reads is the detritus. The detritus kernel s
 Rejected: more seeded matter (a different budget, D048's stock), and a conception that
 widens its search when short (a second rule for one gate).
 
+**Amended a second time the same night: a take delivers what the gate promised.** The
+relaunched seed-2 screen bred well, and its statistics showed standing matter rising from
+6,000 to 28,520 units by 3,000 s in a closed budget, about 6 per birth. The vertex take
+spread a price over the kernel by weight and capped each vertex at what it held, so a mouth
+at one vertex could be given less than `ReachableStock` promised, and `World.Conceive`
+booked the whole price into the body. Two changes. `VertexField.Take` now fills: the
+shortfall of a capped vertex is handed on to those with room until the ask is delivered or
+nothing in reach is left, so a take delivers `min(asked, reachable)` to a rounding. And
+conception books what was taken, not what was asked, refuses a take short by more than a
+rounding, returns the matter and drops the reservation, and counts it
+(`ConceptionsShortOfMatter`, the table's `mat short`). The table gains `mat resid`, D074's
+identity as a residual, printed for the reason `audit` is: the fault was visible only in
+the statistics file. The energy audit never opened; the matter identity is a second audit,
+and it now has a column.
+
 **Withdrawn.** The motility proposal's halo (option A, my recommendation of that afternoon)
 was a one-number sketch of this field's behaviour near a body; it is retired unbuilt. Its
 finer field (B) is this field at a coarser resolution without transport; its encounter

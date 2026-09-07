@@ -528,6 +528,12 @@ actually verifying it.
   seed-2 screen ran both at 1 m and bred once in 10,000 s, because a child costs 8 to 16
   units of matter and a 1 m kernel reaches 4 at the seeded density; a vertex world whose
   founders never breed should be read at `mat blk` against `mat here` before anything else.
+  **`mat resid` is the matter identity and must read 0 like `audit`.** The energy audit does
+  not see matter: the second seed-2 screen created 22,000 units of matter in 3,000 s with
+  `audit` at 0.0000% on every row, because the vertex take delivered less than its gate
+  promised and conception booked the price. From the build that fixed it (2026-09-07 late)
+  the table prints the residual and `mat short`; on a run older than the column, read
+  `matterStanding` in `stats.jsonl` against the seeded stock plus influx less burial.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.

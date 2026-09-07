@@ -131,6 +131,30 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void ATakeDeliversWhatTheGatePromised()
+        {
+            // The second screen's fault: a mouth at one vertex of a lattice asks for nearly all
+            // that is in reach, the weight-proportional spread caps the near vertex and leaves
+            // the far ones untouched, and the take falls short of ReachableStock. The world had
+            // booked the full price. A take must deliver min(asked, reachable) to a rounding.
+            VertexField field = Field();
+            field.SeedUniform(1f);
+            FieldPoint p = P(10f, -10f, 2.5f);
+
+            double reachable = field.ReachableStock(p);
+            Assert.InRange(reachable, 3.5, 5.0);
+
+            float taken = field.Take(p, (float)(reachable * 0.95));
+            Assert.Equal(reachable * 0.95, taken, 4);
+
+            // Asking for more than there is delivers everything there is, and no more.
+            float rest = field.Take(p, 100f);
+            Assert.Equal(reachable * 0.05, rest, 3);
+            Assert.Equal(0f, field.Take(p, 1f));
+            Assert.True(MinMass(field) >= 0.0);
+        }
+
+        [Fact]
         public void EveryOperatorConservesTheTotal()
         {
             VertexField field = Field(sink: 0.01f);
@@ -383,6 +407,7 @@ namespace Evosim.Core.Tests
                 $"matter identity {identity:R} of {world.MatterInitialTotal:0}");
 
             Assert.True(world.Births > 0, "nothing was born, so the economy was not exercised");
+            Assert.Equal(0L, world.ConceptionsShortOfMatter);
             Assert.True(matter.Count > 0);
             Assert.True(Math.Abs(world.AuditResidual) <= 1e-6 * Math.Max(1d, world.EnergyIn), $"audit residual {world.AuditResidual:R}");
             Assert.True(Math.Abs(identity) <= 1e-6 * world.MatterInitialTotal, $"matter identity {identity:R}");

@@ -412,6 +412,13 @@ namespace Evosim.Core
         /// </remarks>
         public long ConceptionsBlockedByMatter { get; private set; }
 
+        /// <summary>
+        /// Conceptions refused after the gate passed, because the take came up short — D083's
+        /// second amendment. Zero on a cell field by construction; on a vertex field a
+        /// rounding's worth, and anything more is a fault in the take.
+        /// </summary>
+        public long ConceptionsShortOfMatter { get; private set; }
+
         /// <summary>Simulated seconds since the world began.</summary>
         public double ElapsedSeconds { get; private set; }
 
@@ -1804,8 +1811,25 @@ namespace Evosim.Core
 
             if (!stillborn && matterPrice > 0f)
             {
-                Matter.Take(parent.Point, matterPrice);
-                MatterInBodies += matterPrice;
+                // What the water gave, not what was asked. The cell field's gate made the two
+                // equal by construction; a vertex field's take can fall a rounding short of
+                // what its gate promised, and the first build booked the price regardless,
+                // which created matter from nothing (D083's second amendment, logbook/0074).
+                // A take short by more than a rounding is a refusal: the matter goes back
+                // where it came from, the reservation is dropped, and the count says so.
+                float taken = Matter.Take(parent.Point, matterPrice);
+
+                if (taken < matterPrice * (1f - 1e-4f))
+                {
+                    if (taken > 0f) Matter.Deposit(parent.Point, taken);
+                    if (shared) Placement.Release();
+                    ConceptionsBlockedByMatter++;
+                    ConceptionsShortOfMatter++;
+                    return false;
+                }
+
+                MatterInBodies += taken;
+                matterPrice = taken;
             }
 
             parent.Energy -= price;

@@ -109,6 +109,26 @@ left behind. The matter field now reads through its own kernel of 1.8 m, whose r
 24.4 m³ is the old cell's volume to within 3%, so the gate binds where it bound in the base
 world and the thing the round changes is the detritus. Seed 2 runs again.
 
+## The third screen, and the third fix
+
+It bred. By 2,500 s seed 2 had 1,800 bodies and an inherited stomach line of 340 eating the
+exudate faster than it arrived, and I wrote as much here. Then the last rows showed locked
+matter at 20,559 units in a world seeded with 6,000 and closed. The energy audit read
+0.0000% on every row; the matter identity is a second audit, and the table did not print it.
+The statistics file did: standing matter rose from 6,011 at 100 s to 28,520 at 3,000 s,
+about 6 units a birth. The take was the fault. It spread a conception's price over the
+vertices in reach in proportion to their weight, and a vertex at the mouth weighs hundreds
+of times one at the edge, so the near vertex was asked for more than it held, capped, and
+the rest was never asked of the others. The gate had promised the sum of what was in reach;
+the take delivered less; conception booked the price. Matter from nothing, at every birth.
+
+The take now fills: what a capped vertex could not give is handed on to the vertices with
+room, in proportion, until the ask is met or nothing in reach is left, so it delivers what
+the gate promised. Conception books what was taken, refuses a take short by more than a
+rounding and puts the matter back, and counts the refusal. And the table prints the matter
+identity as a residual beside the energy audit, so the next fault of this kind is one
+column wide. Seed 2 runs a third time.
+
 ## A note of my own
 
 The owner designed this field in five lines of a chat message at eleven at night, with the

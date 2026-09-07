@@ -2052,6 +2052,8 @@ namespace Evosim.Sim.EditorTools
             // Matter the ledger says is in bodies, less what the living hold body by body. One
             // pass over the living at sample cadence, which is cheap where a step is not.
             double matterOrphaned = world.MatterInBodies - world.MatterInLivingBodies;
+            double matterResidual =
+                world.MatterInitialTotal + world.MatterInfluxedTotal - world.MatterBuriedTotal - world.StandingMatter;
             long contactPairsWindow = eco.ContactPairs - LastContactPairs;
             long floorContactPairsWindow = eco.FloorContactPairs - LastFloorContactPairs;
             long contactSteps = eco.Volume != null ? eco.Steps - LastContactSteps : 0L;
@@ -2295,7 +2297,9 @@ namespace Evosim.Sim.EditorTools
                 .Field("matterVertices", world.Matter is VertexField mv ? mv.Count : 0)
                 .Field("verticesMerged",
                     (world.Nutrients is VertexField dm ? dm.Merged : 0L) +
-                    (world.Matter is VertexField mm ? mm.Merged : 0L));
+                    (world.Matter is VertexField mm ? mm.Merged : 0L))
+                .Field("matterResidual", matterResidual)
+                .Field("conceptionsShortOfMatter", world.ConceptionsShortOfMatter);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -2520,6 +2524,10 @@ namespace Evosim.Sim.EditorTools
                 world.Nutrients is VertexField rowDetritus && world.Matter is VertexField rowMatter
                     ? rowDetritus.Count.ToString(c) + "/" + rowMatter.Count.ToString(c)
                     : "—",
+
+                // The matter identity's residual and the short-take count.
+                "**" + matterResidual.ToString("0.###", c) + "**",
+                world.ConceptionsShortOfMatter.ToString(c),
             };
 
             // The per-patch populations, last, so everything before them keeps its index.
@@ -2630,6 +2638,14 @@ namespace Evosim.Sim.EditorTools
             // D083 — appended after `mat here`, per the same rule: living vertices in the
             // detritus and the matter field, `detritus/matter`; an em-dash on a cell field.
             "vtx",
+
+            // D074's matter identity as a residual, appended after `vtx`: what was seeded plus
+            // what flowed in, less what was buried, less what stands in the water and the
+            // bodies. Zero to the rounding in a healthy run, like `audit`; the second seed-2
+            // screen of the vertex world created 22,000 units by 3,000 s and only the
+            // statistics file could show it (logbook/0074). `mat short` beside it counts
+            // conceptions refused after the gate passed because the take came up short.
+            "**mat resid**", "mat short",
         };
 
         /// <summary>
