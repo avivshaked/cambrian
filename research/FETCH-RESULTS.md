@@ -440,3 +440,137 @@ reserved for Baines & Pace 1991 and released**; see the not-obtained list.
   still returns **403** to non-browser clients.
 - **Karl et al. 1998** and **Joint & Pomroy 1983** were not separately sought. Their PER figures
   (~30% North Pacific gyre, 15% Celtic Sea) enter via [62, p.9].
+
+## Round 6 (2026-09-07) asked Q11: how motility and sensing bootstrapped, and when undirected movement pays
+
+All open-access routes; PubMed Central's own site now serves a proof-of-work JavaScript gate to a non-browser client, which was not solved, and Europe PMC's public render endpoint served the same records. Paced at 8 s; two 429s were retried 20 s apart. Directory names under `papers/` carry the number.
+
+### [68] [JKG15] An option space for early neural evolution (Jékely, Keijzer & Godfrey-Smith 2015)
+- Status: OBTAINED
+- Saved as: `68-jekely-2015-option-space-early-neural-evolution.pdf`
+- Source used: https://europepmc.org/articles/PMC4650133?pdf=render
+- Route: open-access (Europe PMC render of PMC4650133; Phil. Trans. B discussion-meeting issue)
+- SHA-256: `56e2043d9ac9c567323ce6c2756c881871d7b2ec0d0215b85bccfcb90c793426` (`68-jekely-2015-option-space-early-neural-evolution.pdf`, 610,561 bytes)
+
+### [69] [KDL13] What nervous systems do (Keijzer, van Duijn & Lyon 2013)
+- Status: OBTAINED
+- Saved as: `69-keijzer-2013-what-nervous-systems-do.pdf`
+- Source used: https://pure.rug.nl/ws/files/25855534/2013_What_nervous_systems_do.pdf
+- Route: open-access (University of Groningen repository, publisher's version)
+- SHA-256: `bccea2e9501a289618faf35a02e5a761a6694e7e68ea14f7c66d54cc4e5abbcd` (`69-keijzer-2013-what-nervous-systems-do.pdf`, 897,545 bytes)
+
+### [70] [J09] Evolution of phototaxis (Jékely 2009)
+- Status: OBTAINED
+- Saved as: `70-jekely-2009-evolution-of-phototaxis.pdf`
+- Source used: https://europepmc.org/articles/PMC2781859?pdf=render
+- Route: open-access (Europe PMC render of PMC2781859)
+- SHA-256: `92491eaa0f0cab49ea622d0fe664033c092683b23a9bbc5951d68939573c5ba7` (`70-jekely-2009-evolution-of-phototaxis.pdf`, 595,582 bytes)
+
+### [71] [SJ10] Bacterial energy taxis: a global strategy? (Schweinitzer & Josenhans 2010)
+- Status: OBTAINED
+- Saved as: `71-schweinitzer-2010-energy-taxis.pdf`
+- Source used: https://europepmc.org/articles/PMC2886117?pdf=render
+- Route: open-access (Springer open access; Europe PMC render of PMC2886117)
+- SHA-256: `74b0d906e90942f0fb3d8e23fba01431167f4f1b48a71780f2be467a97b26fd0` (`71-schweinitzer-2010-energy-taxis.pdf`, 423,711 bytes)
+
+### [72] [MZ09] On the independent origins of complex brains and neurons (Moroz 2009)
+- Status: OBTAINED
+- Saved as: `72-moroz-2009-independent-origins.pdf`
+- Source used: https://europepmc.org/articles/PMC2855278?pdf=render
+- Route: open-access (Europe PMC render of PMC2855278)
+- SHA-256: `e3e5c244cdaeb38627c1c3b5ca8f0d8edbee16fc692d4a27148623cd3e535a79` (`72-moroz-2009-independent-origins.pdf`, 534,345 bytes)
+
+### [73] [P77] Life at low Reynolds number (Purcell 1977)
+- Status: OBTAINED
+- Saved as: `73-purcell-1977-life-at-low-reynolds-number.pdf`
+- Source used: https://www.damtp.cam.ac.uk/user/tong/fluids/lowreynolds.pdf
+- Route: open-access (course copy on Cambridge DAMTP; the publisher's page at AIP is paywalled)
+- SHA-256: `b66d35120bdc095297f4826b5106478e37a4c13491d8a79a19958b72db4271f3` (`73-purcell-1977-life-at-low-reynolds-number.pdf`, 979,602 bytes)
+
+### [74] [BP77] Physics of chemoreception (Berg & Purcell 1977)
+- Status: OBTAINED
+- Saved as: `74-berg-purcell-1977-physics-of-chemoreception.pdf`
+- Source used: https://europepmc.org/articles/PMC1473391?pdf=render
+- Route: open-access (Europe PMC render of PMC1473391)
+- SHA-256: `ad7aa77fd2d73e14ded8c91dc307ca4a23f10a3ae5b9cdd8df46adaa51461999` (`74-berg-purcell-1977-physics-of-chemoreception.pdf`, 2,662,103 bytes)
+
+### [75] [D97] Minimum size limit for useful locomotion by free-swimming microbes (Dusenbery 1997)
+- Status: OBTAINED
+- Saved as: `75-dusenbery-1997-minimum-size-for-locomotion.pdf`
+- Source used: https://europepmc.org/articles/PMC23542?pdf=render
+- Route: open-access (Europe PMC render of PMC23542)
+- SHA-256: `c2d47f674b61aaa78fc1c484ca5dcf4c6a2fcbd0ae1f1be743d28d4eab966ea7` (`75-dusenbery-1997-minimum-size-for-locomotion.pdf`, 209,402 bytes)
+
+### [76] [SL23] Encounter rates prime interactions between microorganisms (Słomka et al. 2023)
+- Status: OBTAINED
+- Saved as: `76-slomka-2023-encounter-rates.pdf`
+- Source used: https://europepmc.org/articles/PMC9912013?pdf=render
+- Route: open-access (Europe PMC render of PMC9912013)
+- SHA-256: `35d41bb1244f0819be16778451a08c39f60111c42552dedbb25ff338e5ea082d` (`76-slomka-2023-encounter-rates.pdf`, 1,304,885 bytes)
+
+### [77] [W11] The population dynamics of bacteria in physically structured habitats and the adaptive virtue of random motility (Wei et al. 2011)
+- Status: OBTAINED
+- Saved as: `77-wei-2011-adaptive-virtue-of-random-motility.pdf`
+- Source used: https://europepmc.org/articles/PMC3053974?pdf=render
+- Route: open-access (Europe PMC render of PMC3053974, found by DOI through the Europe PMC search API; the PNAS page returns 403 to a non-browser client)
+- SHA-256: `3bdc8d1eb0ccc6670a89e8ac3b1b6cd4cc87a3acf1d4a44b122b88a64637ac87` (`77-wei-2011-adaptive-virtue-of-random-motility.pdf`, 851,568 bytes)
+
+### [78] [TS12] Trade-offs of chemotactic foraging in turbulent water (Taylor & Stocker 2012)
+- Status: OBTAINED
+- Saved as: `78-taylor-stocker-2012-chemotactic-foraging-turbulence.pdf`
+- Source used: https://stockerlab.ethz.ch/wp-content/uploads/2014/03/Science-2012-Taylor-675-9.pdf
+- Route: open-access (author self-archive, Stocker laboratory, ETH)
+- SHA-256: `84e12e42464e71ac1523b7f8656f423de6ab1a6af8a4b21b344e04b7252e5651` (`78-taylor-stocker-2012-chemotactic-foraging-turbulence.pdf`, 2,568,007 bytes)
+
+### [79] [KB96] Nutrient fluxes to planktonic osmotrophs in the presence of fluid motion (Karp-Boss, Boss & Jumars 1996)
+- Status: OBTAINED
+- Saved as: `79-karp-boss-1996-nutrient-fluxes-fluid-motion.pdf`
+- Source used: https://misclab.umeoce.maine.edu/documents/karpbossetal_1996.pdf
+- Route: open-access (author self-archive, University of Maine; scanned)
+- SHA-256: `1222fbaefb135709f75131b4141c19f12f1eab32af4962be02b0c83bc1cfaa20` (`79-karp-boss-1996-nutrient-fluxes-fluid-motion.pdf`, 1,886,736 bytes)
+
+### [80] [J11] Origin and early evolution of neural circuits for the control of ciliary locomotion (Jékely 2011)
+- Status: OBTAINED
+- Saved as: `80-jekely-2011-neural-circuits-ciliary-locomotion.pdf`
+- Source used: https://europepmc.org/articles/PMC3049052?pdf=render
+- Route: open-access (Europe PMC render of PMC3049052, found by DOI; the Royal Society page returns 403 to a non-browser client)
+- SHA-256: `e8cc1286cf220018afa58117e3fe277839df0766b7b36b39f5bf62c9ed35f6fb` (`80-jekely-2011-neural-circuits-ciliary-locomotion.pdf`, 1,155,998 bytes)
+
+### [81] [SBB86] Temporal comparisons in bacterial chemotaxis (Segall, Block & Berg 1986)
+- Status: OBTAINED
+- Saved as: `81-segall-1986-temporal-comparisons.pdf`
+- Source used: https://europepmc.org/articles/PMC387059?pdf=render
+- Route: open-access (Europe PMC render of PMC387059, found by DOI)
+- SHA-256: `183c8ebd1be71fdafccd1d56a7e5bcd2b09e14365415882fbd1c43a919cbbd98` (`81-segall-1986-temporal-comparisons.pdf`, 986,951 bytes)
+
+### [82] [MK72] The gradient-sensing mechanism in bacterial chemotaxis (Macnab & Koshland 1972)
+- Status: OBTAINED
+- Saved as: `82-macnab-koshland-1972-gradient-sensing.pdf`
+- Source used: https://europepmc.org/articles/PMC426976?pdf=render
+- Route: open-access (Europe PMC render of PMC426976, found by DOI; fetched on a second pass after a 429)
+- SHA-256: `9026e7143f775b38708bd7e7954d26d06b0a7d8cfe1704c0d51f2267ad328160` (`82-macnab-koshland-1972-gradient-sensing.pdf`, 1,038,638 bytes)
+
+### [83] [HG25] Energy costs and neural complexity evolution in changing environments (Heesom-Green, Shock & Nitschke 2025)
+- Status: OBTAINED
+- Saved as: `83-heesom-green-2025-energy-costs-neural-complexity.pdf`
+- Source used: https://arxiv.org/pdf/2511.20018
+- Route: open-access (arXiv)
+- SHA-256: `5e8c210273b317781be650aa9f05c9e964dce4eeefc7a6e0c30a3619788fc322` (`83-heesom-green-2025-energy-costs-neural-complexity.pdf`, 1,429,315 bytes)
+
+### [84] [JG21] Reafference and the origin of the self in early nervous system evolution (Jékely & Godfrey-Smith 2021)
+- Status: OBTAINED
+- Saved as: `84-jekely-godfrey-smith-2021-reafference.pdf`
+- Source used: https://europepmc.org/articles/PMC7934971?pdf=render
+- Route: open-access (Europe PMC render of PMC7934971, found by DOI 10.1098/rstb.2019.0764 through the search API)
+- SHA-256: `bb0e1895e0a62fb61632825cd4545de41c6df791c7849b90248985cab23b09bd` (`84-jekely-godfrey-smith-2021-reafference.pdf`, 1,408,104 bytes)
+
+### Round 6: sought, NOT obtained (manual-fetch queue)
+
+- Fraenkel & Gunn 1940, *The Orientation of Animals* (book; an Internet Archive scan exists under a variant title and was not verified as the same edition).
+- Berg & Brown 1972, *Nature* 239:500, DOI 10.1038/239500a0 (closed; no PMC record).
+- Wuichet & Zhulin 2010, *Science Signaling* 3:ra50, DOI 10.1126/scisignal.2000724 (closed; course-hosted copies exist and were not used).
+- Adler 1966, *Science* 153:708 (closed). Wadhams & Armitage 2004, *Nat. Rev. Mol. Cell Biol.* 5:1024 (closed; Oxford's repository record carries no file).
+- Mitchell 2002, *Am. Nat.* 160:727, and Mackie 1970, *Q. Rev. Biol.* 45:319 (University of Chicago, closed). Mitchell & Kogure 2006, *FEMS Microbiol. Ecol.* 55:3 (no PMC record).
+- Gerritsen & Strickler 1977, *J. Fish. Res. Board Can.* 34:73 (closed). Visser & Kiørboe 2006, *Oecologia* 148:538 (Springer, closed; DTU Orbit carries no copy). Kiørboe 2011, *Biol. Rev.* 86:311 (Wiley, closed). Fenchel 2002, *Science* 296:1068 (closed).
+- Arendt 2008, *Nat. Rev. Genet.* 9:868, and Arendt, Tosches & Marlow 2016, *Nat. Rev. Neurosci.* 17:61 (closed). Bosch et al. 2017, *Trends Neurosci.* 40:92 (GEOMAR copy restricted to registered users).
+- Egbert, Barandiaran & Di Paolo 2012, *Artificial Life* 18:1, DOI 10.1162/artl_a_00047 (MIT Press, closed; no PMC record). Elsberry, Grabowski, Ofria & Pennock 2009, IEEE ALIFE (mirrors only).

@@ -242,6 +242,27 @@ are in the manifest, as the bullet says. §5A's currency table still gave matter
 which D074's burial falsified. Both corrected after the outside reviews were captured
 (logbook/0071). No rule of the world changed.
 
+## 0r. Changelog — review round 6: how nature bootstrapped movement and sensing, and why this world cannot (2026-09-07)
+
+No mechanism changes. Round 6 of the literature review (research §0, Q11) answered the
+owner's question of the same evening: movement in the primordial soup was not worth having
+without senses, and senses were not worth having without movement, so how did nature solve
+it? The answer, across four literatures that agree, is that nature never had the problem.
+Undirected movement paid on its own wherever the habitat was physically structured and the
+body was large enough for its own motion to refresh the water it fed from [W11 p.1; KB96
+p.1; D97 p.4; P77 p.7–8]; the first sense compared a scalar with its own recent past and
+biased a walk that was already random [MK72 p.1; SBB86 p.1]; and in animals the first
+sensorimotor unit was one cell [J11 p.1; KDL13 p.4].
+
+What that says about §5A.2c is a diagnosis, recorded here and acted on only by a proposal.
+A body here draws from a field cell 5 m across that every body in it shares, at one price
+for all of them (§0p). It neither depletes its own water by staying nor refreshes it by
+moving, so undirected movement earns exactly nothing and costs the stroke, and every round's
+deletion of the muscles has been the correct reading of that world. The physics that made
+blind movement pay is absent by construction, at body sizes a thousand times above the
+threshold where it applies. Three world rules that would supply it are in
+`fable-propose-motility.md`, for the owner.
+
 ## 0q. Changelog — the global brain retired; added mass becomes a launch setting (2026-09-07, D081)
 
 Two changes to what the simulator is, both ruled in D081 and both landing in one build for

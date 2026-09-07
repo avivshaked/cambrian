@@ -14,7 +14,12 @@ the global brain retired (D081's build, commit `40b16b8`, `simHash e43b81a8…`)
 `r29-s5` on workers 2 to 6, dt 0.01, 30,000 s, wall 1,200 min; round 28's arms are the
 controls. Six predictions and their two-sided readings are in 0072; the scorer's verdict
 line now says `CENSORED` for a run that ends short of its budget. Round 28 read 3 of 5
-(0070) and is the base world by D081.
+(0070) and is the base world by D081. Then the owner asked how nature solved the chicken
+and egg of movement and sensing; review round 6 answered it the same night (research §0,
+Q11; logbook/0073), and the answer is that this world cannot bootstrap movement by
+construction, so `fable-propose-motility.md` is in front of the owner with three world
+rules, pros, cons and a recommendation. D082 (the price of a bud) is ruled and its knobs
+are built.
 
 The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
 asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive
@@ -191,6 +196,13 @@ the running status), in the order they are done:
   noted under D063.
 - **Whether the absence of CI is a choice.** The suite runs by hand before a launch; nothing
   says whether that is the standing decision.
+
+Raised 2026-09-07 by review round 6 (logbook/0073), and the next thing to rule:
+
+- **How undirected movement gets to pay** (`fable-propose-motility.md`): a per-body
+  depletion halo refreshed by diffusion and relative flow, a finer horizontal field, or
+  encounter feeding; the proposal recommends the halo, and asks whether it runs alone or
+  with D082's prices.
 
 Raised 2026-09-07 by round 28's reading (logbook/0070), and still open after D081:
 

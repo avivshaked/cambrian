@@ -42,6 +42,7 @@ round.
 | **3** | 2026-08-29 | §9's backlog, overdue by the review's own protocol: §5A implemented and measured for a month with its literature never searched; the 2025 co-optimisation preprint never followed up; forward snowballing never done; §13.4 quarantine unverified | 4 parallel search sweeps (delegated to subagents — §3.2, §8), plus Semantic Scholar citation API for forward snowballing and CrossRef for verification | **8 new papers retrieved** ([Y94] [MC25] [CO02] [VG05] [GOY23] [ST00] [CB18] [PU16]), ~45 candidates surfaced and screened, ~13 citing works triaged; key claims verified against primary text for [Y94] [MC25] [CO02] [CB18] | **§5A.2's "no precedent for a per-neuron charge" corrected** — [Y94 p.7] is the precedent (DESIGN.md §0e). [CB18] and [PU16] verified and promoted out of §13.4. Q1 sharpened by [MC25]; **Q7 answered in part; Q8 opened and answered in principle** (§2). No DESIGN mechanism changed; the round's findings feed the next decisions rather than rewriting existing ones |
 | **4** | 2026-09-01 | A design decision built on uncited inference was falsified by experiment: D055's seabed refuge — flagged ⚠ uncited in its own entry — blocked consumer establishment (logbook/0042) and starved hand-placed consumers to extinction (logbook/0043), and the pending round-8 stabiliser decision plus the owner's whole-layer-access hypothesis lean on the same untouched literature | 2 parallel sweeps (delegated — §3.7, §8), 9 declared new themes under a new question (Q9); the §3.2 re-run was skipped as vacuous (3 days since round 3) and is so logged | **13 PDFs fetched** (12 new to the corpus), **10 into the synthesis** ([HUF58] [JN97] [RMF07] [FM15] [HZ13] [KR13] [MO04] [JKT04] [DBWM05] [RC07]); ~25 relevant works recorded closed-access; 4 load-bearing claims re-verified by the reviewer against extracted text | **D055's failure is theory-predicted, not anomalous** — [KR13 p.2]: the consumer's equilibrium needs refuge *plus* accessible break-even density, so a refuge covering the feeding ground deletes the consumer (D055 addendum updated). Q9 opened and answered in theory. Three constraints delivered to the pending round-8 decision: patches must be *unequal* [HZ13 p.5], the criterion is a length-scale ratio not a dispersal rate [RMF07 p.5], and the strong refuge form is fixed-number (≡ type III response) not proportional [KR13 p.1–2]. The period-vs-generation discriminator for the bust mechanism is uncomputable from current logs — **lineage events promoted from post-goal to pre-round-8**. No existing DESIGN mechanism changed |
 | **5** | 2026-09-03 | `DECISIONS.md` **D070**, ruled in principle the same day and explicitly gated on this round: the world's producers give nothing to the water while they live, so dead tissue is the detritus pool's only income, the second trophic level is fed at ~1% of primary production (0.2 W against ~17 W) and a consumer line caps out at about six individuals. The proposed world rule — a producer deposits a fraction of photosynthetic intake into the nutrient field each step — needed a *number with a citation* before it could be a rule | 11 web queries in 3 themes, plus the Semantic Scholar graph + batch APIs (10 DOIs screened for open access) and the Figshare API; **the §3.2 strings were not re-run** — 2 days since round 4, a date-filtered re-run is vacuous, logged per §3.5 rule 1 | **7 PDFs fetched, all 7 into the synthesis** ([PC95] [MCP05] [LS11] [LS13] [CH20] [PWAH07] [ED21]); every numeric claim in the tables below was located and re-read by the reviewer in the extracted `source.md`. **6 works recorded bot-gated or closed and not bypassed** — including the field's two canonical sources, Baines & Pace 1991 and Thornton 2014 | **Q10 opened and answered.** The number D070 asked for: percentage extracellular release is **10–20% of primary production as a world-ocean general range** (Nagata 2000, via [CH20 p.5]), a cross-system mean of **13%** ([BP91], reached only through three independent verified secondaries), **~20% and flat** across a 150-fold productivity range [MCP05 p.1, p.9], rising to **37–41%** in oligotrophic water [LS11 p.1; CH20 p.1]. Three corrections to what the design would otherwise have assumed: exudation does **not** scale allometrically with cell size (isometric, slope 0.95 across >7 orders of magnitude of cell volume) and does **not** differ between growth phases [LS13 p.1]; and it is **not** proportional to light — DOCp is irradiance-independent while POCp is not, so real PER is *highest where photosynthesis is lowest* [MCP05 p.1, p.8–9]. Two reference points for the 1% diagnosis: the producer→herbivore step measures **13% (11–17%)** [ED21 p.14], and Pauly & Christensen's famous 10% is measured for **TL2→4 only** [PC95 p.3], so it is the wrong number to compare a producer→consumer step against. No DESIGN mechanism changed; the fraction goes to the owner for D070 |
+| **6** | 2026-09-07 | The owner's question, put while round 29 ran: "movement in the primordial soup would not have been worth it without senses, and senses would not have been worth it before movement, so how did our nature solve this chicken and egg problem?" Behind it, D082 and 0072: no round has ever selected for moving, and the owner's reading is that the world is not one in which random movement beats sitting still | Four parallel search sweeps (Claude Sonnet subagents, read-only web, scoped briefs), about thirty queries between them; **the §3.2 strings were not re-run** and no forward snowball was done, both logged in §3.9 per §3.5 | **17 PDFs fetched, all 17 into the synthesis** ([P77] [BP77] [D97] [KB96] [SL23] [W11] [TS12] [MK72] [SBB86] [SJ10] [J09] [J11] [JKG15] [KDL13] [JG21] [MZ09] [HG25]); every claim used was located by the reviewer in the extracted `source.md` at the page. 17 works recorded closed or bot-gated and not bypassed, among them the two founding texts, Fraenkel & Gunn 1940 and Berg & Brown 1972 | **Q11 opened and answered.** Nature did not solve the problem; it never had it. Blind motility pays on its own where the habitat is physically structured [W11 p.1] and the body is large enough for its own motion to refresh the water it feeds from (a radius near 20 µm for a 50% gain [KB96 p.1]; nothing below 0.6 µm [D97 p.1, p.4]; a bacterium relocates rather than stirs [P77 p.7–8; BP77 p.1]); the first sense is a scalar compared with itself a few seconds earlier, biasing a walk that was already random [MK72 p.1; SBB86 p.1; SJ10 p.1]; in animals the first sensorimotor unit was one cell, and nervous systems came to coordinate a new effector, not to link sensing to moving for the first time [JKG15 p.2–3; KDL13 p.4, p.8; J09 p.7; J11 p.1]. **Design impact: a diagnosis and a proposal, no mechanism changed.** §5A.2c's field has no per-body depletion, so undirected movement earns nothing here by construction; DESIGN §0r records it and `fable-propose-motility.md` puts three world rules in front of the owner |
 
 Round 2 searched nothing and retrieved nothing. It re-read papers already in
 `research/papers/` against a question that had not been asked in round 1. The answer changed
@@ -148,6 +149,7 @@ result did not reach statistical significance and is reported here as suggestive
 | Q8 | *(opened round 3)* What instrument distinguishes adaptive evolution from a treadmill, computable from this project's logs (births with parent ids, deaths, genomes, energy ledgers)? | 🟡 **Answered in principle, not yet implemented.** Bedau–Packard evolutionary activity with the class 1–4 taxonomy (via [BSP98 — lead, unfetched]) is the formal treadmill test; [ST00] supplies an implementation that replaces the "neutral shadow run" with a randomly-permuted shadow population, which fits a system that has no fitness function to switch off. The MODES toolbox ([DOL19 — lead, bot-gated preprint]) is the modern alternative and substitutes a lineage-persistence filter for the shadow. Both need a lineage record, which bears directly on the open `lineage.jsonl` decision |
 | Q9 | *(opened round 4)* What stabilises a consumer–resource interaction against boom-and-bust — and which stabiliser fits a world whose only evolved consumer is a benthic filter feeder on a well-mixed detritus pool? | ✅ **Answered in theory; the world's own answer is the round-8 experiment.** The theory predicted this project's own result before it ran: a refuge covering the consumer's feeding ground does not stabilise, it deletes the consumer — the equilibrium needs the refuge *plus* the consumer's break-even accessible density [KR13 p.2], and increasing hidden prey ends in predator extinction (González-Olivares & Ramos-Jiliberto 2003, abstract — closed). Four stabiliser families with primary sources: **(a) refuge, strong form** — fixed-*number* not proportional, which is mathematically a type III functional response [KR13 p.1–2; Maynard Smith 1974 via KR13]; **(b) spatial structure** — works by asynchrony + limited dispersal (empirically: continuous platform dead in 120 days vs eight throttled islands persisting 393–447+ [JN97 p.7]; Huffaker's 120-position universe [HUF58 p.39–41]), but *subdivision alone is the null result* — dispersal can destabilise (Briggs & Hoopes 2004, abstract — closed), identical patches buy nothing [HZ13 p.5], and the operative criterion is a length-scale ratio: coexistence dies when the boom-bust pattern wavelength outgrows the domain [RMF07 p.5]; a growth *gradient* plus mobile grazer stabilises even type I feeding at unbounded carrying capacity [FM15 p.1, p.19] — this project's light gradient is that geometry, rotated; **(c) feeding relaxation at low density** — a type III toe (q=0.1 suffices in food webs [DBWM05 p.12]), noting an unbounded linear clearance is not even a real type I, which has a satiation plateau by definition [JKT04 p.1]; **(d) donor control** — a flux-fed detritus pool with a mass-action consumer is *globally stable* [MO04 p.7], so the observed busts imply this world's pool is not behaving as donor-controlled (closed-loop recycling feeds back — Quévreux 2021, abstract, bot-gated) and/or the cycles are cohort-structural, not dynamical (de Roos & Persson family — lead). **The discriminator (cycle period vs consumer generation time) needs lineage events, which do not exist yet** |
 | Q10 | *(opened round 5)* What fraction of its photosynthetic intake does a producer release to the water while alive; what producer→consumer transfer efficiency should a world be judged against; and is the detritus/microbial route a real path for energy to consumers rather than a leak? | ✅ **Answered, with three corrections to the naive form of the rule.** **(a) The fraction.** Percentage extracellular release (PER = dissolved / [dissolved + particulate] primary production) is a normal, continuous process in all growth phases. World-ocean general range **10–20%** (Nagata 2000 via [CH20 p.5]); cross-system mean **13%**, from 16 lacustrine/marine/estuarine studies ([BP91] — **not obtained**, reached through [MCP05 p.9], [LS11 p.7] and [CH20 p.5], all three of which also flag that its glass-fibre-filter methods *underestimate* release); **22 ± 2%** measured in the Celtic Sea and **~20% flat** across a productivity range from <100 to >15,000 mg C m⁻² d⁻¹ (n = 35, r² = 0.90) [MCP05 p.1, p.9]; **~37%** in the ultraoligotrophic Mediterranean [LS11 p.1]; **40.8 ± 12.2%** (integrated range 28.6–60.1%) in the southern East China Sea [CH20 p.1, p.5]; **10 to >35%** in natural assemblages but only **<1–20%, mean ~2%,** in cultures [LS13 p.1]. **(b) Variation.** With *nutrient status*: contested inside one lab — [LS11 p.7–8] finds the oligotrophic contribution higher yet reports that on their pooled dataset "no overall inverse relationship between PER and total primary production exists", while [MCP05 p.9] finds PER flat from eutrophic to oligotrophic. With *growth phase*: no significant difference across three growth stages in 22 species [LS13 p.1]. With *cell size*: **none** — PER uncorrelated with cell size, cell-specific exudation isometric with cell volume (slope 0.95), so "general allometric models cannot be used to predict exudation" [LS13 p.1]. With *light*: DOCp is roughly constant across irradiance while POCp is strongly light-dependent, so PER rises under low light and peaks (>40–50%) at the *base* of the euphotic layer [MCP05 p.1, p.7, p.8–9]. **(c) The reference point.** Producer→herbivore transfer efficiency averages **13% (11–17%)**, and herbivore→fish **10% (7–12%)** [ED21 p.14]; the conventional ~10% [ED21 p.7] traces to [PC95], whose mean of 140 estimates across 48 trophic models is **for TL2→4 and shows no trend with TL** [PC95 p.1, p.3] — it is not a measurement of the producer→consumer step. Ecosystem-scale estimates span <1%–52% [ED21 p.17]. **(d) The detritus/microbial path is real and large.** Of 138 energy channels deconstructed from 40 community food webs, 20% originate with detritus against 63% with a primary producer, "many of which could be traced back to detritus if the description were complete" [MO04 p.3]; most organic matter available to consumers in the ocean is used and respired by bacteria [PWAH07 p.3], and the larger part of all energy captured by marine photosynthesis is ultimately consumed by microorganisms [PWAH07 p.6]. **The caveat that matters for D070:** exudation alone does not feed that loop even in the real ocean — bacterial carbon demand exceeded dissolved primary production **5- to 14-fold** in the Mediterranean [LS11 p.8] and exceeded total primary production at all non-upwelling East China Sea stations [CH20 p.1]; sloppy feeding, excretion and viral lysis supply the rest [LS11 p.8; ED21 p.10]. *Framing, 2026-09-07: D070's rule, a fixed fraction of current photosynthetic income, is an engineering rule that takes its magnitude from this evidence and not its shape; the evidence says release is not proportional to light and is highest where photosynthesis is lowest, and the rule does not model that* |
+| Q11 | *(opened round 6)* Under what conditions is undirected movement worth its cost before any directional sense exists; how did the first sense couple to movement; and did early animals ever pass through a stage with senses and no effectors, or effectors and no senses? | ✅ **Answered.** **(a) When blind movement pays.** Only in a physically structured habitat: "for natural selection to favor motility for the acquisition of nutrients by bacteria, their environment must be physically structured", and "chemotaxis evolved in bacteria that were already capable of self-propulsion in random directions" [W11 p.1]. At bacterial size movement does not raise uptake, since "the adsorption rate for molecules of moderate size cannot be significantly enhanced by motion of the cell or by stirring" [BP77 p.1] and "this bug can't do anything by stirring its local surroundings"; what it can do is "find places where the food is better", moving "to find greener pastures" a distance of order D/v to outrun diffusion [P77 p.7–8]. The size threshold: an organism "smaller than 0.6 µm diameter is unlikely to obtain any advantage by expending energy on locomotion", and the smallest of 97 motile genera averages 0.8 µm while 18 of 94 non-motile genera are smaller [D97 p.1, p.4]. Above that, swimming or sinking raises the flux to an absorber, by about 50% at a radius near 20 µm, and "mass transfer increases with cell size and with" relative motion in every flow regime [KB96 p.1]. Encounters with particles are diffusive below a micrometre and ballistic, scaling with swimming speed, above it [SL23 p.4]. Even with a sense, directed search beats undirected only at intermediate turbulence [TS12 p.2]. **(b) The first sense.** Bacteria detect no gradient across the body: "the apparent detection of a spatial gradient by the bacteria therefore involves an actual detection of a temporal gradient experienced as a result of movement through space" [MK72 p.1]; the comparison reaches "4 sec into the past: the past second is given a positive weighting, the previous 3 sec are given a negative weighting" [SBB86 p.1]. The signal can be the cell's own energy state: "motility, combined with the sensory perception of the internal energetic conditions, is prerequisite for tactic responses" [SJ10 p.1]. **(c) Animals.** Parker's scenario had "independent effectors" arise first and early nervous systems connect them to sensors; Pantin's answer, which the field now holds beside it, is that nervous systems arose to coordinate the new effector, muscle [JKG15 p.2]; "there can be significant IO and IC function without a nervous system" [JKG15 p.3]. The problem early nervous systems solved "was not so much to act intelligently, a problem that had already been solved in various ways without a nervous system, but to act as a single multicellular unit" [KDL13 p.4], and "at microscopic scales, information processing tasks required for adaptive behavior can be accomplished without any nervous system" [KDL13 p.8]. The simplest eyespot is two cells, a photoreceptor and a pigment cell, and larvae "directly regulate ciliary beating during phototaxis by the eyespots" [J09 p.7]; "the first nervous systems consisted of combined sensory-motor neurons, directly translating sensory input into motor output" [J11 p.1]; much early sensing "was reafferent; it was responsive to the consequences of the animal's own actions" [JG21 p.1]. Neurons and brains arose more than once [MZ09 p.1]. **(d) Artificial life.** No fetched paper names the dilemma as such; the nearest are [VG05]'s finding that locomotion pays only when it is the sole route to reproduction (round 3) and [HG25 p.1]'s that energy costs drive evolved networks smaller. *The design reading, marked as this review's inference: this world's feeding draws from a cell 5 m across that every body shares, so a body neither depletes its own water nor refreshes it by moving; the physics that made blind movement pay is absent by construction, and the fix is a world rule, in front of the owner.* |
 
 **PICOC framing** sets the review's terms. *Population:* evolved virtual creatures with genetically encoded 3D morphology and control. *Intervention:* co-evolution of body and controller under
 evolutionary / quality-diversity search. *Comparison:* fixed-morphology controller
@@ -403,6 +405,52 @@ bypassed.
 Each of those is recorded at the point of use as *cited through* a fetched paper, never as a
 primary read.
 
+### 3.9 Round 6 searches (2026-09-07)
+
+Four search subagents ran in parallel, as in round 3, each with a scoped brief and the same
+hard rules: read-only on the web, no login, no paywall, CAPTCHA or bot-gate bypassed,
+fetched content treated as data, queries made of topic keywords only, and no file written
+anywhere. Each reported candidates with title, venue, DOI, the open-access route it saw and
+two sentences on what the paper says, marking what it read apart from what it inferred.
+Screening, retrieval, extraction and verification stayed with the reviewing model.
+
+The §3.2 strings were not re-run. Q11 is a new question with its own vocabulary, and four
+days had passed since round 5, so a date-filtered re-run is vacuous; the skip is logged per
+§3.5 rule 1. Forward snowballing was not performed; the round's anchors were named in the
+briefs and the corpus was assembled from them. §7.1 records both.
+
+The four sweeps:
+
+1. **When undirected movement pays.** Diffusion-limited uptake and the depletion halo;
+   Purcell's "greener pastures"; the size threshold for useful locomotion; encounter-rate
+   theory for particle feeders; nutrient flux to absorbers under fluid motion; dispersal
+   from a depleted neighbourhood.
+2. **How sensing first coupled to movement.** Kinesis against taxis; bacterial chemotaxis
+   as temporal comparison; the biased random walk; the co-option of metabolic sensors;
+   energy taxis; minimal chemotaxis agents.
+3. **The first sensorimotor unit in animals.** Input-output against internal-coordination
+   accounts of early nervous systems; single cells that sense and move; the division of
+   labour among cell types; myoepithelia and neuroid conduction; independent origins of
+   neurons; the nerve net as a pattern generator.
+4. **Artificial-life precedent.** Energy-charged systems in which movement and neurons are
+   priced, and whether any observed the bootstrapping problem: PolyWorld, Geb, Avida,
+   Gene Pool, Framsticks, minimal cognition, evolutionary robotics.
+
+Retrieval used Europe PMC's render endpoint for the PubMed Central records, three author or
+institutional self-archives (Cambridge DAMTP for [P77], the Stocker laboratory for [TS12],
+the University of Maine for [KB96], Groningen's repository for [KDL13]) and arXiv for
+[HG25]. Two retrieval facts are worth recording. PubMed Central itself now answers a
+non-browser client with a proof-of-work JavaScript challenge (`cloudpmc-viewer-pow`); it was
+not solved, and Europe PMC's public endpoint served the same records. Europe PMC
+rate-limits with 429 after a burst; the retrieval script paces at 8 s and the two records
+it refused were fetched on a second pass 20 s apart.
+
+Seventeen works were recorded closed or bot-gated and not fetched: Fraenkel & Gunn 1940,
+Berg & Brown 1972, Adler 1966, Wadhams & Armitage 2004, Wuichet & Zhulin 2010 (course-hosted
+copies exist and were not used), Mitchell 2002, Mitchell & Kogure 2006, Gerritsen & Strickler
+1977, Visser & Kiørboe 2006, Kiørboe 2011, Fenchel 2002, Arendt 2008, Arendt et al. 2016,
+Mackie 1970, Bosch et al. 2017, Egbert et al. 2012 and Elsberry et al. 2009.
+
 ## 4. PRISMA flow
 
 *These counts are cumulative through round 1. Later rounds add to them rather than replacing them, as §0 says.*
@@ -544,6 +592,32 @@ PDF is authoritative.
 of the 1983 paper that named the microbial loop. That is the nearest thing to primary
 provenance obtainable while Inter-Research is bot-gated.
 
+Round 6 additions (2026-09-07):
+
+```
+IDENTIFICATION
+  Records surfaced by 4 subagent sweeps (about 30 queries)           ~55 candidates reported
+SCREENING
+  Candidates screened against Q11 by the reviewer                       55
+  Carried forward to retrieval (open-access route seen)                 19
+RETRIEVAL
+  Successfully retrieved                                             17/19
+     (Mitchell & Kogure 2006 and Egbert et al. 2012: no PMC record, publisher closed)
+  Relevant, recorded closed or bot-gated, NOT fetched, NOT bypassed     17   (§3.9 lists them)
+APPRAISAL
+  Every claim used located and re-read by the reviewer in the
+  extracted source.md before entering a table                          17   all of them
+  Read in full                                                          0
+  Read at targeted passages (abstract, results, discussion)            17
+  ADDED TO SYNTHESIS                                                   17
+```
+
+Verification this round was against each PDF's own title page and the passages cited, not
+against CrossRef; §7.2 records the gap. Two extraction notes: PyMuPDF renders Dusenbery's
+"µm" as "mm" in [D97]'s text, and the figure is 0.6 µm, as its own comparison with bacterial
+lengths of 0.1 to 0.6 µm makes plain [D97 p.4]; and [KB96] is a scanned review whose text
+layer is clean at the abstract and rough in the figures.
+
 ## 5. Synthesis matrix
 
 | Key | Claim used | Method / scope | Stance vs design | Quality | Limitations |
@@ -578,6 +652,23 @@ provenance obtainable while Inter-Research is bot-gated.
 | **[PWAH07]** *(round 5)* | "Most of the organic matter available to consumers in the ocean is used and respired by bacteria"; "the larger part of all energy captured by marine photosynthesis ... is consumed ultimately by microorganisms"; in blue water, where small cells dominate, **only 1–2% of primary production may finally be assimilated by fishes**; microphages (salps, krill) short-circuit the loop and are its most efficient path upward | Narrative review by four of the field's founders, incl. Azam of the 1983 paper that named the microbial loop | **Confirms the path is real and cautions about its length** — a long microbial chain delivers ~1% to top consumers, which is what this world currently gets at level *two* | 📄 Peer-reviewed, *Oceanography* (TOS), gold OA | Deliberately non-quantitative; its numbers are all inherited citations (Ducklow et al. 1986; del Giorgio & Williams 2005). Read in full |
 | **[BP91]** ⚠ **NOT OBTAINED** *(round 5)* | Cross-system mean PER of **13%**, measured PER ranging <1–75% with individual-system means 3–40%, from 16 lacustrine, marine and estuarine studies; PER approximately constant across productivity | Literature synthesis, 16 studies | **The field's default number** — and the one this round could not read | 🔒 Wiley/ASLO, 403 to non-browser clients; the Semantic Scholar GREEN record resolves to link-only Figshare metadata | **Cited only through [MCP05 p.9], [LS11 p.7] and [CH20 p.5]**, all three of which independently report the 13% *and* independently flag that its glass-fibre-filter methods underestimate release. Treat 13% as a probable floor, not a central estimate |
 
+| **[P77]** *(round 6)* | At low Reynolds number "this bug can't do anything by stirring its local surroundings"; swimming does not raise intake, it relocates the cell "to find greener pastures", and to outrun diffusion it must go a distance of order D/v | Lecture essay, order-of-magnitude physics | **Diagnostic** — the reason blind movement pays at all is relocation out of a depleted neighbourhood, which this world's feeding model cannot express | 📄 *Am. J. Phys.* 1977, self-archived | Bacterial scale; qualitative |
+| **[BP77]** *(round 6)* | "The adsorption rate for molecules of moderate size cannot be significantly enhanced by motion of the cell or by stirring of the medium by the cell"; local stirring at best doubles the diffusive current | Analytic physics of diffusion to receptors | **Diagnostic** — sets the scale below which motion cannot refresh a halo | 📄 *Biophys. J.* 1977, PMC | Micron scale; this world's bodies are a thousand times larger |
+| **[D97]** *(round 6)* | No locomotion pays below about 0.6 µm diameter; smallest of 97 motile genera averages 0.8 µm, 18 of 94 non-motile genera are smaller; motility also raises the dispersal coefficient | Physical model against a survey of bacterial genera | **Confirmatory** — a size threshold exists and this world is far above it | 📄 *PNAS* 1997, PMC | Free-floating microbes only |
+| **[KB96]** *(round 6)* | Flux to an absorber rises with size and with relative motion in every flow regime; a radius near 20 µm before swimming or sinking raises flux by about 50% over stagnant water; solutions do not transfer between regimes | Review with new asymptotic and numerical solutions | **Enabling** — a body-scale halo refreshed by relative flow is the physics a proposal can lean on | 📄 *Oceanogr. Mar. Biol.* 1996, author self-archive | Osmotrophs; scanned copy |
+| **[SL23]** *(round 6)* | Diffusive encounters rule the sub-micrometre world; ballistic (swimming) encounters dominate from the micrometre scale up; formulas for each | Review, encounter kernels | **Enabling** — for a particle feeder, intake proportional to swept volume is the standard model | 📄 *Interface Focus* 2023, PMC | Microbial scale |
+| **[W11]** *(round 6)* | "Chemotaxis evolved in bacteria that were already capable of self-propulsion in random directions"; motility is favoured only where the habitat is physically structured; motile strains outcompete non-motile in soft agar | Theory plus competition experiments | **Decisive for Q11(a)** — the order was movement first, and only in a structured habitat | 📄 *PNAS* 2011, PMC | 2D model, agar habitat |
+| **[TS12]** *(round 6)* | Chemotaxis is favoured only at intermediate turbulence; below and above, undirected motion does as well | Simulation of chemotactic foragers in turbulent filaments | **Cautionary** — a sense is worth its cost only in a window of environmental structure | 📄 *Science* 2012, author self-archive | Microbial scale |
+| **[MK72]** *(round 6)* | "The apparent detection of a spatial gradient by the bacteria therefore involves an actual detection of a temporal gradient experienced as a result of movement through space" | Temporal-gradient apparatus, stopped flow | **Decisive for Q11(b)** — the first sense compares a scalar with its own recent past | 📄 *PNAS* 1972, PMC | One species |
+| **[SBB86]** *(round 6)* | Temporal comparison reaches 4 s into the past, the last second weighted positive and the previous three negative | Tethered-cell impulse responses | **Quantifies [MK72]** — a differentiator with a short memory | 📄 *PNAS* 1986, PMC | *E. coli* only |
+| **[SJ10]** *(round 6)* | "Motility, combined with the sensory perception of the internal energetic conditions, is prerequisite for tactic responses"; energy taxis and chemotaxis are not cleanly separable | Review | **Confirmatory** — an internal energy signal is a sense that steers, and this world already has one (`Energy`) | 📄 *Arch. Microbiol.* 2010, OA | Review; the ancestral-order claim is the review's own caution |
+| **[J09]** *(round 6)* | The simplest eyespot is two cells; larvae directly regulate ciliary beating by the eyespots, no integration between | Review of phototaxis across protists and larvae | **Confirmatory for Q11(c)** — the minimal sensorimotor link is direct | 📄 *Phil. Trans. B* 2009, PMC | Phototaxis only |
+| **[J11]** *(round 6)* | "The first nervous systems consisted of combined sensory-motor neurons, directly translating sensory input into motor output" | Review with the *Platynereis* larva as the case | **Confirmatory** — one cell did both jobs | 📄 *Proc. R. Soc. B* 2011, PMC | Ciliary locomotion |
+| **[JKG15]** *(round 6)* | Parker: independent effectors first, nervous systems then connect them to sensors; Pantin: nervous systems coordinate the new effector, muscle; "significant IO and IC function without a nervous system" | Conceptual review | **Frames Q11(c)** — the two accounts and the option space between them | 📄 *Phil. Trans. B* 2015, PMC | Conceptual |
+| **[KDL13]** *(round 6)* | The problem early nervous systems solved "was not so much to act intelligently, a problem that had already been solved in various ways without a nervous system, but to act as a single multicellular unit" | Theoretical argument (the skin brain thesis) | **Decisive for Q11(c)** — the chicken-and-egg was solved at the single-cell level | 📄 *Adaptive Behavior* 2013, author self-archive | Theoretical |
+| **[JG21]** *(round 6)* | "Much early sensing was reafferent; it was responsive to the consequences of the animal's own actions" | Conceptual review | **Enriching** — the first sense may have read the body's own motion | 📄 *Phil. Trans. B* 2021, PMC | Conceptual |
+| **[MZ09]** *(round 6)* | Neurons and complex brains arose independently more than once | Review | **Context** — there is no single route from a sensorimotor cell to a brain | 📄 *Brain Behav. Evol.* 2009, PMC | Review |
+| **[HG25]** *(round 6)* | Under energy constraints, more seasonal environments evolved smaller networks; the Expensive Brain Hypothesis over the Cognitive Buffer Hypothesis | Evolved RL agents with priced neurons | **Confirmatory for D082** — pricing neurons selects them away where they do not pay | 📄 ALIFE 2025, arXiv | Not an ecology; task-driven |
 ## 6. Annotated bibliography
 
 **[EA23]** L. Eguiarte-Morett and W. Aguilar, "Premature convergence in morphology and
@@ -847,6 +938,97 @@ queue (§9).
 | Moran et al. 2022, *L&O* | hybrid CC BY-NC but Wiley-gated |
 | Cole, Findlay & Pace 1988, *MEPS* 43:1 | Inter-Research bot-gated |
 
+### Round 6 additions (2026-09-07)
+
+**[P77]** E. M. Purcell, "Life at low Reynolds number," *Am. J. Phys.* 45(1):3–11, 1977.
+DOI `10.1119/1.10903`, 📄 lecture essay, author self-archive (Cambridge DAMTP). Read at the
+stirring and greener-pastures passages [p.7–8]. The bug "might as well wait for things to
+diffuse"; swimming "does no good at all" for intake and is for finding "places where the food
+is better".
+
+**[BP77]** H. C. Berg & E. M. Purcell, "Physics of chemoreception," *Biophys. J.*
+20(2):193–219, 1977. DOI `10.1016/S0006-3495(77)85544-6`, 📄 peer-reviewed, PMC. Read at the
+abstract and the stirring section [p.1, p.8–9]. Motion and stirring cannot significantly
+enhance adsorption at this size; local stirring gives at most twice the diffusive current.
+
+**[D97]** D. B. Dusenbery, "Minimum size limit for useful locomotion by free-swimming
+microbes," *PNAS* 94(20):10949–10954, 1997. DOI `10.1073/pnas.94.20.10949`, 📄
+peer-reviewed, PMC. Read at the abstract, the dispersal section and the conclusion [p.1–2,
+p.4]. The 0.6 µm limit and the genera survey.
+
+**[KB96]** L. Karp-Boss, E. Boss & P. A. Jumars, "Nutrient fluxes to planktonic osmotrophs in
+the presence of fluid motion," *Oceanogr. Mar. Biol. Annu. Rev.* 34:71–107, 1996. 📄
+peer-reviewed review, author self-archive (University of Maine), scanned. Read at the
+abstract [p.1]. A radius near 20 µm before swimming or sinking raises flux by about 50%;
+flux rises with size and relative motion in every regime.
+
+**[SL23]** J. Słomka, U. Alcolombri, F. Carrara, R. Foffi, F. J. Peaudecerf, M. Zbinden & R.
+Stocker, "Encounter rates prime interactions between microorganisms," *Interface Focus*
+13(2):20220059, 2023. DOI `10.1098/rsfs.2022.0059`, 📄 peer-reviewed, PMC. Read at the
+encounter-mechanism section [p.2–5].
+
+**[W11]** Y. Wei, X. Wang, J. Liu, I. Nemenman, A. H. Singh, H. Weiss & B. R. Levin, "The
+population dynamics of bacteria in physically structured habitats and the adaptive virtue of
+random motility," *PNAS* 108(10):4047–4052, 2011. DOI `10.1073/pnas.1013499108`, 📄
+peer-reviewed, PMC. Read at the introduction and discussion [p.1, p.4]. *The round's clearest
+statement of the order: self-propulsion first, chemotaxis after, and only in a structured
+habitat.*
+
+**[TS12]** J. R. Taylor & R. Stocker, "Trade-offs of chemotactic foraging in turbulent
+water," *Science* 338(6107):675–679, 2012. DOI `10.1126/science.1219417`, 📄 peer-reviewed,
+author self-archive (Stocker laboratory). Read at the abstract and results [p.2, p.4–5].
+
+**[MK72]** R. M. Macnab & D. E. Koshland Jr., "The gradient-sensing mechanism in bacterial
+chemotaxis," *PNAS* 69(9):2509–2512, 1972. DOI `10.1073/pnas.69.9.2509`, 📄 peer-reviewed,
+PMC. Read at the abstract [p.1].
+
+**[SBB86]** J. E. Segall, S. M. Block & H. C. Berg, "Temporal comparisons in bacterial
+chemotaxis," *PNAS* 83(23):8987–8991, 1986. DOI `10.1073/pnas.83.23.8987`, 📄 peer-reviewed,
+PMC. Read at the abstract [p.1].
+
+**[SJ10]** T. Schweinitzer & C. Josenhans, "Bacterial energy taxis: a global strategy?"
+*Arch. Microbiol.* 192(7):507–520, 2010. 📄 peer-reviewed, open access at Springer, PMC. Read
+at the abstract and introduction [p.1].
+
+**[J09]** G. Jékely, "Evolution of phototaxis," *Phil. Trans. R. Soc. B* 364(1531):2795–2808,
+2009. DOI `10.1098/rstb.2009.0072`, 📄 peer-reviewed, PMC. Read at the eyespot section [p.7].
+
+**[J11]** G. Jékely, "Origin and early evolution of neural circuits for the control of
+ciliary locomotion," *Proc. R. Soc. B* 278(1707):914–922, 2011. DOI
+`10.1098/rspb.2010.2027`, 📄 peer-reviewed, PMC. Read at the abstract and the larval
+circuitry section [p.1, p.4].
+
+**[JKG15]** G. Jékely, F. Keijzer & P. Godfrey-Smith, "An option space for early neural
+evolution," *Phil. Trans. R. Soc. B* 370(1684):20150181, 2015. DOI `10.1098/rstb.2015.0181`,
+📄 peer-reviewed, PMC. Read at the introduction and the cilia section [p.1–3, p.7].
+
+**[KDL13]** F. Keijzer, M. van Duijn & P. Lyon, "What nervous systems do: early evolution,
+input-output, and the skin brain thesis," *Adaptive Behavior* 21(2):67–85, 2013. DOI
+`10.1177/1059712312465330`, 📄 peer-reviewed, author self-archive (Groningen, publisher's
+version). Read at the introduction and §3.3 [p.4, p.8–9].
+
+**[JG21]** G. Jékely & P. Godfrey-Smith, "Reafference and the origin of the self in early
+nervous system evolution," *Phil. Trans. R. Soc. B* 376(1821):20190764, 2021. DOI
+`10.1098/rstb.2019.0764`, 📄 peer-reviewed, PMC. Read at the abstract [p.1].
+
+**[MZ09]** L. L. Moroz, "On the independent origins of complex brains and neurons," *Brain
+Behav. Evol.* 74(3):177–190, 2009. DOI `10.1159/000258665`, 📄 peer-reviewed, PMC. Read at
+the abstract and introduction [p.1].
+
+**[HG25]** S. Heesom-Green, J. Shock & G. Nitschke, "Energy costs and neural complexity
+evolution in changing environments," ALIFE 2025, arXiv:2511.20018. 📄 conference paper,
+arXiv. Read at the abstract and results [p.1, p.5].
+
+**Sought and not obtained in round 6**, recorded rather than bypassed: Fraenkel & Gunn
+1940 (book; the kinesis vocabulary enters through [SJ10] and the sweep's reading of
+secondary sources); Berg & Brown 1972, *Nature*; Adler 1966, *Science*; Wadhams & Armitage
+2004 and Arendt 2008, Arendt et al. 2016, *Nature Reviews*; Wuichet & Zhulin 2010, *Science
+Signaling*; Mitchell 2002, *Am. Nat.*, and Mackie 1970, *Q. Rev. Biol.* (University of
+Chicago); Gerritsen & Strickler 1977; Visser & Kiørboe 2006 (Springer; DTU's record carries
+no copy); Kiørboe 2011 (Wiley); Mitchell & Kogure 2006 (no PMC record); Fenchel 2002;
+Bosch et al. 2017 (repository copy restricted); Egbert et al. 2012 (MIT Press); Elsberry et
+al. 2009 (mirrors only).
+
 ## 7. Threats to validity
 
 ### 7.1 Search validity
@@ -950,6 +1132,13 @@ queue (§9).
   check at all on its *derivation*. The underlying 16 studies, their methods and their
   spread are known here only as three sentences of secondary summary.
 
+- ↻ **Round 6 brought the relay back**, four Sonnet sweeps under the round-3 rules, and
+  with it round 3's threat: every candidate was screened from a subagent's report, and
+  the reviewer read only the seventeen it retrieved. The §3.2 strings were not re-run and
+  no forward snowball was done, both logged in §3.9. The physics half of the corpus is
+  old (1972 to 1997) and the animal half is one school (Jékely, Keijzer, Godfrey-Smith,
+  four of the seventeen); a dissenting account of early nervous systems was not sought.
+
 ### 7.2 Verification validity
 
 - ⚠ **The two-database cross-match rule** was not met. Verification used **CrossRef
@@ -980,6 +1169,10 @@ queue (§9).
   The cross-check earned its keep in both directions. CrossRef confirmed [PWAH07]'s DOI and
   pagination, which had been inferred. The PDFs corrected two search-index errors, both in
   §4's metadata notes: a transposed [LS13] title and a misattributed [CH20] first author.
+
+- ⚠ **Round 6 did not run CrossRef.** Each record was checked against its own PDF's title
+  page and read at the passage cited, which catches a wrong paper and not a wrong volume
+  or a retraction. The next round that touches these keys should run the batch.
 
 ### 7.3 Synthesis validity
 
@@ -1065,6 +1258,13 @@ queue (§9).
   grey literature was ultimately consulted, so the main justification for the MLR
   framing was never exercised.
 
+- ↻ **Forty-five after round 6**, with seventeen added on 2026-09-07, none of them read in
+  full. The round's answer rests on passages, and on passages that agree across four
+  independent literatures, which is the mitigation.
+- ⚠ **Round 6's artificial-life finding is an absence.** No fetched paper names the
+  movement-before-sensing dilemma as its thesis; the framing is this project's own and is
+  marked as inference wherever it is used.
+
 ## 8. AI assistance disclosure (PRISMA-trAIce)
 
 | Stage | Performed by | Human oversight |
@@ -1083,6 +1283,8 @@ queue (§9).
 | **Round 4** (2026-09-01): search + retrieval + first-pass extraction | 2 parallel Claude Opus subagents (scoped briefs; read-only web; open-access only; bot-gates respected, not bypassed) | Round run autonomously under the standing goal; the triggering hypothesis (whole-layer access) is the owner's, raised in discussion |
 | Round 4: screening, load-bearing-claim re-verification, synthesis, this update | Claude Fable 5 | Four design-impacting claims re-verified against extracted text before entering any table |
 | **Round 5** (2026-09-03): search, retrieval, extraction, verification, synthesis, this update | Claude Fable 5.1 via subagent — **no search subagents**, one model end to end; open-access only, bot-gates recorded and not bypassed; no institutional access | Round commissioned by the owner with the question fixed by `DECISIONS.md` D070 and the fraction reserved as an owner decision; the review reports a range, it does not set the world rule |
+| **Round 6** (2026-09-07): search | 4 parallel Claude Sonnet subagents (scoped briefs; read-only web; no login, no gate bypassed; no file written) | Round asked for by the owner in their own words; the question and the sweeps' themes were the reviewer's framing of it |
+| Round 6: screening, retrieval, extraction, page verification, synthesis, this update | Claude Fable 5.1 (the reviewing model); Europe PMC's public endpoints and author self-archives only, no institutional access | The design consequence is a proposal to the owner (`fable-propose-motility.md`), not a change |
 
 No citation in this document was generated from model memory. Every reference originates
 from a tool-call result within the session. Every cited work was retrieved and read except
@@ -1105,7 +1307,8 @@ is reconstructible by anyone with equivalent access.
 Several questions are answered well enough to build on. Those are Q1, with [MC25]'s
 sharpening, and Q3, Q4 and Q6. Q7 is answered in its precedent half. Q9 is answered in its
 theory half, from round 4, and the world's own answer to it is experimental. Q10 is answered
-by round 5, with the independence caveat in §7.3.
+by round 5, with the independence caveat in §7.3. Q11 is answered by round 6, across four
+literatures that agree, and its consequence for the design is a proposal rather than a rule.
 
 Four items were resolved by round 3, and are kept here rather than deleted.
 
@@ -1283,3 +1486,10 @@ substrate from the one this project targets.
 
 The round-3 snowball reinforced that judgement, since the citation traffic around [C18] is
 dominated by that same substrate.
+
+5. **Round 6's manual-fetch queue and one check.** Fraenkel & Gunn 1940 and Berg & Brown
+   1972 are the two founding texts of Q11(b) and both are read here only through others;
+   Wuichet & Zhulin 2010 is the evolutionary evidence for the co-option of metabolic sensors
+   and was not fetched. And the "sessile trap" of evolutionary robotics, populations that
+   converge on standing still because it is cheaper, surfaced in sweep 4 as a pattern
+   without a citation; one verified source for it would turn an inference into a finding.

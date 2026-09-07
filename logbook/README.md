@@ -255,3 +255,4 @@ key only translates the entries' reporting shorthand.
 | [0070](0070-the-good-world-with-one-change.md) | 2026-09-06 | The good world with one change: contact |
 | [0071](0071-three-outside-reviews.md) | 2026-09-07 | Three outside reviews |
 | [0072](0072-the-round-that-asks-whether-moving-pays.md) | 2026-09-07 | The round that asks whether moving pays |
+| [0073](0073-the-chicken-and-the-egg.md) | 2026-09-07 | The chicken and the egg |
