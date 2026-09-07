@@ -194,14 +194,13 @@ namespace Evosim.Core.Tests
                     minParts: 3);
 
                 Phenotype phenotype = Developer.Develop(genome, DevelopmentLimits.Default);
-                Brain brain = Brain.For(phenotype, genome.GlobalBrain);
+                Brain brain = Brain.For(phenotype);
 
                 var expected = new HashSet<SensorChannel>();
                 foreach (PhenotypePart part in phenotype.Parts)
                 {
                     Collect(part.Neurons, expected);
                 }
-                Collect(genome.GlobalBrain, expected);
 
                 foreach (SensorChannel channel in Enum.GetValues(typeof(SensorChannel)))
                 {

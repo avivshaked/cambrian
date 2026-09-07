@@ -4070,3 +4070,8 @@ shows packing binds. The one more thing the owner asked to say before a new roun
 Astra's second response to the review work; its accepted items (the scorer's censoring
 gate, one exit code, five wordings) were scheduled ahead of the movement build the same
 evening, and the owner then said to continue.
+
+**Note, the same evening.** Item 4 says the added-mass coefficient is set "with the
+ledger's help". The ledger prices energy and added mass is an inertial term, so it cannot;
+logbook/0072 sets 0.5, the sphere's coefficient, and says why. The movement build landed
+the same evening (DESIGN §0q) and round 29 is pre-registered as 0072.

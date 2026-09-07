@@ -306,7 +306,7 @@ namespace Evosim.Core.Tests
         public void RewiringReachesEveryInputKindAndOnlyImplementedChannels()
         {
             // Two properties at once, because they fail in opposite directions. A rewire that
-            // cannot reach ParentNode or GlobalBrain leaves whole classes of connection
+            // cannot reach ParentNode or ChildNode leaves whole classes of connection
             // unevolvable and looks exactly like a search that is merely slow. A rewire that
             // draws channels uniformly from the enum spends most of its sensory mutations on
             // channels wired to a constant zero, which looks exactly like a sensor that does
@@ -333,9 +333,15 @@ namespace Evosim.Core.Tests
                 }
             }
 
+            // Every kind but the retired one (D081), which must never be produced. The rewire
+            // draws below GlobalBrain's value, so this also pins GlobalBrain as the enum's last
+            // member: a kind added after it would be unreachable and this would say so.
             foreach (NeuronInputKind kind in Enum.GetValues(typeof(NeuronInputKind)))
             {
-                Assert.Contains(kind, kinds);
+                if (kind == NeuronInputKind.GlobalBrain) Assert.DoesNotContain(kind, kinds);
+                else Assert.Contains(kind, kinds);
+                Assert.True((int)kind <= (int)NeuronInputKind.GlobalBrain,
+                    $"{kind} sits above GlobalBrain in the enum and a rewire can never draw it");
             }
 
             Assert.NotEmpty(channels);
@@ -345,6 +351,45 @@ namespace Evosim.Core.Tests
                 "forever and be indistinguishable from a dead input"));
 
             _output.WriteLine($"kinds reached: {kinds.Count}; channels used: {string.Join(", ", channels)}");
+        }
+
+        [Fact]
+        public void AChildCarriesNoGlobalBrainAndNoReferenceToOne()
+        {
+            // D081. A parent recorded before the global brain was retired may carry global
+            // neurons and a node that reads one. Every child is born without the array, every
+            // reference to it has been repaired to a constant, and the child is valid — under
+            // rates that never rewire, so the repair and not a lucky redraw is what did it.
+            Genome parent = Parent(9);
+            parent.GlobalBrain = new[]
+            {
+                new NeuronDef { Op = NeuronOp.Sum, Inputs = new[] { NeuronInput.FromConstant(0.5f) } },
+                new NeuronDef { Op = NeuronOp.Sin },
+            };
+            MorphNode root = parent.Nodes[parent.RootIndex];
+            var reader = new NeuronDef
+            {
+                Op = NeuronOp.Sum,
+                Inputs = new[] { NeuronInput.FromNeuron(NeuronInputKind.GlobalBrain, 1) },
+            };
+            var withReader = new List<NeuronDef>(root.Neurons) { reader };
+            root.Neurons = withReader.ToArray();
+            Assert.Empty(parent.Validate());
+
+            var rates = new MutationRates { RewireInputChance = 0f, RemoveNeuronChance = 0f };
+            for (ulong seed = 1; seed <= 20; seed++)
+            {
+                Genome child = Mutator.Mutate(parent, new Rng(seed), rates);
+                Assert.Empty(child.GlobalBrain);
+                Assert.Empty(child.Validate());
+                foreach (MorphNode node in child.Nodes)
+                    foreach (NeuronDef neuron in node.Neurons)
+                        foreach (NeuronInput input in neuron.Inputs)
+                            Assert.NotEqual(NeuronInputKind.GlobalBrain, input.Kind);
+            }
+
+            // And the parent itself is untouched: mutation clones.
+            Assert.Equal(2, parent.GlobalBrain.Length);
         }
 
         [Fact]

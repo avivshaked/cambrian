@@ -90,7 +90,7 @@ namespace Evosim.Core.Tests
                 Genome genome = GenomeFactory.RandomViable(new Rng(seed), options, limits, minParts: 3);
                 Phenotype phenotype = Developer.Develop(genome, limits);
 
-                Brain brain = Brain.For(phenotype, genome.GlobalBrain);
+                Brain brain = Brain.For(phenotype);
                 if (brain.TotalDof == 0) continue;
 
                 var drive = new float[brain.TotalDof];
@@ -211,6 +211,41 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void AStoredGlobalBrainIsNeitherBuiltNorRead()
+        {
+            // D081. A genome recorded before the global brain was retired may carry global
+            // neurons and a node that reads one. The brain built from it has no group for them,
+            // counts none of them, and the reference reads zero rather than throwing or wrapping
+            // into some other group.
+            Genome genome = GenomeFactory.RandomViable(
+                new Rng(7), RandomGenomeOptions.Default, DevelopmentLimits.Default, minParts: 3);
+            genome.GlobalBrain = new[]
+            {
+                new NeuronDef { Op = NeuronOp.Sum, Inputs = new[] { NeuronInput.FromConstant(0.9f) } },
+            };
+            MorphNode root = genome.Nodes[genome.RootIndex];
+            var reader = new NeuronDef
+            {
+                Op = NeuronOp.Sum,
+                Inputs = new[] { NeuronInput.FromNeuron(NeuronInputKind.GlobalBrain, 0) },
+            };
+            var withReader = new List<NeuronDef>(root.Neurons) { reader };
+            root.Neurons = withReader.ToArray();
+            Assert.Empty(genome.Validate());
+
+            Phenotype phenotype = Developer.Develop(genome, DevelopmentLimits.Default);
+            int bodyNeurons = 0;
+            foreach (PhenotypePart part in phenotype.Parts) bodyNeurons += part.Neurons.Length;
+
+            Brain brain = Brain.For(phenotype);
+            Assert.Equal(bodyNeurons, brain.NeuronCount);
+
+            var drive = new float[Math.Max(1, brain.TotalDof)];
+            for (int i = 0; i < 50; i++) brain.Step(Dt, drive);
+            Assert.All(drive, d => Assert.False(float.IsNaN(d)));
+        }
+
+        [Fact]
         public void TheSameGenomeGivesTheSameDriveEveryTime()
         {
             // §7. A controller that varied between runs would make every stored result
@@ -221,7 +256,7 @@ namespace Evosim.Core.Tests
             string Trace()
             {
                 Phenotype phenotype = Developer.Develop(genome, DevelopmentLimits.Default);
-                Brain brain = Brain.For(phenotype, genome.GlobalBrain);
+                Brain brain = Brain.For(phenotype);
 
                 var drive = new float[Math.Max(1, brain.TotalDof)];
                 var text = new StringBuilder();

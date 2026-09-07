@@ -107,8 +107,8 @@ goal and misses the reference is read as "meets the goal, cost recorded".
    physics worker count, both read from the manifest, once D078 has landed.
 7. **The movement pre-registration** gains a second layer: an active-versus-clamped assay on
    saved members of the jointed clade.
-8. **A `mat here` column** in the run report: the matter density a body sees is in the
-   statistics file and not in the table.
+8. **A `mat here` column** in the run report (done 2026-09-07 in the movement build, with
+   `sense`, `dep jnt` and `dep rig`).
 
 Captured 2026-09-07 from the three outside reviews (logbook/0071), in no order of urgency:
 

@@ -1174,7 +1174,7 @@ namespace Evosim.Sim.EditorTools
             fluid.ApplyAddedMass(creature);
 
             var driver = new EffectorDriver(creature, FixedDt);
-            var brain = Brain.For(phenotype, genome.GlobalBrain);
+            var brain = Brain.For(phenotype);
 
             // Brain.AllSensorChannels, not this brain's own mask: the mask exists so a creature
             // pays for nothing it does not read, and this check is asking what the simulator can

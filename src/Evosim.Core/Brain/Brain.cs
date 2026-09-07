@@ -78,15 +78,12 @@ namespace Evosim.Core
         /// </remarks>
         private readonly float[] _memory;
 
-        private readonly NeuronDef[][] _neurons;      // per part, then the global brain last
+        private readonly NeuronDef[][] _neurons;      // per part
         private readonly int[] _offset;               // where each group starts in the buffers
         private readonly int[] _firstChild;           // per part, or -1
         private readonly int[] _parent;               // per part, or -1
         private readonly int[] _dofStart;             // per part, or -1 where the joint is fixed
         private readonly int[] _dofCount;
-
-        /// <summary>Index of the global brain's group in <see cref="_offset"/>.</summary>
-        private readonly int _globalGroup;
 
         /// <summary>Total actuated degrees of freedom — the length <c>drive</c> must be.</summary>
         public int TotalDof { get; }
@@ -109,9 +106,8 @@ namespace Evosim.Core
         /// <b>Skipping a value nobody reads is bit-identical by construction</b>, which is the
         /// only reason it can be turned on unconditionally: an input that references a channel
         /// sets that channel's bit, and nothing else in the creature can reach the sampler.
-        /// The global brain is walked too — a global neuron's sensor input is repaired to a
-        /// constant by <c>Mutator.RepairInputs</c> and so cannot arise from evolution, but a
-        /// hand-authored genome may carry one and a mask that under-reports is a silent zero.
+        /// The global brain is not walked, because it is not built (D081): a stored genome's
+        /// global neurons are never stepped, so nothing they read is ever computed.
         /// </para>
         /// </remarks>
         public int SensorMask { get; }
@@ -123,7 +119,7 @@ namespace Evosim.Core
         public static bool MaskReads(int mask, SensorChannel channel) =>
             (mask & (1 << (int)channel)) != 0;
 
-        /// <summary>Neurons in this creature, body and global brain together.</summary>
+        /// <summary>Neurons in this creature's body. A stored global brain is not counted (D081).</summary>
         public int NeuronCount => _previous.Length;
 
         /// <summary>Simulated seconds this brain has been evaluated for.</summary>
@@ -140,7 +136,6 @@ namespace Evosim.Core
             _firstChild = firstChild;
             _dofStart = dofStart;
             _dofCount = dofCount;
-            _globalGroup = neurons.Length - 1;
 
             _previous = new float[totalNeurons];
             _current = new float[totalNeurons];
@@ -153,16 +148,19 @@ namespace Evosim.Core
         /// Builds the nervous system of a developed body. Call once, at birth.
         /// </summary>
         /// <param name="phenotype">The developed body. Supplies neurons, topology and joints.</param>
-        /// <param name="globalBrain">
-        /// <see cref="Genome.GlobalBrain"/> — neurons owned by no part, readable from anywhere.
-        /// </param>
-        public static Brain For(Phenotype phenotype, NeuronDef[] globalBrain = null)
+        /// <remarks>
+        /// Until D081 (2026-09-07) this also took <see cref="Genome.GlobalBrain"/> and stepped it
+        /// as one more group after the parts. It no longer does: a brain has a location or it
+        /// is not built, and a stored genome's global neurons are loaded, validated and ignored.
+        /// An input of kind <see cref="NeuronInputKind.GlobalBrain"/> reads zero.
+        /// </remarks>
+        public static Brain For(Phenotype phenotype)
         {
             if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
 
             int parts = phenotype.PartCount;
-            var neurons = new NeuronDef[parts + 1][];
-            var offset = new int[parts + 1];
+            var neurons = new NeuronDef[parts][];
+            var offset = new int[parts];
             var parent = new int[parts];
             var firstChild = new int[parts];
             var dofStart = new int[parts];
@@ -201,10 +199,6 @@ namespace Evosim.Core
                 dofStart[i] = count > 0 ? dofCursor : -1;
                 dofCursor += count;
             }
-
-            neurons[parts] = globalBrain ?? Array.Empty<NeuronDef>();
-            offset[parts] = cursor;
-            cursor += neurons[parts].Length;
 
             // The requirement mask, taken on the way past rather than in a second walk: every
             // neuron group is already in hand, and this runs once per birth.
@@ -260,7 +254,7 @@ namespace Evosim.Core
             {
                 NeuronDef[] group_ = _neurons[group];
                 int at = _offset[group];
-                int part = group == _globalGroup ? -1 : group;
+                int part = group;   // one group per part since D081; there is no partless group
 
                 for (int n = 0; n < group_.Length; n++)
                 {
@@ -300,7 +294,8 @@ namespace Evosim.Core
         /// </remarks>
         public float Output(int partIndex, int neuronIndex)
         {
-            int group = partIndex < 0 ? _globalGroup : partIndex;
+            // A negative part index used to name the global brain (D081): nothing is there now.
+            int group = partIndex;
             if (group < 0 || group >= _neurons.Length) return 0f;
 
             if (neuronIndex < 0 || neuronIndex >= _neurons[group].Length) return 0f;
@@ -449,7 +444,9 @@ namespace Evosim.Core
                 }
 
                 case NeuronInputKind.GlobalBrain:
-                    return FromGroup(_globalGroup, input.Index) * input.Weight;
+                    // Retired (D081). A stored genome may still carry the reference; there is
+                    // no group to read, so it reads zero, as ParentNode does at the root.
+                    return 0f;
 
                 default:
                     return 0f;

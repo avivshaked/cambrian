@@ -55,18 +55,20 @@ namespace Evosim.Core
 
             MutateReproduction(child, rng, rates);
 
-            // The global brain is mutated FIRST, and it used to be last. A node's inputs are made
-            // legal against whatever `child.GlobalBrain` holds when that node is repaired, so
-            // repairing nodes and then replacing the global brain leaves every GlobalBrain
-            // reference validated against a list that no longer exists — and if the new brain is
-            // shorter, the genome is invalid.
+            // D081 (2026-09-07): the global brain is retired. A child is born without one, and
+            // the array is emptied here, FIRST, for the reason its mutation used to run first: a
+            // node's inputs are made legal against whatever `child.GlobalBrain` holds when that
+            // node is repaired, so RepairInputs below turns every GlobalBrain reference into a
+            // constant (its globalCount reads 0) and the genome stays valid. A stored genome
+            // carrying global neurons still loads and validates; its neurons are no longer
+            // stepped (Brain.For), and none of its descendants carries them.
             //
-            // That was unreachable until the rewire mutation existed, because nothing in the
-            // codebase ever produced a GlobalBrain reference: founders draw sensors and
-            // same-node links only, and mutation could not change an input's kind. Implementing
-            // one dead knob is what made a second latent fault reachable (logbook/0019).
-            MutateNeuronSet(child.GlobalBrain, null, child, rng, rates, sensorPool, out NeuronDef[] brain);
-            child.GlobalBrain = brain;
+            // Until 2026-09-07 the set was mutated like a node's. It was legal, mutable, stepped
+            // and billed by nothing (Metabolism prices neurons per part), and in the record three
+            // genomes in five carried one or two constant-input global neurons that almost no
+            // local neuron read (D019's note). D019's own argument is that thinking must have a
+            // location, and a placeless brain undercut the one thing it set up.
+            child.GlobalBrain = Array.Empty<NeuronDef>();
 
             for (int n = 0; n < child.Nodes.Count; n++)
             {
@@ -487,7 +489,10 @@ namespace Evosim.Core
         private static NeuronInput Rewire(
             NeuronInput input, float constant, float weight, Rng rng, SensorChannel[] sensorPool)
         {
-            var kind = (NeuronInputKind)rng.Range(KindCount);
+            // Drawn from the kinds a neuron can still be wired to. GlobalBrain is the last
+            // member of the enum and is excluded by the range (D081): a rewire onto it would be
+            // repaired to a constant on the spot, a mutation spent on nothing.
+            var kind = (NeuronInputKind)rng.Range(LiveKindCount);
 
             if (kind == NeuronInputKind.Sensor)
             {
@@ -499,7 +504,13 @@ namespace Evosim.Core
             return new NeuronInput(kind, index, input.Channel, constant, weight);
         }
 
-        private static readonly int KindCount = Enum.GetValues(typeof(NeuronInputKind)).Length;
+        /// <summary>
+        /// How many input kinds a rewire may produce: every member below
+        /// <see cref="NeuronInputKind.GlobalBrain"/>, which is the enum's last value and is
+        /// retired (D081). <c>MutationTests</c> pins the enum's shape so that a kind added after
+        /// it would be noticed rather than silently unreachable.
+        /// </summary>
+        private static readonly int LiveKindCount = (int)NeuronInputKind.GlobalBrain;
 
         /// <summary>
         /// Largest neuron index a rewire will reach for. Not a cap on how many neurons a node
@@ -513,11 +524,10 @@ namespace Evosim.Core
         {
             int local = neurons.Length;
 
-            // When the set being repaired IS the global brain, `g.GlobalBrain` is still the
-            // pre-mutation list — the caller assigns the new one only after this returns — so a
-            // GlobalBrain reference has to be clamped against `neurons`, which is the same list
-            // it is pointing into. Reading the stale one lets a reference past the end survive
-            // repair and fail validation.
+            // `owner == null` meant "the set being repaired is the global brain", which no
+            // caller passes since D081; the branch is kept so the function stays total. For a
+            // node, `g.GlobalBrain` is empty by the time this runs (Mutate clears it first), so
+            // every GlobalBrain reference below becomes a constant.
             int globalCount = owner == null ? local : g.GlobalBrain.Length;
 
             for (int n = 0; n < neurons.Length; n++)

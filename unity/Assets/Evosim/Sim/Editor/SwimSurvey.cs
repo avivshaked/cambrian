@@ -168,7 +168,7 @@ namespace Evosim.Sim.EditorTools
                 fluid.ApplyAddedMass(creatures[i]);
 
                 drivers[i] = new EffectorDriver(creatures[i], FixedDt);
-                brains[i] = Brain.For(phenotype, genome.GlobalBrain);
+                brains[i] = Brain.For(phenotype);
                 sensors[i] = new CreatureSensors(creatures[i], config.WorldDepthMetres);
                 drive[i] = new float[Mathf.Max(1, brains[i].TotalDof)];
                 start[i] = FluidEnvironment.CentreOfMass(creatures[i]);

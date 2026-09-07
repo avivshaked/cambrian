@@ -1355,7 +1355,7 @@ namespace Evosim.Sim
 
             Fluid.ApplyAddedMass(instance);
 
-            Brain brain = Brain.For(creature.Phenotype, creature.Genome.GlobalBrain);
+            Brain brain = Brain.For(creature.Phenotype);
 
             var body = new Body
             {

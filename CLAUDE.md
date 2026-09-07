@@ -493,14 +493,19 @@ actually verifying it.
   commit inside it and made every earlier recording unreplayable, because a HUD label is a `.cs`
   file under that root and `simHash` cannot tell a viewer from a solver. Presentation, tooling and
   anything else that does not decide a trajectory goes beside it (`Assets/Theatre/`), not in it.
-- **Every evolution run to date has run with added mass off.** `FluidConfig.AddedMassCoefficient`
-  has no initialiser and `EvolutionRun` never sets it, so every `config.json` in the record
-  reads `addedMassCoefficient: 0` and every world has swum on drag alone. DESIGN §5.4 promotes
-  added mass to Milestone 3 on [C18]'s finding that a simplified fluid collapses body-plan
-  diversity, and the movement round (D075) is exactly the question a drag-only fluid answers
-  wrongly. Turning it on is a per-step change, so it is a new realisation of every seed, and it
-  is a world rule: the owner's call, before the movement round is pre-registered (raised by the
-  outside review of 2026-08-31; captured 2026-09-07).
+- **Every evolution run through round 28 swam with added mass off, and the knob defaults to
+  off.** `FluidConfig.AddedMassCoefficient` had no initialiser and `EvolutionRun` never set it,
+  so every `config.json` through round 28 reads `addedMassCoefficient: 0` and those worlds swam
+  on drag alone. From the movement build (D081, 2026-09-07) `EVOSIM_ADDED_MASS` sets it, the
+  header carries `addedMass` on every run, and the default stays 0 so that every launcher in
+  the record still describes the world it ran. It is a per-step term: any nonzero value is a
+  new realisation of every seed, and a config at 0 replays the record.
+- **A stored genome may carry a global brain that nothing steps.** `Genome.GlobalBrain` was
+  retired by D081 (2026-09-07): a child is born without one, a rewire never draws the
+  `GlobalBrain` input kind, and `Brain.For` builds no partless group. Snapshots recorded before
+  that build still load and validate, and three genomes in five in them carry one or two
+  global neurons; a count of "neurons" taken from such a genome includes neurons the new build
+  never evaluates. `Brain.NeuronCount` is the body's count.
 - **`stillb` and `mat orphan` read 0 in a healthy run, and the second is an invariant.** From
   the 2026-09-07 build the table carries the stillbirth total and the matter the ledger says
   is in bodies less what the living hold. A nonzero `mat orphan` means matter was charged to a

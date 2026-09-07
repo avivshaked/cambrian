@@ -190,7 +190,7 @@ namespace Evosim.Theatre
 
             solo.Fluid.ApplyAddedMass(solo.Instance);
 
-            solo.Brain = Brain.For(solo.Phenotype, genome.GlobalBrain);
+            solo.Brain = Brain.For(solo.Phenotype);
 
             // Every channel, not the brain's own mask: a viewer wants to see what the creature
             // could read as well as what it does read, and the HUD lists all seven. The mask is a

@@ -24,7 +24,11 @@ namespace Evosim.Core
 
         /// <summary>
         /// Neurons belonging to no part, addressable from any node via
-        /// <see cref="NeuronInputKind.GlobalBrain"/>.
+        /// <see cref="NeuronInputKind.GlobalBrain"/>. <b>Retired by D081 (2026-09-07):</b> a
+        /// genome recorded before then may carry them, and it still loads, clones, validates and
+        /// compares (<see cref="SpeciesDistance"/>); they are not stepped (<see cref="Brain"/>),
+        /// mutation empties the array in every child (<see cref="Mutator"/>), and a reference
+        /// to one reads zero. Kept as a property so that no stored genome is refused.
         /// </summary>
         public NeuronDef[] GlobalBrain { get; set; } = Array.Empty<NeuronDef>();
 

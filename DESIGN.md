@@ -242,6 +242,34 @@ are in the manifest, as the bullet says. §5A's currency table still gave matter
 which D074's burial falsified. Both corrected after the outside reviews were captured
 (logbook/0071). No rule of the world changed.
 
+## 0q. Changelog — the global brain retired; added mass becomes a launch setting (2026-09-07, D081)
+
+Two changes to what the simulator is, both ruled in D081 and both landing in one build for
+the movement round (logbook/0072).
+
+**The global brain is retired.** §4.3's argument that thinking must have a location (D019)
+left `Genome.GlobalBrain` in place: legal, mutable, stepped by `Brain` and billed by nothing.
+From this build a child is born without one, mutation never adds one, a rewire never draws
+the `GlobalBrain` input kind, and `Brain.For` builds one neuron group per part and no
+partless group. A genome recorded before this still loads, clones, validates and compares;
+its global neurons are not stepped and a reference to one reads zero. The enum member and
+the property stay, so that no stored genome is refused. In the record three genomes in five
+carried one or two constant-input global neurons that almost no local neuron read (D019's
+note); whether the few read connections changed any behaviour was not traced.
+
+**Added mass is set at launch.** §5.4 promoted the term to Milestone 3 on [C18 §4, p.28];
+every world through round 28 swam with `addedMassCoefficient` 0 because nothing set it.
+`EVOSIM_ADDED_MASS` now sets `FluidConfig.AddedMassCoefficient`, default 0, so every
+launcher in the record still describes the world it ran, and the header carries
+`addedMass` unconditionally. The coefficient enters the config hash as it always did. The
+movement round runs at 0.5, the sphere's coefficient, for the reason 0072 gives.
+
+Both are per-step changes: every seed under this build is a new realisation, which D081
+accepts for the movement round. The round's report also gains `sense` (living genomes with
+an input on Chemical, Energy or Flow), `dep jnt` and `dep rig` (each guild's mean height)
+and `mat here` (the matter density at the population's mean height, which the statistics
+file had carried since D052).
+
 ## 0p. Changelog — the feeding allocation priced from frozen availability; a stillbirth charged no matter (2026-09-07)
 
 §5A.2c's proportional share was computed from the live stock while the consumption pass
@@ -1036,6 +1064,8 @@ brain to be.** Cephalization, one of the most universal patterns in animal evolu
 structurally unreachable.
 
 `GlobalBrain` was also the one cost in §5A attached to no tissue: joules spent, nothing to bite.
+*(It was retired on 2026-09-07, D081 and §0q: a genome is born without one and a stored one
+is loaded but not stepped. The paragraph above is the argument that retired it.)*
 
 **Every cell hosts a small baseline of neurons; neural tissue makes them cheaper.** The
 baseline is a nerve net, which is what cnidarians have, and it exists to avoid a valley: a

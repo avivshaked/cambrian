@@ -355,6 +355,14 @@ namespace Evosim.Sim.EditorTools
             // (logbook/0027) — and above it nothing holds station.
             float excessDensity = Env("EVOSIM_EXCESS_DENSITY", 0f);
 
+            // D081 (2026-09-07). The fluid's added-mass coefficient, FluidConfig.AddedMassCoefficient:
+            // the water a part must accelerate along with itself, as a multiple of the water it
+            // displaces (DESIGN §5.4, [C18]). Every run before round 29 swam with it at 0
+            // (CLAUDE.md's gotcha), which is what the default keeps, so every launcher in the
+            // record still describes the world it ran; the movement round sets it. It is a
+            // per-step term, so any nonzero value is a new realisation of every seed.
+            float addedMass = Env("EVOSIM_ADDED_MASS", 0f);
+
             // D064. Body volume at which tissue is neutrally buoyant, m3 — the excess density
             // above is scaled by max(0, 1 - (V0/V)^(2/3)), so a founder-sized body barely sinks
             // and a large one feels the full constant. 0 is off and reproduces every pre-D064 run
@@ -483,6 +491,7 @@ namespace Evosim.Sim.EditorTools
             {
                 Fluid = new FluidConfig
                 {
+                    AddedMassCoefficient = addedMass,
                     TissueExcessDensity = excessDensity,
                     NeutralBodyVolume = neutralVolume,
                     SurfaceRestoringFraction = surfaceRestore,
@@ -786,6 +795,11 @@ namespace Evosim.Sim.EditorTools
                 // the world it produces at 0 and at 15 obeys the same rules — it is only the
                 // realisation that differs.
                 " · physics jobs " + physicsJobWorkers +
+                // D081, appended after `physics jobs` per the header's append-only convention and
+                // rendered unconditionally for D065's reason: a header without the token would
+                // read the same for "added mass off" and "written before the knob existed", and
+                // every world through round 28 is the first of those.
+                " · addedMass " + addedMass +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());
@@ -1748,6 +1762,17 @@ namespace Evosim.Sim.EditorTools
             // `jointed` because the denominators differ the moment a creature is skipped.
             double foodJointed = 0d, foodRigid = 0d;
             int foodJointedCount = 0, foodRigidCount = 0;
+
+            // The movement round's two readings (logbook/0072, D081). Where each guild sits,
+            // because a jointed body that survives without eating better may be paying for a
+            // position rather than a meal, and `depth m` is set by whichever guild is the
+            // majority. And how many living genomes carry an input on one of the three
+            // perception channels (Chemical, Energy, Flow), so that "the senses are taken up"
+            // is read from the table rather than by grepping a snapshot. Counted on the genome,
+            // the thing mutation writes, rather than on the developed brain's mask: a genome
+            // that carries the input in a node development pruned still carries it.
+            double depthJointed = 0d, depthRigid = 0d;
+            int sensing = 0;
             int buoyant = 0, buoyantInherited = 0;
 
             // The producers, the other half of the trophic reading (the Sol/GPT review of
@@ -1867,8 +1892,10 @@ namespace Evosim.Sim.EditorTools
                 // move; this says whether moving took them anywhere worth being.
                 double foodHere = world.Nutrients.EdibleDensityAt(creature.HeightY, creature.Patch);
 
-                if (creatureDof > 0) { foodJointed += foodHere; foodJointedCount++; }
-                else { foodRigid += foodHere; foodRigidCount++; }
+                if (creatureDof > 0) { foodJointed += foodHere; foodJointedCount++; depthJointed += creature.HeightY; }
+                else { foodRigid += foodHere; foodRigidCount++; depthRigid += creature.HeightY; }
+
+                if (ReadsPerception(creature.Genome)) sensing++;
 
                 // Counted the same way and for the same reason as joints and feeding: a share is
                 // contaminated by whatever the founder draw happens to be, and only the inherited
@@ -2216,7 +2243,12 @@ namespace Evosim.Sim.EditorTools
                 // R2, 2026-09-07). The second is 0 from the fix onward and is written so that
                 // it can be read, not assumed.
                 .Field("stillbirths", world.Stillbirths)
-                .Field("matterOrphaned", matterOrphaned);
+                .Field("matterOrphaned", matterOrphaned)
+                // The movement round's columns (D081, logbook/0072) — appended after
+                // matterOrphaned, per the same rule.
+                .Field("sensing", sensing)
+                .Field("depthJointed", foodJointedCount > 0 ? depthJointed / foodJointedCount : 0d)
+                .Field("depthRigid", foodRigidCount > 0 ? depthRigid / foodRigidCount : 0d);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -2425,6 +2457,17 @@ namespace Evosim.Sim.EditorTools
                 floorSteps > 0 ? (floorContactPairsWindow / (double)floorSteps).ToString("0.###", c) : "—",
                 world.Stillbirths.ToString(c),
                 matterOrphaned.ToString("0.###", c),
+
+                // The movement round's columns (D081, logbook/0072) — appended after `mat orphan`,
+                // per the same rule. `sense` is the count of living genomes with an input on
+                // Chemical, Energy or Flow; `dep jnt` and `dep rig` are each guild's mean height,
+                // an em-dash where the guild is empty, for `spd jnt`'s reason; `mat here` is the
+                // matter density at the population's mean height, which the statistics file has
+                // carried since D052 and the table never showed (HANDOFF item 8).
+                "**" + sensing.ToString(c) + "**",
+                foodJointedCount > 0 ? (depthJointed / foodJointedCount).ToString("0.##", c) : "—",
+                foodRigidCount > 0 ? (depthRigid / foodRigidCount).ToString("0.##", c) : "—",
+                world.Matter.DensityAt((float)meanDepth, 0).ToString("0.###", c),
             };
 
             // The per-patch populations, last, so everything before them keeps its index.
@@ -2527,6 +2570,10 @@ namespace Evosim.Sim.EditorTools
             // what the living actually hold, which is 0 by construction from the fix onward and
             // is printed so that a nonzero reading would be seen rather than inferred.
             "stillb", "mat orphan",
+
+            // The movement round (D081, logbook/0072) — appended after `mat orphan`, per the same
+            // rule. See the row for what each is.
+            "**sense**", "dep jnt", "dep rig", "mat here",
         };
 
         /// <summary>
@@ -2562,6 +2609,34 @@ namespace Evosim.Sim.EditorTools
         /// comma-separated so a script can split it. Read from the pool itself: the token and the
         /// draw cannot disagree, because there is only one list.
         /// </remarks>
+        /// <summary>
+        /// True when any neuron in <paramref name="genome"/>'s nodes reads one of the three
+        /// perception channels D075 item 1 turned on (Chemical, Energy, Flow) — the `sense`
+        /// column's test, on the genome rather than the developed brain (see the row's remark).
+        /// </summary>
+        private static bool ReadsPerception(Genome genome)
+        {
+            for (int n = 0; n < genome.Nodes.Count; n++)
+            {
+                NeuronDef[] neurons = genome.Nodes[n].Neurons;
+                for (int k = 0; k < neurons.Length; k++)
+                {
+                    NeuronInput[] inputs = neurons[k].Inputs;
+                    if (inputs == null) continue;
+                    for (int i = 0; i < inputs.Length; i++)
+                    {
+                        if (inputs[i].Kind != NeuronInputKind.Sensor) continue;
+                        SensorChannel ch = inputs[i].Channel;
+                        if (ch == SensorChannel.Chemical || ch == SensorChannel.Energy || ch == SensorChannel.Flow)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
         private static string SensesToken(RunConfig config)
         {
             SensorChannel[] pool = config.SensorPool();
