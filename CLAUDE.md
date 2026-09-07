@@ -25,12 +25,15 @@ drifts and then none of it can be trusted.
 | `CLAUDE.md` (this file) | *What will bite you* |
 | [`STYLE.md`](STYLE.md) | *How we write* — the voice, the shape of a piece, the tells to avoid, and the rules for restyling what exists. Applies to every prose file here, this one included |
 
-**Two licences.** Code is MIT ([`LICENSE`](LICENSE)); the prose — `DESIGN.md`,
+**Two licences, both non-commercial since 2026-09-07 (D080).** Code and the genome files under
+`inocula/` are PolyForm Noncommercial 1.0.0 ([`LICENSE`](LICENSE)); the prose — `DESIGN.md`,
 `DECISIONS.md`, `README.md`, `STYLE.md`, this file, and everything under `research/`, `logbook/` and
-`primer/` — is CC BY 4.0
-([`LICENSE-DOCS`](LICENSE-DOCS)). New files land under whichever applies; if you add a
+`primer/` — is CC BY-NC 4.0 ([`LICENSE-DOCS`](LICENSE-DOCS)). `COMMERCIAL.md` draws the
+commercial line and `CONTRIBUTING.md` states the grant a contribution carries; a contribution
+without that grant is not merged. New files land under whichever applies; if you add a
 directory that is neither clearly code nor clearly prose, say which it is in `LICENSE-DOCS`
-rather than leaving it ambiguous.
+rather than leaving it ambiguous. Versions at or before `c8f9c98` were MIT and CC BY 4.0 and
+stay so for the copies already made.
 
 **Commits are guarded.** `scripts/githooks/pre-commit` blocks copyrighted PDFs, secrets,
 stray emails, Unity build output and files over 5 MB. Enable with

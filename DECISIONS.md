@@ -37,7 +37,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D012](#d012) | Living literature review, extended in rounds | 2026-08-02 | active |
 | [D013](#d013) | Public repository, named `cambrian` | 2026-08-02 | active |
 | [D014](#d014) | Papers and extractions never committed | 2026-08-02 | active |
-| [D015](#d015) | MIT for code, CC BY 4.0 for documentation | 2026-08-02 | active |
+| [D015](#d015) | MIT for code, CC BY 4.0 for documentation | 2026-08-02 | SUPERSEDED BY D080 (2026-09-07): both halves moved to non-commercial terms |
 | [D016](#d016) | A logbook, kept as dated entries | 2026-08-02 | active |
 | [D017](#d017) | Endogenous selection: an energy economy, not a fitness function | 2026-08-02 | active |
 | [D018](#d018) | Generation zero is one cell, or one cell and a tail | 2026-08-07 | active |
@@ -102,6 +102,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5; costs: the plume's crowd, the placeholder floor** · **the floor real 2026-09-06 (`a268311`)** · confirmation at 0.01 at influx 0.3 / stock 0.25 **failed 2 of 5 (logbook/0067: the lean dose starves the stomachs)** · re-run at influx 0.6 **read 2026-09-07 (logbook/0068): 3 of 5 under D063 as amended, below the round's bar of 4; the stock grew 44–53% over the last third in every seed; one realisation per seed (0069)** · superseded as the path by D079: the fed world is a screen, and the box returns to round 18's closed world (logbook/0070) |
 | [D078](#d078) | Single-threaded physics by default — the shared world replays only with no job-system worker threads; `EVOSIM_PHYSICS_JOBS` 0, recorded in manifest and header; shared-world changes validated by the state digest | 2026-09-06 | adopted by the agent as an instrument decision (a reproducibility invariant restored; owner may reverse for throughput) · cost measured at 120–180 bodies +19% wall (logbook/0069) · **built 2026-09-06**: `EVOSIM_PHYSICS_JOBS` default 0, manifest `physicsJobWorkers`/`jobWorkerMaximum`, header `physics jobs N`, theatre sets it from the manifest; `jobs-a` ≡ `jobs-b` over 3,001 digests at the default, `jobs-15` parts at step 152,500, tiled replay unmoved, theatre identity 30 of 30 on a shared recording; this machine's ceiling is 31 workers, not 15 |
 | [D079](#d079) | One change at a time from the last good world — round 18's closed world is the base; the first change is shared space (D077's box, real floor, restoring top) under D078's single-threaded physics; the open budget and the vent return afterwards, each earning its place | 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 |
+| [D080](#d080) | Non-commercial terms: PolyForm Noncommercial 1.0.0 for code and the genomes, CC BY-NC 4.0 for prose, commercial licences on request, contributions carry a relicensing grant | 2026-09-07 | ruled (owner: "lets apply the changes to the license") · supersedes D015 |
 
 ---
 
@@ -325,6 +326,9 @@ commit, which is the same class of failure in the opposite direction.
 
 ### D015
 **MIT for code, CC BY 4.0 for documentation** · 2026-08-02
+
+**SUPERSEDED BY D080** on 2026-09-07: the repository moved to non-commercial terms for both
+halves. The grants below stand for every copy made at or before commit `c8f9c98`.
 
 This repository is roughly 90% prose and 10% throwaway spike code. A single code licence
 would have been the reflexive choice and the wrong one: MIT says nothing meaningful about a
@@ -3900,3 +3904,53 @@ starting stock that founds the community is selected first, at influx 0; the inf
 added second. And the standing caution against 0068's pre-registered next lever, burial 0.02:
 burial and founding draw on the same early inventory, so faster burial removes more of what
 the founders need. That arm is not run until the stock question is settled.
+
+---
+
+### D080
+**Non-commercial terms for code and prose** · 2026-09-07
+
+Ruled by the owner on 2026-09-07: "I'm happy with people taking it and running it, or even
+contributing to it. I'm even ok with this being cited in academic researches. Where I would
+want the license to be explicit is in any kind of commercial applications of the content in
+this repository." Then, on the recommended pair: "lets apply the changes to the license so
+it's clear what can and can't be done with this project."
+
+**The terms.** The code and the evolved genome files under `inocula/` move from MIT to the
+PolyForm Noncommercial License 1.0.0, reproduced verbatim in `LICENSE` from the SPDX text,
+with the project's Required Notice line above it. The written work moves from CC BY 4.0 to
+CC BY-NC 4.0, referenced by URL in `LICENSE-DOCS` as before, for D015's reason: a licence
+transcribed by hand is a risk a link is not. `COMMERCIAL.md` says in plain words what counts
+as commercial, what plainly does not, and how to ask for a commercial licence, which is
+granted case by case. `CONTRIBUTING.md` states the grant every contribution carries: the
+project's licences, plus the right for the copyright holder to license the contribution
+under other terms, commercial ones included. A contribution without that grant is not
+merged, because without it every merged change would be a piece of the work the holder
+could not license.
+
+**Why these two.** PolyForm Noncommercial is the one non-commercial code licence written by
+licensing lawyers for this case; it defines the permitted purposes carefully and
+names educational institutions and public research organisations as non-commercial
+whatever funds them. That answers D015's objection to CC BY-NC, that it "blocks academic
+reuse in commercially-funded research": the code licence permits a university lab under any
+funding, and `COMMERCIAL.md` and `LICENSE-DOCS` state the same reading for the prose. What
+the terms do exclude, deliberately, is use inside a company's own product work or research.
+The word "non-commercial" stays vague at its edges in any licence, so the companion page
+carries examples on both sides and an invitation to ask.
+
+**What the change cannot do.** MIT and CC BY 4.0 are irrevocable. Every copy of the
+repository as it stood at or before commit `c8f9c98` keeps those terms; the new terms bind
+from the relicensing commit onward. Relicensing was possible at all because every one of
+the 297 commits to that point is the owner's own, so no contributor's consent was needed.
+The copyright holder is not bound by either licence and may use or license the work
+commercially at will.
+
+**Rejected:** AGPL-3.0 with a commercial licence on request. It stays open source by the
+OSI's definition and deters proprietary use through copyleft, but it does not say "no
+commercial use", it says "commercial use on my terms", and the owner asked for the line to
+be explicit. MIT plus the Commons Clause: widely disliked, loosely worded, and it leaves a
+reader unsure what is allowed. The Business Source License: a time-delayed conversion to
+permissive terms, which is not what the owner wants. CC BY-NC-SA for the prose: share-alike
+adds friction for the quoting and citing audience the prose is written for, with no gain
+the owner asked for. Neither new licence covers the quoted paper excerpts, which stay their
+publishers' copyright under fair dealing, as D014 and D015 already record.

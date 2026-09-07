@@ -158,7 +158,9 @@ DECISIONS.md                  why things are the way they are, and what was reje
 primer/                       what was built and why it is interesting — start here to learn
 logbook/                      dated entries on what was tried, and what broke
 CLAUDE.md                     orientation for AI assistants — what will bite you
-LICENSE / LICENSE-DOCS        MIT for code, CC BY 4.0 for prose — see below
+LICENSE / LICENSE-DOCS        non-commercial: PolyForm NC 1.0.0 for code, CC BY-NC 4.0 for prose
+COMMERCIAL.md                 what counts as commercial use, and how to ask for a licence
+CONTRIBUTING.md               what a contribution grants, and the checks to run first
 src/
   Evosim.Core/                no UnityEngine, runs headless in ~1 s
     Genome/                   the recursive graph: nodes, edges, neurons, reproduction traits
@@ -434,14 +436,22 @@ promoted out of that table without checking the source directly.
 
 ## Licence
 
-Two licences, because this repository is mostly not code.
+Two licences, because this repository is mostly not code, and both are non-commercial.
 
-- **Code** — [MIT](LICENSE). The spike, and everything built later.
-- **Documentation** — [CC BY 4.0](LICENSE-DOCS). `DESIGN.md`, `DECISIONS.md`, this README, and
-  everything under `research/`.
+- **Code and the evolved genomes** — [PolyForm Noncommercial 1.0.0](LICENSE). The spike, the
+  simulator, the scripts, and the genome files under `inocula/`.
+- **Written work** — [CC BY-NC 4.0](LICENSE-DOCS). `DESIGN.md`, `DECISIONS.md`, this README,
+  and everything under `research/`, `logbook/` and `primer/`.
+
+You may run it, change it, share it, teach with it, research with it at a university or a
+public research organisation, cite it and contribute to it. Commercial use, which includes
+use inside a company's product work or research, needs a licence from the author.
+[`COMMERCIAL.md`](COMMERCIAL.md) draws the line and says how to ask; [`CONTRIBUTING.md`](CONTRIBUTING.md)
+says what a contribution grants. Versions published before 2026-09-07 were MIT and CC BY 4.0,
+and those grants stand for the copies already made (D015, D080).
 
 The split is deliberate. A code licence has nothing useful to say about a literature review,
-and the attribution requirement in CC BY matches the norm the written work is already
+and the attribution requirement in CC BY-NC matches the norm the written work is already
 following: if you reuse the review's conclusions, cite it — and cite the underlying papers,
 which is what §6 of the review is for.
 

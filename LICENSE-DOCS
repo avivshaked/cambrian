@@ -1,4 +1,4 @@
-Creative Commons Attribution 4.0 International (CC BY 4.0)
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
 
 Copyright (c) 2026 Aviv Shaked
 
@@ -14,26 +14,29 @@ The written work in this repository:
     AGENTS.md
     STYLE.md
     HANDOFF.md
+    COMMERCIAL.md
+    CONTRIBUTING.md
     research/**            (the literature review and provenance records)
     logbook/**             (dated entries on what was tried and what broke)
     primer/**              (explanatory writing about what was built)
     spikes/**/README.md
     spikes/**/results/FINDINGS.md
 
-Source code is licensed separately under the MIT License — see LICENSE.
+Source code is licensed separately under the PolyForm Noncommercial License
+1.0.0 — see LICENSE.
 
 inocula/** is neither prose nor source: it holds evolved genome files, produced
 by this project's own simulations and tracked as experiment inputs (D060). They
-are covered by the MIT License alongside the code that reads them.
+are covered by the code licence alongside the code that reads them.
 
 
 THE LICENCE
 ───────────
-This work is licensed under the Creative Commons Attribution 4.0
+This work is licensed under the Creative Commons Attribution-NonCommercial 4.0
 International License.
 
-Full legal text:  https://creativecommons.org/licenses/by/4.0/legalcode
-Human summary:    https://creativecommons.org/licenses/by/4.0/
+Full legal text:  https://creativecommons.org/licenses/by-nc/4.0/legalcode
+Human summary:    https://creativecommons.org/licenses/by-nc/4.0/
 
 The canonical text is referenced rather than reproduced here deliberately. It
 runs to several thousand words, and a transcription error in a licence is worse
@@ -42,14 +45,22 @@ than a link — the version at the URL above is authoritative.
 
 IN SHORT
 ────────
-You are free to share and adapt this material for any purpose, including
-commercially, provided you give appropriate credit, link to the licence, and
-indicate if changes were made.
+You are free to share and adapt this material for any non-commercial purpose,
+provided you give appropriate credit, link to the licence, and indicate if
+changes were made. Commercial use needs a separate licence from the copyright
+holder. COMMERCIAL.md says what counts as commercial, what plainly does not, and
+how to ask.
+
+The licence's own test: a use is commercial when it is "primarily intended for
+or directed towards commercial advantage or monetary compensation". Reading,
+citing, quoting, teaching from and building on this work at a school, a
+university or a public research organisation is non-commercial, whatever funds
+the institution — the same reading the code licence writes down explicitly.
 
 
 HOW TO ATTRIBUTE
 ────────────────
-    "Cambrian" by Aviv Shaked, licensed under CC BY 4.0.
+    "Cambrian" by Aviv Shaked, licensed under CC BY-NC 4.0.
     https://github.com/avivshaked/cambrian
 
 If you reuse the literature review or its conclusions, please cite the
@@ -69,3 +80,13 @@ point of use with page-level locators.
 The papers themselves are NOT distributed with this repository. research/papers/
 is deliberately excluded — see research/FETCH-RESULTS.md for the retrieval URL
 of every source, so anyone with equivalent access can rebuild the set.
+
+
+EARLIER TERMS
+─────────────
+Until 2026-09-07 this repository was published under the MIT License for code
+and CC BY 4.0 for prose (DECISIONS.md, D015). Those grants are irrevocable for
+the versions published under them: anyone holding a copy of the repository as
+it stood at or before commit c8f9c98 keeps the permissive terms for that copy.
+Everything from the relicensing commit onward carries the terms above. The
+reasons are in DECISIONS.md, D080.
