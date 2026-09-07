@@ -128,3 +128,4 @@ once.
 | arm | worker | launched (local) | digest | note |
 |---|---|---|---|---|
 | `r28-s1` | 7 | 2026-09-06 23:49 | every 100 steps | first, on the worker the build freed |
+| `r28-s2` | 6 | 2026-09-07 02:05 | off | on `r27-s5`'s worker, refreshed first |
