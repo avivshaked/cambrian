@@ -232,8 +232,10 @@ grows the producers, so it is a decision about how big the world is, which is th
 A short section on a different kind of finding, because it changed how every arm above was
 read.
 
-The physics solver replays bit for bit on one machine under one build. Three identical arms
-produced identical rows to the last sample
+The physics solver replays bit for bit on one machine under one build, with one more
+condition found later: once bodies share the water and touch, only with the physics on a
+single thread ([logbook 0069](../logbook/0069-the-shared-world-does-not-replay.md)).
+Three identical arms produced identical rows to the last sample
 ([logbook 0052](../logbook/0052-the-coarse-step.md)), which is a stronger guarantee than the
 design had promised itself.
 

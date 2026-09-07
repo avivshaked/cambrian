@@ -377,7 +377,8 @@ world from a configuration alone; that is a small addition if wanted.
 
 Not needed to run anything. `research/papers/` is gitignored, but
 [`research/FETCH-RESULTS.md`](research/FETCH-RESULTS.md) lists the exact retrieval URL for
-every paper — six are open access, two need a university subscription. Text and figure
+every paper — thirty-five came by open-access routes and two by a university subscription,
+of thirty-seven. Text and figure
 extraction used [PyMuPDF](https://pymupdf.readthedocs.io/) (`pip install pymupdf`).
 
 ---

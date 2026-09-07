@@ -505,7 +505,7 @@ actually verifying it.
   the 2026-09-07 build the table carries the stillbirth total and the matter the ledger says
   is in bodies less what the living hold. A nonzero `mat orphan` means matter was charged to a
   body that does not exist, which is what happened for every stillbirth between D065 and
-  2026-09-07 (none occurred in a scored world; DESIGN §0p).
+  2026-09-07 (none seen in the checks made on the scored worlds; DESIGN §0p).
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.

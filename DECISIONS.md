@@ -85,24 +85,25 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D060](#d060) | The invasion assay — a labeled hand for a mechanism question | 2026-08-31 | active · built, first use logbook/0043 |
 | [D061](#d061) | The patchy world — horizontal structure, throttled exchange, endogenous inequality | 2026-09-01 | built · round 8: 0-of-5 by producer extinction — a founding cost at this dose (logbook/0044); knobs kept for the movement question |
 | [D062](#d062) | The satiation cap — a filter feeder's mouth gets its physical limit | 2026-09-01 | built · round 8: unanswered — every clean arm ran away before a chain formed (logbook/0044) |
-| [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · earned its keep in round 8: failed the flagship's sterile cohort at the cut (logbook/0044) · **met 2026-09-04, round 18 (logbook/0054): 4 of 5 seeds, discovery regime, with exudation 0.15 (D070)** · amended the same day (owner): one connected clade, held ≥ 10 through the last two lifetimes; producers scored as an inherited photosynthetic line |
+| [D063](#d063) | The recruitment clause — a chain must be breeding, not merely surviving | 2026-09-01 | active · **two named bars from 2026-09-07 (D081): the goal is 3 of 5, the reference bar is the base world's own count** · earned its keep in round 8: failed the flagship's sterile cohort at the cut (logbook/0044) · **met 2026-09-04, round 18 (logbook/0054): 4 of 5 seeds, discovery regime, with exudation 0.15 (D070)** · amended the same day (owner): one connected clade, held ≥ 10 through the last two lifetimes; producers scored as an inherited photosynthetic line |
 | [D064](#d064) | Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column | 2026-09-02 | built · round 10c: the drowning is cured — five of five producer worlds to budget, uncensored, depth held within 3 m through 24,000 s of throttled births (logbook/0046); the chain still does not arrive |
 | [D065](#d065) | The fixed matter cost — a body costs a minimum of matter to exist, so the count cannot ratchet through shrinking | 2026-09-02 | built · round 10c: counts levelled at 1,490–1,610 against a ceiling of 8,000, uncensored (logbook/0046) |
 | [D066](#d066) | Roll cells — the water moves everything, and it stirs: one prescribed flow over patches advects bodies and fields; blinking rolls for chaotic advection | 2026-09-02 | built · round 12 (logbook/0048) 0 of 6: the rolls stir fields and bodies and keep producers alive at 30 m cells, but a roll that stops above the floor is a trapdoor for remains — surface detritus 0.2–3 J/m³, deep 15–21; one absorptive line formed and drifted out. Next lever proposed: sink speed of remains |
 | [D067](#d067) | The vent — an upwelling plume from the floor in one patch, return through the others, superposed on the rolls; returns what the trapdoor takes | 2026-09-03 | built · run as round 13 arm B (logbook/0049), two seeds: producers survive the return flow (M6 held), the deep field falls to the lowest of the round (2.0–2.4 J/m³), no chain forms, matter refusals rise 1.5–5× against the twin. Neither harmful nor load-bearing while absorbers cannot breed; off in round 14 |
 | [D068](#d068) | The stomach's gearing — clearance 5 and 10, because a stomach at clearance 1 cannot out-earn a leaf and a mutant that earns less than its siblings never leaves a line | 2026-09-03 | ruled · round 14 (logbook/0050) running under D069's sequential rule: 0 of 3 scored so far — clearance 10 grows the first 20–48-member lines of the campaign and they graze their field and crash; clearance 5 holds a line of 3–9 |
-| [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out |
+| [D069](#d069) | Compute, screen, confirm — the ledger calculator, the invasion assay, futility and sequential-seed rules, and a configurable physics step validated against a seed already run | 2026-09-03 | ruled and built · calculator and assay in use (logbook/0051); coarse step settled (logbook/0052): 0.02 screens, 0.01 confirms, 0.05 out · **futility clause narrowed to screens 2026-09-07 (D081)** |
 | [D070](#d070) | Exudation — producers deposit a fraction of photosynthetic intake as detritus while alive, because the second trophic level is fed at ~1% (0.2 W against ~17 W) and the flux, not the gearing, caps a line at about six | 2026-09-03 | ruled in principle · build gated on `r14c10-s1-flux`'s measured income and `r14c10-s4`'s outcome; review round 5 done (PER 10–20%, screen at 0.15); screen pre-registered; **confirmed 2026-09-04** (logbook/0054: 4 of 5 seeds pass D063 at dt 0.01 with exudation 0.15; the failing seed's stomachs were matter-blocked, not starved) · a world rule, DESIGN.md §5A.2c |
 | [D071](#d071) | Matter at depth — the matter sink decoupled from the detritus sink (0.02 m/s against 0.002), because the population plateau was the matter cap and the deep was dry; a vent that adds matter deferred as a future experiment | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0055): not adopted** — the free pool is 10% of the stock at any sink speed; overtaken by D072 (the contest for each unit was an age queue) |
 | [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · **screened 2026-09-04 (logbook/0056): `shuffled` not adopted** — the queue was the stomachs' lifeline, because in a matter-bound plateau energy buys no fecundity; ruled as D073 |
 | [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0057): neither adopted** — the stomachs bid highest and still breed no more than the leaves; the larger stock triples everything at the same share; the open matter budget follows as D074 |
 | [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · **adopted 2026-09-05 in the vent shape at 0.6/s (owner); confirmation at 0.01 (logbook/0061): 3 of 5 at the threshold, not round 18's 4; the stock still grows at the dose and the plume lifts every population to the waterline — surface fix and dose correction put to the owner before re-confirming** |
-| [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 |
+| [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 · **order amended 2026-09-07 (D081): movement next, on the contact world; predation; then the open budget** |
 | [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · **cost measured 2026-09-05 (logbook/0064): none — shared/tiled 0.88–1.12×, real time to ~2,900 bodies; the constraints are packing and a boundary rule** · the footprint and predation rules follow as proposals |
 | [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5, the two seed-2 arms wall-censored (noted 2026-09-07); costs: the plume's crowd, the placeholder floor** · **the floor real 2026-09-06 (`a268311`)** · confirmation at 0.01 at influx 0.3 / stock 0.25 **failed 2 of 5 (logbook/0067: the lean dose starves the stomachs)** · re-run at influx 0.6 **read 2026-09-07 (logbook/0068): 3 of 5 under D063 as amended, below the round's bar of 4; the stock grew 44–53% over the last third in every seed; one realisation per seed (0069)** · superseded as the path by D079: the fed world is a screen, and the box returns to round 18's closed world (logbook/0070) |
 | [D078](#d078) | Single-threaded physics by default — the shared world replays only with no job-system worker threads; `EVOSIM_PHYSICS_JOBS` 0, recorded in manifest and header; shared-world changes validated by the state digest | 2026-09-06 | adopted by the agent as an instrument decision (a reproducibility invariant restored; owner may reverse for throughput) · cost measured at 120–180 bodies +19% wall (logbook/0069) · **built 2026-09-06**: `EVOSIM_PHYSICS_JOBS` default 0, manifest `physicsJobWorkers`/`jobWorkerMaximum`, header `physics jobs N`, theatre sets it from the manifest; `jobs-a` ≡ `jobs-b` over 3,001 digests at the default, `jobs-15` parts at step 152,500, tiled replay unmoved, theatre identity 30 of 30 on a shared recording; this machine's ceiling is 31 workers, not 15 |
-| [D079](#d079) | One change at a time from the last good world — round 18's closed world is the base; the first change is shared space (D077's box, real floor, restoring top) under D078's single-threaded physics; the open budget and the vent return afterwards, each earning its place | 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 · **round 28 read 2026-09-07 (logbook/0070): 3 of 5 under D063 as amended, below round 18's bar of 4; seeds 2, 3, 4 pass and seed 1 fails as in round 18; seed 5's stomach line stable at 17 and sterile from 21,408 s; M5 (no crowd) fails in every seed; the collisions-off control and the box's width are the owner's rulings** |
+| [D079](#d079) | One change at a time from the last good world — round 18's closed world is the base; the first change is shared space (D077's box, real floor, restoring top) under D078's single-threaded physics; the open budget and the vent return afterwards, each earning its place | 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 · **round 28 read 2026-09-07 (logbook/0070): 3 of 5 under D063 as amended, below round 18's bar of 4; seeds 2, 3, 4 pass and seed 1 fails as in round 18; seed 5's stomach line stable at 17 and sterile from 21,408 s; M5 (no crowd) fails in every seed; the collisions-off control and the box's width are the owner's rulings** · **amended 2026-09-07 (D081): the base becomes round 28's contact world** |
 | [D080](#d080) | Non-commercial terms: PolyForm Noncommercial 1.0.0 for code and the genomes, CC BY-NC 4.0 for prose, commercial licences on request, contributions carry a relicensing grant | 2026-09-07 | ruled (owner: "lets apply the changes to the license") · supersedes D015 |
+| [D081](#d081) | Six rulings on round 28's reading — two named bars (the goal, the reference); the contact world is the base; the path is movement, predation, then the open budget; added mass on and the global brain removed in the movement build; the futility clause narrowed to screens | 2026-09-07 | ruled (owner, by question) · amends D063's reading, D069, D075, D079 |
 
 ---
 
@@ -533,13 +534,16 @@ Plants have no neurons, and that is a strategy rather than an oversight.
 
 **Note, 2026-09-07 (from the Astra review).** The `GlobalBrain` array survived this
 decision: it is legal, mutable, stepped by `Brain` and billed by nothing, since `Metabolism`
-prices neurons per part. In the record it is idle rather than exploited. Three genomes in
+prices neurons per part. In the record it is present and little read. Three genomes in
 five at the end of a run carry one or two global neurons with constant inputs (r18x-s1:
 2,210 of 3,668; r28-s1: 1,121 of 1,769), and only 2 and 18 genomes respectively have a
-local neuron reading one. An unbilled neuron would be worth about 0.06 W against a median
-absorptive upkeep of 0.27 W. The treatment is the owner's: remove the array from new
+local neuron reading one. Whether those few connections change any behaviour was not
+traced (that would take the developed brain's executed path or an intervention), so
+"idle" is a reading of the counts, not a finding. An unbilled neuron would be worth about
+0.06 W against a median absorptive upkeep of 0.27 W. The treatment is the owner's: remove the array from new
 genomes, bill it at the undiscounted rate, or map it to tissue. Each is a new realisation
-of every seed, and stored genomes must stay readable through it.
+of every seed, and stored genomes must stay readable through it. **Ruled the same evening
+(D081): removed, in the movement build.**
 
 ---
 
@@ -3998,3 +4002,71 @@ permissive terms, which is not what the owner wants. CC BY-NC-SA for the prose: 
 adds friction for the quoting and citing audience the prose is written for, with no gain
 the owner asked for. Neither new licence covers the quoted paper excerpts, which stay their
 publishers' copyright under fair dealing, as D014 and D015 already record.
+
+---
+
+### D081
+**Six rulings on round 28's reading** · 2026-09-07
+
+Put to the owner as questions with the options, their costs and a recommendation, after
+round 28 read 3 of 5 (logbook/0070) and the Astra review's response listed what needed a
+ruling. The owner's own words, where they reframed a question, are quoted.
+
+**1. Two named bars.** *The goal* is D063's three seeds of five and says whether a world
+meets the rule at all. *The reference bar* is the base world's own count, and a change is
+adopted into the base only if it does at least as well; a change that meets the goal and
+misses the reference is read as "meets the goal, cost recorded". Rejected: one bar at three
+(adopts a change that lost a seed without asking why) and one bar at four (raises the goal
+after results, which pre-registration forbids). Round 28 therefore meets the goal and
+misses the reference by one seed.
+
+**2. The contact world is the base, and no collisions-off control runs.** The owner:
+"even if the collision cost the seed, we still need the collision, because we can't
+proceed without real contact in the world. everything is predicated on creatures need to
+move about, interact, and sometimes die." Contact is a world rule (D076), the contact
+world meets the goal, and its lost seed did not starve of contact: seed 5's stomach line
+boomed to 329, ate its larder from 11.7 to 2.3 J/m³, ran at a loss of 0.02 to 0.05 W for
+twenty thousand seconds and stopped breeding at 21,408 s (the absorptive log, 0070's
+Results). A control that assigns the seed to contact or to the box changes no decision,
+so it is not run; the reference cost is recorded and the base moves.
+
+**3. The order is movement, predation, then the open budget.** The owner: "what helps us
+get to a point where creatures evolve brains? that's the question we should be asking,
+because at the end of the day, that's what this evolution sets out to achieve." The
+answer, which decides the order: nothing selects for behaviour because nothing moves. The
+inherited jointed count reads 0 at the end of every arm of round 28 and never exceeded 1
+during any of them, and the same has been true of every round. A brain is selected only
+where control changes income or survival, which is movement that pays and predation on
+contact. The open budget feeds the stomach line's larder, a physiology loop, and comes
+when a round shows the larder binds, as seed 5 did. D075's order and D079's are amended
+accordingly. One number to carry into the movement round: a neuron costs 0.05 W and the
+median stomach in round 28 nets 0.03 W, so a single neuron costs more than a stomach's
+profit, and a brain can only appear where it multiplies income.
+
+**4. Added mass is on in the movement build.** Every recorded world has swum with
+`addedMassCoefficient` 0 (CLAUDE.md's gotcha); DESIGN §5.4 promotes the term on [C18]'s
+finding that a drag-only fluid collapses body plans toward the ones that cannot swim.
+The movement round is the question it changes, and every seed is a new realisation there
+in any case. The coefficient's value is set in the round's pre-registration with the
+ledger's help, and it becomes a launch setting so that the record's worlds still replay
+at 0.
+
+**5. The global brain is removed, in the same build.** Mutation stops adding to
+`Genome.GlobalBrain`, `Brain` stops stepping it, and stored genomes still load. This
+finishes D019's argument that thinking must have a location; a placeless free brain
+undercut the one thing that decision set up, brain placement evolving inside the body.
+Rejected: billing it (keeps a thing the design says should not exist) and leaving it (the
+loophole stays open). Exposure in the record is in D019's note.
+
+**6. D069's futility clause is narrowed to screens.** It applies to fast-step screens
+only, never to a confirmation at dt 0.01, and "appeared" means an inherited absorptive
+birth ever. Its premise was contradicted by round 26's passes rooted at 15,867 and
+21,641 s (0067). Rejected: retiring it (a plainly dead screen would run its full budget)
+and keeping it as written.
+
+Not ruled: the box's width. M5 failed in every seed at area 100, and a wider box is a
+different light budget; it stays on the owner's list, to be raised if the movement round
+shows packing binds. The one more thing the owner asked to say before a new round was
+Astra's second response to the review work; its accepted items (the scorer's censoring
+gate, one exit code, five wordings) were scheduled ahead of the movement build the same
+evening, and the owner then said to continue.

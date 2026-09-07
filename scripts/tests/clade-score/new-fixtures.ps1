@@ -36,6 +36,10 @@
                     t=11,000, after the report's last sample at 10,000 -- the shape of a
                     live run whose lineage is ahead of its report. They must not count:
                     the seed FAILS on recruitment (the Astra review's R4).
+    wall-censored   the smaller-passes world with a run.json that says the run ended on
+                    its wall clock at 10,000 s of 30,000 requested. The clauses pass, and
+                    the line must say CENSORED rather than print a bare PASS (the Astra
+                    review's second response).
 
   Samples run 100..10,000 s at the report's 100 s interval, so "the last 20 samples" is
   t > 8,000 and "the last two lifetimes" is t >= 4,000 -- the same windows the real reports
@@ -114,6 +118,15 @@ function New-Case([string]$CaseName, [string]$ArmName, $Rows, [int]$Inherit, $Ph
     Write-Host "  wrote $CaseName/$ArmName ($($Rows.Count) lineage rows)"
 }
 
+# A manifest beside the lineage, with only the fields the scorer reads from it. The real
+# one carries thirty more; the scorer must find these by name.
+function Write-Manifest([string]$Dir, [string]$ArmName, [string]$Status, [string]$Reason, [double]$Simulated, [double]$Requested) {
+    $runDir = Join-Path (Join-Path $Dir $ArmName) '2026-01-01-000000-fixture'
+    $text = '{"arm":"' + $ArmName + '","requestedSeconds":' + $Requested + ',"status":"' + $Status +
+            '","reason":"' + $Reason + '","simulatedSeconds":' + $Simulated + '}'
+    [System.IO.File]::WriteAllText((Join-Path $runDir 'run.json'), $text)
+}
+
 # ---------------------------------------------------------------------------------------
 # 1. smaller-passes -- the largest clade fails stability, a smaller clade passes every
 #    clause. Clade A: 1 founder + 24 that die at 4,950 + 4 that never die + 25 born at
@@ -190,3 +203,20 @@ $rows.AddRange((New-Cohort 2000 2001 13 250 $null 1 $null))
 $rows.AddRange((New-Cohort 2000 2014 3 11000 $null 1 $null))
 $rows.AddRange((New-Cohort -1 9000 10 100 $null 0 $null))
 New-Case 'future-birth' 'fx-future-birth' $rows 14 $null
+
+# ---------------------------------------------------------------------------------------
+# 6. wall-censored -- smaller-passes again, under a manifest that ended on the wall clock
+#    a third of the way through its request. Every clause passes; the line is CENSORED.
+# ---------------------------------------------------------------------------------------
+$rows = New-Object System.Collections.Generic.List[string]
+$rows.Add((New-BirthRow 100 1000 -1 'f' 1 $null))
+$rows.AddRange((New-Cohort 1000 1001 24 150 4950 1 $null))
+$rows.AddRange((New-Cohort 1000 1025 4 150 $null 1 $null))
+$rows.AddRange((New-Cohort 1000 1029 25 5050 $null 1 $null))
+$rows.AddRange((New-Cohort 1000 1054 5 9500 $null 1 $null))
+$rows.Add((New-BirthRow 200 2000 -1 'f' 1 $null))
+$rows.AddRange((New-Cohort 2000 2001 13 250 $null 1 $null))
+$rows.AddRange((New-Cohort 2000 2014 3 9600 $null 1 $null))
+$rows.AddRange((New-Cohort -1 9000 10 100 $null 0 $null))
+New-Case 'wall-censored' 'fx-wall-censored' $rows 52 $null
+Write-Manifest (Join-Path $fixtures 'wall-censored') 'fx-wall-censored' 'ended' 'wall' 10000 30000

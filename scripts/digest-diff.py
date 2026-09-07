@@ -135,7 +135,7 @@ def main():
     if not common:
         print('no step has a digest-bodies.jsonl row in both runs '
               '(relaunch both with -DigestDump at a step they share)')
-        return
+        return exit_code
 
     for step in common:
         ra, rb = DA[step], DB[step]

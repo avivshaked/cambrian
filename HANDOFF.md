@@ -19,8 +19,13 @@ refreshed before the next launch, and the next launch reports a new `simHash`). 
 follows is the owner's ruling**, as 0070's two-sided readings say: the same box with
 creature collisions off (separates contact from the rest of the package), the width of the
 box (M5), and which bar a round is held to (D063's three of five, at which this round holds,
-or round 18's four). Until then no arm is launched; the movement pre-registration
-(`scratch/movement-prereg-draft.md`) waits on the same ruling.
+or round 18's four). **Ruled the same evening (D081):** the contact world is the base, no control runs, the
+order is movement, predation, then the open budget, added mass on and the global brain
+removed in the movement build, two named bars, the futility clause narrowed to screens.
+The owner's one more thing before a new round was Astra's second response, ruled on the
+same evening (the companion file's last section): the scorer's censoring gate and one exit
+code fixed, five wordings softened, source checksums queued as item 23. The movement build
+is next.
 
 The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
 asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive
@@ -59,22 +64,27 @@ a shared-world seed could be re-run and watched.
 
 ## The path, ruled
 
-D079 (owner, 2026-09-06: "agreed. proceed with that idea"): go back to round 18's world and
-add one change at a time, asking D063 of each. A change that costs the rule is read rather
-than tuned around. Round 27 therefore runs on as a screen rather than a scored condition.
+D079 (owner, 2026-09-06) set the method: one change at a time, asking D063 of each, a
+change that costs the rule read rather than tuned around. D081 (owner, 2026-09-07, after
+round 28) set the base and the order.
 
-1. **Shared space**, round 28, pre-registered as
-   [logbook/0070](logbook/0070-the-good-world-with-one-change.md). Round 18's closed world
-   plus D077's box, wrap, placement, restoring top and real floor (`EVOSIM_SHARED_SPACE` and
-   `EVOSIM_SURFACE_RESTORE`), under D078's single-threaded physics. Five seeds at dt 0.01 for
-   30,000 s on workers 2–6 as round 27's arms end, plus a 10,000-s replay probe, r28p-s1.
-2. **The open matter budget** (D074), then the vent, one at a time, each on the world that
-   held the rule before it.
-3. **Movement that pays** (D075's first item), rewritten on whichever world holds. Its cost
-   side closed long ago and its prize side has never existed; the channels it needs are
-   built, and the decisions behind it are D040–D050.
-4. **Predation on contact** in D076's world; the proposal is in front of the owner.
+1. **The base world is round 28's**: round 18's closed world plus D077's box, wrap,
+   placement, restoring top and real floor, under D078's single-threaded physics
+   (`scratch/launch-r28.ps1`). It meets the goal at 3 of 5 and misses round 18's reference
+   by one seed, which starved on its larder (logbook/0070).
+2. **Movement that pays** (D075's first item), next. On the base world with added mass on,
+   the three senses on, and the global brain removed, all in one build that is a new
+   realisation of every seed. The draft is `scratch/movement-prereg-draft.md`; it is
+   rewritten for this world before launch, with the ledger setting the added-mass
+   coefficient and the active-versus-clamped assay (queue item 7) beside it.
+3. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
+   brain can be selected for, right after movement.
+4. **The open matter budget** (D074) and the vent, when a round shows the larder binds.
 5. **The cell types and immigration**, then the archive and the islands.
+
+Two bars are named from D081 on: *the goal* (D063's 3 of 5) and *the reference* (the base
+world's own count). A change joins the base only at the reference; a round that meets the
+goal and misses the reference is read as "meets the goal, cost recorded".
 
 ## Queued, in order
 
@@ -156,6 +166,15 @@ the running status), in the order they are done:
     sensing-versus-acquisition seam stated, added mass named as off.
 22. **A fresh seed batch** once the rules and instruments are stable, so the conclusion is
     checked beyond the five founding lotteries every round has reused (owner's call on when).
+23. **Astra's second response** (2026-09-07 evening; the companion file's last section).
+    Done the same evening: the scorer's line reads `CENSORED` with the reason and the
+    seconds reached on any run that ended short of its budget (wall, ceiling, error, a
+    stop), with a fixture; `digest-diff.py` returns its exit code on the path with no body
+    dump; DESIGN §0p, CLAUDE.md, D019's note, the primer's butterfly section and README's
+    source count reworded. Still queued, on priority and not on need: **a checksum table
+    for the research sources** (SHA-256 of each PDF under `research/papers/` beside its
+    retrieval record), so a future rebuild of the corpus can tell the file it fetched from
+    the file that was read. An hour's work, after the movement round is launched.
 
 ## The decisions in front of the owner
 
@@ -171,35 +190,20 @@ the running status), in the order they are done:
 - **Extending a passing seed past 30,000 s**, to see whether the balance holds.
 - **The maintenance assay**, a multi-genome inoculum with cell-type mutation off: a good
   instrument for after round 28, and one the owner should scope.
-- **Added mass has been off in every run** (`addedMassCoefficient: 0` in every config; CLAUDE.md's
-  gotcha). DESIGN §5.4 wants it on by Milestone 3 and the movement round is the question it
-  changes. Turning it on is a world rule and a new realisation of every seed.
+- **Added mass** is ruled on for the movement build (D081); the coefficient's value is set
+  in the pre-registration with the ledger's help, and the owner sees it there.
 - **The food chain's meaning under D063** (any absorptive body, or a lineage materially
   dependent on detritus) and **the split between the lineage rule and a balance rule**, both
   noted under D063.
 - **Whether the absence of CI is a choice.** The suite runs by hand before a launch; nothing
   says whether that is the standing decision.
 
-Raised 2026-09-07 by round 28's reading (logbook/0070):
+Raised 2026-09-07 by round 28's reading (logbook/0070), and still open after D081:
 
-- **The collisions-off control**: the same box, lid, bed, wrap and placement with
-  creature-creature collisions off, five seeds at dt 0.01. It is the pre-registered first
-  follow-up to an M1 failure and separates contact from the rest of D077's package.
 - **The width of the box.** M5 failed in every seed at area 100: a wider box is a different
-  light budget, so the width is a world rule.
-
-Raised 2026-09-07 by the Astra review (its response file has the measurements):
-
-- **The global brain** (D019's note of 2026-09-07). `Genome.GlobalBrain` is legal, mutable,
-  stepped and billed by nothing. Idle in the record: three genomes in five carry one or two
-  constant-input global neurons and almost none is read by a local neuron. Remove it from
-  new genomes, bill it undiscounted, or map it to tissue; each is a new realisation of every
-  seed.
-- **Three of five against four of five.** D063's goal is three seeds; round 18's four is the
-  bar D079 adopts a change against. Name them (the goal, the reference bar) or fold them.
-- **The futility clause of D069.** Its premise (no line that mattered started after 15,000 s)
-  was contradicted by round 26's passes rooted at 15,867 and 21,641 s (0067). Retire or
-  narrow it, and say whether "appeared" means ever born, alive at the cut, or established.
+  light budget, so the width is a world rule. Raised again if the movement round shows
+  packing binds. (The collisions-off control, the global brain, the two bars and the
+  futility clause were ruled in D081.)
 
 ## How the experiments are run
 

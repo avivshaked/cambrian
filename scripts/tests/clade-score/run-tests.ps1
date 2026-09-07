@@ -94,6 +94,15 @@ $cases = @(
             'no manifest'
         )
         Absent = @('fx-future-birth: PASS', 'PROVISIONAL')
+    },
+    @{
+        Case = 'wall-censored'
+        Arm = 'fx-wall-censored'
+        Expect = @(
+            'fx-wall-censored: PASS | passing clade: root 2000',
+            'CENSORED: ended (wall) at t=10000 of 30000 s requested; a reading, not a verdict'
+        )
+        Absent = @('PROVISIONAL', 'no manifest')
     }
 )
 

@@ -252,8 +252,12 @@ availability is frozen once per step after the demand pass, every share and rati
 is priced from it, a rationed draw is capped at its share of the demand, and a take that
 comes up short is fed back into the ledger. A body of no parts is charged no matter (D065's
 fixed term had no body to sit in and was never returned). No rule of the world changed: the
-code now does what §5A.2c said. Neither branch had fired in any scored world, and the fixed
-Core replays `r28-s1` bit for bit over 3,001 digest steps (`r28chk-s1`).
+code now does what §5A.2c said. Neither branch was seen to fire in the checks made (the
+share below one in none of 36,000 sampled absorptive meals; no stillbirth in 35,380
+mutations of two end-of-run genome pools), which is not a proof over every step of every
+run, and the fixed Core replays `r28-s1` bit for bit over the 3,001 digest steps checked, to
+t=3,000 (`r28chk-s1`). The record stands for the simulator that wrote it; its exposure to
+these two faults is *not observed*, not *nil*.
 
 ## 0o. Changelog — three more status corrections (2026-09-07, from the Astra review)
 

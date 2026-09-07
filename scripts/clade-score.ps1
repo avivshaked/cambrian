@@ -359,10 +359,14 @@ foreach ($a in $Arm) {
     if (-not $runDir) { throw "No run directory under $armDir." }
     $lineagePath = Join-Path $runDir.FullName 'lineage.jsonl'
 
-    # The manifest's status decides whether this is a reading or a verdict. A running arm's
-    # report and lineage are both live, so its line is provisional; a run with no manifest
-    # (a fixture, or a run older than the manifest) says so. The clauses are computed the
-    # same way either way -- only the label changes.
+    # The manifest's status and reason decide whether this is a reading or a verdict. A
+    # running arm's report and lineage are both live, so its line is provisional; a run
+    # that ended for any reason but its budget or extinction -- the wall clock, the
+    # population ceiling, an error, a stop -- is censored (D058, logbook/0065), and its
+    # line says so with how far it got, because a PASS at 10,000 s of a 30,000-s request
+    # is not a pass (the Astra review's second response, 2026-09-07); a run with no
+    # manifest (a fixture, or a run older than the manifest) says so. The clauses are
+    # computed the same way in every case -- only the label changes.
     $manifestPath = Join-Path $runDir.FullName 'run.json'
     $standing = ''
     if (-not (Test-Path -LiteralPath $manifestPath)) {
@@ -371,8 +375,16 @@ foreach ($a in $Arm) {
         $manifestText = [System.IO.File]::ReadAllText($manifestPath)
         $m = [regex]::Match($manifestText, '"status"\s*:\s*"([^"]+)"')
         $status = if ($m.Success) { $m.Groups[1].Value } else { 'unknown' }
+        $m = [regex]::Match($manifestText, '"reason"\s*:\s*"([^"]+)"')
+        $reason = if ($m.Success) { $m.Groups[1].Value } else { 'unknown' }
+        $m = [regex]::Match($manifestText, '"simulatedSeconds"\s*:\s*([0-9.]+)')
+        $simulated = if ($m.Success) { $m.Groups[1].Value } else { '?' }
+        $m = [regex]::Match($manifestText, '"requestedSeconds"\s*:\s*([0-9.]+)')
+        $requested = if ($m.Success) { $m.Groups[1].Value } else { '?' }
         if ($status -ne 'ended' -and $status -ne 'stopped') {
             $standing = " | PROVISIONAL: manifest status $status, the report and the lineage are still being written"
+        } elseif ($status -eq 'stopped' -or ($reason -ne 'budget' -and $reason -ne 'extinct')) {
+            $standing = " | CENSORED: $status ($reason) at t=$simulated of $requested s requested; a reading, not a verdict"
         }
     }
 
