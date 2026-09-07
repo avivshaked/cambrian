@@ -54,6 +54,14 @@ foreach ($n in $Workers) {
     $dest = Join-Path $root "unity-w$n"
     $isNew = -not (Test-Path $dest)
 
+    # Unity holds Temp/UnityLockfile for as long as it has the project open. Refreshing a
+    # worker under a running arm would change the source under a process that has already
+    # compiled it, and the manifest's simHash would no longer be the tree on disk (the Astra
+    # review, 2026-09-07). The operator used to have to remember this.
+    if (Test-Path (Join-Path $dest 'Temp/UnityLockfile')) {
+        throw "unity-w$n has a Unity process open (Temp/UnityLockfile exists). Let its arm end, or stop it with stop-arm.ps1, before refreshing."
+    }
+
     if ($isNew) { New-Item -ItemType Directory -Path $dest | Out-Null }
 
     foreach ($part in $parts) {

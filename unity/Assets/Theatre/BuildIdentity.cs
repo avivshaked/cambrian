@@ -73,20 +73,35 @@ namespace Evosim.Theatre
         /// </summary>
         /// <param name="recordedCoreHash">run.json's <c>source.coreHash</c>.</param>
         /// <param name="recordedSimHash">run.json's <c>source.simHash</c>.</param>
-        public static string Difference(string recordedCoreHash, string recordedSimHash)
+        /// <param name="recordedUnityVersion">
+        /// run.json's <c>unityVersion</c>, or null for a manifest written before it was recorded.
+        /// The engine is part of a run's identity as much as the source is (DESIGN §7's caveat),
+        /// and it was loaded and never compared until 2026-09-07 (the Astra review).
+        /// </param>
+        public static string Difference(
+            string recordedCoreHash, string recordedSimHash, string recordedUnityVersion = null)
         {
             string core = CoreHash();
             string sim = SimHash();
 
             bool coreDiffers = !Equal(core, recordedCoreHash);
             bool simDiffers = !Equal(sim, recordedSimHash);
+            bool unityDiffers =
+                recordedUnityVersion != null && recordedUnityVersion != Application.unityVersion;
 
-            if (!coreDiffers && !simDiffers) return null;
+            if (!coreDiffers && !simDiffers && !unityDiffers) return null;
 
             var sb = new StringBuilder();
 
+            if (unityDiffers)
+            {
+                sb.Append("Unity ").Append(recordedUnityVersion)
+                  .Append(" recorded, ").Append(Application.unityVersion).Append(" here");
+            }
+
             if (coreDiffers)
             {
+                if (sb.Length > 0) sb.Append("; ");
                 sb.Append("coreHash ").Append(Short(recordedCoreHash))
                   .Append(" recorded, ").Append(Short(core)).Append(" here");
             }

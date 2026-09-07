@@ -639,6 +639,17 @@ namespace Evosim.Sim.EditorTools
                 {
                     eco.EnableDigest(dir.Path, digestEvery, digestDumpSteps);
 
+                    // The digest's own settings beside it, so a comparison knows what it can
+                    // observe without the Unity log (the Astra review, 2026-09-07). Not in
+                    // run.json, whose shape several scripts read, and not in config.json or its
+                    // hash, which the digest must not touch.
+                    File.WriteAllText(
+                        Path.Combine(dir.Path, "digest-settings.json"),
+                        "{\"digestEvery\": " + digestEvery.ToString(CultureInfo.InvariantCulture) +
+                        ", \"dumpSteps\": [" +
+                        string.Join(",", digestDumpSteps.ConvertAll(x => x.ToString(CultureInfo.InvariantCulture))) +
+                        "]}\n");
+
                     Debug.Log(
                         "digest: every " + digestEvery + " physics steps into " +
                         Path.Combine(dir.Path, "digest.jsonl") +
@@ -958,6 +969,16 @@ namespace Evosim.Sim.EditorTools
 
             Flush(outPath, report);
             Debug.Log(report.ToString());
+
+            // The last window's lineage rows. They are drained at every sample and nowhere else,
+            // so a run that ended between samples put its final births in the snapshot below and
+            // never in lineage.jsonl: r25-s2's wall end left 38 snapshot ids with no birth row
+            // (scratch/floor-build-report.md; the Astra review, 2026-09-07).
+            IReadOnlyList<LineageEvent> lineageTail = eco.World.DrainLineageEvents();
+            if (dir != null)
+            {
+                for (int i = 0; i < lineageTail.Count; i++) dir.Lineage.Write(lineageTail[i].ToJson());
+            }
 
             Snapshot(dir, eco);
             if (dir != null)
@@ -1960,6 +1981,10 @@ namespace Evosim.Sim.EditorTools
             // over, not the metabolic ones: pairs are reported every Physics.Simulate.
             long wrapsWindow = eco.Wraps - LastWraps;
             long crowdedWindow = eco.Crowded - LastCrowded;
+
+            // Matter the ledger says is in bodies, less what the living hold body by body. One
+            // pass over the living at sample cadence, which is cheap where a step is not.
+            double matterOrphaned = world.MatterInBodies - world.MatterInLivingBodies;
             long contactPairsWindow = eco.ContactPairs - LastContactPairs;
             long floorContactPairsWindow = eco.FloorContactPairs - LastFloorContactPairs;
             long contactSteps = eco.Volume != null ? eco.Steps - LastContactSteps : 0L;
@@ -2185,7 +2210,13 @@ namespace Evosim.Sim.EditorTools
                 // it, and the flag is what says which of the two facts a 0 is.
                 .Field("floorContactPairs", eco.FloorContactPairs)
                 .Field("floorContactPairsPerStep",
-                    floorSteps > 0 ? floorContactPairsWindow / (double)floorSteps : 0d);
+                    floorSteps > 0 ? floorContactPairsWindow / (double)floorSteps : 0d)
+                // Appended after floorContactPairsPerStep, per the same rule: the stillbirth
+                // total and the matter charged to bodies that do not exist (the Astra review's
+                // R2, 2026-09-07). The second is 0 from the fix onward and is written so that
+                // it can be read, not assumed.
+                .Field("stillbirths", world.Stillbirths)
+                .Field("matterOrphaned", matterOrphaned);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -2392,6 +2423,8 @@ namespace Evosim.Sim.EditorTools
                 "**" + crowdedWindow.ToString(c) + "**",
                 contactSteps > 0 ? (contactPairsWindow / (double)contactSteps).ToString("0.###", c) : "—",
                 floorSteps > 0 ? (floorContactPairsWindow / (double)floorSteps).ToString("0.###", c) : "—",
+                world.Stillbirths.ToString(c),
+                matterOrphaned.ToString("0.###", c),
             };
 
             // The per-patch populations, last, so everything before them keeps its index.
@@ -2487,6 +2520,13 @@ namespace Evosim.Sim.EditorTools
             // em-dash where there is no bed, for `contacts`' own reason: 0 pairs and no floor are
             // different facts and a number alone cannot say which.
             "floor con",
+
+            // The stillbirth count and the matter held by nobody — appended after `floor con`,
+            // per the same rule (the Astra review's R2, 2026-09-07). `stillb` is the running
+            // total of bodies that developed into no parts; `mat orphan` is MatterInBodies less
+            // what the living actually hold, which is 0 by construction from the fix onward and
+            // is printed so that a nonzero reading would be seen rather than inferred.
+            "stillb", "mat orphan",
         };
 
         /// <summary>
@@ -2565,11 +2605,19 @@ namespace Evosim.Sim.EditorTools
         private static float Env(string name, float fallback)
         {
             string raw = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrEmpty(raw)) return fallback;
 
-            return !string.IsNullOrEmpty(raw) &&
-                   float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float v)
-                ? v
-                : fallback;
+            if (float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float v))
+            {
+                return v;
+            }
+
+            // A value that will not parse stops the launch, for EnvSteps's reason: until
+            // 2026-09-07 it fell back to the default silently, and the only evidence would have
+            // been a header that did not say what the launcher said (the Astra review).
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is not a number. Unset it or give it a number; " +
+                "a setting that fails to parse must not become its default without anyone knowing.");
         }
 
         /// <summary>

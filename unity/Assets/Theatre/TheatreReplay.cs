@@ -144,8 +144,22 @@ namespace Evosim.Theatre
                 return null;
             }
 
-            replay.SourceDifference =
-                BuildIdentity.Difference(replay.Record.CoreHash, replay.Record.SimHash);
+            // A run that injected an inoculum (D060's assay) fired World.Inoculate from the
+            // batch runner at a set time, and this step path has no such event: a replay would
+            // be that world only until the injection. Refused with the reason rather than
+            // played as a cousin (the Astra review, 2026-09-07).
+            if (replay.Record.Config.InoculateAtSeconds > 0f)
+            {
+                refusal =
+                    "This run injected an inoculum at t=" +
+                    replay.Record.Config.InoculateAtSeconds.ToString("0.#") +
+                    " s, and the theatre does not replay injections yet; from that moment " +
+                    "what it produced would not be this run.";
+                return null;
+            }
+
+            replay.SourceDifference = BuildIdentity.Difference(
+                replay.Record.CoreHash, replay.Record.SimHash, replay.Record.UnityVersion);
             replay.Faithful = replay.SourceDifference == null;
 
             if (!replay.Faithful && !allowMismatch)

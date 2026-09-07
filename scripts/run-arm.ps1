@@ -173,29 +173,34 @@ $env:EVOSIM_OUT = $out
 # Without this it falls back to the worker's parent and says so in the manifest's note.
 $env:EVOSIM_REPO_ROOT = $root
 
-foreach ($k in $Settings.Keys) {
-    $saved[$k] = [Environment]::GetEnvironmentVariable($k)
-    Set-Item -Path "env:$k" -Value $Settings[$k]
-}
+# Restored in a finally, so that a launch that throws between setting and starting cannot
+# leave this shell carrying the arm's settings into the next launch (the Astra review,
+# 2026-09-07).
+try {
+    foreach ($k in $Settings.Keys) {
+        $saved[$k] = [Environment]::GetEnvironmentVariable($k)
+        Set-Item -Path "env:$k" -Value $Settings[$k]
+    }
 
-$a = @('-projectPath', $proj, '-batchmode', '-quit', '-nographics',
-       '-executeMethod', 'Evosim.Sim.EditorTools.EvolutionRun.Run', '-logFile', $log)
-if ($UnityArgs.Count -gt 0) { $a += $UnityArgs }
+    $a = @('-projectPath', $proj, '-batchmode', '-quit', '-nographics',
+           '-executeMethod', 'Evosim.Sim.EditorTools.EvolutionRun.Run', '-logFile', $log)
+    if ($UnityArgs.Count -gt 0) { $a += $UnityArgs }
 
-Write-Host "$Name -> worker $Worker ($proj)"
-Write-Host "  seed $Seed, $Seconds s, $WallMinutes min wall"
-foreach ($k in $Settings.Keys) { Write-Host "  $k = $($Settings[$k])" }
-Write-Host "  log $log"
-Write-Host "  out $out"
-Write-Host "  worker simHash $simHash"
-if ($UnityArgs.Count -gt 0) { Write-Host "  unity args $($UnityArgs -join ' ')" }
+    Write-Host "$Name -> worker $Worker ($proj)"
+    Write-Host "  seed $Seed, $Seconds s, $WallMinutes min wall"
+    foreach ($k in $Settings.Keys) { Write-Host "  $k = $($Settings[$k])" }
+    Write-Host "  log $log"
+    Write-Host "  out $out"
+    Write-Host "  worker simHash $simHash"
+    if ($UnityArgs.Count -gt 0) { Write-Host "  unity args $($UnityArgs -join ' ')" }
 
-$launchedAt = (Get-Date).ToUniversalTime()
-$process = Start-Process -FilePath $unity -ArgumentList $a -NoNewWindow -PassThru
-
-foreach ($k in $saved.Keys) {
-    if ($null -eq $saved[$k]) { Remove-Item "env:$k" -ErrorAction SilentlyContinue }
-    else { Set-Item -Path "env:$k" -Value $saved[$k] }
+    $launchedAt = (Get-Date).ToUniversalTime()
+    $process = Start-Process -FilePath $unity -ArgumentList $a -NoNewWindow -PassThru
+} finally {
+    foreach ($k in $saved.Keys) {
+        if ($null -eq $saved[$k]) { Remove-Item "env:$k" -ErrorAction SilentlyContinue }
+        else { Set-Item -Path "env:$k" -Value $saved[$k] }
+    }
 }
 
 # Wait for the manifest, then read the run's own account of what produced it. This is where a

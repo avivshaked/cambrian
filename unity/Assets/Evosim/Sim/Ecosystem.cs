@@ -1251,7 +1251,10 @@ namespace Evosim.Sim
         /// </remarks>
         private void Reconcile()
         {
-            long revision = World.Births + World.Deaths + World.FloorSpawns;
+            // Every way a creature enters or leaves the economy, or the next inoculant would
+            // have no body until the next birth or death happened to bump the count (the Astra
+            // review, 2026-09-07). Zero in a run that never inoculates, so the sum is unchanged.
+            long revision = World.Births + World.Deaths + World.FloorSpawns + World.Inoculated;
             if (revision == _reconciledAt) return;
 
             _reconciledAt = revision;

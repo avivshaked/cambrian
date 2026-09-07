@@ -5,7 +5,10 @@ agrees and the first that does not. If both arms also dumped bodies (digest-bodi
 at a step they share, prints the first creature id, in file order, whose row differs, and
 every component of it that differs.
 
-Usage: python3 scratch/digest-diff.py det3-a det3-b
+Usage: python3 scripts/digest-diff.py det3-a det3-b
+
+Exits 0 when every shared digest step agrees, 1 when any differs, 2 on a usage error -- so a
+launcher or a test can gate on it rather than read its prose (the Astra review, 2026-09-07).
 """
 import glob
 import json
@@ -88,7 +91,8 @@ def compare_creature(ra, rb):
 
 def main():
     if len(sys.argv) < 3:
-        sys.exit(__doc__)
+        print(__doc__)
+        return 2
 
     a, b = sys.argv[1], sys.argv[2]
     pa, A = digests(a)
@@ -110,6 +114,7 @@ def main():
             first_diff = step
             break
 
+    exit_code = 0
     if first_diff is None:
         print(f'{a} vs {b}: identical over all {len(shared)} shared digest steps '
               f'(to step {shared[-1]}, t={A[shared[-1]]["t"]} s)')
@@ -120,6 +125,7 @@ def main():
         for arm, R in ((a, A), (b, B)):
             r = R[first_diff]
             print(f'    {arm}: hash {r["hash"]}, bodies {r["bodies"]}, first id {r["first"]}')
+        exit_code = 1
 
     # The per-body dump, at whatever steps both runs happen to carry one.
     _, DA = bodies(a)
@@ -165,6 +171,8 @@ def main():
         if not found and ids_a == ids_b:
             print('    every creature identical at this step')
 
+    return exit_code
+
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
