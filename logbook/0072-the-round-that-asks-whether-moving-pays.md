@@ -131,3 +131,10 @@ Whether a brain evolves. A jointed guild that pays its way is the precondition, 
 ecological layer of the movement rule is the owner's to word after this reading. Nor does
 it ask about predation: `EVOSIM_BITE` does not exist yet, and the consolidated proposal
 waits on the owner.
+
+## Launch
+
+*2026-09-07, late evening.* `r29-s1` to `r29-s5` launched on workers 2 to 6 at commit
+`40b16b8`, every manifest reading the launched `simHash e43b81a8…`, `coreHash 1084ee1c…`,
+`physicsJobWorkers 0` and `gitDirty false`; every header carries V1's tokens. The machine
+holds five arms and nothing else. Read as they land, against this entry and the scorer.

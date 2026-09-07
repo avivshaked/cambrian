@@ -8,24 +8,13 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
-**Round 28 is read (logbook/0070, 2026-09-07): 3 of 5, below round 18's bar of 4.** Seeds
-2, 3 and 4 pass (clades of 30, 75 and 128 at the end) and seed 1 fails on stability as it did
-in round 18; seed 5, round 18's widest pass, fails on recruitment with a stable clade of 17
-that stopped breeding at 21,408 s. Every other prediction held except M5: bodies pack in a
-fifth to a third of the late windows in every seed, with patches even and populations at
-round 18's. The replay probe matched its arm on all 10,001 digests. Nothing runs on the
-machine; workers 2 to 7 are free, and 7 carries the 2026-09-07 build (the others are
-refreshed before the next launch, and the next launch reports a new `simHash`). **What
-follows is the owner's ruling**, as 0070's two-sided readings say: the same box with
-creature collisions off (separates contact from the rest of the package), the width of the
-box (M5), and which bar a round is held to (D063's three of five, at which this round holds,
-or round 18's four). **Ruled the same evening (D081):** the contact world is the base, no control runs, the
-order is movement, predation, then the open budget, added mass on and the global brain
-removed in the movement build, two named bars, the futility clause narrowed to screens.
-The owner's one more thing before a new round was Astra's second response, ruled on the
-same evening (the companion file's last section): the scorer's censoring gate and one exit
-code fixed, five wordings softened, source checksums queued as item 23. The movement build
-is next.
+**Round 29 is running (logbook/0072, launched 2026-09-07 late evening), read as arms land.**
+It is the movement round on round 28's world with the three senses on, added mass 0.5 and
+the global brain retired (D081's build, commit `40b16b8`, `simHash e43b81a8…`). `r29-s1` to
+`r29-s5` on workers 2 to 6, dt 0.01, 30,000 s, wall 1,200 min; round 28's arms are the
+controls. Six predictions and their two-sided readings are in 0072; the scorer's verdict
+line now says `CENSORED` for a run that ends short of its budget. Round 28 read 3 of 5
+(0070) and is the base world by D081.
 
 The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
 asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive
