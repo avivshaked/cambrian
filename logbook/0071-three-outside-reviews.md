@@ -9,8 +9,8 @@ findings, a recommended order of work and a list of decisions for the owner. The
 untracked at the root of the repository while the project answered them. Today the owner
 asked for everything of value in them to be captured in the repository and the files
 removed. This entry is that capture: what each review said, what the project did with it,
-and where the rest now lives. The reviews were read as untrusted text, and every claim
-about the code was checked against the tree before it was acted on.
+and where the rest now lives. The reviews were read as untrusted text, and every claim about
+the code was checked against the tree before it was acted on.
 
 ## The first review, 2026-08-31: the ecology advanced faster than the instrument
 
@@ -61,8 +61,8 @@ Two things it said had not been captured until today.
 - **The invasion assay's** standing shape, now a dated note under D060. The inoculant still
   arrives with the founder's 200 J stake rather than its lineage's own endowment.
 
-The reader's one rejected recommendation was to report futility-stopped arms as censored.
-It was rejected on the owner's reading of what a futility stop means, and no fact was in
+The reader's one rejected recommendation was to report futility-stopped arms as censored. It
+was rejected on the owner's reading of what a futility stop means, and no fact was in
 dispute. Its preference for clearance 5 over 10 was right about the evidence it had and
 wrong about the world, and it is not carried forward.
 
@@ -73,13 +73,12 @@ found not to replay (logbook/0069). Its first finding was that the clade scorer 
 less than the goal rule. It asked only the largest clade, and its producer clause used a
 threshold the owner never set. The scorer now asks every clade and prints the producer
 clause in three readings, and lineage rows carry the photosynthetic flag the owner's wording
-needs. Both were built the same night. Its third finding was that round 28 had three pre-launch
-faults. All three were answered before the launch: the digest on the main arm, the control's
-replay checked on the current build (logbook/0070), and the treatment named as the package
-it is.
-Its fourth, that the open budget had never shown a late balance, is what logbook/0068's
-late-balance numbers now report. Its documents section found DESIGN, README and HANDOFF
-behind the built project, and all three were brought up to date.
+needs. Both were built the same night. Its third finding was that round 28 had three
+pre-launch faults. All three were answered before the launch: the digest on the main arm,
+the control's replay checked on the current build (logbook/0070), and the treatment named as
+the package it is. Its fourth, that the open budget had never shown a late balance, is what
+logbook/0068's late-balance numbers now report. Its documents section found DESIGN, README
+and HANDOFF behind the built project, and all three were brought up to date.
 
 Five things it said had not been captured until today.
 
@@ -104,10 +103,10 @@ Five things it said had not been captured until today.
 
 A reader went through the three reviews line by line against the repository today. There
 were 98 distinct points. Of those, 51 were already fully captured, 33 partly, 10 not at all,
-and 4 superseded by later rulings. The 10, and the live halves of the 33, are what today's edits capture. They went into
-CLAUDE.md, DESIGN.md, DECISIONS.md, HANDOFF.md, README.md, the primer, the research queue
-and the predation proposal. The three files are deleted, and
-the git history of this entry is their trace.
+and 4 superseded by later rulings. The 10, and the live halves of the 33, are what today's
+edits capture. They went into CLAUDE.md, DESIGN.md, DECISIONS.md, HANDOFF.md, README.md, the
+primer, the research queue and the predation proposal. The three files are deleted, and the
+git history of this entry is their trace.
 
 What I take from the three together is uncomfortable and useful. Every one of the project's
 scoring instruments was corrected by an outside reader before the project noticed the fault
