@@ -233,6 +233,13 @@ and changes no rule of the world.
 §5A's status line and the milestone table's rows 6 and 8 said less had been built than has
 been; they were corrected to match the tree, and no rule of the world changed.
 
+## 0n. Changelog — two more status corrections (2026-09-07)
+
+§7's bullet on what `configHash` covers overstated it (the timestep and the Unity version
+were never in the hash; they are in the manifest), and §5A's currency table still gave
+matter no sink, which D074's burial falsified. Both corrected after the outside reviews
+were captured (logbook/0071). No rule of the world changed.
+
 ## 1. Target hardware
 
 | | |
@@ -1286,7 +1293,7 @@ one of them made by the organisms.
 | | source | sink | conserved by |
 |---|---|---|---|
 | energy (J) | sunlight, founder endowment | metabolism, reproductive overhead | §5A.2's audit, a hard equality |
-| **matter** | seeded once at `InitialMatterPerCubicMetre` | nothing — it is only ever moved | `World.StandingMatter` |
+| **matter** | seeded once at `InitialMatterPerCubicMetre`, plus `MatterInfluxPerSecond` at the surface or the vent when the open budget is on (D074) | burial at the sea floor when the open budget is on (D074); none in the closed world, where it is only ever moved | `World.StandingMatter`, conserved only with influx and burial at zero (corrected 2026-09-07) |
 
 - **Reproduction requires matter as well as energy**, `MatterPerTissueJoule` per joule of the
   child's tissue, drawn from the parent's own layer. No amount of sunlight builds a daughter
@@ -1990,7 +1997,12 @@ at different physics thread counts, are different trajectories; the manifest is 
 complete identity, and `configHash` names the world it obeys).
 
 - Seeded PRNG per evaluation, stored with the result. No ambient randomness.
-- `configHash` covers timestep, solver iterations, fluid constants, caps, Unity version.
+- `configHash` covers the tunables on `RunConfig` and the cell-type registry, and nothing
+  else. The physics timestep (`EVOSIM_DT`), the Unity version, Unity's physics settings and
+  the job-worker count are *not* in it; they are in the manifest (`physicsDtSeconds`,
+  `unityVersion`, `simHash`, `physicsJobWorkers`), which is why the manifest, not the hash,
+  is a run's complete identity (corrected 2026-09-07; §0l had already said the step was
+  outside the hash).
 - **Honest caveat:** PhysX is not bitwise deterministic across CPUs, drivers or Unity
   versions. Same-machine same-version replay is reliable in practice; cross-machine is not
   guaranteed. The hash exists so mismatches are *detected*.

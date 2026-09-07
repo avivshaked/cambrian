@@ -82,3 +82,27 @@ discriminates anything in the record.
 3. Matter moving with the bite.
 4. `DeathCause.Eaten` as the third cause.
 5. Yields left as coded for the screen; `BiteJoulesPerSecond` set by it.
+
+## Conditions added after the outside review of 2026-09-06
+
+Captured 2026-09-07 so the owner rules on a corrected design rather than a superseded one.
+Each replaces or narrows a rule above.
+
+1. **The round runs at dt 0.01 from the first screen**, not 0.02. A bite needs contact to
+   persist between metabolic steps, so the physics step changes the treatment itself.
+2. **Rule 2 needs an identity the contact counter does not keep.** Today's callback counts
+   pairs; the bite path needs a canonical (creature, part) key, deduplication across
+   colliders, an ordering by stable id, and a note that the callback may run on a worker
+   thread, which matters more now that the physics thread count is a recorded setting (D078).
+3. **Rule 3 caps the total draw from each target** before several mouths divide it.
+4. **Rule 4 becomes an injury pool with fixed geometry.** `TissueJoules` is per creature while
+   part volumes come from the phenotype, so a per-part tissue-and-volume loss has no balance
+   and no mid-life collider resize; an integrity pool is drawn down instead, and a lethal bite
+   kills through the normal death path.
+5. **Rule 5 puts the matter taken into a named internal matter reserve**, not silently into
+   the structural matter of an unchanged body.
+6. **The bite dose is screened with the ledger before a worker** (D069): find the minimum
+   `BiteJoulesPerSecond` at which a biter replaces itself, then search a narrow bracket around
+   it, instead of the two guessed doses above.
+7. **What the vent crowd produces is reported as contact feeding**, not predation, until the
+   movement assay shows a consumer reaching or holding prey through its own actuation.

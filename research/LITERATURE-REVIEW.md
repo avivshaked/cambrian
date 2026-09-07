@@ -1163,6 +1163,12 @@ on the list. No paper was added, no round row was touched, and no claim changed.
 Items 1, 2, 3, 9, 10, 11 and 12 keep their standing and are read as the three questions
 need them.
 
+Added 2026-09-07 from the outside review of 2026-08-31 (logbook/0071): D051 leans on [GOY23]
+harder than an abstract-level appraisal supports and is still cited in DESIGN §5A's
+remineralisation paragraph, though the mechanism is built and off; a full read of [GOY23]
+joins the queue, as does a search on stress-induced mutation and self-adaptation, which D056
+names without a review behind it.
+
 Open, in priority order:
 
 1. **Read [MC25]** in full, and decide what it means for §2.3 and §8.4 *under endogenous

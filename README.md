@@ -23,7 +23,7 @@ plans**, which is what an open-ended ecosystem is being built to produce.
 > brains, and energy is a conserved budget audited to 0.0000% across the whole food web. A
 > finite competed-for sun, currents and mixing, senescence, a matter currency, a buoyancy
 > organ, living excretion, marine snow and a vent are all in and measured
-> ([`DECISIONS.md`](DECISIONS.md) D023–D071). Eighteen scored rounds
+> ([`DECISIONS.md`](DECISIONS.md) D023–D079). Twenty-eight scored rounds
 > ([logbook/0036](logbook/0036-the-floor-gives-back.md) onward) found the constraint one
 > layer at a time — the floor, the drowning, the matter ratchet, the stomach's gearing — and
 > the last of them was the flux: the second trophic level was fed at one percent of the
@@ -58,7 +58,8 @@ being designed in:
 
 - **Trophic strategy is morphology.** Photosynthesis, filter-feeding and predation are cell
   types, so a species is a distribution of cell types over a body plan and speciation is a
-  change in that distribution. No separate species or niche concept exists.
+  change in that distribution. Species is otherwise a measured distance between genomes
+  (D057), not a separate concept in the world's rules.
 - **Motion costs a part.** Only a *link* cell may carry a joint, so two parts cannot move
   relative to each other without one between them — and link tissue is the most expensive
   there is, charged for its strength whether or not it moves. A creature with no links is a

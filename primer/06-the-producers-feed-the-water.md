@@ -255,7 +255,8 @@ Movement has never paid. The cost side closed in piece 04, and the prize side is
 a reason for a body to go somewhere, sensed and reachable. Every jointed creature in these
 worlds is jointed by inheritance rather than by advantage.
 
-Perception reads four channels of the seven the design specifies. A stomach that can smell
+Perception reads all seven channels the design specifies (logbook/0062), and nothing has yet
+been selected for using them. A stomach that can smell
 the field it is drifting past is a different animal from one that waits for the leak to land
 on it.
 

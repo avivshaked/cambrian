@@ -2782,6 +2782,13 @@ from round 6 s5's final snapshot — notably a **one-part body**: all 50 absorpt
 in that snapshot develop to solitary absorptive blobs, everything else pruned for volume.
 First use pre-registered in logbook/0043.
 
+**Note, 2026-09-07 (from the outside review of 2026-09-03, logbook/0071).** The inoculant's
+endowment is still the founder stake (`FounderEnergyJoules`, 200 J), a deliberate reuse so the
+audit closes, which means a copy arrives richer than any child of its own lineage would. The
+assay's standing shape when it is next used: 5 copies (now the default), inoculated after the
+producer world has settled, run for at least two consumer lifetimes, scored by connected clade,
+with a same-build off control.
+
 ### D061
 **The patchy world — horizontal structure, throttled exchange, endogenous inequality** · 2026-09-01
 
@@ -2904,6 +2911,19 @@ stomach can establish was answered on its own (0051 amendment 2; 0054's seed 4).
 lifetimes 48 / 41 / 24 / 127; the producer clause is read from the columns the
 contract-repairs build adds and is recorded when they exist. `scratch/clade-score.py` is
 the scorer until it moves into `scripts/`.
+
+**Two questions in front of the owner, captured 2026-09-07 from the outside reviews (logbook/0071).**
+First, the food chain's meaning: D063 scores any body that expresses absorptive tissue,
+including a mixotroph earning most of its living from light. Whether the goal means that, or
+a lineage materially dependent on detritus, has never been ruled; `scripts/absorptive-log.ps1`
+measures what a stomach earned, so the difference is measurable before the ruling. Second,
+the split the reviews asked for: D063 is the *lineage* rule and tests nothing about
+ecological balance. A separate balance rule would need its own tolerance; the review's four
+draft clauses were a late total-matter slope at most 10% of the influx, influx about equal to
+burial over each of the last two lifetimes, no one-way late trend in population or trophic
+shares, and all of it holding after the last stomach clade's origin. Round 27 measured the
+first two (logbook/0068: the stock rose at 49–70% of the influx); the other two are not yet
+measured.
 
 ### D064
 **Size-dependent buoyancy — small bodies float in place, growth is what sinks you; founders anywhere in the column** · 2026-09-02
@@ -3872,3 +3892,11 @@ away, they are re-ordered.
 **What it changes elsewhere.** The movement round (D075's first item) waits for a shared
 world that holds the rule; its draft pre-registration is rewritten on whichever world that
 is. The predation proposal likewise.
+
+**Note, 2026-09-07 (from the outside review of 2026-09-06, logbook/0071).** When the open
+budget returns to this world, the starting inventory and the ongoing influx are two changes,
+not one: 0067 moved both at once and could not tell which starved the stomachs. A finite
+starting stock that founds the community is selected first, at influx 0; the influx is
+added second. And the standing caution against 0068's pre-registered next lever, burial 0.02:
+burial and founding draw on the same early inventory, so faster burial removes more of what
+the founders need. That arm is not run until the stock question is settled.

@@ -60,3 +60,7 @@ describes unwritten code is a design document with adjectives.
 | [04](04-nobody-decides-who-wins.md) | Nobody decides who wins | An energy economy instead of a fitness function, and the four ways the world cheated once we let it run |
 | [05](05-a-brain-that-is-copied-with-the-limb.md) | A brain that is copied with the limb | Why the controller lives inside the body graph, and what an open-loop swimmer cannot do |
 | [06](06-the-producers-feed-the-water.md) | The producers feed the water | Why the second trophic level starved at one percent, what the ocean does about it, and the food chain that followed |
+
+Chapter 6 is the tiled ecology's history and stays that way. A chapter 7 is written only
+after the shared world settles into a reference (logbook/0070 onward), so that the primer
+explains one world rather than narrating a parameter chase (sequencing note, 2026-09-07).

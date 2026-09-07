@@ -253,3 +253,4 @@ key only translates the entries' reporting shorthand.
 | [0068](0068-the-shared-world-fed.md) | 2026-09-06 | The shared world, fed |
 | [0069](0069-the-shared-world-does-not-replay.md) | 2026-09-06 | The shared world does not replay |
 | [0070](0070-the-good-world-with-one-change.md) | 2026-09-06 | The good world with one change: contact |
+| [0071](0071-three-outside-reviews.md) | 2026-09-07 | Three outside reviews |

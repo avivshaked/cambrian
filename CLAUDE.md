@@ -45,8 +45,8 @@ recorded there.
 Current state: **the ecosystem runs.** Genomes develop into phenotypes, articulations swim
 under their own evolved brains, and `Evosim.Core`'s world charges upkeep, feeds, breeds and
 kills — the energy audit closes at 0.0000% across a food web that has twice assembled itself
-(logbook/0025, 0028). Milestones 2–5 are done, out of the listed order; perception is partial
-(four sensor channels read — `Chemical`, `Energy` and `Flow` do not). **The goal rule (D063) was met on
+(logbook/0025, 0028). Milestones 2–5 are done, out of the listed order; perception reads all
+seven of §4.4's channels (logbook/0062), and nothing has yet been selected for using them. **The goal rule (D063) was met on
 2026-09-04** (logbook/0054): with producers exuding 15% of their light intake (D070) the world
 holds inherited absorptive lines of 76–221 to the end of a 30,000-s run in four seeds of
 five, discovery regime. The open frontier: matter at depth (the failing seed's stomachs held
@@ -416,8 +416,9 @@ actually verifying it.
   each living creature's *genome graph*, not its developed phenotype (a creature can carry an
   absorptive node it never expressed, and read `abs=0` — one concrete route: the node's accumulated
   edge scale takes its part below `minPartVolume` and development prunes the subtree, so a mixotroph
-  genome develops into a pure leaf; seen in `r14c10-s4`'s snapshot), and snapshot rows have no id to join
-  against lineage. Depth-by-guild and body-size-by-guild are therefore not measurable from a run's
+  genome develops into a pure leaf; seen in `r14c10-s4`'s snapshot), and snapshot rows carry an
+  organism id that joins to `lineage.jsonl` from genome format 4 (`SnapshotJoinTests`) but no
+  reserve, age, position or field state, so a snapshot resumes nothing: it is a genome pool. Depth-by-guild and body-size-by-guild are therefore not measurable from a run's
   output today; say so rather than proxying (logbook/0048's dissection).
 - **PhysX replays bit for bit on this machine, so every per-step change is a butterfly.** Same
   genome, seed, config *and build* give the same run report to the last decimal (`r16dt-01c` ≡
@@ -484,6 +485,17 @@ actually verifying it.
   commit inside it and made every earlier recording unreplayable, because a HUD label is a `.cs`
   file under that root and `simHash` cannot tell a viewer from a solver. Presentation, tooling and
   anything else that does not decide a trajectory goes beside it (`Assets/Theatre/`), not in it.
+- **Every evolution run to date has run with added mass off.** `FluidConfig.AddedMassCoefficient`
+  has no initialiser and `EvolutionRun` never sets it, so every `config.json` in the record
+  reads `addedMassCoefficient: 0` and every world has swum on drag alone. DESIGN §5.4 promotes
+  added mass to Milestone 3 on [C18]'s finding that a simplified fluid collapses body-plan
+  diversity, and the movement round (D075) is exactly the question a drag-only fluid answers
+  wrongly. Turning it on is a per-step change, so it is a new realisation of every seed, and it
+  is a world rule: the owner's call, before the movement round is pre-registered (raised by the
+  outside review of 2026-08-31; captured 2026-09-07).
+- **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
+  against `births` in the same window (logbook/0068: refusals at two to three times the births),
+  never as an absolute threshold; a raw blocked-conception count says nothing on its own.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

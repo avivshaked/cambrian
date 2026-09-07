@@ -85,6 +85,30 @@ than tuned around. Round 27 therefore runs on as a screen rather than a scored c
 8. **A `mat here` column** in the run report: the matter density a body sees is in the
    statistics file and not in the table.
 
+Captured 2026-09-07 from the three outside reviews (logbook/0071), in no order of urgency:
+
+9. **The movement rule's ecological layer**, beside item 7's assay: a connected jointed clade
+   persisting two lifetimes, recruiting in the final window, paying positive net after
+   mechanical work; the assay repeated across several starting orientations and positions.
+10. **Round 18 as a committed reference**: it exists only as a launcher script and five
+    gitignored run directories. Its config, hashes and a representative lineage should be
+    committed once if it is the base D079 builds on.
+11. **A manifest-versus-header contract test at the Unity boundary**: the one seam with no
+    automated check; the by-hand header read stands in for it and is where every settings
+    bug in this record was caught.
+12. **The transactional guard test D052 queued** (force an `Admit` failure; field matter,
+    `MatterInBodies`, parent energy and `EnergyOut` all close) still does not exist; D077's
+    ordering makes today's refusal paths safe.
+13. **Two columns**: gross photosynthesis per window (the one term in the energy identity that
+    is inferred rather than reported, and the balance rule will want it) and the matter drawn
+    at conception per window (`mat blk` counts refusals, not units). The flux counters are world
+    totals; the patch dimension is only a standing-stock spread.
+14. **The clade scorer checks nothing about which round a report belongs to**; the launch-side
+    `-ExpectSimHash` guard stands in for it.
+15. **The theatre has never been looked at by a person.** Its identity check proves it is the
+    right world, not that the world is legible; one session in the Editor before it carries a
+    reading.
+
 ## The decisions in front of the owner
 
 - **The producer threshold** is unsettled. D063's amendment asks for one living inherited
@@ -99,6 +123,14 @@ than tuned around. Round 27 therefore runs on as a screen rather than a scored c
 - **Extending a passing seed past 30,000 s**, to see whether the balance holds.
 - **The maintenance assay**, a multi-genome inoculum with cell-type mutation off: a good
   instrument for after round 28, and one the owner should scope.
+- **Added mass has been off in every run** (`addedMassCoefficient: 0` in every config; CLAUDE.md's
+  gotcha). DESIGN §5.4 wants it on by Milestone 3 and the movement round is the question it
+  changes. Turning it on is a world rule and a new realisation of every seed.
+- **The food chain's meaning under D063** (any absorptive body, or a lineage materially
+  dependent on detritus) and **the split between the lineage rule and a balance rule**, both
+  noted under D063.
+- **Whether the absence of CI is a choice.** The suite runs by hand before a launch; nothing
+  says whether that is the standing decision.
 
 ## How the experiments are run
 
