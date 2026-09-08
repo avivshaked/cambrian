@@ -118,7 +118,13 @@ round 28) set the base and the order.
    not enough for a trait that needs several mutations to line up before it pays. Rounds
    that ask whether a trait is kept stay at 30,000 s. The question of whether a wired sense
    is *used* goes to an inoculated round (round 15's tool), not a longer one; it is decided
-   after round 31 reads.
+   after round 31 reads. *Mutation rates stay where they are (owner, same night: "agreed"):*
+   a child already carries of the order of one structural change per birth and brain
+   changes are the cheapest, so novelty is not what is short; more mutation breaks
+   assembled combinations as fast as it makes them and makes the inherited columns read
+   draw rather than descent. The one targeted test allowed is the input-rewiring chance
+   alone, with a control, if inoculation shows the world keeps a wired sense but never
+   finds one.
 6. **The open matter budget** (D074) and the vent, when a round shows the larder binds.
 7. **The cell types and immigration**, then the archive and the islands.
 
