@@ -153,6 +153,33 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void AFiniteHeightNoSeaCouldHoldIsRefusedLikeANonFiniteOne()
+        {
+            // r31-s3 (logbook/0077): a root the solver had thrown to a finite height so large
+            // that the light field's layer index overflowed passed the non-finite guard above and
+            // took the arm down from LightField.Contribute. The guard now refuses anything
+            // outside the world's box with room, and names the creature and the height.
+            var world = new World(Config(), seed: 2);
+            world.Step(1f);
+            Organism creature = world.Living[0];
+            float depth = world.Config.WorldDepthMetres;
+
+            var refused = Assert.Throws<ArgumentOutOfRangeException>(
+                () => world.Observe(creature, -7.6e31f, 1f));
+            Assert.Contains($"Creature {creature.Id} has a height of", refused.Message);
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => world.Observe(creature, 2f * depth, 1f));
+
+            // The box with room is still the sea: a body coasting above the surface or one that
+            // reached the bed's plane is observed, not refused.
+            world.Observe(creature, 0.5f * depth, 1f);
+            world.Observe(creature, -2.5f * depth, 1f);
+            Assert.True(World.HeightIsInTheWorld(-131f, 60f));   // round 5b's sinkers, logbook/0040
+            Assert.False(World.HeightIsInTheWorld(float.NaN, 60f));
+        }
+
+        [Fact]
         public void DepthDecidesIncomeSoThereIsSomethingToSwimFor()
         {
             // The reason any of this is worth doing. Two identical worlds, one held at the

@@ -875,11 +875,22 @@ namespace Evosim.Sim
         private const int MaxDumps = 50;
 
         /// <summary>
-        /// Checks that every living body is still finite, and kills the ones that are not.
+        /// Checks that every living body is still finite and still in the world, and kills the
+        /// ones that are not.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>One native read and one branch per creature, once per metabolic step.</b> The
+        /// <b>Finite is not enough.</b> <c>r31-s3</c> lost four bodies in one step at 11,533.5 s;
+        /// three were caught here at NaN and dumped, and a fourth whose root was finite and
+        /// astronomical went through to <c>World.Observe</c>, passed its non-finite guard, and
+        /// overflowed the light field's layer index — an <c>ArgumentOutOfRangeException</c> from
+        /// <c>LightField.Contribute</c> and a censored arm (logbook/0077). The height is now read
+        /// against <see cref="World.HeightIsInTheWorld"/>, the one bound Core's guard refuses at,
+        /// so a body the solver has thrown out of the sea dies here as the counted death a NaN
+        /// body does, and the guard behind it stays a guard.
+        /// </para>
+        /// <para>
+        /// <b>One native read and two branches per creature, once per metabolic step.</b> The
         /// root's position is the whole test: a divergence reaches it before it reaches anything
         /// else — <c>3075</c>'s dump has the root at NaN while its velocities were still
         /// (enormously) finite — and reading two velocities per <i>part</i> per <i>physics</i>
@@ -902,6 +913,8 @@ namespace Evosim.Sim
         /// </remarks>
         private void CheckFinite()
         {
+            float depth = World.Config.WorldDepthMetres;
+
             for (int i = 0; i < _order.Count; i++)
             {
                 Body body = _order[i];
@@ -909,9 +922,10 @@ namespace Evosim.Sim
                 if (bodies == null || bodies.Length == 0) continue;
 
                 Vector3 root = bodies[0].transform.position;
-                float sum = root.x + root.y + root.z;
+                float horizontal = root.x + root.z;
 
-                if (!float.IsNaN(sum) && !float.IsInfinity(sum))
+                if (World.HeightIsInTheWorld(root.y, depth) &&
+                    !float.IsNaN(horizontal) && !float.IsInfinity(horizontal))
                 {
                     body.LastRootPosition = root;
                     continue;
@@ -1118,8 +1132,8 @@ namespace Evosim.Sim
         private void Metabolise()
         {
             // Before anything reads what the solver has been producing — the divergence spec,
-            // after logbook/0056. A body whose state has stopped being finite is removed here as
-            // a death; if it were left, World.Observe would see the non-finite height and take
+            // after logbook/0056. A body whose state has stopped being finite, or whose root has
+            // left the sea, is removed here as a death; if it were left, World.Observe would see the height and take
             // the run down, which is how r20q-s1 was censored at t=15,345 of 20,000 s. That
             // refusal in Observe stays exactly as it is: it is the guard for anything that gets
             // past this, and this runs first, so a diverged body never reaches it.

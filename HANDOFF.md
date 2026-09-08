@@ -107,8 +107,11 @@ round 28) set the base and the order.
    logbook/0077; the screen stood (five of five, three passing the scorer at 10,000 s) and
    the round is running: `r31-s1..s5` at dt 0.01 on workers 2 to 6, launched 2026-09-08
    night (`scratch/launch-r31.ps1`), landing in about ten hours; read against 0077's
-   predictions and the scorer. If the prize appears, the round after screens the exudate
-   fraction; founding a vertex per excretion is queued behind both.
+   predictions and the scorer. Seed 3 fell at 11,533 s to a body the solver threw to a
+   finite height no test caught (0077's "Seed 3 fell"); the guard was widened the same
+   evening and seed 3 reruns as `r31-s3b` on worker 7 on the fixed build, so the round is
+   split across two builds the way round 24 was (0061). If the prize appears, the round
+   after screens the exudate fraction; founding a vertex per excretion is queued behind both.
 5. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
    brain can be selected for, right after movement pays.
    *Run length (owner, 2026-09-08 night: "that sounds good"):* 30,000 s gives 40 to 50

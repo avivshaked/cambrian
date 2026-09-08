@@ -448,7 +448,13 @@ actually verifying it.
   0.01 a drive impulse limiter caps each joint at 30 rad/s per step and counts its binds as
   `driveImpulsesLimited` — about 10⁵ per 0.02 run, so **the fast step under-drives evolved
   muscle; anything about swimming or joints is read at 0.01 only.** A run whose manifest reads
-  `status error` is censored.
+  `status error` is censored. **A finite body can diverge too**: `r31-s3` ended at 11,533 s
+  with a root thrown to a finite height of the order of 10³¹ m, which passed both non-finite
+  tests and overflowed the light field's layer index (`ArgumentOutOfRangeException` from
+  `LightField.Contribute`, logbook/0077). Since 2026-09-08 the harness's check and Core's
+  `Observe` guard read the height against the world's box with room
+  (`World.HeightIsInTheWorld`: the depth above the surface, twice the depth below the floor),
+  and such a body dies as the same counted `Diverged` death.
 - **The shared world does not replay unless the physics step runs on one thread.** Same
   genome, seed, config and build on the same worker gave six realisations of one world, every
   pair identical for ~148,000 steps and then parting in one body's velocity by one or two ulp

@@ -796,12 +796,15 @@ namespace Evosim.Core
         {
             if (creature == null) throw new ArgumentNullException(nameof(creature));
 
-            if (float.IsNaN(heightY) || float.IsInfinity(heightY))
+            if (!HeightIsInTheWorld(heightY, Config.WorldDepthMetres))
             {
+                string what = float.IsNaN(heightY) || float.IsInfinity(heightY)
+                    ? "a non-finite height"
+                    : $"a height of {heightY:g4} m in a world {Config.WorldDepthMetres:0.#} m deep";
                 throw new ArgumentOutOfRangeException(
                     nameof(heightY), heightY,
-                    $"Creature {creature.Id} has a non-finite height, so the solver has already " +
-                    "diverged and every income derived from depth would be meaningless.");
+                    $"Creature {creature.Id} has {what}, so the solver has already diverged " +
+                    "and every income derived from depth would be meaningless.");
             }
 
             if (workJoules < 0f || float.IsNaN(workJoules))
@@ -815,6 +818,30 @@ namespace Evosim.Core
             creature.HeightY = heightY;
             creature.PendingWorkJoules += workJoules;
         }
+
+        /// <summary>
+        /// Whether a height is one the sea could hold, or one only a diverged solver produces —
+        /// the bound <see cref="Observe(Organism, float, float)"/> refuses and the harness's
+        /// divergence check kills at.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Finite is not enough.</b> <c>r31-s3</c> ended at 11,533.5 s with an
+        /// <c>ArgumentOutOfRangeException</c> out of <see cref="LightField.Contribute"/>: a root
+        /// the solver had thrown to a finite height so large that the layer index
+        /// <c>(int)(-heightY / LayerMetres)</c> overflowed passed the non-finite test here and in
+        /// the harness, and took the arm down where a NaN body would have been dumped and killed
+        /// as a counted death (logbook/0077). The bound is the world's box with room: above, the
+        /// world's depth past the surface — D050 stops upward net force at y = 0, so a body above
+        /// it is coasting on momentum and never gets far; below, twice the depth past the floor,
+        /// which has been a collider since D077's bed (round 5b's sinkers at −131 m in a 60 m
+        /// world, logbook/0040, are inside it). A body outside that box is not somewhere in the
+        /// sea, and a body that tunnelled through the bed and kept sinking is a solver fault too.
+        /// </para>
+        /// <para>NaN fails both comparisons, so the non-finite case is inside this one.</para>
+        /// </remarks>
+        public static bool HeightIsInTheWorld(float heightY, float worldDepthMetres) =>
+            heightY <= worldDepthMetres && heightY >= -3f * worldDepthMetres;
 
         /// <summary>
         /// <see cref="Observe(Organism, float, float)"/> with the whole centre of mass — D083.
