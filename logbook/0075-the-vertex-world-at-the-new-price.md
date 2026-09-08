@@ -136,3 +136,28 @@ else. The first rows show the identity at 0 and no short takes in every arm; the
 read at its end against the sequencing section, and the round at 0.01 follows if it does
 not fail the world.
 
+## The screen
+
+*2026-09-08, midday.* All five ended on budget at 10,000 s in about three hours. Read
+against the sequencing section and nothing else.
+
+| arm | alive (round 29's seed at 10,000 s) | inherited stomachs (round 29) | scorer | detritus out over exuded, last 4,000 s | detritus standing, kJ (round 29) |
+|---|---|---|---|---|---|
+| `r30q-s1` | 1,568 (1,638) | 56 (9) | pass, a clade of 43 | 1.04 | 5.9 (33) |
+| `r30q-s2` | 1,494 (1,359) | 78 (33) | pass, a clade of 78 | 1.02 | 6.6 (19) |
+| `r30q-s3` | 1,383 (1,636) | 66 (6) | pass, a clade of 64 | 1.06 | 4.7 (34) |
+| `r30q-s4` | 1,389 (1,561) | 24 (134) | fail, recruitment only | 1.04 | 8.8 (11) |
+| `r30q-s5` | 1,697 (1,747) | 3 (5) | fail | 0.99 | 30 (32) |
+
+The world stands: every arm within 0.85 to 1.10 of round 29's seed. The identities close:
+`mat resid` 0, `mat short` 0, `audit` 0.0000% and `diverged` 0 at every sample of every arm,
+`verticesMerged` 0, and the vertex count peaked at 48,000 against a cap of 100,000. A
+stomach line formed in four seeds of five and the scorer passes three at a third of the
+round's length, where round 29's same seeds held 9, 33 and 6 inherited stomachs at that
+age. The detritus loop closes in every arm, with the stomachs taking the exudate as fast as
+it arrives over the last 4,000 s, and the standing stock is a fifth to a sixth of the cell
+world's in four seeds. Seed 5 is the exception: three inherited stomachs and 30 kJ of
+exudate standing, as in its cell-world seed. Nothing here about the senses, the joints or
+depth is a reading; `sense` ran from 11 to 325 bodies and `jnt inh` peaked at 11 in seed 4,
+and both wait for 0.01. The screen does not fail the world. The round launches at 0.01.
+
