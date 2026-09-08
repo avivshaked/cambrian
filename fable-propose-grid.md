@@ -81,9 +81,10 @@ vertex field had in a day were all faults of objects a grid does not have.
 
 ## What it retires
 
-D083's vertex field as the base, with its kernel, merge distance, cap and quantum. D084's
-two sideways diffusivities. The negative vertex, unbuilt, with the geometry argument above
-as its record. The halo, already withdrawn.
+- D083's vertex field as the base, with its kernel, merge distance, cap and quantum.
+- D084's two sideways diffusivities.
+- The negative vertex, unbuilt, with the geometry argument above as its record.
+- The halo, already withdrawn.
 
 ## What it does not change
 
@@ -97,7 +98,7 @@ is the seam predation on contact builds on.
 Round 31 is read as the vertex world's last word. The grid is built behind the field
 interface, with its tests held to the vertex field's contracts. The experiment harness
 runs the sitter against the mover, the corpse patch and the owner's five-and-five geometry
-on it. Then a base round at round 31's prices and mixing, five seeds at 0.01, gives the
+on it. Then a base round at round 31's prices and mixing, five seeds at 0.01. That gives the
 grid its own count under the goal rule before anything else is asked of it.
 
 ## For ruling
