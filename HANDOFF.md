@@ -111,6 +111,14 @@ round 28) set the base and the order.
    fraction; founding a vertex per excretion is queued behind both.
 5. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
    brain can be selected for, right after movement pays.
+   *Run length (owner, 2026-09-08 night: "that sounds good"):* 30,000 s gives 40 to 50
+   generations along the deepest line and three to four turnovers of the standing crop,
+   most of them in the first third of a run. That is enough to read whether a trait the
+   world already contains is kept or lost, which is what every round so far has asked, and
+   not enough for a trait that needs several mutations to line up before it pays. Rounds
+   that ask whether a trait is kept stay at 30,000 s. The question of whether a wired sense
+   is *used* goes to an inoculated round (round 15's tool), not a longer one; it is decided
+   after round 31 reads.
 6. **The open matter budget** (D074) and the vent, when a round shows the larder binds.
 7. **The cell types and immigration**, then the archive and the islands.
 
