@@ -395,6 +395,13 @@ namespace Evosim.Sim.EditorTools
             float fieldCell = Env("EVOSIM_FIELD_CELL", new RunConfig().FieldCellMetres);
             float fieldMatterCell = Env("EVOSIM_FIELD_MATTER_CELL", new RunConfig().FieldMatterCellMetres);
 
+            // fable-propose-grid.md rule 6: a death founds a particle that sinks, drifts and leaks
+            // into the water at this fraction of what it still holds per second, instead of
+            // dissolving where it died. 0 is every run on file and is the default, so the token
+            // below reads 0 on an arm that never asked for it and the world it describes is the
+            // one the record already has.
+            float corpseDecay = Env("EVOSIM_CORPSE_DECAY", new RunConfig().CorpseDecayPerSecond);
+
             // D064. Body volume at which tissue is neutrally buoyant, m3 — the excess density
             // above is scaled by max(0, 1 - (V0/V)^(2/3)), so a founder-sized body barely sinks
             // and a large one feels the full constant. 0 is off and reproduces every pre-D064 run
@@ -615,6 +622,7 @@ namespace Evosim.Sim.EditorTools
             config.FieldVertexJoules = fieldQuantum;
             config.FieldCellMetres = fieldCell;
             config.FieldMatterCellMetres = fieldMatterCell;
+            config.CorpseDecayPerSecond = corpseDecay;
             config.InoculateAtSeconds = inoculateAt;
             config.InoculateCount = inoculateCount;
             config.InoculateDepthMetres = inoculateDepth;
@@ -857,6 +865,11 @@ namespace Evosim.Sim.EditorTools
                 // header written before the grid existed must not read the same, and a grid run
                 // is only reproducible from its two cell sizes.
                 " cell=" + fieldCell + " mcell=" + fieldMatterCell +
+                // Rule 6 of fable-propose-grid.md, appended after the cell sizes per the same
+                // convention and rendered unconditionally for the same reason: a header without
+                // the token and a run at 0 must not read the same, since the difference between
+                // them is whether a death is a place or a density.
+                " corpse=" + corpseDecay + "/s" +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());
@@ -2318,7 +2331,16 @@ namespace Evosim.Sim.EditorTools
                     (world.Nutrients is VertexField dm ? dm.Merged : 0L) +
                     (world.Matter is VertexField mm ? mm.Merged : 0L))
                 .Field("matterResidual", matterResidual)
-                .Field("conceptionsShortOfMatter", world.ConceptionsShortOfMatter);
+                .Field("conceptionsShortOfMatter", world.ConceptionsShortOfMatter)
+                // Rule 6 of fable-propose-grid.md, appended after conceptionsShortOfMatter, per
+                // the append-only column discipline. The count is what the markdown shows; the two
+                // stocks are what `audit` and `mat resid` beside them are made of, so a reader can
+                // see how much of the world's standing energy and matter is sitting in the dead
+                // rather than having to infer it from the residuals reading zero. All three are 0
+                // for the life of a run with EVOSIM_CORPSE_DECAY unset, which is every run on file.
+                .Field("corpses", world.Corpses.Count)
+                .Field("corpseJoules", world.CorpseJoules)
+                .Field("corpseMatter", world.CorpseMatter);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -2547,6 +2569,9 @@ namespace Evosim.Sim.EditorTools
                 // The matter identity's residual and the short-take count.
                 "**" + matterResidual.ToString("0.###", c) + "**",
                 world.ConceptionsShortOfMatter.ToString(c),
+
+                // The drifting dead, rule 6 of fable-propose-grid.md.
+                world.Corpses.Count.ToString(c),
             };
 
             // The per-patch populations, last, so everything before them keeps its index.
@@ -2665,6 +2690,15 @@ namespace Evosim.Sim.EditorTools
             // statistics file could show it (logbook/0074). `mat short` beside it counts
             // conceptions refused after the gate passed because the take came up short.
             "**mat resid**", "mat short",
+
+            // Rule 6 of fable-propose-grid.md, appended after `mat short` per the same rule: how
+            // many dead bodies are still drifting and leaking rather than dissolved. Reads 0 for
+            // the life of a run with EVOSIM_CORPSE_DECAY unset, which is every run on file, and
+            // that 0 is a fact rather than an instrument that is off. The header's `corpse` token
+            // is what says which world this is. The joules and matter they hold are in
+            // stats.jsonl; here the count is the reading, because what the proposal is asking is
+            // whether there is anything in the water for a mover to go to.
+            "corpses",
         };
 
         /// <summary>

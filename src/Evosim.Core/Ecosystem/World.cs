@@ -64,6 +64,13 @@ namespace Evosim.Core
         private readonly List<Organism> _born = new List<Organism>();
 
         /// <summary>
+        /// Bodies that have died and not yet finished leaking into the water. Rule 6 of
+        /// <c>fable-propose-grid.md</c>. Always empty at
+        /// <see cref="RunConfig.CorpseDecayPerSecond"/> 0, which is every run on file.
+        /// </summary>
+        private readonly List<Corpse> _corpses = new List<Corpse>();
+
+        /// <summary>
         /// Births and deaths since the last <see cref="DrainLineageEvents"/> — pure
         /// instrumentation for <c>lineage.jsonl</c> (see <see cref="LineageEvent"/>). Swapped out
         /// rather than copied-and-cleared on drain, so a report interval with nothing to report
@@ -247,10 +254,44 @@ namespace Evosim.Core
         /// <see cref="MatterInfluxedTotal"/>'s remarks, which reduces to the old one at influx and
         /// burial 0.
         /// </remarks>
-        public double StandingMatter => Matter.TotalJoules + MatterInBodies;
+        public double StandingMatter => Matter.TotalJoules + MatterInBodies + CorpseMatter;
 
         /// <summary>Matter locked up in living tissue, awaiting its owner's death.</summary>
         public double MatterInBodies { get; private set; }
+
+        /// <summary>
+        /// Bodies that have died and are still handing their tissue and matter back to the water,
+        /// oldest first. Rule 6 of <c>fable-propose-grid.md</c>. Read-only from outside: a corpse
+        /// is founded by <see cref="Bury"/> and emptied by the world's own pass, and nothing else
+        /// may move a joule of it without the audit noticing.
+        /// </summary>
+        /// <remarks>
+        /// Empty for the whole life of a run with <see cref="RunConfig.CorpseDecayPerSecond"/> at
+        /// 0, which is every run on file: at 0 a death deposits at once and founds nothing.
+        /// </remarks>
+        public IReadOnlyList<Corpse> Corpses => _corpses;
+
+        /// <summary>Tissue still held by the dead, J. A third standing account beside the water and the living.</summary>
+        public double CorpseJoules
+        {
+            get
+            {
+                double sum = 0.0;
+                for (int i = 0; i < _corpses.Count; i++) sum += _corpses[i].Joules;
+                return sum;
+            }
+        }
+
+        /// <summary>Matter still held by the dead. Part of D074's identity, like the two accounts beside it.</summary>
+        public double CorpseMatter
+        {
+            get
+            {
+                double sum = 0.0;
+                for (int i = 0; i < _corpses.Count; i++) sum += _corpses[i].Matter;
+                return sum;
+            }
+        }
 
         /// <summary>
         /// What <see cref="RunConfig.InitialMatterPerCubicMetre"/> seeded the world with at construction —
@@ -313,6 +354,12 @@ namespace Evosim.Core
         /// <c>DetritusDepositedTotal + DetritusExudedTotal - DetritusTakenTotal ==
         /// Nutrients.TotalJoules</c> at every step, because settling, mixing, advection and
         /// remineralisation all conserve.
+        /// <para>
+        /// With <see cref="RunConfig.CorpseDecayPerSecond"/> above 0 this counts the instalments a
+        /// corpse pays and not the death that founded it, which is what keeps that identity true:
+        /// crediting the water with a whole body while the corpse still holds it would open the
+        /// identity for as long as the corpse lasted.
+        /// </para>
         /// </remarks>
         public double DetritusDepositedTotal { get; private set; }
 
@@ -512,6 +559,12 @@ namespace Evosim.Core
                 {
                     sum += _living[i].Energy + _living[i].TissueJoules;
                 }
+
+                // The fourth account, and only ever nonzero where a corpse exists: a body's
+                // tissue is standing energy from the death that founds the corpse to the step the
+                // last of it is deposited. The loop runs zero times at CorpseDecayPerSecond 0, so
+                // this line adds nothing at all to a world on file.
+                sum += CorpseJoules;
                 return sum;
             }
         }
@@ -959,6 +1012,13 @@ namespace Evosim.Core
             // same step it entered the world.
             DepositMatterInflux(seconds);
 
+            // Rule 6 of fable-propose-grid.md. Before the fields' own passes, so a joule a corpse
+            // hands over this step sinks, mixes and drifts on the same step it arrives. That
+            // is the rule DepositMatterInflux is placed by above, and the rule a death has
+            // always obeyed, since Metabolise runs before all of this. Returns before touching
+            // anything when there is no corpse, which is every world at CorpseDecayPerSecond 0.
+            StepCorpses(seconds);
+
             Nutrients.Settle(seconds);
             Matter.Settle(seconds);
 
@@ -1128,6 +1188,169 @@ namespace Evosim.Core
             for (int patch = 0; patch < patches; patch++) Matter.Deposit(0f, per, patch);
 
             MatterInfluxedTotal += (double)per * patches;
+        }
+
+        /// <summary>
+        /// Carries every corpse one step and takes its decay out of it. Rule 6 of
+        /// <c>fable-propose-grid.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Returns before touching anything when there is no corpse</b>, which is every world
+        /// at <see cref="RunConfig.CorpseDecayPerSecond"/> 0: nothing is founded there, so the
+        /// list is empty and this method is a length check. The same shape D052's excretion,
+        /// D070's exudation and D074's influx are written in, and the reason the cell, vertex and
+        /// grid worlds on file replay bit for bit.
+        /// </para>
+        /// <para>
+        /// <b>It moves like the water and not like a body.</b> A corpse sinks at the detritus
+        /// field's own <see cref="IMatterField.SinkMetresPerSecond"/> and rides
+        /// <see cref="RunConfig.Current"/> under exactly the condition
+        /// <see cref="VertexField.Advect"/> uses: a current that exists and has
+        /// <see cref="CurrentField.AdvectFields"/> on. It rides because it is detritus that has
+        /// not dissolved yet, and detritus that drifted differently from the water around it
+        /// would be a second transport model nobody chose. It wraps on x and z round D077's
+        /// rings and clamps to the surface and the floor, which is what a vertex does.
+        /// </para>
+        /// <para>
+        /// <b>The horizontal leg needs a world with positions.</b> A tiled world never calls
+        /// <see cref="Observe(Organism, Float3, float)"/>, so a body's x and z stay wherever
+        /// <c>Admit</c> put them and nothing in that world reads them. Drifting a corpse across
+        /// them there would move it between patches on the strength of a coordinate the world
+        /// does not use, so a tiled world's corpse keeps the patch its body died in and only
+        /// sinks. The grid and the vertex fields both refuse a tiled world anyway, so this is
+        /// only ever a cell world someone turned the knob on in.
+        /// </para>
+        /// <para>
+        /// <b>Decay is a fraction of what is left, so the knob is a half-life</b>
+        /// (<c>ln 2 / rate</c>: 0.005/s is 139 s). Clamped at 1 for a step long enough to ask for
+        /// more than the corpse holds, the same clamp <see cref="BuryMatter"/> makes. What is
+        /// handed over is a float, and the corpse's own account is reduced by exactly that float,
+        /// so the transfer is exact in both books rather than exact in one and rounded in the
+        /// other.
+        /// </para>
+        /// <para>
+        /// <b>The last crumb is deposited rather than left to halve for ever.</b> Below 1e-6 J and
+        /// 1e-6 matter the remainder goes in whole and the corpse is removed. Both stocks have to
+        /// be under, since one of them can empty a step before the other. Without a floor a
+        /// corpse would live for the length of the run, and the standing account would carry
+        /// thousands of objects holding nothing.
+        /// </para>
+        /// <para>
+        /// <b><see cref="DetritusDepositedTotal"/> counts the instalments, not the death.</b> Its
+        /// own identity is <c>deposited + exuded − taken == Nutrients.TotalJoules</c>, so counting
+        /// a whole body at the death would credit the water with joules the corpse still holds
+        /// and break it for as long as the corpse lasted.
+        /// </para>
+        /// </remarks>
+        private void StepCorpses(float seconds)
+        {
+            if (_corpses.Count == 0) return;
+
+            float sink = Nutrients.SinkMetresPerSecond * seconds;
+            CurrentField current = Config.Current;
+            bool drifts = Config.SharedSpace && current != null && current.AdvectFields;
+
+            float length = Nutrients.PatchWidthMetres * PatchCount;
+            float width = Nutrients.PatchWidthMetres;
+            float depth = Config.WorldDepthMetres;
+
+            double fraction = (double)Config.CorpseDecayPerSecond * seconds;
+            if (fraction > 1.0) fraction = 1.0;
+
+            int kept = 0;
+            for (int i = 0; i < _corpses.Count; i++)
+            {
+                Corpse corpse = _corpses[i];
+                corpse.AgeSeconds += seconds;
+
+                Float3 p = corpse.Position;
+                float x = p.X;
+                float y = p.Y - sink;
+                float z = p.Z;
+
+                if (drifts)
+                {
+                    Float3 v = current.VelocityAt(p.Y, ElapsedSeconds, corpse.Patch, PatchCount);
+                    x = WrapAxis(x + v.X * seconds, length);
+                    y += v.Y * seconds;
+                    z = WrapAxis(z + v.Z * seconds, width);
+                }
+
+                if (y > 0f) y = 0f;
+                else if (y < -depth) y = -depth;
+
+                corpse.Position = new Float3(x, y, z);
+                if (drifts) corpse.Patch = PatchOfX(x, width);
+
+                // The last instalment: everything that is left, in one go. Both stocks have to be
+                // under the floor value, because one empties before the other. A body that
+                // excreted its whole price away (D052) dies with matter at 0 and tissue at 100 J,
+                // and a corpse dropped on the strength of the empty half would take the full half
+                // with it. A step long enough to ask for the whole remainder is the same case.
+                bool last = fraction >= 1.0 ||
+                    (corpse.Joules < 1e-6 && corpse.Matter < 1e-6);
+
+                FieldPoint at = corpse.Point;
+
+                if (corpse.Joules > 0d)
+                {
+                    float given = (float)(last ? corpse.Joules : corpse.Joules * fraction);
+                    if (given > 0f)
+                    {
+                        Nutrients.Deposit(at, given);
+                        corpse.Joules -= given;
+                        DetritusDepositedTotal += given;
+                    }
+                }
+
+                if (corpse.Matter > 0d)
+                {
+                    float given = (float)(last ? corpse.Matter : corpse.Matter * fraction);
+                    if (given > 0f)
+                    {
+                        Matter.Deposit(at, given);
+                        corpse.Matter -= given;
+                    }
+                }
+
+                if (last)
+                {
+                    // The corpse leaves. A field takes a float and the corpse's own account is a
+                    // double, so the last instalment can leave half an ulp of what it carried
+                    // behind, either way. At the floor value that is under 1e-13, and at a step
+                    // long enough to empty a full corpse it is half an ulp of the body's own
+                    // tissue. It is released rather than carried by an object that would otherwise
+                    // halve for ever. This is the float quantisation every deposit in the world
+                    // already has; naming it is the point, since an audit read to 1e-6 of the sun's
+                    // whole input cannot see it and an unnamed rounding is how a leak hides.
+                    corpse.Joules = 0d;
+                    corpse.Matter = 0d;
+                    continue;
+                }
+
+                _corpses[kept++] = corpse;
+            }
+
+            if (kept < _corpses.Count) _corpses.RemoveRange(kept, _corpses.Count - kept);
+        }
+
+        /// <summary>The ring's patch for a world x: D077's rule, <c>floor(x / W) mod K</c>.</summary>
+        private int PatchOfX(float x, float patchWidthMetres)
+        {
+            int patch = (int)Math.Floor(x / patchWidthMetres);
+            patch %= PatchCount;
+            if (patch < 0) patch += PatchCount;
+            return patch;
+        }
+
+        /// <summary>A coordinate folded back onto a ring of the given extent. <see cref="GridField"/>'s own.</summary>
+        private static float WrapAxis(float v, float extent)
+        {
+            if (v >= 0f && v < extent) return v;
+            float folded = v - extent * (float)Math.Floor(v / extent);
+            if (folded >= extent || folded < 0f) folded = 0f;
+            return folded;
         }
 
         /// <summary>
@@ -1432,27 +1655,55 @@ namespace Evosim.Core
             EnergyOut += creature.Energy;
             creature.Energy = 0f;
 
-            // The body becomes detritus where it died — §5A.2c. This is the whole reason
-            // anything other than a plant can live, and the reason the doomed half of
-            // generation zero is the world's first food rather than merely a waste of seeds.
-            // HeightY is the last height Observe accepted, and Observe refuses a non-finite one
-            // — so this is the last *finite* depth even when the body's own transform is NaN.
-            Nutrients.Deposit(creature.Point, creature.TissueJoules);
-            if (creature.TissueJoules > 0f) DetritusDepositedTotal += creature.TissueJoules;
-
-            // Whatever matter is still locked returns to the layer the body died in, and
-            // sinks from there — which is why the deep is rich and the surface is not.
-            // LockedMatter (D052) is what remains after a lifetime of excretion, or the full
-            // price paid at conception if the knob is off; either way it is already 0 for a
-            // floor founder, which never paid and so never owes anything back.
-            if (creature.LockedMatter > 0f)
+            // Rule 6 of fable-propose-grid.md: above zero the body leaves a corpse instead, and
+            // the two deposits below happen in instalments from wherever the corpse has drifted
+            // to. Nothing else about the death changes. The reserve still leaves the world on
+            // the line above, the matter still leaves MatterInBodies, and the lineage row is the
+            // same row. Guarded on the knob rather than written as a general path, so at 0 the
+            // deposits below run exactly as they always have and every world on file replays.
+            if (Config.CorpseDecayPerSecond > 0f &&
+                (creature.TissueJoules > 0f || creature.LockedMatter > 0f))
             {
-                Matter.Deposit(creature.Point, creature.LockedMatter);
+                // A body with nothing to give founds nothing: a floor founder that never paid for
+                // itself and developed into no tissue would otherwise leave an empty object for
+                // the pass to carry and drop.
+                _corpses.Add(new Corpse(
+                    creature.Id, creature.Point.Position, creature.Patch,
+                    creature.TissueJoules, creature.LockedMatter));
+
+                // The matter is out of the body from this instant and in the corpse, so
+                // StandingMatter's three accounts add to what its two added to before. The
+                // tissue needs no counterpart line: StandingJoules reads a living body's tissue
+                // and a corpse's joules into the same total, and the body's own is zeroed on the
+                // line after.
                 MatterInBodies -= creature.LockedMatter;
                 creature.LockedMatter = 0f;
+                creature.TissueJoules = 0f;
             }
+            else
+            {
+                // The body becomes detritus where it died — §5A.2c. This is the whole reason
+                // anything other than a plant can live, and the reason the doomed half of
+                // generation zero is the world's first food rather than merely a waste of seeds.
+                // HeightY is the last height Observe accepted, and Observe refuses a non-finite one
+                // — so this is the last *finite* depth even when the body's own transform is NaN.
+                Nutrients.Deposit(creature.Point, creature.TissueJoules);
+                if (creature.TissueJoules > 0f) DetritusDepositedTotal += creature.TissueJoules;
 
-            creature.TissueJoules = 0f;
+                // Whatever matter is still locked returns to the layer the body died in, and
+                // sinks from there — which is why the deep is rich and the surface is not.
+                // LockedMatter (D052) is what remains after a lifetime of excretion, or the full
+                // price paid at conception if the knob is off; either way it is already 0 for a
+                // floor founder, which never paid and so never owes anything back.
+                if (creature.LockedMatter > 0f)
+                {
+                    Matter.Deposit(creature.Point, creature.LockedMatter);
+                    MatterInBodies -= creature.LockedMatter;
+                    creature.LockedMatter = 0f;
+                }
+
+                creature.TissueJoules = 0f;
+            }
 
             _living.RemoveAt(index);
             _dead.Add(creature);

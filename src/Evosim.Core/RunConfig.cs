@@ -739,6 +739,37 @@ namespace Evosim.Core
         public float FieldMatterCellMetres { get; set; } = 3f;
 
         /// <summary>
+        /// How fast a corpse hands its remaining tissue and matter to the water it is in, per
+        /// second. <c>fable-propose-grid.md</c> rule 6. Zero is every run on file: a death
+        /// deposits the whole body at once and no corpse exists.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A corpse that stays an object is something a body can reach.</b> Death is the one
+        /// large parcel of food this ecology makes, and today it is dissolved into the water on
+        /// the step the body dies, at which point it is a density like any other and a sitter
+        /// reads it as well as a swimmer does. Held as a particle it sinks, drifts and stays worth
+        /// crossing a cell for, which is the first prize a mover could win that a sitter cannot
+        /// have (the proposal's closing). Exudation (D070) and excretion (D052) stay dissolved and
+        /// are not touched by this: they are trickles from a living body, not a parcel.
+        /// </para>
+        /// <para>
+        /// <b>The number is a half-life.</b> The decay is a fraction of what is left per second,
+        /// so the half-life is <c>ln 2 / rate</c>: 0.005/s is about 139 s, and the proposal's own
+        /// reading of it is a corpse that is still worth swimming to a couple of minutes after
+        /// the death. Larger is a puff, smaller is a sinking larder.
+        /// </para>
+        /// <para>
+        /// <b>Zero by default, so every launcher on record still describes the world it ran.</b>
+        /// At 0 <c>World.Bury</c> deposits exactly where it always did and the corpse list is
+        /// never touched, so the cell, vertex and grid worlds on file replay bit for bit.
+        /// <c>EVOSIM_CORPSE_DECAY</c> in the header. ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        [Tunable("field", Unit = "1/s")]
+        public float CorpseDecayPerSecond { get; set; }
+
+        /// <summary>
         /// Fraction of a refuge layer's density that feeding can see and take, in [0, 1] —
         /// arm C's knob on D055's refuge. Zero is D055's own refuge: total exclusion.
         /// </summary>
