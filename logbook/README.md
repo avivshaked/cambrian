@@ -260,3 +260,4 @@ key only translates the entries' reporting shorthand.
 | [0075](0075-the-vertex-world-at-the-new-price.md) | 2026-09-08 | The vertex world at the new price |
 | [0076](0076-the-hole-refills-in-five-seconds.md) | 2026-09-08 | The hole refills in five seconds |
 | [0077](0077-the-water-stirred-less.md) | 2026-09-08 | The water stirred less |
+| [0078](0078-the-water-as-a-grid.md) | 2026-09-08 | The water as a grid |

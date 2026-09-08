@@ -540,6 +540,22 @@ actually verifying it.
   promised and conception booked the price. From the build that fixed it (2026-09-07 late)
   the table prints the residual and `mat short`; on a run older than the column, read
   `matterStanding` in `stats.jsonl` against the seeded stock plus influx less burial.
+- **A grid world refuses three things a vertex launcher would pass, and prints a dash where
+  it printed a count.** From the grid build (fable-propose-grid.md, 2026-09-08, logbook/0078)
+  `EVOSIM_FIELD grid` puts both fields on cells (`GridField`; `EVOSIM_FIELD_CELL` 1 m,
+  `EVOSIM_FIELD_MATTER_CELL`). A cell size must divide the box on all three axes or the
+  world is refused at construction: the campaign's 100 m² over four patches at 60 m is a box
+  20 × 5 × 60 m, so the matter default of 3 m refuses it and 2.5 m or 5 m runs (which one is
+  the owner's ruling). `EVOSIM_H_MIXING` must equal `EVOSIM_MIXING` or the world is refused,
+  because a grid stirs at one rate on all six faces and the header's `h-mix` has to read what
+  the detritus does; the matter grid stirs at its own `MatterMixingDiffusivity` on every axis,
+  2 m²/s in the campaign, where the vertex world walked it sideways at 0.02. Explicit
+  diffusion is refused above `D·dt/cell² = 1/6`, so 2 m²/s at a half-second step needs a
+  matter cell over 2.45 m. The `vtx` column prints a dash on a grid. The two cell tunables
+  make every earlier `config.json` unreadable by the build, rounds 30 and 31 included; their
+  arithmetic replays on the vertex field under their own builds. Read a grid field's shape
+  from a run, as for vertices; the Core experiments (`GridFieldExperiments`) are the
+  sitter/mover, column and corpse-patch measurements and nothing else.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.

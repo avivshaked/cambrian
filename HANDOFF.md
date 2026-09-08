@@ -15,7 +15,15 @@ senses were carried in 1 of 5 (round 29: 3 of 5) and no jointed guild held; seed
 of 14 lasted to 10,000 s feeding as well as the sitters and moving no faster than the
 drift. Logbook/0076 measured why: at 0.2 m²/s a sitter's hole refills in five seconds, so
 there was no prize. Round 31 (D085, logbook/0077) is round 30 with the detritus mixing at
-0.02 on both axes, screened at the fast step first.** Round 29 (logbook/0072) was the price
+0.02 on both axes, screened at the fast step first; it runs overnight, seed 3 rerun on the
+widened divergence guard (0077). Meanwhile the owner asked where the hole lives and the
+answer replaced the representation: the water as a grid of cells with corpses as particles
+(`fable-propose-grid.md`, logbook/0078), built, reviewed and smoked on 2026-09-08 night and
+awaiting two rulings (the matter cell, 2.5 m or 5 m; matter mixed at 2 m²/s on every
+axis). Round 32 is the grid's base round at round 31's prices and mixing; round 33 is growth
+(`fable-propose-growth.md`: birth investment, litter and adult size as genome dials,
+children born small and growing), agreed in direction and awaiting its ruling; predation
+waits behind both.** Round 29 (logbook/0072) was the price
 control: the senses carried by a third to a half of the population in three seeds of five
 at the old price, no jointed body, the goal 2 of 5, the world standing under added mass. Round 29 was the movement round on round 28's world with the three senses
 on, added mass 0.5 and the global brain retired (D081's build, commit `40b16b8`,
@@ -112,8 +120,22 @@ round 28) set the base and the order.
    evening and seed 3 reruns as `r31-s3b` on worker 7 on the fixed build, so the round is
    split across two builds the way round 24 was (0061). If the prize appears, the round
    after screens the exudate fraction; founding a vertex per excretion is queued behind both.
-5. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
-   brain can be selected for, right after movement pays.
+5. **The water as a grid** (owner 2026-09-08 night, "sgtm... proceed"; `fable-propose-grid.md`,
+   logbook/0078): cells that hold amounts, one cell per mouth, Fick's law between
+   neighbours, upwind advection, corpses as particles. Built and smoked (`scratch/launch-r32.ps1`);
+   round 32 is its base round, five seeds at 0.01 at round 31's prices and mixing, after the
+   owner rules on the matter cell (2.5 m caps the largest child, 5 m loosens the gate five
+   times; I recommend 5 m) and on matter mixed at 2 m²/s on every axis (I recommend it
+   stands). The negative vertex the owner first proposed is retired unbuilt with its
+   geometry argument as its record; the halo was already withdrawn.
+6. **Bodies that grow** (owner 2026-09-08 night, "love it! go ahead"; `fable-propose-growth.md`):
+   `BirthInvestment` as a fraction of the parent's tissue value replaces the endowment,
+   `AdultScale` scales the plan, brood stays; a child is born at the investment over the
+   litter and grows to its adult size before it breeds; three world constants with first
+   values, a newborn mass floor of 0.5 kg against the divergence record. Round 33, after
+   round 32 has its count; the Unity side is an in-place rescale of the articulation.
+7. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
+   brain can be selected for, after growth.
    *Run length (owner, 2026-09-08 night: "that sounds good"):* 30,000 s gives 40 to 50
    generations along the deepest line and three to four turnovers of the standing crop,
    most of them in the first third of a run. That is enough to read whether a trait the
