@@ -93,3 +93,14 @@ Whether a sense is used. Round 30 carried one in one seed of five at the new pri
 sense that reads a gradient is worth carrying only where following it buys something; that
 question waits for a world in which M1 holds. Nor whether exudate should found vertices
 (D085 item 4), which is orthogonal to the prize and queued behind this round.
+
+## Launch
+
+*2026-09-08, evening.* The screen: `r31q-s1` to `r31q-s5` on workers 2 to 6 at dt 0.02 for
+10,000 s, every header reading `mixing 0.02 m2/s`, `h-mix 0.02 m2/s` and `work x0.25`,
+every manifest `physicsJobWorkers 0` and `gitDirty false` on one `coreHash 73047e8e…`. That
+hash differs from round 30's because a remark was added to the mixing knob in
+`RunConfig.cs` after round 30 launched; no code moved, and the `simHash` is round 30's.
+The launcher refused any other `simHash`. Seeds 1 to 3 record commit `e6449b7` and 4 and 5
+`7729d2c`, one prose commit apart. The machine holds the five screens and nothing else.
+
