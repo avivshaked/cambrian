@@ -105,6 +105,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D080](#d080) | Non-commercial terms: PolyForm Noncommercial 1.0.0 for code and the genomes, CC BY-NC 4.0 for prose, commercial licences on request, contributions carry a relicensing grant | 2026-09-07 | ruled (owner: "lets apply the changes to the license") · supersedes D015 |
 | [D081](#d081) | Six rulings on round 28's reading — two named bars (the goal, the reference); the contact world is the base; the path is movement, predation, then the open budget; added mass on and the global brain removed in the movement build; the futility clause narrowed to screens | 2026-09-07 | ruled (owner, by question) · amends D063's reading, D069, D075, D079 · **round 29 read 2026-09-08 (logbook/0072): the world stands under added mass in every seed, the senses are carried in 3 of 5 at today's price, no jointed guild, the goal 2 of 5** |
 | [D082](#d082) | The price of a bud: the neuron and its inputs about tenfold cheaper, and the stroke's work billed at a fraction, in a price round after round 29 reads; round 29 is the control at today's price | 2026-09-07 | ruled (owner, by question) · the numbers are set by the ledger and the record in the round's pre-registration · **folded into round 30 with D083 the same night; round 29 stays the price control** |
+| [D085](#d085) | The waste stays where nature puts it: exudate keeps joining the water beside its producer; the prize for moving is made by stirring the water less, the detritus mixing to 0.02 m²/s on both axes in round 31; the exudate fraction is lowered only after, and founding vertices per excretion waits | 2026-09-08 | ruled (owner: "proceed with your recommendations") · measured in logbook/0076 |
 | [D084](#d084) | Sideways mixing stays 0.2 m²/s in the vertex water, and round 29's separation arm runs only if round 30 reads below round 28 as well | 2026-09-08 | ruled (owner: "proceed with your recommendations") |
 | [D083](#d083) | The water as vertices: detritus and free matter become vertices holding joules at positions, read through a kernel, so a still body eats a hole and a moving body leaves it; the vent founds vertices and the floor buries them; the cell field stays behind a switch for the record | 2026-09-07 | ruled (owner: "it's settled") · built and tested the same night; the halo proposal withdrawn · round 30 is the vertex world with D082's prices, round 29 the price control, round 28 the world control |
 
@@ -4294,3 +4295,48 @@ vertex world the same night and the arm was not run.
 **What it changes.** Nothing in code. `EVOSIM_H_MIXING 0.2` is round 30's setting and the
 vertex world's default in every launcher from here; the cell world's configs keep whatever
 they ran. HANDOFF carries the conditional arm as a queue item with its trigger.
+
+### D085
+
+**2026-09-08 — The waste stays; the water is stirred less**
+
+**Status:** ruled by the owner, in conversation, after round 30 showed no swimmer and the
+field was asked why (logbook/0076).
+
+**Context.** At two thirds of round 30 no arm held an inherited jointed body, and the one
+line that had lasted fed in water as rich as the sitters' and moved no faster than the
+drift. The owner's hypothesis was that the field had too few vertices for a mover and a
+sitter to see different water. Three Core experiments measured the field: the count moved
+only the noise; the mixing rate set the prize, a swimmer's meal going from 1.1 times a
+sitter's at the world's 0.2 m²/s to 2.5 times at 0.02, because a 1 m hole refills in about
+five seconds at 0.2; a corpse is a patch for a minute at 0.02 and for nothing at 0.2; and
+at 0.02 the larder stays near its producers, 86% in the top 20 m, with nothing reaching
+the floor in a lifetime at either rate. The owner then asked whether excretion should
+found vertices as the vent does, and whether a stomach living on its neighbours' waste
+should be discouraged.
+
+**Ruled.**
+
+1. **The waste mechanism stays.** A stomach latching onto other creatures' waste is what
+   nature does and what the world found in round 18; exudate keeps joining the water
+   beside its producer, and the fraction (D070's 0.15) is not a thing to remove. Rejected:
+   any change to how waste is delivered.
+2. **The prize for moving is made by stirring the water less.** Round 31 runs the detritus
+   mixing at 0.02 m²/s on both axes, everything else round 30's, screened at the fast step
+   first. Rejected: raising the vertex count (measured to change only the noise), a
+   distance law on the mouth's reach or on the refill (the diffusion the field already has
+   falls off as one over distance; the rate is the lever, not the shape), and remineralisation
+   turned on beside it (proposed, then measured unnecessary: nothing reaches the floor in
+   a run's horizon at either rate, so it stays off and the round changes one number).
+3. **The exudate fraction is lowered after, not instead.** A smaller exudate stream moves
+   food from the smooth route at the producer to the lumpy route through a corpse, which
+   is patchier food, and patchy food pays a mover only where patches persist; the round
+   after 31 screens the fraction if the prize appears. Rejected: lowering it now (the
+   history at zero is that no stomach line persisted, which is why D070 exists).
+4. **Founding a vertex per excretion waits.** It would make the field finer and less lumpy
+   and it is orthogonal to the prize; it is queued behind the mixing change, with the
+   cap and the merge rule as the things to watch when it is built.
+
+**What it changes.** `EVOSIM_MIXING` and `EVOSIM_H_MIXING` at 0.02 in round 31's launcher;
+no code. The matter field's mixing (2 m²/s) is untouched, since the conception gate is not
+the prize under test. D084's ruling that the two axes are equal stands at the new value.

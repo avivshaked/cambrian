@@ -99,10 +99,15 @@ round 28) set the base and the order.
    Round 29 is the price control and round 28 the world control. Pre-registered as
    logbook/0075 on 2026-09-08 with the work fraction at 0.25 from round 28's first window;
    fast-step screens first (`scratch/launch-r30.ps1 -Dt 0.02`), the confirming round at 0.01.
-4. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
+4. **The water stirred less** (D085, owner 2026-09-08): round 31 runs the detritus mixing at
+   0.02 m²/s on both axes, everything else round 30's, because at 0.2 a sitter's hole refills
+   in five seconds and a mover gains nothing (logbook/0076); fast-step screen first
+   (`scratch/launch-r31.ps1`). If the prize appears, the round after screens the exudate
+   fraction; founding a vertex per excretion is queued behind both.
+5. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
    brain can be selected for, right after movement pays.
-5. **The open matter budget** (D074) and the vent, when a round shows the larder binds.
-6. **The cell types and immigration**, then the archive and the islands.
+6. **The open matter budget** (D074) and the vent, when a round shows the larder binds.
+7. **The cell types and immigration**, then the archive and the islands.
 
 Two bars are named from D081 on: *the goal* (D063's 3 of 5) and *the reference* (the base
 world's own count). A change joins the base only at the reference; a round that meets the
