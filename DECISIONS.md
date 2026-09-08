@@ -105,6 +105,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D080](#d080) | Non-commercial terms: PolyForm Noncommercial 1.0.0 for code and the genomes, CC BY-NC 4.0 for prose, commercial licences on request, contributions carry a relicensing grant | 2026-09-07 | ruled (owner: "lets apply the changes to the license") · supersedes D015 |
 | [D081](#d081) | Six rulings on round 28's reading — two named bars (the goal, the reference); the contact world is the base; the path is movement, predation, then the open budget; added mass on and the global brain removed in the movement build; the futility clause narrowed to screens | 2026-09-07 | ruled (owner, by question) · amends D063's reading, D069, D075, D079 · **round 29 read 2026-09-08 (logbook/0072): the world stands under added mass in every seed, the senses are carried in 3 of 5 at today's price, no jointed guild, the goal 2 of 5** |
 | [D082](#d082) | The price of a bud: the neuron and its inputs about tenfold cheaper, and the stroke's work billed at a fraction, in a price round after round 29 reads; round 29 is the control at today's price | 2026-09-07 | ruled (owner, by question) · the numbers are set by the ledger and the record in the round's pre-registration · **folded into round 30 with D083 the same night; round 29 stays the price control** |
+| [D084](#d084) | Sideways mixing stays 0.2 m²/s in the vertex water, and round 29's separation arm runs only if round 30 reads below round 28 as well | 2026-09-08 | ruled (owner: "proceed with your recommendations") |
 | [D083](#d083) | The water as vertices: detritus and free matter become vertices holding joules at positions, read through a kernel, so a still body eats a hole and a moving body leaves it; the vent founds vertices and the floor buries them; the cell field stays behind a switch for the record | 2026-09-07 | ruled (owner: "it's settled") · built and tested the same night; the halo proposal withdrawn · round 30 is the vertex world with D082's prices, round 29 the price control, round 28 the world control |
 
 ---
@@ -4255,3 +4256,41 @@ before it lacks the `field` group and is refused by it, and its configs by older
 Matter refusals may rise where a crowd eats its own matter, and the round reads `mat blk`
 against births. The kernel, the merge radius, the cap and the quantum join §5A.10's
 unmeasured list.
+
+### D084
+
+**2026-09-08 — Sideways mixing stays, and the separation arm waits on round 30**
+
+**Status:** ruled by the owner ("proceed with your recommendations"), on two decisions put
+to them in plain terms with a preferred way for each.
+
+**Context.** Two decisions were the owner's after round 29's reading (logbook/0072) and
+round 30's launch (logbook/0075). The first is a world setting. `HorizontalMixingDiffusivity`
+(`EVOSIM_H_MIXING`) was the exchange between patches in the cell world and round 29 ran it
+at 0. In the vertex world (D083) it is the sideways step of every vertex's random walk, and
+at 0 the water moves only up and down. Round 30 was launched at 0.2 m²/s, equal to the
+vertical diffusivity, and flagged for veto. The second is a round design. Logbook/0072
+pre-registered a follow-up to a failed M4: one arm set with the senses off and added mass
+on, to say which of round 29's three changes cost the goal a seed. The base moved to the
+vertex world the same night and the arm was not run.
+
+**Ruled.**
+
+1. **Sideways mixing stays at 0.2 m²/s.** It is the one value with a physical reason: the
+   walk is the same in every direction. A higher value blurs the hole a still body eats,
+   which is the prize the vertex world exists to offer; a lower one makes a layered fluid
+   with no reason behind the layering. Rejected: 0 (the cell world's value, which in the
+   vertex world is not water), and any value chosen to tune the prize.
+2. **The separation arm runs only if round 30 reads below round 28 as well.** One seed's
+   difference between rounds 28 and 29 is inside what a new realisation moves
+   (logbook/0052), the cell world is no longer the base, and a day of five workers on a
+   world the campaign has left is better spent on the vertex world's next round. If round
+   30 reads 3 of 5 or better, the question is closed by the world control; if it reads
+   below round 28, the arm runs on the cell world at round 29's settings with the senses
+   off, as 0072 wrote it. Rejected: running it now in parallel (no workers until round 30
+   lands, and then a day), and dropping it (the pre-registration named it, and a
+   pre-registered follow-up is dropped in writing, not by silence).
+
+**What it changes.** Nothing in code. `EVOSIM_H_MIXING 0.2` is round 30's setting and the
+vertex world's default in every launcher from here; the cell world's configs keep whatever
+they ran. HANDOFF carries the conditional arm as a queue item with its trigger.

@@ -39,8 +39,9 @@ eight-pass bound refusing takes as short; the bound is the neighbour count from 
 `r30v-s1u` screened seed 1 on that build for 10,000 s: `mat short` 0 throughout, 85
 inherited stomachs at the end, and the clade scorer's first vertex-world pass.
 D082 (the price of a bud) is folded into the same build, and round 30 (0075) is that build.
-Queued for the owner: 0072's pre-registered follow-up to a failed M4, senses off with added
-mass on in the cell world, not run because the base has moved to the vertex world.
+Conditional (D084): 0072's pre-registered follow-up to a failed M4, senses off with added
+mass on in the cell world, runs only if round 30 reads below round 28 as well; if round 30
+reads 3 of 5 or better the world control closes the question.
 
 The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
 asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive

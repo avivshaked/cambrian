@@ -41,7 +41,8 @@ round 29's world and not a reversion to round 28's.
    between patches and round 29 ran it at 0. In the vertex world it is the sideways step of
    every vertex's random walk, and at 0 the water would move only up and down. Set equal to
    the vertical diffusivity so the walk is isotropic. This is a world setting and the
-   owner's to veto; it is stated here so that the veto has a number to act on.
+   owner's to veto; it is stated here so that the veto has a number to act on. *Ruled the
+   same day, D084: it stays.*
 
 ## Sequencing
 

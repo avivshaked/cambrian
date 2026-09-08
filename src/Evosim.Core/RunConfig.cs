@@ -1097,6 +1097,13 @@ namespace Evosim.Core
         /// <para>⚠ Unmeasured. Zero by default, so a K&gt;1 world with this off has patches that
         /// never exchange detritus at all — isolated columns, not merely throttled ones. The
         /// D052/D055 shape. <c>EVOSIM_H_MIXING</c> in the header.</para>
+        /// <para>
+        /// In a vertex world (D083, <see cref="MatterField.Vertices"/>) this is the sideways
+        /// diffusivity of every vertex's random walk, with <see cref="NutrientMixingDiffusivity"/>
+        /// the vertical one: the step is σ = √(2·D·dt) per axis, so at 0 the water moves only up
+        /// and down. D084 rules it equal to the vertical rate (0.2 m²/s) so the walk is
+        /// isotropic; the cell world's configs keep the value they ran.
+        /// </para>
         /// </remarks>
         [Tunable("patches", Unit = "m2/s")]
         public float HorizontalMixingDiffusivity { get; set; }

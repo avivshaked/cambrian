@@ -1294,11 +1294,15 @@ is.
 
 **The stock has two representations, and a body's water is local in the second (D083, §0s).**
 `NutrientField` keeps one number per layer and patch, which is every recorded run. `VertexField`
-keeps the same joules on vertices at positions and reads a density through a 1 m kernel, so a
-body that stays eats the vertices around it down and a body that moves reaches vertices it has
-not eaten; the difference is what pays undirected movement (§0r, research Q11), and the kernel
-gives the chemical sense a gradient inside a patch. Both are stocks, both share by §0p's frozen
-availability, and both close the audit; `RunConfig.FieldModel` picks one.
+keeps the same joules on vertices at positions and reads a density through a kernel, 1 m for
+detritus and 1.8 m for matter (the old cell's volume, so the matter gate binds where it bound),
+so a body that stays eats the vertices around it down and a body that moves reaches vertices it
+has not eaten; the difference is what pays undirected movement (§0r, research Q11), and the
+kernel gives the chemical sense a gradient inside a patch. The vertices sink, ride the current
+and take a seeded random walk whose vertical step is `NutrientMixingDiffusivity` and whose
+sideways step is `HorizontalMixingDiffusivity`, equal by D084 so the walk is isotropic. Both
+are stocks, both share by §0p's frozen availability, and both close the audit and the matter
+identity (`mat resid`); `RunConfig.FieldModel` picks one.
 
 **Detritus sinks, and that is what makes the deep a niche rather than only a dark place.** Light
 falls off downward; food falls *toward* the dark. The two gradients oppose, so neither strategy
