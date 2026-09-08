@@ -81,24 +81,24 @@ vertex field had in a day were all faults of objects a grid does not have.
 
 ## What it retires
 
-D083's vertex field as the base, its kernel, merge distance, cap and quantum; D084's two
-sideways diffusivities; the negative vertex, unbuilt, with the geometry argument above as
-its record; the halo, already withdrawn.
+D083's vertex field as the base, with its kernel, merge distance, cap and quantum. D084's
+two sideways diffusivities. The negative vertex, unbuilt, with the geometry argument above
+as its record. The halo, already withdrawn.
 
 ## What it does not change
 
 No joint survives founding in any world so far, and the grid does not change what a joint
 costs on its first day. What the grid changes is that a corpse is something a body can
-reach, which is the first thing a mover could be paid for that a sitter cannot have, and
-the seam predation on contact builds on.
+reach. That is the first thing a mover could be paid for that a sitter cannot have, and it
+is the seam predation on contact builds on.
 
 ## Sequence
 
 Round 31 is read as the vertex world's last word. The grid is built behind the field
-interface with its tests held to the vertex field's contracts, the sitter against the
-mover, the corpse patch and the owner's five-and-five geometry in the experiment harness.
-A base round at round 31's prices and mixing, five seeds at 0.01, gives the grid its own
-count under the goal rule before anything else is asked of it.
+interface, with its tests held to the vertex field's contracts. The experiment harness
+runs the sitter against the mover, the corpse patch and the owner's five-and-five geometry
+on it. Then a base round at round 31's prices and mixing, five seeds at 0.01, gives the
+grid its own count under the goal rule before anything else is asked of it.
 
 ## For ruling
 
