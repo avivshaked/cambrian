@@ -161,3 +161,12 @@ exudate standing, as in its cell-world seed. Nothing here about the senses, the 
 depth is a reading; `sense` ran from 11 to 325 bodies and `jnt inh` peaked at 11 in seed 4,
 and both wait for 0.01. The screen does not fail the world. The round launches at 0.01.
 
+## Launch
+
+*2026-09-08, afternoon.* `r30-s1` to `r30-s5` on workers 2 to 6 at dt 0.01 for 30,000 s,
+wall 1,200 min, every manifest reading `coreHash adbb400d…`, `simHash d928e2a5…`,
+`physicsJobWorkers 0` and `gitDirty false`; seeds 1 and 2 record commit `da520f8` and the
+rest `f1c295d`, prose commits apart on the same code. The launcher refused any other
+`simHash`. Every header carries V1's tokens, read from the reports. The machine holds the
+five arms and nothing else. Read as they land, against the predictions and the scorer.
+
