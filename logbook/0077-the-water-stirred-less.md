@@ -4,19 +4,19 @@
 
 Round 30 (logbook/0075) met the goal rule in every seed and kept no swimmer. The one
 jointed line that lasted fed as well as the sitters and moved no faster than the drift.
-Logbook/0076 asked the field why and measured the answer: at the world's mixing rate of
+Logbook/0076 asked the field why and measured the answer. At the world's mixing rate of
 0.2 m²/s the hole a sitting mouth eats is refilled in about five seconds, faster than the
-mouth drinks, so a mover and a sitter eat the same. At a tenth of the rate a swimmer eats
+mouth drinks. A mover and a sitter therefore eat the same. At a tenth of the rate a swimmer eats
 two and a half times what a sitter eats, a corpse is a patch for a minute, and the larder
 stays near the producers that made it. The owner ruled (D085) that the water is stirred
 less and nothing else changes. This is that round.
 
 ## What is held
 
-Everything in round 30's launcher: the vertex world with its two kernels, merge distance,
-cap and quantum; D082's prices (neuron 0.005 W, connection 0.001 W, work at a quarter);
-round 28's contact world with the three senses on, added mass 0.5, the global brain
-retired, single-threaded physics; 30,000 s, five seeds. The matter field's own mixing stays
+Everything in round 30's launcher. The vertex world with its two kernels, merge distance,
+cap and quantum. D082's prices: neuron 0.005 W, connection 0.001 W, work at a quarter.
+Round 28's contact world with the three senses on, added mass 0.5, the global brain
+retired, single-threaded physics. 30,000 s, five seeds. The matter field's own mixing stays
 at 2 m²/s: the conception gate is not the prize under test. Remineralisation stays off,
 because 0076 measured that nothing reaches the floor in a lifetime at either rate.
 
@@ -29,23 +29,23 @@ to refill from about 5 s to about 50 s. Nothing in Core moves; the launcher is
 `scratch/launch-r31.ps1`.
 
 The cost stated before the reading. Less stirring also means a stomach's own water is
-refilled more slowly from the field at large, so a stomach line that lived on the mixing
-carrying food to it (0076 measured the sitter's income tripled by it) may thin. That is
+refilled more slowly from the field at large. A stomach line that lived on the mixing
+carrying food to it may thin; 0076 measured a sitter's income tripled by the stirring. That is
 the price of a world in which sitting still costs something, and M0 reads whether the
 world can pay it.
 
 ## Sequencing
 
-Five seeds at dt 0.02 for 10,000 s on workers 2 to 6 first (`r31q-s1` to `r31q-s5`), read
-within the step and only for whether the world stands, the identities close, a stomach
-line forms and the loop closes. Nothing about joints, swimming or depth is read from them.
+Five seeds at dt 0.02 for 10,000 s on workers 2 to 6 first (`r31q-s1` to `r31q-s5`). They
+are read within the step and only for whether the world stands, the identities close, a
+stomach line forms and the loop closes. Nothing about joints, swimming or depth is read from them.
 If the screen does not fail the world, the round runs at 0.01 for 30,000 s on the same
 workers (`r31-s1` to `r31-s5`), and that is the round this entry scores.
 
 ## Validity checks
 
 - **V1 header.** Every token of round 30's, with `mixing 0.02 m2/s` and `h-mix 0.02 m2/s`.
-  Read from the report.
+  Every token is read from the report and never from the launch command.
 - **V2 identities.** `audit` within a joule, `mat resid` 0 to the rounding, `mat short` 0,
   `vtx` below the cap, `verticesMerged` 0.
 - **V3 manifests.** `ended budget`, `diverged 0`, `physicsJobWorkers 0`, `gitDirty false`,
@@ -75,9 +75,9 @@ is round 30's five.
   experiment; the producers beside every stomach refill it. Read `food rig` against
   `J/m3 here` per seed, then the exudate fraction is the lever (D085 item 3).
 - **M1 holds, M2 fails:** the hole exists and no swimmer lives in it. The prize is real and
-  unreachable at this stroke, so the question is the drive: read `spd jnt` in the early
-  samples for whether any line moved faster than the drift, and the stroke's cost and the
-  added mass are next, the owner's.
+  unreachable at this stroke, so the question is the drive. Read `spd jnt` in the early
+  samples for whether any line moved faster than the drift; the stroke's cost and the
+  added mass are next, and they are the owner's.
 - **M2 holds, M3 fails:** swimmers persist without eating better, so a jointed body pays
   for something else; `dep jnt` against `dep rig`, then the active-versus-clamped assay.
 - **M1 to M3 hold:** movement pays. The owner words the movement clause of the goal rule,
