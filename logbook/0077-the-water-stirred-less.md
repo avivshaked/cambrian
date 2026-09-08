@@ -131,3 +131,13 @@ fast step and read at 0.01. Nothing about joints is read here: `jnt inh` peaked 
 seed 5 at 1,900 s and 0 stood at the end in every arm. The screen does not fail the world.
 The round launches at 0.01.
 
+## Launch
+
+*2026-09-08, night.* `r31-s1` to `r31-s5` on workers 2 to 6 at dt 0.01 for 30,000 s, wall
+1,200 min, every manifest reading `coreHash 73047e8e…`, `simHash d928e2a5…`,
+`configHash d2d31a9b…`, `physicsJobWorkers 0` and `gitDirty false`; seed 1 records commit
+`381b851` and the rest `a2ef9c1`, prose commits apart on the same code. The launcher
+refused any other `simHash`. Every header reads `mixing 0.02 m2/s`, `h-mix 0.02 m2/s` and
+`work x0.25`. The machine holds the five arms and nothing else. Read as they land, against
+the predictions and the scorer.
+

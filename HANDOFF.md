@@ -104,8 +104,10 @@ round 28) set the base and the order.
 4. **The water stirred less** (D085, owner 2026-09-08): round 31 runs the detritus mixing at
    0.02 m²/s on both axes, everything else round 30's, because at 0.2 a sitter's hole refills
    in five seconds and a mover gains nothing (logbook/0076); pre-registered as
-   logbook/0077 and screening on workers 2 to 6 (`r31q-s1..s5`, launched 2026-09-08
-   evening, `scratch/launch-r31.ps1`); the round at 0.01 follows if the screen stands. If the prize appears, the round after screens the exudate
+   logbook/0077; the screen stood (five of five, three passing the scorer at 10,000 s) and
+   the round is running: `r31-s1..s5` at dt 0.01 on workers 2 to 6, launched 2026-09-08
+   night (`scratch/launch-r31.ps1`), landing in about ten hours; read against 0077's
+   predictions and the scorer. If the prize appears, the round after screens the exudate
    fraction; founding a vertex per excretion is queued behind both.
 5. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
    brain can be selected for, right after movement pays.
