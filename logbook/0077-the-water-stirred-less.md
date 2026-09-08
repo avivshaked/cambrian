@@ -141,3 +141,44 @@ refused any other `simHash`. Every header reads `mixing 0.02 m2/s`, `h-mix 0.02 
 `work x0.25`. The machine holds the five arms and nothing else. Read as they land, against
 the predictions and the scorer.
 
+## Seed 3 fell
+
+*2026-09-08, evening.* `r31-s3` ended with `status error` at 11,533.5 s, on worker 4, with a
+world of 1,468 and an inherited stomach line of 213. Its manifest counts one diverged body
+and its `diverged/` directory holds five dumps. Creature 2636, a newborn of two parts on a
+twist hinge, went non-finite at 10,948 s and was killed as a death. At 11,533.5 s four
+bodies went in one step. One was a second newborn of two parts. Three were single-part
+producers within a metre of it at x ≈ 10, y ≈ −2.3, two of them 2,400 and 2,600 s old.
+Three of the four were caught at NaN and dumped. The fourth was not, because its root was
+finite. The solver had thrown it to a height of the order of 10³¹ m, which passes a test
+for NaN and infinity. The light field's layer index is an integer cast of the depth, and
+the cast overflows there. `LightField.Contribute` threw an `ArgumentOutOfRangeException` from inside
+`World.Metabolise` and the arm was censored where a NaN body would have been one more counted
+death.
+
+The divergence itself is the known kind: a newborn jointed body beside others at dt 0.01
+(logbook/0059's class), and this entry does not explain it. What was wrong was the guard.
+A body outside the sea is as diverged as a body at NaN, and nothing said so.
+
+The fix is one bound in two places. A method on the world says whether a height is one the
+sea could hold. Above, the bound is the world's depth past the surface, since D050 stops
+upward net force at y = 0 and a body above it is coasting. Below, it is twice the depth
+past the floor, which has been a collider since D077's bed. The harness's check kills at
+that bound as the same counted death and dumps the body first. Core's observation refuses
+at it and names the creature and the height, so the guard behind the check stays a guard.
+NaN fails both comparisons, so the old case is inside the new one. A regression test in
+`ObservationTests` refuses the height that fell seed 3. It accepts round 5b's sinkers at
+−131 m in a 60 m world (logbook/0040). The suite is 556. Worker 7 was refreshed, and a 300 s
+screen at dt 0.02 compiled and ended on budget with the round's header.
+
+The round is now split across two builds, the way round 24 was (logbook/0061). Seeds 1, 2,
+4 and 5 continue on `coreHash 73047e8e…` and `simHash d928e2a5…`; they carry the old check,
+and a body of this kind would censor any of them. Seed 3 reruns as `r31-s3b` on worker 7,
+launched 2026-09-08 at 18:30 on `coreHash d0f27c7b…`, `simHash b65aad0b…`, commit `b6b198e`,
+`gitDirty false`, the same `configHash d2d31a9b…`; the launcher refused any other `simHash`.
+The change is not a per-step term. A body the new check kills is one the old world crashed
+on, so up to that instant the two builds are one realisation. The rerun is expected to
+retrace the censored arm to 11,533.5 s and continue past it, and its report says whether it
+did. The censored arm stays on disk with its dumps and is not scored. The machine holds five
+arms.
+
