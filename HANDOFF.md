@@ -12,8 +12,10 @@ The whole record (logbook, primer, research) was restyled under STYLE.md and lan
 of the population in three seeds of five at today's price, no seed keeps a jointed body, the
 goal holds in 2 of 5 against a reference of 3, and the world stands under added mass in every
 seed. Round 30 is pre-registered (logbook/0075): the vertex world at D082's prices, work
-fraction 0.25, sideways mixing 0.2, five fast-step screens `r30q-s1..s5` first and then the
-round at 0.01.** Round 29 was the movement round on round 28's world with the three senses
+fraction 0.25, sideways mixing 0.2. The five fast-step screens `r30q-s1..s5` all stood with
+both identities at 0 and the scorer passing 3 of 5 at 10,000 s, and the round is running:
+`r30-s1..s5` at dt 0.01 on workers 2 to 6, launched 2026-09-08 afternoon, landing in about
+ten hours; read against 0075's predictions and the scorer.** Round 29 was the movement round on round 28's world with the three senses
 on, added mass 0.5 and the global brain retired (D081's build, commit `40b16b8`,
 `simHash e43b81a8…`): `r29-s1` to `r29-s5` on workers 2 to 6, dt 0.01, 30,000 s; round 28's arms are the
 controls. Six predictions and their two-sided readings are in 0072; the scorer's verdict
