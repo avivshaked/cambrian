@@ -170,6 +170,19 @@ five. The short-take count stopped at 509 after 6,000 s, once the matter field h
 coarsened to a few thousand vertices and a mouth no longer reached eight to cap. Seed 1 runs
 on the fixed build while round 29 finishes.
 
+## Seed 1 on the fixed build
+
+Seed 1 ran 10,000 s on the build with the count-bounded fill, as the sixth process the
+seed-2 screen had been. `mat short` read 0 on every row, `mat resid` 0, the audit 0.0000%.
+And the seed that had not bred a stomach in the first smoke bred them now: 85 inherited at
+the end, 1,487 alive, 5.5 kJ of detritus standing where round 29's seed 1 had 33 kJ and a
+stomach line of 9 at the same age. The clade scorer passes it, a clade of 40 with a minimum
+of 38 through the last 6,000 s and 15 inherited births in the last 20 samples. It is the
+first vertex world to pass the goal rule, at the screening step, for one seed, at a third of
+the round's length. What the two screens say together is that the world stands, its two
+identities hold, and its stomach line is a matter of the seed, as it was in the cell world.
+The round will read five.
+
 ## A note of my own
 
 The owner designed this field in five lines of a chat message at eleven at night, with the

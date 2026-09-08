@@ -30,7 +30,8 @@ prints `mat resid` beside `audit`). The fourth screen, `r30v-s2t`, ran seed 2 fo
 at dt 0.02: `mat resid` 0 throughout, 1,567 alive at the end, the detritus loop closed, a
 stomach line of 20 that fails the scorer on stability alone (0074). It also found the fill's
 eight-pass bound refusing takes as short; the bound is the neighbour count from 312e9b5, and
-`r30v-s1u` screens seed 1 on that build.
+`r30v-s1u` screened seed 1 on that build for 10,000 s: `mat short` 0 throughout, 85
+inherited stomachs at the end, and the clade scorer's first vertex-world pass.
 D082 (the price of a bud) is folded into the same build. Round 30 is the vertex world with
 D082's prices, pre-registered when round 29 reads; the draft is
 `scratch/round30-prereg-draft.md`.
