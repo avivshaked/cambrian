@@ -198,6 +198,12 @@ the running status), in the order they are done:
     retrieval record), so a future rebuild of the corpus can tell the file it fetched from
     the file that was read. Done 2026-09-07, after round 29 launched: every entry in
     `research/FETCH-RESULTS.md` carries its PDF's SHA-256 and size, or says no PDF is on disk.
+24. **Two primer pieces** (owner: "sgtm", 2026-09-08), written when round 30 lands and
+    with its confirmed numbers: piece 07, the accounting, the two books the world keeps
+    (the energy audit since logbook/0008, the matter identity since 0074) and why every
+    operation is a transfer; piece 08, the water as vertices (D083, 0074, 0075). The
+    accounting piece first, since the vertex piece leans on it; inference marked, values
+    linked to DESIGN and not restated, per `primer/README.md`.
 
 ## The decisions in front of the owner
 
