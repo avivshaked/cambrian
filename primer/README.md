@@ -60,7 +60,9 @@ describes unwritten code is a design document with adjectives.
 | [04](04-nobody-decides-who-wins.md) | Nobody decides who wins | An energy economy instead of a fitness function, and the four ways the world cheated once we let it run |
 | [05](05-a-brain-that-is-copied-with-the-limb.md) | A brain that is copied with the limb | Why the controller lives inside the body graph, and what an open-loop swimmer cannot do |
 | [06](06-the-producers-feed-the-water.md) | The producers feed the water | Why the second trophic level starved at one percent, what the ocean does about it, and the food chain that followed |
+| [07](07-the-world-keeps-two-books.md) | The world keeps two books | The energy audit and the matter identity: what each conserves, what each found, and why a closed book is what lets every other number be believed |
+| [08](08-the-water-as-vertices.md) | The water as vertices | Amounts on vertices instead of values in cells, so a still body eats a hole and a moving one leaves it; what the first rounds on it found |
 
-Chapter 6 is the tiled ecology's history and stays that way. A chapter 7 is written only
-after the shared world settles into a reference (logbook/0070 onward), so that the primer
-explains one world rather than narrating a parameter chase (sequencing note, 2026-09-07).
+Chapter 6 is the tiled ecology's history and stays that way. Chapters 7 and 8 were written
+on 2026-09-08 with the owner's agreement, after the shared world had held its reference
+(round 28) and the vertex world had closed both identities through a confirming round.
