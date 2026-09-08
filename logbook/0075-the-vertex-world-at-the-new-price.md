@@ -2,9 +2,9 @@
 
 **2026-09-08**  ·  round 30, pre-registered before launch; D082 and D083 in one build
 
-Round 29 (logbook/0072) read in the small hours: the senses are carried by a third to a
-half of the population in three seeds of five at today's price, no seed keeps a jointed
-body, the goal holds in two seeds of five, and the world stands under added mass in every
+Round 29 (logbook/0072) read in the small hours. The senses are carried by a third to a
+half of the population in three seeds of five at today's price. No seed keeps a jointed
+body. The goal holds in two seeds of five, and the world stands under added mass in every
 seed. The owner had ruled two things the evening that round launched. D082 brings the
 neuron and its inputs down about tenfold and the stroke's work to a fraction. D083 puts the
 water on vertices, so a body feeds from the water at its own position and a still body eats
@@ -25,15 +25,15 @@ round 29's world and not a reversion to round 28's.
    matter through 1.8 m (the old cell's volume to within 3%, so the matter gate binds where
    it bound), merge distance 0.25 m, a cap of 100,000 vertices and a quantum of 0.125 J.
    The build is commit `312e9b5` or later, whose take fills across the vertices in reach
-   with a pass per neighbour; the seed-2 screen on the eight-pass build refused 403
-   conceptions as short by 2,900 s and the seed-1 screen on this build refused none
+   with a pass per neighbour. The seed-2 screen on the eight-pass build refused 403
+   conceptions as short by 2,900 s. The seed-1 screen on this build refused none
    (logbook/0074).
 2. **The price.** `EVOSIM_NEURON_COST 0.005`, `EVOSIM_CONNECTION_COST 0.001` (D082's
-   tenfold) and `EVOSIM_WORK_COST 0.25`. The work fraction is set from the record as D082
-   asked: in round 28's first window the founders' work was 4.9 to 6.8% of all spending in
-   every seed while 9 to 17 of 40 bodies were jointed, so a stroke cost a jointed body about
-   15 to 30% of what it spent, and by 600 s the share was 0.1 to 1.7% with 6 to 10 still
-   jointed. A quarter takes the stroke to 4 to 8% of a jointed body's spending, below the
+   tenfold) and `EVOSIM_WORK_COST 0.25`. The work fraction is set from round 28's first
+   window, as D082 asked. There the founders' work was 4.9 to 6.8% of all spending in every
+   seed while 9 to 17 of 40 bodies were jointed, so a stroke cost a jointed body about 15 to
+   30% of what it spent. By 600 s the share was 0.1 to 1.7% with 6 to 10 still jointed. A
+   quarter takes the stroke to 4 to 8% of a jointed body's spending, below the
    neuron's new share and above the zero D082 rejected. The cost is the one D082 stated:
    cheaper work cheapens flapping as much as swimming, so M3 reads the guilds' feeding
    against each other.
@@ -46,9 +46,9 @@ round 29's world and not a reversion to round 28's.
 ## Sequencing
 
 The owner's instruction is to fail fast where it is appropriate. Five seeds run first at
-dt 0.02 for 10,000 s on workers 2 to 6 (`r30q-s1` to `r30q-s5`), read within the step and
-only for what a fast step can say: the world stands, the two identities close, a stomach
-line forms, the detritus loop closes, the vertex count stays under the cap. Nothing about
+dt 0.02 for 10,000 s on workers 2 to 6 (`r30q-s1` to `r30q-s5`). They are read within the
+step and only for what a fast step can say: the world stands, the two identities close, a
+stomach line forms, the detritus loop closes, the vertex count stays under the cap. Nothing about
 joints, swimming, depth or the film is read from them (CLAUDE.md's 0.02 rule; the fast step
 under-drives evolved muscle). If the screen does not fail the world, the round runs at 0.01
 for 30,000 s on the same five workers (`r30-s1` to `r30-s5`), and that is the round this
@@ -74,10 +74,11 @@ world control's count.
 
 A seam to state before M3 is read. In the cell world `food jnt` and `food rig` were the
 edible density of the 25 m³ cell the body fed from. In the vertex world they are a kernel
-read at the body's own position, and exudate lands where the producers stand, so a stomach
-beside a producer reads hundreds of joules per cubic metre while the layer mean is tens
-(the 3,000 s screen read 378 at rigid bodies against a layer mean of 25). The two guilds'
-rates are read as a ratio against each other, never as levels against the record.
+read at the body's own position, and exudate lands where the producers stand. A stomach
+beside a producer therefore reads hundreds of joules per cubic metre while the layer mean
+is tens; the 3,000 s screen read 378 at rigid bodies against a layer mean of 25. The two
+guilds' rates are read as a ratio against each other, never as levels against earlier
+rounds.
 
 | # | prediction | falsified by |
 |---|---|---|
@@ -91,9 +92,8 @@ rates are read as a ratio against each other, never as levels against the record
 | M7 | **matter is the ceiling and the vertex world reaches it sooner**: `mat blk` per birth over the last 6,000 s at least three times round 29's same seed, and `mat locked` at the end above it (the seed-2 screen refused a hundred conceptions per birth where the cell world refused ten, and locked 5,735 of 6,000 units by 10,000 s) | `mat blk`, `births`, `mat locked` |
 
 The matter field's vertex count falls through a run as bodies take whole quanta and return
-them where they die, from 48,000 seeded to about 1,300 at 10,000 s in both screens; `vtx`
-is read for clustering and not for loss, and the identity column is what says whether
-matter was lost.
+them where they die, from 48,000 seeded to about 1,300 at 10,000 s in both screens. `vtx`
+is read for clustering. The identity column is what says whether matter was lost.
 
 ## The two-sided readings
 
