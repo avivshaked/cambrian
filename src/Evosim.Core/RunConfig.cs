@@ -416,9 +416,19 @@ namespace Evosim.Core
 
         /// <summary>How strongly the water stirs matter vertically, m²/s — D048.</summary>
         /// <remarks>
+        /// <para>
         /// The counterweight to <see cref="MatterSinkMetresPerSecond"/>. With no mixing, matter
         /// drains to the floor and the photic zone becomes permanently sterile — D036's failure,
         /// in the currency that now gates reproduction rather than the one that gates feeding.
+        /// </para>
+        /// <para>
+        /// <b>On a grid this is the rate on every axis, not the vertical one alone.</b>
+        /// <see cref="HorizontalMixingDiffusivity"/> is one knob for two substances and it belongs
+        /// to the detritus, which is what a run header's h-mix token names. A cubic cell has no
+        /// preferred axis (D084), so <c>World.Step</c> hands the matter grid this rate sideways as
+        /// well, and the number a grid world stirs its matter across the ring at is stated here
+        /// rather than in a second knob nobody sets.
+        /// </para>
         /// </remarks>
         [Tunable("world", Unit = "m2/s")]
         public float MatterMixingDiffusivity { get; set; } = 2f;
@@ -658,6 +668,75 @@ namespace Evosim.Core
         /// ⚠ Unmeasured (§5A.10).</remarks>
         [Tunable("field", Unit = "J")]
         public float FieldVertexJoules { get; set; } = 0.125f;
+
+        /// <summary>
+        /// The side of a detritus grid cell, m. <see cref="MatterField.Grid"/> only
+        /// (<c>fable-propose-grid.md</c>).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>This is the whole resolution of the water, bought once.</b> Inside one cell the
+        /// density is one number, so the cell is how big a hole a still mouth can eat and how far
+        /// a mover has to go to find fresh water. The proposal's own argument sets it: the cell is
+        /// chosen at the body's scale, so that an eater drains the cell it stands in while the cell
+        /// beside it keeps its water, and a mover that crosses one boundary finds a full one. A
+        /// metre is about a body length at round 30's sizes.
+        /// </para>
+        /// <para>
+        /// <b>It is not the vertex field's kernel and must not be read as one.</b>
+        /// <see cref="FieldKernelMetres"/> is a support radius: at 1 m it reaches 4.2 m³, four
+        /// times what a 1 m cell holds. The same number in the two knobs therefore offers a mouth
+        /// four times the water on the vertex field, so a grid round at 1 m is not a vertex round
+        /// at 1 m with the samples tidied into rows.
+        /// </para>
+        /// <para>
+        /// <b>It must divide the box on all three axes</b>, or <see cref="GridField"/> refuses the
+        /// world: a part cell at a seam holds less than a whole one and would be priced as a whole
+        /// one. The box is <c>K·sqrt(area/K)</c> long, <c>sqrt(area/K)</c> wide and
+        /// <see cref="WorldDepthMetres"/> deep.
+        /// </para>
+        /// <para>
+        /// <b>It also sets the mixing step.</b> Explicit diffusion on a grid is stable while
+        /// <c>D·dt/cell²</c> stays below 1/6, so at 0.2 m²/s and a 1 m cell the metabolic step
+        /// has to be under 0.83 s; the field refuses a longer one rather than quietly clamping.
+        /// ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        [Tunable("field", Unit = "m")]
+        public float FieldCellMetres { get; set; } = 1f;
+
+        /// <summary>
+        /// The side of a free-matter grid cell, m. <see cref="MatterField.Grid"/> only.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Coarser than the detritus grid, and for the reason D083 gave its matter kernel a
+        /// wider reach.</b> A child costs 8 to 16 units of matter at round 29's prices and water
+        /// at the seeded density holds about one per cubic metre, so a 1 m cell could never afford
+        /// a conception and the first vertex screen on seed 2 bred nothing in 10,000 s for exactly
+        /// that (logbook/0074). At 3 m the cell is 27 m³, about a tenth over the old cell's
+        /// 24.4 m³, so the matter gate binds close to where it bound in the base world.
+        /// </para>
+        /// <para>
+        /// <b>Same two rules as <see cref="FieldCellMetres"/></b>: it must divide the box, and it
+        /// sets its own mixing limit, which a wider cell makes far easier to satisfy. The default
+        /// matter diffusivity is 2 m²/s, which at a half-second step needs a cell wider than
+        /// 2.45 m; 3 m clears it and 1 m does not, which is a second reason the two grids differ.
+        /// </para>
+        /// <para>
+        /// <b>The campaign's box admits no cell that leaves the gate where it was, and choosing
+        /// between the two it does admit is a world rule rather than a default.</b> Rounds 28 to
+        /// 31 run 100 m² over four patches and 60 m deep, which is a box 20 m long, 5 m wide and
+        /// 60 m deep; 3 m divides only the depth, so a grid world at this default is refused at
+        /// construction. What divides all three is 2.5 m and 5 m, and neither is 24.4 m³. At 2.5 m
+        /// the cell holds 15.6 m³, about 15 units at the seeded density, which caps the largest
+        /// child the world can afford, since a child costs 8 to 16. At 5 m it holds 125 m³ and
+        /// loosens the gate about five times over. A capped gate and a slack gate are different
+        /// ecologies, so which one runs is the owner's to say. ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        [Tunable("field", Unit = "m")]
+        public float FieldMatterCellMetres { get; set; } = 3f;
 
         /// <summary>
         /// Fraction of a refuge layer's density that feeding can see and take, in [0, 1] —
@@ -1475,6 +1554,17 @@ namespace Evosim.Core
 
         /// <summary>Vertices holding joules at positions, read through a kernel — <see cref="VertexField"/>.</summary>
         Vertices = 1,
+
+        /// <summary>
+        /// A 3D grid of cubic cells of <see cref="RunConfig.FieldCellMetres"/>:
+        /// <see cref="GridField"/>, <c>fable-propose-grid.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// The vertex world's property, bought with an array index instead of a kernel sum: a
+        /// still mouth eats its own cell, a moving mouth leaves it behind. Requires
+        /// <see cref="RunConfig.SharedSpace"/>, because a cell is a place.
+        /// </remarks>
+        Grid = 2,
     }
 
     public enum MatterInflux

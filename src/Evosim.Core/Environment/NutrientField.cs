@@ -477,6 +477,33 @@ namespace Evosim.Core
         /// <summary>The cell's whole stock — what conception's matter gate has always compared a price against.</summary>
         public double ReachableStock(FieldPoint at) => StockInLayer(LayerOf(at.HeightY), at.Patch);
 
+        /// <summary>
+        /// Removes up to <paramref name="wanted"/> from one cell and returns what was taken.
+        /// D074's burial, addressed by layer rather than by depth.
+        /// </summary>
+        /// <remarks>
+        /// The same arithmetic <see cref="Take(float, float, int)"/> does, with the layer given
+        /// instead of derived from a height. It replaces the cast <c>World.BuryMatter</c> used to
+        /// make, and it is deliberately identical to what that cast called: burial passes the same
+        /// float it always did, and <c>Math.Min</c> against the same cap leaves every cell world on
+        /// file replaying bit for bit.
+        /// </remarks>
+        public double TakeFromLayer(int layer, int patch, double wanted)
+        {
+            ValidatePatch(patch);
+            if (layer < 0 || layer >= LayerCount) return 0d;
+            if (!(wanted > 0d)) return 0d;
+
+            int cell = Cell(layer, patch);
+            double cap = IsRefuge(layer) ? EdibleStock(layer, patch) : _stock[cell];
+
+            double taken = Math.Min(wanted, cap);
+            if (taken <= 0.0) return 0d;
+
+            _stock[cell] -= taken;
+            return taken;
+        }
+
         /// <summary>Nothing to merge: a cell is a cell.</summary>
         public void Cull() { }
 

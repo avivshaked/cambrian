@@ -570,6 +570,53 @@ namespace Evosim.Core
                     config.FieldMatterKernelMetres, config.FieldMergeMetres, config.FieldVertexCap,
                     config.FieldVertexJoules, Rng.SeedFor(seed, MatterFieldIndex));
             }
+            else if (config.FieldModel == MatterField.Grid)
+            {
+                // fable-propose-grid.md, and D083's reason unchanged: a cell of the grid is a
+                // place, so the bodies must have places. The tiled world gives a body a depth and
+                // a patch index and nothing else, and defaulting the rest would put every creature
+                // at its patch's centre and call that a position.
+                if (!config.SharedSpace)
+                {
+                    throw new ArgumentException(
+                        "FieldModel is Grid but SharedSpace is false. The grid field reads a " +
+                        "body's position, which only the shared volume has.",
+                        nameof(config));
+                }
+
+                // D084 said the sideways rate equals the vertical one because the walk is the
+                // same in every direction, and a cubic cell has no axis to prefer. The trap this
+                // refusal closes is a provenance one rather than a physical one: GridField would
+                // accept a horizontal rate of 0 and then stir sideways at its vertical rate
+                // anyway, so a run header could record h-mix 0 for a world that mixes sideways at
+                // 0.02. Refusing here keeps the header's h-mix token equal to what the detritus
+                // actually does on every axis.
+                if (config.HorizontalMixingDiffusivity != config.NutrientMixingDiffusivity)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"FieldModel is Grid, but HorizontalMixingDiffusivity is ") +
+                        FormattableString.Invariant(
+                            $"{config.HorizontalMixingDiffusivity} m2/s against a vertical ") +
+                        FormattableString.Invariant(
+                            $"NutrientMixingDiffusivity of {config.NutrientMixingDiffusivity} m2/s. ") +
+                        "A grid's cells are cubes and D084 ruled the two axes equal, so the two " +
+                        "knobs must agree or the run header would name a sideways rate the world " +
+                        "does not run.",
+                        nameof(config));
+                }
+
+                Nutrients = new GridField(
+                    config.WorldAreaSquareMetres, config.NutrientSinkMetresPerSecond,
+                    config.WorldDepthMetres, config.FloorRefugeMetres, config.RefugeEdibleFraction,
+                    patchCount, config.FieldCellMetres);
+
+                // Its own, coarser cell: matter is drawn in whole conceptions rather than grazed,
+                // and a metre of water cannot afford a child (RunConfig.FieldMatterCellMetres).
+                Matter = new GridField(
+                    config.WorldAreaSquareMetres, config.MatterSinkMetresPerSecond,
+                    config.WorldDepthMetres, 0f, 0f, patchCount, config.FieldMatterCellMetres);
+            }
             else
             {
                 Nutrients = new NutrientField(
@@ -595,6 +642,13 @@ namespace Evosim.Core
                 // D083. A lattice holding the same total the cells would, spaced for one quantum
                 // per vertex; nothing here when the density is 0, exactly like the cells.
                 matterVertices.SeedUniform(config.InitialMatterPerCubicMetre);
+            }
+            else if (Matter is GridField matterGrid)
+            {
+                // The same total again, one share per cell. The grid's cells tile the box exactly
+                // (GridField refuses a cell size that does not), so this is the cells' own seed
+                // read at a finer scale and not an approximation of it.
+                matterGrid.SeedUniform(config.InitialMatterPerCubicMetre);
             }
             else if (config.InitialMatterPerCubicMetre > 0f)
             {
@@ -919,7 +973,17 @@ namespace Evosim.Core
             // adds a horizontal pass alongside the vertical one, throttled by its own knob — see
             // NutrientField.Mix's remarks for why it is a separate, far slower rate.
             Nutrients.Mix(seconds, Config.NutrientMixingDiffusivity, Config.HorizontalMixingDiffusivity);
-            Matter.Mix(seconds, Config.MatterMixingDiffusivity, Config.HorizontalMixingDiffusivity);
+
+            // The matter grid stirs at its own rate on every axis. HorizontalMixingDiffusivity is
+            // one knob for two substances, and it belongs to the detritus: it is what the run
+            // header's h-mix token names, and World's Grid branch refuses a world where it
+            // disagrees with the vertical detritus rate. A cube has no preferred axis, so the
+            // matter field's sideways rate is its own vertical one, and that number is stated in
+            // RunConfig.MatterMixingDiffusivity rather than in a second knob nobody sets. The cell
+            // and vertex fields keep the shared knob exactly as they always had it.
+            Matter.Mix(
+                seconds, Config.MatterMixingDiffusivity,
+                Matter is GridField ? Config.MatterMixingDiffusivity : Config.HorizontalMixingDiffusivity);
 
             // D066. Carried after it is stirred, in the same step and against the same clock the
             // bodies feel — diffusion is now the residual and advection the transport. A no-op
@@ -1008,6 +1072,35 @@ namespace Evosim.Core
                 return;
             }
 
+            // The same two boxes the vertex branch emits into, landing on the cells they cover
+            // rather than founding quanta inside them. Every joule handed in is in the world on
+            // the step it arrives, so what is counted is exactly what was added. The surface case
+            // spreads over the whole top layer rather than one column per patch: the vertex field
+            // scatters its quanta across the whole surface box, and a grid that dropped the same
+            // influx into K centre cells would be a different world wearing the same knob.
+            if (Matter is GridField grid)
+            {
+                float gridWidth = Matter.PatchWidthMetres;
+                float gridHalf = 0.5f * Matter.LayerMetres;
+
+                if (Config.MatterInfluxAt == MatterInflux.Vent)
+                {
+                    CurrentField plume = Config.Current;
+                    MatterInfluxedTotal += grid.DepositBox(
+                        amount,
+                        new Float3((plume.VentPatch + 0.5f) * gridWidth, -plume.VentDepthMetres + gridHalf, 0.5f * gridWidth),
+                        new Float3(0.5f * gridWidth, gridHalf, 0.5f * gridWidth));
+                    return;
+                }
+
+                float gridLength = gridWidth * PatchCount;
+                MatterInfluxedTotal += grid.DepositBox(
+                    amount,
+                    new Float3(0.5f * gridLength, -gridHalf, 0.5f * gridWidth),
+                    new Float3(0.5f * gridLength, gridHalf, 0.5f * gridWidth));
+                return;
+            }
+
             if (Config.MatterInfluxAt == MatterInflux.Vent)
             {
                 CurrentField vent = Config.Current;
@@ -1028,8 +1121,11 @@ namespace Evosim.Core
             float per = (float)(amount / patches);
             if (!(per > 0f)) return;
 
-            NutrientField cells = (NutrientField)Matter;
-            for (int patch = 0; patch < patches; patch++) cells.Deposit(0f, per, patch);
+            // Through the interface, so the cells and the grid share this line: both put one
+            // patch's share into that patch at the surface, the grid into the patch's centre
+            // column. The same call the cast used to make, so the cell worlds on file are
+            // untouched.
+            for (int patch = 0; patch < patches; patch++) Matter.Deposit(0f, per, patch);
 
             MatterInfluxedTotal += (double)per * patches;
         }
@@ -1047,11 +1143,14 @@ namespace Evosim.Core
         /// and the identity would have no way to describe what happened.
         /// </para>
         /// <para>
-        /// <b>Counted as the field's own before-and-after</b>, not as <c>Take</c>'s float return.
-        /// <c>Take</c> subtracts a double and hands back a float copy of it, so a floor whose
-        /// stock is smaller than the request would lose slightly more than the counter recorded —
-        /// a rounding, and exactly the kind of rounding an identity asserted "to the rounding"
-        /// stops being able to distinguish from a leak.
+        /// <b>Counted as the field's own before-and-after</b>, not as the draw's own return.
+        /// The cell field's <c>Take</c> subtracted a double and handed back a float copy of it, so
+        /// a floor whose stock is smaller than the request would lose slightly more than the
+        /// counter recorded — a rounding, and exactly the kind of rounding an identity asserted
+        /// "to the rounding" stops being able to distinguish from a leak. The draw now goes
+        /// through <see cref="IMatterField.TakeFromLayer"/> so that a third representation needs
+        /// no branch here; the float <c>wanted</c> and the before-and-after count are unchanged,
+        /// which is what keeps every cell world on file replaying bit for bit.
         /// </para>
         /// <para>
         /// The fraction is clamped at 1 for a step long enough to ask for more than the floor
@@ -1077,7 +1176,6 @@ namespace Evosim.Core
             }
 
             int floor = Matter.LayerCount - 1;
-            float floorY = -((floor + 0.5f) * Matter.LayerMetres);
 
             for (int patch = 0; patch < PatchCount; patch++)
             {
@@ -1087,7 +1185,7 @@ namespace Evosim.Core
                 float wanted = (float)(before * fraction);
                 if (!(wanted > 0f)) continue;
 
-                ((NutrientField)Matter).Take(floorY, wanted, patch);
+                Matter.TakeFromLayer(floor, patch, wanted);
                 MatterBuriedTotal += before - Matter.StockInLayer(floor, patch);
             }
         }

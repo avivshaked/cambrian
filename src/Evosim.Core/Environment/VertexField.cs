@@ -563,6 +563,52 @@ namespace Evosim.Core
             return sum;
         }
 
+        /// <summary>
+        /// Removes up to <paramref name="wanted"/> from the vertices in one layer of one patch, in
+        /// proportion to what each holds, and returns what was taken.
+        /// </summary>
+        /// <remarks>
+        /// <b>Present for the interface, and not on the world's burial path.</b> D074's burial in
+        /// a vertex world removes whole vertices resting on the floor
+        /// (<see cref="BuryFloor"/>), which is the rule rounds 30 and 31 ran and must keep
+        /// running; <c>World.BuryMatter</c> still takes that branch. This is what any other caller
+        /// addressing a layer and a patch gets, spread proportionally so that no vertex is
+        /// singled out by its position in the store.
+        /// </remarks>
+        public double TakeFromLayer(int layer, int patch, double wanted)
+        {
+            if (layer < 0 || layer >= LayerCount) return 0d;
+            if (patch < 0 || patch >= PatchCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(patch), patch, $"This field has {PatchCount} patch(es), indexed 0..{PatchCount - 1}.");
+            }
+
+            if (!(wanted > 0d)) return 0d;
+
+            double pool = 0.0;
+            for (int i = 0; i < _m.Count; i++)
+            {
+                if (_alive[i] && LayerOf(_y[i]) == layer && PatchOf(_x[i]) == patch) pool += Edible(i) * _m[i];
+            }
+
+            if (!(pool > 0d)) return 0d;
+
+            double fraction = (wanted < pool ? wanted : pool) / pool;
+            double taken = 0.0;
+
+            for (int i = 0; i < _m.Count; i++)
+            {
+                if (!_alive[i] || LayerOf(_y[i]) != layer || PatchOf(_x[i]) != patch) continue;
+                double t = Edible(i) * _m[i] * fraction;
+                if (t <= 0.0) continue;
+                _m[i] -= t;
+                taken += t;
+            }
+
+            return taken;
+        }
+
         public void ClearDemand()
         {
             for (int i = 0; i < _demand.Count; i++) _demand[i] = 0.0;

@@ -85,7 +85,9 @@ namespace Evosim.Core
 
         /// <summary>
         /// A deposit by depth and patch — the address every test and tool has used since D061.
-        /// A vertex field puts it at the patch's centre; the world itself never calls this.
+        /// A vertex field puts it at the patch's centre, and a grid field the patch's centre
+        /// column. The world calls this in one place, D074's surface influx into a cell field,
+        /// where each patch receives its own share of one deposit.
         /// </summary>
         void Deposit(float heightY, float joules, int patch);
 
@@ -93,6 +95,22 @@ namespace Evosim.Core
         void Deposit(float heightY, float joules);
         float DensityAt(FieldPoint at);
         float EdibleDensityAt(FieldPoint at);
+
+        /// <summary>
+        /// Removes up to <paramref name="wanted"/> J from one layer of one patch and returns what
+        /// was taken. What D074's burial asks of a field.
+        /// </summary>
+        /// <remarks>
+        /// <b>Added so that <c>World.BuryMatter</c> stops casting to a concrete field.</b> It read
+        /// the floor through <see cref="NutrientField"/>'s own <c>Take(heightY, joules, patch)</c>
+        /// and special-cased the vertex field beside it, which meant a third representation could
+        /// not be added without a third branch there. Each field answers in its own units: the
+        /// cell field takes from the one cell, the grid spreads the draw over the patch's columns
+        /// in proportion to what each holds, and the vertex field over the vertices in that layer
+        /// and patch. The world still buries vertices whole (<see cref="VertexField.BuryFloor"/>),
+        /// so rounds 30 and 31 replay unchanged.
+        /// </remarks>
+        double TakeFromLayer(int layer, int patch, double wanted);
 
         void ClearDemand();
         void Demand(FieldPoint at, float joules);

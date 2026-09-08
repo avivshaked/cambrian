@@ -376,12 +376,24 @@ namespace Evosim.Sim.EditorTools
             // run, the default) or `vertices`; the kernel's reach, the merge radius, the cap on
             // the count and the quantum an emitted vertex carries. All four are RunConfig
             // tunables with the same defaults, so a header names them whatever the model.
+            //
+            // fable-propose-grid.md (2026-09-08) adds `grid`, the water as a 3D array of cubic
+            // cells, and two sizes with it: EVOSIM_FIELD_CELL for the detritus grid and
+            // EVOSIM_FIELD_MATTER_CELL for the matter grid, which is coarser because a child
+            // costs 8 to 16 units of matter and a cubic metre of seeded water holds about one.
+            // Both are read whatever the model, like the vertex knobs above, so that the header
+            // names every field setting the config carries rather than only the ones this run's
+            // model happens to use. A cell size that does not divide the box is refused by
+            // GridField at construction, not clamped here: the campaign's 20 by 5 by 60 m box
+            // takes 1 and 2.5 and refuses the 3 m default (RunConfig's remark says why).
             MatterField fieldModel = EnvFieldModel("EVOSIM_FIELD");
             float fieldKernel = Env("EVOSIM_FIELD_KERNEL", new RunConfig().FieldKernelMetres);
             float fieldMatterKernel = Env("EVOSIM_FIELD_MATTER_KERNEL", new RunConfig().FieldMatterKernelMetres);
             float fieldMerge = Env("EVOSIM_FIELD_MERGE", new RunConfig().FieldMergeMetres);
             int fieldCap = (int)Env("EVOSIM_FIELD_CAP", new RunConfig().FieldVertexCap);
             float fieldQuantum = Env("EVOSIM_FIELD_QUANTUM", new RunConfig().FieldVertexJoules);
+            float fieldCell = Env("EVOSIM_FIELD_CELL", new RunConfig().FieldCellMetres);
+            float fieldMatterCell = Env("EVOSIM_FIELD_MATTER_CELL", new RunConfig().FieldMatterCellMetres);
 
             // D064. Body volume at which tissue is neutrally buoyant, m3 — the excess density
             // above is scaled by max(0, 1 - (V0/V)^(2/3)), so a founder-sized body barely sinks
@@ -601,6 +613,8 @@ namespace Evosim.Sim.EditorTools
             config.FieldMergeMetres = fieldMerge;
             config.FieldVertexCap = fieldCap;
             config.FieldVertexJoules = fieldQuantum;
+            config.FieldCellMetres = fieldCell;
+            config.FieldMatterCellMetres = fieldMatterCell;
             config.InoculateAtSeconds = inoculateAt;
             config.InoculateCount = inoculateCount;
             config.InoculateDepthMetres = inoculateDepth;
@@ -838,6 +852,11 @@ namespace Evosim.Sim.EditorTools
                 // vertex field existed" must not read the same.
                 " · field " + fieldModel.ToString().ToLowerInvariant() +
                 " h=" + fieldKernel + " mh=" + fieldMatterKernel + " merge=" + fieldMerge + " cap=" + fieldCap + " q=" + fieldQuantum +
+                // fable-propose-grid.md, appended after the vertex knobs per the same convention
+                // and rendered unconditionally for the same reason: `field cells cell=1` and a
+                // header written before the grid existed must not read the same, and a grid run
+                // is only reproducible from its two cell sizes.
+                " cell=" + fieldCell + " mcell=" + fieldMatterCell +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());
@@ -2750,8 +2769,9 @@ namespace Evosim.Sim.EditorTools
         }
 
         /// <summary>
-        /// D083's field model from the environment: `cells` or `vertices`, case-insensitive;
-        /// unset is Cells. Anything else stops the launch, for <see cref="Env(string, float)"/>'s reason.
+        /// D083's field model from the environment: `cells`, `vertices` or `grid`
+        /// (fable-propose-grid.md), case-insensitive; unset is Cells. Anything else stops the
+        /// launch, for <see cref="Env(string, float)"/>'s reason.
         /// </summary>
         private static MatterField EnvFieldModel(string name)
         {
@@ -2762,10 +2782,11 @@ namespace Evosim.Sim.EditorTools
             {
                 case "cells": return MatterField.Cells;
                 case "vertices": return MatterField.Vertices;
+                case "grid": return MatterField.Grid;
             }
 
             throw new ArgumentException(
-                name + " is '" + raw + "', which is neither 'cells' nor 'vertices'.");
+                name + " is '" + raw + "', which is none of 'cells', 'vertices' or 'grid'.");
         }
 
         private static float Env(string name, float fallback)
