@@ -8,10 +8,14 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
-**Round 29 is running (logbook/0072, launched 2026-09-07 late evening), read as arms land.**
-It is the movement round on round 28's world with the three senses on, added mass 0.5 and
-the global brain retired (D081's build, commit `40b16b8`, `simHash e43b81a8…`). `r29-s1` to
-`r29-s5` on workers 2 to 6, dt 0.01, 30,000 s, wall 1,200 min; round 28's arms are the
+**Round 29 is read (logbook/0072, 2026-09-08): the senses are carried by a third to a half
+of the population in three seeds of five at today's price, no seed keeps a jointed body, the
+goal holds in 2 of 5 against a reference of 3, and the world stands under added mass in every
+seed. Round 30 is pre-registered (logbook/0075): the vertex world at D082's prices, work
+fraction 0.25, sideways mixing 0.2, five fast-step screens `r30q-s1..s5` first and then the
+round at 0.01.** Round 29 was the movement round on round 28's world with the three senses
+on, added mass 0.5 and the global brain retired (D081's build, commit `40b16b8`,
+`simHash e43b81a8…`): `r29-s1` to `r29-s5` on workers 2 to 6, dt 0.01, 30,000 s; round 28's arms are the
 controls. Six predictions and their two-sided readings are in 0072; the scorer's verdict
 line now says `CENSORED` for a run that ends short of its budget. Round 28 read 3 of 5
 (0070) and is the base world by D081. Then the owner asked how nature solved the chicken
@@ -32,9 +36,9 @@ stomach line of 20 that fails the scorer on stability alone (0074). It also foun
 eight-pass bound refusing takes as short; the bound is the neighbour count from 312e9b5, and
 `r30v-s1u` screened seed 1 on that build for 10,000 s: `mat short` 0 throughout, 85
 inherited stomachs at the end, and the clade scorer's first vertex-world pass.
-D082 (the price of a bud) is folded into the same build. Round 30 is the vertex world with
-D082's prices, pre-registered when round 29 reads; the draft is
-`scratch/round30-prereg-draft.md`.
+D082 (the price of a bud) is folded into the same build, and round 30 (0075) is that build.
+Queued for the owner: 0072's pre-registered follow-up to a failed M4, senses off with added
+mass on in the cell world, not run because the base has moved to the vertex world.
 
 The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
 asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive
@@ -89,9 +93,9 @@ round 28) set the base and the order.
 3. **The vertex world with the price of a bud** (D083 and D082, owner 2026-09-07): the
    water as vertices, so that blind movement pays by what it refreshes, and the neuron and
    its inputs about tenfold cheaper, in one build on the base round 29's reading leaves.
-   Round 29 is the price control and round 28 the world control. Fast-step screens first
-   (`scratch/launch-r30.ps1 -Dt 0.02`), the confirming round at 0.01. The work fraction is
-   set from round 28's early windows in the pre-registration.
+   Round 29 is the price control and round 28 the world control. Pre-registered as
+   logbook/0075 on 2026-09-08 with the work fraction at 0.25 from round 28's first window;
+   fast-step screens first (`scratch/launch-r30.ps1 -Dt 0.02`), the confirming round at 0.01.
 4. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
    brain can be selected for, right after movement pays.
 5. **The open matter budget** (D074) and the vent, when a round shows the larder binds.

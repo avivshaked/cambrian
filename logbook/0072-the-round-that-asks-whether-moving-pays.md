@@ -138,3 +138,67 @@ waits on the owner.
 `40b16b8`, every manifest reading the launched `simHash e43b81a8…`, `coreHash 1084ee1c…`,
 `physicsJobWorkers 0` and `gitDirty false`; every header carries V1's tokens. The machine
 holds five arms and nothing else. Read as they land, against this entry and the scorer.
+
+## Results
+
+*2026-09-08, small hours.* All five arms ended on budget at 30,000 s after about nine hours
+each, at 0.9 times real time with five on the machine. V1 to V3 held: every header carried
+the round's tokens, every manifest reads `ended budget` with `diverged 0`, the audit read
+0.0000% at every sample and neither impulse limiter bound once. The readings come from
+`scripts/clade-score.ps1` and from the named columns over the last 6,000 s
+(`scratch/r29-read.py`); the sense channels come from each arm's last snapshot, counting
+genomes that carry an input of that kind, expressed or not.
+
+| arm | M1 sense share | M2 `jnt inh` | M4 scorer | M5 alive against round 28 | M6 |
+|---|---|---|---|---|---|
+| `r29-s1` | 0.9–1.2%, failed | 0 | fail, stability: a clade born at 13,044 s, 29 at the end, minimum 3 | 1,780 against 1,769 (1.01), held | held |
+| `r29-s2` | 36–40%, held; the energy sense, 810 of 1,777 genomes | 0 | **pass**: a clade of 153, minimum 15, 67 recruits in the last window | 1,777 against 1,829 (0.97), held | held |
+| `r29-s3` | 1.4–2.3%, failed | 0 | fail: the line collapsed to 4 with 211 kJ of exudate standing | 1,781 against 1,775 (1.00), held | held |
+| `r29-s4` | 55–57%, held; the chemical sense, 1,144 of 1,783 | 0 | **pass**: a clade of 72, minimum 45, 27 recruits | 1,783 against 1,791 (1.00), held | held |
+| `r29-s5` | 28–29%, held; the chemical sense, 435 of 1,830 | 0 | fail, stability: a clade born at 13,106 s, 21 at the end, minimum 3 | 1,830 against 1,794 (1.02), held | held |
+
+**M1** held in three arms and failed as written, since it asked for every arm. Where it held
+it held well: a third to a half of the population carried a sense through the last two
+lifetimes, and each world settled on one channel. Seed 2 carries the energy sense, a body
+reading its own reserve; seeds 4 and 5 carry the chemical sense. Seeds 1 and 3 carry
+almost none, at 1 to 2%. The seam stated before the predictions applies: a carried input is
+not a used one, and this round cannot say which of the three worlds selected its sense and
+which merely afforded it.
+
+**M2** failed in every arm. No arm held an inherited jointed body at any sample of its last
+6,000 s, which is the record's reading again, now with the senses on and the fluid pushing
+back. **M3** therefore does not apply. Seed 3 printed a jointed feeding rate in its last
+window, 12% above the rigid guild's at 0.061 m/s, and it came from bodies whose joints were
+not inherited, so it is founder noise and not a reading.
+
+**M4** is two of five, against a goal and a reference of three. Seeds 1 and 5 failed the way
+round 28's seed 1 did: a stomach clade founded after 13,000 s that reached ten members only
+in the last 5,000 s, so its minimum through the last two lifetimes is 3. Seed 3's line
+collapsed. Round 28 read three of five on the same seeds, and the difference is one seed.
+The three changes are per-step terms, so every seed of this round is a new realisation of
+its world (logbook/0052's wingspan), and one seed either way is inside what a realisation
+moves. The round cannot say whether the changes cost the rule a seed, and I am not going to
+read it as though it could.
+
+**M5** held in every arm, with the population at the end within 3% of round 28's same seed.
+Added mass at 0.5 leaves this world where it was, and the round is read as a movement result
+and not a fluid one. **M6** held.
+
+One reading outside the predictions. The exudate stood at 34 kJ in seed 4 and 211 kJ in
+seed 3 at the end, in order of how thin the stomach line was, which is round 27's finding
+again: the loop closes only where the stomachs are. The vertex-world screens of the same
+night stood at 5 to 7 kJ at 10,000 s (logbook/0074), and round 30's M4 reads that.
+
+## Verdict
+
+The branch is "M1 holds, M2 fails" in three seeds and "M1 fails" in two. The senses can be
+carried at today's price by a third to a half of a world, and the muscles still do not pay.
+The entry's reading for both branches is that the price is the lever, and the owner had
+already pulled it: D082, ruled by question the evening the round launched, brings the neuron
+and its inputs down about tenfold and the stroke's work to a fraction, with this round as
+the control at today's price. The M4 branch's pre-registered follow-up, senses off with added
+mass on, is not run. D083 moved the base to the vertex world the same night, and separating
+the senses from the fluid in the cell world would answer a question about a world the
+campaign has left; it is queued in `HANDOFF.md` for the owner to revive if round 30's world
+control says the fluid mattered after all. Round 30 is pre-registered in logbook/0075.
+
