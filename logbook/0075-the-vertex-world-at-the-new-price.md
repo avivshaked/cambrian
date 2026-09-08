@@ -124,3 +124,15 @@ Whether a brain evolves, and whether a bud (a neuron and the muscle it moves) is
 selected rather than afforded; both need a jointed guild to exist first. Nor whether a
 sense is used rather than carried: round 29's three sensing worlds each settled on one
 channel and the round could not say which selected it. That assay is the owner's to word.
+
+## Launch
+
+*2026-09-08, morning.* The screen: `r30q-s1` to `r30q-s5` on workers 2 to 6 at dt 0.02
+for 10,000 s, every manifest reading `coreHash adbb400d…`, `simHash d928e2a5…`,
+`configHash ed91d7c5…`, `physicsJobWorkers 0` and `gitDirty false`. Seed 1 records commit
+`360a271` and the rest `e11fddc`, one prose commit apart on the same code. Every header
+carries V1's tokens, read from the report. The machine holds the five screens and nothing
+else. The first rows show the identity at 0 and no short takes in every arm; the screen is
+read at its end against the sequencing section, and the round at 0.01 follows if it does
+not fail the world.
+
