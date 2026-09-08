@@ -171,3 +171,83 @@ rest `f1c295d`, prose commits apart on the same code. The launcher refused any o
 `simHash`. Every header carries V1's tokens, read from the reports. The machine holds the
 five arms and nothing else. Read as they land, against the predictions and the scorer.
 
+## Results
+
+*2026-09-08, evening.* All five arms ended on budget at 30,000 s after nine to ten hours
+each. V1 to V3 held: every header carried the round's tokens, every manifest reads
+`ended budget`, `diverged 0`, `physicsJobWorkers 0` and `gitDirty false`, all five on one
+`coreHash` and one `configHash`. The readings come from `scripts/clade-score.ps1` and from
+the named columns over the last 6,000 s (`scratch/r30-read.py`); the sense channels come
+from each arm's last snapshot.
+
+| arm | M0 alive (round 29's seed); scorer | M1 sense share | M2 `jnt inh` | M4 detritus at end, kJ (round 29) | M7 refusals per birth (round 29) |
+|---|---|---|---|---|---|
+| `r30-s1` | 1,743 (1,780); **pass**, a clade of 31, minimum 31 | 1.1–1.8%, failed | 0, never above 0 | 7.5 (67), loop 1.12 | 11,300 (21,600), failed |
+| `r30-s2` | 1,727 (1,777); **pass**, a clade of 37, minimum 34 | 2.4–3.2%, failed | 0, never above 0 | 7.0 (113), loop 1.05 | 11,800 (11,900), failed |
+| `r30-s3` | 1,770 (1,781); **pass**, a clade of 67, minimum 67 | 60–61%, held; the flow sense, 1,181 of 1,770 genomes | 0, peak 2 at 3,500 s | 8.8 (211), loop 1.03 | 13,100 (26,800), failed |
+| `r30-s4` | 1,840 (1,783); **pass**, a clade of 24, minimum 11 | 2.6–3.1%, failed | 0, peak 14 at 4,000 s, last seen 10,000 s | 25.8 (34), loop 1.09 | 16,300 (25,500), failed |
+| `r30-s5` | 1,776 (1,830); **pass**, a clade of 45, minimum 45 | 1.9–3.4%, failed | 0, peak 1 at 200 s | 11.3 (140), loop 1.05 | 10,900 (50,600), failed |
+
+M5 and M6 held in every arm: the vertex count peaked at 48,000 against a cap of 100,000
+with nothing merged, `mat resid` read 0 and `audit` 0.0000% at every sample, `mat short`
+0, neither impulse limiter bound, nothing diverged.
+
+**M0 held, and the goal rule is met five of five.** Every seed holds a connected stomach
+clade through the last two lifetimes with recruitment in the last window, the first round
+in the record to pass in every seed; the reference was round 29's two and round 28's
+three. The populations sit within 3% of round 29's, so the vertex world is the same size
+of world at the new price. The clades are smaller than the cell world's best (24 to 67
+against round 29's 72 and 153) and there are more of them alive at the end, three to ten
+per seed, which is what a world with local water should do to a guild that once shared
+one pool.
+
+**M1 failed as written, one of five.** The surprise of the round. At a tenth of the price
+the senses were carried by fewer bodies, not more. Round 29's three sensing worlds, energy
+in seed 2 at 36 to 40%, chemical in seeds 4 and 5 at 55% and 28%, all read 2 to 3% here,
+and the one world that took a sense up did so completely: seed 3 carries the flow sense in
+two thirds of its genomes. A per-seed comparison across a per-step change is a comparison
+of realisations, so the reading is the distribution, three of five against one of five,
+and it says the price was not what kept a sense. What keeps one is whatever seed 3's
+lineage found, and this round cannot say what that was. The branch is the entry's "M0
+holds, M1 fails": the squash constants are next, and they are the owner's.
+
+**M2 failed in every arm, and seed 4 says how.** Its line of fourteen inherited jointed
+bodies lasted from 2,000 s to 10,000 s, three lifetimes, longer than any jointed line in
+a confirming run before it. From 4,000 s on those bodies fed in water as rich as the rigid
+guild's or richer and sat shallower, and they moved at the rigid guild's speed, 0.01 to
+0.06 m/s, at every sample. A stroke that produces no displacement collects no prize, and
+logbook/0076 measured that in this water there was no prize to collect: at 0.2 m²/s a
+sitter's hole refills in five seconds. Round 31 (D085) changes that one number. M3 does not
+apply.
+
+**M4 held in every arm.** The stomachs take the exudate as fast as it arrives, and the
+standing detritus at the end is a tenth to a twentieth of the cell world's in four seeds.
+Seed 4 is the exception in degree and not in kind: its stomach line thinned to 24 and the
+stock rose to 26 kJ, against 34 kJ in its cell-world seed. The vertex world's water is
+clean because a stomach beside a producer eats the exudate where it lands.
+
+**M7 failed, and the prediction was wrong.** The screen's early window showed the vertex
+world refusing a hundred conceptions per birth where the cell world refused ten, and I
+predicted three times round 29's rate at the end. At 30,000 s the vertex world refuses
+fewer conceptions per birth than the cell world in four seeds and the same in one. The
+early ratio was the young world clustering its matter faster; by the end both worlds are
+at the same ceiling with 5,700 to 5,850 units locked against 5,450 to 5,570. Matter is
+the ceiling in both, and the vertex world does not reach it sooner in any way that lasts.
+
+## Verdict
+
+The vertex world at the new price is the campaign's new base. It passes the goal rule in
+every seed, closes both identities, closes the detritus loop, and holds the same population
+as the cell world. The price did not keep the senses and did not keep the joints; the
+water did not give a mover a prize, and logbook/0076 says why. The pre-registered branches
+are "M0 holds, M1 fails" and "M0 holds, M2 fails" together. Their levers, the squash
+constants and the prize side, are the owner's, and the owner has ruled on the second:
+round 31 stirs the water at a tenth of the rate (D085). The first waits for a round in
+which a mover can be paid, since a sense that reads a gradient is worth carrying only in a
+world where following it buys something.
+
+Two corrections to my own predictions are on the record above: M7's ratio did not last,
+and the deep larder I expected at low mixing is not where the food goes (0076). The round
+also settles a question 0074 left open: whether the vertex world's thinner stomach lines
+were a property of the world or of the seed. Five of five say the world.
+

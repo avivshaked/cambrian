@@ -8,14 +8,16 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
-**Round 29 is read (logbook/0072, 2026-09-08): the senses are carried by a third to a half
-of the population in three seeds of five at today's price, no seed keeps a jointed body, the
-goal holds in 2 of 5 against a reference of 3, and the world stands under added mass in every
-seed. Round 30 is pre-registered (logbook/0075): the vertex world at D082's prices, work
-fraction 0.25, sideways mixing 0.2. The five fast-step screens `r30q-s1..s5` all stood with
-both identities at 0 and the scorer passing 3 of 5 at 10,000 s, and the round is running:
-`r30-s1..s5` at dt 0.01 on workers 2 to 6, launched 2026-09-08 afternoon, landing in about
-ten hours; read against 0075's predictions and the scorer.** Round 29 was the movement round on round 28's world with the three senses
+**Round 30 is read (logbook/0075, 2026-09-08 evening): the vertex world at D082's prices
+meets the goal rule in 5 of 5, the first round to do so, with both identities closed, the
+detritus loop closed and the population within 3% of round 29's. It is the new base. The
+senses were carried in 1 of 5 (round 29: 3 of 5) and no jointed guild held; seed 4's line
+of 14 lasted to 10,000 s feeding as well as the sitters and moving no faster than the
+drift. Logbook/0076 measured why: at 0.2 m²/s a sitter's hole refills in five seconds, so
+there was no prize. Round 31 (D085, logbook/0077) is round 30 with the detritus mixing at
+0.02 on both axes, screened at the fast step first.** Round 29 (logbook/0072) was the price
+control: the senses carried by a third to a half of the population in three seeds of five
+at the old price, no jointed body, the goal 2 of 5, the world standing under added mass. Round 29 was the movement round on round 28's world with the three senses
 on, added mass 0.5 and the global brain retired (D081's build, commit `40b16b8`,
 `simHash e43b81a8…`): `r29-s1` to `r29-s5` on workers 2 to 6, dt 0.01, 30,000 s; round 28's arms are the
 controls. Six predictions and their two-sided readings are in 0072; the scorer's verdict

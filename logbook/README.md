@@ -259,3 +259,4 @@ key only translates the entries' reporting shorthand.
 | [0074](0074-the-water-as-vertices.md) | 2026-09-07 | The water as vertices |
 | [0075](0075-the-vertex-world-at-the-new-price.md) | 2026-09-08 | The vertex world at the new price |
 | [0076](0076-the-hole-refills-in-five-seconds.md) | 2026-09-08 | The hole refills in five seconds |
+| [0077](0077-the-water-stirred-less.md) | 2026-09-08 | The water stirred less |
