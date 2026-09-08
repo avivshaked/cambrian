@@ -15,8 +15,8 @@ and without waiting for the round.
 Three readings from the running arms, before any experiment. The detritus field held about
 2.1 vertices per cubic metre in every arm, which is 9 in a mouth's 1 m reach against the
 30 the design note asked for; the count is below design. While seed 4's jointed line lived,
-from 4,000 s on its bodies fed in water as rich as the rigid guild's or richer, 3.6 against
-4.0, 3.8 against 2.8, 3.5 against 2.7 J/m³, and dwindled anyway. And the jointed bodies
+from 4,000 s on its bodies fed in water as rich as the rigid guild's or richer: 3.6 against
+4.0, 3.8 against 2.8, 3.5 against 2.7 J/m³. It dwindled anyway. And the jointed bodies
 moved at the same speed as the rigid ones at every sample, 0.01 to 0.06 m/s, which is the
 drift. Two more facts frame them: every rigid body read water one to seven times richer
 than its layer's mean, and each stomach had 16 to 65 producers exuding beside it.
@@ -24,14 +24,15 @@ than its layer's mean, and each stomach had 16 to 65 producers exuding beside it
 ## Three experiments
 
 They live in `VertexFieldExperiments.cs` beside the field's tests, run under the world's
-build, and print their tables; the code is the record of their settings.
+build, and print their tables; the code carries their settings.
 
 **A sitter and a mover.** Two identical blind mouths eating by the world's rule (draw is
 density times clearance times tissue volume times the step; round 30 runs satiation and the
-toe at zero) in water seeded at round 30's mean density. Swept: the count in reach (8, 32,
-99), the mixing rate (the world's 0.2 m²/s and 0.02), the mover's speed (0.03 m/s, round
-30's drift, and 0.3 m/s, a swimmer) and fixed sources beside the mouths at the world's
-exudate rate, on and off. The reading is the mover's meal over the sitter's.
+toe at zero) in water seeded at round 30's mean density. Four things were swept. The count
+in reach: 8, 32, 99. The mixing rate: the world's 0.2 m²/s and 0.02. The mover's speed:
+0.03 m/s, which is round 30's drift, and 0.3 m/s, a swimmer. And fixed sources beside the
+mouths at the world's exudate rate, on and off. The reading is the mover's meal over the
+sitter's.
 
 | mixing | mover's speed | mover over sitter, across all counts and source settings | sitter's water over the mean |
 |---|---|---|---|
@@ -40,18 +41,18 @@ exudate rate, on and off. The reading is the mover's meal over the sitter's.
 | 0.02 | 0.03 | 1.12 to 1.26 | 0.07 to 0.3 |
 | 0.02 | 0.3 | 2.2 to 2.5 | 0.07 to 0.3 |
 
-The count moved nothing but the noise. The mixing moved everything. A hole of size L refills
-in about L²/D seconds, and at 0.2 m²/s over a 1 m reach that is five seconds, faster than
-the mouth eats, so the sitter's water is refilled as it is drunk and the mixing triples the
-sitter's income by carrying food to it. At a tenth of the rate the hole is real and a
+The count moved nothing but the noise, and the mixing moved the whole result. A hole of
+size L refills in about L²/D seconds. At 0.2 m²/s over a 1 m reach that is five seconds,
+faster than the mouth eats, so the sitter's water is refilled as it is drunk, and the
+mixing triples the sitter's income by carrying food to it. At a tenth of the rate the hole is real and a
 swimmer eats two and a half times what a sitter eats. The sources changed the ratio at
 neither rate, so the producers beside every stomach are why a sitter never goes hungry, and
 not why the mover gains nothing.
 
 **A corpse as a patch.** Fifty joules land at one point and are stirred. At 0.2 the point is
 background within 10 s. At 0.02 it reads 5.5 times the mean at 10 s, 2.7 at 30 s, and fades
-by 100 s. A corpse is a patch for a minute at the lower rate, not for a lifetime; the
-standing prize is the hole, not the carcass.
+by 100 s. A corpse is a patch for a minute at the lower rate and never for a lifetime; the
+standing prize is the hole rather than the carcass.
 
 **Where the food sits.** Exudate at round 30's rate enters a 60 m column in the band where
 the producers stand, sinks at the world's rate and is stirred for one lifetime, with
@@ -71,21 +72,21 @@ scale-height argument describes a steady state the world never reaches inside a 
 ## What it means
 
 The owner's diagnosis was right and the mechanism was not. The water is uniform where a
-body can reach, and that erases the prize for moving; but it is uniform because it is
-stirred faster than any mouth can dent it, not because it has too few vertices. Fixing the
+body can reach, and that erases the prize for moving. It is uniform because it is stirred
+faster than any mouth can dent it, and the vertex count has nothing to do with it. Fixing the
 count would change the noise. Fixing the mixing changes the world, and the experiment says
 by how much: a swimmer's meal goes from 1.1 times a sitter's to 2.5. A second condition has
 to hold as well, and round 30 shows it did not: the jointed bodies never moved faster than
 the drift, and a stroke that produces no displacement collects nothing whatever the field
 looks like. That is read from the round's own columns when it lands.
 
-The owner then asked two design questions and ruled on both (D085). Should exudate found
-vertices as the vent does, rather than joining the nearest? It would make the field finer
-and less lumpy and it is orthogonal to the prize; it waits. Should a stomach living on its
-neighbours' waste be discouraged? No, that is what nature does and what the world found on
-its own in round 18; the lever is how much is delivered, and it is pulled after the mixing,
-not instead of it, because a smaller exudate stream only makes food patchier if the
-patches persist.
+The owner then raised two designs and ruled on both (D085). The first was exudate founding
+vertices as the vent does, rather than joining the nearest. It would make the field finer
+and less lumpy, it is orthogonal to the prize, and it waits. The second was whether a
+stomach living on its neighbours' waste should be discouraged. It should not: that is what
+nature does and what the world found on its own in round 18. The lever there is how much is
+delivered, and it is pulled after the mixing rather than instead of it, because a smaller
+exudate stream only makes food patchier where the patches persist.
 
 Round 31 is one number: the detritus mixing at 0.02 m²/s on both axes, everything else
 round 30's, pre-registered when round 30 reads.
