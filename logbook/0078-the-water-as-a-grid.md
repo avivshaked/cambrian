@@ -82,6 +82,25 @@ the round's mixing, which is the number the design states as the current's stirr
 and its manifest is kept beside the second's. Worker 4 carried a stale lockfile from the
 arm that crashed on it (0077); it was removed after a check that no process held it.
 
+## The corpses
+
+*2026-09-09, small hours.* Rule 6 followed the grid by a fifth agent. A death founds a
+corpse carrying the body's tissue joules and its locked matter at the place it died. Once
+a metabolic step, before the fields' own passes, every corpse sinks at the detritus sink
+speed, rides the current where the fields do, wraps at the seams, and pays the decay rate
+times the step of what it still holds into the nutrient and matter fields at its position.
+Under a millionth of a joule and a unit the rest goes in whole and the corpse is dropped.
+Both books count a corpse as standing, so `audit` and `mat resid` read zero while a body
+is half water and half object. The knob is `CorpseDecayPerSecond`, default 0, at which the
+death path is the old two deposits verbatim; every world on record replays. The table
+gains a `corpses` column and the statistics three fields.
+
+Six tests. The half-life at 0.005 per second measured 138.5 s against 138.6 predicted.
+The grid closure test with decay on holds both identities to a millionth over 3,000 steps
+with births, deaths, influx, burial and a rolling current. The smoke on worker 4 at
+0.005 per second ended on budget with 35 corpses for 35 deaths in 300 s, the identities
+closed, the same last row on three launches. The suite is 585.
+
 ## Two rulings the build put in front of the owner
 
 - **The matter cell.** The campaign's box is 20 m by 5 m by 60 m, and 3 m divides only the

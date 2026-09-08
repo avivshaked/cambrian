@@ -555,7 +555,13 @@ actually verifying it.
   make every earlier `config.json` unreadable by the build, rounds 30 and 31 included; their
   arithmetic replays on the vertex field under their own builds. Read a grid field's shape
   from a run, as for vertices; the Core experiments (`GridFieldExperiments`) are the
-  sitter/mover, column and corpse-patch measurements and nothing else.
+  sitter/mover, column and corpse-patch measurements and nothing else. **A corpse is an
+  object only when `EVOSIM_CORPSE_DECAY` is above 0** (`CorpseDecayPerSecond`, default 0,
+  at which a death deposits at once as it always did): above 0 a dead body's joules and
+  matter sit in `World.Corpses`, counted as standing by both identities, and reach the
+  fields at that rate per second; read the `corpses` column and the `corpseJoules` /
+  `corpseMatter` stats fields, and remember `detritus J` no longer holds what a corpse
+  still does.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.
