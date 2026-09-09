@@ -105,6 +105,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D080](#d080) | Non-commercial terms: PolyForm Noncommercial 1.0.0 for code and the genomes, CC BY-NC 4.0 for prose, commercial licences on request, contributions carry a relicensing grant | 2026-09-07 | ruled (owner: "lets apply the changes to the license") · supersedes D015 |
 | [D081](#d081) | Six rulings on round 28's reading — two named bars (the goal, the reference); the contact world is the base; the path is movement, predation, then the open budget; added mass on and the global brain removed in the movement build; the futility clause narrowed to screens | 2026-09-07 | ruled (owner, by question) · amends D063's reading, D069, D075, D079 · **round 29 read 2026-09-08 (logbook/0072): the world stands under added mass in every seed, the senses are carried in 3 of 5 at today's price, no jointed guild, the goal 2 of 5** |
 | [D082](#d082) | The price of a bud: the neuron and its inputs about tenfold cheaper, and the stroke's work billed at a fraction, in a price round after round 29 reads; round 29 is the control at today's price | 2026-09-07 | ruled (owner, by question) · the numbers are set by the ledger and the record in the round's pre-registration · **folded into round 30 with D083 the same night; round 29 stays the price control** · **round 30 read 2026-09-08: at the new price the senses were carried in 1 of 5 against round 29's 3 of 5 and no jointed guild held; the price was not what kept a sense (logbook/0075)** |
+| [D086](#d086) | The water as a grid: cells that hold amounts, a body feeding from the cell it stands in, Fick's law between neighbours, upwind advection, corpses as particles; 1 m detritus cells, 5 m matter cells, matter mixed at 2 m²/s on every axis; the base from round 32 | 2026-09-09 | ruled (owner: "sgtm... proceed", "proceed"); built and screened the same night (logbook/0078), round 32 running (0079) |
 | [D085](#d085) | The waste stays where nature puts it: exudate keeps joining the water beside its producer; the prize for moving is made by stirring the water less, the detritus mixing to 0.02 m²/s on both axes in round 31; the exudate fraction is lowered only after, and founding vertices per excretion waits | 2026-09-08 | ruled (owner: "proceed with your recommendations"); read 2026-09-09 (logbook/0077): 4 of 5, the world stands at 0.02, the hole is not at the sitter but in the water at large, no swimmer, the larder went deep |
 | [D084](#d084) | Sideways mixing stays 0.2 m²/s in the vertex water, and round 29's separation arm runs only if round 30 reads below round 28 as well | 2026-09-08 | ruled (owner: "proceed with your recommendations") |
 | [D083](#d083) | The water as vertices: detritus and free matter become vertices holding joules at positions, read through a kernel, so a still body eats a hole and a moving body leaves it; the vent founds vertices and the floor buries them; the cell field stays behind a switch for the record | 2026-09-07 | ruled (owner: "it's settled") · built and tested the same night; the halo proposal withdrawn · round 30 is the vertex world with D082's prices, round 29 the price control, round 28 the world control · **round 30 read 2026-09-08 (logbook/0075): the goal rule met 5 of 5, both identities closed, the loop closed; the new base** |
@@ -4340,3 +4341,89 @@ should be discouraged.
 **What it changes.** `EVOSIM_MIXING` and `EVOSIM_H_MIXING` at 0.02 in round 31's launcher;
 no code. The matter field's mixing (2 m²/s) is untouched, since the conception gate is not
 the prize under test. D084's ruling that the two axes are equal stands at the new value.
+
+### D086
+
+**2026-09-09 — The water as a grid, and corpses as particles**
+
+**Status:** ruled by the owner, in conversation, 2026-09-08 night ("sgtm... proceed") and
+2026-09-09 morning ("proceed") on the matter cell; built, reviewed and smoked the same
+night (logbook/0078); round 32 is its base round (logbook/0079). Absorbs
+`fable-propose-grid.md`, deleted on ruling.
+
+**Context.** Round 31 was running on D083's vertex water when the owner asked where the
+hole lives. A take is spread over the vertices within a metre of the mouth by their
+weights, so the dip is centred on the vertices and not on the eater, and its footprint is
+two kernel radii because each reduced vertex casts its own. Five bodies feeding from the
+tails of five vertices lower the water most at the vertices, and a sixth body sitting beside
+one of them reads the loss at nearly full weight; it pays for a meal it did not eat. The
+owner's first answer was a negative vertex founded at the mouth with the take's amount,
+paid for by adding the same amount to the neighbours: the right diagnosis, and a
+representation with a source at the eater's position was the real remedy. The second answer
+was a grid, which has a source at every place a body can be.
+
+**Ruled.**
+
+1. **Two grids of cells, each holding an amount.** Detritus at 1 m a side
+   (`FieldCellMetres`), matter at 5 m (`FieldMatterCellMetres`), over D077's box. A cell
+   holds joules or units, never a density. A cell size must divide the box on all three
+   axes or the world is refused at construction. The matter cell is coarser because a child
+   costs 8 to 16 units and a cubic metre holds about one at the seeded density. The
+   campaign's box admits 2.5 m or 5 m and neither is the vertex world's 24 m³; 0078's
+   screens showed 2.5 m stranding a fifth of the world's matter in cells too small to
+   afford a child and costing 300 bodies, and 5 m reproducing the vertex world's locked
+   matter to 1%. 5 m is the ruling.
+
+2. **A body feeds from one cell**, the one holding its centre, under §0p's frozen
+   availability. Conception draws matter from the parent's matter cell under the same cap.
+
+3. **Diffusion is Fick's law between face neighbours**, linear in the difference, at the
+   field's own rate on every axis, zero flux through the surface and the floor, wrapped at
+   the seams. The scheme is refused above `D·dt/cell² = 1/6` rather than clamped. A grid
+   world refuses a `HorizontalMixingDiffusivity` that differs from
+   `NutrientMixingDiffusivity`, so the header's `h-mix` reads what the detritus does
+   sideways, and the matter grid mixes at `MatterMixingDiffusivity` on every axis: 2 m²/s
+   in the campaign, where the vertex world walked matter sideways at 0.02. A cube has no
+   preferred axis, and the vertical rate was the one chosen for the gate.
+
+4. **The current carries cells downstream** by upwind transfer, speed times step over cell
+   size per face, Courant-clamped at a half, wrapping at the seams. Upwind spreads a patch
+   along the flow as a by-product, measured at 0.13 m²/s at 0.3 m/s on 1 m cells, six
+   times the round's mixing; that is the current's stirring and there is no separate
+   along-flow term. Sinking is the same transfer downward; what reaches the floor's cells is
+   buried at D074's rule.
+
+5. **A corpse is a particle.** A death founds a corpse carrying the body's tissue joules
+   and its locked matter at its position. Once a metabolic step it sinks at the sink speed,
+   rides the current where the fields do, wraps at the seams, and pays
+   `CorpseDecayPerSecond` of what it holds into the fields at its position, 0.005 per
+   second, a half-life near 139 s. Both books count a corpse as standing. At 0 the death
+   path is the old two deposits verbatim, so every world on record replays. Exudate and
+   excretion stay dissolved.
+
+6. **Reads for the record stay.** The per-depth columns are the same bins summed over
+   cells; `vtx` prints a dash on a grid; `corpses` is a new column and three statistics
+   fields.
+
+7. **A grid world needs shared space**, as a vertex world does, since a cell is a position.
+
+8. **The grid is the base from round 32.** The vertex field stays in the code under its
+   own mode so that rounds 30 and 31 replay on their own builds; every config written before
+   the two cell tunables is refused by the build, per §9.
+
+**What the experiments say** (logbook/0078). On the grid a swimmer at 0.3 m/s eats 3.2
+times a sitter at mixing 0.02 and 1.1 times at 0.2, against 2.5 and 1.1 on vertices; the
+hole is at the mouth and one cell wide. Five mouths packed in one cell take 1 J between
+them where five spread one to a cell take 5 J, and the packed cell's neighbours keep their
+stock to twelve decimal places.
+
+**Superseded.** D083 as the base representation, with its kernel, merge distance, cap and
+quantum, all of which stay as the vertex mode's own knobs; D084's two sideways diffusivities
+as a pair, since a grid has one rate per field. The negative vertex is retired unbuilt with
+the geometry argument above as its record; the halo was withdrawn under D083.
+
+**What it changes.** Every seed under the grid is a new realisation. `EVOSIM_FIELD grid`,
+`EVOSIM_FIELD_CELL`, `EVOSIM_FIELD_MATTER_CELL` and `EVOSIM_CORPSE_DECAY` in the launcher
+(`scratch/launch-r32.ps1`), the header carrying `cell=`, `mcell=` and `corpse=`. Round 32
+is the grid at round 31's prices and mixing, five seeds at 0.01, read under logbook/0079's
+predictions with round 31's same seed as the reference.

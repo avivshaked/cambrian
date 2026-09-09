@@ -261,6 +261,25 @@ world; the detritus kernel is 1 m. Why, and what was rejected: D083. What it ans
 diagnosis, which stands as written. A still body now eats a hole in its own water and a moving body leaves
 it, and the chemical sense reads a gradient inside a patch for the first time.
 
+## 0t. Changelog — the water as a grid (2026-09-09, D086)
+
+§5A.2c's two stocks gain a third representation and it is the base. `GridField` holds each
+as cells of a 3D grid over D077's box, detritus at `FieldCellMetres` (1 m) and matter at
+`FieldMatterCellMetres` (5 m), each cell an amount and never a density. A body feeds from the
+cell holding its centre under §0p's rule; conception draws from the parent's matter cell.
+Diffusion is Fick's law between face neighbours at the field's own rate on every axis,
+refused above the explicit scheme's limit `D·dt/cell² = 1/6`; a grid world refuses a
+sideways rate that differs from the detritus rate, and the matter grid mixes at
+`MatterMixingDiffusivity` on every axis. The current moves stock by upwind transfer between
+cells, wrapping at the seams, and spreads a patch along the flow by about half the speed
+times the cell size (0.13 m²/s at 0.3 m/s and 1 m). Sinking is the same transfer downward.
+A death founds a corpse (`Corpse`) that sinks, rides the current and pays
+`CorpseDecayPerSecond` of what it holds into the fields at its position; both books count it
+as standing; at 0 the death deposits at once as before. `RunConfig.FieldModel Grid` selects
+it; the cell and vertex modes stay for the record. Why, and what was rejected: D086. What it
+answers: the owner's objection that a vertex world's hole lives at the vertices and not at
+the eater (logbook/0078).
+
 ## 0r. Changelog — review round 6: how nature bootstrapped movement and sensing, and why this world cannot (2026-09-07)
 
 No mechanism changes. Round 6 of the literature review (research §0, Q11) answered the
@@ -1304,6 +1323,17 @@ sideways step is `HorizontalMixingDiffusivity`, equal by D084 so the walk is iso
 are stocks, both share by §0p's frozen availability, and both close the audit and the matter
 identity (`mat resid`); `RunConfig.FieldModel` picks one.
 
+**The third representation is a grid, and it is the base (D086, §0t).** `GridField` keeps the
+joules in cells, 1 m a side for detritus and 5 m for matter, and a body feeds from the cell
+it stands in, so the hole a sitter eats is one cell wide and centred on the mouth, and the
+cell beside it keeps its water. Diffusion is Fick's law between face neighbours at the
+field's own rate on every axis, refused above the scheme's stability limit; the current
+carries stock downstream by upwind transfer and spreads it along the flow by about half the
+speed times the cell size, which is the current's stirring; sinking is the same transfer
+downward. A dead body is a corpse that sinks, drifts and decays into its cell at
+`CorpseDecayPerSecond`, counted as standing by both books until it is gone. On the grid a
+swimmer eats 3.2 times a sitter at mixing 0.02 (logbook/0078), against 2.5 on vertices.
+
 **Detritus sinks, and that is what makes the deep a niche rather than only a dark place.** Light
 falls off downward; food falls *toward* the dark. The two gradients oppose, so neither strategy
 wins everywhere — and nobody arranged it. It follows from photosynthesis needing the surface and
@@ -1926,6 +1956,7 @@ without reaching `RunConfig.Hash()` is two different experiments filed under one
 | Carrion / grazing / predation yield | `ConsumerCell.*Yield` | Fraction kept per target type. Carrion highest — the predator valley's bridge (§5A.3) |
 | Founder stake | `RunConfig.FounderEnergyJoules` | The only energy besides sunlight created from nothing |
 | Field kernel, merge radius, vertex cap, vertex quantum | `RunConfig.Field*` | How finely the water is sampled in a vertex world (D083): a mouth's reach and a read's noise, the budget on the count, and the mass a vent founds a vertex with. All four unmeasured |
+| Cell sizes, corpse decay | `RunConfig.FieldCellMetres`, `FieldMatterCellMetres`, `CorpseDecayPerSecond` | The grid's resolution (D086): the hole a sitter eats and the reach of the matter gate; a cell must divide the box, and the matter cell is coarser so a cell can afford a child (5 m ruled from 0078's screens). The corpse half-life, 139 s at 0.005. All unmeasured beyond 0078's screens |
 | **Spending** | | |
 | Basal upkeep, per type | `CellType.UpkeepWattsPerCubicMetre` | What tissue costs to keep alive. Never zero (§5A.1) |
 | Idle actuator cost | `LinkCell.IdleWattsPerNewtonMetre` | What capacity costs whether or not it is used |
