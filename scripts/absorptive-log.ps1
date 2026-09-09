@@ -76,12 +76,19 @@ $reader = New-Object System.IO.StreamReader($fs)
 # of thousands of rows and the schema is fixed and flat (AbsorptiveSample.ToJson). Named groups
 # so nothing here indexes a column by position — CLAUDE.md's rule, learned the hard way when a
 # positional misread reported float tissue as the food chain (logbook/0044).
+#
+# It is anchored on every key in order, so a renamed key does not mis-read a column, it stops
+# the row matching at all and the whole file lands in the malformed counter with an empty
+# summary above it. That is what fable-propose-growth.md (2026-09-08) did when `endowment`
+# became `investment`: the failure is loud but the message points at the schema rather than at
+# the key, so scripts/tests/absorptive-log/ now holds a row of the current shape and asserts
+# that nothing is malformed.
 $rx = [regex]('"t":(?<t>-?[0-9.E+-]+),"id":(?<id>\d+),"age":(?<age>-?[0-9.E+-]+),' +
     '"gen":(?<gen>\d+),"patch":(?<patch>\d+),"y":(?<y>-?[0-9.E+-]+),' +
     '"volume":(?<volume>-?[0-9.E+-]+),"absVolume":(?<absv>-?[0-9.E+-]+),' +
     '"photoArea":(?<area>-?[0-9.E+-]+),"parts":(?<parts>\d+),"mixotroph":(?<mixo>true|false),' +
     '"energy":(?<energy>-?[0-9.E+-]+),"tissue":(?<tissue>-?[0-9.E+-]+),' +
-    '"endowment":(?<endow>-?[0-9.E+-]+),"densityHere":(?<dens>-?[0-9.E+-]+),' +
+    '"investment":(?<investment>-?[0-9.E+-]+),"densityHere":(?<dens>-?[0-9.E+-]+),' +
     '"share":(?<share>-?[0-9.E+-]+),"foodW":(?<food>-?[0-9.E+-]+),"lightW":(?<light>-?[0-9.E+-]+),' +
     '"upkeepW":(?<upkeep>-?[0-9.E+-]+),"exudedW":(?<exuded>-?[0-9.E+-]+),"netW":(?<net>-?[0-9.E+-]+),' +
     '"children":(?<children>\d+),"lastChildT":(?<lastChild>null|-?[0-9.E+-]+),"dead":(?<dead>true|false)')

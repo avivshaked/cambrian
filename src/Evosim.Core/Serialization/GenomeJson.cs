@@ -51,7 +51,14 @@ namespace Evosim.Core
         /// on, and "the file loaded but every creature in it is anonymous" is the silent-default
         /// failure §9 exists to prevent, one level up.
         /// </remarks>
-        public const int FormatVersion = 4;
+        /// <remarks>
+        /// 5 — fable-propose-growth.md (2026-09-08). <c>endowment</c> is retired and
+        /// <c>investment</c> and <c>adultScale</c> take its place. This one genuinely cannot be
+        /// read across: a format-4 genome's endowment is joules and the field that replaced it is
+        /// a fraction of a body, so the same number in the same place means something else
+        /// entirely, and it carries no size at all.
+        /// </remarks>
+        public const int FormatVersion = 5;
 
         /// <summary>Written for a row that carries no organism id.</summary>
         public const long NoId = -1;
@@ -74,9 +81,11 @@ namespace Evosim.Core
             w.Field("format", FormatVersion);
             w.Field("root", genome.RootIndex);
 
+            w.Field("adultScale", genome.AdultScale);
+
             w.BeginObject("reproduction")
                 .Field("brood", genome.Reproduction.BroodSize)
-                .Field("endowment", genome.Reproduction.OffspringEndowment)
+                .Field("investment", genome.Reproduction.BirthInvestment)
                 .EndObject();
 
             w.BeginArray("nodes");
@@ -101,17 +110,19 @@ namespace Evosim.Core
                 throw new FormatException(
                     $"Genome is format {format}, this build reads {FormatVersion}. There is no " +
                     "migration path: re-run, or check out the revision that wrote it. " +
-                    "(Format 4 added the snapshot row's creature id, so a format-3 snapshot " +
-                    "cannot be joined to lineage.jsonl and is refused rather than read blind.)");
+                    "(Format 5 replaced the offspring endowment in joules with a birth " +
+                    "investment as a fraction of the parent's body, and added the adult scale, " +
+                    "so an older genome carries neither a size nor a readable investment.)");
             }
 
             var genome = new Genome
             {
                 RootIndex = root["root"].AsInt(),
+                AdultScale = root["adultScale"].AsFloat(),
                 Reproduction = new ReproductionTraits
                 {
                     BroodSize = root["reproduction"]["brood"].AsInt(),
-                    OffspringEndowment = root["reproduction"]["endowment"].AsFloat(),
+                    BirthInvestment = root["reproduction"]["investment"].AsFloat(),
                 },
             };
 

@@ -114,7 +114,10 @@ namespace Evosim.Core.Tests
 
                 var config = new RunConfig
                 {
-                    Light = new LightModel(300f, 12f),
+                    // 90 W/m2 rather than 300 since fable-propose-growth.md (2026-09-08):
+                    // cheaper reproduction carries several times the head-count at the same
+                    // light, and this world met its ceiling before it met its subject.
+                    Light = new LightModel(90f, 12f),
                     MinimumPopulation = 30,
                     MaximumPopulation = 300,
                     HorizontalPatches = 4f,

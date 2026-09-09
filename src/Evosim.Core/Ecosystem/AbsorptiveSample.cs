@@ -65,8 +65,16 @@ namespace Evosim.Core
         /// <summary>Embodied energy, J — <see cref="Organism.TissueJoules"/>.</summary>
         public float TissueJoules { get; }
 
-        /// <summary>What this genome would give a child, J — <see cref="ReproductionTraits.OffspringEndowment"/>.</summary>
-        public float Endowment { get; }
+        /// <summary>
+        /// What a reproduction would cost this genome, as a share of its own body —
+        /// <see cref="ReproductionTraits.BirthInvestment"/>.
+        /// </summary>
+        /// <remarks>
+        /// A fraction where the column held joules before fable-propose-growth.md (2026-09-08).
+        /// Read against <see cref="TissueJoules"/> to get the old quantity back: what the parent
+        /// spends is this times that.
+        /// </remarks>
+        public float BirthInvestment { get; }
 
         /// <summary>
         /// The nutrient density this creature was actually fed at, J/m³ — <b>the number
@@ -124,7 +132,7 @@ namespace Evosim.Core
         public AbsorptiveSample(
             double elapsedSeconds, long id, float age, int generationDepth, int patch,
             float heightY, float volume, float absorptiveVolume, float litArea, int partCount,
-            bool mixotroph, float energy, float tissueJoules, float endowment,
+            bool mixotroph, float energy, float tissueJoules, float birthInvestment,
             float densityHere, float share,
             float foodWatts, float lightWatts, float upkeepWatts, float exudedWatts, float netWatts,
             int children, double lastChildSeconds, bool dead)
@@ -142,7 +150,7 @@ namespace Evosim.Core
             Mixotroph = mixotroph;
             Energy = energy;
             TissueJoules = tissueJoules;
-            Endowment = endowment;
+            BirthInvestment = birthInvestment;
             DensityHere = densityHere;
             Share = share;
             FoodWatts = foodWatts;
@@ -192,7 +200,7 @@ namespace Evosim.Core
                 creature.HasPhotosyntheticTissue,
                 creature.Energy,
                 creature.TissueJoules,
-                creature.Genome.Reproduction.OffspringEndowment,
+                creature.Genome.Reproduction.BirthInvestment,
                 creature.LastDensityHere,
                 creature.LastShare,
                 ledger.FoodIncome * perSecond,
@@ -226,7 +234,7 @@ namespace Evosim.Core
                 .Field("mixotroph", Mixotroph)
                 .Field("energy", Energy)
                 .Field("tissue", TissueJoules)
-                .Field("endowment", Endowment)
+                .Field("investment", BirthInvestment)
                 .Field("densityHere", DensityHere)
                 .Field("share", Share)
                 .Field("foodW", FoodWatts)

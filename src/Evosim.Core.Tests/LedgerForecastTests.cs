@@ -19,7 +19,7 @@ namespace Evosim.Core.Tests
         [Fact]
         public void APhotosyntheticBodyAtTheSurfaceReproducesAndEventuallySuccumbsToSenescence()
         {
-            Genome genome = SingleCellGenome(CellTypeIds.Photosynthetic, broodSize: 1, endowment: 100f);
+            Genome genome = SingleCellGenome(CellTypeIds.Photosynthetic, broodSize: 1, investment: 0.5f);
             var config = new RunConfig { SenescenceDoublingSeconds = 3000f };
 
             Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
@@ -50,7 +50,7 @@ namespace Evosim.Core.Tests
         [Fact]
         public void AnAbsorptiveBodyAtClearanceOneInThinWaterNeverBreedsAndDies()
         {
-            Genome genome = SingleCellGenome(CellTypeIds.Absorptive, broodSize: 1, endowment: 100f);
+            Genome genome = SingleCellGenome(CellTypeIds.Absorptive, broodSize: 1, investment: 0.5f);
             var config = new RunConfig { CellTypes = AbsorptiveRegistry(clearanceRate: 1f) };
 
             Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
@@ -72,7 +72,7 @@ namespace Evosim.Core.Tests
         [Fact]
         public void AnAbsorptiveBodyAtClearanceTenInRichWaterReproduces()
         {
-            Genome genome = SingleCellGenome(CellTypeIds.Absorptive, broodSize: 1, endowment: 100f);
+            Genome genome = SingleCellGenome(CellTypeIds.Absorptive, broodSize: 1, investment: 0.5f);
             var config = new RunConfig { CellTypes = AbsorptiveRegistry(clearanceRate: 10f) };
 
             Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
@@ -96,7 +96,7 @@ namespace Evosim.Core.Tests
             // Default AbsorptiveCell: clearance 1, upkeep 4 W/m3, yield 1 — so income is
             // density x clearance x volume and upkeep is 4 x volume; the volume cancels and the
             // break-even density is upkeep / clearance = 4, independent of body size.
-            Genome genome = SingleCellGenome(CellTypeIds.Absorptive, broodSize: 1, endowment: 100f);
+            Genome genome = SingleCellGenome(CellTypeIds.Absorptive, broodSize: 1, investment: 0.5f);
             var config = new RunConfig();
 
             Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
@@ -117,7 +117,7 @@ namespace Evosim.Core.Tests
         [Fact]
         public void ABodyWithNoAbsorptiveTissueHasNoBreakEvenDensity()
         {
-            Genome genome = SingleCellGenome(CellTypeIds.Photosynthetic, broodSize: 1, endowment: 100f);
+            Genome genome = SingleCellGenome(CellTypeIds.Photosynthetic, broodSize: 1, investment: 0.5f);
             var config = new RunConfig();
 
             Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
@@ -144,7 +144,7 @@ namespace Evosim.Core.Tests
             //
             // If this ever passes with R0 rising, Net has stopped carrying Exuded and the knob is
             // invisible to every consumer of a ledger, the world's own reserve update included.
-            Genome genome = SingleCellGenome(CellTypeIds.Photosynthetic, broodSize: 1, endowment: 100f);
+            Genome genome = SingleCellGenome(CellTypeIds.Photosynthetic, broodSize: 1, investment: 0.5f);
 
             int previous = int.MaxValue;
             float previousNet = float.MaxValue;
@@ -195,16 +195,16 @@ namespace Evosim.Core.Tests
 
             Assert.Throws<ArgumentException>(() => LedgerForecast.Forecast(
                 empty, config, 100f, 1f, 0f,
-                new ReproductionTraits { BroodSize = 1, OffspringEndowment = 10f }));
+                new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f }));
         }
 
         /// <summary>One unjointed box of a single cell type — the simplest body that can earn or spend.</summary>
-        private static Genome SingleCellGenome(string cellTypeId, int broodSize, float endowment)
+        private static Genome SingleCellGenome(string cellTypeId, int broodSize, float investment)
         {
             var genome = new Genome
             {
                 RootIndex = 0,
-                Reproduction = new ReproductionTraits { BroodSize = broodSize, OffspringEndowment = endowment },
+                Reproduction = new ReproductionTraits { BroodSize = broodSize, BirthInvestment = investment },
             };
 
             genome.Nodes.Add(new MorphNode

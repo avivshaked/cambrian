@@ -43,10 +43,13 @@ namespace Evosim.Core.Tests
                 return sb.ToString();
             }
 
-            var unset = new RunConfig { Light = new LightModel(300f, 12f) };
+            // 90 W/m2 rather than 300 since fable-propose-growth.md (2026-09-08): cheaper
+            // reproduction carries several times the head-count at the same light, and both
+            // worlds met the ceiling before the trajectories could be compared.
+            var unset = new RunConfig { Light = new LightModel(90f, 12f) };
             var explicitOff = new RunConfig
             {
-                Light = new LightModel(300f, 12f),
+                Light = new LightModel(90f, 12f),
                 HorizontalPatches = 1f,
                 HorizontalMixingDiffusivity = 0f,
                 DispersalChancePerStep = 0f,
@@ -300,7 +303,9 @@ namespace Evosim.Core.Tests
                 HorizontalMixingDiffusivity = 0.05f,
                 DispersalChancePerStep = 0.1f,
                 PerPatchShading = 1f,
-                Light = new LightModel(300f, 12f),
+
+                // 90 W/m2 rather than 300 — see KEqualsOneIsBitIdenticalToAWorldThatNeverHeardOfPatches.
+                Light = new LightModel(90f, 12f),
             };
 
             string Trajectory()
@@ -371,9 +376,17 @@ namespace Evosim.Core.Tests
             Assert.NotEmpty(events);
 
             bool sawNonZeroPatch = false;
+            bool sawBirth = false;
             foreach (LineageEvent evt in events)
             {
-                Assert.Equal(LineageEventKind.Birth, evt.Kind);
+                // Deaths are in the drain too since fable-propose-growth.md (2026-09-08): a
+                // founder is born at its own genome's birth fraction with the floor's purse
+                // scaled the same way, so the poorest of them starve inside this window where
+                // they used to start on the whole 200 J. The subject here is the patch a birth
+                // row carries, so a death row is skipped rather than asserted about.
+                if (evt.Kind != LineageEventKind.Birth) continue;
+
+                sawBirth = true;
                 Assert.InRange(evt.Patch, 0, 3);
 
                 Organism match = null;
@@ -386,6 +399,7 @@ namespace Evosim.Core.Tests
                 if (evt.Patch != 0) sawNonZeroPatch = true;
             }
 
+            Assert.True(sawBirth, "no birth rows at all, so nothing was checked");
             Assert.True(
                 sawNonZeroPatch,
                 "every founder landed in patch 0 across 4 patches and many draws — suspiciously uniform");

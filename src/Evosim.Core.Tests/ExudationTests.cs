@@ -178,7 +178,7 @@ namespace Evosim.Core.Tests
             var genome = new Genome
             {
                 RootIndex = 0,
-                Reproduction = new ReproductionTraits { BroodSize = 1, OffspringEndowment = 100f },
+                Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f },
             };
 
             genome.Nodes.Add(new MorphNode

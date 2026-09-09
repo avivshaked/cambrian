@@ -53,7 +53,12 @@ namespace Evosim.Core.Tests
     /// the four rows are read on the same axes, even though nothing there is actually
     /// shielded from grazing.
     /// </para>
+    /// <para>
+    /// Marked <c>Slow</c> and left out of the default run: this is a scan that reports a
+    /// timescale, not a guard on one. Run it with <c>core-test.ps1 -All</c>.
+    /// </para>
     /// </remarks>
+    [Trait("Category", "Slow")]
     public class RefugeImpulse
     {
         private readonly ITestOutputHelper _output;

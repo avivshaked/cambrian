@@ -334,10 +334,16 @@ namespace Evosim.Core.Tests
 
             var world = new World(config, seed: 1);
 
+            // Stopped on the state this test is about rather than on the corpse count alone:
+            // one corpse left, and that corpse already under the crumb floor, so the next step is
+            // the one that deposits the remainder whole. Waiting only for the count leaves
+            // whatever the population's last death happened to hand over, which since
+            // fable-propose-growth.md (2026-09-08) is a different number at a different step.
             for (int step = 0; step < 4_000; step++)
             {
                 world.Step(1f);
-                if (world.Living.Count == 0 && world.Corpses.Count <= 1) break;
+                if (world.Living.Count == 0 && world.Corpses.Count == 1 &&
+                    world.Corpses[0].Joules < 1e-6) break;
             }
 
             Assert.Empty(world.Living);

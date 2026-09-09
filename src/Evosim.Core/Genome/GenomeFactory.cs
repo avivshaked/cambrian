@@ -243,18 +243,35 @@ namespace Evosim.Core
         public int MaxBroodSize { get; set; } = 3;
 
         /// <summary>
-        /// Offspring endowment range for the initial population, in joules — DESIGN.md §5A.6.
+        /// Birth-investment range for the initial population, as a fraction of the parent's own
+        /// tissue value — DESIGN.md §5A.6, fable-propose-growth.md rule 1.
         /// </summary>
         /// <remarks>
-        /// ⚠ Unmeasured, and it cannot be measured until the energy economy exists (§5A.10).
-        /// The number that matters is not this one but its ratio to what a creature can earn in
-        /// the time an offspring takes to become self-sufficient, and nothing here knows that
-        /// yet. Treated as a placeholder that must be revisited at Milestone 5, not as a value.
+        /// <b>Both ends at the proposal's single default, so generation zero is not handed a
+        /// strategy.</b> The range that stood here before was 50 to 400 J, a spread on a quantity
+        /// that meant different things to bodies of different sizes; a fraction of the parent's
+        /// own body travels, and the founding lottery has no reason to guess at it. Kept as two
+        /// knobs rather than one so that a screen can open the spread without a code change, which
+        /// is exactly how the r/K axis would be probed if the owner rules that founders should
+        /// vary. ⚠ Unmeasured (§5A.10).
         /// </remarks>
         [Tunable("genome")]
-        public float MinOffspringEndowment { get; set; } = 50f;
+        public float MinBirthInvestment { get; set; } = 0.5f;
         [Tunable("genome")]
-        public float MaxOffspringEndowment { get; set; } = 400f;
+        public float MaxBirthInvestment { get; set; } = 0.5f;
+
+        /// <summary>
+        /// Adult size a founder is drawn at — fable-propose-growth.md rule 7.
+        /// </summary>
+        /// <remarks>
+        /// One at every founding, and not a range. The node dimensions already carry a fourfold
+        /// spread of body size (<see cref="MinHalfExtent"/>), so a second draw over the same thing
+        /// would only make the founding lottery noisier; what this dial is for is letting a
+        /// <i>lineage</i> walk its size, which starts from a definite place and gets there by
+        /// mutation.
+        /// </remarks>
+        [Tunable("genome")]
+        public float FounderAdultScale { get; set; } = 1f;
 
         /// <summary>
         /// Cell types a founder's single body cell may be — DESIGN.md §5A.0b.
@@ -357,11 +374,12 @@ namespace Evosim.Core
             var genome = new Genome
             {
                 RootIndex = 0,
+                AdultScale = options.FounderAdultScale,
                 Reproduction = new ReproductionTraits
                 {
                     BroodSize = rng.Range(options.MinBroodSize, options.MaxBroodSize + 1),
-                    OffspringEndowment =
-                        rng.Range(options.MinOffspringEndowment, options.MaxOffspringEndowment),
+                    BirthInvestment =
+                        rng.Range(options.MinBirthInvestment, options.MaxBirthInvestment),
                 },
             };
 
@@ -452,11 +470,12 @@ namespace Evosim.Core
             var genome = new Genome
             {
                 RootIndex = 0,
+                AdultScale = options.FounderAdultScale,
                 Reproduction = new ReproductionTraits
                 {
                     BroodSize = rng.Range(options.MinBroodSize, options.MaxBroodSize + 1),
-                    OffspringEndowment =
-                        rng.Range(options.MinOffspringEndowment, options.MaxOffspringEndowment),
+                    BirthInvestment =
+                        rng.Range(options.MinBirthInvestment, options.MaxBirthInvestment),
                 },
             };
 

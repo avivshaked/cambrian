@@ -177,18 +177,21 @@ namespace Evosim.Core.Tests
             // must be the only difference: at the 400 W/m² default the wide world is a hundred
             // times the standard one and legitimately reaches fifty thousand creatures, which
             // stops the run for a reason that has nothing to do with what is being tested.
+            // 32 W/m² rather than 48 since fable-propose-growth.md (2026-09-08): a reproduction
+            // costs a fraction of the parent's body where it cost a whole one plus an endowment,
+            // so the transition moved down and the wide world reached the ceiling at 48.
             var narrow = new RunConfig
             {
                 MinimumPopulation = 30, MaximumPopulation = 50000,
                 FloorSpawnsPerStep = 2, WorldAreaSquareMetres = 25f,
-                Light = new LightModel(48f, 12f),
+                Light = new LightModel(32f, 12f),
             };
 
             var wide = new RunConfig
             {
                 MinimumPopulation = 30, MaximumPopulation = 50000,
                 FloorSpawnsPerStep = 2, WorldAreaSquareMetres = 40000f,
-                Light = new LightModel(48f, 12f),
+                Light = new LightModel(32f, 12f),
             };
 
             var a = new World(narrow, 1);

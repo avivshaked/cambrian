@@ -79,19 +79,29 @@ namespace Evosim.Core
         /// </summary>
         public NeuronDef[] Neurons { get; internal set; } = Array.Empty<NeuronDef>();
 
-        /// <summary>Volume in m³, computed by this part's shape at development time.</summary>
+        /// <summary>Volume in m³, computed by this part's shape when the part was built.</summary>
         /// <remarks>
         /// Stored rather than derived, because deriving it needs the shape registry and this is
-        /// read on every part on every step by the metabolic accounting.
+        /// read on every part on every step by the metabolic accounting. Since
+        /// fable-propose-growth.md rule 5 (2026-09-08) a growing body is rebuilt at its new size
+        /// rather than edited in place (<see cref="Phenotype.Scaled"/>), so this is still written
+        /// once for any one part and still measured by the shape rather than scaled arithmetically.
         /// </remarks>
         public float Volume { get; internal set; }
 
-        /// <summary>Total surface area, m². Stored at development because it never changes.</summary>
+        /// <summary>Total surface area, m². Stored, because a part never changes size.</summary>
         /// <remarks>
         /// Recomputing it means asking the shape for its panels and summing them, which allocates
         /// and costs more than everything else in an energy step put together — the same fault
-        /// the fluid model documents and avoids. A part's geometry is fixed from development to
-        /// death (growth does not exist, §5A.6), so this is computed once.
+        /// the fluid model documents and avoids.
+        /// <para>
+        /// A <i>part</i>'s geometry is still fixed from the moment it is built to the moment the
+        /// body holding it is replaced, which is what makes computing this once safe. A
+        /// <i>body</i>'s is not, since fable-propose-growth.md rule 5: a creature below its adult
+        /// size grows every step, and growth builds a whole new phenotype at the new scale rather
+        /// than mutating these fields. Measuring the new part from its shape is the reason the
+        /// energy audit does not notice growth happening.
+        /// </para>
         /// </remarks>
         public float SurfaceArea { get; internal set; }
 

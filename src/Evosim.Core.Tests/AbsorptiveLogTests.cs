@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
 using Evosim.Core;
 using Xunit;
 using Xunit.Abstractions;
@@ -47,6 +50,15 @@ namespace Evosim.Core.Tests
                 Neurons = Array.Empty<NeuronDef>(),
             });
             g.RootIndex = 0;
+
+            // Born adult. fable-propose-growth.md (2026-09-08) makes a newborn start at a
+            // fraction of its body and spend its reserve building the rest, and several tests
+            // here take the reserve's change across a step as ground truth for the ledger — with
+            // growth running that change is the ledger less what the body bought, which is a
+            // second withdrawal the ledger never saw. An investment of 2 over a brood of 1 leaves
+            // 1.6 of an adult body after the newborn reserve, capped at 1, so this creature is
+            // finished at birth and growth is a no-op for it.
+            g.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 2f };
             return g;
         }
 
@@ -127,7 +139,7 @@ namespace Evosim.Core.Tests
             Assert.False(row.Mixotroph);
             Assert.Equal(stomach.TissueJoules, row.TissueJoules);
             Assert.Equal(stomach.Phenotype.TotalVolume, row.AbsorptiveVolume);
-            Assert.Equal(stomach.Genome.Reproduction.OffspringEndowment, row.Endowment);
+            Assert.Equal(stomach.Genome.Reproduction.BirthInvestment, row.BirthInvestment);
             Assert.Equal(0, stomach.Children);
             Assert.Equal(0, row.Children);
             Assert.True(double.IsNaN(row.LastChildSeconds), "a childless creature reported a last child");
@@ -352,6 +364,76 @@ namespace Evosim.Core.Tests
                 "a child was born after the world got there");
 
             _output.WriteLine(row.ToJson());
+        }
+
+        [Fact]
+        public void TheReaderScriptMatchesARealRow()
+        {
+            // scripts/absorptive-log.ps1 reads the log with one regex anchored on every key of
+            // ToJson in order. That is deliberate — nothing indexes a column by position, which
+            // is CLAUDE.md's rule after logbook/0044 — and it has one failure mode: rename a key
+            // and no row matches at all, so the script prints an empty summary and counts every
+            // line as malformed. fable-propose-growth.md (2026-09-08) renamed `endowment` to
+            // `investment` and did exactly that.
+            //
+            // So the guard is here rather than only in a fixture: this lifts the script's own
+            // regex out of the script and runs it against a row this build has just serialised,
+            // which is the one comparison a hand-written fixture cannot make.
+            string script = Path.GetFullPath(Path.Combine(
+                Directory.GetCurrentDirectory(), "..", "..", "..", "..", "..",
+                "scripts", "absorptive-log.ps1"));
+
+            if (!File.Exists(script))
+            {
+                _output.WriteLine($"no reader script at {script} — skipped");
+                return;
+            }
+
+            // The literal pieces of the PowerShell expression, concatenated. Each is a
+            // single-quoted string on its own line ending in ` +` or `)`; the doubled quote is
+            // PowerShell's escape and does not occur in this regex.
+            var pattern = new StringBuilder();
+            bool inside = false;
+
+            foreach (string line in File.ReadAllLines(script))
+            {
+                string trimmed = line.Trim();
+
+                if (!inside)
+                {
+                    int open = trimmed.IndexOf("$rx = [regex](", StringComparison.Ordinal);
+                    if (open < 0) continue;
+                    inside = true;
+                    trimmed = trimmed.Substring(open + "$rx = [regex](".Length).Trim();
+                }
+
+                int first = trimmed.IndexOf('\'');
+                int last = trimmed.LastIndexOf('\'');
+                if (first >= 0 && last > first) pattern.Append(trimmed, first + 1, last - first - 1);
+
+                if (trimmed.EndsWith(")", StringComparison.Ordinal)) break;
+            }
+
+            Assert.True(pattern.Length > 0, $"no $rx regex found in {script}");
+
+            RunConfig config = EmptyWorld();
+            var world = new World(config, seed: 11);
+            world.Nutrients.Deposit(-6f, 20_000f, 0);
+            world.Inoculate(Stomach(), count: 1, heightY: -6f);
+            world.Step(1f);
+
+            var rows = new List<AbsorptiveSample>();
+            world.CollectAbsorptiveLog(rows);
+            string json = Assert.Single(rows).ToJson();
+
+            _output.WriteLine(pattern.ToString());
+            _output.WriteLine(json);
+
+            Assert.True(
+                Regex.IsMatch(json, pattern.ToString()),
+                "scripts/absorptive-log.ps1's regex no longer matches AbsorptiveSample.ToJson, so " +
+                "the reader will count every row as malformed and print an empty summary. Update " +
+                "the regex and regenerate scripts/tests/absorptive-log/'s fixture.");
         }
     }
 }

@@ -12,12 +12,20 @@ namespace Evosim.Core.Tests
     /// record.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <b>One column had to change.</b> The vertex table sweeps the number of vertices a kernel
     /// holds, because that is what buys a vertex field its resolution. A grid buys resolution with
     /// the cell size and holds exactly one number per cell, so the first column is the cell and the
     /// volume a mouth reaches. Everything else is the same sweep at the same settings, and the box
     /// is 24 by 6 by 24 m rather than 20 by 5 by 20 so that cells of 1, 2 and 3 m all divide it.
+    /// </para>
+    /// <para>
+    /// Marked <c>Slow</c> and left out of the default run, alongside <see cref="VertexFieldExperiments"/>:
+    /// this is a scan of the field's own behaviour, not a guard on it. Run it with
+    /// <c>core-test.ps1 -All</c>.
+    /// </para>
     /// </remarks>
+    [Trait("Category", "Slow")]
     public sealed class GridFieldExperiments
     {
         private readonly ITestOutputHelper _output;

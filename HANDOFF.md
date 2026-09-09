@@ -143,9 +143,13 @@ round 28) set the base and the order.
    `BirthInvestment` as a fraction of the parent's tissue value replaces the endowment,
    `AdultScale` scales the plan, brood stays; a child is born at the investment over the
    litter and grows to its adult size before it breeds; three world constants with first
-   values, a newborn mass floor of 0.5 kg against the divergence record. Round 33, after
-   round 33 reads; the Unity side is an in-place rescale of the articulation. The Core half
-   is being built (2026-09-09, `scratch/growth-core-spec.md`) on the proposal's defaults.
+   values, a newborn mass floor of 0.5 kg against the divergence record. Built in both
+   halves and smoked on 2026-09-09 (logbook/0081): the suite passes at 604, the smoke
+   closes both books with 1,093 in-place resizes and no divergence, and children are born
+   at a median third of their adult body. Five constants wait on the owner (0081's list:
+   investment 0.5 with a biomass ceiling, one gate of 0.08, founders 0.25 to 1.0, the
+   reserve cap, the reserve floor); round 34 launches on `scratch/launch-r34.ps1` once they
+   are ruled and round 33 has read.
 8. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
    brain can be selected for, after growth.
    *Run length (owner, 2026-09-08 night: "that sounds good"):* 30,000 s gives 40 to 50

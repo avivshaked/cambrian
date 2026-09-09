@@ -99,8 +99,40 @@ namespace Evosim.Core.Tests
         {
             // §5A.10's rule applied to the newest knob: WorkCostMultiplier must reach the
             // arithmetic, or "swimming is expensive" is a claim no run can vary.
-            var cheap = new RunConfig { Light = new LightModel(48f, 12f), WorkCostMultiplier = 1f };
-            var dear = new RunConfig { Light = new LightModel(48f, 12f), WorkCostMultiplier = 4f };
+            // Founders born adult, so that the reserve's change across the step is the stroke
+            // and the upkeep and nothing else. Since fable-propose-growth.md (2026-09-08) a
+            // newborn spends everything above its growth floor on building its body, which is a
+            // second withdrawal far larger than the stroke being measured and would swamp it. An
+            // investment of 2 over a brood of 1 leaves more than a whole adult body after the
+            // newborn reserve, and the surplus is capped away.
+            // The brood is pinned too: the share is the investment over the litter, so a founder
+            // drawn with a brood of three would be born at half its adult size and grow.
+            var genome = new RandomGenomeOptions
+            {
+                MinBirthInvestment = 2f, MaxBirthInvestment = 2f,
+                MinBroodSize = 1, MaxBroodSize = 1,
+            };
+
+            // And an overhead no founder can afford, so nothing breeds inside the measured
+            // step either: a conception is a third withdrawal from the same reserve, and a much
+            // larger one than the stroke.
+            const float NoBreeding = 1e9f;
+
+            var cheap = new RunConfig
+            {
+                Light = new LightModel(48f, 12f), WorkCostMultiplier = 1f, Genome = genome,
+                PerOffspringOverheadJoules = NoBreeding,
+            };
+            var dear = new RunConfig
+            {
+                Light = new LightModel(48f, 12f), WorkCostMultiplier = 4f,
+                Genome = new RandomGenomeOptions
+                {
+                    MinBirthInvestment = 2f, MaxBirthInvestment = 2f,
+                    MinBroodSize = 1, MaxBroodSize = 1,
+                },
+                PerOffspringOverheadJoules = NoBreeding,
+            };
 
             Assert.NotEqual(cheap.Hash(), dear.Hash());
 

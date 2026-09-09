@@ -120,7 +120,11 @@ namespace Evosim.Core.Tests
             {
                 var config = new RunConfig
                 {
-                    Light = new LightModel(300f, 12f),
+                    // 90 W/m2 rather than 300 since fable-propose-growth.md (2026-09-08): a
+                    // reproduction costs a fraction of the parent's body where it cost a whole
+                    // one plus an endowment, so the same light carries several times the
+                    // head-count and this world met its ceiling before it met its subject.
+                    Light = new LightModel(90f, 12f),
                     MinimumPopulation = 30,
                     MaximumPopulation = 300,
                     HorizontalPatches = 4f,
@@ -449,7 +453,8 @@ namespace Evosim.Core.Tests
         {
             var config = new RunConfig
             {
-                Light = new LightModel(300f, 12f),
+                // 90 W/m2 rather than 300 — see AWorldWithRollsOffIsUntouchedByAMovingCurrent.
+                Light = new LightModel(90f, 12f),
                 MinimumPopulation = 40,
                 MaximumPopulation = 500,
                 HorizontalPatches = 4f,

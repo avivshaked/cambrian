@@ -74,7 +74,11 @@ namespace Evosim.Core.Tests
             {
                 var config = new RunConfig
                 {
-                    Light = new LightModel(300f, 12f),
+                    // 90 W/m2 rather than 300 since fable-propose-growth.md (2026-09-08):
+                    // cheaper reproduction carries several times the head-count at the same
+                    // light, and both worlds met the default ceiling before the trajectories
+                    // could be compared.
+                    Light = new LightModel(90f, 12f),
                     SharedSpace = true,
                     HorizontalPatches = 4f,
                     DispersalChancePerStep = dispersal,
@@ -207,7 +211,11 @@ namespace Evosim.Core.Tests
             // and a refusal.
             RunConfig Config() => new RunConfig
             {
-                Light = new LightModel(400f, 12f),
+                // 120 W/m2 rather than 400 since fable-propose-growth.md (2026-09-08): a
+                // reproduction costs a fraction of the parent's body where it cost a whole one
+                // plus an endowment, so the same light carries several times the head-count and
+                // the open world met its ceiling before it met its subject.
+                Light = new LightModel(120f, 12f),
                 SharedSpace = true,
                 MinimumPopulation = 20,
                 MaximumPopulation = 400,
@@ -320,7 +328,8 @@ namespace Evosim.Core.Tests
 
             var config = new RunConfig
             {
-                Light = new LightModel(400f, 12f),
+                // 120 W/m2 rather than 400 — see ACrowdedBirthCostsItsParentNothingAndIsCounted.
+                Light = new LightModel(120f, 12f),
                 SharedSpace = true,
                 WorldDepthMetres = 60f,
                 FounderDepthSpread = 60f,

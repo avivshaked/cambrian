@@ -31,12 +31,23 @@ namespace Evosim.Sim
         /// Drag panels for each part, built once. Owned by <see cref="FluidEnvironment"/>.
         /// </summary>
         /// <remarks>
-        /// A part's local geometry is fixed the moment it is developed, but panels were rebuilt
-        /// from the <see cref="PartShape"/> on every part on every step — which §5A.9 measured as
-        /// the largest single term in the simulation. Cached here rather than in the environment
-        /// because they belong to the creature: they describe its body, and they die with it.
-        /// <see cref="DragPanelsPerAxis"/> records the resolution they were built at so that an
-        /// environment configured differently rebuilds instead of silently using someone else's.
+        /// <para>
+        /// A part's local geometry is fixed for as long as the body is one size, but panels were
+        /// rebuilt from the <see cref="PartShape"/> on every part on every step — which §5A.9
+        /// measured as the largest single term in the simulation. Cached here rather than in the
+        /// environment because they belong to the creature: they describe its body, and they die
+        /// with it. <see cref="DragPanelsPerAxis"/> records the resolution they were built at so
+        /// that an environment configured differently rebuilds instead of silently using someone
+        /// else's.
+        /// </para>
+        /// <para>
+        /// <b>A body can change size now</b> (fable-propose-growth.md rule 8, 2026-09-08), and
+        /// <see cref="PhenotypeBuilder.Resize"/> nulls this rather than refilling it. The
+        /// environment owns the one place panels are built, so a grown body that kept its old
+        /// panels would be the cached-parameter fault this project has hit three times: drag
+        /// priced against a body the creature no longer has, with nothing reporting it
+        /// (logbook/0007, 0008, 0013).
+        /// </para>
         /// </remarks>
         public DragPanelSet[] DragPanels { get; internal set; }
 
@@ -253,6 +264,110 @@ namespace Evosim.Sim
         }
 
         /// <summary>
+        /// Puts a creature's live articulation at the size <paramref name="scaled"/> says it is,
+        /// without rebuilding it. fable-propose-growth.md rule 8 (2026-09-08).
+        /// </summary>
+        /// <param name="instance">The built creature. Its <see cref="CreatureInstance.Phenotype"/> becomes <paramref name="scaled"/>.</param>
+        /// <param name="scaled">
+        /// <c>Organism.Phenotype</c>, which Core has already scaled from the adult. Its parts are
+        /// in the adult's order and count, so part <i>i</i> here is body <i>i</i> there.
+        /// </param>
+        /// <param name="fluid">
+        /// The fluid the creature swims in, for added mass. Mass is set from the new volume and
+        /// then inflated once, so added mass is never applied twice: the plain mass is recomputed
+        /// on every resize rather than being multiplied into whatever the body was carrying.
+        /// </param>
+        /// <param name="shapes">The registry the phenotype was developed with, as <see cref="Build"/> demands.</param>
+        /// <remarks>
+        /// <para>
+        /// <b>Rebuilding the articulation instead would throw the creature away.</b> A body's
+        /// velocities, its joint state and its brain's loop through the solver all live in the
+        /// articulation, and a creature that grew by being destroyed and rebuilt would be reset to
+        /// rest every ten seconds. So the four things that carry size are written in place:
+        /// collider extents, mass, both joint anchors, and the visual.
+        /// </para>
+        /// <para>
+        /// <b>The transforms are deliberately not touched.</b> PhysX drives every link's pose from
+        /// the articulation once the solver has run, so writing a link's local position here would
+        /// be overwritten at best and would fight the solver at worst. The anchors are what say
+        /// where a joint is, and they are lengths, so they scale.
+        /// </para>
+        /// <para>
+        /// <b>PhysX keeps the joint state across an anchor change, and a smoke is what proves
+        /// it.</b> The failure mode this has is a body that teleports when its constraint frame
+        /// moves: r20q-s1 diverged because one newborn link was spun up by thousands of rad/s in a
+        /// single step (logbook/0059), and a resize that jumps a body is the same accident from a
+        /// different direction. <c>Ecosystem</c> therefore measures the largest root displacement
+        /// across a resize and reports it, rather than anyone asserting from the documentation
+        /// that it is zero.
+        /// </para>
+        /// <para>
+        /// <b>Cost, and why it is off the physics path.</b> One pass over the parts: a collider
+        /// write, a mass write, two anchor writes and up to three transform writes each, plus the
+        /// panel rebuild the fluid does lazily on its next step. That is roughly what
+        /// <see cref="Build"/> costs less the GameObject allocation, which spike 01 measured at
+        /// 0.335 ms for a ten-part creature. Run once per <c>RunConfig.GrowthStepSeconds</c> of
+        /// simulated time, which is one metabolic step in twenty at the default, and never per
+        /// physics step.
+        /// </para>
+        /// </remarks>
+        public static void Resize(
+            CreatureInstance instance,
+            Phenotype scaled,
+            FluidConfig fluid,
+            PartShapeRegistry shapes = null)
+        {
+            if (instance == null) throw new System.ArgumentNullException(nameof(instance));
+            if (scaled == null) throw new System.ArgumentNullException(nameof(scaled));
+
+            // Not defensive padding: the whole method indexes one list by the other's position,
+            // and a mismatch would silently give part i the size of some other part. Core
+            // guarantees the count, so this can only fire if that guarantee breaks.
+            if (scaled.PartCount != instance.Bodies.Length)
+            {
+                throw new System.ArgumentException(
+                    $"A body of {instance.Bodies.Length} links cannot be resized to a phenotype of " +
+                    $"{scaled.PartCount} parts. Growth changes a body's size and never its plan.",
+                    nameof(scaled));
+            }
+
+            shapes = shapes ?? PartShapeRegistry.Standard;
+
+            for (int i = 0; i < scaled.PartCount; i++)
+            {
+                PhenotypePart part = scaled.Parts[i];
+                ArticulationBody body = instance.Bodies[i];
+                if (body == null) continue;
+
+                ResizeColliderAndVisual(body.gameObject, part, shapes.Resolve(part.ShapeId));
+
+                // The same two lines Build uses, in the same order. FluidModel.EffectiveMass is
+                // the identity at coefficient 0, which is every run through round 28, so this is
+                // called unconditionally rather than branching on the coefficient.
+                float mass = Mathf.Max(0.001f, part.Volume * DensityKgPerM3);
+                body.mass = fluid == null ? mass : FluidModel.EffectiveMass(mass, part.Volume, fluid);
+
+                // Anchors only, and the rotations are left alone: a joint frame's orientation is
+                // a property of the plan and growth does not touch the plan. The root has no
+                // joint, so it has no anchors to move.
+                if (!part.IsRoot)
+                {
+                    body.anchorPosition = part.ChildAnchorLocal.ToVector3();
+                    body.parentAnchorPosition = part.ParentAnchorLocal.ToVector3();
+                }
+            }
+
+            instance.Phenotype = scaled;
+
+            // Dropped rather than rebuilt here, so that FluidEnvironment.EnsurePanels stays the
+            // one place a panel set is made. Two places building panels is how a resolution
+            // change stops reaching the thing it configures, which is this project's oldest
+            // recurring fault (logbook/0007, 0008, 0013).
+            instance.DragPanels = null;
+            instance.DragPanelsPerAxis = 0;
+        }
+
+        /// <summary>
         /// Paints each part by what it is made of, or restores the plain look — DESIGN.md §5A.1.
         /// </summary>
         /// <remarks>
@@ -330,43 +445,152 @@ namespace Evosim.Sim
         /// </remarks>
         private static void AddColliderAndVisual(GameObject go, PhenotypePart part, PartShape shape)
         {
+            SizeCollider(go, part, shape, create: true);
+
+            int count = VisualPlan(part, shape);
+            for (int v = 0; v < count; v++)
+            {
+                AddMesh(go.transform, _visualMesh[v], _visualOffset[v], _visualScale[v]);
+            }
+        }
+
+        /// <summary>
+        /// Puts an existing part's collider and visual at the size <paramref name="part"/> now
+        /// says it is. The geometry half of <see cref="Resize"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Shares <see cref="SizeCollider"/> and <see cref="VisualPlan"/> with the build, and
+        /// that is the point.</b> Three things have to agree about how large a part is (see
+        /// <see cref="AddColliderAndVisual"/>'s note), and a second copy of the arithmetic here
+        /// would let a grown creature's collider and its drawing drift apart with nothing
+        /// reporting it. So the build creates what this one edits, from one description.
+        /// <para>
+        /// The visuals are found by walking the part's own children and taking the ones that draw
+        /// something. A part's children are its visuals and its child <i>parts</i>, and only the
+        /// visuals carry a <see cref="MeshFilter"/>; they were added before any child part was
+        /// parented, so they come first and in the order <see cref="VisualPlan"/> lists them.
+        /// </para>
+        /// </remarks>
+        private static void ResizeColliderAndVisual(GameObject go, PhenotypePart part, PartShape shape)
+        {
+            SizeCollider(go, part, shape, create: false);
+
+            int count = VisualPlan(part, shape);
+            Transform t = go.transform;
+            int v = 0;
+
+            for (int k = 0; k < t.childCount && v < count; k++)
+            {
+                Transform child = t.GetChild(k);
+                if (child.GetComponent<MeshFilter>() == null) continue;
+
+                child.localPosition = _visualOffset[v];
+                child.localScale = _visualScale[v];
+                v++;
+            }
+        }
+
+        /// <summary>Sizes the part's collider, adding it when the part is being built.</summary>
+        private static void SizeCollider(GameObject go, PhenotypePart part, PartShape shape, bool create)
+        {
+            Float3 h = part.HalfExtents;
+
+            switch (shape)
+            {
+                case SphereShape _:
+                {
+                    SphereCollider sphere =
+                        create ? go.AddComponent<SphereCollider>() : go.GetComponent<SphereCollider>();
+                    if (sphere != null) sphere.radius = SphereShape.Radius(h);
+                    break;
+                }
+
+                case CapsuleShape _:
+                {
+                    CapsuleCollider capsule =
+                        create ? go.AddComponent<CapsuleCollider>() : go.GetComponent<CapsuleCollider>();
+                    if (capsule == null) break;
+
+                    capsule.direction = 1;                 // Y, matching CapsuleShape
+                    capsule.radius = CapsuleShape.Radius(h);
+                    capsule.height =                       // Unity's height includes the caps
+                        2f * (CapsuleShape.HalfSpan(h) + CapsuleShape.Radius(h));
+                    break;
+                }
+
+                default:
+                {
+                    BoxCollider box =
+                        create ? go.AddComponent<BoxCollider>() : go.GetComponent<BoxCollider>();
+                    if (box != null)
+                    {
+                        box.size = new Vector3(
+                            2f * Mathf.Abs(h.X), 2f * Mathf.Abs(h.Y), 2f * Mathf.Abs(h.Z));
+                    }
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The meshes one part draws with, and where each sits, filled into the scratch arrays
+        /// and returned as a count.
+        /// </summary>
+        /// <remarks>
+        /// A capsule is drawn as a cylinder plus two spheres rather than as Unity's capsule
+        /// primitive. That primitive is a fixed 1 wide by 2 tall, so making it the right length
+        /// and the right width needs a non-uniform scale, which stretches the hemispherical caps
+        /// into ellipsoids — the rendered part stops matching its own collider, by an amount that
+        /// grows the further the capsule is from twice-as-long-as-wide. Three uniformly-scaled
+        /// primitives are exact, and cost two extra renderers on a quarter of parts.
+        /// <para>
+        /// Static scratch rather than a returned array, because this is called once per part on
+        /// every resize of every growing body and a new array each time would be garbage in a
+        /// loop that runs over thousands of creatures.
+        /// </para>
+        /// </remarks>
+        private static int VisualPlan(PhenotypePart part, PartShape shape)
+        {
             EnsureAssets();
 
             Float3 h = part.HalfExtents;
-            Transform t = go.transform;
 
             switch (shape)
             {
                 case SphereShape _:
                 {
                     float r = SphereShape.Radius(h);
-                    go.AddComponent<SphereCollider>().radius = r;
-                    AddMesh(t, _sphereMesh, Vector3.zero, Vector3.one * (2f * r));
-                    break;
+                    _visualMesh[0] = _sphereMesh;
+                    _visualOffset[0] = Vector3.zero;
+                    _visualScale[0] = Vector3.one * (2f * r);
+                    return 1;
                 }
 
                 case CapsuleShape _:
                 {
                     float r = CapsuleShape.Radius(h);
                     float span = CapsuleShape.HalfSpan(h);
+                    int n = 0;
 
-                    CapsuleCollider capsule = go.AddComponent<CapsuleCollider>();
-                    capsule.direction = 1;                 // Y, matching CapsuleShape
-                    capsule.radius = r;
-                    capsule.height = 2f * (span + r);      // Unity's height includes the caps
+                    if (span > 0f)
+                    {
+                        _visualMesh[n] = _cylinderMesh;
+                        _visualOffset[n] = Vector3.zero;
+                        _visualScale[n] = new Vector3(2f * r, span, 2f * r);
+                        n++;
+                    }
 
-                    // Drawn as a cylinder plus two spheres rather than as Unity's capsule
-                    // primitive. That primitive is a fixed 1 wide by 2 tall, so making it the
-                    // right length and the right width needs a non-uniform scale, which
-                    // stretches the hemispherical caps into ellipsoids — the rendered part
-                    // stops matching its own collider, by an amount that grows the further the
-                    // capsule is from twice-as-long-as-wide. Three uniformly-scaled primitives
-                    // are exact, and cost two extra renderers on a quarter of parts.
-                    if (span > 0f) AddMesh(t, _cylinderMesh, Vector3.zero, new Vector3(2f * r, span, 2f * r));
+                    _visualMesh[n] = _sphereMesh;
+                    _visualOffset[n] = new Vector3(0f, span, 0f);
+                    _visualScale[n] = Vector3.one * (2f * r);
+                    n++;
 
-                    AddMesh(t, _sphereMesh, new Vector3(0f, span, 0f), Vector3.one * (2f * r));
-                    AddMesh(t, _sphereMesh, new Vector3(0f, -span, 0f), Vector3.one * (2f * r));
-                    break;
+                    _visualMesh[n] = _sphereMesh;
+                    _visualOffset[n] = new Vector3(0f, -span, 0f);
+                    _visualScale[n] = Vector3.one * (2f * r);
+                    n++;
+
+                    return n;
                 }
 
                 default:
@@ -374,12 +598,17 @@ namespace Evosim.Sim
                     var full = new Vector3(
                         2f * Mathf.Abs(h.X), 2f * Mathf.Abs(h.Y), 2f * Mathf.Abs(h.Z));
 
-                    go.AddComponent<BoxCollider>().size = full;
-                    AddMesh(t, _cubeMesh, Vector3.zero, full);
-                    break;
+                    _visualMesh[0] = _cubeMesh;
+                    _visualOffset[0] = Vector3.zero;
+                    _visualScale[0] = full;
+                    return 1;
                 }
             }
         }
+
+        private static readonly Mesh[] _visualMesh = new Mesh[3];
+        private static readonly Vector3[] _visualOffset = new Vector3[3];
+        private static readonly Vector3[] _visualScale = new Vector3[3];
 
         private static Mesh _cubeMesh;
         private static Mesh _sphereMesh;

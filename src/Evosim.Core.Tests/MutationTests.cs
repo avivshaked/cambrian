@@ -49,7 +49,7 @@ namespace Evosim.Core.Tests
                 RewireInputChance = 0.9f, NeuronOpChance = 0.9f,
                 JointTypeChance = 0.9f, FlagChance = 0.9f,
                 RecursiveLimitChance = 0.9f, CellTypeChance = 0.9f,
-                BroodSizeChance = 0.9f, EndowmentChance = 0.9f,
+                BroodSizeChance = 0.9f, InvestmentChance = 0.9f, AdultScaleChance = 0.9f,
             };
 
             Genome g = Parent(1);
@@ -199,7 +199,8 @@ namespace Evosim.Core.Tests
         {
             var rates = new MutationRates
             {
-                BroodSizeChance = 1f, EndowmentChance = 1f, ScalarStdDev = 2f, MaxBroodSize = 8,
+                BroodSizeChance = 1f, InvestmentChance = 1f, AdultScaleChance = 1f,
+                ScalarStdDev = 2f, MaxBroodSize = 8,
             };
 
             Genome g = Parent(1);
@@ -208,8 +209,98 @@ namespace Evosim.Core.Tests
                 g = Mutator.Mutate(g, new Rng(step), rates);
 
                 Assert.InRange(g.Reproduction.BroodSize, 1, 8);
-                Assert.True(g.Reproduction.OffspringEndowment > 0f);
+                Assert.True(g.Reproduction.BirthInvestment > 0f);
+                Assert.True(g.AdultScale > 0f);
             }
+        }
+
+        [Fact]
+        public void EachDialMovesAtTheRateItsKnobNames()
+        {
+            // The knobs were gated twice when growth was built: the named chance here and then
+            // Perturb's own ScalarChance inside it, so a dial advertising 0.08 per birth moved at
+            // 0.0064 while a node dimension moved at 0.08. Nothing said so, and the remark beside
+            // AdultScaleChance said the opposite. Found in the review of fable-propose-growth.md
+            // (2026-09-08). This measures the realised rate rather than reading the code, because
+            // the fault was invisible in exactly the place a reader would look.
+            const int Trials = 20000;
+
+            // Every structural operator off, so the one node this genome has is still the one
+            // node the child has and a dimension that moved was moved by the scalar step.
+            var rates = new MutationRates
+            {
+                InvestmentChance = 0.08f,
+                AdultScaleChance = 0.08f,
+                ScalarChance = 0.08f,
+                ScalarStdDev = 0.15f,
+                AddNodeChance = 0f,
+                AddEdgeChance = 0f,
+                RemoveEdgeChance = 0f,
+                AddNeuronChance = 0f,
+                RemoveNeuronChance = 0f,
+                RewireInputChance = 0f,
+                NeuronOpChance = 0f,
+                JointTypeChance = 0f,
+                FlagChance = 0f,
+                RecursiveLimitChance = 0f,
+                ShapeChance = 0f,
+                CellTypeChance = 0f,
+                BroodSizeChance = 0f,
+            };
+
+            var parent = new Genome
+            {
+                RootIndex = 0,
+                AdultScale = 1f,
+                Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f },
+            };
+
+            parent.Nodes.Add(new MorphNode
+            {
+                CellTypeId = CellTypeIds.Structural,
+                ShapeId = ShapeIds.Box,
+                Dimensions = new Float3(0.25f, 0.25f, 0.25f),
+                JointType = JointType.Fixed,
+                JointLimits = Array.Empty<Float2>(),
+                RecursiveLimit = 1,
+                Neurons = Array.Empty<NeuronDef>(),
+            });
+
+            int investmentMoved = 0, scaleMoved = 0, dimensionMoved = 0;
+
+            for (ulong seed = 1; seed <= Trials; seed++)
+            {
+                Genome child = Mutator.Mutate(parent, new Rng(seed), rates);
+
+                if (child.Reproduction.BirthInvestment != parent.Reproduction.BirthInvestment)
+                {
+                    investmentMoved++;
+                }
+
+                if (child.AdultScale != parent.AdultScale) scaleMoved++;
+                if (child.Nodes[0].Dimensions.X != parent.Nodes[0].Dimensions.X) dimensionMoved++;
+            }
+
+            double investment = investmentMoved / (double)Trials;
+            double scale = scaleMoved / (double)Trials;
+            double dimension = dimensionMoved / (double)Trials;
+
+            _output.WriteLine(
+                $"per birth, over {Trials} mutations of one genome: investment {investment:0.####}, " +
+                $"adult scale {scale:0.####}, one node dimension {dimension:0.####}, " +
+                $"knobs 0.08 / 0.08 / 0.08");
+
+            // Three standard errors of a Bernoulli draw at p = 0.08 over 20,000 trials is
+            // 0.0058, so this is sampling error and nothing else. The double gate would have
+            // produced 0.0064, which is thirteen standard errors below the knob.
+            const double Tolerance = 0.006;
+
+            Assert.InRange(investment, 0.08 - Tolerance, 0.08 + Tolerance);
+            Assert.InRange(scale, 0.08 - Tolerance, 0.08 + Tolerance);
+
+            // The dial and the dimension are on the same footing now, which is the whole point:
+            // a knob at the same number has to mean the same thing in both places.
+            Assert.InRange(dimension, 0.08 - Tolerance, 0.08 + Tolerance);
         }
 
         [Fact]
@@ -223,7 +314,7 @@ namespace Evosim.Core.Tests
             for (ulong seed = 1; seed <= 400; seed++)
             {
                 Genome parent = Parent(seed % 20 + 1);
-                parent.Reproduction = new ReproductionTraits { BroodSize = 8, OffspringEndowment = 100f };
+                parent.Reproduction = new ReproductionTraits { BroodSize = 8, BirthInvestment = 0.5f };
 
                 int after = Mutator.Mutate(parent, new Rng(seed), rates).Reproduction.BroodSize;
                 if (after > 8) up++; else if (after < 8) down++;
@@ -295,11 +386,30 @@ namespace Evosim.Core.Tests
             // wiring must be identical; turn it up and it must not be.
             Genome parent = Parent(7);
 
-            var off = new MutationRates { RewireInputChance = 0f };
-            var on = new MutationRates { RewireInputChance = 0.9f };
+            // Every other operator off in both arms. Half of them can move the wiring string on
+            // their own: adding a neuron lengthens it, removing one clamps every input that
+            // pointed past it, and losing a joint makes a JointAngle input invalid and sends it
+            // through the same repair path a rewire uses. Leaving them on makes this a test of
+            // whichever operator fired first on the seed it happened to be given.
+            MutationRates off = NothingMutates();
+            MutationRates on = NothingMutates();
+            on.RewireInputChance = 0.9f;
 
-            Assert.Equal(Wiring(parent), Wiring(Mutator.Mutate(parent, new Rng(11), off)));
-            Assert.NotEqual(Wiring(parent), Wiring(Mutator.Mutate(parent, new Rng(11), on)));
+            // A run of seeds rather than one. The claim is that the knob has an effect at all,
+            // and a single seed makes that claim hostage to the draw order: any change upstream
+            // in Mutate shifts the stream, and one seed can then land on a rewire that happens to
+            // repoint an input at itself. That is what happened when the growth dials stopped
+            // rolling ScalarChance a second time (2026-09-08) and seed 11 went quiet.
+            int changed = 0;
+
+            for (ulong seed = 11; seed <= 30; seed++)
+            {
+                Assert.Equal(Wiring(parent), Wiring(Mutator.Mutate(parent, new Rng(seed), off)));
+                if (Wiring(parent) != Wiring(Mutator.Mutate(parent, new Rng(seed), on))) changed++;
+            }
+
+            _output.WriteLine($"{changed} of 20 seeds rewired something at a chance of 0.9");
+            Assert.True(changed > 0, "no seed rewired anything at a chance of 0.9");
         }
 
         [Fact]
@@ -421,6 +531,22 @@ namespace Evosim.Core.Tests
         }
 
         /// <summary>Every input reference in the genome, ignoring weights and constants.</summary>
+        /// <summary>Rates with every chance at zero, for isolating one operator.</summary>
+        private static MutationRates NothingMutates()
+        {
+            var rates = new MutationRates();
+
+            foreach (PropertyInfo p in typeof(MutationRates).GetProperties())
+            {
+                if (p.CanWrite && p.PropertyType == typeof(float) && p.Name.EndsWith("Chance"))
+                {
+                    p.SetValue(rates, 0f);
+                }
+            }
+
+            return rates;
+        }
+
         private static string Wiring(Genome g)
         {
             var parts = new List<string>();

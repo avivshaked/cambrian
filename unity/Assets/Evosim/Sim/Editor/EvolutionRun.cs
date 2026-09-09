@@ -402,6 +402,31 @@ namespace Evosim.Sim.EditorTools
             // one the record already has.
             float corpseDecay = Env("EVOSIM_CORPSE_DECAY", new RunConfig().CorpseDecayPerSecond);
 
+            // fable-propose-growth.md (2026-09-08). A child is born at a fraction of its adult
+            // body and grows into the rest, so the world needs four numbers it never had: the
+            // share of a newborn's start that is reserve rather than body, the buffer a growing
+            // body keeps back, the lightest newborn part the solver will accept, and how often
+            // the harness applies a grown body to the physics. All four are RunConfig tunables
+            // with the same defaults, so a header names them whatever the run.
+            float newbornReserve = Env("EVOSIM_NEWBORN_RESERVE", new RunConfig().NewbornReserveFraction);
+            float growthFloor = Env("EVOSIM_GROWTH_FLOOR", new RunConfig().GrowthReserveFloor);
+            float minNewbornKg = Env("EVOSIM_MIN_NEWBORN_KG", new RunConfig().MinNewbornPartKilograms);
+            float growthStep = Env("EVOSIM_GROWTH_STEP", new RunConfig().GrowthStepSeconds);
+
+            // Rule 1's two dials and the founder draw they start from. The investment range is
+            // what generation zero is handed: RandomGenomeOptions defaults it to a single value,
+            // which founds a world where every lineage begins with the same life history and
+            // selection has nothing to sort. A range is what makes the first round a measurement
+            // of the dial rather than of one point on it.
+            float investMin = Env("EVOSIM_INVEST_MIN", RandomGenomeOptions.Default.MinBirthInvestment);
+            float investMax = Env("EVOSIM_INVEST_MAX", RandomGenomeOptions.Default.MaxBirthInvestment);
+
+            // The two rates the dials mutate at. Both are per birth and neither is gated a second
+            // time by ScalarChance. They were, and delivered 0.0064 where the field said 0.08,
+            // which the review of the growth build fixed (MutationRates' own remark).
+            float adultScaleChance = Env("EVOSIM_ADULT_SCALE_CHANCE", MutationRates.Default.AdultScaleChance);
+            float investChance = Env("EVOSIM_INVEST_CHANCE", MutationRates.Default.InvestmentChance);
+
             // D064. Body volume at which tissue is neutrally buoyant, m3 — the excess density
             // above is scaled by max(0, 1 - (V0/V)^(2/3)), so a founder-sized body barely sinks
             // and a large one feels the full constant. 0 is off and reproduces every pre-D064 run
@@ -623,6 +648,19 @@ namespace Evosim.Sim.EditorTools
             config.FieldCellMetres = fieldCell;
             config.FieldMatterCellMetres = fieldMatterCell;
             config.CorpseDecayPerSecond = corpseDecay;
+
+            // fable-propose-growth.md. The founder range is ordered here rather than trusted from
+            // the launcher: a minimum above the maximum is a silent empty draw, and the genome
+            // factory would hand every founder the same number without saying so.
+            config.NewbornReserveFraction = newbornReserve;
+            config.GrowthReserveFloor = growthFloor;
+            config.MinNewbornPartKilograms = minNewbornKg;
+            config.GrowthStepSeconds = growthStep;
+            config.Genome.MinBirthInvestment = Math.Min(investMin, investMax);
+            config.Genome.MaxBirthInvestment = Math.Max(investMin, investMax);
+            config.Mutation.AdultScaleChance = adultScaleChance;
+            config.Mutation.InvestmentChance = investChance;
+
             config.InoculateAtSeconds = inoculateAt;
             config.InoculateCount = inoculateCount;
             config.InoculateDepthMetres = inoculateDepth;
@@ -870,6 +908,18 @@ namespace Evosim.Sim.EditorTools
                 // the token and a run at 0 must not read the same, since the difference between
                 // them is whether a death is a place or a density.
                 " corpse=" + corpseDecay + "/s" +
+                // fable-propose-growth.md, appended after the corpse rate per the same convention
+                // and rendered unconditionally for D065's reason: a run in which every creature
+                // is born adult and a report written before growth existed must not read the
+                // same. `reserve` is the newborn's share held as reserve, `floor` the buffer a
+                // growing body keeps, `minkg` the lightest newborn part the world will build,
+                // `step` how often the harness applies a grown body. `invest` and `scale` are the
+                // founder investment range and the two dials' mutation rates, which decide what
+                // generation zero can start from and how fast a lineage can move.
+                " · growth reserve=" + newbornReserve + " floor=" + growthFloor +
+                " minkg=" + minNewbornKg + " step=" + growthStep +
+                " invest=" + config.Genome.MinBirthInvestment + "-" + config.Genome.MaxBirthInvestment +
+                " scale/invest chance=" + adultScaleChance + "/" + investChance +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());
@@ -2340,7 +2390,28 @@ namespace Evosim.Sim.EditorTools
                 // for the life of a run with EVOSIM_CORPSE_DECAY unset, which is every run on file.
                 .Field("corpses", world.Corpses.Count)
                 .Field("corpseJoules", world.CorpseJoules)
-                .Field("corpseMatter", world.CorpseMatter);
+                .Field("corpseMatter", world.CorpseMatter)
+                // fable-propose-growth.md rule 9, appended after corpseMatter per the same
+                // append-only rule. The three dials as the living population holds them, how grown
+                // that population is, and the two refusals growth adds: a body held short of
+                // matter and a conception refused for being too light to put in the solver. All
+                // six read NaN or 0 in a world where nothing grows.
+                // World returns NaN on an empty world, deliberately, and JSON cannot hold one, so
+                // the four means are written as 0 when nothing is alive. `alive` beside them is
+                // what says which of the two a 0 is, and the table prints an em-dash rather than
+                // a number. The same shape as `dep jnt` and `spd jnt` above.
+                .Field("meanAdultScale", alive > 0 ? world.MeanAdultScale : 0f)
+                .Field("meanBirthInvestment", alive > 0 ? world.MeanBirthInvestment : 0f)
+                .Field("meanBroodSize", alive > 0 ? world.MeanBroodSize : 0f)
+                .Field("meanBodyFraction", alive > 0 ? world.MeanBodyFraction : 0f)
+                .Field("growthShortOfMatter", world.GrowthShortOfMatter)
+                .Field("conceptionsUnderMassFloor", world.ConceptionsUnderMassFloor)
+                // Rule 8's jump check, written every row rather than only at the end so that a
+                // reader can see when a body started jumping and not merely that one did. The
+                // count is bodies-times-resizes; the two distances are maxima over the run.
+                .Field("resizes", eco.Resizes)
+                .Field("resizeJumpMetres", eco.MaxResizeJumpMetres)
+                .Field("resizeStepMetres", eco.MaxResizeStepMetres);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -2572,6 +2643,16 @@ namespace Evosim.Sim.EditorTools
 
                 // The drifting dead, rule 6 of fable-propose-grid.md.
                 world.Corpses.Count.ToString(c),
+
+                // Rule 9 of fable-propose-growth.md, appended after `corpses`, per the same
+                // rule. Three decimals on all four: the dials move by graded steps, which is the
+                // whole point of them, and two decimals would round a generation's drift away.
+                // An em-dash on an empty world rather than a 0, because 0 is not a real value for
+                // any of these and a reader will average whatever it is given.
+                alive > 0 ? world.MeanAdultScale.ToString("0.###", c) : "—",
+                alive > 0 ? world.MeanBirthInvestment.ToString("0.###", c) : "—",
+                alive > 0 ? world.MeanBroodSize.ToString("0.###", c) : "—",
+                alive > 0 ? world.MeanBodyFraction.ToString("0.###", c) : "—",
             };
 
             // The per-patch populations, last, so everything before them keeps its index.
@@ -2596,6 +2677,22 @@ namespace Evosim.Sim.EditorTools
                 throw new InvalidOperationException(
                     $"{row.Count} values against {Columns.Length} headers. A column was added at " +
                     "one end and not the other, and every row after it would be mislabelled.");
+            }
+
+            // Rule 8's jump check, in the run log as well as in stats.jsonl. A smoke is read from
+            // its log before anyone parses its statistics, and the one thing that has to be seen
+            // there is whether resizing a live articulation moves bodies: `jump` is measured with
+            // no physics step in between, so anything above 0 is the engine moving a body because
+            // its anchors moved, and `step` is how far a resized root travelled over the metabolic
+            // step that followed. Both are maxima over the run, so the last line printed is the
+            // verdict. Silent in a world where nothing has grown yet, so a run without growth
+            // gains no noise.
+            if (eco.Resizes > 0)
+            {
+                Debug.Log(
+                    "growth resize: " + eco.Resizes.ToString(c) +
+                    " so far, max jump " + eco.MaxResizeJumpMetres.ToString("0.000000", c) +
+                    " m, max step after a resize " + eco.MaxResizeStepMetres.ToString("0.000000", c) + " m");
             }
 
             return "| " + string.Join(" | ", row) + " |";
@@ -2699,6 +2796,17 @@ namespace Evosim.Sim.EditorTools
             // stats.jsonl; here the count is the reading, because what the proposal is asking is
             // whether there is anything in the water for a mover to go to.
             "corpses",
+
+            // Rule 9 of fable-propose-growth.md, appended after `corpses` per the append-only
+            // rule. The three genome dials as the living hold them and how grown they are:
+            // `adult scale` is the scalar on the plan, `invest` the fraction of its own tissue a
+            // parent banks before it breeds, `brood` the children per event, `body frac` the
+            // share of its adult body the mean creature has built. An em-dash on an empty world,
+            // for `spd jnt`'s reason. Read `body frac` first: a world of adults and a world of
+            // perpetual juveniles have the same population and the same birth rate, and only this
+            // tells them apart. The two refusals growth adds and the resize jump check are in
+            // stats.jsonl rather than here, so that the table did not grow seven columns at once.
+            "adult scale", "invest", "brood", "body frac",
         };
 
         /// <summary>

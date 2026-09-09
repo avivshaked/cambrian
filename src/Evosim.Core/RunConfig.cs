@@ -222,9 +222,16 @@ namespace Evosim.Core
         /// <summary>Joules a floor-spawned founder starts with.</summary>
         /// <remarks>
         /// The only energy in the design created from nothing besides sunlight, so it is counted
-        /// as income in the §5A.2 audit. It buys a founder time to establish rather than body —
-        /// growth does not exist (§5A.6) — and setting it high enough that founders survive
-        /// regardless would make the floor a life-support machine. ⚠ Unmeasured — §5A.10.
+        /// as income in the §5A.2 audit. Setting it high enough that founders survive regardless
+        /// would make the floor a life-support machine.
+        /// <para>
+        /// It buys time, and since fable-propose-growth.md rule 5 (2026-09-08) time is also how a
+        /// founder buys body: a founder is admitted at its genome's birth fraction, holding this
+        /// scaled by that fraction, and it grows into its adult size out of what it earns. So this
+        /// is still not a body — nobody is handed one — but it is now the runway a founder has to
+        /// earn one on, and a value that leaves a founder starving before it can grow is a
+        /// different world from one that lets it reach adulthood. ⚠ Unmeasured — §5A.10.
+        /// </para>
         /// </remarks>
         [Tunable("population", Unit = "J")]
         public float FounderEnergyJoules { get; set; } = 200f;
@@ -392,6 +399,108 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world")]
         public float MatterPerCreature { get; set; }
+
+        // ---------------------------------------------------------------- growth
+        //
+        // fable-propose-growth.md (2026-09-08). A child is born at a fraction of its adult body
+        // and grows into the rest, so three things the world used to be able to assume are now
+        // decisions: how much of its start is reserve rather than body, how much reserve a
+        // growing body keeps back, and how small a newborn part the physics will accept. None of
+        // them is in the genome, and each has its own reason not to be.
+
+        /// <summary>
+        /// The share of a newborn's start it holds as reserve rather than body, 0 to 1 — rule 2.
+        /// </summary>
+        /// <remarks>
+        /// <b>Out of the genome deliberately.</b> A child's whole start is its parent's investment
+        /// over the litter, and this is where the split between "body" and "something to live on"
+        /// is made. A lineage allowed to set it would set it to zero, hand every child a body with
+        /// no reserve, and pocket the difference as extra size — children that are born larger and
+        /// starve before their first meal, which is not a strategy the world should be able to
+        /// express. ⚠ Unmeasured (§5A.10); 0.2 is the proposal's first value.
+        /// </remarks>
+        [Tunable("growth")]
+        public float NewbornReserveFraction { get; set; } = 0.2f;
+
+        /// <summary>
+        /// Reserve a growing body keeps rather than investing, as a fraction of its own current
+        /// tissue value — rule 5.
+        /// </summary>
+        /// <remarks>
+        /// <b>Growth is a transfer and it comes first, so without a floor it would be total.</b> A
+        /// body below its adult size moves everything above this into tissue every step, which is
+        /// what makes "grow first, breed later" fall out of the ordering rather than being
+        /// declared as a rule. The floor is what stops a growing creature from starving itself the
+        /// instant the water goes quiet: it is a buffer measured against the body it already has,
+        /// so a large body keeps a large one.
+        /// <para>
+        /// <b>The arithmetic is thin and the number should be read knowing it.</b> Tissue is worth
+        /// about 500 J per cubic metre of body and upkeep runs 3 to 4 W per cubic metre, so a
+        /// reserve of 0.1 of tissue value is 50 J against 3 to 4 W: twelve to seventeen seconds of
+        /// upkeep, whatever the body's size, because both terms scale with volume. A growing body
+        /// therefore sits at the edge of starvation for as long as it is growing, and a quiet
+        /// patch of water for one sampling interval kills it. That is a real cost of growing fast
+        /// rather than an oversight, but it is the owner's to raise. ⚠ Unmeasured (§5A.10); 0.1 is
+        /// the proposal's first value.
+        /// </para>
+        /// </remarks>
+        [Tunable("growth")]
+        public float GrowthReserveFloor { get; set; } = 0.1f;
+
+        /// <summary>
+        /// Lightest part a newborn may be built with, kg. A conception producing anything lighter
+        /// does not happen — rule 3.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A refusal, not a clamp, and the divergence record is why.</b> Every divergence on
+        /// file was a newborn, and the lightest link among them weighed 0.143 kg (logbook/0059,
+        /// logbook/0077): a light body driven by a joint sized for an adult is what spins up by
+        /// thousands of radians a second in one step. Growth makes small bodies ordinary rather
+        /// than rare, so the guard has to exist before the round does. Clamping the child up to
+        /// the floor instead would silently hand a lineage a bigger child than it paid for, which
+        /// is free energy; refusing leaves the parent holding its reserve and makes a genome whose
+        /// investment over its litter sits below the floor simply childless, which selection can
+        /// see.
+        /// </para>
+        /// <para>
+        /// Mass is <see cref="PartDensityKilogramsPerCubicMetre"/> times the part's volume, which
+        /// is the number the harness gives the articulation. ⚠ Unmeasured (§5A.10); 0.5 kg is the
+        /// proposal's first value, and the first screens read the <c>diverged</c> column against
+        /// it.
+        /// </para>
+        /// </remarks>
+        [Tunable("growth", Unit = "kg")]
+        public float MinNewbornPartKilograms { get; set; } = 0.5f;
+
+        /// <summary>
+        /// How often the harness applies a grown body to the physics, seconds — rule 8.
+        /// </summary>
+        /// <remarks>
+        /// <b>Read by the harness and by nothing in this assembly.</b> The economy grows a body on
+        /// every metabolic step, because growth is a transfer and a transfer paid at a cadence is
+        /// a transfer that has to be reconciled; what happens at a cadence is the expensive half,
+        /// resizing colliders, masses, anchors and drag panels on a live articulation. So Core
+        /// moves the joules and the harness reads <see cref="Organism.BodyFraction"/> when this
+        /// says to. It is a tunable rather than a constant in the harness because it changes what
+        /// the physics does, and §7 says anything that changes a trajectory belongs in the hash.
+        /// </remarks>
+        [Tunable("growth", Unit = "s")]
+        public float GrowthStepSeconds { get; set; } = 10f;
+
+        /// <summary>
+        /// What a body part weighs per cubic metre, kg/m³ — the density the harness builds
+        /// articulation bodies at.
+        /// </summary>
+        /// <remarks>
+        /// <b>A constant, not a tunable, and a duplicate on purpose.</b> The authority is
+        /// <c>PhenotypeBuilder.DensityKgPerM3</c> in <c>Evosim.Sim</c>, which Core may not
+        /// reference (§6.1's no-<c>UnityEngine</c> rule runs in this direction too). Core needs the
+        /// number only to read <see cref="MinNewbornPartKilograms"/> as a mass, and a knob here
+        /// would be a second answer to a question the physics has already settled: water is 1000
+        /// kg/m³ and a neutrally buoyant body is the same.
+        /// </remarks>
+        public const float PartDensityKilogramsPerCubicMetre = 1000f;
 
         /// <summary>Matter the world starts with, per cubic metre — D048.</summary>
         /// <remarks>

@@ -38,7 +38,13 @@ namespace Evosim.Core
         /// Bumped whenever an operator changes in a way that makes a stored seed reproduce a
         /// different offspring. Recorded per birth; see the class remarks.
         /// </summary>
-        public const int CodeVersion = 2;
+        /// <remarks>
+        /// 3 — fable-propose-growth.md (2026-09-08). <c>MutateReproduction</c> now perturbs the
+        /// birth investment where it perturbed the offspring endowment, and draws once more for
+        /// the adult scale, so every seed after this operator reproduces a different child from
+        /// the one it reproduced before it.
+        /// </remarks>
+        public const int CodeVersion = 3;
 
         public static Genome Mutate(
             Genome parent, Rng rng, MutationRates rates = null, CellTypeRegistry cellTypes = null,
@@ -95,6 +101,18 @@ namespace Evosim.Core
 
         // ---------------------------------------------------------------- reproduction
 
+        /// <remarks>
+        /// The three dials of fable-propose-growth.md (2026-09-08): the litter, the share of the
+        /// parent's body that buys it, and how big the child grows up to be. Each moves by a
+        /// graded step under its own rate, because the whole point of them is that they are dials
+        /// and not switches — this is the first place in the world where selection can climb a
+        /// slope rather than jump a gap.
+        ///
+        /// <b>The adult scale is mutated here rather than in <see cref="MutateNode"/>, and that
+        /// is what makes it worth having.</b> It is one number per genome, so it walks at one
+        /// rate whatever the body plan holds; a size encoded in the nodes would be walked once
+        /// per node, and a lineage could not get bigger without also getting a different shape.
+        /// </remarks>
         private static void MutateReproduction(Genome g, Rng rng, MutationRates rates)
         {
             ReproductionTraits r = g.Reproduction;
@@ -105,12 +123,17 @@ namespace Evosim.Core
                     r.BroodSize + (rng.Chance(0.5f) ? 1 : -1)));
             }
 
-            if (rng.Chance(rates.EndowmentChance))
+            if (rng.Chance(rates.InvestmentChance))
             {
-                r.OffspringEndowment = PerturbPositive(r.OffspringEndowment, rng, rates);
+                r.BirthInvestment = Step(r.BirthInvestment, rng, rates);
             }
 
             g.Reproduction = r;
+
+            if (rng.Chance(rates.AdultScaleChance))
+            {
+                g.AdultScale = Step(g.AdultScale, rng, rates);
+            }
         }
 
         // ---------------------------------------------------------------- nodes
@@ -592,12 +615,28 @@ namespace Evosim.Core
 
         /// <remarks>
         /// Clamped above zero because every scalar this is used on — a half-extent, a link's
-        /// capacity, an offspring's endowment — is meaningless or invalid at or below it, and a
+        /// capacity, a joint's range — is meaningless or invalid at or below it, and a
         /// Gaussian step has no lower bound.
         /// </remarks>
         private static float PerturbPositive(float value, Rng rng, MutationRates rates)
         {
             float mutated = Perturb(value, rng, rates);
+            return mutated > 1e-4f ? mutated : 1e-4f;
+        }
+
+        /// <summary>The same step as <see cref="PerturbPositive"/>, taken unconditionally.</summary>
+        /// <remarks>
+        /// For the dials that carry their own named chance. <see cref="Perturb"/> gates itself on
+        /// <c>ScalarChance</c>, so a caller that had already rolled a named chance was rolling
+        /// twice and moving its dial at the product of the two: the birth investment and the adult
+        /// scale each advertised 0.08 per birth and delivered 0.0064, an order of magnitude below
+        /// a node dimension, while the remark beside the knob said otherwise. Found in the review
+        /// of fable-propose-growth.md's build (2026-09-08). A knob means the rate it names.
+        /// </remarks>
+        private static float Step(float value, Rng rng, MutationRates rates)
+        {
+            float scale = Math.Max(1e-4f, Math.Abs(value));
+            float mutated = value + rng.Gaussian(0f, rates.ScalarStdDev * scale);
             return mutated > 1e-4f ? mutated : 1e-4f;
         }
 

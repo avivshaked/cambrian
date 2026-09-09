@@ -233,6 +233,44 @@ namespace Evosim.Sim
         /// </remarks>
         public long DriveImpulsesLimited { get; private set; }
 
+        /// <summary>
+        /// Articulations resized so far because their creature grew, fable-propose-growth.md
+        /// rule 8.
+        /// </summary>
+        /// <remarks>
+        /// A count of bodies-times-resizes, so it is read against the population like
+        /// <c>mat blk</c> and <c>crowded</c> (CLAUDE.md). 0 for the life of a run in which nothing
+        /// grows, which is every run before this build.
+        /// </remarks>
+        public long Resizes { get; private set; }
+
+        /// <summary>
+        /// The largest distance a root moved across a resize itself, m, over the run so far. This
+        /// is the jump check.
+        /// </summary>
+        /// <remarks>
+        /// <b>Measured with no <c>Physics.Simulate</c> in between, so anything above zero is the
+        /// engine moving a body because its anchors moved.</b> It is the question rule 8 has to
+        /// answer before a round runs on this: a resize that teleports a body is a position
+        /// change nobody paid for, and next to a joint drive it is the same accident that
+        /// diverged r20q-s1 (logbook/0059). Reported rather than asserted, because "PhysX keeps
+        /// the joint state across an anchor change" is documentation and this is a measurement.
+        /// </remarks>
+        public double MaxResizeJumpMetres { get; private set; }
+
+        /// <summary>
+        /// The largest distance a resized root travelled over the metabolic step that followed
+        /// its resize, m.
+        /// </summary>
+        /// <remarks>
+        /// The second half of the jump check, and the half that catches a solver kick rather than
+        /// a teleport: a constraint frame that moves can leave the solver with an error to correct
+        /// and it corrects it as velocity. Read against the population's own <c>spd jnt</c> over
+        /// the same window. A swimmer covers about 1.5 mm in a 0.5 s step at the speeds on
+        /// record, so a centimetre is far outside what growing should be able to do.
+        /// </remarks>
+        public double MaxResizeStepMetres { get; private set; }
+
         private readonly Dictionary<long, Body> _bodies = new Dictionary<long, Body>();
 
         /// <summary>The bodies to step, and whose creature each one is. Parallel, same order.</summary>
@@ -407,10 +445,41 @@ namespace Evosim.Sim
             /// Radius of the sphere that holds the whole body — <see cref="SharedVolume.BoundingRadius"/>.
             /// </summary>
             /// <remarks>
-            /// Computed once, at the build, because growth does not exist (§5A.6) and a body's
-            /// size cannot change afterwards. 0 in a tiled world, where nothing asks.
+            /// <b>This used to be computed once because a body could not change size.</b> It can
+            /// now (fable-propose-growth.md rule 8, 2026-09-08), so it is recomputed on every
+            /// resize. Left at its birth value it would tell the placer that a grown adult was
+            /// still newborn-sized, and D077's crowding test would let bodies be conceived inside
+            /// each other. An overlap is a force, and one logbook/0007 measured a creature
+            /// learning to farm. 0 in a tiled world, where nothing asks.
             /// </remarks>
             public float Radius;
+
+            /// <summary>
+            /// The <c>Organism.BodyFraction</c> the articulation was last built or resized at.
+            /// </summary>
+            /// <remarks>
+            /// <b>Held here rather than read off the phenotype, so that the physics knows what it
+            /// applied and not what the ledger wants.</b> Core moves joules into tissue on every
+            /// metabolic step and the harness follows at <c>RunConfig.GrowthStepSeconds</c>, so
+            /// the two are almost always apart; comparing them is what decides whether this body
+            /// needs the expensive pass. A creature that reaches fraction 1 is resized once, on
+            /// the growth step after it gets there, and never again, because from then on the two
+            /// numbers agree.
+            /// </remarks>
+            public float AppliedBodyFraction;
+
+            /// <summary>
+            /// True for the one metabolic step that follows a resize. The jump check's flag.
+            /// </summary>
+            /// <remarks>
+            /// A resize moves a joint's constraint frame while the solver holds the body's state,
+            /// and the failure mode is a body that teleports or is kicked when it does. Every
+            /// divergence on record was a body accelerated in one step (logbook/0059, 0077), so
+            /// the displacement over the step after a resize is measured rather than assumed
+            /// harmless. Costs one distance per resized body per step and nothing at all once a
+            /// population is grown.
+            /// </remarks>
+            public bool ResizedLastStep;
         }
 
         public Ecosystem(RunConfig config, ulong seed = 1, Transform parent = null)
@@ -1228,6 +1297,23 @@ namespace Evosim.Sim
                     }
                 }
 
+                // The jump check's second reading, taken on the one step that follows a resize.
+                // Free of any new Transform read: CheckFinite took LastRootPosition a few lines
+                // ago and PreviousRoot is where this body stood when it was resized.
+                if (body.ResizedLastStep)
+                {
+                    body.ResizedLastStep = false;
+
+                    if (body.Settled)
+                    {
+                        double moved = Volume != null
+                            ? Volume.ShortestDistance(body.LastRootPosition, body.PreviousRoot)
+                            : Vector3.Distance(body.LastRootPosition, body.PreviousRoot);
+
+                        if (moved > MaxResizeStepMetres) MaxResizeStepMetres = moved;
+                    }
+                }
+
                 body.Settled = true;
                 body.PreviousCentre = centre;
                 body.PreviousRoot = body.LastRootPosition;
@@ -1254,6 +1340,86 @@ namespace Evosim.Sim
                 {
                     if (_bodies.TryGetValue(after[i].Id, out Body body)) body.Instance.Patch = after[i].Patch;
                 }
+            }
+
+            // fable-propose-growth.md rule 8. After the world has stepped, because that is where
+            // a body's size changes: Core moved the joules and scaled the phenotype a few lines
+            // ago, and until this runs the creature has drag and lit area from its new size and
+            // colliders and mass from its old one. Counted in simulated seconds, never against a
+            // wall clock: a growth cadence that depended on how loaded the machine was would make
+            // a run unreproducible from its own config.
+            _sinceGrowthStep += seconds;
+
+            float growthStep = World.Config.GrowthStepSeconds;
+            if (_sinceGrowthStep + GrowthStepEpsilon >= growthStep)
+            {
+                _sinceGrowthStep = 0f;
+                ApplyGrowth();
+            }
+        }
+
+        /// <summary>
+        /// Half a physics step, seconds. The slack the growth cadence is compared with.
+        /// </summary>
+        /// <remarks>
+        /// The metabolic step is 0.5 s and the cadence is a float read from the config, so an
+        /// accumulator compared exactly would sometimes take twenty-one steps to clear a
+        /// ten-second cadence and sometimes twenty. That would be a growth rate that drifted
+        /// against its own setting, which is the shape of fault this project has agreed means an
+        /// instrument is not measuring what it says.
+        /// </remarks>
+        private const float GrowthStepEpsilon = 0.005f;
+
+        private float _sinceGrowthStep;
+
+        /// <summary>
+        /// Puts every body that has grown since the last growth step at the size Core says it is,
+        /// fable-propose-growth.md rule 8.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Walks the living rather than the body table.</b> Deaths have happened inside
+        /// <c>World.Step</c> and <see cref="Reconcile"/> has not run yet, so the table still holds
+        /// bodies whose creature is dead and about to be destroyed; resizing those would be work
+        /// done on a corpse. Newborns are the other way round: they have no articulation until
+        /// Reconcile builds one, and it is built from <c>creature.Phenotype</c>, which is already
+        /// the scaled body, so a newborn needs no resize at all.
+        /// </para>
+        /// <para>
+        /// <b>A creature at fraction 1 is resized exactly once.</b> The applied fraction catches
+        /// up with the ledger's on the step it reaches its adult size, and the two agree from
+        /// then on, so a grown population costs one float comparison per creature per growth step
+        /// and nothing else.
+        /// </para>
+        /// </remarks>
+        private void ApplyGrowth()
+        {
+            IReadOnlyList<Organism> living = World.Living;
+
+            for (int i = 0; i < living.Count; i++)
+            {
+                Organism creature = living[i];
+                if (!_bodies.TryGetValue(creature.Id, out Body body)) continue;
+                if (creature.BodyFraction == body.AppliedBodyFraction) continue;
+
+                ArticulationBody root = body.Instance.Bodies[0];
+                Vector3 before = root.transform.position;
+
+                PhenotypeBuilder.Resize(
+                    body.Instance, creature.Phenotype, World.Config.Fluid, World.Config.Shapes);
+
+                // Nothing has simulated between these two reads, so any distance here is the
+                // engine having moved the body because its anchors moved. See MaxResizeJumpMetres.
+                double jump = Vector3.Distance(before, root.transform.position);
+                if (jump > MaxResizeJumpMetres) MaxResizeJumpMetres = jump;
+
+                body.AppliedBodyFraction = creature.BodyFraction;
+                body.ResizedLastStep = true;
+
+                // The placer's picture of how much room this body needs, refreshed with the body.
+                if (Volume != null) body.Radius = SharedVolume.BoundingRadius(creature.Phenotype);
+
+                Resizes++;
             }
         }
 
@@ -1390,6 +1556,14 @@ namespace Evosim.Sim
                 PreviousCentre = FluidEnvironment.CentreOfMass(instance),
                 Tile = tile,
                 Radius = radius,
+
+                // fable-propose-growth.md rule 8. The articulation above was built from
+                // creature.Phenotype, which Core has already scaled to this fraction, so the body
+                // and the ledger start in agreement and the first resize is the first growth step
+                // that actually changes something. Building from AdultPhenotype instead would
+                // hand every newborn an adult's colliders and an adult's mass, which is the exact
+                // mismatch rule 8 exists to close.
+                AppliedBodyFraction = creature.BodyFraction,
             };
 
             // D077. Contact reporting is opt-in per collider and defaults off — without it PhysX

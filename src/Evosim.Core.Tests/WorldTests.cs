@@ -336,7 +336,12 @@ namespace Evosim.Core.Tests
             static RunConfig Config(float? exudation = null)
             {
                 var config = new RunConfig { MinimumPopulation = 30, MaximumPopulation = 600 };
-                config.Light = new LightModel(400f, 12f);
+
+                // 120 W/m2 rather than 400 since fable-propose-growth.md (2026-09-08): a
+                // reproduction costs a fraction of the parent's body where it cost a whole one
+                // plus an endowment, so the same light carries several times the head-count and
+                // both worlds met the ceiling before the 200 steps were up.
+                config.Light = new LightModel(120f, 12f);
                 if (exudation.HasValue) config.ExudationFraction = exudation.Value;
                 return config;
             }
@@ -430,11 +435,11 @@ namespace Evosim.Core.Tests
         [Fact]
         public void ReproductionCostsExactlyWhatTheGenomeSays()
         {
-            // n * (e + overhead + body) — §5A.6 and §5A.2c. The overhead is spent rather than
-            // transferred, which is what makes brood size a trait selection can act on: without
-            // it, one brood of four and four broods of one are the same transaction. The body term
-            // is what stops offspring size being free, and is an estimate from the parent's own
-            // tissue since the offspring does not exist yet.
+            // investment * body + n * overhead — §5A.6, §5A.2c and fable-propose-growth.md rule 2.
+            // The overhead is spent rather than transferred, which is what makes brood size a
+            // trait selection can act on: without it, one brood of four and four broods of one are
+            // the same transaction. The investment term is what stops offspring size being free,
+            // and it is the parent's own body because that is what it is spending a share of.
             //
             // That the world charges this correctly is proven by EnergyIsConservedAcrossTheWholeRun
             // rather than here — a reproduction priced wrong would not close the books. This checks
@@ -449,8 +454,7 @@ namespace Evosim.Core.Tests
                 ReproductionTraits traits = creature.Genome.Reproduction;
 
                 Assert.Equal(
-                    traits.BroodSize *
-                        (traits.OffspringEndowment + 25f + creature.TissueJoules),
+                    traits.BirthInvestment * creature.TissueJoules + traits.BroodSize * 25f,
                     creature.ReproductionThreshold(25f), 3);
 
                 // A larger brood must cost more, or brood size is a free parameter and every
@@ -1074,10 +1078,12 @@ namespace Evosim.Core.Tests
 
                 var lockedBefore = new Dictionary<long, float>();
                 var upkeepBefore = new Dictionary<long, float>();
+                bool growingBefore = false;
                 foreach (Organism c in world.Living)
                 {
                     lockedBefore[c.Id] = c.LockedMatter;
                     upkeepBefore[c.Id] = c.Lifetime.Upkeep;
+                    if (c.BodyFraction < 1f) growingBefore = true;
                 }
 
                 double matterInBodiesBefore = world.MatterInBodies;
@@ -1086,6 +1092,18 @@ namespace Evosim.Core.Tests
                 world.Step(1f);
 
                 if (world.Births != birthsBefore || world.Deaths != deathsBefore) continue;
+
+                // Quiet now means nobody grew either. Growth draws matter into a body at
+                // MatterPerTissueJoule (fable-propose-growth.md rule 5), which moves
+                // MatterInBodies in the opposite direction to excretion on the same step and
+                // would be netted into the reading. Every body reaches its adult size and stops,
+                // so a quiet step arrives a little later than it used to.
+                bool growing = growingBefore;
+                foreach (Organism c in world.Living)
+                {
+                    if (c.BodyFraction < 1f) { growing = true; break; }
+                }
+                if (growing) continue;
 
                 double expected = 0d;
                 foreach (Organism c in world.Living)
@@ -1517,7 +1535,8 @@ namespace Evosim.Core.Tests
             config.Mutation.ShapeChance = 0f;
             config.Mutation.CellTypeChance = 0f;
             config.Mutation.BroodSizeChance = 0f;
-            config.Mutation.EndowmentChance = 0f;
+            config.Mutation.InvestmentChance = 0f;
+            config.Mutation.AdultScaleChance = 0f;
 
             var world = new World(config, seed: 7);
 
@@ -1563,7 +1582,10 @@ namespace Evosim.Core.Tests
         {
             RunConfig Config() => new RunConfig
             {
-                Light = new LightModel(300f, 12f),
+                // 90 W/m2 rather than 300 since fable-propose-growth.md (2026-09-08): cheaper
+                // reproduction carries several times the head-count at the same light, and the
+                // world met its ceiling before the two trajectories could be compared.
+                Light = new LightModel(90f, 12f),
                 MinimumPopulation = 20,
                 MaximumPopulation = 300,
                 SpeciesDriftThreshold = 2f,
@@ -1710,9 +1732,19 @@ namespace Evosim.Core.Tests
             for (int i = 0; i < 100; i++) world.Step(1f);
 
             Genome genome = AbsorptiveBlob();
-            Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
-            float tissue = Metabolism.TissueJoules(body, config);
-            float expectedCredit = 5 * (config.FounderEnergyJoules + tissue);
+            Phenotype adult = Developer.Develop(genome, config.Development, null, config.Shapes);
+            float adultTissue = Metabolism.TissueJoules(adult, config);
+
+            // fable-propose-growth.md rule 7: an inoculant is born as a child is, at its own
+            // genome's birth fraction, with the founder's purse scaled the same way. So the
+            // credit is that fraction of both terms rather than the whole of either — the rule
+            // written out here rather than read off the creature, since reading the creature
+            // would be asking the code under test what it did.
+            float wanted = genome.Reproduction.BirthInvestment / genome.Reproduction.BroodSize *
+                           (1f - config.NewbornReserveFraction);
+            Phenotype newborn = adult.Scaled((float)Math.Pow(wanted, 1d / 3d), config.Shapes);
+            float tissue = Metabolism.TissueJoules(newborn, config);
+            float expectedCredit = 5 * (config.FounderEnergyJoules * (tissue / adultTissue) + tissue);
 
             double energyInBefore = world.EnergyIn;
             int livingBefore = world.Living.Count;

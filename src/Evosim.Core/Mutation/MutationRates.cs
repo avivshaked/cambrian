@@ -178,9 +178,42 @@ namespace Evosim.Core
         [Tunable("mutation")]
         public float BroodSizeChance { get; set; } = 0.05f;
 
-        /// <summary>Chance offspring endowment is perturbed — §5A.6.</summary>
+        /// <summary>Chance the birth investment is perturbed — §5A.6.</summary>
+        /// <remarks>
+        /// Renamed from <c>EndowmentChance</c> with the dial it drives
+        /// (fable-propose-growth.md rule 1, 2026-09-08). The key in <c>config.json</c> moves with
+        /// the property name, which costs nothing extra: the same build added the growth group,
+        /// and §9 refuses a config missing a knob rather than defaulting it, so every earlier
+        /// config is unreadable by this build either way.
+        /// <para>
+        /// This is the realised rate per birth, not a gate in front of another gate. The dial is
+        /// stepped by <c>Mutator.Step</c>, which does not roll <c>ScalarChance</c> a second time;
+        /// <c>MutationTests</c> measures the realised rate against this number.
+        /// </para>
+        /// </remarks>
         [Tunable("mutation")]
-        public float EndowmentChance { get; set; } = 0.08f;
+        public float InvestmentChance { get; set; } = 0.08f;
+
+        /// <summary>Chance the genome's adult size is perturbed — fable-propose-growth.md rule 1.</summary>
+        /// <remarks>
+        /// The investment's rate, deliberately, and not the per-scalar rate a dimension gets.
+        /// Both of these are one number per genome rather than one per node, so a body with
+        /// twelve nodes must not walk its size twelve times as fast as it walks its reproductive
+        /// strategy.
+        /// <para>
+        /// The size taken when it moves is a <c>ScalarStdDev</c> step, relative to the value, which
+        /// makes size a graded trait: this is the first slope in the world rather than a gap, and a
+        /// step that moved it in leaps would put it back to being a switch.
+        /// </para>
+        /// <para>
+        /// Like the investment, this is the realised rate per birth. Both dials were gated twice
+        /// when they were built — the named chance here and then <c>Perturb</c>'s own
+        /// <c>ScalarChance</c> — which delivered 0.0064 while this line claimed 0.08. Fixed in
+        /// the review of the growth build (2026-09-08); the value itself is the owner's to rule on.
+        /// </para>
+        /// </remarks>
+        [Tunable("mutation")]
+        public float AdultScaleChance { get; set; } = 0.08f;
 
         /// <summary>Largest brood a mutation may produce.</summary>
         /// <remarks>

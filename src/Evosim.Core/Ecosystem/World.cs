@@ -466,6 +466,80 @@ namespace Evosim.Core
         /// </summary>
         public long ConceptionsShortOfMatter { get; private set; }
 
+        /// <summary>
+        /// Growth steps at which matter, rather than energy or the adult body, was what bound —
+        /// fable-propose-growth.md rule 5.
+        /// </summary>
+        /// <remarks>
+        /// <b>A count of bodies-times-steps, not of creatures.</b> One body held short for a
+        /// thousand steps and a thousand bodies held short once read the same here, so it is read
+        /// against the population the way <c>mat blk</c> and <c>crowded</c> are (CLAUDE.md). What
+        /// it answers is the question growth adds to a matter-limited world: whether bodies are
+        /// small because their lineages chose small, or because the water would not pay for the
+        /// rest of them.
+        /// </remarks>
+        public long GrowthShortOfMatter { get; private set; }
+
+        /// <summary>
+        /// Conceptions refused because a newborn part would have been lighter than
+        /// <see cref="RunConfig.MinNewbornPartKilograms"/> — rule 3.
+        /// </summary>
+        /// <remarks>
+        /// Not a stillbirth and not a crowded refusal: the genome is fine, the world has room, and
+        /// the parent could pay. What it cannot do is put a body that light into the solver, and
+        /// every divergence on record was a newborn. A lineage whose investment over its litter
+        /// sits under the floor is childless, which is a selection pressure with a column of its
+        /// own so that it cannot be mistaken for the world simply being poor.
+        /// </remarks>
+        public long ConceptionsUnderMassFloor { get; private set; }
+
+        /// <summary>
+        /// Floor draws refused because the founder's body would have been under
+        /// <see cref="RunConfig.MinNewbornPartKilograms"/> — rule 3 applied to rule 7.
+        /// </summary>
+        /// <remarks>
+        /// Its own counter rather than a share of <see cref="ConceptionsUnderMassFloor"/>, because
+        /// the two say different things about the world. A conception refused is a lineage that
+        /// cannot breed; a floor draw refused is the founding lottery rejecting a ticket, and it
+        /// counts against <see cref="FloorSpawns"/> rather than against any parent. Reading the
+        /// two as one number would hide a founder draw that had become mostly refusals behind a
+        /// population that was breeding perfectly well.
+        /// </remarks>
+        public long FoundersUnderMassFloor { get; private set; }
+
+        /// <summary>Mean <see cref="Genome.AdultScale"/> over the living — rule 9. NaN when empty.</summary>
+        /// <remarks>
+        /// <b>The three dials and the body scale, computed on demand rather than tracked.</b> They
+        /// are read once per report row and a running mean would have to be maintained on every
+        /// birth, death and growth step — four accumulators kept in step with three events, for a
+        /// number nothing in the economy reads. NaN rather than 0 on an empty world: 0 is a real
+        /// value for none of these, and a reader will average whatever it is given.
+        /// </remarks>
+        public float MeanAdultScale => MeanOverLiving(c => c.Genome.AdultScale);
+
+        /// <summary>Mean <see cref="ReproductionTraits.BirthInvestment"/> over the living. NaN when empty.</summary>
+        public float MeanBirthInvestment => MeanOverLiving(c => c.Genome.Reproduction.BirthInvestment);
+
+        /// <summary>Mean <see cref="ReproductionTraits.BroodSize"/> over the living. NaN when empty.</summary>
+        public float MeanBroodSize => MeanOverLiving(c => c.Genome.Reproduction.BroodSize);
+
+        /// <summary>Mean <see cref="Organism.BodyFraction"/> over the living. NaN when empty.</summary>
+        /// <remarks>
+        /// How grown the population is, which is the reading rule 9 asks for beside the dials: a
+        /// world of adults and a world of perpetual juveniles have the same population count and
+        /// the same birth rate, and only this tells them apart.
+        /// </remarks>
+        public float MeanBodyFraction => MeanOverLiving(c => c.BodyFraction);
+
+        private float MeanOverLiving(Func<Organism, float> of)
+        {
+            if (_living.Count == 0) return float.NaN;
+
+            double sum = 0.0;
+            for (int i = 0; i < _living.Count; i++) sum += of(_living[i]);
+            return (float)(sum / _living.Count);
+        }
+
         /// <summary>Simulated seconds since the world began.</summary>
         public double ElapsedSeconds { get; private set; }
 
@@ -993,6 +1067,13 @@ namespace Evosim.Core
             Field.Advance(ElapsedSeconds);
 
             Metabolise(seconds);
+
+            // fable-propose-growth.md rule 5. After feeding and upkeep, so a body invests what
+            // this step actually left it; before Reproduce, so growth has first claim on the
+            // reserve and a creature below its adult size almost never clears the breeding gate.
+            // Before the fields' own transport passes for the reason feeding is: what a body draws
+            // this step comes out of the water as it stood when the step began.
+            Grow();
 
             // D061. After Metabolise, so this step's feeding and shading were priced at each
             // creature's patch as it stood when the step began; before Reproduce, so an
@@ -1593,8 +1674,9 @@ namespace Evosim.Core
                 // Turnover — D052. A living body gives back a fraction of what it holds, in
                 // proportion to what it spent staying alive this step, at its own depth rather
                 // than only at death. Capped at what is still locked: a body cannot excrete
-                // matter it does not have. LockedMatter is already 0 for a floor founder, so the
-                // cap alone keeps founders from excreting matter they never held.
+                // matter it does not have. A floor founder starts at 0 and holds only what its
+                // own growth has since bought (rule 5), so the cap alone still keeps a body from
+                // excreting matter it never held.
                 if (Config.ExcretionPerJoule > 0f && creature.LockedMatter > 0f)
                 {
                     // D065 (amended): the fixed matter cost is machinery mass and leaves only
@@ -1621,6 +1703,177 @@ namespace Evosim.Core
                 // either: it is the solver failing, and it enters through KillDiverged below.
                 Bury(creature, i, DeathCause.Starved);
             }
+        }
+
+        /// <summary>
+        /// One step of growth for every body below its adult size — fable-propose-growth.md
+        /// rule 5 (2026-09-08).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Growth is a transfer, and both books close because it is only ever a transfer.</b>
+        /// Energy moves out of <see cref="Organism.Energy"/> and into
+        /// <see cref="Organism.TissueJoules"/>, and §5A.2's audit sums both, so nothing is created
+        /// or destroyed and <see cref="AuditResidual"/> never learns that growth happened. Matter
+        /// moves out of <see cref="Matter"/> and into <see cref="Organism.LockedMatter"/> with
+        /// <see cref="MatterInBodies"/> credited in the same breath, which is exactly what
+        /// conception already does, so D074's identity closes for the same reason.
+        /// </para>
+        /// <para>
+        /// <b>Three bounds, and the smallest wins.</b> What the reserve can spare above
+        /// <see cref="RunConfig.GrowthReserveFloor"/> of the body it already has; what the water
+        /// within reach can pay for at <see cref="RunConfig.MatterPerTissueJoule"/>; and what is
+        /// left of the adult. A body that cannot draw the matter grows as far as the matter it
+        /// could get and no further (rule 5's last sentence), and <see cref="GrowthShortOfMatter"/>
+        /// is the column that says so.
+        /// </para>
+        /// <para>
+        /// <b>The body is authoritative and the ledger is charged what the body cost.</b> The new
+        /// tissue figure is re-measured with <see cref="Metabolism.TissueJoules"/> on the scaled
+        /// phenotype rather than accumulated from the increments, so the number the world holds
+        /// and the number the body is worth cannot drift apart over ten thousand steps of
+        /// rounding — and the reserve is debited exactly that difference, so the transfer is still
+        /// a transfer.
+        /// </para>
+        /// <para>
+        /// <b>Growth is not a rate, which is why this takes no step length.</b> A body invests
+        /// everything above the floor every time this runs, so how fast it reaches its adult size
+        /// is set by what it can earn and what the water will sell it, not by a growth constant
+        /// nobody would know how to choose. The consequence is that the step length does change
+        /// how many bites the same growth is taken in, and that is the honest situation: rule 5
+        /// gave the world an appetite, not a schedule.
+        /// </para>
+        /// <para>
+        /// <b>Matter is charged for the target and tissue is booked for the actual</b>, since the
+        /// scaled body is re-measured after the matter has been bought; the two differ by the
+        /// rounding of a cube root, both identities close, and the rates above are honoured to
+        /// that rounding.
+        /// </para>
+        /// <para>
+        /// <b>Nothing here draws from an <see cref="Rng"/>.</b> Growth is arithmetic on a body and
+        /// a cell, so a world with growth switched off by every creature already being adult steps
+        /// through exactly the trajectory it would have without this pass.
+        /// </para>
+        /// </remarks>
+        private void Grow()
+        {
+            float matterRate = Config.MatterPerTissueJoule;
+            float reserveFloor = Config.GrowthReserveFloor;
+
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+                if (creature.BodyFraction >= 1f) continue;
+
+                float adultTissue = creature.AdultTissueJoules;
+                float remaining = adultTissue - creature.TissueJoules;
+                if (!(remaining > 0f)) continue;
+
+                // What the reserve can spare. The floor is a fraction of the body this creature
+                // already has, so a large body keeps a large buffer and a newborn keeps a small
+                // one — the same proportion of the same thing at every size.
+                float target = creature.Energy - reserveFloor * creature.TissueJoules;
+                if (target > remaining) target = remaining;
+                if (!(target > 0f)) continue;
+
+                bool matterBound = false;
+                float paidMatter = 0f;
+
+                if (matterRate > 0f)
+                {
+                    // The gate before the take, for the reason conception has one: a partial take
+                    // that is then abandoned leaks matter out of the world, and it leaks fastest
+                    // exactly when matter is scarce enough to matter.
+                    float affordable = (float)(Matter.ReachableStock(creature.Point) / matterRate);
+                    if (affordable < target)
+                    {
+                        target = affordable;
+                        matterBound = true;
+                    }
+
+                    if (target > 0f)
+                    {
+                        float asked = matterRate * target;
+                        paidMatter = Matter.Take(creature.Point, asked);
+
+                        // Grown only as far as it paid. A vertex field's take can come up a
+                        // rounding short of what its gate promised (D083's second amendment), and
+                        // booking the growth regardless would create tissue from nothing exactly
+                        // as booking a conception's price did.
+                        if (paidMatter < asked)
+                        {
+                            matterBound = true;
+                            target = paidMatter / matterRate;
+                        }
+                    }
+                }
+
+                if (matterBound) GrowthShortOfMatter++;
+                if (!(target > 0f))
+                {
+                    if (paidMatter > 0f) Matter.Deposit(creature.Point, paidMatter);
+                    continue;
+                }
+
+                float fraction = (creature.TissueJoules + target) / adultTissue;
+                if (fraction > 1f) fraction = 1f;
+
+                // The cube root, because the fraction is a volume and the parts are scaled by a
+                // length. Phenotype.Scaled says why the adult is the thing scaled from.
+                Phenotype grown = fraction >= 1f
+                    ? creature.AdultPhenotype
+                    : creature.AdultPhenotype.Scaled(
+                        (float)Math.Pow(fraction, 1d / 3d), Config.Shapes);
+
+                float actual = fraction >= 1f ? adultTissue : Metabolism.TissueJoules(grown, Config);
+                float spend = actual - creature.TissueJoules;
+
+                // The one case this refuses: a body whose re-measured tissue costs a hair more
+                // than the reserve holds. It is reachable only when the increment is already down
+                // in the rounding, and growing anyway would take a creature to a negative reserve
+                // — a death by bookkeeping rather than by starvation, which §5A.6 does not have.
+                // The matter goes back where it came from, as a refused conception's does.
+                if (spend > creature.Energy)
+                {
+                    if (paidMatter > 0f) Matter.Deposit(creature.Point, paidMatter);
+                    continue;
+                }
+
+                creature.Energy -= spend;
+                creature.TissueJoules = actual;
+                creature.Phenotype = grown;
+                creature.BodyFraction = actual >= adultTissue ? 1f : actual / adultTissue;
+
+                if (paidMatter > 0f)
+                {
+                    creature.LockedMatter += paidMatter;
+                    MatterInBodies += paidMatter;
+                }
+
+                // The two cached readings of a body that has just changed size. The standing cost
+                // is asked at this creature's own age so that growing does not quietly reset its
+                // senescence (D038); the absorptive volume is instrumentation, and a mouth that
+                // grew must be measured as the mouth it now is.
+                creature.StandingWatts = Metabolism.StandingWatts(grown, Config, creature.Age);
+                creature.AbsorptiveVolume = AbsorptiveVolumeOf(grown);
+            }
+        }
+
+        /// <summary>Volume of <see cref="CellTypeIds.Absorptive"/> tissue in a body, m³.</summary>
+        /// <remarks>
+        /// One walk, two callers — <c>Admit</c> at birth and <see cref="Grow"/> whenever the body
+        /// changes size. Written once because the two must agree about what a mouth is, which is
+        /// the reason <see cref="HasAbsorptive"/> exists in this file rather than in two.
+        /// </remarks>
+        private static float AbsorptiveVolumeOf(Phenotype phenotype)
+        {
+            float volume = 0f;
+            IReadOnlyList<PhenotypePart> parts = phenotype.Parts;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (parts[i].CellTypeId == CellTypeIds.Absorptive) volume += parts[i].Volume;
+            }
+            return volume;
         }
 
         /// <summary>
@@ -1692,9 +1945,11 @@ namespace Evosim.Core
 
                 // Whatever matter is still locked returns to the layer the body died in, and
                 // sinks from there — which is why the deep is rich and the surface is not.
-                // LockedMatter (D052) is what remains after a lifetime of excretion, or the full
-                // price paid at conception if the knob is off; either way it is already 0 for a
-                // floor founder, which never paid and so never owes anything back.
+                // LockedMatter (D052) is what remains after a lifetime of excretion and growth:
+                // the price paid at conception, plus everything rule 5's growth bought, less
+                // everything excretion gave back. A floor founder starts at 0 because it never
+                // paid a conception price, and since growth exists it does not stay there — it
+                // owes back exactly the matter its own growth took out of the water, and no more.
                 if (creature.LockedMatter > 0f)
                 {
                     Matter.Deposit(creature.Point, creature.LockedMatter);
@@ -2011,10 +2266,45 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>
+        /// Whether any part of a body is lighter than <see cref="RunConfig.MinNewbornPartKilograms"/>
+        /// — fable-propose-growth.md rule 3.
+        /// </summary>
+        /// <remarks>
+        /// Mass is <see cref="RunConfig.PartDensityKilogramsPerCubicMetre"/> times volume, which is
+        /// the mass the harness gives the articulation body. Asked of the newborn and never of the
+        /// adult: what the solver has to carry is the body that will exist.
+        /// </remarks>
+        private bool IsUnderTheMassFloor(Phenotype body)
+        {
+            float floor = Config.MinNewbornPartKilograms;
+            if (!(floor > 0f)) return false;
+
+            float minVolume = floor / RunConfig.PartDensityKilogramsPerCubicMetre;
+            IReadOnlyList<PhenotypePart> parts = body.Parts;
+
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (parts[i].Volume < minVolume) return true;
+            }
+
+            return false;
+        }
+
         /// <summary>One parent's turn: the solvency gate, then the brood behind it.</summary>
         /// <remarks>
+        /// <para>
         /// Lifted out of <see cref="Reproduce"/> so the two orders share one body and cannot drift
         /// apart — the walk is what D072 varies, and nothing else is.
+        /// </para>
+        /// <para>
+        /// <b>The gate is the investment, since fable-propose-growth.md rule 2.</b> A parent breeds
+        /// when its reserve holds <see cref="ReproductionTraits.BirthInvestment"/> of its own
+        /// tissue value plus the litter's overhead, and it spends exactly that. The litter no
+        /// longer multiplies what the event costs, only how many ways it is divided — which is
+        /// what makes brood size a decision about the size of a child rather than about the price
+        /// of a reproduction.
+        /// </para>
         /// </remarks>
         private void Brood(Organism parent)
         {
@@ -2023,7 +2313,13 @@ namespace Evosim.Core
 
             for (int n = 0; n < parent.Genome.Reproduction.BroodSize; n++)
             {
-                if (!Conceive(parent)) break;
+                // A sibling refused under the mass floor is skipped, not the end of the litter.
+                // The floor is a property of the body that was drawn, and the next sibling is a
+                // fresh draw of a fresh mutation, so a brood of three with one dwarfed sibling
+                // yields two children rather than one. An energy or matter shortfall is different
+                // in kind: it is a property of the parent and is still true for every sibling
+                // behind this one, so it ends the brood as it always has.
+                if (Conceive(parent) == Conception.Refused) break;
             }
         }
 
@@ -2097,11 +2393,29 @@ namespace Evosim.Core
             return solvent;
         }
 
+        /// <summary>How one attempt at one offspring ended.</summary>
+        /// <remarks>
+        /// Three outcomes rather than a bool, because two of the failures mean opposite things to
+        /// the litter behind them. <see cref="Refused"/> is the parent's own shortfall and ends
+        /// the brood; <see cref="UnderFloor"/> is a fact about the body just drawn and ends only
+        /// this sibling (fable-propose-growth.md rule 3, as amended in review 2026-09-08).
+        /// </remarks>
+        private enum Conception
+        {
+            /// <summary>A child was admitted, or a stillbirth was counted and settled.</summary>
+            Born,
+
+            /// <summary>The parent could not afford it. The rest of the brood is abandoned.</summary>
+            Refused,
+
+            /// <summary>This body was under the mass floor. The next sibling still draws.</summary>
+            UnderFloor,
+        }
+
         /// <summary>
-        /// Makes one offspring if the parent can afford it. False means it could not, and the
-        /// rest of the brood is abandoned.
+        /// Makes one offspring if the parent can afford it and the body it drew can be built.
         /// </summary>
-        private bool Conceive(Organism parent)
+        private Conception Conceive(Organism parent)
         {
             // Before anything expensive. See CheapestPossibleChildMatter: if the parent's layer
             // cannot afford the smallest child that could exist, no mutation of this genome can
@@ -2111,7 +2425,7 @@ namespace Evosim.Core
                 Matter.ReachableStock(parent.Point) < CheapestPossibleChildMatter)
             {
                 ConceptionsBlockedByMatter++;
-                return false;
+                return Conception.Refused;
             }
 
             ulong seed = Rng.SeedFor(Seed, _nextIndex++);
@@ -2123,11 +2437,68 @@ namespace Evosim.Core
             Phenotype body = Developer.Develop(
                 childGenome, Config.Development, null, Config.Shapes);
 
-            float endowment = parent.Genome.Reproduction.OffspringEndowment;
-            float tissue = Metabolism.TissueJoules(body, Config);
-            float price = endowment + tissue + Config.PerOffspringOverheadJoules;
+            // A body of no parts is a stillbirth (§4.5's extinction-by-shrinking; Admit counts it
+            // and settles the energy). Read here rather than further down because everything
+            // between this line and the birth has to know that there is no body to size, price in
+            // matter or place.
+            bool stillborn = body.PartCount == 0;
 
-            if (parent.Energy < price) return false;
+            // fable-propose-growth.md rules 2 and 3. The parent spends a fraction of its own body
+            // value on the litter, each child gets an equal share, and the share is the child's
+            // whole start: the body it is born with plus its first reserve, split by a world
+            // constant so that no lineage can set its children's reserve to zero.
+            ReproductionTraits traits = parent.Genome.Reproduction;
+            float share = traits.BirthInvestment * parent.TissueJoules / traits.BroodSize;
+
+            float adultTissue = Metabolism.TissueJoules(body, Config);
+
+            // The whole share is capped, not only the body it buys (rule 3, corrected in the
+            // review of 2026-09-08). A parent may not buy a creature larger than its genome
+            // describes, so the ceiling is the share that exactly fills the adult body once the
+            // reserve has been taken out of it. Capping only the body left a child whose adult
+            // scale had mutated well below its parent's born full grown and holding a reserve
+            // sized to the parent's body: a windfall paid for being small, which is a pressure
+            // nobody chose. Everything above the capped share stays with the parent. The other
+            // end is not clamped. A share worth almost nothing makes an almost-nothing child,
+            // and the mass floor below is what refuses that.
+            float reserveFraction = Config.NewbornReserveFraction;
+
+            if (!stillborn && adultTissue > 0f && reserveFraction < 1f)
+            {
+                float cap = adultTissue / (1f - reserveFraction);
+                if (share > cap) share = cap;
+            }
+
+            float reserve = share * reserveFraction;
+            float bodyValue = share - reserve;
+
+            float fraction = adultTissue > 0f ? bodyValue / adultTissue : 1f;
+            if (fraction > 1f) fraction = 1f;
+
+            Phenotype newborn = stillborn || fraction >= 1f
+                ? body
+                : body.Scaled((float)Math.Pow(fraction, 1d / 3d), Config.Shapes);
+
+            float tissue = stillborn || fraction >= 1f
+                ? adultTissue
+                : Metabolism.TissueJoules(newborn, Config);
+
+            // Rule 3's other edge, and it is a refusal rather than a smaller child. Every
+            // divergence on record was a newborn and the lightest link among them weighed
+            // 0.143 kg, so a body the physics cannot carry must not be built at all. A genome
+            // whose investment over its litter sits under the floor therefore never breeds, which
+            // is something selection can see. The parent keeps its reserve: nothing was spent and
+            // no lineage row is written, exactly as for a crowded refusal. The sibling behind
+            // this one still draws, because the next mutation may not be under the floor.
+            if (!stillborn && IsUnderTheMassFloor(newborn))
+            {
+                ConceptionsUnderMassFloor++;
+                return Conception.UnderFloor;
+            }
+
+            float price = tissue + reserve + Config.PerOffspringOverheadJoules;
+
+            if (parent.Energy < price) return Conception.Refused;
 
             // Energy is necessary and, from D048, no longer sufficient. Tissue is matter, and a
             // parent with sunlight to spare and nothing dissolved in the water around it does not
@@ -2143,19 +2514,16 @@ namespace Evosim.Core
             // return is short removes the partial amount and then drops it on the floor, which
             // leaks matter on every blocked conception — 132 units of 24,000 in a 400 s test,
             // and it leaks fastest exactly when matter is scarce enough to matter.
-            // A body of no parts is a stillbirth (§4.5's extinction-by-shrinking; Admit counts
-            // it and settles the energy). It is charged no matter: the fixed term (D065) is
-            // machinery mass with no body to sit in, and charging it here put it into
-            // MatterInBodies with no owner and no death to return it -- the Astra review's R2
-            // (2026-09-07). The energy rule is unchanged: the parent pays the endowment and the
-            // overhead, and both leave the world in Admit, exactly as before.
-            bool stillborn = body.PartCount == 0;
-
+            // A stillbirth is charged no matter: the fixed term (D065) is machinery mass with no
+            // body to sit in, and charging it here put it into MatterInBodies with no owner and no
+            // death to return it -- the Astra review's R2 (2026-09-07). The energy rule is
+            // unchanged: the parent pays the child's start and the overhead, and both leave the
+            // world in Admit, exactly as before.
             if (!stillborn && matterPrice > 0f &&
                 Matter.ReachableStock(parent.Point) < matterPrice)
             {
                 ConceptionsBlockedByMatter++;
-                return false;
+                return Conception.Refused;
             }
 
             // D077. The last gate, and deliberately after every solvency check and before the
@@ -2177,12 +2545,17 @@ namespace Evosim.Core
             // charges are the same number; in the tiled world nothing touches it and the
             // expression is parent.HeightY exactly, as before.
             float childHeight = parent.HeightY;
-            bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
 
-            if (shared && !Placement.TryReserveOffspring(parent, body, ref childHeight, out childPatch))
+            // The newborn and not the adult. What the placer is asked for is room for the body
+            // that is about to exist, and a body born at a fifth of its adult volume needs a
+            // little over half the clearance — asking for the adult's would refuse births into
+            // water a child fits in perfectly well.
+            bool shared = Config.SharedSpace && Placement != null && newborn.PartCount > 0;
+
+            if (shared && !Placement.TryReserveOffspring(parent, newborn, ref childHeight, out childPatch))
             {
                 CrowdedStillbirths++;
-                return false;
+                return Conception.Refused;
             }
 
             if (!stillborn && matterPrice > 0f)
@@ -2201,7 +2574,7 @@ namespace Evosim.Core
                     if (shared) Placement.Release();
                     ConceptionsBlockedByMatter++;
                     ConceptionsShortOfMatter++;
-                    return false;
+                    return Conception.Refused;
                 }
 
                 MatterInBodies += taken;
@@ -2210,17 +2583,17 @@ namespace Evosim.Core
 
             parent.Energy -= price;
 
-            // Endowment and tissue are transferred and stay in the world; the overhead is burned.
-            // It is paid per offspring, so it does not by itself tell one brood of four from four
-            // broods of one (corrected 2026-09-07); the gate above does, by asking the parent to
-            // hold the whole brood's price at once. What the overhead does is make an offspring
-            // cost more than the energy it carries (§5A.6).
+            // The child's body and its first reserve are transferred and stay in the world; the
+            // overhead is burned. It is paid per offspring, so it does not by itself tell one
+            // brood of four from four broods of one (corrected 2026-09-07); the gate above does,
+            // by asking the parent to hold the whole litter's investment at once. What the
+            // overhead does is make an offspring cost more than the energy it carries (§5A.6).
             EnergyOut += Config.PerOffspringOverheadJoules;
 
             Organism child = Admit(
-                childGenome, body, BirthKind.Reproduction, seed, parent.Id,
-                parent.GenerationDepth + 1, endowment, tissue, childHeight, parent,
-                patch: childPatch);
+                childGenome, newborn, BirthKind.Reproduction, seed, parent.Id,
+                parent.GenerationDepth + 1, reserve, tissue, childHeight, parent,
+                patch: childPatch, adultPhenotype: body, adultTissue: adultTissue);
 
             // D077. The reservation belongs to a creature now, or to nobody. Admit cannot
             // actually refuse a body with parts, so the Release below is a belt rather than a
@@ -2234,9 +2607,11 @@ namespace Evosim.Core
 
             if (child != null)
             {
-                // What the layer was just charged for this body — D052's starting balance, and
-                // (with ExcretionPerJoule at 0) the only value LockedMatter will ever hold, which
-                // is exactly what death paid out before this decision existed.
+                // What the layer was just charged for this body — D052's starting balance. It
+                // is a balance and no longer a constant: excretion draws it down, and since
+                // fable-propose-growth.md rule 5 every growth step adds the matter the new tissue
+                // was bought with, so a body that reaches adulthood owes the water far more at
+                // death than it was charged at conception.
                 child.LockedMatter = matterPrice;
                 _born.Add(child);
 
@@ -2248,7 +2623,7 @@ namespace Evosim.Core
                 parent.LastChildSeconds = ElapsedSeconds;
             }
 
-            return true;
+            return Conception.Born;
         }
 
         /// <remarks>
@@ -2311,8 +2686,29 @@ namespace Evosim.Core
                     patch = new Rng(patchSeed).Range(PatchCount);
                 }
 
-                Phenotype body = Developer.Develop(
+                Phenotype adult = Developer.Develop(
                     genome, Config.Development, null, Config.Shapes);
+
+                // fable-propose-growth.md rule 7: a founder is born as a child is, at its own
+                // genome's birth fraction, so the founding lottery runs under the same rule as
+                // every birth rather than seeding the world with adults nobody paid for. The
+                // reserve the floor gives it is scaled the same way, so a founder placed at a
+                // fifth of its adult body arrives with a fifth of the purse — otherwise the floor
+                // would hand the smallest bodies the largest head starts.
+                bool admissible = NewbornFrom(
+                    genome, adult, out Phenotype body, out float tissue, out float birthFraction);
+
+                // Rule 3 applies to a founder's body too, and the floor's answer is simply to
+                // draw again next step. Counted rather than retried here, for the same reason a
+                // stillborn founder is counted: a floor that redrew until something fitted would
+                // be selecting for viability instead of sampling the genome space, and rule 3
+                // exists because every divergence on record was a newborn.
+                if (!admissible)
+                {
+                    FoundersUnderMassFloor++;
+                    FloorSpawns++;
+                    continue;
+                }
 
                 bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
 
@@ -2329,9 +2725,10 @@ namespace Evosim.Core
 
                 Organism founder = Admit(
                     genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
-                    energy: Config.FounderEnergyJoules,
-                    tissue: Metabolism.TissueJoules(body, Config), heightY: height, parent: null,
-                    patch: patch);
+                    energy: Config.FounderEnergyJoules * birthFraction,
+                    tissue: tissue, heightY: height, parent: null,
+                    patch: patch, adultPhenotype: adult,
+                    adultTissue: Metabolism.TissueJoules(adult, Config));
 
                 if (shared)
                 {
@@ -2359,8 +2756,9 @@ namespace Evosim.Core
         /// <b>Follows <see cref="EnforceFloor"/>'s accounting exactly, because an inoculant is a
         /// second way energy enters the world from nothing — not a third.</b> Each copy is
         /// admitted with <see cref="RunConfig.FounderEnergyJoules"/>, zero
-        /// <see cref="Organism.LockedMatter"/> (never paid, so it never owes anything back — same
-        /// as a floor founder), generation depth 0 and no parent, so it founds its own species
+        /// <see cref="Organism.LockedMatter"/> at admission, the same as a floor founder, after
+        /// which its own growth buys matter and owes that back at death (rule 5, 2026-09-08);
+        /// generation depth 0 and no parent, so it founds its own species
         /// under D057 exactly as a floor founder does (<see cref="AssignSpecies"/> branches on
         /// <c>parent == null</c>, not on <see cref="BirthKind"/>).
         /// </para>
@@ -2383,10 +2781,38 @@ namespace Evosim.Core
         /// <param name="count">How many copies to admit. Stillbirths still consume a seed and are
         /// still counted in <see cref="Inoculated"/>, matching the floor's own accounting.</param>
         /// <param name="heightY">World height, metres, every copy is placed at.</param>
+        /// <exception cref="ArgumentException">
+        /// The genome's newborn body would be under <see cref="RunConfig.MinNewbornPartKilograms"/>
+        /// (rule 3). Thrown before anything is admitted, so the world is untouched.
+        /// </exception>
         public void Inoculate(Genome genome, int count, float heightY)
         {
             if (genome == null) throw new ArgumentNullException(nameof(genome));
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+
+            // Rule 3, asked once and before anything is spent. Every copy is the same genome
+            // developed the same way, so the answer is the same for all of them; asking inside
+            // the loop would burn a seed and leave the world half inoculated on the way to the
+            // same exception. Loud rather than quiet, unlike the floor's own draw: an assay names
+            // one genome deliberately, so a body the physics cannot carry is a mistake in the
+            // pre-registration, and silently placing nothing would leave an experiment reporting
+            // an inoculation that never happened.
+            if (count > 0 && !NewbornFrom(
+                    genome,
+                    Developer.Develop(genome, Config.Development, null, Config.Shapes),
+                    out Phenotype preflight, out _, out float preflightFraction))
+            {
+                throw new ArgumentException(
+                    "inoculant is under the newborn mass floor: its lightest part weighs " +
+                    FormattableString.Invariant(
+                        $"{LightestPartKilograms(preflight):0.####} kg at its birth fraction of ") +
+                    FormattableString.Invariant($"{preflightFraction:0.###}, and the floor is ") +
+                    FormattableString.Invariant(
+                        $"{Config.MinNewbornPartKilograms:0.####} kg ") +
+                    "(fable-propose-growth.md rule 3). Raise the genome's birth investment, " +
+                    "lower its brood size, or lower MinNewbornPartKilograms.",
+                    nameof(genome));
+            }
 
             for (int i = 0; i < count; i++)
             {
@@ -2405,7 +2831,17 @@ namespace Evosim.Core
                     patch = new Rng(patchSeed).Range(PatchCount);
                 }
 
-                Phenotype body = Developer.Develop(genome, Config.Development, null, Config.Shapes);
+                Phenotype adult = Developer.Develop(genome, Config.Development, null, Config.Shapes);
+
+                // fable-propose-growth.md rule 7, exactly as EnforceFloor applies it: an
+                // inoculant has no parent either, so it is born at its own genome's birth
+                // fraction with the founder's purse scaled the same way. An assay that placed
+                // adults into a world of growing bodies would be measuring a hand rather than a
+                // lineage.
+                // Refused above, once, before the loop: the preflight and this call see the
+                // same genome and the same config, so this cannot come back false here.
+                NewbornFrom(genome, adult, out Phenotype body, out float tissue,
+                    out float birthFraction);
 
                 bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
 
@@ -2424,9 +2860,10 @@ namespace Evosim.Core
 
                 Organism creature = Admit(
                     genome, body, BirthKind.Inoculation, seed, parentId: -1, generationDepth: 0,
-                    energy: Config.FounderEnergyJoules,
-                    tissue: Metabolism.TissueJoules(body, Config), heightY: placedHeight, parent: null,
-                    patch: patch);
+                    energy: Config.FounderEnergyJoules * birthFraction,
+                    tissue: tissue, heightY: placedHeight, parent: null,
+                    patch: patch, adultPhenotype: adult,
+                    adultTissue: Metabolism.TissueJoules(adult, Config));
 
                 if (shared)
                 {
@@ -2448,6 +2885,88 @@ namespace Evosim.Core
         /// build — which looks, in a population count, exactly like ordinary mortality.
         /// </remarks>
         public long Stillbirths { get; private set; }
+
+        /// <summary>
+        /// The body a parentless creature is born with — fable-propose-growth.md rule 7.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A founder and an inoculant have no parent to take a share from, so they take it from
+        /// themselves.</b> The birth fraction is the one every child of this genome would get,
+        /// <c>BirthInvestment / BroodSize</c> less the newborn reserve, capped at the whole adult —
+        /// so a lineage that starts small starts small however it entered the world, and the
+        /// founding lottery is run under the rule the world actually has rather than under the old
+        /// one where everything arrived grown.
+        /// </para>
+        /// <para>
+        /// A stillbirth passes straight through: a body of no parts has no size to be born at, and
+        /// <c>Admit</c> is about to refuse it for the older reason.
+        /// </para>
+        /// </remarks>
+        /// <param name="birthFraction">
+        /// What was realised, not what was asked for. The reserve is scaled by this, so it has to
+        /// be the fraction the body actually came out at.
+        /// </param>
+        /// <returns>
+        /// False when the body would arrive under <see cref="RunConfig.MinNewbornPartKilograms"/>.
+        /// Rule 3 is a fact about what the solver can carry, and the solver does not care whether
+        /// a body had a parent, so a founder and an inoculant are held to it exactly as a child
+        /// is (added in the review of 2026-09-08; rule 7 already said founders are born as
+        /// children are, and the first build applied the floor only to conceptions). A stillbirth
+        /// passes as true: there is no body to weigh, and <c>Admit</c> refuses it for the older
+        /// reason a line below.
+        /// </returns>
+        private bool NewbornFrom(
+            Genome genome, Phenotype adult,
+            out Phenotype newborn, out float tissue, out float birthFraction)
+        {
+            float adultTissue = Metabolism.TissueJoules(adult, Config);
+            ReproductionTraits traits = genome.Reproduction;
+
+            float wanted = traits.BirthInvestment / traits.BroodSize *
+                           (1f - Config.NewbornReserveFraction);
+
+            if (adult.PartCount == 0)
+            {
+                newborn = adult;
+                tissue = adultTissue;
+                birthFraction = 1f;
+                return true;
+            }
+
+            if (!(wanted > 0f) || wanted >= 1f)
+            {
+                newborn = adult;
+                tissue = adultTissue;
+                birthFraction = 1f;
+            }
+            else
+            {
+                newborn = adult.Scaled((float)Math.Pow(wanted, 1d / 3d), Config.Shapes);
+                tissue = Metabolism.TissueJoules(newborn, Config);
+                birthFraction = adultTissue > 0f ? tissue / adultTissue : 1f;
+            }
+
+            return !IsUnderTheMassFloor(newborn);
+        }
+
+        /// <summary>
+        /// The mass of the lightest part of a body, kilograms. For refusal messages only.
+        /// </summary>
+        private static float LightestPartKilograms(Phenotype body)
+        {
+            IReadOnlyList<PhenotypePart> parts = body.Parts;
+            if (parts.Count == 0) return 0f;
+
+            float lightest = float.MaxValue;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                float mass = parts[i].Volume * RunConfig.PartDensityKilogramsPerCubicMetre;
+                if (mass < lightest) lightest = mass;
+            }
+
+            return lightest;
+        }
 
         /// <summary>
         /// Develops a genome and turns it into a creature, or refuses it. Null means stillborn.
@@ -2472,10 +2991,20 @@ namespace Evosim.Core
         /// world's seed stream for a floor founder or an inoculant, guarded behind
         /// <see cref="PatchCount"/> &gt; 1 at each call site.
         /// </param>
+        /// <param name="adultPhenotype">
+        /// The body this creature grows towards — fable-propose-growth.md rule 4. The same object
+        /// as <paramref name="phenotype"/> for anything born at full size, and the unscaled
+        /// development for anything born smaller.
+        /// </param>
+        /// <param name="adultTissue">
+        /// <see cref="Metabolism.TissueJoules"/> of <paramref name="adultPhenotype"/>. Passed
+        /// rather than measured here because every caller has just computed it to decide how big
+        /// the newborn is, and measuring it twice is a walk over every part for nothing.
+        /// </param>
         private Organism Admit(
             Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
             int generationDepth, float energy, float tissue, float heightY, Organism parent,
-            int patch)
+            int patch, Phenotype adultPhenotype, float adultTissue)
         {
             if (phenotype.PartCount == 0)
             {
@@ -2499,6 +3028,12 @@ namespace Evosim.Core
                 BirthSeed = seed,
                 Genome = genome,
                 Phenotype = phenotype,
+                AdultPhenotype = adultPhenotype,
+                AdultTissueJoules = adultTissue,
+
+                // Derived from the two tissue figures rather than passed alongside them, so the
+                // body fraction is a readout of the energy ledger and cannot disagree with it.
+                BodyFraction = adultTissue > 0f && tissue < adultTissue ? tissue / adultTissue : 1f,
                 Energy = energy,
                 TissueJoules = tissue,
                 HeightY = heightY,
@@ -2513,21 +3048,20 @@ namespace Evosim.Core
                 StandingWatts = Metabolism.StandingWatts(phenotype, Config),
             };
 
-            // One pass over the parts, at the one moment a body is built. Growth does not exist
-            // (§5A.6), so none of these three can change afterwards — and the alternative is the
+            // One pass over the parts, at the one moment a body plan is built. Growth changes a
+            // body's size and never what it is made of (fable-propose-growth.md rule 4), so the
+            // two flags below are fixed from birth to death; only the volume moves, and
+            // <see cref="Grow"/> refreshes that where it changes it. The alternative is the
             // per-creature per-step loop the absorptive log would otherwise need just to decide
             // whether to record a creature at all.
-            float absorptiveVolume = 0f;
             bool photosynthetic = false;
             IReadOnlyList<PhenotypePart> admitted = phenotype.Parts;
             for (int i = 0; i < admitted.Count; i++)
             {
-                string cellTypeId = admitted[i].CellTypeId;
-                if (cellTypeId == CellTypeIds.Absorptive) absorptiveVolume += admitted[i].Volume;
-                else if (cellTypeId == CellTypeIds.Photosynthetic) photosynthetic = true;
+                if (admitted[i].CellTypeId == CellTypeIds.Photosynthetic) photosynthetic = true;
             }
 
-            creature.AbsorptiveVolume = absorptiveVolume;
+            creature.AbsorptiveVolume = AbsorptiveVolumeOf(phenotype);
             creature.HasAbsorptiveTissue = HasAbsorptive(phenotype);
             creature.HasPhotosyntheticTissue = photosynthetic;
 
@@ -2551,7 +3085,8 @@ namespace Evosim.Core
             // creature it describes can never disagree about what the body is made of.
             _lineageEvents.Add(LineageEvent.Birth(
                 ElapsedSeconds, creature.Id, parentId, kind, generationDepth, creature.SpeciesId,
-                HasAbsorptive(phenotype), phenotype.TotalDof > 0, photosynthetic, patch));
+                HasAbsorptive(phenotype), phenotype.TotalDof > 0, photosynthetic, patch,
+                creature.BodyFraction, genome.AdultScale));
 
             return creature;
         }

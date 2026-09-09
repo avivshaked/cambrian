@@ -52,10 +52,10 @@ namespace Evosim.Core.Tests
                     runDir,
                     lineageRows: new[]
                     {
-                        LineageEvent.Birth(0.0, 1, -1, BirthKind.Floor, 0, 0, false, false, false, 0).ToJson(),
-                        LineageEvent.Birth(5.0, 2, -1, BirthKind.Floor, 0, 0, false, false, false, 0).ToJson(),
+                        LineageEvent.Birth(0.0, 1, -1, BirthKind.Floor, 0, 0, false, false, false, 0, 1f, 1f).ToJson(),
+                        LineageEvent.Birth(5.0, 2, -1, BirthKind.Floor, 0, 0, false, false, false, 0, 1f, 1f).ToJson(),
                         LineageEvent.Death(8.0, 2, DeathCause.Starved).ToJson(),
-                        LineageEvent.Birth(10.0, 3, 1, BirthKind.Reproduction, 1, 0, false, false, false, 0).ToJson(),
+                        LineageEvent.Birth(10.0, 3, 1, BirthKind.Reproduction, 1, 0, false, false, false, 0, 1f, 1f).ToJson(),
                     },
                     // Snapshot at t=10 carries ids 1 (born at t=0, still alive) and 3 (born at
                     // t=10 — the same-second birth the test's remarks call out as counting: a
@@ -95,7 +95,7 @@ namespace Evosim.Core.Tests
                     runDir,
                     lineageRows: new[]
                     {
-                        LineageEvent.Birth(0.0, 1, -1, BirthKind.Floor, 0, 0, false, false, false, 0).ToJson(),
+                        LineageEvent.Birth(0.0, 1, -1, BirthKind.Floor, 0, 0, false, false, false, 0, 1f, 1f).ToJson(),
                     },
                     // Id 99 was never born — the failure this checker exists to catch.
                     snapshotTime: 10,

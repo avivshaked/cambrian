@@ -86,6 +86,102 @@ namespace Evosim.Core
         /// </remarks>
         public float TotalLitArea { get; private set; }
 
+        /// <summary>
+        /// A copy of this body at <paramref name="linear"/> times its size on every axis — what a
+        /// creature below its adult size actually is, fable-propose-growth.md rule 4 (2026-09-08).
+        /// </summary>
+        /// <param name="linear">
+        /// Length ratio, not volume ratio. A body holding a fraction <c>f</c> of its adult volume
+        /// is this at <c>f^(1/3)</c>, and the caller does that conversion because it is the one
+        /// holding the tissue ledger.
+        /// </param>
+        /// <param name="shapes">
+        /// Geometry to re-measure the scaled parts with. Defaults to
+        /// <see cref="PartShapeRegistry.Standard"/>; a run using custom shapes must pass its own,
+        /// exactly as <see cref="Developer.Develop"/> demands.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>The developer's scale folding is the model, and this is deliberately the same
+        /// arithmetic.</b> Half-extents, position and both anchors are lengths and scale by
+        /// <paramref name="linear"/>; volume and surface are re-measured by the part's own shape
+        /// rather than multiplied by a power, so a shape whose volume is not a simple cube of its
+        /// extents stays honest. Nothing else about a part changes: a growing creature keeps its
+        /// plan, its cell types, its joints and its neurons, and only its size moves.
+        /// </para>
+        /// <para>
+        /// <b>What is deliberately not applied: the two limits.</b> Development thickens a thin
+        /// part to <see cref="DevelopmentLimits.MinPartHalfExtent"/> and prunes a subtree outside
+        /// the volume bounds, and neither may happen here. The child develops once, at its adult
+        /// size, so that the pruning rule judges the adult and a newborn does not lose parts it
+        /// would have grown (rule 4); and thickening would break the one identity growth rests on,
+        /// that a body's tissue joules are its adult's times its body fraction. A newborn too
+        /// small to build is refused at conception by <see cref="RunConfig.MinNewbornPartKilograms"/>
+        /// instead, which is a decision about the world rather than a silent repair of a body.
+        /// </para>
+        /// <para>
+        /// The pruning counters are carried across unchanged: they record what development did to
+        /// the plan, which is a fact about the genome and not about how grown the creature is.
+        /// </para>
+        /// </remarks>
+        public Phenotype Scaled(float linear, PartShapeRegistry shapes = null)
+        {
+            if (!(linear > 0f) || float.IsInfinity(linear))
+            {
+                throw new System.ArgumentOutOfRangeException(
+                    nameof(linear), linear,
+                    "A body scale must be finite and positive. Zero is not a small creature, it " +
+                    "is a body with no extent, no volume and no anchors.");
+            }
+
+            shapes = shapes ?? PartShapeRegistry.Standard;
+
+            var scaled = new Phenotype
+            {
+                Limits = Limits.Clone(),
+                PrunedForVolume = PrunedForVolume,
+                PrunedForDepth = PrunedForDepth,
+                PrunedForParts = PrunedForParts,
+            };
+
+            for (int i = 0; i < _parts.Count; i++)
+            {
+                PhenotypePart part = _parts[i];
+                Float3 halfExtents = part.HalfExtents * linear;
+                PartShape shape = shapes.Resolve(part.ShapeId);
+
+                scaled.Add(new PhenotypePart
+                {
+                    ParentIndex = part.ParentIndex,
+                    SourceNode = part.SourceNode,
+                    Depth = part.Depth,
+                    HalfExtents = halfExtents,
+                    Position = part.Position * linear,
+                    Rotation = part.Rotation,
+                    Mirrored = part.Mirrored,
+                    CellTypeId = part.CellTypeId,
+                    ShapeId = part.ShapeId,
+                    Volume = shape.Volume(halfExtents),
+                    SurfaceArea = shape.SurfaceArea(halfExtents),
+                    JointType = part.JointType,
+                    JointLimits = part.JointLimits,
+
+                    // Torque capacity and lift are not lengths and are not scaled. Power is what
+                    // the genome says a link can push with and lift is kg/m³ of displaced water,
+                    // so both already mean the same thing at any size — and both are billed per
+                    // step, so a half-grown body pays its adult's bill for them. Whether that is
+                    // the world we want is a question for a round, not for a copy constructor.
+                    Power = part.Power,
+                    Lift = part.Lift,
+                    ParentAnchorLocal = part.ParentAnchorLocal * linear,
+                    ChildAnchorLocal = part.ChildAnchorLocal * linear,
+                    Neurons = part.Neurons,
+                });
+            }
+
+            return scaled;
+        }
+
         internal PhenotypePart Add(PhenotypePart part)
         {
             part.Index = _parts.Count;

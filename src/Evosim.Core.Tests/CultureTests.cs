@@ -114,8 +114,8 @@ namespace Evosim.Core.Tests
             {
                 Assert.Contains("1.5", new LightModel(120f, 1.5f).ToString());
                 Assert.Contains("0.125", new FluidConfig { DragCoefficient = 0.125f }.ToString());
-                var brood = new ReproductionTraits { BroodSize = 1, OffspringEndowment = 0.25f };
-                Assert.Contains("0.3", brood.ToString());   // "0.#" rounds; the point is the point
+                var brood = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.125f };
+                Assert.Contains("0.125", brood.ToString());
 
                 var limits = new DevelopmentLimits { MinPartHalfExtent = 0.125f };
                 Assert.Contains("0.125", limits.ToString());

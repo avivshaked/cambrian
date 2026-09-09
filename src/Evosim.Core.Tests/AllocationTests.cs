@@ -23,7 +23,7 @@ namespace Evosim.Core.Tests
             var g = new Genome
             {
                 RootIndex = 0,
-                Reproduction = new ReproductionTraits { BroodSize = 1, OffspringEndowment = 10000f },
+                Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 1000f },
             };
             g.Nodes.Add(new MorphNode
             {
@@ -120,6 +120,12 @@ namespace Evosim.Core.Tests
                 config.InitialMatterPerCubicMetre = 100f;
                 config.MatterPerCreature = 2f;
                 config.MatterPerTissueJoule = 0f;
+
+                // The newborn mass floor off. Since fable-propose-growth.md rule 3 reached
+                // founders and inoculants (2026-09-08) a body this small is refused at the
+                // default 0.5 kg, and the root here is deliberately just above the minimum
+                // *volume* because that is the edge this test is about.
+                config.MinNewbornPartKilograms = 0f;
                 foreach (var prop in typeof(MutationRates).GetProperties())
                 {
                     if (prop.PropertyType == typeof(float) && prop.Name.EndsWith("Chance"))
@@ -128,7 +134,7 @@ namespace Evosim.Core.Tests
                 config.Mutation.ScalarChance = 1f;
 
                 Genome g = Cube(CellTypeIds.Photosynthetic, 0.0234f);
-                g.Reproduction = new ReproductionTraits { BroodSize = 1, OffspringEndowment = 10f };
+                g.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f };
 
                 var candidate = new World(config, seed);
                 candidate.Inoculate(g, 1, -0.5f);

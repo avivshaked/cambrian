@@ -51,7 +51,53 @@ namespace Evosim.Core
         public ulong BirthSeed { get; internal set; }
 
         public Genome Genome { get; internal set; }
+
+        /// <summary>
+        /// The body as it is now: <see cref="AdultPhenotype"/> scaled to
+        /// <see cref="BodyFraction"/> — fable-propose-growth.md rule 4 (2026-09-08).
+        /// </summary>
+        /// <remarks>
+        /// <b>Everything that prices this creature reads this and not the adult.</b> Upkeep is per
+        /// cubic metre, light income is lit area, feeding is clearance per cubic metre of
+        /// absorptive tissue, drag is panels over the surface — so a half-grown body earns and
+        /// spends as the body it actually is, with nothing having to know that growth exists.
+        /// Replaced wholesale on a growth step rather than edited in place, so a reader may hold
+        /// it for the length of a step.
+        /// </remarks>
         public Phenotype Phenotype { get; internal set; }
+
+        /// <summary>
+        /// The body this creature is growing towards, developed once at birth at the genome's
+        /// <see cref="Genome.AdultScale"/> — rule 4.
+        /// </summary>
+        /// <remarks>
+        /// <b>Developed once, at full size, so that the small-part pruning rule judges the
+        /// adult.</b> Developing a newborn at its own size would prune the parts it was about to
+        /// grow, and the creature would reach adulthood with a different body plan from the one
+        /// its genome describes — a body that changes shape as it grows rather than size. Held for
+        /// the creature's whole life because every growth step scales from it: a chain of
+        /// scalings from the current body would compound its own rounding.
+        /// </remarks>
+        public Phenotype AdultPhenotype { get; internal set; }
+
+        /// <summary>
+        /// How much of its adult body this creature has built, 0 to 1 — rule 4.
+        /// </summary>
+        /// <remarks>
+        /// <b>A volume fraction, not a length one.</b> It is <see cref="TissueJoules"/> over
+        /// <see cref="AdultTissueJoules"/>, which is what makes growth a transfer the audit can
+        /// see: the fraction is a readout of the energy ledger rather than a second account beside
+        /// it. The linear scale the body is built at is its cube root.
+        /// </remarks>
+        public float BodyFraction { get; internal set; } = 1f;
+
+        /// <summary>Embodied energy of the finished adult body, J — what growth is aiming at.</summary>
+        /// <remarks>
+        /// Cached at birth for the reason <see cref="StandingWatts"/> used to be: it is
+        /// <see cref="Metabolism.TissueJoules"/> over every part of a body that does not change,
+        /// and growth reads it on every step of every growing creature.
+        /// </remarks>
+        public float AdultTissueJoules { get; internal set; }
 
         /// <summary>Joules in reserve. Death at zero (§5A.6).</summary>
         public float Energy { get; internal set; }
@@ -97,11 +143,15 @@ namespace Evosim.Core
         /// </remarks>
         public float PendingWorkJoules { get; internal set; }
 
-        /// <summary>Standing cost in watts, cached at birth — the body does not change.</summary>
+        /// <summary>Standing cost in watts, refreshed whenever the body or the wear changes.</summary>
         /// <remarks>
-        /// Recomputing it every step would be the single largest cost in a population loop that
-        /// is otherwise arithmetic, and it cannot change: growth does not exist yet (§5A.6), so a
-        /// creature's body is fixed from birth to death.
+        /// <b>This remark used to say the body does not change. It does now</b>
+        /// (fable-propose-growth.md rule 4, 2026-09-08). Three places write it: birth, the
+        /// metabolic step — which takes it from the ledger it has just computed, so senescence is
+        /// already in it (D038) — and the growth step, which recomputes it from the newly scaled
+        /// body at this creature's own age. Left at its birth value it would make
+        /// <see cref="SecondsOfReserve"/>, and therefore §4.4's energy sensor, more optimistic the
+        /// larger a creature grew.
         /// </remarks>
         public float StandingWatts { get; internal set; }
 
@@ -113,12 +163,20 @@ namespace Evosim.Core
         /// dead. DESIGN.md §5A.2c.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// <b>Held separately from <see cref="Energy"/> because it is not spendable.</b> A
-        /// starving creature cannot metabolise its own body — there is no growth in this design
-        /// and therefore no shrinking either (§5A.6) — so this sits outside the reserve that
-        /// death-at-zero watches, and moves exactly twice: in when a parent builds it, out into
-        /// the nutrient pool when it dies. Two movements of one number is what keeps the food web
-        /// inside §5A.2's audit instead of alongside it.
+        /// starving creature cannot metabolise its own body, so this sits outside the reserve
+        /// that death-at-zero watches. There is growth in this design and still no shrinking
+        /// (fable-propose-growth.md rule 5): the account only ever fills.
+        /// </para>
+        /// <para>
+        /// <b>It moves three ways now, not two.</b> In when a parent builds it, in again on every
+        /// growth step out of this creature's own reserve, and out into the water when it dies.
+        /// Growth is a transfer between two accounts the audit already sums, so the books close
+        /// for the reason a birth's did: nothing is created, only moved. And it is always
+        /// <see cref="Metabolism.TissueJoules"/> of <see cref="Phenotype"/> — derived from the
+        /// body rather than accumulated beside it, so the two cannot drift.
+        /// </para>
         /// </remarks>
         public float TissueJoules { get; internal set; }
 
@@ -179,11 +237,11 @@ namespace Evosim.Core
         /// cached at birth by <see cref="World"/>'s <c>Admit</c>.
         /// </summary>
         /// <remarks>
-        /// <b>Cached because the body cannot change.</b> There is no growth in this design
-        /// (§5A.6), so a creature's cell types are fixed from birth to death, and the alternative
-        /// is a loop over every part of every living creature on every metabolic step purely to
-        /// decide whether an instrument should record it. Cached once, at the one moment the body
-        /// is built, alongside the tissue price and the standing cost.
+        /// <b>Cached because a body's cell types cannot change.</b> Growth moves a body's size and
+        /// nothing else (fable-propose-growth.md rule 4), so what a creature is made of is still
+        /// fixed from birth to death, and the alternative is a loop over every part of every living
+        /// creature on every metabolic step purely to decide whether an instrument should record
+        /// it. Cached once, at the one moment the plan is built.
         /// </remarks>
         public bool HasAbsorptiveTissue { get; internal set; }
 
@@ -199,7 +257,8 @@ namespace Evosim.Core
         /// Separate from <see cref="Phenotype.TotalVolume"/> because a mixotroph's mouth is the
         /// part of it that eats: the D062 clearance model prices intake per cubic metre of
         /// absorptive tissue, so this is the number a break-even reading has to be taken against
-        /// and the whole body is not.
+        /// and the whole body is not. Refreshed on a growth step with the body it measures: a
+        /// mouth grows with the rest of the creature.
         /// </remarks>
         public float AbsorptiveVolume { get; internal set; }
 
@@ -266,12 +325,19 @@ namespace Evosim.Core
         /// constant to keep in sync.
         /// </para>
         /// <para>
-        /// <b>An estimate, not the price.</b> Since §5A.2c a parent also builds each offspring's
-        /// body, and what that costs is unknown until the mutated genome has been developed. This
-        /// stands in <see cref="TissueJoules"/> — the parent's own body — because offspring are
-        /// mutated copies and are nearly always close to the parent's size. Whoever passes this
-        /// gate still pays the true price or is refused, so the estimate cannot buy anything; it
-        /// only decides whether developing a genome is worth trying.
+        /// <b>The price, where it used to be an estimate</b> (fable-propose-growth.md rule 2,
+        /// 2026-09-08). The old gate stood the parent's own tissue in for the child's, because a
+        /// child was born at full size and what that cost could not be known until the mutated
+        /// genome had been developed. A parent now spends a fraction of its own body plus the
+        /// litter's overhead, and it knows both. The one way it pays less is a child whose share
+        /// buys more body than it has adult to build: that surplus stays with the parent.
+        /// </para>
+        /// <para>
+        /// <b>A half-grown body's gate is a half-grown body's.</b> The investment is a fraction of
+        /// this creature's current tissue, so a newborn's threshold is small — and it still almost
+        /// never breeds before it is grown, because growth runs first and takes its reserve down
+        /// to <see cref="RunConfig.GrowthReserveFloor"/> of its tissue every step. Grow first and
+        /// breed later falls out of the ordering rather than being a rule anybody wrote.
         /// </para>
         /// <para>
         /// <b>Leaving tissue out of the gate is not a small mistake.</b> With it omitted, every
@@ -281,7 +347,7 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         public float ReproductionThreshold(float perOffspringOverheadJoules) =>
-            Genome.Reproduction.CostJoules(perOffspringOverheadJoules + TissueJoules);
+            Genome.Reproduction.CostJoules(TissueJoules, perOffspringOverheadJoules);
 
         public override string ToString() =>
             FormattableString.Invariant(

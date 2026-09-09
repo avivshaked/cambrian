@@ -204,13 +204,19 @@ Start-Process -FilePath $unity -Wait -NoNewWindow -ArgumentList @(
     '-logFile', "$PWD/scratch/logs/theatre-identity.log")
 ```
 
-**Test `Evosim.Core`** (the whole suite is a couple of minutes for ~470 tests; the
+**Test `Evosim.Core`** (the default run skips the `Slow` trait, which covers the calibration
+sweeps, field experiments and the snapshot scan, and ran 592 tests in 58 s on 2026-09-09; the
 development and ecosystem tests are seconds each, so use `-Filter` while iterating):
 
 ```powershell
 ./scripts/core-test.ps1
 ./scripts/core-test.ps1 -Filter DevelopmentTests
+./scripts/core-test.ps1 -All
 ```
+
+`-All` runs the slow experiments too, and takes much longer: a timed run on 2026-09-09 took
+27 minutes beside five arms, with the calibration sweep alone at 20 minutes. Run `-All`
+before a commit that touches the world.
 
 **There is no .NET SDK installed system-wide on this machine** — `dotnet --list-sdks` is
 empty, only runtimes are present. Unity ships a complete .NET 8 SDK at
@@ -562,6 +568,22 @@ actually verifying it.
   fields at that rate per second; read the `corpses` column and the `corpseJoules` /
   `corpseMatter` stats fields, and remember `detritus J` no longer holds what a corpse
   still does.
+- **From the growth build (2026-09-09, logbook/0081) a body is not a unit of biomass, and every
+  stored genome is refused.** `BirthInvestment` replaced the endowment and `AdultScale` joined
+  the genome, so `GenomeJson.FormatVersion` is 5 and every `format":4` inoculum and snapshot on
+  disk is refused, as the format-4 bump did to format 3; re-extract from a new snapshot. A child
+  is born at a fraction of its adult body (median 0.31 in the smoke) and grows, so
+  `MaximumPopulation` still ends a runaway but counts bodies of any size; read `body frac`,
+  `adult scale`, `invest` and `brood` in the table, `bf` and `as` on lineage birth rows, and
+  `growthShortOfMatter` / `conceptionsUnderMassFloor` in `stats.jsonl`. At investment 0.5 a
+  world breeds about seven times faster through founding than one whose children are born
+  whole, and strips the matter at its layer within 300 s (0081's smoke against `r32-s1`).
+  The harness resizes a living articulation in place every `GrowthStepSeconds`;
+  `resizeJumpMetres` is exact and read 0, but `resizeStepMetres` reads the root only and
+  cannot see a snap smaller than the current's drift (15 cm per step at 0.3 m/s), so a
+  resize suspected of throwing a body is read from a per-link instrument that does not
+  exist yet, and from `diverged`. `mat orphan` has read of the order of 1e-4 units on 6,000
+  since before growth; the invariant is broken by a value the table does not round away.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.
@@ -577,6 +599,12 @@ actually verifying it.
 - **First-person voice is welcome in the record** — the owner invited genuine agent
   reactions, as the agent's own: honest and brief, never performative (logbook/0042's
   personal note is the precedent).
+- **A subagent cannot wait, so never hand it a task that ends in one.** It cannot sleep and
+  cannot return before its report, so a suite or a smoke as its last step turns into a no-op
+  shell command every few seconds until someone stops it; on 2026-09-09 that ran for an hour
+  and the owner had to stop the session (logbook/0081). An agent's task ends when its edits
+  and the fast filtered tests are in; the caller launches anything long in the background,
+  where a completion notice costs nothing, and reads the result.
 - **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
   amendments, scope and round design forks, pushes of anything that is not code/prose, and
   anything irreversible or outward-facing. Instruments, diagnostics, replays of scored

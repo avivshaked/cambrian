@@ -414,7 +414,8 @@ namespace Evosim.Core.Tests
             ShapeChance = 0f,
             CellTypeChance = 0f,
             BroodSizeChance = 0f,
-            EndowmentChance = 0f,
+            InvestmentChance = 0f,
+            AdultScaleChance = 0f,
         };
 
         /// <summary>One photosynthetic box that breeds one cheap child at a time.</summary>
@@ -435,7 +436,12 @@ namespace Evosim.Core.Tests
             g.Reproduction = new ReproductionTraits
             {
                 BroodSize = 1,
-                OffspringEndowment = 0.01f,
+
+                // A tenth of its own body per child, which is cheap enough that a solvent leaf
+                // breeds on the step it clears the gate. Not a hundredth: a child at 0.8% of an
+                // adult leaf lands within a rounding of MinNewbornPartKilograms, and this test is
+                // about who breeds first rather than about the mass floor.
+                BirthInvestment = 0.1f,
             };
             return g;
         }

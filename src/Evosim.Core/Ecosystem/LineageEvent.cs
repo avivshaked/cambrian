@@ -80,6 +80,27 @@ namespace Evosim.Core
         /// </summary>
         public int Patch { get; }
 
+        /// <summary>
+        /// Birth only — what share of its adult body this creature was born with,
+        /// <see cref="Organism.BodyFraction"/> at birth. fable-propose-growth.md rule 9.
+        /// </summary>
+        /// <remarks>
+        /// <b>The number the litter and the investment together decide, recorded where the
+        /// decision landed.</b> Both dials can be read off a stored genome, but what a particular
+        /// child was actually born at depends on its parent's body at that instant, and nothing
+        /// else in the record carries a parent's tissue value at the moment it bred. 1 for
+        /// anything born at full size.
+        /// </remarks>
+        public float BirthFraction { get; }
+
+        /// <summary>Birth only — the genome's <see cref="Genome.AdultScale"/>, rule 9.</summary>
+        /// <remarks>
+        /// Carried on the row rather than left to a snapshot, because the question the dial exists
+        /// for is whether a lineage's size drifts, and that is a question about every birth in a
+        /// parent chain rather than about the survivors a snapshot happens to catch.
+        /// </remarks>
+        public float AdultScale { get; }
+
         /// <summary>Death only — why the creature left the population.</summary>
         public DeathCause Cause { get; }
 
@@ -87,8 +108,11 @@ namespace Evosim.Core
             LineageEventKind kind, double elapsedSeconds, long id, long parentId,
             BirthKind birthKind, int generationDepth, uint speciesId,
             bool hasAbsorptive, bool hasJoint, bool hasPhotosynthetic, int patch,
+            float birthFraction, float adultScale,
             DeathCause cause)
         {
+            BirthFraction = birthFraction;
+            AdultScale = adultScale;
             Kind = kind;
             ElapsedSeconds = elapsedSeconds;
             Id = id;
@@ -106,16 +130,18 @@ namespace Evosim.Core
         public static LineageEvent Birth(
             double elapsedSeconds, long id, long parentId, BirthKind birthKind,
             int generationDepth, uint speciesId, bool hasAbsorptive, bool hasJoint,
-            bool hasPhotosynthetic, int patch) =>
+            bool hasPhotosynthetic, int patch, float birthFraction, float adultScale) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
-                speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch, default);
+                speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
+                birthFraction, adultScale, default);
 
         public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
             new LineageEvent(
                 LineageEventKind.Death, elapsedSeconds, id, parentId: -1, birthKind: default,
                 generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
-                hasPhotosynthetic: false, patch: 0, cause: cause);
+                hasPhotosynthetic: false, patch: 0, birthFraction: 0f, adultScale: 0f,
+                cause: cause);
 
         /// <summary>One-letter code for <see cref="BirthKind"/> — "f" floor, "r" reproduction, "i" inoculation.</summary>
         private static string Code(BirthKind kind)
@@ -170,7 +196,9 @@ namespace Evosim.Core
                     .Field("abs", HasAbsorptive ? 1 : 0)
                     .Field("jnt", HasJoint ? 1 : 0)
                     .Field("pho", HasPhotosynthetic ? 1 : 0)
-                    .Field("pt", Patch);
+                    .Field("pt", Patch)
+                    .Field("bf", BirthFraction)
+                    .Field("as", AdultScale);
             }
             else
             {

@@ -24,7 +24,15 @@ namespace Evosim.Core.Tests
     /// against is a genome the <i>simulator</i> chose: an operator, a cell type or a sensor
     /// channel that a run can produce and the reader has never seen.
     /// </para>
+    /// <para>
+    /// Marked <c>Slow</c> and left out of the default run: on 2026-09-09 <c>runs/</c> held 11 GB
+    /// and this one test cost 136 s, all of it spent reading full snapshot files whose first row
+    /// already said they were stale. Staleness is now decided from that first row before the rest
+    /// of the file is touched — see <see cref="EveryGenomeARunWroteCanBeReadBack"/>. Run it with
+    /// <c>core-test.ps1 -All</c>.
+    /// </para>
     /// </remarks>
+    [Trait("Category", "Slow")]
     public class SnapshotReadbackTests
     {
         private readonly ITestOutputHelper _output;
@@ -63,7 +71,7 @@ namespace Evosim.Core.Tests
                 f => Path.GetFileName(Path.GetDirectoryName(f)) == "snapshots");
             if (snapshots.Length == 0) { _output.WriteLine("no snapshots — skipped"); return; }
 
-            int files = 0, genomes = 0, parts = 0, neurons = 0, stale = 0;
+            int files = 0, genomes = 0, parts = 0, neurons = 0, stale = 0, empty = 0;
             var cellTypes = new HashSet<string>();
             var failures = new List<string>();
 
@@ -71,23 +79,53 @@ namespace Evosim.Core.Tests
             {
                 files++;
 
-                // ReadRows rather than ReadAllLines: the latter opens with FileShare.Read, which
-                // will not coexist with a live writer and throws a sharing violation. Runs are
-                // usually in flight when this matters.
-                string[] rows;
-                try { rows = JsonlWriter.ReadRows(file); }
+                // Staleness is decided from the first row alone, before the rest of the file is
+                // touched. runs/ held 11 GB on 2026-09-09 and this test cost 136 s, almost all of
+                // it spent reading full snapshot files whose first row already said they were an
+                // old format this build correctly refuses. Opened with FileShare.ReadWrite, not
+                // File.ReadAllLines's FileShare.Read, because a live run holds the file open for
+                // append and that throws a sharing violation.
+                string first;
+                try { first = FirstLine(file); }
                 catch (Exception e) { failures.Add($"{Path.GetFileName(file)}: unreadable — {e.Message}"); continue; }
+
+                // A file with nothing in it is neither a genome this build can read nor an older
+                // schema it correctly refuses — a run writes one whenever a sample lands on an
+                // empty world. Counted on its own so the guard at the bottom can say every file
+                // was accounted for, rather than being satisfied by whichever category happened
+                // to be non-empty. Found when the genome format moved to 5 and the twenty-nine
+                // empty files under runs/ were the only ones left over.
+                if (string.IsNullOrWhiteSpace(first))
+                {
+                    empty++;
+                    continue;
+                }
 
                 // Archaeology is not a regression. This guards that a run cannot write a genome
                 // *this build* is unable to read back; a snapshot from an older schema is
                 // correctly unreadable, and GenomeJson.FormatVersion exists to say so plainly
                 // rather than fail on a missing field twelve levels down. Skipped and counted,
                 // never quietly passed over — a run of nothing but old files would otherwise
-                // report success while testing zero genomes.
-                if (rows.Length > 0 && !string.IsNullOrWhiteSpace(rows[0]) &&
-                    FormatOf(rows[0]) is int format && format != GenomeJson.FormatVersion)
+                // report success while testing zero genomes. Decided from the first row, so a
+                // stale file is never read in full.
+                if (FormatOf(first) is int format && format != GenomeJson.FormatVersion)
                 {
                     stale++;
+                    continue;
+                }
+
+                // Only a current-format file reaches a full read. ReadRows rather than
+                // ReadAllLines for the same sharing reason as FirstLine above.
+                string[] rows;
+                try { rows = JsonlWriter.ReadRows(file); }
+                catch (Exception e) { failures.Add($"{Path.GetFileName(file)}: unreadable — {e.Message}"); continue; }
+
+                // The first line was non-blank, but the row it belongs to may not have a trailing
+                // newline yet if a run is still writing it — ReadRows drops an incomplete last
+                // line, which can leave zero complete rows even though the peek above saw content.
+                if (rows.Length == 0)
+                {
+                    empty++;
                     continue;
                 }
 
@@ -133,6 +171,7 @@ namespace Evosim.Core.Tests
                     $"{stale} snapshot(s) skipped: written before genome format " +
                     $"{GenomeJson.FormatVersion} and correctly unreadable by this build.");
             }
+            if (empty > 0) _output.WriteLine($"{empty} snapshot(s) held no rows at all.");
 
             Assert.True(
                 failures.Count == 0,
@@ -140,8 +179,22 @@ namespace Evosim.Core.Tests
                 Environment.NewLine + string.Join(Environment.NewLine, failures.GetRange(0, Math.Min(5, failures.Count))));
 
             Assert.True(
-                genomes > 0 || stale == files,
+                genomes > 0 || stale + empty == files,
                 "snapshots existed but held no genomes");
+        }
+
+        /// <summary>
+        /// The file's first line, or null if it has none. Opened with <see cref="FileShare.ReadWrite"/>
+        /// rather than <c>File.ReadAllLines</c>'s default share mode, because a live run holds the
+        /// file open for append and that mode throws a sharing violation.
+        /// </summary>
+        private static string FirstLine(string path)
+        {
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var reader = new StreamReader(stream, new System.Text.UTF8Encoding(false)))
+            {
+                return reader.ReadLine();
+            }
         }
 
         /// <summary>The declared format of a genome row, or null if it will not even parse.</summary>

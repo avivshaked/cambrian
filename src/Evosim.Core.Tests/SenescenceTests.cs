@@ -155,7 +155,13 @@ namespace Evosim.Core.Tests
             //
             // So the honest statement is the one below: without ageing this world explodes, and
             // with it the same world runs to the end of the same 1500 s. That is the effect.
-            var lit = new LightModel(400f, 12f);
+            // 300 W/m2 rather than 400 since fable-propose-growth.md (2026-09-08): cheaper
+            // reproduction carries several times the head-count at the same light, and at 400 the
+            // ageing world hit the ceiling too, which is the one thing this test needs it not to
+            // do. The claim is unchanged, and sharper at this light: the immortal world runs away
+            // at t=303 s and the ageing one finishes the 1500 s with 88% of its creatures dead
+            // against the immortal world's 6%.
+            var lit = new LightModel(300f, 12f);
 
             RunConfig Config(float doubling) => new RunConfig
             {

@@ -12,9 +12,15 @@
     runtimes. Unity ships a complete .NET 8 SDK inside the Editor install, and this
     script uses that, so nothing needs installing.
 
+    A timed run of the full suite on 2026-09-09 took 27 minutes: six classes are scans
+    and calibration experiments, not guards on a rule, and are traited "Category=Slow".
+    By default this script excludes that trait, so the run covers only what guards a
+    rule. Pass -All to run everything, slow experiments included.
+
 .EXAMPLE
     ./scripts/core-test.ps1
     ./scripts/core-test.ps1 -Filter DevelopmentTests
+    ./scripts/core-test.ps1 -All
 #>
 [CmdletBinding()]
 param(
@@ -27,7 +33,12 @@ param(
     # Show what tests write to ITestOutputHelper. Several tests here exist to report a
     # measurement rather than to assert on one — population overlap, joint clearance — and
     # their tables are invisible at the default verbosity.
-    [switch] $ShowOutput
+    [switch] $ShowOutput,
+
+    # Run everything, including the classes traited "Category=Slow" (calibration sweeps
+    # and field experiments that scan for a number rather than guard a rule). Without
+    # this switch those are excluded, which is what keeps the default run fast.
+    [switch] $All
 )
 
 $ErrorActionPreference = 'Stop'
@@ -78,7 +89,17 @@ $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
 
 $testArgs = @('test', $project, '--nologo', '-v', 'minimal')
-if ($Filter) { $testArgs += @('--filter', $Filter) }
+
+# Without -All, the slow experiments and scans are excluded so the default run stays
+# fast; -All drops that exclusion and runs whatever -Filter alone asks for, or nothing.
+if ($All) {
+    if ($Filter) { $testArgs += @('--filter', $Filter) }
+} elseif ($Filter) {
+    $testArgs += @('--filter', "($Filter)&Category!=Slow")
+} else {
+    $testArgs += @('--filter', 'Category!=Slow')
+}
+
 if ($ShowOutput) { $testArgs += @('--logger', 'console;verbosity=detailed') }
 
 & $dotnet @testArgs

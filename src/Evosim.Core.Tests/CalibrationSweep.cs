@@ -32,7 +32,13 @@ namespace Evosim.Core.Tests
     /// income does not depend on how many others there are, so a population above break-even grows
     /// without bound at <i>every</i> setting. The knob decided only how fast.
     /// </para>
+    /// <para>
+    /// Marked <c>Slow</c> and left out of the default run: this is a scan for a transition, not
+    /// a guard on one, and its single longest test cost 1,225 s of the 27-minute run timed on
+    /// 2026-09-09. Run it with <c>core-test.ps1 -All</c>.
+    /// </para>
     /// </remarks>
+    [Trait("Category", "Slow")]
     public class CalibrationSweep
     {
         private readonly ITestOutputHelper _output;

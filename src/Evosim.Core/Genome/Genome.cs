@@ -34,7 +34,31 @@ namespace Evosim.Core
 
         /// <summary>How surplus energy is turned into offspring — DESIGN.md §5A.6.</summary>
         public ReproductionTraits Reproduction { get; set; } =
-            new ReproductionTraits { BroodSize = 1, OffspringEndowment = 1f };
+            new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f };
+
+        /// <summary>
+        /// How big this body plan grows up to be: one scalar the developer multiplies into every
+        /// node's dimensions — fable-propose-growth.md rule 1 (2026-09-08).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The plan and its size are separate things to mutate, and that is the whole reason
+        /// this is not just another dimension.</b> Scaling a body through its nodes takes as many
+        /// mutations as the genome has nodes and passes through every intermediate shape on the
+        /// way, so a lineage cannot get bigger without also getting a different shape. One scalar
+        /// can be walked by a graded step, which makes size the first trait in this world that
+        /// selection can climb rather than jump. Every trait the world had selected on before this
+        /// was a switch: a joint or not, a stomach or not.
+        /// </para>
+        /// <para>
+        /// <b>It multiplies the developer's accumulated scale, so it reaches anchors and volumes
+        /// for free.</b> <see cref="Developer"/> already folds accumulated scale into half-extents
+        /// and into the anchors derived from them, and the small-part pruning rule judges what
+        /// comes out — so a genome scaled to nothing loses its parts and is a stillbirth, exactly
+        /// as one whose nodes shrank to nothing already was.
+        /// </para>
+        /// </remarks>
+        public float AdultScale { get; set; } = 1f;
 
         public Genome Clone()
         {
@@ -43,6 +67,7 @@ namespace Evosim.Core
                 RootIndex = RootIndex,
                 GlobalBrain = new NeuronDef[GlobalBrain.Length],
                 Reproduction = Reproduction.Clone(),
+                AdultScale = AdultScale,
             };
 
             for (int i = 0; i < GlobalBrain.Length; i++) clone.GlobalBrain[i] = GlobalBrain[i].Clone();
@@ -81,21 +106,32 @@ namespace Evosim.Core
 
             // A brood of zero is a lineage that ends, which is a thing a creature may not
             // express — dying childless has to be something the world does to it, not something
-            // the genome declares. A negative endowment would let a parent gain energy by
+            // the genome declares. A negative investment would let a parent gain energy by
             // reproducing, which is a free-energy source of exactly the kind §11.2 exists for.
             if (Reproduction.BroodSize < 1)
             {
                 issues.Add($"Brood size {Reproduction.BroodSize} must be at least 1.");
             }
 
-            if (float.IsNaN(Reproduction.OffspringEndowment) ||
-                float.IsInfinity(Reproduction.OffspringEndowment) ||
-                Reproduction.OffspringEndowment <= 0f)
+            if (float.IsNaN(Reproduction.BirthInvestment) ||
+                float.IsInfinity(Reproduction.BirthInvestment) ||
+                Reproduction.BirthInvestment <= 0f)
             {
                 issues.Add(
-                    $"Offspring endowment {Reproduction.OffspringEndowment} must be finite and " +
+                    $"Birth investment {Reproduction.BirthInvestment} must be finite and " +
                     "positive. An offspring born with nothing is dead on arrival, and one born " +
                     "with less than nothing pays its parent to make it.");
+            }
+
+            // A body plan with no size is not a small creature, it is an arithmetic hole: every
+            // half-extent, every anchor and every volume in the phenotype is this number times
+            // something, so a zero develops into nothing and a negative one reflects the whole
+            // body through the origin without recording that it did.
+            if (float.IsNaN(AdultScale) || float.IsInfinity(AdultScale) || AdultScale <= 0f)
+            {
+                issues.Add(
+                    $"Adult scale {AdultScale} must be finite and positive. It multiplies every " +
+                    "node's dimensions, so nothing below zero describes a body.");
             }
 
             for (int n = 0; n < Nodes.Count; n++)

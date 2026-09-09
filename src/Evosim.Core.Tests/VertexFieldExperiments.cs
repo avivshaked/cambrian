@@ -10,6 +10,11 @@ namespace Evosim.Core.Tests
     /// world and print their readings. They assert only what must hold (conservation); the
     /// numbers are the point, and the logbook entry that cites them is the record.
     /// </summary>
+    /// <remarks>
+    /// Marked <c>Slow</c> and left out of the default run: this class cost 950 s of the
+    /// 27-minute run timed on 2026-09-09. Run it with <c>core-test.ps1 -All</c>.
+    /// </remarks>
+    [Trait("Category", "Slow")]
     public sealed class VertexFieldExperiments
     {
         private readonly ITestOutputHelper _output;

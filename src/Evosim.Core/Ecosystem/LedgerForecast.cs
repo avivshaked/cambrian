@@ -59,7 +59,7 @@ namespace Evosim.Core
         /// <c>irradiance × (1 − shadeFraction)</c>.
         /// </param>
         /// <param name="reproduction">
-        /// The genome's own <see cref="ReproductionTraits"/> — brood size and offspring endowment.
+        /// The genome's own <see cref="ReproductionTraits"/> — brood size and birth investment.
         /// Not read from <paramref name="phenotype"/>, which carries no genome.
         /// </param>
         /// <remarks>
@@ -73,17 +73,25 @@ namespace Evosim.Core
         /// <para>
         /// <b>The breeding rule, reproduced from <see cref="World.Reproduce"/> and
         /// <see cref="World.Conceive"/>:</b> a creature attempts to breed once its energy clears
-        /// <c>Genome.Reproduction.CostJoules(PerOffspringOverheadJoules + TissueJoules)</c> — the
-        /// gate <see cref="Organism.ReproductionThreshold"/> computes, using the creature's own
-        /// tissue as the estimate <see cref="World"/> also uses before a child is actually
-        /// developed. Once past the gate, it produces up to <c>BroodSize</c> children this step,
-        /// each priced at <c>OffspringEndowment + tissue + PerOffspringOverheadJoules</c> — the
-        /// parent's own tissue standing in for the child's, since there is no mutation here to
-        /// develop a different one — stopping the brood as soon as one child cannot be afforded,
-        /// exactly as <see cref="World.Conceive"/> truncates rather than refuses. Matter
-        /// availability is never checked: <see cref="World"/> would refuse a conception the local
-        /// matter stock cannot cover, and this method has no matter field to consult, so it
-        /// reports the price and lets the energy rule alone decide whether a birth happens.
+        /// <c>Genome.Reproduction.CostJoules(TissueJoules, PerOffspringOverheadJoules)</c> — the
+        /// gate <see cref="Organism.ReproductionThreshold"/> computes. Once past it, it produces up
+        /// to <c>BroodSize</c> children this step, each priced at its share of the investment plus
+        /// the overhead, stopping the brood as soon as one cannot be afforded, exactly as
+        /// <see cref="World.Conceive"/> truncates rather than refuses. Matter availability is never
+        /// checked: <see cref="World"/> would refuse a conception the local matter stock cannot
+        /// cover, and this method has no matter field to consult, so it reports the price and lets
+        /// the energy rule alone decide whether a birth happens.
+        /// </para>
+        /// <para>
+        /// <b>⚠ What it does not model, since fable-propose-growth.md (2026-09-08): growth.</b>
+        /// The body it is handed earns and spends at that size from its first step, where a real
+        /// newborn starts at a fraction of it and spends its early reserve building the rest. So
+        /// the lifetime and the time to first child are both optimistic for a lineage whose
+        /// children are born small — the forecast is an adult's ledger, and the question it
+        /// answers well is still the one it was built for, whether a body of this shape at this
+        /// depth and density is solvent at all. The mass floor
+        /// (<see cref="RunConfig.MinNewbornPartKilograms"/>) is not applied either: a genome whose
+        /// children would be refused is forecast as though they were born.
         /// </para>
         /// <para>
         /// <b>D070's exudation arrives for free, and that is deliberate.</b> This integrates
@@ -146,12 +154,12 @@ namespace Evosim.Core
                     "Genome.Validate enforces.", nameof(reproduction));
             }
 
-            if (float.IsNaN(reproduction.OffspringEndowment) ||
-                float.IsInfinity(reproduction.OffspringEndowment) ||
-                reproduction.OffspringEndowment <= 0f)
+            if (float.IsNaN(reproduction.BirthInvestment) ||
+                float.IsInfinity(reproduction.BirthInvestment) ||
+                reproduction.BirthInvestment <= 0f)
             {
                 throw new ArgumentException(
-                    $"Offspring endowment {reproduction.OffspringEndowment} must be finite and " +
+                    $"Birth investment {reproduction.BirthInvestment} must be finite and " +
                     "positive — an offspring born with nothing is dead on arrival.",
                     nameof(reproduction));
             }
@@ -168,11 +176,19 @@ namespace Evosim.Core
 
             float? breakEvenDensity = FindBreakEvenDensity(phenotype, config, irradiance);
 
-            float childPrice = reproduction.OffspringEndowment + tissue + config.PerOffspringOverheadJoules;
-            float matterPricePerChild = config.MatterPerTissueJoule * tissue + config.MatterPerCreature;
-            float reproductionGate = reproduction.CostJoules(config.PerOffspringOverheadJoules + tissue);
+            // fable-propose-growth.md rules 2 and 3, at the one body this calculator has. A parent
+            // spends its investment on the litter; each child's share is that over the brood, and
+            // the share is a body plus a first reserve. The body this forecast is given stands in
+            // for both the parent and the child, exactly as the parent's own tissue used to stand
+            // in for the child's, so the share buys a fraction of the same body.
+            float share = reproduction.BirthInvestment * tissue / reproduction.BroodSize;
+            float newbornReserve = share * config.NewbornReserveFraction;
+            float childBody = Math.Min(share - newbornReserve, tissue);
+            float childPrice = childBody + newbornReserve + config.PerOffspringOverheadJoules;
+            float matterPricePerChild = config.MatterPerTissueJoule * childBody + config.MatterPerCreature;
+            float reproductionGate = reproduction.CostJoules(tissue, config.PerOffspringOverheadJoules);
 
-            float energy = reproduction.OffspringEndowment;
+            float energy = newbornReserve;
             float age = 0f;
             float elapsed = 0f;
             int children = 0;

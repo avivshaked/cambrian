@@ -251,9 +251,14 @@ namespace Evosim.Core
 
         private static float ParameterUnits(Genome a, Genome b)
         {
+            // The three whole-creature dials of fable-propose-growth.md, counted once each and
+            // not once per node: they are one number per genome, so weighting them by body size
+            // would make a big creature's reproductive strategy count for less than a small
+            // one's.
             float units =
                 RelativeDiff(a.Reproduction.BroodSize, b.Reproduction.BroodSize) +
-                RelativeDiff(a.Reproduction.OffspringEndowment, b.Reproduction.OffspringEndowment);
+                RelativeDiff(a.Reproduction.BirthInvestment, b.Reproduction.BirthInvestment) +
+                RelativeDiff(a.AdultScale, b.AdultScale);
 
             int minNodes = Math.Min(a.Nodes.Count, b.Nodes.Count);
             for (int i = 0; i < minNodes; i++)

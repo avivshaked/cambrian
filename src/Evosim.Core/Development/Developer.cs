@@ -60,6 +60,14 @@ namespace Evosim.Core
             var occurrences = new int[genome.Nodes.Count];
 
             occurrences[genome.RootIndex] = 1;
+
+            // fable-propose-growth.md rule 1: the accumulated scale starts at the genome's adult
+            // size rather than at one, so the plan and its size are separate things to mutate.
+            // Applied here rather than to each node's dimensions because it must reach the edge
+            // scales' compounding too — a subtree two edges down is this scalar times whatever
+            // its edges made of it, which is what keeps a scaled body the same shape.
+            var adultScale = new Float3(genome.AdultScale, genome.AdultScale, genome.AdultScale);
+
             Expand(
                 genome,
                 limits,
@@ -68,7 +76,7 @@ namespace Evosim.Core
                 occurrences,
                 genome.RootIndex,
                 rootTransform ?? Mat4.Identity,
-                Float3.One,
+                adultScale,
                 parentPartIndex: -1,
                 depth: 0,
                 jointType: JointType.Fixed,

@@ -323,11 +323,22 @@ namespace Evosim.Core
         /// divided into a creature's reserve it gives the seconds it can survive earning nothing,
         /// which is what <see cref="SensorChannel.Energy"/> reports (§4.4).
         /// </remarks>
-        public static float StandingWatts(Phenotype phenotype, RunConfig config)
+        /// <param name="phenotype">The developed body, at whatever size it is now.</param>
+        /// <param name="config">Supplies cell types, shapes and the neural cost rates.</param>
+        /// <param name="ageSeconds">
+        /// How long this creature has been alive, for senescence (D038). Zero is the answer at
+        /// birth and in a world without ageing, and is the default so that every caller written
+        /// before growth existed asks the same question it always asked. <c>World.Grow</c> passes
+        /// the creature's real age, because a body that changes size mid-life must not have its
+        /// wear silently reset by being remeasured.
+        /// </param>
+        public static float StandingWatts(Phenotype phenotype, RunConfig config, float ageSeconds = 0f)
         {
-            EnergyLedger ledger = Step(
-                phenotype, config, DarkWorld, creatureHeightY: -1000f,
-                nutrientDensity: 0f, workJoules: 0f, seconds: 1f);
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            EnergyLedger ledger = StepAt(
+                phenotype, config, DarkWorld.IrradianceAt(-1000f),
+                nutrientDensity: 0f, workJoules: 0f, seconds: 1f, ageSeconds: ageSeconds);
 
             return ledger.Expenditure;
         }

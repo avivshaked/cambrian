@@ -155,12 +155,14 @@ namespace Evosim.Core.Tests
         public void ReproductionTraitsSurviveTheRoundTrip()
         {
             Genome g = GenomeFactory.Random(new Rng(11));
-            g.Reproduction = new ReproductionTraits { BroodSize = 5, OffspringEndowment = 123.75f };
+            g.Reproduction = new ReproductionTraits { BroodSize = 5, BirthInvestment = 0.4375f };
+            g.AdultScale = 1.375f;
 
             Genome back = GenomeJson.Read(GenomeJson.Write(g));
 
             Assert.Equal(5, back.Reproduction.BroodSize);
-            Fixtures.AssertClose(123.75f, back.Reproduction.OffspringEndowment, 0f);
+            Fixtures.AssertClose(0.4375f, back.Reproduction.BirthInvestment, 0f);
+            Fixtures.AssertClose(1.375f, back.AdultScale, 0f);
         }
 
         [Fact]
