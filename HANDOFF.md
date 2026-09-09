@@ -15,8 +15,9 @@ senses were carried in 1 of 5 (round 29: 3 of 5) and no jointed guild held; seed
 of 14 lasted to 10,000 s feeding as well as the sitters and moving no faster than the
 drift. Logbook/0076 measured why: at 0.2 m²/s a sitter's hole refills in five seconds, so
 there was no prize. Round 31 (D085, logbook/0077) is round 30 with the detritus mixing at
-0.02 on both axes, screened at the fast step first; it runs overnight, seed 3 rerun on the
-widened divergence guard (0077). Meanwhile the owner asked where the hole lives and the
+0.02 on both axes, read 2026-09-09 (0077): 4 of 5 under D063 as amended, the population
+unchanged, the hole in the water at large rather than at the sitter, no joint surviving
+founding in any seed, the larder gone deep; the vertex world's last word. Meanwhile the owner asked where the hole lives and the
 answer replaced the representation: the water as a grid of cells with corpses as particles
 (`fable-propose-grid.md`, logbook/0078), built, reviewed and smoked on 2026-09-08 night and
 awaiting two rulings (the matter cell, 2.5 m or 5 m; matter mixed at 2 m²/s on every
@@ -113,9 +114,9 @@ round 28) set the base and the order.
    0.02 m²/s on both axes, everything else round 30's, because at 0.2 a sitter's hole refills
    in five seconds and a mover gains nothing (logbook/0076); pre-registered as
    logbook/0077; the screen stood (five of five, three passing the scorer at 10,000 s) and
-   the round is running: `r31-s1..s5` at dt 0.01 on workers 2 to 6, launched 2026-09-08
-   night (`scratch/launch-r31.ps1`), landing in about ten hours; read against 0077's
-   predictions and the scorer. Seed 3 fell at 11,533 s to a body the solver threw to a
+   the round ran at dt 0.01 on workers 2 to 6 (`scratch/launch-r31.ps1`) and is read
+   (0077 Results and Verdict): M0 held, M1 failed in reverse, M2 failed, M5 failed, M4 in
+   three, M6 in four with seed 3's caveat. Seed 3 fell at 11,533 s to a body the solver threw to a
    finite height no test caught (0077's "Seed 3 fell"); the guard was widened the same
    evening and seed 3 reruns as `r31-s3b` on worker 7 on the fixed build, so the round is
    split across two builds the way round 24 was (0061). If the prize appears, the round
