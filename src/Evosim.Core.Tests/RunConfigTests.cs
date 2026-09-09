@@ -183,6 +183,13 @@ namespace Evosim.Core.Tests
                 // sub-config that has quietly become untestable.
                 return NudgeFloat(target, p);
             }
+            else if (p.PropertyType == typeof(double))
+            {
+                // MaximumTissueJoules's own type. Rule 9's tissue ceiling, the first double
+                // directly on RunConfig. Same shrinking-search shape as NudgeFloat, for the same
+                // reason.
+                return NudgeDouble(target, p);
+            }
             else if (p.PropertyType == typeof(int))
             {
                 p.SetValue(target, (int)p.GetValue(target) + 3);
@@ -280,6 +287,50 @@ namespace Evosim.Core.Tests
             return false;
         }
 
+        /// <summary>Moves a double tunable to a different legal value, or reports that it cannot.</summary>
+        /// <remarks>A copy of <see cref="NudgeFloat"/> at <c>double</c> width. See its remark.</remarks>
+        private static bool NudgeDouble(object target, PropertyInfo p)
+        {
+            var original = (double)p.GetValue(target);
+
+            for (double delta = 7.5; delta > 1e-4; delta *= 0.5)
+            {
+                foreach (double candidate in new[] { original + delta, original - delta })
+                {
+                    try
+                    {
+                        p.SetValue(target, candidate);
+                    }
+                    catch (Exception e) when (
+                        e is ArgumentOutOfRangeException ||
+                        e.InnerException is ArgumentOutOfRangeException)
+                    {
+                        continue;
+                    }
+
+                    if ((double)p.GetValue(target) != original) return true;
+                }
+            }
+
+            foreach (double candidate in new[] { original * 2d, original * 0.5d })
+            {
+                try
+                {
+                    p.SetValue(target, candidate);
+                }
+                catch (Exception e) when (
+                    e is ArgumentOutOfRangeException ||
+                    e.InnerException is ArgumentOutOfRangeException)
+                {
+                    continue;
+                }
+
+                if ((double)p.GetValue(target) != original) return true;
+            }
+
+            return false;
+        }
+
         [Fact]
         public void EverySettableValueIsDeclaredTunable()
         {
@@ -357,7 +408,8 @@ namespace Evosim.Core.Tests
                 Assert.False(string.IsNullOrWhiteSpace(entry.Key), $"{entry.Path} has no key");
 
                 Assert.True(
-                    entry.ValueType == typeof(float) || entry.ValueType == typeof(int) ||
+                    entry.ValueType == typeof(float) || entry.ValueType == typeof(double) ||
+                    entry.ValueType == typeof(int) ||
                     entry.ValueType == typeof(bool) || entry.ValueType == typeof(string[]) ||
                     entry.ValueType.IsEnum ||
                     ConfigSchema.EnumElementOf(entry.ValueType) != null,

@@ -280,6 +280,22 @@ it; the cell and vertex modes stay for the record. Why, and what was rejected: D
 answers: the owner's objection that a vertex world's hole lives at the vertices and not at
 the eater (logbook/0078).
 
+## 0u. Changelog — bodies that grow (2026-09-09, D087)
+
+§5A.6's two evolved numbers become three dials: `BroodSize`, `BirthInvestment` (a fraction
+of the parent's tissue value, replacing the endowment in joules) and `AdultScale` (one scalar
+on every node's dimensions). A parent breeds when it holds the investment plus the brood's
+overhead and spends exactly that; each child's share is split into body and reserve by
+`NewbornReserveFraction`, its birth fraction is the body over its adult tissue value, capped
+at one and refused under `MinNewbornPartKilograms`. The child is developed once at its adult
+size and scaled by the cube root of its fraction (`Phenotype.Scaled`; `Organism.AdultPhenotype`,
+`BodyFraction`). `World.Grow` moves reserve into tissue and matter from the body's cell into
+the body each metabolic step above `GrowthReserveFloor`, so §5A.2d's matter draw now happens
+at growth as well as at conception, and both books close by construction. The harness
+resizes the articulation in place every `GrowthStepSeconds`. `MaximumTissueJoules` ends a
+runaway on biomass beside `MaximumPopulation`'s count. Genome format 5; `bf` and `as` on
+lineage birth rows; four table columns. Built and smoked 2026-09-09 (logbook/0081).
+
 ## 0r. Changelog — review round 6: how nature bootstrapped movement and sensing, and why this world cannot (2026-09-07)
 
 No mechanism changes. Round 6 of the literature review (research §0, Q11) answered the
@@ -1437,8 +1453,9 @@ one of them made by the organisms.
 
 - **Reproduction requires matter as well as energy**, `MatterPerTissueJoule` per joule of the
   child's tissue, drawn from the parent's own layer. No amount of sunlight builds a daughter
-  cell without nitrogen and phosphorus. §5A.6 has no growth, so reproduction is the only moment
-  tissue is ever created and therefore the only place this can be charged.
+  cell without nitrogen and phosphorus. Since D087 tissue is created at conception and again
+  at every growth step, and both draw matter at the same rate; growth's draw is locked in the
+  body as conception's is (§0u).
 - **A matter-starved world does not kill its inhabitants, it stops them breeding** — which is
   what happens to a nutrient-limited bloom, and is why the charge is here rather than in upkeep.
 - **Death returns it** to the layer the body died in, whence it sinks. Floor founders are exempt
@@ -1595,12 +1612,13 @@ sexual reproduction once perception exists, and horizontal gene transfer through
 which would give grafting a mechanism at Milestone 5 without needing perception, at the cost
 of breaking the archive's assumption that lineage is a tree.
 
-**Brood size and offspring endowment are evolved, not global constants.** A creature carries
-two numbers: *n*, how many offspring per event, and *e*, how much energy each starts with.
-A reproduction event costs
+**Brood size and the birth investment are evolved, not global constants.** A creature
+carries two numbers: *n*, how many offspring per event, and *i*, the fraction of its own
+tissue value it banks and spends on them (D087; until 2026-09-09 the second number was *e*,
+an endowment in joules per child, and a child was born whole). A reproduction event costs
 
 ```
-n × (e + overhead)
+i × tissue + n × overhead
 ```
 
 where `overhead` is a world constant (§5A.10) and **not** evolvable — a creature permitted
@@ -1617,13 +1635,20 @@ explore: the same surplus buys one well-provisioned offspring or eight feeble on
 wins is a property of the environment rather than something written in here.
 
 **The reproduction threshold is derived, not configured.** A creature reproduces once it
-holds `n × (e + overhead)` above its own reserve. A creature that evolves a larger brood
-therefore waits longer for it automatically, and there is no separate constant to keep in
-sync.
+holds `i × tissue + n × overhead` above its own reserve. A creature that evolves a larger
+brood or a larger investment therefore waits longer for it automatically, and there is no
+separate constant to keep in sync.
 
-⚠ Until growth exists, an offspring is born full-size, so endowment buys it *time* — how long
-it can search before starving — rather than body. Early runs are therefore unusually kind to
-the many-and-feeble strategy, and should be read with that in mind.
+**A child is born at a fraction of its adult body and grows (D087, §0u).** Each child's
+share is `i × tissue / n`, split into body and first reserve by `NewbornReserveFraction`; its
+birth fraction is the body part over its adult tissue value, capped at one with the surplus
+staying with the parent, and refused below `MinNewbornPartKilograms` rather than clamped. The
+child is developed once at its adult size (`AdultScale`, the third dial) and scaled by the
+cube root of its fraction; each metabolic step it moves reserve into tissue and matter into
+the body until it is whole, keeping `GrowthReserveFloor` as a buffer. Until 2026-09-09 an
+offspring was born full-size, so the endowment bought it time rather than body and every
+round through 33 was unusually kind to the many-and-feeble strategy; read them with that in
+mind.
 
 Neutral buoyancy is retained (§5.2): depth changes only by swimming. Per-part density is a
 tempting knob — swim bladders are cheap and biological — but it is a second system and is
@@ -1957,6 +1982,7 @@ without reaching `RunConfig.Hash()` is two different experiments filed under one
 | Founder stake | `RunConfig.FounderEnergyJoules` | The only energy besides sunlight created from nothing |
 | Field kernel, merge radius, vertex cap, vertex quantum | `RunConfig.Field*` | How finely the water is sampled in a vertex world (D083): a mouth's reach and a read's noise, the budget on the count, and the mass a vent founds a vertex with. All four unmeasured |
 | Cell sizes, corpse decay | `RunConfig.FieldCellMetres`, `FieldMatterCellMetres`, `CorpseDecayPerSecond` | The grid's resolution (D086): the hole a sitter eats and the reach of the matter gate; a cell must divide the box, and the matter cell is coarser so a cell can afford a child (5 m ruled from 0078's screens). The corpse half-life, 139 s at 0.005. All unmeasured beyond 0078's screens |
+| Growth | `RunConfig.NewbornReserveFraction`, `GrowthReserveFloor`, `MinNewbornPartKilograms`, `GrowthStepSeconds`, `MaximumTissueJoules`; `MutationRates.InvestmentChance`, `AdultScaleChance`; `RandomGenomeOptions.MinBirthInvestment`, `MaxBirthInvestment` | D087's constants: the newborn's reserve share (0.2), the buffer a growing body keeps (0.1 of its tissue, twelve to seventeen seconds of upkeep), the mass floor against the divergence record (0.5 kg), the harness's resize cadence (10 s), the biomass ceiling beside the body count; one gate of 0.08 on the two new dials; founders drawn from 0.25 to 1.0. All unmeasured beyond 0081's smoke |
 | **Spending** | | |
 | Basal upkeep, per type | `CellType.UpkeepWattsPerCubicMetre` | What tissue costs to keep alive. Never zero (§5A.1) |
 | Idle actuator cost | `LinkCell.IdleWattsPerNewtonMetre` | What capacity costs whether or not it is used |

@@ -181,6 +181,23 @@ namespace Evosim.Core
         [Tunable("population")]
         public int MaximumPopulation { get; set; } = 5000;
 
+        /// <summary>
+        /// Standing tissue joules across the living above which the world stops and says so, in
+        /// addition to <see cref="MaximumPopulation"/>. Rule 9, the owner's ruling of 2026-09-09
+        /// after logbook/0081.
+        /// </summary>
+        /// <remarks>
+        /// <b>0 means off.</b> Growth (D081) made a body count stop measuring biomass: a child is
+        /// born at a median third of its adult body, so 5,000 grown bodies and 5,000 newborns are
+        /// not the same photosynthetic mat, and the count ceiling alone can no longer tell them
+        /// apart. This reads <see cref="World.StandingTissueJoules"/> instead of the count, the
+        /// same check §5A.7 was built to make, against the quantity growth left it blind to. §9's
+        /// refuse-rather-than-default rule applies here like any other tunable: a config written
+        /// before this field exists is refused on load, not silently run with it off.
+        /// </remarks>
+        [Tunable("population", Unit = "J")]
+        public double MaximumTissueJoules { get; set; }
+
         /// <summary>Most founders the floor may spawn in one step.</summary>
         /// <remarks>
         /// A trickle rather than a cohort. Creatures spawned together tend to die together, which

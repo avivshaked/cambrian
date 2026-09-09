@@ -30,8 +30,9 @@ namespace Evosim.Core
         public string Unit { get; }
 
         /// <summary>
-        /// <see cref="float"/>, <see cref="int"/>, <see cref="bool"/>, <c>string[]</c>, an enum,
-        /// or an array of some enum — see <see cref="ConfigSchema.EnumElementOf"/>.
+        /// <see cref="float"/>, <see cref="double"/>, <see cref="int"/>, <see cref="bool"/>,
+        /// <c>string[]</c>, an enum, or an array of some enum — see
+        /// <see cref="ConfigSchema.EnumElementOf"/>.
         /// </summary>
         public Type ValueType { get; }
 
@@ -70,6 +71,7 @@ namespace Evosim.Core
             {
                 case null: return "";
                 case float f: return f.ToString("R", c);
+                case double d: return d.ToString("R", c);
                 case int i: return i.ToString(c);
                 case bool b: return b ? "true" : "false";
                 case string[] a: return string.Join(";", a);

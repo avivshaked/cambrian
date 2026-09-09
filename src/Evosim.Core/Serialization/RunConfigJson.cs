@@ -80,6 +80,7 @@ namespace Evosim.Core
             switch (entry.Get())
             {
                 case float f: w.Field(entry.Key, f); break;
+                case double d: w.Field(entry.Key, d); break;
                 case int i: w.Field(entry.Key, i); break;
                 case bool b: w.Field(entry.Key, b); break;
 
@@ -153,6 +154,7 @@ namespace Evosim.Core
         private static object ReadValue(TunableEntry entry, JsonNode node)
         {
             if (entry.ValueType == typeof(float)) return node.AsFloat();
+            if (entry.ValueType == typeof(double)) return node.AsDouble();
             if (entry.ValueType == typeof(int)) return node.AsInt();
             if (entry.ValueType == typeof(bool)) return node.AsBool();
 

@@ -332,6 +332,13 @@ namespace Evosim.Sim.EditorTools
             // The default is RunConfig's own, so a run that does not name it is unchanged.
             int maxPopulation = (int)Env("EVOSIM_MAX_POP", new RunConfig().MaximumPopulation);
 
+            // The tissue ceiling beside it. Rule 9, the owner's ruling of 2026-09-09 after
+            // logbook/0081. Growth means a body count alone can miss the mat §5A.7 describes: a
+            // newborn is grown from a fraction of its adult body, so a population under
+            // maxPopulation can still be over budget in standing tissue. 0 is off and is
+            // RunConfig's own default, so a launch that does not name it is unchanged.
+            double maxTissue = Env("EVOSIM_MAX_TISSUE", (float)new RunConfig().MaximumTissueJoules);
+
             // Ageing (D038). Seconds of life after which a body costs twice as much to keep and
             // converts half as much of what it takes. 0 is the immortal world every earlier run
             // measured, in which 92% of everything ever born was still alive.
@@ -628,6 +635,7 @@ namespace Evosim.Sim.EditorTools
             config.PhysicsStepSeconds = Ecosystem.FixedDt;
             config.FloorClosesAfterSeconds = floorCloses;
             config.MaximumPopulation = maxPopulation;
+            config.MaximumTissueJoules = maxTissue;
             config.SenescenceDoublingSeconds = senescence;
             config.Mutation.CellTypeChance = cellTypeMutation;
             config.SenseChemical = senseChemical;
@@ -848,6 +856,11 @@ namespace Evosim.Sim.EditorTools
                 " · surface restore " + surfaceRestore +
                 (floorCloses > 0f ? " · floor closes " + floorCloses + " s" : " · floor open") +
                 " · ceiling " + maxPopulation +
+                // Rule 9, beside the population ceiling it now shares the job with. Printed
+                // unconditionally for D065's reason: a header without the token would read the
+                // same for "off" and "written before the knob existed", and 0 is a real value for
+                // neither of those questions.
+                " maxTissue=" + maxTissue.ToString("0.#", CultureInfo.InvariantCulture) +
                 " · senescence " + (senescence > 0f ? senescence + " s" : "off") +
                 " · cellType mut " + cellTypeMutation +
                 " · clearance " + clearance +
@@ -930,7 +943,8 @@ namespace Evosim.Sim.EditorTools
 
             // Two readings of how the run ended: `ending` is the prose the markdown footer
             // prints, `terminationCode` is D058's own vocabulary (extinct / budget / wall /
-            // ceiling) for run.json, where a script reads it rather than a person. Both start
+            // ceiling-population / ceiling-tissue, the last two rule 9's) for run.json, where a
+            // script reads it rather than a person. Both start
             // null rather than defaulted to "budget reached" — the pre-round-8 contract's fix for
             // the footer reading "budget reached" on an arm the wall clock actually cut, which
             // made every censored arm look like a completed one to anyone skimming the footer
@@ -1049,11 +1063,19 @@ namespace Evosim.Sim.EditorTools
                 // extinction locates the lean end, and culling to fit a compute budget would be
                 // selection performed by us. D058 files this the same as a wall cut: censored,
                 // never a pass.
+                //
+                // Rule 9 gave this a second ceiling. terminationCode names which one fired
+                // ("ceiling-population" or "ceiling-tissue") so a script reading run.json's
+                // `reason` does not have to parse the prose to tell them apart; both readings are
+                // in the prose regardless, since growth means a run can be well under one ceiling
+                // while over the other and a reader will want to see both numbers either way.
                 ending =
                     "RUNAWAY at t=" + runaway.ElapsedSeconds.ToString("0.#") + " s with " +
-                    runaway.Population + " alive — light is covering upkeep so completely that " +
+                    runaway.Population + " alive and " +
+                    runaway.TissueJoules.ToString("0") + " J of standing tissue, over the " +
+                    runaway.Ceiling + " ceiling — light is covering upkeep so completely that " +
                     "nothing has to do anything";
-                terminationCode = "ceiling";
+                terminationCode = "ceiling-" + runaway.Ceiling;
             }
 
             clock.Stop();

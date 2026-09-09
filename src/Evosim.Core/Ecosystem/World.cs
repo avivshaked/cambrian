@@ -4,23 +4,43 @@ using System.Collections.Generic;
 namespace Evosim.Core
 {
     /// <summary>
-    /// The world exceeded its population ceiling — DESIGN.md §5A.7, D021.
+    /// The world exceeded a runaway ceiling. DESIGN.md §5A.7, D021, and fable-propose-growth.md
+    /// rule 9's tissue ceiling.
     /// </summary>
     /// <remarks>
     /// Its own type so a sweep harness can catch it and record "this configuration exploded" as
     /// a result rather than as a crash. A runaway is a measurement: it locates one end of the
     /// transition in §5A.6b just as precisely as extinction locates the other.
+    /// <para>
+    /// Two ceilings can throw this, and <see cref="Ceiling"/> says which one did. Growth made
+    /// the count ceiling alone unreliable: a child is born at a median third of its adult body,
+    /// so 5,000 bodies can be a third of the biomass that count was calibrated against, and the
+    /// same count no longer means the same photosynthetic mat it used to (the owner's ruling of
+    /// 2026-09-09, after logbook/0081). <see cref="Population"/> and <see cref="TissueJoules"/>
+    /// are both always populated, whichever ceiling fired, so a catcher never has to re-read the
+    /// world to get the reading the message did not need.
+    /// </para>
     /// </remarks>
     public sealed class PopulationRunawayException : Exception
     {
         public int Population { get; }
+
+        /// <summary>Standing tissue joules across the living at the moment this was thrown.</summary>
+        public double TissueJoules { get; }
+
         public double ElapsedSeconds { get; }
 
-        public PopulationRunawayException(string message, int population, double elapsedSeconds)
+        /// <summary>Which ceiling fired: <c>"population"</c> or <c>"tissue"</c>.</summary>
+        public string Ceiling { get; }
+
+        public PopulationRunawayException(
+            string message, int population, double tissueJoules, double elapsedSeconds, string ceiling)
             : base(message)
         {
             Population = population;
+            TissueJoules = tissueJoules;
             ElapsedSeconds = elapsedSeconds;
+            Ceiling = ceiling;
         }
     }
 
@@ -645,6 +665,26 @@ namespace Evosim.Core
 
         /// <summary>How far §5A.2's books are from balancing, in joules. Should be ~0.</summary>
         public double AuditResidual => EnergyIn - EnergyOut - StandingJoules;
+
+        /// <summary>
+        /// The living bodies' tissue alone, in joules. <see cref="StandingJoules"/> without the
+        /// reserve energy or the detritus account.
+        /// </summary>
+        /// <remarks>
+        /// Read by <see cref="EnforceCeiling"/> against <see cref="RunConfig.MaximumTissueJoules"/>.
+        /// Growth made a body count stop measuring biomass (rule 9): a newborn's tissue is a
+        /// fraction of its adult target, so this reads what the count ceiling was built to read
+        /// and no longer does on its own.
+        /// </remarks>
+        public double StandingTissueJoules
+        {
+            get
+            {
+                double sum = 0d;
+                for (int i = 0; i < _living.Count; i++) sum += _living[i].TissueJoules;
+                return sum;
+            }
+        }
 
         public World(RunConfig config, ulong seed = 1)
         {
@@ -1499,21 +1539,53 @@ namespace Evosim.Core
         /// ceiling costs more than the last, so a loop that only noticed would still be a loop
         /// that never returned; and culling to fit a budget would be selection performed by us,
         /// hiding a calibration failure behind a population number we chose.
+        /// <para>
+        /// Two ceilings, both checked every step. <see cref="RunConfig.MaximumPopulation"/> is the
+        /// original one; <see cref="RunConfig.MaximumTissueJoules"/> is rule 9's addition,
+        /// because growth broke the count as a biomass proxy. A newborn is grown from a fraction
+        /// of its adult body, so a world of 5,000 newborns can hold a third of the tissue a world
+        /// of 5,000 adults did. The tissue ceiling defaults to 0, off, so a config written before
+        /// this rule still describes the world it ran, and at 0 the tissue sum below is skipped
+        /// rather than taken and compared against zero every step.
+        /// </para>
         /// </remarks>
         private void EnforceCeiling()
         {
-            if (_living.Count <= Config.MaximumPopulation) return;
+            bool overPopulation = _living.Count > Config.MaximumPopulation;
+
+            // Summed only when the tissue ceiling is on, or the population ceiling has already
+            // fired and the run is ending anyway. Every config on file before rule 9 has this
+            // off, and this runs once a step: summing every living body's tissue on top of the
+            // count check would be a real cost across thousands of creatures for an instrument
+            // almost nothing reads.
+            bool tissueCeilingOn = Config.MaximumTissueJoules > 0d;
+            double tissueJoules = tissueCeilingOn || overPopulation ? StandingTissueJoules : 0d;
+            bool overTissue = tissueCeilingOn && tissueJoules > Config.MaximumTissueJoules;
+
+            if (!overPopulation && !overTissue) return;
+
+            string message = overPopulation
+                ? FormattableString.Invariant($"Population reached {_living.Count}, above the ceiling of ") +
+                  FormattableString.Invariant(
+                      $"{Config.MaximumPopulation}, at t={ElapsedSeconds:0.#} s after {Births} births. ") +
+                  "This is §5A.7's photosynthetic mat: light is covering upkeep, so nothing has to " +
+                  "do anything and every creature can afford to breed. The ratio in §5A.2 is too " +
+                  "generous — lower the surface irradiance or raise cell upkeep. It is not culled, " +
+                  "because culling to fit a compute budget is selection performed by us and would " +
+                  "hide this behind a population number we chose."
+                : FormattableString.Invariant($"Standing tissue reached {tissueJoules:0} J, above the ") +
+                  FormattableString.Invariant(
+                      $"ceiling of {Config.MaximumTissueJoules:0} J, at t={ElapsedSeconds:0.#} s after ") +
+                  FormattableString.Invariant($"{Births} births, with {_living.Count} bodies alive. ") +
+                  "This is the same photosynthetic mat §5A.7 names, read by biomass rather than by " +
+                  "count. Growth means a body count alone can miss it: a world of small, fast-growing " +
+                  "bodies can stay under the population ceiling while still holding more tissue than " +
+                  "the light or matter budget was calibrated for. It is not culled, for the same " +
+                  "reason the count ceiling is not.";
 
             throw new PopulationRunawayException(
-                FormattableString.Invariant($"Population reached {_living.Count}, above the ceiling of ") +
-                FormattableString.Invariant(
-                    $"{Config.MaximumPopulation}, at t={ElapsedSeconds:0.#} s after {Births} births. ") +
-                "This is §5A.7's photosynthetic mat: light is covering upkeep, so nothing has to " +
-                "do anything and every creature can afford to breed. The ratio in §5A.2 is too " +
-                "generous — lower the surface irradiance or raise cell upkeep. It is not culled, " +
-                "because culling to fit a compute budget is selection performed by us and would " +
-                "hide this behind a population number we chose.",
-                _living.Count, ElapsedSeconds);
+                message, _living.Count, tissueJoules, ElapsedSeconds,
+                overPopulation ? "population" : "tissue");
         }
 
         /// <remarks>

@@ -573,7 +573,13 @@ actually verifying it.
   the genome, so `GenomeJson.FormatVersion` is 5 and every `format":4` inoculum and snapshot on
   disk is refused, as the format-4 bump did to format 3; re-extract from a new snapshot. A child
   is born at a fraction of its adult body (median 0.31 in the smoke) and grows, so
-  `MaximumPopulation` still ends a runaway but counts bodies of any size; read `body frac`,
+  `MaximumPopulation` still ends a runaway but counts bodies of any size, so D087 adds
+  `MaximumTissueJoules` (`EVOSIM_MAX_TISSUE`, 0 = off; the header's `maxTissue=`), which ends a
+  run as a runaway on the living bodies' standing tissue, and `run.json` names which ceiling
+  fired. In a closed-matter world neither can: round 34's 6,000 units cannot build 8,000
+  bodies (24,000 units for the per-creature term alone) or 30,000 J of tissue (15,000 units),
+  so a runaway there is impossible by construction and both ceilings are idle instruments
+  kept for a world with influx. Read `body frac`,
   `adult scale`, `invest` and `brood` in the table, `bf` and `as` on lineage birth rows, and
   `growthShortOfMatter` / `conceptionsUnderMassFloor` in `stats.jsonl`. At investment 0.5 a
   world breeds about seven times faster through founding than one whose children are born

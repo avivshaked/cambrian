@@ -530,6 +530,56 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void ATissueCeilingStopsTheWorldEvenUnderThePopulationCeiling()
+        {
+            // fable-propose-growth.md rule 9, the owner's ruling of 2026-09-09. Growth means a
+            // body count no longer measures biomass: a newborn is grown from a fraction of its
+            // adult body, so a world can sit under RunConfig.MaximumPopulation and still be the
+            // photosynthetic mat §5A.7 describes, read by tissue rather than by count. Population
+            // is set far out of reach so the tissue ceiling is the only thing that can fire.
+            var config = new RunConfig { MinimumPopulation = 20, MaximumPopulation = 100_000 };
+            config.Light = new LightModel(50000f, 60f);
+            var world = new World(config, seed: 1);
+
+            // Let the floor finish founding before reading a number to build the ceiling from.
+            for (int i = 0; i < 15; i++) world.Step(1f);
+
+            double tissueAfterFounding = world.StandingTissueJoules;
+            Assert.True(tissueAfterFounding > 0d, "founders should already carry tissue");
+
+            // Set below what is already standing, so the very next step is already over it.
+            config.MaximumTissueJoules = tissueAfterFounding * 0.5d;
+
+            var thrown = Assert.Throws<PopulationRunawayException>(() => world.Step(1f));
+
+            _output.WriteLine(thrown.Message);
+            Assert.Equal("tissue", thrown.Ceiling);
+            Assert.True(thrown.TissueJoules > config.MaximumTissueJoules);
+            Assert.True(thrown.Population <= config.MaximumPopulation);
+        }
+
+        [Fact]
+        public void ATissueCeilingOfZeroNeverFires()
+        {
+            // The default. A config.json written before this field existed is refused on load
+            // (§9), but one written by this build with the field left at 0 must still replay the
+            // world it always ran, with no new way for it to stop. Reruns the overfed scenario above,
+            // which stands on a great deal of tissue by the time it ends, and checks that what
+            // fired was still the population ceiling and never the tissue one.
+            var config = new RunConfig { MinimumPopulation = 20, MaximumPopulation = 300 };
+            config.Light = new LightModel(50000f, 60f);
+            Assert.Equal(0d, config.MaximumTissueJoules);
+            var world = new World(config, seed: 1);
+
+            var thrown = Assert.Throws<PopulationRunawayException>(() =>
+            {
+                for (int i = 0; i < 5000; i++) world.Step(1f);
+            });
+
+            Assert.Equal("population", thrown.Ceiling);
+        }
+
+        [Fact]
         public void DepthStatisticsDescribeTheDistributionAndNotJustTheMean()
         {
             // A takeover and a healthy world have the same mean, so the spread is what is

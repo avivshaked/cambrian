@@ -48,6 +48,12 @@ namespace Evosim.Core.Tests
                 {
                     Assert.True(NudgeFloat(config, p), $"{p.Name} accepted no value but its own");
                 }
+                else if (p.PropertyType == typeof(double))
+                {
+                    // MaximumTissueJoules's own type. Rule 9's tissue ceiling, the first double
+                    // directly on RunConfig.
+                    Assert.True(NudgeDouble(config, p), $"{p.Name} accepted no value but its own");
+                }
                 else if (p.PropertyType == typeof(int)) p.SetValue(config, (int)p.GetValue(config) + 3);
 
                 // A scalar enum, moved to any member but the one it holds. Skipping enums is how
@@ -133,6 +139,50 @@ namespace Evosim.Core.Tests
                 }
 
                 if ((float)p.GetValue(target) != original) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Moves a double tunable to a different legal value, or reports that it cannot.</summary>
+        /// <remarks>A copy of <see cref="NudgeFloat"/> at <c>double</c> width. See its remark.</remarks>
+        private static bool NudgeDouble(object target, PropertyInfo p)
+        {
+            var original = (double)p.GetValue(target);
+
+            for (double delta = 7.5; delta > 1e-4; delta *= 0.5)
+            {
+                foreach (double candidate in new[] { original + delta, original - delta })
+                {
+                    try
+                    {
+                        p.SetValue(target, candidate);
+                    }
+                    catch (Exception e) when (
+                        e is ArgumentOutOfRangeException ||
+                        e.InnerException is ArgumentOutOfRangeException)
+                    {
+                        continue;
+                    }
+
+                    if ((double)p.GetValue(target) != original) return true;
+                }
+            }
+
+            foreach (double candidate in new[] { original * 2d, original * 0.5d })
+            {
+                try
+                {
+                    p.SetValue(target, candidate);
+                }
+                catch (Exception e) when (
+                    e is ArgumentOutOfRangeException ||
+                    e.InnerException is ArgumentOutOfRangeException)
+                {
+                    continue;
+                }
+
+                if ((double)p.GetValue(target) != original) return true;
             }
 
             return false;

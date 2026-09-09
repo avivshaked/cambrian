@@ -106,6 +106,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D081](#d081) | Six rulings on round 28's reading — two named bars (the goal, the reference); the contact world is the base; the path is movement, predation, then the open budget; added mass on and the global brain removed in the movement build; the futility clause narrowed to screens | 2026-09-07 | ruled (owner, by question) · amends D063's reading, D069, D075, D079 · **round 29 read 2026-09-08 (logbook/0072): the world stands under added mass in every seed, the senses are carried in 3 of 5 at today's price, no jointed guild, the goal 2 of 5** |
 | [D082](#d082) | The price of a bud: the neuron and its inputs about tenfold cheaper, and the stroke's work billed at a fraction, in a price round after round 29 reads; round 29 is the control at today's price | 2026-09-07 | ruled (owner, by question) · the numbers are set by the ledger and the record in the round's pre-registration · **folded into round 30 with D083 the same night; round 29 stays the price control** · **round 30 read 2026-09-08: at the new price the senses were carried in 1 of 5 against round 29's 3 of 5 and no jointed guild held; the price was not what kept a sense (logbook/0075)** |
 | [D086](#d086) | The water as a grid: cells that hold amounts, a body feeding from the cell it stands in, Fick's law between neighbours, upwind advection, corpses as particles; 1 m detritus cells, 5 m matter cells, matter mixed at 2 m²/s on every axis; the base from round 32 | 2026-09-09 | ruled (owner: "sgtm... proceed", "proceed"); built and screened the same night (logbook/0078), round 32 running (0079) |
+| [D087](#d087) | Bodies that grow: a child is born at a fraction of its adult body and grows; `BirthInvestment` (a fraction of the parent's tissue) replaces the endowment, `AdultScale` scales the plan, brood stays; `NewbornReserveFraction` 0.2, `GrowthReserveFloor` 0.1, `MinNewbornPartKilograms` 0.5, `GrowthStepSeconds` 10; investment 0.5, one gate of 0.08, founders 0.25 to 1.0, the reserve capped beside the body, a runaway ceiling on biomass | 2026-09-09 | ruled (owner: "love it! go ahead" on the design, "proceed with your recommendations" on the five constants); built in both halves and smoked (logbook/0081); round 34 |
 | [D085](#d085) | The waste stays where nature puts it: exudate keeps joining the water beside its producer; the prize for moving is made by stirring the water less, the detritus mixing to 0.02 m²/s on both axes in round 31; the exudate fraction is lowered only after, and founding vertices per excretion waits | 2026-09-08 | ruled (owner: "proceed with your recommendations"); read 2026-09-09 (logbook/0077): 4 of 5, the world stands at 0.02, the hole is not at the sitter but in the water at large, no swimmer, the larder went deep |
 | [D084](#d084) | Sideways mixing stays 0.2 m²/s in the vertex water, and round 29's separation arm runs only if round 30 reads below round 28 as well | 2026-09-08 | ruled (owner: "proceed with your recommendations") |
 | [D083](#d083) | The water as vertices: detritus and free matter become vertices holding joules at positions, read through a kernel, so a still body eats a hole and a moving body leaves it; the vent founds vertices and the floor buries them; the cell field stays behind a switch for the record | 2026-09-07 | ruled (owner: "it's settled") · built and tested the same night; the halo proposal withdrawn · round 30 is the vertex world with D082's prices, round 29 the price control, round 28 the world control · **round 30 read 2026-09-08 (logbook/0075): the goal rule met 5 of 5, both identities closed, the loop closed; the new base** |
@@ -4427,3 +4428,108 @@ the geometry argument above as its record; the halo was withdrawn under D083.
 (`scratch/launch-r32.ps1`), the header carrying `cell=`, `mcell=` and `corpse=`. Round 32
 is the grid at round 31's prices and mixing, five seeds at 0.01, read under logbook/0079's
 predictions with round 31's same seed as the reference.
+### D087
+
+**2026-09-09 — Bodies that grow**
+
+**Status:** ruled by the owner, in conversation: the design on 2026-09-08 night ("love it!
+go ahead"), the five constants the build put in front of the owner on 2026-09-09 ("proceed
+with your recommendations"). Built in both halves and smoked the same day (logbook/0081);
+round 34 is its first round, after round 33 reads. Absorbs `fable-propose-growth.md`,
+deleted on ruling.
+
+**Context.** Every creature the world had held was born at its adult size: a parent paid a
+whole body at the tissue price plus an endowment of reserve, and `ReproductionTraits`
+carried the brood and that endowment as its two evolved numbers. Every trait the world has
+selected on is a switch, a joint or not, a stomach or not, and a switch is what mutation
+breaks. The owner's idea was the first dial: size at birth, the litter and the adult size,
+each mutating by a little, so that selection can climb a slope rather than jump a gap.
+The refinement that followed replaced a size-at-birth dial with a threshold, so that the
+size of a child is the product of what the parent banked and how many it split it over.
+
+**Ruled.**
+
+1. **Three genome dials.** `BroodSize` stays. `BirthInvestment`, a fraction of the parent's
+   own tissue value, replaces `OffspringEndowment` in joules. `AdultScale` is one scalar the
+   developer multiplies into every node's dimensions, so the plan and its size are separate
+   things to mutate. Each dial mutates by a graded step under one gate, `InvestmentChance`
+   and `AdultScaleChance` at 0.08 each (the build had gated the two new dials twice, at
+   0.0064 per birth in effect; one gate is the ruling). The genome format is 5.
+
+2. **The threshold is the investment.** A parent breeds when its reserve holds
+   `BirthInvestment` times its own tissue joules plus the brood's overhead, and spends
+   exactly that. Each child's share is the investment over the litter; the share is the
+   child's whole start, its body at birth and its first reserve, split by
+   `NewbornReserveFraction` (0.2), a world constant kept out of the genome so that no lineage
+   can set its children's reserve to zero and pocket the difference. The investment's
+   default is 0.5, and founders draw theirs from 0.25 to 1.0, so that the founding lottery
+   samples the dial.
+
+3. **Two edges, and neither is a clamp.** A share worth more than the child's adult body is
+   capped at the adult body and the surplus stays with the parent; the reserve is capped
+   beside the body, so that a child cannot be born with more reserve than body. A share
+   whose body would put any newborn part under `MinNewbornPartKilograms` (0.5 kg) does not
+   make a smaller child: the conception does not happen, counted as
+   `ConceptionsUnderMassFloor`, and the parent keeps its reserve. Every divergence on record
+   was a newborn and the lightest link among them weighed 0.14 kg.
+
+4. **The plan is fixed at birth, the scale is not.** A child is developed once, at its adult
+   size, so that the small-part pruning rule judges the adult and a newborn never loses a
+   part it would have grown. Growth is one scalar per body, the cube root of its body
+   fraction on every axis, applied to every half-extent, position and anchor.
+
+5. **Growth is a transfer and it comes first.** Each metabolic step a body below its adult
+   size moves reserve into tissue at the tissue price and draws matter from its cell at
+   `MatterPerTissueJoule`, keeping `GrowthReserveFloor` (0.1 of its tissue value, twelve to
+   seventeen seconds of upkeep in the smoke, kept and read in the round) as a buffer. A body
+   short of matter grows what it paid for and the shortfall is counted
+   (`GrowthShortOfMatter`). Both books close by construction: tissue is standing energy and
+   is deposited at death, and matter drawn during growth is locked in the body as
+   conception's draw is.
+
+6. **Senescence is unchanged.** A genome that grows large spends more of its wear clock
+   growing and less breeding, and that trade needs no knob.
+
+7. **Founders are born as children are**, at their own birth fraction with the newborn
+   reserve, and the floor's founder float stays.
+
+8. **The physics changes in place.** Every `GrowthStepSeconds` (10 s) of simulated time the
+   harness sets each part's collider extents, mass and both anchors from the scaled
+   phenotype without rebuilding the articulation, drops the drag panels so that the one
+   place they are built rebuilds them, and recomputes mass from volume so that added mass
+   cannot compound. `resizeJumpMetres` (exact, read 0 over 1,093 resizes) and
+   `resizeStepMetres` (the root's travel in the step after, blind to a snap smaller than
+   the current's drift) are the instrument.
+
+9. **The runaway ceiling reads biomass.** `MaximumPopulation` counts bodies, and a body is
+   no longer a unit of biomass; `MaximumTissueJoules` ends a run as a runaway when the
+   living bodies' standing tissue exceeds it, beside the count. Round 34's value is 30,000 J,
+   8,000 bodies' worth of round 32's mean adult tissue (3.77 J per body over the snapshots
+   from 5,000 s; the arithmetic is in the launcher). The calibration showed what the ruling
+   had not: in the campaign's closed world, 6,000 units of matter and no influx, neither
+   ceiling can fire. Eight thousand bodies need 24,000 units for their per-creature term
+   alone and 30,000 J of tissue needs 15,000. Matter bounds biomass by construction, and
+   both instruments are idle until a world with influx (D074) is run again; they are kept
+   so that such a world has them.
+
+10. **The record reads the dials**: the living population's mean adult scale, investment,
+    brood and body fraction in the table (`adult scale`, `invest`, `brood`, `body frac`),
+    `bf` and `as` on lineage birth rows, the two counters in `stats.jsonl`.
+
+**Rejected.** A size-at-birth dial beside the threshold (the owner's own refinement: size is
+the product of the threshold met and the litter). An evolved reserve fraction (a lineage
+would set its children's reserve to zero). A clamp at the mass floor (a smaller child than
+the parent paid for is a different creature wearing its price). Growing the plan by adding
+parts, deferred with §4.2's pruning rule as the reason.
+
+**What it changes.** Every stored genome is refused (format 5; re-extract from a new
+snapshot), and every seed is a new realisation. At the proposal's defaults breeding is two
+to five times cheaper than it was, and 0081's smoke bred seven times faster through founding
+than round 32's same seed and stripped the matter at its layer within 300 s; a world that
+breeds like that is matter-limited from the start, and round 34 reads whether that is a
+different ecology or the same one reached sooner. The price of a bud (D082) becomes the
+genome's, since a small newborn is a cheap one; a newborn joint is smaller and lighter than
+an adult's, which is where the divergences have been. `scratch/launch-r34.ps1` carries the
+growth knobs and the header carries `growth reserve= floor= minkg= step= invest=
+scale/invest chance=` and the biomass ceiling.
+

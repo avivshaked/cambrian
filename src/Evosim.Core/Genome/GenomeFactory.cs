@@ -247,18 +247,22 @@ namespace Evosim.Core
         /// tissue value — DESIGN.md §5A.6, fable-propose-growth.md rule 1.
         /// </summary>
         /// <remarks>
-        /// <b>Both ends at the proposal's single default, so generation zero is not handed a
-        /// strategy.</b> The range that stood here before was 50 to 400 J, a spread on a quantity
-        /// that meant different things to bodies of different sizes; a fraction of the parent's
-        /// own body travels, and the founding lottery has no reason to guess at it. Kept as two
-        /// knobs rather than one so that a screen can open the spread without a code change, which
-        /// is exactly how the r/K axis would be probed if the owner rules that founders should
-        /// vary. ⚠ Unmeasured (§5A.10).
+        /// <b>0.25 to 1.0, the owner's ruling of 2026-09-09.</b> Both ends sat at 0.5 through the
+        /// growth build, so generation zero opened with no life-history strategy at all. Every
+        /// founder invested the same fraction of its own tissue in its brood, and only mutation
+        /// ever moved off it. The founding lottery already samples every other genome dial this
+        /// way (<see cref="MinBroodSize"/>, <see cref="MinBuoyancyLift"/>); leaving this one pinned
+        /// was the exception, not the rule, and it meant selection had nothing to sort on the r/K
+        /// axis until a mutation happened to open it. The range that stood here before 0.5/0.5 was
+        /// 50 to 400 J, a spread on a quantity that meant different things to bodies of different
+        /// sizes; a fraction of the parent's own body travels, so 0.25 to 1.0 is a spread of the
+        /// same shape rather than a return to that one. Kept as two knobs rather than one so a
+        /// screen can still narrow or move the spread without a code change. ⚠ Unmeasured (§5A.10).
         /// </remarks>
         [Tunable("genome")]
-        public float MinBirthInvestment { get; set; } = 0.5f;
+        public float MinBirthInvestment { get; set; } = 0.25f;
         [Tunable("genome")]
-        public float MaxBirthInvestment { get; set; } = 0.5f;
+        public float MaxBirthInvestment { get; set; } = 1f;
 
         /// <summary>
         /// Adult size a founder is drawn at — fable-propose-growth.md rule 7.

@@ -139,17 +139,17 @@ round 28) set the base and the order.
    as the priced control. Round 33, in the gap before the growth build is ready; if the
    share collapses anyway, the divergence dumps, the joint mutation rates and jointed
    bodies' depth are read before anything is priced again.
-7. **Bodies that grow** (owner 2026-09-08 night, "love it! go ahead"; `fable-propose-growth.md`):
+7. **Bodies that grow** (D087, ruled 2026-09-09; logbook/0081):
    `BirthInvestment` as a fraction of the parent's tissue value replaces the endowment,
    `AdultScale` scales the plan, brood stays; a child is born at the investment over the
    litter and grows to its adult size before it breeds; three world constants with first
    values, a newborn mass floor of 0.5 kg against the divergence record. Built in both
    halves and smoked on 2026-09-09 (logbook/0081): the suite passes at 604, the smoke
    closes both books with 1,093 in-place resizes and no divergence, and children are born
-   at a median third of their adult body. Five constants wait on the owner (0081's list:
-   investment 0.5 with a biomass ceiling, one gate of 0.08, founders 0.25 to 1.0, the
-   reserve cap, the reserve floor); round 34 launches on `scratch/launch-r34.ps1` once they
-   are ruled and round 33 has read.
+   at a median third of their adult body. Ruled as D087 the same afternoon (investment 0.5
+   with `MaximumTissueJoules` as a biomass ceiling beside the count, one gate of 0.08,
+   founders 0.25 to 1.0, the reserve capped beside the body, the reserve floor 0.1); round
+   34 launches on `scratch/launch-r34.ps1` once round 33 has read.
 8. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
    brain can be selected for, after growth.
    *Run length (owner, 2026-09-08 night: "that sounds good"):* 30,000 s gives 40 to 50
