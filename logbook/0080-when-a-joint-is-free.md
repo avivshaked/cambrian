@@ -1,6 +1,15 @@
 # 0080 — When a joint is free
 
-**2026-09-09**  ·  round 33, pre-registered before launch; a hypothesis test with one knob set to nothing
+**2026-09-09**  ·  round 34, pre-registered before launch; a hypothesis test with one knob set to nothing
+
+> **Amended before launch, 2026-09-09 afternoon.** This was written as round 33 against round
+> 32. The growth build (D087, logbook/0081) landed the same day, and the pre-growth world no
+> longer exists in the code: every child is now born small and grows, and there is no switch
+> that reproduces bodies born whole. The owner had ruled the order conditionally that morning
+> (growth first if its build was close), so growth is round 33 and this round is 34, run on
+> the growth world with round 33's same seed as its control. Every "round 32" below reads as
+> "round 33", the growth base, and the launcher is `scratch/launch-r34.ps1`, round 33's with
+> the four prices at zero. The predictions are otherwise unchanged.
 
 Every round on record ends with the swimmers gone, and round 31 (logbook/0077) named the
 wall: no jointed body survives founding, before there is anything to eat, so selection

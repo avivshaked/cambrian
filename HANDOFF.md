@@ -23,11 +23,15 @@ answer replaced the representation: the water as a grid of cells with corpses as
 (matter cells 5 m, matter mixed at 2 m²/s on every axis, corpses at 0.005/s). Round 32,
 the grid's base round at round 31's prices and mixing, is running: `r32-s1..s5` on workers
 2 to 6 at 0.01, launched 2026-09-09 midday (`scratch/launch-r32.ps1`), pre-registered as
-logbook/0079, landing overnight. Round 33 is the free-joint test (logbook/0080, owner
-2026-09-09: "we should see what happens when joints are free"): round 32's world with the
-muscle's idle charge, the stroke's work and the neuron and connection prices at 0, launched
-when round 32 lands and the workers are idle, since the growth build is days away
-(`scratch/launch-r33.ps1`). Round 34 is growth
+logbook/0079, landing overnight. Round 33 is growth (D087, logbook/0081; `scratch/launch-r33.ps1`):
+the growth build landed on 2026-09-09 and the pre-growth world no longer exists in the code,
+so the owner's conditional ruling of that morning (growth first if its build was close) puts
+growth before the free joint. Round 34 is the free-joint test (logbook/0080, amended before
+launch; `scratch/launch-r34.ps1`, round 33's launcher with the four prices at zero) on the
+growth world, with round 33's same seed as its control. **When round 33 lands, work pauses**
+(owner, 2026-09-09 afternoon): the owner tests the theatre on it, since a growth-build run is
+the first one the current code can replay, and nothing launches until the owner says so.
+Round 34 was
 (`fable-propose-growth.md`: birth investment, litter and adult size as genome dials,
 children born small and growing), agreed in direction and awaiting its ruling; predation
 waits behind both.** Round 29 (logbook/0072) was the price
@@ -133,12 +137,18 @@ round 28) set the base and the order.
    corpses at 0.005/s. Round 32 is its base round and is running (0079); read M0 to M6
    against round 31's same seed when it lands. The negative vertex is retired unbuilt with
    its geometry argument as its record.
-6. **A joint made free** (owner 2026-09-09; logbook/0080): the hypothesis that joints are
-   selected out for their price, tested by charging nothing for the idle muscle, the stroke
-   and the brain; read as the jointed-parent share against the founder draw, with round 32
-   as the priced control. Round 33, in the gap before the growth build is ready; if the
-   share collapses anyway, the divergence dumps, the joint mutation rates and jointed
-   bodies' depth are read before anything is priced again.
+6. **A joint made free** (owner 2026-09-09; logbook/0080, amended): the hypothesis that joints
+   are selected out for their price, tested by charging nothing for the idle muscle, the
+   stroke and the brain; read as the jointed-parent share against the founder draw, with
+   round 33, the growth base, as the priced control. Round 34, after the owner's theatre
+   pause; if the share collapses anyway, the divergence dumps, the joint mutation rates and
+   jointed bodies' depth are read before anything is priced again.
+6b. **Every code change orphans every earlier run for the theatre** (owner 2026-09-09: "a
+   problem we should consider on its own", not to be answered now). The theatre replays a
+   run only under the build that recorded it, and the farm compiles Core from the main tree,
+   so the day growth landed no run on disk was replayable. Candidates when it is taken up: a
+   tagged build per round kept beside the tree, the theatre built against a run's recorded
+   commit in a worktree, or a replay-only mode that loads old formats read-only.
 7. **Bodies that grow** (D087, ruled 2026-09-09; logbook/0081):
    `BirthInvestment` as a fraction of the parent's tissue value replaces the endowment,
    `AdultScale` scales the plan, brood stays; a child is born at the investment over the
