@@ -262,3 +262,4 @@ key only translates the entries' reporting shorthand.
 | [0077](0077-the-water-stirred-less.md) | 2026-09-08 | The water stirred less |
 | [0078](0078-the-water-as-a-grid.md) | 2026-09-08 | The water as a grid |
 | [0079](0079-the-grid-has-its-own-count.md) | 2026-09-09 | The grid has its own count |
+| [0080](0080-when-a-joint-is-free.md) | 2026-09-09 | When a joint is free |

@@ -23,7 +23,11 @@ answer replaced the representation: the water as a grid of cells with corpses as
 (matter cells 5 m, matter mixed at 2 m²/s on every axis, corpses at 0.005/s). Round 32,
 the grid's base round at round 31's prices and mixing, is running: `r32-s1..s5` on workers
 2 to 6 at 0.01, launched 2026-09-09 midday (`scratch/launch-r32.ps1`), pre-registered as
-logbook/0079, landing overnight. Round 33 is growth
+logbook/0079, landing overnight. Round 33 is the free-joint test (logbook/0080, owner
+2026-09-09: "we should see what happens when joints are free"): round 32's world with the
+muscle's idle charge, the stroke's work and the neuron and connection prices at 0, launched
+when round 32 lands and the workers are idle, since the growth build is days away
+(`scratch/launch-r33.ps1`). Round 34 is growth
 (`fable-propose-growth.md`: birth investment, litter and adult size as genome dials,
 children born small and growing), agreed in direction and awaiting its ruling; predation
 waits behind both.** Round 29 (logbook/0072) was the price
@@ -129,13 +133,20 @@ round 28) set the base and the order.
    corpses at 0.005/s. Round 32 is its base round and is running (0079); read M0 to M6
    against round 31's same seed when it lands. The negative vertex is retired unbuilt with
    its geometry argument as its record.
-6. **Bodies that grow** (owner 2026-09-08 night, "love it! go ahead"; `fable-propose-growth.md`):
+6. **A joint made free** (owner 2026-09-09; logbook/0080): the hypothesis that joints are
+   selected out for their price, tested by charging nothing for the idle muscle, the stroke
+   and the brain; read as the jointed-parent share against the founder draw, with round 32
+   as the priced control. Round 33, in the gap before the growth build is ready; if the
+   share collapses anyway, the divergence dumps, the joint mutation rates and jointed
+   bodies' depth are read before anything is priced again.
+7. **Bodies that grow** (owner 2026-09-08 night, "love it! go ahead"; `fable-propose-growth.md`):
    `BirthInvestment` as a fraction of the parent's tissue value replaces the endowment,
    `AdultScale` scales the plan, brood stays; a child is born at the investment over the
    litter and grows to its adult size before it breeds; three world constants with first
    values, a newborn mass floor of 0.5 kg against the divergence record. Round 33, after
-   round 32 has its count; the Unity side is an in-place rescale of the articulation.
-7. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
+   round 33 reads; the Unity side is an in-place rescale of the articulation. The Core half
+   is being built (2026-09-09, `scratch/growth-core-spec.md`) on the proposal's defaults.
+8. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
    brain can be selected for, after growth.
    *Run length (owner, 2026-09-08 night: "that sounds good"):* 30,000 s gives 40 to 50
    generations along the deepest line and three to four turnovers of the standing crop,
