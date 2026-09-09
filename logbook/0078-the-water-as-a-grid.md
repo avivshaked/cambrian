@@ -113,6 +113,19 @@ closed, the same last row on three launches. The suite is 585.
   and 0.02 sideways. On a grid it goes to 2 on every axis. I recommend it stands, since a
   cube has no preferred axis and the vertical rate was the one chosen for the gate.
 
+## Screens for the matter cell
+
+*2026-09-09, morning.* Round 31 landed and freed the workers, so the matter-cell ruling
+gets numbers rather than arithmetic. Four fast-step screens, dt 0.02 for 10,000 s, seeds 1
+and 2 at each size: `r32q-m25-s1` and `r32q-m25-s2` at 2.5 m on workers 2 and 3,
+`r32q-m5-s1` and `r32q-m5-s2` at 5 m on workers 5 and 6. Everything else is round 31's
+launcher on the grid with corpses at 0.005 per second. Every header reads `field grid`,
+`cell=1`, the arm's `mcell`, `corpse=0.005/s`, `mixing 0.02 m2/s`, `h-mix 0.02 m2/s` and
+`work x0.25`; every manifest `simHash b7f589d0…`, `coreHash 9e1f47b2…`, `physicsJobWorkers 0`,
+and the launcher refused any other `simHash`. Read within the step and only for whether
+the world stands, the identities close, a stomach line forms and `mat blk` against births
+at each cell size. Nothing about depth or joints is read from them.
+
 ## What it costs the record
 
 Every config written before this build lacks the two cell tunables and is refused by it,
