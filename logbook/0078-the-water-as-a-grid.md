@@ -126,6 +126,33 @@ and the launcher refused any other `simHash`. Read within the step and only for 
 the world stands, the identities close, a stomach line forms and `mat blk` against births
 at each cell size. Nothing about depth or joints is read from them.
 
+All four ended on budget in under an hour each. Read against round 31's screens of the
+same seeds (`r31q-s1`, `r31q-s2`, the vertex world at the same mixing).
+
+| arm | alive | stomach line | scorer | refusals per birth, 3,000 to 10,000 s | matter locked in bodies | free matter at the mean depth | corpses standing |
+|---|---|---|---|---|---|---|---|
+| `r32q-m25-s1` | 1,544 | 108 | pass, 109 | 7,450 | 4,713 | 0.183 | 371 |
+| `r32q-m25-s2` | 1,552 | 126 | pass, 127 | 8,540 | 4,727 | 0.185 | 329 |
+| `r32q-m5-s1` | 1,838 | 59 | pass, 56 | 7,480 | 5,745 | 0.023 | 366 |
+| `r32q-m5-s2` | 1,864 | 209 | fail, a line born at 8,240 s | 7,450 | 5,788 | 0.022 | 390 |
+| `r31q-s1` | 1,524 | 46 | fail | 6,370 | 5,800 | 0.011 | |
+| `r31q-s2` | 1,570 | 33 | fail | 6,440 | 5,786 | 0.049 | |
+
+The grid stands at both sizes, the identities close on every row of every arm, a stomach
+line forms in every seed and the scorer passes three of four at 10,000 s where the vertex
+screens passed neither seed. The refusals per birth are the same at both sizes and within a
+fifth of the vertex world's, which says the gate binds on the world's stock and not on the
+cell. What the cell size moves is where the stock sits. At 5 m the matter locked in bodies
+is 5,750 to 5,790 of the world's 6,000, the vertex world's figure to within 1%, and the
+free water reads 0.02. At 2.5 m it is 4,710 to 4,730, with 0.18 standing free: about a
+fifth of the world's matter sits in cells too small to afford a child and is never locked.
+That is the size cap the arithmetic predicted, seen as stranded stock, and it costs the
+2.5 m worlds about 300 bodies. The 5 m cell reproduces the vertex world's matter economy
+and the 2.5 m cell does not. My recommendation stands at 5 m, with the numbers behind it.
+Nothing about joints is read here: the count of bodies born with one peaked at 0 to 3.
+The share of bodies carrying a sense is 25% in one arm of each pair and 1 to 3% in the
+other, the same spread round 31 showed at the fine step.
+
 ## What it costs the record
 
 Every config written before this build lacks the two cell tunables and is refused by it,

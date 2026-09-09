@@ -125,8 +125,9 @@ round 28) set the base and the order.
    logbook/0078): cells that hold amounts, one cell per mouth, Fick's law between
    neighbours, upwind advection, corpses as particles. Built and smoked (`scratch/launch-r32.ps1`);
    round 32 is its base round, five seeds at 0.01 at round 31's prices and mixing, after the
-   owner rules on the matter cell (2.5 m caps the largest child, 5 m loosens the gate five
-   times; I recommend 5 m) and on matter mixed at 2 m²/s on every axis (I recommend it
+   owner rules on the matter cell (0078's screens: 2.5 m strands a fifth of the world's
+   matter in cells too small to afford a child and costs 300 bodies; 5 m reproduces the
+   vertex world's locked matter to 1%; I recommend 5 m) and on matter mixed at 2 m²/s on every axis (I recommend it
    stands). The negative vertex the owner first proposed is retired unbuilt with its
    geometry argument as its record; the halo was already withdrawn.
 6. **Bodies that grow** (owner 2026-09-08 night, "love it! go ahead"; `fable-propose-growth.md`):
