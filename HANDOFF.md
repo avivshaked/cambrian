@@ -19,9 +19,11 @@ there was no prize. Round 31 (D085, logbook/0077) is round 30 with the detritus 
 unchanged, the hole in the water at large rather than at the sitter, no joint surviving
 founding in any seed, the larder gone deep; the vertex world's last word. Meanwhile the owner asked where the hole lives and the
 answer replaced the representation: the water as a grid of cells with corpses as particles
-(`fable-propose-grid.md`, logbook/0078), built, reviewed and smoked on 2026-09-08 night and
-awaiting two rulings (the matter cell, 2.5 m or 5 m; matter mixed at 2 m²/s on every
-axis). Round 32 is the grid's base round at round 31's prices and mixing; round 33 is growth
+(D086, logbook/0078), built, reviewed and smoked on 2026-09-08 night, ruled 2026-09-09
+(matter cells 5 m, matter mixed at 2 m²/s on every axis, corpses at 0.005/s). Round 32,
+the grid's base round at round 31's prices and mixing, is running: `r32-s1..s5` on workers
+2 to 6 at 0.01, launched 2026-09-09 midday (`scratch/launch-r32.ps1`), pre-registered as
+logbook/0079, landing overnight. Round 33 is growth
 (`fable-propose-growth.md`: birth investment, litter and adult size as genome dials,
 children born small and growing), agreed in direction and awaiting its ruling; predation
 waits behind both.** Round 29 (logbook/0072) was the price
@@ -121,15 +123,12 @@ round 28) set the base and the order.
    evening and seed 3 reruns as `r31-s3b` on worker 7 on the fixed build, so the round is
    split across two builds the way round 24 was (0061). If the prize appears, the round
    after screens the exudate fraction; founding a vertex per excretion is queued behind both.
-5. **The water as a grid** (owner 2026-09-08 night, "sgtm... proceed"; `fable-propose-grid.md`,
-   logbook/0078): cells that hold amounts, one cell per mouth, Fick's law between
-   neighbours, upwind advection, corpses as particles. Built and smoked (`scratch/launch-r32.ps1`);
-   round 32 is its base round, five seeds at 0.01 at round 31's prices and mixing, after the
-   owner rules on the matter cell (0078's screens: 2.5 m strands a fifth of the world's
-   matter in cells too small to afford a child and costs 300 bodies; 5 m reproduces the
-   vertex world's locked matter to 1%; I recommend 5 m) and on matter mixed at 2 m²/s on every axis (I recommend it
-   stands). The negative vertex the owner first proposed is retired unbuilt with its
-   geometry argument as its record; the halo was already withdrawn.
+5. **The water as a grid** (D086, ruled 2026-09-09; logbook/0078): cells that hold
+   amounts, one cell per mouth, Fick's law between neighbours, upwind advection, corpses as
+   particles; matter cells 5 m from 0078's screens, matter mixed at 2 m²/s on every axis,
+   corpses at 0.005/s. Round 32 is its base round and is running (0079); read M0 to M6
+   against round 31's same seed when it lands. The negative vertex is retired unbuilt with
+   its geometry argument as its record.
 6. **Bodies that grow** (owner 2026-09-08 night, "love it! go ahead"; `fable-propose-growth.md`):
    `BirthInvestment` as a fraction of the parent's tissue value replaces the endowment,
    `AdultScale` scales the plan, brood stays; a child is born at the investment over the

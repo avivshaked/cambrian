@@ -121,6 +121,20 @@ That is where the piece ends, because that is where the work is. The round after
 stirs the water less, and it is the first round in the campaign in which sitting still has
 a measured cost.
 
+## Afterword
+
+The vertex water lasted two rounds. Round 31 stirred it less and found the hole in the
+water at large rather than at the sitter, and no swimmer alive to take a prize of any size.
+The same night the owner asked where a hole lives in a field of vertices. It lives at the
+vertices, because a take is spread over them by weight, so a body beside a vertex pays for
+a meal eaten a metre away. The remedy is a source at every place a body can be, which is a
+grid of cells. The water is now that: each cell an amount, each mouth draining the one cell
+it stands in, Fick's law between neighbours, the current carrying cells downstream, and a
+corpse a particle that sinks and decays into its cell. Everything piece 07 says about
+amounts and transfers carried over unchanged, which is why the change took one evening and
+the books closed on the first smoke. [Logbook 0078](../logbook/0078-the-water-as-a-grid.md)
+is the build and [D086](../DECISIONS.md#d086) the ruling.
+
 ## What here is inference
 
 - **"Nothing to swim to" as the reason movement never paid** is the author's reading of
@@ -131,6 +145,7 @@ a measured cost.
 - **"Four faults in a day is what enforcement looks like"** is the author's judgement.
 - **The vertex world as the base** is the owner's ruling on the round's reading (D083's
   index row), reported here.
+- **The afterword's reading of round 31** is the author's; logbook 0077 holds the numbers.
 
 ## Where it is
 

@@ -545,8 +545,8 @@ actually verifying it.
   `EVOSIM_FIELD grid` puts both fields on cells (`GridField`; `EVOSIM_FIELD_CELL` 1 m,
   `EVOSIM_FIELD_MATTER_CELL`). A cell size must divide the box on all three axes or the
   world is refused at construction: the campaign's 100 m² over four patches at 60 m is a box
-  20 × 5 × 60 m, so the matter default of 3 m refuses it and 2.5 m or 5 m runs (which one is
-  the owner's ruling). `EVOSIM_H_MIXING` must equal `EVOSIM_MIXING` or the world is refused,
+  20 × 5 × 60 m, so the matter default of 3 m refuses it and 2.5 m or 5 m runs (5 m is ruled,
+  D086; 2.5 m strands a fifth of the matter in cells too small to afford a child, 0078). `EVOSIM_H_MIXING` must equal `EVOSIM_MIXING` or the world is refused,
   because a grid stirs at one rate on all six faces and the header's `h-mix` has to read what
   the detritus does; the matter grid stirs at its own `MatterMixingDiffusivity` on every axis,
   2 m²/s in the campaign, where the vertex world walked it sideways at 0.02. Explicit
