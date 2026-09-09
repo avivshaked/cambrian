@@ -70,7 +70,7 @@ first two wait for growth (`fable-propose-growth.md`, round 33), the third for t
 2 m²/s on every axis, corpses at 0.005 per second (D086). The first launch did not carry
 the ruling. The launcher's defaults were edited by a script whose assertion failed on a
 line ending, and the five arms went out at 2.5 m with corpses off; the headers said so
-within a minute, which is what the rule about reading settings from the header and never
+within a minute. That is what the rule about reading settings from the header and never
 from the launch command is for. All five were stopped through the stop script, their
 manifests reading `stopped manual-other` under the same arm names, and relaunched on the
 corrected launcher. `r32-s1` to `r32-s5` on workers 2 to 6 at dt 0.01 for 30,000 s, wall
@@ -163,7 +163,7 @@ eaters are born a third of their size.
 
 What the round does not say: that the grid is the wrong water. The vertex field's four
 passes were read in 0077 as the pairs feeding on a hole in the water at large, which is
-the geometry the grid was built to remove. A world that holds fewer eaters honestly is
+the geometry the grid was built to remove. A world that holds fewer eaters is
 not a worse instrument than one that held more by an accident of where the hole fell.
 It is a harder world, and the question the campaign asks of it is unchanged.
 

@@ -12,7 +12,7 @@ A Karl Sims–style evolved-virtual-creatures simulator in Unity. Genomes encode
 body plan and brain; creatures are grown from a recursive directed graph and evaluated in
 physics. Aquatic locomotion first, terrestrial later.
 
-**Six documents, deliberately non-overlapping.** Keep them that way — duplicated rationale
+**Eight documents, deliberately non-overlapping.** Keep them that way — duplicated rationale
 drifts and then none of it can be trusted.
 
 | File | Answers |
@@ -24,10 +24,11 @@ drifts and then none of it can be trusted.
 | [`primer/`](primer/) | *What the thing is, and why it is interesting* — explanatory prose for a reader, written after a mechanism works. Also never a source of truth. Anything it asserts that is not traceable to a cited source must be marked as inference, in the text and in its sources table |
 | `CLAUDE.md` (this file) | *What will bite you* |
 | [`STYLE.md`](STYLE.md) | *How we write* — the voice, the shape of a piece, the tells to avoid, and the rules for restyling what exists. Applies to every prose file here, this one included |
+| [`HANDOFF.md`](HANDOFF.md) | *Where work stands right now*, and what is queued. The one file that is rewritten rather than appended to |
 
 **Two licences, both non-commercial since 2026-09-07 (D080).** Code and the genome files under
 `inocula/` are PolyForm Noncommercial 1.0.0 ([`LICENSE`](LICENSE)); the prose — `DESIGN.md`,
-`DECISIONS.md`, `README.md`, `STYLE.md`, this file, and everything under `research/`, `logbook/` and
+`DECISIONS.md`, `README.md`, `STYLE.md`, `HANDOFF.md`, this file, and everything under `research/`, `logbook/` and
 `primer/` — is CC BY-NC 4.0 ([`LICENSE-DOCS`](LICENSE-DOCS)). `COMMERCIAL.md` draws the
 commercial line and `CONTRIBUTING.md` states the grant a contribution carries; a contribution
 without that grant is not merged. New files land under whichever applies; if you add a
@@ -45,18 +46,18 @@ literature with page locators. Read it before proposing architectural changes; s
 obvious-seeming ideas were already tested against the literature and rejected, for reasons
 recorded there.
 
-Current state: **the ecosystem runs.** Genomes develop into phenotypes, articulations swim
-under their own evolved brains, and `Evosim.Core`'s world charges upkeep, feeds, breeds and
-kills — the energy audit closes at 0.0000% across a food web that has twice assembled itself
-(logbook/0025, 0028). Milestones 2–5 are done, out of the listed order; perception reads all
-seven of §4.4's channels (logbook/0062), and nothing has yet been selected for using them. **The goal rule (D063) was met on
-2026-09-04** (logbook/0054): with producers exuding 15% of their light intake (D070) the world
-holds inherited absorptive lines of 76–221 to the end of a 30,000-s run in four seeds of
-five, discovery regime. The open frontier: matter at depth (the failing seed's stomachs held
-full reserves in full water and were refused conceptions for want of matter at their layer —
-levers `EVOSIM_EXCRETION`, the matter price, the matter sink, all world rules), whether a
-*late* stomach can invade (the assay at 0.15), and movement, which has never paid its energy
-cost (the cost side is closed, the prize side is open). Throughput still binds: dt 0.02
+Current state: **the ecosystem runs**, in one shared box of water (D077) stepped on one
+thread so that it replays (D078). Genomes develop into phenotypes, articulations swim under
+their own evolved brains, and `Evosim.Core`'s world charges upkeep, feeds, breeds and kills
+with both books closed at every sample. The water is a grid of cells (D086, logbook/0078)
+and bodies are born small and grow (D087, logbook/0081). The goal rule (D063 as amended) was
+last met five seeds of five in round 30 (logbook/0075); the grid's base round 32 read two of
+five with every mechanism prediction holding (0079); round 33, the growth base, is the first
+world in which a trait has moved by degree rather than by switch, and work pauses when it
+lands for the owner's theatre test. The open frontier: why the eaters' lines stop recruiting
+on the grid, whether a free joint survives founding (round 34, logbook/0080), and movement,
+which has never paid its energy cost (the cost side is closed, the prize side is open).
+Throughput still binds: dt 0.02
 screens, 0.01 confirms (logbook/0052). Experiments are *arms*, launched with
 `scripts/run-arm.ps1` against worker copies `unity-w2`..`unity-w7` — never two processes on
 one worker, at most five concurrent arms, and verify every arm's settings from the header its
@@ -493,7 +494,9 @@ actually verifying it.
   every stored `format":3` genome in `scratch/` (the inocula among them) is refused by this build
   and by `ledger.ps1 -Genome`. The genome fields did not change across that bump — only the
   optional id was added — so an inoculum can be brought forward by re-extracting it from a new
-  snapshot, which is the one route that cannot quietly mislabel a creature.
+  snapshot, which is the one route that cannot quietly mislabel a creature. The growth build
+  took it to 5 on 2026-09-09 (D087), so a format-4 genome is refused the same way; the growth
+  gotcha below has the details.
 - **`simHash` is a property of a checkout, not of a commit.** It hashes the bytes of every `.cs`
   under `Assets/Evosim` on disk, and this working tree is mixed: `EffectorDriver.cs`,
   `EmbodiedRun.cs` and `ThroughputSurvey.cs` are CRLF while everything beside them is LF, which
@@ -576,7 +579,7 @@ actually verifying it.
   `MaximumPopulation` still ends a runaway but counts bodies of any size, so D087 adds
   `MaximumTissueJoules` (`EVOSIM_MAX_TISSUE`, 0 = off; the header's `maxTissue=`), which ends a
   run as a runaway on the living bodies' standing tissue, and `run.json` names which ceiling
-  fired. In a closed-matter world neither can: round 34's 6,000 units cannot build 8,000
+  fired. In a closed-matter world neither can: round 33's 6,000 units cannot build 8,000
   bodies (24,000 units for the per-creature term alone) or 30,000 J of tissue (15,000 units),
   so a runaway there is impossible by construction and both ceilings are idle instruments
   kept for a world with influx. Read `body frac`,

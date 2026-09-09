@@ -48,5 +48,5 @@ reasoning given so it can be argued with.
 | [`MECHANISMS.md`](MECHANISMS.md) | The survey: what the evidence says, what this world has, what is missing, ranked by what it would change |
 | [`SOURCES.md`](SOURCES.md) | Retrieval record — URL, date, access route, and how much of each source was actually read |
 
-Prose, so CC BY 4.0 under [`LICENSE-DOCS`](../../LICENSE-DOCS), like the rest of
+Prose, so CC BY-NC 4.0 (D080) under [`LICENSE-DOCS`](../../LICENSE-DOCS), like the rest of
 `research/`.

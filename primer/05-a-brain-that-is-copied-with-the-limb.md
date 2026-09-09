@@ -82,7 +82,9 @@ salamanders swim.
 
 This is also why the input references a neuron may use are restricted to *relative* things.
 A neuron may read a sensor on its own part, or another neuron in the same node. It may read
-a neuron in the parent or the child node, a global neuron, or a constant.
+a neuron in the parent or the child node, or a constant. Until D081 (2026-09-07) it could
+also read a global neuron that belonged to no part. A child is born without one now, and
+genomes recorded before then still carry ones nothing steps.
 
 There is deliberately no way to say "neuron 7 of part 12". Such a reference would be
 meaningless in the copy, since there is no telling which part 12 is meant, and the

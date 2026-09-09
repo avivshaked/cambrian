@@ -8,9 +8,10 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
-**Round 30 is read (logbook/0075, 2026-09-08 evening): the vertex world at D082's prices
+**Round 33, the growth base, is running on workers 2 to 6; when it lands, work pauses for
+the owner's theatre test (D087, logbook/0081).** **Round 30 is read (logbook/0075, 2026-09-08 evening): the vertex world at D082's prices
 meets the goal rule in 5 of 5, the first round to do so, with both identities closed, the
-detritus loop closed and the population within 3% of round 29's. It is the new base. The
+detritus loop closed and the population within 3% of round 29's. It was the base until the grid (D086). The
 senses were carried in 1 of 5 (round 29: 3 of 5) and no jointed guild held; seed 4's line
 of 14 lasted to 10,000 s feeding as well as the sitters and moving no faster than the
 drift. Logbook/0076 measured why: at 0.2 m²/s a sitter's hole refills in five seconds, so
@@ -23,7 +24,7 @@ answer replaced the representation: the water as a grid of cells with corpses as
 (matter cells 5 m, matter mixed at 2 m²/s on every axis, corpses at 0.005/s). Round 32,
 the grid's base round at round 31's prices and mixing, is running: `r32-s1..s5` on workers
 2 to 6 at 0.01, launched 2026-09-09 midday (`scratch/launch-r32.ps1`), pre-registered as
-logbook/0079, read 2026-09-09 evening: the mechanism holds in every arm, the population is higher, and the goal rule holds in two seeds of five against round 31's four, the stomach lines thinning from founding without recruiting; the grid stands as the base and the eaters' recruitment is the open question (a per-guild feeding trace and a corpses-off seed are the two reads). Round 33 is growth, running since 2026-09-09 19:00 on workers 2 to 6 (`r33-s1..s5`, `simHash 0924b9ad…`, `coreHash 621d32ee…`, commit 0b8e822) (D087, logbook/0081; `scratch/launch-r33.ps1`):
+logbook/0079, read 2026-09-09 evening: the mechanism holds in every arm, the population is higher, and the goal rule holds in two seeds of five against round 31's four, the stomach lines thinning from founding without recruiting; the grid stands as the base and the eaters' recruitment is the open question (a per-guild feeding trace and a corpses-off seed are the two reads). Round 33 is growth, running since the evening of 2026-09-09 on workers 2 to 6 (`r33-s1..s5`, `simHash 0924b9ad…`, `coreHash 621d32ee…`, commit 0b8e822) (D087, logbook/0081; `scratch/launch-r33.ps1`):
 the growth build landed on 2026-09-09 and the pre-growth world no longer exists in the code,
 so the owner's conditional ruling of that morning (growth first if its build was close) puts
 growth before the free joint. Round 34 is the free-joint test (logbook/0080, amended before
@@ -31,10 +32,7 @@ launch; `scratch/launch-r34.ps1`, round 33's launcher with the four prices at ze
 growth world, with round 33's same seed as its control. **When round 33 lands, work pauses**
 (owner, 2026-09-09 afternoon): the owner tests the theatre on it, since a growth-build run is
 the first one the current code can replay, and nothing launches until the owner says so.
-Round 34 was
-(`fable-propose-growth.md`: birth investment, litter and adult size as genome dials,
-children born small and growing), agreed in direction and awaiting its ruling; predation
-waits behind both.** Round 29 (logbook/0072) was the price
+Predation waits behind round 34.** Round 29 (logbook/0072) was the price
 control: the senses carried by a third to a half of the population in three seeds of five
 at the old price, no jointed body, the goal 2 of 5, the world standing under added mass. Round 29 was the movement round on round 28's world with the three senses
 on, added mass 0.5 and the global brain retired (D081's build, commit `40b16b8`,
@@ -62,7 +60,8 @@ inherited stomachs at the end, and the clade scorer's first vertex-world pass.
 D082 (the price of a bud) is folded into the same build, and round 30 (0075) is that build.
 Conditional (D084): 0072's pre-registered follow-up to a failed M4, senses off with added
 mass on in the cell world, runs only if round 30 reads below round 28 as well; if round 30
-reads 3 of 5 or better the world control closes the question.
+reads 3 of 5 or better the world control closes the question. Closed: round 30 read 5 of 5,
+above round 28's 3 of 5, so the condition cannot fire.
 
 The goal has been met once, and no world since has matched it. D063, as amended 2026-09-04,
 asks for a clade that lasts. One connected absorptive clade must be alive for 20 consecutive
@@ -159,7 +158,8 @@ round 28) set the base and the order.
    at a median third of their adult body. Ruled as D087 the same afternoon (investment 0.5
    with `MaximumTissueJoules` as a biomass ceiling beside the count, one gate of 0.08,
    founders 0.25 to 1.0, the reserve capped beside the body, the reserve floor 0.1); round
-   34 launches on `scratch/launch-r34.ps1` once round 33 has read.
+   33 is the growth base and is running; round 34, the free joint, launches on
+   `scratch/launch-r34.ps1` once round 33 has read and the owner's theatre pause has ended.
 8. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
    brain can be selected for, after growth.
    *Run length (owner, 2026-09-08 night: "that sounds good"):* 30,000 s gives 40 to 50
@@ -176,8 +176,8 @@ round 28) set the base and the order.
    draw rather than descent. The one targeted test allowed is the input-rewiring chance
    alone, with a control, if inoculation shows the world keeps a wired sense but never
    finds one.
-6. **The open matter budget** (D074) and the vent, when a round shows the larder binds.
-7. **The cell types and immigration**, then the archive and the islands.
+9. **The open matter budget** (D074) and the vent, when a round shows the larder binds.
+10. **The cell types and immigration**, then the archive and the islands.
 
 Two bars are named from D081 on: *the goal* (D063's 3 of 5) and *the reference* (the base
 world's own count). A change joins the base only at the reference; a round that meets the
@@ -223,7 +223,7 @@ Captured 2026-09-07 from the three outside reviews (logbook/0071), in no order o
     ordering makes today's refusal paths safe.
 13. **Two columns**: gross photosynthesis per window (the one term in the energy identity that
     is inferred rather than reported, and the balance rule will want it) and the matter drawn
-    at conception per window (`mat blk` counts refusals, not units). The flux counters are world
+    at conception per window (`mat blk` counts refusals; the units drawn are not reported). The flux counters are world
     totals; the patch dimension is only a standing-stock spread.
 14. **The clade scorer checks nothing about which round a report belongs to**; the launch-side
     `-ExpectSimHash` guard stands in for it.
@@ -301,8 +301,6 @@ the running status), in the order they are done:
   noted under D063.
 - **Whether the absence of CI is a choice.** The suite runs by hand before a launch; nothing
   says whether that is the standing decision.
-
-Raised 2026-09-07 by review round 6 (logbook/0073), and the next thing to rule:
 
 Raised 2026-09-07 by round 28's reading (logbook/0070), and still open after D081:
 

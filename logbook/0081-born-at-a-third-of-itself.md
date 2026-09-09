@@ -105,12 +105,12 @@ proposal left open or set without a world to read, and the smoke gives them numb
 
 **Ruled the same afternoon**, all five as recommended ("proceed with your recommendations"),
 and absorbed as D087 with the proposal deleted. The biomass ceiling is `MaximumTissueJoules`,
-beside the body count, set to 30,000 J for round 34 from round 32's mean adult tissue of
+beside the body count, set to 30,000 J for round 33 from round 32's mean adult tissue of
 3.77 J per body; the founders' default range is now the code's. Calibrating it showed that
 in a closed world of 6,000 units of matter neither ceiling can fire, since 8,000 bodies or
 30,000 J of tissue would need more matter than exists. Matter bounds biomass by
-construction, and the runaway instrument is idle until a world with influx runs again. Round 33, the
-free joint, is next and needs none of them.
+construction, and the runaway instrument is idle until a world with influx runs again. Round 34, the
+free joint, follows and needs none of them.
 
 ## The suite was 78% experiment
 

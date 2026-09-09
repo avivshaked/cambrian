@@ -16,16 +16,19 @@ detritus when a body dies. Every one of those is a movement of joules from one p
 them is a place where joules appear.
 
 The second is matter. A body is built from it at conception and returns it at death, and it
-is neither eaten nor spent. Until [D074](../DECISIONS.md#d074) the world's matter was a
-closed stock; since then a vent can add some and the floor can bury some, and those two are
+is neither eaten nor spent. Since [D087](../DECISIONS.md#d087) growth is a second moment.
+Tissue is created again as a body grows, and the matter that growth draws is locked in the
+body the same way conception's is. Until [D074](../DECISIONS.md#d074) the world's matter was
+a closed stock; since then a vent can add some and the floor can bury some, and those two are
 the only doors.
 
 ## The first book
 
 The energy book is a single identity, kept in
 [`World.cs`](../src/Evosim.Core/Ecosystem/World.cs) as three running totals. Everything
-that has ever entered. Everything that has ever left. Everything standing in the world now,
-which is the reserves in living bodies plus the joules in the water. The residual is
+that has ever entered. Everything that has ever left. Everything standing in the world now.
+That is the reserves in living bodies, the joules locked in their tissue, the joules in
+corpses not yet decayed, and the joules in the water. The residual is
 the first less the second less the third, and it has to be zero. The run report prints it
 as `audit`, as a percentage of what entered, on every row.
 
@@ -33,8 +36,9 @@ as `audit`, as a percentage of what entered, on every row.
 everything else conserved. For a while the middle clause was an aspiration, because two
 things were free. A body cost nothing to build, and a corpse was worth nothing. §5A.2c
 closed both with one number, the energy a cubic metre of tissue is worth. The parent pays
-it at a birth and the water receives it at a death. The two have to be the same
-figure or a birth-and-death cycle creates energy, so both call one method.
+part of it at a birth, the child pays the rest as it grows (D087), and the water receives
+all of it at a death. The two have to be the same figure or a birth-and-death cycle creates
+energy, so both call one method.
 
 What the identity forbids is any operation that is not a transfer. A stomach cannot read a
 density and convert it to joules unless the same joules leave the water. A sun cannot shine

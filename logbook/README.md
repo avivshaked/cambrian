@@ -3,8 +3,8 @@
 Dated entries about what actually happened: what was tried, what broke, what surprised us,
 and what the numbers were on the day.
 
-This is the fifth document in the set described in [`CLAUDE.md`](../CLAUDE.md). The other
-four describe the system as it *currently stands*. This one describes how it got there, and
+This is one of the documents described in [`CLAUDE.md`](../CLAUDE.md). The others
+describe the system as it *currently stands*. This one describes how it got there, and
 it is the only one allowed to be out of date, because it is history, and history doesn't
 drift.
 
@@ -140,11 +140,16 @@ leaves the world instead of being fixed.
 | ***matter sink*** | the speed at which free matter settles toward the floor |
 | ***burial*** | the fraction of floor-layer matter removed from the world each second, the outflow that lets the stock level off |
 | ***patch*** | one of the world's spatial regions; since the shared box (D077) it is a literal 10 × 10 m zone read from a body's position |
+| ***vertex*** | an amount of water held at a point rather than in a cell, the representation of rounds 30 and 31 (D083) |
+| ***grid*** and ***cell*** | the water as cells that hold amounts, the representation from round 32 onward (D086) |
+| ***corpse*** | a dead body that sinks and decays into the water over about two minutes rather than releasing it all at once (D086) |
 | ***crowded stillbirth*** | the `crowded` column: a birth refused because no free space could be found beside the parent |
 | ***goal rule*** | D063 in `DECISIONS.md`, the pass/fail criterion a world must meet. In brief: one connected stomach lineage alive and breeding to the end of a 30,000-s run, scored per seed, so "4 of 5" means four seeds passed it |
 | ***simHash*** and ***coreHash*** | fingerprints of the exact source code a run was built from, the Unity side and the `Evosim.Core` side, so two runs can be known to share a build |
 | ***fine step*** | dt 0.01 s, the step at which results count |
 | ***fast step*** | 0.02, a screening step, three times quicker and less trustworthy on depth and movement |
+| ***added mass*** | the water a body drags with it when it accelerates, priced from the movement build onward (D081) |
+| ***birth fraction*** and ***adult scale*** | a child's start as a fraction of the parent's own tissue, and the scalar that grows its body plan to its adult size, both genome dials from round 33 onward (D087) |
 
 Last, the vocabulary of reproducibility, from
 [0069](0069-the-shared-world-does-not-replay.md) onward.
@@ -171,9 +176,20 @@ These are the report columns the entries quote, with what each number means.
 | `exudation` | the share of a producer's light intake it releases into the water while alive, food for the chain (D070); `exudation 0.15` in a header is that setting |
 | `det deep` | detritus energy density (J/m³) in the deep water — the chain's larder |
 | `mat top` | free matter density at the surface — what conceptions are paid from |
-| `mat blk` | conceptions refused for want of matter since the last row — the drought gauge |
+| `mat blk` | conceptions refused for want of matter since the last row — the drought gauge, a per-window count that scales with the population, not an absolute threshold |
 | `floor` | creatures the population floor spawned since the last row — 0 means the world is on its own |
 | `gen min` / `gen max` | lowest and highest generation alive — `gen min` 0 means founders are still present |
+| `vtx` | the vertex world's detritus/matter counts against the vertex cap; a grid world prints a dash here instead |
+| `mat resid` | the matter identity's residual — must read 0, the same as `audit` |
+| `mat short` | matter a take delivered short of what its gate promised at conception |
+| `corpses` | dead bodies still standing and decaying into the fields, rather than releasing everything at death (only nonzero with corpse decay on) |
+| `diverged` | bodies dumped and killed for going non-finite or outside the world's box — a counted death, and a run with any is read with that caveat |
+| `stillb` | the stillbirth total — reads 0 in a healthy run |
+| `mat orphan` | matter charged to a body that no longer exists — must read 0, an invariant |
+| `body frac` | a newborn's body at birth as a fraction of its adult size |
+| `adult scale` | the genome's `AdultScale` dial, the scalar grown into the body plan's size |
+| `invest` | the genome's `BirthInvestment` dial, the fraction of the parent's own tissue value spent on a birth |
+| `brood` | the litter size, `BroodSize` |
 
 None of this is specification. What the mechanisms *are* lives in
 [`DESIGN.md`](../DESIGN.md), and the reasoning in [`DECISIONS.md`](../DECISIONS.md). This

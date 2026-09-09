@@ -7,6 +7,13 @@ the git history. Built on `scratch/predation-survey.md`, DESIGN.md §5A.3 and §
 D077. For the ruling after round 28 and the movement round (D075's order). Absorbed into
 DECISIONS.md on ruling, then deleted.*
 
+> **Premises moved, 2026-09-09.** D086 made the water a grid (a body feeds from the cell
+> holding its centre, and a corpse is a particle that sinks and decays) and D087 made
+> bodies grow (colliders, mass and anchors are reset in place every growth step, and a
+> newborn is a fraction of its adult). So the integrity pool cannot be pinned at birth, the
+> resize this proposal said was not possible is built, and every "layer" below is a cell.
+> The proposal is re-cut before it is put up for ruling.
+
 ## What the world now has that it did not
 
 Creatures share one volume and touch. Round 28's arms count 300 to 1,500 contact pairs

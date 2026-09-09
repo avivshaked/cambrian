@@ -21,7 +21,9 @@ opening the pull request is the grant.
 - **Enable the pre-commit guard** with `git config core.hooksPath scripts/githooks`. It
   blocks copyrighted PDFs, secrets, Unity build output and files over 5 MB, and a finding
   is real until proven otherwise.
-- **Run the tests** for anything that touches `src/Evosim.Core`, with `./scripts/core-test.ps1`.
+- **Run the tests** for anything that touches `src/Evosim.Core`, with `./scripts/core-test.ps1`,
+  and `./scripts/core-test.ps1 -All` if you touched anything under the `Slow` trait (the
+  experiments and the snapshot scan).
   Anything that touches the clade scorer runs `scripts/tests/clade-score/run-tests.ps1`.
 - **Write prose to [`STYLE.md`](STYLE.md)** and run `python scripts/style-check.py` on the
   file. The logbook and the primer are read by people as well as agents, and they are meant

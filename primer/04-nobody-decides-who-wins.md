@@ -53,8 +53,9 @@ other ways, from nutrients in the water and from tissue they touch, and that is 
 herbivores and carnivores come from later.
 
 The third is that **enough surplus makes a copy**. A creature above a threshold pays energy
-out of its own reserve to produce mutated offspring. How much it gives each one, and how
-many it makes, are heritable traits rather than settings.
+out of its own reserve to produce mutated offspring. How much of itself it banks for them,
+how many it splits that over, and how large it grows are heritable traits rather than
+settings. Three dials since D087; two until then.
 
 Nothing in those rules mentions swimming. Whether swimming is worth doing is a question the
 world answers rather than one we answer for it. And a creature that just sits there is not
@@ -212,8 +213,9 @@ was nothing for a scavenger to scavenge, and the whole detritus half of the worl
 fuel.
 
 Both are fixed by one number, and it has to be one number. **What a cubic metre of tissue is
-worth is also what it costs**. The parent pays it to build the body, and the world gets it
-back as detritus when that body dies.
+worth is also what it costs**. The parent pays for part of the body at birth and the child
+buys the rest as it grows, at the same price. The world gets all of it back when that body
+dies.
 
 If those two figures ever differed, birth followed by death would create or destroy energy.
 That is a free lunch put there by us rather than found by evolution, and it is the one thing
@@ -288,6 +290,13 @@ enough to be reassured.
 
 The thing that made them visible was insisting the books balance.
 
+## Afterword
+
+Two things moved after this was written. A parent now pays a fraction of a body and the
+child buys the rest as it grows, at the same price per cubic metre. The one-number argument
+holds through both purchases (D087). And a corpse now stands for a while before it becomes
+detritus, so it is a fourth term in the standing equality above (D086).
+
 ## Sources
 
 | Key | Used here for |
@@ -339,7 +348,7 @@ Seven things here are mine rather than the literature's.
 | [`World.cs`](../src/Evosim.Core/Ecosystem/World.cs) | the loop: earn, spend, breed, starve, and `Observe`, the one-way seam the simulator pushes measurements through |
 | [`Ecosystem.cs`](../unity/Assets/Evosim/Sim/Ecosystem.cs) | the other side of that seam: physics steps, the metabolic clock, bodies built and destroyed as creatures are born and die |
 | [`LightField.cs`](../src/Evosim.Core/Environment/LightField.cs) | the finite sun, and who shades whom |
-| [`NutrientField.cs`](../src/Evosim.Core/Environment/NutrientField.cs) | dead matter in the water, sinking, and what is left after everyone has fed |
+| [`GridField.cs`](../src/Evosim.Core/Environment/GridField.cs) | dead matter in the water as cells that hold amounts, sinking, and what is left after everyone has fed (D086); `NutrientField.cs` is the cell field it replaced |
 | [`CellType.cs`](../src/Evosim.Core/Cells/CellType.cs) | what a part is made of, and how that decides how it earns |
 | [`CalibrationSweep.cs`](../src/Evosim.Core.Tests/CalibrationSweep.cs) | the experiment, and the two tables above |
 | [`DESIGN.md`](../DESIGN.md) §5A | the specification, and §5A.7 for the failure modes this is watched for |

@@ -4,7 +4,7 @@
 written before the Editor was installed; the measurements answered it. The solver
 parallelism it infers from scaling is qualified by D078: the shared world replays only with
 the physics on one thread.
-**Blocks:** Milestones 1–4. This is risk 11.1 in [`../../DESIGN.md`](../../DESIGN.md).
+**Blocked:** Milestones 1–4, all since met; kept as the record behind DESIGN §11.1.
 **Expected effort:** ~1 day
 **Disposable:** yes — this code is thrown away once the question is answered.
 
@@ -144,7 +144,7 @@ performance detail — record it if found.
 
 | Outcome | Meaning | Action |
 |---|---|---|
-| All targets met | Architecture confirmed | Proceed to Milestone 1, delete this spike |
+| All targets met | Architecture confirmed | Proceed to Milestone 1, delete this spike (kept instead, as the record) |
 | M1/M2 fail, pooling works | Rebuild is expensive but avoidable | Adopt pooling, note the topology constraint in §4.2, proceed |
 | M1/M2 fail, pooling blocked by topology | Morphology can't vary freely within a batch | Redesign the batching strategy before Milestone 1 |
 | **M3 scales linearly** | **No island parallelism — §6.3 is invalid** | **Escalate to DOTS / Unity Physics now**, revise §6 |

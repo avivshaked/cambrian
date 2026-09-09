@@ -23,15 +23,15 @@ plans**, which is what an open-ended ecosystem is being built to produce.
 > brains, and energy is a conserved budget audited to 0.0000% across the whole food web. A
 > finite competed-for sun, currents and mixing, senescence, a matter currency, a buoyancy
 > organ, living excretion, marine snow and a vent are all in and measured
-> ([`DECISIONS.md`](DECISIONS.md) D023–D079). Twenty-eight rounds, each read by a person against a rule written down before launch,
+> ([`DECISIONS.md`](DECISIONS.md) D023–D087). Thirty-three rounds, each read by a person against a rule written down before launch,
 > ([logbook/0036](logbook/0036-the-floor-gives-back.md) onward) found the constraint one
 > layer at a time — the floor, the drowning, the matter ratchet, the stomach's gearing — and
 > the last of them was the flux: the second trophic level was fed at one percent of the
-> first because producers fed the water only by dying. With exudation (D070) the standing
-> goal is met, 4 of 5 seeds in [logbook/0054](logbook/0054-the-confirmation.md): a
-> connected absorptive clade alive and breeding through two lifetimes, on an inherited
-> producer lineage, floor closed. The failing seed named the next constraint — matter at
-> depth (D071, screening). Movement has never paid its energy cost — the cost side is
+> first because producers fed the water only by dying. The standing goal has been met, most
+> recently five seeds of five in round 30 (`logbook/0075`); the water then became a grid of
+> cells and bodies now grow (D086, D087), and the open constraint is how a line of eaters
+> recruits. The grid's base round named the next constraint: its lines of eaters thin without
+recruiting (logbook/0079). Movement has never paid its energy cost — the cost side is
 > closed, the prize side is open — and throughput binds every remaining question.
 
 ---
@@ -286,7 +286,7 @@ timings are meaningless. See §M3 in [the spike spec](spikes/01-articulation-bod
 
 `Evosim.Core` — the genome, the development that grows a creature from it, the cell types,
 mutation and serialization — has no `UnityEngine` dependency, so it builds and tests as
-ordinary C# in under a minute (531 tests as of 2026-09-07). **No .NET SDK is required:** the script uses a system-wide one
+ordinary C# in about a minute (592 tests as of 2026-09-09; `-All` adds the slow experiments and takes far longer). **No .NET SDK is required:** the script uses a system-wide one
 if you have it and otherwise falls back to the complete .NET 8 SDK that ships inside the
 Unity install.
 
@@ -343,7 +343,10 @@ with the physics on one thread, replay.
    `Evosim > Rebuild Theatre Scene` and open it again.
 3. Select `Theatre Runner` in the Hierarchy. In the Inspector set `Mode` to `World` and
    put a run directory in `Run Directory` — an arm directory such as `runs/r27-s4` (its
-   newest run is taken) or the dated directory inside it.
+   newest run is taken) or the dated directory inside it. A run replays only under the
+   build that recorded it, and the farm compiles from the main tree, so every code change
+   orphans the runs before it; the growth build of 2026-09-09 orphaned every run then on
+   disk (HANDOFF item 6b).
 4. Optional: `Seek To Seconds` runs the world unrendered to that simulated second, then
    renders from there. `K` triggers it again later.
 5. Press Play.

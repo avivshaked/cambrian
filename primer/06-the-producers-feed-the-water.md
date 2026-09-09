@@ -19,8 +19,8 @@ above it shade.
 
 An *absorptive* part earns from dead matter dissolved in the water around it. The primer
 calls such a part a stomach, because that is what it is. What it feeds on is the nutrient
-field, [`NutrientField.cs`](../src/Evosim.Core/Environment/NutrientField.cs), which corpses
-feed and which sinks slowly toward the floor.
+field, [`NutrientField.cs`](../src/Evosim.Core/Environment/NutrientField.cs) (the grid,
+`GridField.cs`, since D086), which corpses feed and which sinks slowly toward the floor.
 
 A stomach sweeps some volume of water per second and keeps the energy it finds there. That
 sweep rate is its *clearance*, and [`DESIGN.md` §5A.2c](../DESIGN.md) owns the number.
@@ -268,6 +268,13 @@ measurement says the world is as large as its matter allows and no larger.
 
 Whether to make it larger, and how, is the next thing the owner will be asked.
 
+## Afterword
+
+The prices in this piece are the prices those rounds ran at. Since D087 (2026-09-09) a child
+costs a fraction of its parent's own tissue rather than an endowment in joules. It is born
+small and grows, so the arithmetic of what a stomach can earn in a lifetime is different from
+here on. [Logbook 0081](../logbook/0081-born-at-a-third-of-itself.md) is the build.
+
 ## Sources
 
 | Key | Used here for |
@@ -279,7 +286,7 @@ Whether to make it larger, and how, is the next thing the owner will be asked.
 | `[ED21]` | Producer-to-herbivore transfer efficiency of about thirteen percent |
 | `[PC95]` | The ten-percent rule's provenance: measured between trophic levels two and four, not at the base |
 
-Seven things here are mine rather than the literature's.
+Eight things here are mine rather than the literature's.
 
 - **The one-percent-against-ten-percent comparison** is this project's inference. The
   world's
@@ -307,13 +314,17 @@ Seven things here are mine rather than the literature's.
 - **The ruling that a mutant root is not required** is a design choice by the owner rather
   than a finding. The primer reports it because the earlier writing had assumed otherwise.
 
+- **The afterword's reading of what D087 changes for a stomach's arithmetic** is the
+  author's; the ruling itself is in [`DECISIONS.md` D087](../DECISIONS.md#d087).
+
 ## Where it is
 
 | file | what it holds |
 |---|---|
 | [`Metabolism.cs`](../src/Evosim.Core/Ecosystem/Metabolism.cs) | the leak, charged against a producer's net before anything else |
 | [`World.cs`](../src/Evosim.Core/Ecosystem/World.cs) | the flux totals the instrument reads: deposited, exuded, taken |
-| [`NutrientField.cs`](../src/Evosim.Core/Environment/NutrientField.cs) | the field the leak lands in, and the sink that moves it |
+| [`NutrientField.cs`](../src/Evosim.Core/Environment/NutrientField.cs) | the field the leak lands in, and the sink that moves it, before D086 |
+| [`GridField.cs`](../src/Evosim.Core/Environment/GridField.cs) | the field the leak lands in now (D086) |
 | [`LedgerForecast.cs`](../src/Evosim.Core/Ecosystem/LedgerForecast.cs) | the calculator: one body, one world, break-even and R0 without Unity |
 | [`ledger.ps1`](../scripts/ledger.ps1), [`analyse-arm.ps1`](../scripts/analyse-arm.ps1) | asking the ledger, and reading a run by named column |
 | [`DESIGN.md`](../DESIGN.md) §5A.2c, §6.2, §7 | the rule and its number, then the step policy and the determinism rule |

@@ -2,10 +2,10 @@
 
 **Status:** Draft 5 — endogenous selection (§5A) specified, then largely implemented and
 measured; findings are recorded inline with ✅/⚠/strikethrough marks as they land, and the
-decision trail is `DECISIONS.md` D017–D050. Milestones 0–5 of §10 are complete (out of the
+decision trail is `DECISIONS.md` D017–D087. Milestones 0–5 of §10 are complete (out of the
 listed order); perception (§4.4) is partial. There is no fitness function and no directed
 search — that is §5A working as specified, not something missing.
-**Date:** 2026-08-29 (draft 5 specified 2026-08-07; document begun 2026-08-02)
+**Date:** 2026-09-09 (draft 5 specified 2026-08-07; document begun 2026-08-02)
 
 A Karl Sims–style evolved-virtual-creatures simulator in Unity. Genomes encode both
 **body plan** and **brain**; creatures are grown from a directed graph and evaluated in
@@ -20,6 +20,9 @@ genuine research instrument with reproducible runs and exportable data.
 ---
 
 ## 0. Changelog — draft 1 → draft 2
+
+Sections are appended by letter as they land and are not in date order after 0s; read the
+date on each.
 
 Draft 1 was written from first principles before any literature was read. Three papers
 have since been read in full. Seven things changed, and one whole failure mode had been
@@ -289,7 +292,7 @@ overhead and spends exactly that; each child's share is split into body and rese
 `NewbornReserveFraction`, its birth fraction is the body over its adult tissue value, capped
 at one and refused under `MinNewbornPartKilograms`. The child is developed once at its adult
 size and scaled by the cube root of its fraction (`Phenotype.Scaled`; `Organism.AdultPhenotype`,
-`BodyFraction`). `World.Grow` moves reserve into tissue and matter from the body's cell into
+`BodyFraction`). The world's growth step (`World.Grow`, private) moves reserve into tissue and matter from the body's cell into
 the body each metabolic step above `GrowthReserveFloor`, so §5A.2d's matter draw now happens
 at growth as well as at conception, and both books close by construction. The harness
 resizes the articulation in place every `GrowthStepSeconds`. `MaximumTissueJoules` ends a
@@ -569,6 +572,11 @@ Guard rails:
   whether a child lands on top of its own grandparent depends on the path taken to reach
   the node.
 
+`AdultScale`, one scalar the genome carries, multiplies every node's dimensions. Development
+runs once at that size, so the minimum-volume rule judges the adult and a newborn never loses
+a part it would have grown. What the physics gets is that phenotype scaled by the cube root
+of the body fraction (D087, §0u).
+
 The phenotype is always a **tree**, mapping cleanly onto a PhysX articulation.
 
 ### 4.3 Brain graph
@@ -749,7 +757,8 @@ control, at a fraction of the complexity.
 Perturb scalars (Gaussian); duplicate a morph node; add/remove morph edge; add/remove
 neuron; rewire neuron input (respecting §4.3); change joint type; change neuron op;
 toggle any `reflect` flag or `terminalOnly`; change `recursiveLimit`; change cell type
-(rare, §5A.3); perturb brood size and offspring endowment (§5A.6); and **graft** —
+(rare, §5A.3); perturb brood size, birth investment and adult scale (§5A.6), each under its
+own gate; and **graft** —
 attach a subgraph from genome B at a random edge of genome A.
 
 **There is no remove-node operator, and that is deliberate.** A node enters small — a
@@ -996,9 +1005,10 @@ a certain threshold, a swimbot starts looking for food. A swimbot with zero ener
 > `research/LITERATURE-REVIEW.md` §3.5 and needs a round entry there rather than a quiet
 > citation here.
 
-**What this does not change.** §4.1 genome, §4.2 development, §4.3 brain graph, §5.1–5.4
-fluid model, §6.1 assemblies, §7 reproducibility, §11.2 exploit checks. The encoding does not
-care how selection happens. Everything built through Milestone 2 remains correct.
+**What this did not change**, when it was written: §4.1 genome, §4.2 development, §4.3 brain
+graph, §5.1–5.4 fluid model, §6.1 assemblies, §7 reproducibility, §11.2 exploit checks. The
+encoding does not care how selection happens. Everything built through Milestone 2 remains
+correct. D087 has since reached §4.1 and §4.2.
 
 ### 5A.0b Generation zero: what the world starts with
 
@@ -1028,7 +1038,9 @@ strategy in one body — has to be discovered, priced, and kept because it paid.
 `Consumer`), weighted 2:1:1. `Structural` and `Link` acquire nothing, so a founder built from
 those alone has zero income against nonzero upkeep and starves with certainty in every world —
 compute spent to produce a corpse. Structure remains one mutation away; it is simply not where
-a lineage starts.
+a lineage starts. Since D087 a founder is born as a child is, at its own birth fraction with
+the newborn reserve, and draws its investment from 0.25 to 1.0, so the founding lottery
+samples the dial as well as the plan.
 
 **The half that cannot eat yet is the point.** At t=0 there is no nutrient in the water and no
 corpse to bite, so absorptive and consumer founders earn nothing and die. Their tissue becomes
@@ -1365,7 +1377,7 @@ exactly nothing. They can now scavenge the detritus pool at `CarrionYield`. Detr
 scavenger → predator is a gradient the population can actually walk.
 
 **The audit is now an equality, not a check.** `EnergyIn − EnergyOut == StandingJoules`, where
-standing energy is creature reserves plus creature bodies plus detritus. Sunlight and floor
+standing energy is creature reserves, creature bodies, corpses not yet decayed, and detritus. Sunlight and floor
 spawns are the only sources; metabolism, reproductive overhead and the loss on every feeding
 transfer are the only sinks. Measured residual over a 300 s run with births, deaths and feeding:
 **0.0000%**.
@@ -1452,13 +1464,14 @@ one of them made by the organisms.
 | **matter** | seeded once at `InitialMatterPerCubicMetre`, plus `MatterInfluxPerSecond` at the surface or the vent when the open budget is on (D074) | burial at the sea floor when the open budget is on (D074); none in the closed world, where it is only ever moved | `World.StandingMatter`, conserved only with influx and burial at zero (corrected 2026-09-07) |
 
 - **Reproduction requires matter as well as energy**, `MatterPerTissueJoule` per joule of the
-  child's tissue, drawn from the parent's own layer. No amount of sunlight builds a daughter
+  child's tissue, drawn from the parent's own cell of water (its layer, in the cell field). No amount of sunlight builds a daughter
   cell without nitrogen and phosphorus. Since D087 tissue is created at conception and again
   at every growth step, and both draw matter at the same rate; growth's draw is locked in the
   body as conception's is (§0u).
 - **A matter-starved world does not kill its inhabitants, it stops them breeding** — which is
   what happens to a nutrient-limited bloom, and is why the charge is here rather than in upkeep.
-- **Death returns it** to the layer the body died in, whence it sinks. Floor founders are exempt
+- **Death returns it** to the cell the body died in, at once, or through a corpse that sinks
+  and decays where it goes (D086). Floor founders are exempt
   because they never paid; crediting them would mine matter out of nothing.
 - **`World.Matter` is deliberately outside `StandingJoules`.** Matter is not energy, and folding
   it into §5A.2's audit would let the books balance by counting a different substance — the
@@ -1591,8 +1604,10 @@ marker that makes speciation watchable.
 
 ### 5A.6 Reproduction and death
 
-**Death** at zero energy. Tissue returns to the nutrient pool at its location and sinks,
-which is what closes the loop in §5A.2.
+**Death** at zero energy. Tissue returns to the nutrient pool at the body's own position.
+Above `CorpseDecayPerSecond` it goes through a corpse first, a particle that sinks, rides the
+current and pays itself into the water as it goes (D086). That is what closes the loop in
+§5A.2.
 
 **Reproduction** in-world, paying the offspring's starting energy out of the parent's.
 **Asexual — a mutated copy, with no recombination.** Sexual reproduction requires
@@ -1679,7 +1694,10 @@ boom-and-bust oscillation.
 extinct, it explodes, and §5A.9 puts real time at roughly 200 creatures. But killing creatures
 to stay inside a compute budget is selection by us of the worst sort — arbitrary, invisible in
 the lineage record, and biased towards whatever the cull happens to reach first. A population
-ceiling is therefore a **hard stop with a loud report**, not a silent cull.
+ceiling is therefore a **hard stop with a loud report**, not a silent cull. Since D087 a body
+is not a unit of biomass, so there are two hard stops, `MaximumPopulation` on the count and
+`MaximumTissueJoules` on the standing tissue. Both report and neither culls. In a closed-matter
+world neither can fire, since the matter bounds the biomass (D087 item 9).
 
 ### 5A.6b Is the world alive? — generation depth
 
@@ -2001,8 +2019,8 @@ without reaching `RunConfig.Hash()` is two different experiments filed under one
 
 Two things deliberately **not** tunable, and the distinction matters:
 
-- **Offspring endowment and brood size are evolved genome traits**, not config. A creature that
-  could choose its own would choose whatever is free.
+- **Brood size, birth investment and adult scale are evolved genome traits**, not config. A
+  creature that could choose its own would choose whatever is free.
 - **Lit area is a quarter of surface area.** That is Cauchy's formula — the orientation-averaged
   projected area of any convex body — not a coefficient. A tunable there would be a licence to
   break geometry.
@@ -2063,9 +2081,10 @@ it configures* (logbook/0007, logbook/0008, logbook/0013).
   remineralisation rate `NutrientRemineralisationPerSecond` joins this list as unmeasured, and
   the ratio D/v of mixing to sink — the length scale of the deep-water gradient it feeds — is
   the number the two knobs together set
-- ~~Reproduction threshold and offspring endowment~~ — **resolved by §5A.6**: endowment and
-  brood size are evolved genome traits, and the threshold is derived from them. What remains
-  is the per-offspring **overhead**, which is a world constant and still unmeasured
+- ~~Reproduction threshold and offspring endowment~~ — **resolved by §5A.6**: brood size,
+  birth investment and adult scale are evolved genome traits, and the threshold is derived
+  from the first two (D087). What remains is the per-offspring **overhead**, which is a world
+  constant and still unmeasured
 - Cell-type mutation rate — "very scarce" is the requirement; the value is not known
 - Current field magnitude and correlation length
 - Starting population and world volume
@@ -2318,7 +2337,10 @@ A **snapshot row carries the organism's `id` as its first field** — the same i
 that carried it ([D075](DECISIONS.md#d075) item 2, the theatre's join). The id belongs to the
 row and not to the genome, which is a recipe shared by every creature that develops it;
 `GenomeJson.FormatVersion` is 4 from that change, and a format-3 snapshot is refused rather
-than read without ids.
+than read without ids. D087's three reproduction dials took the format to 5 on 2026-09-09, so
+a format-4 snapshot is refused too, and every genome stored before that date must be
+re-extracted from a new snapshot. This stops the theatre's Mode A on every run recorded
+before it.
 
 ---
 
@@ -2404,6 +2426,7 @@ actually needed, adopted wholesale:
 | **Depenetration velocity cap** | Solver separating overlapping parts faster than the cap | Prevent — engine configuration, not a per-creature test |
 | **Engine damping defaults** | Any physics-engine damping the design did not specify | Zero it — §5.2 is the only resistance a creature may feel |
 | **Energy balance** | Joint work ≠ ΔKE + drag dissipated, on a system with no other sink | Reject — the actuation or fluid model is not measuring what it claims |
+| **Resize displacement** | A body moving further across a growth resize than the current would carry it | Reject: the in-place resize is injecting position (D087) |
 
 Self-collision vibration is from [C18 Fig. 13, p.19], which reports that "some of the best
 stiff robots (S5) **exploit self-collisions resulting in fast vibrations to produce
@@ -2452,6 +2475,11 @@ simulator, not on the creature.**
   the leak falls monotonically with the cap (0.5 → 0.045, 0.1 → 0.032, 0.02 → 0.019 m²/s) and
   is bounded rather than eliminated. Unlike the rest of the table this is a *prevention* rather than a test, and it is
   the momentum conservation row that detects it if the setting is ever lost.
+- **Resize displacement.** D087's in-place growth resize sets a part's extents and both
+  anchors without rebuilding the articulation, and a resize is not a physics step, so it must
+  not move the root further than the current already would. The resize's own instrument read
+  0 m of displacement over 1,093 resizes in the first smoke (logbook/0081); the step-after
+  reading is blind below the current's drift.
 
 The general lesson is worth keeping: for a physical simulation, prefer *"which conservation
 law would this violate if it were wrong"* over *"does this output look reasonable."* A

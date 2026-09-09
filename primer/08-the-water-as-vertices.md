@@ -144,7 +144,7 @@ is the build and [D086](../DECISIONS.md#d086) the ruling.
   no round has yet selected for a sense that follows it.
 - **"Four faults in a day is what enforcement looks like"** is the author's judgement.
 - **The vertex world as the base** is the owner's ruling on the round's reading (D083's
-  index row), reported here.
+  index row), reported here, superseded by D086 on 2026-09-09.
 - **The afterword's reading of round 31** is the author's; logbook 0077 holds the numbers.
 
 ## Where it is
@@ -152,8 +152,9 @@ is the build and [D086](../DECISIONS.md#d086) the ruling.
 | file | what it holds |
 |---|---|
 | [`VertexField.cs`](../src/Evosim.Core/Environment/VertexField.cs) | the vertices, the kernel, feeding, transport, founding, burial, culling |
-| [`IMatterField.cs`](../src/Evosim.Core/Environment/IMatterField.cs) | the interface the world reads its water through; the cell field is the other implementation |
+| [`IMatterField.cs`](../src/Evosim.Core/Environment/IMatterField.cs) | the interface the world reads its water through; the cell field and the grid are the other two implementations |
+| [`GridField.cs`](../src/Evosim.Core/Environment/GridField.cs) | the grid that replaced this piece's subject (D086) |
 | [`VertexFieldTests.cs`](../src/Evosim.Core.Tests/VertexFieldTests.cs), [`VertexFieldExperiments.cs`](../src/Evosim.Core.Tests/VertexFieldExperiments.cs) | the sitter and the walker; the sweeps over count, mixing and speed |
-| [`DESIGN.md`](../DESIGN.md) §5A.2c | the two representations, the kernels, the walk's two diffusivities |
-| [`DECISIONS.md`](../DECISIONS.md) D083, D084, D085 | the ruling, its amendments, the mixing setting, and the water stirred less |
+| [`DESIGN.md`](../DESIGN.md) §5A.2c | the three representations, the kernels, the walk's two diffusivities |
+| [`DECISIONS.md`](../DECISIONS.md) D083, D084, D085, D086 | the ruling, its amendments, the mixing setting, the water stirred less, and the ruling that superseded it |
 | [logbook 0074](../logbook/0074-the-water-as-vertices.md), [0075](../logbook/0075-the-vertex-world-at-the-new-price.md), [0076](../logbook/0076-the-hole-refills-in-five-seconds.md) | the build and its faults, the first round, the experiments |
