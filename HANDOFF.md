@@ -23,7 +23,7 @@ answer replaced the representation: the water as a grid of cells with corpses as
 (matter cells 5 m, matter mixed at 2 m²/s on every axis, corpses at 0.005/s). Round 32,
 the grid's base round at round 31's prices and mixing, is running: `r32-s1..s5` on workers
 2 to 6 at 0.01, launched 2026-09-09 midday (`scratch/launch-r32.ps1`), pre-registered as
-logbook/0079, landing overnight. Round 33 is growth (D087, logbook/0081; `scratch/launch-r33.ps1`):
+logbook/0079, read 2026-09-09 evening: the mechanism holds in every arm, the population is higher, and the goal rule holds in two seeds of five against round 31's four, the stomach lines thinning from founding without recruiting; the grid stands as the base and the eaters' recruitment is the open question (a per-guild feeding trace and a corpses-off seed are the two reads). Round 33 is growth, running since 2026-09-09 19:00 on workers 2 to 6 (`r33-s1..s5`, `simHash 0924b9ad…`, `coreHash 621d32ee…`, commit 0b8e822) (D087, logbook/0081; `scratch/launch-r33.ps1`):
 the growth build landed on 2026-09-09 and the pre-growth world no longer exists in the code,
 so the owner's conditional ruling of that morning (growth first if its build was close) puts
 growth before the free joint. Round 34 is the free-joint test (logbook/0080, amended before
