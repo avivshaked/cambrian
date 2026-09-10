@@ -27,7 +27,7 @@ All of it under the theatre, so no recording is orphaned and the farm never know
   smallest half-extent, so that a puffed vertex lands on the collider and never past it.
   The growth resize still applies, because the transform is untouched.
 - **Joints.** A short neck between the two anchors, drawn inside the parent's footprint,
-  recomputed on every paint because bodies grow. No collider.
+  recomputed on every paint because bodies grow, and carrying no collider.
 - **The water's furniture.** Marine snow as one particle system clipped to the box in the
   shader, procedural caustics on the bed, a sand bed with a triplanar ripple normal map,
   cooled to near grey because warm sand sat on the stomachs' hue.
@@ -37,8 +37,8 @@ All of it under the theatre, so no recording is orphaned and the farm never know
 Round 35 seed 3 at 3,000 s, faithful on every sample. From above: 403 bodies, green
 producers and brown stomachs telling apart at a glance, the few near-black ones starving,
 a long segmented body reading as a chain, the bed a dim grey floor. From the side: green
-in the top twenty metres and brown below to forty-five, which is what the positions
-reader says (leaves at a mean of 12 m down, stomachs at 32). The top view checked against
+in the top twenty metres and brown below to forty-five, in agreement with the positions
+reader (leaves at a mean of 12 m down, stomachs at 32). The top view checked against
 the plot of the recorded positions at the same time: the stomach cluster, the two isolated
 stomachs and the sparse band all coincide.
 
