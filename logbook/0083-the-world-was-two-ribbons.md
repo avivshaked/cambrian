@@ -81,8 +81,15 @@ invisible to the record again.
 
 The theatre also reported that its replay of the run parted from the recording at 200 s,
 in the fourth figure of the audit. That is a second fault, separate from the ribbons,
-under investigation as this is written; replay identity was last validated at round 28 and
-three builds have landed since.
+found the same afternoon. The farm runs in batch mode and destroys a dead body inside the
+step that killed it; the theatre runs in Play mode, where Unity defers the destroy to the end
+of the frame, and the theatre takes tens of physics steps per frame, so a dead creature stayed
+in the scene as an undriven collider and a newborn could be placed inside it and shoved out.
+The replay matched the recording exactly at 100 s and parted between 100 and 200 s, which
+rules out every config, seed and cadence difference. The fix is to destroy immediately in
+either mode, in the body, the sea floor and the mesh cache, and it ships with the dispersal
+build; the headless identity check ran in edit mode and could not see this, so it gains a
+Play-mode variant.
 
 ## Sources
 
