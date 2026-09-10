@@ -196,6 +196,12 @@ against the run's own `stats.jsonl` at every sample, so a viewer knows whether t
 the run or a cousin of it. **Mode A** grows one genome from a snapshot row and drives it under its
 own brain, alone, with no economy. Both refuse a run this build did not record unless
 `Allow Source Mismatch` is ticked, in which case the overlay says it is not a faithful replay.
+**The skin** lives beside them under `unity/Assets/Theatre/` and moves no hash, so it cannot
+orphan a recording: dark-field lighting and fog, rounded meshes generated at start, a neck at
+every joint, marine snow and a sand bed, all from `TheatreSkin.cs` and `TheatreMeshes.cs`.
+`TheatreBody.shader` is the one body material, carrying the guild on a Fresnel rim over faked
+subsurface and a Voronoi mottle; its `_PuffFraction` and `TheatreMeshes.Inset` sum to one, which
+is what keeps a visual inside its collider (`research/theatre-look/README.md` is the reading).
 
 **An agent has no eyes, so it takes pictures.**
 `./scripts/theatre-snap.ps1 r35tsmoke3 -At 300,600 [-Worker 6] [-Views side,top] [-Size 900x1600]`

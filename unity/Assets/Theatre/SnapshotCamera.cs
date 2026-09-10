@@ -91,8 +91,18 @@ namespace Evosim.Theatre
         /// <summary>Pixels per cell of the label's font. Three is legible at 1600 across.</summary>
         public const int LabelScale = 3;
 
-        /// <summary>The sandbox's water, so the two views look like the same project.</summary>
-        public Color Water = new Color(0.05f, 0.13f, 0.20f);
+        /// <summary>
+        /// The water: the frame's background and the colour the fog carries everything towards.
+        /// </summary>
+        /// <remarks>
+        /// Near black rather than the sandbox's blue since the skin landed. A dark field is the
+        /// arrangement plankton is photographed under and the one the theatre's shaders are written
+        /// for (research/theatre-look/README.md, "Lighting, before any material"); against a lit
+        /// blue the rim that carries the guild is the thing that disappears. The value is
+        /// <see cref="TheatreSkin.Water"/>'s, kept in step by eye rather than by reference, since
+        /// this class must work on a scene that never built a skin.
+        /// </remarks>
+        public Color Water = new Color(0.012f, 0.032f, 0.048f);
 
         // The palette's three guilds. Duplicated as plain fields rather than shared with
         // TheatrePalette, which paints renderers through a MaterialPropertyBlock and has no
@@ -208,6 +218,7 @@ namespace Evosim.Theatre
             _camera.backgroundColor = Water;
 
             List<WaterBounds> silenced = SilenceTheWater();
+            Fog saved = FrameTheFog(box);
 
             try
             {
@@ -215,6 +226,7 @@ namespace Evosim.Theatre
             }
             finally
             {
+                saved.Restore();
                 for (int i = 0; i < silenced.Count; i++) silenced[i].enabled = true;
             }
 
@@ -251,6 +263,96 @@ namespace Evosim.Theatre
                 (boxNote != null ? "; " + boxNote : "");
 
             return png.Length;
+        }
+
+        /// <summary>What the render settings' fog was, so one render can borrow them.</summary>
+        private struct Fog
+        {
+            public bool On;
+            public FogMode Mode;
+            public Color Colour;
+            public float Density;
+            public float Start;
+            public float End;
+
+            public static Fog Save() => new Fog
+            {
+                On = RenderSettings.fog,
+                Mode = RenderSettings.fogMode,
+                Colour = RenderSettings.fogColor,
+                Density = RenderSettings.fogDensity,
+                Start = RenderSettings.fogStartDistance,
+                End = RenderSettings.fogEndDistance,
+            };
+
+            public void Restore()
+            {
+                RenderSettings.fog = On;
+                RenderSettings.fogMode = Mode;
+                RenderSettings.fogColor = Colour;
+                RenderSettings.fogDensity = Density;
+                RenderSettings.fogStartDistance = Start;
+                RenderSettings.fogEndDistance = End;
+            }
+        }
+
+        /// <summary>
+        /// Rescales the fog to the span this view is looking through, for the length of one
+        /// render, and hands back what it changed.
+        /// </summary>
+        /// <remarks>
+        /// <b>Why the picture does not simply use the Play mode fog.</b>
+        /// <see cref="TheatreSkin"/> sets an exponential squared fog tuned for a person flying
+        /// inside the water, where twenty metres should be dim. Three of these four views are
+        /// orthographic, and an orthographic camera stands off the whole box before it starts:
+        /// the top view of the campaign's sixty metre column looks through a hundred and twenty
+        /// metres of it, at which that density is black. The first constraint on these pictures is
+        /// that they can be read, so the fog here is linear and spanned across the box: it starts
+        /// at the near face and reaches a little past the far one, which leaves about a third of a
+        /// body's light at the back wall whatever the box's size. The look is the same look; only
+        /// the depth it is measured over follows the frame.
+        /// </remarks>
+        private Fog FrameTheFog(Bounds box)
+        {
+            Fog saved = Fog.Save();
+
+            if (!RenderSettings.fog) return saved;
+
+            Vector3 eye = _camera.transform.position;
+            Vector3 forward = _camera.transform.forward;
+            Vector3 half = 0.5f * box.size;
+
+            float near = float.MaxValue;
+            float far = float.MinValue;
+
+            for (int sx = -1; sx <= 1; sx += 2)
+            {
+                for (int sy = -1; sy <= 1; sy += 2)
+                {
+                    for (int sz = -1; sz <= 1; sz += 2)
+                    {
+                        Vector3 corner = box.center +
+                            new Vector3(sx * half.x, sy * half.y, sz * half.z);
+
+                        float along = Vector3.Dot(corner - eye, forward);
+
+                        near = Mathf.Min(near, along);
+                        far = Mathf.Max(far, along);
+                    }
+                }
+            }
+
+            near = Mathf.Max(0f, near);
+            float span = Mathf.Max(0.5f, far - near);
+
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogStartDistance = near;
+
+            // 1.54 spans is where a linear fog leaves 35% of the light at the far wall, which is
+            // "dim but present" without turning the back of the box into background.
+            RenderSettings.fogEndDistance = near + 1.54f * span;
+
+            return saved;
         }
 
         /// <summary>
@@ -298,7 +400,7 @@ namespace Evosim.Theatre
         /// box at all, only a lattice a hundred metres apart in otherwise empty space, so there
         /// the frame is four tiles of it and the remark says the picture is of a lattice.
         /// </remarks>
-        private static Bounds BoxOf(TheatreReplay replay, out string note)
+        public static Bounds BoxOf(TheatreReplay replay, out string note)
         {
             note = null;
             RunConfig config = replay.Record.Config;

@@ -132,6 +132,18 @@ namespace Evosim.Theatre
         private readonly CreatureIdMap _map = new CreatureIdMap();
         private readonly TheatrePalette _palette = new TheatrePalette();
 
+        /// <summary>
+        /// The look: dark field lighting, the water's fog, the sea bed, the snow, and the
+        /// materials the palette paints with.
+        /// </summary>
+        /// <remarks>
+        /// A plain object and safe in a field initializer, unlike the palette's property block:
+        /// nothing in its constructor makes an engine object. It lives under
+        /// <c>Assets/Theatre</c>, so none of it is in <c>simHash</c> and a change to the look
+        /// cannot orphan a recording.
+        /// </remarks>
+        private readonly TheatreSkin _skin = new TheatreSkin();
+
         private string _error;
         private double _pending;
         private bool _seeking;
@@ -166,6 +178,15 @@ namespace Evosim.Theatre
 
         private void Start()
         {
+            // The skin first, and the scene's own light off with it: the shaders the palette
+            // paints with come from here, and a body gathered before the material exists would
+            // keep the plain one until its root changed.
+            Camera view = FlyCamera != null ? FlyCamera.GetComponent<Camera>() : null;
+
+            _skin.Apply(view);
+            _skin.SilenceSceneLights();
+            _palette.Skin = _skin;
+
             _palette.Photosynthetic = PhotosyntheticColour;
             _palette.Absorptive = AbsorptiveColour;
             _palette.Structural = StructuralColour;
@@ -257,7 +278,15 @@ namespace Evosim.Theatre
                 {
                     Water.Show(water.WorldDepthMetres, WaterExtentMetres, Ecosystem.TileSpacing);
                 }
+
+                // The skin's bed is a real renderer with sand on it, so the immediate mode quad
+                // goes; the grid and the seams above it stay.
+                Water.DrawBed = false;
             }
+
+            // The box from the run's own config, taken from the one place that works it out
+            // (SnapshotCamera.BoxOf) rather than a second copy of sqrt(area / K) here.
+            _skin.Dress(SnapshotCamera.BoxOf(_replay, out _));
 
             if (SeekToSeconds > 0f) BeginSeek(SeekToSeconds);
         }
@@ -303,7 +332,18 @@ namespace Evosim.Theatre
             if (FlyCamera != null) FlyCamera.Follow(_solo.Instance.Root.transform, _solo.BodyRadius());
 
             // A tighter grid: one creature is metres across, not kilometres.
-            if (Water != null) Water.Show(config.WorldDepthMetres, 40f, 5f);
+            if (Water != null)
+            {
+                Water.Show(config.WorldDepthMetres, 40f, 5f);
+                Water.DrawBed = false;
+            }
+
+            // Mode A has no box, so the skin is dressed around the creature: the same water and
+            // the same snow, over a footprint a viewer can see the edges of.
+            float depth = Mathf.Max(1f, config.WorldDepthMetres);
+
+            _skin.Dress(new Bounds(
+                new Vector3(0f, -0.5f * depth, 0f), new Vector3(40f, depth, 40f)));
 
             Debug.Log(
                 $"[Theatre] solo: {description}, {_solo.Phenotype.PartCount} parts, " +
@@ -318,13 +358,26 @@ namespace Evosim.Theatre
             _solo = null;
             _map.Clear();
             _palette.Clear();
-            if (Water != null) Water.Hide();
+            _skin.Undress();
+
+            if (Water != null)
+            {
+                Water.Hide();
+                Water.DrawBed = true;
+            }
             _selectedId = -1;
             _pending = 0d;
             _seeking = false;
         }
 
         private void OnDisable() => Close();
+
+        /// <summary>
+        /// Puts the render settings back. The fog and the ambient are global, so leaving Play mode
+        /// with the theatre's dark field still set would follow the owner into the next scene they
+        /// opened.
+        /// </summary>
+        private void OnDestroy() => _skin.Dispose();
 
         // ---------------------------------------------------------------- the loop
 

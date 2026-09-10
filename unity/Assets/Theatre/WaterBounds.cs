@@ -62,6 +62,18 @@ namespace Evosim.Theatre
         /// </remarks>
         public Color BedColour = new Color(0.28f, 0.23f, 0.16f, 1f);
 
+        /// <summary>
+        /// Draw the filled floor quad. Turned off while <see cref="TheatreSkin"/> owns the bed.
+        /// </summary>
+        /// <remarks>
+        /// The skin puts a real renderer on the sea floor with a sand material on it, and two beds
+        /// at the same height would z fight along the whole floor of the picture. This one is the
+        /// one that goes: it is a flat colour drawn in immediate mode, and it is already turned off
+        /// entirely during a snapshot render (see <c>SnapshotCamera.SilenceTheWater</c>), so the
+        /// grid lines above it are what this component is actually for.
+        /// </remarks>
+        public bool DrawBed = true;
+
         /// <summary>Where a patch seam is drawn: x = k·W, for k in 1..K−1 — D077.</summary>
         public Color SeamColour = new Color(0.95f, 0.85f, 0.45f, 0.55f);
 
@@ -144,7 +156,7 @@ namespace Evosim.Theatre
             GL.PushMatrix();
 
             // The bed first and the lines after, so the grid and the seams read on top of it.
-            if (_boxWidth > 0f)
+            if (_boxWidth > 0f && DrawBed)
             {
                 GL.Begin(GL.QUADS);
                 Bed();
