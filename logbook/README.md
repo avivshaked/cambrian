@@ -284,3 +284,4 @@ key only translates the entries' reporting shorthand.
 | [0083](0083-the-world-was-two-ribbons.md) | 2026-09-10 | The world was two ribbons |
 | [0084](0084-what-still-stands.md) | 2026-09-10 | What still stands |
 | [0085](0085-the-water-carries-now.md) | 2026-09-10 | The water carries now |
+| [0086](0086-seen-from-above.md) | 2026-09-10 | Seen from above |

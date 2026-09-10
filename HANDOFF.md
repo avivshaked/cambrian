@@ -19,7 +19,15 @@ children. The table carries `cols`, `cols abs`, `x sd`. The viewing arm `r35v-s3
 pass; the owner's sequence is to see the fixed world first, then rule on 0084's knob list
 (dispersal radius, box shape, speed and period, founders' reservation, mixing, prices,
 corpses, the mass floor, shading's length scale), then the retries in 0084's bin 3. Round 34
-waits behind that. `mean m/s` reads the water now; a relative-speed column does not exist.**
+waits behind that. `mean m/s` reads the water now; a relative-speed column does not exist.
+The owner delegated the theatre pass (2026-09-10 late): the agent photographs runs headless
+(`TheatreSnapshot`, `scripts/theatre-snap.ps1`) and reads `positions.jsonl`
+(`scripts/positions-read.py`), both built and committed the same evening; logbook/0086 is the
+first look, and the old-rules recreation `r35old-s3b` (dispersal 0, rolls) is the before
+picture, 23 columns against 100. A non-finite link killed a process (`r35old-s3`) and the
+finiteness check now reads every link. Five questions are in front of the owner: the
+dispersal radius (recommend keep 5 m), the box's shape (not yet), the current's speed
+(recommend 0.1 m/s), founders reserving the adult (recommend yes), matplotlib for the reader.**
 **Round 33, the growth base, is read (logbook/0082, 2026-09-10 morning): the goal rule in five
 seeds of five, every stomach line recruiting and four of five founded by a late child; adult
 scale, investment and litter walked the same way in every seed and stopped at the mass floor,
