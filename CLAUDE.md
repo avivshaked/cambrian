@@ -484,7 +484,14 @@ actually verifying it.
   `LightField.Contribute`, logbook/0077). Since 2026-09-08 the harness's check and Core's
   `Observe` guard read the height against the world's box with room
   (`World.HeightIsInTheWorld`: the depth above the surface, twice the depth below the floor),
-  and such a body dies as the same counted `Diverged` death.
+  and such a body dies as the same counted `Diverged` death. **A non-finite link is a diverged body too, and until 2026-09-10 only the root
+  was read**: `CheckFinite` ran at the metabolic cadence on the root alone, the chemical sense
+  read every part's transform on every physics step, and `r35old-s3` died with the whole
+  process at 618 s when a link went non-finite between two checks and the grid refused the
+  point (`status error`, no `diverged/` dump; round 33's three divergences were one-part
+  bodies, so the root check was lucky). From that build the check reads every link and runs
+  again before the sensors on any step where a birth or a resize moved a body, and the grid's
+  refusal names a non-finite position rather than `FieldPoint.At`.
 - **The shared world does not replay unless the physics step runs on one thread.** Same
   genome, seed, config and build on the same worker gave six realisations of one world, every
   pair identical for ~148,000 steps and then parting in one body's velocity by one or two ulp
