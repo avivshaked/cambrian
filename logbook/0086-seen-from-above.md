@@ -48,7 +48,11 @@ D088's tunables and the loader refuses it rather than defaulting them. `r35old-s
 same launcher with dispersal 0 and the rolls, seed 3 at dt 0.02 for 3,000 s: D077's placer
 and D037's current under the new build, the old rules and not the old run. Its table at
 3,000 s reads 792 bodies in 23 of 100 columns, `x sd` 4.5, mean depth 6 m, both books
-closed. Six hundred seconds in, the new world had already put 119 bodies in 71 columns. The difference is
+closed. From above at 3,000 s it is 0083's picture exactly: two ribbons the width of the
+box, one in the first patch and one in the fourth, a metre thick, with seven bodies loose
+between them and the second and third patches empty; the replay matched the recording on
+all thirty samples. Six hundred seconds in, the new world had already put 119 bodies in
+71 columns. The difference is
 not the population, which the fast step and the surface film confound (0056), and not the
 depth; it is the twenty columns against a hundred.
 
