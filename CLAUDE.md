@@ -591,7 +591,13 @@ actually verifying it.
   `resizeJumpMetres` is exact and read 0, but `resizeStepMetres` reads the root only and
   cannot see a snap smaller than the current's drift (15 cm per step at 0.3 m/s), so a
   resize suspected of throwing a body is read from a per-link instrument that does not
-  exist yet, and from `diverged`. `mat orphan` has read of the order of 1e-4 units on 6,000
+  exist yet, and from `diverged`. **`conceptionsUnderMassFloor` counts attempts, not parents**:
+  a refused parent keeps its reserve and draws again next step with a fresh mutant, so round
+  33's two million per arm is thirty to forty parents standing at their threshold at any
+  moment, and the floor is the sieve that shapes the litter (logbook/0082). **The placer
+  reserves a newborn's spot at its birth radius** and the body grows up to twentyfold in
+  place; `Body.Radius` is refreshed on resize for crowding, the reservation is not, and a
+  contact divergence of three leaves in one step (`r33-s2`, 3,066.5 s) is read against it. `mat orphan` has read of the order of 1e-4 units on 6,000
   since before growth; the invariant is broken by a value the table does not round away.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),

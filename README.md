@@ -28,9 +28,9 @@ plans**, which is what an open-ended ecosystem is being built to produce.
 > layer at a time — the floor, the drowning, the matter ratchet, the stomach's gearing — and
 > the last of them was the flux: the second trophic level was fed at one percent of the
 > first because producers fed the water only by dying. The standing goal has been met, most
-> recently five seeds of five in round 30 (`logbook/0075`); the water then became a grid of
-> cells and bodies now grow (D086, D087), and the open constraint is how a line of eaters
-> recruits. The grid's base round named the next constraint: its lines of eaters thin without
+> recently five seeds of five in round 33, the first world in which bodies are born small and
+> grow (`logbook/0082`; D086, D087), with three genome dials walking the same way in every
+> seed. The grid's base round named the next constraint: its lines of eaters thin without
 recruiting (logbook/0079). Movement has never paid its energy cost — the cost side is
 > closed, the prize side is open — and throughput binds every remaining question.
 

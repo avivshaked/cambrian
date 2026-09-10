@@ -8,8 +8,15 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
-**Round 33, the growth base, is running on workers 2 to 6; when it lands, work pauses for
-the owner's theatre test (D087, logbook/0081).** **Round 30 is read (logbook/0075, 2026-09-08 evening): the vertex world at D082's prices
+**Round 33, the growth base, is read (logbook/0082, 2026-09-10 morning): the goal rule in five
+seeds of five, every stomach line recruiting and four of five founded by a late child; adult
+scale, investment and litter walked the same way in every seed and stopped at the mass floor,
+which is now a rule of the world; one contact divergence in seed 2 with the placer's birth-size
+reservation as the suspect; a cheap joint outlived founding in seed 4 to 10,000 s. Work is
+paused (owner, 2026-09-09): the owner tests the theatre on round 33's runs, the first the
+current build can replay, and nothing launches until the owner says so. Next in line: the
+placer fix (reserve the adult radius, or re-reserve on growth) before round 34, the free joint
+(logbook/0080, `scratch/launch-r34.ps1`), then a neutral-dial control.** **Round 30 is read (logbook/0075, 2026-09-08 evening): the vertex world at D082's prices
 meets the goal rule in 5 of 5, the first round to do so, with both identities closed, the
 detritus loop closed and the population within 3% of round 29's. It was the base until the grid (D086). The
 senses were carried in 1 of 5 (round 29: 3 of 5) and no jointed guild held; seed 4's line
