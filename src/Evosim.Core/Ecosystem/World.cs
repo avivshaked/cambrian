@@ -2817,7 +2817,7 @@ namespace Evosim.Core
                 // birth, and the attempt is still counted — for the trickle's sake, per the
                 // remark below, and because a floor that retried until something fitted would be
                 // packing the world rather than sampling it.
-                if (shared && !Placement.TryReserveFounder(body, ref height, out patch))
+                if (shared && !Placement.TryReserveFounder(adult, ref height, out patch))
                 {
                     CrowdedStillbirths++;
                     FloorSpawns++;
@@ -2952,7 +2952,7 @@ namespace Evosim.Core
                 // is a fact about the floor rather than a new depth for the whole cohort.
                 float placedHeight = heightY;
 
-                if (shared && !Placement.TryReserveFounder(body, ref placedHeight, out patch))
+                if (shared && !Placement.TryReserveFounder(adult, ref placedHeight, out patch))
                 {
                     CrowdedStillbirths++;
                     Inoculated++;

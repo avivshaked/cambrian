@@ -52,11 +52,16 @@ their own evolved brains, and `Evosim.Core`'s world charges upkeep, feeds, breed
 with both books closed at every sample. The water is a grid of cells (D086, logbook/0078)
 and bodies are born small and grow (D087, logbook/0081). The goal rule (D063 as amended) was
 last met five seeds of five in round 30 (logbook/0075); the grid's base round 32 read two of
-five with every mechanism prediction holding (0079); round 33, the growth base, is the first
-world in which a trait has moved by degree rather than by switch, and work pauses when it
-lands for the owner's theatre test. The open frontier: why the eaters' lines stop recruiting
-on the grid, whether a free joint survives founding (round 34, logbook/0080), and movement,
-which has never paid its energy cost (the cost side is closed, the prize side is open).
+five with every mechanism prediction holding (0079); round 33, the growth base, met it five of five
+and was the first world in which a trait moved by degree rather than by switch (0082). Then
+the theatre showed every clade as a metre-wide column (0083): a newborn beside its parent
+and a current that returned bodies. D088 (2026-09-10) replaced both, a newborn dispersed
+over a disc and a current that carries in three dimensions, and the agent's own pictures
+(0086, `scripts/theatre-snap.ps1`) show the fixed world filling the box. Round 35 is the
+base round in that world (0087); which of the earlier readings survive it is 0084's list.
+The open frontier: why the eaters' lines stop recruiting on the grid, whether a free joint
+survives founding (round 34, logbook/0080), and movement, which has never paid its energy
+cost (the cost side is closed, the prize side is open; `mean m/s` reads the water now).
 Throughput still binds: dt 0.02
 screens, 0.01 confirms (logbook/0052). Experiments are *arms*, launched with
 `scripts/run-arm.ps1` against worker copies `unity-w2`..`unity-w7` — never two processes on

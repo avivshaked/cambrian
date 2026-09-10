@@ -8,6 +8,13 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
+**Round 35, the base round in three dimensions, is launching (logbook/0087, 2026-09-10
+evening): round 33's world with D088, dispersal 5 m, transport at 0.1 m/s, founders
+reserving the adult, five seeds at 0.01 on workers 2 to 6 (`scratch/launch-r35.ps1`
+defaults). The owner ruled the five questions with "proceed with your recommendations". The
+viewing arm `r35v-s3` (0.3 m/s) was stopped at 11,100 s to free the fifth worker; its
+pictures are in 0086. Round 34, the free joint, follows on this base.**
+
 **The three-dimensional world is built (D088, logbook/0085, 2026-09-10 afternoon): a newborn
 dispersed over a 5 m disc about its parent (`EVOSIM_OFFSPRING_DISPERSAL`, 0 replays the
 record), a current that carries bodies, corpses and the grid's cells in three dimensions with

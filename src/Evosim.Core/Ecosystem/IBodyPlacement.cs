@@ -57,14 +57,14 @@ namespace Evosim.Core
         /// Reserves room anywhere in the world for a body that has no parent — a floor founder
         /// (<c>World.EnforceFloor</c>) or an inoculant (<c>World.Inoculate</c>).
         /// </summary>
-        /// <param name="body">
-        /// The developed body, for its size. <b>Still the newborn here</b>, where
-        /// <see cref="TryReserveOffspring"/> takes the adult since 2026-09-10: a founder and an
-        /// inoculant are born at their own birth fraction too (growth rule 7) and grow in place
-        /// exactly as a child does, so the same argument applies to them and the same change has
-        /// not been made, because the founder rule is the owner's to move and this one was ruled
-        /// for births. A floor spawn into a full world therefore still reserves a spot it can
-        /// grow out of.
+        /// <param name="adult">
+        /// The developed adult body, for its size, since 2026-09-10 evening: the owner ruled
+        /// ("proceed with your recommendations") that a founder and an inoculant reserve the
+        /// room they will grow into, as a child does under <see cref="TryReserveOffspring"/>.
+        /// They are born at their own birth fraction too (growth rule 7) and grow in place
+        /// exactly as a child does, so a spot reserved at the newborn was one they would grow
+        /// out of, into a neighbour. A floor spawn into a full world is refused a little more
+        /// often for it, and counted, which is the honest reading.
         /// </param>
         /// <param name="heightY">
         /// In, the depth it was drawn at; only x and z are free. Out, the depth it is actually
@@ -73,7 +73,7 @@ namespace Evosim.Core
         /// </param>
         /// <param name="patch">The patch the reserved position falls in.</param>
         /// <returns>False when the world is too full to admit it.</returns>
-        bool TryReserveFounder(Phenotype body, ref float heightY, out int patch);
+        bool TryReserveFounder(Phenotype adult, ref float heightY, out int patch);
 
         /// <summary>
         /// The patch a living creature's body is actually in — D077's "a patch is a region".

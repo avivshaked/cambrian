@@ -285,3 +285,4 @@ key only translates the entries' reporting shorthand.
 | [0084](0084-what-still-stands.md) | 2026-09-10 | What still stands |
 | [0085](0085-the-water-carries-now.md) | 2026-09-10 | The water carries now |
 | [0086](0086-seen-from-above.md) | 2026-09-10 | Seen from above |
+| [0087](0087-the-base-round-in-three-dimensions.md) | 2026-09-10 | The base round in three dimensions |
