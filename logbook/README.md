@@ -286,3 +286,4 @@ key only translates the entries' reporting shorthand.
 | [0085](0085-the-water-carries-now.md) | 2026-09-10 | The water carries now |
 | [0086](0086-seen-from-above.md) | 2026-09-10 | Seen from above |
 | [0087](0087-the-base-round-in-three-dimensions.md) | 2026-09-10 | The base round in three dimensions |
+| [0088](0088-a-skin-for-the-boxes.md) | 2026-09-10 | A skin for the boxes |

@@ -13,7 +13,8 @@ evening): round 33's world with D088, dispersal 5 m, transport at 0.1 m/s, found
 reserving the adult, five seeds at 0.01 on workers 2 to 6 (`scratch/launch-r35.ps1`
 defaults). The owner ruled the five questions with "proceed with your recommendations". The
 viewing arm `r35v-s3` (0.3 m/s) was stopped at 11,100 s to free the fifth worker; its
-pictures are in 0086. Round 34, the free joint, follows on this base.**
+pictures are in 0086. Round 34, the free joint, follows on this base. The theatre has a skin (logbook/0088,
+`research/theatre-look/`), all under `Assets/Theatre`, no hash moved.**
 
 **The three-dimensional world is built (D088, logbook/0085, 2026-09-10 afternoon): a newborn
 dispersed over a 5 m disc about its parent (`EVOSIM_OFFSPRING_DISPERSAL`, 0 replays the
