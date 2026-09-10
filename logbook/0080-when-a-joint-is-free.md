@@ -10,6 +10,15 @@
 > the growth world with round 33's same seed as its control. Every "round 32" below reads as
 > "round 33", the growth base, and the launcher is `rounds/launch-r34.ps1`, round 33's with
 > the four prices at zero. The predictions are otherwise unchanged.
+>
+> **Amended again, 2026-09-10.** Round 33 was seen in the theatre as two ribbons (logbook/0083)
+> and round 35 (logbook/0087) replaced it as the base: the same world with D088's dispersal
+> disc, the transport current at 0.1 m/s and founders reserving the adult. This round runs on
+> that world, so every "round 33" below now reads as "round 35", and the launcher is round 35's
+> with the four prices at zero. The control is round 35's same seed. One prediction changes in
+> what it means and not in its number: M4 read `spd jnt` against `spd rig` as drift, and in the
+> transport world both are the water's speed (0087's G3), so M4 is read as before and says
+> nothing about swimming either way.
 
 Every round on record ends with the swimmers gone, and round 31 (logbook/0077) named the
 wall: no jointed body survives founding, before there is anything to eat, so selection

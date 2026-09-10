@@ -1,17 +1,15 @@
-﻿# Round 34 (logbook/0080): round 33's growth world with a joint free. The muscle's idle charge, the
-# stroke's work, the neuron and the connection prices all at 0; nothing else moves. ASCII only.
-# born at a fraction of its adult size and grows into the rest, and three genome dials decide
-# how big, how many and how much. Everything else is launch-r32.ps1 verbatim. ASCII only.
+﻿# Round 34 (logbook/0080, amended twice): round 35's world with a joint free. The muscle's idle
+# charge, the stroke's work, the neuron and the connection prices all at 0; nothing else moves.
+# Written first on round 33's launcher; rebased on round 35's on 2026-09-10 when the
+# three-dimensional world became the base (logbook/0087), so it carries D088's dispersal disc,
+# the transport current at 0.1 m/s and founders reserving the adult. Everything else is
+# launch-r35.ps1 verbatim. ASCII only.
 #   ./rounds/launch-r34.ps1 -Seed 1 -Worker 2 -ExpectSimHash <hash>                       # r34-s1
 #   ./rounds/launch-r34.ps1 -Seed 1 -Worker 7 -Seconds 600 -Name r34smoke -Dt 0.02        # the smoke
-# Verify the header: everything launch-r32.ps1 lists, plus the growth token
-#   'growth reserve=0.2 floor=0.1 minkg=0.5 step=10 invest=0.25-1 scale/invest chance=0.08/0.08'
-# and in the table the four new columns 'adult scale', 'invest', 'brood', 'body frac'. The
-# tissue ceiling reads beside 'ceiling 8000' as 'maxTissue=30000' -- rule 9, see -MaxTissue below.
-# Read 'body frac' below 1 early and rising, and read 'diverged' against round 32's 0: a resize
-# that jumps a body is this build's failure mode. The jump check itself is in the Unity log
-# ('growth resize: ... max jump ... max step ...') and in stats.jsonl as resizeJumpMetres and
-# resizeStepMetres.
+# Verify the header: everything launch-r35.ps1 lists ('dispersal=5 m', 'current 0.1 m/s
+# transport'), plus 'idle 0 W/N', 'work x0' and 'neuron 0 W + 0 W/input'. Read 'jnt inh'
+# against 'alive' every 1,000 s, and 'diverged' against round 35's same seed: a free joint that
+# dies of the solver is 0080's second hypothesis.
 param(
     [Parameter(Mandatory)][int]$Seed,
     [Parameter(Mandatory)][int]$Worker,
@@ -91,12 +89,35 @@ param(
     # (mean of each snapshot's own mean; the pooled sum/count reading is close, 3.51 J). 8,000x
     # that, rounded to two significant figures, is 30,000 J -- eight population-ceilings' worth
     # of round 32-scale tissue, so this should not bind unless growth changes the scale a lot.
-    [float]$MaxTissue = 30000
+    [float]$MaxTissue = 30000,
+    # The disc a newborn is set down in, about its parent, m
+    # (RunConfig.OffspringDispersalMetres, EVOSIM_OFFSPRING_DISPERSAL). 0 is D077's touching rule
+    # and every run on file, and it takes the old code path exactly. 5 m is a first cut: a quarter
+    # of the box's 20 m length and half a patch, so a clade spreads over the water it is in within
+    # a few generations without a child being flung across the world at birth. The value is the
+    # owner's to rule on.
+    [float]$Dispersal = 5,
+    # Which current field the world runs (RunConfig.Current.Mode, EVOSIM_CURRENT_MODE).
+    # 'rolls' is D059 and D066, every run on file, and the value at which this launcher describes
+    # round 35 exactly. 'transport' is the owner's ruling of 2026-09-10: a three-dimensional
+    # divergence-free field over the whole box, drawn from the seed, which moves a body along x and
+    # z as well as up and down and carries both grids with the local water. Under 'transport' the
+    # speed below is the RMS over the box, not a peak.
+    [string]$CurrentMode = 'Transport',
+    # The current's speed, m/s. A peak under 'rolls' and an RMS over the box under 'transport',
+    # which is why it is a parameter now: the two numbers do not mean the same thing and a header
+    # that named only the number would describe two worlds identically. The transport field's
+    # fastest water runs about 2.5 times its RMS (the analytic ceiling is 4.6x), so at 1 m detritus
+    # cells and a 0.5 s metabolic step 0.3 m/s puts the Courant number near 0.7 and GridField
+    # splits the step in two rather than refusing it or clamping it. Past eight substeps, a Courant
+    # number of four, it refuses and names the arithmetic.
+    [float]$Current = 0.1
 )
 
 $s = @{
     EVOSIM_SEED = $Seed
-    EVOSIM_IRRADIANCE = 200; EVOSIM_CURRENT = 0.3; EVOSIM_MIXING = $Mixing; EVOSIM_REMIN = 0
+    EVOSIM_IRRADIANCE = 200; EVOSIM_CURRENT = $Current; EVOSIM_MIXING = $Mixing; EVOSIM_REMIN = 0
+    EVOSIM_CURRENT_MODE = $CurrentMode
     EVOSIM_EXCRETION = 0.01; EVOSIM_AREA = 100; EVOSIM_FLOOR_CLOSES = 3000; EVOSIM_MAX_POP = 8000
     EVOSIM_MAX_TISSUE = $MaxTissue
     EVOSIM_SENESCENCE = 3000; EVOSIM_EXCESS_DENSITY = 0.02
@@ -128,6 +149,8 @@ $s = @{
     EVOSIM_MIN_NEWBORN_KG = $MinNewbornKg; EVOSIM_GROWTH_STEP = $GrowthStep
     EVOSIM_INVEST_MIN = $InvestMin; EVOSIM_INVEST_MAX = $InvestMax
     EVOSIM_ADULT_SCALE_CHANCE = $AdultScaleChance; EVOSIM_INVEST_CHANCE = $InvestChance
+    # The dispersal disc. Not EVOSIM_DISPERSAL, which is D061's retired per-step patch lottery.
+    EVOSIM_OFFSPRING_DISPERSAL = $Dispersal
 }
 
 if ($DigestEvery -gt 0) { $s.EVOSIM_DIGEST_EVERY = $DigestEvery }

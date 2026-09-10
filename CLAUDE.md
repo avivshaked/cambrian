@@ -219,7 +219,11 @@ largest of its neighbours from a three-quarter angle at a distance that fills th
 box and no markers. It is a portrait of one crowd and never a census, it is never in the default
 set, and `-Carve` sets the carve depth for the run. Its Unity command line is
 `-batchmode` **without `-quit`** (the entry quits itself) and **without `-nographics`** (a picture
-needs a graphics device); `Evosim/Theatre/Snapshot Now` takes the same four of the world on screen.
+needs a graphics device); `Evosim/Theatre/Snapshot Now` takes the same four of the world on screen. **A worker's `Assets/Theatre` goes stale silently**: `new-worker.ps1` copies it with the rest, but
+nothing checks it at a render the way `simHash` checks the simulation, so a worker refreshed before
+a skin change replays faithfully in the old skin, and refuses a view it has never heard of (four
+renders on 2026-09-10 died in a minute on `'close' is not a view`). Refresh the render worker
+first; `Assets/Evosim` is unchanged by it, so the recording still replays.
 
 Keys: `Space` pause, `[` `]` pace, `K` seek, `C` colour, `F` follow, `R` reload, `H` hide,
 click to select; fly with `WASD`+`QE`, right-drag to look, wheel for speed. `EVOSIM_THEATRE_RUN`,
