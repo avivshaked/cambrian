@@ -36,8 +36,24 @@
   Worker number, default 6. Worker 1 is unity/ and is refused.
 
 .PARAMETER Views
-  Any of side, end, top, iso. All four by default. side looks along z (length by depth), end
-  along x (width by depth), top straight down (length by width), iso from above one corner.
+  Any of side, end, top, iso, close. The first four by default. side looks along z (length by
+  depth), end along x (width by depth), top straight down (length by width), iso from above one
+  corner.
+
+  close is the odd one and is never taken unless it is named. The other four frame the whole box,
+  which at 1600 px across the campaign's 20 m water is about eighty pixels to a metre and
+  twenty-four to a 0.3 m creature: enough to say where a body is and which guild it is, and
+  nowhere near enough to say what its surface does. So close throws the census away and frames
+  the largest body in the world together with the largest of its neighbours, from a three quarter
+  angle, with no box outline and no markers. It is a portrait of one crowd and never a sample:
+  nothing about the population or the spread can be read from it.
+
+.PARAMETER Carve
+  How deep the skin cuts each body inward, as a fraction of the part's smallest half-extent.
+  Default 0.2, clamped at 0.5 by the theatre. The displacement is never positive, so no setting
+  can put a visual outside its collider; what it changes is how grown rather than built a body
+  looks. Rendering the same close view at 0.1, 0.2 and 0.35 is how the depth is chosen, because
+  it is a question about a picture and not about a number.
 
 .PARAMETER Size
   Picture size as WxH. Default 1600x900. The whole box is fitted inside it, so a box taller than
@@ -60,6 +76,9 @@
 
 .EXAMPLE
   ./scripts/theatre-snap.ps1 r33-s3 -At 1000,5000,20000 -Worker 6 -Views side,top
+
+.EXAMPLE
+  ./scripts/theatre-snap.ps1 r35-s1 -At 5000 -Views close -Carve 0.35 -Worker 7
 #>
 [CmdletBinding()]
 param(
@@ -68,6 +87,7 @@ param(
     [int]$Worker = 6,
     [string[]]$Views = @(),
     [string]$Size = '1600x900',
+    [double]$Carve = 0.2,
     [string]$Out,
     [switch]$AllowSourceMismatch,
     [int]$WallMinutes = 30
@@ -115,7 +135,7 @@ foreach ($t in $timeList) {
 }
 
 $viewNames = @(Split-List $Views)
-$known = @('side', 'end', 'top', 'iso')
+$known = @('side', 'end', 'top', 'iso', 'close')
 foreach ($v in $viewNames) {
     if ($known -notcontains $v.ToLowerInvariant()) {
         throw "-Views: '$v' is not a view. The views are side, end, top, iso."
@@ -123,6 +143,10 @@ foreach ($v in $viewNames) {
 }
 
 if ($Size -notmatch '^\d+[xX]\d+$') { throw "-Size: '$Size' is not a size. Write it as WxH." }
+
+# Refused here rather than clamped in the theatre, so that a launcher's own record of what it
+# asked for is the number that was used.
+if ($Carve -lt 0 -or $Carve -gt 0.5) { throw "-Carve: $Carve is outside 0 to 0.5." }
 
 if ($Worker -eq 1) {
     throw "Worker 1 is unity/, which the owner keeps open in the Editor. Use a worker from 2 up."
@@ -165,7 +189,8 @@ $log = Join-Path $logDirectory "theatre-snap-$Arm.log"
 $names = @(
     'EVOSIM_THEATRE_RUN', 'EVOSIM_THEATRE_SNAP_TIMES', 'EVOSIM_THEATRE_SNAP_VIEWS',
     'EVOSIM_THEATRE_SNAP_OUT', 'EVOSIM_THEATRE_SNAP_SIZE', 'EVOSIM_THEATRE_WALL_MINUTES',
-    'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_SEEK', 'EVOSIM_REPO_ROOT')
+    'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_SEEK', 'EVOSIM_REPO_ROOT',
+    'EVOSIM_THEATRE_CARVE')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -177,6 +202,7 @@ try {
     $env:EVOSIM_THEATRE_SNAP_SIZE = $Size
     $env:EVOSIM_THEATRE_WALL_MINUTES = $WallMinutes
     $env:EVOSIM_REPO_ROOT = $root
+    $env:EVOSIM_THEATRE_CARVE = $Carve.ToString([System.Globalization.CultureInfo]::InvariantCulture)
 
     if ($viewNames.Count -gt 0) { $env:EVOSIM_THEATRE_SNAP_VIEWS = ($viewNames -join ',') }
     else { Remove-Item env:EVOSIM_THEATRE_SNAP_VIEWS -ErrorAction SilentlyContinue }
@@ -192,6 +218,7 @@ try {
     Write-Host "  at     $($timeList -join ', ') s"
     Write-Host "  views  $(if ($viewNames.Count -gt 0) { $viewNames -join ', ' } else { 'side, end, top, iso' })"
     Write-Host "  size   $Size"
+    Write-Host "  carve  $($env:EVOSIM_THEATRE_CARVE)"
     Write-Host "  out    $snapDirectory"
     Write-Host "  log    $log"
     if ($AllowSourceMismatch) { Write-Host "  source mismatch allowed: the pictures are of a cousin world, and say so" }

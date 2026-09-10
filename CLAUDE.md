@@ -214,10 +214,10 @@ runs `Evosim.Theatre.EditorTools.TheatreSnapshot.Run`, which replays the run in 
 identity check on and writes the box from the side, the end, the top and a corner at each named
 second into `scratch/snaps/<arm>/`, each frame fitted from the run's own config and labelled with the
 arm, the second, the living count and whether the replay is faithful. A world view at thirteen pixels a
-metre cannot show a wrinkle, so a fifth view, **`close`**, frames the six largest bodies from a
-three-quarter angle at a distance that fills the frame, with no box and no markers. It is never
-in the default set, and `theatre-snap.ps1`'s `-Views` allowlist does not yet know it, so it is
-asked for through `EVOSIM_THEATRE_SNAP_VIEWS`. Its Unity command line is
+metre cannot show a wrinkle. So a fifth view, **`close`**, frames the largest body and the
+largest of its neighbours from a three-quarter angle at a distance that fills the frame, with no
+box and no markers. It is a portrait of one crowd and never a census, it is never in the default
+set, and `-Carve` sets the carve depth for the run. Its Unity command line is
 `-batchmode` **without `-quit`** (the entry quits itself) and **without `-nographics`** (a picture
 needs a graphics device); `Evosim/Theatre/Snapshot Now` takes the same four of the world on screen.
 

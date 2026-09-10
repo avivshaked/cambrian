@@ -113,6 +113,26 @@ namespace Evosim.Theatre
             public MeshRenderer[] Renderers;
             public int[] Part;
 
+            /// <summary>This body's carve seed, so no two bodies wear the same impressions.</summary>
+            public float Seed;
+
+            /// <summary>
+            /// Per renderer, the two joint anchors nearest it, in that visual's own object units,
+            /// with a reach in w, or a zero reach for none. See <see cref="Pinches"/>.
+            /// </summary>
+            public Vector4[] PinchA;
+            public Vector4[] PinchB;
+
+            /// <summary>
+            /// Per renderer, what the visual's local scale has to be multiplied by to draw the
+            /// genome's three half-extents rather than the collider's one radius. See
+            /// <see cref="Aspect"/>. Never above one on any axis.
+            /// </summary>
+            public Vector3[] Shape;
+
+            /// <summary>Per renderer, the local scale this class last wrote. See <see cref="Reshape"/>.</summary>
+            public Vector3[] Wrote;
+
             /// <summary>One neck per jointed part, or null when this body has no joint.</summary>
             public Transform[] Necks;
 
@@ -144,6 +164,9 @@ namespace Evosim.Theatre
         private static readonly int ColorId = Shader.PropertyToID("_Color");
         private static readonly int RimColorId = Shader.PropertyToID("_RimColor");
         private static readonly int ReserveId = Shader.PropertyToID("_Reserve");
+        private static readonly int CarveId = Shader.PropertyToID("_Carve");
+        private static readonly int PinchAId = Shader.PropertyToID("_PinchA");
+        private static readonly int PinchBId = Shader.PropertyToID("_PinchB");
 
         public int Painted => _bodies.Count;
 
@@ -175,7 +198,7 @@ namespace Evosim.Theatre
 
             if (!_bodies.TryGetValue(id, out Body body) || body.Root != root)
             {
-                body = Gather(root, phenotype);
+                body = Gather(id, root, phenotype);
                 _bodies[id] = body;
             }
 
@@ -189,17 +212,23 @@ namespace Evosim.Theatre
                 MeshRenderer renderer = body.Renderers[i];
                 if (renderer == null) continue;
 
+                int part = body.Part[i];
+                bool known = part >= 0 && part < phenotype.PartCount;
+
                 Color guild = Color.white;
+                if (on) guild = known ? ColourOf(phenotype.Parts[part].CellTypeId) : Structural;
 
-                if (on)
-                {
-                    int part = body.Part[i];
-                    guild = part >= 0 && part < phenotype.PartCount
-                        ? ColourOf(phenotype.Parts[part].CellTypeId)
-                        : Structural;
-                }
+                Reshape(body, i, renderer.transform);
 
-                Set(renderer, guild, brightness, on ? reserve : 1f, on);
+                string cellType = known ? phenotype.Parts[part].CellTypeId : CellTypeIds.Structural;
+
+                float seed = body.Seed + 0.61803399f * Mathf.Max(0, part);
+                seed -= Mathf.Floor(seed);
+
+                Vector4 carve = Character(cellType, seed);
+
+                Set(renderer, guild, brightness, on ? reserve : 1f, on,
+                    carve, body.PinchA[i], body.PinchB[i]);
             }
 
             RefreshNecks(body, phenotype, brightness, on ? reserve : 1f, on);
@@ -213,7 +242,9 @@ namespace Evosim.Theatre
         /// theatre's own shader and are ignored by the others, which is why the body colour still
         /// carries the reserve brightness rather than leaving it all to the glow.
         /// </remarks>
-        private void Set(Renderer renderer, Color guild, float brightness, float reserve, bool on)
+        private void Set(
+            Renderer renderer, Color guild, float brightness, float reserve, bool on,
+            Vector4 carve, Vector4 pinchA, Vector4 pinchB)
         {
             Color rim = on
                 ? Muted(guild, RimSaturation, RimLightness)
@@ -234,6 +265,9 @@ namespace Evosim.Theatre
             _block.SetColor(ColorId, body);
             _block.SetColor(RimColorId, rim);
             _block.SetFloat(ReserveId, reserve);
+            _block.SetVector(CarveId, carve);
+            _block.SetVector(PinchAId, pinchA);
+            _block.SetVector(PinchBId, pinchB);
 
             renderer.SetPropertyBlock(_block);
         }
@@ -265,7 +299,24 @@ namespace Evosim.Theatre
             return Color.HSVToRGB(h, Mathf.Clamp01(sOut), Mathf.Clamp01(vOut));
         }
 
-        private Body Gather(Transform root, Phenotype phenotype)
+        /// <summary>
+        /// One creature's carve seed, in [0, 1).
+        /// </summary>
+        /// <remarks>
+        /// Mixed rather than taken raw, and fractional rather than large, and both for the same
+        /// reason: the shader turns this into a lattice offset with a <c>frac</c>, and a float
+        /// carrying four digits before the point has only three left after it. Consecutive ids
+        /// would then land on the same offset and a cohort of siblings would wear one carving.
+        /// The multiplier is Knuth's, the odd integer nearest 2^32 over the golden ratio.
+        /// </remarks>
+        private static float SeedOf(long id)
+        {
+            long mixed = unchecked(id * 2654435761L);
+
+            return ((mixed >> 13) & 0xFFFF) / 65536f;
+        }
+
+        private Body Gather(long id, Transform root, Phenotype phenotype)
         {
             _scratch.Clear();
             root.GetComponentsInChildren<MeshRenderer>(true, _scratch);
@@ -275,16 +326,55 @@ namespace Evosim.Theatre
                 Root = root,
                 Renderers = _scratch.ToArray(),
                 Part = new int[_scratch.Count],
+                Seed = SeedOf(id),
+                PinchA = new Vector4[_scratch.Count],
+                PinchB = new Vector4[_scratch.Count],
+                Shape = new Vector3[_scratch.Count],
+                Wrote = new Vector3[_scratch.Count],
             };
 
             for (int i = 0; i < _scratch.Count; i++)
             {
                 body.Part[i] = PartIndexOf(_scratch[i].transform.parent);
+                body.Shape[i] = Vector3.one;
             }
 
             Dress(body, phenotype);
 
             return body;
+        }
+
+        /// <summary>
+        /// The carve's character for one part: its seed, how lobed it is, how wrinkled, and how
+        /// much of the dial it takes at all.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Lightly by guild, as the shape asks.</b> A producer is more lobed, because a leaf
+        /// is a thing with a shape rather than a thing with a texture; a stomach is more
+        /// wrinkled; a structural part is smoother, because it is the strut and not the organ.
+        /// The differences are small and none of them is what tells a viewer which guild a part
+        /// is: that is the rim's colour, and giving the shape a second vote would make a badly
+        /// lit producer read as a stomach.
+        /// </para>
+        /// <para>
+        /// <b>The seed carries the part index as well as the body's id.</b> The field is read in
+        /// each part's own object units, so two parts of one body with the same size and one seed
+        /// would come out as two copies of one carving. An irrational step, wrapped back into
+        /// [0, 1), keeps them apart while leaving the whole body drawn from one creature's
+        /// number; the golden ratio is the step that fills the interval most evenly for any
+        /// number of parts.
+        /// </para>
+        /// </remarks>
+        private static Vector4 Character(string cellTypeId, float seed)
+        {
+            if (cellTypeId == CellTypeIds.Photosynthetic)
+                return new Vector4(seed, 1.00f, 0.42f, 1.05f);
+
+            if (cellTypeId == CellTypeIds.Absorptive)
+                return new Vector4(seed, 0.60f, 0.78f, 1.00f);
+
+            return new Vector4(seed, 0.85f, 0.32f, 0.62f);
         }
 
         /// <summary>
@@ -319,11 +409,209 @@ namespace Evosim.Theatre
                 var filter = renderer.GetComponent<MeshFilter>();
                 if (filter == null) continue;
 
-                Mesh rounded = TheatreMeshes.RoundedFor(filter.sharedMesh);
-                if (rounded != null) filter.sharedMesh = rounded;
+                Mesh mesh = filter.sharedMesh;
+                Mesh rounded = TheatreMeshes.RoundedFor(mesh);
+
+                if (rounded != null) { filter.sharedMesh = rounded; mesh = rounded; }
+
+                // Which solid this visual draws, by reference and not by name, so that dressing a
+                // body twice reads the same answer the second time: after the swap the mesh is
+                // one of the three this theatre generated, and RoundedFor would no longer
+                // recognise it by the engine's name for the primitive it replaced.
+                bool isSphere = mesh == TheatreMeshes.Sphere();
+                bool isCylinder = mesh == TheatreMeshes.Cylinder();
+
+                int part = body.Part[i];
+                if (part < 0 || part >= phenotype.PartCount) continue;
+
+                body.Shape[i] = Aspect(phenotype.Parts[part], isSphere, isCylinder);
+
+                // Squashed before the anchors are measured, not after: Pinches divides by the
+                // visual's scale to reach object units, and the scale it has to divide by is the
+                // one the mesh is finally drawn at.
+                Reshape(body, i, renderer.transform);
+
+                Pinches(body, i, phenotype, part, renderer.transform);
             }
 
             BuildNecks(body, phenotype);
+        }
+
+        // ---------------------------------------------------------------- shape
+
+        /// <summary>
+        /// What a visual's local scale has to be multiplied by to draw the genome's three
+        /// half-extents rather than the one radius the simulation reduced them to.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>This shows the genome's intent and not the body's physics, and the collider is the
+        /// sphere.</b> A node carries three half-extents whatever shape it takes, and
+        /// <c>SphereShape.Radius</c> is their mean, so a genome that has evolved a part twice as
+        /// long as it is wide collides, displaces and drags as a ball of the average size and the
+        /// two other numbers are silent in the world. Drawing the ball back as a ball hides a
+        /// trait the genome is carrying; drawing the three half-extents shows what the genome
+        /// says while the collider goes on being the sphere. A viewer reading a swimming stroke
+        /// off an ellipsoid's long axis is reading something the physics does not have.
+        /// <c>CapsuleShape.Radius</c> is the mean of the X and Z half-extents in the same way, so
+        /// a capsule's cross-section is drawn elliptical on the same argument and its length,
+        /// which the shape does use, is left alone.
+        /// </para>
+        /// <para>
+        /// <b>Why it is a multiplier and not a size.</b> <c>PhenotypeBuilder.VisualPlan</c> owns
+        /// the arithmetic that turns half-extents into a visual's scale, and
+        /// <c>ResizeColliderAndVisual</c> rewrites it every time a body grows. A second copy of
+        /// that arithmetic here would drift from it silently, which is the fault that file spends
+        /// its remarks warning about. So this class never computes a size: it takes whatever
+        /// scale the simulation last wrote and squashes it.
+        /// </para>
+        /// <para>
+        /// <b>The size bound.</b> Every component is the half-extent divided by the largest of
+        /// them, so the longest semi-axis keeps the collider's radius exactly and the two others
+        /// come in. An ellipsoid whose longest semi-axis is the sphere's radius is inside the
+        /// sphere; for a capsule the same argument holds against the swept sphere, since a cap
+        /// squashed on X and Z and left alone on Y is inside the hemisphere it replaces. So this
+        /// under-reports and never over-reports, which is the direction the two constraints
+        /// allow.
+        /// </para>
+        /// </remarks>
+        private static Vector3 Aspect(PhenotypePart part, bool isSphere, bool isCylinder)
+        {
+            if (!isSphere && !isCylinder) return Vector3.one;
+
+            Vector3 h = Abs(part.HalfExtents.ToVector3());
+
+            if (part.ShapeId == ShapeIds.Sphere && isSphere)
+            {
+                float longest = Mathf.Max(h.x, Mathf.Max(h.y, h.z));
+                if (longest <= 0f) return Vector3.one;
+
+                return new Vector3(h.x / longest, h.y / longest, h.z / longest);
+            }
+
+            if (part.ShapeId == ShapeIds.Capsule)
+            {
+                float longest = Mathf.Max(h.x, h.z);
+                if (longest <= 0f) return Vector3.one;
+
+                // Y is left at one on both the shaft and the caps: the shaft's Y is the span the
+                // shape really has, and a cap squashed on Y would pull the end of the drawn body
+                // in from the end of the capsule collider for no reason.
+                return new Vector3(h.x / longest, 1f, h.z / longest);
+            }
+
+            return Vector3.one;
+        }
+
+        /// <summary>
+        /// Applies <see cref="Aspect"/> to whatever local scale the simulation last wrote.
+        /// </summary>
+        /// <remarks>
+        /// Checked against what this class wrote rather than applied every paint, because the
+        /// multiplier would compound: a body squashed to nine tenths on every frame of a run is
+        /// gone inside a minute. An exact float comparison is the right one here and not a
+        /// sloppy one, because an untouched transform holds the identical bits and a growth
+        /// resize writes a different number however small the step
+        /// (<c>PhenotypeBuilder.ResizeColliderAndVisual</c>).
+        /// </remarks>
+        private static void Reshape(Body body, int i, Transform visual)
+        {
+            if (visual == null) return;
+
+            Vector3 current = visual.localScale;
+            Vector3 wrote = body.Wrote[i];
+
+            if (current.x == wrote.x && current.y == wrote.y && current.z == wrote.z) return;
+
+            Vector3 aspect = body.Shape[i];
+            var next = new Vector3(
+                current.x * aspect.x, current.y * aspect.y, current.z * aspect.z);
+
+            visual.localScale = next;
+            body.Wrote[i] = next;
+        }
+
+        /// <summary>
+        /// The joint anchors that touch one visual, in that visual's own object units.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why the shader needs them.</b> Two parts meet by one solid entering another, and
+        /// nothing on a surface hides that. The carve deepens near an anchor on both sides of a
+        /// junction, so the tissue draws in where the hinge is and the join reads as a waist; it
+        /// also widens the gap the neck is drawn in (<see cref="BuildNecks"/>).
+        /// </para>
+        /// <para>
+        /// <b>Two of them.</b> A part is touched by its own attachment to its parent and by every
+        /// child hanging off it, and a fixed pair of shader properties is the arrangement that
+        /// does not need an array through a property block. The two nearest the visual are the
+        /// two that would be seen; a third anchor on the far side of a long part is carved by
+        /// whichever of its own pair it is nearest.
+        /// </para>
+        /// <para>
+        /// <b>In object units, and computed once.</b> The anchors are metres in the part's frame,
+        /// so they are moved into the visual's frame by its offset and divided by its scale,
+        /// which is what makes them mean the same thing to a mesh built as a unit solid. Growth
+        /// rebuilds a phenotype at a new scale rather than reshaping it
+        /// (<c>Phenotype.Scaled</c>), so a point given as a fraction of a part's own size stays
+        /// where it was and this does not have to be redone as a body grows.
+        /// </para>
+        /// </remarks>
+        private static void Pinches(
+            Body body, int i, Phenotype phenotype, int part, Transform visual)
+        {
+            if (visual == null) return;
+
+            // How far a pinch reaches, in object units, where a part's own size is one. Under
+            // half, so it is a waist at the joint and not a general thinning of the part.
+            const float reach = 0.45f;
+
+            Vector3 offset = visual.localPosition;
+            Vector3 scale = visual.localScale;
+
+            if (Mathf.Abs(scale.x) < 1e-6f || Mathf.Abs(scale.y) < 1e-6f ||
+                Mathf.Abs(scale.z) < 1e-6f)
+            {
+                return;
+            }
+
+            var best = new Vector4(0f, 0f, 0f, 0f);
+            var second = new Vector4(0f, 0f, 0f, 0f);
+            float bestAway = float.MaxValue;
+            float secondAway = float.MaxValue;
+
+            void Consider(Vector3 anchorPartLocal)
+            {
+                Vector3 local = anchorPartLocal - offset;
+                var here = new Vector3(local.x / scale.x, local.y / scale.y, local.z / scale.z);
+
+                float away = here.magnitude;
+                var point = new Vector4(here.x, here.y, here.z, reach);
+
+                if (away < bestAway)
+                {
+                    secondAway = bestAway; second = best;
+                    bestAway = away; best = point;
+                }
+                else if (away < secondAway)
+                {
+                    secondAway = away; second = point;
+                }
+            }
+
+            PhenotypePart mine = phenotype.Parts[part];
+
+            if (mine.ParentIndex >= 0) Consider(mine.ChildAnchorLocal.ToVector3());
+
+            for (int c = 0; c < phenotype.PartCount; c++)
+            {
+                if (phenotype.Parts[c].ParentIndex != part) continue;
+
+                Consider(phenotype.Parts[c].ParentAnchorLocal.ToVector3());
+            }
+
+            body.PinchA[i] = best;
+            body.PinchB[i] = second;
         }
 
         // ---------------------------------------------------------------- joints
@@ -448,7 +736,15 @@ namespace Evosim.Theatre
                 neck.localScale = scale;
 
                 var renderer = neck.GetComponent<MeshRenderer>();
-                if (renderer != null) Set(renderer, Jointed, brightness, reserve, true);
+
+                // A neck takes no carve: its character's fourth component is zero, so whatever
+                // the dial says the depth comes out zero. It is a marker, and a marker with
+                // impressions in it is a marker that lies about being tissue.
+                if (renderer != null)
+                {
+                    Set(renderer, Jointed, brightness, reserve, true,
+                        new Vector4(0f, 1f, 0f, 0f), Vector4.zero, Vector4.zero);
+                }
             }
         }
 

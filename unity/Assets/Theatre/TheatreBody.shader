@@ -14,7 +14,8 @@
 //   Voronoi cell mottle      [U2], done in three dimensions here so it does not swim on a
 //                            turning body
 //   caustics from above      [CY2] [AM]
-//   vertex puff along the smoothed normal, bounded                                       [CY]
+//   inward vertex carve, two octaves of noise in the part's own object space, bounded,
+//                            with the normal rebuilt per pixel from the same field         [CY]
 //
 // Batching. TheatrePalette paints every body through one MaterialPropertyBlock on one shared
 // material, and that is kept: a block drops those renderers out of the SRP Batcher, which is the
@@ -60,12 +61,29 @@ Shader "Evosim/Theatre Body"
         _CausticMetresPerCell("Caustic metres per cell", Range(0.2, 20)) = 3.0
         _CausticReach("Metres below the surface caustics reach", Range(1, 200)) = 10
 
-        [Header(Shape)]
-        // Bounded, and the bound is the whole point. TheatreMeshes generates every mesh inset to
-        // (1 - this) of the collider's half extent, so a puff of exactly this fraction lands on
-        // the collider surface and never past it. TheatreSkin clamps the value it sets to what
-        // the meshes were actually built for, so the two cannot drift apart.
-        _PuffFraction("Vertex puff, fraction of the smallest half extent", Range(0, 0.03)) = 0.03
+        [Header(Carve)]
+        // The dial the second day is about, and the bound is the whole point. The displacement
+        // below is -normal * depth * noise with the noise in [0, 1], so it is never positive and
+        // a carved vertex can only move away from the collider. depth is this fraction of the
+        // part's SMALLEST half extent, which is at most that fraction of the half extent on any
+        // axis, so the deepest impression on the longest body is still a fraction of its
+        // thinnest dimension. TheatreSkin reads EVOSIM_THEATRE_CARVE into it and clamps.
+        _CarveFraction("Carve depth, fraction of the smallest half extent", Range(0, 0.5)) = 0.2
+
+        // The hard cap, after the joint pinch has deepened the carve. Nothing about the collider
+        // needs it: it stops a body from being cut past its own middle and turning inside out.
+        _CarveMaximum("Deepest carve of any kind, same fraction", Range(0, 0.6)) = 0.5
+
+        _PinchGain("How much deeper the carve runs at a joint anchor", Range(0, 4)) = 1.6
+
+        [Header(Per body from TheatrePalette)]
+        // x seed, y lobe gain, z wrinkle gain, w how much carve this guild takes at all.
+        _Carve("Carve: seed, lobes, wrinkles, character", Vector) = (0, 0.85, 0.30, 1)
+
+        // A joint anchor in this visual's own object units, xyz, with its reach in w. Zero reach
+        // is "no joint on this part", which is most of them.
+        _PinchA("Joint anchor A", Vector) = (0, 0, 0, 0)
+        _PinchB("Joint anchor B", Vector) = (0, 0, 0, 0)
     }
 
     SubShader
@@ -117,7 +135,12 @@ Shader "Evosim/Theatre Body"
                 float _CausticStrength;
                 float _CausticMetresPerCell;
                 float _CausticReach;
-                float _PuffFraction;
+                float _CarveFraction;
+                float _CarveMaximum;
+                float _PinchGain;
+                float4 _Carve;
+                float4 _PinchA;
+                float4 _PinchB;
             CBUFFER_END
 
             struct Attributes
@@ -133,6 +156,10 @@ Shader "Evosim/Theatre Body"
                 float3 normalWS   : TEXCOORD1;
                 // x is the fog factor, y is how translucent this part's thickness makes it.
                 float2 fogAndThickness : TEXCOORD2;
+                // The undisplaced object position, so the fragment can ask the carve field the
+                // same question the vertex asked it, and the depth in metres it was asked with.
+                float3 positionOS : TEXCOORD3;
+                float carveDepth  : TEXCOORD4;
             };
 
             // The part's half extents in metres, taken from the object to world matrix rather
@@ -149,6 +176,23 @@ Shader "Evosim/Theatre Body"
                     length(UNITY_MATRIX_M._m02_m12_m22));
             }
 
+            // How deep the carve is allowed to go on this vertex, in metres.
+            //
+            // Two multipliers on one fraction, and then a cap. The guild's character (_Carve.w)
+            // makes a structural strut smoother than a leaf; the pinch deepens the cut near a
+            // joint anchor so a junction reads as a waist rather than as one box entering
+            // another. The cap is the only thing that stops the two compounding into a body cut
+            // through its own middle; it says nothing about the collider, which the sign of the
+            // displacement already settles.
+            float CarveDepth(float3 positionOS, float smallest)
+            {
+                float pinch = EvoPinch(positionOS, _PinchA) + EvoPinch(positionOS, _PinchB);
+
+                float fraction = _CarveFraction * _Carve.w * (1.0 + _PinchGain * pinch);
+
+                return min(fraction, _CarveMaximum) * smallest;
+            }
+
             Varyings Vertex(Attributes input)
             {
                 Varyings output = (Varyings)0;
@@ -159,14 +203,34 @@ Shader "Evosim/Theatre Body"
                 float3 halfExtents = HalfExtentsWS();
                 float smallest = min(halfExtents.x, min(halfExtents.y, halfExtents.z));
 
-                // Displaced in world space, not object space. The visuals carry a non uniform
-                // scale (a box part is 2h on each axis), so an object space push of a fixed
-                // length would come out longer on the long axis and would break the bound this
-                // whole arrangement exists to keep.
-                positionWS += normalWS * (_PuffFraction * smallest);
+                // The carve, and the whole of the second day in four lines.
+                //
+                // The field is read in the part's own object units, so an impression is a place
+                // on the body rather than a place in the water: it travels with the part, turns
+                // with it, and does not swim across it as it moves. Its wavelength is set in the
+                // same units, so the lobes come out about the size of the part whatever the
+                // part's size is (TheatreWater.hlsl, EvoCarve).
+                //
+                // The displacement is in world metres along the world normal, not in object
+                // units, because the visuals carry a non uniform scale and an object space push
+                // of a fixed length would come out longer on the long axis.
+                //
+                // The sign is the bound. carve is in [0, 1] and depth is positive, so this term
+                // can only move a vertex inward, and the mesh it moves is already inset
+                // (TheatreMeshes.Inset). Nothing here can put a vertex outside the collider, at
+                // any dial setting, on any body.
+                float depth = CarveDepth(input.positionOS.xyz, smallest);
+
+                float3 unusedGradient;
+                float carve = EvoCarve(
+                    input.positionOS.xyz, _Carve.x, _Carve.y, _Carve.z, unusedGradient);
+
+                positionWS -= normalWS * (depth * carve);
 
                 output.positionWS = positionWS;
                 output.normalWS = normalWS;
+                output.positionOS = input.positionOS.xyz;
+                output.carveDepth = depth;
                 output.positionCS = TransformWorldToHClip(positionWS);
 
                 // A thin part transmits and a thick one does not. Faked from the geometry rather
@@ -177,6 +241,55 @@ Shader "Evosim/Theatre Body"
                 output.fogAndThickness = float2(ComputeFogFactor(output.positionCS.z), thickness);
 
                 return output;
+            }
+
+            // The normal of the carved surface, rebuilt per pixel from the field's own gradient.
+            //
+            // Why per pixel and not per vertex. Without this the carve is nearly invisible: a
+            // dent that does not shade is only a change in the outline, and most of a body is
+            // not on its outline. Taking it in the fragment stage also frees the impressions
+            // from the mesh, so the wrinkles read at full resolution on a mesh dense enough only
+            // for the lobes, which is what keeps two thousand bodies affordable.
+            //
+            // The chain rule, which is the only fiddly part. The field is a function of the
+            // object position and the surface is in world metres, so the object gradient has to
+            // be divided by how many metres an object unit is on each axis and then turned into
+            // world axes. The object to world matrix's column i is (size on axis i) times (world
+            // direction of axis i), so column_i / dot(column_i, column_i) is exactly that world
+            // direction divided by that size. Parts are never sheared, so the columns are
+            // orthogonal and the three terms simply add.
+            //
+            // Then the standard displaced surface normal: for a surface pushed along its normal
+            // by a height h, the new normal is the old one less the part of grad h lying in the
+            // surface. The pinch's own gradient is left out; it varies over a whole part rather
+            // than over a wrinkle, so its slope is small beside the field's.
+            float3 CarvedNormal(float3 normalWS, float3 positionOS, float depth)
+            {
+                float3 gradientOS;
+                EvoCarve(positionOS, _Carve.x, _Carve.y, _Carve.z, gradientOS);
+
+                float3 cx = UNITY_MATRIX_M._m00_m10_m20;
+                float3 cy = UNITY_MATRIX_M._m01_m11_m21;
+                float3 cz = UNITY_MATRIX_M._m02_m12_m22;
+
+                float3 gradientWS =
+                    gradientOS.x * cx / max(1e-8, dot(cx, cx)) +
+                    gradientOS.y * cy / max(1e-8, dot(cy, cy)) +
+                    gradientOS.z * cz / max(1e-8, dot(cz, cz));
+
+                // The height is -depth * field, so its gradient is -depth times the field's.
+                float3 slope = -depth * gradientWS;
+                float3 alongSurface = slope - normalWS * dot(slope, normalWS);
+
+                // Bounded, because a steep wrinkle on a nearly flat face can otherwise turn the
+                // normal past ninety degrees and light the inside of the body. Smoothly rather
+                // than by a clamp: a hard clamp bites over whole regions of a well carved body
+                // at once, and every pixel inside such a region then gets the same tilt, which
+                // is a flat patch of noise where the wrinkle was.
+                float reach = length(alongSurface);
+                alongSurface *= rsqrt(1.0 + reach * reach / (1.4 * 1.4));
+
+                return normalize(normalWS - alongSurface);
             }
 
             // A wrapped Lambert. A hard terminator on a body two centimetres across is one pixel
@@ -200,7 +313,9 @@ Shader "Evosim/Theatre Body"
 
             half4 Fragment(Varyings input) : SV_Target
             {
-                float3 n = normalize(input.normalWS);
+                float3 n = CarvedNormal(
+                    normalize(input.normalWS), input.positionOS, input.carveDepth);
+
                 float3 v = normalize(GetWorldSpaceViewDir(input.positionWS));
 
                 float thickness = input.fogAndThickness.y;

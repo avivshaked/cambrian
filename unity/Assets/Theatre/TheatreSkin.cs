@@ -19,7 +19,7 @@ namespace Evosim.Theatre
     /// </para>
     /// <para>
     /// <b>Everything here is generated.</b> No mesh, texture, material or shader is a committed
-    /// binary. The bed is a quad built in code, the sand and the caustics are arithmetic in the
+    /// binary. The bed is a grid built in code, the sand and the caustics are arithmetic in the
     /// shader, the snow is a particle system configured in code with a procedural mote, and the
     /// meshes come from <see cref="TheatreMeshes"/>. That is the note's constraint (no purchased
     /// assets, nothing fetched at run time) and this repository's rule about what can be reviewed
@@ -58,6 +58,61 @@ namespace Evosim.Theatre
 
         /// <summary>Flat ambient. Low, because the dark field is the whole look.</summary>
         public Color Ambient = new Color(0.020f, 0.038f, 0.046f);
+
+        // ---------------------------------------------------------------- the carve
+
+        /// <summary>
+        /// How deep the bodies are carved, as a fraction of a part's smallest half extent.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The second day's one dial. The first day rounded the boxes and mottled them and the
+        /// owner's reading of it was that it was "still very very geometric": what makes a thing
+        /// look grown is its silhouette, and rounding leaves every face flat and parallel. So the
+        /// body shader cuts inward by two octaves of noise in each part's own object space, and
+        /// this is how far.
+        /// </para>
+        /// <para>
+        /// <b>It can only make a body smaller.</b> The displacement is never positive, so the
+        /// setting cannot put a vertex outside a collider at any value; the shader's own
+        /// <c>_CarveMaximum</c> is the separate question of not cutting a body through its middle.
+        /// </para>
+        /// <para>
+        /// Set from <c>EVOSIM_THEATRE_CARVE</c> so that three pictures at three depths can be
+        /// taken from one build and the owner can choose from pictures rather than from a number.
+        /// </para>
+        /// </remarks>
+        public float CarveFraction = CarveFromEnvironment();
+
+        /// <summary>Reads the dial, or the default when nothing set it.</summary>
+        /// <remarks>
+        /// Parsed invariantly and clamped rather than trusted. A machine whose decimal separator
+        /// is a comma would read 0.35 as 35 and carve every body away to nothing, and a refusal
+        /// here would take the viewer down for a cosmetic setting, which WaterBounds' rule
+        /// forbids.
+        /// </remarks>
+        private static float CarveFromEnvironment()
+        {
+            const float fallback = 0.2f;
+
+            string text = System.Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CARVE");
+            if (string.IsNullOrWhiteSpace(text)) return fallback;
+
+            if (!float.TryParse(
+                    text,
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out float value))
+            {
+                Debug.LogWarning(
+                    "[Theatre] EVOSIM_THEATRE_CARVE is not a number ('" + text + "'); using " +
+                    fallback.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".");
+
+                return fallback;
+            }
+
+            return Mathf.Clamp(value, 0f, 0.5f);
+        }
 
         // ---------------------------------------------------------------- the furniture
 
@@ -256,7 +311,7 @@ namespace Evosim.Theatre
             _bed.transform.position = new Vector3(
                 min.x + 0.5f * size.x, min.y, min.z + 0.5f * size.z);
 
-            _bed.AddComponent<MeshFilter>().sharedMesh = Quad(size.x + overhang, size.z + overhang);
+            _bed.AddComponent<MeshFilter>().sharedMesh = Bed(size.x + overhang, size.z + overhang);
 
             MeshRenderer renderer = _bed.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
@@ -269,27 +324,82 @@ namespace Evosim.Theatre
             material.SetFloat("_CausticReach", Mathf.Max(1f, 0.22f * size.y));
         }
 
-        /// <summary>A flat quad in the xz plane, facing up, centred on its own origin.</summary>
-        private static Mesh Quad(float length, float width)
+        /// <summary>
+        /// The bed's display mesh: a grid in the xz plane, facing up, centred on its own origin.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A grid and no longer a quad.</b> The bed shader now cuts the surface downward by a
+        /// low frequency field, and a displacement can only move vertices it has: four of them
+        /// describe a plane whatever the field says. The spacing is set from the box rather than
+        /// fixed, so a run with a different footprint gets the same size of ripple.
+        /// </para>
+        /// <para>
+        /// <b>Nothing here is a size claim.</b> The vertices sit exactly on the collider's top
+        /// plane and the shader only ever subtracts from that, so the drawn bed is at or below
+        /// the sea floor and a body resting on it can appear to hover a little and never to sink.
+        /// </para>
+        /// </remarks>
+        private static Mesh Bed(float length, float width)
         {
+            // About a fifth of a metre between vertices, which is a twenty fifth of the shader's
+            // five metre lobe, capped so that a very large box cannot ask for a million vertices.
+            const float metres = 0.2f;
+            const int most = 220;
+
+            int nx = Mathf.Clamp(Mathf.RoundToInt(length / metres), 1, most);
+            int nz = Mathf.Clamp(Mathf.RoundToInt(width / metres), 1, most);
+
             float x = 0.5f * length;
             float z = 0.5f * width;
 
-            var mesh = new Mesh { name = "Theatre Bed Quad", hideFlags = HideFlags.DontSave };
+            var vertices = new List<Vector3>((nx + 1) * (nz + 1));
+            var normals = new List<Vector3>((nx + 1) * (nz + 1));
+            var triangles = new List<int>(nx * nz * 6);
 
-            mesh.SetVertices(new List<Vector3>
+            for (int j = 0; j <= nz; j++)
             {
-                new Vector3(-x, 0f, -z), new Vector3(-x, 0f, z),
-                new Vector3(x, 0f, z), new Vector3(x, 0f, -z),
-            });
+                float pz = Mathf.Lerp(-z, z, (float)j / nz);
 
-            mesh.SetNormals(new List<Vector3>
+                for (int i = 0; i <= nx; i++)
+                {
+                    vertices.Add(new Vector3(Mathf.Lerp(-x, x, (float)i / nx), 0f, pz));
+                    normals.Add(Vector3.up);
+                }
+            }
+
+            int stride = nx + 1;
+
+            for (int j = 0; j < nz; j++)
             {
-                Vector3.up, Vector3.up, Vector3.up, Vector3.up,
-            });
+                for (int i = 0; i < nx; i++)
+                {
+                    int a = j * stride + i;
+                    int b = a + 1;
+                    int c = a + stride;
+                    int d = c + 1;
 
-            mesh.SetTriangles(new List<int> { 0, 1, 2, 0, 2, 3 }, 0);
+                    triangles.Add(a); triangles.Add(c); triangles.Add(b);
+                    triangles.Add(b); triangles.Add(c); triangles.Add(d);
+                }
+            }
+
+            var mesh = new Mesh { name = "Theatre Bed Grid", hideFlags = HideFlags.DontSave };
+
+            // A grid this size passes 65,535 vertices at the cap, and the default index format
+            // would wrap silently rather than refuse.
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+
+            mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
+            mesh.SetTriangles(triangles, 0);
             mesh.RecalculateBounds();
+
+            // The shader cuts the surface down and the bounds have to know, or the bed is culled
+            // from a low camera the moment its flat plane leaves the frustum.
+            Bounds bounds = mesh.bounds;
+            bounds.Expand(new Vector3(0f, 8f, 0f));
+            mesh.bounds = bounds;
 
             return mesh;
         }
@@ -423,11 +533,11 @@ namespace Evosim.Theatre
                 hideFlags = HideFlags.HideAndDontSave,
             };
 
-            // The one clamp that keeps the pictures honest. The meshes were generated inset to
-            // TheatreMeshes.Inset of the collider, so the shader may push a vertex out by at most
-            // what is left over; taking the value from the same constant means the two cannot be
-            // edited apart.
-            material.SetFloat("_PuffFraction", TheatreMeshes.PuffFraction);
+            // The dial, and it is the only thing here that changes what a body's outline is.
+            // Nothing about it can make a body larger: the shader's displacement is negative by
+            // construction (TheatreBody.shader, Vertex), so the meshes' own inset is the whole of
+            // the size bound and this only decides how far inside it the tissue is cut.
+            material.SetFloat("_CarveFraction", Mathf.Clamp(CarveFraction, 0f, 0.5f));
 
             return material;
         }
@@ -440,11 +550,11 @@ namespace Evosim.Theatre
             material.name = "Theatre Neck";
 
             // A neck is a marker, not tissue: no mottle, no caustics, a hard bright rim, and no
-            // puff at all, because it is already sized to fit inside the part it sits in and a
-            // puff would be a second bound to keep.
+            // carve at all. It is already sized to fit inside the part it sits in, and a marker
+            // with impressions cut into it would read as tissue.
             material.SetFloat("_MottleStrength", 0f);
             material.SetFloat("_CausticStrength", 0f);
-            material.SetFloat("_PuffFraction", 0f);
+            material.SetFloat("_CarveFraction", 0f);
             material.SetFloat("_RimStrength", 2.6f);
             material.SetFloat("_RimPower", 1.6f);
             material.SetFloat("_GlowStrength", 0.5f);

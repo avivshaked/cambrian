@@ -80,7 +80,48 @@ namespace Evosim.Theatre
 
             /// <summary>Three quarters, from above one corner. The only perspective view.</summary>
             Iso = 3,
+
+            /// <summary>
+            /// The six largest bodies, from a three quarter angle, close enough to see one.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// <b>Why a fifth view.</b> The other four frame the whole box, which is what a
+            /// question about where the bodies are needs. The campaign's water is 20 m long in a
+            /// 1600 px frame, so a metre is about eighty pixels and a 0.3 m creature is
+            /// twenty-four of them: enough to say it is there and its guild, and nowhere near
+            /// enough to say what its surface does. A skin cannot be judged from a picture that
+            /// cannot resolve it, so this one throws away the census and frames a handful of
+            /// bodies instead.
+            /// </para>
+            /// <para>
+            /// <b>Largest, because the question is the silhouette.</b> The bodies with the most
+            /// pixels on them are the ones a carve can be read off, and picking them by size
+            /// makes the choice repeatable rather than a matter of where the camera happened to
+            /// point. It is not a sample of the world and must not be read as one: nothing about
+            /// the population, the guild mix or the spread is visible in it.
+            /// </para>
+            /// <para>
+            /// <b>The six largest in the world are not six neighbours, and the first cut of this
+            /// view learned it the expensive way.</b> Asked for the six largest bodies in r35-s1
+            /// at t = 5,000 s, it framed 19.35 by 13.28 m, which is the whole box: the clades sit
+            /// in columns metres apart (logbook/0083), so the largest body in one column and the
+            /// largest in another are as far apart as anything in the world. The picture came out
+            /// at about twenty pixels a body, which is the world view again. So the anchor is the
+            /// largest body and the other five are the largest of its neighbours; see
+            /// <see cref="CloseOn"/>.
+            /// </para>
+            /// <para>
+            /// <b>It carries no box and no markers.</b> A frame a few metres across cuts the
+            /// water's edges at odd angles, and a marker is a five pixel square standing in for
+            /// a body too small to draw, which is the opposite of this view's purpose.
+            /// </para>
+            /// </remarks>
+            Close = 4,
         }
+
+        /// <summary>How many bodies <see cref="View.Close"/> frames.</summary>
+        public const int CloseBodies = 6;
 
         /// <summary>A projected body narrower than this gets a marker instead of being trusted.</summary>
         public const float MinimumBodyPixels = 4f;
@@ -168,6 +209,9 @@ namespace Evosim.Theatre
 
             if (string.IsNullOrWhiteSpace(text))
             {
+                // Close is not in the default set. It answers a different question from the
+                // other four and takes a picture nobody asked for whenever a caller wants a
+                // census, so it is named or it is not taken.
                 return new[] { View.Side, View.End, View.Top, View.Iso };
             }
 
@@ -181,7 +225,8 @@ namespace Evosim.Theatre
 
                 if (!Enum.TryParse(trimmed, true, out View view))
                 {
-                    refusal = "'" + trimmed + "' is not a view; the views are side, end, top, iso.";
+                    refusal =
+                        "'" + trimmed + "' is not a view; the views are side, end, top, iso, close.";
                     return null;
                 }
 
@@ -213,12 +258,20 @@ namespace Evosim.Theatre
             if (replay == null) throw new ArgumentNullException(nameof(replay));
 
             Bounds box = BoxOf(replay, out string boxNote);
-            Frame(view, box);
+
+            // What the camera is fitted to, which is the whole water for every view but one.
+            Bounds framed = view == View.Close ? CloseOn(replay, box, ref boxNote) : box;
+
+            Frame(view, framed);
 
             _camera.backgroundColor = Water;
 
             List<WaterBounds> silenced = SilenceTheWater();
-            Fog saved = FrameTheFog(box);
+
+            // The fog is framed on what is being looked at rather than on the box. In the close
+            // view that is the point: a few metres of water put the rest of the world into the
+            // background where it belongs, which is the dark field arrangement done with depth.
+            Fog saved = FrameTheFog(framed);
 
             try
             {
@@ -244,7 +297,8 @@ namespace Evosim.Theatre
 
             _pixels = _readback.GetPixels32();
 
-            DrawBox(box, replay);
+            if (view != View.Close) DrawBox(box, replay);
+
             DrawBodies(replay, view, out int marked, out int outside, out int bodies);
             DrawLabel(Label(replay, view));
 
@@ -423,6 +477,191 @@ namespace Evosim.Theatre
             return new Bounds(new Vector3(0f, -0.5f * depth, 0f), new Vector3(reach, depth, reach));
         }
 
+        /// <summary>
+        /// The water that holds the six largest bodies, as the box <see cref="View.Close"/> is
+        /// fitted to.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Sized by <see cref="Radius"/>, the same reach the marker rule measures a body by, so
+        /// that "largest" means the same thing in both places. Each body contributes its own
+        /// reach on every axis, so a long creature lying across the frame is inside it and not
+        /// cut in half by its own selection.
+        /// </para>
+        /// <para>
+        /// <b>The largest body, and then its largest neighbours.</b> Asking for the six largest
+        /// in the world frames the whole world whenever two of them are in different columns,
+        /// which is what r35-s1 did (see <see cref="View.Close"/>). The neighbourhood is set from
+        /// the anchor's own reach rather than in metres, so the frame holds the same fraction of
+        /// a body whether the world's creatures are centimetres or metres across.
+        /// </para>
+        /// <para>
+        /// <b>What is given up, and it should be said.</b> The five neighbours are the largest
+        /// near the largest, so a body of a different guild or a different size class in the next
+        /// column over is not in the picture and cannot be read out of it. This view is a
+        /// portrait of one crowd and never a census.
+        /// </para>
+        /// </remarks>
+        private static Bounds CloseOn(TheatreReplay replay, Bounds box, ref string note)
+        {
+            IReadOnlyList<Organism> living = replay.Eco.World.Living;
+
+            Organism anchor = null;
+            float anchorReach = 0f;
+
+            for (int i = 0; i < living.Count; i++)
+            {
+                var at = new Vector3(living[i].X, living[i].HeightY, living[i].Z);
+                if (!IsFinite(at)) continue;
+
+                float r = Radius(living[i].Phenotype);
+                if (anchor != null && r <= anchorReach) continue;
+
+                anchor = living[i];
+                anchorReach = r;
+            }
+
+            if (anchor == null)
+            {
+                note = Join(note, "nothing was alive to frame, so the close view is of the box");
+                return box;
+            }
+
+            // How far out the neighbours may be. Six reaches of the anchor is a frame that holds
+            // the anchor across about a sixth of its width, which is a body of a couple of
+            // hundred pixels at 1600 across; the metre floor keeps a frame of that shape when
+            // every body in the world is small.
+            float around = Mathf.Max(1.2f, 6f * anchorReach);
+            var centre = new Vector3(anchor.X, anchor.HeightY, anchor.Z);
+
+            var chosen = new List<Organism>(CloseBodies) { anchor };
+            var reach = new List<float>(CloseBodies) { anchorReach };
+
+            for (int i = 0; i < living.Count; i++)
+            {
+                Organism creature = living[i];
+                if (creature == anchor) continue;
+
+                var at = new Vector3(creature.X, creature.HeightY, creature.Z);
+                if (!IsFinite(at)) continue;
+                if ((at - centre).sqrMagnitude > around * around) continue;
+
+                float r = Radius(creature.Phenotype);
+
+                int slot = chosen.Count;
+                while (slot > 1 && reach[slot - 1] < r) slot--;
+
+                if (slot >= CloseBodies) continue;
+
+                chosen.Insert(slot, creature);
+                reach.Insert(slot, r);
+
+                if (chosen.Count > CloseBodies)
+                {
+                    chosen.RemoveAt(CloseBodies);
+                    reach.RemoveAt(CloseBodies);
+                }
+            }
+
+            Bounds framed = default;
+
+            for (int i = 0; i < chosen.Count; i++)
+            {
+                var at = new Vector3(chosen[i].X, chosen[i].HeightY, chosen[i].Z);
+                var size = 2.4f * reach[i] * Vector3.one;
+
+                if (i == 0) framed = new Bounds(at, size);
+                else framed.Encapsulate(new Bounds(at, size));
+            }
+
+            note = Join(
+                note,
+                "close on " + chosen.Count + " bodies within " +
+                around.ToString("0.##", CultureInfo.InvariantCulture) + " m of the largest, of reach " +
+                Least(reach).ToString("0.###", CultureInfo.InvariantCulture) + " to " +
+                anchorReach.ToString("0.###", CultureInfo.InvariantCulture) + " m, framed over " +
+                Metres(framed.size) + "; " + Ellipsoids(replay));
+
+            return framed;
+        }
+
+        private static float Least(List<float> values)
+        {
+            float worst = float.MaxValue;
+            for (int i = 0; i < values.Count; i++) worst = Mathf.Min(worst, values[i]);
+
+            return values.Count == 0 ? 0f : worst;
+        }
+
+        private static string Join(string first, string second) =>
+            string.IsNullOrEmpty(first) ? second : first + "; " + second;
+
+        private static string Metres(Vector3 size) => string.Format(
+            CultureInfo.InvariantCulture, "{0:0.##} by {1:0.##} by {2:0.##} m",
+            size.x, size.y, size.z);
+
+        private static bool IsFinite(Vector3 v) =>
+            !float.IsNaN(v.x) && !float.IsNaN(v.y) && !float.IsNaN(v.z) &&
+            !float.IsInfinity(v.x) && !float.IsInfinity(v.y) && !float.IsInfinity(v.z);
+
+        /// <summary>
+        /// How far from round the world's round parts are, as the theatre draws them.
+        /// </summary>
+        /// <remarks>
+        /// The theatre draws a sphere part as an ellipsoid of the genome's three half-extents
+        /// (<c>TheatrePalette.Aspect</c>), because the simulation reduced them to their mean and
+        /// collides as a ball. Whether that shows in a picture depends entirely on how far from
+        /// equal a genome's three numbers are, and that is a fact about the run rather than about
+        /// the skin, so it is measured here and printed with the picture instead of being assumed
+        /// either way. The ratio is the smallest half-extent over the largest: one is a ball.
+        /// </remarks>
+        private static string Ellipsoids(TheatreReplay replay)
+        {
+            IReadOnlyList<Organism> living = replay.Eco.World.Living;
+
+            int round = 0;
+            double total = 0.0;
+            float flattest = 1f;
+
+            for (int i = 0; i < living.Count; i++)
+            {
+                Phenotype phenotype = living[i].Phenotype;
+                if (phenotype == null) continue;
+
+                foreach (PhenotypePart part in phenotype.Parts)
+                {
+                    bool sphere = part.ShapeId == ShapeIds.Sphere;
+                    bool capsule = part.ShapeId == ShapeIds.Capsule;
+
+                    if (!sphere && !capsule) continue;
+
+                    Float3 h = part.HalfExtents;
+
+                    float hx = Mathf.Abs(h.X), hy = Mathf.Abs(h.Y), hz = Mathf.Abs(h.Z);
+
+                    // A capsule's length is a dimension the shape really has; only its cross
+                    // section was averaged away, so only X and Z are asked about.
+                    float low = sphere ? Mathf.Min(hx, Mathf.Min(hy, hz)) : Mathf.Min(hx, hz);
+                    float high = sphere ? Mathf.Max(hx, Mathf.Max(hy, hz)) : Mathf.Max(hx, hz);
+
+                    if (high <= 0f) continue;
+
+                    float ratio = low / high;
+
+                    round++;
+                    total += ratio;
+                    flattest = Mathf.Min(flattest, ratio);
+                }
+            }
+
+            if (round == 0) return "no sphere or capsule part is alive, so nothing is drawn as an ellipsoid";
+
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "{0} round parts alive, short over long axis {1:0.###} on average and {2:0.###} at the flattest",
+                round, total / round, flattest);
+        }
+
         /// <summary>Points the camera and sizes it so the whole box is inside the picture.</summary>
         /// <remarks>
         /// Fitted from the box's eight corners rather than from its diagonal: the diagonal is a
@@ -452,6 +691,16 @@ namespace Evosim.Theatre
                 case View.Top:
                     // Up is +z, so the picture reads like a map: length across, width up.
                     rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+                    break;
+
+                case View.Close:
+                    // A shallower three quarters than the iso view's, and a longer lens. Looking
+                    // steeply down on a body a metre away puts most of it in its own shadow and
+                    // spreads the near end of it across the frame; from nearer the horizon the
+                    // key rakes across the carve, which is what a carve has to be seen by.
+                    rotation = Quaternion.LookRotation(
+                        new Vector3(-0.78f, -0.34f, 1f).normalized, Vector3.up);
+                    perspective = true;
                     break;
 
                 default:
@@ -507,7 +756,7 @@ namespace Evosim.Theatre
             }
             else
             {
-                _camera.fieldOfView = 34f;
+                _camera.fieldOfView = view == View.Close ? 28f : 34f;
 
                 float tanV = Mathf.Tan(0.5f * _camera.fieldOfView * Mathf.Deg2Rad);
                 float tanH = tanV * aspect;
@@ -612,6 +861,10 @@ namespace Evosim.Theatre
             outside = 0;
             bodies = 0;
 
+            // A marker stands in for a body too small to draw. The close view exists to show
+            // what a body looks like, so a square painted over one would answer its own question.
+            bool marking = view != View.Close;
+
             IReadOnlyList<Organism> living = replay.Eco.World.Living;
             float tanV = Mathf.Tan(0.5f * _camera.fieldOfView * Mathf.Deg2Rad);
 
@@ -645,6 +898,7 @@ namespace Evosim.Theatre
                     : _height / (2f * Mathf.Max(0.01f, screen.z) * tanV);
 
                 if (2f * Radius(creature.Phenotype) * pixelsPerMetre >= MinimumBodyPixels) continue;
+                if (!marking) continue;
 
                 marked++;
                 Marker((int)screen.x, (int)screen.y, ColourOf(creature));

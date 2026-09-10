@@ -7,10 +7,14 @@
 // quad is (research/theatre-look, [CC3]); the normal is rebuilt per projection rather than
 // blended as a vector, which is Golus's point [BG].
 //
-// Why the ripples are a normal and not a height. The bed is flat: SeaFloor is a box collider with
-// a flat top and the theatre must not draw a bed that a body could appear to sink into. So the
-// relief is entirely in the shading, and the drawn surface is exactly the plane the collider's top
-// is at.
+// Why the bed is carved downward and only downward. SeaFloor is a box collider with a flat top,
+// and the theatre must not draw a bed a body could appear to sink into. The first day answered
+// that by keeping the drawn surface exactly on the collider's plane and putting all the relief in
+// the shading, which left a plane: seen from the side it was a ruled line under a world of boxes.
+// The second day cuts into it instead, by low frequency noise that is never negative, subtracted
+// from the plane. So every drawn point is at or below the collider's top, a body resting on the
+// floor can only appear to hover a little rather than to sink, and the bed reads as a bed. The
+// fine ripple and the grain stay in the normal, where they cost nothing.
 //
 // The caustics are the same function the body shader uses, from TheatreWater.hlsl, so the net on
 // the sand and the net on a creature swimming above it are one pattern.
@@ -32,6 +36,12 @@ Shader "Evosim/Theatre Bed"
         // for, so the furniture gives up its colour to them.
         _SandDark("Sand, shaded", Color) = (0.012, 0.012, 0.012, 1)
         _SandLight("Sand, lit", Color) = (0.066, 0.065, 0.061, 1)
+
+        // The carve. Amplitude first, then the wavelength: the ratio is the bed's steepness, and
+        // the normal composition in the fragment below is a small angle approximation that wants
+        // it well under one.
+        _BedCarveMetres("How far the bed is cut down, metres", Range(0, 3)) = 0.45
+        _BedLobeMetres("Metres per bed lobe", Range(0.5, 40)) = 5.0
 
         _RippleMetres("Metres per ripple", Range(0.05, 5)) = 0.55
         _RippleStrength("Ripple strength", Range(0, 2)) = 0.9
@@ -78,6 +88,8 @@ Shader "Evosim/Theatre Bed"
             #include "TheatreWater.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
+                float _BedCarveMetres;
+                float _BedLobeMetres;
                 float4 _SandDark;
                 float4 _SandLight;
                 float _RippleMetres;
@@ -105,13 +117,54 @@ Shader "Evosim/Theatre Bed"
                 float fogFactor   : TEXCOORD2;
             };
 
+            // How far the bed is cut down at a point, in metres, and the slope of that cut.
+            //
+            // Two octaves of the same value noise the bodies are carved by (TheatreWater.hlsl),
+            // read in world metres rather than in object units: the bed is one quad sized from
+            // the run's config, so a field in its object space would stretch with the box the way
+            // a UV map would, which is the reason the sand was triplanar in the first place.
+            //
+            // In [0, 1] and multiplied by a positive depth, so the result is subtracted from the
+            // plane and never added to it. That is the whole of the size argument.
+            float BedCarve(float2 xz, out float2 slope)
+            {
+                float metres = max(0.5, _BedLobeMetres);
+
+                float3 coarseGradient, fineGradient;
+                float coarse = EvoValueNoise(float3(xz.x, 0.0, xz.y) / metres, coarseGradient);
+                float fine = EvoValueNoise(float3(xz.x, 0.0, xz.y) * (2.7 / metres), fineGradient);
+
+                float value = 0.78 * coarse + 0.22 * fine;
+
+                slope = (0.78 * coarseGradient.xz + 0.22 * 2.7 * fineGradient.xz) / metres;
+
+                return saturate(value);
+            }
+
             Varyings Vertex(Attributes input)
             {
                 Varyings output = (Varyings)0;
 
-                output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
-                output.normalWS = normalize(TransformObjectToWorldNormal(input.normalOS));
-                output.positionCS = TransformWorldToHClip(output.positionWS);
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                float3 normalWS = normalize(TransformObjectToWorldNormal(input.normalOS));
+
+                float2 slope;
+                float carve = BedCarve(positionWS.xz, slope);
+
+                // Only the upward facing side of the quad is cut. The bed is drawn two sided so
+                // that a camera under the world does not see a hole, and a downward facing pass
+                // of the same surface must move with it.
+                positionWS.y -= _BedCarveMetres * carve;
+
+                // The normal of that surface: the height is h(x, z) = -depth * carve, so the
+                // surface normal is (-dh/dx, 1, -dh/dz) normalised, kept pointing the same way
+                // the flat quad's normal did.
+                float2 gradient = -_BedCarveMetres * slope;
+                float3 tilted = normalize(float3(-gradient.x, 1.0, -gradient.y));
+
+                output.positionWS = positionWS;
+                output.normalWS = normalWS.y < 0.0 ? -tilted : tilted;
+                output.positionCS = TransformWorldToHClip(positionWS);
                 output.fogFactor = ComputeFogFactor(output.positionCS.z);
 
                 return output;
@@ -186,7 +239,13 @@ Shader "Evosim/Theatre Bed"
                     blend.y * float3(ny.x, ny.z * sign(geometric.y), ny.y) +
                     blend.z * float3(nz.x, nz.y, nz.z * sign(geometric.z));
 
-                float3 n = normalize(detail);
+                // The triplanar detail is built around each projection's own axis, so on a bed
+                // whose normal has been tilted by the carve it would come back pointing straight
+                // up again and the lobes would stop shading. Composing the two by adding the
+                // geometric normal's departure from vertical is the small angle form of putting
+                // the detail in the tilted frame; the bed's slope is a fraction of a metre over
+                // five, so the small angle is the case by construction.
+                float3 n = normalize(detail + (geometric - float3(0.0, 1.0, 0.0)));
 
                 float tone = saturate(0.5 + 0.5 * n.y);
                 float3 sand = lerp(_SandDark.rgb, _SandLight.rgb, tone);
