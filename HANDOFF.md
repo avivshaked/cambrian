@@ -319,6 +319,31 @@ the running status), in the order they are done:
     accounting piece first, since the vertex piece leans on it; inference marked, values
     linked to DESIGN and not restated, per `primer/README.md`.
 
+## The owner's ideas of 2026-09-10 evening, in the order they will be taken
+
+Written down here so that none is lost; each is agent work unless marked as the owner's rule.
+
+1. **The carved skin** (in build tonight, `scratch/skin-spec-2.md`): inward-only impressions,
+   a pinch at joints, a carved bed, a close view, three carve depths for the owner to pick
+   from pictures; sphere parts drawn as the ellipsoid the genome asks for, bounded by the
+   collider.
+2. **Skin seeded from the genome** rather than from the body's id, so relatives resemble each
+   other and a clade has a face. Theatre only.
+3. **The sun and the surface**: a rippling surface plane seen from below, Snell's window with
+   the sun's disc, intensity from the run's irradiance and its day-night cycle if on; a
+   screen-space shimmer; light shafts if the frame time allows. Theatre only.
+4. **A reading, offline, any time**: have the shapes that already can flatten (a box's three
+   half-extents mutate on their own axes) flattened under light pressure in the record? From
+   the snapshots.
+5. **Inherited skin genes** (owner's rule, a proposal after round 34 reads): six to ten neutral
+   numbers under one gate, inherited and mutated, drifting apart between species and shown by
+   the theatre; selected only once something can see. Genome format bump, no per-step effect.
+6. **Ellipsoids and flattened capsules in the physics** (owner's rule; on the table once round
+   34 answers whether a free joint survives): the visual and the drag honour the three
+   half-extents, the collider is the best-fitting primitive inside.
+
+The round work stays first: round 35 read, then round 34 on this base.
+
 ## The decisions in front of the owner
 
 - **The producer threshold** is unsettled. D063's amendment asks for one living inherited
