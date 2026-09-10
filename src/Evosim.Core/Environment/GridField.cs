@@ -296,13 +296,25 @@ namespace Evosim.Core
         /// carries no place cannot be answered.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// The same refusal <see cref="VertexField"/> makes and for the same reason: defaulting
         /// the missing coordinates would put every body at its patch's centre and call that a
         /// position, which is the cell field's coarseness wearing a grid's name.
+        /// </para>
+        /// <para>
+        /// <b>Two refusals, and the difference is the whole diagnosis.</b> Until 2026-09-10 this
+        /// asked <c>HasHorizontal</c> first, which is false for NaN, so a caller that handed over
+        /// a diverged part's transform was told the point "was made with FieldPoint.At" and the
+        /// next reader went looking for a call nobody had written. That is how
+        /// <c>r35old-s3</c> was read for half an hour: the real fault was a part the solver had
+        /// lost reaching <c>CreatureSensors.Sample</c> before the harness noticed. The point now
+        /// says which constructor made it (<see cref="FieldPoint.DepthAndPatchOnly"/>), so a NaN
+        /// position is named as one.
+        /// </para>
         /// </remarks>
         private static Float3 Validated(FieldPoint at)
         {
-            if (!at.HasHorizontal)
+            if (at.DepthAndPatchOnly)
             {
                 throw new InvalidOperationException(
                     "A grid field needs a position, not a depth and a patch: the point was made " +
@@ -312,7 +324,11 @@ namespace Evosim.Core
             Float3 p = at.Position;
             if (!p.IsFinite)
             {
-                throw new ArgumentOutOfRangeException(nameof(at), p, "A non-finite position.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(at), p,
+                    "A non-finite position: this point was built from a real coordinate that has " +
+                    "stopped being finite, not with FieldPoint.At. The body it came from has " +
+                    "diverged and should have been killed before it was asked where it was.");
             }
 
             return p;

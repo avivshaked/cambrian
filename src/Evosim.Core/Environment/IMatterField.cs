@@ -20,21 +20,46 @@ namespace Evosim.Core
     /// need one. <see cref="VertexField"/> refuses it rather than putting the body at a
     /// coordinate nobody chose.
     /// </para>
+    /// <para>
+    /// <b>The point records which constructor made it, because the value cannot be read back
+    /// from the bits.</b> A part the solver has lost carries NaN in X and Z as well, so
+    /// "no horizontal coordinates" and "a diverged body's position" arrive at a field looking
+    /// exactly alike. On 2026-09-10 <c>r35old-s3</c> died at 618.5 s with
+    /// <see cref="GridField"/> reporting a point "made with FieldPoint.At", which nothing in
+    /// <c>CreatureSensors.Sample</c> had done: the caller had handed it a part's own transform
+    /// and the transform was NaN. One bool per point costs nothing on a stack local and is the
+    /// only reading that cannot send the next reader to the wrong place.
+    /// </para>
     /// </remarks>
     public readonly struct FieldPoint
     {
         public readonly Float3 Position;
         public readonly int Patch;
 
+        /// <summary>
+        /// True only for a point built by <see cref="At(float, int)"/>: a depth and a patch, and
+        /// no claim about x or z at all. False for every point built from a real position,
+        /// including one whose position has stopped being finite.
+        /// </summary>
+        public readonly bool DepthAndPatchOnly;
+
         public FieldPoint(Float3 position, int patch)
         {
             Position = position;
             Patch = patch;
+            DepthAndPatchOnly = false;
+        }
+
+        private FieldPoint(Float3 position, int patch, bool depthAndPatchOnly)
+        {
+            Position = position;
+            Patch = patch;
+            DepthAndPatchOnly = depthAndPatchOnly;
         }
 
         /// <summary>A depth and a patch and nothing else — the pre-D083 address.</summary>
         public static FieldPoint At(float heightY, int patch) =>
-            new FieldPoint(new Float3(float.NaN, heightY, float.NaN), patch);
+            new FieldPoint(new Float3(float.NaN, heightY, float.NaN), patch, true);
 
         public float HeightY => Position.Y;
 

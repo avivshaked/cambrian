@@ -483,6 +483,72 @@ namespace Evosim.Core.Tests
             Assert.Throws<InvalidOperationException>(() => field.DensityAt(FieldPoint.At(-5f, 0)));
         }
 
+        /// <summary>
+        /// A NaN coordinate is a diverged body, and the refusal has to say so.
+        /// </summary>
+        /// <remarks>
+        /// <c>r35old-s3</c> died at 618.5 s on 2026-09-10 with the field reporting a point "made
+        /// with FieldPoint.At" that no caller had made that way: <c>CreatureSensors.Sample</c>
+        /// had handed over a part's own transform and the transform was NaN, and the old
+        /// <c>Validated</c> asked <c>HasHorizontal</c> first, which is false for NaN either way.
+        /// The reader was sent to look for a call that did not exist while the real fault, a
+        /// diverged link the harness had not killed, stood untouched. Both fields refuse both
+        /// shapes; the test asserts the messages do not swap.
+        /// </remarks>
+        [Fact]
+        public void ANonFinitePositionIsRefusedAsOneAndNotAsAMissingPosition()
+        {
+            GridField field = Field();
+
+            foreach (Float3 lost in new[]
+            {
+                new Float3(float.NaN, float.NaN, float.NaN),          // a part the solver lost
+                new Float3(float.NaN, -5f, 2.5f),                     // x alone
+                new Float3(10.5f, -5f, float.NaN),                    // z alone
+                new Float3(float.PositiveInfinity, -5f, 2.5f),
+                new Float3(10.5f, float.NaN, 2.5f),                   // the depth alone
+            })
+            {
+                var at = new FieldPoint(lost, 0);
+
+                ArgumentOutOfRangeException refused = Assert.Throws<ArgumentOutOfRangeException>(
+                    () => field.DensityAt(at));
+
+                _output.WriteLine($"{lost.X}, {lost.Y}, {lost.Z} -> {refused.Message.Split('\n')[0]}");
+
+                Assert.Contains("A non-finite position", refused.Message);
+                Assert.DoesNotContain("FieldPoint.At, which carries no x or z", refused.Message);
+            }
+
+            // And the genuine article still reads as itself, with the other message and the other
+            // type, so neither refusal has been widened into the other.
+            InvalidOperationException missing = Assert.Throws<InvalidOperationException>(
+                () => field.DensityAt(FieldPoint.At(-5f, 0)));
+
+            Assert.Contains("FieldPoint.At, which carries no x or z", missing.Message);
+            Assert.DoesNotContain("A non-finite position", missing.Message);
+        }
+
+        /// <summary>The same two refusals from <see cref="VertexField"/>, which shares the rule.</summary>
+        [Fact]
+        public void TheVertexFieldMakesTheSameTwoRefusals()
+        {
+            var field = new VertexField(
+                Area, 1f, 0f, Depth, 0f, 0f, Patches,
+                kernelMetres: 1f, mergeMetres: 0.25f, vertexCap: 100_000, vertexJoules: 0.125f, seed: 7UL);
+
+            ArgumentOutOfRangeException lost = Assert.Throws<ArgumentOutOfRangeException>(
+                () => field.DensityAt(new FieldPoint(new Float3(float.NaN, -5f, 2.5f), 0)));
+
+            Assert.Contains("A non-finite position", lost.Message);
+            Assert.DoesNotContain("FieldPoint.At, which carries no x or z", lost.Message);
+
+            InvalidOperationException missing = Assert.Throws<InvalidOperationException>(
+                () => field.DensityAt(FieldPoint.At(-5f, 0)));
+
+            Assert.Contains("FieldPoint.At, which carries no x or z", missing.Message);
+        }
+
         [Fact]
         public void ACellThatDoesNotDivideTheBoxIsRefused()
         {

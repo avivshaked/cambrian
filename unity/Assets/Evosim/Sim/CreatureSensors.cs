@@ -191,11 +191,54 @@ namespace Evosim.Sim
             for (int b = 0; b < bodies.Length; b++)
             {
                 Transform t = bodies[b].transform;
+                Vector3 pos = t.position;
+
+                // ⚠ The second line, and it is not the real one. The real one is
+                // Ecosystem.CheckFinite, which reads every link and kills a body the solver has
+                // lost as a counted Diverged death with a post-mortem in the run's diverged/
+                // directory. It runs at the metabolic cadence, so up to fifty physics steps can
+                // pass between a part going NaN and the harness noticing, and this loop runs on
+                // every one of them. On 2026-09-10 that gap ended r35old-s3 at 618.5 s: a NaN
+                // part reached GridField through the chemical sense below and the field, quite
+                // correctly, refused to invent a cell for it: an unhandled exception, exit code
+                // 1, a manifest reading status error, and a run censored for a body that should
+                // have died as a statistic.
+                //
+                // So a part that is not finite is skipped and its channels read as an absence
+                // rather than as a number. That is not a repair: a creature carrying such a part
+                // is already gone, and it will be killed at the next metabolic step. What this
+                // buys is that the world it was living in is not taken down with it.
+                //
+                // Free, near enough: pos is read here anyway for depth and for smell, and NaN and
+                // infinity both propagate through addition, so one sum and two branches per part
+                // settle all three components.
+                float finite = pos.x + pos.y + pos.z;
+                if (float.IsNaN(finite) || float.IsInfinity(finite))
+                {
+                    _depth[b] = 0f;
+                    _up[b] = 0f;
+                    _chemical[b] = 0f;
+
+                    if (_readsFlow)
+                    {
+                        int gone = b * 3;
+                        _flow[gone] = 0f;
+                        _flow[gone + 1] = 0f;
+                        _flow[gone + 2] = 0f;
+                    }
+
+                    // The joint channels keep whatever they last held rather than being zeroed:
+                    // they are indexed by degree of freedom and not by part, a diverged part's
+                    // jointPosition is NaN too, and Brain's own NaN guard is what stands behind
+                    // them. One step of stale proprioception on a creature that is about to be
+                    // removed is not worth a second index walk here.
+                    continue;
+                }
 
                 // Positive downward and clamped, so it reads as a fraction of the water column
                 // rather than as a world coordinate. A creature above the surface or below the
                 // floor is at the end of the scale, not off it.
-                if (_readsDepth) _depth[b] = Mathf.Clamp01(-t.position.y / _worldDepthMetres);
+                if (_readsDepth) _depth[b] = Mathf.Clamp01(-pos.y / _worldDepthMetres);
                 if (_readsUp) _up[b] = Vector3.Dot(t.up, Vector3.up);
 
                 // Smell, at the part's own height and in the creature's own patch. The *edible*
@@ -215,7 +258,7 @@ namespace Evosim.Sim
                     // patch out of this and nothing else, as it always did; a vertex field reads
                     // the position, which is what gives the smell a gradient inside a patch for
                     // the first time.
-                    float density = _nutrients.EdibleDensityAt(new FieldPoint(t.position.ToFloat3(), patch));
+                    float density = _nutrients.EdibleDensityAt(new FieldPoint(pos.ToFloat3(), patch));
 
                     // x / (x + k): 0 in empty water, ½ at the half-scale, and it never quite
                     // arrives at 1. A linear clamp would saturate in rich water, which is blind

@@ -840,6 +840,23 @@ namespace Evosim.Sim
         {
             Reconcile();
 
+            // The second bracket on CheckFinite, and the reason it is here rather
+            // than beside the first. The first runs at the top of Metabolise, after the solver;
+            // three things then move a body without the solver touching it. World.Step decides
+            // births and deaths, ApplyGrowth resizes a living articulation in place, and
+            // Reconcile builds a newborn's body, and the very next thing to read a transform is
+            // the sensor loop below. So the check runs again, immediately before that loop, on
+            // exactly the steps where one of those three has happened; on every other physics
+            // step it is one bool test. Reconcile is called again after it because the check
+            // kills, and a body killed here would otherwise be sampled and driven for one more
+            // step; it returns at once when nothing died.
+            if (_movedOutsideTheSolver)
+            {
+                _movedOutsideTheSolver = false;
+                CheckFinite();
+                Reconcile();
+            }
+
             for (int i = 0; i < _order.Count; i++)
             {
                 Body body = _order[i];
@@ -1137,14 +1154,39 @@ namespace Evosim.Sim
         /// body does, and the guard behind it stays a guard.
         /// </para>
         /// <para>
-        /// <b>One native read and two branches per creature, once per metabolic step.</b> The
-        /// root's position is the whole test: a divergence reaches it before it reaches anything
-        /// else — <c>3075</c>'s dump has the root at NaN while its velocities were still
-        /// (enormously) finite — and reading two velocities per <i>part</i> per <i>physics</i>
-        /// step instead cost 27% of the wall clock of a five-thousand-creature world, against 16%
-        /// for the root alone and under 5% at this cadence. NaN and infinity both propagate
-        /// through addition, so summing the three components and testing the sum once is the same
-        /// test as testing all three.
+        /// <b>Every link, not only the root: the hole that took <c>r35old-s3</c> down.</b> On
+        /// 2026-09-10 that arm died at 618.5 s inside <c>GridField.EdibleDensityAt</c>, called
+        /// from <c>CreatureSensors.Sample</c>, which smells at each <i>part</i>'s own position
+        /// (D083). A part hanging off a finite root had gone NaN, this check read the root, found
+        /// it in the world, and let the body live; the chemical sense then handed the field a
+        /// position that was not one, and the process exited 1 with <c>divergedTotal: 0</c>.
+        /// Round 33 had the identical hole and was lucky: all three of <c>r33-s2</c>'s
+        /// divergences were one-part bodies, whose only part <i>is</i> the root.
+        /// </para>
+        /// <para>
+        /// <b>Position only, and the box bound only at the root.</b> A link is finite or it is
+        /// not; the height bound stays a root rule because D077 wraps the articulation by its
+        /// root and a link legitimately hangs metres away from it, so asking
+        /// <see cref="World.HeightIsInTheWorld"/> of a leaf would kill a healthy body floating at
+        /// the top of the allowed band. Nothing downstream needs more than finiteness of a leaf
+        /// either: <c>GridField</c> wraps x and z and clamps y, so a finite-but-astronomical
+        /// <i>link</i> lands in a cell rather than overflowing an index, which is the failure
+        /// <c>r31-s3</c> hit through the <i>root</i> (logbook/0077) and which the root's bound
+        /// still catches. Rotation is not read: it is a second native Transform access per part,
+        /// and no consumer of a part reads an orientation the position has not already spoiled.
+        /// </para>
+        /// <para>
+        /// <b>What it costs.</b> One native read and two branches per creature became one per
+        /// <i>part</i>, still once per metabolic step. The root's read was free and stays free,
+        /// since <c>Body.LastRootPosition</c> and the motility instrument want it; and
+        /// the leaves are new. Reading two velocities per part per <i>physics</i> step once cost
+        /// 27% of the wall clock of a five-thousand-creature world against 16% for the root
+        /// alone; this is one value per part at a fiftieth of that rate, so it is that 27%
+        /// divided by <see cref="StepsPerMetabolicStep"/> and halved again for reading one
+        /// quantity rather than two: a fraction of one percent, and under a third of it in a
+        /// world of the one- and two-part bodies these rounds actually grow. NaN and infinity
+        /// both propagate through addition, so summing the three components and testing the sum
+        /// once is the same test as testing all three.
         /// </para>
         /// <para>
         /// Read from the solver rather than from the fluid's cached copies: those were gathered
@@ -1171,8 +1213,18 @@ namespace Evosim.Sim
                 Vector3 root = bodies[0].transform.position;
                 float horizontal = root.x + root.z;
 
-                if (World.HeightIsInTheWorld(root.y, depth) &&
-                    !float.IsNaN(horizontal) && !float.IsInfinity(horizontal))
+                bool intact = World.HeightIsInTheWorld(root.y, depth) &&
+                              !float.IsNaN(horizontal) && !float.IsInfinity(horizontal);
+
+                for (int b = 1; intact && b < bodies.Length; b++)
+                {
+                    Vector3 part = bodies[b].transform.position;
+                    float sum = part.x + part.y + part.z;
+
+                    if (float.IsNaN(sum) || float.IsInfinity(sum)) intact = false;
+                }
+
+                if (intact)
                 {
                     body.LastRootPosition = root;
                     continue;
@@ -1551,6 +1603,14 @@ namespace Evosim.Sim
         private float _sinceGrowthStep;
 
         /// <summary>
+        /// Set whenever something other than the solver has moved, built or resized a body since
+        /// the last <see cref="CheckFinite"/>, and read once per physics step at the top of
+        /// <see cref="Step"/>. It is what makes the second check cost nothing on the 24 or 49
+        /// steps in 25 or 50 where nothing but physics has happened.
+        /// </summary>
+        private bool _movedOutsideTheSolver;
+
+        /// <summary>
         /// Puts every body that has grown since the last growth step at the size Core says it is,
         /// fable-propose-growth.md rule 8.
         /// </summary>
@@ -1598,6 +1658,7 @@ namespace Evosim.Sim
                 if (Volume != null) body.Radius = SharedVolume.BoundingRadius(creature.Phenotype);
 
                 Resizes++;
+                _movedOutsideTheSolver = true;
             }
         }
 
@@ -1618,6 +1679,11 @@ namespace Evosim.Sim
             if (revision == _reconciledAt) return;
 
             _reconciledAt = revision;
+
+            // A body has been built or destroyed, so the next CheckFinite is owed one: see the
+            // gate at the top of Step. Set before the work rather than after it so that a throw
+            // inside Build cannot leave the debt unrecorded.
+            _movedOutsideTheSolver = true;
 
             IReadOnlyList<Organism> living = World.Living;
 

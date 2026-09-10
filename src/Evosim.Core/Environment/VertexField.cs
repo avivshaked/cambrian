@@ -262,9 +262,16 @@ namespace Evosim.Core
 
         private bool OnFloor(int j) => _y[j] <= -DepthMetres + 1e-4f;
 
+        /// <summary>
+        /// The position a point describes, or a refusal. <see cref="GridField"/>'s twin, and
+        /// the same two refusals for the same reason. A point that never carried x or z is one
+        /// fault; a position that has stopped being finite is a diverged body, and saying so is
+        /// what stops the next reader looking for a <see cref="FieldPoint.At"/> call nobody made
+        /// (<c>r35old-s3</c>, 2026-09-10).
+        /// </summary>
         private static Float3 Validated(FieldPoint at)
         {
-            if (!at.HasHorizontal)
+            if (at.DepthAndPatchOnly)
             {
                 throw new InvalidOperationException(
                     "A vertex field needs a position, not a depth and a patch: the point was made " +
@@ -274,7 +281,11 @@ namespace Evosim.Core
             Float3 p = at.Position;
             if (!p.IsFinite)
             {
-                throw new ArgumentOutOfRangeException(nameof(at), p, "A non-finite position.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(at), p,
+                    "A non-finite position: this point was built from a real coordinate that has " +
+                    "stopped being finite, not with FieldPoint.At. The body it came from has " +
+                    "diverged and should have been killed before it was asked where it was.");
             }
 
             return p;
