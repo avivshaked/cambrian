@@ -12,11 +12,15 @@ The whole record (logbook, primer, research) was restyled under STYLE.md and lan
 seeds of five, every stomach line recruiting and four of five founded by a late child; adult
 scale, investment and litter walked the same way in every seed and stopped at the mass floor,
 which is now a rule of the world; one contact divergence in seed 2 with the placer's birth-size
-reservation as the suspect; a cheap joint outlived founding in seed 4 to 10,000 s. Work is
-paused (owner, 2026-09-09): the owner tests the theatre on round 33's runs, the first the
-current build can replay, and nothing launches until the owner says so. Next in line: the
-placer fix (reserve the adult radius, or re-reserve on growth) before round 34, the free joint
-(logbook/0080, `scratch/launch-r34.ps1`), then a neutral-dial control.** **Round 30 is read (logbook/0075, 2026-09-08 evening): the vertex world at D082's prices
+reservation as the suspect; a cheap joint outlived founding in seed 4 to 10,000 s. The owner's
+theatre session (2026-09-10 midday) showed the world as two vertical ribbons a metre wide
+(logbook/0083): a child is placed touching its parent, the current returns a body to where it
+found it, and nothing else moves a sitter sideways, so every clade is a column, and since the
+grid a column drains its own cells. The owner ruled the fix started at once: offspring
+dispersal (`OffspringDispersalMetres`, first value 5 m) and a horizontal-position instrument
+(`cols`, `cols abs`, `x sd`), being built with a smoke on worker 7. The theatre's replay also
+parted from the recording at 200 s, a separate fault under investigation. Round 34, the free
+joint, waits behind both; the placer's birth-size reservation fix waits with it.** **Round 30 is read (logbook/0075, 2026-09-08 evening): the vertex world at D082's prices
 meets the goal rule in 5 of 5, the first round to do so, with both identities closed, the
 detritus loop closed and the population within 3% of round 29's. It was the base until the grid (D086). The
 senses were carried in 1 of 5 (round 29: 3 of 5) and no jointed guild held; seed 4's line

@@ -281,3 +281,4 @@ key only translates the entries' reporting shorthand.
 | [0080](0080-when-a-joint-is-free.md) | 2026-09-09 | When a joint is free |
 | [0081](0081-born-at-a-third-of-itself.md) | 2026-09-09 | Born at a third of itself |
 | [0082](0082-five-worlds-born-small.md) | 2026-09-10 | Five worlds born small |
+| [0083](0083-the-world-was-two-ribbons.md) | 2026-09-10 | The world was two ribbons |
