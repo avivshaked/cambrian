@@ -205,6 +205,14 @@ Start-Process -FilePath $unity -Wait -NoNewWindow -ArgumentList @(
     '-logFile', "$PWD/scratch/logs/theatre-identity.log")
 ```
 
+That entry is the **edit-mode** check, and its verdict line now says so. It drives one physics step
+per iteration of a loop of its own, so it passed for three days while the Play-mode replay was
+parting from its recording (logbook/0083). `TheatreIdentityCheck.RunInPlayMode` is the other one.
+Same environment, plus `EVOSIM_THEATRE_SAMPLES` (20) and `EVOSIM_THEATRE_WALL_MINUTES` (30), and
+**launched without `-quit`**. It enters Play mode, lets the Theatre Runner's own `Update` step the
+run many steps to a frame, prints the identity verdict at every sample, and quits the Editor with
+0 or 1. `EVOSIM_THEATRE_PLAYMODE=1` sends the plain `Run` entry there instead.
+
 **Test `Evosim.Core`** (the default run skips the `Slow` trait, which covers the calibration
 sweeps, field experiments and the snapshot scan, and ran 592 tests in 58 s on 2026-09-09; the
 development and ecosystem tests are seconds each, so use `-Filter` while iterating):
@@ -602,7 +610,7 @@ actually verifying it.
 - **Watch a round in the theatre before writing it up, and say what was seen.** On 2026-09-10 the
   owner opened round 33 seed 3 in the theatre and saw the whole world as two vertical ribbons a
   metre wide in a box twenty metres long (logbook/0083). A newborn was placed touching its
-  parent (D077), the current returned every body to where it found it (D059, written when
+  parent (D077), the current returned every body to where it found it (D037, written when
   "nothing reads horizontal position" was true), and no body ever swam, so every clade was a
   column packed around its founder's spot for the whole run, draining its own cells since the
   grid. Thirty-three rounds were read on a report that carries a mean depth and per-patch bins
@@ -612,6 +620,21 @@ actually verifying it.
   `cols abs` and `x sd` (the occupied 1 m columns of the footprint and the spread of x) are
   read with `alive`. The rounds' books, prices and verdicts stand as measured; every claim
   about where food is relative to bodies is confounded and logbook/0084 lists the retries.
+- **From D088 (2026-09-10) the water carries, and three readings change with it.** `EVOSIM_CURRENT_MODE
+  Transport` is a three-dimensional divergence-free field at RMS `EVOSIM_CURRENT`, equal on every
+  axis, that moves bodies, corpses and the grid's cells; `Rolls` (the default, and every recorded
+  config) is the returning current. Read the mode from the header (`current 0.3 m/s transport`),
+  and read **`mean m/s` as the water**: a sitter in the transport field moves at about two thirds
+  of the knob because the water does, so the column that was the locomotion readout is not one,
+  and there is no relative-speed column yet. The grid substeps its advection when the fastest
+  water (2.45 times the RMS) would cross more than half a cell in a metabolic step and refuses
+  above eight substeps; 0.3 m/s on 1 m cells is two, and about a quarter of the throughput.
+  Dispersal is `EVOSIM_OFFSPRING_DISPERSAL` (`OffspringDispersalMetres`, 0 = D077's touching
+  rule), **not `EVOSIM_DISPERSAL`**, which is D061's retired patch lottery and still bound; the
+  header prints `dispersal=`. The placer reserves a child's adult radius from this build, so
+  `crowded` and `stillb` mean something different from round 33's; founders still reserve
+  their birth radius. Both tunables refuse every earlier `config.json`, rounds 32 and 33
+  included.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.

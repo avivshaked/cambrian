@@ -201,6 +201,13 @@ namespace Evosim.Sim.EditorTools
             float currentBlink = Env("EVOSIM_CURRENT_BLINK", 0f);
             bool currentAdvect = Env("EVOSIM_CURRENT_ADVECT", 0f) > 0.5f;
 
+            // Which field the water is: the rolls of D059 and D066, or the three-dimensional
+            // transport field over D077's box. Unset is Rolls, which is every run on file. In
+            // Transport the speed above is the RMS over the box rather than a peak, and the cell
+            // height and the roll switches are not read, so the header names the mode next to the
+            // speed rather than leaving a reader to work out which number they are looking at.
+            CurrentMode currentMode = EnvCurrentMode("EVOSIM_CURRENT_MODE");
+
             // D067's four. The vent is a plume rising from the floor in one patch with the return
             // sinking through all the others, which is the return path a roll that stops above the
             // floor does not have (logbook/0048). Speed 0 is off, and off is every run before D067
@@ -312,6 +319,13 @@ namespace Evosim.Sim.EditorTools
             // bit for bit — see RunConfig.SharedSpace for why the two branches are whole worlds
             // and not one world with a switch.
             bool sharedSpace = Env("EVOSIM_SHARED_SPACE", 0f) > 0.5f;
+
+            // How far a newborn may be set down from its parent, metres. 0 is D077's touching
+            // rule and every run on file. The name is not EVOSIM_DISPERSAL: that one is taken,
+            // by D061's retired patch lottery a few lines above, and one variable setting two
+            // tunables is how a launcher silently describes a world it did not run.
+            float offspringDispersal = Env(
+                "EVOSIM_OFFSPRING_DISPERSAL", new RunConfig().OffspringDispersalMetres);
 
             // D077's other half, on its own knob so the boundary can be read without the box:
             // how hard the water pushes a body back in above the surface and below the floor, as
@@ -587,6 +601,7 @@ namespace Evosim.Sim.EditorTools
 
             config.Genome.MaxLinkPower = maxPower;
             config.Genome.MinLinkPower = Math.Min(minPower, maxPower);
+            config.Current.Mode = currentMode;
             config.Current.Speed = currentSpeed;
             config.Current.PeriodSeconds = currentPeriod;
             config.Current.CellMetres = currentCell;
@@ -624,6 +639,7 @@ namespace Evosim.Sim.EditorTools
             config.PerPatchShading = patchShading;
             config.WorldAreaSquareMetres = area;
             config.SharedSpace = sharedSpace;
+            config.OffspringDispersalMetres = offspringDispersal;
             // DESIGN.md §6.2's queued item, closed: the physics step is now a tunable, so it
             // reaches config.json and the hash like every other setting. Read back from
             // Ecosystem.FixedDt rather than from `physicsDt` again — the static above is what the
@@ -808,11 +824,28 @@ namespace Evosim.Sim.EditorTools
                 // D066. The current is three numbers and two switches now, not one number, and a
                 // header that named only the speed would describe five different worlds
                 // identically — which is exactly the failure the run-header rule exists to stop.
-                " · current " + currentSpeed + " m/s over " + currentPeriod + " s in " +
-                currentCell + " m cells" +
-                " · rolls " + (currentRolls
-                    ? currentBlink > 0f ? "blink " + currentBlink + " s" : "steady"
-                    : "off") +
+                // The mode goes next to the speed because it says what the speed means: an RMS
+                // over the whole box under transport, a peak under the rolls. A header that named
+                // only the number would describe two different worlds identically, which is the
+                // failure the run-header rule exists to stop.
+                //
+                // And the cell height and the roll switches are a roll's own geometry, which the
+                // transport field does not read. The first transport smoke printed
+                // "rolls blink 3000 s" for a world with no rolls in it, because the launcher still
+                // carried round 35's roll settings: a token that names a knob the run did not
+                // spend is worse than a missing one, since the rule is to verify an arm from its
+                // header. Both are therefore rendered as unread rather than as values.
+                " · current " + currentSpeed + " m/s " +
+                currentMode.ToString().ToLowerInvariant() +
+                " over " + currentPeriod + " s" +
+                (currentMode == CurrentMode.Transport
+                    ? " (cell " + currentCell + " m unread)"
+                    : " in " + currentCell + " m cells") +
+                " · rolls " + (currentMode == CurrentMode.Transport
+                    ? "unread in transport"
+                    : currentRolls
+                        ? currentBlink > 0f ? "blink " + currentBlink + " s" : "steady"
+                        : "off") +
                 " · advect " + (currentAdvect ? "on" : "off") +
                 " · vent " + (vent > 0f
                     ? vent + " m/s in patch " + (int)ventPatch + " from " + ventDepth +
@@ -853,6 +886,11 @@ namespace Evosim.Sim.EditorTools
                 " · area " + area + " m2" +
                 // D077 — appended after `area`, which is the setting the box is derived from.
                 " · space " + spaceToken +
+                // Beside the token that names the box, because it is a rule about where in the
+                // box a body starts. Rendered unconditionally for D065's reason: a world where
+                // newborns touch their parents and a report written before the knob existed must
+                // not read the same, and every run on file is the first of those.
+                " dispersal=" + offspringDispersal + " m" +
                 " · surface restore " + surfaceRestore +
                 (floorCloses > 0f ? " · floor closes " + floorCloses + " s" : " · floor open") +
                 " · ceiling " + maxPopulation +
@@ -1942,6 +1980,13 @@ namespace Evosim.Sim.EditorTools
             // species nobody alive still belongs to.
             var speciesSeen = new HashSet<uint>();
 
+            // The living that carry a stomach, by id, for the horizontal spread instrument below.
+            // Collected in the loop that already decides the question rather than walked again in
+            // Ecosystem, so `cols abs` and `absorpt` in the same row cannot disagree about what an
+            // absorptive creature is. Allocated per row, like alivePerPatch above, and for the
+            // same reason: a row is written every reportEvery metabolic steps.
+            var absorptiveNow = new HashSet<long>();
+
             // D077. Alive per patch — one column each. The instrument the footprint world is read
             // through: with patches as regions, "the population is in one patch" and "the
             // population is spread" are different worlds that `alive` alone cannot tell apart,
@@ -1992,6 +2037,7 @@ namespace Evosim.Sim.EditorTools
 
                     absorptive++;
                     creatureAbsorptive = true;
+                    absorptiveNow.Add(creature.Id);
                     EverAbsorptive.Add(creature.Id);
 
                     // Born into the trade rather than mutated into it. Counted against the ids
@@ -2090,6 +2136,13 @@ namespace Evosim.Sim.EditorTools
             // World's own function rather than a tally in the loop above, so a test can ask the
             // world what it holds without building a report.
             int photosynthetic = world.CountPhotosynthetic();
+
+            // Where the population stands on the floor plan, which the report has never carried:
+            // occupied columns of the box's footprint and the spread on each horizontal axis. The
+            // reading is taken in Ecosystem, which owns the positions, from the roots CheckFinite
+            // read this metabolic step. `totalColumns` is 0 in a tiled world, where the instrument
+            // is off rather than reading an empty box.
+            Ecosystem.HorizontalSpread spread = eco.MeasureHorizontalSpread(absorptiveNow);
 
             // Spread, not only the mean, and it is the statistic a migration would show up in.
             // A population that has settled at one good depth and a population sloshing up and
@@ -2433,7 +2486,16 @@ namespace Evosim.Sim.EditorTools
                 // count is bodies-times-resizes; the two distances are maxima over the run.
                 .Field("resizes", eco.Resizes)
                 .Field("resizeJumpMetres", eco.MaxResizeJumpMetres)
-                .Field("resizeStepMetres", eco.MaxResizeStepMetres);
+                .Field("resizeStepMetres", eco.MaxResizeStepMetres)
+                // The horizontal spread instrument (2026-09-10), appended after the resize check
+                // per the same append-only rule. `totalColumns` is the denominator and the switch
+                // at once: 0 says the world is tiled and the other four are not readings. The two
+                // spreads are circular standard deviations in metres, because the box wraps.
+                .Field("occupiedColumns", spread.OccupiedColumns)
+                .Field("totalColumns", spread.TotalColumns)
+                .Field("occupiedColumnsAbsorptive", spread.OccupiedColumnsAbsorptive)
+                .Field("xSpreadMetres", spread.XSpreadMetres)
+                .Field("zSpreadMetres", spread.ZSpreadMetres);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -2675,6 +2737,22 @@ namespace Evosim.Sim.EditorTools
                 alive > 0 ? world.MeanBirthInvestment.ToString("0.###", c) : "—",
                 alive > 0 ? world.MeanBroodSize.ToString("0.###", c) : "—",
                 alive > 0 ? world.MeanBodyFraction.ToString("0.###", c) : "—",
+
+                // The horizontal spread instrument (2026-09-10), appended after `body frac` per
+                // the append-only rule. `cols` is occupied columns of the box's footprint over
+                // the whole footprint, one column per square metre, so 17/100 in the campaign's
+                // 20 x 5 m box is a population standing on a sixth of the world. `cols abs` is
+                // the same count over the stomachs alone, which is the packing the ribbon
+                // question is about. `x sd` is the circular standard deviation of x in metres.
+                // An em-dash on a tiled world, for `contacts`' reason: there is no footprint to
+                // be a share of, and a 0 would read as a world crushed into one column.
+                spread.TotalColumns > 0
+                    ? spread.OccupiedColumns.ToString(c) + "/" + spread.TotalColumns.ToString(c)
+                    : "—",
+                spread.TotalColumns > 0
+                    ? spread.OccupiedColumnsAbsorptive.ToString(c) + "/" + spread.TotalColumns.ToString(c)
+                    : "—",
+                spread.TotalColumns > 0 ? spread.XSpreadMetres.ToString("0.00", c) : "—",
             };
 
             // The per-patch populations, last, so everything before them keeps its index.
@@ -2829,6 +2907,17 @@ namespace Evosim.Sim.EditorTools
             // tells them apart. The two refusals growth adds and the resize jump check are in
             // stats.jsonl rather than here, so that the table did not grow seven columns at once.
             "adult scale", "invest", "brood", "body frac",
+
+            // The horizontal spread instrument (2026-09-10), appended after `body frac` per the
+            // append-only rule. Where the population stands on the floor plan, which the report
+            // has never said anything about: `cols` is occupied square metres of the box's
+            // footprint over the whole footprint, `cols abs` the same for the stomachs, `x sd`
+            // the circular standard deviation of x in metres. Read `cols` against `alive`: a
+            // thousand creatures in seventeen columns is the two-ribbon world the theatre found
+            // in round 33 seed 3, and a mean depth and four patch bins cannot show it. An
+            // em-dash in a tiled world, where there is no box. `z sd` is in stats.jsonl only, to
+            // keep the table's growth to three.
+            "cols", "cols abs", "x sd",
         };
 
         /// <summary>
@@ -2951,6 +3040,25 @@ namespace Evosim.Sim.EditorTools
 
             throw new ArgumentException(
                 name + " is '" + raw + "', which is none of 'cells', 'vertices' or 'grid'.");
+        }
+
+        /// <summary>
+        /// Which current field to run: `rolls` or `transport`, case-insensitive; unset is Rolls.
+        /// Anything else stops the launch, for <see cref="Env(string, float)"/>'s reason.
+        /// </summary>
+        private static CurrentMode EnvCurrentMode(string name)
+        {
+            string raw = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrEmpty(raw)) return CurrentMode.Rolls;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "rolls": return CurrentMode.Rolls;
+                case "transport": return CurrentMode.Transport;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is neither 'rolls' nor 'transport'.");
         }
 
         private static float Env(string name, float fallback)

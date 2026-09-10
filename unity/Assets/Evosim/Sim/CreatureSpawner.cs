@@ -414,6 +414,16 @@ namespace Evosim.Sim
             return _jointRate < 0.05f ? "   <b>— barely moving</b>" : "";
         }
 
-        private void OnDestroy() => _creature?.Destroy();
+        /// <summary>
+        /// The one place a body is let go at the end of the frame instead of at once.
+        /// </summary>
+        /// <remarks>
+        /// Unity is already tearing this component's own GameObject down when this runs, and the
+        /// creature hangs off it, so an immediate destroy here is a destroy from inside a
+        /// destruction callback. Nothing simulates afterwards, which is what makes the deferral
+        /// harmless here and nowhere else: see <c>PhenotypeInstance.Destroy</c> for why every
+        /// other call site is immediate now.
+        /// </remarks>
+        private void OnDestroy() => _creature?.DestroyAtEndOfFrame();
     }
 }

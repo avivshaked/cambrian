@@ -61,6 +61,12 @@ namespace Evosim.Sim
         /// 64 attempts sample the parent's own shell densely; they do not search further afield,
         /// which is deliberate. "Beside the parent" is the rule, and a birth that had to be flung
         /// across the patch to fit would not be that.
+        /// <para>
+        /// With <see cref="OffspringDispersalMetres"/> above 0 each attempt also re-draws the
+        /// distance, over the whole disc rather than the shell, so the budget searches an area
+        /// instead of a ring. The count is unchanged: a child that cannot be set down in 64 tries
+        /// is still a crowded stillbirth, and that is still a fact about the world.
+        /// </para>
         /// </remarks>
         public const int AttemptBudget = 64;
 
@@ -89,14 +95,35 @@ namespace Evosim.Sim
         private bool _reserved;
         private Occupant _reservation;
 
-        public SharedVolume(int patchCount, float patchWidthMetres, float depthMetres, ulong seed)
+        public SharedVolume(
+            int patchCount,
+            float patchWidthMetres,
+            float depthMetres,
+            ulong seed,
+            float offspringDispersalMetres = 0f)
         {
             PatchCount = Mathf.Max(1, patchCount);
             PatchWidthMetres = Mathf.Max(0.01f, patchWidthMetres);
             DepthMetres = Mathf.Max(0.01f, depthMetres);
 
+            // Floored at 0 rather than trusted: a negative radius would pass Mathf.Sqrt as NaN and
+            // put a newborn nowhere, which the free test would then reject 64 times over and file
+            // as a crowded world.
+            OffspringDispersalMetres = Mathf.Max(0f, offspringDispersalMetres);
+
             _rng = new Rng(Rng.SeedFor(seed, World.PlacementIndex));
         }
+
+        /// <summary>
+        /// The disc a newborn is set down in, about its parent, metres.
+        /// <see cref="RunConfig.OffspringDispersalMetres"/>. 0 is D077's touching rule.
+        /// </summary>
+        /// <remarks>
+        /// Taken in the constructor rather than settable like <see cref="Floor"/>, because it is a
+        /// world rule and not a scene dependency: a run that changed it halfway through would have
+        /// two placement rules under one config hash.
+        /// </remarks>
+        public float OffspringDispersalMetres { get; }
 
         /// <summary>
         /// The sea bed, once there is one — <c>scratch/floor-spec.md</c> rule 2. Null leaves the
@@ -360,12 +387,43 @@ namespace Evosim.Sim
                 : creature.Patch;
         }
 
-        public bool TryReserveOffspring(Organism parent, Phenotype child, ref float heightY, out int patch)
+        /// <summary>
+        /// Reserves a newborn's spot at the size of the adult it grows into.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The radius is the adult's, and that is a world rule.</b> Since D087 a child is born
+        /// at a fraction of the body its genome describes and grows into it where it lies, up to
+        /// twentyfold, while its neighbours do the same towards it. A spot chosen to fit the
+        /// newborn is therefore a spot it grows out of, and the growth is what closes the gap:
+        /// round 33's seed 2 threw three bodies to NaN in a single contact cluster half a metre
+        /// across, and the step-after-resize instrument read a quarter of a metre of engine
+        /// displacement in that arm, which is a body being pushed on a growth step
+        /// (logbook/0082). <c>World.Conceive</c> hands the adult plan down for this reason, and
+        /// everything the radius reaches here follows it: the free test, the clearance over the
+        /// bed, and the floor under the dispersal draw.
+        /// </para>
+        /// <para>
+        /// <b>What it costs is births.</b> A crowded neighbourhood refuses more of them, so
+        /// <see cref="Refusals"/> and the world's crowded stillbirths rise where bodies are packed
+        /// and are untouched where they are not. That is the honest reading of a world that has no
+        /// room in it, and it is preferable to the alternative the old rule bought, which was a
+        /// birth granted room the creature could not keep. No tunable is added: the rule changes
+        /// with the build, the build hash records it, and every seed is a new realisation of its
+        /// world from here.
+        /// </para>
+        /// <para>
+        /// The occupied volume still holds each living body at the size it is now
+        /// (<see cref="Note"/>, refreshed on every resize by <c>Ecosystem.ApplyGrowth</c>), not at
+        /// the size it will be. Only the reservation looks ahead.
+        /// </para>
+        /// </remarks>
+        public bool TryReserveOffspring(Organism parent, Phenotype adult, ref float heightY, out int patch)
         {
             patch = parent != null ? parent.Patch : 0;
-            if (parent == null || child == null) return false;
+            if (parent == null || adult == null) return false;
 
-            float radius = BoundingRadius(child);
+            float radius = BoundingRadius(adult);
 
             // A parent nothing has told us about cannot be bred beside. It should not happen —
             // every living creature is Noted at the start of the metabolic step in which it can
@@ -374,16 +432,20 @@ namespace Evosim.Sim
             // an ecological fact.
             if (!_known.TryGetValue(parent.Id, out Occupant at))
             {
-                return TryReserveFounder(child, ref heightY, out patch);
+                return TryReserveFounder(adult, ref heightY, out patch);
             }
 
+            // The two radii: the parent as it is now, and the child as it will be. Everything
+            // that reads this distance reads the second of those.
             float distance = at.Radius + radius;
 
-            // A parent resting on the bed is at its parent's depth minus nothing, and its child's
-            // sphere is the child's own size: put beside a parent lying on the rock, a larger
-            // newborn would be half inside it. Raised only, and only as far as it takes — the
-            // ordinary body, metres off the bottom, is placed at exactly its parent's depth, which
-            // is the depth the parent's income was earned at.
+            // A parent resting on the bed is at its parent's depth minus nothing, and the sphere
+            // being cleared is the adult's: put beside a parent lying on the rock, a larger
+            // newborn would be half inside it, and one that grew there would end up inside it.
+            // Raised only, and only as far as it takes — the ordinary body, metres off the bottom,
+            // is placed at exactly its parent's depth, which is the depth the parent's income was
+            // earned at. A body near the bed is now lifted by its adult radius rather than its
+            // newborn one, so a lineage living on the floor is born a little further off it.
             float y = Mathf.Max(at.Position.y, LowestPlacement(radius));
 
             for (int attempt = 0; attempt < AttemptBudget; attempt++)
@@ -394,10 +456,30 @@ namespace Evosim.Sim
                 // be the world choosing where a child should live.
                 float angle = _rng.Range(0f, 2f * Mathf.PI);
 
+                // How far out, and the only thing dispersal changes. At 0 this is `distance`, the
+                // touching rule, with no draw taken and therefore no perturbation of the stream:
+                // the branch is the old code, and a config at 0 replays the record. Above 0 the
+                // radius is R·sqrt(u) so the draw is uniform over the disc's area rather than
+                // over its radius, which would pile children up near the parent and reproduce the
+                // ribbon this knob exists to break. Floored at the touching distance, because two
+                // bounding spheres may not overlap however the lottery falls, and that distance is
+                // the parent as it stands plus the child as it will be: a floor drawn at the
+                // newborn's radius would let the lottery put a child close enough to grow into its
+                // own parent.
+                //
+                // ⚠ Neither branch can be tested where it lives. The placer is Sim-side and needs
+                // UnityEngine, so Evosim.Core cannot reach it, and a bit-identity test against
+                // the old code would need two builds of Unity in one process. The guarantee is
+                // therefore structural and has to stay that way: at 0 no draw is taken and the
+                // expression is `distance` itself.
+                float reach = OffspringDispersalMetres > 0f
+                    ? Mathf.Max(distance, OffspringDispersalMetres * Mathf.Sqrt(_rng.NextFloat()))
+                    : distance;
+
                 var candidate = new Vector3(
-                    WrapAxis(at.Position.x + distance * Mathf.Cos(angle), LengthMetres),
+                    WrapAxis(at.Position.x + reach * Mathf.Cos(angle), LengthMetres),
                     y,
-                    WrapAxis(at.Position.z + distance * Mathf.Sin(angle), PatchWidthMetres));
+                    WrapAxis(at.Position.z + reach * Mathf.Sin(angle), PatchWidthMetres));
 
                 if (!Free(candidate, radius)) { Rejections++; continue; }
 

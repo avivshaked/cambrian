@@ -166,12 +166,18 @@ namespace Evosim.Sim
         public float MinimumPlacementY(float boundingRadius) =>
             TopY + Mathf.Max(0f, boundingRadius) + ClearanceMetres;
 
+        /// <summary>Takes the bed out of the scene, immediately and in either mode.</summary>
+        /// <remarks>
+        /// <c>PhenotypeInstance.Destroy</c>'s reason, applied to the largest collider in the
+        /// world: a bed deferred to the end of the frame is a rock still standing in the water
+        /// while the next world is built into the same space, and in Play mode that frame is tens
+        /// of physics steps (logbook/0083).
+        /// </remarks>
         public void Destroy()
         {
             if (Root == null) return;
 
-            if (Application.isPlaying) Object.Destroy(Root);
-            else Object.DestroyImmediate(Root);
+            Object.DestroyImmediate(Root);
         }
     }
 }

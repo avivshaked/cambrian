@@ -263,6 +263,42 @@ namespace Evosim.Core
         [Tunable("population", Unit = "m")]
         public float FounderDepthSpread { get; set; } = 20f;
 
+        /// <summary>
+        /// How far a newborn may be set down from its parent, metres. 0 is D077's rule exactly:
+        /// touching, at a random compass angle.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Nothing in the world moved a sitter sideways until this knob.</b> A newborn is
+        /// placed against its parent (D077 rule 5), the rolling current returns a body to where
+        /// it found it by design (D037), and no other rule touches x or z. So a clade is a column
+        /// packed around the spot its founder landed on, for the whole run. On 2026-09-10 the
+        /// theatre showed round 33 seed 3 as two vertical ribbons about a metre wide, and no
+        /// column in the record could have shown it: the report carries a mean depth and per-patch
+        /// bins and nothing about x or z. Since the grid (D086) a mouth drains the one cell it
+        /// stands in, so a ribbon like that drains the same handful of cells for thirty thousand
+        /// seconds.
+        /// </para>
+        /// <para>
+        /// <b>A propagule in the sea drifts before it settles</b>, which is the biology this
+        /// stands in for. Above 0 the child's horizontal position is drawn uniformly over a disc
+        /// of this radius about the parent, uniform in area rather than in radius, and never
+        /// closer than the two bounding spheres allow. The depth is still the parent's, because
+        /// that is the depth the parent's income was earned at.
+        /// </para>
+        /// <para>
+        /// Default 0, so every launcher in the record still describes the world it ran, and the
+        /// placer takes the same branch it always took. The rule itself lives in
+        /// <c>Evosim.Sim</c>'s <c>SharedVolume</c>, with the rest of the box.
+        /// <c>EVOSIM_OFFSPRING_DISPERSAL</c> in the header, which is not
+        /// <c>EVOSIM_DISPERSAL</c>: that name already belongs to
+        /// <see cref="DispersalChancePerStep"/>, D061's retired patch lottery, and one name for
+        /// two knobs would set both from one launcher.
+        /// </para>
+        /// </remarks>
+        [Tunable("population", Unit = "m")]
+        public float OffspringDispersalMetres { get; set; }
+
         /// <summary>Horizontal area of the world, m² — the sun's aperture. DESIGN.md §5A.2b.</summary>
         /// <remarks>
         /// <b>This is the carrying capacity, and it is the only thing that sets one.</b> The world

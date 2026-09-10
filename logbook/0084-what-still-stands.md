@@ -106,7 +106,7 @@ shading needs a length scale smaller than a patch, and that is a ruling of its o
 - **Corpses as particles** (D086 clause 5). A corpse drifting downstream matters only if
   somebody is downstream; in a column its stock fell back on its own clade. Retry: 0079's
   corpses-off control, dispersed.
-- **The returning current, the standing waves and the vent's plume** (D059, D037, D067).
+- **The returning current, the standing waves and the vent's plume** (D037, D066, D067).
   Their premise, "nothing reads horizontal position", has been false since D083. Their
   results are void as transport claims, and the current is being rebuilt.
 - **The patchy world and the roll cells** (D061, D066, 0044, 0048). Horizontal structure
@@ -129,7 +129,7 @@ shading needs a length scale smaller than a patch, and that is a ruling of its o
 ## What the owner has to rule again
 
 The decisions that need a superseding or re-read entry once the fixed world has run: D077
-(clause 5, retired), D059 and D037 (the current's premise), D086 and D083 (their prize
+(clause 5, retired), D037 and D066 (the current's premise), D086 and D083 (their prize
 arithmetic and round 32's verdict), D084 and D085 (mixing), D082 (the prize side), D087
 (the walk, and the placer's birth-size reservation), D063's verdicts, D070 and D085's
 exudate clause, D074's doses; D061 and D066 marked moot.

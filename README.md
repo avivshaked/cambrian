@@ -23,15 +23,18 @@ plans**, which is what an open-ended ecosystem is being built to produce.
 > brains, and energy is a conserved budget audited to 0.0000% across the whole food web. A
 > finite competed-for sun, currents and mixing, senescence, a matter currency, a buoyancy
 > organ, living excretion, marine snow and a vent are all in and measured
-> ([`DECISIONS.md`](DECISIONS.md) D023–D087). Thirty-three rounds, each read by a person against a rule written down before launch,
+> ([`DECISIONS.md`](DECISIONS.md) D023–D088). Thirty-three rounds, each read by a person against a rule written down before launch,
 > ([logbook/0036](logbook/0036-the-floor-gives-back.md) onward) found the constraint one
 > layer at a time — the floor, the drowning, the matter ratchet, the stomach's gearing — and
 > the last of them was the flux: the second trophic level was fed at one percent of the
 > first because producers fed the water only by dying. The standing goal has been met, most
 > recently five seeds of five in round 33, the first world in which bodies are born small and
 > grow (`logbook/0082`; D086, D087), with three genome dials walking the same way in every
-> seed. The grid's base round named the next constraint: its lines of eaters thin without
-recruiting (logbook/0079). Movement has never paid its energy cost — the cost side is
+> seed. Then the theatre, pointed at a scored run for the first time, showed every clade as a
+> metre-wide column in a world whose current returned bodies to where it found them
+> (`logbook/0083`); a dispersed birth and a current that carries replaced those rules the same
+> day (D088, `logbook/0085`), and which of the thirty-three rounds' readings survive the
+> three-dimensional world is the open question (`logbook/0084`). Movement has never paid its energy cost — the cost side is
 > closed, the prize side is open — and throughput binds every remaining question.
 
 ---

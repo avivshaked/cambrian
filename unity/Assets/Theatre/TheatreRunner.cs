@@ -149,6 +149,21 @@ namespace Evosim.Theatre
         private GUIStyle _panel;
         private GUIStyle _text;
 
+        /// <summary>
+        /// The replay on screen, or null when Mode B has not opened one.
+        /// </summary>
+        /// <remarks>
+        /// Read by the Play-mode identity check (<c>TheatreIdentityCheck.RunInPlayMode</c>), which
+        /// drives this component's own <c>Update</c> and then reads the verdict off it rather than
+        /// running a second loop of its own. A loop of its own is what the edit-mode check does,
+        /// and what it could not see: the fault in logbook/0083 lives in the difference between
+        /// one step per frame and tens of them.
+        /// </remarks>
+        public TheatreReplay Replay => _replay;
+
+        /// <summary>Why nothing opened, or null. The same string the overlay prints.</summary>
+        public string Error => _error;
+
         private void Start()
         {
             _palette.Photosynthetic = PhotosyntheticColour;

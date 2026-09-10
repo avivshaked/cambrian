@@ -18,7 +18,7 @@ together.
   placer that could prove a spot free, and the spot it proves is one body-radius from the
   parent at a random compass angle, at the parent's depth. That is the whole horizontal law
   for a body that does not swim: a random walk of a fraction of a metre per generation.
-- **The current returns a body to where it found it** (D059). Two standing waves,
+- **The current returns a body to where it found it** (D037). Two standing waves,
   antisymmetric in time, chosen so that the water stirs without carrying anything. The
   comment on the code says why: "nothing reads horizontal position, so this changes what
   the water feels like and not where anything ends up." When it was written the world was
@@ -94,4 +94,4 @@ Play-mode variant.
 ## Sources
 
 The owner's theatre session (2026-09-10 midday; Mode B on `runs/r33-s3`); `SharedVolume.cs`
-`TryReserveOffspring`; `CurrentField.VelocityAt`; D059, D077, D086; logbook/0079, 0082.
+`TryReserveOffspring`; `CurrentField.VelocityAt`; D037, D066, D077, D086; logbook/0079, 0082.

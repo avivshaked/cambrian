@@ -224,7 +224,7 @@ namespace Evosim.Theatre
         {
             if (Eco == null) return false;
 
-            map?.BeforeStep(Eco.World);
+            map?.BeforeStep(Eco.World, Eco.Volume);
             bool metabolic = Eco.Step();
             map?.AfterStep();
 

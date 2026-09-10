@@ -32,7 +32,13 @@ namespace Evosim.Core
         /// Reserves room for a child about to be born beside <paramref name="parent"/>.
         /// </summary>
         /// <param name="parent">The parent, already alive and therefore already somewhere.</param>
-        /// <param name="child">The developed body, for the size the room has to hold.</param>
+        /// <param name="adult">
+        /// The developed body <b>at its adult size</b>, for the room that has to be held. Not the
+        /// body the child is born with: since D087 a child is born at a fraction of this and grows
+        /// into it without moving, so a spot that fits the newborn is a spot it grows out of and
+        /// into its neighbours (logbook/0082's contact cluster). What the world promises a newborn
+        /// is room for the animal it becomes.
+        /// </param>
         /// <param name="heightY">
         /// In, the depth the child would be admitted at — its parent's. Out, the depth it is
         /// actually placed at, which the implementation may only ever <b>raise</b>: a world with a
@@ -45,13 +51,21 @@ namespace Evosim.Core
         /// than inheriting an index, so this is what the child is admitted with.
         /// </param>
         /// <returns>False when the neighbourhood is full: a crowded stillbirth.</returns>
-        bool TryReserveOffspring(Organism parent, Phenotype child, ref float heightY, out int patch);
+        bool TryReserveOffspring(Organism parent, Phenotype adult, ref float heightY, out int patch);
 
         /// <summary>
         /// Reserves room anywhere in the world for a body that has no parent — a floor founder
         /// (<c>World.EnforceFloor</c>) or an inoculant (<c>World.Inoculate</c>).
         /// </summary>
-        /// <param name="body">The developed body, for its size.</param>
+        /// <param name="body">
+        /// The developed body, for its size. <b>Still the newborn here</b>, where
+        /// <see cref="TryReserveOffspring"/> takes the adult since 2026-09-10: a founder and an
+        /// inoculant are born at their own birth fraction too (growth rule 7) and grow in place
+        /// exactly as a child does, so the same argument applies to them and the same change has
+        /// not been made, because the founder rule is the owner's to move and this one was ruled
+        /// for births. A floor spawn into a full world therefore still reserves a spot it can
+        /// grow out of.
+        /// </param>
         /// <param name="heightY">
         /// In, the depth it was drawn at; only x and z are free. Out, the depth it is actually
         /// placed at — raised, and never lowered, when the draw would have put the body in the

@@ -99,7 +99,44 @@ namespace Evosim.Sim
         /// </remarks>
         public Float3[] RelativeVelocity { get; internal set; }
 
+        /// <summary>Takes the body out of the water, on the line that kills it.</summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Immediate in both modes, and that is the fix rather than the tidiness.</b> This used
+        /// to call <c>Object.Destroy</c> whenever <c>Application.isPlaying</c>, which Unity defers
+        /// to the end of the frame. In the farm a frame is one physics step and nothing can tell
+        /// the difference; in the theatre a frame is tens of steps, so a creature killed inside a
+        /// step stayed in the scene as an undriven collider for the rest of the frame, and a
+        /// newborn placed into the spot it was still standing in was shoved out of it by the
+        /// depenetration. That is an impulse the recording never felt: the theatre's replay of
+        /// round 33 seed 3 matched its recording exactly at 100 s and had parted from it by 200 s
+        /// (logbook/0083). The farm and the theatre must run the same step, so the body leaves the
+        /// world at the moment the world says it is dead.
+        /// </para>
+        /// <para>
+        /// The one caller that cannot have this is <see cref="DestroyAtEndOfFrame"/>.
+        /// </para>
+        /// </remarks>
         public void Destroy()
+        {
+            if (Root == null) return;
+
+            Object.DestroyImmediate(Root);
+            Root = null;
+        }
+
+        /// <summary>
+        /// Takes the body out at the end of the frame, for a caller that is already inside Unity's
+        /// own teardown.
+        /// </summary>
+        /// <remarks>
+        /// The single exception to <see cref="Destroy"/>, and it is not a simulation path.
+        /// <c>CreatureSpawner.OnDestroy</c> runs while Unity is destroying the object this body
+        /// hangs from, and destroying a GameObject immediately from inside a destruction callback
+        /// is the case Unity leaves undefined. Nothing steps afterwards, so the frame this waits
+        /// for simulates nothing and the fidelity argument above does not arise.
+        /// </remarks>
+        public void DestroyAtEndOfFrame()
         {
             if (Root == null) return;
 
@@ -649,13 +686,21 @@ namespace Evosim.Sim
             _partMaterial = new Material(shader) { name = "Evosim Part" };
         }
 
+        /// <summary>Borrows a primitive's mesh and takes the primitive straight back out.</summary>
+        /// <remarks>
+        /// Immediate in both modes, for <see cref="PhenotypeInstance.Destroy"/>'s reason and one
+        /// sharper. <c>CreatePrimitive</c> hands back a GameObject with a collider on it at the
+        /// origin, and this runs the first time anything builds a body, which in the theatre is
+        /// inside the first physics step: a deferred destroy would leave a cube, a sphere and a
+        /// cylinder standing in the water for the rest of that frame, in a box the creatures are
+        /// swimming in. The mesh itself is a built-in asset and outlives the object it came from.
+        /// </remarks>
         private static Mesh PrimitiveMesh(PrimitiveType type)
         {
             GameObject temp = GameObject.CreatePrimitive(type);
             Mesh mesh = temp.GetComponent<MeshFilter>().sharedMesh;
 
-            if (Application.isPlaying) Object.Destroy(temp);
-            else Object.DestroyImmediate(temp);
+            Object.DestroyImmediate(temp);
 
             return mesh;
         }

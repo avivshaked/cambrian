@@ -8,6 +8,18 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
+**The three-dimensional world is built (D088, logbook/0085, 2026-09-10 afternoon): a newborn
+dispersed over a 5 m disc about its parent (`EVOSIM_OFFSPRING_DISPERSAL`, 0 replays the
+record), a current that carries bodies, corpses and the grid's cells in three dimensions with
+equal speed on every axis (`EVOSIM_CURRENT_MODE Transport`; the rolls kept as `Rolls`), every
+destroy immediate so that the theatre's replay matches the farm (identity 6 of 6 in Play mode
+on the smoke), the placer reserving the adult's radius, the theatre's id pairing fixed for bred
+children. The table carries `cols`, `cols abs`, `x sd`. The viewing arm `r35v-s3` (seed 3,
+0.01, 30,000 s, worker 7, `scratch/launch-r35.ps1` defaults) runs for the owner's theatre
+pass; the owner's sequence is to see the fixed world first, then rule on 0084's knob list
+(dispersal radius, box shape, speed and period, founders' reservation, mixing, prices,
+corpses, the mass floor, shading's length scale), then the retries in 0084's bin 3. Round 34
+waits behind that. `mean m/s` reads the water now; a relative-speed column does not exist.**
 **Round 33, the growth base, is read (logbook/0082, 2026-09-10 morning): the goal rule in five
 seeds of five, every stomach line recruiting and four of five founded by a late child; adult
 scale, investment and litter walked the same way in every seed and stopped at the mass floor,

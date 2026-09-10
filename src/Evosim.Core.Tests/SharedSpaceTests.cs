@@ -162,7 +162,7 @@ namespace Evosim.Core.Tests
 
             public float LastOfferedHeightY;
 
-            public bool TryReserveOffspring(Organism parent, Phenotype child, ref float heightY, out int patch)
+            public bool TryReserveOffspring(Organism parent, Phenotype adult, ref float heightY, out int patch)
             {
                 patch = Patch;
                 LastOfferedHeightY = heightY;

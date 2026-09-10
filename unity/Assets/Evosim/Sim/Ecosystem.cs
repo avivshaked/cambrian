@@ -503,7 +503,7 @@ namespace Evosim.Sim
                 // is would price the ecology against one and place bodies against the other.
                 Volume = new SharedVolume(
                     Fluid.PatchCount, World.Nutrients.PatchWidthMetres,
-                    config.WorldDepthMetres, seed);
+                    config.WorldDepthMetres, seed, config.OffspringDispersalMetres);
 
                 World.Placement = Volume;
 
@@ -653,6 +653,184 @@ namespace Evosim.Sim
         /// (CLAUDE.md's lineage-dissection gotcha).
         /// </remarks>
         public long FloorContactPairs => System.Threading.Interlocked.Read(ref _floorContactPairs);
+
+        // -------------------------------------------------------------- where the bodies are, flat
+
+        /// <summary>The side of one horizontal column the spread instrument counts, metres.</summary>
+        /// <remarks>
+        /// A metre, because a creature is metre-scale (§4.1's dimension range) and the ribbon this
+        /// instrument was built for was about a metre wide. It also makes the reading easy to say
+        /// out loud: the campaign's box is 20 x 5 m, so the count is out of 100.
+        /// </remarks>
+        public const float ColumnMetres = 1f;
+
+        /// <summary>
+        /// How much of the box's footprint the living actually stand on, at one sample.
+        /// </summary>
+        /// <remarks>
+        /// <b><see cref="TotalColumns"/> is 0 when the instrument is off</b>, which is every tiled
+        /// world: bodies there sit on a lattice a hundred metres apart and a footprint column
+        /// means nothing. The report prints an em-dash on that, for the reason <c>contacts</c>
+        /// does. 0 occupied columns out of 100 and no box are different facts.
+        /// </remarks>
+        public struct HorizontalSpread
+        {
+            /// <summary>Columns holding at least one living root.</summary>
+            public int OccupiedColumns;
+
+            /// <summary>Columns in the box's footprint. 0 means the instrument is off.</summary>
+            public int TotalColumns;
+
+            /// <summary>Columns holding at least one living root with absorptive tissue.</summary>
+            public int OccupiedColumnsAbsorptive;
+
+            /// <summary>Circular standard deviation of x, metres, on the ring's circumference.</summary>
+            public double XSpreadMetres;
+
+            /// <summary>Circular standard deviation of z, metres, across the box's width.</summary>
+            public double ZSpreadMetres;
+
+            /// <summary>Living bodies the reading is taken over.</summary>
+            public int Bodies;
+        }
+
+        /// <summary>Reused between samples, since the footprint's size cannot change in a run.</summary>
+        private bool[] _columnHeld;
+        private bool[] _columnHeldAbsorptive;
+
+        /// <summary>
+        /// Where the living are horizontally: how many columns of the footprint they stand on, and
+        /// how spread out they are on each axis.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The report had no x and no z at all, and that is how a world could run for thirty
+        /// thousand seconds as two ribbons without anyone seeing it.</b> On 2026-09-10 the theatre
+        /// showed round 33 seed 3 as two vertical columns about a metre wide. Nothing in the world
+        /// moves a sitter sideways: a newborn is placed against its parent (D077 rule 5), the
+        /// rolling current puts a body back where it found it (D059), and no other rule touches
+        /// the horizontal. Since the grid (D086) a mouth drains the one cell it stands in, so a
+        /// ribbon drains the same handful of cells forever. The report carried a mean depth and
+        /// per-patch bins, and a patch is 10 m wide: four bins cannot tell a spread population
+        /// from a pair of threads inside one of them.
+        /// </para>
+        /// <para>
+        /// <b>Circular, not linear, on both axes.</b> The box is periodic (<see cref="SharedVolume"/>),
+        /// so x = 0.1 and x = 19.9 are neighbours and a linear standard deviation would call that
+        /// pair the most spread population possible. The circular deviation is the standard fix:
+        /// average the unit vectors, and read the spread off the length of the mean. It is
+        /// reported in metres by scaling radians back onto the axis, so it is comparable with
+        /// <c>depth sd</c> beside it, and it is capped at one whole extent, which no real
+        /// population reaches.
+        /// </para>
+        /// <para>
+        /// <b>At the sample cadence, off the physics path.</b> One dictionary lookup per living
+        /// creature against a root position <see cref="CheckFinite"/> already read this metabolic
+        /// step, so the instrument makes no Transform read of its own, the same discipline
+        /// <see cref="AboveSurface"/> keeps. A creature conceived during this step has no body
+        /// yet and is skipped; so is one whose root is not finite, which is a diverged body about
+        /// to be killed rather than a position.
+        /// </para>
+        /// </remarks>
+        /// <param name="absorptive">
+        /// Ids of the living that carry absorptive tissue, or null for none. Passed in rather than
+        /// walked here, so that <c>cols abs</c> and <c>absorpt</c> in the same row cannot come
+        /// from two different definitions of a stomach.
+        /// </param>
+        public HorizontalSpread MeasureHorizontalSpread(HashSet<long> absorptive)
+        {
+            var reading = new HorizontalSpread();
+            if (Volume == null) return reading;
+
+            float length = Volume.LengthMetres;
+            float width = Volume.PatchWidthMetres;
+
+            // Ceiling, not rounding, so a box whose side is not a whole number of metres still has
+            // a column for every point in it; the last one on each axis is then a part column, and
+            // the clamp below is what keeps a body exactly on the far face inside the array.
+            int nx = Mathf.Max(1, Mathf.CeilToInt(length / ColumnMetres));
+            int nz = Mathf.Max(1, Mathf.CeilToInt(width / ColumnMetres));
+            int total = nx * nz;
+
+            if (_columnHeld == null || _columnHeld.Length != total)
+            {
+                _columnHeld = new bool[total];
+                _columnHeldAbsorptive = new bool[total];
+            }
+            else
+            {
+                Array.Clear(_columnHeld, 0, total);
+                Array.Clear(_columnHeldAbsorptive, 0, total);
+            }
+
+            double sinX = 0d, cosX = 0d, sinZ = 0d, cosZ = 0d;
+
+            IReadOnlyList<Organism> living = World.Living;
+
+            for (int i = 0; i < living.Count; i++)
+            {
+                Organism creature = living[i];
+                if (!_bodies.TryGetValue(creature.Id, out Body body)) continue;
+
+                Vector3 root = body.LastRootPosition;
+                float horizontal = root.x + root.z;
+                if (float.IsNaN(horizontal) || float.IsInfinity(horizontal)) continue;
+
+                reading.Bodies++;
+
+                int ix = Mathf.Clamp(Mathf.FloorToInt(root.x / ColumnMetres), 0, nx - 1);
+                int iz = Mathf.Clamp(Mathf.FloorToInt(root.z / ColumnMetres), 0, nz - 1);
+                int column = iz * nx + ix;
+
+                if (!_columnHeld[column])
+                {
+                    _columnHeld[column] = true;
+                    reading.OccupiedColumns++;
+                }
+
+                if (absorptive != null && absorptive.Contains(creature.Id) && !_columnHeldAbsorptive[column])
+                {
+                    _columnHeldAbsorptive[column] = true;
+                    reading.OccupiedColumnsAbsorptive++;
+                }
+
+                double angleX = 2d * Math.PI * root.x / length;
+                double angleZ = 2d * Math.PI * root.z / width;
+
+                sinX += Math.Sin(angleX);
+                cosX += Math.Cos(angleX);
+                sinZ += Math.Sin(angleZ);
+                cosZ += Math.Cos(angleZ);
+            }
+
+            reading.TotalColumns = total;
+            reading.XSpreadMetres = CircularSpread(sinX, cosX, reading.Bodies, length);
+            reading.ZSpreadMetres = CircularSpread(sinZ, cosZ, reading.Bodies, width);
+
+            return reading;
+        }
+
+        /// <summary>
+        /// Mardia's circular standard deviation, in metres on an axis of <paramref name="extent"/>.
+        /// </summary>
+        /// <remarks>
+        /// sqrt(-2 ln R), where R is the length of the mean unit vector, converted from radians by
+        /// extent / 2pi. It is unbounded as R goes to zero, which is a population spread perfectly
+        /// evenly round the ring, so it is capped at one whole extent: a scattered world reads
+        /// about 0.46 of it and nothing real gets past that. 0 for fewer than two bodies, where
+        /// there is no spread to speak of rather than a spread of nothing.
+        /// </remarks>
+        private static double CircularSpread(double sinSum, double cosSum, int count, double extent)
+        {
+            if (count < 2 || extent <= 0d) return 0d;
+
+            double r = Math.Sqrt(sinSum * sinSum + cosSum * cosSum) / count;
+            if (r <= 0d) return extent;
+
+            double radians = Math.Sqrt(Math.Max(0d, -2d * Math.Log(Math.Min(1d, r))));
+
+            return Math.Min(extent, radians * extent / (2d * Math.PI));
+        }
 
         /// <summary>
         /// Advances physics one step, and the economy once every

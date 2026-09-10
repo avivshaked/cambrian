@@ -55,7 +55,21 @@ namespace Evosim.Theatre
         }
 
         private readonly Dictionary<long, Body> _bodies = new Dictionary<long, Body>();
-        private readonly MaterialPropertyBlock _block = new MaterialPropertyBlock();
+        /// <summary>
+        /// Made on first paint, never in a field initializer — see the remarks below.
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="MaterialPropertyBlock"/> is an engine object, and Unity refuses to create
+        /// one while it is deserializing a MonoBehaviour, which is exactly when that
+        /// MonoBehaviour's field initializers run. <c>TheatreRunner</c> holds its palette as
+        /// <c>private readonly TheatrePalette _palette = new TheatrePalette()</c>, so building the
+        /// block here threw <c>CreateImpl is not allowed…</c> before <c>Start</c> ran, left
+        /// <c>_palette</c> null, and killed the viewer on Play with a bare
+        /// <c>NullReferenceException</c> two frames later. The headless checks never saw it: they
+        /// build the world directly and never instantiate the component, so the interactive path
+        /// went unexercised from D075 until someone first pressed Play (2026-09-10).
+        /// </remarks>
+        private MaterialPropertyBlock _block;
         private readonly List<MeshRenderer> _scratch = new List<MeshRenderer>();
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -96,6 +110,8 @@ namespace Evosim.Theatre
             }
 
             float brightness = on ? Mathf.Lerp(Starving, 1f, Mathf.Clamp01(tint)) : 1f;
+
+            if (_block == null) _block = new MaterialPropertyBlock();
 
             for (int i = 0; i < body.Renderers.Length; i++)
             {

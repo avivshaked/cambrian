@@ -75,6 +75,13 @@ namespace Evosim.Core
         private readonly double[] _velocityY;
         private readonly double[] _velocityZ;
 
+        // CurrentMode.Transport's field is a function of a place, so it is sampled per cell rather
+        // than per layer and patch. Allocated on the first transport step - see
+        // EnsureCellVelocities.
+        private double[] _cellVelocityX;
+        private double[] _cellVelocityY;
+        private double[] _cellVelocityZ;
+
         private readonly int[] _patchOfColumn;
 
         // Reused by DepositBox so a per-step influx allocates nothing.
@@ -803,11 +810,38 @@ namespace Evosim.Core
         /// transport for a tidiness nothing is asking for.
         /// </para>
         /// <para>
-        /// <b>The velocity is sampled once per layer and patch.</b> <see cref="CurrentField"/>
-        /// is a function of depth, time and patch, so the x face at every column of a patch feels
-        /// the same water. The face's own depth is used: cell centres for the horizontal passes,
-        /// the interface depth for the vertical one, which is the staggered arrangement
-        /// <see cref="NutrientField.Advect"/> already upwinds across.
+        /// <b>The velocity is sampled once per layer and patch under
+        /// <see cref="CurrentMode.Rolls"/>.</b> That field is a function of depth, time and patch,
+        /// so the x face at every column of a patch feels the same water. The face's own depth is
+        /// used: cell centres for the horizontal passes, the interface depth for the vertical one,
+        /// which is the staggered arrangement <see cref="NutrientField.Advect"/> already upwinds
+        /// across.
+        /// </para>
+        /// <para>
+        /// <b>Under <see cref="CurrentMode.Transport"/> it is sampled once per cell.</b> That field
+        /// is a function of a place, and a per-layer sample would throw away exactly the structure
+        /// it exists to have: two cells in one patch at one depth would be handed the same water,
+        /// which is the coarseness that made a clade drain the same cells for a whole run
+        /// (logbook/0083). The same two depths are used, so the pass shape is unchanged.
+        /// </para>
+        /// <para>
+        /// <b>The cost, stated.</b> Two samples per cell per advection step, and the advection
+        /// step is the metabolic step and not the physics step, so a 20 by 60 by 5 m box on metre
+        /// cells is 12,000 samples every half second of world time for the detritus grid, and a
+        /// twenty-fifth of that for the matter grid on 5 m cells. A sample is five Fourier modes,
+        /// four trigonometric calls each. It is not cached across the step because there is nothing
+        /// to cache: the clock has moved by the time it is called again, and the field is a
+        /// function of the clock.
+        /// </para>
+        /// <para>
+        /// <b>The Courant check is against the field's maximum, not its RMS.</b>
+        /// <see cref="CurrentField.Speed"/> is an average over the whole box under
+        /// <see cref="CurrentMode.Transport"/>, and an average says nothing about the fastest
+        /// water, which is where a scheme comes apart. The per-face fraction is still clamped at a
+        /// half so that conservation and non-negativity hold whatever anyone configures, but a
+        /// world whose fastest water would cross more than half a cell in a step is refused rather
+        /// than quietly run at a transport slower than the config asks for, which is
+        /// <see cref="Mix"/>'s ruling applied to the same arithmetic.
         /// </para>
         /// <para>
         /// <b>Nothing leaves the world.</b> The vertical pass walks only interfaces between two
@@ -820,21 +854,126 @@ namespace Evosim.Core
             if (current == null || !current.AdvectFields) return;
             if (!(dt > 0f)) return;
 
+            bool transport = current.Mode == CurrentMode.Transport;
+            int substeps = 1;
+
+            if (transport)
+            {
+                double courant = current.MaximumTransportSpeed * (double)dt / CellMetres;
+
+                if (courant > 0.5)
+                {
+                    substeps = (int)Math.Ceiling(2.0 * courant);
+
+                    if (substeps > MaximumSubsteps)
+                    {
+                        throw new ArgumentException(
+                            FormattableString.Invariant(
+                                $"Upwind advection on a grid is stable to a Courant number of a half, ") +
+                            FormattableString.Invariant(
+                                $"and the transport field's fastest water, at most ") +
+                            FormattableString.Invariant(
+                                $"{current.MaximumTransportSpeed:0.####} m/s, crosses {courant:0.####} ") +
+                            FormattableString.Invariant($"of a {CellMetres} m cell in {dt} s. ") +
+                            FormattableString.Invariant(
+                                $"That needs {substeps} substeps and the ceiling is {MaximumSubsteps}. ") +
+                            "Shorten the step, widen the cell, or slow the current. The knob is an RMS " +
+                            "over the box and this is the ceiling, which is the number stability " +
+                            "depends on.",
+                            nameof(current));
+                    }
+                }
+
+                EnsureCellVelocities();
+            }
+
+            // Exactly dt when there is one substep, so a rolls world runs the same arithmetic in
+            // the same order it always did and every recorded run replays.
+            float step = dt / substeps;
+
+            for (int i = 0; i < substeps; i++)
+            {
+                Sweep(current, seconds + i * (double)step, step, transport);
+            }
+        }
+
+        /// <summary>
+        /// How many substeps <see cref="Advect"/> will split one step into rather than run past a
+        /// Courant number of a half, and the ceiling past which it refuses instead.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Substeps rather than a refusal, ruled 2026-09-10.</b> The first build refused, on
+        /// <see cref="Mix"/>'s argument that a clamp turns a config error into an unrecorded change
+        /// of physics. That argument is sound about a clamp and wrong about a substep: a clamp runs
+        /// a slower transport than the config asks for and says nothing, while a substep runs the
+        /// transport the config asks for and costs time. The refusal was also biting a world nobody
+        /// would call unreasonable, round 35's own 0.3 m/s over 1 m cells at a half-second
+        /// metabolic step, where the honest answer is two substeps and not a stopped launch.
+        /// </para>
+        /// <para>
+        /// <b>Each substep samples the field at its own clock</b>, <c>seconds + i·dt/n</c>, so a
+        /// substepped step is a shorter step run n times and not one velocity applied n times. The
+        /// three passes are conservative per substep exactly as they are per step, so the total is
+        /// unmoved by however many there are.
+        /// </para>
+        /// <para>
+        /// <b>The ceiling stays, because the cost is real.</b> Eight substeps is a Courant number
+        /// of four, sixteen field samples per cell per metabolic step; past that the config is
+        /// asking for water faster than the grid is a description of, and the same refusal names
+        /// the numbers so the fix is arithmetic.
+        /// </para>
+        /// </remarks>
+        public const int MaximumSubsteps = 8;
+
+        /// <summary>One pass of the three upwind axes at one clock. <see cref="Advect"/>'s body.</summary>
+        private void Sweep(CurrentField current, double seconds, float dt, bool transport)
+        {
             int k = PatchCount;
 
-            for (int iy = 0; iy < _ny; iy++)
+            if (transport)
             {
-                float centreY = -((iy + 0.5f) * CellMetres);
-                float interfaceY = -((iy + 1) * CellMetres);
-
-                for (int patch = 0; patch < k; patch++)
+                for (int iy = 0; iy < _ny; iy++)
                 {
-                    Float3 atCentre = current.VelocityAt(centreY, seconds, patch, k);
-                    _velocityX[iy * k + patch] = atCentre.X;
-                    _velocityZ[iy * k + patch] = atCentre.Z;
-                    _velocityY[iy * k + patch] = iy < _ny - 1
-                        ? current.VelocityAt(interfaceY, seconds, patch, k).Y
-                        : 0d;
+                    float centreY = -((iy + 0.5f) * CellMetres);
+                    float interfaceY = -((iy + 1) * CellMetres);
+                    bool hasBelow = iy < _ny - 1;
+
+                    for (int ix = 0; ix < _nx; ix++)
+                    {
+                        float x = (ix + 0.5f) * CellMetres;
+
+                        for (int iz = 0; iz < _nz; iz++)
+                        {
+                            float z = (iz + 0.5f) * CellMetres;
+                            int cell = Index(ix, iy, iz);
+
+                            Float3 atCentre = current.VelocityAt(x, centreY, z, seconds);
+                            _cellVelocityX[cell] = atCentre.X;
+                            _cellVelocityZ[cell] = atCentre.Z;
+                            _cellVelocityY[cell] = hasBelow
+                                ? current.VelocityAt(x, interfaceY, z, seconds).Y
+                                : 0d;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (int iy = 0; iy < _ny; iy++)
+                {
+                    float centreY = -((iy + 0.5f) * CellMetres);
+                    float interfaceY = -((iy + 1) * CellMetres);
+
+                    for (int patch = 0; patch < k; patch++)
+                    {
+                        Float3 atCentre = current.VelocityAt(centreY, seconds, patch, k);
+                        _velocityX[iy * k + patch] = atCentre.X;
+                        _velocityZ[iy * k + patch] = atCentre.Z;
+                        _velocityY[iy * k + patch] = iy < _ny - 1
+                            ? current.VelocityAt(interfaceY, seconds, patch, k).Y
+                            : 0d;
+                    }
                 }
             }
 
@@ -846,16 +985,34 @@ namespace Evosim.Core
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
-                        double u = _velocityX[iy * k + _patchOfColumn[ix]];
-                        if (u == 0d) continue;
+                        double layerU = transport ? 0d : _velocityX[iy * k + _patchOfColumn[ix]];
+                        double layerFraction = 0d;
 
-                        double fraction = Math.Abs(u) * dt / CellMetres;
-                        if (fraction > 0.5) fraction = 0.5;
+                        if (!transport)
+                        {
+                            if (layerU == 0d) continue;
+
+                            layerFraction = Math.Abs(layerU) * dt / CellMetres;
+                            if (layerFraction > 0.5) layerFraction = 0.5;
+                        }
 
                         int nextX = ix + 1 == _nx ? 0 : ix + 1;
                         for (int iz = 0; iz < _nz; iz++)
                         {
                             int cell = Index(ix, iy, iz);
+
+                            double u = layerU;
+                            double fraction = layerFraction;
+
+                            if (transport)
+                            {
+                                u = _cellVelocityX[cell];
+                                if (u == 0d) continue;
+
+                                fraction = Math.Abs(u) * dt / CellMetres;
+                                if (fraction > 0.5) fraction = 0.5;
+                            }
+
                             int east = Index(nextX, iy, iz);
                             _fluxX[cell] = u > 0d ? _stock[cell] * fraction : -_stock[east] * fraction;
                         }
@@ -873,16 +1030,33 @@ namespace Evosim.Core
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
-                        double w = _velocityY[iy * k + _patchOfColumn[ix]];
-                        if (w == 0d) continue;
+                        double layerW = transport ? 0d : _velocityY[iy * k + _patchOfColumn[ix]];
+                        double layerFraction = 0d;
 
-                        double fraction = Math.Abs(w) * dt / CellMetres;
-                        if (fraction > 0.5) fraction = 0.5;
+                        if (!transport)
+                        {
+                            if (layerW == 0d) continue;
+
+                            layerFraction = Math.Abs(layerW) * dt / CellMetres;
+                            if (layerFraction > 0.5) layerFraction = 0.5;
+                        }
 
                         for (int iz = 0; iz < _nz; iz++)
                         {
                             int upper = Index(ix, iy, iz);
                             int lower = Index(ix, iy + 1, iz);
+
+                            double w = layerW;
+                            double fraction = layerFraction;
+
+                            if (transport)
+                            {
+                                w = _cellVelocityY[upper];
+                                if (w == 0d) continue;
+
+                                fraction = Math.Abs(w) * dt / CellMetres;
+                                if (fraction > 0.5) fraction = 0.5;
+                            }
 
                             // Rising water carries what is below it up, sinking water carries what
                             // is above it down.
@@ -902,15 +1076,33 @@ namespace Evosim.Core
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
-                        double v = _velocityZ[iy * k + _patchOfColumn[ix]];
-                        if (v == 0d) continue;
+                        double layerV = transport ? 0d : _velocityZ[iy * k + _patchOfColumn[ix]];
+                        double layerFraction = 0d;
 
-                        double fraction = Math.Abs(v) * dt / CellMetres;
-                        if (fraction > 0.5) fraction = 0.5;
+                        if (!transport)
+                        {
+                            if (layerV == 0d) continue;
+
+                            layerFraction = Math.Abs(layerV) * dt / CellMetres;
+                            if (layerFraction > 0.5) layerFraction = 0.5;
+                        }
 
                         for (int iz = 0; iz < _nz; iz++)
                         {
                             int cell = Index(ix, iy, iz);
+
+                            double v = layerV;
+                            double fraction = layerFraction;
+
+                            if (transport)
+                            {
+                                v = _cellVelocityZ[cell];
+                                if (v == 0d) continue;
+
+                                fraction = Math.Abs(v) * dt / CellMetres;
+                                if (fraction > 0.5) fraction = 0.5;
+                            }
+
                             int front = Index(ix, iy, iz + 1 == _nz ? 0 : iz + 1);
                             _fluxZ[cell] = v > 0d ? _stock[cell] * fraction : -_stock[front] * fraction;
                         }
@@ -919,6 +1111,24 @@ namespace Evosim.Core
 
                 ApplyFront(_fluxZ);
             }
+        }
+
+        /// <summary>
+        /// The per-cell velocity buffers, allocated on the first transport step and never in a
+        /// world that does not take one.
+        /// </summary>
+        /// <remarks>
+        /// Three arrays of one double per cell, which is 144 kB on the campaign's 6,000 detritus
+        /// cells. Lazy rather than allocated in the constructor so that a rolls world, which is
+        /// every run in the record, carries exactly the memory it did before.
+        /// </remarks>
+        private void EnsureCellVelocities()
+        {
+            if (_cellVelocityX != null) return;
+
+            _cellVelocityX = new double[_stock.Length];
+            _cellVelocityY = new double[_stock.Length];
+            _cellVelocityZ = new double[_stock.Length];
         }
 
         /// <summary>Nothing to merge and nothing to drop: a cell is a cell.</summary>

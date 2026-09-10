@@ -162,6 +162,14 @@ namespace Evosim.Core
         public const ulong MatterFieldIndex = ulong.MaxValue - 4UL;
 
         /// <summary>
+        /// The stream behind <see cref="CurrentMode.Transport"/>'s phases. Its own, so that the
+        /// water a seed gets is decided by the seed and by nothing a knob elsewhere perturbs; it
+        /// takes no draw at all in a <see cref="CurrentMode.Rolls"/> world, because the field is
+        /// never built there.
+        /// </summary>
+        public const ulong CurrentFieldIndex = ulong.MaxValue - 5UL;
+
+        /// <summary>
         /// The stream behind <see cref="ConceptionOrder.Shuffled"/> — D072. Constructed for every
         /// world and drawn from by none but a shuffled one.
         /// </summary>
@@ -840,7 +848,13 @@ namespace Evosim.Core
             // creature feels in one is a velocity and does. The field is told once, here, from the
             // same geometry the fields themselves were built with — sqrt(area / K) — so a world
             // cannot end up with two patch widths that disagree.
-            config.Current?.SetPatchWidth(Nutrients.PatchWidthMetres);
+            // D086's grid and the transport field want the whole box, not only the width: the
+            // length is the width times the patch count and the floor is at minus the depth, and
+            // the seed is what makes one round's five seeds five draws of the water as well as of
+            // the genome. Same geometry the fields were built with, for the same reason.
+            config.Current?.SetBox(
+                Nutrients.PatchWidthMetres, patchCount, config.WorldDepthMetres,
+                Rng.SeedFor(seed, CurrentFieldIndex));
 
             Seed = seed;
 
@@ -1392,7 +1406,13 @@ namespace Evosim.Core
 
                 if (drifts)
                 {
-                    Float3 v = current.VelocityAt(p.Y, ElapsedSeconds, corpse.Patch, PatchCount);
+                    // A corpse carries a position, so under CurrentMode.Transport it rides the
+                    // water where it actually is rather than the water at its patch's centre.
+                    // The rolls take the patch, which is all that field is a function of, so
+                    // every run in the record drifts on the same arithmetic it always did.
+                    Float3 v = current.Mode == CurrentMode.Transport
+                        ? current.VelocityAt(p.X, p.Y, p.Z, ElapsedSeconds)
+                        : current.VelocityAt(p.Y, ElapsedSeconds, corpse.Patch, PatchCount);
                     x = WrapAxis(x + v.X * seconds, length);
                     y += v.Y * seconds;
                     z = WrapAxis(z + v.Z * seconds, width);
@@ -2618,13 +2638,22 @@ namespace Evosim.Core
             // expression is parent.HeightY exactly, as before.
             float childHeight = parent.HeightY;
 
-            // The newborn and not the adult. What the placer is asked for is room for the body
-            // that is about to exist, and a body born at a fifth of its adult volume needs a
-            // little over half the clearance — asking for the adult's would refuse births into
-            // water a child fits in perfectly well.
+            // The adult and not the newborn, reversed 2026-09-10. What the placer is asked for
+            // used to be room for the body that is about to exist, on the reasoning that a child
+            // born at a fifth of its adult volume needs a little over half the clearance and that
+            // asking for the adult's would refuse births into water a child fits in perfectly
+            // well. Since D087 that is the wrong end of the creature's life: the child does not
+            // stay that size. It grows into its adult body in place, up to twentyfold, inside a
+            // spot reserved for the body it was born as, and its neighbours grow towards it at the
+            // same time. Round 33's seed 2 threw three bodies to NaN in one contact cluster at
+            // 3,066.5 s, and the step-after-resize instrument peaked at 25 cm of engine
+            // displacement in that arm: bodies being shoved on a growth step (logbook/0082). So
+            // the world reserves the room the lineage will actually need. In a crowded
+            // neighbourhood that refuses more births, and those refusals are counted as crowded
+            // stillbirths, which is the honest reading: the room was not there.
             bool shared = Config.SharedSpace && Placement != null && newborn.PartCount > 0;
 
-            if (shared && !Placement.TryReserveOffspring(parent, newborn, ref childHeight, out childPatch))
+            if (shared && !Placement.TryReserveOffspring(parent, body, ref childHeight, out childPatch))
             {
                 CrowdedStillbirths++;
                 return Conception.Refused;

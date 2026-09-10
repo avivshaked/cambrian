@@ -217,6 +217,39 @@ namespace Evosim.Core
         public bool AdvectFields { get; set; }
 
         /// <summary>
+        /// Which field this is: D037's standing waves and D066's rolls, or a three-dimensional transport
+        /// field over the whole box. <see cref="CurrentMode.Rolls"/> by default, so every recorded
+        /// config replays.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The rolls were built for a world in which horizontal position did not exist.</b>
+        /// §6.3 tiled creatures across x and z and treated a tile index as a recycled bookkeeping
+        /// slot, so the field was made a function of depth, time and patch, and the class remark
+        /// above proves that such a field cannot be divergence-free and depth-varying at once.
+        /// D077 gave the world one shared box with real coordinates and D086 put the water on a
+        /// grid of cells, which removed the premise. On 2026-09-10 the owner opened round 33 seed
+        /// 3 in the theatre and saw the whole world as two vertical ribbons a metre wide in a box
+        /// twenty metres long (logbook/0083): a newborn was set down touching its parent, the roll
+        /// returned every body to the depth it found it at and moved nothing sideways, and no body
+        /// ever swam, so each clade drained the same handful of cells for thirty thousand seconds.
+        /// <see cref="CurrentMode.Transport"/> is the water that answers that.
+        /// </para>
+        /// <para>
+        /// <b>The patch-level readers are unchanged in either mode.</b>
+        /// <see cref="CrossingDirection"/> and <see cref="HorizontalCrossingFraction"/> move stock
+        /// between the cell and vertex fields' patches, which is a coarse-graining that a
+        /// positional field does not need and a grid does not use; in
+        /// <see cref="CurrentMode.Transport"/> they read the four-argument overload exactly as
+        /// they always did, which now samples at the patch's centre. The field that carries stock
+        /// with the local water is <see cref="GridField.Advect"/>, and it takes the positional
+        /// sampler.
+        /// </para>
+        /// </remarks>
+        [Tunable("current")]
+        public CurrentMode Mode { get; set; } = CurrentMode.Rolls;
+
+        /// <summary>
         /// Speed of the upwelling plume, m/s — D067. 0 (the default) is no vent, which is every
         /// run before D067 bit for bit.
         /// </summary>
@@ -386,6 +419,66 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// Tells the field the box it lives in and the run's seed, which is everything
+        /// <see cref="CurrentMode.Transport"/> needs and more than <see cref="CurrentMode.Rolls"/>
+        /// reads.
+        /// </summary>
+        /// <param name="patchWidthMetres">One patch's side, m. Also the box's z extent.</param>
+        /// <param name="patchCount">D061's patches, so the box is this many patches long in x.</param>
+        /// <param name="depthMetres">The box's depth, m. The floor sits at −this.</param>
+        /// <param name="seed">The run's seed, which the transport field's phases are drawn from.</param>
+        /// <remarks>
+        /// <para>
+        /// <b>State, not tunables, for <see cref="PatchWidthMetres"/>'s reason.</b> Every number
+        /// here is already in the hash somewhere else: the width is
+        /// <c>sqrt(WorldAreaSquareMetres / HorizontalPatches)</c>, the count and the depth are
+        /// their own tunables, and the seed is recorded in the run manifest beside the config hash.
+        /// Declaring them tunable would let a config name a geometry its own area contradicts, and
+        /// would put the seed in the hash, which would make one config two configs.
+        /// </para>
+        /// <para>
+        /// <b>The seed is here because the transport field has to differ between seeds.</b> A
+        /// fixed set of phases would put the same eddy in the same place in every run of a round,
+        /// so five seeds would be five draws of the genome and one draw of the water. That is not
+        /// a replicate.
+        /// </para>
+        /// </remarks>
+        public void SetBox(float patchWidthMetres, int patchCount, float depthMetres, ulong seed)
+        {
+            SetPatchWidth(patchWidthMetres);
+
+            if (patchCount < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(patchCount), patchCount, "A box is at least one patch long.");
+            }
+
+            if (!(depthMetres > 0f) || float.IsInfinity(depthMetres))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(depthMetres), depthMetres, "A depth is positive and finite.");
+            }
+
+            _patchCount = patchCount;
+            _depthMetres = depthMetres;
+            _seed = seed;
+
+            // Built lazily on the first sample, so a Rolls world never pays for it and a config
+            // handed to two worlds of different geometry rebuilds rather than describing the first.
+            _transportAmplitude = null;
+        }
+
+        private int _patchCount;
+        private float _depthMetres;
+        private ulong _seed;
+
+        /// <summary>The box's length along x, m: every patch side by side. 0 until a world says.</summary>
+        public float LengthMetres => _patchWidthMetres * _patchCount;
+
+        /// <summary>The box's depth, m. 0 until a world says.</summary>
+        public float DepthMetres => _depthMetres;
+
+        /// <summary>
         /// Whether the vent is doing anything at this patch count — D067.
         /// </summary>
         /// <remarks>
@@ -492,9 +585,21 @@ namespace Evosim.Core
         /// ring that D061 deliberately has none of.
         /// </para>
         /// </remarks>
+        /// <remarks>
+        /// <b>In <see cref="CurrentMode.Transport"/> it samples at the patch's centre</b>, because
+        /// a patch index is all this signature carries and the transport field is a function of a
+        /// place. Every reader that has a real position calls
+        /// <see cref="VelocityAt(float, float, float, double)"/> instead: the harness's drag pass,
+        /// the grid's advection and a drifting corpse all do. What is left on this overload is the
+        /// cell and vertex fields' patch-level transport, which is a coarse-graining already and
+        /// is honest about being one, and any harness that has only a depth.
+        /// </remarks>
         public Float3 VelocityAt(float heightY, double seconds, int patch, int patchCount)
         {
-            Float3 flow = RollOrSteady(heightY, seconds, patch, patchCount);
+            Float3 flow = Mode == CurrentMode.Transport
+                ? TransportAt(PatchCentreX(patch), heightY, 0.5f * _patchWidthMetres, seconds)
+                : RollOrSteady(heightY, seconds, patch, patchCount);
+
             if (!VentActive(patchCount)) return flow;
 
             double depth = -(double)heightY;
@@ -502,9 +607,437 @@ namespace Evosim.Core
             float w = (float)VentVertical(depth, patch, patchCount);
             float u = (float)VentHorizontal(depth, patch, patchCount);
 
-            // Both terms already satisfy Z = -X, so their sum does; nothing here needs to restate
-            // the convention.
+            // The vent's own contribution is (u, w, -u), so this is the sum of two velocities and
+            // nothing more. Under the rolls both terms satisfy Z = -X and so does the sum; under
+            // the transport field the flow half does not, and the addition is unaffected either
+            // way because it was never using that property, only restating it.
             return new Float3(flow.X + u, flow.Y + w, flow.Z - u);
+        }
+
+        // ------------------------------------------------------------------ the transport field
+
+        /// <summary>
+        /// Water velocity at a place and a time, m/s: the primary sampler for anything that knows
+        /// where it is.
+        /// </summary>
+        /// <param name="x">World x, m. The box is a ring <see cref="LengthMetres"/> long.</param>
+        /// <param name="y">World height, m. Zero is the waterline, negative is down.</param>
+        /// <param name="z">World z, m. The box is a ring <see cref="PatchWidthMetres"/> wide.</param>
+        /// <param name="seconds">The world's clock, s.</param>
+        /// <remarks>
+        /// <b>In <see cref="CurrentMode.Rolls"/> the horizontal coordinates buy only the patch</b>,
+        /// because that is all the roll field is a function of. A caller in that mode that already
+        /// holds a creature's patch should keep calling the four-argument overload with it: a patch
+        /// is assigned by the world and a patch recomputed from x is the same number in a settled
+        /// world and not necessarily the same number in the step a body crosses a seam, and every
+        /// run in the record was made with the world's answer.
+        /// </remarks>
+        public Float3 VelocityAt(float x, float y, float z, double seconds)
+        {
+            if (Mode != CurrentMode.Transport)
+            {
+                return VelocityAt(y, seconds, PatchOfX(x), Math.Max(1, _patchCount));
+            }
+
+            Float3 flow = TransportAt(x, y, z, seconds);
+            if (!VentActive(_patchCount)) return flow;
+
+            double depth = -(double)y;
+            int patch = PatchOfX(x);
+
+            float u = (float)VentHorizontal(depth, patch, _patchCount);
+            float w = (float)VentVertical(depth, patch, _patchCount);
+
+            return new Float3(flow.X + u, flow.Y + w, flow.Z - u);
+        }
+
+        /// <summary>Water velocity at a place and a time, m/s.</summary>
+        public Float3 VelocityAt(Float3 at, double seconds) => VelocityAt(at.X, at.Y, at.Z, seconds);
+
+        /// <summary>The patch an x falls in on the ring, <c>floor(x / W) mod K</c> — D077's rule.</summary>
+        /// <remarks>
+        /// <see cref="GridField.PatchOf"/>'s arithmetic, repeated here rather than shared because
+        /// this class knows nothing about fields and a world may have none of them. The two are
+        /// held together by <see cref="World"/> handing both the same geometry.
+        /// </remarks>
+        public int PatchOfX(float x)
+        {
+            if (_patchCount < 1 || !(_patchWidthMetres > 0f)) return 0;
+
+            int patch = (int)Math.Floor(WrapAxis(x, LengthMetres) / _patchWidthMetres);
+            patch %= _patchCount;
+            if (patch < 0) patch += _patchCount;
+            return patch;
+        }
+
+        private float PatchCentreX(int patch) => (patch + 0.5f) * _patchWidthMetres;
+
+        private static float WrapAxis(float v, float extent)
+        {
+            if (v >= 0f && v < extent) return v;
+            float folded = v - extent * (float)Math.Floor(v / extent);
+            if (folded >= extent || folded < 0f) folded = 0f;
+            return folded;
+        }
+
+        /// <summary>
+        /// An upper bound on the speed of the transport field anywhere in the box, m/s. 0 under
+        /// <see cref="CurrentMode.Rolls"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>A bound, not a sample, so a Courant check on it cannot be beaten by looking in the
+        /// wrong place.</b> It is the sum of every mode's own amplitude on each axis, combined
+        /// across the three: no argument can produce more, because every term is a sine or a
+        /// cosine. That makes it an over-estimate of the true supremum, typically by about twice,
+        /// and over-estimating is the direction a stability check should err in.
+        /// <see cref="GridField.Advect"/> refuses a step this bound would carry more than half a
+        /// cell in, which is what the RMS knob cannot answer: the knob is an average over the box
+        /// and the fastest water is where the trouble is.
+        /// </remarks>
+        public float MaximumTransportSpeed
+        {
+            get
+            {
+                if (Mode != CurrentMode.Transport || _speed <= 0f) return 0f;
+                EnsureTransport();
+                return _speed * _transportBound;
+            }
+        }
+
+        /// <summary>
+        /// The number of Fourier modes the vector potential is made of.
+        /// </summary>
+        /// <remarks>
+        /// Five, which is inside the three-to-six the owner's spec asks for. One mode alone is a
+        /// single steady eddy and a particle in it circles forever; the incommensurate drift rates
+        /// below are what stop the sum repeating, and they need more than one thing to be
+        /// incommensurate with.
+        /// </remarks>
+        private const int TransportModes = 5;
+
+        // Whole numbers of wavelengths across the box in x and z, which is what makes the field
+        // exactly periodic on D077's two rings rather than nearly so: a seam in a periodic world
+        // is a wall the water piles against. The five pairs are distinct, which
+        // MeasureTransportScale's closed form depends on.
+        //
+        // The vertical mode number is NOT in this table. It is derived per mode from the two
+        // horizontal ones so that the eddy is round rather than tall — see VerticalWaves.
+        private static readonly int[] TransportWavesX = { 1, 0, 1, 2, 2 };
+        private static readonly int[] TransportWavesZ = { 0, 1, 1, 1, 0 };
+
+        /// <summary>
+        /// The number of half-sines down the depth for a mode with these horizontal wavenumbers.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Derived, because the first build fixed it at one or two and the field came out
+        /// eleven parts vertical to one part horizontal.</b> The per-axis RMS at a knob of 0.3 m/s
+        /// read x 0.027, y 0.297, z 0.027, which is a lift and a fall and almost nothing sideways.
+        /// The owner asked for water that moves a body "up and down, left and right, in all
+        /// directions really", so the ruling of 2026-09-10 was to balance the axes.
+        /// </para>
+        /// <para>
+        /// <b>The balance is one line of algebra.</b> A single mode's mean square velocities are
+        /// <c>a²k_y²/4</c> on x, <c>a²k_y²/4</c> on z and <c>a²(k_x² + k_z²)/4</c> on y, because
+        /// the curl puts the vertical wavenumber on the horizontal components and the horizontal
+        /// wavenumbers on the vertical one. So the three are equal exactly when
+        /// <c>k_y = sqrt(k_x² + k_z²)</c>, and since <c>k_y = qπ/D</c> that fixes
+        /// <c>q = round(D·sqrt(k_x² + k_z²)/π)</c>. Rounding to a whole number costs at most a few
+        /// per cent of the balance and buys the exact zero at the bed that a fractional <c>q</c>
+        /// would give up.
+        /// </para>
+        /// <para>
+        /// <b>The eddies are squat because the box is.</b> A round eddy in a box 20 m long, 5 m
+        /// wide and 60 m deep is at most 5 m across, so it is at most 5 m tall: for the mode that
+        /// carries the z structure this comes out at <c>q</c> = 24, a vertical wavelength of 5 m,
+        /// which is of the order of the width rather than of the depth. That is the price of "all
+        /// directions" in a box of this shape and the owner ruled it acceptable. Two consequences
+        /// to hold in mind: the 1 m detritus grid resolves such a mode at four to ten cells per
+        /// wavelength, which is coarse but real, and the 5 m matter grid samples it about once per
+        /// wavelength, so what the matter grid feels is one sample of a wave it cannot see. Both
+        /// pass every conservation test either way, because a transfer is conservative whatever
+        /// velocity it is handed; what is under-resolved is the shape of the transport, not the
+        /// books.
+        /// </para>
+        /// <para>
+        /// <b>Never below one.</b> A wide shallow box would round to zero, at which the mode has no
+        /// vertical structure at all, no vertical velocity, and no closure to prove at the bed.
+        /// </para>
+        /// </remarks>
+        private static int VerticalWaves(double kx, double kz, double depth)
+        {
+            int q = (int)Math.Round(depth * Math.Sqrt(kx * kx + kz * kz) / Math.PI);
+            return q < 1 ? 1 : q;
+        }
+
+        private double[] _transportAmplitude;
+        private double[] _transportKx;
+        private double[] _transportKz;
+        private double[] _transportKy;
+        private double[] _transportRateF;
+        private double[] _transportRateG;
+        private double[] _transportPhaseF;
+        private double[] _transportPhaseG;
+        private float _transportBound;
+
+        /// <summary>
+        /// The three-dimensional field: the curl of a vector potential, sampled at a place and a
+        /// time, in units of <see cref="Speed"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The construction, in full.</b> Write the box as <c>x</c> on a ring of length
+        /// <c>L</c>, <c>z</c> on a ring of width <c>W</c>, and <c>y</c> from the floor at
+        /// <c>−D</c> to the waterline at 0. The potential is
+        /// <c>A = (Φ_m(y)·f_m, 0, Φ_m(y)·g_m)</c> summed over modes, with
+        /// <c>Φ_m(y) = sin(q_m·π·y/D)</c>, <c>f_m = a_m·cos(χ_m^f)</c>,
+        /// <c>g_m = a_m·cos(χ_m^g)</c> and
+        /// <c>χ = k_x·x + k_z·z + θ + σ·(2π·t/T)</c>, where <c>k_x = 2π·n/L</c> and
+        /// <c>k_z = 2π·p/W</c>. The velocity is its curl:
+        /// </para>
+        /// <para>
+        /// <c>u = Φ'·g</c>, <c>w = Φ·(∂f/∂z − ∂g/∂x)</c>, <c>v = −Φ'·f</c>, writing <c>u, w, v</c>
+        /// for the x, y and z components and <c>Φ' = (q·π/D)·cos(q·π·y/D)</c>. Since <c>f</c> and
+        /// <c>g</c> do not depend on <c>y</c>, the divergence is
+        /// <c>Φ'·∂g/∂x + Φ'·(∂f/∂z − ∂g/∂x) − Φ'·∂f/∂z = 0</c> identically, for every mode and so
+        /// for the sum. Divergence-free by derivation, not by correction: nothing here adjusts a
+        /// component after the fact, which is the mistake that would make the property hold at the
+        /// points a test happens to check and nowhere else.
+        /// </para>
+        /// <para>
+        /// <b>The vertical vanishes at both ends because <c>Φ</c> does</b>, and it is the only
+        /// factor on <c>w</c>. <c>sin(q·π·y/D)</c> is 0 at <c>y = 0</c> and at <c>y = −D</c> for
+        /// every whole <c>q</c>, so the water slides along the surface and along the bed and
+        /// carries nothing through either. Both ends are special-cased to exactly zero rather than
+        /// computed, for the reason the roll's are: <c>Math.Sin(-Math.PI)</c> is −1.2e-16, and a
+        /// vertical velocity of 1.2e-16 at the waterline is still a velocity, integrated over a
+        /// run into the slow invisible one-directional lift that carried a whole population six
+        /// metres into the air in 2,500 s (logbook/0022). A body or a parcel that has arrived
+        /// outside the box reads the water at the nearest face, so nothing above the surface is
+        /// pushed further up and nothing below the bed is pushed further down.
+        /// </para>
+        /// <para>
+        /// <b>Each mode's amplitude is divided by its own wavenumber norm</b>,
+        /// <c>κ = sqrt(2(qπ/D)² + k_x² + k_z²)</c>, so that the five modes contribute comparably
+        /// instead of the shortest wavelength drowning the rest: <c>w</c> scales as <c>a·k</c> and
+        /// the horizontal components as <c>a·qπ/D</c>, so equal <c>a</c> would weight a mode by how
+        /// finely it is cut. It also makes every mode contribute exactly a quarter to the mean
+        /// square, which is what lets the RMS scale be a closed form rather than a lattice: see
+        /// <see cref="MeasureTransportScale"/>. The whole field is multiplied by that scale so its
+        /// RMS speed over the box and over time is exactly 1, and <see cref="Speed"/> multiplies
+        /// that.
+        /// </para>
+        /// <para>
+        /// <b>The three axes carry the same RMS, and the first build's did not.</b> The curl puts
+        /// the vertical wavenumber on the horizontal components and the horizontal ones on the
+        /// vertical, so a mode with wavelengths of the order of the box on every axis is a tall
+        /// thin eddy that runs almost entirely up and down: the field measured eleven parts
+        /// vertical to one part horizontal in a box 20 m by 5 m by 60 m. Choosing the vertical mode
+        /// number to match the horizontal wavenumbers instead makes each mode round, and a round
+        /// eddy has no preferred axis. <see cref="VerticalWaves"/> carries the algebra and the
+        /// consequence, which is that the eddies are as squat as the box is narrow.
+        /// <see cref="HorizontalRatio"/> stays a rolls-only knob: scaling one component of a curl
+        /// by hand is exactly the correction that would give up divergence-free.
+        /// </para>
+        /// <para>
+        /// <b>The drift rates are incommensurate multiples of the period</b>,
+        /// <c>σ_j = 1 + j·φ</c> with <c>φ</c> the golden ratio's reciprocal and <c>j</c> running
+        /// over all ten halves of the five modes, with alternating signs so that no direction is
+        /// preferred. The ratio of any two of them is irrational, so the sum has no period, no
+        /// parcel is returned to where it started, and the mixing cannot switch itself off at a
+        /// timescale nobody chose. That is the same argument <see cref="Incommensurate"/> records
+        /// for the rolls, applied to ten terms rather than two.
+        /// </para>
+        /// </remarks>
+        private Float3 TransportAt(float x, float y, float z, double seconds)
+        {
+            if (_speed <= 0f) return Float3.Zero;
+
+            EnsureTransport();
+
+            return Unit(x, y, z, 2.0 * Math.PI * seconds / _periodSeconds) * (_speed * _transportScale);
+        }
+
+        private float _transportScale;
+
+        /// <summary>
+        /// The field at unit <see cref="Speed"/> and unit scale, at a place and an already-scaled
+        /// phase. Shared by the sampler and by the scale measurement so the two cannot describe
+        /// different water.
+        /// </summary>
+        private Float3 Unit(double x, double y, double z, double t)
+        {
+            double depth = _depthMetres;
+
+            // Outside the box reads the nearest face — see the remarks on TransportAt.
+            if (y > 0d) y = 0d;
+            else if (y < -depth) y = -depth;
+
+            bool atFace = y >= 0d || y <= -depth;
+
+            double vx = 0d, vy = 0d, vz = 0d;
+
+            for (int m = 0; m < TransportModes; m++)
+            {
+                double phase = _transportKx[m] * x + _transportKz[m] * z;
+                double chiF = phase + _transportPhaseF[m] + _transportRateF[m] * t;
+                double chiG = phase + _transportPhaseG[m] + _transportRateG[m] * t;
+
+                double a = _transportAmplitude[m];
+                double ky = _transportKy[m];
+
+                double profile = atFace ? 0d : Math.Sin(ky * y);
+                double slope = ky * Math.Cos(ky * y);
+
+                double f = a * Math.Cos(chiF);
+                double g = a * Math.Cos(chiG);
+
+                vx += slope * g;
+                vz -= slope * f;
+                vy += profile * a * (_transportKz[m] * -Math.Sin(chiF) + _transportKx[m] * Math.Sin(chiG));
+            }
+
+            return new Float3((float)vx, (float)vy, (float)vz);
+        }
+
+        private void EnsureTransport()
+        {
+            if (_transportAmplitude != null) return;
+
+            if (!(_patchWidthMetres > 0f) || _patchCount < 1 || !(_depthMetres > 0f))
+            {
+                throw new InvalidOperationException(
+                    "CurrentMode.Transport is a field over a box, and this field has not been " +
+                    "told what box it is in. Call SetBox(patchWidth, patchCount, depth, seed) " +
+                    "first; World's constructor does it for every world. " +
+                    FormattableString.Invariant(
+                        $"Have patch width {_patchWidthMetres} m, {_patchCount} patches, depth {_depthMetres} m."));
+            }
+
+            BuildTransport();
+        }
+
+        /// <summary>
+        /// Draws the modes' phases from the run's seed and fixes the scale that makes the RMS
+        /// speed the knob.
+        /// </summary>
+        /// <remarks>
+        /// <b>Independent of <see cref="Speed"/> and <see cref="PeriodSeconds"/> on purpose.</b>
+        /// The speed multiplies the whole field and the period only rescales the clock, so neither
+        /// changes the shape and neither forces a rebuild: sweeping either is then a cheap sweep
+        /// rather than a rebuild per sample. Geometry and the seed do change the shape, and
+        /// <see cref="SetBox"/> drops the tables when they move.
+        /// </remarks>
+        private void BuildTransport()
+        {
+            double length = LengthMetres;
+            double width = _patchWidthMetres;
+            double depth = _depthMetres;
+
+            _transportKx = new double[TransportModes];
+            _transportKz = new double[TransportModes];
+            _transportKy = new double[TransportModes];
+            _transportRateF = new double[TransportModes];
+            _transportRateG = new double[TransportModes];
+            _transportPhaseF = new double[TransportModes];
+            _transportPhaseG = new double[TransportModes];
+            _transportAmplitude = new double[TransportModes];
+
+            var rng = new Rng(_seed);
+
+            for (int m = 0; m < TransportModes; m++)
+            {
+                double kx = 2.0 * Math.PI * TransportWavesX[m] / length;
+                double kz = 2.0 * Math.PI * TransportWavesZ[m] / width;
+                double ky = VerticalWaves(kx, kz, depth) * Math.PI / depth;
+
+                _transportKx[m] = kx;
+                _transportKz[m] = kz;
+                _transportKy[m] = ky;
+
+                // κ, so that a finely cut mode does not outweigh a coarse one — see TransportAt.
+                _transportAmplitude[m] = 1.0 / Math.Sqrt(2.0 * ky * ky + kx * kx + kz * kz);
+
+                // σ_j = 1 + j·φ over the ten halves, signs alternating. (1 + jφ)/(1 + kφ) is
+                // rational only when j = k, so every pair of these is incommensurate.
+                _transportRateF[m] = Rate(2 * m);
+                _transportRateG[m] = Rate(2 * m + 1);
+
+                _transportPhaseF[m] = 2.0 * Math.PI * rng.NextFloat();
+                _transportPhaseG[m] = 2.0 * Math.PI * rng.NextFloat();
+            }
+
+            _transportScale = (float)(1.0 / MeasureTransportScale());
+
+            // The bound: every cosine and sine is at most 1, so this is a ceiling no argument
+            // reaches. See MaximumTransportSpeed.
+            double bx = 0d, by = 0d, bz = 0d;
+            for (int m = 0; m < TransportModes; m++)
+            {
+                double a = _transportAmplitude[m] * _transportScale;
+                bx += _transportKy[m] * a;
+                bz += _transportKy[m] * a;
+                by += a * (Math.Abs(_transportKz[m]) + Math.Abs(_transportKx[m]));
+            }
+
+            _transportBound = (float)Math.Sqrt(bx * bx + by * by + bz * bz);
+
+            double Rate(int j) => ((j & 1) == 0 ? 1.0 : -1.0) * (1.0 + j * Incommensurate);
+        }
+
+        /// <summary>
+        /// The RMS speed of the unit field over the box and over time, which the scale divides out
+        /// so that <see cref="Speed"/> means what it says.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A closed form, and the first build measured it on a lattice instead.</b> That was the
+        /// right call while two modes could share a wavevector, because then the cross terms do not
+        /// vanish and the algebra is a page long. Since the vertical mode number became a function
+        /// of the horizontal ones (see <see cref="VerticalWaves"/>) the five <c>(n, p)</c> pairs
+        /// are distinct, no two modes share a wavevector, and every cross term integrates to zero
+        /// over the box. The lattice then stopped being safe as well as stopping being necessary: a
+        /// balanced mode set puts up to twenty-seven half-sines down the depth, and twelve samples
+        /// in y alias that into a number with no relation to the field.
+        /// </para>
+        /// <para>
+        /// <b>The derivation.</b> For one mode, <c>&lt;v_x²&gt; = &lt;Φ'²&gt;&lt;g²&gt;</c> with
+        /// <c>Φ' = k_y·cos(k_y·y)</c>, and the y-average of <c>cos²</c> over a whole number of
+        /// half-periods is exactly a half, as is the average of <c>cos²(χ)</c> over the box and the
+        /// clock; so <c>&lt;v_x²&gt; = a²k_y²/4</c>, and the same for z. On y the two halves of the
+        /// mode carry different incommensurate drift rates, so their cross term averages to zero
+        /// over time and <c>&lt;v_y²&gt; = a²(k_x² + k_z²)/4</c>. Adding the three gives
+        /// <c>a²(2k_y² + k_x² + k_z²)/4</c>, which is <c>a²κ²/4</c> — and <c>a</c> is <c>1/κ</c>, so
+        /// every mode contributes exactly a quarter and the whole field's mean square is
+        /// <c>M/4</c>. The RMS is <c>sqrt(M)/2</c>, whatever the box and whatever the seed.
+        /// </para>
+        /// <para>
+        /// <b>It is checked and not merely asserted.</b> <c>CurrentTransportTests</c> measures the
+        /// RMS on its own lattice, at three knobs, and demands 5%.
+        /// </para>
+        /// </remarks>
+        private double MeasureTransportScale()
+        {
+            // The derivation needs distinct wavevectors, so it is checked rather than remembered:
+            // a repeated (n, p) pair would leave a cross term standing and the scale would be
+            // wrong by however much of it survived, silently and only in some boxes.
+            for (int m = 0; m < TransportModes; m++)
+            {
+                for (int n = m + 1; n < TransportModes; n++)
+                {
+                    if (TransportWavesX[m] == TransportWavesX[n] &&
+                        TransportWavesZ[m] == TransportWavesZ[n])
+                    {
+                        throw new InvalidOperationException(
+                            FormattableString.Invariant(
+                                $"Transport modes {m} and {n} share the wavevector ({TransportWavesX[m]}, {TransportWavesZ[m]}). ") +
+                            "The RMS scale is a closed form that assumes distinct wavevectors, so " +
+                            "two modes on one would make Speed mean something other than the RMS.");
+                    }
+                }
+            }
+
+            return Math.Sqrt(TransportModes) / 2.0;
         }
 
         /// <summary>
@@ -893,16 +1426,49 @@ namespace Evosim.Core
         public override string ToString() =>
             (_speed <= 0f
                 ? "still water"
-                : FormattableString.Invariant(
-                      $"{_speed:0.###} m/s peak, {_cellMetres:0.#} m cells, {_periodSeconds:0.#} s period") +
-                  (Rolls
-                      ? _rollBlinkSeconds > 0f
-                          ? FormattableString.Invariant($", rolls blinking every {_rollBlinkSeconds:0.#} s")
-                          : ", steady rolls"
-                      : "") +
+                : (Mode == CurrentMode.Transport
+                      // The knob means the RMS over the box here and the peak under the rolls, so
+                      // the string says which rather than printing one number under two meanings.
+                      // CellMetres is a roll's own geometry and is not named in a mode that has no
+                      // rolls to size.
+                      ? FormattableString.Invariant(
+                            $"{_speed:0.###} m/s RMS transport, {_periodSeconds:0.#} s period")
+                      : FormattableString.Invariant(
+                            $"{_speed:0.###} m/s peak, {_cellMetres:0.#} m cells, {_periodSeconds:0.#} s period") +
+                        (Rolls
+                            ? _rollBlinkSeconds > 0f
+                                ? FormattableString.Invariant($", rolls blinking every {_rollBlinkSeconds:0.#} s")
+                                : ", steady rolls"
+                            : "")) +
                   (AdvectFields ? ", advecting the fields" : "")) +
             (_ventSpeed > 0f
                 ? FormattableString.Invariant($", vent {_ventSpeed:0.###} m/s in patch {_ventPatch}")
                 : "");
+    }
+
+    /// <summary>
+    /// Which field <see cref="CurrentField"/> is — see <see cref="CurrentField.Mode"/> for why
+    /// there are two.
+    /// </summary>
+    public enum CurrentMode
+    {
+        /// <summary>
+        /// D037's standing wave in depth and D066's rolls over D061's patches: a function of
+        /// depth, time and patch index, and every run in the record. The default, so a recorded
+        /// config replays.
+        /// </summary>
+        Rolls = 0,
+
+        /// <summary>
+        /// A three-dimensional, divergence-free, time-varying field over D077's whole box, drawn
+        /// from the run's seed and sampled at a position.
+        /// </summary>
+        /// <remarks>
+        /// It moves a body up, down and sideways, and it moves the grid's water the same way, so
+        /// a clade that sits still is carried away from the cells it has drained. That is the
+        /// answer to the ribbons of logbook/0083; the construction is written out in full, with
+        /// its equations, on <c>CurrentField.TransportAt</c>.
+        /// </remarks>
+        Transport = 1,
     }
 }

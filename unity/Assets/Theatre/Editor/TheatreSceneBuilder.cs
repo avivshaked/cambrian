@@ -16,7 +16,8 @@ namespace Evosim.Theatre.EditorTools
     /// </remarks>
     public static class TheatreSceneBuilder
     {
-        private const string ScenePath = "Assets/Scenes/Theatre.unity";
+        /// <summary>Where the generated scene lives. Public so a batch entry can open it.</summary>
+        public const string ScenePath = "Assets/Scenes/Theatre.unity";
 
         [MenuItem("Evosim/Rebuild Theatre Scene")]
         public static bool Build()

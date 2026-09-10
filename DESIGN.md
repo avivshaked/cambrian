@@ -2,10 +2,10 @@
 
 **Status:** Draft 5 — endogenous selection (§5A) specified, then largely implemented and
 measured; findings are recorded inline with ✅/⚠/strikethrough marks as they land, and the
-decision trail is `DECISIONS.md` D017–D087. Milestones 0–5 of §10 are complete (out of the
+decision trail is `DECISIONS.md` D017–D088. Milestones 0–5 of §10 are complete (out of the
 listed order); perception (§4.4) is partial. There is no fitness function and no directed
 search — that is §5A working as specified, not something missing.
-**Date:** 2026-09-09 (draft 5 specified 2026-08-07; document begun 2026-08-02)
+**Date:** 2026-09-10 (draft 5 specified 2026-08-07; document begun 2026-08-02)
 
 A Karl Sims–style evolved-virtual-creatures simulator in Unity. Genomes encode both
 **body plan** and **brain**; creatures are grown from a directed graph and evaluated in
@@ -282,6 +282,21 @@ as standing; at 0 the death deposits at once as before. `RunConfig.FieldModel Gr
 it; the cell and vertex modes stay for the record. Why, and what was rejected: D086. What it
 answers: the owner's objection that a vertex world's hole lives at the vertices and not at
 the eater (logbook/0078).
+
+## 0v. Changelog — the third dimension (2026-09-10, D088)
+
+Three rules replaced after the theatre showed round 33 as two vertical ribbons (logbook/0083).
+A newborn is set down over a horizontal disc of `OffspringDispersalMetres` about its parent
+(0 is D077's touching rule, the default; `SharedVolume.TryReserveOffspring`), and the placer
+reserves the child's adult radius rather than its birth radius. §5A.4's current gains
+`CurrentMode Transport`: a three-dimensional divergence-free field over the box, equal on
+every axis, RMS at `CurrentSpeedMetresPerSecond`, phases drifting so that a parcel is carried
+(`CurrentField.VelocityAt(x, y, z, t)`); bodies, corpses and the grid's cells ride it, the
+grid substepping its advection where the Courant number would pass a half. The rolls
+(D037, D066) stay as `CurrentMode Rolls` for replay. Every destroy is immediate in Play mode
+as in batch, which is why the theatre's replay parted at 200 s, and a Play-mode identity
+check exists beside the edit-mode one. The table gains `cols`, `cols abs` and `x sd`; the
+header gains `dispersal=` and the current's mode. Built and smoked 2026-09-10 (logbook/0085).
 
 ## 0u. Changelog — bodies that grow (2026-09-09, D087)
 
@@ -1551,6 +1566,20 @@ existing model at one point: `FluidModel.BoxDrag` already takes a velocity, so p
 `bodyVelocity − currentVelocity` gives real advection for the price of a noise lookup. Drifting
 stops being free, and nutrients — being small and drag-dominated — are carried much further by
 it than creatures are.
+
+**Built, twice (D037/D066, then D088, §0v).** The first current was two standing waves in depth,
+then roll cells over patches, both chosen so that a body is returned to where it started, because
+horizontal position was a tile index and a field that read it would have made an artefact
+ecological (D037's proof). Once the world was one box (D077) that premise was false, and on
+2026-09-10 the theatre showed every clade as a column (logbook/0083). `CurrentMode Transport` is
+the field this paragraph asked for: the curl of a vector potential of five Fourier modes over the
+box, so divergence-free by construction; periodic along the length and the width; a half-sine
+profile in depth whose mode number is derived so that the three axes carry equal mean squares
+(the eddies are squat in a box 5 m wide and 60 m deep); zero vertical velocity at the surface and
+the bed; phases drifting at pairwise irrational rates so that a parcel is carried rather than
+returned; the knob its RMS speed. Bodies feel it through drag at their root, corpses drift by it,
+and the grid's cells are advected by the water at their centres, substepped where the Courant
+number would pass a half. The rolls remain as `CurrentMode Rolls` so that the record replays.
 
 **Light and depth.** Irradiance falls off with depth; dead matter sinks. This is the cheapest
 available source of **spatial heterogeneity**, and heterogeneity is what stops one strategy

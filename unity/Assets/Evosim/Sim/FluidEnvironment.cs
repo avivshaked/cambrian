@@ -275,9 +275,20 @@ namespace Evosim.Sim
                     // thread only; the compute phase past this point touches no Unity type.
                     // D066: and at the creature's patch, because with rolls on the water at one
                     // depth runs up in one patch and down in the next.
+                    //
+                    // Under CurrentMode.Transport the water is a function of a place and the whole
+                    // position is handed over, so the drag pulls a body along x and z as well as
+                    // up and down. That is the difference the mode exists for: on 2026-09-10 the
+                    // owner watched round 33 and saw the world as two ribbons a metre wide, because
+                    // the roll returns a body to the depth it found it at and moves nothing
+                    // sideways (logbook/0083). The rolls keep the patch, which is all that field is
+                    // a function of, so every run in the record feels the water it always did.
+                    Vector3 where = body.transform.position;
+
                     Float3 water = Current != null
-                        ? Current.VelocityAt(
-                            body.transform.position.y, ElapsedSeconds, creature.Patch, PatchCount)
+                        ? Current.Mode == CurrentMode.Transport
+                            ? Current.VelocityAt(where.x, where.y, where.z, ElapsedSeconds)
+                            : Current.VelocityAt(where.y, ElapsedSeconds, creature.Patch, PatchCount)
                         : Float3.Zero;
 
                     _velocity[at + i] = body.linearVelocity.ToFloat3() - water;
