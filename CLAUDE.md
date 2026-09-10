@@ -440,8 +440,14 @@ actually verifying it.
   edge scale takes its part below `minPartVolume` and development prunes the subtree, so a mixotroph
   genome develops into a pure leaf; seen in `r14c10-s4`'s snapshot), and snapshot rows carry an
   organism id that joins to `lineage.jsonl` from genome format 4 (`SnapshotJoinTests`) but no
-  reserve, age, position or field state, so a snapshot resumes nothing: it is a genome pool. Depth-by-guild and body-size-by-guild are therefore not measurable from a run's
-  output today; say so rather than proxying (logbook/0048's dissection).
+  reserve, age, position or field state, so a snapshot resumes nothing: it is a genome pool.
+  Body-size-by-guild is therefore not measurable from a run's output; say so rather than
+  proxying (logbook/0048's dissection). **Depth by guild stood in the same place until
+  2026-09-10 and no longer does**: `positions.jsonl` carries every living body's place and its
+  three guild flags at every sample, so depth by guild, the footprint, the spread and the
+  median nearest neighbour are all read from a run with `scripts/positions-read.py`. Only in a
+  shared world, where a coordinate is a place rather than a lattice artefact, and only from that
+  build: a tiled world and every run recorded before it carry no such file.
 - **PhysX replays bit for bit on this machine, so every per-step change is a butterfly.** Same
   genome, seed, config *and build* give the same run report to the last decimal (`r16dt-01c` ≡
   `-01d` ≡ `-01e`, logbook/0052). Change any per-step term — 68 capped drag impulses at dt 0.01,
@@ -678,7 +684,10 @@ actually verifying it.
   one second. `Json`, `GenomeJson`, `RunConfigJson`, `CellTypeJson`, `RunDirectory`.
 - **A run is a directory, and its two high-volume files are append-only JSONL.** `config.json`
   (indented, hand-editable, carries its own hash), `lineage.jsonl` (one row per creature ever
-  born), `stats.jsonl` (one row per sample), `snapshots/`. A killed run leaves every completed
+  born), `stats.jsonl` (one row per sample), `snapshots/`, and, in a shared world from
+  2026-09-10, `positions.jsonl` (one row per sample carrying every living body's id, x, y, z and
+  its absorptive/jointed/photosynthetic flags; read it with `python scripts/positions-read.py
+  <arm> --summary`, or `--at 1000,5000` for the pictures). A killed run leaves every completed
   row valid; a single rewritten document would leave a truncated file that parses as nothing.
   Creatures are **rows, not files** — a genome measures ~5 KB and the working estimate is 40,000
   births an hour, so one file each is 40,000 files and 200 MB per hour.

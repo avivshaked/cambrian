@@ -833,6 +833,51 @@ namespace Evosim.Sim
         }
 
         /// <summary>
+        /// Where one living creature's root stood this metabolic step, or false if it has no
+        /// position to report.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The whole of what <c>positions.jsonl</c> reads.</b> Nothing in a run said where a
+        /// body was until 2026-09-10, when the theatre showed round 33 seed 3 as two ribbons a
+        /// metre wide (logbook/0083) and thirty-three rounds turned out to have been read on a
+        /// mean depth and four patch bins. The file that fixes that is written by the harness, and
+        /// this is the only thing it needs from the physics side.
+        /// </para>
+        /// <para>
+        /// <b>No Transform read of its own</b>, the same discipline
+        /// <see cref="MeasureHorizontalSpread"/> keeps: <see cref="CheckFinite"/> took this
+        /// position a few lines earlier in the step. A creature conceived during this step has no
+        /// body yet and returns false, and so does one whose root is not finite, which is a
+        /// diverged body about to be killed rather than a place.
+        /// </para>
+        /// <para>
+        /// All three axes are checked here where the spread instrument checks only x and z: that
+        /// one wants a footprint column and this one writes a depth, and a NaN y written as a
+        /// number would be a creature plotted at a height it never had.
+        /// </para>
+        /// </remarks>
+        public bool TryRootPosition(long organismId, out Vector3 root)
+        {
+            if (!_bodies.TryGetValue(organismId, out Body body))
+            {
+                root = Vector3.zero;
+                return false;
+            }
+
+            root = body.LastRootPosition;
+
+            float finite = root.x + root.y + root.z;
+            if (float.IsNaN(finite) || float.IsInfinity(finite))
+            {
+                root = Vector3.zero;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Advances physics one step, and the economy once every
         /// <see cref="StepsPerMetabolicStep"/>. Returns true on the steps the economy ran.
         /// </summary>

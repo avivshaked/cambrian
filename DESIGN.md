@@ -2343,8 +2343,9 @@ algorithms that preserve one while losing the other (e.g. ME scores 0 on genetic
 > *Status, 2026-09-07: the layout below is the design's original plan for a MAP-Elites farm
 > and is not what was built. A run today is a directory `runs/<arm>/<run>/` holding
 > `config.json`, `run.json`, `lineage.jsonl`, `stats.jsonl`, `absorptive.jsonl`,
-> `digest.jsonl` when enabled, and `snapshots/`, as CLAUDE.md's conventions and
-> `RunDirectory` describe. The archive files below return with the observatory (§5A.8).*
+> `positions.jsonl` in a shared world (one row per sample: every living body's id, place and
+> guild flags, read by `scripts/positions-read.py`), `digest.jsonl` when enabled, and
+> `snapshots/`, as CLAUDE.md's conventions and `RunDirectory` describe. The archive files below return with the observatory (§5A.8).*
 
 ```
 runs/<runId>/

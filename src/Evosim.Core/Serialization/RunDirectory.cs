@@ -16,6 +16,7 @@ namespace Evosim.Core
     ///   lineage.jsonl    one row per creature ever born
     ///   stats.jsonl      one row per sample interval
     ///   absorptive.jsonl one row per living eater per sample, plus a final row per death
+    ///   positions.jsonl  one row per sample: where every living body's root stood
     ///   snapshots/       world state, one file per save point
     /// </code>
     /// </para>
@@ -56,6 +57,26 @@ namespace Evosim.Core
         /// </remarks>
         public JsonlWriter Absorptive { get; }
 
+        /// <summary>
+        /// One row per sample: the position of every living body, <see cref="PositionsRow"/>.
+        /// <b>Null in a tiled world</b>, where the file is not written at all.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>No file rather than an empty one, when <see cref="RunConfig.SharedSpace"/> is off.</b>
+        /// Bodies in a tiled world sit on a lattice a hundred metres apart, one to a tile, so
+        /// their coordinates are an artefact of the tiling and not a place: a reader given those
+        /// would draw a perfect grid and conclude something about the world. The same reasoning
+        /// puts 0 in <c>totalColumns</c> for the spread instrument, and an absent file is the one
+        /// signal that cannot be mistaken for a reading.
+        /// </para>
+        /// <para>
+        /// Flushed each row like <see cref="Stats"/> and for the same reason: one row a sample, and
+        /// it is a file someone may want to draw while the run is still going.
+        /// </para>
+        /// </remarks>
+        public JsonlWriter Positions { get; }
+
         public string SnapshotsPath => System.IO.Path.Combine(Path, "snapshots");
 
         private RunDirectory(string path, RunConfig config)
@@ -81,6 +102,14 @@ namespace Evosim.Core
             // up to the last flush.
             Absorptive = new JsonlWriter(
                 System.IO.Path.Combine(path, "absorptive.jsonl"), flushEachRow: false);
+
+            // Opened only for a world whose positions mean something. No file in a tiled world is
+            // the point, not an oversight: see the remark on Positions.
+            if (config.SharedSpace)
+            {
+                Positions = new JsonlWriter(
+                    System.IO.Path.Combine(path, "positions.jsonl"), flushEachRow: true);
+            }
         }
 
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
@@ -144,6 +173,7 @@ namespace Evosim.Core
             Lineage?.Dispose();
             Stats?.Dispose();
             Absorptive?.Dispose();
+            Positions?.Dispose();
         }
     }
 

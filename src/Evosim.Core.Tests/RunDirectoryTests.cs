@@ -111,6 +111,43 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void PositionsAreWrittenInASharedWorldAndNotInATiledOne()
+        {
+            // No file rather than an empty one, when the coordinates would be an artefact of the
+            // tiling: a body in a tiled world sits alone on a lattice a hundred metres wide, and a
+            // reader handed those would draw a perfect grid and conclude something about the
+            // world. It is the same distinction totalColumns = 0 makes for the spread instrument.
+            using (var tiled = RunDirectory.Create(_root, new RunConfig { SharedSpace = false }, Started))
+            {
+                Assert.Null(tiled.Positions);
+            }
+
+            using (var shared = RunDirectory.Create(
+                       _root, new RunConfig { SharedSpace = true }, Started))
+            {
+                Assert.NotNull(shared.Positions);
+
+                shared.Positions.Write(PositionsRow.Write(
+                    100d, 1, new long[] { 1 }, new[] { 2f }, new[] { -3f }, new[] { 4f },
+                    new[] { PositionsRow.AbsorptiveBit }));
+            }
+
+            string[] runs = Directory.GetDirectories(_root);
+
+            int written = 0;
+            foreach (string run in runs)
+            {
+                string file = Path.Combine(run, "positions.jsonl");
+                if (!File.Exists(file)) continue;
+
+                written++;
+                Assert.Equal("{\"t\":100,\"n\":1,\"b\":[[1,2,-3,4,1]]}", File.ReadAllLines(file)[0]);
+            }
+
+            Assert.Equal(1, written);
+        }
+
+        [Fact]
         public void ARowContainingALineBreakIsRefused()
         {
             // One embedded newline splits a record across two lines and makes every row after it
