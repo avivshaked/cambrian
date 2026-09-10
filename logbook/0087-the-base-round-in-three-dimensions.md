@@ -53,6 +53,15 @@ the current or the founders' reservation: all three moved at once, by the owner'
 that the fixed world comes first. The one-at-a-time separations are 0084's bin 3 and come
 after the base is read.
 
+## Launch
+
+2026-09-10, 11:28 to 11:29 UTC: `r35-s1` to `r35-s5` on workers 2 to 6, commit `8e1ebaf`,
+`simHash b5d31a48…`, `coreHash cafcb692…`, `configHash 2129e5bf…` on all five,
+`physicsJobWorkers 0`. Every header reads `current 0.1 m/s transport over 6000 s`,
+`dispersal=5 m`, `dt=0.01`; V1's tokens verified from the reports before this line was
+written. One monitor watches the five for their end, an error signature and a stalled
+report.
+
 ## Results
 
 *To be written when the arms land.*
