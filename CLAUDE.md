@@ -599,6 +599,19 @@ actually verifying it.
   place; `Body.Radius` is refreshed on resize for crowding, the reservation is not, and a
   contact divergence of three leaves in one step (`r33-s2`, 3,066.5 s) is read against it. `mat orphan` has read of the order of 1e-4 units on 6,000
   since before growth; the invariant is broken by a value the table does not round away.
+- **Watch a round in the theatre before writing it up, and say what was seen.** On 2026-09-10 the
+  owner opened round 33 seed 3 in the theatre and saw the whole world as two vertical ribbons a
+  metre wide in a box twenty metres long (logbook/0083). A newborn was placed touching its
+  parent (D077), the current returned every body to where it found it (D059, written when
+  "nothing reads horizontal position" was true), and no body ever swam, so every clade was a
+  column packed around its founder's spot for the whole run, draining its own cells since the
+  grid. Thirty-three rounds were read on a report that carries a mean depth and per-patch bins
+  and nothing about x or z, and the theatre had existed for three days without being pointed
+  at a scored run. The rule from it: no round's entry is written until the world has been
+  watched in the theatre, and the entry says what it looked like; and the table's `cols`,
+  `cols abs` and `x sd` (the occupied 1 m columns of the footprint and the spread of x) are
+  read with `alive`. The rounds' books, prices and verdicts stand as measured; every claim
+  about where food is relative to bodies is confounded and logbook/0084 lists the retries.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.
