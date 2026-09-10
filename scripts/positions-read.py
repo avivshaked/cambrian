@@ -516,7 +516,9 @@ def draw(plt, sample, arm, out_dir, clade_of):
         ax.set_ylabel(ylabel)
         ax.set_title(f'{arm} | t = {sample.t:.0f} s | alive {sample.n} | {name} view')
         if sample.n:
-            ax.legend(loc='upper right', fontsize=8, framealpha=0.9)
+            # Outside the axes: the side and end views are tall and narrow, and a legend inside
+            # them sat on the surface band, which is where most of the bodies are.
+            ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1.0), fontsize=8, framealpha=0.9)
 
         path = os.path.join(out_dir, f'{arm}-t{int(round(sample.t)):07d}-{name}.png')
         fig.savefig(path, dpi=110, bbox_inches='tight')
@@ -576,7 +578,7 @@ def draw_clades(plt, sample, arm, out_dir, clade_of):
     ax.set_ylabel('y (m)')
     ax.set_title(f'{arm} | t = {sample.t:.0f} s | alive {sample.n} | side view by clade')
     if sample.n:
-        ax.legend(loc='upper right', fontsize=7, framealpha=0.9)
+        ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1.0), fontsize=7, framealpha=0.9)
 
     path = os.path.join(out_dir, f'{arm}-t{int(round(sample.t)):07d}-clades.png')
     fig.savefig(path, dpi=110, bbox_inches='tight')
