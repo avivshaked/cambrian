@@ -10,11 +10,11 @@ cell with all of them. What binds the step is our own drag loop, at 56% of it.
 
 The harness is commit `80fcedd`, in `SharedSpaceSpike.cs`.
 
-It follows the spec in `scratch/shared-space-spike-spec.md`.
+It follows the spec in `logbook/specs/shared-space-spike-spec.md`.
 
 It ran on worker 6, alone on the machine, after round 24 ended. The results are in
 `runs/spike-shared-space/2026-09-05-202709-matrix/`, and the agent's report is
-`scratch/shared-space-spike-report.md`.
+`logbook/specs/shared-space-spike-report.md`.
 
 ## The question
 
@@ -96,4 +96,4 @@ belongs.
 What remains is design rather than cost. How big the water is, how the four patches become
 regions, what happens at the edge, and how a newborn is placed beside its parent instead of
 on a lattice. The footprint proposal carries those, and its survey is
-`scratch/footprint-survey.md`.
+`logbook/specs/footprint-survey.md`.

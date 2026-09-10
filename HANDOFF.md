@@ -10,7 +10,7 @@ The whole record (logbook, primer, research) was restyled under STYLE.md and lan
 
 **Round 35, the base round in three dimensions, is launching (logbook/0087, 2026-09-10
 evening): round 33's world with D088, dispersal 5 m, transport at 0.1 m/s, founders
-reserving the adult, five seeds at 0.01 on workers 2 to 6 (`scratch/launch-r35.ps1`
+reserving the adult, five seeds at 0.01 on workers 2 to 6 (`rounds/launch-r35.ps1`
 defaults). The owner ruled the five questions with "proceed with your recommendations". The
 viewing arm `r35v-s3` (0.3 m/s) was stopped at 11,100 s to free the fifth worker; its
 pictures are in 0086. Round 34, the free joint, follows on this base. The theatre has a skin (logbook/0088,
@@ -23,7 +23,7 @@ equal speed on every axis (`EVOSIM_CURRENT_MODE Transport`; the rolls kept as `R
 destroy immediate so that the theatre's replay matches the farm (identity 6 of 6 in Play mode
 on the smoke), the placer reserving the adult's radius, the theatre's id pairing fixed for bred
 children. The table carries `cols`, `cols abs`, `x sd`. The viewing arm `r35v-s3` (seed 3,
-0.01, 30,000 s, worker 7, `scratch/launch-r35.ps1` defaults) runs for the owner's theatre
+0.01, 30,000 s, worker 7, `rounds/launch-r35.ps1` defaults) runs for the owner's theatre
 pass; the owner's sequence is to see the fixed world first, then rule on 0084's knob list
 (dispersal radius, box shape, speed and period, founders' reservation, mixing, prices,
 corpses, the mass floor, shading's length scale), then the retries in 0084's bin 3. Round 34
@@ -62,12 +62,12 @@ answer replaced the representation: the water as a grid of cells with corpses as
 (D086, logbook/0078), built, reviewed and smoked on 2026-09-08 night, ruled 2026-09-09
 (matter cells 5 m, matter mixed at 2 m²/s on every axis, corpses at 0.005/s). Round 32,
 the grid's base round at round 31's prices and mixing, is running: `r32-s1..s5` on workers
-2 to 6 at 0.01, launched 2026-09-09 midday (`scratch/launch-r32.ps1`), pre-registered as
-logbook/0079, read 2026-09-09 evening: the mechanism holds in every arm, the population is higher, and the goal rule holds in two seeds of five against round 31's four, the stomach lines thinning from founding without recruiting; the grid stands as the base and the eaters' recruitment is the open question (a per-guild feeding trace and a corpses-off seed are the two reads). Round 33 is growth, running since the evening of 2026-09-09 on workers 2 to 6 (`r33-s1..s5`, `simHash 0924b9ad…`, `coreHash 621d32ee…`, commit 0b8e822) (D087, logbook/0081; `scratch/launch-r33.ps1`):
+2 to 6 at 0.01, launched 2026-09-09 midday (`rounds/launch-r32.ps1`), pre-registered as
+logbook/0079, read 2026-09-09 evening: the mechanism holds in every arm, the population is higher, and the goal rule holds in two seeds of five against round 31's four, the stomach lines thinning from founding without recruiting; the grid stands as the base and the eaters' recruitment is the open question (a per-guild feeding trace and a corpses-off seed are the two reads). Round 33 is growth, running since the evening of 2026-09-09 on workers 2 to 6 (`r33-s1..s5`, `simHash 0924b9ad…`, `coreHash 621d32ee…`, commit 0b8e822) (D087, logbook/0081; `rounds/launch-r33.ps1`):
 the growth build landed on 2026-09-09 and the pre-growth world no longer exists in the code,
 so the owner's conditional ruling of that morning (growth first if its build was close) puts
 growth before the free joint. Round 34 is the free-joint test (logbook/0080, amended before
-launch; `scratch/launch-r34.ps1`, round 33's launcher with the four prices at zero) on the
+launch; `rounds/launch-r34.ps1`, round 33's launcher with the four prices at zero) on the
 growth world, with round 33's same seed as its control. **When round 33 lands, work pauses**
 (owner, 2026-09-09 afternoon): the owner tests the theatre on it, since a growth-build run is
 the first one the current code can replay, and nothing launches until the owner says so.
@@ -145,11 +145,11 @@ round 28) set the base and the order.
 
 1. **The base world is round 28's**: round 18's closed world plus D077's box, wrap,
    placement, restoring top and real floor, under D078's single-threaded physics
-   (`scratch/launch-r28.ps1`). It meets the goal at 3 of 5 and misses round 18's reference
+   (`rounds/launch-r28.ps1`). It meets the goal at 3 of 5 and misses round 18's reference
    by one seed, which starved on its larder (logbook/0070).
 2. **Movement that pays** (D075's first item), next. On the base world with added mass on,
    the three senses on, and the global brain removed, all in one build that is a new
-   realisation of every seed. The draft is `scratch/movement-prereg-draft.md`; it is
+   realisation of every seed. The draft is `logbook/specs/movement-prereg-draft.md`; it is
    rewritten for this world before launch, with the ledger setting the added-mass
    coefficient and the active-versus-clamped assay (queue item 7) beside it.
 3. **The vertex world with the price of a bud** (D083 and D082, owner 2026-09-07): the
@@ -157,12 +157,12 @@ round 28) set the base and the order.
    its inputs about tenfold cheaper, in one build on the base round 29's reading leaves.
    Round 29 is the price control and round 28 the world control. Pre-registered as
    logbook/0075 on 2026-09-08 with the work fraction at 0.25 from round 28's first window;
-   fast-step screens first (`scratch/launch-r30.ps1 -Dt 0.02`), the confirming round at 0.01.
+   fast-step screens first (`rounds/launch-r30.ps1 -Dt 0.02`), the confirming round at 0.01.
 4. **The water stirred less** (D085, owner 2026-09-08): round 31 runs the detritus mixing at
    0.02 m²/s on both axes, everything else round 30's, because at 0.2 a sitter's hole refills
    in five seconds and a mover gains nothing (logbook/0076); pre-registered as
    logbook/0077; the screen stood (five of five, three passing the scorer at 10,000 s) and
-   the round ran at dt 0.01 on workers 2 to 6 (`scratch/launch-r31.ps1`) and is read
+   the round ran at dt 0.01 on workers 2 to 6 (`rounds/launch-r31.ps1`) and is read
    (0077 Results and Verdict): M0 held, M1 failed in reverse, M2 failed, M5 failed, M4 in
    three, M6 in four with seed 3's caveat. Seed 3 fell at 11,533 s to a body the solver threw to a
    finite height no test caught (0077's "Seed 3 fell"); the guard was widened the same
@@ -198,7 +198,7 @@ round 28) set the base and the order.
    with `MaximumTissueJoules` as a biomass ceiling beside the count, one gate of 0.08,
    founders 0.25 to 1.0, the reserve capped beside the body, the reserve floor 0.1); round
    33 is the growth base and is running; round 34, the free joint, launches on
-   `scratch/launch-r34.ps1` once round 33 has read and the owner's theatre pause has ended.
+   `rounds/launch-r34.ps1` once round 33 has read and the owner's theatre pause has ended.
 8. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
    brain can be selected for, after growth.
    *Run length (owner, 2026-09-08 night: "that sounds good"):* 30,000 s gives 40 to 50
@@ -323,7 +323,7 @@ the running status), in the order they are done:
 
 Written down here so that none is lost; each is agent work unless marked as the owner's rule.
 
-1. **The carved skin** (in build tonight, `scratch/skin-spec-2.md`): inward-only impressions,
+1. **The carved skin** (in build tonight, `logbook/specs/skin-spec-2.md`): inward-only impressions,
    a pinch at joints, a carved bed, a close view, three carve depths for the owner to pick
    from pictures; sphere parts drawn as the ellipsoid the genome asks for, bounded by the
    collider.
@@ -343,6 +343,13 @@ Written down here so that none is lost; each is agent work unless marked as the 
    half-extents, the collider is the best-fitting primitive inside.
 
 The round work stays first: round 35 read, then round 34 on this base.
+
+Queued behind the next Core change (it moves both hashes, so it lands between rounds and never
+alone): eighteen comments in nine C# files still cite `scratch/floor-spec.md`, `digest-spec.md`,
+`footprint-survey.md`, `footprint-build-report.md` and `floor-build-report.md`, which now live in
+`logbook/specs/`. Also for the owner: the `scratch/` cleanout list in the migration report
+(logbook/specs/scratch-migration-spec.md's companion, 2026-09-10): 70 MB of logs, review
+captures, probe output, one-off edit scripts, stale copies; nothing was deleted.
 
 ## The decisions in front of the owner
 
@@ -383,7 +390,7 @@ CLAUDE.md holds the commands and the gotchas. This is where each tool sits.
 | launching | `scripts/run-arm.ps1` with `-ExpectSimHash`, logs in `scratch/logs/`; end an arm with `stop-arm.ps1` and never with a kill; read every setting back from the run header and the manifest, never from the launch command |
 | reading | `scripts/analyse-arm.ps1` by column name (`-ListColumns`), never positionally, passing `-Columns` as a real array from inside PowerShell, since through `pwsh -File` the comma list arrives as one string and every cell reads `?`; `mat blk`, `floor` and the `det in/out/exuded` columns are per-window deltas; `matterHere` is in `stats.jsonl` and not in the table; `lineage.jsonl` holds one row per birth with the `pho` flag from the 2026-09-06 build onward (older runs print `flag absent` in the scorer), while the report's `photo` columns carry the producer population |
 | scoring | `scripts/clade-score.ps1` for D063, `scripts/absorptive-log.ps1 <arm>` for what a stomach earned, `scripts/lineage-invasion.ps1` for an inoculated lineage, and `scripts/ledger.ps1` (D069) before a worker |
-| monitoring | `scratch/monitor-r13.sh` over `scratch/evosim-watch-arms.txt`; it exits when the list is empty and must be restarted after the list is set |
+| monitoring | `scripts/monitor-r13.sh` over `scratch/evosim-watch-arms.txt`; it exits when the list is empty and must be restarted after the list is set |
 | throughput | about 1,800 bodies at dt 0.01 with five arms sharing the machine is five to six hours per 30,000 s; single-threaded physics cost nothing measurable in 0069's confirmation at 518 bodies, though its short probes at 120 to 400 bodies read about 15% with a spread as wide as the gap, and it is unmeasured at a round's population (0070 budgets a quarter); the ceiling (`MaximumPopulation`, `EVOSIM_MAX_POP`) ends a run as a censored runaway |
 
 ## Open decisions for the owner

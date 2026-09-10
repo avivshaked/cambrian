@@ -44,7 +44,7 @@ The inoculum is the first genome carrying an absorptive node in `r13a-s2`'s t=17
 snapshot. It is a **single-node pure stomach**, one absorptive part and no leaf, with brood
 1 and an endowment of 103 J, SHA-256 `342f472a7dda…`.
 
-It is kept on this machine at `scratch/inoculum-r13a-s2-t17000.json`, as run data rather
+It is kept on this machine at `inocula/inoculum-r13a-s2-t17000.json`, as run data rather
 than committed, and the header records the hash. It is the body the world itself produced
 rather than one we designed.
 
@@ -275,7 +275,7 @@ and dt 0.02, the screening step, and 50 copies of the same inoculum at t=5,000 a
 runs to 20,000 s, so that establishment is read two lifetimes past the inoculation, per the
 instrument note above.
 
-The launcher is `scratch/launch-r15.ps1 -Exudation 0.15 -Dt 0.02 -Seconds 20000`.
+The launcher is `rounds/launch-r15.ps1 -Exudation 0.15 -Dt 0.02 -Seconds 20000`.
 
 This world already carries founder-descended stomachs, since 0053's `r17x-s2` had 66
 inherited at t=3,000 at this seed and step. So the inoculants are read by their inoculation

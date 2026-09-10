@@ -94,6 +94,7 @@ First, the vocabulary of the work itself.
 | ***worker*** | a copy of the Unity project, so several arms can run at once without sharing state |
 | ***run report*** | `runs/<name>.md`, gitignored: a header line recording every setting the arm actually ran with — the settings truth, always trusted over the launch command — then one table row per ~100 simulated seconds, and a footer saying how the run ended |
 | ***sample*** | one of those table rows |
+| ***spec***, ***build report*** | the brief a build was made from and the report it handed back, both in [`specs/`](specs/) beside the surveys and pre-registration drafts. Entries cite them; none of them is a source of truth, and none is edited afterwards |
 
 A run can end in four ways.
 

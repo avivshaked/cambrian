@@ -14,7 +14,7 @@
     dotnet.exe, exactly as scripts/core-test.ps1 does, so nothing needs installing.
 
 .EXAMPLE
-    ./scripts/ledger.ps1 -Genome scratch/inoculum-r13a-s2-t17000.json `
+    ./scripts/ledger.ps1 -Genome inocula/inoculum-r13a-s2-t17000.json `
         -Config runs/r13a-s2/2026-09-03-091631-1c50cf52/config.json `
         -Clearance 1,5,10 -Depth 0,12 -Density 1,4,7,10
 

@@ -1,5 +1,5 @@
 """Replay-identity check between two arms: first stats.jsonl sample whose fields differ.
-Usage: python3 scratch/compare-det.py det0-a det0-b"""
+Usage: python3 scripts/compare-det.py det0-a det0-b"""
 import json, glob, sys
 def rows(a):
     f = glob.glob(f'runs/{a}/*/stats.jsonl')

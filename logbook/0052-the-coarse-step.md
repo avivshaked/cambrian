@@ -105,7 +105,7 @@ first, over `Editor/EvolutionRun.cs` and `Ecosystem.cs`.
 
 The refresh also covers `FluidEnvironment.cs` and `PhenotypeBuilder.cs`.
 
-The launcher is `scratch/launch-r16.ps1 -Dt 0.05 -Worker 7`. Results are appended below.
+The launcher is `rounds/launch-r16.ps1 -Dt 0.05 -Worker 7`. Results are appended below.
 
 ## Results
 

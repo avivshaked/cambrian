@@ -42,7 +42,7 @@ Four arms, at dt 0.02 for 20,000 s.
 
 The controls are 0056's `r20q0-s2` and `r20q0-s4`, the closed budget at the same step.
 
-The launcher is `scratch/launch-r22.ps1`. Workers were refreshed to the build and launched
+The launcher is `rounds/launch-r22.ps1`. Workers were refreshed to the build and launched
 with `-ExpectSimHash`, up to five concurrent alongside the divergence replay.
 
 ## Validity checks
@@ -58,9 +58,9 @@ with `-ExpectSimHash`, up to five concurrent alongside the divergence replay.
 
 | # | prediction | falsified by |
 |---|---|---|
-| M1 | **the stock finds an equilibrium**: at 0.6/s, `mat in − mat buried` per window falls below a fifth of `mat in` by t=15,000, and the standing matter (free + locked) sits within a factor of two of 6,000 at 20,000 s | `stats.jsonl` (`scratch/matter-profile.py`, extended) |
+| M1 | **the stock finds an equilibrium**: at 0.6/s, `mat in − mat buried` per window falls below a fifth of `mat in` by t=15,000, and the standing matter (free + locked) sits within a factor of two of 6,000 at 20,000 s | `stats.jsonl` (`scripts/reads/matter-profile.py`, extended) |
 | M2 | **the column is wet**: `matterHere` (the free density at the population's depth) ≥ 0.3 units/m³ on average over t > 10,000 in every arm — the number 0055 asked for and did not get | `stats.jsonl` |
-| M3 | **the queue weakens**: median parent age in the plateau < 2,000 s in every arm (controls 4,318 and 4,632 s) | `scratch/parent-age.py` |
+| M3 | **the queue weakens**: median parent age in the plateau < 2,000 s in every arm (controls 4,318 and 4,632 s) | `scripts/reads/parent-age.py` |
 | M4 | **the stomachs hold**: a connected absorptive clade ≥ 10, stable through the last 6,000 s, in every arm with a stomach population at t=10,000 — no claim that it beats the control's | `scripts/clade-score.ps1` |
 | M5 | **the size is a flow**: `alive` at 20,000 s in the 1.2/s arms exceeds the 0.6/s arms' by more than the wingspan (±20%) for the same seed, and `mat locked` with it | `alive`, `mat locked` |
 | M6 | **matter turns over**: `mat buried` summed over the run exceeds a quarter of the initial stock at 0.6/s — the bodies' matter is not sitting | `stats.jsonl` totals |

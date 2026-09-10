@@ -28,7 +28,7 @@ Nothing in DESIGN.md specifies an order. The order is an artefact of the list ra
 world rule anyone ever chose. That makes it a fault by CLAUDE.md's rule about the engine
 doing what the design did not ask for.
 
-The measurement comes from `lineage.jsonl`, read by `scratch/parent-age.py`. It takes a
+The measurement comes from `lineage.jsonl`, read by `scripts/reads/parent-age.py`. It takes a
 parent's age at each regular birth, in the growth phase from 3,000 to 10,000 s and in the
 plateau after 10,000 s.
 
@@ -86,7 +86,7 @@ The reference world is round 18's, at exudation 0.15 and sinks 0.002, run at dt 
 | `r20q-s4` | shuffled | seed 4 |
 | `r20q0-s4` | age | seed 4's control; seed 1's control is 0055's `r19m0-s1` at this step |
 
-The launcher is `scratch/launch-r20.ps1`. Workers were refreshed to the build and launched
+The launcher is `rounds/launch-r20.ps1`. Workers were refreshed to the build and launched
 with `-ExpectSimHash`, at most 3 concurrent.
 
 ## Validity checks
@@ -96,13 +96,13 @@ with `-ExpectSimHash`, at most 3 concurrent.
 | V1 | header carries `conception shuffled` (control `conception age`), `dt=0.02`, `sink 0.002 m/s, matter 0.002 m/s`, `exudation 0.15`; every other token equals round 18's | header line 3 |
 | V2 | `floor` = 0 after t=3,100; audit 0.0000% every sample | `floor`, `audit` |
 | V3 | manifests `status ended`, `reason budget`, `simHash` as launched | `run.json` |
-| V4 | the control's parent-age profile reproduces the table's shape (median > 2,000 s in the plateau) | `scratch/parent-age.py` |
+| V4 | the control's parent-age profile reproduces the table's shape (median > 2,000 s in the plateau) | `scripts/reads/parent-age.py` |
 
 ## Predictions
 
 | # | prediction | falsified by |
 |---|---|---|
-| M1 | **the queue is gone**: median parent age in the plateau < 1,000 s in both `shuffled` arms, and < half the control's | `scratch/parent-age.py` |
+| M1 | **the queue is gone**: median parent age in the plateau < 1,000 s in both `shuffled` arms, and < half the control's | `scripts/reads/parent-age.py` |
 | M2 | **the stomachs breed**: in each `shuffled` arm with a stomach population at t=10,000, a connected absorptive clade ≥ 10 at 20,000 s, stable through the last 6,000 s, larger than the same seed's control clade | `scripts/clade-score.ps1` |
 | M3 | **the refusals do not fall** — the demand is unchanged: `mat blk` per window within a factor of two of the control's at t > 10,000 | `mat blk` |
 | M4 | **the producers persist, younger**: `photo inh` ≥ 1,000 to the end, no ceiling, and the mean age column below the control's after t=10,000 | `photo inh`, `age`, `**Ended:**` |

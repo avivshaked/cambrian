@@ -9,7 +9,7 @@ zones, placement refusals ran up to 37 times the births, and two arms met the wa
 instead of the budget.
 
 This was pre-registered before the build it depends on had landed
-(`scratch/footprint-spec.md`). The header tokens below are the spec's, and each was verified
+(`logbook/specs/footprint-spec.md`). The header tokens below are the spec's, and each was verified
 against the build's own rendering at launch.
 
 ## Why this round exists
@@ -53,7 +53,7 @@ influx at the vent's base, burial 0.01/s, matter sink 0.02, and D067's vent on.
 The controls are 0060's `r23v-s2` and `r23v-s4`, which are the same world tiled at area 100
 with no restoring boundary at 0.02, and 0061's five seeds at 0.01.
 
-The launcher is `scratch/launch-r25.ps1`, with `-ExpectSimHash` taken from the build's own
+The launcher is `rounds/launch-r25.ps1`, with `-ExpectSimHash` taken from the build's own
 manifest, five concurrent.
 
 ## Validity checks
@@ -71,7 +71,7 @@ manifest, five concurrent.
 | M1 | **the world has a top and a bottom**: `above` = 0 and `below` = 0 at every sample after t=3,000 in every arm | `above`, `below` |
 | M2 | **the populations leave the film**: mean height over t > 10,000 below −5 m in every arm (0060's vent arms at this step: −0.4 and +0.2 m) | `depth m` |
 | M3 | **founding survives the drain in the bigger box**: `alive` ≥ 40 at every sample to t=6,000 in ≥ 4 of 5 | `alive` |
-| M4 | **the dose reads**: at influx 0.3 the standing matter grows ≤ 15% over 15,000–20,000, and at 0.6 it grows more than at 0.3 for the same seed | `stats.jsonl` (`scratch/matter-budget.py`) |
+| M4 | **the dose reads**: at influx 0.3 the standing matter grows ≤ 15% over 15,000–20,000, and at 0.6 it grows more than at 0.3 for the same seed | `stats.jsonl` (`scripts/reads/matter-budget.py`) |
 | M5 | **the stomachs live where the matter arrives**: the absorptive share in patch 0 (the plume's) exceeds the mean of the other three over t > 10,000 in every arm | `p0`..`p3`, per-patch absorptive (or the snapshot's patch field if the columns are population-only) |
 | M6 | **a stable clade in every arm** (≥ 10 through the last 6,000 s) | `scripts/clade-score.ps1` |
 | M7 | **placement and contact work**: `crowded` < 1% of births; `contacts` > 0 in every arm | `crowded`, `births`, `contacts` |
@@ -227,7 +227,7 @@ The stock is recommended on the two readings separately and on cost. A 3,000-bod
 0.01 is a day, and a 6,000-body contact world is four.
 
 The floor is D077's own placeholder, called a mirror when it was written, and the
-divergences are its bill (`scratch/floor-spec.md`).
+divergences are its bill (`logbook/specs/floor-spec.md`).
 
 Two things are not recommended now: a wider box, or a slower vent for the crowd. The crowd
 is the vent's ecology, and the confirmation should read it before a rule is spent on it.

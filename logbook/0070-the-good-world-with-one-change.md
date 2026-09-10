@@ -18,7 +18,7 @@ It is pre-registered before D078's build has landed. The owner's ruling was shor
 
 ## What is held and what changes
 
-Everything in `scratch/launch-r18.ps1` is held. That is the closed matter budget, the vent
+Everything in `rounds/launch-r18.ps1` is held. That is the closed matter budget, the vent
 off, starting stock 1/m³, area 100 m², exudation 0.15 and clearance 10. It is also
 senescence 3,000 s, the floor closing at 3,000 s, and dt 0.01, over 30,000 s and five seeds.
 
@@ -40,7 +40,7 @@ Under D078 the physics step runs single-threaded, recorded in the header as
 The arms are `r28-s1` to `r28-s5`, at dt 0.01 for 30,000 s, on workers 2 to 6 as round 27's
 arms end.
 
-They launch with `scratch/launch-r28.ps1 -ExpectSimHash <D078 build>`, one arm per worker.
+They launch with `rounds/launch-r28.ps1 -ExpectSimHash <D078 build>`, one arm per worker.
 
 The wall budget is 1,200 minutes. Round 18 ran 30,000 s in about six hours, and
 single-threaded physics is expected to add a quarter at this population.
@@ -107,7 +107,7 @@ Both of them carry `EVOSIM_DIGEST_EVERY 100`.
 
 Three changes were made before any arm was launched, on the late evening of 2026-09-06. They
 follow the Sol/GPT review of the same night (`sol-gpt-2026-09-06-220754-review.md`; my
-response is in `scratch/`).
+response is in `logbook/specs/`).
 
 The replay probe grows from 3,000 s to 10,000 s. It starts on the free worker while `r28-s1`
 runs, so the longer probe costs nothing, and `det6` (0069) had only reached 518 bodies.
@@ -147,7 +147,7 @@ launched as `r18x-s1`, into the historical arm's directory, and overwrote its re
 before I saw it.
 
 The run directory, with every sample and every lineage row, was never touched. The report
-was rebuilt from that data by `scratch/rebuild-report.py`, calibrated on `r18x-s2`, where 6
+was rebuilt from that data by `scripts/reads/rebuild-report.py`, calibrated on `r18x-s2`, where 6
 cells in 14,700 differ by rounding. It says so in its first line, and it re-scores
 identically.
 
@@ -186,7 +186,7 @@ the round launches over several hours rather than at once.
 
 *2026-09-07.* All five arms ended on their budget of 30,000 s, in 549 to 764 minutes of
 wall clock each, with the machine carrying four or five arms throughout. The replay probe
-ended earlier in the day. The readings are in `scratch/r28-results.md`; the verdicts come
+ended earlier in the day. The readings are in `logbook/specs/r28-results.md`; the verdicts come
 from `scripts/clade-score.ps1` as fixed the same afternoon (its recruitment window is now
 bounded at the last sample, which changes nothing for a completed run) and the rest from
 `stats.jsonl`.

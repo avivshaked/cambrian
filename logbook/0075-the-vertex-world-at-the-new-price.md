@@ -177,7 +177,7 @@ five arms and nothing else. Read as they land, against the predictions and the s
 each. V1 to V3 held: every header carried the round's tokens, every manifest reads
 `ended budget`, `diverged 0`, `physicsJobWorkers 0` and `gitDirty false`, all five on one
 `coreHash` and one `configHash`. The readings come from `scripts/clade-score.ps1` and from
-the named columns over the last 6,000 s (`scratch/r30-read.py`); the sense channels come
+the named columns over the last 6,000 s (`scripts/reads/r30-read.py`); the sense channels come
 from each arm's last snapshot.
 
 | arm | M0 alive (round 29's seed); scorer | M1 sense share | M2 `jnt inh` | M4 detritus at end, kJ (round 29) | M7 refusals per birth (round 29) |

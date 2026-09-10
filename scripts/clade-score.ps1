@@ -3,8 +3,8 @@
   Score a run's connected clades against the goal rule (D063 as amended, DECISIONS.md).
 
 .DESCRIPTION
-  A port of scratch/clade-score.py (gitignored) into scripts/, per D063's amendment note
-  ("scratch/clade-score.py is the scorer until it moves into scripts/") and logbook/0054's
+  A port of scripts/reads/clade-score.py into scripts/, per D063's amendment note
+  ("scripts/reads/clade-score.py is the scorer until it moves into scripts/") and logbook/0054's
   addendum "scored again by connected clade".
 
   A clade begins at an absorptive birth whose parent did not express the trait (or at an
@@ -12,7 +12,7 @@
   trait is inherited.
 
   **Every clade is scored, not only the largest** (2026-09-06; the Sol/GPT review of that
-  night, item 1 of scratch/review-2026-09-06-response.md). D063 asks whether *a* connected
+  night, item 1 of logbook/specs/review-2026-09-06-response.md). D063 asks whether *a* connected
   clade meets the bar, so the seed PASSES when any clade with a living member at the last
   sample meets every clause:
 
@@ -41,7 +41,7 @@
 
   When no clade passes, the first line names the clade that fails the fewest clauses; ties
   go to the clade with the most living members at the last sample, then to the lowest root
-  id. The largest clade is chosen exactly as scratch/clade-score.py chose it -- strictly
+  id. The largest clade is chosen exactly as scripts/reads/clade-score.py chose it -- strictly
   greater "alive at end" while walking clades in insertion order, so ties keep the first
   root found.
 
@@ -106,7 +106,7 @@ if (-not $RunsRoot) { $RunsRoot = Join-Path $repo 'runs' }
 # ---------------------------------------------------------------------------------------
 # runs/<arm>.md -- the header row ("| t (s) | ..."), by name -> column index, and
 # t (s) -> full row of trimmed, un-bolded cell strings. The data-row filter matches
-# scratch/clade-score.py exactly: a line starting "| " that is not the header and whose
+# scripts/reads/clade-score.py exactly: a line starting "| " that is not the header and whose
 # first cell is all digits. Opened ReadWrite -- run-arm.ps1 keeps writing this file for the
 # life of a live arm.
 # ---------------------------------------------------------------------------------------
@@ -243,7 +243,7 @@ function Get-AliveSeries($Members, [int[]]$Samples, $Birth, $Death) {
 # not express it, or at a founder (parent id -1) that expresses it; membership follows the
 # parent chain forward while the trait is inherited. Both dictionaries are [ordered] because
 # the largest-clade tie-break keeps whichever clade is iterated first, and that order must
-# match scratch/clade-score.py's dict insertion order -- ascending birth-id order of the
+# match scripts/reads/clade-score.py's dict insertion order -- ascending birth-id order of the
 # first trait-expressing descendant reached.
 function Get-Clades($Birth, [string]$Trait) {
     $ids = $Birth.Keys | Sort-Object
@@ -394,7 +394,7 @@ foreach ($a in $Arm) {
 
     # -------------------------------------------------------------------------------
     # Every absorptive clade with a living member at the last sample, against all four
-    # clauses. The largest is tracked separately, on scratch/clade-score.py's own
+    # clauses. The largest is tracked separately, on scripts/reads/clade-score.py's own
     # tie-break (strictly greater "alive at end", first root found wins a tie).
     # -------------------------------------------------------------------------------
     $clades = Get-Clades $birth 'abs'

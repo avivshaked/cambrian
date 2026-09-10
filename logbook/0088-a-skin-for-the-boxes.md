@@ -42,6 +42,16 @@ reader (leaves at a mean of 12 m down, stomachs at 32). The top view checked aga
 the plot of the recorded positions at the same time: the stomach cluster, the two isolated
 stomachs and the sparse band all coincide.
 
+![Round 35 seed 3 skinned, from above at 3,000 s](images/r35-s3-t3000-top.png)
+
+*From above at 3,000 s: 403 bodies, producers green and stomachs brown at a glance, the
+starving near-black, the bed a dim grey floor.*
+
+![Round 35 seed 3 skinned, from the side at 3,000 s](images/r35-s3-t3000-side.png)
+
+*From the side: green in the top twenty metres, brown below to forty-five, which is where
+the positions reader puts them.*
+
 Three faults found by reading the pictures, all fixed: the sand read as a lit beach,
 because URP's fog does not apply under an orthographic camera; the snow was invisible,
 because the emitter's warm-up ran one duration and the lifetime was eleven minutes; the
@@ -58,6 +68,6 @@ The second day, if wanted: ripple keyed to the water, iridescence, eyes.
 
 ## Sources
 
-`research/theatre-look/README.md`; `scratch/skin-spec.md`; `unity/Assets/Theatre/TheatreSkin.cs`,
+`research/theatre-look/README.md`; `logbook/specs/skin-spec.md`; `unity/Assets/Theatre/TheatreSkin.cs`,
 `TheatreMeshes.cs`, `TheatreBody.shader`, `TheatreBed.shader`, `TheatreSnow.shader`;
 `scratch/snaps/r35-s3/`; D075, D088; logbook/0086.

@@ -215,7 +215,7 @@ ran, while S1 and S4 fail. Arm A stops with this seed.
 
 This is `r12y-s3`, dissected from `lineage.jsonl` by a subagent.
 
-The subagent's report is in `scratch/`. One mutant absorptive, id 971, was born at t=6,961
+The subagent's report is in `logbook/specs/`. One mutant absorptive, id 971, was born at t=6,961
 by reproduction from a producer parent, on patch 3, in surface water at ~1 J/m³. Its line
 ran four generations, 971 → 1403 → 1741 → 2470, born at 6,961, 8,840, 10,100 and 13,155. It
 was a strict single-child chain with no branching, every member unjointed and on patch 3.

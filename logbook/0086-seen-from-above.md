@@ -29,6 +29,11 @@ three dimensions, depth by guild, and how many bodies stand within a metre of th
 clade. On the smoke its `cols` and `x sd` reproduce the table's to the rounding. Depth by
 guild, which CLAUDE.md has called unmeasurable for a week, is measurable from here.
 
+![Clade plot of r35-s5 at 2,000 s](images/r35-s5-t0002000-clades.png)
+
+*What the positions reader draws: `r35-s5` at 2,000 s from above, one colour per clade, the
+largest eight named and the rest grey.*
+
 ## What the pictures show
 
 `r35v-s3`, seed 3 at dt 0.01 on the launcher's defaults (dispersal 5 m, transport at
@@ -43,6 +48,16 @@ layer. The table says the same: 94 to 99 of 100 columns occupied from 2,400 s an
 100 from 7,000 s, the inherited stomach line of 50 to 90 spread over 40 to 53 columns,
 `x sd` between 6.4 and 8.9 m, 1,404 alive at 11,100 s with nothing diverged.
 
+![r35v-s3 from above at 3,000 s](images/r35v-s3-t3000-top.png)
+
+*From above at 3,000 s: 361 bodies over all four patches, the seams crossed without a change
+of density.*
+
+![r35v-s3 from the side at 1,500 s](images/r35v-s3-t1500-side.png)
+
+*From the side at 1,500 s: surface to bed, thicker in the top twenty metres, a scatter and
+not a layer.*
+
 The before picture is a recreation, because round 33's own recording predates two of
 D088's tunables and the loader refuses it rather than defaulting them. `r35old-s3b` is the
 same launcher with dispersal 0 and the rolls, seed 3 at dt 0.02 for 3,000 s: D077's placer
@@ -55,6 +70,11 @@ all thirty samples. Six hundred seconds in, the new world had already put 119 bo
 71 columns. The difference is
 not the population, which the fast step and the surface film confound (0056), and not the
 depth; it is the twenty columns against a hundred.
+
+![r35old-s3b from above at 3,000 s](images/r35old-s3b-t3000-top.png)
+
+*The old rules under the new build: two ribbons a metre thick in the first and fourth
+patches, the middle two empty. 0083's picture again.*
 
 The one number to carry that no picture shows: `mean m/s` reads 0.22 to 0.24 in the
 transport world and 0.03 to 0.06 in the rolls world. That is the water. A sitter rides it,

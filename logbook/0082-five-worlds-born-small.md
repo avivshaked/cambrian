@@ -29,7 +29,7 @@ than as a test of a prediction. Round 34 is pre-registered (0080).
 ## The reading
 
 The reference is round 32's same seed, the same water with bodies born whole. Read with
-`scratch/r33-read.py` and scored by connected clade.
+`scripts/reads/r33-read.py` and scored by connected clade.
 
 | # | what is read | what would count |
 |---|---|---|
@@ -58,7 +58,7 @@ them, is a round of its own.
 
 *2026-09-10, morning.* All five ended on budget at 30,000 s in 7 to 10 hours of wall clock,
 one build, `physicsJobWorkers 0`, `gitDirty false`, neither limiter bound, `audit` 0.0000%
-and `mat resid` 0 on every row, no ceiling fired. Read with `scratch/r33-read.py` against
+and `mat resid` 0 on every row, no ceiling fired. Read with `scripts/reads/r33-read.py` against
 round 32's same seed and scored by connected clade.
 
 | arm | alive (r32) | scorer | stomach clade at end (r32 `inherit`) | founded by, at | adult scale | invest | brood | `bf` median | diverged |

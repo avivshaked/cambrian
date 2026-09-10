@@ -200,15 +200,24 @@ own brain, alone, with no economy. Both refuse a run this build did not record u
 orphan a recording: dark-field lighting and fog, rounded meshes generated at start, a neck at
 every joint, marine snow and a sand bed, all from `TheatreSkin.cs` and `TheatreMeshes.cs`.
 `TheatreBody.shader` is the one body material, carrying the guild on a Fresnel rim over faked
-subsurface and a Voronoi mottle; its `_PuffFraction` and `TheatreMeshes.Inset` sum to one, which
-is what keeps a visual inside its collider (`research/theatre-look/README.md` is the reading).
+subsurface and a Voronoi mottle. Since the second day it also **carves** each body inward by two
+octaves of noise in the part's own object space, deepened at a joint anchor, with the normal
+rebuilt per pixel from the same field. The depth is `EVOSIM_THEATRE_CARVE` (default 0.2, clamped
+at 0.5) times the part's smallest half-extent, and the displacement is never positive, which is
+the whole of what keeps a visual inside its collider. A sphere part is drawn as the genome's
+three half-extents scaled so the longest semi-axis is the collider's radius: the genome's intent,
+not the physics, which collides as the ball (`research/theatre-look/README.md` is the reading).
 
 **An agent has no eyes, so it takes pictures.**
 `./scripts/theatre-snap.ps1 r35tsmoke3 -At 300,600 [-Worker 6] [-Views side,top] [-Size 900x1600]`
 runs `Evosim.Theatre.EditorTools.TheatreSnapshot.Run`, which replays the run in Play mode with the
 identity check on and writes the box from the side, the end, the top and a corner at each named
 second into `scratch/snaps/<arm>/`, each frame fitted from the run's own config and labelled with the
-arm, the second, the living count and whether the replay is faithful. Its Unity command line is
+arm, the second, the living count and whether the replay is faithful. A world view at thirteen pixels a
+metre cannot show a wrinkle, so a fifth view, **`close`**, frames the six largest bodies from a
+three-quarter angle at a distance that fills the frame, with no box and no markers. It is never
+in the default set, and `theatre-snap.ps1`'s `-Views` allowlist does not yet know it, so it is
+asked for through `EVOSIM_THEATRE_SNAP_VIEWS`. Its Unity command line is
 `-batchmode` **without `-quit`** (the entry quits itself) and **without `-nographics`** (a picture
 needs a graphics device); `Evosim/Theatre/Snapshot Now` takes the same four of the world on screen.
 
@@ -523,7 +532,7 @@ actually verifying it.
   after it, whatever its `Assets/` carry, and the manifest's `coreHash` records which. A round
   cannot be held on one build once Core has moved (round 24's fifth seed runs on the perception
   build for this reason, 0061); land Core changes between rounds or accept and record the split.
-- **`scratch/simhash.py` is not the hash.** It agreed with `EvolutionRun.HashSourceTree` on every
+- **`scripts/simhash.py` is not the hash.** It agreed with `EvolutionRun.HashSourceTree` on every
   tree through 1ce2e71 and disagreed on e59f6af's (`93ef4e96…` against the C#'s and
   `run-arm.ps1`'s `30b96bf6…`), which cost one refused launch. Take the expected hash from a
   manifest the build has written (`runs/<arm>/<run>/run.json`, `source.simHash`) or from
@@ -532,7 +541,7 @@ actually verifying it.
   refuse-rather-than-default rule on a missing group. `ledger.ps1 -Config` against a run written
   before the tunable throws; take the genome from the old run and the config from a new one.
   The same rule now bites genome files: the snapshot id took `GenomeJson.FormatVersion` to 4, so
-  every stored `format":3` genome in `scratch/` (the inocula among them) is refused by this build
+  every stored `format":3` genome under `inocula/` is refused by this build
   and by `ledger.ps1 -Genome`. The genome fields did not change across that bump — only the
   optional id was added — so an inoculum can be brought forward by re-extracting it from a new
   snapshot, which is the one route that cannot quietly mislabel a creature. The growth build
@@ -700,10 +709,19 @@ actually verifying it.
 
 - **Nothing of the project's is written outside the repository — TEMP included.** Transient
   files go in `scratch/` (gitignored): Unity run logs (`scratch/logs/`, where
-  `run-arm.ps1` puts them), monitor watch lists, launchers, extracted genomes, compile logs.
-  An agent's own session scratchpad and the Windows temp directory are both outside the
-  project and both off limits (owner's rule, 2026-09-03; the per-arm logs lived in TEMP
-  until then).
+  `run-arm.ps1` puts them), monitor watch lists, theatre pictures (`scratch/snaps/`,
+  `scratch/positions/`), extracted genomes, compile logs. An agent's own session scratchpad
+  and the Windows temp directory are both outside the project and both off limits (owner's
+  rule, 2026-09-03; the per-arm logs lived in TEMP until then). **Whatever prose points to,
+  and whatever tool will be used again, does not stay in `scratch/`** (owner's rule,
+  2026-09-10): a file a citation can reach has to survive a cleanout, and what only bought
+  one validation or one afternoon's understanding does not. Round launchers live in
+  `rounds/`, the per-round reads and analysis scripts in `scripts/reads/`, and the build
+  specs, build reports, surveys and prereg drafts the record cites in `logbook/specs/`. The
+  working test is whether the record depends on the file, and the limit is derived rather
+  than raw: an entry's pictures, plots, configs and genomes are committed beside it
+  (`logbook/images/`, `inocula/`) as part of writing the entry, under the hook's 5 MB
+  ceiling, and a run directory itself never is; its manifest and hashes are the pointer.
 - Simulation output (`runs/`) and spike CSVs are gitignored; `FINDINGS.md` is tracked
   because DESIGN.md links to it.
 - Genomes serialize to **JSON**, not binary — readable, diffable, and hand-written rather than

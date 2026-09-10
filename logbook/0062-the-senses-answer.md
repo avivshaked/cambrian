@@ -8,7 +8,7 @@ build also came out about a fifth faster than the one it replaced, because a per
 skips the reads that nothing looks at.
 
 This entry is written from the implementing agent's report,
-`scratch/perception-build-report.md`. The owner's ruling on starting the work in parallel
+`logbook/specs/perception-build-report.md`. The owner's ruling on starting the work in parallel
 with the confirmation round, rather than after it, was short.
 
 > agreed, go ahead

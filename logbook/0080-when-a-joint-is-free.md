@@ -8,7 +8,7 @@
 > that reproduces bodies born whole. The owner had ruled the order conditionally that morning
 > (growth first if its build was close), so growth is round 33 and this round is 34, run on
 > the growth world with round 33's same seed as its control. Every "round 32" below reads as
-> "round 33", the growth base, and the launcher is `scratch/launch-r34.ps1`, round 33's with
+> "round 33", the growth base, and the launcher is `rounds/launch-r34.ps1`, round 33's with
 > the four prices at zero. The predictions are otherwise unchanged.
 
 Every round on record ends with the swimmers gone, and round 31 (logbook/0077) named the
@@ -48,7 +48,7 @@ A joint costs in four places. Three go to zero by knob and one cannot.
 
 Round 32's launcher (logbook/0079): the grid at 1 m and 5 m, corpses at 0.005 per second,
 detritus mixing 0.02, added mass 0.5, the three senses on, 30,000 s, five seeds. The
-launcher is `scratch/launch-r33.ps1`, round 32's with the four knobs at zero.
+launcher is `rounds/launch-r33.ps1`, round 32's with the four knobs at zero.
 
 ## Validity checks
 

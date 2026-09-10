@@ -9,7 +9,7 @@ floor, no crowd and no wall stop. The lean world also showed something the fed o
 stomach lineage evolving at the vent's floor from nothing, three times in three seeds.
 
 This was pre-registered before the floor build it depends on had landed
-(`scratch/floor-spec.md`). The owner's ruling was short.
+(`logbook/specs/floor-spec.md`). The owner's ruling was short.
 
 > love it. go ahead.
 
@@ -49,7 +49,7 @@ The wall is generous on purpose, because 0065's seed-2 worlds hit a 600-minute w
 fast step. The quarter-stock world ran there at 1.6 times real time, so about half real time
 is expected here.
 
-The launcher is `scratch/launch-r26.ps1`, with `-ExpectSimHash` from the floor build's own
+The launcher is `rounds/launch-r26.ps1`, with `-ExpectSimHash` from the floor build's own
 manifest, five concurrent on workers 2 to 6.
 
 The controls are 0061's five seeds, which are the same open world tiled with no top at 0.01.

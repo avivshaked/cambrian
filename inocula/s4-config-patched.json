@@ -1,0 +1,228 @@
+{
+  "format": 2,
+  "configHash": "a23f4a73658f8717",
+  "assay": {
+    "inoculateAtSeconds": 0,
+    "inoculateCount": 5,
+    "inoculateDepthMetres": 50
+  },
+  "current": {
+    "advectFields": true,
+    "cellMetres": 30,
+    "horizontalRatio": 1,
+    "periodSeconds": 6000,
+    "rollBlinkSeconds": 3000,
+    "rolls": true,
+    "speed": 0.3,
+    "ventDepthMetres": 60,
+    "ventLegMetres": 1,
+    "ventPatch": 0,
+    "ventSpeed": 0
+  },
+  "development": {
+    "maxDepth": 8,
+    "maxPartVolume": 1000000,
+    "maxParts": 16,
+    "minPartHalfExtent": 0.01,
+    "minPartVolume": 0.0001
+  },
+  "economy": {
+    "neuralCostPerConnectionWatts": 0.01,
+    "neuralCostPerNeuronWatts": 0.05,
+    "perOffspringOverheadJoules": 25,
+    "workCostMultiplier": 1
+  },
+  "feeding": {
+    "clearanceToeDensity": 0,
+    "exudationFraction": 0,
+    "satiationWattsPerCubicMetre": 0
+  },
+  "fluid": {
+    "addedMassCoefficient": 0,
+    "density": 1000,
+    "dragCoefficient": 1.5,
+    "neutralBodyVolume": 0.25,
+    "panelsPerAxis": 2,
+    "tissueExcessDensity": 0.02
+  },
+  "genome": {
+    "bodyCellTypes": [
+      "structural",
+      "structural",
+      "photosynthetic",
+      "photosynthetic",
+      "absorptive",
+      "consumer",
+      "neural"
+    ],
+    "founderCellTypes": [
+      "photosynthetic",
+      "photosynthetic",
+      "absorptive",
+      "consumer"
+    ],
+    "founderFloatChance": 0.5,
+    "founderTailChance": 0.5,
+    "jointTypes": [
+      "Hinge",
+      "Twist",
+      "HingeTwist",
+      "TwistHinge",
+      "Universal",
+      "Spherical"
+    ],
+    "linkChance": 0.5,
+    "maxBroodSize": 3,
+    "maxBuoyancyLift": 2,
+    "maxEdgeScale": 1,
+    "maxEdgeTiltDegrees": 50,
+    "maxEdgesPerNode": 2,
+    "maxHalfExtent": 0.4,
+    "maxJointLimit": 1.4,
+    "maxLinkHalfExtent": 0.26,
+    "maxLinkPower": 20,
+    "maxNeuronsPerNode": 3,
+    "maxNodes": 5,
+    "maxOffspringEndowment": 400,
+    "maxOscillatorHz": 2.5,
+    "maxRecursiveLimit": 4,
+    "minBroodSize": 1,
+    "minBuoyancyLift": 0.25,
+    "minEdgeScale": 0.6,
+    "minHalfExtent": 0.15,
+    "minJointLimit": 0.4,
+    "minLinkHalfExtent": 0.1,
+    "minLinkPower": 5,
+    "minNeuronsPerNode": 1,
+    "minNodes": 2,
+    "minOffspringEndowment": 50,
+    "minOscillatorHz": 0.3,
+    "minRecursiveLimit": 1,
+    "reflectChance": 0.35,
+    "rotateChance": 0.4,
+    "shapeIdChoices": [
+      "box",
+      "box",
+      "capsule",
+      "sphere"
+    ],
+    "terminalChance": 0.3
+  },
+  "light": {
+    "attenuationDepth": 12,
+    "dayLengthSeconds": 200,
+    "dayNightAmplitude": 0,
+    "surfaceIrradiance": 200
+  },
+  "mutation": {
+    "addEdgeChance": 0.06,
+    "addNeuronChance": 0.05,
+    "addNodeChance": 0.04,
+    "broodSizeChance": 0.05,
+    "cellTypeChance": 0.005,
+    "endowmentChance": 0.08,
+    "flagChance": 0.03,
+    "jointTypeChance": 0.04,
+    "maxBroodSize": 64,
+    "maxNodes": 64,
+    "neuronOpChance": 0.03,
+    "newNodeHalfExtent": 0.03,
+    "nodeExtinctionHalfExtent": 0.02,
+    "recursiveLimitChance": 0.03,
+    "removeEdgeChance": 0.05,
+    "removeNeuronChance": 0.04,
+    "rewireInputChance": 0.05,
+    "scalarChance": 0.08,
+    "scalarStdDev": 0.15,
+    "shapeChance": 0.02
+  },
+  "patches": {
+    "dispersalChancePerStep": 0,
+    "horizontalMixingDiffusivity": 0,
+    "horizontalPatches": 4,
+    "perPatchShading": 0
+  },
+  "population": {
+    "floorClosesAfterSeconds": 3000,
+    "floorSpawnsPerStep": 2,
+    "founderDepthSpread": 60,
+    "founderEnergyJoules": 200,
+    "maximumPopulation": 8000,
+    "minimumPopulation": 40
+  },
+  "species": {
+    "speciesBrainWeight": 0,
+    "speciesCellTypeWeight": 1,
+    "speciesDriftThreshold": 0,
+    "speciesParameterWeight": 1,
+    "speciesTopologyWeight": 1
+  },
+  "world": {
+    "excretionPerJoule": 0.01,
+    "floorRefugeMetres": 0,
+    "initialMatterPerCubicMetre": 1,
+    "lightLayerMetres": 1,
+    "matterMixingDiffusivity": 2,
+    "matterPerCreature": 3,
+    "matterPerTissueJoule": 0.5,
+    "matterRemineralisationPerSecond": 0,
+    "matterSinkMetresPerSecond": 0.002,
+    "nutrientMixingDiffusivity": 0.2,
+    "nutrientRemineralisationPerSecond": 0,
+    "nutrientSinkMetresPerSecond": 0.002,
+    "refugeEdibleFraction": 0,
+    "senescenceDoublingSeconds": 3000,
+    "worldAreaSquareMetres": 100,
+    "worldDepthMetres": 60
+  },
+  "cellTypes": [
+    {
+      "id": "structural",
+      "upkeepWattsPerCubicMetre": 1,
+      "tissueEnergyPerCubicMetre": 500
+    },
+    {
+      "id": "link",
+      "upkeepWattsPerCubicMetre": 2.5,
+      "tissueEnergyPerCubicMetre": 500,
+      "idleWattsPerNewtonMetre": 0.02,
+      "photosyntheticEfficiency": 0
+    },
+    {
+      "id": "neural",
+      "upkeepWattsPerCubicMetre": 5,
+      "tissueEnergyPerCubicMetre": 500,
+      "neuronsSupportedPerCubicMetre": 400,
+      "discountedCostFraction": 0.2
+    },
+    {
+      "id": "photosynthetic",
+      "upkeepWattsPerCubicMetre": 3,
+      "tissueEnergyPerCubicMetre": 500,
+      "efficiency": 0.05
+    },
+    {
+      "id": "absorptive",
+      "upkeepWattsPerCubicMetre": 4,
+      "tissueEnergyPerCubicMetre": 500,
+      "clearanceRate": 10,
+      "yield": 1
+    },
+    {
+      "id": "consumer",
+      "upkeepWattsPerCubicMetre": 6,
+      "tissueEnergyPerCubicMetre": 500,
+      "biteRate": 20,
+      "scavengeRate": 1,
+      "carrionYield": 0.8,
+      "grazingYield": 0.5,
+      "predationYield": 0.2
+    },
+    {
+      "id": "buoyancy",
+      "upkeepWattsPerCubicMetre": 2.5,
+      "tissueEnergyPerCubicMetre": 500,
+      "wattsPerLiftUnit": 0.05
+    }
+  ]
+}

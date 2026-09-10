@@ -36,7 +36,7 @@ and the vent off.
 Beside them sit 0056's closed-budget arms, `r20q0-s2` and `r20q0-s4`.
 
 The vent arms change two things at once, the plume and the source, and the surface arms
-isolate the sink. The launcher is `scratch/launch-r23.ps1`, and workers were refreshed and
+isolate the sink. The launcher is `rounds/launch-r23.ps1`, and workers were refreshed and
 launched with `-ExpectSimHash`, four concurrent.
 
 ## Validity checks

@@ -14,7 +14,7 @@ Round 33's launcher (growth, the grid, corpses at 0.005/s, mixing 0.02, the D082
 the 30,000 J ceiling) with D088 on it: a newborn set down over a 5 m disc about its parent,
 `CurrentMode Transport` at an RMS of 0.1 m/s over 6,000 s, every destroy immediate, the
 placer reserving the adult's radius for births and founders alike. Five seeds, dt 0.01,
-30,000 s, workers 2 to 6, `scratch/launch-r35.ps1` defaults. The header must read
+30,000 s, workers 2 to 6, `rounds/launch-r35.ps1` defaults. The header must read
 `dispersal=5 m` and `current 0.1 m/s transport`, and every arm's manifest must carry one
 build and `physicsJobWorkers 0`.
 
@@ -68,4 +68,4 @@ report.
 
 ## Sources
 
-Logbook/0082, 0083, 0084, 0085, 0086; D063, D086, D087, D088; `scratch/launch-r35.ps1`.
+Logbook/0082, 0083, 0084, 0085, 0086; D063, D086, D087, D088; `rounds/launch-r35.ps1`.

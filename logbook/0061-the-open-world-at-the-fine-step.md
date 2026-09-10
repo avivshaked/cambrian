@@ -43,7 +43,7 @@ in the vent shape.
 | exudation | 0.15 |
 | ceiling | 8,000 |
 
-The launcher is `scratch/launch-r24.ps1`, with `-ExpectSimHash` on every launch. Four arms
+The launcher is `rounds/launch-r24.ps1`, with `-ExpectSimHash` on every launch. Four arms
 go first, on workers 2 to 5. The fifth follows on worker 6 once the perception build's
 validation has released it, so the machine never carries more than five arms.
 
@@ -65,11 +65,11 @@ The controls for the goal rule are round 18's five seeds, the closed world at dt
 |---|---|---|
 | M1 | **the goal rule holds on the open world**: D063 as amended (all five clauses, `scripts/clade-score.ps1`) passes in ≥ 4 of 5 seeds, round 18's bar | `clade-score.ps1` |
 | M2 | **no runaway**: no arm reaches the 8,000 ceiling before 30,000 s | `alive`, manifest `reason` |
-| M3 | **the stock levels**: standing matter at 30,000 within 30% of its value at 20,000 in ≥ 4 of 5 | `stats.jsonl` (`scratch/matter-budget.py`) |
+| M3 | **the stock levels**: standing matter at 30,000 within 30% of its value at 20,000 in ≥ 4 of 5 | `stats.jsonl` (`scripts/reads/matter-budget.py`) |
 | M4 | **the film was the step, not the plume**: mean depth over t > 10,000 below −5 m in every arm (0060's vent arms at 0.02 ended at −0.4 and 0.2 m; the 0.01 record sits at −12 to −15 m) | `depth m` |
 | M5 | **burial sees the influx at the fine step too**: `mat buried` per window ≥ 40% of `mat in` over t > 15,000 in every arm (0060: 43–50%) | `mat buried`, `mat in` |
 | M6 | **founding survives the drain**: `alive` ≥ 40 at every sample to t=6,000 in ≥ 4 of 5 (0060's `r23s-s4` fell to 21) | `alive` |
-| M7 | **the queue stays weak**: median parent age in the plateau (t > 10,000) below 2,000 s in every arm (closed world 4,300–4,600; 0060: 580–1,163) | `scratch/parent-age.py` |
+| M7 | **the queue stays weak**: median parent age in the plateau (t > 10,000) below 2,000 s in every arm (closed world 4,300–4,600; 0060: 580–1,163) | `scripts/reads/parent-age.py` |
 
 ## The two-sided readings
 
@@ -116,7 +116,7 @@ of 20 rows over 2,000 s at 0.01 on r16dt-01c's settings (logbook/0062). The head
 `senses` token reads the default four. Seed 5 is read on that evidence, and the split is
 recorded here. Its header otherwise matches V1.
 
-One launch was refused first, on a hash taken from `scratch/simhash.py`, which disagrees
+One launch was refused first, on a hash taken from `scripts/simhash.py`, which disagrees
 with the C# on this tree (CLAUDE.md). A monitor runs over the arms. Results are appended
 below.
 
@@ -207,7 +207,7 @@ whole population above the waterline, to within a body length. Seeds 1, 3 and 4 
 +0.8 and +0.2 m with deviations of 6 to 8 m. That is a population split between the surface
 and the deep, with a handful below the floor.
 
-A column counting bodies above y = 0 is specified with the fix in `scratch/surface-spec.md`,
+A column counting bodies above y = 0 is specified with the fix in `logbook/specs/surface-spec.md`,
 so the next round reads this directly.
 
 The goal rule itself came out at three seeds. Those three hold stable, connected absorptive

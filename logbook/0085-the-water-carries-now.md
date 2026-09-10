@@ -104,7 +104,7 @@ puts it or holds against it.
 
 ## Sources
 
-The three build reports (dispersal, transport, destroy), `scratch/current-transport-spec.md`,
-`scratch/destroy-fix-spec.md`; `runs/r35smoke`, `r35tsmoke`, `r35tsmoke2`, `r35tsmoke3`;
+The three build reports (dispersal, transport, destroy), `logbook/specs/current-transport-spec.md`,
+`logbook/specs/destroy-fix-spec.md`; `runs/r35smoke`, `r35tsmoke`, `r35tsmoke2`, `r35tsmoke3`;
 `scratch/logs/theatre-identity-play.log`; `CurrentTransportTests`; D037, D066, D077, D086,
 D087, D088; logbook/0082, 0083, 0084.

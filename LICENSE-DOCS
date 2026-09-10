@@ -19,6 +19,8 @@ The written work in this repository:
     fable-propose-*.md     (proposals in front of the owner)
     research/**            (the literature review and provenance records)
     logbook/**             (dated entries on what was tried and what broke)
+    logbook/specs/**       (the briefs builds were made from, and the reports back)
+    logbook/images/**      (the pictures those entries cite)
     primer/**              (explanatory writing about what was built)
     spikes/**/README.md
     spikes/**/results/FINDINGS.md
@@ -29,6 +31,10 @@ Source code is licensed separately under the PolyForm Noncommercial License
 inocula/** is neither prose nor source: it holds evolved genome files, produced
 by this project's own simulations and tracked as experiment inputs (D060). They
 are covered by the code licence alongside the code that reads them.
+
+rounds/** is source: one launcher per round, each setting a world's knobs and
+calling scripts/run-arm.ps1. It is covered by the code licence, PolyForm
+Noncommercial 1.0.0, alongside scripts/.
 
 
 THE LICENCE

@@ -7,7 +7,7 @@ identity check on screen that tells the viewer whether they are watching the run
 of it. Nothing rendered has been seen by anyone yet, because batch mode has no display.
 
 This is D075's parallel item and DESIGN.md §6.1's second program, written from the
-implementing agent's report, `scratch/theatre-build-report.md`.
+implementing agent's report, `logbook/specs/theatre-build-report.md`.
 
 ## What was built
 
@@ -55,7 +55,7 @@ genome is a recipe and an id is a body.
 
 Across five runs, 396 ids join `lineage.jsonl`: present, born before the snapshot, and not
 dead before it. Format 4 refuses format-3 files by name and version, and the inocula in
-`scratch/` are format 3 and stay so.
+`inocula/` are format 3 and stay so.
 
 Mode A is one creature. A genome comes from a snapshot, by row or by id, or from a file. It
 is grown and wired to its own brain, sensors and effectors, in the reference water.

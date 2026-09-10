@@ -2938,7 +2938,7 @@ founder-rooted clade the world has sustained for 30,000 s is that state; whether
 stomach can establish was answered on its own (0051 amendment 2; 0054's seed 4). Round 18
 (0054) is the first pass under this wording: 4 of 5 by clade, minima over the last two
 lifetimes 48 / 41 / 24 / 127; the producer clause is read from the columns the
-contract-repairs build adds and is recorded when they exist. `scratch/clade-score.py` is
+contract-repairs build adds and is recorded when they exist. `scripts/reads/clade-score.py` is
 the scorer until it moves into `scripts/`.
 
 **Two questions in front of the owner, captured 2026-09-07 from the outside reviews (logbook/0071).**
@@ -3767,7 +3767,7 @@ population a world can hold at the fine step drops by an amount not yet known, w
 likely moves the island model forward in D075's path; corpses and large detritus become
 physical bodies (logbook/0022's rejection of a physical corpse rested on tiling and is
 reversed by this). **Measured first:** a spike in the pattern of spike 01
-(`scratch/shared-space-spike-spec.md`) — one shared volume, collisions on, 250–2,000
+(`logbook/specs/shared-space-spike-spec.md`) — one shared volume, collisions on, 250–2,000
 real creatures with the fluid on, at three footprints, against today's tiling — run on a
 quiet machine after round 24's arms end. The footprint proposal and the rewritten
 predation proposal carry its numbers. D075's order is amended by this: shared space and
@@ -3804,7 +3804,7 @@ free, from a dedicated RNG stream; a birth that cannot be placed is a counted *c
 stillbirth. The lattice is retired. (6) Contacts and per-patch populations are counted.
 
 **Why it is one decision.** `WorldAreaSquareMetres` is the sun's aperture and the
-denominator of every density the ecology reads (`scratch/footprint-survey.md`), so the
+denominator of every density the ecology reads (`logbook/specs/footprint-survey.md`), so the
 number that sets the packing sets every concentration; a separate physical scale factor
 was rejected as the same fiction as tiling in a harder-to-see form. Quadrupling the area
 quadruples the aperture and the initial stock and dilutes the influx, so every rule tuned
@@ -3842,7 +3842,7 @@ ran at half real time into the wall); the placeholder floor produced three newbo
 divergences at 60 m; at 1/m³ the box's 24,000 starting units set the world's size at
 4,000–6,000 and the influx only its slope. **Put to the owner for the 0.01 confirmation:**
 influx 0.3, starting stock 0.25/m³ (unscreened together; each read alone), and a real
-floor collider at −60 m before it (`scratch/floor-spec.md`). **Ruled 2026-09-06 (owner: "love it. go ahead"):** the real floor is built first, then the
+floor collider at −60 m before it (`logbook/specs/floor-spec.md`). **Ruled 2026-09-06 (owner: "love it. go ahead"):** the real floor is built first, then the
 confirmation at 0.01 on five seeds at influx 0.3 and stock 0.25/m³, pre-registered as
 logbook/0067; the crowd is read there before any rule is spent on it.
 
@@ -3926,7 +3926,7 @@ first seed failed on a boom-and-bust of its stomach line that one flipped bit de
 (0069). A world whose outcome hinges on one bit is on a knife edge, and tuning its dose
 further would not tell us which of the five changes put it there.
 
-**The rule.** (1) The base is round 18's world exactly (`scratch/launch-r18.ps1`: closed
+**The rule.** (1) The base is round 18's world exactly (`rounds/launch-r18.ps1`: closed
 budget, vent off, stock 1/m³, area 100, exudation 0.15, clearance 10, dt 0.01). (2) Each
 round adds one change and asks D063 as amended of it; a change that costs the rule is read,
 not tuned around. (3) The first change is shared space as D077 defines it — the box, the
@@ -4426,7 +4426,7 @@ the geometry argument above as its record; the halo was withdrawn under D083.
 
 **What it changes.** Every seed under the grid is a new realisation. `EVOSIM_FIELD grid`,
 `EVOSIM_FIELD_CELL`, `EVOSIM_FIELD_MATTER_CELL` and `EVOSIM_CORPSE_DECAY` in the launcher
-(`scratch/launch-r32.ps1`), the header carrying `cell=`, `mcell=` and `corpse=`. Round 32
+(`rounds/launch-r32.ps1`), the header carrying `cell=`, `mcell=` and `corpse=`. Round 32
 is the grid at round 31's prices and mixing, five seeds at 0.01, read under logbook/0079's
 predictions with round 31's same seed as the reference.
 ### D087
@@ -4439,7 +4439,7 @@ with your recommendations"). Built in both halves and smoked the same day (logbo
 round 34 is its first round, after round 33 reads. Absorbs `fable-propose-growth.md`,
 deleted on ruling. Corrected the same evening: growth is round 33 and the free joint round
 34, the order amended before launch (logbook/0080); the launcher is
-`scratch/launch-r33.ps1` and the 30,000 J ceiling is round 33's.
+`rounds/launch-r33.ps1` and the 30,000 J ceiling is round 33's.
 
 **Context.** Every creature the world had held was born at its adult size: a parent paid a
 whole body at the tissue price plus an endowment of reserve, and `ReproductionTraits`
@@ -4532,7 +4532,7 @@ than round 32's same seed and stripped the matter at its layer within 300 s; a w
 breeds like that is matter-limited from the start, and round 34 reads whether that is a
 different ecology or the same one reached sooner. The price of a bud (D082) becomes the
 genome's, since a small newborn is a cheap one; a newborn joint is smaller and lighter than
-an adult's, which is where the divergences have been. `scratch/launch-r34.ps1` carries the
+an adult's, which is where the divergences have been. `rounds/launch-r34.ps1` carries the
 growth knobs and the header carries `growth reserve= floor= minkg= step= invest=
 scale/invest chance=` and the biomass ceiling.
 

@@ -26,7 +26,7 @@ because 0076 measured that nothing reaches the floor in a lifetime at either rat
 random walk, vertical and sideways, and D084's rule that the two are equal holds at the new
 value. The step per half second goes from 0.45 m to 0.14 m, and the time a 1 m hole takes
 to refill from about 5 s to about 50 s. Nothing in Core moves; the launcher is
-`scratch/launch-r31.ps1`.
+`rounds/launch-r31.ps1`.
 
 The cost stated before the reading. Less stirring also means a stomach's own water is
 refilled more slowly from the field at large. A stomach line that lived on the mixing
@@ -188,7 +188,7 @@ arms.
 clock, `physicsJobWorkers 0`, no impulse limiter bound. Seeds 1, 2, 4 and 5 on
 `coreHash 73047e8e…`; seed 3 is `r31-s3b` on the widened guard, `coreHash d0f27c7b…`, with
 its seven counted divergences at 11,533.5 s and nothing after. V1 to V3 hold, with that one
-caveat on seed 3. Read against round 30's same seed, `scratch/r31-read.py`.
+caveat on seed 3. Read against round 30's same seed, `scripts/reads/r31-read.py`.
 
 | arm | alive (r30) | scorer | stomach clade at end (r30 `inherit`) | sense share | `food rig` last 6,000 s (r30) | `J/m3 here` (r30) | `det deep` (r30) | floor max | detritus kJ (r30) |
 |---|---|---|---|---|---|---|---|---|---|

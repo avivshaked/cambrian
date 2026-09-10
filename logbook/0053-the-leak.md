@@ -44,9 +44,9 @@ is read past two lifetimes:
 | `r17x-s2` | 2 | 0.15 | w5 | the world that grew a line of 48 at 0.01 |
 | `r17x0-s2` | 2 | 0 | w2 | control: seed 2 at 0.02 with the leak off (seed 1's control is `r14c10-s1-flux`, 15,000 s) |
 
-Everything else is round 14's world, from `scratch/launch-r14.ps1`'s block. That is sink
+Everything else is round 14's world, from `rounds/launch-r14.ps1`'s block. That is sink
 0.002 on both fields, vent off, rolls and four patches, with the floor closing at 3,000,
-senescence 3,000 and cell-type mutation 0.005. The launcher is `scratch/launch-r17.ps1`.
+senescence 3,000 and cell-type mutation 0.005. The launcher is `rounds/launch-r17.ps1`.
 
 Per 0052, a 0.02 arm is a different chaotic realisation of its seed from the 0.01 arm. So
 the comparison is against the 0.02 control and against the distribution round 14
@@ -85,7 +85,7 @@ headers token by token, not by hash, across this boundary.
   Then something between the field and the child is binding that the ledger does not see.
   The dissection of `r14c10-s4` already found stomachs that should breed and did not, with
   no output recording where they were. The per-creature absorptive ledger log
-  (`scratch/absorptive-log-spec.md`) is the next instrument, before any further world
+  (`logbook/specs/absorptive-log-spec.md`) is the next instrument, before any further world
   change. The review's caveat (iii) applies: in the ocean too, exudation alone does not
   close the consumers' demand.
 

@@ -48,7 +48,7 @@ doubled.
 | ceiling | 8,000 |
 | wall | 2,400 minutes |
 
-The launcher is `scratch/launch-r26.ps1 -Influx 0.6 -Name r27-sN`, with
+The launcher is `rounds/launch-r26.ps1 -Influx 0.6 -Name r27-sN`, with
 `-ExpectSimHash 1f5455f4851591d0`, the floor build unchanged. Seeds 4 and 5 go first on the
 freed workers, and seeds 1 to 3 follow as 0067's arms end.
 

@@ -3,7 +3,7 @@
 *Fable, consolidated 2026-09-07 into one operative design. It folds in the seven conditions
 added after the outside review of 2026-09-06 and the points the Astra review of 2026-09-07
 raised, so the owner rules on one text. The 2026-09-06 draft, which this replaces, is in
-the git history. Built on `scratch/predation-survey.md`, DESIGN.md §5A.3 and §4.4, D076 and
+the git history. Built on `logbook/specs/predation-survey.md`, DESIGN.md §5A.3 and §4.4, D076 and
 D077. For the ruling after round 28 and the movement round (D075's order). Absorbed into
 DECISIONS.md on ruling, then deleted.*
 

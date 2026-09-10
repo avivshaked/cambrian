@@ -37,7 +37,7 @@ One control, `r19m0-s1`, runs round 18's sinks unchanged at dt 0.02. Every round
 at 0.01, and 0052 says a step change is a butterfly, so the comparison is made inside one
 step.
 
-The launcher is `scratch/launch-r19.ps1`.
+The launcher is `rounds/launch-r19.ps1`.
 
 Workers were refreshed to the contract-repairs build and hash-checked. That build carries
 the run manifest, the `photo` columns, invariant culture and the step in the config hash.
@@ -66,7 +66,7 @@ counts refused conceptions per 100-s window.
 ## Scoring
 
 Scoring is D063 as amended, by connected clade, following 0054's addendum and
-`scratch/clade-score.py`. One connected absorptive clade must be alive for at least 20
+`scripts/reads/clade-score.py`. One connected absorptive clade must be alive for at least 20
 consecutive samples to the end. It must hold at least 10 living members at the last sample
 and through the last 6,000 s. Inside the clade there must be an inherited absorptive birth
 in the last 20 samples. Producers are read as an inherited photosynthetic lineage from
@@ -145,7 +145,7 @@ The table's `mat deep` column is the density at −54 m. The reading that carrie
 `matterHere`, the density at the population's own mean depth.
 
 That column lives in `stats.jsonl` rather than in the report table, and
-`scratch/matter-profile.py` extracts it. Densities below are in units per cubic metre, and
+`scripts/reads/matter-profile.py` extracts it. Densities below are in units per cubic metre, and
 the means are over t ≥ 10,000.
 
 | arm | matter sink | depth | `matterHere` mean · min · last | `mat deep` mean · min · last | `mat locked` at end | `mat blk` mean/window | alive at end |

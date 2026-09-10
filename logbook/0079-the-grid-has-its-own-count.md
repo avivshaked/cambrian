@@ -18,7 +18,7 @@ single-threaded physics, detritus mixing 0.02, remineralisation off, 30,000 s, f
 `EVOSIM_FIELD grid`, detritus cells of 1 m and matter cells of 5 m (D086, from 0078's
 screens), matter mixed at its own 2 m²/s on every axis where the vertex world walked it
 sideways at 0.02, and corpses as particles decaying at 0.005 per second. Everything else
-is the water's own physics on a different carrier. The launcher is `scratch/launch-r32.ps1`
+is the water's own physics on a different carrier. The launcher is `rounds/launch-r32.ps1`
 at its defaults.
 
 ## Validity checks
@@ -86,7 +86,7 @@ Read as they land, against the predictions and the scorer.
 clock, one build (`simHash b7f589d0…`, `coreHash 9e1f47b2…`), `physicsJobWorkers 0`,
 `gitDirty false`, no divergence in any arm, neither impulse limiter bound, `audit` 0.0000%
 and `mat resid` 0 on every row. V1 to V3 hold without a caveat. Read against round 31's
-same seed with `scratch/r32-read.py` (seed 3's control is `r31-s3b`, the rerun that
+same seed with `scripts/reads/r32-read.py` (seed 3's control is `r31-s3b`, the rerun that
 finished), and scored by connected clade.
 
 | arm | alive (r31) | scorer | stomach clade at end (r31 `inherit`) | `det out` / `det exuded`, last 6,000 s | `mat locked` / r31 | corpse share of the larder | `det deep` (r30) | `mat blk` last window (r31) |

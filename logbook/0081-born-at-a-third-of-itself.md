@@ -11,7 +11,7 @@ The rules themselves are in the proposal until it is absorbed.
 
 ## The Core half
 
-An agent built it to `scratch/growth-core-spec.md` while round 32 ran. `BirthInvestment`
+An agent built it to `logbook/specs/growth-core-spec.md` while round 32 ran. `BirthInvestment`
 replaces the endowment in joules, and `AdultScale` multiplies every node's dimensions
 before development. A child is developed once at its adult size and then scaled by the
 cube root of its body fraction. So the pruning rule judges the adult, and a newborn never
@@ -43,7 +43,7 @@ The full suite passed, 604 of 604, at 11:41.
 The Sim reads a creature's phenotype live for drag, lit area and the bounding radius, and
 sets mass and colliders once at birth, so a body that grew in Core alone would have the
 drag of its new size and the mass of its old one. A second agent built the resize to
-`scratch/growth-unity-spec.md`. Once every `GrowthStepSeconds` of simulated time, every
+`logbook/specs/growth-unity-spec.md`. Once every `GrowthStepSeconds` of simulated time, every
 body whose fraction moved has its collider extents, mass and both joint anchors set from
 the scaled phenotype, without rebuilding the articulation. Its drag panels are dropped, so
 that the one place panels are built rebuilds them. Mass is recomputed from volume rather
@@ -136,7 +136,7 @@ caller runs anything long in the background where a completion notice is free.
 
 ## Sources
 
-`fable-propose-growth.md` (the rules); `scratch/growth-core-spec.md` and
-`scratch/growth-unity-spec.md` (the briefs); `src/Evosim.Core.Tests/GrowthTests.cs`;
+`fable-propose-growth.md` (the rules); `logbook/specs/growth-core-spec.md` and
+`logbook/specs/growth-unity-spec.md` (the briefs); `src/Evosim.Core.Tests/GrowthTests.cs`;
 `runs/r34smoke/2026-09-09-111229-cf1be697/` (smoke); `runs/r32-s1/` (the comparison);
 `scratch/logs/trx/growth-confirm.trx` (the timed suite); logbook/0079 (round 32).

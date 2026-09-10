@@ -1,4 +1,4 @@
-"""Where two runs of one seed stop being the same run — scratch/digest-spec.md.
+"""Where two runs of one seed stop being the same run — logbook/specs/digest-spec.md.
 
 Reads runs/<arm>/*/digest.jsonl from two arms and prints the last step whose state hash
 agrees and the first that does not. If both arms also dumped bodies (digest-bodies.jsonl)

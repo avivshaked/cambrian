@@ -9,7 +9,7 @@ showed what the vent does with a crowd. There were 1,161 contact pairs per physi
 45,941 crowded stillbirths against about 2,300 births.
 
 This is D077's build, written from the implementing agent's report,
-`scratch/footprint-build-report.md`. The screen that reads it is 0065.
+`logbook/specs/footprint-build-report.md`. The screen that reads it is 0065.
 
 ## What was built
 
@@ -102,7 +102,7 @@ Commit `a268311` gives the world a static box collider, with its top face at y =
 measures 50 × 2 × 20 m at the screen's settings, which is the ring with 5 m past each seam.
 It sits on the creatures' layer with the project's default material and no bounce, and the
 restoring mirror below the floor is retired for the shared branch. The build report is
-`scratch/floor-build-report.md`.
+`logbook/specs/floor-build-report.md`.
 
 Placement may only raise a body. Every founder, inoculant and newborn is lifted until its
 bounding sphere clears the bed by 5 cm, so a parent on the bed breeds beside itself. The

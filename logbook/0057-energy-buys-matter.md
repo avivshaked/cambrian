@@ -42,7 +42,7 @@ dt 0.02 for 20,000 s.
 | `r21b-s2`, `r21b-s4` | reserve, stock 1 | 0056's `r20q0-s2` and `r20q0-s4` (age, stock 1, same step) |
 | `r21a-s2`, `r21a-s4` | stock 3, age order | the same two |
 
-The launcher is `scratch/launch-r21.ps1`. Workers were refreshed to the build and launched
+The launcher is `rounds/launch-r21.ps1`. Workers were refreshed to the build and launched
 with `-ExpectSimHash`, four concurrent. The A arms are expected to run two to three times
 slower.
 
@@ -53,7 +53,7 @@ slower.
 | V1 | B headers carry `conception reserve` and `from 1/m3`; A headers `conception age` and `from 3/m3`; all `dt=0.02`, `exudation 0.15`, `sink 0.002 m/s, matter 0.002 m/s`; every other token equals round 18's | header line 3 |
 | V2 | `floor` = 0 after t=3,100; audit 0.0000% every sample; matter conserved (`mat locked` ≤ stock) | `floor`, `audit`, `mat locked` |
 | V3 | manifests `status ended`, `reason budget`, `simHash` as launched | `run.json` |
-| V4 | under `reserve`, the median parent age in the plateau is not the controls' 4,300–4,600 s (the walk is not the age walk) | `scratch/parent-age.py` |
+| V4 | under `reserve`, the median parent age in the plateau is not the controls' 4,300–4,600 s (the walk is not the age walk) | `scripts/reads/parent-age.py` |
 
 ## Predictions
 

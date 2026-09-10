@@ -31,7 +31,7 @@ Five seeds, one arm each, at dt 0.01 for 30,000 s, in round 14's clearance-10 wo
 
 The arms are `r18x-s1` to `r18x-s5`, on w2 to w7 as workers free, at most 5 concurrent.
 
-The launcher is `scratch/launch-r18.ps1`. All workers are refreshed to the build that
+The launcher is `rounds/launch-r18.ps1`. All workers are refreshed to the build that
 carries the exudation knob, the flux columns and the absorptive log, and hash-checked.
 
 Seeds 1 and 2 are the screen's seeds at the finer step. They are different
@@ -208,7 +208,7 @@ absorptive birth whose parent did not express the trait, or at an absorptive fou
 Membership follows the parent chain while the trait is inherited. The three clauses are then
 asked of *one* clade. It must be alive for ≥ 20 consecutive samples to the end and hold ≥ 10
 living members at the last sample. It must also show an inherited absorptive birth within
-the last 20 samples, inside that clade. The scorer is `scratch/clade-score.py`, reading
+the last 20 samples, inside that clade. The scorer is `scripts/reads/clade-score.py`, reading
 `lineage.jsonl`'s birth and death events.
 
 | seed | clades with a living member at 30,000 | the largest clade: root, born | members ever | alive at end | alive-streak (samples) | ≥ 10 from | inherited births in last 20 samples | clade verdict |

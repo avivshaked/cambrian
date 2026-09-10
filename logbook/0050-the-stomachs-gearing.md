@@ -142,7 +142,7 @@ Ten arms, at most 5 concurrent, interleaved so that both arms have early seeds.
 | then | the rest, as workers free |
 
 No code changed for this round, so a worker needs a hash check rather than a refresh.
-`scratch/queue-r14.ps1` watches round 13's five workers and launches the next arm on each as
+`rounds/queue-r14.ps1` watches round 13's five workers and launches the next arm on each as
 it ends cleanly and hash-checks. It appends each arm to the round-13 monitor's watch list,
 so the same monitor covers both rounds. Headers are verified against the table before any
 arm is believed, and results are appended below.
@@ -283,7 +283,7 @@ is queued behind the exudation build.
 
 D070's second gate reading is met on this, since a larger stock did not turn the crash into
 a cycle holding ten. The gate is open, and the exudation build starts from
-`scratch/exudation-spec.md`.
+`logbook/specs/exudation-spec.md`.
 
 On the two stopped arms, recorded 2026-09-04. The Sol/GPT review of 2026-09-03 proposed
 reporting them as censored and screen-negative rather than failed. The owner reaffirmed the

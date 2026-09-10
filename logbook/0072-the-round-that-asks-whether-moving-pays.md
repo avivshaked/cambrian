@@ -20,7 +20,7 @@ the first place that can happen, so it is the next change.
 
 ## What is held and what changes
 
-Everything in `scratch/launch-r28.ps1` is held: round 18's closed world with D077's box,
+Everything in `rounds/launch-r28.ps1` is held: round 18's closed world with D077's box,
 wrap, placement, restoring top and real floor, single-threaded physics, dt 0.01, 30,000 s,
 five seeds. Round 28 is the base world (D081), and its five arms are the controls.
 
@@ -55,7 +55,7 @@ new header tokens and the four new columns, ended on budget, and closed its audi
 ## The arms
 
 `r29-s1` to `r29-s5`, seeds 1 to 5, at dt 0.01 for 30,000 s, on workers 2 to 6, launched
-with `scratch/launch-r29.ps1 -ExpectSimHash e43b81a8…`. The wall budget is 1,200 minutes,
+with `rounds/launch-r29.ps1 -ExpectSimHash e43b81a8…`. The wall budget is 1,200 minutes,
 as round 28's, which ran 549 to 764 minutes with five arms up.
 
 The controls are round 28's five arms.
@@ -146,7 +146,7 @@ each, at 0.9 times real time with five on the machine. V1 to V3 held: every head
 the round's tokens, every manifest reads `ended budget` with `diverged 0`, the audit read
 0.0000% at every sample and neither impulse limiter bound once. The readings come from
 `scripts/clade-score.ps1` and from the named columns over the last 6,000 s
-(`scratch/r29-read.py`); the sense channels come from each arm's last snapshot, counting
+(`scripts/reads/r29-read.py`); the sense channels come from each arm's last snapshot, counting
 genomes that carry an input of that kind, expressed or not.
 
 | arm | M1 sense share | M2 `jnt inh` | M4 scorer | M5 alive against round 28 | M6 |
