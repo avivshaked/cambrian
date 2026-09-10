@@ -21,12 +21,12 @@ run time; the look must serve reading the ecology (guild, size, joints) before p
 
 Sims never dressed his creatures, and said so in the paper's future work: "flexible skin
 could surround or be controlled by the rigid components", scales, hair, fur, eyes,
-tentacles, and their inclusion in the genome [S94 §8]. The famous boxes are an
-acknowledged gap, not a style. Framsticks keeps the stick skeleton visible and colours
+tentacles, and their inclusion in the genome [S94 §8]. The famous boxes are a gap
+he named himself. Framsticks keeps the stick skeleton visible and colours
 function: red muscle, green assimilation, yellow ingestion, translucent sensors [FR].
 Keiwan's Evolution renders jointed boxes plainly and adds cosmetic stickers, eyes above
 all, that snap to bones and change nothing in the simulation [KE]. Species: ALRE skins a
-mesh over a skeleton and textures it by projecting one seamless texture from three axes,
+mesh over a skeleton and textures it by projecting one tiling texture from three axes,
 because parts that scale by gene stretch any UV map; its author found raw RGB gene colours
 drift garish and moved to HSL [SP1, SP2]. The Bibites draws each body's sprite from its
 genes, so size, speed and diet shape the silhouette [BB]. Slug Disco's Ecosystem evolves
