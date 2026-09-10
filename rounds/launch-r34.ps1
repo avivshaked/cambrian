@@ -7,7 +7,11 @@
 #   ./rounds/launch-r34.ps1 -Seed 1 -Worker 2 -ExpectSimHash <hash>                       # r34-s1
 #   ./rounds/launch-r34.ps1 -Seed 1 -Worker 7 -Seconds 600 -Name r34smoke -Dt 0.02        # the smoke
 # Verify the header: everything launch-r35.ps1 lists ('dispersal=5 m', 'current 0.1 m/s
-# transport'), plus 'idle 0 W/N', 'work x0' and 'neuron 0 W + 0 W/input'. Read 'jnt inh'
+# transport'), plus 'idle 0.0001 W/N', 'work x0' and 'neuron 0 W + 0 W/input'. The idle charge
+# is not a literal zero because Core refuses one (LinkCell: capacity with no standing cost is
+# free capacity); 0.0001 W per N.m is a two-hundredth of the price, 0.002 W at the 20 N.m
+# capacity ceiling against a part's own 0.5 W of upkeep, which is free within this round's
+# meaning and keeps the ceiling's guard. Read 'jnt inh'
 # against 'alive' every 1,000 s, and 'diverged' against round 35's same seed: a free joint that
 # dies of the solver is 0080's second hypothesis.
 param(
@@ -38,9 +42,11 @@ param(
     [float]$NeuronCost = 0,
     [float]$ConnectionCost = 0,
     [float]$WorkCost = 0,
-    # Round 34 (logbook/0080): the muscle's standing charge, W per newton of capacity, 0.02 in every
-    # round before. Header token 'idle'.
-    [float]$Idle = 0,
+    # Round 34 (logbook/0080): the muscle's standing charge, W per newton-metre of capacity, 0.02 in
+    # every round before. Header token 'idle'. Not zero: Core refuses a free capacity outright
+    # (seed 1's first launch, 2026-09-10, died on it before its first step), so this is the
+    # price divided by two hundred.
+    [float]$Idle = 0.0001,
     # Sideways diffusivity of the detritus grid, m2/s. A grid mixes at one rate on all six faces,
     # so World refuses a grid world whose h-mix differs from EVOSIM_MIXING (the review of
     # 2026-09-08); the matter grid stirs on every axis at its own MatterMixingDiffusivity (2 m2/s,

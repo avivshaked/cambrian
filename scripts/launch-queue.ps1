@@ -79,7 +79,14 @@ while ($pending.Count -gt 0) {
         try {
             $extra = @{}
             if ($ExpectSimHash -ne '') { $extra.ExpectSimHash = $ExpectSimHash }
-            & $launcherPath -Seed $seed -Worker $worker @extra 2>&1 | ForEach-Object { Write-Output "    $_" }
+            $said = @(& $launcherPath -Seed $seed -Worker $worker @extra 2>&1 | ForEach-Object { [string]$_ })
+            $said | ForEach-Object { Write-Output "    $_" }
+            # run-arm.ps1 warns rather than throws when Unity exits before the manifest, so the
+            # launcher returns normally from a launch that did not happen (round 34 seed 1,
+            # 2026-09-10: Core refused the config and the queue counted the seed as launched).
+            if (($said -join "`n") -match 'before writing run\.json|could not be found|error CS') {
+                throw "Unity exited before writing run.json; see scratch/logs for the arm's log."
+            }
             $pending.RemoveAt(0)
             $launchedThisPass++
             Write-Output "$(Stamp) launched seed $seed on worker $worker"

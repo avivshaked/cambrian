@@ -19,6 +19,14 @@
 > what it means and not in its number: M4 read `spd jnt` against `spd rig` as drift, and in the
 > transport world both are the water's speed (0087's G3), so M4 is read as before and says
 > nothing about swimming either way.
+>
+> **Amended a third time, 2026-09-10 night, at the first launch.** Core refuses a joint whose
+> standing charge is a literal zero: `LinkCell` throws on it, with the reason in the message,
+> "capacity with no standing cost is free capacity, and evolution takes all of it", and seed
+> 1's first arm died before its first step. The round runs at 0.0001 W per newton-metre, the
+> price divided by two hundred: 0.002 W at the 20 N·m capacity ceiling against a part's own
+> 0.5 W of upkeep, which is free within this round's meaning and keeps the ceiling's guard.
+> The header token to verify is `idle 0.0001`, not `idle 0`.
 
 Every round on record ends with the swimmers gone, and round 31 (logbook/0077) named the
 wall: no jointed body survives founding, before there is anything to eat, so selection
