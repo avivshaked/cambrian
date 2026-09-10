@@ -1328,6 +1328,39 @@ namespace Evosim.Sim.EditorTools
         /// </remarks>
         private static readonly List<AbsorptiveSample> AbsorptiveRows = new List<AbsorptiveSample>();
 
+        /// <summary>
+        /// Scratch for <c>positions.jsonl</c>: one entry per living body with a finite root, the
+        /// five arrays <see cref="PositionsRow.Write"/> takes.
+        /// </summary>
+        /// <remarks>
+        /// Reused and grown rather than allocated per sample, for the reason
+        /// <see cref="AbsorptiveRows"/> is: this is one entry per creature per sample and a fresh
+        /// set every sample would be five arrays of garbage a sample for the life of a run.
+        /// They hold no state between runs, only capacity, which is why they are not cleared in
+        /// <see cref="ResetStaticReportState"/> the way the tallies are.
+        /// </remarks>
+        private static long[] PositionIds = new long[0];
+        private static float[] PositionX = new float[0];
+        private static float[] PositionY = new float[0];
+        private static float[] PositionZ = new float[0];
+        private static int[] PositionFlags = new int[0];
+
+        /// <summary>Grows the position scratch to hold at least <paramref name="needed"/> bodies.</summary>
+        private static void EnsurePositionCapacity(int needed)
+        {
+            if (PositionIds.Length >= needed) return;
+
+            // Doubled rather than fitted, so that a population climbing towards the ceiling does
+            // not resize five arrays at every sample on the way up.
+            int size = Math.Max(64, needed * 2);
+
+            Array.Resize(ref PositionIds, size);
+            Array.Resize(ref PositionX, size);
+            Array.Resize(ref PositionY, size);
+            Array.Resize(ref PositionZ, size);
+            Array.Resize(ref PositionFlags, size);
+        }
+
         /// <summary>Whether D060's assay has already fired this run — the one-shot guard.</summary>
         /// <remarks>
         /// Static for the same reason every other field here is: a second <c>Evosim/Run</c> from
@@ -1987,6 +2020,19 @@ namespace Evosim.Sim.EditorTools
             // same reason: a row is written every reportEvery metabolic steps.
             var absorptiveNow = new HashSet<long>();
 
+            // positions.jsonl (2026-09-10): where every body actually is, at the cadence of
+            // stats.jsonl. Nothing in a run carried a position, and the theatre showed round 33
+            // seed 3 as two ribbons a metre wide the first time it was pointed at a scored run
+            // (logbook/0083) -- thirty-three rounds read on a mean depth and four patch bins.
+            // Filled in the loop below rather than by a second walk over the population, so that
+            // a body's guild flags and the report's `absorpt`, `jointed` and `photo` cannot come
+            // from two different tests. Null Positions is a tiled world, where a coordinate is an
+            // artefact of the lattice rather than a place: RunDirectory writes no file at all.
+            bool recordPositions = dir?.Positions != null;
+            int positionCount = 0;
+
+            if (recordPositions) EnsurePositionCapacity(world.Living.Count);
+
             // D077. Alive per patch — one column each. The instrument the footprint world is read
             // through: with patches as regions, "the population is in one patch" and "the
             // population is spread" are different worlds that `alive` alone cannot tell apart,
@@ -2072,6 +2118,25 @@ namespace Evosim.Sim.EditorTools
                     if (EverJointed.Contains(creature.ParentId)) jointedInherited++;
                 }
                 dof += creatureDof;
+
+                // The creature's place and its guild, taken from the three answers this loop has
+                // just worked out. The root is the one CheckFinite read this metabolic step, so
+                // there is no Transform read here; a creature conceived this step has no body yet
+                // and a non-finite root is a diverged body about to be killed, and Ecosystem drops
+                // both, exactly as MeasureHorizontalSpread does.
+                if (recordPositions && eco.TryRootPosition(creature.Id, out Vector3 positionRoot))
+                {
+                    PositionIds[positionCount] = creature.Id;
+                    PositionX[positionCount] = positionRoot.x;
+                    PositionY[positionCount] = positionRoot.y;
+                    PositionZ[positionCount] = positionRoot.z;
+                    PositionFlags[positionCount] =
+                        (creatureAbsorptive ? PositionsRow.AbsorptiveBit : 0) |
+                        (creatureDof > 0 ? PositionsRow.JointedBit : 0) |
+                        (creature.HasPhotosyntheticTissue ? PositionsRow.PhotosyntheticBit : 0);
+
+                    positionCount++;
+                }
 
                 // The water each guild is actually sitting in — the other half of the movement
                 // instrument. Read at the creature's own height and patch, and *edible* rather
@@ -2504,6 +2569,20 @@ namespace Evosim.Sim.EditorTools
                 for (int p = 0; p < alivePerPatch.Length; p++) w.Value(alivePerPatch[p]);
                 w.EndArray();
             });
+
+            // The same sample again, one line per body: id, x, y, z and the guild flags. Written
+            // beside stats.jsonl rather than as more columns on it, for the reason absorptive.jsonl
+            // is its own file: a stats row is one sample of the whole world and this is one entry
+            // per creature per sample, and the two cannot share a shape. It is a recording and not
+            // a world rule, so it is not a tunable, moves no config hash and refuses no older
+            // config; it does move simHash and coreHash, which is why it lands after the owner's
+            // theatre pass on the growth base rather than during it.
+            if (recordPositions)
+            {
+                dir.Positions.Write(PositionsRow.Write(
+                    world.ElapsedSeconds, positionCount,
+                    PositionIds, PositionX, PositionY, PositionZ, PositionFlags));
+            }
 
             // The lineage-events instrument (pre-round-8, LITERATURE-REVIEW.md §9 item 9): drained
             // every report row, alongside stats.jsonl, and appended one row per event to
