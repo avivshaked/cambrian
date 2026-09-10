@@ -192,6 +192,15 @@ the run or a cousin of it. **Mode A** grows one genome from a snapshot row and d
 own brain, alone, with no economy. Both refuse a run this build did not record unless
 `Allow Source Mismatch` is ticked, in which case the overlay says it is not a faithful replay.
 
+**An agent has no eyes, so it takes pictures.**
+`./scripts/theatre-snap.ps1 r35tsmoke3 -At 300,600 [-Worker 6] [-Views side,top] [-Size 900x1600]`
+runs `Evosim.Theatre.EditorTools.TheatreSnapshot.Run`, which replays the run in Play mode with the
+identity check on and writes the box from the side, the end, the top and a corner at each named
+second into `scratch/snaps/<arm>/`, each frame fitted from the run's own config and labelled with the
+arm, the second, the living count and whether the replay is faithful. Its Unity command line is
+`-batchmode` **without `-quit`** (the entry quits itself) and **without `-nographics`** (a picture
+needs a graphics device); `Evosim/Theatre/Snapshot Now` takes the same four of the world on screen.
+
 Keys: `Space` pause, `[` `]` pace, `K` seek, `C` colour, `F` follow, `R` reload, `H` hide,
 click to select; fly with `WASD`+`QE`, right-drag to look, wheel for speed. `EVOSIM_THEATRE_RUN`,
 `EVOSIM_THEATRE_GENOME`, `EVOSIM_THEATRE_SEEK` and `EVOSIM_THEATRE_OVERRIDE` set the same fields
