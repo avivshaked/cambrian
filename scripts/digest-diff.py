@@ -89,6 +89,41 @@ def compare_creature(ra, rb):
     return out
 
 
+def flatten(node, prefix=''):
+    """A config document as {dotted.path: value}."""
+    out = {}
+    if isinstance(node, dict):
+        for k, v in node.items():
+            out.update(flatten(v, f'{prefix}{k}.'))
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            out.update(flatten(v, f'{prefix}{i}.'))
+    else:
+        out[prefix[:-1]] = node
+    return out
+
+
+def warn_config_differences(a, b):
+    pa = one_file(a, 'config.json')
+    pb = one_file(b, 'config.json')
+    if not pa or not pb:
+        return
+    with open(pa, encoding='utf-8') as f:
+        A = flatten(json.load(f))
+    with open(pb, encoding='utf-8') as f:
+        B = flatten(json.load(f))
+    differ = sorted(k for k in set(A) & set(B) if A[k] != B[k] and not k.endswith('configHash'))
+    only_a = sorted(set(A) - set(B))
+    only_b = sorted(set(B) - set(A))
+    if differ:
+        print(f'WARNING: {len(differ)} config value(s) differ, so the digests describe different worlds:')
+        for k in differ:
+            print(f'    {k}: {A[k]!r} vs {B[k]!r}')
+    if only_a or only_b:
+        print(f'keys in one config only ({len(only_a)} in {a}, {len(only_b)} in {b}): '
+              + ', '.join(only_a + only_b))
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__)
@@ -100,6 +135,14 @@ def main():
 
     print(f'{a}: {pa} ({len(A)} rows)')
     print(f'{b}: {pb} ({len(B)} rows)')
+
+    # Two digests are only comparable when the two runs are the same world. On 2026-09-11 a
+    # tank build was read as breaking the box path because its digest was taken under round
+    # 36's launcher and the reference under round 35's: five prices differed and the headers
+    # said so. So the configs are compared first, and every differing key is printed as a
+    # warning before the hashes are read; keys present in one config only (a new tunable at
+    # its default) are listed separately, since those are what a build change is expected to add.
+    warn_config_differences(a, b)
 
     shared = sorted(set(A) & set(B))
     if not shared:
