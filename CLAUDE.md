@@ -460,7 +460,11 @@ actually verifying it.
   is also its exit code on success, so nothing distinguishes the two. Six workers were "refreshed"
   this way and every one still carried the previous `EvolutionRun.cs`; the hash check caught it.
   Call it once per worker from a shell, or from inside PowerShell with a real array. The hash
-  check is not optional.
+  check is not optional. **The same bite from bash**: `pwsh -File scripts/analyse-arm.ps1 r34-s3
+  -Timeline -Columns 'alive','cols'` hands `-Columns` one string, `alive,cols`, which names no
+  column, and the timeline prints `?` in every cell rather than refusing (2026-09-11). Call
+  the scripts that take arrays from PowerShell, or split the list inside the script as
+  `theatre-snap.ps1` does.
 - **The species column reads 1 unless `EVOSIM_SPECIES_THETA` is set.** `SpeciesDriftThreshold`
   defaults to 0, at which `AssignSpecies` gives every creature species 0 — the instrument is
   off, not reporting one species. Every arm through round 13 ran at 0; calibrate with the
