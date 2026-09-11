@@ -503,10 +503,15 @@ namespace Evosim.Sim
                 // is would price the ecology against one and place bodies against the other.
                 // The layout too, so the placer wraps and indexes over the box the fields
                 // were built with rather than over a row of patches (fable-propose-box.md).
+                // And the shape, with the radius the world derived from the area rather than a
+                // second square root taken here: one geometry, so the water a body feeds from and
+                // the glass it is stopped by cannot be different circles
+                // (fable-propose-aquarium.md ruling 1).
                 Volume = new SharedVolume(
                     Fluid.PatchCount, World.Nutrients.PatchWidthMetres,
                     config.WorldDepthMetres, seed, config.OffspringDispersalMetres,
-                    Mathf.Max(1, (int)config.PatchesAcross));
+                    Mathf.Max(1, (int)config.PatchesAcross),
+                    config.WorldShape, World.TankRadiusMetres);
 
                 World.Placement = Volume;
 
@@ -515,11 +520,18 @@ namespace Evosim.Sim
                 Floor = SeaFloor.Build(Volume, parent);
                 Volume.Floor = Floor;
 
+                // The glass, right after the bed and for the same reason it is built at all: the
+                // wall starts inside the bed, so the bed has to exist to say where that is. Null
+                // in a box, where the boundary is D077's translation.
+                Wall = TankWall.Build(Volume, parent);
+
                 if (Floor != null)
                 {
                     _floorEntityId = Floor.ColliderEntityId;
                     _hasFloor = true;
                 }
+
+                _wallEntityIds = Wall?.ColliderEntityIds;
 
                 // And with rock under the box, the restoring mirror below −D is retired: two
                 // things holding the same boundary is a trampoline. FluidEnvironment.FloorIsSolid
@@ -559,6 +571,7 @@ namespace Evosim.Sim
         {
             EntityId floorId = _floorEntityId;
             bool hasFloor = _hasFloor;
+            EntityId[] wallIds = _wallEntityIds;
             long pairs = 0;
             long floorPairs = 0;
 
@@ -577,7 +590,12 @@ namespace Evosim.Sim
                     ContactPair pair = header.GetContactPair(j);
 
                     if (pair.colliderEntityId.Equals(floorId) ||
-                        pair.otherColliderEntityId.Equals(floorId))
+                        pair.otherColliderEntityId.Equals(floorId) ||
+                        // The glass counts with the bed: both are a body resting against the
+                        // world, and neither is two animals meeting, which is the distinction the
+                        // split exists to make. The scan is null in every box.
+                        IsWall(wallIds, pair.colliderEntityId) ||
+                        IsWall(wallIds, pair.otherColliderEntityId))
                     {
                         floorPairs++;
                     }
@@ -605,6 +623,27 @@ namespace Evosim.Sim
 
         private readonly bool _hasFloor;
 
+        /// <summary>The glass's collider ids, cached for the contact callback. Null in a box.</summary>
+        /// <remarks>
+        /// Null rather than empty, so that the callback's test for "this world has no wall" is a
+        /// reference comparison and a box pays one null check per contact pair rather than a walk
+        /// over an empty array.
+        /// </remarks>
+        private readonly EntityId[] _wallEntityIds;
+
+        /// <summary>Whether a collider id is one of the glass's slabs. False when there is none.</summary>
+        private static bool IsWall(EntityId[] wallIds, EntityId id)
+        {
+            if (wallIds == null) return false;
+
+            for (int i = 0; i < wallIds.Length; i++)
+            {
+                if (wallIds[i].Equals(id)) return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// The box, when there is one — D077. Null in a tiled world, which is every run before
         /// D077 and every run with <c>EVOSIM_SHARED_SPACE</c> unset.
@@ -615,6 +654,12 @@ namespace Evosim.Sim
         /// The sea bed under the box — <c>logbook/specs/floor-spec.md</c>. Null in a tiled world.
         /// </summary>
         public SeaFloor Floor { get; }
+
+        /// <summary>
+        /// The glass round the tank — <c>fable-propose-aquarium.md</c> ruling 1. Null in a box and
+        /// in a tiled world.
+        /// </summary>
+        public TankWall Wall { get; }
 
         /// <summary>Living creatures whose root is above the waterline, at the last sample.</summary>
         /// <remarks>
@@ -628,6 +673,12 @@ namespace Evosim.Sim
         public int AboveSurface { get; private set; }
 
         /// <summary>Bodies translated at a seam, running total. 0 unless shared — D077.</summary>
+        /// <remarks>
+        /// <b>0 in a tank by construction</b>, where the boundary is <see cref="TankWall"/>'s
+        /// collider and nothing is ever translated. The column stays in the report for exactly
+        /// that reason: a reader has to be able to see that the wrap stopped happening rather than
+        /// take it on the shape's word.
+        /// </remarks>
         public long Wraps => Volume != null ? Volume.Wraps : 0L;
 
         /// <summary>Births refused for want of room, running total. 0 unless shared — D077.</summary>
@@ -718,6 +769,13 @@ namespace Evosim.Sim
         /// from a pair of threads inside one of them.
         /// </para>
         /// <para>
+        /// <b>In a tank the denominator is the water and the deviations are plain.</b> `cols`
+        /// counts the occupied 1 m columns against the columns whose centres are inside the
+        /// circle, so a full tank reads n/n rather than n/(bounding square); and there is no seam,
+        /// so <c>x sd</c> and <c>z sd</c> are ordinary standard deviations
+        /// (<c>logbook/specs/tank-spec.md</c>). Everything else below is the box's.
+        /// </para>
+        /// <para>
         /// <b>Circular, not linear, on both axes.</b> The box is periodic (<see cref="SharedVolume"/>),
         /// so x = 0.1 and x = 19.9 are neighbours and a linear standard deviation would call that
         /// pair the most spread population possible. The circular deviation is the standard fix:
@@ -745,6 +803,7 @@ namespace Evosim.Sim
             var reading = new HorizontalSpread();
             if (Volume == null) return reading;
 
+            bool tank = Volume.Shape == WorldShape.Tank;
             float length = Volume.LengthMetres;
             float width = Volume.WidthMetres;
 
@@ -766,7 +825,32 @@ namespace Evosim.Sim
                 Array.Clear(_columnHeldAbsorptive, 0, total);
             }
 
+            // The denominator is the footprint the population could be standing on, so in a tank it
+            // is the columns whose own centres are in the water — the same test the grid's mask
+            // makes, at the instrument's own 1 m scale. Counting the bounding square instead would
+            // report a world packed into 79% of the columns as packed into 100% of them and call
+            // the difference ecology.
+            int live = total;
+
+            if (tank)
+            {
+                live = 0;
+                for (int ix = 0; ix < nx; ix++)
+                {
+                    for (int iz = 0; iz < nz; iz++)
+                    {
+                        if (TankGeometry.Inside(
+                            (ix + 0.5f) * ColumnMetres, (iz + 0.5f) * ColumnMetres,
+                            Volume.TankRadiusMetres))
+                        {
+                            live++;
+                        }
+                    }
+                }
+            }
+
             double sinX = 0d, cosX = 0d, sinZ = 0d, cosZ = 0d;
+            double sumX = 0d, sumXX = 0d, sumZ = 0d, sumZZ = 0d;
 
             IReadOnlyList<Organism> living = World.Living;
 
@@ -797,6 +881,19 @@ namespace Evosim.Sim
                     reading.OccupiedColumnsAbsorptive++;
                 }
 
+                // A tank has a wall where the box has a seam, so x = 0.1 and x = 2R − 0.1 are as
+                // far apart as the world goes and the plain deviation is the honest one. The
+                // circular statistic exists because a periodic box makes those two neighbours;
+                // used here it would read a population packed against one side as evenly spread.
+                if (tank)
+                {
+                    sumX += root.x;
+                    sumXX += (double)root.x * root.x;
+                    sumZ += root.z;
+                    sumZZ += (double)root.z * root.z;
+                    continue;
+                }
+
                 double angleX = 2d * Math.PI * root.x / length;
                 double angleZ = 2d * Math.PI * root.z / width;
 
@@ -806,9 +903,13 @@ namespace Evosim.Sim
                 cosZ += Math.Cos(angleZ);
             }
 
-            reading.TotalColumns = total;
-            reading.XSpreadMetres = CircularSpread(sinX, cosX, reading.Bodies, length);
-            reading.ZSpreadMetres = CircularSpread(sinZ, cosZ, reading.Bodies, width);
+            reading.TotalColumns = live;
+            reading.XSpreadMetres = tank
+                ? PlainSpread(sumX, sumXX, reading.Bodies)
+                : CircularSpread(sinX, cosX, reading.Bodies, length);
+            reading.ZSpreadMetres = tank
+                ? PlainSpread(sumZ, sumZZ, reading.Bodies)
+                : CircularSpread(sinZ, cosZ, reading.Bodies, width);
 
             return reading;
         }
@@ -833,6 +934,27 @@ namespace Evosim.Sim
             double radians = Math.Sqrt(Math.Max(0d, -2d * Math.Log(Math.Min(1d, r))));
 
             return Math.Min(extent, radians * extent / (2d * Math.PI));
+        }
+
+        /// <summary>
+        /// The ordinary standard deviation, in metres — the tank's, where there is no seam.
+        /// </summary>
+        /// <remarks>
+        /// The population form rather than the sample one, so that it is comparable with
+        /// <c>depth sd</c> beside it, which is taken the same way. 0 for fewer than two bodies,
+        /// where there is no spread to speak of rather than a spread of nothing; and floored at 0
+        /// before the root, because the sum-of-squares form can go a few ulp negative on a
+        /// population standing in one spot, which is the one arrangement this column exists to
+        /// show.
+        /// </remarks>
+        private static double PlainSpread(double sum, double sumOfSquares, int count)
+        {
+            if (count < 2) return 0d;
+
+            double mean = sum / count;
+            double variance = sumOfSquares / count - mean * mean;
+
+            return variance > 0d ? Math.Sqrt(variance) : 0d;
         }
 
         /// <summary>
@@ -929,7 +1051,10 @@ namespace Evosim.Sim
             // of the world, not outside it. Before Settle, which reads velocities and not
             // positions, so the order between the two is a matter of the rule's wording rather
             // than of arithmetic.
-            if (Volume != null) WrapAtTheSeams();
+            // Nothing to do in a tank: its boundary is a static collider, so a body is stopped
+            // during the step rather than moved after it, and the test is skipped rather than
+            // asked and answered "no" once per body per physics step.
+            if (Volume != null && Volume.Shape != WorldShape.Tank) WrapAtTheSeams();
 
             Fluid.Settle(_instances);
 
@@ -1252,6 +1377,17 @@ namespace Evosim.Sim
         {
             float depth = World.Config.WorldDepthMetres;
 
+            // The tank's horizontal bound, and the reason it exists is the height bound's: a body
+            // the solver has thrown through the glass must die here as a counted death rather than
+            // hand the grid a point it has to walk back in from, or ride a gyre sampled at a
+            // radius the field was never built over. One metre past the wall, so an ordinary
+            // depenetration at the rim — centimetres — is never it. It should never fire, and the
+            // `diverged` column is what says whether it did (logbook/specs/tank-spec.md).
+            bool tank = Volume != null && Volume.Shape == WorldShape.Tank;
+            float radius = tank ? Volume.TankRadiusMetres : 0f;
+            float outside = (radius + 1f) * (radius + 1f);
+            float axis = radius;
+
             for (int i = 0; i < _order.Count; i++)
             {
                 Body body = _order[i];
@@ -1263,6 +1399,17 @@ namespace Evosim.Sim
 
                 bool intact = World.HeightIsInTheWorld(root.y, depth) &&
                               !float.IsNaN(horizontal) && !float.IsInfinity(horizontal);
+
+                if (intact && tank)
+                {
+                    float dx = root.x - axis;
+                    float dz = root.z - axis;
+
+                    // The root's bound only, exactly as the height's is: D077 wraps an
+                    // articulation by its root and a link legitimately hangs away from it, so
+                    // asking this of a leaf would kill a healthy body brushing the glass.
+                    if (dx * dx + dz * dz > outside) intact = false;
+                }
 
                 for (int b = 1; intact && b < bodies.Length; b++)
                 {
@@ -1835,7 +1982,9 @@ namespace Evosim.Sim
             {
                 Instance = instance,
                 Creature = creature,
-                Driver = new EffectorDriver(instance, FixedDt),
+                // The limiter's gate, from the world's own config rather than from the step alone
+                // (fable-propose-limiter.md). False is every recorded run.
+                Driver = new EffectorDriver(instance, FixedDt, World.Config.DriveLimitAtEveryStep),
                 Brain = brain,
                 // The world it can perceive, and only the channels its own brain reads —
                 // CreatureSensors' remarks on §4.4's requirement mask. The organism is handed
@@ -1904,8 +2053,10 @@ namespace Evosim.Sim
 
             // The bed goes with them. It is a GameObject in a scene that outlives this object —
             // the editor harnesses build several worlds in one process — and a leaked floor would
-            // sit in the next world's water, colliding with it.
+            // sit in the next world's water, colliding with it. The glass is forty-eight more of
+            // exactly that, so it goes the same way.
             Floor?.Destroy();
+            Wall?.Destroy();
 
             // The digest's files close with the world that wrote them. Left null afterwards, so a
             // harness that builds a second world in the same process has to ask for it again

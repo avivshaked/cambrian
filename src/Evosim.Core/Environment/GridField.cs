@@ -56,6 +56,19 @@ namespace Evosim.Core
     /// different volume, priced at the same volume as every other, which is the shape of an
     /// invisible subsidy.
     /// </para>
+    /// <para>
+    /// <b>In a <see cref="WorldShape.Tank"/> the array is the same and a mask decides what is
+    /// water</b> — <c>logbook/specs/tank-spec.md</c>. The cells span the bounding square
+    /// <c>[0, 2R)²</c> and a cell is live when its own centre is inside the circle; every face
+    /// between a live cell and a dead one is glass, and so is the array's edge, so
+    /// <see cref="Mix"/> and <see cref="Advect"/> move nothing across either and neither ever
+    /// wraps. Seeding, the totals, the refuge sums and the per-patch sums run over live cells
+    /// alone, and a patch is a ring of equal area rather than a block of columns
+    /// (<see cref="TankGeometry"/>). The tank's diameter need not be a whole number of cells,
+    /// because everything past it is dead: what the box's divisibility rule protects — a part cell
+    /// priced as a whole one — is protected by the mask instead, and the depth is still refused
+    /// unless it divides.
+    /// </para>
     /// </remarks>
     public sealed class GridField : IMatterField
     {
@@ -139,11 +152,44 @@ namespace Evosim.Core
         /// <summary>Patches along x, <c>K / A</c>. The constructor refuses an A that leaves a remainder.</summary>
         public int PatchesAlong { get; }
 
-        /// <summary>The box's length along x, m: <c>W · K / A</c>.</summary>
-        public float LengthMetres => PatchWidthMetres * PatchesAlong;
+        /// <summary>
+        /// The box's length along x, m: <c>W · K / A</c>, and the tank's diameter <c>2R</c>.
+        /// </summary>
+        public float LengthMetres =>
+            Shape == WorldShape.Tank ? 2f * TankRadiusMetres : PatchWidthMetres * PatchesAlong;
 
-        /// <summary>The box's extent along z, m: <c>W · A</c>.</summary>
-        public float WidthMetres => PatchWidthMetres * PatchesAcross;
+        /// <summary>
+        /// The box's extent along z, m: <c>W · A</c>, and the tank's diameter <c>2R</c>.
+        /// </summary>
+        public float WidthMetres =>
+            Shape == WorldShape.Tank ? 2f * TankRadiusMetres : PatchWidthMetres * PatchesAcross;
+
+        /// <summary>
+        /// The container — <see cref="RunConfig.WorldShape"/>. <see cref="WorldShape.Box"/> is
+        /// every run on file, at which there is no mask and every face is the face it always was.
+        /// </summary>
+        public WorldShape Shape { get; }
+
+        /// <summary>The tank's radius, m — 0 in a box. <see cref="TankGeometry"/>.</summary>
+        public float TankRadiusMetres { get; }
+
+        /// <summary>
+        /// Cells the mask calls live: the whole array in a box, and the cells whose centres lie
+        /// inside the circle in a tank.
+        /// </summary>
+        public int LiveCellCount { get; }
+
+        /// <summary>The water this field actually holds, m³ — <see cref="LiveCellCount"/> cells.</summary>
+        /// <remarks>
+        /// What <see cref="RunConfig.MatterBudgetUnits"/> divides a total by, so that a budget is
+        /// the number asked for whatever the circle cuts off the corners of the array. In a box it
+        /// is the box's own volume to the last bit, because the cell size is refused unless it
+        /// divides all three axes.
+        /// </remarks>
+        public double LiveVolumeCubicMetres => (double)LiveCellCount * CellVolume;
+
+        /// <summary>Whether the cell at these indices is water. Always true in a box.</summary>
+        public bool IsLive(int ix, int iy, int iz) => _live == null || _live[Index(ix, iy, iz)];
 
         /// <summary>Cells along x.</summary>
         public int CellsX => _nx;
@@ -175,10 +221,23 @@ namespace Evosim.Core
         /// </remarks>
         public float LayerVolume { get; }
 
+        /// <summary>
+        /// Builds the water. <c>shape</c> is <see cref="RunConfig.WorldShape"/> — a tank is this
+        /// same array over the bounding square with a mask on it, see <see cref="IsLive"/> and the
+        /// class remarks — and <c>tankRadiusMetres</c> is <c>sqrt(area/π)</c> when the shape is a
+        /// tank and unread otherwise.
+        /// </summary>
+        /// <remarks>
+        /// The radius is handed in rather than derived here, so that the world, the water, the
+        /// current and the placer all read one radius (<see cref="TankGeometry.RadiusFor"/>).
+        /// Written as prose rather than as two <c>param</c> tags because the other eight arguments
+        /// carry none, and a half-documented signature is a compiler warning per undocumented
+        /// argument.
+        /// </remarks>
         public GridField(
             float worldArea, float sinkMetresPerSecond, float worldDepth,
             float refugeMetres, float refugeEdibleFraction, int patchCount, float cellMetres,
-            int patchesAcross = 1)
+            int patchesAcross = 1, WorldShape shape = WorldShape.Box, float tankRadiusMetres = 0f)
         {
             if (!(worldArea > 0f) || float.IsInfinity(worldArea))
                 throw new ArgumentOutOfRangeException(nameof(worldArea), worldArea, "Must be positive and finite.");
@@ -206,6 +265,14 @@ namespace Evosim.Core
                     nameof(patchesAcross));
             }
 
+            if (shape == WorldShape.Tank && (!(tankRadiusMetres > 0f) || float.IsInfinity(tankRadiusMetres)))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(tankRadiusMetres), tankRadiusMetres,
+                    "A tank's water is a disc, so its radius is positive and finite. " +
+                    "logbook/specs/tank-spec.md.");
+            }
+
             WorldArea = worldArea;
             CellMetres = cellMetres;
             LayerMetres = cellMetres;
@@ -215,24 +282,53 @@ namespace Evosim.Core
             PatchesAcross = patchesAcross;
             PatchesAlong = patchCount / patchesAcross;
             PatchWidthMetres = (float)Math.Sqrt(worldArea / patchCount);
+            Shape = shape;
+            TankRadiusMetres = shape == WorldShape.Tank ? tankRadiusMetres : 0f;
 
-            _nx = (int)Math.Round(LengthMetres / cellMetres);
             _ny = (int)Math.Round(worldDepth / cellMetres);
-            _nz = (int)Math.Round(WidthMetres / cellMetres);
 
-            if (_nx < 1 || _ny < 1 || _nz < 1 ||
-                Math.Abs(_nx * (double)cellMetres - LengthMetres) > 1e-4 ||
-                Math.Abs(_ny * (double)cellMetres - worldDepth) > 1e-4 ||
-                Math.Abs(_nz * (double)cellMetres - WidthMetres) > 1e-4)
+            if (shape == WorldShape.Tank)
             {
-                throw new ArgumentException(
-                    FormattableString.Invariant(
-                        $"A cell of {cellMetres} m does not divide the box, which is {LengthMetres} m ") +
-                    FormattableString.Invariant(
-                        $"long, {worldDepth} m deep and {WidthMetres} m wide. Pick a cell that divides ") +
-                    "all three: a part cell at a seam holds less than a whole one and would be " +
-                    "priced as a whole one.",
-                    nameof(cellMetres));
+                // The array spans the bounding square, which a cell need not divide: the tank's
+                // diameter is 2*sqrt(area/pi) and nothing makes that a whole number of cells. The
+                // part of the array past the diameter is entirely outside the circle and therefore
+                // entirely dead, so no live cell is ever a part cell and the divisibility rule the
+                // box needs — a part cell holds less than a whole one and would be priced as a
+                // whole one — is kept where it matters. The depth is still refused, because a
+                // layer is a row of cells and a part layer would be a part-priced layer.
+                _nx = (int)Math.Ceiling(LengthMetres / cellMetres - 1e-6);
+                _nz = _nx;
+
+                if (_nx < 1 || _ny < 1 || Math.Abs(_ny * (double)cellMetres - worldDepth) > 1e-4)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"A cell of {cellMetres} m does not fit a tank {LengthMetres} m across ") +
+                        FormattableString.Invariant($"and {worldDepth} m deep. ") +
+                        "The depth must be a whole number of cells, and the tank must be at least " +
+                        "one cell across.",
+                        nameof(cellMetres));
+                }
+            }
+            else
+            {
+                _nx = (int)Math.Round(LengthMetres / cellMetres);
+                _nz = (int)Math.Round(WidthMetres / cellMetres);
+
+                if (_nx < 1 || _ny < 1 || _nz < 1 ||
+                    Math.Abs(_nx * (double)cellMetres - LengthMetres) > 1e-4 ||
+                    Math.Abs(_ny * (double)cellMetres - worldDepth) > 1e-4 ||
+                    Math.Abs(_nz * (double)cellMetres - WidthMetres) > 1e-4)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"A cell of {cellMetres} m does not divide the box, which is {LengthMetres} m ") +
+                        FormattableString.Invariant(
+                            $"long, {worldDepth} m deep and {WidthMetres} m wide. Pick a cell that divides ") +
+                        "all three: a part cell at a seam holds less than a whole one and would be " +
+                        "priced as a whole one.",
+                        nameof(cellMetres));
+                }
             }
 
             LayerCount = _ny;
@@ -271,7 +367,62 @@ namespace Evosim.Core
                         PatchOf((ix + 0.5f) * cellMetres, (iz + 0.5f) * cellMetres);
                 }
             }
+
+            LiveCellCount = cells;
+
+            if (shape != WorldShape.Tank) return;
+
+            // The mask, built once — logbook/specs/tank-spec.md. A cell is live when its own
+            // centre is inside the circle, which is the only test that cannot make a cell half
+            // alive: a cell straddling the glass is either in the water or it is not, and a
+            // fractional one would hold less than a whole cell's worth while being priced as a
+            // whole cell, which is exactly what the box's divisibility rule exists to prevent.
+            // What it costs is a rim of about a cell's width where the water's edge and the
+            // glass's are not the same line; the live-cell count is therefore pi*R^2/cell^2 to
+            // within one ring of cells, and the tests say so rather than the geometry claiming it.
+            _live = new bool[cells];
+            int live = 0;
+
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                float cx = (ix + 0.5f) * cellMetres;
+
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    float cz = (iz + 0.5f) * cellMetres;
+                    bool inside = TankGeometry.Inside(cx, cz, tankRadiusMetres);
+
+                    // A dead column belongs to no patch. -1 rather than a ring index, so that
+                    // every per-patch sum — StockInLayer, TakeFromLayer, the roll's velocity
+                    // lookup — passes over it without needing to know about the mask.
+                    if (!inside) _patchOfColumn[ix * _nz + iz] = -1;
+
+                    for (int iy = 0; iy < _ny; iy++)
+                    {
+                        if (!inside) continue;
+                        _live[Index(ix, iy, iz)] = true;
+                        live++;
+                    }
+                }
+            }
+
+            if (live == 0)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"No cell of {cellMetres} m has its centre inside a tank of radius ") +
+                    FormattableString.Invariant($"{tankRadiusMetres} m, so the water has no cells ") +
+                    "in it at all. Use a cell smaller than the radius.",
+                    nameof(cellMetres));
+            }
+
+            LiveCellCount = live;
         }
+
+        /// <summary>
+        /// Which cells are water: null in a box, where every cell is — see the class remarks.
+        /// </summary>
+        private readonly bool[] _live;
 
         // ------------------------------------------------------------------ geometry
 
@@ -296,8 +447,18 @@ namespace Evosim.Core
         /// At A = 1 the row index is 0 and this is <c>floor(x / W) mod K</c> term for term, which
         /// is the arithmetic every recorded run's per-patch bins were filled by.
         /// </remarks>
+        /// <remarks>
+        /// <b>In a tank a patch is a ring of equal area</b> about the axis at <c>(R, R)</c> —
+        /// <see cref="TankGeometry.RingOf"/> — so the per-patch bins read centre to rim and stay
+        /// comparable in area, which is the whole reason a bin is worth having.
+        /// </remarks>
         public int PatchOf(float x, float z)
         {
+            if (Shape == WorldShape.Tank)
+            {
+                return TankGeometry.RingOf(x, z, TankRadiusMetres, PatchCount);
+            }
+
             int along = PatchesAlong;
 
             int ix = (int)Math.Floor(WrapAxis(x, LengthMetres) / PatchWidthMetres);
@@ -325,9 +486,62 @@ namespace Evosim.Core
 
         private int LayerOfCell(int cell) => cell / _layerStride;
 
+        /// <summary>
+        /// The cell across this one's east face, or −1 when that face is a wall.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A box has no walls and a tank is nothing but.</b> In a box the x axis is a ring, so
+        /// the face past the last column is the first column's and this is the wrap every
+        /// recorded run stirred and advected across. In a tank the array's edge is a wall, and so
+        /// is every face between a live cell and a dead one: the mask is the glass, and water that
+        /// crossed it would be water leaving the tank.
+        /// </para>
+        /// <para>
+        /// <b>The flux at a closed face is left at zero rather than skipped downstream</b>, which
+        /// is why <see cref="ApplyEast"/> and <see cref="ApplyFront"/> need no mask of their own:
+        /// every pass clears its buffer first and only an open face ever writes to it, so the
+        /// apply walks the same loop it always did and moves nothing across a wall.
+        /// </para>
+        /// </remarks>
+        private int EastOf(int ix, int iy, int iz)
+        {
+            int next = ix + 1;
+
+            if (next == _nx)
+            {
+                if (Shape == WorldShape.Tank) return -1;
+                next = 0;
+            }
+
+            int east = Index(next, iy, iz);
+            if (_live != null && !_live[east]) return -1;
+
+            return east;
+        }
+
+        /// <summary>The cell across this one's front face, or −1 when that face is a wall.</summary>
+        private int FrontOf(int ix, int iy, int iz)
+        {
+            int next = iz + 1;
+
+            if (next == _nz)
+            {
+                if (Shape == WorldShape.Tank) return -1;
+                next = 0;
+            }
+
+            int front = Index(ix, iy, next);
+            if (_live != null && !_live[front]) return -1;
+
+            return front;
+        }
+
         /// <summary>The cell a position falls in, wrapped on x and z and clamped on y.</summary>
         private int CellAt(Float3 p)
         {
+            if (Shape == WorldShape.Tank) return TankCellAt(p);
+
             int ix = (int)(WrapAxis(p.X, LengthMetres) / CellMetres);
             if (ix >= _nx) ix = _nx - 1;
             if (ix < 0) ix = 0;
@@ -341,6 +555,75 @@ namespace Evosim.Core
             if (iy < 0) iy = 0;
 
             return Index(ix, iy, iz);
+        }
+
+        /// <summary>
+        /// The cell a position falls in inside a tank, walking toward the axis until it finds
+        /// water.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Nothing in the world is outside the glass, and float error at the wall is.</b> A
+        /// body is stopped by a static collider and a corpse drifts on a field with no radial flow
+        /// at the rim, so a point past the circle is arithmetic rather than an event — a
+        /// depenetration of a centimetre, a deposit at the exact radius, a cell centre a
+        /// millimetre outside its own mask. Refusing it would take a run down over a rounding;
+        /// clamping it to the array's edge would put that stock in a dead cell, where it would sit
+        /// for the rest of the run out of every sum and quietly break the audit. So the point is
+        /// walked in along its own radius, half a cell at a time, until it lands in water — the
+        /// nearest water in the direction that exists, and the axis at worst.
+        /// </para>
+        /// <para>
+        /// <b>No wrap, on either axis.</b> A tank has a wall where the box has a seam, so folding
+        /// a coordinate would put a body at the far rim of the same tank.
+        /// </para>
+        /// </remarks>
+        private int TankCellAt(Float3 p)
+        {
+            int iy = p.Y >= 0f ? 0 : (int)(-p.Y / CellMetres);
+            if (iy >= _ny) iy = _ny - 1;
+            if (iy < 0) iy = 0;
+
+            double dx = p.X - TankRadiusMetres;
+            double dz = p.Z - TankRadiusMetres;
+            double r = Math.Sqrt(dx * dx + dz * dz);
+
+            if (r > 0d)
+            {
+                for (double reach = r; reach > 0d; reach -= 0.5d * CellMetres)
+                {
+                    int cell = Index(
+                        Column((float)(TankRadiusMetres + dx * reach / r)), iy,
+                        Column((float)(TankRadiusMetres + dz * reach / r)));
+
+                    if (_live[cell]) return cell;
+                }
+            }
+
+            int axis = Index(Column(TankRadiusMetres), iy, Column(TankRadiusMetres));
+            if (_live[axis]) return axis;
+
+            // The cell holding the axis is live in any tank wider than a cell and a half, which is
+            // every tank a round would run; the scan is here so that a small one answers rather
+            // than putting stock in a dead cell, where it would sit outside every sum for the rest
+            // of the run and break the audit quietly.
+            for (int i = iy * _layerStride; i < (iy + 1) * _layerStride; i++)
+            {
+                if (_live[i]) return i;
+            }
+
+            return axis;
+        }
+
+        /// <summary>
+        /// One horizontal index, clamped to the array. The tank's, which never wraps — and where
+        /// the two horizontal counts are equal by construction, so one clamp serves both axes.
+        /// </summary>
+        private int Column(float v)
+        {
+            int i = (int)(v / CellMetres);
+            if (i >= _nx) return _nx - 1;
+            return i < 0 ? 0 : i;
         }
 
         /// <summary>
@@ -421,9 +704,25 @@ namespace Evosim.Core
         /// makes for the same overloads, so a tool that writes through the old address writes to
         /// the same place in both representations.
         /// </remarks>
+        /// <remarks>
+        /// <b>In a tank it is the cell at the ring's mid-radius on the <c>θ = 0</c> ray from the
+        /// axis</b> — <see cref="TankGeometry.MidRadiusOf"/>. A ring has no centre column and no
+        /// preferred direction, so a ray has to be picked; <c>θ = 0</c> is the one every other
+        /// reader of this geometry picks (<see cref="CurrentField"/>'s patch-centre sampler), and
+        /// picking the same one is what keeps the density a run reports and the water it samples
+        /// describing the same place.
+        /// </remarks>
         private int CentreCell(float heightY, int patch)
         {
             ValidatePatch(patch);
+
+            if (Shape == WorldShape.Tank)
+            {
+                return CellAt(new Float3(
+                    TankRadiusMetres + TankGeometry.MidRadiusOf(patch, TankRadiusMetres, PatchCount),
+                    heightY,
+                    TankRadiusMetres));
+            }
 
             // The patch's own centre on both axes. At A = 1 the row is 0 and the second
             // coordinate is half the box's width, which is what this line always read.
@@ -470,13 +769,31 @@ namespace Evosim.Core
         /// Fills the box uniformly at a density, in J/m³. The same signature and the same meaning
         /// as <see cref="VertexField.SeedUniform"/>, so <c>World</c> seeds both the same way.
         /// </summary>
+        /// <remarks>
+        /// Over the live cells only, so a tank is seeded at the density asked for and holds
+        /// <c>density × <see cref="LiveVolumeCubicMetres"/></c> rather than the bounding square's
+        /// worth. Stock put in a dead cell could never be reached, mixed or advected, and would
+        /// sit outside every sum for the life of the run.
+        /// </remarks>
         public void SeedUniform(float densityJoulesPerCubicMetre)
         {
             if (!(densityJoulesPerCubicMetre > 0f)) return;
 
             double each = (double)densityJoulesPerCubicMetre * CellVolume;
-            for (int i = 0; i < _stock.Length; i++) _stock[i] += each;
-            _total += each * _stock.Length;
+
+            if (_live == null)
+            {
+                for (int i = 0; i < _stock.Length; i++) _stock[i] += each;
+                _total += each * _stock.Length;
+                return;
+            }
+
+            for (int i = 0; i < _stock.Length; i++)
+            {
+                if (_live[i]) _stock[i] += each;
+            }
+
+            _total += each * LiveCellCount;
         }
 
         /// <summary>
@@ -505,6 +822,9 @@ namespace Evosim.Core
             _boxCells.Clear();
             for (int i = 0; i < _stock.Length; i++)
             {
+                // Live cells only: an influx that landed in a dead cell would be counted as
+                // arriving and could never be reached again.
+                if (_live != null && !_live[i]) continue;
                 if (InsideBox(i, centre, halfExtent)) _boxCells.Add(i);
             }
 
@@ -539,7 +859,15 @@ namespace Evosim.Core
             float cy = -((iy + 0.5f) * CellMetres);
             float cz = (iz + 0.5f) * CellMetres;
 
-            // x and z are rings, so "inside" is measured the shorter way round; y is not.
+            // A tank has a wall where the box has a seam, so nothing is measured the way round;
+            // in a box x and z are rings and "inside" is the shorter arc, while y never is.
+            if (Shape == WorldShape.Tank)
+            {
+                return Math.Abs(cx - centre.X) <= halfExtent.X + 1e-4f
+                    && Math.Abs(cy - centre.Y) <= halfExtent.Y + 1e-4f
+                    && Math.Abs(cz - centre.Z) <= halfExtent.Z + 1e-4f;
+            }
+
             return Math.Abs(RingDelta(WrapAxis(centre.X, LengthMetres), cx, LengthMetres)) <= halfExtent.X + 1e-4f
                 && Math.Abs(cy - centre.Y) <= halfExtent.Y + 1e-4f
                 && Math.Abs(RingDelta(WrapAxis(centre.Z, WidthMetres), cz, WidthMetres)) <= halfExtent.Z + 1e-4f;
@@ -846,17 +1174,18 @@ namespace Evosim.Core
                     for (int iz = 0; iz < _nz; iz++)
                     {
                         int cell = Index(ix, iy, iz);
+                        if (_live != null && !_live[cell]) continue;
 
                         if (_nx >= 2)
                         {
-                            int east = Index(ix + 1 == _nx ? 0 : ix + 1, iy, iz);
-                            _fluxX[cell] = (_stock[cell] - _stock[east]) * fraction;
+                            int east = EastOf(ix, iy, iz);
+                            if (east >= 0) _fluxX[cell] = (_stock[cell] - _stock[east]) * fraction;
                         }
 
                         if (_nz >= 2)
                         {
-                            int front = Index(ix, iy, iz + 1 == _nz ? 0 : iz + 1);
-                            _fluxZ[cell] = (_stock[cell] - _stock[front]) * fraction;
+                            int front = FrontOf(ix, iy, iz);
+                            if (front >= 0) _fluxZ[cell] = (_stock[cell] - _stock[front]) * fraction;
                         }
 
                         if (iy < _ny - 1)
@@ -1029,6 +1358,11 @@ namespace Evosim.Core
                             float z = (iz + 0.5f) * CellMetres;
                             int cell = Index(ix, iy, iz);
 
+                            // Dead cells are never a source or a destination, so the field is not
+                            // asked about them: a sample is five Fourier modes or three parts of a
+                            // gyre, and a tank's array is about a fifth dry.
+                            if (_live != null && !_live[cell]) continue;
+
                             Float3 atCentre = current.VelocityAt(x, centreY, z, seconds);
                             _cellVelocityX[cell] = atCentre.X;
                             _cellVelocityZ[cell] = atCentre.Z;
@@ -1066,10 +1400,15 @@ namespace Evosim.Core
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
-                        int nextX = ix + 1 == _nx ? 0 : ix + 1;
                         for (int iz = 0; iz < _nz; iz++)
                         {
                             int cell = Index(ix, iy, iz);
+                            if (_live != null && !_live[cell]) continue;
+
+                            // The mask is the glass — see EastOf. In a box this is the wrap the
+                            // record was advected across and the branch never fires.
+                            int east = EastOf(ix, iy, iz);
+                            if (east < 0) continue;
 
                             // The roll's velocity is per layer and patch, and at A > 1 a column's
                             // patch is a function of z as well as of x, so the lookup sits inside
@@ -1086,7 +1425,6 @@ namespace Evosim.Core
                             double fraction = Math.Abs(u) * dt / CellMetres;
                             if (fraction > 0.5) fraction = 0.5;
 
-                            int east = Index(nextX, iy, iz);
                             _fluxX[cell] = u > 0d ? _stock[cell] * fraction : -_stock[east] * fraction;
                         }
                     }
@@ -1107,6 +1445,10 @@ namespace Evosim.Core
                         {
                             int upper = Index(ix, iy, iz);
                             int lower = Index(ix, iy + 1, iz);
+
+                            // A dead column is dead all the way down, so the vertical face needs
+                            // no mask of its own beyond this one.
+                            if (_live != null && !_live[upper]) continue;
 
                             // Per cell rather than per column, for the x pass's reason.
                             double w = transport
@@ -1139,6 +1481,10 @@ namespace Evosim.Core
                         for (int iz = 0; iz < _nz; iz++)
                         {
                             int cell = Index(ix, iy, iz);
+                            if (_live != null && !_live[cell]) continue;
+
+                            int front = FrontOf(ix, iy, iz);
+                            if (front < 0) continue;
 
                             // Per cell rather than per column, for the x pass's reason.
                             double v = transport
@@ -1150,7 +1496,6 @@ namespace Evosim.Core
                             double fraction = Math.Abs(v) * dt / CellMetres;
                             if (fraction > 0.5) fraction = 0.5;
 
-                            int front = Index(ix, iy, iz + 1 == _nz ? 0 : iz + 1);
                             _fluxZ[cell] = v > 0d ? _stock[cell] * fraction : -_stock[front] * fraction;
                         }
                     }

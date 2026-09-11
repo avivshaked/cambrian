@@ -1,27 +1,31 @@
-﻿# Round 37 (fable-propose-aquarium.md ruling 1, logbook/specs/tank-spec.md): round 36's world in a
-# tank. Same area, depth, cells, dose, dispersal radius, prices and current speed; what changes is
-# the container. The footprint is a disc of the same 100 m2 -- radius 5.64 m -- with a glass wall
-# where the box had a seam, the four patches are rings of equal area from the axis out to the rim
-# instead of four strips in a row, the grid carries a mask and stirs nothing across it, and the
-# water is a gyre rather than the periodic transport field. Nothing else moves.
+﻿# Round 38 (fable-propose-aquarium.md rulings 2 and 3): round 37's tank, diluted. Four times the
+# footprint -- 400 m2, radius 11.28 m -- with the matter held at 6,000 units, so the density falls
+# by four and the body count does not. Everything else is launch-r37.ps1 verbatim: same depth,
+# cells, dose, prices, dispersal radius, current and container.
 #
-# Why: the owner watched round 36 seed 1 in the theatre and saw bodies displaced, a jump rather
-# than a death and a birth. It is the wrap. D077 made the footprint periodic while nothing crossed
-# a seam; D088's carrying current made it bite, and r36-s1 wrapped 1,143 bodies in a window at
-# 1,154 alive. A wall is the honest boundary for water that carries.
+# Why: round 35's median nearest neighbour is 0.63 to 0.70 m in three dimensions, a body every
+# metre in the upper band. That is a bloom, not an ocean, and read as inference it is why movement
+# has never paid here -- with food within a body length in every direction a sitter eats as well as
+# a swimmer, so the stroke has had nothing to buy in thirty-seven rounds. A dilute world is the one
+# in which a sense and a stroke can earn their price.
 #
-# The one knob is EVOSIM_SHAPE (RunConfig.WorldShape, default box, at which the world is round
-# 36's exactly). EVOSIM_PATCHES_ACROSS is gone: a layout is the box's, and Core refuses a tank
-# that names one. ASCII only.
-#   ./rounds/launch-r37.ps1 -Seed 1 -Worker 2 -ExpectSimHash <hash>                       # r37-s1
-#   ./rounds/launch-r37.ps1 -Seed 3 -Worker 6 -Seconds 600 -Name r37smoke -Dt 0.02        # the smoke
-# Verify the header: everything launch-r36.ps1 lists, and
-#   'space tank r=5.64 m (100 m2), depth 60, wall, bed'
-# where every round before reads 'shared 4x1x5 m, depth 60, wrap, bed'. Also 'driveLimit >0.01'
-# unless -DriveLimitAlways is passed, and 'matterBudget 0' (the density rule, round 36's).
-# A build that does not know EVOSIM_SHAPE ignores it silently and runs the old box; the header is
-# the only proof the container arrived. Read 'wraps', which is 0 in a tank by construction, and
-# 'cols', whose denominator is now the columns inside the circle rather than a rectangle.
+# A uniformly dilute world is a desert, so the concentrators come with it (ruling 3): the light
+# already gathers the producers in the upper band, sinking and the bed already make the floor a
+# larder, the gyre's downwelling collects what sinks where the flow goes down, and a corpse is a
+# parcel that decays in place rather than dissolving into its cell at once (EVOSIM_CORPSE_DECAY
+# 0.005, D086's figure, which round 37 already runs).
+#
+# The one knob against round 37 is EVOSIM_MATTER_BUDGET beside the area. Before this runs, the
+# ledger has to say founding survives the new concentration -- a child costs 8 to 16 units and a
+# founder reaches one matter cell -- or ruling 2 is amended first (the proposal's check 3).
+# ASCII only.
+#   ./rounds/launch-r38.ps1 -Seed 1 -Worker 2 -ExpectSimHash <hash>                       # r38-s1
+#   ./rounds/launch-r38.ps1 -Seed 3 -Worker 6 -Seconds 600 -Name r38smoke -Dt 0.02        # the smoke
+# Verify the header: everything launch-r37.ps1 lists, and
+#   'space tank r=11.28 m (400 m2), depth 60, wall, bed' with 'area 400 m2' and 'matterBudget 6000'
+# where round 37 reads 'r=5.64 m (100 m2)' and 'matterBudget 0'. Read 'mat here' and 'mat blk'
+# against 'births' in the first thousand seconds: a field four times thinner can leave every
+# founder short, and that shows up as blocked conceptions before it shows up as a population.
 param(
     [Parameter(Mandatory)][int]$Seed,
     [Parameter(Mandatory)][int]$Worker,
@@ -38,15 +42,23 @@ param(
     [float]$Merge = 0.25,
     [int]$Cap = 100000,
     [float]$Quantum = 0.125,
+    # The matter the world is seeded with, in units (RunConfig.MatterBudgetUnits,
+    # EVOSIM_MATTER_BUDGET). 0 is the density rule and every run before this one. 6,000 is what a
+    # 100 m2 by 60 m world holds at 1 unit per cubic metre, which is what rounds 33 through 37
+    # ran on, so this round changes the water a unit sits in and not how many there are.
+    [float]$MatterBudget = 6000,
     # The detritus grid's cell, m. One metre is the vertex kernel's support, so a mouth gets
     # about the reach it had in round 31. In a tank the cells span the bounding square and the
-    # mask decides which are water: at 100 m2 that is 12 by 12 columns of which 100 are live,
-    # which is the disc's own area to the square metre.
+    # mask decides which are water: at 400 m2 that is 23 by 23 columns of which about 400 are
+    # live, so the grid is about 24,000 cells -- cheap beside the physics, which follows bodies.
     [float]$Cell = 1,
     # The matter grid's cell, m. Coarser because a child costs 8 to 16 units of matter and seeded
     # water holds about one per cubic metre, so a 1 m cell could never afford a conception. 5 m is
     # D086's ruling; in a tank it does not have to divide the diameter, because everything past
-    # the diameter is outside the circle and therefore dead. Four live cells a layer at 100 m2.
+    # the diameter is outside the circle and therefore dead. About sixteen live cells a layer at
+    # 400 m2 -- the area over the cell's, give or take where the mask falls at the rim -- each
+    # holding about a quarter of what round 37's four held. That quarter is the dilution, and it
+    # is the number the ledger has to be run against before this launches.
     [float]$MatterCell = 5,
     [float]$NeuronCost = 0,
     [float]$ConnectionCost = 0,
@@ -131,7 +143,7 @@ $s = @{
     EVOSIM_SEED = $Seed
     EVOSIM_IRRADIANCE = 200; EVOSIM_CURRENT = $Current; EVOSIM_MIXING = $Mixing; EVOSIM_REMIN = 0
     EVOSIM_CURRENT_MODE = $CurrentMode
-    EVOSIM_EXCRETION = 0.01; EVOSIM_AREA = 100; EVOSIM_FLOOR_CLOSES = 3000; EVOSIM_MAX_POP = 8000
+    EVOSIM_EXCRETION = 0.01; EVOSIM_AREA = 400; EVOSIM_FLOOR_CLOSES = 3000; EVOSIM_MAX_POP = 8000
     EVOSIM_MAX_TISSUE = $MaxTissue
     EVOSIM_SENESCENCE = 3000; EVOSIM_EXCESS_DENSITY = 0.02
     EVOSIM_MATTER_PER_TISSUE = 0.5; EVOSIM_MATTER_INITIAL = 1; EVOSIM_FOUNDER_FLOAT = 0.5
@@ -166,15 +178,21 @@ $s = @{
     # The dispersal disc. Not EVOSIM_DISPERSAL, which is D061's retired per-step patch lottery and
     # which Core refuses outright in a tank.
     EVOSIM_OFFSPRING_DISPERSAL = $Dispersal
-    # fable-propose-aquarium.md ruling 1: the container. This round's one knob.
+    # fable-propose-aquarium.md ruling 1: the container, round 37's.
     EVOSIM_SHAPE = 'tank'
+    # Ruling 2: the matter as a total rather than a density. This round's one knob against round
+    # 37, beside the area above. 6,000 units is round 33's own stock and round 37's -- 1 unit per
+    # cubic metre over 100 m2 by 60 m -- held while the water quadruples, so the world holds the
+    # same matter at a quarter of the concentration. 0 would be the density rule, at which 400 m2
+    # would seed 24,000 units and the round would be a bigger world rather than a thinner one.
+    EVOSIM_MATTER_BUDGET = $MatterBudget
     # fable-propose-limiter.md. 0 is the rule every recorded run was driven under.
     EVOSIM_DRIVE_LIMIT_ALWAYS = $driveLimit
 }
 
 if ($DigestEvery -gt 0) { $s.EVOSIM_DIGEST_EVERY = $DigestEvery }
 
-$name = if ($Name -ne '') { $Name } else { "r37-s$Seed" }
+$name = if ($Name -ne '') { $Name } else { "r38-s$Seed" }
 $extra = @{}
 if ($ExpectSimHash -ne '') { $extra.ExpectSimHash = $ExpectSimHash }
 & "$PSScriptRoot\..\scripts\run-arm.ps1" -Name $name -Worker $Worker -Seed $Seed -Seconds $Seconds -WallMinutes $WallMinutes -Settings $s @extra

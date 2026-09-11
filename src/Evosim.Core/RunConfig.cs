@@ -566,6 +566,89 @@ namespace Evosim.Core
         [Tunable("world")]
         public float InitialMatterPerCubicMetre { get; set; } = 1f;
 
+        /// <summary>
+        /// The matter the world is seeded with, in units. 0 (the default) is
+        /// <see cref="InitialMatterPerCubicMetre"/> times the live volume, which is every run on
+        /// file; above 0 it is the total, and the density is derived from it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>It decouples the area dial from the matter budget</b> —
+        /// <c>fable-propose-aquarium.md</c> ruling 2. Until this knob the two moved together:
+        /// <see cref="WorldAreaSquareMetres"/> multiplies the volume and the seed is a density,
+        /// so a world four times the footprint held four times the matter and therefore about
+        /// four times the bodies. That makes dilution unaskable, and dilution is what the
+        /// movement rounds need: round 35's median nearest neighbour is 0.63 to 0.70 m, a body
+        /// every metre in the upper band, and with food within a body length in every direction a
+        /// sitter eats as well as a swimmer. Held at a total, four times the area is a quarter of
+        /// the density at the same number of bodies, and compute follows bodies rather than cubic
+        /// metres.
+        /// </para>
+        /// <para>
+        /// <b>Only the matter.</b> The detritus seed is unchanged, because detritus is not seeded
+        /// — the light makes it — and the one quantity a closed world's population is denominated
+        /// in is its matter (D048, D074).
+        /// </para>
+        /// <para>
+        /// <b>The live volume, not the box's.</b> In a <see cref="WorldShape.Tank"/> on a
+        /// <see cref="MatterField.Grid"/> the divisor is the cells the mask calls live times the
+        /// cell volume, so the seeded total is the number asked for whatever the circle cuts off
+        /// the corners of the array. <c>EVOSIM_MATTER_BUDGET</c> in the header, beside
+        /// <c>matter</c>'s own token.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "units")]
+        public float MatterBudgetUnits
+        {
+            get => _matterBudgetUnits;
+            set => _matterBudgetUnits = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(MatterBudgetUnits), value,
+                    "A budget is finite and not negative; 0 is the density rule.");
+        }
+
+        private float _matterBudgetUnits;
+
+        /// <summary>
+        /// The container the world is: D077's periodic box, or the tank —
+        /// <c>fable-propose-aquarium.md</c> ruling 1. <see cref="WorldShape.Box"/> by default, so
+        /// every recorded world is the one it always was.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The wrap became visible when the water started carrying.</b> The box is periodic on
+        /// both horizontal axes and D077 chose that while nothing crossed a seam; since D088's
+        /// transport field a body crosses one about every hundred seconds (<c>r36-s1</c>: 1,143
+        /// wraps per window at 1,154 alive), and the owner watching round 36 seed 1 in the
+        /// theatre saw bodies displaced — a jump, not a death and a birth. A wall is the honest
+        /// container for water that carries.
+        /// </para>
+        /// <para>
+        /// <b>What the shape changes, and it is one change:</b> the footprint is a disc of
+        /// <c>R = sqrt(area/π)</c> in a bounding square <c>[0, 2R)²</c>
+        /// (<see cref="TankGeometry"/>); the patches are rings of equal area rather than a row of
+        /// squares; the horizontal boundary is a static collider rather than a translation, so
+        /// <c>wraps</c> reads 0 by construction; the grid carries a mask and stirs and advects
+        /// only between live cells; the current is a gyre about the axis, tangential at the glass
+        /// by construction; and the placer draws founders over the disc. The area, the depth, the
+        /// patch count, the prices and every other rule are untouched.
+        /// </para>
+        /// <para>
+        /// <b>Refused rather than half-built.</b> <see cref="World"/> refuses a tank on
+        /// <see cref="MatterField.Cells"/> (a one-dimensional ring of patches is not an annulus)
+        /// or on <see cref="MatterField.Vertices"/> (a set of positions in a periodic box, with no
+        /// mask and a seam where the glass is),
+        /// a tank with <see cref="PatchesAcross"/> above 1 (a layout is the box's), a tank with
+        /// D061's dispersal lottery (the same ring), and a tank under
+        /// <see cref="CurrentMode.Rolls"/> at a nonzero speed (the rolls are a field over the
+        /// box's patches). <c>EVOSIM_SHAPE</c> in the header, which names the tank as
+        /// <c>space tank r=5.64 m (100 m2), depth 60, wall, bed</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public WorldShape WorldShape { get; set; } = WorldShape.Box;
+
         /// <summary>How fast matter falls, m/s — D048.</summary>
         /// <remarks>
         /// Separate from <see cref="NutrientSinkMetresPerSecond"/> rather than shared. They
@@ -1507,6 +1590,39 @@ namespace Evosim.Core
         private float _physicsStepSeconds = 0.01f;
 
         /// <summary>
+        /// Whether the drive impulse limiter applies at every step rather than only above dt 0.01
+        /// — <c>fable-propose-limiter.md</c>. False by default, which is every run on file.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it gates.</b> <c>Evosim.Sim</c>'s <c>EffectorDriver</c> caps each degree of
+        /// freedom's drive torque so one physics step cannot add more than 30 rad/s of joint
+        /// angular velocity — about five revolutions a second, faster than anything that has ever
+        /// swum here — and counts every bind as <c>driveImpulsesLimited</c>. The cap was gated to
+        /// steps coarser than 0.01 so that the confirming step kept replaying the record, and at
+        /// 0.01 every drive torque is applied as computed.
+        /// </para>
+        /// <para>
+        /// <b>Why it is asked for now.</b> Round 34 drove the stroke flat out with every price at
+        /// zero and lost fifty bodies across five seeds, every dump read carrying an active joint
+        /// and a median age near 1,200 s: adults thrown out of the world by the solver rather
+        /// than selected against, about two percent of jointed births (logbook/0080, logbook/0090).
+        /// The rounds ahead make the stroke cheap on purpose, so the leak grows with the
+        /// programme.
+        /// </para>
+        /// <para>
+        /// <b>A tunable and not a new constant</b>, so the record stays readable in its own
+        /// terms: at false the driver keeps today's rule to the character and every recorded run
+        /// replays under its own config. The 30 rad/s stays a constant — it is a physical bound,
+        /// and a second dial there would invite tuning the solver rather than the world.
+        /// <c>EVOSIM_DRIVE_LIMIT_ALWAYS</c>, and the header prints <c>driveLimit always</c> or
+        /// <c>driveLimit &gt;0.01</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("physics")]
+        public bool DriveLimitAtEveryStep { get; set; }
+
+        /// <summary>
         /// Whether a genome in this run may draw <see cref="SensorChannel.Chemical"/> — the smell
         /// of food in the water at a part, §4.4.
         /// </summary>
@@ -1772,6 +1888,31 @@ namespace Evosim.Core
     /// world is being told is where its matter comes from, and the depth follows from that. At an
     /// influx of 0 the two are the same world.
     /// </remarks>
+    /// <summary>
+    /// What shape the water is — <see cref="RunConfig.WorldShape"/>,
+    /// <c>fable-propose-aquarium.md</c> ruling 1.
+    /// </summary>
+    public enum WorldShape
+    {
+        /// <summary>
+        /// D077's box: <c>K/A</c> patches along x by <c>A</c> across z, periodic on both
+        /// horizontal axes. Every run in the record, and the default so that it stays so.
+        /// </summary>
+        Box = 0,
+
+        /// <summary>
+        /// A cylinder of water with a glass wall: a disc of <c>R = sqrt(area/π)</c> in a bounding
+        /// square <c>[0, 2R)²</c> about an axis at <c>(R, R)</c>, <c>K</c> rings of equal area
+        /// for patches, and a gyre for a current.
+        /// </summary>
+        /// <remarks>
+        /// The wall replaces the seam a carrying current made visible, and the disc has a centre
+        /// and a rim, which is the ecological axis a round tank has where a row of patches has
+        /// none. <see cref="TankGeometry"/> holds the arithmetic.
+        /// </remarks>
+        Tank = 1,
+    }
+
     /// <summary>How <see cref="RunConfig.FieldModel"/> holds the water's stock — D083.</summary>
     public enum MatterField
     {
