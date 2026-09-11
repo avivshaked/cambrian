@@ -504,6 +504,10 @@ captures, probe output, one-off edit scripts, stale copies; nothing was deleted.
 
 ## The decisions in front of the owner
 
+- **The drive impulse limiter at every step** (`fable-propose-limiter.md`, 2026-09-11, from
+  round 34's M3): one tunable, default off so every recorded world replays, on for the rounds
+  after the box; a replay of `r34-s5` with it on is the check before it is trusted. The
+  agent recommends landing it with the box build so the record's configs break once.
 - **The producer threshold** is unsettled. D063's amendment asks for one living inherited
   member with a recent photosynthetic birth; the scorer substituted 10 members through two
   lifetimes. Both will be printed, and the ruling picks one.
