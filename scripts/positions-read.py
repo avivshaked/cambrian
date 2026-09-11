@@ -435,6 +435,15 @@ class Sample:
             for g in GUILDS
         }
 
+        # The guilds above are exclusive, so a jointed leaf counts as a leaf and `jnt` is the
+        # jointed body with no tissue. Round 34 (logbook/0080) reads jointed bodies against rigid
+        # ones whatever they feed on, so the flag is counted again here on its own.
+        jointed = [i for i in range(self.n) if flags[i] & JOINTED]
+        self.jointed_count = len(jointed)
+        self.jointed_depth = (sum(ys[i] for i in jointed) / len(jointed)) if jointed else None
+        rigid_n = self.n - len(jointed)
+        self.rigid_depth = ((sum(ys) - sum(ys[i] for i in jointed)) / rigid_n) if rigid_n else None
+
         self.close_kin = close_kin(ids, xs, ys, zs, box, clade_of)
 
 
@@ -444,6 +453,7 @@ COLUMNS = [
     ('t', 9), ('n', 6), ('cols', 9), ('x sd', 7), ('z sd', 7), ('nn h', 8), ('nn 3d', 8),
     ('leaf', 6), ('leaf y', 8), ('stom', 6), ('stom y', 8), ('mixo', 6), ('mixo y', 8),
     ('jnt', 6), ('jnt y', 8), ('plain', 6), ('plain y', 8), ('clade 1m', 9),
+    ('jointed', 8), ('joint y', 8), ('rigid y', 8),
 ]
 
 
@@ -472,6 +482,9 @@ def sample_line(s):
         values.append(number(s.guild_depth[g]))
 
     values.append('-' if s.close_kin is None else str(s.close_kin))
+    values.append(str(s.jointed_count))
+    values.append(number(s.jointed_depth))
+    values.append(number(s.rigid_depth))
 
     return ' '.join(v.rjust(width) for v, (_, width) in zip(values, COLUMNS))
 
