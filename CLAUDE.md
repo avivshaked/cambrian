@@ -460,7 +460,11 @@ actually verifying it.
   is also its exit code on success, so nothing distinguishes the two. Six workers were "refreshed"
   this way and every one still carried the previous `EvolutionRun.cs`; the hash check caught it.
   Call it once per worker from a shell, or from inside PowerShell with a real array. The hash
-  check is not optional.
+  check is not optional. **The same bite from bash**: `pwsh -File scripts/analyse-arm.ps1 r34-s3
+  -Timeline -Columns 'alive','cols'` hands `-Columns` one string, `alive,cols`, which names no
+  column, and the timeline prints `?` in every cell rather than refusing (2026-09-11). Call
+  the scripts that take arrays from PowerShell, or split the list inside the script as
+  `theatre-snap.ps1` does.
 - **The species column reads 1 unless `EVOSIM_SPECIES_THETA` is set.** `SpeciesDriftThreshold`
   defaults to 0, at which `AssignSpecies` gives every creature species 0 — the instrument is
   off, not reporting one species. Every arm through round 13 ran at 0; calibrate with the
@@ -683,6 +687,14 @@ actually verifying it.
   `crowded` and `stillb` mean something different from round 33's; founders still reserve
   their birth radius. Both tunables refuse every earlier `config.json`, rounds 32 and 33
   included.
+- **A rule chosen for being cheap gets re-asked when a later change makes it bite, and the
+  report probably already says so.** D077's periodic wrap cost nothing while no body ever
+  reached a seam. D088's carrying current sent every body across one about once per hundred
+  seconds, the table's `wraps` column counted it in every window of rounds 35 and 36, and
+  nobody read the column as a problem until the owner watched a minute of the theatre and
+  saw bodies teleport (2026-09-11; `fable-propose-aquarium.md`). Read `wraps` with `alive`,
+  and when a world rule changes, list the rules that were chosen for cheapness under the old
+  one and ask each whether it still holds.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.

@@ -66,6 +66,25 @@ and repeated here, so that "eats better" comes with the net beside it.
   buys a place in the light, and round 38's light sense has something to work with; the
   buoyant share is read beside it, since gas is the cheaper way up.
 
+## Launch
+
+Five seeds on round 34's launcher with `EVOSIM_LINK_PHOTO` 0.5 (`rounds/launch-r36.ps1`),
+`configHash 55a61291`, build `simHash b5d31a48`, `coreHash cafcb692`, the round 34 build. The
+header of every arm was read for `linkPhoto 0.5`, `idle 0.0001 W/N·m`, `current 0.1 m/s
+transport` and `space shared 4x5x5 m` before it was counted as launched.
+
+| arm | launched | run | worker |
+|---|---|---|---|
+| `r36-s1` | 2026-09-11 07:18 | `2026-09-11-071830-55a61291` | 5 |
+| `r36-s2` | 2026-09-11 07:20 | `2026-09-11-072004-55a61291` | 6 |
+| `r36-s3` | 2026-09-11 11:25 | `2026-09-11-112526-55a61291` | 5 |
+| `r36-s4` | 2026-09-11 18:08 | `2026-09-11-170833-55a61291` | 6 |
+| `r36-s5` | 2026-09-11 19:23 | `2026-09-11-182321-55a61291` | 5 |
+
+All five launched on one build by `scripts/launch-queue.ps1`, two workers at a time, in
+twelve hours. Seeds 1, 2 and 3 ended at budget the same day (12:06, 18:05 and 19:20, with
+1,154, 1,624 and 1,342 alive); their reads wait for the set.
+
 ## What the round does not ask
 
 Whether the stroke is used for anything, and whether a jointed leaf at 0.5 is simply a

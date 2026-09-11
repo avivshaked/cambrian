@@ -164,3 +164,4 @@ scratch/
 # batchmode processes never share one Library/. Everything in them is either a copy of
 # unity/ or regenerated, so tracking them would duplicate every script in the repository.
 unity-w*/
+scripts/tests/positions/fixtures/

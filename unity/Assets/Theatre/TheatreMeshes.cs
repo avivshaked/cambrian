@@ -20,12 +20,22 @@ namespace Evosim.Theatre
     /// inside a unit solid scaled down by <see cref="Inset"/>, and
     /// <c>PhenotypeBuilder.VisualPlan</c> gives each visual a local scale equal to the part's full
     /// size, so a vertex at <c>Inset * 0.5</c> in object space lands at <c>Inset * h</c> in world
-    /// space on that axis. That is the whole of the bound now, because the only thing the body
-    /// shader does to a vertex is move it <i>inward</i>: the first day's outward puff is gone and
-    /// the carve that replaced it is <c>-normal * depth * noise</c> with the noise in [0, 1], so
-    /// no vertex can reach the collider from inside, let alone pass it. A carved body is a little
-    /// smaller than its box, which under-reports rather than over-reports, which is the direction
-    /// the two constraints allow.
+    /// space on that axis. That is the whole of the bound for everything the shader does along a
+    /// normal: the first day's outward puff is gone and the carve that replaced it is
+    /// <c>-normal * depth * noise</c> with the noise in [0, 1], so no vertex can reach the
+    /// collider from inside, let alone pass it. A carved body is a little smaller than its box,
+    /// which under-reports rather than over-reports, which is the direction the two constraints
+    /// allow.
+    /// </para>
+    /// <para>
+    /// <b>The third day added a deformation that is not along a normal</b>, so the bound is
+    /// stated twice now. A box part is tapered and bent in its own object space
+    /// (<c>TheatreBody.shader</c>, <c>ShapeBox</c>), and both of those are written to be inward
+    /// by construction: the taper multiplies a cross-section by a number at most one, and the
+    /// bend shrinks the cross-section by its own amplitude before it displaces by it. The shader
+    /// then clamps the object position into the box these meshes were built inside anyway, so
+    /// inside-ness does not depend on anyone having checked the arithmetic. The flag that says
+    /// which mesh may be deformed is baked here, in <see cref="Finish"/>.
     /// </para>
     /// <para>
     /// <b>Dense on purpose.</b> The meshes are three to twenty times the first day's, because a
@@ -62,14 +72,44 @@ namespace Evosim.Theatre
         /// How much of a half extent the cube's corner rounding eats, as [CC1] measures it.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// A third rather than the first day's quarter. The carve makes a box's faces wavy and
         /// its edges wander, and in the first carved pictures the thing still saying "built" was
         /// the corner: three planes meeting at a right angle survives any amount of surface
         /// relief. The rounding is inward, so a wider fillet only makes the drawn body smaller,
         /// and it does not touch the ratio between the half extents, which is what makes a box a
         /// fin (StandardShapes' BoxShape remarks).
+        /// </para>
+        /// <para>
+        /// A dial from the third day, <c>EVOSIM_THEATRE_PILLOW</c>, because the owner's reading of
+        /// the close views was that the boxes still looked manufactured and the pillowing is the
+        /// half of that answer which belongs to the mesh rather than to the shader
+        /// (logbook/specs/skin-spec-3.md). Clamped to a half, where the construction below turns
+        /// the cube into the ball inscribed in it: that is the roundest a box can be and still be
+        /// a box's mesh, and beyond it the arithmetic would start eating the flat faces from the
+        /// outside rather than the corners from the inside.
+        /// </para>
+        /// <para>
+        /// The radius is a fraction of the object-space half, which is one number for all three
+        /// axes, so on the drawn body it comes out as that fraction of the half extent on each
+        /// axis: exactly the fraction of the smallest half extent on the smallest axis, and a
+        /// corner that is inside the box on every axis by construction.
+        /// </para>
         /// </remarks>
-        public const float Roundness = 0.34f;
+        public static readonly float Pillow =
+            TheatreSkin.Dial("EVOSIM_THEATRE_PILLOW", 0.34f, 0f, 0.5f);
+
+        /// <summary>
+        /// The cylinder's rim fillet, the second day's 0.34, and it is a constant on purpose.
+        /// </summary>
+        /// <remarks>
+        /// The third day is about the box. A capsule reads as grown already, and the fillet is
+        /// load-bearing rather than cosmetic: the carve moves each vertex along its own normal, so
+        /// a hard crease tears the mesh open along the rim (BuildCylinder's remarks). Tying it to
+        /// a dial aimed at the box would let a picture of a new pillow setting change a capsule
+        /// that nobody asked to change.
+        /// </remarks>
+        public const float Fillet = 0.34f;
 
         /// <summary>
         /// Vertices along one edge of one cube face.
@@ -177,7 +217,7 @@ namespace Evosim.Theatre
         private static Mesh BuildRoundedCube()
         {
             float half = 0.5f * Inset;
-            float radius = Roundness * half;
+            float radius = Pillow * half;
             float flat = half - radius;
 
             var vertices = new List<Vector3>();
@@ -214,7 +254,7 @@ namespace Evosim.Theatre
                 normals[i] = normal;
             }
 
-            return Finish("Theatre Rounded Cube", vertices, normals, triangles);
+            return Finish("Theatre Rounded Cube", vertices, normals, triangles, 1f);
         }
 
         private static void AddCubeFace(
@@ -320,7 +360,7 @@ namespace Evosim.Theatre
                 vertices[i] = vertices[i] * radius;
             }
 
-            return Finish("Theatre Sphere", vertices, normals, triangles);
+            return Finish("Theatre Sphere", vertices, normals, triangles, 0f);
         }
 
         private static int Midpoint(List<Vector3> vertices, Dictionary<long, int> cache, int a, int b)
@@ -365,7 +405,7 @@ namespace Evosim.Theatre
         {
             float radius = 0.5f * Inset;
             float half = Inset;
-            float fillet = Roundness * Mathf.Min(radius, half);
+            float fillet = Fillet * Mathf.Min(radius, half);
 
             float flatR = radius - fillet;
             float flatY = half - fillet;
@@ -452,13 +492,46 @@ namespace Evosim.Theatre
                 }
             }
 
-            return Finish("Theatre Cylinder", vertices, normals, triangles);
+            return Finish("Theatre Cylinder", vertices, normals, triangles, 0f);
         }
 
         // ---------------------------------------------------------------- shared
 
+        /// <summary>
+        /// Closes one mesh, and tells the shader which solid it is.
+        /// </summary>
+        /// <param name="boxness">
+        /// One for the cube and zero for anything else. The third day's taper and bend are for
+        /// boxes only, and the shader has no other way to know what it is drawing.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>Why the flag is a vertex attribute and not a material property.</b> Every body in
+        /// the theatre is drawn with one shared material and painted through one
+        /// <c>MaterialPropertyBlock</c> that <c>TheatrePalette</c> owns; which primitive a part
+        /// draws with is known there, but the flag has to reach the vertex stage of a mesh that
+        /// the palette has already swapped, and a mesh knows what it is. Baked into UV channel
+        /// three, which nothing else in the theatre uses and which the engine's own primitives do
+        /// not carry, so a mesh this class did not build reads zero and is left alone.
+        /// </para>
+        /// <para>
+        /// <b>Why zero is the safe answer, and it is a size bound.</b> A sphere part is drawn as
+        /// the genome's three half extents scaled so that the longest semi-axis is the collider's
+        /// radius (TheatrePalette.Aspect), so its collider is the ball and not the box: clamping a
+        /// bent sphere into the box of its half extents would keep it inside a box the physics
+        /// does not have while letting it out of the ball the physics does. So the deformation the
+        /// clamp guards is offered to the cube alone, and anything unrecognised gets the second
+        /// day's carve, whose bound is the sign of a displacement rather than a shape.
+        /// </para>
+        /// <para>
+        /// The channel's second number is the mesh's own object space half extent, so the shader
+        /// clamps against the mesh's bound rather than against a constant copied out of this file.
+        /// It is only read when the flag is one.
+        /// </para>
+        /// </remarks>
         private static Mesh Finish(
-            string name, List<Vector3> vertices, List<Vector3> normals, List<int> triangles)
+            string name, List<Vector3> vertices, List<Vector3> normals, List<int> triangles,
+            float boxness)
         {
             var mesh = new Mesh
             {
@@ -466,8 +539,14 @@ namespace Evosim.Theatre
                 hideFlags = HideFlags.HideAndDontSave,
             };
 
+            var shape = new List<Vector2>(vertices.Count);
+            var flag = new Vector2(boxness, 0.5f * Inset);
+
+            for (int i = 0; i < vertices.Count; i++) shape.Add(flag);
+
             mesh.SetVertices(vertices);
             mesh.SetNormals(normals);
+            mesh.SetUVs(3, shape);
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateBounds();
 

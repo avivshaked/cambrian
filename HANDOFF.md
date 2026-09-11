@@ -8,6 +8,48 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
+**Round 34 is read (logbook/0090, 2026-09-11 midday): five seeds of five pass the goal
+rule, the free joint founds in every seed (46 to 140 inherited at 1,000 s) and is gone from
+every seed by 23,100 s, re-invented by mutation to the end and never re-founded. The ledger
+charges it nothing (R1), jointed newborns die in their first minute whichever lineage they
+arrive in (R2), and the stroke is driven flat out at 5 to 77 W per jointed body while it
+exists, moving the body faster than the water (R3); the divergences are jointed adults thrown
+by the solver, two percent of jointed births. The reading: the price was the founding
+barrier, the unthrottled stroke is what removes the joint afterwards. Consequences recorded in
+the path: round 39 (the stroke priced alone) stays moved forward, and the drive impulse
+limiter at every step goes to the owner as a proposal before any cheap-stroke round. Round
+36 (the link earns) is running: seed 1 ended at 12:06 and passes with a jointed line alive
+at 30,000 s (73 inherited, from a peak of 167), which no round 34 seed managed; seeds 2 and
+3 run on workers 6 and 5, seeds 4 and 5 queue behind them. The round 34 pictures for seed 4
+are still to render (its first render was stopped a minute in to give round 36 seed 3 the
+slot). The theatre skin's third day landed (commit `e4d6540`, `logbook/specs/skin-spec-3.md`:
+taper, bend, pillow dial, carve default 0.35, softer rim; boxes only, all inside the
+collider); the three comparison pictures of `r35-s1` at 5,000 s are in
+`scratch/snaps/skin3-*/`, the agent's reading is keep the defaults and refuse carve 0.5,
+and the pillow (0.34 or 0.5) is the owner's ruling. The fourth day, the sun and the surface
+(`logbook/specs/skin-spec-4.md`: rippling surface from below, Snell's window and a sun,
+light shafts, caustics on bodies and bed from one ripple, a `sky` snapshot view), compiled
+first time on worker 3, rendered `r36-s1` at 5,000 s (`scratch/snaps/skin4/`) and merged
+into main the same evening (branch `skin4`); its five dials (`EVOSIM_THEATRE_WAVE`,
+`_WAVELENGTH`, `_WAVE_SPEED`, `_LIGHT_REACH`, `_SHAFTS`) are unjudged by the owner, and
+the agent's first reading is that the surface reads as bands rather than water, which is
+the wave steepness. Both skin days are written up as logbook/0091; the calm sea (0.022 m over 3.2 m) is the
+wave default, picked from two pictures; the pillow ruling is still the owner's. The owner
+ruled the aquarium's shape the same evening ("yes proceed" on the cylinder, the square as
+fallback; `fable-propose-aquarium.md`), so the tank build starts on a branch off `box`, with
+a code survey first and the proposal's six checks before any scored round; rulings 2 and 3
+(the dilution's numbers, the concentrators) are taken as the agent's recommendation until
+the owner says otherwise, and the proposal is absorbed into DECISIONS.md when the build
+lands. The owner watched `r36-s1` in the theatre (Mode B,
+seek 5,000 s) and saw no sun, shimmer or ripple, which is why the day was moved up. Round 36 is fully launched (seed 5 at 19:23); seeds 1, 2 and 3 have landed with
+a jointed inherited count at 30,000 s of 73, 4 and 0. The box build (branch `box`, worktree
+`scratch/wt-box`) now waits for round 36's renders as well as its arms, because the theatre
+refuses a recording whose `coreHash` the build did not write and every worker compiles Core
+from the main tree: merging before the last render would make every round 36 picture a
+declared cousin. Order: skin day 4 merges first (no hash), then the box with the limiter
+tunable if the owner rules for it, after the last round 36 render. The round 34 read files
+moved from `scratch/r34-read/` to `logbook/specs/r34-read/` because 0090 cites them.**
+
 **Round 35 is read (logbook/0087, 2026-09-11 small hours): the three-dimensional base stands
 in five seeds of five, every book closed, every seed filling the box from 1,100 s on, the
 goal rule held with smaller stomach clades (20 to 130 against round 33's 74 to 120), and
@@ -15,16 +57,8 @@ round 33's one-way dial walk did not replicate: seeds 1 and 5 kept it, seeds 2, 
 went to small adults born nearly whole in litters of 1.5 to 1.7. The stomach lines thin
 from an early peak in four seeds, round 32's shape, so 0079's question stands in the fixed
 world. Pictures at 5,000, 15,000 and 30,000 s of every seed are in `scratch/snaps/r35-s*/`
-(three beside the entry). Round 34, the free joint, is running on this base: `r34-s1` to
-`r34-s5` launched overnight one at a time by `scripts/launch-queue.ps1` as the renders freed
-workers (0080's Launch section; `rounds/launch-r34.ps1` is round 35's launcher with the four
-prices at zero, the idle charge at 0.0001 because Core refuses a literal zero). Seed 1 has
-landed already: the free joint survived founding, 73 inherited at 5,000 s against 72 at
-1,000, held 45 to 80 bodies to 10,000 s, then thinned to none by 30,000 s, with three
-divergences; 0080's "M2 holds and M1 fails" reading, to be confirmed on the other four. The
-theatre's skin has its second day (carving, ellipsoids, the close view; CLAUDE.md's theatre
-paragraph); the owner has the three carve depths to pick from. A numbers agent stalled for
-six hours without writing, and its column was gathered by hand.**
+(three beside the entry). The theatre's skin had its second day (carving, ellipsoids, the
+close view; CLAUDE.md's theatre paragraph) and the owner picked carve 0.35 by eye.**
 
 **Round 35, the base round in three dimensions, is launching (logbook/0087, 2026-09-10
 evening): round 33's world with D088, dispersal 5 m, transport at 0.1 m/s, founders
@@ -223,27 +257,55 @@ round 28) set the base and the order.
    is its control and never a replay where a build moved the hashes. Rounds 34 (the free
    joint, running) and 35 (the base, read) stand before it.
    1. **Round 36, the link that earns**: `EVOSIM_LINK_PHOTO` 0.5 on round 34's launcher; no
-      build; pre-registered as logbook/0089; launches when round 34 frees the workers.
-   2. **Round 37, the box**: four patches in a 2 by 2 layout, 10 by 10 by 60 m at the same
-      area; a build in the shared volume and the patch indexing (`fable-propose-box.md`,
-      drafted while round 34 lands).
-   3. **Round 38, a light sense**: one new sense input, light and its vertical gradient;
-      read on jointed against rigid against buoyant depth. Proposal first.
-   4. **Round 39, the idle charge restored** to 0.02; no build.
-   5. **Round 40, ellipsoids in the physics**: spheres and capsules collide and drag as
-      their three half-extents; preceded by the offline read of whether boxes have
+      build; pre-registered as logbook/0089; all five seeds launched 2026-09-11 (three
+      landed: jointed inherited at 30,000 s of 73, 4 and 0).
+   *Resequenced 2026-09-11 evening by the agent under the owner's grant, after the owner
+   watched `r36-s1` in the theatre and saw two things the report had been counting without
+   anyone reading them: bodies teleported at the seams (the wrap, once per body per hundred
+   seconds since the current carries) and a crowd a body apart (median nearest neighbour
+   0.65 m), which is read as the reason movement has never paid: a sitter eats as well as a
+   swimmer when food is a body length away. `fable-propose-aquarium.md` carries the design
+   and the three rulings; the old order is in the proposal's table and in git.*
+   2. **Round 37, the tank** (`fable-propose-aquarium.md`, ruling 1): a cylinder of the same
+      100 m² with a glass wall, a gyre current from a stream function that vanishes on the
+      wall, a cell mask on the grid, rings for patches; the walled 10 by 10 m square as the
+      fallback if the mask misbehaves in the digest. The limiter on if its check passes
+      (`fable-propose-limiter.md`). One build for 37 and 38, and the 2 by 2 box's shape
+      code (`scratch/wt-box`) absorbed into it. Supersedes the box round.
+   3. **Round 38, the dilute tank** (rulings 2 and 3): four times the area, 400 m², with the
+      matter held at 6,000 units by a new tunable whose default is today's scaling; corpses
+      as objects at 0.005/s; no new build. The ledger screens founding first. Read: nearest
+      neighbour, founding, the gyre's downwelling as the first patch, sitter against mover.
+   4. **Round 39, a bed with shape** (was round 42): rocks, ridges, hollows; the current
+      flows around them, detritus settles into them, the grid's floor follows; the theatre
+      draws the same data. Moved up because in a dilute world it is a coast. Proposal first.
+   5. **Round 40, a light sense** (was round 38): one new sense input, light and its vertical
+      gradient; read on jointed against rigid against buoyant depth, now in a world with
+      something to steer toward. Proposal first.
+   6. **Round 41, the stroke priced alone** (was round 39): the work cost back to D082's 0.25
+      with the idle charge still at 0.0001; no build. *First reordered 2026-09-11 morning
+      after round 34's first three seeds (the free stroke driven flat out, about 23 W of
+      unpaid work per jointed body, the solver throwing jointed adults, jointed newborns dead
+      in their first minute half the time; confirmed 5 of 5 in logbook/0090): the stroke's
+      price shapes what a joint does, the idle charge only what it costs to own.* Now behind
+      the dilution and the bed, so that there is a chase to pay for.
+   7. **Round 42, ellipsoids in the physics** (was round 40): spheres and capsules collide and
+      drag as their three half-extents; preceded by the offline read of whether boxes have
       flattened. Proposal first.
-   6. **Round 41, shading with a length scale**: self-shading by the neighbours above
-      rather than the patch mean. Proposal first.
-   7. **Round 42, a bed with shape**: rocks, ridges, hollows; the current flows around
-      them, detritus settles into them, the grid's floor follows. Proposal first; the
-      theatre draws the same data.
    8. **Round 43, the anchoring cell**: holds a body to the bed or a rock against the
-      current. Proposal first.
-   9. **Round 44, the remaining prices restored** (work, neuron, connection) on whichever
-      world of 39 to 43 carries joints; no build.
-   10. **Round 45, the long arm**: one seed, 300,000 s, on the richest standing world, the
+      current; pairs with the bed, now behind it. Proposal first.
+   9. **Round 44, shading with a length scale** (was round 41): self-shading by the
+      neighbours above rather than the patch mean. Moved down as the least urgent.
+      Proposal first.
+   10. **Round 45, the remaining prices restored** (the idle charge to 0.02, the neuron and
+      the connection to D082's values) on whichever world of 39 to 44 carries joints; no
+      build.
+   11. **Round 46, the long arm**: one seed, 300,000 s, on the richest standing world, the
       stroke read against the water every 1,000 s; one worker for a week.
+   Also from round 34, proposed 2026-09-11 (`fable-propose-limiter.md`): the drive impulse
+   limiter at every step, not only above dt 0.01, since an unpriced stroke at 0.01 is what
+   the limiter was never asked to bound; folded into round 37's build if the owner rules for
+   it.
    Beside the ten and not in them: 0084's bin 3 screens (dispersed against undispersed on
    round 32's seeds, mixing 0.2 against 0.02, corpses off) on any free worker; the skin in
    the genome and the theatre's sun, which need no round; predation, which the owner ruled
@@ -434,6 +496,40 @@ twice.
    depth, and it would move only the top few metres; worth it once something lives there.
 8. **The skin in the genome** (item 5 of the evening list): inherited, mutated, shown by the
    theatre, neutral until something can see.
+9. **The box that stops looking made**: the skin's third day. The owner, on `r35-s1`'s close
+   view at 5,000 s (2026-09-11 midday): "the spheres look amazing", the boxes "still look
+   somewhat non-biological"; "let's try". A corner radius a third of the smallest half-extent rather than
+   the sliver it has, an inward taper toward one end so a box reads as a seed rather than a
+   brick, one low-frequency bend or twist per body seeded from its id so no two are congruent,
+   a wider and softer rim. All of it inward and inside the collider, as the carve is; no hash
+   moves. Beside it, a second way for the close view to choose its subject, the body with the
+   most parts rather than the largest, framed by its neighbours rather than its reach, because
+   the eight-metre chain in `r35-s3` backs the camera off until everything is a speck.
+   Photograph the same seed-1 crowd afterwards for the comparison. Waits behind the box merge,
+   which touches the same theatre files.
+10. **A safari** (owner, 2026-09-11 midday: a theatre feature that finds the species, visits
+    the interesting ones, takes their pictures and explains each, "without requiring ad-hoc
+    intelligence"). The agent's view: it can be procedural to the last sentence, because every
+    fact a field-guide entry wants is already in the run. Clades from the scorer's parent
+    walk (or genome distance under the species knob); a clade's founding time, the parent
+    clade it split from and the mutation at the split (the two genomes differ in a
+    listable way); its share of the living, its peak, its generation depth; where it lives
+    from `positions.jsonl` (depth band, spread, drift with the water); its body from the
+    genome (parts, shapes, symmetry, recursion, joints, guild); its life from lineage rows
+    (lifetime, age at first birth, litter, investment); its economics from the ledger
+    (net watts, break-even density, against its ancestor's). "Interesting" is a ranking
+    over those: novelty (distance from the ancestor), success (share), persistence (age),
+    rarity (old and small), firsts (the first jointed clade, the first with three parts).
+    A name is a deterministic binomial from the genome hash. The explanation is a template
+    with the facts in its slots and a few conditional sentences; what it cannot do is say
+    why one won, beyond what the ledger measures. An entry says "the split changed X; the
+    ledger reads Y" and stops. Three stages, none of them a round: a census
+    script that writes the guide as prose with the names and the numbers (a day, on the
+    existing reads); pictures through `theatre-snap.ps1` with a view that frames a named body
+    at a named second (half a day; Mode A can also grow one alone as a portrait); and the
+    theatre's tour mode that flies to each in Play mode with the entry on screen (later).
+    An LLM, if ever, is a polish pass over the template's prose, off by default, and the
+    facts never come from it.
 
 
 Queued behind the next Core change (it moves both hashes, so it lands between rounds and never
@@ -445,6 +541,15 @@ captures, probe output, one-off edit scripts, stale copies; nothing was deleted.
 
 ## The decisions in front of the owner
 
+- **Things wrong in motion** (owner, 2026-09-11 evening, after watching `r36-s1` in the
+  theatre): "there are some issues with the world that you can only see when rendering",
+  set aside for now and not yet named. The agent reads stills only, so when they are named
+  the route is a Game Bar or Recorder film of the session and frames pulled from it at the
+  seconds in question, read as pictures beside the numbers.
+- **The drive impulse limiter at every step** (`fable-propose-limiter.md`, 2026-09-11, from
+  round 34's M3): one tunable, default off so every recorded world replays, on for the rounds
+  after the box; a replay of `r34-s5` with it on is the check before it is trusted. The
+  agent recommends landing it with the box build so the record's configs break once.
 - **The producer threshold** is unsettled. D063's amendment asks for one living inherited
   member with a recent photosynthetic birth; the scorer substituted 10 members through two
   lifetimes. Both will be printed, and the ruling picks one.
