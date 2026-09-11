@@ -80,22 +80,68 @@ namespace Evosim.Theatre
         /// <para>
         /// Set from <c>EVOSIM_THEATRE_CARVE</c> so that three pictures at three depths can be
         /// taken from one build and the owner can choose from pictures rather than from a number.
+        /// The default is 0.35 rather than the second day's 0.2, because that is the one of the
+        /// three the owner picked from the close views on 2026-09-11
+        /// (logbook/specs/skin-spec-3.md).
         /// </para>
         /// </remarks>
-        public float CarveFraction = CarveFromEnvironment();
+        public float CarveFraction = Dial("EVOSIM_THEATRE_CARVE", 0.35f, 0f, 0.5f);
 
-        /// <summary>Reads the dial, or the default when nothing set it.</summary>
+        // ---------------------------------------------------------------- the box that grew
+
+        /// <summary>
+        /// How far a box part narrows towards one end, as a fraction of its cross-section.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The third day's reading of the same complaint the second day answered for the surface.
+        /// The owner looked at the close views and said the spheres were right and the boxes still
+        /// looked manufactured: six flat faces at right angles, and no amount of surface relief
+        /// argues with a silhouette that is a rectangle. A grown thing is almost never the same
+        /// width at both ends, so the box narrows down its longest axis, smoothly rather than as a
+        /// wedge, and reads as a seed or a grain (logbook/specs/skin-spec-3.md).
+        /// </para>
+        /// <para>
+        /// <b>It can only make a body smaller.</b> The cross-section is multiplied by a number in
+        /// [1 - this, 1], so every vertex moves towards the part's own long axis and none of them
+        /// can reach the collider, let alone leave it.
+        /// </para>
+        /// </remarks>
+        public float TaperFraction = Dial("EVOSIM_THEATRE_TAPER", 0.35f, 0f, 0.8f);
+
+        /// <summary>
+        /// How far a box part bends across itself, as a fraction of its smallest half extent.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// One low-frequency half wave down the longest axis, in a lateral direction drawn from
+        /// the same per-body number the carve and the mottle are drawn from, so a body's parts are
+        /// bent by its own id and not by the frame: it cannot flicker, and two creatures are bent
+        /// differently (logbook/specs/skin-spec-3.md).
+        /// </para>
+        /// <para>
+        /// <b>It can only make a body smaller.</b> A bend inside a box has to be paid for: the
+        /// shader shrinks the cross-section by the amplitude before it displaces by it, and then
+        /// clamps the object position into the mesh's own box anyway, so inside-ness is a
+        /// property of the arithmetic and not of the setting (<c>TheatreBody.shader</c>,
+        /// <c>ShapeBox</c>). Boxes only; a sphere or a capsule is not bent at all, because its
+        /// collider is not the box the clamp would hold it inside.
+        /// </para>
+        /// </remarks>
+        public float BendFraction = Dial("EVOSIM_THEATRE_BEND", 0.15f, 0f, 0.4f);
+
+        /// <summary>Reads one of the skin's dials from the environment, or its default.</summary>
         /// <remarks>
         /// Parsed invariantly and clamped rather than trusted. A machine whose decimal separator
         /// is a comma would read 0.35 as 35 and carve every body away to nothing, and a refusal
         /// here would take the viewer down for a cosmetic setting, which WaterBounds' rule
-        /// forbids.
+        /// forbids. One method for all of them, because a second copy of this parse is a second
+        /// place for the clamp to be forgotten; <see cref="TheatreMeshes"/> reads its pillow
+        /// through it too.
         /// </remarks>
-        private static float CarveFromEnvironment()
+        internal static float Dial(string name, float fallback, float low, float high)
         {
-            const float fallback = 0.2f;
-
-            string text = System.Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CARVE");
+            string text = System.Environment.GetEnvironmentVariable(name);
             if (string.IsNullOrWhiteSpace(text)) return fallback;
 
             if (!float.TryParse(
@@ -105,13 +151,13 @@ namespace Evosim.Theatre
                     out float value))
             {
                 Debug.LogWarning(
-                    "[Theatre] EVOSIM_THEATRE_CARVE is not a number ('" + text + "'); using " +
+                    "[Theatre] " + name + " is not a number ('" + text + "'); using " +
                     fallback.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".");
 
                 return fallback;
             }
 
-            return Mathf.Clamp(value, 0f, 0.5f);
+            return Mathf.Clamp(value, low, high);
         }
 
         // ---------------------------------------------------------------- the furniture
@@ -533,11 +579,17 @@ namespace Evosim.Theatre
                 hideFlags = HideFlags.HideAndDontSave,
             };
 
-            // The dial, and it is the only thing here that changes what a body's outline is.
-            // Nothing about it can make a body larger: the shader's displacement is negative by
-            // construction (TheatreBody.shader, Vertex), so the meshes' own inset is the whole of
-            // the size bound and this only decides how far inside it the tissue is cut.
+            // The three dials that change what a body's outline is, and none of them can make a
+            // body larger. The carve's displacement is negative by construction, the taper only
+            // ever multiplies a cross-section by a number at most one, and the bend buys its
+            // amplitude out of the cross-section before it spends it and is clamped into the
+            // mesh's own box afterwards (TheatreBody.shader, Vertex and ShapeBox). So the meshes'
+            // inset is still the whole of the size bound and these only decide how far inside it
+            // the tissue sits. Clamped again here: the fields are public and a scene or a check
+            // can set them without going through Dial.
             material.SetFloat("_CarveFraction", Mathf.Clamp(CarveFraction, 0f, 0.5f));
+            material.SetFloat("_TaperFraction", Mathf.Clamp(TaperFraction, 0f, 0.8f));
+            material.SetFloat("_BendFraction", Mathf.Clamp(BendFraction, 0f, 0.4f));
 
             return material;
         }
@@ -555,6 +607,12 @@ namespace Evosim.Theatre
             material.SetFloat("_MottleStrength", 0f);
             material.SetFloat("_CausticStrength", 0f);
             material.SetFloat("_CarveFraction", 0f);
+
+            // A neck is drawn with the cylinder, which the shader never tapers or bends anyway;
+            // set to zero so that the marker stays a marker if it is ever drawn with something
+            // else.
+            material.SetFloat("_TaperFraction", 0f);
+            material.SetFloat("_BendFraction", 0f);
             material.SetFloat("_RimStrength", 2.6f);
             material.SetFloat("_RimPower", 1.6f);
             material.SetFloat("_GlowStrength", 0.5f);

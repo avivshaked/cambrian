@@ -67,16 +67,16 @@ rate itself, the cap is a gait and the proposal should not be adopted as it stan
 ## Two ways to run it, and a recommendation
 
 1. **On from round 37.** Every round from the box on shares it. Round 37's comparison to
-   round 35 carries the limiter as a second difference, but in a priced world almost no body
-   is jointed, so in practice the confound is nil and the record is simpler: one rule for the
-   rest of the programme.
+   round 35 carries the limiter as a second difference. In a priced world almost no body is
+   jointed, so in practice the confound is nil, and there is one rule for the rest of the
+   programme.
 2. **On only for the cheap-stroke rounds** (36's successors, 39, 44), off elsewhere. Each
    cheap-stroke round is then read against a base without the limiter, and a jointed body
    that diverges in the base and not in the arm is a difference the limiter made.
 
 The agent recommends the first, after the check above passes. The limiter removes torques no
-creature could apply; a base that keeps them is not a fairer base, it is a base with a leak
-in it that only shows when the joint is cheap, and the reads that matter in the cheap-stroke
+creature could apply. A base that keeps them is not a fairer base; it is a base with a leak
+in it that only shows when the joint is cheap. And the reads that matter in the cheap-stroke
 rounds are the jointed count and the stroke's use, which the second way would confound with
 the limiter's presence anyway.
 
@@ -88,6 +88,6 @@ are round 39's, and a limiter that stopped them would be doing the world's selec
 
 ## Standing answers
 
-The box proposal's standing answers apply: the change is a harness change with a config
-tunable, defaults preserve every recorded world, the header carries it, and the Core test
+The box proposal's standing answers apply. The change is a harness change with a config
+tunable, defaults preserve every recorded world, and the header carries it. The Core test
 that checks every tunable reaches the hash and survives a reload will catch a missed wire.

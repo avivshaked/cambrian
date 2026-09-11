@@ -50,10 +50,11 @@
 
 .PARAMETER Carve
   How deep the skin cuts each body inward, as a fraction of the part's smallest half-extent.
-  Default 0.2, clamped at 0.5 by the theatre. The displacement is never positive, so no setting
-  can put a visual outside its collider; what it changes is how grown rather than built a body
-  looks. Rendering the same close view at 0.1, 0.2 and 0.35 is how the depth is chosen, because
-  it is a question about a picture and not about a number.
+  Default 0.35, the depth the owner chose from the close views on 2026-09-11, clamped at 0.5 by
+  the theatre. The displacement is never positive, so no setting can put a visual outside its
+  collider; what it changes is how grown rather than built a body looks. Rendering the same close
+  view at 0.1, 0.2 and 0.35 is how the depth was chosen, because it is a question about a picture
+  and not about a number.
 
 .PARAMETER Size
   Picture size as WxH. Default 1600x900. The whole box is fitted inside it, so a box taller than
@@ -87,7 +88,7 @@ param(
     [int]$Worker = 6,
     [string[]]$Views = @(),
     [string]$Size = '1600x900',
-    [double]$Carve = 0.2,
+    [double]$Carve = 0.35,
     [string]$Out,
     [switch]$AllowSourceMismatch,
     [int]$WallMinutes = 30

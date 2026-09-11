@@ -16,6 +16,16 @@
 //   caustics from above      [CY2] [AM]
 //   inward vertex carve, two octaves of noise in the part's own object space, bounded,
 //                            with the normal rebuilt per pixel from the same field         [CY]
+//   taper and bend of a box part in its own object space, inward by construction and clamped
+//                            into the mesh's box afterwards (logbook/specs/skin-spec-3.md)
+//
+// The third day is about the box. The owner looked at the close views and said the spheres looked
+// alive and the boxes still looked manufactured: six flat faces at right angles with a small
+// rounding on the edges, which is a silhouette no amount of surface relief argues with. So a box
+// is pillowed in the mesh (TheatreMeshes.Pillow), narrowed towards one end, and bent once across
+// its longest axis. Spheres and capsules are left alone, and the reason is the size bound rather
+// than taste: their colliders are the ball and the capsule, so the box clamp that makes the bend
+// safe would not be holding them inside anything the physics has (TheatreMeshes.Finish).
 //
 // Batching. TheatrePalette paints every body through one MaterialPropertyBlock on one shared
 // material, and that is kept: a block drops those renderers out of the SRP Batcher, which is the
@@ -38,8 +48,15 @@ Shader "Evosim/Theatre Body"
         _Reserve("Reserve fraction, 0 starving to 1 sated", Range(0, 1)) = 1
 
         [Header(The look)]
-        _RimPower("Rim sharpness", Range(0.5, 8)) = 2.6
-        _RimStrength("Rim strength", Range(0, 4)) = 1.5
+        // Wider and softer than the second day's 2.6 and 1.5, by about a third. A Fresnel rim at
+        // a high power is a bright line one or two pixels wide at the silhouette, which is the
+        // hard edge the dark field was supposed to be getting rid of: it drew the outline of the
+        // collider rather than the shape of the tissue. Lowering the power widens the band into
+        // the body, and the strength comes down with it so that the total light on a body's edge
+        // is about what it was and the guild still reads at the same brightness
+        // (logbook/specs/skin-spec-3.md).
+        _RimPower("Rim sharpness", Range(0.5, 8)) = 1.75
+        _RimStrength("Rim strength", Range(0, 4)) = 1.3
         _GlowStrength("Inner glow at full reserve", Range(0, 1)) = 0.22
         _Wrap("Diffuse wrap", Range(0, 1)) = 0.45
         _KeyGain("Key gain", Range(0, 3)) = 1.0
@@ -68,13 +85,29 @@ Shader "Evosim/Theatre Body"
         // part's SMALLEST half extent, which is at most that fraction of the half extent on any
         // axis, so the deepest impression on the longest body is still a fraction of its
         // thinnest dimension. TheatreSkin reads EVOSIM_THEATRE_CARVE into it and clamps.
-        _CarveFraction("Carve depth, fraction of the smallest half extent", Range(0, 0.5)) = 0.2
+        //
+        // 0.35 rather than the second day's 0.2: the owner ruled it by eye on 2026-09-11 from the
+        // close views taken at 0.1, 0.2 and 0.35 (logbook/specs/skin-spec-3.md).
+        _CarveFraction("Carve depth, fraction of the smallest half extent", Range(0, 0.5)) = 0.35
 
         // The hard cap, after the joint pinch has deepened the carve. Nothing about the collider
         // needs it: it stops a body from being cut past its own middle and turning inside out.
         _CarveMaximum("Deepest carve of any kind, same fraction", Range(0, 0.6)) = 0.5
 
         _PinchGain("How much deeper the carve runs at a joint anchor", Range(0, 4)) = 1.6
+
+        [Header(The box that stops looking made)]
+        // Both are read from the environment by TheatreSkin (EVOSIM_THEATRE_TAPER,
+        // EVOSIM_THEATRE_BEND) and both are for box parts only: the mesh says which those are
+        // (TheatreMeshes.Finish), and a mesh that does not say reads zero and is not deformed.
+        //
+        // The taper is a fraction of the cross-section, so the far end is (1 - taper) of the near
+        // one and the multiplier is never above one. The bend is a fraction of the smallest half
+        // extent, and it is paid for out of the cross-section before it is spent, so it cannot
+        // reach the wall either. Neither claim is what the size bound rests on: ShapeBox clamps
+        // the object position into the mesh's own box whatever the dials say.
+        _TaperFraction("Taper, fraction of the cross-section lost at the far end", Range(0, 0.8)) = 0.35
+        _BendFraction("Bend, fraction of the smallest half extent", Range(0, 0.4)) = 0.15
 
         [Header(Per body from TheatrePalette)]
         // x seed, y lobe gain, z wrinkle gain, w how much carve this guild takes at all.
@@ -138,6 +171,8 @@ Shader "Evosim/Theatre Body"
                 float _CarveFraction;
                 float _CarveMaximum;
                 float _PinchGain;
+                float _TaperFraction;
+                float _BendFraction;
                 float4 _Carve;
                 float4 _PinchA;
                 float4 _PinchB;
@@ -147,6 +182,13 @@ Shader "Evosim/Theatre Body"
             {
                 float4 positionOS : POSITION;
                 float3 normalOS   : NORMAL;
+
+                // What solid this mesh is, baked per vertex by TheatreMeshes.Finish: x is one on
+                // the box and zero on everything else, y is the mesh's own half extent in object
+                // units. A mesh that carries no fourth UV channel reads zero here, which is the
+                // answer that leaves it undeformed, so an unrecognised mesh drawn with this
+                // material gets the carve and nothing else.
+                float2 shapeOS    : TEXCOORD3;
             };
 
             struct Varyings
@@ -193,15 +235,135 @@ Shader "Evosim/Theatre Body"
                 return min(fraction, _CarveMaximum) * smallest;
             }
 
+            // A box part's living shape: a taper down its longest axis and one half wave of bend
+            // across it, both in the part's own object space, both inward.
+            //
+            // Why here and not in the mesh. The taper narrows the part along its LONGEST axis and
+            // the bend's amplitude is a fraction of its SMALLEST half extent, and neither of those
+            // is known where the mesh is built: one unit cube is shared by every box in the world
+            // and the part's proportions arrive as the object to world matrix. So the mesh carries
+            // the pillowing, which is the same on every axis and can be baked, and the two dials
+            // that need to know which axis is which are applied per vertex here.
+            //
+            // Why it is inside the collider, which is the one invariant of this skin. Three
+            // separate reasons, in the order they apply. The taper multiplies the cross-section by
+            // a number in [1 - taper, 1], so every vertex moves towards the long axis. The bend
+            // shrinks the cross-section by its own amplitude before displacing by it, so the
+            // outside of the curve reaches the wall at the deepest point of the bend and nothing
+            // passes it. And then the object position is clamped into the box the mesh was built
+            // inside, so a dial set past its range, a mesh that is not the one this was written
+            // for, or an arithmetic slip cannot put a vertex outside the collider.
+            void ShapeBox(
+                inout float3 positionOS, inout float3 normalOS,
+                float3 halfExtents, float smallest, float meshHalf)
+            {
+                float3 p = positionOS;
+                float3 n = normalOS;
+
+                // The longest axis, read from the part's own scale, and it is the axis a grown
+                // thing has a direction along. Ties resolve in a fixed order, so a part with two
+                // equal sides picks the same one every frame rather than swapping between them.
+                float3 axisA;
+
+                if (halfExtents.x >= halfExtents.y && halfExtents.x >= halfExtents.z)
+                    axisA = float3(1, 0, 0);
+                else if (halfExtents.y >= halfExtents.z)
+                    axisA = float3(0, 1, 0);
+                else
+                    axisA = float3(0, 0, 1);
+
+                // The two across it, in a fixed cyclic order, and the mask of both together.
+                float3 axisB = float3(axisA.z, axisA.x, axisA.y);
+                float3 axisC = float3(axisA.y, axisA.z, axisA.x);
+                float3 across = 1.0 - axisA;
+
+                float along = dot(p, axisA);
+
+                // Which end narrows, and which way the body leans. Both are drawn from the number
+                // the carve and the mottle are already drawn from: _Carve.x is the creature's id
+                // mixed with the part index (TheatrePalette.Character), so this is a property of
+                // the creature rather than of the frame and cannot flicker, and two bodies are
+                // shaped differently. Mixed twice more so that the end and the direction do not
+                // line up with the carve's own phase.
+                float end = frac(_Carve.x * 13.37 + 0.271) < 0.5 ? -1.0 : 1.0;
+                float angle = 6.2831853 * frac(_Carve.x * 7.919 + 0.613);
+
+                // The taper, eased rather than straight: a linear narrowing is a wedge, which is a
+                // made thing, and the eased one reads as a seed or a grain.
+                float u = saturate(0.5 + 0.5 * end * along / meshHalf);
+                float ease = u * u * (3.0 - 2.0 * u);
+                float easeSlope = 6.0 * u * (1.0 - u) * (0.5 * end / meshHalf);
+
+                float taper = 1.0 - _TaperFraction * ease;
+                float taperSlope = -_TaperFraction * easeSlope;
+
+                // The bend: one half wave, zero at both ends and deepest in the middle, in a
+                // direction across the long axis. The amplitude is in world metres, a fraction of
+                // the smallest half extent, so each axis divides by its own size to reach object
+                // units: an object unit on an axis is the part's full size on it, twice the half
+                // extent the matrix column gave.
+                float3 amplitude =
+                    axisB * (cos(angle) / max(1e-6, 2.0 * dot(halfExtents, axisB))) +
+                    axisC * (sin(angle) / max(1e-6, 2.0 * dot(halfExtents, axisC)));
+
+                amplitude *= _BendFraction * smallest;
+
+                float t = saturate(0.5 + 0.5 * along / meshHalf);
+                float wave = sin(3.14159265 * t);
+                float waveSlope = 3.14159265 * cos(3.14159265 * t) * (0.5 / meshHalf);
+
+                // What makes the bend affordable. A bend inside a box cannot be a translation of
+                // the cross-section: the side the body leans towards is already against the wall,
+                // so translating it would put it through the collider and leave the clamp to shave
+                // it flat, which draws a plane exactly where the curve was meant to be. So the
+                // cross-section gives the amplitude up before it spends it.
+                float3 room = 1.0 - saturate(abs(amplitude) / meshHalf);
+
+                // The two composed as one map of the lateral coordinates, p' = scale * p + offset,
+                // with the long axis left alone (scale one, offset zero).
+                float3 scale = axisA + across * (taper * room);
+                float3 offset = across * (amplitude * wave);
+
+                float3 scaleSlope = across * (taperSlope * room);
+                float3 offsetSlope = across * (amplitude * waveSlope);
+
+                scale = max(scale, 1e-3);
+
+                positionOS = clamp(scale * p + offset, -meshHalf, meshHalf);
+
+                // The deformed surface's normal: the inverse transpose of the map's Jacobian on
+                // the old one. The map is triangular, because a lateral coordinate depends on
+                // itself and on where the vertex is along the axis while the axis coordinate
+                // depends on nothing, so the whole of it is two terms: divide the lateral
+                // components by the scale, and tilt the axis component by the lateral slope.
+                // Without it a tapered box shades like an untapered one and the taper only shows
+                // on the outline. The carve rebuilds the pixel normal from what this leaves
+                // (CarvedNormal), so this has to be right for the impressions to sit on the bend.
+                float3 shear = across * ((scaleSlope * p + offsetSlope) / scale);
+
+                normalOS = n / scale - axisA * dot(shear, n);
+            }
+
             Varyings Vertex(Attributes input)
             {
                 Varyings output = (Varyings)0;
 
-                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
-                float3 normalWS = normalize(TransformObjectToWorldNormal(input.normalOS));
-
                 float3 halfExtents = HalfExtentsWS();
                 float smallest = min(halfExtents.x, min(halfExtents.y, halfExtents.z));
+
+                // Which solid this is, from the mesh itself, and how big the mesh is in its own
+                // units. Anything that is not the box, the engine's own primitives included, reads
+                // zero here and is left to the carve alone (TheatreMeshes.Finish).
+                bool box = input.shapeOS.x > 0.5;
+                float meshHalf = max(1e-4, input.shapeOS.y);
+
+                float3 shapedOS = input.positionOS.xyz;
+                float3 shapedNormalOS = input.normalOS;
+
+                if (box) ShapeBox(shapedOS, shapedNormalOS, halfExtents, smallest, meshHalf);
+
+                float3 positionWS = TransformObjectToWorld(shapedOS);
+                float3 normalWS = normalize(TransformObjectToWorldNormal(shapedNormalOS));
 
                 // The carve, and the whole of the second day in four lines.
                 //
@@ -219,13 +381,38 @@ Shader "Evosim/Theatre Body"
                 // can only move a vertex inward, and the mesh it moves is already inset
                 // (TheatreMeshes.Inset). Nothing here can put a vertex outside the collider, at
                 // any dial setting, on any body.
+                //
+                // It is read at the undeformed object position, not at the shaped one, so an
+                // impression stays on the same piece of tissue when the part is tapered and bent:
+                // the field is a property of the body, and the fragment stage asks it the same
+                // question at the same place to rebuild the normal.
                 float depth = CarveDepth(input.positionOS.xyz, smallest);
 
                 float3 unusedGradient;
                 float carve = EvoCarve(
                     input.positionOS.xyz, _Carve.x, _Carve.y, _Carve.z, unusedGradient);
 
-                positionWS -= normalWS * (depth * carve);
+                // Along the deformed normal, so the impressions cut into the bent surface rather
+                // than into the box the mesh started as.
+                float3 inward = -normalWS * (depth * carve);
+
+                if (box)
+                {
+                    // The same displacement written in the part's own units, so that the box clamp
+                    // has the last word on a box. The world to object matrix is the exact inverse
+                    // and parts are never sheared, so this is the same move in the other basis and
+                    // not an approximation of it; the clamp then makes inside-ness a property of
+                    // the final position rather than of the sign of a term.
+                    shapedOS = clamp(
+                        shapedOS + mul((float3x3)GetWorldToObjectMatrix(), inward),
+                        -meshHalf, meshHalf);
+
+                    positionWS = TransformObjectToWorld(shapedOS);
+                }
+                else
+                {
+                    positionWS += inward;
+                }
 
                 output.positionWS = positionWS;
                 output.normalWS = normalWS;
