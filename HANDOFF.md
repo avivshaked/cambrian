@@ -445,9 +445,9 @@ twice.
    depth, and it would move only the top few metres; worth it once something lives there.
 8. **The skin in the genome** (item 5 of the evening list): inherited, mutated, shown by the
    theatre, neutral until something can see.
-9. **The box that stops looking made** (owner, 2026-09-11 midday, on `r35-s1`'s close view at
-   5,000 s: "the spheres look amazing", the boxes "still look somewhat non-biological"; "let's
-   try"): the skin's third day. A corner radius a third of the smallest half-extent rather than
+9. **The box that stops looking made**: the skin's third day. The owner, on `r35-s1`'s close
+   view at 5,000 s (2026-09-11 midday): "the spheres look amazing", the boxes "still look
+   somewhat non-biological"; "let's try". A corner radius a third of the smallest half-extent rather than
    the sliver it has, an inward taper toward one end so a box reads as a seed rather than a
    brick, one low-frequency bend or twist per body seeded from its id so no two are congruent,
    a wider and softer rim. All of it inward and inside the collider, as the carve is; no hash
@@ -471,8 +471,8 @@ twice.
     rarity (old and small), firsts (the first jointed clade, the first with three parts).
     A name is a deterministic binomial from the genome hash. The explanation is a template
     with the facts in its slots and a few conditional sentences; what it cannot do is say
-    why one won, beyond what the ledger measures, and the honest entry says "the split
-    changed X; the ledger reads Y" and stops. Three stages, none of them a round: a census
+    why one won, beyond what the ledger measures. An entry says "the split changed X; the
+    ledger reads Y" and stops. Three stages, none of them a round: a census
     script that writes the guide as prose with the names and the numbers (a day, on the
     existing reads); pictures through `theatre-snap.ps1` with a view that frames a named body
     at a named second (half a day; Mode A can also grow one alone as a portrait); and the
