@@ -469,6 +469,13 @@ namespace Evosim.Theatre
 
             _snow = go.AddComponent<ParticleSystem>();
 
+            // A particle system added at runtime is already playing when AddComponent returns,
+            // and the duration cannot be set on a playing system: Unity logs an error and keeps
+            // the default. The snow therefore never took its lifetime as its duration until
+            // this stop was added (seen in the owner's console on 2026-09-11). Stopped and
+            // cleared here, configured, then played once below.
+            _snow.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
             float lifetime = Mathf.Max(1f, SnowSecondsOfLife);
 
             ParticleSystem.MainModule main = _snow.main;
