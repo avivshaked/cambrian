@@ -109,6 +109,18 @@ The reference is round 32's same seed, the same world with the joint priced. The
 - **M4 fails, jointed bodies move faster than the drift:** a free stroke is used, and the
   round after prices the stroke alone with everything else free, to find its price.
 
+## Launch
+
+2026-09-10, 22:56 UTC to 2026-09-11, 03:14 UTC: `r34-s1` to `r34-s5`, one at a time as the
+round 35 renders freed a worker, on workers 7, 2, 4, 3 and 7 again. Commit `43218fd`, the
+same build as round 35 (`simHash b5d31a48…`, `coreHash cafcb692…`), `configHash 96b76bdc…`
+on all five, physics on one thread. Every header reads `idle 0.0001 W/N`, `neuron 0 W + 0
+W/input, work x0`, `dispersal=5 m`, `current 0.1 m/s transport` and `dt=0.01`, verified from
+each report before this line. Seed 1's first arm, at a
+literal zero, died before its first step (the third amendment above). Seed 1 ended at 30,000 s
+after 256 minutes, at about twice real time on a machine with four editors running, and
+seed 5 took its worker.
+
 ## What the round does not ask
 
 Whether a swimmer eats better than a sitter. Nothing here pays a stroke, and the grid's
