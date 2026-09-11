@@ -17,7 +17,9 @@
 // fine ripple and the grain stay in the normal, where they cost nothing.
 //
 // The caustics are the same function the body shader uses, from TheatreWater.hlsl, so the net on
-// the sand and the net on a creature swimming above it are one pattern.
+// the sand and the net on a creature swimming above it are one pattern. Since the fourth day that
+// pattern is the sea itself, focused: the surface plane overhead, the shafts coming down from it
+// and this net are three readings of one wave field (logbook/specs/skin-spec-4.md).
 
 Shader "Evosim/Theatre Bed"
 {
@@ -48,10 +50,13 @@ Shader "Evosim/Theatre Bed"
         _GrainMetres("Metres per grain cell", Range(0.01, 2)) = 0.09
         _GrainStrength("Grain strength", Range(0, 1)) = 0.25
 
+        // The net's scale is the sea's wavelength now, a global pushed once by TheatreSkin
+        // (TheatreWater.hlsl), so the bed cannot be lit by a different surface from the bodies
+        // above it. The reach comes from the skin too, off the one dial the shafts and the
+        // ceiling fade on (EVOSIM_THEATRE_LIGHT_REACH).
         _CausticColor("Caustic colour", Color) = (0.55, 0.85, 0.95, 1)
         _CausticStrength("Caustic strength", Range(0, 3)) = 0.9
-        _CausticMetresPerCell("Caustic metres per cell", Range(0.2, 20)) = 3.0
-        _CausticReach("Metres below the surface caustics reach", Range(1, 400)) = 120
+        _CausticReach("Metres below the surface caustics reach", Range(1, 400)) = 18
 
         _Wrap("Diffuse wrap", Range(0, 1)) = 0.35
     }
@@ -98,7 +103,6 @@ Shader "Evosim/Theatre Bed"
                 float _GrainStrength;
                 float4 _CausticColor;
                 float _CausticStrength;
-                float _CausticMetresPerCell;
                 float _CausticReach;
                 float _Wrap;
             CBUFFER_END
@@ -264,12 +268,15 @@ Shader "Evosim/Theatre Bed"
 
                 lit += sand * SampleSH(n);
 
+                // The same net a body carries, from the same wave field at the same second
+                // (TheatreWater.hlsl, EvoCausticNet), so the light on the sand and the light on a
+                // creature swimming above it are one surface focusing rather than two patterns
+                // that happen to share a colour.
                 float fade = EvoCausticFade(input.positionWS, _CausticReach);
 
                 if (fade > 0.001)
                 {
-                    float net = EvoCaustics(
-                        input.positionWS.xz / max(0.01, _CausticMetresPerCell), _Time.y);
+                    float net = EvoCausticNet(input.positionWS, _Time.y);
 
                     lit += _CausticColor.rgb * (net * fade * _CausticStrength) * (0.35 + 0.65 * sand);
                 }

@@ -1,10 +1,10 @@
 #ifndef EVOSIM_THEATRE_WATER_INCLUDED
 #define EVOSIM_THEATRE_WATER_INCLUDED
 
-// The procedural patterns the theatre's skin is made of: a cell mottle for tissue and a caustic
-// net for the light coming through the surface. Both are here rather than in each shader so that
-// a body and the sea bed cannot drift into two different caustics, which would read as two
-// different suns.
+// The procedural patterns the theatre's skin is made of: a cell mottle for tissue, the wave field
+// the sea's surface is, the light that field focuses, and the noise the bodies are carved by.
+// They are here rather than in each shader so that the surface plane, the shafts under it, a body
+// and the sea bed cannot drift into two different seas, which would read as two different suns.
 //
 // Nothing in this file is fetched or sampled from a texture. research/theatre-look/README.md's
 // constraint is "no purchased assets and nothing fetched at run time", and a procedural pattern
@@ -73,52 +73,210 @@ void EvoVoronoi(float3 p, out float f1, out float f2, out float tone)
     f2 = sqrt(f2);
 }
 
-// Two overlaid Voronoi edge fields, panned in opposite directions. A caustic net is the caustic
-// of a wave field, and the cheap stand-in everyone uses is the wall of a cell pattern, because
-// the walls are where neighbouring wavefronts fold onto each other. Two layers at different
-// scales and speeds stop the pattern reading as one tiling grid (research/theatre-look, [CY2],
-// [AM]).
-float EvoCaustics(float2 p, float time)
+// ---------------------------------------------------------------------------------------------
+// The surface: one sea, read by everything the sun reaches.
+//
+// Why this replaced a pattern that only looked like caustics. The first three days were about
+// bodies, and the water got a colour, a fog, snow and a caustic net drawn from a Voronoi cell
+// wall, which is the cheap stand-in everyone uses [CY2] [AM]. It was a net from nowhere: there
+// was no surface above it, nothing it was the shadow of, and no reason for it to agree with
+// anything. The owner ran round 36 and said they could not see the sun, the shimmer or the
+// underwater ripple, and they were right to, because none of those existed
+// (logbook/specs/skin-spec-4.md). So the wave field is written down once, here, and the surface
+// plane, the shafts, the bodies and the sea bed are all lit from it. A caustic is then the
+// surface above a body, focused, rather than a picture of one.
+//
+// The four numbers the sea is made of arrive as globals rather than as material properties,
+// pushed once by TheatreSkin.PushWater. A material property would be a fifth copy of each dial
+// (surface, shafts, body, neck, bed), and the moment two of them disagreed the light on a body
+// would stop being the light coming through the ceiling above it, which is the one thing this
+// day is for. They sit outside UnityPerMaterial deliberately: they are not material properties,
+// so they belong among the shader's globals the way the engine's own light and time uniforms do.
+
+// x: wave amplitude in metres. y: wavelength of the longest train in metres.
+// z: how much of the true phase speed the trains run at. w: metres the surface light reaches.
+float4 _EvoRipple;
+
+// Unit, pointing at the sun from the water. Set from the scene's directional light.
+float4 _EvoSun;
+
+// Unit, pointing down along the sun's ray after it has been refracted into the water.
+float4 _EvoSunRay;
+
+// Each dial falls back rather than refusing, because a scene that never built a skin still draws
+// bodies and a bed, and a zero wavelength there would divide the sea by nothing. The fallbacks
+// are TheatreSkin's own defaults.
+float EvoWaveMetres()       { return _EvoRipple.x > 0.0  ? _EvoRipple.x : 0.045; }
+float EvoWaveLengthMetres() { return _EvoRipple.y > 0.01 ? _EvoRipple.y : 1.6; }
+float EvoWaveSpeed()        { return _EvoRipple.z > 0.0  ? _EvoRipple.z : 0.5; }
+float EvoLightReachMetres() { return _EvoRipple.w > 0.01 ? _EvoRipple.w : 18.0; }
+
+float3 EvoSunDirectionWS()
 {
-    float net = 0.0;
+    return dot(_EvoSun.xyz, _EvoSun.xyz) > 1e-4
+        ? normalize(_EvoSun.xyz)
+        : normalize(float3(0.28, 0.92, 0.27));
+}
+
+float3 EvoSunRayWS()
+{
+    return dot(_EvoSunRay.xyz, _EvoSunRay.xyz) > 1e-4
+        ? normalize(_EvoSunRay.xyz)
+        : normalize(float3(0.20, -0.96, 0.19));
+}
+
+// The wave field: how high the water stands over a point, how it tilts there, and how it curves.
+//
+// Three directional trains rather than a noise, for two reasons. A wave has a direction and a
+// speed and a noise has neither, so a noise surface boils where a sea travels. And the second
+// derivative of a sine is another sine: the curvature the caustics are built out of falls out of
+// the same arithmetic, where a noise field would have to be sampled twice more per axis.
+//
+// The trains are set by deep water dispersion, c = sqrt(g L / 2 pi), so the long one runs ahead
+// of the short ones and the pattern never repeats on a beat. The whole set is then slowed by the
+// speed dial, which is not physics: it is there because nobody has watched this sea yet, and a
+// ripple that beats about once a second may well read as rain on a ceiling rather than as a calm
+// day. The dial puts it back to the true speed at 1.
+//
+// The amplitude is shared out so that the sum stays inside the dial: the gains add to one.
+float EvoRipple(float2 xz, float time, out float2 slope, out float curvature)
+{
+    float amplitude = EvoWaveMetres();
+    float wavelength = EvoWaveLengthMetres();
+    float speed = EvoWaveSpeed();
+
+    // Three headings at no simple angle to each other, so the sum never reads as a grid.
+    const float2 heading0 = float2(0.99503, 0.09950);
+    const float2 heading1 = float2(-0.31623, 0.94868);
+    const float2 heading2 = float2(0.62470, -0.78087);
+
+    float height = 0.0;
+    slope = float2(0.0, 0.0);
+    curvature = 0.0;
 
     [unroll]
-    for (int layer = 0; layer < 2; layer++)
+    for (int train = 0; train < 3; train++)
     {
-        float scale = layer == 0 ? 0.55 : 0.92;
-        float speed = layer == 0 ? 0.035 : -0.023;
+        // Spelled out rather than read from a small array, because an index into one is the one
+        // construction in this file that a shader compiler is entitled to refuse.
+        float2 heading = train == 0 ? heading0 : (train == 1 ? heading1 : heading2);
+        float fraction = train == 0 ? 1.0 : (train == 1 ? 0.53 : 0.27);
+        float gain = train == 0 ? 0.58 : (train == 1 ? 0.28 : 0.14);
 
-        float2 q = p * scale + float2(time * speed, time * speed * 0.7);
+        float metres = max(0.05, wavelength * fraction);
+        float k = 6.2831853 / metres;
+        float phaseSpeed = speed * sqrt(9.81 * metres / 6.2831853);
+        float a = amplitude * gain;
 
-        float2 cell = floor(q);
-        float2 frc = q - cell;
+        float phase = k * dot(heading, xz) - k * phaseSpeed * time;
+        float s = sin(phase);
+        float c = cos(phase);
 
-        float f1 = 8.0;
-        float f2 = 8.0;
+        height += a * s;
+        slope += (a * k * c) * heading;
 
-        [unroll]
-        for (int x = -1; x <= 1; x++)
-        {
-            [unroll]
-            for (int y = -1; y <= 1; y++)
-            {
-                float2 offset = float2(x, y);
-                float2 seed = float2(EvoHash1(cell + offset),
-                                     EvoHash1(cell + offset + 37.0));
-
-                float2 rel = offset + seed - frc;
-                float d = dot(rel, rel);
-
-                if (d < f1) { f2 = f1; f1 = d; }
-                else if (d < f2) { f2 = d; }
-            }
-        }
-
-        float wall = saturate(1.0 - (sqrt(f2) - sqrt(f1)) * 2.2);
-        net += pow(wall, 3.0);
+        // The Laplacian of one train: the heading is a unit vector, so its two second
+        // derivatives sum to -a k^2 sin whatever direction it runs in.
+        curvature += -a * k * k * s;
     }
 
-    return saturate(net * 0.62);
+    return height;
+}
+
+// The surface's normal at a point, pointing up into the air.
+float3 EvoRippleNormal(float2 xz, float time)
+{
+    float2 slope;
+    float curvature;
+    EvoRipple(xz, time, slope, curvature);
+
+    // The normal of h(x, z) is (-dh/dx, 1, -dh/dz), the same construction the sea bed's carve
+    // uses, and normalised rather than approximated: the surface is looked at edge on near the
+    // window's rim, which is where a small angle approximation is worst.
+    return normalize(float3(-slope.x, 1.0, -slope.y));
+}
+
+// How much of the sun's light the surface gathers onto a point, in [0, 1].
+//
+// This is the fourth day's fourth item and the reason the wave field exists. A bundle of rays
+// that leaves a curved surface and falls a depth d covers, at the bottom, about
+// (1 + d (1 - 1/n) lap h) times the area it started with: a surface curving down towards the
+// light draws the bundle in, and where that factor reaches zero the bundle has folded onto a
+// line, which is a cusp and is where a real caustic is brightest. So the brightness is the
+// reciprocal of that area, clamped at the fold, because a picture cannot hold a division by
+// nothing.
+//
+// The sample is taken where the ray that lands here met the surface, one refracted ray back up,
+// so the net slides sideways with the sun and with depth instead of sitting under the body like
+// a decal.
+//
+// The depth the focusing is worked out over is capped at the light's reach. Below that the factor
+// swings through zero several times a metre, which is finer than any of these pictures can
+// resolve and would come back as noise; and below that the fade has taken the caustics away in
+// any case.
+float EvoCausticNet(float3 positionWS, float time)
+{
+    float depth = max(0.0, -positionWS.y);
+    float focusing = min(depth, EvoLightReachMetres());
+
+    float3 ray = EvoSunRayWS();
+    float2 shift = focusing * ray.xz / max(0.15, -ray.y);
+
+    float2 slope;
+    float curvature;
+    EvoRipple(positionWS.xz - shift, time, slope, curvature);
+
+    // 1 - 1 / 1.333: how much of a slope at the surface becomes sideways travel below it.
+    const float bend = 0.248;
+
+    float area = 1.0 + focusing * bend * curvature;
+    float gain = 1.0 / max(0.14, abs(area));
+
+    // Subtracting a little under one leaves the filaments and drops the flat water between them,
+    // which is what a caustic net is: bright lines on dark, and not a bright wash.
+    return saturate((gain - 0.9) * 0.8);
+}
+
+// How brightly one shaft of light burns, read where it leaves the surface.
+//
+// A shaft is a bundle of rays the surface sent down together, so its brightness is the same
+// question the caustics ask, asked at one point rather than over a body: bright where the water
+// above it is concave towards the sun. Divided by the field's own curvature scale, so the dials
+// change how fast the shafts breathe and never how many of them are lit.
+//
+// It never falls to nothing. A shaft that switched off would read as a flicker; a real one dims
+// and brightens.
+float EvoShaftGain(float2 topXZ, float time)
+{
+    float2 slope;
+    float curvature;
+    EvoRipple(topXZ, time, slope, curvature);
+
+    float k = 6.2831853 / EvoWaveLengthMetres();
+    float scale = max(1e-4, EvoWaveMetres() * k * k);
+
+    return 0.45 + 0.55 * saturate(-curvature / scale);
+}
+
+// How much of the water's own furniture this eye is allowed to see.
+//
+// The surface plane and the light shafts are things seen from under water. Above the waterline
+// there is nothing for a beam to be in and the ceiling is not a ceiling, so an eye up there sees
+// neither: that is one of the two ways the fourth day keeps its promise that the snapshot's top
+// and iso views are unchanged, and the only one that also holds for a viewer flying the world in
+// Play mode (the other is SnapshotCamera, which turns both off outright for the four views that
+// stand outside the box and photograph the census).
+//
+// Faded in over the first metre under, rather than switched, so that a camera crossing the
+// surface does not flash.
+//
+// The eye's own position, not the pixel's: whether a beam is there at all is a question about
+// where it is being looked at from.
+float EvoSeenFromBelow(float waterlineY)
+{
+    float below = waterlineY - GetCameraPositionWS().y;
+
+    return saturate(below);
 }
 
 // How much of the surface's light still reaches a point. Zero at reach metres down and one at

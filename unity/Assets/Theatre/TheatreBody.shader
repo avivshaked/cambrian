@@ -13,7 +13,8 @@
 //                            URP form, no pre pass                                  [BB11] [JA]
 //   Voronoi cell mottle      [U2], done in three dimensions here so it does not swim on a
 //                            turning body
-//   caustics from above      [CY2] [AM]
+//   caustics from above, focused by the surface the theatre now actually draws, out of the one
+//                            wave field it is drawn from (TheatreWater.hlsl)         [CY2] [AM]
 //   inward vertex carve, two octaves of noise in the part's own object space, bounded,
 //                            with the normal rebuilt per pixel from the same field         [CY]
 //   taper and bend of a box part in its own object space, inward by construction and clamped
@@ -73,10 +74,17 @@ Shader "Evosim/Theatre Body"
         _MottleStrength("Mottle strength", Range(0, 0.5)) = 0.14
 
         [Header(Caustics)]
+        // The net's own scale is no longer a property here: it is the sea's wavelength, which is
+        // a global pushed once by TheatreSkin so that the body, the bed, the shafts and the
+        // ceiling cannot be lit by four different surfaces (TheatreWater.hlsl). A metres per cell
+        // dial beside it would be a fifth sea nobody could see was disagreeing.
         _CausticColor("Caustic colour", Color) = (0.55, 0.85, 0.95, 1)
         _CausticStrength("Caustic strength on bodies", Range(0, 2)) = 0.35
-        _CausticMetresPerCell("Caustic metres per cell", Range(0.2, 20)) = 3.0
-        _CausticReach("Metres below the surface caustics reach", Range(1, 200)) = 10
+
+        // How far down the caustics still reach. Set by TheatreSkin from the same dial the shafts
+        // and the ceiling fade on (EVOSIM_THEATRE_LIGHT_REACH), so the lit part of the world is
+        // one depth rather than three.
+        _CausticReach("Metres below the surface caustics reach", Range(1, 200)) = 18
 
         [Header(Carve)]
         // The dial the second day is about, and the bound is the whole point. The displacement
@@ -166,7 +174,6 @@ Shader "Evosim/Theatre Body"
                 float _MottleStrength;
                 float4 _CausticColor;
                 float _CausticStrength;
-                float _CausticMetresPerCell;
                 float _CausticReach;
                 float _CarveFraction;
                 float _CarveMaximum;
@@ -558,12 +565,18 @@ Shader "Evosim/Theatre Body"
                 lit += _RimColor.rgb * (_GlowStrength * _Reserve * (0.30 + 0.70 * pow(facing, 0.7)));
 
                 // Caustics, on the upward faces of whatever is in the top few metres.
+                //
+                // The fourth day's fourth item: the net is the surface above this body, focused,
+                // read from the one wave field the ceiling and the shafts are drawn from
+                // (TheatreWater.hlsl, EvoCausticNet). Until then it was a Voronoi cell wall
+                // panned in two directions, which looked like caustics and was the shadow of
+                // nothing at all; on a body it could not agree with the water above it because
+                // there was no water above it (logbook/specs/skin-spec-4.md).
                 float fade = EvoCausticFade(input.positionWS, _CausticReach);
 
                 if (fade > 0.001)
                 {
-                    float net = EvoCaustics(
-                        input.positionWS.xz / max(0.01, _CausticMetresPerCell), _Time.y);
+                    float net = EvoCausticNet(input.positionWS, _Time.y);
 
                     lit += _CausticColor.rgb * (net * fade * saturate(n.y) * _CausticStrength);
                 }
