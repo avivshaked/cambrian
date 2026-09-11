@@ -22,11 +22,16 @@ limiter at every step goes to the owner as a proposal before any cheap-stroke ro
 at 30,000 s (73 inherited, from a peak of 167), which no round 34 seed managed; seeds 2 and
 3 run on workers 6 and 5, seeds 4 and 5 queue behind them. The round 34 pictures for seed 4
 are still to render (its first render was stopped a minute in to give round 36 seed 3 the
-slot). The theatre skin's third day is built and uncommitted (`logbook/specs/skin-spec-3.md`:
+slot). The theatre skin's third day landed (commit `e4d6540`, `logbook/specs/skin-spec-3.md`:
 taper, bend, pillow dial, carve default 0.35, softer rim; boxes only, all inside the
-collider): it compiles and photographs on worker 4 at the first free slot, three close
-views of `r35-s1` at 5,000 s for the owner (defaults, carve 0.5, pillow 0.5), and is
-committed after the pictures. The box build (branch `box`, worktree `scratch/wt-box`) waits
+collider); the three comparison pictures of `r35-s1` at 5,000 s are in
+`scratch/snaps/skin3-*/`, the agent's reading is keep the defaults and refuse carve 0.5,
+and the pillow (0.34 or 0.5) is the owner's ruling. The fourth day, the sun and the surface
+(`logbook/specs/skin-spec-4.md`: rippling surface from below, Snell's window and a sun,
+light shafts, caustics on bodies and bed from one ripple, a `sky` snapshot view), is in
+build on branch `skin4` in the worktree `scratch/wt-skin4`, compiled and photographed on a
+worker when a slot frees, then merged. The owner watched `r36-s1` in the theatre (Mode B,
+seek 5,000 s) and saw no sun, shimmer or ripple, which is why the day was moved up. The box build (branch `box`, worktree `scratch/wt-box`) waits
 for round 36's last launch before it merges, since it moves Core. The round 34 read files
 moved from `scratch/r34-read/` to `logbook/specs/r34-read/` because 0090 cites them.**
 
