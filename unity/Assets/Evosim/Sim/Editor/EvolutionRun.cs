@@ -3044,11 +3044,14 @@ namespace Evosim.Sim.EditorTools
         /// "tiled" or "written before the box existed".
         /// </para>
         /// <para>
-        /// fable-propose-box.md clause 4: the three numbers are the patches along x, the patches
-        /// across z and the patch side, so the token says which box the run was in. The old token
-        /// printed the patch count and the width twice, which at A = 1 read "4x5x5 m" where this
-        /// reads "4x1x5 m" — the same box, named by its layout. A token that cannot say whether
-        /// four patches are a row or a square is worth changing.
+        /// fable-propose-box.md clause 4 asked for three numbers, the patches along x, the patches
+        /// across z and the patch side, so that a token could say whether four patches are a row
+        /// or a square. fable-propose-aquarium.md superseded that layout and tank-spec.md's
+        /// invariant keeps the box's header to the character, so one row of patches prints the
+        /// recorded form ("4x5x5 m": the count and the width twice) and only a second row prints
+        /// the count on each axis. The recorded form is what every box header in the record
+        /// carries, and a reader comparing headers across rounds should not find them differing
+        /// by a string that names the same box.
         /// </para>
         /// <para>
         /// fable-propose-aquarium.md ruling 1: the third shape, named by its radius and the area
@@ -3086,11 +3089,18 @@ namespace Evosim.Sim.EditorTools
             }
 
             float patchWidth = eco.World.Nutrients.PatchWidthMetres;
-            int patchesAlong = eco.World.Nutrients.PatchCount / eco.World.Nutrients.PatchesAcross;
+            int patchesAcross = eco.World.Nutrients.PatchesAcross;
+            int patchesAlong = eco.World.Nutrients.PatchCount / patchesAcross;
+            string width = patchWidth.ToString("0.###", CultureInfo.InvariantCulture);
+            // One row of patches prints the form every recording carries ("4x5x5 m": the patch
+            // count and the patch width twice), so a box header reads as it always has; only a
+            // second row of patches prints the count on each axis (tank-spec.md's invariant).
+            string layout = patchesAcross > 1
+                ? patchesAlong + "x" + patchesAcross + "x" + width
+                : patchesAlong + "x" + width + "x" + width;
 
             return
-                "shared " + patchesAlong + "x" + eco.World.Nutrients.PatchesAcross + "x" +
-                patchWidth.ToString("0.###", CultureInfo.InvariantCulture) + " m, depth " +
+                "shared " + layout + " m, depth " +
                 config.WorldDepthMetres + ", wrap, " +
                 // The bed, read off the Ecosystem rather than off the config: it is built or not
                 // built by the constructor, and a header that inferred it from SharedSpace would
