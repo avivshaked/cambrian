@@ -362,6 +362,49 @@ Written down here so that none is lost; each is agent work unless marked as the 
 
 The round work stays first: round 35 read, then round 34 on this base.
 
+## The owner's ideas of 2026-09-11 morning, with the agent's view on each
+
+After round 34's first seed (a free joint survives founding and thins afterwards; 0080),
+the owner's call was that predators are too early and the world should get more interesting
+before any long arm is run. Each of these is a world rule and comes to the owner as a
+proposal before it is built; the order is the agent's suggestion, by how much each gives
+selection to see for what it costs. What already exists is said so that nothing is built
+twice.
+
+1. **A light sense.** The three senses are chemical, energy and flow (D081); nothing reads
+   light or its direction. Light is the one gradient this world has that a body could steer
+   by, the vertical one, and a leaf that could feel "brighter above" has the first reason to
+   use a stroke. Small build: one input kind, one hash move, no new tissue. The agent's first
+   pick.
+2. **The link that earns** (round 36 as proposed, no build): `EVOSIM_LINK_PHOTO` at 0.5 on round
+   34's launcher. A hinge on a producer instead of dead weight.
+3. **More extreme shapes.** A box's three half-extents already mutate on their own axes with
+   no aspect limit (`Mutator.MutateNode`; only a part whose mean half-extent falls under the
+   extinction threshold is pruned), so a plate or a rod is reachable today and item 4 of the
+   evening list asks whether any lineage has gone there. A sphere and a capsule cannot
+   flatten, because the physics collides them as a ball or a tube; that is the ellipsoid
+   item below. So this is a reading first, then a shape.
+4. **Ellipsoids and flattened capsules in the physics** (item 6 of the evening list): drag
+   and the visual honour the three half-extents, the collider is the best primitive inside.
+5. **New cell types.** The buoyancy cell exists (D049; `Lift` is a mutable dial, founders
+   carry it at `EVOSIM_FOUNDER_FLOAT`), and it is the cheap way to hold a depth that the
+   stroke competes with, so it is read against the joint in every round from 34 on. A "nose"
+   is the chemical sense, already on. Genuinely new would be: a light sense (item 1); a
+   sticky or anchoring cell that holds a body to the bed or to a structure against the
+   current, which makes the bed matter; a storage cell that changes the reserve's price.
+6. **A bed with shape**: rocks, ridges, hollows, a slope; static colliders the current flows
+   around and detritus settles into, so that food is patchy where the current cannot smooth
+   it and there is somewhere to be. Medium build (a height field or a set of convex
+   colliders, the grid's floor cells following it, the theatre's bed mesh from the same
+   data). This is the "food the current does not smooth" prize in its most natural form,
+   and it pairs with the anchoring cell.
+7. **Surface waves.** Cosmetic in the theatre first (the evening list's item 3, the sun and
+   the surface). As physics it is another current mode whose orbital motion decays with
+   depth, and it would move only the top few metres; worth it once something lives there.
+8. **The skin in the genome** (item 5 of the evening list): inherited, mutated, shown by the
+   theatre, neutral until something can see.
+
+
 Queued behind the next Core change (it moves both hashes, so it lands between rounds and never
 alone): eighteen comments in nine C# files still cite `scratch/floor-spec.md`, `digest-spec.md`,
 `footprint-survey.md`, `footprint-build-report.md` and `floor-build-report.md`, which now live in
