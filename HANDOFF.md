@@ -250,38 +250,55 @@ round 28) set the base and the order.
    is its control and never a replay where a build moved the hashes. Rounds 34 (the free
    joint, running) and 35 (the base, read) stand before it.
    1. **Round 36, the link that earns**: `EVOSIM_LINK_PHOTO` 0.5 on round 34's launcher; no
-      build; pre-registered as logbook/0089; launches when round 34 frees the workers.
-   2. **Round 37, the box**: four patches in a 2 by 2 layout, 10 by 10 by 60 m at the same
-      area; a build in the shared volume and the patch indexing (`fable-propose-box.md`,
-      drafted while round 34 lands).
-   3. **Round 38, a light sense**: one new sense input, light and its vertical gradient;
-      read on jointed against rigid against buoyant depth. Proposal first.
-   4. **Round 39, the stroke priced again**: the work cost back to D082's 0.25 with the idle
-      charge still at 0.0001; no build. *Reordered 2026-09-11 by the agent under the owner's
-      grant of autonomy over the sequence, after round 34's first three seeds: with the
-      stroke free, brains drive the joint flat out (about 23 W of unpaid work per jointed
-      body against 1 to 2 W of upkeep), the solver throws jointed adults (16 of seed 5's 17
-      divergences), and a jointed newborn dies in its first minute half the time. The
-      stroke's price shapes what a joint does; the idle charge only what it costs to own,
-      so the stroke comes back first.*
-   5. **Round 40, ellipsoids in the physics**: spheres and capsules collide and drag as
-      their three half-extents; preceded by the offline read of whether boxes have
+      build; pre-registered as logbook/0089; all five seeds launched 2026-09-11 (three
+      landed: jointed inherited at 30,000 s of 73, 4 and 0).
+   *Resequenced 2026-09-11 evening by the agent under the owner's grant, after the owner
+   watched `r36-s1` in the theatre and saw two things the report had been counting without
+   anyone reading them: bodies teleported at the seams (the wrap, once per body per hundred
+   seconds since the current carries) and a crowd a body apart (median nearest neighbour
+   0.65 m), which is read as the reason movement has never paid: a sitter eats as well as a
+   swimmer when food is a body length away. `fable-propose-aquarium.md` carries the design
+   and the three rulings; the old order is in the proposal's table and in git.*
+   2. **Round 37, the tank** (`fable-propose-aquarium.md`, ruling 1): a cylinder of the same
+      100 m² with a glass wall, a gyre current from a stream function that vanishes on the
+      wall, a cell mask on the grid, rings for patches; the walled 10 by 10 m square as the
+      fallback if the mask misbehaves in the digest. The limiter on if its check passes
+      (`fable-propose-limiter.md`). One build for 37 and 38, and the 2 by 2 box's shape
+      code (`scratch/wt-box`) absorbed into it. Supersedes the box round.
+   3. **Round 38, the dilute tank** (rulings 2 and 3): four times the area, 400 m², with the
+      matter held at 6,000 units by a new tunable whose default is today's scaling; corpses
+      as objects at 0.005/s; no new build. The ledger screens founding first. Read: nearest
+      neighbour, founding, the gyre's downwelling as the first patch, sitter against mover.
+   4. **Round 39, a bed with shape** (was round 42): rocks, ridges, hollows; the current
+      flows around them, detritus settles into them, the grid's floor follows; the theatre
+      draws the same data. Moved up because in a dilute world it is a coast. Proposal first.
+   5. **Round 40, a light sense** (was round 38): one new sense input, light and its vertical
+      gradient; read on jointed against rigid against buoyant depth, now in a world with
+      something to steer toward. Proposal first.
+   6. **Round 41, the stroke priced alone** (was round 39): the work cost back to D082's 0.25
+      with the idle charge still at 0.0001; no build. *First reordered 2026-09-11 morning
+      after round 34's first three seeds (the free stroke driven flat out, about 23 W of
+      unpaid work per jointed body, the solver throwing jointed adults, jointed newborns dead
+      in their first minute half the time; confirmed 5 of 5 in logbook/0090): the stroke's
+      price shapes what a joint does, the idle charge only what it costs to own.* Now behind
+      the dilution and the bed, so that there is a chase to pay for.
+   7. **Round 42, ellipsoids in the physics** (was round 40): spheres and capsules collide and
+      drag as their three half-extents; preceded by the offline read of whether boxes have
       flattened. Proposal first.
-   6. **Round 41, shading with a length scale**: self-shading by the neighbours above
-      rather than the patch mean. Proposal first.
-   7. **Round 42, a bed with shape**: rocks, ridges, hollows; the current flows around
-      them, detritus settles into them, the grid's floor follows. Proposal first; the
-      theatre draws the same data.
    8. **Round 43, the anchoring cell**: holds a body to the bed or a rock against the
-      current. Proposal first.
-   9. **Round 44, the remaining prices restored** (the idle charge to 0.02, the neuron and
-      the connection to D082's values) on whichever world of 39 to 43 carries joints; no
+      current; pairs with the bed, now behind it. Proposal first.
+   9. **Round 44, shading with a length scale** (was round 41): self-shading by the
+      neighbours above rather than the patch mean. Moved down as the least urgent.
+      Proposal first.
+   10. **Round 45, the remaining prices restored** (the idle charge to 0.02, the neuron and
+      the connection to D082's values) on whichever world of 39 to 44 carries joints; no
       build.
-   10. **Round 45, the long arm**: one seed, 300,000 s, on the richest standing world, the
+   11. **Round 46, the long arm**: one seed, 300,000 s, on the richest standing world, the
       stroke read against the water every 1,000 s; one worker for a week.
-   Also from round 34, a physics guard to propose before any later cheap-stroke round: the
-   drive impulse limiter at every step, not only above dt 0.01, since an unpriced stroke at
-   0.01 is what the limiter was never asked to bound.
+   Also from round 34, proposed 2026-09-11 (`fable-propose-limiter.md`): the drive impulse
+   limiter at every step, not only above dt 0.01, since an unpriced stroke at 0.01 is what
+   the limiter was never asked to bound; folded into round 37's build if the owner rules for
+   it.
    Beside the ten and not in them: 0084's bin 3 screens (dispersed against undispersed on
    round 32's seeds, mixing 0.2 against 0.02, corpses off) on any free worker; the skin in
    the genome and the theatre's sun, which need no round; predation, which the owner ruled

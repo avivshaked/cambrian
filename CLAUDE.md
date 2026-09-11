@@ -687,6 +687,14 @@ actually verifying it.
   `crowded` and `stillb` mean something different from round 33's; founders still reserve
   their birth radius. Both tunables refuse every earlier `config.json`, rounds 32 and 33
   included.
+- **A rule chosen for being cheap gets re-asked when a later change makes it bite, and the
+  report probably already says so.** D077's periodic wrap cost nothing while no body ever
+  reached a seam. D088's carrying current sent every body across one about once per hundred
+  seconds, the table's `wraps` column counted it in every window of rounds 35 and 36, and
+  nobody read the column as a problem until the owner watched a minute of the theatre and
+  saw bodies teleport (2026-09-11; `fable-propose-aquarium.md`). Read `wraps` with `alive`,
+  and when a world rule changes, list the rules that were chosen for cheapness under the old
+  one and ask each whether it still holds.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.
