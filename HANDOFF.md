@@ -445,6 +445,40 @@ twice.
    depth, and it would move only the top few metres; worth it once something lives there.
 8. **The skin in the genome** (item 5 of the evening list): inherited, mutated, shown by the
    theatre, neutral until something can see.
+9. **The box that stops looking made** (owner, 2026-09-11 midday, on `r35-s1`'s close view at
+   5,000 s: "the spheres look amazing", the boxes "still look somewhat non-biological"; "let's
+   try"): the skin's third day. A corner radius a third of the smallest half-extent rather than
+   the sliver it has, an inward taper toward one end so a box reads as a seed rather than a
+   brick, one low-frequency bend or twist per body seeded from its id so no two are congruent,
+   a wider and softer rim. All of it inward and inside the collider, as the carve is; no hash
+   moves. Beside it, a second way for the close view to choose its subject, the body with the
+   most parts rather than the largest, framed by its neighbours rather than its reach, because
+   the eight-metre chain in `r35-s3` backs the camera off until everything is a speck.
+   Photograph the same seed-1 crowd afterwards for the comparison. Waits behind the box merge,
+   which touches the same theatre files.
+10. **A safari** (owner, 2026-09-11 midday: a theatre feature that finds the species, visits
+    the interesting ones, takes their pictures and explains each, "without requiring ad-hoc
+    intelligence"). The agent's view: it can be procedural to the last sentence, because every
+    fact a field-guide entry wants is already in the run. Clades from the scorer's parent
+    walk (or genome distance under the species knob); a clade's founding time, the parent
+    clade it split from and the mutation at the split (the two genomes differ in a
+    listable way); its share of the living, its peak, its generation depth; where it lives
+    from `positions.jsonl` (depth band, spread, drift with the water); its body from the
+    genome (parts, shapes, symmetry, recursion, joints, guild); its life from lineage rows
+    (lifetime, age at first birth, litter, investment); its economics from the ledger
+    (net watts, break-even density, against its ancestor's). "Interesting" is a ranking
+    over those: novelty (distance from the ancestor), success (share), persistence (age),
+    rarity (old and small), firsts (the first jointed clade, the first with three parts).
+    A name is a deterministic binomial from the genome hash. The explanation is a template
+    with the facts in its slots and a few conditional sentences; what it cannot do is say
+    why one won, beyond what the ledger measures, and the honest entry says "the split
+    changed X; the ledger reads Y" and stops. Three stages, none of them a round: a census
+    script that writes the guide as prose with the names and the numbers (a day, on the
+    existing reads); pictures through `theatre-snap.ps1` with a view that frames a named body
+    at a named second (half a day; Mode A can also grow one alone as a portrait); and the
+    theatre's tour mode that flies to each in Play mode with the entry on screen (later).
+    An LLM, if ever, is a polish pass over the template's prose, off by default, and the
+    facts never come from it.
 
 
 Queued behind the next Core change (it moves both hashes, so it lands between rounds and never
