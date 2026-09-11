@@ -217,8 +217,39 @@ round 28) set the base and the order.
    founders 0.25 to 1.0, the reserve capped beside the body, the reserve floor 0.1); round
    33 is the growth base and is running; round 34, the free joint, launches on
    `rounds/launch-r34.ps1` once round 33 has read and the owner's theatre pause has ended.
-8. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
-   brain can be selected for, after growth.
+8. **The ten rounds after the base** (owner, 2026-09-11 morning: "plan the next 10 rounds
+   and change only if a result compels us"; the box folded in and "proceed autonomously").
+   One change per round, each pre-registered, each read against the round before it, which
+   is its control and never a replay where a build moved the hashes. Rounds 34 (the free
+   joint, running) and 35 (the base, read) stand before it.
+   1. **Round 36, the link that earns**: `EVOSIM_LINK_PHOTO` 0.5 on round 34's launcher; no
+      build; pre-registered as logbook/0089; launches when round 34 frees the workers.
+   2. **Round 37, the box**: four patches in a 2 by 2 layout, 10 by 10 by 60 m at the same
+      area; a build in the shared volume and the patch indexing (`fable-propose-box.md`,
+      drafted while round 34 lands).
+   3. **Round 38, a light sense**: one new sense input, light and its vertical gradient;
+      read on jointed against rigid against buoyant depth. Proposal first.
+   4. **Round 39, the idle charge restored** to 0.02; no build.
+   5. **Round 40, ellipsoids in the physics**: spheres and capsules collide and drag as
+      their three half-extents; preceded by the offline read of whether boxes have
+      flattened. Proposal first.
+   6. **Round 41, shading with a length scale**: self-shading by the neighbours above
+      rather than the patch mean. Proposal first.
+   7. **Round 42, a bed with shape**: rocks, ridges, hollows; the current flows around
+      them, detritus settles into them, the grid's floor follows. Proposal first; the
+      theatre draws the same data.
+   8. **Round 43, the anchoring cell**: holds a body to the bed or a rock against the
+      current. Proposal first.
+   9. **Round 44, the remaining prices restored** (work, neuron, connection) on whichever
+      world of 39 to 43 carries joints; no build.
+   10. **Round 45, the long arm**: one seed, 300,000 s, on the richest standing world, the
+      stroke read against the water every 1,000 s; one worker for a week.
+   Beside the ten and not in them: 0084's bin 3 screens (dispersed against undispersed on
+   round 32's seeds, mixing 0.2 against 0.02, corpses off) on any free worker; the skin in
+   the genome and the theatre's sun, which need no round; predation, which the owner ruled
+   too early; surface waves as physics.
+9. **Predation on contact** (`fable-propose-predation.md`, consolidated), the first thing a
+   brain can be selected for, after the ten (owner, 2026-09-11: too early).
    *Run length (owner, 2026-09-08 night: "that sounds good"):* 30,000 s gives 40 to 50
    generations along the deepest line and three to four turnovers of the standing crop,
    most of them in the first third of a run. That is enough to read whether a trait the
