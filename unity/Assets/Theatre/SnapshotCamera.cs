@@ -29,11 +29,13 @@ namespace Evosim.Theatre
     /// gotchas on.
     /// </para>
     /// <para>
-    /// <b>Three of the four views are orthographic and the fourth is not.</b> Side, end and top
-    /// are the literal projections the names promise, and a perspective camera would foreshorten
-    /// the far half of the box and make a column look like a cone. The iso view is perspective,
-    /// because its whole job is to give the eye the depth cue the three flat views deliberately
-    /// throw away.
+    /// <b>Three of the four census views are orthographic and the fourth is not.</b> Side, end
+    /// and top are the literal projections the names promise, and a perspective camera would
+    /// foreshorten the far half of the box and make a column look like a cone. The iso view is
+    /// perspective, because its whole job is to give the eye the depth cue the three flat views
+    /// deliberately throw away. The two views that are not of the census, close and sky, are both
+    /// perspective and neither is framed on the box: one is a portrait of a body and the other is
+    /// taken from inside the water looking up at the surface.
     /// </para>
     /// <para>
     /// <b>The label and the markers are composited into the pixels, not rendered.</b>
@@ -66,7 +68,7 @@ namespace Evosim.Theatre
     /// </remarks>
     public sealed class SnapshotCamera : IDisposable
     {
-        /// <summary>Which way the camera looks. Every one frames the whole box.</summary>
+        /// <summary>Which way the camera looks. The first four frame the whole box.</summary>
         public enum View
         {
             /// <summary>Along z: the box's length by its depth, the view the ribbons showed up in.</summary>
@@ -78,7 +80,7 @@ namespace Evosim.Theatre
             /// <summary>Straight down: length by width, the footprint.</summary>
             Top = 2,
 
-            /// <summary>Three quarters, from above one corner. The only perspective view.</summary>
+            /// <summary>Three quarters, from above one corner. The perspective census view.</summary>
             Iso = 3,
 
             /// <summary>
@@ -118,10 +120,56 @@ namespace Evosim.Theatre
             /// </para>
             /// </remarks>
             Close = 4,
+
+            /// <summary>
+            /// Up at the surface from three metres under, for the sun and the window.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// <b>Why a sixth view.</b> The fourth day put a sea on the world's ceiling: a
+            /// rippling surface, the sky refracted through it into Snell's window with the sun in
+            /// it, and shafts of light coming down (logbook/specs/skin-spec-4.md). Not one of the
+            /// other five can see any of it. Four of them photograph the census from outside the
+            /// box and have the sea turned off for them
+            /// (<see cref="HideWhatOnlyTheWaterSees"/>), and the close view looks along the water
+            /// at a body. So this one stands inside the water and looks up, which is the only
+            /// place the day's work exists.
+            /// </para>
+            /// <para>
+            /// <b>Three metres down, at the box's centre, sixty degrees up, wide.</b> Three
+            /// metres is close enough that the window fills a good part of the frame and far
+            /// enough that it is a window rather than a ceiling tile; sixty degrees puts the
+            /// vertical near the top of the frame and leaves the bottom third for the water and
+            /// the bodies in it; and the lens is wide because the whole point is one frame that
+            /// holds the window, the sun, the shafts and what is swimming under them.
+            /// </para>
+            /// <para>
+            /// <b>It looks along the sun's bearing.</b> The disc is wherever the scene's
+            /// directional light is, so a camera pointed at a fixed compass bearing would find it
+            /// in some runs and not others. The bearing is read from the same global the shaders
+            /// draw the sun from (<c>TheatreWater.hlsl</c>, <c>_EvoSun</c>), so the picture and
+            /// the ceiling cannot disagree about where the sun is.
+            /// </para>
+            /// <para>
+            /// <b>No box and no markers, as the close view has none.</b> The box's wireframe
+            /// would be stamped across the window, and a five pixel marker is for a body too
+            /// small to draw, which from inside the water at this range is not the case.
+            /// </para>
+            /// </remarks>
+            Sky = 5,
         }
 
         /// <summary>How many bodies <see cref="View.Close"/> frames.</summary>
         public const int CloseBodies = 6;
+
+        /// <summary>How far under the surface <see cref="View.Sky"/> stands, in metres.</summary>
+        public const float SkyDepthMetres = 3f;
+
+        /// <summary>How far above the horizontal <see cref="View.Sky"/> looks, in degrees.</summary>
+        public const float SkyRiseDegrees = 60f;
+
+        /// <summary>The wide lens <see cref="View.Sky"/> uses, in degrees across the frame's height.</summary>
+        public const float SkyFieldOfView = 76f;
 
         /// <summary>A projected body narrower than this gets a marker instead of being trusted.</summary>
         public const float MinimumBodyPixels = 4f;
@@ -209,9 +257,9 @@ namespace Evosim.Theatre
 
             if (string.IsNullOrWhiteSpace(text))
             {
-                // Close is not in the default set. It answers a different question from the
-                // other four and takes a picture nobody asked for whenever a caller wants a
-                // census, so it is named or it is not taken.
+                // Close and sky are not in the default set. Each answers a different question
+                // from the other four and takes a picture nobody asked for whenever a caller
+                // wants a census, so each is named or it is not taken.
                 return new[] { View.Side, View.End, View.Top, View.Iso };
             }
 
@@ -226,7 +274,8 @@ namespace Evosim.Theatre
                 if (!Enum.TryParse(trimmed, true, out View view))
                 {
                     refusal =
-                        "'" + trimmed + "' is not a view; the views are side, end, top, iso, close.";
+                        "'" + trimmed +
+                        "' is not a view; the views are side, end, top, iso, close, sky.";
                     return null;
                 }
 
@@ -259,7 +308,9 @@ namespace Evosim.Theatre
 
             Bounds box = BoxOf(replay, out string boxNote);
 
-            // What the camera is fitted to, which is the whole water for every view but one.
+            // What the camera is fitted to, which is the whole water for every view but the close
+            // one. The sky view is fitted to nothing at all and stands where it stands, but it is
+            // handed the box too, because the fog below is spanned across whatever is passed here.
             Bounds framed = view == View.Close ? CloseOn(replay, box, ref boxNote) : box;
 
             Frame(view, framed);
@@ -267,6 +318,7 @@ namespace Evosim.Theatre
             _camera.backgroundColor = Water;
 
             List<WaterBounds> silenced = SilenceTheWater();
+            List<Renderer> hidden = HideWhatOnlyTheWaterSees(view);
 
             // The fog is framed on what is being looked at rather than on the box. In the close
             // view that is the point: a few metres of water put the rest of the world into the
@@ -281,6 +333,7 @@ namespace Evosim.Theatre
             {
                 saved.Restore();
                 for (int i = 0; i < silenced.Count; i++) silenced[i].enabled = true;
+                for (int i = 0; i < hidden.Count; i++) hidden[i].enabled = true;
             }
 
             RenderTexture active = RenderTexture.active;
@@ -297,7 +350,10 @@ namespace Evosim.Theatre
 
             _pixels = _readback.GetPixels32();
 
-            if (view != View.Close) DrawBox(box, replay);
+            // Neither the close view nor the sky view carries the box. The close view's frame cuts
+            // the water's edges at odd angles, and the sky view stands inside the box looking up,
+            // where the wireframe would be stamped straight across the window.
+            if (view != View.Close && view != View.Sky) DrawBox(box, replay);
 
             DrawBodies(replay, view, out int marked, out int outside, out int bodies);
             DrawLabel(Label(replay, view));
@@ -440,6 +496,54 @@ namespace Evosim.Theatre
             }
 
             return silenced;
+        }
+
+        /// <summary>
+        /// Turns off the furniture that only exists to be seen from inside the water, for the
+        /// length of one render, and hands back what it turned off.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What and why.</b> The fourth day put a rippling surface on the world's ceiling and a
+        /// handful of light shafts under it (logbook/specs/skin-spec-4.md), and said in as many
+        /// words that the views taken from outside the box must be unchanged by it: the top view
+        /// still sees the world, and nothing new stands in front of the box in the side, the end
+        /// or the iso. The shaders refuse any eye above the waterline by themselves, which covers
+        /// the top and the iso, but the side and the end cameras stand under the water looking in,
+        /// where a shaft is a bright slab straight across the census.
+        /// </para>
+        /// <para>
+        /// <b>Done by camera rather than by geometry, deliberately.</b> The obvious rule, draw
+        /// them only for an eye inside the box, would also have taken the sea away from the Play
+        /// mode viewer, whose camera starts twenty six metres outside it
+        /// (<c>TheatreSceneBuilder</c>). What separates a census picture from a viewer is which
+        /// camera is rendering, and that is known here and nowhere else.
+        /// </para>
+        /// <para>
+        /// The close and the sky views keep it. Sky is a picture of the surface and would be an
+        /// empty frame without it, and close is a portrait taken inside the water where the light
+        /// falling on a body is the subject.
+        /// </para>
+        /// </remarks>
+        private static List<Renderer> HideWhatOnlyTheWaterSees(View view)
+        {
+            var hidden = new List<Renderer>(2);
+
+            if (view == View.Close || view == View.Sky) return hidden;
+
+            foreach (TheatreInsideOnly mark in
+                     UnityEngine.Object.FindObjectsByType<TheatreInsideOnly>(FindObjectsSortMode.None))
+            {
+                if (mark == null) continue;
+
+                var renderer = mark.GetComponent<Renderer>();
+                if (renderer == null || !renderer.enabled) continue;
+
+                renderer.enabled = false;
+                hidden.Add(renderer);
+            }
+
+            return hidden;
         }
 
         // ---------------------------------------------------------------- the frame
@@ -673,6 +777,15 @@ namespace Evosim.Theatre
         {
             const float margin = 1.06f;
 
+            // The sky view is not fitted to anything: it stands in the water rather than outside
+            // it, so the corner arithmetic below, which asks how far back a camera has to stand to
+            // hold the whole box, has no answer for it. Placed and returned here instead.
+            if (view == View.Sky)
+            {
+                FrameTheSky(box);
+                return;
+            }
+
             Quaternion rotation;
             bool perspective = false;
 
@@ -777,6 +890,47 @@ namespace Evosim.Theatre
             _camera.farClipPlane = standoff + 2f * reachZ + 200f;
         }
 
+        /// <summary>Stands the camera in the water under the surface and points it up at the sun.</summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The bearing comes from the sun the shaders draw.</b>
+        /// <see cref="TheatreSkin.PushWater"/> sets <c>_EvoSun</c> from the scene's directional
+        /// light, and the surface's window and the shafts are both built on it, so reading the
+        /// same global here is the only way to be sure the camera is looking where the sun
+        /// actually is. A scene that never dressed itself leaves the global at zero, and the
+        /// picture then looks along the box's length, which is at least a view of the water.
+        /// </para>
+        /// <para>
+        /// <b>The depth is bounded by the box.</b> Three metres under is the intent, but a run in
+        /// a shallower world would put the camera under its own floor, so it is at most half the
+        /// water's depth.
+        /// </para>
+        /// </remarks>
+        private void FrameTheSky(Bounds box)
+        {
+            float depth = Mathf.Min(SkyDepthMetres, 0.5f * box.size.y);
+
+            var eye = new Vector3(box.center.x, box.max.y - depth, box.center.z);
+
+            Vector4 sun = Shader.GetGlobalVector("_EvoSun");
+            var bearing = new Vector3(sun.x, 0f, sun.z);
+
+            if (bearing.sqrMagnitude < 1e-6f) bearing = Vector3.right;
+            bearing = bearing.normalized;
+
+            Vector3 forward =
+                (bearing + Vector3.up * Mathf.Tan(SkyRiseDegrees * Mathf.Deg2Rad)).normalized;
+
+            _camera.orthographic = false;
+            _camera.aspect = (float)_width / _height;
+            _camera.fieldOfView = SkyFieldOfView;
+            _camera.nearClipPlane = 0.05f;
+            _camera.farClipPlane = 4f * box.size.magnitude + 200f;
+
+            _camera.transform.SetPositionAndRotation(
+                eye, Quaternion.LookRotation(forward, Vector3.up));
+        }
+
         // ---------------------------------------------------------------- what is stamped
 
         /// <summary>
@@ -862,8 +1016,10 @@ namespace Evosim.Theatre
             bodies = 0;
 
             // A marker stands in for a body too small to draw. The close view exists to show
-            // what a body looks like, so a square painted over one would answer its own question.
-            bool marking = view != View.Close;
+            // what a body looks like, so a square painted over one would answer its own question,
+            // and the sky view stands inside the water at a few metres, where a body is tens of
+            // pixels across and a marker would only hide the light falling on it.
+            bool marking = view != View.Close && view != View.Sky;
 
             IReadOnlyList<Organism> living = replay.Eco.World.Living;
             float tanV = Mathf.Tan(0.5f * _camera.fieldOfView * Mathf.Deg2Rad);
