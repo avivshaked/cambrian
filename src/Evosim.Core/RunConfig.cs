@@ -1879,16 +1879,6 @@ namespace Evosim.Core
     }
 
     /// <summary>
-    /// Where <see cref="RunConfig.MatterInfluxPerSecond"/>'s deposit lands — D074. See
-    /// <see cref="RunConfig.MatterInfluxAt"/> for why it is a knob and
-    /// <see cref="World.Step"/> for when it is spent.
-    /// </summary>
-    /// <remarks>
-    /// Named for the route rather than for the layer, because the layer is a consequence: what a
-    /// world is being told is where its matter comes from, and the depth follows from that. At an
-    /// influx of 0 the two are the same world.
-    /// </remarks>
-    /// <summary>
     /// What shape the water is — <see cref="RunConfig.WorldShape"/>,
     /// <c>fable-propose-aquarium.md</c> ruling 1.
     /// </summary>
@@ -1934,6 +1924,16 @@ namespace Evosim.Core
         Grid = 2,
     }
 
+    /// <summary>
+    /// Where <see cref="RunConfig.MatterInfluxPerSecond"/>'s deposit lands — D074. See
+    /// <see cref="RunConfig.MatterInfluxAt"/> for why it is a knob and
+    /// <see cref="World.Step"/> for when it is spent.
+    /// </summary>
+    /// <remarks>
+    /// Named for the route rather than for the layer, because the layer is a consequence: what a
+    /// world is being told is where its matter comes from, and the depth follows from that. At an
+    /// influx of 0 the two are the same world.
+    /// </remarks>
     public enum MatterInflux
     {
         /// <summary>
