@@ -517,6 +517,11 @@ captures, probe output, one-off edit scripts, stale copies; nothing was deleted.
 
 ## The decisions in front of the owner
 
+- **Things wrong in motion** (owner, 2026-09-11 evening, after watching `r36-s1` in the
+  theatre): "there are some issues with the world that you can only see when rendering",
+  set aside for now and not yet named. The agent reads stills only, so when they are named
+  the route is a Game Bar or Recorder film of the session and frames pulled from it at the
+  seconds in question, read as pictures beside the numbers.
 - **The drive impulse limiter at every step** (`fable-propose-limiter.md`, 2026-09-11, from
   round 34's M3): one tunable, default off so every recorded world replays, on for the rounds
   after the box; a replay of `r34-s5` with it on is the check before it is trusted. The
