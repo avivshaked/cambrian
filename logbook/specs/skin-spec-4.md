@@ -37,29 +37,29 @@ the snapshot views: nothing new in the way, the top view still sees the world.
 2. **Snell's window and the sun.** From below, the surface shows the sky refracted into a
    cone of about 97 degrees around the vertical, and outside that cone the surface is a
    mirror of the dark water (total internal reflection). The shader takes the view
-   direction, refracts it through the rippled normal with the water's index (1.33), and
-   inside the window shows a sky gradient with a sun disc where the refracted ray meets
+   direction and refracts it through the rippled normal with the water's index (1.33).
+   Inside the window it shows a sky gradient with a sun disc where the refracted ray meets
    the sun's direction; outside it shows the fog colour darkened. The sun's direction comes
    from the scene's directional light so the key light and the sun agree. The ripple
    breaks the window's edge and wobbles the sun, which is the shimmer.
 3. **Light shafts.** A small number of translucent vertical slabs or a cone bundle under
-   the sun, generated at start, additive, fading with depth over the first fifteen or
-   twenty metres and fading at grazing view angles, with their brightness modulated by
+   the sun, generated at start and drawn additively. They fade with depth over the first
+   fifteen or twenty metres and at grazing view angles. Their brightness is modulated by
    the same ripple function sampled at their top, so the shafts move with the surface.
    They must not write depth and must not occlude bodies. Cheap: this is a handful of
    quads, not a volumetric pass.
 4. **The caustics agree with the surface.** `TheatreBody.shader`'s caustic term and a
    matching term on `TheatreBed.shader` are driven from the same ripple function, same
-   time, same dials, so the light pattern on a body's upper surface is the surface above
+   time, same dials. The light pattern on a body's upper surface is then the surface above
    it focused, and it fades with depth on the same curve as the shafts. Put the ripple
    function in one shared `.hlsl` include under `Assets/Theatre/` so there is one copy.
 5. **Depth.** Everything above fades with depth below the surface: the shafts, the
    caustics, the window's brightness seen from far down. The world is 60 m deep and the
    habitable band is the top twenty; below that the water is the dark field it is now.
-6. **A view for the picture.** `SnapshotCamera.cs` gains a view `sky`: the camera three
-   metres below the surface at the box's centre, looking up at about 60 degrees from
-   horizontal, wide field of view, so one frame holds the window, the sun, the shafts and
-   the bodies beneath them. Add it to the views list and the error message. (The `box`
+6. **A view for the picture.** `SnapshotCamera.cs` gains a view `sky`. The camera sits
+   three metres below the surface at the box's centre, looking up at about 60 degrees from
+   horizontal with a wide field of view, so one frame holds the window, the sun, the
+   shafts and the bodies beneath them. Add it to the views list and the error message. (The `box`
    branch also edits this file; the caller resolves that merge.)
 
 ## What it is not
