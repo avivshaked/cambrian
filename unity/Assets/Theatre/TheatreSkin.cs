@@ -147,9 +147,12 @@ namespace Evosim.Theatre
         /// the sea the theatre is now lit by.
         /// </para>
         /// <para>
-        /// A few centimetres, which with a wavelength of a metre or two is a calm day rather than
+        /// A few centimetres, which with a wavelength of a few metres is a calm day rather than
         /// surf. The steepness of the two together is what decides whether the ceiling reads as
-        /// water or as crumpled foil, and it is the ratio rather than either number.
+        /// water or as crumpled foil, and it is the ratio rather than either number. The first
+        /// picture, at 0.045 m over 1.6 m, read as bands of black and white; the second, at half
+        /// the height over twice the length, read as water, and that is the default (the agent's
+        /// pick from the two pictures on 2026-09-11 evening, logbook/0091).
         /// </para>
         /// <para>
         /// <b>It is a visual and moves nothing.</b> No body is pushed by this wave, no current
@@ -157,7 +160,7 @@ namespace Evosim.Theatre
         /// a sea drawn on the ceiling is a picture of the waterline the world already has.
         /// </para>
         /// </remarks>
-        public float SurfaceWaveMetres = Dial("EVOSIM_THEATRE_WAVE", 0.045f, 0f, 0.5f);
+        public float SurfaceWaveMetres = Dial("EVOSIM_THEATRE_WAVE", 0.022f, 0f, 0.5f);
 
         /// <summary>The longest wave train's wavelength, in metres.</summary>
         /// <remarks>
@@ -167,7 +170,7 @@ namespace Evosim.Theatre
         /// puts a dozen crests across the campaign box's five metre width: enough for the window
         /// to break up, few enough that the pattern is not below what a picture can hold.
         /// </remarks>
-        public float SurfaceWaveLengthMetres = Dial("EVOSIM_THEATRE_WAVELENGTH", 1.6f, 0.2f, 20f);
+        public float SurfaceWaveLengthMetres = Dial("EVOSIM_THEATRE_WAVELENGTH", 3.2f, 0.2f, 20f);
 
         /// <summary>How much of their true phase speed the wave trains run at.</summary>
         /// <remarks>
