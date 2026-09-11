@@ -28,9 +28,12 @@ collider); the three comparison pictures of `r35-s1` at 5,000 s are in
 `scratch/snaps/skin3-*/`, the agent's reading is keep the defaults and refuse carve 0.5,
 and the pillow (0.34 or 0.5) is the owner's ruling. The fourth day, the sun and the surface
 (`logbook/specs/skin-spec-4.md`: rippling surface from below, Snell's window and a sun,
-light shafts, caustics on bodies and bed from one ripple, a `sky` snapshot view), is in
-build on branch `skin4` in the worktree `scratch/wt-skin4`, compiled and photographed on a
-worker when a slot frees, then merged. The owner watched `r36-s1` in the theatre (Mode B,
+light shafts, caustics on bodies and bed from one ripple, a `sky` snapshot view), compiled
+first time on worker 3, rendered `r36-s1` at 5,000 s (`scratch/snaps/skin4/`) and merged
+into main the same evening (branch `skin4`); its five dials (`EVOSIM_THEATRE_WAVE`,
+`_WAVELENGTH`, `_WAVE_SPEED`, `_LIGHT_REACH`, `_SHAFTS`) are unjudged by the owner, and
+the agent's first reading is that the surface reads as bands rather than water, which is
+the wave steepness. Both skin days still want a logbook entry once the owner has ruled. The owner watched `r36-s1` in the theatre (Mode B,
 seek 5,000 s) and saw no sun, shimmer or ripple, which is why the day was moved up. Round 36 is fully launched (seed 5 at 19:23); seeds 1, 2 and 3 have landed with
 a jointed inherited count at 30,000 s of 73, 4 and 0. The box build (branch `box`, worktree
 `scratch/wt-box`) now waits for round 36's renders as well as its arms, because the theatre
