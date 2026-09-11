@@ -229,7 +229,14 @@ round 28) set the base and the order.
       drafted while round 34 lands).
    3. **Round 38, a light sense**: one new sense input, light and its vertical gradient;
       read on jointed against rigid against buoyant depth. Proposal first.
-   4. **Round 39, the idle charge restored** to 0.02; no build.
+   4. **Round 39, the stroke priced again**: the work cost back to D082's 0.25 with the idle
+      charge still at 0.0001; no build. *Reordered 2026-09-11 by the agent under the owner's
+      grant of autonomy over the sequence, after round 34's first three seeds: with the
+      stroke free, brains drive the joint flat out (about 23 W of unpaid work per jointed
+      body against 1 to 2 W of upkeep), the solver throws jointed adults (16 of seed 5's 17
+      divergences), and a jointed newborn dies in its first minute half the time. The
+      stroke's price shapes what a joint does; the idle charge only what it costs to own,
+      so the stroke comes back first.*
    5. **Round 40, ellipsoids in the physics**: spheres and capsules collide and drag as
       their three half-extents; preceded by the offline read of whether boxes have
       flattened. Proposal first.
@@ -240,10 +247,14 @@ round 28) set the base and the order.
       theatre draws the same data.
    8. **Round 43, the anchoring cell**: holds a body to the bed or a rock against the
       current. Proposal first.
-   9. **Round 44, the remaining prices restored** (work, neuron, connection) on whichever
-      world of 39 to 43 carries joints; no build.
+   9. **Round 44, the remaining prices restored** (the idle charge to 0.02, the neuron and
+      the connection to D082's values) on whichever world of 39 to 43 carries joints; no
+      build.
    10. **Round 45, the long arm**: one seed, 300,000 s, on the richest standing world, the
       stroke read against the water every 1,000 s; one worker for a week.
+   Also from round 34, a physics guard to propose before any later cheap-stroke round: the
+   drive impulse limiter at every step, not only above dt 0.01, since an unpriced stroke at
+   0.01 is what the limiter was never asked to bound.
    Beside the ten and not in them: 0084's bin 3 screens (dispersed against undispersed on
    round 32's seeds, mixing 0.2 against 0.02, corpses off) on any free worker; the skin in
    the genome and the theatre's sun, which need no round; predation, which the owner ruled
