@@ -552,9 +552,32 @@ namespace Evosim.Theatre
         /// <summary>
         /// Puts the bed and the snow in the water the run was simulated in.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A tank is dressed by its bounding square, and that is enough for the two surfaces
+        /// that matter.</b> <see cref="SnapshotCamera.BoxOf"/> hands back <c>[0, 2R)²</c> for a
+        /// tank (<c>logbook/specs/tank-spec.md</c>), so the bed below covers the circle with its
+        /// own 2% overhang to spare and the ceiling covers it several times over — its margin is
+        /// half the footprint or eight metres, whichever is larger. Neither needed a shape of its
+        /// own: a sand plane and a water ceiling that reach past the glass are exactly what a
+        /// camera inside a cylinder should see, and the glass itself is drawn by
+        /// <see cref="WaterBounds.ShowTank"/>.
+        /// </para>
+        /// <para>
+        /// ⚠ <b>The snow and the shafts fill the square, not the circle.</b> The particle system's
+        /// volume and the shaders' clip box are the bounds given here, so about a fifth of the
+        /// motes and the ends of some shafts hang in the four corners, outside the water the run
+        /// actually had. It is named rather than hidden: both are atmosphere with no census in
+        /// them, and clipping them to a cylinder means a radius in
+        /// <c>TheatreSnow.shader</c> and in <c>TheatreShafts.shader</c>, which is a shader change
+        /// for a corner of fog. Nothing that is read off a picture — a body, a marker, the
+        /// outline, the bed — is affected.
+        /// </para>
+        /// </remarks>
         /// <param name="box">
         /// The world's box, the same one <see cref="SnapshotCamera"/> frames: x and z are the
-        /// footprint, y runs from the floor to the waterline at zero.
+        /// footprint, y runs from the floor to the waterline at zero. In a tank it is the
+        /// circle's bounding square.
         /// </param>
         public void Dress(Bounds box)
         {

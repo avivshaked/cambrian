@@ -817,56 +817,7 @@ namespace Evosim.Sim.EditorTools
                 }
             }
 
-            // D077's header token, built from the world the run actually constructed rather than
-            // from the environment it was launched with: the patch width is the fields' own
-            // sqrt(area / K) (World's constructor hands it to the current field too), so the
-            // header cannot describe a box the simulation does not have. Rendered unconditionally
-            // for D065's reason — a reader must never have to work out whether a missing token
-            // means "tiled" or "written before the box existed".
-            //
-            // fable-propose-box.md clause 4: the three numbers are the patches along x, the
-            // patches across z and the patch side, so the token says which box the run was in.
-            // The old token printed the patch count and the width twice, which at A = 1 read
-            // "4x5x5 m" where this reads "4x1x5 m" — the same box, named by its layout. A token
-            // that cannot say whether four patches are a row or a square is worth changing.
-            // fable-propose-aquarium.md ruling 1: the third shape, named by its radius and the
-            // area that radius comes from, and by the wall where the box says wrap. Read off the
-            // world rather than off the environment for the token's own reason — the radius is
-            // World.TankRadiusMetres, the one the fields and the placer were built with, so the
-            // header cannot describe a tank the simulation does not have. The box's token is
-            // unchanged to the character.
-            float patchWidth = eco.World.Nutrients.PatchWidthMetres;
-            int patchesAlong = eco.World.Nutrients.PatchCount / eco.World.Nutrients.PatchesAcross;
-            string spaceToken;
-
-            if (!sharedSpace)
-            {
-                spaceToken = "tiled " + Ecosystem.TileSpacing + " m";
-            }
-            else if (config.WorldShape == WorldShape.Tank)
-            {
-                spaceToken =
-                    "tank r=" +
-                    eco.World.TankRadiusMetres.ToString("0.##", CultureInfo.InvariantCulture) +
-                    " m (" + area.ToString("0.###", CultureInfo.InvariantCulture) + " m2), depth " +
-                    config.WorldDepthMetres + ", " +
-                    // The glass, read off the Ecosystem for the bed's reason below: it is built or
-                    // not built by the constructor, and a header that inferred it from the shape
-                    // would still say "wall" on the day something stops it being built.
-                    (eco.Wall != null ? "wall" : "no wall") + ", " +
-                    (eco.Floor != null ? "bed" : "no bed");
-            }
-            else
-            {
-                spaceToken =
-                    "shared " + patchesAlong + "x" + eco.World.Nutrients.PatchesAcross + "x" +
-                    patchWidth.ToString("0.###", CultureInfo.InvariantCulture) + " m, depth " +
-                    config.WorldDepthMetres + ", wrap, " +
-                    // The bed, read off the Ecosystem rather than off the config: it is built or
-                    // not built by the constructor, and a header that inferred it from SharedSpace
-                    // would still say "bed" on the day something stops it being built.
-                    (eco.Floor != null ? "bed" : "no bed");
-            }
+            string spaceToken = SpaceToken(config, eco);
 
             // The table's shape, fixed before the header names it: D077 appends one column per
             // patch, so the width is a function of the config.
@@ -3079,6 +3030,73 @@ namespace Evosim.Sim.EditorTools
             // (logbook/specs/tank-spec.md).
             "cols", "cols abs", "x sd",
         };
+
+        /// <summary>
+        /// The header's <c>space</c> token: which container this run was in, in one string.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// D077's token, <b>built from the world the run actually constructed rather than from the
+        /// environment it was launched with</b>: the patch width is the fields' own
+        /// <c>sqrt(area / K)</c> (World's constructor hands it to the current field too), so the
+        /// header cannot describe a box the simulation does not have. Rendered unconditionally for
+        /// D065's reason — a reader must never have to work out whether a missing token means
+        /// "tiled" or "written before the box existed".
+        /// </para>
+        /// <para>
+        /// fable-propose-box.md clause 4: the three numbers are the patches along x, the patches
+        /// across z and the patch side, so the token says which box the run was in. The old token
+        /// printed the patch count and the width twice, which at A = 1 read "4x5x5 m" where this
+        /// reads "4x1x5 m" — the same box, named by its layout. A token that cannot say whether
+        /// four patches are a row or a square is worth changing.
+        /// </para>
+        /// <para>
+        /// fable-propose-aquarium.md ruling 1: the third shape, named by its radius and the area
+        /// that radius comes from, and by the wall where the box says wrap. Read off the world
+        /// rather than off the environment for the token's own reason — the radius is
+        /// <c>World.TankRadiusMetres</c>, the one the fields and the placer were built with, so
+        /// the header cannot describe a tank the simulation does not have. The box's token is
+        /// unchanged to the character.
+        /// </para>
+        /// <para>
+        /// <b>A method rather than the three branches it used to be inline</b>, so that
+        /// <see cref="SharedSpaceSmoke"/> can assert the string a tank run's header will carry by
+        /// calling the code that writes it (<c>logbook/specs/tank-spec.md</c>). A smoke holding a
+        /// second copy of the format would pass on the day the header changed, which is the one
+        /// day it exists to fail on.
+        /// </para>
+        /// </remarks>
+        public static string SpaceToken(RunConfig config, Ecosystem eco)
+        {
+            if (!config.SharedSpace) return "tiled " + Ecosystem.TileSpacing + " m";
+
+            if (config.WorldShape == WorldShape.Tank)
+            {
+                return
+                    "tank r=" +
+                    eco.World.TankRadiusMetres.ToString("0.##", CultureInfo.InvariantCulture) +
+                    " m (" +
+                    config.WorldAreaSquareMetres.ToString("0.###", CultureInfo.InvariantCulture) +
+                    " m2), depth " + config.WorldDepthMetres + ", " +
+                    // The glass, read off the Ecosystem for the bed's reason below: it is built or
+                    // not built by the constructor, and a header that inferred it from the shape
+                    // would still say "wall" on the day something stops it being built.
+                    (eco.Wall != null ? "wall" : "no wall") + ", " +
+                    (eco.Floor != null ? "bed" : "no bed");
+            }
+
+            float patchWidth = eco.World.Nutrients.PatchWidthMetres;
+            int patchesAlong = eco.World.Nutrients.PatchCount / eco.World.Nutrients.PatchesAcross;
+
+            return
+                "shared " + patchesAlong + "x" + eco.World.Nutrients.PatchesAcross + "x" +
+                patchWidth.ToString("0.###", CultureInfo.InvariantCulture) + " m, depth " +
+                config.WorldDepthMetres + ", wrap, " +
+                // The bed, read off the Ecosystem rather than off the config: it is built or not
+                // built by the constructor, and a header that inferred it from SharedSpace would
+                // still say "bed" on the day something stops it being built.
+                (eco.Floor != null ? "bed" : "no bed");
+        }
 
         /// <summary>
         /// Fixes the table's shape for this run: the base columns plus one per patch.

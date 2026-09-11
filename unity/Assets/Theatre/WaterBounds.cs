@@ -47,6 +47,16 @@ namespace Evosim.Theatre
     /// box's own end face; a body that leaves there reappears at the other, which no still
     /// picture can show.
     /// </para>
+    /// <para>
+    /// <b>Or the water is a tank</b> — <c>fable-propose-aquarium.md</c> ruling 1,
+    /// <c>logbook/specs/tank-spec.md</c>, and <see cref="ShowTank"/>. Then there is no seam to
+    /// leave unshown and the picture can be honest all the way round: a circle of
+    /// <c>R = sqrt(area/π)</c> at the surface and another at the floor, eight verticals between
+    /// them, the patch rings as circles at their own boundary radii, and the bed as a disc rather
+    /// than a square. Which shape is drawn is the config's <c>WorldShape</c> and never an
+    /// inference from the numbers: a tank and a square box of the same area differ by a corner,
+    /// and a viewer who cannot tell them apart cannot tell whether a body is against the glass.
+    /// </para>
     /// </remarks>
     public sealed class WaterBounds : MonoBehaviour
     {
@@ -84,12 +94,30 @@ namespace Evosim.Theatre
         private Material _material;
         private bool _ready;
 
+        /// <summary>
+        /// How many straight pieces one circle is drawn from — <c>logbook/specs/tank-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// Forty-eight, which is <c>Evosim.Sim.TankWall.Segments</c>: the glass a body actually
+        /// hits is a forty-eight-sided prism, so a forty-eight-sided outline is the wall rather
+        /// than a smoothed idea of it. The patch rings are drawn at the same resolution for one
+        /// arc resolution in the picture; nothing here measures anything, so the number is a
+        /// matter of how the frame reads and not of what the world is.
+        /// </remarks>
+        private const int CircleSegments = 48;
+
         /// <summary>The box, when the run has one — D077. Zero width means "no box, draw a grid".</summary>
         private float _boxLength;
         private float _boxWidth;
         private float _patchMetres;
         private int _patches;
         private int _patchesAcross = 1;
+
+        /// <summary>
+        /// The tank's radius, m — <c>fable-propose-aquarium.md</c> ruling 1. Zero means "not a
+        /// tank", the way a zero <see cref="_boxWidth"/> means "no box".
+        /// </summary>
+        private float _tankRadius;
 
         /// <summary>
         /// Sets the water up from a loaded run.
@@ -107,6 +135,7 @@ namespace Evosim.Theatre
             _patchMetres = 0f;
             _patches = 1;
             _patchesAcross = 1;
+            _tankRadius = 0f;
             _ready = true;
         }
 
@@ -135,6 +164,55 @@ namespace Evosim.Theatre
             // a square layout is drawn at the pitch its row-shaped twin would have been.
             _spacing = Mathf.Max(1f, Mathf.Round(_patchMetres / 5f));
             _extent = Mathf.Max(_boxLength, _boxWidth);
+            _tankRadius = 0f;
+            _ready = true;
+        }
+
+        /// <summary>
+        /// Draws the tank — the cylinder of water the run was simulated in, and its patch rings.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The radius is the world's, not a shape chosen for the picture.</b> It comes from
+        /// <c>Evosim.Core.TankGeometry.RadiusFor(area)</c> at the call site
+        /// (<c>TheatreRunner.OpenWorld</c>), which is the same square root the fields, the placer
+        /// and the glass were built with, so a viewer measuring a body against the wall in this
+        /// picture is measuring it against the wall the body hit.
+        /// </para>
+        /// <para>
+        /// <b>The bounding square is <c>[0, 2R)²</c> and the axis is at <c>(R, R)</c></b>
+        /// (<c>TankGeometry</c>), so everything drawn here is in the same world coordinates the
+        /// box path uses and a camera fitted to the square frames the tank.
+        /// </para>
+        /// </remarks>
+        /// <param name="depthMetres"><c>RunConfig.WorldDepthMetres</c>. The water runs y = 0 to −D.</param>
+        /// <param name="radiusMetres">R = sqrt(area/π) — <c>World.TankRadiusMetres</c>.</param>
+        /// <param name="rings">
+        /// K — <c>RunConfig.HorizontalPatches</c>. In a tank a patch is a ring of equal area, so
+        /// K−1 circles are drawn inside the glass and the glass itself is the last boundary.
+        /// </param>
+        public void ShowTank(float depthMetres, float radiusMetres, int rings)
+        {
+            _depth = Mathf.Max(0.1f, depthMetres);
+            _tankRadius = Mathf.Max(0.1f, radiusMetres);
+            _patches = Mathf.Max(1, rings);
+            _patchesAcross = 1;
+
+            // The bounding square stands in for the box everywhere the extent is read: the
+            // storage, the camera and the grid pitch all want a rectangle, and the circle is
+            // inscribed in this one (TankGeometry's remarks).
+            _boxLength = 2f * _tankRadius;
+            _boxWidth = _boxLength;
+
+            // No patch has a side in a tank — a ring is an annulus — and the field is cleared
+            // rather than left carrying the last box's width, so nothing can draw a seam with it.
+            _patchMetres = 0f;
+
+            // Read off the whole footprint rather than off a patch, because a tank's patches are
+            // annuli of very different widths and the innermost one would set a pitch that drew
+            // hundreds of lines across the outermost.
+            _spacing = Mathf.Max(1f, Mathf.Round(_boxLength / 10f));
+            _extent = _boxLength;
             _ready = true;
         }
 
@@ -169,7 +247,15 @@ namespace Evosim.Theatre
             GL.PushMatrix();
 
             // The bed first and the lines after, so the grid and the seams read on top of it.
-            if (_boxWidth > 0f && DrawBed)
+            // A tank's bed is a disc and needs triangles where the box's needs one quad, which is
+            // the only reason the two are not one call.
+            if (_tankRadius > 0f && DrawBed)
+            {
+                GL.Begin(GL.TRIANGLES);
+                BedDisc();
+                GL.End();
+            }
+            else if (_boxWidth > 0f && DrawBed)
             {
                 GL.Begin(GL.QUADS);
                 Bed();
@@ -178,7 +264,8 @@ namespace Evosim.Theatre
 
             GL.Begin(GL.LINES);
 
-            if (_boxWidth > 0f) Box();
+            if (_tankRadius > 0f) Tank();
+            else if (_boxWidth > 0f) Box();
             else Lattice();
 
             GL.End();
@@ -244,6 +331,116 @@ namespace Evosim.Theatre
                 GL.Vertex3(_boxLength, -_depth, z);
                 Vertical(0f, z);
                 Vertical(_boxLength, z);
+            }
+        }
+
+        /// <summary>
+        /// The tank: the circle at the surface and at the floor, eight verticals, the patch rings.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>No grid and no seams.</b> The box's two grids exist to give a viewer a scale on a
+        /// flat plane; here the patch rings do that job and are boundaries as well, so a square
+        /// grid over them would be two rulers disagreeing about what a line means. The rings are
+        /// drawn in <see cref="SeamColour"/> for exactly the reason the box's seams are: under a
+        /// shared volume a patch is a region a body is in and crosses, not an index.
+        /// </para>
+        /// <para>
+        /// <b>Eight verticals, at 45°.</b> Enough that the two circles read as one cylinder from
+        /// any angle, few enough that they do not become a cage in front of the bodies. They are
+        /// at the glass, where the box's are at its corners, and they carry no information beyond
+        /// "these two circles are the ends of the same water".
+        /// </para>
+        /// </remarks>
+        private void Tank()
+        {
+            Circle(0f, _tankRadius, SurfaceColour);
+            Circle(-_depth, _tankRadius, FloorColour);
+
+            GL.Color(new Color(SurfaceColour.r, SurfaceColour.g, SurfaceColour.b, 0.35f));
+
+            for (int i = 0; i < 8; i++)
+            {
+                float angle = 2f * Mathf.PI * i / 8f;
+
+                Vertical(
+                    _tankRadius + _tankRadius * Mathf.Cos(angle),
+                    _tankRadius + _tankRadius * Mathf.Sin(angle));
+            }
+
+            // The patch rings, at the surface and at the floor so that the pair reads as a
+            // cylinder of its own. The glass is ring K−1's outer boundary and is already drawn, so
+            // the loop stops short of it.
+            for (int k = 1; k < _patches; k++)
+            {
+                float r = RingBoundary(k);
+
+                Circle(0f, r, SeamColour);
+                Circle(-_depth, r, SeamColour);
+            }
+        }
+
+        /// <summary>
+        /// The radius where ring <paramref name="ring"/> begins, m: <c>R·sqrt(ring/K)</c>.
+        /// </summary>
+        /// <remarks>
+        /// <b>The inverse of <c>TankGeometry.RingOf</c>'s <c>floor(K·(r/R)²)</c></b>, which is the
+        /// one place the world decides which ring a body is in
+        /// (<c>logbook/specs/tank-spec.md</c>). The arithmetic is repeated here rather than added
+        /// to <c>TankGeometry</c>, which is deliberate and is the rule that keeps the theatre out
+        /// of <c>Assets/Evosim</c>: a drawing must never be the reason a simulation source file
+        /// changes. Nothing here is measured against anything — a circle a pixel off is not a
+        /// world event, where a field and a placer disagreeing about a boundary would be.
+        /// </remarks>
+        private float RingBoundary(int ring) =>
+            _tankRadius * Mathf.Sqrt(Mathf.Clamp01(ring / (float)Mathf.Max(1, _patches)));
+
+        /// <summary>One horizontal circle about the axis at <c>(R, R)</c>, as a closed polyline.</summary>
+        private void Circle(float y, float radius, Color colour)
+        {
+            if (!(radius > 0f)) return;
+
+            GL.Color(colour);
+
+            float previousX = _tankRadius + radius;
+            float previousZ = _tankRadius;
+
+            for (int i = 1; i <= CircleSegments; i++)
+            {
+                float angle = 2f * Mathf.PI * i / CircleSegments;
+                float x = _tankRadius + radius * Mathf.Cos(angle);
+                float z = _tankRadius + radius * Mathf.Sin(angle);
+
+                GL.Vertex3(previousX, y, previousZ);
+                GL.Vertex3(x, y, z);
+
+                previousX = x;
+                previousZ = z;
+            }
+        }
+
+        /// <summary>The sea bed, filled — a disc under the tank at y = −D, as a triangle fan.</summary>
+        /// <remarks>
+        /// A fan from the axis rather than a square: the water is the circle, and filling the
+        /// bounding square would draw sea bed in four corners the run has no water in — the same
+        /// fault the box's fill avoids by stopping short of <c>SeaFloor</c>'s overhang.
+        /// </remarks>
+        private void BedDisc()
+        {
+            GL.Color(BedColour);
+
+            for (int i = 0; i < CircleSegments; i++)
+            {
+                float a = 2f * Mathf.PI * i / CircleSegments;
+                float b = 2f * Mathf.PI * (i + 1) / CircleSegments;
+
+                GL.Vertex3(_tankRadius, -_depth, _tankRadius);
+                GL.Vertex3(
+                    _tankRadius + _tankRadius * Mathf.Cos(a), -_depth,
+                    _tankRadius + _tankRadius * Mathf.Sin(a));
+                GL.Vertex3(
+                    _tankRadius + _tankRadius * Mathf.Cos(b), -_depth,
+                    _tankRadius + _tankRadius * Mathf.Sin(b));
             }
         }
 

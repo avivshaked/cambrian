@@ -174,6 +174,18 @@ namespace Evosim.Theatre
         /// <summary>A projected body narrower than this gets a marker instead of being trusted.</summary>
         public const float MinimumBodyPixels = 4f;
 
+        /// <summary>
+        /// How many chords a tank's circle is stamped from — <c>logbook/specs/tank-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// Forty-eight, which is <c>Evosim.Sim.TankWall.Segments</c>: the glass a body actually
+        /// hits is a forty-eight-sided prism, so the outline is the wall rather than a smoothed
+        /// idea of it. At 1600 px across a 11.3 m tank a chord is about thirty pixels, which reads
+        /// as a circle; the patch rings use the same number so that one picture has one arc
+        /// resolution in it.
+        /// </remarks>
+        public const int CircleSegments = 48;
+
         /// <summary>The marker's coloured square, in pixels, inside a one-pixel dark surround.</summary>
         public const int MarkerPixels = 5;
 
@@ -558,12 +570,30 @@ namespace Evosim.Theatre
         /// (fable-propose-box.md). A tiled recording has no box at all, only a lattice a hundred
         /// metres apart in otherwise empty space, so there the frame is four tiles of it and the
         /// remark says the picture is of a lattice.
+        ///
+        /// <para>
+        /// <b>A tank is framed by its bounding square</b> — <c>[0, 2R)²</c> about an axis at
+        /// <c>(R, R)</c>, <c>TankGeometry</c>, <c>logbook/specs/tank-spec.md</c>. A camera fitted
+        /// to the circle's own bounding box is fitted to the circle, since the two touch on all
+        /// four sides; the corners cost a few percent of the frame and buy the whole of the rest
+        /// of the theatre keeping one rectangle to reason about — the skin's bed and surface, the
+        /// snow's volume and the close view's neighbourhood all read these bounds.
+        /// </para>
         /// </remarks>
         public static Bounds BoxOf(TheatreReplay replay, out string note)
         {
             note = null;
             RunConfig config = replay.Record.Config;
             float depth = Mathf.Max(0.1f, config.WorldDepthMetres);
+
+            if (config.SharedSpace && config.WorldShape == WorldShape.Tank)
+            {
+                float side = 2f * TankGeometry.RadiusFor(config.WorldAreaSquareMetres);
+
+                return new Bounds(
+                    new Vector3(0.5f * side, -0.5f * depth, 0.5f * side),
+                    new Vector3(side, depth, side));
+            }
 
             if (config.SharedSpace)
             {
@@ -958,6 +988,18 @@ namespace Evosim.Theatre
             Color vertical = new Color(0.30f, 0.48f, 0.62f, 1f);
             Color seam = new Color(0.95f, 0.85f, 0.45f, 1f);
 
+            RunConfig water = replay.Record.Config;
+
+            // fable-propose-aquarium.md ruling 1. The frame is the bounding square either way
+            // (BoxOf), but what is stamped into the pixels is the water: a tank's outline is the
+            // circle and its patches are rings, and drawing the square would put a wall through
+            // four corners of open frame and invite a reader to measure a body against it.
+            if (water.SharedSpace && water.WorldShape == WorldShape.Tank)
+            {
+                DrawTank(box, water, surface, floor, vertical, seam);
+                return;
+            }
+
             // The surface rectangle at y = 0 and the floor rectangle at y = -depth, in their own
             // colours: which is which is the one thing a still picture of a water column must
             // never leave ambiguous.
@@ -1000,6 +1042,74 @@ namespace Evosim.Theatre
                 Line(new Vector3(hi.x, lo.y, z), new Vector3(hi.x, hi.y, z), seam);
                 Line(new Vector3(lo.x, hi.y, z), new Vector3(hi.x, hi.y, z), seam);
                 Line(new Vector3(lo.x, lo.y, z), new Vector3(hi.x, lo.y, z), seam);
+            }
+        }
+
+        /// <summary>
+        /// The tank's two circles, its eight verticals and its patch rings, drawn into the pixels.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The same picture <see cref="WaterBounds.ShowTank"/> draws in the scene</b>, for the
+        /// reason <see cref="DrawBox"/> composites the box: the immediate-mode draw is one
+        /// callback away from not reaching a camera made here, and a census view with no water in
+        /// it cannot be read. The radius is the config's own <c>sqrt(area/π)</c>
+        /// (<c>TankGeometry</c>) rather than half the frame, so a frame later widened for any
+        /// reason would still draw the glass where the glass is.
+        /// </para>
+        /// <para>
+        /// <b>Rings, not seams.</b> A tank's patches are annuli of equal area
+        /// (<c>logbook/specs/tank-spec.md</c>), so the boundaries are circles at
+        /// <c>R·sqrt(k/K)</c> and the outermost of them is the glass, already drawn.
+        /// </para>
+        /// </remarks>
+        private void DrawTank(
+            Bounds box, RunConfig water, Color surface, Color floor, Color vertical, Color seam)
+        {
+            float radius = TankGeometry.RadiusFor(water.WorldAreaSquareMetres);
+            var axis = new Vector3(radius, 0f, radius);
+
+            float top = box.max.y;
+            float bottom = box.min.y;
+
+            Circle(top, axis, radius, surface);
+            Circle(bottom, axis, radius, floor);
+
+            for (int i = 0; i < 8; i++)
+            {
+                float angle = 2f * Mathf.PI * i / 8f;
+                float x = axis.x + radius * Mathf.Cos(angle);
+                float z = axis.z + radius * Mathf.Sin(angle);
+
+                Line(new Vector3(x, bottom, z), new Vector3(x, top, z), vertical);
+            }
+
+            int rings = Mathf.Max(1, (int)water.HorizontalPatches);
+
+            for (int k = 1; k < rings; k++)
+            {
+                float r = radius * Mathf.Sqrt(k / (float)rings);
+
+                Circle(top, axis, r, seam);
+                Circle(bottom, axis, r, seam);
+            }
+        }
+
+        /// <summary>One horizontal circle, as a closed polyline of <see cref="CircleSegments"/> chords.</summary>
+        private void Circle(float y, Vector3 axis, float radius, Color colour)
+        {
+            if (!(radius > 0f)) return;
+
+            var previous = new Vector3(axis.x + radius, y, axis.z);
+
+            for (int i = 1; i <= CircleSegments; i++)
+            {
+                float angle = 2f * Mathf.PI * i / CircleSegments;
+                var next = new Vector3(
+                    axis.x + radius * Mathf.Cos(angle), y, axis.z + radius * Mathf.Sin(angle));
+
+                Line(previous, next, colour);
+                previous = next;
             }
         }
 

@@ -33,6 +33,16 @@ namespace Evosim.Sim.EditorTools
     /// top restores, the bed holds, contacts are counted, and no body is left non-finite.
     /// </para>
     /// <para>
+    /// <b>Part 4</b> is the other container — the tank of <c>fable-propose-aquarium.md</c> ruling 1
+    /// (<c>logbook/specs/tank-spec.md</c>), added on 2026-09-11 and in the same two halves. First
+    /// <see cref="SharedVolume"/>'s tank arithmetic with no scene: the bounding square, the rings,
+    /// the wrap that never happens, the separation that is never folded, founders that are all
+    /// inside the glass. Then the world with rock and glass in it, where five bodies are walked
+    /// into the wall at three times the fastest speed anything here has ever swum, to see them
+    /// stopped. The three box parts above are untouched: a Box world must stay bit-identical to
+    /// every recording, which is the tank build's one invariant.
+    /// </para>
+    /// <para>
     /// <b>The bed is a collider now</b> (<c>logbook/specs/floor-spec.md</c>, <see cref="SeaFloor"/>), so
     /// what Part 3 asks of the bottom changed with it. It used to ask whether a spring threw a
     /// body back into the world; it now asks the two things a bed has to be true of: <b>nothing is
@@ -161,6 +171,7 @@ namespace Evosim.Sim.EditorTools
                 ok &= RestoringBoundary(report);
                 ok &= Geometry(report);
                 ok &= TheBox(report);
+                ok &= TheTank(report);
             }
             catch (Exception e)
             {
@@ -754,6 +765,473 @@ namespace Evosim.Sim.EditorTools
             if (p.z >= volume.WidthMetres) over = Mathf.Max(over, p.z - volume.WidthMetres);
 
             return over;
+        }
+
+        // ----------------------------------------------------------------------- part 4: the tank
+
+        /// <summary>The tank's footprint, m². 100 m² is R = 5.6419 m — round 37's water.</summary>
+        private const float TankArea = 100f;
+
+        /// <summary>K, the rings of equal area a tank's patches are.</summary>
+        private const int TankRings = 4;
+
+        /// <summary>
+        /// How far past the glass a root is allowed to be seen, metres.
+        /// </summary>
+        /// <remarks>
+        /// <b>A quarter of a metre, and it is a contact tolerance rather than a band.</b> The
+        /// placer never puts a body outside the circle and the slabs' inner faces are tangent to
+        /// it, so a root pressed against the glass sits at R less whatever its own body reaches
+        /// out to; the only way past R at all is the millimetre or two of the prism's corners
+        /// (<see cref="TankWall"/>) plus the solver's contact offset. A quarter of a metre is far
+        /// more than either and far less than the metre at which
+        /// <c>Ecosystem.CheckFinite</c> calls a root a <c>Diverged</c> death, so a body this test
+        /// passes is a body inside the water and not one the divergence guard would have caught.
+        /// </remarks>
+        private const float WallToleranceMetres = 0.25f;
+
+        /// <summary>How hard a walked body is pushed at the glass, m/s.</summary>
+        /// <remarks>
+        /// The fastest animal on record here manages 0.5 m/s, so this is three times anything the
+        /// wall will ever be asked to stop by a creature — and at dt 0.01 it is 1.5 cm a step
+        /// against half a metre of glass, which is thirty steps of contact before anything could
+        /// tunnel. Re-imposed every step rather than applied once, because the fluid takes it
+        /// straight back off: what is under test is a body that keeps trying to leave.
+        /// </remarks>
+        private const float WalkMetresPerSecond = 1.5f;
+
+        /// <summary>How many bodies are walked into the glass.</summary>
+        private const int Walkers = 5;
+
+        /// <summary>Physics steps the tank is run for — six seconds at <see cref="FixedDt"/>.</summary>
+        /// <remarks>
+        /// Enough for a walked body to cross the whole tank at <see cref="WalkMetresPerSecond"/>
+        /// (9 m against a diameter of 11.3, from wherever in the disc it was founded) and then to
+        /// spend seconds pressed against the glass, which is the part that matters. The box's two
+        /// thousand steps are not needed: nothing here is waiting on a depenetration at 0.02 m/s.
+        /// </remarks>
+        private const int TankSteps = 600;
+
+        /// <summary>Founders the walled world is run with.</summary>
+        private const int TankFounders = 40;
+
+        /// <summary>
+        /// Does the tank hold? — <c>fable-propose-aquarium.md</c> ruling 1,
+        /// <c>logbook/specs/tank-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Two halves, cheapest first, exactly as the box's three are.</b> The first is
+        /// <see cref="SharedVolume"/>'s tank arithmetic with no scene at all: the bounding square,
+        /// the ring a position falls in, the wrap that must never happen, the distance that must
+        /// not be folded, and founders that must all be inside the glass. The second builds the
+        /// world with rock and glass in it and walks bodies at the wall to see them stopped.
+        /// </para>
+        /// <para>
+        /// <b>Why the wall is worth a smoke of its own.</b> Every other rule that keeps a body in
+        /// the tank is arithmetic and is tested as arithmetic — the placer refuses a candidate
+        /// outside the disc, the gyre has no radial flow at the glass, the divergence guard kills
+        /// a root a metre past it. The wall is the only one that is a collider, which means it is
+        /// the only one that can be built on the wrong layer, at the wrong radius, or facing the
+        /// wrong way and still look right in every number the world prints. A body walked into it
+        /// is the one question those four cannot answer between them.
+        /// </para>
+        /// <para>
+        /// <b>The header token is asked of the code that writes it</b>
+        /// (<see cref="EvolutionRun.SpaceToken"/>) rather than assembled again here. A smoke
+        /// carrying its own copy of the format would agree with itself for ever, and the token is
+        /// the only proof a launcher has that the container it asked for arrived: a build that
+        /// does not know <c>EVOSIM_SHAPE</c> ignores it and runs the old box.
+        /// </para>
+        /// </remarks>
+        private static bool TheTank(StringBuilder report)
+        {
+            report.AppendLine("**4. The tank** (`TankGeometry`, `TankWall`)");
+            report.AppendLine();
+
+            bool ok = true;
+
+            float radius = TankGeometry.RadiusFor(TankArea);
+
+            // The patch width is the box's number and means nothing in a tank — a ring is an
+            // annulus — but it is what the constructor takes, and handing it the world's own
+            // sqrt(area / K) keeps this volume identical to the one Ecosystem would build.
+            var volume = new SharedVolume(
+                patchCount: TankRings,
+                patchWidthMetres: Mathf.Sqrt(TankArea / TankRings),
+                depthMetres: 60f,
+                seed: 1,
+                offspringDispersalMetres: 0f,
+                patchesAcross: 1,
+                shape: WorldShape.Tank,
+                tankRadiusMetres: radius);
+
+            report.AppendLine(
+                "- tank of " + TankArea + " m2: R = " +
+                radius.ToString("0.####", CultureInfo.InvariantCulture) +
+                " m, bounding square " +
+                volume.LengthMetres.ToString("0.####", CultureInfo.InvariantCulture) +
+                " m on a side, axis at (" +
+                radius.ToString("0.##", CultureInfo.InvariantCulture) + ", " +
+                radius.ToString("0.##", CultureInfo.InvariantCulture) + ")");
+
+            ok &= Same(report, "the bounding square's length", volume.LengthMetres, 2f * radius);
+            ok &= Same(report, "the bounding square's width", volume.WidthMetres, 2f * radius);
+
+            // The rings, at known radii. Never on a boundary: ring i begins at R.sqrt(i/K) and a
+            // point placed exactly there is a float comparison rather than a fact about the world
+            // — the fractions below are either side of one, which is what a reader of a per-patch
+            // bin actually needs to be true.
+            ok &= Same(report, "ring at the axis", volume.PatchOf(radius, radius), 0);
+            ok &= Same(report, "ring at r = 0.49 R (inside the first boundary)",
+                volume.PatchOf(radius + 0.49f * radius, radius), 0);
+            ok &= Same(report, "ring at r = 0.51 R (outside it)",
+                volume.PatchOf(radius + 0.51f * radius, radius), 1);
+            ok &= Same(report, "ring at r = 0.51 R the other way (a ring has no direction)",
+                volume.PatchOf(radius - 0.51f * radius, radius), 1);
+            ok &= Same(report, "ring at r = 0.75 R, on z",
+                volume.PatchOf(radius, radius + 0.75f * radius), 2);
+            ok &= Same(report, "ring at r = 0.99 R (against the glass)",
+                volume.PatchOf(radius + 0.99f * radius, radius), 3);
+
+            // Outside reads the last ring rather than throwing: float error at the wall is not a
+            // world event, and the callers that care about being outside ask InTheWater.
+            ok &= Same(report, "ring past the glass (clamped, not thrown)",
+                volume.PatchOf(radius + 1.5f * radius, radius), 3);
+
+            ok &= Same(report, "the axis is in the water", volume.InTheWater(radius, radius) ? 1 : 0, 1);
+            ok &= Same(report, "a corner of the bounding square is not",
+                volume.InTheWater(0.1f, 0.1f) ? 1 : 0, 0);
+
+            // The wrap that must never happen. Every one of these leaves the box on some axis, and
+            // in D077's water each would have been translated to the far face; here the boundary
+            // is a collider and the body is stopped during the step rather than moved after it.
+            var loose = new[]
+            {
+                new Vector3(5f, -3f, 5f),
+                new Vector3(-1f, -3f, 5f),
+                new Vector3(2f * radius + 1f, -3f, 5f),
+                new Vector3(5f, -3f, -2f),
+                new Vector3(5f, -3f, 2f * radius + 2f),
+                new Vector3(4f * radius, -3f, 4f * radius),
+            };
+
+            int wrapped = 0;
+            int moved = 0;
+
+            for (int i = 0; i < loose.Length; i++)
+            {
+                if (volume.TryWrap(loose[i], out Vector3 after)) wrapped++;
+                if ((after - loose[i]).sqrMagnitude > 0f) moved++;
+            }
+
+            ok &= Same(report, "positions wrapped, including four outside the square", wrapped, 0);
+            ok &= Same(report, "positions moved by the wrap", moved, 0);
+            ok &= Same(report, "the wrap counter", (float)volume.Wraps, 0f);
+
+            // And the distance is the plain one. Two bodies at opposite ends of the bounding
+            // square are as far apart as the world goes; a periodic box of the same extent would
+            // call them a metre apart, which is the reading the minimum image exists to give and
+            // the one a tank must not.
+            ok &= Same(report, "distance across the tank (0.5 -> 2R - 0.5)",
+                volume.ShortestDistance(
+                    new Vector3(0.5f, -3f, radius), new Vector3(2f * radius - 0.5f, -3f, radius)),
+                2f * radius - 1f);
+
+            // Founders: uniform over the disc, and every one of them inside the glass. The bed is
+            // under them for part 2's reason — the founder lottery draws depths inside the rock,
+            // and a placer that did not consult the floor would bury a few.
+            SeaFloor bed = SeaFloor.Build(volume);
+            volume.Floor = bed;
+
+            var config = new RunConfig();
+            int placed = 0;
+            int outside = 0;
+            int badRing = 0;
+            float furthest = 0f;
+            var ringCount = new int[TankRings];
+
+            for (int i = 0; i < Founders; i++)
+            {
+                var rng = new Rng(Rng.SeedFor(909UL, (ulong)i));
+                Genome genome = GenomeFactory.Founder(rng, config.Genome, config.SensorPool());
+                Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
+                if (body.PartCount == 0) continue;
+
+                float height = -rng.Range(0f, 60f);
+
+                if (!volume.TryReserveFounder(body, ref height, out int patch)) continue;
+
+                volume.Commit(i);
+                volume.TryTakePlacement(i, out Vector3 at);
+
+                placed++;
+                if (!volume.InTheWater(at.x, at.z)) outside++;
+                if (patch < 0 || patch >= TankRings) badRing++;
+                else ringCount[patch]++;
+
+                float dx = at.x - radius;
+                float dz = at.z - radius;
+                furthest = Mathf.Max(furthest, Mathf.Sqrt(dx * dx + dz * dz));
+            }
+
+            report.AppendLine(
+                "- placed " + placed + " founders over the disc, " + volume.Rejections +
+                " rejected attempts; furthest from the axis " +
+                furthest.ToString("0.###", CultureInfo.InvariantCulture) + " m of " +
+                radius.ToString("0.###", CultureInfo.InvariantCulture) + "; by ring " +
+                string.Join("/", System.Array.ConvertAll(ringCount, c => c.ToString(CultureInfo.InvariantCulture))));
+
+            ok &= Same(report, "founders placed outside the glass", outside, 0);
+            ok &= Same(report, "founders placed in a ring that does not exist", badRing, 0);
+
+            // And the draw has to have happened, or both zeroes above are true of a world in which
+            // no founder was ever set down — part 2's `anyRaised` rule.
+            bool anyPlaced = placed > 0;
+            report.AppendLine(
+                (anyPlaced ? "- ok   " : "- FAIL ") + "the disc was drawn on: " + placed +
+                " of " + Founders + " founders placed");
+            ok &= anyPlaced;
+
+            bed.Destroy();
+            volume.Floor = null;
+
+            report.AppendLine();
+            ok &= TheGlass(report, radius);
+
+            report.AppendLine();
+            return ok;
+        }
+
+        /// <summary>
+        /// The walled world with bodies in it: the header's token, and bodies walked at the glass.
+        /// </summary>
+        private static bool TheGlass(StringBuilder report, float radius)
+        {
+            SimulationMode previousMode = Physics.simulationMode;
+            Vector3 previousGravity = Physics.gravity;
+
+            Physics.simulationMode = SimulationMode.Script;
+            FluidEnvironment.ConfigureScene(selfCollision: true);
+
+            Ecosystem.ConfigurePhysicsStep(FixedDt);
+
+            var config = new RunConfig
+            {
+                Light = new LightModel(200f, 12f),
+                SharedSpace = true,
+
+                // The tank, and the one thing it insists on: a grid. World refuses a tank on the
+                // cell field (a row of patches is not an annulus) and on the vertex field (a set
+                // of positions in a periodic box with no mask), so this is not a choice.
+                WorldShape = WorldShape.Tank,
+                FieldModel = MatterField.Grid,
+
+                HorizontalPatches = TankRings,
+                WorldAreaSquareMetres = TankArea,
+                WorldDepthMetres = 60f,
+                FounderDepthSpread = 60f,
+
+                MinimumPopulation = TankFounders,
+                FloorSpawnsPerStep = TankFounders,
+                MaximumPopulation = 4000,
+            };
+
+            config.Fluid.TissueExcessDensity = ExcessDensity;
+            config.Fluid.SurfaceRestoringFraction = 1f;
+
+            var eco = new Ecosystem(config, seed: 77);
+            bool ok = true;
+
+            try
+            {
+                // The token the run's header will carry, from the code that writes it. This is the
+                // only proof a launcher has that the shape arrived: a build that does not know
+                // EVOSIM_SHAPE ignores it silently and runs the old box.
+                string token = EvolutionRun.SpaceToken(config, eco);
+                const string wanted = "tank r=5.64 m (100 m2), depth 60, wall, bed";
+
+                bool tokenOk = token == wanted;
+                report.AppendLine(
+                    (tokenOk ? "- ok   " : "- FAIL ") + "the header's space token: `" + token + "`" +
+                    (tokenOk ? "" : " — wanted `" + wanted + "`"));
+                ok &= tokenOk;
+
+                ok &= Same(report, "slabs of glass", eco.Wall != null ? eco.Wall.Colliders.Length : 0,
+                    TankWall.Segments);
+
+                var walkers = new System.Collections.Generic.List<CreatureInstance>(Walkers);
+
+                float worstRadius = 0f;
+                float furthestWalker = 0f;
+                int outsideEver = 0;
+
+                for (int step = 1; step <= TankSteps; step++)
+                {
+                    eco.Step();
+
+                    // Picked once the founding cohort has bodies, and kept: what is under test is
+                    // one body's whole journey to the glass and what happens when it arrives. The
+                    // economy runs once every Ecosystem.StepsPerMetabolicStep physics steps and
+                    // the floor's spawns are its business, so there is nothing to pick before the
+                    // first of those; asked again each step until it has its five rather than on
+                    // one chosen step, which would be a number about the cadence.
+                    if (walkers.Count < Walkers && step > Ecosystem.StepsPerMetabolicStep)
+                    {
+                        Walk(eco, walkers);
+                    }
+
+                    // Re-imposed every step. The fluid takes the push straight back off, and a
+                    // body that stopped trying to leave would make every number below vacuous.
+                    Push(walkers, radius);
+
+                    foreach (CreatureInstance instance in eco.Instances)
+                    {
+                        ArticulationBody[] bodies = instance.Bodies;
+                        if (bodies == null || bodies.Length == 0) continue;
+
+                        Vector3 p = bodies[0].transform.position;
+                        float sum = p.x + p.z;
+                        if (float.IsNaN(sum) || float.IsInfinity(sum)) continue;
+
+                        float dx = p.x - radius;
+                        float dz = p.z - radius;
+                        float r = Mathf.Sqrt(dx * dx + dz * dz);
+
+                        worstRadius = Mathf.Max(worstRadius, r);
+                        if (r > radius + WallToleranceMetres) outsideEver++;
+                    }
+
+                    for (int i = 0; i < walkers.Count; i++)
+                    {
+                        if (walkers[i].Root == null) continue;
+
+                        ArticulationBody[] bodies = walkers[i].Bodies;
+                        if (bodies == null || bodies.Length == 0) continue;
+
+                        Vector3 p = bodies[0].transform.position;
+                        float sum = p.x + p.z;
+                        if (float.IsNaN(sum) || float.IsInfinity(sum)) continue;
+
+                        float dx = p.x - radius;
+                        float dz = p.z - radius;
+
+                        furthestWalker = Mathf.Max(furthestWalker, Mathf.Sqrt(dx * dx + dz * dz));
+                    }
+                }
+
+                report.AppendLine(
+                    "- " + eco.World.Living.Count + " alive after " + TankSteps + " steps at dt " +
+                    FixedDt + ", " + eco.World.FloorSpawns + " floor spawns, " + eco.World.Births +
+                    " births, " + eco.World.Diverged + " diverged");
+                report.AppendLine(
+                    "- " + walkers.Count + " bodies walked at the glass at " +
+                    WalkMetresPerSecond + " m/s: the furthest reached " +
+                    furthestWalker.ToString("0.####", CultureInfo.InvariantCulture) +
+                    " m from the axis, in a tank of " +
+                    radius.ToString("0.####", CultureInfo.InvariantCulture) + " m");
+                report.AppendLine(
+                    "- furthest any root was seen from the axis, any step and any body: " +
+                    worstRadius.ToString("0.####", CultureInfo.InvariantCulture) +
+                    " m (tolerance R + " + WallToleranceMetres + " m — see WallToleranceMetres)");
+                report.AppendLine(
+                    "- the glass and the bed: " + eco.FloorContactPairs +
+                    " contact pairs, counted apart from the " + eco.ContactPairs +
+                    " creature-creature pairs");
+
+                // The walk has to have happened, or every zero below is a statement about a world
+                // in which nothing ever went near the wall.
+                bool reached = walkers.Count > 0 && furthestWalker > radius - 1f;
+                report.AppendLine(
+                    (reached ? "- ok   " : "- FAIL ") + "the glass was actually reached: " +
+                    furthestWalker.ToString("0.###", CultureInfo.InvariantCulture) + " m of " +
+                    radius.ToString("0.###", CultureInfo.InvariantCulture) + " m");
+                ok &= reached;
+
+                ok &= Same(report, "roots seen past R + tolerance, any step", outsideEver, 0);
+                ok &= Within(report, "furthest any root got from the axis",
+                    worstRadius, radius + WallToleranceMetres);
+
+                // 0 by construction, and the column is kept in the report precisely so that a
+                // reader can see that it is (SharedVolume.TryWrap).
+                ok &= Same(report, "wraps in a tank", (float)eco.Wraps, 0f);
+
+                // A body thrown through the glass dies here as a counted death rather than riding
+                // a gyre sampled at a radius the field was never built over. It should never fire.
+                ok &= Same(report, "diverged", (int)eco.World.Diverged, 0);
+
+                // The glass has to be reporting: five bodies pressed against it that produce no
+                // pairs would mean the slabs are on a layer nothing hits, or providesContacts is
+                // off, or they are facing the wrong way and the bodies are inside the prism.
+                bool touched = eco.FloorContactPairs > 0;
+                report.AppendLine(
+                    (touched ? "- ok   " : "- FAIL ") + "the glass and the bed report contacts: " +
+                    eco.FloorContactPairs + " pairs");
+                ok &= touched;
+            }
+            finally
+            {
+                eco.DestroyAll();
+                Physics.simulationMode = previousMode;
+                Physics.gravity = previousGravity;
+            }
+
+            return ok;
+        }
+
+        /// <summary>Picks the bodies that will be walked into the glass.</summary>
+        private static void Walk(
+            Ecosystem eco, System.Collections.Generic.List<CreatureInstance> walkers)
+        {
+            foreach (CreatureInstance instance in eco.Instances)
+            {
+                if (walkers.Count >= Walkers) return;
+
+                ArticulationBody[] bodies = instance.Bodies;
+                if (bodies == null || bodies.Length == 0) continue;
+
+                // By reference, because this is asked again on every step until it has its five:
+                // a world whose founding cohort arrived in two batches would otherwise carry the
+                // first batch twice and count one body's journey as two.
+                if (walkers.Contains(instance)) continue;
+
+                walkers.Add(instance);
+            }
+        }
+
+        /// <summary>
+        /// Pushes each walked body straight at the nearest glass, one step's worth.
+        /// </summary>
+        /// <remarks>
+        /// The root's velocity is set rather than a force added, so that what arrives at the wall
+        /// is a known speed rather than whatever the drag model left of an impulse — the wall is
+        /// what is under test and not the water. Outward from the axis, so a body walks the
+        /// shortest way to the glass from wherever it was founded; a body exactly on the axis has
+        /// no outward direction and is sent along +x.
+        /// </remarks>
+        private static void Push(
+            System.Collections.Generic.List<CreatureInstance> walkers, float radius)
+        {
+            for (int i = 0; i < walkers.Count; i++)
+            {
+                if (walkers[i].Root == null) continue;
+
+                ArticulationBody[] bodies = walkers[i].Bodies;
+                if (bodies == null || bodies.Length == 0) continue;
+
+                ArticulationBody root = bodies[0];
+                Vector3 p = root.transform.position;
+
+                float dx = p.x - radius;
+                float dz = p.z - radius;
+                float r = Mathf.Sqrt(dx * dx + dz * dz);
+
+                Vector3 outward = r > 1e-3f
+                    ? new Vector3(dx / r, 0f, dz / r)
+                    : Vector3.right;
+
+                root.linearVelocity = outward * WalkMetresPerSecond;
+            }
         }
 
         /// <summary>
