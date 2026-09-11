@@ -1,0 +1,288 @@
+############ jointed2 (clade B, id 689) ############
+dotnet:  C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe
+project: D:\Projects\experiments\evolution-simulator\src\Evosim.Ledger\Evosim.Ledger.csproj
+
+## Body — scratch/r34-read/jointed2.json
+
+- Parts: 2
+- Volume: 0.0056 m3
+- Lit area: 0.0475 m2
+- Tissue: 2.7967 J
+- Standing cost: 0.0169 W
+- Truncated: False
+- Cell types: link x1 (0.0019 m3) photosynthetic x1 (0.0036 m3)
+
+## Body (leaf <-> stomach swapped) — scratch/r34-read/jointed2.json
+
+- Parts: 2
+- Volume: 0.0056 m3
+- Lit area: 0.0475 m2
+- Tissue: 2.7967 J
+- Standing cost: 0.0206 W
+- Truncated: False
+- Cell types: absorptive x1 (0.0036 m3) link x1 (0.0019 m3)
+
+
+### Clearance = 1 (as stored)
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|0.2265|none|9822.5|23|120.5|3.8226|
+|0|1|0.2265|none|9822.5|23|120.5|3.8226|
+|0|2|0.2265|none|9822.5|23|120.5|3.8226|
+|0|4|0.2265|none|9822.5|23|120.5|3.8226|
+|12|0.5|0.0726|none|5032|4|404.5|3.8226|
+|12|1|0.0726|none|5032|4|404.5|3.8226|
+|12|2|0.0726|none|5032|4|404.5|3.8226|
+|12|4|0.0726|none|5032|4|404.5|3.8226|
+|20|0.5|0.029|none|4209.5|0|never|3.8226|
+|20|1|0.029|none|4209.5|0|never|3.8226|
+|20|2|0.029|none|4209.5|0|never|3.8226|
+|20|4|0.029|none|4209.5|0|never|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+
+
+### Clearance = 1 (swapped (1 node(s)))
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|-0.0188|5.648|22|0|never|3.8226|
+|0|1|-0.0169|5.648|24.5|0|never|3.8226|
+|0|2|-0.0133|5.648|31|0|never|3.8226|
+|0|4|-0.006|5.648|64.5|0|never|3.8226|
+|12|0.5|-0.0188|5.648|22|0|never|3.8226|
+|12|1|-0.0169|5.648|24.5|0|never|3.8226|
+|12|2|-0.0133|5.648|31|0|never|3.8226|
+|12|4|-0.006|5.648|64.5|0|never|3.8226|
+|20|0.5|-0.0188|5.648|22|0|never|3.8226|
+|20|1|-0.0169|5.648|24.5|0|never|3.8226|
+|20|2|-0.0133|5.648|31|0|never|3.8226|
+|20|4|-0.006|5.648|64.5|0|never|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+
+
+### Clearance = 5 (as stored)
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|0.2265|none|9822.5|23|120.5|3.8226|
+|0|1|0.2265|none|9822.5|23|120.5|3.8226|
+|0|2|0.2265|none|9822.5|23|120.5|3.8226|
+|0|4|0.2265|none|9822.5|23|120.5|3.8226|
+|12|0.5|0.0726|none|5032|4|404.5|3.8226|
+|12|1|0.0726|none|5032|4|404.5|3.8226|
+|12|2|0.0726|none|5032|4|404.5|3.8226|
+|12|4|0.0726|none|5032|4|404.5|3.8226|
+|20|0.5|0.029|none|4209.5|0|never|3.8226|
+|20|1|0.029|none|4209.5|0|never|3.8226|
+|20|2|0.029|none|4209.5|0|never|3.8226|
+|20|4|0.029|none|4209.5|0|never|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+
+
+### Clearance = 5 (swapped (1 node(s)))
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|-0.0115|1.1296|35.5|0|never|3.8226|
+|0|1|-0.0024|1.1296|129.5|0|never|3.8226|
+|0|2|0.0159|1.1296|2106|0|never|3.8226|
+|0|4|0.0523|1.1296|3614.5|2|610|3.8226|
+|12|0.5|-0.0115|1.1296|35.5|0|never|3.8226|
+|12|1|-0.0024|1.1296|129.5|0|never|3.8226|
+|12|2|0.0159|1.1296|2106|0|never|3.8226|
+|12|4|0.0523|1.1296|3614.5|2|610|3.8226|
+|20|0.5|-0.0115|1.1296|35.5|0|never|3.8226|
+|20|1|-0.0024|1.1296|129.5|0|never|3.8226|
+|20|2|0.0159|1.1296|2106|0|never|3.8226|
+|20|4|0.0523|1.1296|3614.5|2|610|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+
+
+### Clearance = 10 (as stored)
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|0.2265|none|9822.5|23|120.5|3.8226|
+|0|1|0.2265|none|9822.5|23|120.5|3.8226|
+|0|2|0.2265|none|9822.5|23|120.5|3.8226|
+|0|4|0.2265|none|9822.5|23|120.5|3.8226|
+|12|0.5|0.0726|none|5032|4|404.5|3.8226|
+|12|1|0.0726|none|5032|4|404.5|3.8226|
+|12|2|0.0726|none|5032|4|404.5|3.8226|
+|12|4|0.0726|none|5032|4|404.5|3.8226|
+|20|0.5|0.029|none|4209.5|0|never|3.8226|
+|20|1|0.029|none|4209.5|0|never|3.8226|
+|20|2|0.029|none|4209.5|0|never|3.8226|
+|20|4|0.029|none|4209.5|0|never|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+
+
+### Clearance = 10 (swapped (1 node(s)))
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|-0.0024|0.5648|129.5|0|never|3.8226|
+|0|1|0.0159|0.5648|2106|0|never|3.8226|
+|0|2|0.0523|0.5648|3614.5|2|610|3.8226|
+|0|4|0.1252|0.5648|6934.5|8|223.5|3.8226|
+|12|0.5|-0.0024|0.5648|129.5|0|never|3.8226|
+|12|1|0.0159|0.5648|2106|0|never|3.8226|
+|12|2|0.0523|0.5648|3614.5|2|610|3.8226|
+|12|4|0.1252|0.5648|6934.5|8|223.5|3.8226|
+|20|0.5|-0.0024|0.5648|129.5|0|never|3.8226|
+|20|1|0.0159|0.5648|2106|0|never|3.8226|
+|20|2|0.0523|0.5648|3614.5|2|610|3.8226|
+|20|4|0.1252|0.5648|6934.5|8|223.5|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+
+############ rigid2 (clade B, id 689) ############
+dotnet:  C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe
+project: D:\Projects\experiments\evolution-simulator\src\Evosim.Ledger\Evosim.Ledger.csproj
+
+## Body — scratch/r34-read/rigid2.json
+
+- Parts: 2
+- Volume: 0.0056 m3
+- Lit area: 0.0475 m2
+- Tissue: 2.7967 J
+- Standing cost: 0.0158 W
+- Truncated: False
+- Cell types: link x1 (0.0019 m3) photosynthetic x1 (0.0036 m3)
+
+## Body (leaf <-> stomach swapped) — scratch/r34-read/rigid2.json
+
+- Parts: 2
+- Volume: 0.0056 m3
+- Lit area: 0.0475 m2
+- Tissue: 2.7967 J
+- Standing cost: 0.0195 W
+- Truncated: False
+- Cell types: absorptive x1 (0.0036 m3) link x1 (0.0019 m3)
+
+
+### Clearance = 1 (as stored)
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|0.2276|none|10028|24|120|3.8226|
+|0|1|0.2276|none|10028|24|120|3.8226|
+|0|2|0.2276|none|10028|24|120|3.8226|
+|0|4|0.2276|none|10028|24|120|3.8226|
+|12|0.5|0.0737|none|5862|4|396.5|3.8226|
+|12|1|0.0737|none|5862|4|396.5|3.8226|
+|12|2|0.0737|none|5862|4|396.5|3.8226|
+|12|4|0.0737|none|5862|4|396.5|3.8226|
+|20|0.5|0.0302|none|2701|1|1554|3.8226|
+|20|1|0.0302|none|2701|1|1554|3.8226|
+|20|2|0.0302|none|2701|1|1554|3.8226|
+|20|4|0.0302|none|2701|1|1554|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+
+
+### Clearance = 1 (swapped (1 node(s)))
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|-0.0176|5.3362|23.5|0|never|3.8226|
+|0|1|-0.0158|5.3362|26|0|never|3.8226|
+|0|2|-0.0122|5.3362|33.5|0|never|3.8226|
+|0|4|-0.0049|5.3362|78|0|never|3.8226|
+|12|0.5|-0.0176|5.3362|23.5|0|never|3.8226|
+|12|1|-0.0158|5.3362|26|0|never|3.8226|
+|12|2|-0.0122|5.3362|33.5|0|never|3.8226|
+|12|4|-0.0049|5.3362|78|0|never|3.8226|
+|20|0.5|-0.0176|5.3362|23.5|0|never|3.8226|
+|20|1|-0.0158|5.3362|26|0|never|3.8226|
+|20|2|-0.0122|5.3362|33.5|0|never|3.8226|
+|20|4|-0.0049|5.3362|78|0|never|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+
+
+### Clearance = 5 (as stored)
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|0.2276|none|10028|24|120|3.8226|
+|0|1|0.2276|none|10028|24|120|3.8226|
+|0|2|0.2276|none|10028|24|120|3.8226|
+|0|4|0.2276|none|10028|24|120|3.8226|
+|12|0.5|0.0737|none|5862|4|396.5|3.8226|
+|12|1|0.0737|none|5862|4|396.5|3.8226|
+|12|2|0.0737|none|5862|4|396.5|3.8226|
+|12|4|0.0737|none|5862|4|396.5|3.8226|
+|20|0.5|0.0302|none|2701|1|1554|3.8226|
+|20|1|0.0302|none|2701|1|1554|3.8226|
+|20|2|0.0302|none|2701|1|1554|3.8226|
+|20|4|0.0302|none|2701|1|1554|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+
+
+### Clearance = 5 (swapped (1 node(s)))
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|-0.0103|1.0672|39.5|0|never|3.8226|
+|0|1|-0.0012|1.0672|178|0|never|3.8226|
+|0|2|0.017|1.0672|2355|0|never|3.8226|
+|0|4|0.0535|1.0672|4131.5|2|589.5|3.8226|
+|12|0.5|-0.0103|1.0672|39.5|0|never|3.8226|
+|12|1|-0.0012|1.0672|178|0|never|3.8226|
+|12|2|0.017|1.0672|2355|0|never|3.8226|
+|12|4|0.0535|1.0672|4131.5|2|589.5|3.8226|
+|20|0.5|-0.0103|1.0672|39.5|0|never|3.8226|
+|20|1|-0.0012|1.0672|178|0|never|3.8226|
+|20|2|0.017|1.0672|2355|0|never|3.8226|
+|20|4|0.0535|1.0672|4131.5|2|589.5|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+
+
+### Clearance = 10 (as stored)
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|0.2276|none|10028|24|120|3.8226|
+|0|1|0.2276|none|10028|24|120|3.8226|
+|0|2|0.2276|none|10028|24|120|3.8226|
+|0|4|0.2276|none|10028|24|120|3.8226|
+|12|0.5|0.0737|none|5862|4|396.5|3.8226|
+|12|1|0.0737|none|5862|4|396.5|3.8226|
+|12|2|0.0737|none|5862|4|396.5|3.8226|
+|12|4|0.0737|none|5862|4|396.5|3.8226|
+|20|0.5|0.0302|none|2701|1|1554|3.8226|
+|20|1|0.0302|none|2701|1|1554|3.8226|
+|20|2|0.0302|none|2701|1|1554|3.8226|
+|20|4|0.0302|none|2701|1|1554|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+
+
+### Clearance = 10 (swapped (1 node(s)))
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | matter/child |
+|---|---|---|---|---|---|---|---|
+|0|0.5|-0.0012|0.5336|178|0|never|3.8226|
+|0|1|0.017|0.5336|2355|0|never|3.8226|
+|0|2|0.0535|0.5336|4131.5|2|589.5|3.8226|
+|0|4|0.1264|0.5336|6346.5|9|221.5|3.8226|
+|12|0.5|-0.0012|0.5336|178|0|never|3.8226|
+|12|1|0.017|0.5336|2355|0|never|3.8226|
+|12|2|0.0535|0.5336|4131.5|2|589.5|3.8226|
+|12|4|0.1264|0.5336|6346.5|9|221.5|3.8226|
+|20|0.5|-0.0012|0.5336|178|0|never|3.8226|
+|20|1|0.017|0.5336|2355|0|never|3.8226|
+|20|2|0.0535|0.5336|4131.5|2|589.5|3.8226|
+|20|4|0.1264|0.5336|6346.5|9|221.5|3.8226|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+

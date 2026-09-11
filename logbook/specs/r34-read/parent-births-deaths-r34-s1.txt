@@ -1,0 +1,111 @@
+# r34-s1: runs\r34-s1\2026-09-10-215639-96b76bdc\lineage.jsonl
+# organisms recorded: 17831, last event at t=29999.5 s
+
+== r34-s1: parents born 0-5,000 s (n=2155) ==
+  by own joint (jnt) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    jointed (jnt=1)    573           1.499             0.000            661.4          1.2818
+    rigid (jnt=0)    1582           1.485             0.000           1244.6          0.8012
+  by own absorptive (abs) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    absorptive (abs=1)    851           1.186             0.000           1740.1          0.7568
+    non-abs (abs=0)   1304           1.687             0.000            665.0          1.0414
+
+== r34-s1: parents born 5,000-15,000 s (n=5070) ==
+  by own joint (jnt) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    jointed (jnt=1)    661           0.649             0.000            511.2          0.2363
+    rigid (jnt=0)    4409           1.361             0.000           1541.2          0.3843
+  by own absorptive (abs) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    absorptive (abs=1)    851           1.115             1.000           3761.1          0.3003
+    non-abs (abs=0)   4219           1.299             0.000            932.1          0.3780
+
+== r34-s1: parents born 0-30,000 s (n=17831) ==
+  by own joint (jnt) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    jointed (jnt=1)   1404           0.942             0.000            541.8          0.6412
+    rigid (jnt=0)   16427           0.997             0.000           1373.3          0.2983
+  by own absorptive (abs) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    absorptive (abs=1)   2753           0.988             0.000           2846.3          0.3952
+    non-abs (abs=0)  15078           0.994             0.000           1027.0          0.3125
+
+== r34-s1: --deaths, born 0-5,000 s (n=2155) ==
+  jointed (jnt=1) (n=573)
+    age at death          n    share
+    0-50 s              235    41.0%
+    50-200 s            105    18.3%
+    200-500 s            82    14.3%
+    500-1,500 s          68    11.9%
+    1,500-3,000 s        39     6.8%
+    3,000+ s             44     7.7%
+    alive at end          0     0.0%
+    bf   (birth fraction): mean 0.1227, median 0.0742
+    as   (adult scale):    mean 0.9639, median 1.0000
+    parent itself jointed: 97.3% of 512 with a known parent (61 founder/inoculant with no parent to check)
+  rigid (jnt=0) (n=1582)
+    age at death          n    share
+    0-50 s              363    22.9%
+    50-200 s            325    20.5%
+    200-500 s           263    16.6%
+    500-1,500 s         181    11.4%
+    1,500-3,000 s       173    10.9%
+    3,000+ s            277    17.5%
+    alive at end          0     0.0%
+    bf   (birth fraction): mean 0.3290, median 0.3466
+    as   (adult scale):    mean 0.8915, median 1.0000
+    parent itself jointed: 4.4% of 1519 with a known parent (63 founder/inoculant with no parent to check)
+
+== r34-s1: --deaths, born 5,000-15,000 s (n=5070) ==
+  jointed (jnt=1) (n=661)
+    age at death          n    share
+    0-50 s              144    21.8%
+    50-200 s            249    37.7%
+    200-500 s           141    21.3%
+    500-1,500 s          65     9.8%
+    1,500-3,000 s        32     4.8%
+    3,000+ s             30     4.5%
+    alive at end          0     0.0%
+    bf   (birth fraction): mean 0.0972, median 0.0742
+    as   (adult scale):    mean 0.8567, median 0.8465
+    parent itself jointed: 89.0% of 661 with a known parent (0 founder/inoculant with no parent to check)
+  rigid (jnt=0) (n=4409)
+    age at death          n    share
+    0-50 s              476    10.8%
+    50-200 s           1210    27.4%
+    200-500 s           732    16.6%
+    500-1,500 s         522    11.8%
+    1,500-3,000 s       549    12.5%
+    3,000+ s            919    20.8%
+    alive at end          1     0.0%
+    bf   (birth fraction): mean 0.2758, median 0.0952
+    as   (adult scale):    mean 0.7263, median 0.8122
+    parent itself jointed: 1.8% of 4409 with a known parent (0 founder/inoculant with no parent to check)
+
+== r34-s1: --deaths, born 0-30,000 s (n=17831) ==
+  jointed (jnt=1) (n=1404)
+    age at death          n    share
+    0-50 s              474    33.8%
+    50-200 s            405    28.8%
+    200-500 s           237    16.9%
+    500-1,500 s         137     9.8%
+    1,500-3,000 s        73     5.2%
+    3,000+ s             78     5.6%
+    alive at end          0     0.0%
+    bf   (birth fraction): mean 0.1124, median 0.0742
+    as   (adult scale):    mean 0.8900, median 0.8465
+    parent itself jointed: 86.6% of 1343 with a known parent (61 founder/inoculant with no parent to check)
+  rigid (jnt=0) (n=16427)
+    age at death          n    share
+    0-50 s             2441    14.9%
+    50-200 s           3997    24.3%
+    200-500 s          3038    18.5%
+    500-1,500 s        1805    11.0%
+    1,500-3,000 s      1486     9.0%
+    3,000+ s           2355    14.3%
+    alive at end       1305     7.9%
+    bf   (birth fraction): mean 0.2593, median 0.1065
+    as   (adult scale):    mean 0.6201, median 0.5594
+    parent itself jointed: 1.0% of 16364 with a known parent (63 founder/inoculant with no parent to check)
+
