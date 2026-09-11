@@ -78,9 +78,11 @@ transport` and `space shared 4x5x5 m` before it was counted as launched.
 | `r36-s1` | 2026-09-11 07:18 | `2026-09-11-071830-55a61291` | 5 |
 | `r36-s2` | 2026-09-11 07:20 | `2026-09-11-072004-55a61291` | 6 |
 | `r36-s3` | 2026-09-11 11:25 | `2026-09-11-112526-55a61291` | 5 |
+| `r36-s4` | 2026-09-11 18:08 | `2026-09-11-170833-55a61291` | 6 |
 
-Seeds 4 and 5 follow on the same two workers as each frees (`scripts/launch-queue.ps1`).
-Seed 1 ended at budget the same day at 12:06 with 1,154 alive; its read waits for the set.
+Seed 5 follows on the first of the two workers to free (`scripts/launch-queue.ps1`). Seeds 1
+and 2 ended at budget the same day, at 12:06 with 1,154 alive and at 18:05 with 1,624; their
+reads wait for the set.
 
 ## What the round does not ask
 
