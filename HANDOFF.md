@@ -31,8 +31,13 @@ and the pillow (0.34 or 0.5) is the owner's ruling. The fourth day, the sun and 
 light shafts, caustics on bodies and bed from one ripple, a `sky` snapshot view), is in
 build on branch `skin4` in the worktree `scratch/wt-skin4`, compiled and photographed on a
 worker when a slot frees, then merged. The owner watched `r36-s1` in the theatre (Mode B,
-seek 5,000 s) and saw no sun, shimmer or ripple, which is why the day was moved up. The box build (branch `box`, worktree `scratch/wt-box`) waits
-for round 36's last launch before it merges, since it moves Core. The round 34 read files
+seek 5,000 s) and saw no sun, shimmer or ripple, which is why the day was moved up. Round 36 is fully launched (seed 5 at 19:23); seeds 1, 2 and 3 have landed with
+a jointed inherited count at 30,000 s of 73, 4 and 0. The box build (branch `box`, worktree
+`scratch/wt-box`) now waits for round 36's renders as well as its arms, because the theatre
+refuses a recording whose `coreHash` the build did not write and every worker compiles Core
+from the main tree: merging before the last render would make every round 36 picture a
+declared cousin. Order: skin day 4 merges first (no hash), then the box with the limiter
+tunable if the owner rules for it, after the last round 36 render. The round 34 read files
 moved from `scratch/r34-read/` to `logbook/specs/r34-read/` because 0090 cites them.**
 
 **Round 35 is read (logbook/0087, 2026-09-11 small hours): the three-dimensional base stands
