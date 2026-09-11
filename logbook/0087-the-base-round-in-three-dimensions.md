@@ -155,7 +155,10 @@ structure seen in fifteen pictures. Seed 5's bodies are mostly spheres by the en
 seed 3's are small boxes, so a picture can now tell one seed's morphology from another's
 at a glance. Seed 4 is one founder's lineage in the whole box, every one of its 1,709 bodies
 descending from the creature born at 27.5 s, the stomach line among them a mutant of 4,178
-s. Whether anything holds against the current or rides it cannot be read from a still.
+s. Seed 4's pictures, taken last, add one thing: from the side its 1,709 small oblong bodies
+are drawn into diagonal filaments a few metres long, the eddies of the transport field seen
+in what they carry, and the only picture of the fifteen in which the water itself shows.
+Whether anything holds against the current or rides it cannot be read from a still.
 
 ![Round 35 seed 5 from above at 30,000 s](images/r35-s5-t30000-top.png)
 
