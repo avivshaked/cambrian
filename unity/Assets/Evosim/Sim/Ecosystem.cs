@@ -501,9 +501,12 @@ namespace Evosim.Sim
                 // The patch width from the fields themselves — sqrt(area / K) — rather than
                 // recomputed here. One derivation: a world with two answers for how wide a patch
                 // is would price the ecology against one and place bodies against the other.
+                // The layout too, so the placer wraps and indexes over the box the fields
+                // were built with rather than over a row of patches (fable-propose-box.md).
                 Volume = new SharedVolume(
                     Fluid.PatchCount, World.Nutrients.PatchWidthMetres,
-                    config.WorldDepthMetres, seed, config.OffspringDispersalMetres);
+                    config.WorldDepthMetres, seed, config.OffspringDispersalMetres,
+                    Mathf.Max(1, (int)config.PatchesAcross));
 
                 World.Placement = Volume;
 
@@ -609,7 +612,7 @@ namespace Evosim.Sim
         public SharedVolume Volume { get; }
 
         /// <summary>
-        /// The sea bed under the box — <c>scratch/floor-spec.md</c>. Null in a tiled world.
+        /// The sea bed under the box — <c>logbook/specs/floor-spec.md</c>. Null in a tiled world.
         /// </summary>
         public SeaFloor Floor { get; }
 
@@ -743,7 +746,7 @@ namespace Evosim.Sim
             if (Volume == null) return reading;
 
             float length = Volume.LengthMetres;
-            float width = Volume.PatchWidthMetres;
+            float width = Volume.WidthMetres;
 
             // Ceiling, not rounding, so a box whose side is not a whole number of metres still has
             // a column for every point in it; the last one on each axis is then a part column, and
@@ -934,7 +937,7 @@ namespace Evosim.Sim
 
             Steps++;
 
-            // The state digest — scratch/digest-spec.md. One null test per physics step when it
+            // The state digest — logbook/specs/digest-spec.md. One null test per physics step when it
             // is off, which is every run that does not set EVOSIM_DIGEST_EVERY: the instrument
             // reads the solver and writes a file, and touches nothing the world will read back.
             // Placed after Settle rather than immediately after Physics.Simulate because neither
@@ -948,7 +951,7 @@ namespace Evosim.Sim
             return true;
         }
 
-        // ---- the state digest (scratch/digest-spec.md)
+        // ---- the state digest (logbook/specs/digest-spec.md)
 
         /// <summary>Floats recorded per part: position 3, rotation 4, linear 3, angular 3.</summary>
         /// <remarks>

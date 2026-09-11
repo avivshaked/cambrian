@@ -599,5 +599,274 @@ namespace Evosim.Core.Tests
 
             return (x, y, z);
         }
+
+        // ------------------------------------------------------------ the square box (fable-propose-box.md)
+
+        // The same four patches of the same 5 m side, laid two by two: 10 m along x, 10 m
+        // across z, 60 m deep. Every property the row-shaped box is held to is asked again
+        // here, because the field is rebuilt from the box and a layout it had never seen
+        // could close on none of them.
+        private const float SquareLength = Width * 2f;
+        private const float SquareWidth = Width * 2f;
+
+        private static CurrentField SquareTransport(float speed = Speed, ulong seed = Seed)
+        {
+            var field = new CurrentField
+            {
+                Mode = CurrentMode.Transport,
+                Speed = speed,
+                PeriodSeconds = Period,
+                AdvectFields = true,
+            };
+
+            field.SetBox(Width, Patches, Depth, seed, patchesAcross: 2);
+            return field;
+        }
+
+        [Fact]
+        public void TheSquareBoxIsTheOneTheLayoutDescribes()
+        {
+            CurrentField field = SquareTransport();
+
+            Assert.Equal(2, field.PatchesAcross);
+            Assert.Equal(2, field.PatchesAlong);
+            Assert.Equal(SquareLength, field.LengthMetres);
+            Assert.Equal(SquareWidth, field.WidthMetres);
+
+            // And a layout that leaves a part row is refused rather than rounded.
+            ArgumentException refused = Assert.Throws<ArgumentException>(
+                () => new CurrentField { Mode = CurrentMode.Transport }
+                    .SetBox(Width, Patches, Depth, Seed, patchesAcross: 3));
+
+            _output.WriteLine(refused.Message);
+            Assert.Contains("3 patches across do not divide 4 patches", refused.Message);
+        }
+
+        [Fact]
+        public void TheSquareFieldIsDivergenceFreeAndPeriodicOnBothRings()
+        {
+            CurrentField field = SquareTransport();
+
+            const double H = 0.05;
+
+            var rng = new Rng(23UL);
+            double worstDivergence = 0d;
+            double worstWrap = 0d;
+
+            for (int i = 0; i < 2000; i++)
+            {
+                double x = rng.NextFloat() * SquareLength;
+                double z = rng.NextFloat() * SquareWidth;
+                double y = -1d - rng.NextFloat() * (Depth - 2d);
+                double t = rng.NextFloat() * 4d * Period;
+
+                double dudx = (Vx(field, x + H, y, z, t) - Vx(field, x - H, y, z, t)) / (2d * H);
+                double dvdy = (Vy(field, x, y + H, z, t) - Vy(field, x, y - H, z, t)) / (2d * H);
+                double dwdz = (Vz(field, x, y, z + H, t) - Vz(field, x, y, z - H, t)) / (2d * H);
+
+                worstDivergence = Math.Max(worstDivergence, Math.Abs(dudx + dvdy + dwdz));
+
+                Float3 here = field.VelocityAt((float)x, (float)y, (float)z, t);
+                Float3 alongX = field.VelocityAt((float)x + SquareLength, (float)y, (float)z, t);
+                Float3 alongZ = field.VelocityAt((float)x, (float)y, (float)z + SquareWidth, t);
+
+                worstWrap = Math.Max(worstWrap, (here - alongX).Magnitude);
+                worstWrap = Math.Max(worstWrap, (here - alongZ).Magnitude);
+            }
+
+            _output.WriteLine(
+                $"square box: worst |div v| {worstDivergence:0.0000e+0} /s, " +
+                $"worst wrap mismatch {worstWrap:0.0000e+0} m/s");
+
+            Assert.True(worstDivergence < 1e-3, $"worst divergence {worstDivergence:0.0000e+0} /s");
+            Assert.True(worstWrap < 1e-5, $"worst mismatch {worstWrap:0.0000e+0} m/s");
+        }
+
+        [Fact]
+        public void TheSquareFieldIsClosedAtTheSurfaceAndTheBedAndRunsAtTheKnob()
+        {
+            CurrentField field = SquareTransport();
+
+            var rng = new Rng(29UL);
+
+            for (int i = 0; i < 200; i++)
+            {
+                float x = rng.NextFloat() * SquareLength;
+                float z = rng.NextFloat() * SquareWidth;
+                double t = rng.NextFloat() * 10d * Period;
+
+                Assert.Equal(0f, field.VelocityAt(x, 0f, z, t).Y);
+                Assert.Equal(0f, field.VelocityAt(x, -Depth, z, t).Y);
+            }
+
+            // The RMS over the box and over time, on the lattice the row-shaped box is read
+            // on: the knob means the same thing in a square box or it means nothing.
+            const int Points = 24;
+            const int Times = 8;
+
+            double sum = 0d, sumX = 0d, sumY = 0d, sumZ = 0d;
+            int taken = 0;
+
+            for (int it = 0; it < Times; it++)
+            {
+                double t = it * Period / Times;
+
+                for (int ix = 0; ix < Points; ix++)
+                {
+                    float x = (ix + 0.5f) * SquareLength / Points;
+
+                    for (int iy = 0; iy < Points; iy++)
+                    {
+                        float y = -(iy + 0.5f) * Depth / Points;
+
+                        for (int iz = 0; iz < Points; iz++)
+                        {
+                            float z = (iz + 0.5f) * SquareWidth / Points;
+
+                            Float3 v = field.VelocityAt(x, y, z, t);
+                            sum += (double)v.X * v.X + (double)v.Y * v.Y + (double)v.Z * v.Z;
+                            sumX += (double)v.X * v.X;
+                            sumY += (double)v.Y * v.Y;
+                            sumZ += (double)v.Z * v.Z;
+                            taken++;
+                        }
+                    }
+                }
+            }
+
+            double rms = Math.Sqrt(sum / taken);
+            double rmsX = Math.Sqrt(sumX / taken);
+            double rmsY = Math.Sqrt(sumY / taken);
+            double rmsZ = Math.Sqrt(sumZ / taken);
+
+            _output.WriteLine(
+                $"square box: RMS {rms:0.0000} m/s over {taken:n0} samples; per axis " +
+                $"x {rmsX:0.0000}, y {rmsY:0.0000}, z {rmsZ:0.0000} m/s");
+
+            Assert.Equal((double)Speed, rms, 0.05 * Speed);
+
+            double most = Math.Max(rmsX, Math.Max(rmsY, rmsZ));
+            double least = Math.Min(rmsX, Math.Min(rmsY, rmsZ));
+
+            Assert.True(
+                most < 1.5 * least,
+                $"the axes are {most / least:0.00}x apart: x {rmsX:0.0000}, y {rmsY:0.0000}, z {rmsZ:0.0000} m/s");
+        }
+
+        [Fact]
+        public void TheSquareBoxsEddiesCarryTheVerticalModeNumbersTheLayoutImplies()
+        {
+            // fable-propose-box.md's arithmetic: the five wavevectors (1,0), (0,1), (1,1),
+            // (2,1) and (2,0) in a 10 by 10 by 60 m box give vertical mode numbers 12, 12, 17,
+            // 27 and 24, against 6, 24, 25, 27 and 12 in the 20 by 5 m one. The finest
+            // structure does not change, so the 1 m detritus grid resolves the field no worse
+            // than it does today; the gain is horizontal.
+            //
+            // Measured rather than recomputed. The x velocity down a column is
+            // Σ (q π / D) cos(q π y / D) g, so projecting it onto cos(q π y / D) for every q up
+            // to forty finds the mode numbers the field was actually built with — a test that
+            // restated the formula would agree with an implementation that had stopped using
+            // it.
+            CurrentField field = SquareTransport();
+
+            const int Samples = 512;
+            const int Modes = 40;
+
+            var power = new double[Modes + 1];
+            var rng = new Rng(31UL);
+
+            for (int column = 0; column < 8; column++)
+            {
+                float x = rng.NextFloat() * SquareLength;
+                float z = rng.NextFloat() * SquareWidth;
+                double t = rng.NextFloat() * Period;
+
+                var u = new double[Samples];
+                for (int j = 0; j < Samples; j++)
+                {
+                    float y = -(float)(Depth * (j + 0.5) / Samples);
+                    u[j] = field.VelocityAt(x, y, z, t).X;
+                }
+
+                for (int q = 1; q <= Modes; q++)
+                {
+                    double c = 0d;
+                    for (int j = 0; j < Samples; j++)
+                    {
+                        c += u[j] * Math.Cos(q * Math.PI * (j + 0.5) / Samples);
+                    }
+
+                    c *= 2.0 / Samples;
+                    power[q] += c * c;
+                }
+            }
+
+            double total = 0d;
+            for (int q = 1; q <= Modes; q++) total += power[q];
+
+            int[] expected = { 12, 17, 24, 27 };
+            double inside = 0d;
+            foreach (int q in expected) inside += power[q];
+
+            var loudest = new System.Collections.Generic.List<string>();
+            for (int q = 1; q <= Modes; q++)
+            {
+                if (power[q] > 0.01 * total) loudest.Add($"q={q} {power[q] / total:0.###}");
+            }
+
+            _output.WriteLine(
+                $"square box: {inside / total:0.0000} of the vertical power sits on " +
+                $"q = 12, 17, 24, 27; modes over 1% are {string.Join(", ", loudest)}");
+
+            // q = 12 twice, so four distinct numbers carry all five modes.
+            Assert.True(inside > 0.999 * total, $"only {inside / total:0.0000} of the power is on the four modes");
+
+            foreach (int q in expected)
+            {
+                Assert.True(power[q] > 0.01 * total, $"mode q={q} carries {power[q] / total:0.#####} of the power");
+            }
+
+            // And the row-shaped box the campaign ran carries its own list, which is the
+            // reading D088 published: 6, 24, 25, 27, 12.
+            CurrentField row = Transport();
+            var rowPower = new double[Modes + 1];
+            var rowRng = new Rng(37UL);
+
+            for (int column = 0; column < 8; column++)
+            {
+                float x = rowRng.NextFloat() * Length;
+                float z = rowRng.NextFloat() * Width;
+                double t = rowRng.NextFloat() * Period;
+
+                var u = new double[Samples];
+                for (int j = 0; j < Samples; j++)
+                {
+                    float y = -(float)(Depth * (j + 0.5) / Samples);
+                    u[j] = row.VelocityAt(x, y, z, t).X;
+                }
+
+                for (int q = 1; q <= Modes; q++)
+                {
+                    double c = 0d;
+                    for (int j = 0; j < Samples; j++)
+                    {
+                        c += u[j] * Math.Cos(q * Math.PI * (j + 0.5) / Samples);
+                    }
+
+                    c *= 2.0 / Samples;
+                    rowPower[q] += c * c;
+                }
+            }
+
+            double rowTotal = 0d;
+            for (int q = 1; q <= Modes; q++) rowTotal += rowPower[q];
+
+            int[] rowExpected = { 6, 12, 24, 25, 27 };
+            double rowInside = 0d;
+            foreach (int q in rowExpected) rowInside += rowPower[q];
+
+            _output.WriteLine($"row box: {rowInside / rowTotal:0.0000} of the vertical power sits on q = 6, 12, 24, 25, 27");
+            Assert.True(rowInside > 0.999 * rowTotal, $"only {rowInside / rowTotal:0.0000} of the row box's power is on its own five modes");
+        }
     }
 }

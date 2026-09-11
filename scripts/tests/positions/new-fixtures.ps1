@@ -38,6 +38,12 @@
   A second arm, fx-no-positions, is a run directory with a config.json and no positions.jsonl:
   a tiled world writes no such file, and neither does any run recorded before 2026-09-10, and
   the reader has to refuse both rather than read them as a world with nothing in it.
+
+  A third arm, fx-square, is the same three samples in the same 100 m^2 of water laid out two
+  patches by two (fable-propose-box.md): a 10 x 10 m box rather than a 20 x 5 m one. The bodies
+  do not move, so what the arm holds fixed is the reader -- it has to take the layout out of
+  config.json and describe the box the run was in, and the footprint is a hundred columns
+  either way.
 #>
 param(
     [string]$Root = $PSScriptRoot
@@ -97,5 +103,29 @@ $absentDir = Join-Path $fixtures 'fx-no-positions/2026-01-01-000000-fixture'
 New-Item -ItemType Directory -Path $absentDir -Force | Out-Null
 [System.IO.File]::WriteAllText((Join-Path $absentDir 'config.json'), $config, $utf8)
 
+# The same world, two patches by two. Only the one added key differs, so anything the reader
+# prints differently for this arm is the layout and nothing else.
+$square = @'
+{
+  "format": 2,
+  "configHash": "fixture",
+  "world": {
+    "worldAreaSquareMetres": 100,
+    "worldDepthMetres": 60
+  },
+  "patches": {
+    "horizontalPatches": 4,
+    "patchesAcross": 2
+  }
+}
+'@
+
+$squareDir = Join-Path $fixtures 'fx-square/2026-01-01-000000-fixture'
+New-Item -ItemType Directory -Path $squareDir -Force | Out-Null
+[System.IO.File]::WriteAllText((Join-Path $squareDir 'config.json'), $square, $utf8)
+[System.IO.File]::WriteAllText((Join-Path $squareDir 'positions.jsonl'), ($positions -join "`n") + "`n", $utf8)
+[System.IO.File]::WriteAllText((Join-Path $squareDir 'lineage.jsonl'), ($lineage -join "`n") + "`n", $utf8)
+
 Write-Host "wrote $runDir"
 Write-Host "wrote $absentDir"
+Write-Host "wrote $squareDir"

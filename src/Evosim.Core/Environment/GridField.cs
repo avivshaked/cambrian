@@ -47,9 +47,11 @@ namespace Evosim.Core
     /// it rather than quietly running an anisotropic world under a knob that says otherwise.
     /// </para>
     /// <para>
-    /// <b>Geometry is D077's box</b>: x on a ring <see cref="PatchCount"/> patches long, z on a
-    /// ring one patch wide, y from the floor at −<see cref="DepthMetres"/> to the waterline at 0.
-    /// A patch is a range of x columns. The cell size must divide the box on all three axes, and
+    /// <b>Geometry is D077's box</b>, laid out as fable-propose-box.md says: x on a ring
+    /// <see cref="PatchesAlong"/> patches long, z on a ring <see cref="PatchesAcross"/> patches
+    /// wide, y from the floor at −<see cref="DepthMetres"/> to the waterline at 0. At A = 1 that
+    /// is the row of patches this field has always held.
+    /// A patch is a block of columns. The cell size must divide the box on all three axes, and
     /// the constructor refuses one that does not: a half cell at a seam would be a cell of a
     /// different volume, priced at the same volume as every other, which is the shape of an
     /// invisible subsidy.
@@ -113,10 +115,10 @@ namespace Evosim.Core
         /// <summary>Layers in the world, floor last. The cells down one column.</summary>
         public int LayerCount { get; }
 
-        /// <summary>Horizontal cells of D061, each a range of x columns.</summary>
+        /// <summary>Horizontal cells of D061, each a block of columns.</summary>
         public int PatchCount { get; }
 
-        /// <summary>One patch's side, m: <c>sqrt(WorldArea / PatchCount)</c>, and the box's z extent.</summary>
+        /// <summary>One patch's side, m: <c>sqrt(WorldArea / PatchCount)</c>, on both horizontal axes.</summary>
         public float PatchWidthMetres { get; }
 
         /// <summary>The box's depth, m.</summary>
@@ -128,11 +130,20 @@ namespace Evosim.Core
         /// <summary>Fraction of a refuge layer feeding can see and take, in [0, 1]. D055's arm C.</summary>
         public float RefugeEdibleFraction { get; }
 
-        /// <summary>The ring's length along x, m: every patch side by side.</summary>
-        public float LengthMetres => PatchWidthMetres * PatchCount;
+        /// <summary>
+        /// How many patches lie across z — <see cref="RunConfig.PatchesAcross"/>, A. 1 is the
+        /// row of patches every run on file was measured in.
+        /// </summary>
+        public int PatchesAcross { get; }
 
-        /// <summary>The box's extent along z, m: one patch.</summary>
-        public float WidthMetres => PatchWidthMetres;
+        /// <summary>Patches along x, <c>K / A</c>. The constructor refuses an A that leaves a remainder.</summary>
+        public int PatchesAlong { get; }
+
+        /// <summary>The box's length along x, m: <c>W · K / A</c>.</summary>
+        public float LengthMetres => PatchWidthMetres * PatchesAlong;
+
+        /// <summary>The box's extent along z, m: <c>W · A</c>.</summary>
+        public float WidthMetres => PatchWidthMetres * PatchesAcross;
 
         /// <summary>Cells along x.</summary>
         public int CellsX => _nx;
@@ -166,7 +177,8 @@ namespace Evosim.Core
 
         public GridField(
             float worldArea, float sinkMetresPerSecond, float worldDepth,
-            float refugeMetres, float refugeEdibleFraction, int patchCount, float cellMetres)
+            float refugeMetres, float refugeEdibleFraction, int patchCount, float cellMetres,
+            int patchesAcross = 1)
         {
             if (!(worldArea > 0f) || float.IsInfinity(worldArea))
                 throw new ArgumentOutOfRangeException(nameof(worldArea), worldArea, "Must be positive and finite.");
@@ -182,6 +194,17 @@ namespace Evosim.Core
                 throw new ArgumentOutOfRangeException(nameof(patchCount), patchCount, "A field needs at least one patch.");
             if (!(cellMetres > 0f) || float.IsInfinity(cellMetres))
                 throw new ArgumentOutOfRangeException(nameof(cellMetres), cellMetres, "Must be positive and finite.");
+            if (patchesAcross < 1)
+                throw new ArgumentOutOfRangeException(nameof(patchesAcross), patchesAcross, "A box is at least one patch wide.");
+            if (patchCount % patchesAcross != 0)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"{patchesAcross} patches across do not divide {patchCount} patches, so ") +
+                    "the layout leaves a part row. Pick a divisor: four patches lie one by four " +
+                    "or two by two, and nine lie one by nine or three by three.",
+                    nameof(patchesAcross));
+            }
 
             WorldArea = worldArea;
             CellMetres = cellMetres;
@@ -189,6 +212,8 @@ namespace Evosim.Core
             SinkMetresPerSecond = sinkMetresPerSecond;
             DepthMetres = worldDepth;
             PatchCount = patchCount;
+            PatchesAcross = patchesAcross;
+            PatchesAlong = patchCount / patchesAcross;
             PatchWidthMetres = (float)Math.Sqrt(worldArea / patchCount);
 
             _nx = (int)Math.Round(LengthMetres / cellMetres);
@@ -229,12 +254,23 @@ namespace Evosim.Core
             _velocityY = new double[_ny * PatchCount];
             _velocityZ = new double[_ny * PatchCount];
 
-            // A patch is a range of x columns, and the width constraint above guarantees the
-            // ranges are whole: the box's z extent is one patch width, so a cell that divides the
-            // width divides the patch. The map is built once from each column's own centre, which
-            // is the only reading of "which patch is this column in" that cannot straddle a seam.
-            _patchOfColumn = new int[_nx];
-            for (int ix = 0; ix < _nx; ix++) _patchOfColumn[ix] = PatchOf((ix + 0.5f) * cellMetres);
+            // A patch is a block of columns, and the divisibility above guarantees the blocks are
+            // whole: the box is a whole number of patches on both horizontal axes and a cell
+            // divides both, so a cell that divides the box divides the patch. The map is built
+            // once from each column's own centre, which is the only reading of "which patch is
+            // this column in" that cannot straddle a seam. It is indexed by the column rather
+            // than by x alone because at A > 1 the patch is a function of z as well
+            // (fable-propose-box.md clause 3); at A = 1 every z in a column answers the same and
+            // the map is the one this field has always held, repeated down the z axis.
+            _patchOfColumn = new int[_nx * _nz];
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    _patchOfColumn[ix * _nz + iz] =
+                        PatchOf((ix + 0.5f) * cellMetres, (iz + 0.5f) * cellMetres);
+                }
+            }
         }
 
         // ------------------------------------------------------------------ geometry
@@ -252,13 +288,29 @@ namespace Evosim.Core
             return layer >= _ny ? _ny - 1 : layer;
         }
 
-        /// <summary>The patch an x falls in on the ring, <c>floor(x / W) mod K</c>. D077's rule.</summary>
-        public int PatchOf(float x)
+        /// <summary>
+        /// The patch a horizontal position falls in: <c>iz · (K / A) + ix</c>, numbered along x
+        /// first. D077's rule as fable-propose-box.md's clause 3 generalises it.
+        /// </summary>
+        /// <remarks>
+        /// At A = 1 the row index is 0 and this is <c>floor(x / W) mod K</c> term for term, which
+        /// is the arithmetic every recorded run's per-patch bins were filled by.
+        /// </remarks>
+        public int PatchOf(float x, float z)
         {
-            int patch = (int)Math.Floor(WrapAxis(x, LengthMetres) / PatchWidthMetres);
-            patch %= PatchCount;
-            if (patch < 0) patch += PatchCount;
-            return patch;
+            int along = PatchesAlong;
+
+            int ix = (int)Math.Floor(WrapAxis(x, LengthMetres) / PatchWidthMetres);
+            ix %= along;
+            if (ix < 0) ix += along;
+
+            if (PatchesAcross == 1) return ix;
+
+            int iz = (int)Math.Floor(WrapAxis(z, WidthMetres) / PatchWidthMetres);
+            iz %= PatchesAcross;
+            if (iz < 0) iz += PatchesAcross;
+
+            return iz * along + ix;
         }
 
         private static float WrapAxis(float v, float extent)
@@ -372,8 +424,17 @@ namespace Evosim.Core
         private int CentreCell(float heightY, int patch)
         {
             ValidatePatch(patch);
-            return CellAt(new Float3((patch + 0.5f) * PatchWidthMetres, heightY, 0.5f * WidthMetres));
+
+            // The patch's own centre on both axes. At A = 1 the row is 0 and the second
+            // coordinate is half the box's width, which is what this line always read.
+            return CellAt(new Float3(
+                (patch % PatchesAlong + 0.5f) * PatchWidthMetres,
+                heightY,
+                (patch / PatchesAlong + 0.5f) * PatchWidthMetres));
         }
+
+        /// <summary>Which patch a column of cells stands in — the map built in the constructor.</summary>
+        private int PatchOfColumn(int ix, int iz) => _patchOfColumn[ix * _nz + iz];
 
         /// <summary>Whether a layer is buried beyond any mouth's reach (D055).</summary>
         public bool IsRefuge(int layer) => layer >= LayerCount - RefugeLayerCount;
@@ -609,8 +670,11 @@ namespace Evosim.Core
             double pool = 0.0;
             for (int ix = 0; ix < _nx; ix++)
             {
-                if (_patchOfColumn[ix] != patch) continue;
-                for (int iz = 0; iz < _nz; iz++) pool += Edible(Index(ix, layer, iz));
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    if (PatchOfColumn(ix, iz) != patch) continue;
+                    pool += Edible(Index(ix, layer, iz));
+                }
             }
 
             if (!(pool > 0d)) return 0d;
@@ -621,9 +685,10 @@ namespace Evosim.Core
 
             for (int ix = 0; ix < _nx; ix++)
             {
-                if (_patchOfColumn[ix] != patch) continue;
                 for (int iz = 0; iz < _nz; iz++)
                 {
+                    if (PatchOfColumn(ix, iz) != patch) continue;
+
                     int cell = Index(ix, layer, iz);
                     double t = Edible(cell) * fraction;
                     if (t <= 0.0) continue;
@@ -1001,33 +1066,25 @@ namespace Evosim.Core
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
-                        double layerU = transport ? 0d : _velocityX[iy * k + _patchOfColumn[ix]];
-                        double layerFraction = 0d;
-
-                        if (!transport)
-                        {
-                            if (layerU == 0d) continue;
-
-                            layerFraction = Math.Abs(layerU) * dt / CellMetres;
-                            if (layerFraction > 0.5) layerFraction = 0.5;
-                        }
-
                         int nextX = ix + 1 == _nx ? 0 : ix + 1;
                         for (int iz = 0; iz < _nz; iz++)
                         {
                             int cell = Index(ix, iy, iz);
 
-                            double u = layerU;
-                            double fraction = layerFraction;
+                            // The roll's velocity is per layer and patch, and at A > 1 a column's
+                            // patch is a function of z as well as of x, so the lookup sits inside
+                            // this loop rather than outside it. Every value and every assignment
+                            // is the one the hoisted form produced; what is gone is a skip of a
+                            // whole column, and the flux it would have skipped is still the zero
+                            // the clear above left.
+                            double u = transport
+                                ? _cellVelocityX[cell]
+                                : _velocityX[iy * k + PatchOfColumn(ix, iz)];
 
-                            if (transport)
-                            {
-                                u = _cellVelocityX[cell];
-                                if (u == 0d) continue;
+                            if (u == 0d) continue;
 
-                                fraction = Math.Abs(u) * dt / CellMetres;
-                                if (fraction > 0.5) fraction = 0.5;
-                            }
+                            double fraction = Math.Abs(u) * dt / CellMetres;
+                            if (fraction > 0.5) fraction = 0.5;
 
                             int east = Index(nextX, iy, iz);
                             _fluxX[cell] = u > 0d ? _stock[cell] * fraction : -_stock[east] * fraction;
@@ -1046,33 +1103,20 @@ namespace Evosim.Core
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
-                        double layerW = transport ? 0d : _velocityY[iy * k + _patchOfColumn[ix]];
-                        double layerFraction = 0d;
-
-                        if (!transport)
-                        {
-                            if (layerW == 0d) continue;
-
-                            layerFraction = Math.Abs(layerW) * dt / CellMetres;
-                            if (layerFraction > 0.5) layerFraction = 0.5;
-                        }
-
                         for (int iz = 0; iz < _nz; iz++)
                         {
                             int upper = Index(ix, iy, iz);
                             int lower = Index(ix, iy + 1, iz);
 
-                            double w = layerW;
-                            double fraction = layerFraction;
+                            // Per cell rather than per column, for the x pass's reason.
+                            double w = transport
+                                ? _cellVelocityY[upper]
+                                : _velocityY[iy * k + PatchOfColumn(ix, iz)];
 
-                            if (transport)
-                            {
-                                w = _cellVelocityY[upper];
-                                if (w == 0d) continue;
+                            if (w == 0d) continue;
 
-                                fraction = Math.Abs(w) * dt / CellMetres;
-                                if (fraction > 0.5) fraction = 0.5;
-                            }
+                            double fraction = Math.Abs(w) * dt / CellMetres;
+                            if (fraction > 0.5) fraction = 0.5;
 
                             // Rising water carries what is below it up, sinking water carries what
                             // is above it down.
@@ -1092,32 +1136,19 @@ namespace Evosim.Core
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
-                        double layerV = transport ? 0d : _velocityZ[iy * k + _patchOfColumn[ix]];
-                        double layerFraction = 0d;
-
-                        if (!transport)
-                        {
-                            if (layerV == 0d) continue;
-
-                            layerFraction = Math.Abs(layerV) * dt / CellMetres;
-                            if (layerFraction > 0.5) layerFraction = 0.5;
-                        }
-
                         for (int iz = 0; iz < _nz; iz++)
                         {
                             int cell = Index(ix, iy, iz);
 
-                            double v = layerV;
-                            double fraction = layerFraction;
+                            // Per cell rather than per column, for the x pass's reason.
+                            double v = transport
+                                ? _cellVelocityZ[cell]
+                                : _velocityZ[iy * k + PatchOfColumn(ix, iz)];
 
-                            if (transport)
-                            {
-                                v = _cellVelocityZ[cell];
-                                if (v == 0d) continue;
+                            if (v == 0d) continue;
 
-                                fraction = Math.Abs(v) * dt / CellMetres;
-                                if (fraction > 0.5) fraction = 0.5;
-                            }
+                            double fraction = Math.Abs(v) * dt / CellMetres;
+                            if (fraction > 0.5) fraction = 0.5;
 
                             int front = Index(ix, iy, iz + 1 == _nz ? 0 : iz + 1);
                             _fluxZ[cell] = v > 0d ? _stock[cell] * fraction : -_stock[front] * fraction;
@@ -1216,8 +1247,11 @@ namespace Evosim.Core
             double sum = 0.0;
             for (int ix = 0; ix < _nx; ix++)
             {
-                if (_patchOfColumn[ix] != patch) continue;
-                for (int iz = 0; iz < _nz; iz++) sum += _stock[Index(ix, layer, iz)];
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    if (PatchOfColumn(ix, iz) != patch) continue;
+                    sum += _stock[Index(ix, layer, iz)];
+                }
             }
 
             return sum;

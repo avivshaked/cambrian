@@ -68,8 +68,9 @@ namespace Evosim.Core
     /// and the defaults put about thirty vertices in a kernel of seeded water.
     /// </para>
     /// <para>
-    /// <b>Geometry is D077's box</b>: x on a ring of <see cref="PatchCount"/> patches
-    /// <see cref="PatchWidthMetres"/> wide, z on a ring one patch wide, y from the floor at
+    /// <b>Geometry is D077's box</b>, laid out as fable-propose-box.md says: x on a ring of
+    /// <see cref="PatchesAlong"/> patches <see cref="PatchWidthMetres"/> wide, z on a ring of
+    /// <see cref="PatchesAcross"/> of them, y from the floor at
     /// −<see cref="DepthMetres"/> to the waterline at 0. Distances take the shorter way round both
     /// rings, which needs each ring at least two kernels long, and the constructor refuses a box
     /// that is not.
@@ -126,11 +127,20 @@ namespace Evosim.Core
         /// <summary>Joules in one emitted vertex, and the mass the seeded lattice is spaced for.</summary>
         public float VertexJoules { get; }
 
-        /// <summary>The ring's length along x, m — every patch side by side.</summary>
-        public float LengthMetres => PatchWidthMetres * PatchCount;
+        /// <summary>
+        /// How many patches lie across z — <see cref="RunConfig.PatchesAcross"/>, A. 1 is the
+        /// row of patches every run on file was measured in.
+        /// </summary>
+        public int PatchesAcross { get; }
 
-        /// <summary>The box's extent along z, m — one patch.</summary>
-        public float WidthMetres => PatchWidthMetres;
+        /// <summary>Patches along x, <c>K / A</c>. The constructor refuses an A that leaves a remainder.</summary>
+        public int PatchesAlong { get; }
+
+        /// <summary>The box's length along x, m — <c>W · K / A</c>.</summary>
+        public float LengthMetres => PatchWidthMetres * PatchesAlong;
+
+        /// <summary>The box's extent along z, m — <c>W · A</c>.</summary>
+        public float WidthMetres => PatchWidthMetres * PatchesAcross;
 
         public float LayerVolume => (WorldArea / PatchCount) * LayerMetres;
 
@@ -154,7 +164,8 @@ namespace Evosim.Core
         public VertexField(
             float worldArea, float layerMetres, float sinkMetresPerSecond, float worldDepth,
             float refugeMetres, float refugeEdibleFraction, int patchCount,
-            float kernelMetres, float mergeMetres, int vertexCap, float vertexJoules, ulong seed)
+            float kernelMetres, float mergeMetres, int vertexCap, float vertexJoules, ulong seed,
+            int patchesAcross = 1)
         {
             if (!(worldArea > 0f) || float.IsInfinity(worldArea))
                 throw new ArgumentOutOfRangeException(nameof(worldArea), worldArea, "Must be positive and finite.");
@@ -180,6 +191,17 @@ namespace Evosim.Core
                 throw new ArgumentOutOfRangeException(nameof(vertexCap), vertexCap, "Must be at least 1.");
             if (!(vertexJoules > 0f) || float.IsInfinity(vertexJoules))
                 throw new ArgumentOutOfRangeException(nameof(vertexJoules), vertexJoules, "Must be positive and finite.");
+            if (patchesAcross < 1)
+                throw new ArgumentOutOfRangeException(nameof(patchesAcross), patchesAcross, "A box is at least one patch wide.");
+            if (patchCount % patchesAcross != 0)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"{patchesAcross} patches across do not divide {patchCount} patches, so ") +
+                    "the layout leaves a part row. Pick a divisor: four patches lie one by four " +
+                    "or two by two, and nine lie one by nine or three by three.",
+                    nameof(patchesAcross));
+            }
 
             WorldArea = worldArea;
             LayerMetres = layerMetres;
@@ -187,6 +209,8 @@ namespace Evosim.Core
             DepthMetres = worldDepth;
             LayerCount = Math.Max(1, (int)Math.Ceiling(worldDepth / layerMetres));
             PatchCount = patchCount;
+            PatchesAcross = patchesAcross;
+            PatchesAlong = patchCount / patchesAcross;
             PatchWidthMetres = (float)Math.Sqrt(worldArea / patchCount);
             RefugeMetres = refugeMetres;
             RefugeEdibleFraction = refugeEdibleFraction;
@@ -224,13 +248,26 @@ namespace Evosim.Core
             return layer >= LayerCount ? LayerCount - 1 : layer;
         }
 
-        /// <summary>The patch an x falls in on the ring — <c>floor(x / W) mod K</c>, D077's rule.</summary>
-        public int PatchOf(float x)
+        /// <summary>
+        /// The patch a horizontal position falls in — <c>iz · (K / A) + ix</c>, numbered along x
+        /// first. D077's rule as fable-propose-box.md's clause 3 generalises it, and
+        /// <c>floor(x / W) mod K</c> term for term at A = 1.
+        /// </summary>
+        public int PatchOf(float x, float z)
         {
-            int patch = (int)Math.Floor(WrapAxis(x, LengthMetres) / PatchWidthMetres);
-            patch %= PatchCount;
-            if (patch < 0) patch += PatchCount;
-            return patch;
+            int along = PatchesAlong;
+
+            int ix = (int)Math.Floor(WrapAxis(x, LengthMetres) / PatchWidthMetres);
+            ix %= along;
+            if (ix < 0) ix += along;
+
+            if (PatchesAcross == 1) return ix;
+
+            int iz = (int)Math.Floor(WrapAxis(z, WidthMetres) / PatchWidthMetres);
+            iz %= PatchesAcross;
+            if (iz < 0) iz += PatchesAcross;
+
+            return iz * along + ix;
         }
 
         private static float WrapAxis(float v, float extent)
@@ -524,8 +561,14 @@ namespace Evosim.Core
                     nameof(patch), patch, $"This field has {PatchCount} patch(es), indexed 0..{PatchCount - 1}.");
             }
 
+            // The patch's own centre on both axes. At A = 1 the row is 0 and the z coordinate is
+            // half the box's width, which is what this line always read.
             Deposit(new FieldPoint(
-                new Float3((patch + 0.5f) * PatchWidthMetres, heightY, 0.5f * WidthMetres), patch), joules);
+                new Float3(
+                    (patch % PatchesAlong + 0.5f) * PatchWidthMetres,
+                    heightY,
+                    (patch / PatchesAlong + 0.5f) * PatchWidthMetres),
+                patch), joules);
         }
 
         /// <summary>The pre-D061 signature: patch 0 of a one-patch field, a refusal otherwise.</summary>
@@ -600,7 +643,7 @@ namespace Evosim.Core
             double pool = 0.0;
             for (int i = 0; i < _m.Count; i++)
             {
-                if (_alive[i] && LayerOf(_y[i]) == layer && PatchOf(_x[i]) == patch) pool += Edible(i) * _m[i];
+                if (_alive[i] && LayerOf(_y[i]) == layer && PatchOf(_x[i], _z[i]) == patch) pool += Edible(i) * _m[i];
             }
 
             if (!(pool > 0d)) return 0d;
@@ -610,7 +653,7 @@ namespace Evosim.Core
 
             for (int i = 0; i < _m.Count; i++)
             {
-                if (!_alive[i] || LayerOf(_y[i]) != layer || PatchOf(_x[i]) != patch) continue;
+                if (!_alive[i] || LayerOf(_y[i]) != layer || PatchOf(_x[i], _z[i]) != patch) continue;
                 double t = Edible(i) * _m[i] * fraction;
                 if (t <= 0.0) continue;
                 _m[i] -= t;
@@ -863,7 +906,7 @@ namespace Evosim.Core
             for (int i = 0; i < _y.Count; i++)
             {
                 if (!_alive[i]) continue;
-                Float3 v = current.VelocityAt(_y[i], seconds, PatchOf(_x[i]), PatchCount);
+                Float3 v = current.VelocityAt(_y[i], seconds, PatchOf(_x[i], _z[i]), PatchCount);
                 if (v.X == 0f && v.Y == 0f && v.Z == 0f) continue;
 
                 _x[i] = WrapAxis(_x[i] + v.X * dt, LengthMetres);
@@ -1040,7 +1083,7 @@ namespace Evosim.Core
             double sum = 0.0;
             for (int i = 0; i < _m.Count; i++)
             {
-                if (_alive[i] && LayerOf(_y[i]) == layer && PatchOf(_x[i]) == patch) sum += _m[i];
+                if (_alive[i] && LayerOf(_y[i]) == layer && PatchOf(_x[i], _z[i]) == patch) sum += _m[i];
             }
 
             return sum;
@@ -1067,7 +1110,7 @@ namespace Evosim.Core
             double sum = 0.0;
             for (int i = 0; i < _m.Count; i++)
             {
-                if (_alive[i] && LayerOf(_y[i]) == layer && PatchOf(_x[i]) == patch) sum += Edible(i) * _m[i];
+                if (_alive[i] && LayerOf(_y[i]) == layer && PatchOf(_x[i], _z[i]) == patch) sum += Edible(i) * _m[i];
             }
 
             return (float)(sum / LayerVolume);

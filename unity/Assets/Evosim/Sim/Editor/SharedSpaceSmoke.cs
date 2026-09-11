@@ -33,7 +33,7 @@ namespace Evosim.Sim.EditorTools
     /// top restores, the bed holds, contacts are counted, and no body is left non-finite.
     /// </para>
     /// <para>
-    /// <b>The bed is a collider now</b> (<c>scratch/floor-spec.md</c>, <see cref="SeaFloor"/>), so
+    /// <b>The bed is a collider now</b> (<c>logbook/specs/floor-spec.md</c>, <see cref="SeaFloor"/>), so
     /// what Part 3 asks of the bottom changed with it. It used to ask whether a spring threw a
     /// body back into the world; it now asks the two things a bed has to be true of: <b>nothing is
     /// ever placed inside it</b> — every founder's bounding sphere is clear of the rock the step
@@ -251,7 +251,7 @@ namespace Evosim.Sim.EditorTools
                 FluidEnvironment.Restore(0f, -80f, 0f, depth), 0f);
 
             // With a real sea bed the bottom half of the rule is retired and the fraction governs
-            // the surface alone (scratch/floor-spec.md rule 1). These are the cases that would
+            // the surface alone (logbook/specs/floor-spec.md rule 1). These are the cases that would
             // make a trampoline if both acted: rock holding a body down while the water threw it
             // back up. The surface is untouched by the change, which is the other half of the
             // claim and is why it is asserted here rather than assumed.
@@ -297,12 +297,12 @@ namespace Evosim.Sim.EditorTools
 
             ok &= Same(report, "ring length", volume.LengthMetres, 40f);
 
-            ok &= Same(report, "patch at x=0", volume.PatchOf(0f), 0);
-            ok &= Same(report, "patch at x=9.99", volume.PatchOf(9.99f), 0);
-            ok &= Same(report, "patch at x=10", volume.PatchOf(10f), 1);
-            ok &= Same(report, "patch at x=39.99", volume.PatchOf(39.99f), 3);
-            ok &= Same(report, "patch at x=40 (wraps)", volume.PatchOf(40f), 0);
-            ok &= Same(report, "patch at x=-1 (wraps)", volume.PatchOf(-1f), 3);
+            ok &= Same(report, "patch at x=0", volume.PatchOf(0f, 0f), 0);
+            ok &= Same(report, "patch at x=9.99", volume.PatchOf(9.99f, 0f), 0);
+            ok &= Same(report, "patch at x=10", volume.PatchOf(10f, 0f), 1);
+            ok &= Same(report, "patch at x=39.99", volume.PatchOf(39.99f, 0f), 3);
+            ok &= Same(report, "patch at x=40 (wraps)", volume.PatchOf(40f, 0f), 0);
+            ok &= Same(report, "patch at x=-1 (wraps)", volume.PatchOf(-1f, 0f), 3);
 
             // The wrap: inside is left alone, and each face maps to the opposite one.
             bool wrapped = volume.TryWrap(new Vector3(5f, -3f, 5f), out Vector3 inside);
@@ -332,7 +332,7 @@ namespace Evosim.Sim.EditorTools
             // from the reference world's own options, so the radii are the ones logbook/0064
             // measured rather than a convenient fiction.
             //
-            // With a bed under the box (scratch/floor-spec.md rule 2) the depth is no longer free
+            // With a bed under the box (logbook/specs/floor-spec.md rule 2) the depth is no longer free
             // either: the draw here runs the full 60 m of a 60 m world, exactly as the reference
             // world's EVOSIM_FOUNDER_DEPTH does, so the deep end of it lands inside the rock and
             // every one of those has to come back raised.
@@ -599,9 +599,9 @@ namespace Evosim.Sim.EditorTools
                     eco.World.Births + " births, " + eco.World.CrowdedStillbirths +
                     " crowded stillbirths, " + eco.World.Diverged + " diverged");
                 report.AppendLine(
-                    "- box " + eco.Volume.PatchCount + " x " +
+                    "- box " + eco.Volume.PatchesAlong + " x " + eco.Volume.PatchesAcross +
+                    " x " +
                     eco.Volume.PatchWidthMetres.ToString("0.##", CultureInfo.InvariantCulture) +
-                    " x " + eco.Volume.PatchWidthMetres.ToString("0.##", CultureInfo.InvariantCulture) +
                     " m, depth " + eco.Volume.DepthMetres + ", hash cell " +
                     eco.Volume.CellMetres.ToString("0.###", CultureInfo.InvariantCulture) +
                     " m, " + eco.Volume.Rejections + " placement rejections");
@@ -751,7 +751,7 @@ namespace Evosim.Sim.EditorTools
             if (p.x < 0f) over = Mathf.Max(over, -p.x);
             if (p.x >= volume.LengthMetres) over = Mathf.Max(over, p.x - volume.LengthMetres);
             if (p.z < 0f) over = Mathf.Max(over, -p.z);
-            if (p.z >= volume.PatchWidthMetres) over = Mathf.Max(over, p.z - volume.PatchWidthMetres);
+            if (p.z >= volume.WidthMetres) over = Mathf.Max(over, p.z - volume.WidthMetres);
 
             return over;
         }

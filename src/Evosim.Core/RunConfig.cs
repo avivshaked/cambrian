@@ -1348,6 +1348,39 @@ namespace Evosim.Core
         public float HorizontalPatches { get; set; } = 1f;
 
         /// <summary>
+        /// How many of <see cref="HorizontalPatches"/> lie across z, A ≥ 1 — the box's shape.
+        /// 1 is the world every run on file was measured in: every patch in one row along x.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A layout, not a new geometry</b> (fable-propose-box.md). The patches along x are
+        /// <c>K / A</c>, so the box is <c>W·K/A</c> long, <c>W·A</c> wide and
+        /// <see cref="WorldDepthMetres"/> deep with <c>W = sqrt(area / K)</c> unchanged. The area,
+        /// the depth, the patch count and the patch side all stay where they were; what moves is
+        /// which patch sits where. Four patches at A = 2 are quadrants of a 10 by 10 m footprint
+        /// rather than four strips of a 20 by 5 m one.
+        /// </para>
+        /// <para>
+        /// <b>Nothing chose the old shape.</b> It fell out of one line: the length was the patch
+        /// count times the width and the width was one patch, written when no part of the ecology
+        /// read a horizontal position. It became the shape of the water. D088's dispersal disc is
+        /// 5 m in radius in a 5 m width, so a child's z is a lottery rather than a distance; the
+        /// transport field's eddies are as wide as the box and no wider; and the two-axis spread
+        /// readings are taken over a footprint four times longer than it is wide.
+        /// </para>
+        /// <para>
+        /// A float used as an int, per <see cref="HorizontalPatches"/>'s convention and for its
+        /// reason. <see cref="World"/> refuses a world whose A does not divide K, and refuses A
+        /// above 1 beside the cell field or D061's dispersal lottery: both walk a
+        /// one-dimensional ring of patches, which a two-by-two layout is not.
+        /// </para>
+        /// <para>⚠ Unmeasured. <c>EVOSIM_PATCHES_ACROSS</c> in the header, which names the layout
+        /// as <c>shared &lt;along&gt;x&lt;across&gt;x&lt;W&gt; m</c>.</para>
+        /// </remarks>
+        [Tunable("patches")]
+        public float PatchesAcross { get; set; } = 1f;
+
+        /// <summary>
         /// Sideways exchange between adjacent patches within a layer, m²/s — D061. Zero is off:
         /// no patch ever hears from its neighbour.
         /// </summary>

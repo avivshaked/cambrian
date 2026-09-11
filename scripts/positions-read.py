@@ -144,11 +144,22 @@ class Box:
         if missing:
             fail('config.json carries none of: ' + ', '.join(missing))
 
-        # SharedVolume's own arithmetic: K = max(1, patches), W = sqrt(area / K), the box's z
-        # extent and one patch's side; the length is K x W, the way around the ring.
+        # The layout (fable-propose-box.md), defaulted to 1 rather than demanded: every config
+        # written before the knob describes a row of patches, and this reader's whole job is to
+        # read runs that already exist. The C# refuses a missing key because a simulation that
+        # guessed a world rule would run a world nobody asked for; a reader that guessed the
+        # shape of a box already on disk would be wrong in a way the run could contradict, and
+        # the runs on disk cannot: they have no other shape.
+        across = find_field(config, 'patchesAcross')
+
+        # SharedVolume's own arithmetic: K = max(1, patches), W = sqrt(area / K), one patch's
+        # side; the box is K/A patches long and A wide.
         self.patches = max(1, int(patches))
-        self.width = math.sqrt(float(area) / self.patches)
-        self.length = self.width * self.patches
+        self.across = min(self.patches, max(1, int(across))) if across is not None else 1
+        self.along = max(1, self.patches // self.across)
+        self.patch_metres = math.sqrt(float(area) / self.patches)
+        self.width = self.patch_metres * self.across
+        self.length = self.patch_metres * self.along
         self.depth = float(depth)
 
         self.columns_x = max(1, math.ceil(self.length / COLUMN_METRES))
@@ -159,8 +170,12 @@ class Box:
         return self.columns_x * self.columns_z
 
     def __str__(self):
+        # The layout is named only where it is not a row, so a reading of a run recorded before
+        # the knob says exactly what it always said.
+        layout = '' if self.across == 1 else f' laid {self.along} x {self.across}'
+
         return (f'{self.length:.3g} x {self.width:.3g} m, {self.depth:.3g} m deep, '
-                f'{self.patches} patch(es)')
+                f'{self.patches} patch(es){layout}')
 
 
 # ---------------------------------------------------------------- the statistics

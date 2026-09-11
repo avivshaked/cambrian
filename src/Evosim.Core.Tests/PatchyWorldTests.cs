@@ -404,5 +404,184 @@ namespace Evosim.Core.Tests
                 sawNonZeroPatch,
                 "every founder landed in patch 0 across 4 patches and many draws — suspiciously uniform");
         }
+
+        // ------------------------------------------------------------ the layout (fable-propose-box.md)
+
+        [Fact]
+        public void ALayoutOfOneIsTheRowEveryRunOnFileWasMeasuredIn()
+        {
+            // 100 m² over four patches is W = 5 m, so a row of them is 20 m long and 5 m
+            // across — the campaign's own box. Clause 2: at A = 1 the index is
+            // floor(x / W) mod K term for term, whatever z is, because there is nowhere else
+            // for a body to be.
+            var field = new GridField(100f, 0f, 60f, 0f, 0f, 4, 1f);
+
+            Assert.Equal(1, field.PatchesAcross);
+            Assert.Equal(4, field.PatchesAlong);
+            Assert.Equal(20f, field.LengthMetres);
+            Assert.Equal(5f, field.WidthMetres);
+
+            var rng = new Rng(101UL);
+            for (int i = 0; i < 500; i++)
+            {
+                // Well outside the box as well as inside it, so the wrap is under test too.
+                float x = (rng.NextFloat() * 3f - 1f) * field.LengthMetres;
+                float z = (rng.NextFloat() * 3f - 1f) * field.WidthMetres;
+
+                Assert.Equal(Ring(x, 20f, 5f, 4), field.PatchOf(x, z));
+            }
+        }
+
+        [Fact]
+        public void QuadrantCentresAndSeamCornersIndexAsTheLayoutSays()
+        {
+            // The same area and the same four patches, laid two by two: a 10 by 10 m
+            // footprint of quadrants numbered along x first (clause 3).
+            var field = new GridField(100f, 0f, 60f, 0f, 0f, 4, 1f, patchesAcross: 2);
+
+            Assert.Equal(2, field.PatchesAcross);
+            Assert.Equal(2, field.PatchesAlong);
+            Assert.Equal(10f, field.LengthMetres);
+            Assert.Equal(10f, field.WidthMetres);
+
+            // The four centres.
+            Assert.Equal(0, field.PatchOf(2.5f, 2.5f));
+            Assert.Equal(1, field.PatchOf(7.5f, 2.5f));
+            Assert.Equal(2, field.PatchOf(2.5f, 7.5f));
+            Assert.Equal(3, field.PatchOf(7.5f, 7.5f));
+
+            // The four seam corners. A seam belongs to the patch it opens, not to the one it
+            // closes, which is the half-open interval D077 already wrote the ring on.
+            Assert.Equal(0, field.PatchOf(0f, 0f));
+            Assert.Equal(1, field.PatchOf(5f, 0f));
+            Assert.Equal(2, field.PatchOf(0f, 5f));
+            Assert.Equal(3, field.PatchOf(5f, 5f));
+
+            // Both axes are rings, so the far corner is the near one and a step back from it
+            // is the last quadrant.
+            Assert.Equal(0, field.PatchOf(10f, 10f));
+            Assert.Equal(3, field.PatchOf(9.999f, 9.999f));
+            Assert.Equal(3, field.PatchOf(-0.001f, -0.001f));
+
+            // The vertex field answers the same question the same way, because a world may
+            // run either and the per-patch bins have to mean one thing.
+            var vertices = new VertexField(
+                100f, 12f, 0f, 60f, 0f, 0f, 4, 1f, 0.5f, 1000, 1f, 5UL, patchesAcross: 2);
+
+            Assert.Equal(10f, vertices.LengthMetres);
+            Assert.Equal(10f, vertices.WidthMetres);
+            Assert.Equal(0, vertices.PatchOf(2.5f, 2.5f));
+            Assert.Equal(1, vertices.PatchOf(7.5f, 2.5f));
+            Assert.Equal(2, vertices.PatchOf(2.5f, 7.5f));
+            Assert.Equal(3, vertices.PatchOf(7.5f, 7.5f));
+        }
+
+        [Fact]
+        public void ALayoutOfOneChangesNothingAboutAWorld()
+        {
+            // Clause 2, asked of a whole world rather than of an index: the default has to be
+            // the world every run on file was measured in, bit for bit, or none of them
+            // describes a world that still exists. The same demand the K = 1 test above makes
+            // of D061's own knob, for the same reason.
+            string Trajectory(RunConfig config)
+            {
+                var world = new World(config, seed: 5);
+                var sb = new StringBuilder();
+                for (int i = 0; i < 200; i++)
+                {
+                    world.Step(1f);
+                    sb.AppendLine(WorldStats.Sample(world).ToJson());
+                    sb.AppendLine(
+                        $"{world.Nutrients.TotalJoules:R}|{world.Matter.TotalJoules:R}|" +
+                        $"{world.AuditResidual:R}|{world.StandingMatter:R}");
+                }
+                return sb.ToString();
+            }
+
+            var unset = new RunConfig { Light = new LightModel(90f, 12f) };
+            var explicitOne = new RunConfig
+            {
+                Light = new LightModel(90f, 12f),
+                HorizontalPatches = 4f,
+                PatchesAcross = 1f,
+            };
+
+            Assert.Equal(1f, unset.PatchesAcross);
+
+            var row = new RunConfig { Light = new LightModel(90f, 12f), HorizontalPatches = 4f };
+            Assert.Equal(Trajectory(row), Trajectory(explicitOne));
+        }
+
+        [Fact]
+        public void ALayoutThatDoesNotDivideThePatchesIsRefused()
+        {
+            // Clause 1. Three across four leaves a part row, and a part row is not a box.
+            var config = new RunConfig
+            {
+                Light = new LightModel(90f, 12f),
+                HorizontalPatches = 4f,
+                PatchesAcross = 3f,
+            };
+
+            ArgumentException refused = Assert.Throws<ArgumentException>(() => new World(config, seed: 1));
+
+            _output.WriteLine(refused.Message);
+            Assert.Contains("PatchesAcross is 3 and HorizontalPatches is 4", refused.Message);
+            Assert.Contains("1 patches over", refused.Message);
+        }
+
+        [Fact]
+        public void TheCellFieldIsRefusedAboveOne()
+        {
+            // Clause 5. NutrientField mixes and advects across a one-dimensional ring, so at
+            // A > 1 it would stir a geometry the world does not have.
+            var config = new RunConfig
+            {
+                Light = new LightModel(90f, 12f),
+                HorizontalPatches = 4f,
+                PatchesAcross = 2f,
+            };
+
+            Assert.Equal(MatterField.Cells, config.FieldModel);
+
+            ArgumentException refused = Assert.Throws<ArgumentException>(() => new World(config, seed: 1));
+
+            _output.WriteLine(refused.Message);
+            Assert.Contains("PatchesAcross is 2 and FieldModel is Cells", refused.Message);
+        }
+
+        [Fact]
+        public void TheDispersalLotteryIsRefusedAboveOne()
+        {
+            // Clause 5's other half: D061's lottery walks the same ring, one patch ahead or
+            // one behind modulo K, which on a two-by-two layout is a diagonal as often as a
+            // sideways step.
+            var config = new RunConfig
+            {
+                Light = new LightModel(90f, 12f),
+                SharedSpace = true,
+                FieldModel = MatterField.Grid,
+                WorldAreaSquareMetres = 100f,
+                WorldDepthMetres = 60f,
+                HorizontalPatches = 4f,
+                PatchesAcross = 2f,
+                DispersalChancePerStep = 0.1f,
+            };
+
+            ArgumentException refused = Assert.Throws<ArgumentException>(() => new World(config, seed: 1));
+
+            _output.WriteLine(refused.Message);
+            Assert.Contains("PatchesAcross is 2 and DispersalChancePerStep is 0.1", refused.Message);
+        }
+
+        /// <summary>D077's index on a row of patches: <c>floor(x / W) mod K</c>, wrapped first.</summary>
+        private static int Ring(float x, float length, float width, int patches)
+        {
+            float wrapped = x - length * (float)Math.Floor(x / length);
+            if (wrapped >= length || wrapped < 0f) wrapped = 0f;
+
+            int patch = (int)Math.Floor(wrapped / width) % patches;
+            return patch < 0 ? patch + patches : patch;
+        }
     }
 }

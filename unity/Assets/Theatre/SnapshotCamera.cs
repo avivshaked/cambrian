@@ -449,10 +449,11 @@ namespace Evosim.Theatre
         /// </summary>
         /// <remarks>
         /// D077's shared volume is a literal box and the theatre already draws it that way
-        /// (<see cref="WaterBounds.ShowBox"/>), from the same two numbers: K patches of
-        /// <c>sqrt(area / K)</c> on a ring along x, one patch across z. A tiled recording has no
-        /// box at all, only a lattice a hundred metres apart in otherwise empty space, so there
-        /// the frame is four tiles of it and the remark says the picture is of a lattice.
+        /// (<see cref="WaterBounds.ShowBox"/>), from the same three numbers: K patches of
+        /// <c>sqrt(area / K)</c>, laid out <c>K/A</c> along x by <c>A</c> across z
+        /// (fable-propose-box.md). A tiled recording has no box at all, only a lattice a hundred
+        /// metres apart in otherwise empty space, so there the frame is four tiles of it and the
+        /// remark says the picture is of a lattice.
         /// </remarks>
         public static Bounds BoxOf(TheatreReplay replay, out string note)
         {
@@ -463,8 +464,10 @@ namespace Evosim.Theatre
             if (config.SharedSpace)
             {
                 int patches = Mathf.Max(1, (int)config.HorizontalPatches);
-                float width = Mathf.Max(0.1f, Mathf.Sqrt(config.WorldAreaSquareMetres / patches));
-                float length = width * patches;
+                int across = Mathf.Clamp((int)config.PatchesAcross, 1, patches);
+                float patchMetres = Mathf.Max(0.1f, Mathf.Sqrt(config.WorldAreaSquareMetres / patches));
+                float length = patchMetres * Mathf.Max(1, patches / across);
+                float width = patchMetres * across;
 
                 return new Bounds(
                     new Vector3(0.5f * length, -0.5f * depth, 0.5f * width),
@@ -815,13 +818,17 @@ namespace Evosim.Theatre
             RunConfig config = replay.Record.Config;
             if (!config.SharedSpace) return;
 
-            // D077's K-1 seams: under a shared volume a patch is a region a body is in and
-            // crosses, so the lines between them are geometry the run has, not an index drawn as
-            // if it were a place.
+            // D077's seams: under a shared volume a patch is a region a body is in and crosses,
+            // so the lines between them are geometry the run has, not an index drawn as if it
+            // were a place. Both axes, since fable-propose-box.md; at A = 1 the second loop runs
+            // no times and this is the picture every recording before the layout was drawn as.
             int patches = Mathf.Max(1, (int)config.HorizontalPatches);
-            float width = (hi.x - lo.x) / patches;
+            int across = Mathf.Clamp((int)config.PatchesAcross, 1, patches);
+            int along = Mathf.Max(1, patches / across);
+            float width = (hi.x - lo.x) / along;
+            float depthPerPatch = (hi.z - lo.z) / across;
 
-            for (int k = 1; k < patches; k++)
+            for (int k = 1; k < along; k++)
             {
                 float x = lo.x + k * width;
 
@@ -829,6 +836,16 @@ namespace Evosim.Theatre
                 Line(new Vector3(x, lo.y, hi.z), new Vector3(x, hi.y, hi.z), seam);
                 Line(new Vector3(x, hi.y, lo.z), new Vector3(x, hi.y, hi.z), seam);
                 Line(new Vector3(x, lo.y, lo.z), new Vector3(x, lo.y, hi.z), seam);
+            }
+
+            for (int k = 1; k < across; k++)
+            {
+                float z = lo.z + k * depthPerPatch;
+
+                Line(new Vector3(lo.x, lo.y, z), new Vector3(lo.x, hi.y, z), seam);
+                Line(new Vector3(hi.x, lo.y, z), new Vector3(hi.x, hi.y, z), seam);
+                Line(new Vector3(lo.x, hi.y, z), new Vector3(hi.x, hi.y, z), seam);
+                Line(new Vector3(lo.x, lo.y, z), new Vector3(hi.x, lo.y, z), seam);
             }
         }
 

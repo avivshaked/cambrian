@@ -127,7 +127,7 @@ namespace Evosim.Sim.EditorTools
             int reportEvery = (int)Env("EVOSIM_REPORT_EVERY", 200f);
             ulong seed = EnvULong("EVOSIM_SEED", 1UL);
 
-            // The state digest — scratch/digest-spec.md. A runner setting like the wall budget,
+            // The state digest — logbook/specs/digest-spec.md. A runner setting like the wall budget,
             // deliberately *not* a RunConfig tunable: it changes nothing the world does, so it
             // must not reach config.json or its hash, and a run with the digest on has to stay
             // hash-compatible with the same run without it. 0 is off, which is every run so far.
@@ -302,6 +302,12 @@ namespace Evosim.Sim.EditorTools
             // other knob at 0 is the world every earlier run measured — a single, perfectly-mixed
             // column per layer, exactly D061's own "today's world" baseline.
             float patches = Env("EVOSIM_PATCHES", new RunConfig().HorizontalPatches);
+
+            // fable-propose-box.md. How many of those patches lie across z: the box is
+            // K/A patches long and A wide, so four at A=2 is a 10 by 10 m footprint where
+            // four in a row is 20 by 5. 1 is the world every run on file was measured in,
+            // at which no arithmetic anywhere changes.
+            float patchesAcross = Env("EVOSIM_PATCHES_ACROSS", new RunConfig().PatchesAcross);
             float horizontalMixing = Env("EVOSIM_H_MIXING", new RunConfig().HorizontalMixingDiffusivity);
             float dispersalChance = Env("EVOSIM_DISPERSAL", new RunConfig().DispersalChancePerStep);
             float patchShading = Env("EVOSIM_PATCH_SHADING", new RunConfig().PerPatchShading);
@@ -634,6 +640,7 @@ namespace Evosim.Sim.EditorTools
             config.MatterBurialPerSecond = matterBurial;
             config.SpeciesDriftThreshold = speciesTheta;
             config.HorizontalPatches = patches;
+            config.PatchesAcross = patchesAcross;
             config.HorizontalMixingDiffusivity = horizontalMixing;
             config.DispersalChancePerStep = dispersalChance;
             config.PerPatchShading = patchShading;
@@ -797,10 +804,16 @@ namespace Evosim.Sim.EditorTools
             // header cannot describe a box the simulation does not have. Rendered unconditionally
             // for D065's reason — a reader must never have to work out whether a missing token
             // means "tiled" or "written before the box existed".
+            //
+            // fable-propose-box.md clause 4: the three numbers are the patches along x, the
+            // patches across z and the patch side, so the token says which box the run was in.
+            // The old token printed the patch count and the width twice, which at A = 1 read
+            // "4x5x5 m" where this reads "4x1x5 m" — the same box, named by its layout. A token
+            // that cannot say whether four patches are a row or a square is worth changing.
             float patchWidth = eco.World.Nutrients.PatchWidthMetres;
+            int patchesAlong = eco.World.Nutrients.PatchCount / eco.World.Nutrients.PatchesAcross;
             string spaceToken = sharedSpace
-                ? "shared " + Math.Max(1, (int)patches) + "x" +
-                  patchWidth.ToString("0.###", CultureInfo.InvariantCulture) + "x" +
+                ? "shared " + patchesAlong + "x" + eco.World.Nutrients.PatchesAcross + "x" +
                   patchWidth.ToString("0.###", CultureInfo.InvariantCulture) + " m, depth " +
                   config.WorldDepthMetres + ", wrap, " +
                   // The bed, read off the Ecosystem rather than off the config: it is built or not
@@ -883,6 +896,10 @@ namespace Evosim.Sim.EditorTools
                     ? " · patches " + (int)patches + ", h-mix " + horizontalMixing + " m2/s, " +
                       "disperse " + dispersalChance + ", patchShade " + patchShading
                     : "") +
+                // The layout is in the space token below, where the box is; this is the
+                // launcher's own number, printed only where it is not the default, for the
+                // reason every other above-default knob is.
+                (patchesAcross > 1f ? " · across " + (int)patchesAcross : "") +
                 " · area " + area + " m2" +
                 // D077 — appended after `area`, which is the setting the box is derived from.
                 " · space " + spaceToken +
@@ -1167,7 +1184,7 @@ namespace Evosim.Sim.EditorTools
             // The last window's lineage rows. They are drained at every sample and nowhere else,
             // so a run that ended between samples put its final births in the snapshot below and
             // never in lineage.jsonl: r25-s2's wall end left 38 snapshot ids with no birth row
-            // (scratch/floor-build-report.md; the Astra review, 2026-09-07).
+            // (logbook/specs/floor-build-report.md; the Astra review, 2026-09-07).
             IReadOnlyList<LineageEvent> lineageTail = eco.World.DrainLineageEvents();
             if (dir != null)
             {
@@ -2496,7 +2513,7 @@ namespace Evosim.Sim.EditorTools
                 .Field("contactPairs", eco.ContactPairs)
                 .Field("contactPairsPerStep",
                     contactSteps > 0 ? contactPairsWindow / (double)contactSteps : 0d)
-                // The sea bed's pairs, appended after the crowd's — scratch/floor-spec.md rule 3.
+                // The sea bed's pairs, appended after the crowd's — logbook/specs/floor-spec.md rule 3.
                 // Written for every run: 0 with no floor is the same shape as `sharedSpace` beside
                 // it, and the flag is what says which of the two facts a 0 is.
                 .Field("floorContactPairs", eco.FloorContactPairs)
@@ -2937,7 +2954,7 @@ namespace Evosim.Sim.EditorTools
             // table whose width depends on the config.
             "above", "wraps", "crowded", "contacts",
 
-            // The sea bed — scratch/floor-spec.md rule 3, appended after `contacts` per the same
+            // The sea bed — logbook/specs/floor-spec.md rule 3, appended after `contacts` per the same
             // rule. `contacts` is creature-creature pairs only; this is pairs against the floor
             // collider, so a benthic crowd is visible instead of being summed into the other. An
             // em-dash where there is no bed, for `contacts`' own reason: 0 pairs and no floor are

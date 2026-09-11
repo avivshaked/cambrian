@@ -328,7 +328,7 @@ namespace Evosim.Sim
             // own density back in recovers the full weight exactly. The first build read D077
             // rule 4's "restore" as the founder sink rate, ~2 mm/s; the vent's plume lifts at
             // 50 mm/s, twenty-eight times harder, and the arm measured the surface still
-            // ratcheting with the rule on (logbook/0065, scratch/footprint-build-report.md).
+            // ratcheting with the rule on (logbook/0065, logbook/specs/footprint-build-report.md).
             // The owner's ruling of 2026-09-05: the spec's strength was the error, and the honest
             // physics is a body out of the water falling under its own weight.
             //

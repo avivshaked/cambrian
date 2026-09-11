@@ -43,7 +43,7 @@ namespace Evosim.Core
         /// In, the depth the child would be admitted at — its parent's. Out, the depth it is
         /// actually placed at, which the implementation may only ever <b>raise</b>: a world with a
         /// solid sea bed cannot put a body inside the rock, and a parent resting on the floor has
-        /// to breed beside itself rather than below itself (<c>scratch/floor-spec.md</c>, rule 2).
+        /// to breed beside itself rather than below itself (<c>logbook/specs/floor-spec.md</c>, rule 2).
         /// Untouched in the ordinary case, so nothing but a body against the bed sees a difference.
         /// </param>
         /// <param name="patch">

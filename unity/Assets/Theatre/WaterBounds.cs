@@ -31,20 +31,21 @@ namespace Evosim.Theatre
     /// <para>
     /// <b>Under <c>RunConfig.SharedSpace</c> the floor is a solid thing and is drawn as one.</b>
     /// D077's bottom was a restoring force — a rule, with nothing there — and a wire grid was an
-    /// honest picture of it. Since <c>scratch/floor-spec.md</c> the bed is a static collider a body
+    /// honest picture of it. Since <c>logbook/specs/floor-spec.md</c> the bed is a static collider a body
     /// rests on (<c>Evosim.Sim.SeaFloor</c>), so it is filled rather than drawn as lines, and the
     /// grid is kept over the fill as a scale reference rather than as the floor itself. What is
-    /// filled is the box's own footprint, x in [0, K·W), z in [0, W): the collider overhangs that
+    /// filled is the box's own footprint, x in [0, W·K/A), z in [0, W·A): the collider overhangs it
     /// by <c>SeaFloor.SeamMarginMetres</c> so a body caught mid-wrap has rock under it, and drawing
     /// the overhang would put sea bed where there is no water.
     /// </para>
     /// <para>
     /// <b>Both of those stop being true under <c>RunConfig.SharedSpace</c></b> (D077), and
     /// <see cref="ShowBox"/> is what the theatre draws then: the box is literal — K patches of
-    /// <c>sqrt(area / K)</c> metres side by side on a ring, x in [0, K·W), z in [0, W) — and the
-    /// K−1 lines between them are boundaries a creature actually crosses. The far seam (x = K·W
-    /// back to x = 0) is the same line as x = 0 and is drawn as the box's own end face; a body
-    /// that leaves there reappears at the other, which no still picture can show.
+    /// <c>sqrt(area / K)</c> metres, laid out K/A along x by A across z (fable-propose-box.md),
+    /// x in [0, W·K/A), z in [0, W·A) — and the lines between them are boundaries a creature
+    /// actually crosses. The far seam on each axis is the same line as 0 and is drawn as the
+    /// box's own end face; a body that leaves there reappears at the other, which no still
+    /// picture can show.
     /// </para>
     /// </remarks>
     public sealed class WaterBounds : MonoBehaviour
@@ -53,7 +54,7 @@ namespace Evosim.Theatre
         public Color FloorColour = new Color(0.55f, 0.45f, 0.30f, 0.5f);
 
         /// <summary>
-        /// The sea bed's fill, drawn under the box's floor grid — <c>scratch/floor-spec.md</c>.
+        /// The sea bed's fill, drawn under the box's floor grid — <c>logbook/specs/floor-spec.md</c>.
         /// </summary>
         /// <remarks>
         /// Darker than <see cref="FloorColour"/> so the grid still reads on top of it. Only the
@@ -86,7 +87,9 @@ namespace Evosim.Theatre
         /// <summary>The box, when the run has one — D077. Zero width means "no box, draw a grid".</summary>
         private float _boxLength;
         private float _boxWidth;
+        private float _patchMetres;
         private int _patches;
+        private int _patchesAcross = 1;
 
         /// <summary>
         /// Sets the water up from a loaded run.
@@ -101,7 +104,9 @@ namespace Evosim.Theatre
             _spacing = Mathf.Max(1f, spacingMetres);
             _boxWidth = 0f;
             _boxLength = 0f;
+            _patchMetres = 0f;
             _patches = 1;
+            _patchesAcross = 1;
             _ready = true;
         }
 
@@ -110,17 +115,25 @@ namespace Evosim.Theatre
         /// </summary>
         /// <param name="depthMetres"><c>RunConfig.WorldDepthMetres</c>. The box runs from y = 0 to −D.</param>
         /// <param name="patchWidthMetres">W = sqrt(area / K), the side of one patch.</param>
-        /// <param name="patches">K. K−1 seams are drawn; the K-th is the box's own end face.</param>
-        public void ShowBox(float depthMetres, float patchWidthMetres, int patches)
+        /// <param name="patchesAlong">K/A, the patches along x. The last seam is the box's own end face.</param>
+        /// <param name="patchesAcross">
+        /// A — <c>RunConfig.PatchesAcross</c>, the patches across z (fable-propose-box.md). 1 draws
+        /// the row of patches every recording before the layout was made of.
+        /// </param>
+        public void ShowBox(
+            float depthMetres, float patchWidthMetres, int patchesAlong, int patchesAcross = 1)
         {
             _depth = Mathf.Max(0.1f, depthMetres);
-            _patches = Mathf.Max(1, patches);
-            _boxWidth = Mathf.Max(0.1f, patchWidthMetres);
-            _boxLength = _boxWidth * _patches;
+            _patches = Mathf.Max(1, patchesAlong);
+            _patchesAcross = Mathf.Max(1, patchesAcross);
+            _patchMetres = Mathf.Max(0.1f, patchWidthMetres);
+            _boxWidth = _patchMetres * _patchesAcross;
+            _boxLength = _patchMetres * _patches;
 
             // A grid pitch that gives a legible number of lines whatever the box is: a 10 m patch
-            // wants metres, a 100 m one does not.
-            _spacing = Mathf.Max(1f, Mathf.Round(_boxWidth / 5f));
+            // wants metres, a 100 m one does not. Read off the patch rather than off the box, so
+            // a square layout is drawn at the pitch its row-shaped twin would have been.
+            _spacing = Mathf.Max(1f, Mathf.Round(_patchMetres / 5f));
             _extent = Mathf.Max(_boxLength, _boxWidth);
             _ready = true;
         }
@@ -203,14 +216,15 @@ namespace Evosim.Theatre
             Vertical(0f, _boxWidth);
             Vertical(_boxLength, _boxWidth);
 
-            // The K−1 patch seams, full height and in their own colour: under SharedSpace these
-            // are regions a creature is in and crosses, not indices. The K-th seam is the box's
-            // own end face, already drawn — and it is the same line as x = 0, because the ring
-            // wraps there.
+            // The patch seams, full height and in their own colour: under SharedSpace these are
+            // regions a creature is in and crosses, not indices. The last seam on each axis is the
+            // box's own end face, already drawn — and it is the same line as 0, because the ring
+            // wraps there. At A = 1 the second loop runs no times and this is the picture every
+            // recording before the layout was drawn as.
             GL.Color(SeamColour);
             for (int k = 1; k < _patches; k++)
             {
-                float x = k * _boxWidth;
+                float x = k * _patchMetres;
 
                 GL.Vertex3(x, 0f, 0f);
                 GL.Vertex3(x, 0f, _boxWidth);
@@ -218,6 +232,18 @@ namespace Evosim.Theatre
                 GL.Vertex3(x, -_depth, _boxWidth);
                 Vertical(x, 0f);
                 Vertical(x, _boxWidth);
+            }
+
+            for (int k = 1; k < _patchesAcross; k++)
+            {
+                float z = k * _patchMetres;
+
+                GL.Vertex3(0f, 0f, z);
+                GL.Vertex3(_boxLength, 0f, z);
+                GL.Vertex3(0f, -_depth, z);
+                GL.Vertex3(_boxLength, -_depth, z);
+                Vertical(0f, z);
+                Vertical(_boxLength, z);
             }
         }
 

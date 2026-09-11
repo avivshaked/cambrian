@@ -839,5 +839,77 @@ namespace Evosim.Core.Tests
             double mean = first / mass;
             return (mean, second / mass - mean * mean);
         }
+
+        // ------------------------------------------------------------ the layout (fable-propose-box.md)
+
+        [Fact]
+        public void TheSquareBoxHoldsTheSameCellsTheRowDoesAndRefusesTheSameCellSizes()
+        {
+            // The campaign's own arithmetic: 100 m² over four patches laid two by two is
+            // 10 by 10 by 60 m, where four in a row is 20 by 5 by 60. Both of the campaign's
+            // cell sizes divide both boxes and the cell counts do not move, which is the
+            // claim that the layout costs nothing.
+            var fine = new GridField(100f, 0f, 60f, 0f, 0f, 4, 1f, patchesAcross: 2);
+
+            Assert.Equal(10f, fine.LengthMetres);
+            Assert.Equal(10f, fine.WidthMetres);
+            Assert.Equal(10, fine.CellsX);
+            Assert.Equal(10, fine.CellsZ);
+            Assert.Equal(60, fine.CellsY);
+            Assert.Equal(6000, fine.CellCount);
+
+            var coarse = new GridField(100f, 0f, 60f, 0f, 0f, 4, 5f, patchesAcross: 2);
+
+            Assert.Equal(2, coarse.CellsX);
+            Assert.Equal(2, coarse.CellsZ);
+            Assert.Equal(12, coarse.CellsY);
+            Assert.Equal(48, coarse.CellCount);
+
+            Assert.Equal(6000, new GridField(100f, 0f, 60f, 0f, 0f, 4, 1f).CellCount);
+            Assert.Equal(48, new GridField(100f, 0f, 60f, 0f, 0f, 4, 5f).CellCount);
+
+            // And the matter default of 3 m divides neither box, which is why D086 ruled 5 m.
+            ArgumentException refused = Assert.Throws<ArgumentException>(
+                () => new GridField(100f, 0f, 60f, 0f, 0f, 4, 3f, patchesAcross: 2));
+
+            _output.WriteLine(refused.Message);
+            Assert.Contains("A cell of 3 m does not divide the box", refused.Message);
+            Assert.Contains("10 m long, 60 m deep and 10 m wide", refused.Message);
+
+            // A layout that leaves a part row is refused before any of that is asked.
+            ArgumentException odd = Assert.Throws<ArgumentException>(
+                () => new GridField(100f, 0f, 60f, 0f, 0f, 4, 1f, patchesAcross: 3));
+
+            _output.WriteLine(odd.Message);
+            Assert.Contains("3 patches across do not divide 4 patches", odd.Message);
+        }
+
+        [Fact]
+        public void ThePatchOfCellMapCoversEachQuadrantEqually()
+        {
+            // The map is built once per column from the column's own centre, so what a
+            // per-patch read sums is what the patch covers. A hundred columns over four
+            // quadrants is twenty-five each, and a uniform seed is what says so.
+            var field = new GridField(100f, 0f, 60f, 0f, 0f, 4, 1f, patchesAcross: 2);
+            field.SeedUniform(1f);
+
+            double layer = 0d;
+            for (int patch = 0; patch < 4; patch++)
+            {
+                Assert.Equal(25d, field.StockInLayer(0, patch), 6);
+                layer += field.StockInLayer(0, patch);
+            }
+
+            Assert.Equal(100d, layer, 6);
+
+            // And a deposit at a quadrant's centre is in that quadrant and in no other.
+            var clean = new GridField(100f, 0f, 60f, 0f, 0f, 4, 1f, patchesAcross: 2);
+            clean.Deposit(new FieldPoint(new Float3(7.5f, -0.5f, 7.5f), 3), 40f);
+
+            Assert.Equal(40d, clean.StockInLayer(0, 3), 6);
+            Assert.Equal(0d, clean.StockInLayer(0, 0), 6);
+            Assert.Equal(0d, clean.StockInLayer(0, 1), 6);
+            Assert.Equal(0d, clean.StockInLayer(0, 2), 6);
+        }
     }
 }

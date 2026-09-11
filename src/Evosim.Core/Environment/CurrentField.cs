@@ -423,10 +423,14 @@ namespace Evosim.Core
         /// <see cref="CurrentMode.Transport"/> needs and more than <see cref="CurrentMode.Rolls"/>
         /// reads.
         /// </summary>
-        /// <param name="patchWidthMetres">One patch's side, m. Also the box's z extent.</param>
-        /// <param name="patchCount">D061's patches, so the box is this many patches long in x.</param>
+        /// <param name="patchWidthMetres">One patch's side, m, on both horizontal axes.</param>
+        /// <param name="patchCount">D061's patches, K, laid out K/A along x by A across z.</param>
         /// <param name="depthMetres">The box's depth, m. The floor sits at −this.</param>
         /// <param name="seed">The run's seed, which the transport field's phases are drawn from.</param>
+        /// <param name="patchesAcross">
+        /// <see cref="RunConfig.PatchesAcross"/>, A. 1 is the row of patches this field has always
+        /// been built over, at which every number below is the one it always held.
+        /// </param>
         /// <remarks>
         /// <para>
         /// <b>State, not tunables, for <see cref="PatchWidthMetres"/>'s reason.</b> Every number
@@ -443,7 +447,9 @@ namespace Evosim.Core
         /// a replicate.
         /// </para>
         /// </remarks>
-        public void SetBox(float patchWidthMetres, int patchCount, float depthMetres, ulong seed)
+        public void SetBox(
+            float patchWidthMetres, int patchCount, float depthMetres, ulong seed,
+            int patchesAcross = 1)
         {
             SetPatchWidth(patchWidthMetres);
 
@@ -453,6 +459,22 @@ namespace Evosim.Core
                     nameof(patchCount), patchCount, "A box is at least one patch long.");
             }
 
+            if (patchesAcross < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(patchesAcross), patchesAcross, "A box is at least one patch wide.");
+            }
+
+            if (patchCount % patchesAcross != 0)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"{patchesAcross} patches across do not divide {patchCount} patches, so ") +
+                    "the layout leaves a part row. The water is a field over a box, and a part " +
+                    "row is not a box.",
+                    nameof(patchesAcross));
+            }
+
             if (!(depthMetres > 0f) || float.IsInfinity(depthMetres))
             {
                 throw new ArgumentOutOfRangeException(
@@ -460,6 +482,7 @@ namespace Evosim.Core
             }
 
             _patchCount = patchCount;
+            _patchesAcross = patchesAcross;
             _depthMetres = depthMetres;
             _seed = seed;
 
@@ -469,11 +492,24 @@ namespace Evosim.Core
         }
 
         private int _patchCount;
+        private int _patchesAcross = 1;
         private float _depthMetres;
         private ulong _seed;
 
-        /// <summary>The box's length along x, m: every patch side by side. 0 until a world says.</summary>
-        public float LengthMetres => _patchWidthMetres * _patchCount;
+        /// <summary>
+        /// How many patches lie across z — <see cref="RunConfig.PatchesAcross"/>, A. 1 until a
+        /// world says otherwise, which is the row of patches every run on file was measured in.
+        /// </summary>
+        public int PatchesAcross => _patchesAcross;
+
+        /// <summary>Patches along x, <c>K / A</c>. 0 until a world says.</summary>
+        public int PatchesAlong => _patchesAcross < 1 ? 0 : _patchCount / _patchesAcross;
+
+        /// <summary>The box's length along x, m: <c>W · K / A</c>. 0 until a world says.</summary>
+        public float LengthMetres => _patchWidthMetres * PatchesAlong;
+
+        /// <summary>The box's extent along z, m: <c>W · A</c>. 0 until a world says.</summary>
+        public float WidthMetres => _patchWidthMetres * _patchesAcross;
 
         /// <summary>The box's depth, m. 0 until a world says.</summary>
         public float DepthMetres => _depthMetres;
@@ -597,7 +633,7 @@ namespace Evosim.Core
         public Float3 VelocityAt(float heightY, double seconds, int patch, int patchCount)
         {
             Float3 flow = Mode == CurrentMode.Transport
-                ? TransportAt(PatchCentreX(patch), heightY, 0.5f * _patchWidthMetres, seconds)
+                ? TransportAt(PatchCentreX(patch), heightY, PatchCentreZ(patch), seconds)
                 : RollOrSteady(heightY, seconds, patch, patchCount);
 
             if (!VentActive(patchCount)) return flow;
@@ -622,7 +658,7 @@ namespace Evosim.Core
         /// </summary>
         /// <param name="x">World x, m. The box is a ring <see cref="LengthMetres"/> long.</param>
         /// <param name="y">World height, m. Zero is the waterline, negative is down.</param>
-        /// <param name="z">World z, m. The box is a ring <see cref="PatchWidthMetres"/> wide.</param>
+        /// <param name="z">World z, m. The box is a ring <see cref="WidthMetres"/> wide.</param>
         /// <param name="seconds">The world's clock, s.</param>
         /// <remarks>
         /// <b>In <see cref="CurrentMode.Rolls"/> the horizontal coordinates buy only the patch</b>,
@@ -636,14 +672,14 @@ namespace Evosim.Core
         {
             if (Mode != CurrentMode.Transport)
             {
-                return VelocityAt(y, seconds, PatchOfX(x), Math.Max(1, _patchCount));
+                return VelocityAt(y, seconds, PatchOfXZ(x, z), Math.Max(1, _patchCount));
             }
 
             Float3 flow = TransportAt(x, y, z, seconds);
             if (!VentActive(_patchCount)) return flow;
 
             double depth = -(double)y;
-            int patch = PatchOfX(x);
+            int patch = PatchOfXZ(x, z);
 
             float u = (float)VentHorizontal(depth, patch, _patchCount);
             float w = (float)VentVertical(depth, patch, _patchCount);
@@ -654,23 +690,43 @@ namespace Evosim.Core
         /// <summary>Water velocity at a place and a time, m/s.</summary>
         public Float3 VelocityAt(Float3 at, double seconds) => VelocityAt(at.X, at.Y, at.Z, seconds);
 
-        /// <summary>The patch an x falls in on the ring, <c>floor(x / W) mod K</c> — D077's rule.</summary>
+        /// <summary>
+        /// The patch a horizontal position falls in — <c>iz · (K / A) + ix</c>, D077's rule as
+        /// fable-propose-box.md's clause 3 generalises it, and <c>floor(x / W) mod K</c> term for
+        /// term at A = 1.
+        /// </summary>
         /// <remarks>
         /// <see cref="GridField.PatchOf"/>'s arithmetic, repeated here rather than shared because
         /// this class knows nothing about fields and a world may have none of them. The two are
         /// held together by <see cref="World"/> handing both the same geometry.
         /// </remarks>
-        public int PatchOfX(float x)
+        public int PatchOfXZ(float x, float z)
         {
             if (_patchCount < 1 || !(_patchWidthMetres > 0f)) return 0;
 
-            int patch = (int)Math.Floor(WrapAxis(x, LengthMetres) / _patchWidthMetres);
-            patch %= _patchCount;
-            if (patch < 0) patch += _patchCount;
-            return patch;
+            int along = PatchesAlong;
+            if (along < 1) return 0;
+
+            int ix = (int)Math.Floor(WrapAxis(x, LengthMetres) / _patchWidthMetres);
+            ix %= along;
+            if (ix < 0) ix += along;
+
+            if (_patchesAcross == 1) return ix;
+
+            int iz = (int)Math.Floor(WrapAxis(z, WidthMetres) / _patchWidthMetres);
+            iz %= _patchesAcross;
+            if (iz < 0) iz += _patchesAcross;
+
+            return iz * along + ix;
         }
 
-        private float PatchCentreX(int patch) => (patch + 0.5f) * _patchWidthMetres;
+        /// <summary>The x of a patch's centre, m. At A = 1 this is <c>(patch + ½)·W</c>.</summary>
+        private float PatchCentreX(int patch) =>
+            (patch % Math.Max(1, PatchesAlong) + 0.5f) * _patchWidthMetres;
+
+        /// <summary>The z of a patch's centre, m. At A = 1 this is half the box's width.</summary>
+        private float PatchCentreZ(int patch) =>
+            (patch / Math.Max(1, PatchesAlong) + 0.5f) * _patchWidthMetres;
 
         private static float WrapAxis(float v, float extent)
         {
@@ -931,7 +987,7 @@ namespace Evosim.Core
         private void BuildTransport()
         {
             double length = LengthMetres;
-            double width = _patchWidthMetres;
+            double width = WidthMetres;
             double depth = _depthMetres;
 
             _transportKx = new double[TransportModes];

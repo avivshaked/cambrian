@@ -316,7 +316,7 @@ namespace Evosim.Core.Tests
         [Fact]
         public void NobodyIsAdmittedBelowTheHeightThePlacerHandedBack()
         {
-            // The floor build's Core-side contract (scratch/floor-spec.md rule 2): where the world
+            // The floor build's Core-side contract (logbook/specs/floor-spec.md rule 2): where the world
             // has a solid sea bed, the placer raises a body clear of it — and the height the body
             // is *built* at has to be the height the economy charges, or a creature would eat the
             // light and the matter of a layer its body is not in. The world may never lower it.

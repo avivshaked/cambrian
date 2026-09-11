@@ -12,19 +12,19 @@ namespace Evosim.Sim
     /// <para>
     /// <b>The box is literal, and it is the one the ecology was already priced against.</b>
     /// <c>RunConfig.WorldAreaSquareMetres</c> is the sun's aperture and the denominator of every
-    /// density the world reads (<c>scratch/footprint-survey.md</c>), and
-    /// <c>RunConfig.HorizontalPatches</c> already divides it into K columns of
+    /// density the world reads (<c>logbook/specs/footprint-survey.md</c>), and
+    /// <c>RunConfig.HorizontalPatches</c> already divides it into K patches of
     /// <c>sqrt(area / K)</c> metres — the width <c>NutrientField.PatchWidthMetres</c> computes and
-    /// the vent's drag term already uses. So the box is K of those columns side by side on a ring:
-    /// x ∈ [0, K·W), y ∈ [−D, 0], z ∈ [0, W). Nothing new is chosen here; a geometry that was
-    /// inert becomes load-bearing.
+    /// the vent's drag term already uses. So the box is those patches laid out K/A along x by
+    /// <c>RunConfig.PatchesAcross</c> across z: x ∈ [0, W·K/A), y ∈ [−D, 0], z ∈ [0, W·A).
+    /// Nothing new is chosen here; a geometry that was inert becomes load-bearing.
     /// </para>
     /// <para>
     /// <b>A patch is a place, not an index.</b> Until D077 a creature carried a patch number it
     /// inherited at birth and changed only by lottery, while its body sat on a lattice a hundred
     /// metres from its neighbours and unrelated to either. Here the number is read from where the
-    /// root actually is — <c>floor(x / W) mod K</c> — so a creature is in the water it is swimming
-    /// in, and it changes patch because something moved it.
+    /// root actually is — <see cref="PatchOf(float, float)"/> — so a creature is in the water it
+    /// is swimming in, and it changes patch because something moved it.
     /// </para>
     /// <para>
     /// <b>The horizontal boundary is periodic</b> (<see cref="TryWrap"/>): a root that leaves by
@@ -100,11 +100,19 @@ namespace Evosim.Sim
             float patchWidthMetres,
             float depthMetres,
             ulong seed,
-            float offspringDispersalMetres = 0f)
+            float offspringDispersalMetres = 0f,
+            int patchesAcross = 1)
         {
             PatchCount = Mathf.Max(1, patchCount);
             PatchWidthMetres = Mathf.Max(0.01f, patchWidthMetres);
             DepthMetres = Mathf.Max(0.01f, depthMetres);
+
+            // fable-propose-box.md's layout. Clamped rather than refused, the way the patch
+            // count above is: World has already refused a world whose A does not divide K,
+            // and a placer that threw on a number the world accepted would be a second
+            // opinion about the same geometry.
+            PatchesAcross = Mathf.Clamp(patchesAcross, 1, PatchCount);
+            PatchesAlong = Mathf.Max(1, PatchCount / PatchesAcross);
 
             // Floored at 0 rather than trusted: a negative radius would pass Mathf.Sqrt as NaN and
             // put a newborn nowhere, which the free test would then reject 64 times over and file
@@ -126,7 +134,7 @@ namespace Evosim.Sim
         public float OffspringDispersalMetres { get; }
 
         /// <summary>
-        /// The sea bed, once there is one — <c>scratch/floor-spec.md</c> rule 2. Null leaves the
+        /// The sea bed, once there is one — <c>logbook/specs/floor-spec.md</c> rule 2. Null leaves the
         /// depth a body is offered untouched, which is the pre-floor behaviour.
         /// </summary>
         /// <remarks>
@@ -154,14 +162,23 @@ namespace Evosim.Sim
         /// <summary>K — <see cref="RunConfig.HorizontalPatches"/>, floored at 1.</summary>
         public int PatchCount { get; }
 
-        /// <summary>W = sqrt(area / K), metres. One patch's side, and the box's z extent.</summary>
+        /// <summary>W = sqrt(area / K), metres. One patch's side, on both horizontal axes.</summary>
         public float PatchWidthMetres { get; }
 
         /// <summary>D — <see cref="RunConfig.WorldDepthMetres"/>.</summary>
         public float DepthMetres { get; }
 
-        /// <summary>K·W: the box's x extent, the way around the ring.</summary>
-        public float LengthMetres => PatchWidthMetres * PatchCount;
+        /// <summary>A — <see cref="RunConfig.PatchesAcross"/>, the patches across z.</summary>
+        public int PatchesAcross { get; }
+
+        /// <summary>K / A — the patches along x.</summary>
+        public int PatchesAlong { get; }
+
+        /// <summary>W·K/A: the box's x extent, the way around the ring.</summary>
+        public float LengthMetres => PatchWidthMetres * PatchesAlong;
+
+        /// <summary>W·A: the box's z extent, the way around the other ring.</summary>
+        public float WidthMetres => PatchWidthMetres * PatchesAcross;
 
         /// <summary>Bodies translated at a seam, running total.</summary>
         public long Wraps { get; private set; }
@@ -180,21 +197,30 @@ namespace Evosim.Sim
 
         // ------------------------------------------------------------------------- the geometry
 
-        /// <summary>The patch a horizontal position falls in — <c>floor(x / W) mod K</c>.</summary>
+        /// <summary>
+        /// The patch a horizontal position falls in — <c>iz·(K/A) + ix</c>, numbered along x
+        /// first, and <c>floor(x / W) mod K</c> term for term at A = 1.
+        /// </summary>
         /// <remarks>
         /// The wrap is applied first, so a body that has drifted past a face between the last wrap
         /// and this read still reads a patch that exists. The second fold is there because C#'s
         /// <c>%</c> keeps the sign of its left operand.
         /// </remarks>
-        public int PatchOf(float x)
+        public int PatchOf(float x, float z)
         {
-            float wrapped = WrapAxis(x, LengthMetres);
-            int patch = (int)Mathf.Floor(wrapped / PatchWidthMetres);
+            int along = PatchesAlong;
 
-            patch %= PatchCount;
-            if (patch < 0) patch += PatchCount;
+            int ix = (int)Mathf.Floor(WrapAxis(x, LengthMetres) / PatchWidthMetres);
+            ix %= along;
+            if (ix < 0) ix += along;
 
-            return patch;
+            if (PatchesAcross == 1) return ix;
+
+            int iz = (int)Mathf.Floor(WrapAxis(z, WidthMetres) / PatchWidthMetres);
+            iz %= PatchesAcross;
+            if (iz < 0) iz += PatchesAcross;
+
+            return iz * along + ix;
         }
 
         /// <summary>
@@ -213,7 +239,7 @@ namespace Evosim.Sim
         {
             float dx = Shortest(a.x - b.x, LengthMetres);
             float dy = a.y - b.y;
-            float dz = Shortest(a.z - b.z, PatchWidthMetres);
+            float dz = Shortest(a.z - b.z, WidthMetres);
 
             return Mathf.Sqrt(dx * dx + dy * dy + dz * dz);
         }
@@ -232,7 +258,7 @@ namespace Evosim.Sim
             wrapped = p;
 
             float length = LengthMetres;
-            float width = PatchWidthMetres;
+            float width = WidthMetres;
 
             if (p.x >= 0f && p.x < length && p.z >= 0f && p.z < width) return false;
 
@@ -383,7 +409,7 @@ namespace Evosim.Sim
             if (creature == null) return 0;
 
             return _known.TryGetValue(creature.Id, out Occupant at)
-                ? PatchOf(at.Position.x)
+                ? PatchOf(at.Position.x, at.Position.z)
                 : creature.Patch;
         }
 
@@ -479,12 +505,12 @@ namespace Evosim.Sim
                 var candidate = new Vector3(
                     WrapAxis(at.Position.x + reach * Mathf.Cos(angle), LengthMetres),
                     y,
-                    WrapAxis(at.Position.z + reach * Mathf.Sin(angle), PatchWidthMetres));
+                    WrapAxis(at.Position.z + reach * Mathf.Sin(angle), WidthMetres));
 
                 if (!Free(candidate, radius)) { Rejections++; continue; }
 
                 Reserve(candidate, radius);
-                patch = PatchOf(candidate.x);
+                patch = PatchOf(candidate.x, candidate.z);
 
                 // Only when the bed actually moved it. The height the world admits the child at
                 // has to be the height its body is built at, or the economy charges one layer for
@@ -518,12 +544,12 @@ namespace Evosim.Sim
                 // founder lottery's business (RunConfig.FounderDepthSpread) and the horizontal
                 // position is this one's.
                 var candidate = new Vector3(
-                    _rng.Range(0f, LengthMetres), y, _rng.Range(0f, PatchWidthMetres));
+                    _rng.Range(0f, LengthMetres), y, _rng.Range(0f, WidthMetres));
 
                 if (!Free(candidate, radius)) { Rejections++; continue; }
 
                 Reserve(candidate, radius);
-                patch = PatchOf(candidate.x);
+                patch = PatchOf(candidate.x, candidate.z);
 
                 if (y > heightY) heightY = y;
 

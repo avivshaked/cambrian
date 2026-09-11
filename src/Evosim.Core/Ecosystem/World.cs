@@ -249,6 +249,16 @@ namespace Evosim.Core
         /// </summary>
         private int PatchCount => Math.Max(1, (int)Config.HorizontalPatches);
 
+        /// <summary>
+        /// Patches across z, A ≥ 1 — <see cref="RunConfig.PatchesAcross"/>, clamped the way
+        /// <see cref="PatchCount"/> is. fable-propose-box.md; the constructor refuses an A that
+        /// does not divide K.
+        /// </summary>
+        private int PatchesAcross => Math.Max(1, (int)Config.PatchesAcross);
+
+        /// <summary>Patches along x, <c>K / A</c>.</summary>
+        private int PatchesAlong => PatchCount / PatchesAcross;
+
         /// <summary>Dead matter in the water, and what feeds on it — §5A.2c.</summary>
         public IMatterField Nutrients { get; }
 
@@ -709,6 +719,47 @@ namespace Evosim.Core
             // (Config was just assigned above) and every field below is built with the same K.
             int patchCount = PatchCount;
 
+            // fable-propose-box.md. The layout, and the three worlds it cannot describe. A is
+            // read once here so that every field, the placer and the current below are built with
+            // one answer, the way K already is.
+            int patchesAcross = PatchesAcross;
+
+            if (patchCount % patchesAcross != 0)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"PatchesAcross is {patchesAcross} and HorizontalPatches is {patchCount}, ") +
+                    FormattableString.Invariant(
+                        $"which leaves {patchCount % patchesAcross} patches over. A layout is a ") +
+                    "whole number of rows: four patches lie one by four or two by two, and nine " +
+                    "lie one by nine or three by three.",
+                    nameof(config));
+            }
+
+            if (patchesAcross > 1 && config.FieldModel == MatterField.Cells)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"PatchesAcross is {patchesAcross} and FieldModel is Cells. The cell ") +
+                    "field mixes and advects across a one-dimensional ring of patches, wrapping " +
+                    "from K−1 back to 0, which is not the geometry of a layout more than one " +
+                    "patch deep: patch 0 and patch K−1 are not neighbours in it. Run a grid or a " +
+                    "vertex field, or leave the box a row.",
+                    nameof(config));
+            }
+
+            if (patchesAcross > 1 && config.DispersalChancePerStep > 0f)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"PatchesAcross is {patchesAcross} and DispersalChancePerStep is ") +
+                    FormattableString.Invariant($"{config.DispersalChancePerStep}. ") +
+                    "D061's lottery walks the same ring the cell field does — one patch ahead or " +
+                    "one behind, modulo K — and on a layout that is not a ring it would move a " +
+                    "creature diagonally across the box as often as sideways.",
+                    nameof(config));
+            }
+
             ValidateVent(config, patchCount);
             ValidateMatterInflux(config, patchCount);
 
@@ -734,7 +785,7 @@ namespace Evosim.Core
                     config.NutrientSinkMetresPerSecond, config.WorldDepthMetres,
                     config.FloorRefugeMetres, config.RefugeEdibleFraction, patchCount,
                     config.FieldKernelMetres, config.FieldMergeMetres, config.FieldVertexCap,
-                    config.FieldVertexJoules, Rng.SeedFor(seed, DetritusFieldIndex));
+                    config.FieldVertexJoules, Rng.SeedFor(seed, DetritusFieldIndex), patchesAcross);
 
                 // Its own reach: the cell's volume, so the matter gate binds where it bound in
                 // the base world (RunConfig.FieldMatterKernelMetres).
@@ -743,7 +794,7 @@ namespace Evosim.Core
                     config.MatterSinkMetresPerSecond, config.WorldDepthMetres,
                     0f, 0f, patchCount,
                     config.FieldMatterKernelMetres, config.FieldMergeMetres, config.FieldVertexCap,
-                    config.FieldVertexJoules, Rng.SeedFor(seed, MatterFieldIndex));
+                    config.FieldVertexJoules, Rng.SeedFor(seed, MatterFieldIndex), patchesAcross);
             }
             else if (config.FieldModel == MatterField.Grid)
             {
@@ -784,13 +835,14 @@ namespace Evosim.Core
                 Nutrients = new GridField(
                     config.WorldAreaSquareMetres, config.NutrientSinkMetresPerSecond,
                     config.WorldDepthMetres, config.FloorRefugeMetres, config.RefugeEdibleFraction,
-                    patchCount, config.FieldCellMetres);
+                    patchCount, config.FieldCellMetres, patchesAcross);
 
                 // Its own, coarser cell: matter is drawn in whole conceptions rather than grazed,
                 // and a metre of water cannot afford a child (RunConfig.FieldMatterCellMetres).
                 Matter = new GridField(
                     config.WorldAreaSquareMetres, config.MatterSinkMetresPerSecond,
-                    config.WorldDepthMetres, 0f, 0f, patchCount, config.FieldMatterCellMetres);
+                    config.WorldDepthMetres, 0f, 0f, patchCount, config.FieldMatterCellMetres,
+                    patchesAcross);
             }
             else
             {
@@ -854,7 +906,7 @@ namespace Evosim.Core
             // the genome. Same geometry the fields were built with, for the same reason.
             config.Current?.SetBox(
                 Nutrients.PatchWidthMetres, patchCount, config.WorldDepthMetres,
-                Rng.SeedFor(seed, CurrentFieldIndex));
+                Rng.SeedFor(seed, CurrentFieldIndex), patchesAcross);
 
             Seed = seed;
 
@@ -1251,16 +1303,21 @@ namespace Evosim.Core
                     CurrentField plume = Config.Current;
                     emitted = vertices.Emit(
                         amount,
-                        new Float3((plume.VentPatch + 0.5f) * width, -plume.VentDepthMetres + half, 0.5f * width),
+                        new Float3(
+                            PatchCentreX(plume.VentPatch), -plume.VentDepthMetres + half,
+                            PatchCentreZ(plume.VentPatch)),
                         new Float3(0.5f * width, half, 0.5f * width));
                 }
                 else
                 {
-                    float length = width * PatchCount;
+                    // The whole surface, which is the field's own box rather than a length
+                    // derived from a width here (fable-propose-box.md).
+                    float length = Matter.LengthMetres;
+                    float across = Matter.WidthMetres;
                     emitted = vertices.Emit(
                         amount,
-                        new Float3(0.5f * length, 0f, 0.5f * width),
-                        new Float3(0.5f * length, 0f, 0.5f * width));
+                        new Float3(0.5f * length, 0f, 0.5f * across),
+                        new Float3(0.5f * length, 0f, 0.5f * across));
                 }
 
                 MatterInfluxedTotal += emitted;
@@ -1283,16 +1340,19 @@ namespace Evosim.Core
                     CurrentField plume = Config.Current;
                     MatterInfluxedTotal += grid.DepositBox(
                         amount,
-                        new Float3((plume.VentPatch + 0.5f) * gridWidth, -plume.VentDepthMetres + gridHalf, 0.5f * gridWidth),
+                        new Float3(
+                            PatchCentreX(plume.VentPatch), -plume.VentDepthMetres + gridHalf,
+                            PatchCentreZ(plume.VentPatch)),
                         new Float3(0.5f * gridWidth, gridHalf, 0.5f * gridWidth));
                     return;
                 }
 
-                float gridLength = gridWidth * PatchCount;
+                float gridLength = Matter.LengthMetres;
+                float gridAcross = Matter.WidthMetres;
                 MatterInfluxedTotal += grid.DepositBox(
                     amount,
-                    new Float3(0.5f * gridLength, -gridHalf, 0.5f * gridWidth),
-                    new Float3(0.5f * gridLength, gridHalf, 0.5f * gridWidth));
+                    new Float3(0.5f * gridLength, -gridHalf, 0.5f * gridAcross),
+                    new Float3(0.5f * gridLength, gridHalf, 0.5f * gridAcross));
                 return;
             }
 
@@ -1386,8 +1446,8 @@ namespace Evosim.Core
             CurrentField current = Config.Current;
             bool drifts = Config.SharedSpace && current != null && current.AdvectFields;
 
-            float length = Nutrients.PatchWidthMetres * PatchCount;
-            float width = Nutrients.PatchWidthMetres;
+            float length = Nutrients.LengthMetres;
+            float width = Nutrients.WidthMetres;
             float depth = Config.WorldDepthMetres;
 
             double fraction = (double)Config.CorpseDecayPerSecond * seconds;
@@ -1422,7 +1482,7 @@ namespace Evosim.Core
                 else if (y < -depth) y = -depth;
 
                 corpse.Position = new Float3(x, y, z);
-                if (drifts) corpse.Patch = PatchOfX(x, width);
+                if (drifts) corpse.Patch = PatchOfXZ(x, z);
 
                 // The last instalment: everything that is left, in one go. Both stocks have to be
                 // under the floor value, because one empties before the other. A body that
@@ -1476,14 +1536,36 @@ namespace Evosim.Core
             if (kept < _corpses.Count) _corpses.RemoveRange(kept, _corpses.Count - kept);
         }
 
-        /// <summary>The ring's patch for a world x: D077's rule, <c>floor(x / W) mod K</c>.</summary>
-        private int PatchOfX(float x, float patchWidthMetres)
+        /// <summary>
+        /// The patch a horizontal position falls in: <c>iz · (K / A) + ix</c>, numbered along x
+        /// first — D077's rule as fable-propose-box.md's clause 3 lays it out, and
+        /// <c>floor(x / W) mod K</c> term for term at A = 1.
+        /// </summary>
+        private int PatchOfXZ(float x, float z)
         {
-            int patch = (int)Math.Floor(x / patchWidthMetres);
-            patch %= PatchCount;
-            if (patch < 0) patch += PatchCount;
-            return patch;
+            float width = Nutrients.PatchWidthMetres;
+            int along = PatchesAlong;
+
+            int ix = (int)Math.Floor(x / width);
+            ix %= along;
+            if (ix < 0) ix += along;
+
+            if (PatchesAcross == 1) return ix;
+
+            int iz = (int)Math.Floor(z / width);
+            iz %= PatchesAcross;
+            if (iz < 0) iz += PatchesAcross;
+
+            return iz * along + ix;
         }
+
+        /// <summary>The x of a patch's centre, m. <c>(patch + ½)·W</c> at A = 1.</summary>
+        private float PatchCentreX(int patch) =>
+            (patch % PatchesAlong + 0.5f) * Nutrients.PatchWidthMetres;
+
+        /// <summary>The z of a patch's centre, m. Half the box's width at A = 1.</summary>
+        private float PatchCentreZ(int patch) =>
+            (patch / PatchesAlong + 0.5f) * Nutrients.PatchWidthMetres;
 
         /// <summary>A coordinate folded back onto a ring of the given extent. <see cref="GridField"/>'s own.</summary>
         private static float WrapAxis(float v, float extent)
@@ -2632,7 +2714,7 @@ namespace Evosim.Core
 
             // The depth the child is admitted at. Its parent's, as it has always been, and the
             // placer may raise it — a parent resting on a solid sea bed breeds beside itself, not
-            // into the rock (scratch/floor-spec.md rule 2). A local rather than the expression
+            // into the rock (logbook/specs/floor-spec.md rule 2). A local rather than the expression
             // inline at Admit so that the height the body is built at and the height the economy
             // charges are the same number; in the tiled world nothing touches it and the
             // expression is parent.HeightY exactly, as before.
@@ -3144,8 +3226,8 @@ namespace Evosim.Core
                 // D083. Beside the parent until the simulator reports where the body actually
                 // is, and at the patch's centre for a body with no parent — the cell field never
                 // reads these, and in a shared volume the next Observe overwrites them.
-                X = parent != null ? parent.X : (patch + 0.5f) * Nutrients.PatchWidthMetres,
-                Z = parent != null ? parent.Z : 0.5f * Nutrients.PatchWidthMetres,
+                X = parent != null ? parent.X : PatchCentreX(patch),
+                Z = parent != null ? parent.Z : PatchCentreZ(patch),
                 StandingWatts = Metabolism.StandingWatts(phenotype, Config),
             };
 

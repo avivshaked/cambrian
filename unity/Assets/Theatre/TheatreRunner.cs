@@ -262,17 +262,20 @@ namespace Evosim.Theatre
                 RunConfig water = _replay.Record.Config;
 
                 // D077. A recording of a shared-space run has a literal box, so the theatre draws
-                // that box and the K-1 seams inside it rather than a lattice grid — the patch
-                // width from the world's own fields (sqrt(area / K)), never recomputed here. A
-                // tiled recording gets the grid it always got.
+                // that box and the seams inside it rather than a lattice grid — the patch width
+                // from the world's own fields (sqrt(area / K)), never recomputed here. The layout
+                // comes off the config too (fable-propose-box.md), or the picture would be of a
+                // box the run was not in. A tiled recording gets the grid it always got.
                 if (water.SharedSpace)
                 {
                     int patches = Mathf.Max(1, (int)water.HorizontalPatches);
+                    int across = Mathf.Clamp((int)water.PatchesAcross, 1, patches);
 
                     Water.ShowBox(
                         water.WorldDepthMetres,
                         Mathf.Sqrt(water.WorldAreaSquareMetres / patches),
-                        patches);
+                        Mathf.Max(1, patches / across),
+                        across);
                 }
                 else
                 {
