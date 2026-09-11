@@ -58,7 +58,9 @@ the theatre showed every clade as a metre-wide column (0083): a newborn beside i
 and a current that returned bodies. D088 (2026-09-10) replaced both, a newborn dispersed
 over a disc and a current that carries in three dimensions, and the agent's own pictures
 (0086, `scripts/theatre-snap.ps1`) show the fixed world filling the box. Round 35 is the
-base round in that world (0087); which of the earlier readings survive it is 0084's list.
+base round in that world and read five of five (0087), the dials no longer walking one way;
+which of the earlier readings survive it is 0084's list, and round 34, the free joint, runs
+on it.
 The open frontier: why the eaters' lines stop recruiting on the grid, whether a free joint
 survives founding (round 34, logbook/0080), and movement, which has never paid its energy
 cost (the cost side is closed, the prize side is open; `mean m/s` reads the water now).

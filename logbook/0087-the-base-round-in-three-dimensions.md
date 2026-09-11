@@ -90,13 +90,12 @@ eaters' footprint is smaller and moves with their numbers: 34 to 75 columns at t
 
 The last four columns are the positions file at 30,000 s: the median distance to the nearest
 body in three dimensions, the count of bodies with a clade-mate within a metre, and the mean
-depth by guild. A spread of 7 to 9 m in x is a scatter over the whole 20 m of the box. The
-nearest neighbour is two thirds of a metre at every seed and every time, which is the
-spacing of a uniform scatter at these numbers, and the horizontal reading is 0.11 to 0.13 m:
-a body's nearest neighbour is almost always above or below it, not beside it. Kin within a
+depth by guild. A spread of 7 to 9 m in x is a scatter over the whole 20 m of the box. The nearest neighbour is two thirds of a metre at every seed and every time, the spacing
+of a uniform scatter at these numbers. The horizontal reading is 0.11 to 0.13 m, so a body's
+nearest neighbour is almost always above or below it rather than beside it. Kin within a
 metre runs at seven to eight bodies in ten. That is not the ribbon; it is what a 5 m disc
 leaves after thirty thousand seconds when nothing swims. The leaves sit 18 to 23 m down and
-the stomachs 4 to 8 m under them, where round 33 had put both in a column; at 5,000 s the
+the stomachs 4 to 8 m under them, where round 33 had put both in a column. At 5,000 s the
 gap was wider, 8 to 20 m, and it closed as the stomach lines thinned.
 
 **The goal rule.** G0 holds in five seeds of five, as in round 33. The passing clades are
@@ -149,8 +148,8 @@ box and one close, and the positions reader drew the same three times. From abov
 seed fills the footprint from the first pictures on: bodies across all four patches and the
 whole width, no ribbon and no column, and the eaters scattered among the leaves rather than
 gathered under them. From the side, bodies from the surface to the bed, the green thickest in
-the top thirty metres and thinning below forty; the stomachs are not a layer beneath the
-leaves but a sparser scatter through the same water, a few metres lower on average. Seed 2
+the top thirty metres and thinning below forty. The stomachs are no layer beneath the
+leaves; they are a sparser scatter through the same water, a few metres lower on average. Seed 2
 at 30,000 s shows a denser shelf of leaves eight to ten metres down, the one horizontal
 structure seen in fifteen pictures. Seed 5's bodies are mostly spheres by the end where
 seed 3's are small boxes, so a picture can now tell one seed's morphology from another's
@@ -181,8 +180,8 @@ downgraded to a trade-off with two answers, and the mass floor as the sieve that
 litter (0082) is now one of two sieves. The stomach lines are thinner in three seeds and
 thin from an early peak in four, which is round 32's shape on the grid, so 0079's open
 question stands in the fixed world and cannot be blamed on the column. Two of 0084's bin 2
-items move to bin 1 on this evidence: the goal-rule pass is now shown in a world that fills
-the box, and the population at the end (1,270 to 1,709 against round 33's 1,321 to 1,762)
+items move to bin 1 on this evidence. The goal-rule pass is now shown in a world that fills
+the box. And the population at the end, 1,270 to 1,709 against round 33's 1,321 to 1,762,
 says the ribbon's shading bargain was worth nothing to the count.
 
 What the round cannot say, as pre-registered: which of dispersal, the current and the

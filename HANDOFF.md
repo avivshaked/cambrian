@@ -8,6 +8,24 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
+**Round 35 is read (logbook/0087, 2026-09-11 small hours): the three-dimensional base stands
+in five seeds of five, every book closed, every seed filling the box from 1,100 s on, the
+goal rule held with smaller stomach clades (20 to 130 against round 33's 74 to 120), and
+round 33's one-way dial walk did not replicate: seeds 1 and 5 kept it, seeds 2, 3 and 4
+went to small adults born nearly whole in litters of 1.5 to 1.7. The stomach lines thin
+from an early peak in four seeds, round 32's shape, so 0079's question stands in the fixed
+world. Pictures at 5,000, 15,000 and 30,000 s of every seed are in `scratch/snaps/r35-s*/`
+(three beside the entry). Round 34, the free joint, is running on this base: `r34-s1` to
+`r34-s5` launched overnight one at a time by `scripts/launch-queue.ps1` as the renders freed
+workers (0080's Launch section; `rounds/launch-r34.ps1` is round 35's launcher with the four
+prices at zero, the idle charge at 0.0001 because Core refuses a literal zero). Seed 1 has
+landed already: the free joint survived founding, 73 inherited at 5,000 s against 72 at
+1,000, held 45 to 80 bodies to 10,000 s, then thinned to none by 30,000 s, with three
+divergences; 0080's "M2 holds and M1 fails" reading, to be confirmed on the other four. The
+theatre's skin has its second day (carving, ellipsoids, the close view; CLAUDE.md's theatre
+paragraph); the owner has the three carve depths to pick from. A numbers agent stalled for
+six hours without writing, and its column was gathered by hand.**
+
 **Round 35, the base round in three dimensions, is launching (logbook/0087, 2026-09-10
 evening): round 33's world with D088, dispersal 5 m, transport at 0.1 m/s, founders
 reserving the adult, five seeds at 0.01 on workers 2 to 6 (`rounds/launch-r35.ps1`
