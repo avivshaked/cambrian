@@ -33,7 +33,14 @@ first time on worker 3, rendered `r36-s1` at 5,000 s (`scratch/snaps/skin4/`) an
 into main the same evening (branch `skin4`); its five dials (`EVOSIM_THEATRE_WAVE`,
 `_WAVELENGTH`, `_WAVE_SPEED`, `_LIGHT_REACH`, `_SHAFTS`) are unjudged by the owner, and
 the agent's first reading is that the surface reads as bands rather than water, which is
-the wave steepness. Both skin days still want a logbook entry once the owner has ruled. The owner watched `r36-s1` in the theatre (Mode B,
+the wave steepness. Both skin days are written up as logbook/0091; the calm sea (0.022 m over 3.2 m) is the
+wave default, picked from two pictures; the pillow ruling is still the owner's. The owner
+ruled the aquarium's shape the same evening ("yes proceed" on the cylinder, the square as
+fallback; `fable-propose-aquarium.md`), so the tank build starts on a branch off `box`, with
+a code survey first and the proposal's six checks before any scored round; rulings 2 and 3
+(the dilution's numbers, the concentrators) are taken as the agent's recommendation until
+the owner says otherwise, and the proposal is absorbed into DECISIONS.md when the build
+lands. The owner watched `r36-s1` in the theatre (Mode B,
 seek 5,000 s) and saw no sun, shimmer or ripple, which is why the day was moved up. Round 36 is fully launched (seed 5 at 19:23); seeds 1, 2 and 3 have landed with
 a jointed inherited count at 30,000 s of 73, 4 and 0. The box build (branch `box`, worktree
 `scratch/wt-box`) now waits for round 36's renders as well as its arms, because the theatre
