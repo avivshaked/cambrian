@@ -33,7 +33,18 @@ build after round 36's last render: all five seeds between 08:28 and 08:31 on wo
 first), the render queue beside them; every header verified.
 Worker 7 ran the tank checks off the worktree's Core and was restored to the main tree's before
 the launch. Round 38's launcher (`rounds/launch-r38.ps1`: area 400, budget 6,000, corpse decay
-0.005) is ready and needs no build.
+0.005) is ready and needs no build. **The throw trace is built and checked, on branch `throws`
+(worktree `scratch/wt-throws`, commit `75d8ed4`; spec `logbook/specs/throw-trace-spec.md`,
+the search behind it `logbook/specs/throw-trace-research.txt`)**: joint mass ratios at every
+build and resize (manifest and stats `maxJointMassRatio`, `bodiesOverMassRatio10`), a
+three-frame ring of every link's position and velocities for every multi-link body, and a
+`<id>-trace.json` beside each diverged dump with the frames, the masses, the ratios and the
+steps since the last resize; `diverged-read.py` reads it. The smoke's part 5 passed on worker
+7 and a 600 s box digest is identical to the reference, so it changes no trajectory. It moves
+`simHash`, so it merges after round 37's last render and round 38 runs with it; the
+mitigation it is meant to decide between (a mass-ratio cap at build and resize is the leading
+candidate; the search names the 10:1 rule) goes to the owner as a proposal once round 38's
+dumps have been read. Worker 7 is back on main's assets.
 
 **Round 34 is read (logbook/0090, 2026-09-11 midday): five seeds of five pass the goal
 rule, the free joint founds in every seed (46 to 140 inherited at 1,000 s) and is gone from
