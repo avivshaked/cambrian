@@ -148,7 +148,7 @@ while ($pending.Count -gt 0) {
         Write-Output "$(Stamp) launching seed $seed on worker $worker ($editors editors running)$preregNote"
         try {
             if ($Refresh) {
-                $refreshed = @(& (Join-Path $PSScriptRoot 'new-worker.ps1') -Workers @($worker) 2>&1 | ForEach-Object { [string]$_ })
+                $refreshed = @(& (Join-Path $PSScriptRoot 'new-worker.ps1') -Workers @($worker) *>&1 | ForEach-Object { [string]$_ })   # *>&1: it reports with Write-Host
                 $refreshed | ForEach-Object { Write-Output "    $_" }
                 if (($refreshed -join "`n") -notmatch 'refreshed|created') {
                     throw "new-worker.ps1 did not report worker $worker refreshed."
