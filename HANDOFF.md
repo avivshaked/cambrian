@@ -395,6 +395,26 @@ round 28) set the base and the order.
       in their first minute half the time; confirmed 5 of 5 in logbook/0090): the stroke's
       price shapes what a joint does, the idle charge only what it costs to own.* Now behind
       the dilution and the bed, so that there is a chase to pay for.
+   6b. **The water that a fin can push on** (owner 2026-09-12 night, "let's follow your
+      recommendation"): before round 41 is read on stroke quality, the fluid model gains the
+      two terms it lacks for a joint moving a mass through water, each a tunable defaulting
+      to 0 so every recording replays. Lift on a panel (a Kutta-style term per panel in
+      speed squared, angle of attack and area, in the same loop as the drag), which is how a
+      thin fin earns its thrust. And the reactive force of a body bending through water
+      (Lighthill's elongated-body theory: the momentum a segment gives the water when its
+      cross-section moves sideways, an unsteady added-mass term in place of the fixed
+      inertia), which is the standard model of undulatory swimming and the term a joint
+      exercises. Proposal first (the two terms, their validation against a known case such
+      as a flapping plate, the cost per part per step), built on a branch like the
+      acceleration force, and switched on for round 41 so that the priced stroke is priced
+      in water that rewards a real stroke. The rigid-body side (PhysX's articulations) stays:
+      the alternatives simulate no water either, MuJoCo's ellipsoid fluid model being the
+      one exception, and a change of engine orphans the replay record for weeks of work; it
+      is taken up only if the throw trace says the throws are the engine's and not ours.
+   6c. **The champion in real water** (same ruling): DESIGN §5.4's validation harness, one
+      evolved swimmer in a proper fluid (SPH or lattice-Boltzmann, hundreds of times slower
+      per body and impossible for a population), to say whether a stroke evolution found is
+      real or the approximation's. After 6b has been read once; not a round, an instrument.
    7. **Round 42, ellipsoids in the physics** (was round 40): spheres and capsules collide and
       drag as their three half-extents; preceded by the offline read of whether boxes have
       flattened. Proposal first.
