@@ -167,8 +167,15 @@ columns. The verdict line ends `PROVISIONAL` on an arm whose manifest still says
 `running` (the lineage runs ahead of the report by up to a sample, and a birth after the
 last sample does not recruit) and `no manifest` on a fixture; the recruitment window is
 20 sampling intervals read from the report, bounded at the last sample (2026-09-07).
-Fixture tests live in `scripts/tests/clade-score/` (`run-tests.ps1`); run them
-after touching the scorer.
+From 2026-09-12 the verdict line ends with a qualifier segment that changes no token:
+`duration <simulated> of <requested> s`, with `SHORT` below 30,000 s (a 10,000 s budget
+passed unqualified until the Astra review's fixture showed it), `floor open` or `floor closes
+at <n> s` from the run's `config.json`, and `reading: absorptive clade only; producer clause
+not decided`. Fixture tests live in `scripts/tests/clade-score/` (`run-tests.ps1`, 52
+assertions); run them after touching the scorer. `scripts/compare-det.py` exits 1 on a
+difference, 2 on a missing arm, field or shared sample or an ambiguous run directory
+(`--run` names one), 3 on unequal coverage (`--allow-partial` waives it); its fixtures are
+`scripts/tests/compare-det/run-tests.ps1`.
 
 ```powershell
 ./scripts/clade-score.ps1 r18x-s1 r18x-s2 r18x-s3 r18x-s4 r18x-s5

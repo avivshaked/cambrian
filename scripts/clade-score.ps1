@@ -39,6 +39,26 @@
   48 / 41 / 24 / 127 over the last two lifetimes. Read the first line for the verdict; read
   the second for continuity with the record.
 
+  **The verdict line (only) carries a qualifier segment** (Astra review F5,
+  logbook/specs/script-contracts-spec.md, 2026-09-12), appended after its standing suffix
+  (PROVISIONAL / CENSORED / no manifest / none of those) and never touching the largest
+  line's byte-for-byte guarantee above:
+
+    `| duration <simulated> of <requested> s [SHORT] | floor open|closes at <n> s|unknown
+    | reading: absorptive clade only; producer clause not decided`
+
+  **SHORT** means the manifest's simulated seconds are below 30,000, the campaign's round
+  length and the span D063 as amended is read over -- this script cannot otherwise tell a
+  10,000 s budget from a full one. It qualifies the reading; it does not change the verdict.
+  **The floor** segment reads `FloorClosesAfterSeconds` (RunConfigJson's camel-cased
+  `floorClosesAfterSeconds`, under "population") out of the run's own `config.json`, and
+  reads `floor unknown` when the file lacks the key (a config older than the knob) or is
+  missing outright. **The reading** segment exists because scripts/tests/clade-score's own
+  fixture suite greps the literal `arm: PASS` this script has always printed, so that token
+  is not renamed to `clade PASS`/`clade FAIL` -- the qualifier says in words what the PASS
+  covers (the absorptive clade clauses only; the photosynthetic producer clause is reported
+  on lines 3 and 4 and decides nothing yet).
+
   When no clade passes, the first line names the clade that fails the fewest clauses; ties
   go to the clade with the most living members at the last sample, then to the lowest root
   id. The largest clade is chosen exactly as scripts/reads/clade-score.py chose it -- strictly
@@ -369,6 +389,8 @@ foreach ($a in $Arm) {
     # computed the same way in every case -- only the label changes.
     $manifestPath = Join-Path $runDir.FullName 'run.json'
     $standing = ''
+    $simulated = '?'
+    $requested = '?'
     if (-not (Test-Path -LiteralPath $manifestPath)) {
         $standing = ' | no manifest'
     } else {
@@ -387,6 +409,44 @@ foreach ($a in $Arm) {
             $standing = " | CENSORED: $status ($reason) at t=$simulated of $requested s requested; a reading, not a verdict"
         }
     }
+
+    # -------------------------------------------------------------------------------
+    # The qualifier segment (Astra review F5, logbook/specs/script-contracts-spec.md): three
+    # readings appended to both the verdict line and the largest-clade line, none of which
+    # change PASS/FAIL -- they say what it does not yet cover.
+    #
+    # Duration: the goal rule (D063 as amended) is read over a 30,000 s round, and this
+    # script cannot otherwise tell a 10,000 s budget from a full one. SHORT qualifies the
+    # reading; it does not change it.
+    # -------------------------------------------------------------------------------
+    $durationSeg = "duration $simulated of $requested s"
+    $simNum = 0.0
+    if (($simulated -ne '?') -and [double]::TryParse($simulated, [ref]$simNum)) {
+        if ($simNum -lt 30000) { $durationSeg += ' SHORT' }
+    }
+
+    # The floor: config.json sits beside the manifest and lineage, in the run directory.
+    # FloorClosesAfterSeconds (RunConfig.cs) is written as "floorClosesAfterSeconds" under
+    # the "population" group (RunConfigJson.cs / ConfigSchema's camel-case of the property
+    # name). A config written before the knob existed has no such key.
+    $floorSeg = 'floor unknown'
+    $configPath = Join-Path $runDir.FullName 'config.json'
+    if (Test-Path -LiteralPath $configPath) {
+        $configText = [System.IO.File]::ReadAllText($configPath)
+        $m = [regex]::Match($configText, '"floorClosesAfterSeconds"\s*:\s*([0-9.]+)')
+        if ($m.Success) {
+            $floorVal = [double]$m.Groups[1].Value
+            $floorSeg = if ($floorVal -gt 0) { "floor closes at $($m.Groups[1].Value) s" } else { 'floor open' }
+        }
+    }
+
+    # Name the reading: scripts/tests/clade-score/run-tests.ps1 (under scripts/tests/) greps
+    # its own fixtures for the literal "arm: PASS" the verdict line prints today, so the
+    # token is not renamed to "clade PASS"/"clade FAIL" -- the qualifier says the same thing
+    # in words instead.
+    $readingSeg = 'reading: absorptive clade only; producer clause not decided'
+
+    $qualifierSeg = " | $durationSeg | $floorSeg | $readingSeg"
 
     $lineage = Read-Lineage $lineagePath
     $birth = $lineage.Birth
@@ -454,6 +514,7 @@ foreach ($a in $Arm) {
             $a, $inheritAtEnd
     }
     $verdictLine += $standing
+    $verdictLine += $qualifierSeg
 
     # -------------------------------------------------------------------------------
     # Line 2 -- the largest clade, in the format this script printed before every clade

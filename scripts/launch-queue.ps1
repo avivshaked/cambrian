@@ -30,17 +30,31 @@
 .PARAMETER MaxUnity
   The cap on Unity editors at once, counting the ones already running. Default 5.
 
+.PARAMETER Prereg
+  Path to a pre-registration file, relative to the repo root (script-contracts-spec.md
+  section 4). Optional; when given, the queue refuses to launch anything unless the file is
+  tracked and clean (`git status --porcelain` reports nothing for it) and has at least one
+  commit -- an unsaved or uncommitted pre-registration is not one. The commit is printed on
+  every launch line, and after each seed launches this writes
+  `runs/<arm>/prereg.json` (`{ "file", "commit", "launchedAt" }`), naming the arm read out of
+  the launcher's own "<arm> -> worker <n> (...)" output line. Omit it and the queue behaves
+  exactly as before this parameter existed.
+
 .EXAMPLE
   ./scripts/launch-queue.ps1 -Launcher rounds/launch-r34.ps1 -Seeds 1,2,3,4,5 -Workers 7,2,3,4,5,6 -ExpectSimHash b5d31a48
+
+.EXAMPLE
+  ./scripts/launch-queue.ps1 -Launcher rounds/launch-r38.ps1 -Seeds 1,2,3,4,5 -Prereg logbook/specs/r38-prereg.json
 #>
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory)][string]$Launcher,
     [Parameter(Mandatory)][int[]]$Seeds,
     [int[]]$Workers = @(7, 2, 3, 4, 5, 6),
     [string]$ExpectSimHash = '',
     [int]$MaxUnity = 5,
-    [int]$PollSeconds = 60
+    [int]$PollSeconds = 60,
+    [string]$Prereg = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -48,6 +62,39 @@ $root = Split-Path -Parent $PSScriptRoot
 $launcherPath = Join-Path $root $Launcher
 if (-not (Test-Path $launcherPath)) { throw "No launcher at $launcherPath" }
 if ($Workers -contains 1) { throw "Worker 1 is unity/, the owner's Editor. Use workers from 2 up." }
+
+# The pre-registration check: a launch is refused unless the named file is tracked and
+# clean and has a commit, so a round cannot run against a prereg nobody can later produce.
+# Read once, up front, because the check does not depend on which seed or worker is next.
+$preregCommit = $null
+if ($Prereg -ne '') {
+    $preregFull = Join-Path $root $Prereg
+    if (-not (Test-Path -LiteralPath $preregFull)) {
+        throw "Prereg file not found: $preregFull"
+    }
+
+    Push-Location $root
+    try {
+        $statusOut = @(git status --porcelain -- $Prereg 2>&1)
+        if ($LASTEXITCODE -ne 0) {
+            throw "git status failed for ${Prereg}: $($statusOut -join ' ')"
+        }
+        $dirty = @($statusOut | Where-Object { $_.Trim() -ne '' })
+        if ($dirty.Count -gt 0) {
+            throw "Prereg file $Prereg is not tracked and clean (git status --porcelain: " +
+                  "$($dirty -join '; ')). Commit it before launching."
+        }
+
+        $commitOut = @(git log -1 --format=%H -- $Prereg 2>&1)
+        $commitText = ($commitOut -join '').Trim()
+        if ($LASTEXITCODE -ne 0 -or $commitText -eq '') {
+            throw "Prereg file $Prereg has no commit in git log. Commit it before launching."
+        }
+        $preregCommit = $commitText
+    } finally {
+        Pop-Location
+    }
+}
 
 function Get-UnityCommandLines {
     @(Get-CimInstance Win32_Process -Filter "Name='Unity.exe'" -ErrorAction SilentlyContinue |
@@ -75,7 +122,18 @@ while ($pending.Count -gt 0) {
         if ($null -eq $worker) { break }
 
         $seed = $pending[0]
-        Write-Output "$(Stamp) launching seed $seed on worker $worker ($editors editors running)"
+        $preregNote = if ($null -ne $preregCommit) { " (prereg $Prereg @ $preregCommit)" } else { '' }
+
+        # -WhatIf never reaches the launcher, so it can never start Unity -- the one thing
+        # the exercise of this flag is not allowed to do.
+        if (-not $PSCmdlet.ShouldProcess("seed $seed on worker $worker", 'launch')) {
+            Write-Output "$(Stamp) WHATIF: would launch seed $seed on worker $worker ($editors editors running)$preregNote"
+            $pending.RemoveAt(0)
+            $launchedThisPass++
+            continue
+        }
+
+        Write-Output "$(Stamp) launching seed $seed on worker $worker ($editors editors running)$preregNote"
         try {
             $extra = @{}
             if ($ExpectSimHash -ne '') { $extra.ExpectSimHash = $ExpectSimHash }
@@ -90,6 +148,28 @@ while ($pending.Count -gt 0) {
             $pending.RemoveAt(0)
             $launchedThisPass++
             Write-Output "$(Stamp) launched seed $seed on worker $worker"
+
+            if ($null -ne $preregCommit) {
+                # The arm name is not something this queue otherwise knows -- it is the
+                # round launcher's own naming choice -- so it is read from run-arm.ps1's
+                # first line of output, "<arm> -> worker <n> (<project path>)".
+                $armLine = $said | Where-Object { $_ -match '^\S+ -> worker \d+' } | Select-Object -First 1
+                if ($null -eq $armLine) {
+                    Write-Output "$(Stamp) WARNING: could not read the arm name from the launcher's output; prereg.json not written for seed $seed"
+                } else {
+                    $armName = ($armLine -split ' ')[0]
+                    $armDir = Join-Path $root "runs\$armName"
+                    if (-not (Test-Path -LiteralPath $armDir)) { New-Item -ItemType Directory -Path $armDir -Force | Out-Null }
+                    $preregRecord = [ordered]@{
+                        file       = $Prereg
+                        commit     = $preregCommit
+                        launchedAt = (Get-Date).ToString('o')
+                    }
+                    $preregPath = Join-Path $armDir 'prereg.json'
+                    [System.IO.File]::WriteAllText($preregPath, ($preregRecord | ConvertTo-Json))
+                    Write-Output "$(Stamp) wrote $preregPath"
+                }
+            }
         } catch {
             Write-Output "$(Stamp) FAILED seed $seed on worker $worker : $($_.Exception.Message)"
             Write-Output "$(Stamp) queue stopped; $($pending.Count) seed(s) not launched: $($pending -join ',')"

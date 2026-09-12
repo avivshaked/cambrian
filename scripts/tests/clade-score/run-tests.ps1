@@ -43,9 +43,14 @@ $cases = @(
             'stability: min last 6000 s = 5 -> unstable',
             "photo (owner's wording): flag absent | photo lineage: flag absent",
             'photo (>=10, two lifetimes): flag absent | photo lineage: flag absent',
-            'photo inh (population column): column absent'
+            'photo inh (population column): column absent',
+            # The qualifier segment (script-contracts-spec.md section 2): no manifest, so
+            # duration reads '?', and the fixture's own config.json names a nonzero floor.
+            'duration ? of ? s',
+            'floor closes at 3000 s',
+            'reading: absorptive clade only; producer clause not decided'
         )
-        Absent = @('fx-smaller-passes: FAIL')
+        Absent = @('fx-smaller-passes: FAIL', 'SHORT')
     },
     @{
         Case = 'none-passes'
@@ -57,7 +62,9 @@ $cases = @(
             '0 of 2 living clades pass',
             'largest: root 3000 (kind f, born 100), 20 members ever, 20 alive at end',
             'inherited births in last 20 samples 0 -> clade fail',
-            'stability: min last 6000 s = 9 -> unstable'
+            'stability: min last 6000 s = 9 -> unstable',
+            # This fixture's config.json sets the floor to 0 (never closes).
+            'floor open'
         )
         Absent = @('fx-none-passes: PASS')
     },
@@ -100,9 +107,23 @@ $cases = @(
         Arm = 'fx-wall-censored'
         Expect = @(
             'fx-wall-censored: PASS | passing clade: root 2000',
-            'CENSORED: ended (wall) at t=10000 of 30000 s requested; a reading, not a verdict'
+            'CENSORED: ended (wall) at t=10000 of 30000 s requested; a reading, not a verdict',
+            'duration 10000 of 30000 s SHORT'
         )
         Absent = @('PROVISIONAL', 'no manifest')
+    },
+    @{
+        # The review's own example manifest (script-contracts-spec.md section 2): ended on
+        # its own budget, ie not censored, but at 10,000 of the 30,000 s the goal rule
+        # (D063 as amended) is read over -- the case the SHORT token exists for.
+        Case = 'short-budget'
+        Arm = 'fx-short-budget'
+        Expect = @(
+            'fx-short-budget: PASS | passing clade: root 2000',
+            'duration 10000 of 10000 s SHORT',
+            'floor unknown'
+        )
+        Absent = @('fx-short-budget: FAIL', 'PROVISIONAL', 'CENSORED', 'no manifest')
     }
 )
 

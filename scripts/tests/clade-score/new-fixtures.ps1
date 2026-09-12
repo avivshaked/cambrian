@@ -127,6 +127,17 @@ function Write-Manifest([string]$Dir, [string]$ArmName, [string]$Status, [string
     [System.IO.File]::WriteAllText((Join-Path $runDir 'run.json'), $text)
 }
 
+# config.json beside the lineage, carrying only the one key the qualifier segment reads
+# (RunConfigJson writes it as "floorClosesAfterSeconds" under the "population" group). Omit
+# the call entirely for a fixture that should print "floor unknown" -- no config.json at all,
+# same as every fixture before the qualifier segment existed.
+function Write-FloorConfig([string]$Dir, [string]$ArmName, [double]$FloorClosesAfterSeconds) {
+    $runDir = Join-Path (Join-Path $Dir $ArmName) '2026-01-01-000000-fixture'
+    $text = '{"format":2,"configHash":"fixture","population":{"floorClosesAfterSeconds":' +
+            $FloorClosesAfterSeconds + '}}'
+    [System.IO.File]::WriteAllText((Join-Path $runDir 'config.json'), $text)
+}
+
 # ---------------------------------------------------------------------------------------
 # 1. smaller-passes -- the largest clade fails stability, a smaller clade passes every
 #    clause. Clade A: 1 founder + 24 that die at 4,950 + 4 that never die + 25 born at
@@ -145,6 +156,7 @@ $rows.AddRange((New-Cohort 2000 2014 3 9600 $null 1 $null))
 # Non-absorptive bystanders, so the world is not made only of absorbers.
 $rows.AddRange((New-Cohort -1 9000 10 100 $null 0 $null))
 New-Case 'smaller-passes' 'fx-smaller-passes' $rows 52 $null
+Write-FloorConfig (Join-Path $fixtures 'smaller-passes') 'fx-smaller-passes' 3000
 
 # ---------------------------------------------------------------------------------------
 # 2. none-passes -- clade C (largest, 20 alive at the end) fails stability AND recruitment;
@@ -160,6 +172,7 @@ $rows.AddRange((New-Cohort 4000 4001 8 350 $null 1 $null))
 $rows.AddRange((New-Cohort 4000 4009 3 9700 $null 1 $null))
 $rows.AddRange((New-Cohort -1 9000 10 100 $null 0 $null))
 New-Case 'none-passes' 'fx-none-passes' $rows 32 $null
+Write-FloorConfig (Join-Path $fixtures 'none-passes') 'fx-none-passes' 0
 
 # ---------------------------------------------------------------------------------------
 # 3. pho-owner-only -- absorptive clade B passes, so the seed's verdict is PASS; the
@@ -220,3 +233,22 @@ $rows.AddRange((New-Cohort 2000 2014 3 9600 $null 1 $null))
 $rows.AddRange((New-Cohort -1 9000 10 100 $null 0 $null))
 New-Case 'wall-censored' 'fx-wall-censored' $rows 52 $null
 Write-Manifest (Join-Path $fixtures 'wall-censored') 'fx-wall-censored' 'ended' 'wall' 10000 30000
+
+# ---------------------------------------------------------------------------------------
+# 7. short-budget -- smaller-passes again, ended on its own budget (not censored) at
+#    10,000 s of a 10,000 s request: a full run by its own request, but short of the
+#    campaign's 30,000 s round, which is what the duration qualifier's SHORT token is for
+#    (the review's own example manifest, script-contracts-spec.md section 2).
+# ---------------------------------------------------------------------------------------
+$rows = New-Object System.Collections.Generic.List[string]
+$rows.Add((New-BirthRow 100 1000 -1 'f' 1 $null))
+$rows.AddRange((New-Cohort 1000 1001 24 150 4950 1 $null))
+$rows.AddRange((New-Cohort 1000 1025 4 150 $null 1 $null))
+$rows.AddRange((New-Cohort 1000 1029 25 5050 $null 1 $null))
+$rows.AddRange((New-Cohort 1000 1054 5 9500 $null 1 $null))
+$rows.Add((New-BirthRow 200 2000 -1 'f' 1 $null))
+$rows.AddRange((New-Cohort 2000 2001 13 250 $null 1 $null))
+$rows.AddRange((New-Cohort 2000 2014 3 9600 $null 1 $null))
+$rows.AddRange((New-Cohort -1 9000 10 100 $null 0 $null))
+New-Case 'short-budget' 'fx-short-budget' $rows 52 $null
+Write-Manifest (Join-Path $fixtures 'short-budget') 'fx-short-budget' 'ended' 'budget' 10000 10000

@@ -176,7 +176,21 @@ $refusals = [ordered]@{
 
 foreach ($refusal in $refusals.GetEnumerator()) {
     $checks++
-    $said = @(& $python.Source $reader $refusal.Value '--summary' '--runs-root' $fixtures 2>&1)
+
+    # Windows PowerShell 5.1 has no $PSNativeCommandUseErrorActionPreference (that guard
+    # above is 7.3+ only): instead it writes each line of a native command's stderr as its
+    # own error record, and with $ErrorActionPreference = 'Stop' in force the first such
+    # record is promoted to a terminating error before $LASTEXITCODE is ever read -- the
+    # reader's own refusal message turns into a script-ending exception rather than a
+    # nonzero exit code. 'Continue' around just this call keeps every stderr line as a
+    # plain warning-level write in both editions, so the exit code is what decides the case.
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $said = @(& $python.Source $reader $refusal.Value '--summary' '--runs-root' $fixtures 2>&1)
+    } finally {
+        $ErrorActionPreference = $previousEap
+    }
 
     if ($LASTEXITCODE -eq 2) {
         Write-Host "    ok   : $($refusal.Key)" -ForegroundColor DarkGreen
