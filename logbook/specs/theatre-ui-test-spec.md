@@ -36,10 +36,12 @@ the entry pattern stands. The check:
    before any replay exists.
 5. Runs once in solo mode (`EVOSIM_THEATRE_GENOME`) and asserts the solo census and that
    the text `global neurons` appears nowhere.
-6. Writes a screenshot per state into `scratch/snaps/ui/<run>/` with `ScreenCapture`, at
-   the window's size and at 3840 by 2160 (set the game view's size the way the snapshot
-   entry does), and prints one line per assertion, `ok` or `FAIL`, then the count, and
-   exits 1 on any failure.
+6. Writes a screenshot per state into `scratch/snaps/ui/<run>/` at 1920 by 1080 and at
+   3840 by 2160, by rendering the world camera and the interface panel into one
+   `RenderTexture` and reading it back (`TheatreUiCapture`; `ScreenCapture` writes nothing
+   under `-batchmode`, found on the first run, 2026-09-13), so the wide step of the
+   stylesheet is exercised whatever the Game View's size; prints one line per assertion,
+   `ok` or `FAIL`, then the count, and exits 1 on any failure.
 
 The fixture is a fresh smoke: the caller records one with the current world's launcher
 (`./rounds/launch-r37b.ps1 -Seed 3 -Worker <w> -Dt 0.02 -Seconds 300 -Name uicheck`) on the
