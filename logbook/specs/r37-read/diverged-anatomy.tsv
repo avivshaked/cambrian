@@ -1,0 +1,25 @@
+## M6  the anatomy of round 37's diverged dumps
+##
+## There is none. All five arms ended on budget with divergedTotal 0 in the manifest and the
+## report's cumulative `diverged` column at 0 on every one of the 300 samples, and no arm
+## wrote a diverged/ directory at all. scripts/reads/diverged-read.py prints
+## "no diverged/ dumps" for each. So every question the brief asks of the dumps -- how many
+## parts, the root's height, its radius from the axis, the age, jointed or not, whether the
+## height guard or the radius guard named the death, and the share of bodies within a metre
+## of the glass -- has no data in round 37, because nothing diverged.
+##
+## V4 of logbook/0093 ("no diverged dump whose reason is the radius guard") therefore holds
+## vacuously: no body went through the glass, and none was thrown.
+##
+## The control, for the record:
+arm	diverged (manifest)	diverged (report, last sample)	dumps on disk
+r37-s1	0	0	none
+r37-s2	0	0	none
+r37-s3	0	0	none
+r37-s4	0	0	none
+r37-s5	0	0	none
+r36-s1	33	33	(round 36, the box control)
+r36-s2	55	55	(round 36, the box control)
+r36-s3	20	20	(round 36, the box control)
+r36-s4	6	6	(round 36, the box control)
+r36-s5	17	17	(round 36, the box control)

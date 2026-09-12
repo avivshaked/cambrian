@@ -1,0 +1,29 @@
+== r37-s1
+r37-s1: no diverged/ dumps under runs/r37-s1\2026-09-12-072848-96d4bce6
+== r37-s2
+r37-s2: no diverged/ dumps under runs/r37-s2\2026-09-12-072921-96d4bce6
+== r37-s3
+r37-s3: no diverged/ dumps under runs/r37-s3\2026-09-12-072956-96d4bce6
+== r37-s4
+r37-s4: no diverged/ dumps under runs/r37-s4\2026-09-12-073031-96d4bce6
+== r37-s5
+r37-s5: no diverged/ dumps under runs/r37-s5\2026-09-12-073107-96d4bce6
+
+== dump directories present:
+r37-s1: no diverged/ directory
+r37-s2: no diverged/ directory
+r37-s3: no diverged/ directory
+r37-s4: no diverged/ directory
+r37-s5: no diverged/ directory
+
+== manifest divergedTotal and report diverged at 30000 s:
+r37-s1 0
+r37-s2 0
+r37-s3 0
+r37-s4 0
+r37-s5 0
+r36-s1 33
+r36-s2 55
+r36-s3 20
+r36-s4 6
+r36-s5 17

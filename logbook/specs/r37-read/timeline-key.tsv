@@ -1,0 +1,85 @@
+== r37-s1 columns:
+   1  t (s)
+   2  alive
+   3  births
+   4  deaths
+   5  jointed
+   6  jointed %
+   7  jnt inh
+   8  mean dof
+   9  mean m/s
+  10  max m/s
+  11  work J/s
+  12  work share
+  13  food %
+  14  absorpt
+  15  inherit
+  16  detritus J
+  17  J/m3 here
+  18  % on floor
+  19  det deep
+  20  depth m
+  21  depth sd
+  22  rise m
+  23  age s
+  24  sun
+  25  shade %
+  26  float
+  27  flt inh
+  28  lift
+  29  flt m
+  30  mat top
+  31  mat deep
+  32  mat blk
+  33  floor
+  34  gen min
+  35  gen max
+  36  audit
+  37  species
+  38  det here ed
+  39  below world
+  40  abs below
+  41  mat locked
+  42  refuge J
+  43  excreted
+  44  det patch sd
+  45  patch max share
+  46  det in
+  47  det out
+  48  det exuded
+  49  abs logged
+  50  photo
+  51  photo inh
+  52  diverged
+  53  mat in
+  54  mat buried
+  55  spd jnt
+  56  spd rig
+  57  food jnt
+  58  food rig
+  59  above
+  60  wraps
+  61  crowded
+  62  contacts
+  63  floor con
+  64  stillb
+  65  mat orphan
+  66  sense
+  67  dep jnt
+  68  dep rig
+  69  mat here
+  70  vtx
+  71  mat resid
+  72  mat short
+  73  corpses
+  74  adult scale
+  75  invest
+  76  brood
+  77  body frac
+  78  cols
+  79  cols abs
+  80  x sd
+  81  p0
+  82  p1
+  83  p2
+  84  p3

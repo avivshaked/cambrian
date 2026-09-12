@@ -1,0 +1,22 @@
+## M2  the tank footprint in 1 m columns
+bounding square columns	12 x 12 = 144
+columns whose centre is inside the circle (the report's and the reader's denominator)	100
+columns a body can stand in (any part inside the circle)	121
+
+## M2  report cols against branch-reader cols, all 300 samples
+arm	samples	identical	mean |difference|	max |difference|	samples over 100 (report)	samples over 100 (reader)
+r37-s1	300	202	0.357	3	34	34
+r37-s2	300	189	0.413	2	79	83
+r37-s3	300	202	0.357	2	60	61
+r37-s4	300	200	0.357	2	71	71
+r37-s5	300	210	0.330	2	41	41
+
+## M2 verdict  cols and x sd over t >= 5000 s (250 samples)
+arm	min report cols	min reader cols	samples with reader cols < 60	mean x sd	min x sd	max x sd	samples with x sd in [2.0,3.4]	share
+r37-s1	59	60	0	3.363	1.95	4.32	128	0.510
+r37-s2	63	63	0	3.274	1.96	4.27	146	0.582
+r37-s3	64	65	0	3.394	2.35	4.21	118	0.470
+r37-s4	61	61	0	3.305	2.16	4.24	128	0.510
+r37-s5	51	52	5	3.339	1.91	4.68	130	0.518
+
+## M2 reference  a uniform disc reads x sd = R/2 = 2.821 m; a thin ring at the glass reads R/sqrt(2) = 3.989 m

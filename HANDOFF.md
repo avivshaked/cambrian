@@ -64,6 +64,23 @@ tank smoke at 1 spreads evenly (`r37bsmoke`). Cost about half the pace; the stre
 derivative is queued to take it back during 37b, verified by digest identity, before round 38.
 Round 37b launches from `rounds/launch-r37b.ps1` on the merged build after round 37's last render.
 
+**Round 37 is read (logbook/0094, 2026-09-12 night).** Five of five on the population, four
+of five on the goal rule, and a ring: the rim quarter held 45 to 98% of the bodies at every
+named time in every seed, the drift was outward at every radius (nine bodies in ten inside
+3 m are further out 100 s later) while births landed inward, so the crust is the drag-only
+body's centrifuge and not the placer's or the field's. The crowd read 0.33 to 0.67 of round
+36's at matched abundance; the joint stood in one seed as in the box (seed 3 ended with 148,
+the record's largest); `mean m/s` read 0.68 to 0.71 of the box's, the crust's own slow water.
+And the tank threw no body across 9.17 million jointed body-seconds where the box threw 131
+across 6.91 million: the agent reads the wrap as the throw's mechanism (inference; the
+throws began with D088's seam crossings and the tank has no seam), so the mass-ratio cap is
+not proposed, the trace stays as an instrument, and round 37b's `diverged` is the test. The
+population cycle (a factor of three on 10,000 s) is not the crust's and has no mechanism yet.
+The read's reader found `positions-read.py`'s numerator still counting the old way in a tank;
+fixed on `streams` (`4889060`), and 0094's `cols` are the corrected ones (M2 holds 3 of 5 on
+them). Pictures: seed 1's ring at 15,000 s and its crust-over-a-deep-scatter at 30,000 s are
+beside the entry.
+
 **The Astra review of 2026-09-12 is answered (`gpt-astra-2026-09-12-1308-review-response.md`,
 evening).** Its first finding is real and reproduced on both trees: the grid's transporter
 turns uniform water into 30% patchiness on 1 m cells within 600 s (34% on the streams; 5 to
@@ -359,7 +376,8 @@ round 28) set the base and the order.
       rings for patches. Built on branch `tank`, checked six ways (0093's sources), merged
       2026-09-12 and launched as logbook/0093 on round 36's world. The limiter is not on: its
       check failed (D089's check 4). The 2 by 2 box's shape code is absorbed and no round runs
-      it.
+      it. Read 2026-09-12 night as logbook/0094: stood (M0, M4, M6) and gathered (M1, M2's
+      spread, M3, M5); zero throws, the wrap read as their mechanism.
    2b. **Round 37b, the water carried as water** (D090; resequenced 2026-09-12 afternoon by
       the agent under the owner's grant, on the owner's diagnosis of round 37's gathering):
       round 37's world on the streams with the fluid acceleration force at 1, and the throw

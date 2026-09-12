@@ -723,7 +723,11 @@ actually verifying it.
   or `always`): its check, round 34 seed 5 rerun with it on, bound 2.58 million drives and
   read 27 divergences against 17 with the same signature (jointed adults, median age
   1,171 s, the root's height going non-finite), so the throw of a jointed adult is not a
-  single step's over-drive and remains unexplained (`r34lim-s5`, D089's check 4).
+  single step's over-drive (`r34lim-s5`, D089's check 4). **Round 37, the tank, threw
+  nothing** across a third more jointed body-seconds than the box that threw 131
+  (logbook/0094), and the box's throws began with D088's seam crossings, so the wrap is the
+  leading candidate for the mechanism, as inference; round 37b's `diverged` is the test, and
+  a mass-ratio cap is not proposed until a tank throws.
 - **A run writes at most 50 diverged dumps** (`Ecosystem.MaxDumps`), so `diverged/` equals the
   `diverged` column only below 50: `r36-s2` counted 55 and dumped 50, and its last five
   throws have no post-mortem (logbook/0092). Read the column for the count and the dumps

@@ -1,0 +1,31 @@
+## M6  diverged (cumulative column at the last sample)
+seed	r37 diverged	r36 diverged	bound 2*r36+2
+1	0	33	68
+2	0	55	112
+3	0	20	42
+4	0	6	14
+5	0	17	36
+
+
+## M6  exposure: jointed body-seconds and divergences per 1e6 of them
+round	seed	sum jnt inh	interval s	jnt-inh body-s	diverged	per 1e6 jnt-inh body-s	sum jointed	jointed body-s	per 1e6 jointed body-s
+r37	1	5330	100	533000	0	0.00	5544	554400	0.00
+r37	2	26521	100	2652100	0	0.00	26812	2681200	0.00
+r37	3	34328	100	3432800	0	0.00	35665	3566500	0.00
+r37	4	17297	100	1729700	0	0.00	18299	1829900	0.00
+r37	5	8258	100	825800	0	0.00	8592	859200	0.00
+r36	1	36953	100	3695300	33	8.93	37671	3767100	8.76
+r36	2	9752	100	975200	55	56.40	10954	1095400	50.21
+r36	3	10007	100	1000700	20	19.99	12002	1200200	16.66
+r36	4	4641	100	464100	6	12.93	4972	497200	12.07
+r36	5	7785	100	778500	17	21.84	8073	807300	21.06
+
+
+## M6  the round as a whole
+round	jnt-inh body-seconds	diverged	per 1e6
+r37	9173400	0	0.00
+r36	6913800	131	18.95
+
+Rule of three: zero events in 9173400 jointed-inherited body-seconds puts a 95% upper bound of
+3/9.173 = 0.327 divergences per 1e6 jointed-inherited body-seconds on round 37, against round 36's
+measured 18.95 -- a floor of about 58x fewer, not merely "no more".
