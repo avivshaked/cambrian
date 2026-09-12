@@ -44,7 +44,18 @@ steps since the last resize; `diverged-read.py` reads it. The smoke's part 5 pas
 `simHash`, so it merges after round 37's last render and round 38 runs with it; the
 mitigation it is meant to decide between (a mass-ratio cap at build and resize is the leading
 candidate; the search names the 10:1 rule) goes to the owner as a proposal once round 38's
-dumps have been read. Worker 7 is back on main's assets.
+dumps have been read. Worker 7 is back on main's assets. **Round 37's early read (13,000 to 23,800 s, afternoon)
+found the glass gathering**: the rim ring holds 58 to 96% of the bodies, the population swings
+700 to 1,750 on a 10,000 s cycle, and at the peaks the whole world is a crust at the glass in the
+top three metres. The owner read the cause before the agent did: a coherent swirl in a drag-only
+fluid model is a centrifuge, and "the currents should not act as unified fields but more like
+streams". Ruled the same afternoon (`fable-propose-streams.md`): no swirl about the axis; a
+spectrum of eddies and small overturning cells with random-walking phases and amplitudes,
+tangential at the glass; a passive-tracer test that the radial distribution stays uniform. Built
+on branch `streams` off `throws`, so the two land in one merge after round 37's renders; round
+37b, the same world on the streams, replaces 37 as the tank's base before round 38. Queued for
+its own proposal: the pressure-gradient term in the fluid model, the force that keeps a neutral
+body on a streamline, which would let any current carry bodies faithfully (DESIGN §5.2).
 
 **Round 34 is read (logbook/0090, 2026-09-11 midday): five seeds of five pass the goal
 rule, the free joint founds in every seed (46 to 140 inherited at 1,000 s) and is gone from
