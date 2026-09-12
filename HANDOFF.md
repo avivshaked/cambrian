@@ -81,7 +81,11 @@ D086). The box path's transport goldens moved, as every per-step change must: ro
 37 are new realisations under this build and replay under their own. The sitter-against-mover
 experiments rerun on the repaired grid read as recorded (3.03 to 3.05 in the box, 0.99 to
 1.21 in the dilute tank), and the shared-space smoke on worker 2 passed with the clearance
-checks (200 founders' reserved spheres, worst 5.637 m of 5.642 m). The script contracts
+checks (200 founders' reserved spheres, worst 5.637 m of 5.642 m); a 600 s box digest
+(`boxdig-conserve`) parts from the old reference at its first sampled step, as a changed
+transport must, and a 600 s tank smoke at `fluidAccel 1` (`r37bsmoke3`, seed 3, dt 0.02) put
+36, 39, 34 and 20 bodies in the four rings at 600 s with wraps, divergences, crowding and
+stillbirths all 0 and both books closed. Worker 2 is back on the main tree. The script contracts
 (`compare-det.py` exit codes, the scorer's `SHORT` and floor qualifiers, the positions suite
 under PowerShell 5.1, `launch-queue.ps1 -Prereg`) build on main from
 `script-contracts-spec.md`. The adoption-rule inconsistency the review found (D081 against

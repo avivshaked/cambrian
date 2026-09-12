@@ -4898,3 +4898,7 @@ conservative transporter (the note under D088), a birth gate that tests a body's
 reserved sphere against the glass (`SharedVolume.Free` tested the centre alone), and a
 `cols` numerator counted on the same columns as its denominator. None is a world rule. The
 owner can overrule before the launch; the response file at the root has the reasoning.
+Checked on worker 2 the same night: the shared-space smoke passed with the clearance checks,
+a 600 s box digest parts from the old reference (a changed transport is a new realisation),
+and a 600 s tank smoke at `c` = 1 (`r37bsmoke3`) read 36, 39, 34 and 20 in the four rings
+with wraps, divergences, crowding and stillbirths 0; the Core suite 671 green.
