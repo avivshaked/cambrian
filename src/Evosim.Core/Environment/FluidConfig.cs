@@ -57,6 +57,62 @@ namespace Evosim.Core
         [Tunable("fluid")]
         public float AddedMassCoefficient { get; set; }
 
+        /// <summary>
+        /// How much of the water's own acceleration a part feels — the second term of the Morison
+        /// equation, at 1 the physical value. 0 is drag alone, which is every run on file.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it is.</b> A parcel of water on a curved streamline is held on it by the
+        /// pressure gradient across the flow, and a body immersed in that water feels the same
+        /// gradient as a force <c>(ρV + m_added)·Du/Dt</c> — the displaced mass plus the added
+        /// mass's share, times the water's own acceleration along its path
+        /// (<see cref="CurrentField.AccelerationAt(float, float, float, double)"/>). With it a
+        /// neutrally buoyant body follows the water to first order in its response time: it is a
+        /// tracer. §5.2 has the drag and D081 has the added mass, and until
+        /// <c>logbook/specs/water-carries-spec.md</c> (2026-09-12) nothing tied a body to the
+        /// water but drag.
+        /// </para>
+        /// <para>
+        /// <b>Why it was built.</b> Drag alone makes a tank a centrifuge. A body pulled toward the
+        /// water's velocity by drag and nothing else fails to turn as sharply as the water does,
+        /// and drifts outward at about <c>τ·u_θ²/r</c> per second — averaged over a disc, outward
+        /// for any current with any azimuthal motion in it at all
+        /// (<c>StreamsTests.ABodyRidesTheWater</c> carries the identity and the readings). At the
+        /// campaign's body size and water speed that is centimetres a second: the whole population
+        /// at the glass within an hour of simulated time, which is what round 37 was.
+        /// </para>
+        /// <para>
+        /// <b>It moves no joule of the economy.</b> §5A's books count food, upkeep and the work a
+        /// creature's own joints do; the water's mechanical work on a body is not one of their
+        /// terms, so the audit closes exactly as it did — the same exemption
+        /// <see cref="TissueExcessDensity"/> and the current itself already carry, and for the same
+        /// reason. Nothing charges for it and nothing credits it:
+        /// <c>FluidEnvironment.DissipatedJoules</c>, which is the only energy this class
+        /// integrates, is the drag force alone, and this term is carried in an array of its own so
+        /// that it cannot reach it.
+        /// </para>
+        /// <para>
+        /// ⚠ <b>Mechanically it is an external force, like every other term in this class that is
+        /// not drag.</b> A body riding a current exchanges kinetic energy with the water, so
+        /// DESIGN §11.2's momentum check and <c>Milestone1Smoke</c>'s mechanical energy audit are
+        /// invalidated by a nonzero value exactly as they are by
+        /// <see cref="TissueExcessDensity"/>, <see cref="BuoyancyCell"/>'s lift and a moving
+        /// current. They are run at 0, which is the default and what every harness sets. There is
+        /// still no free lunch: the pressure gradient is the water's, not the creature's, and a
+        /// creature cannot make the water accelerate — no effector channel reaches it.
+        /// </para>
+        /// <para>
+        /// ⚠ Default 0, so every recorded config replays the world it ran: this is a per-step
+        /// force, and any nonzero value is a new chaotic realisation of every seed (CLAUDE.md's
+        /// butterfly rule). 1 is the physical value and the campaign's; values between are not
+        /// physics but a dial on how much of it a round carries.
+        /// <c>EVOSIM_FLUID_ACCEL</c> in the header.
+        /// </para>
+        /// </remarks>
+        [Tunable("fluid")]
+        public float FluidAccelerationCoefficient { get; set; }
+
         /// <summary>Water, with drag only. The state DESIGN.md §5.4 warns is not enough.</summary>
         /// <summary>
         /// How much denser than the water a creature's tissue is, kg/m³. 0 is neutral buoyancy.
@@ -201,6 +257,7 @@ namespace Evosim.Core
             Density = Density,
             DragCoefficient = DragCoefficient,
             AddedMassCoefficient = AddedMassCoefficient,
+            FluidAccelerationCoefficient = FluidAccelerationCoefficient,
             PanelsPerAxis = PanelsPerAxis,
             TissueExcessDensity = TissueExcessDensity,
             NeutralBodyVolume = NeutralBodyVolume,

@@ -288,6 +288,17 @@ class Tank(Water):
             for iz in range(self.columns_z)
             if self.inside((ix + 0.5) * COLUMN_METRES, (iz + 0.5) * COLUMN_METRES))
 
+    def occupied_columns(self, xs, zs):
+        # The numerator counts the same columns the denominator does: a body a few centimetres
+        # inside the glass stands in a column whose centre is outside it, and counting that column
+        # is how round 37 printed `cols 104/100` (Ecosystem's own reading was fixed the same
+        # day; this reader's numerator was not until 2026-09-12 night, and the round 37 read
+        # found the two still disagreeing). The body still counts in n and in the spreads.
+        columns = {self.column_of(xs[i], zs[i]) for i in range(len(xs))}
+        return sum(
+            1 for (ix, iz) in columns
+            if self.inside((ix + 0.5) * COLUMN_METRES, (iz + 0.5) * COLUMN_METRES))
+
     def inside(self, x, z):
         """TankGeometry.Inside: (x-R)^2 + (z-R)^2 <= R^2."""
         dx = x - self.radius

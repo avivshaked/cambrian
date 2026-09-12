@@ -19,7 +19,7 @@ namespace Evosim.Core.Tests
     /// unlike the one its config names.
     /// </para>
     /// <para>
-    /// <b>The water itself is <see cref="GyreTests"/>.</b> Here the water only has to exist; there
+    /// <b>The water itself is <see cref="StreamsTests"/>.</b> Here the water only has to exist; there
     /// it has to be divergence-free, tangential at the glass and at the speed the knob says.
     /// </para>
     /// </remarks>
@@ -103,6 +103,42 @@ namespace Evosim.Core.Tests
             Assert.Equal(Rings - 1, TankGeometry.RingOf(3f * Radius, Radius, Radius, Rings));
             Assert.True(TankGeometry.Inside(Radius, Radius, Radius));
             Assert.False(TankGeometry.Inside(2f * Radius + 0.01f, Radius, Radius));
+        }
+
+        [Fact]
+        public void InsideWithClearanceKeepsBackFromTheGlass()
+        {
+            // wall-clearance-spec.md: Free asks whether a whole sphere clears the glass, not
+            // just its centre point, so Inside gains a clearance and the existing three-argument
+            // form is exactly its clearance-0 case.
+            double r = Radius;
+
+            // A point 0.49 m short of the glass with a 0.5 m clearance demanded is 0.01 m too
+            // close: out.
+            Assert.False(TankGeometry.Inside(2d * r - 0.49d, r, r, 0.5d));
+
+            // 0.51 m short of the glass clears a 0.5 m clearance by a centimetre: in.
+            Assert.True(TankGeometry.Inside(2d * r - 0.51d, r, r, 0.5d));
+
+            // The axis is inside for any clearance below the radius — nowhere is further from
+            // the glass than the axis is.
+            Assert.True(TankGeometry.Inside(r, r, r, 0.5d));
+            Assert.True(TankGeometry.Inside(r, r, r, r - 0.001d));
+
+            // Clearance at or above the radius refuses everything, the axis included: there is
+            // no point left that can hold that much distance from a wall this close.
+            Assert.False(TankGeometry.Inside(r, r, r, r));
+            Assert.False(TankGeometry.Inside(r, r, r, r + 1d));
+
+            // Clearance 0 is exactly the existing three-argument form's case.
+            Assert.Equal(
+                TankGeometry.Inside(r + 0.3d, r, r),
+                TankGeometry.Inside(r + 0.3d, r, r, 0d));
+
+            _output.WriteLine(
+                $"R {r:0.000}: R-0.49 at clearance 0.5 -> " +
+                $"{TankGeometry.Inside(2d * r - 0.49d, r, r, 0.5d)}, " +
+                $"R-0.51 at clearance 0.5 -> {TankGeometry.Inside(2d * r - 0.51d, r, r, 0.5d)}");
         }
 
         // ---------------------------------------------------------------------------------
@@ -228,7 +264,7 @@ namespace Evosim.Core.Tests
             GridField field = Tank(1f);
             field.SeedUniform(1f);
 
-            // A body is stopped by a collider and the gyre has no radial flow at the wall, so a
+            // A body is stopped by a collider and the streams have no radial flow at the wall, so a
             // point past the circle is arithmetic rather than an event — and it must land in water
             // rather than in a dead cell, where a deposit would be lost to every sum.
             foreach (double theta in new[] { 0d, 1d, 2.5d, 4d, 5.8d })

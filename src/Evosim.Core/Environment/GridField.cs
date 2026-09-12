@@ -97,6 +97,18 @@ namespace Evosim.Core
         private double[] _cellVelocityY;
         private double[] _cellVelocityZ;
 
+        // The conservative route's two sets of buffers - logbook/specs/transport-conserves-spec.md.
+        // The edges carry A.(edge direction).h for each of the three edge families of the lattice,
+        // and the faces carry the volumetric flux through each cell's east, lower and front face,
+        // m^3/s, assembled as a circulation of the edges round that face. Allocated on the first
+        // step that takes the route, so a rolls world carries exactly the memory it did before.
+        private double[] _edgeX;
+        private double[] _edgeY;
+        private double[] _edgeZ;
+        private double[] _faceX;
+        private double[] _faceY;
+        private double[] _faceZ;
+
         private readonly int[] _patchOfColumn;
 
         // Reused by DepositBox so a per-step influx allocates nothing.
@@ -1264,47 +1276,120 @@ namespace Evosim.Core
             if (current == null || !current.AdvectFields) return;
             if (!(dt > 0f)) return;
 
-            bool transport = current.Mode == CurrentMode.Transport;
-            int substeps = 1;
+            // A field of a place: the transport field in a box, and the streams in a tank
+            // whatever the mode says (CurrentField.Shape). D037's rolls are a field of depth,
+            // time and patch and take the route below, unchanged.
+            bool ofAPlace = current.Shape == WorldShape.Tank || current.Mode == CurrentMode.Transport;
 
-            if (transport)
+            if (ofAPlace && !current.HasPotential)
             {
-                double courant = current.MaximumTransportSpeed * (double)dt / CellMetres;
-
-                if (courant > 0.5)
-                {
-                    substeps = (int)Math.Ceiling(2.0 * courant);
-
-                    if (substeps > MaximumSubsteps)
-                    {
-                        throw new ArgumentException(
-                            FormattableString.Invariant(
-                                $"Upwind advection on a grid is stable to a Courant number of a half, ") +
-                            FormattableString.Invariant(
-                                $"and the transport field's fastest water, at most ") +
-                            FormattableString.Invariant(
-                                $"{current.MaximumTransportSpeed:0.####} m/s, crosses {courant:0.####} ") +
-                            FormattableString.Invariant($"of a {CellMetres} m cell in {dt} s. ") +
-                            FormattableString.Invariant(
-                                $"That needs {substeps} substeps and the ceiling is {MaximumSubsteps}. ") +
-                            "Shorten the step, widen the cell, or slow the current. The knob is an RMS " +
-                            "over the box and this is the ceiling, which is the number stability " +
-                            "depends on.",
-                            nameof(current));
-                    }
-                }
-
-                EnsureCellVelocities();
+                // The only way to get here is an active vent, which is not a curl and never has
+                // been run with either of these fields — see CurrentField.HasPotential. Refused
+                // rather than carried on the superseded scheme, because a world whose water this
+                // grid cannot carry conservatively is a world whose books would drift in a way no
+                // audit reads: the energy audit sees transfers, and a transfer is conservative
+                // whatever velocity it is handed. logbook/specs/transport-conserves-spec.md.
+                throw new ArgumentException(
+                    "This water is a field of a place and has no vector potential, so its face " +
+                    "fluxes cannot be made divergence-free and a uniform concentration would not " +
+                    FormattableString.Invariant($"stay uniform. Mode {current.Mode}, shape ") +
+                    FormattableString.Invariant($"{current.Shape}, vent ") +
+                    FormattableString.Invariant($"{current.VentSpeed:0.###} m/s in patch {current.VentPatch}. ") +
+                    "Turn the vent off, or use CurrentMode.Rolls, whose scheme is unchanged.",
+                    nameof(current));
             }
 
-            // Exactly dt when there is one substep, so a rolls world runs the same arithmetic in
-            // the same order it always did and every recorded run replays.
+            if (ofAPlace)
+            {
+                AdvectFromThePotential(current, seconds, dt);
+                return;
+            }
+
+            Sweep(current, seconds, dt, transport: false);
+        }
+
+        /// <summary>
+        /// The superseded centre-sampled transport of rounds 32 to 36, kept so that the repair can
+        /// be measured against it and for no other reason.
+        /// </summary>
+        /// <param name="current">The flow.</param>
+        /// <param name="seconds">The world's clock, s.</param>
+        /// <param name="dt">Step length, s.</param>
+        /// <remarks>
+        /// <b>Not a route any world takes.</b> <see cref="Advect"/> never reaches this; a run
+        /// cannot select it; it exists because "the repair works" is a claim about a difference,
+        /// and a difference needs both numbers. <c>ConservativeTransportTests</c> prints the old
+        /// and the new constant-field spreads side by side from this method and from
+        /// <see cref="Advect"/>. See <c>logbook/specs/transport-conserves-spec.md</c> for what it
+        /// gets wrong: the face velocities it builds are not divergence-free on the grid, and the
+        /// three axis passes each run on the stock the last one left.
+        /// </remarks>
+        public void AdvectCentreSampled(CurrentField current, double seconds, float dt)
+        {
+            if (current == null || !current.AdvectFields) return;
+            if (!(dt > 0f)) return;
+
+            bool transport = current.Shape == WorldShape.Tank || current.Mode == CurrentMode.Transport;
+            int substeps = transport ? CourantSubsteps(current, dt) : 1;
             float step = dt / substeps;
+
+            if (transport) EnsureCellVelocities();
 
             for (int i = 0; i < substeps; i++)
             {
                 Sweep(current, seconds + i * (double)step, step, transport);
             }
+        }
+
+        /// <summary>
+        /// How many substeps the a-priori Courant bound asks for, refusing past
+        /// <see cref="MaximumSubsteps"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="CurrentField.MaximumTransportSpeed"/> is a ceiling no argument reaches, so
+        /// this is an over-estimate — typically by about twice — and over-estimating is the
+        /// direction a stability check errs in. That is what makes it the right shape for a
+        /// refusal and the wrong shape for a count.
+        /// </para>
+        /// <para>
+        /// <b>Under the conservative route it is the refusal and nothing else.</b> What decides
+        /// the count there is the fluxes' own largest per-cell outflow sum, which is the number
+        /// positivity actually depends on and is measured on the water rather than derived from
+        /// its ceiling. The two disagree, and by a lot: the campaign's box at 0.3 m/s on 1 m cells
+        /// bounds at a Courant number that asks for two substeps while its largest outflow sum is
+        /// 0.50 of a cell, which needs one. Keeping the bound as a floor would have doubled the
+        /// transport's cost for an over-estimate. It still decides which worlds are refused, so a
+        /// config the grid turned away before this repair is turned away after it, in the same
+        /// words. See <see cref="AdvectFromThePotential"/>.
+        /// </para>
+        /// </remarks>
+        private int CourantSubsteps(CurrentField current, float dt)
+        {
+            double courant = current.MaximumTransportSpeed * (double)dt / CellMetres;
+            if (courant <= 0.5) return 1;
+
+            int substeps = (int)Math.Ceiling(2.0 * courant);
+
+            if (substeps > MaximumSubsteps)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"Upwind advection on a grid is stable to a Courant number of a half, ") +
+                    FormattableString.Invariant(
+                        $"and the transport field's fastest water, at most ") +
+                    FormattableString.Invariant(
+                        $"{current.MaximumTransportSpeed:0.####} m/s, crosses {courant:0.####} ") +
+                    FormattableString.Invariant($"of a {CellMetres} m cell in {dt} s. ") +
+                    FormattableString.Invariant(
+                        $"That needs {substeps} substeps and the ceiling is {MaximumSubsteps}. ") +
+                    "Shorten the step, widen the cell, or slow the current. The knob is an RMS " +
+                    "over the box and this is the ceiling, which is the number stability " +
+                    "depends on.",
+                    nameof(current));
+            }
+
+            return substeps;
         }
 
         /// <summary>
@@ -1336,6 +1421,579 @@ namespace Evosim.Core
         /// </remarks>
         public const int MaximumSubsteps = 8;
 
+        /// <summary>
+        /// The largest share of its own stock a cell may be asked to hand out in one substep.
+        /// </summary>
+        /// <remarks>
+        /// <b>Positivity needs at most 1; the margin is what is left over.</b> The six faces of a
+        /// cell are computed from one snapshot and applied together, so a cell can lose at most
+        /// the sum of its outflow fractions and nothing goes negative while that sum is at or
+        /// below 1. The substep count is chosen from the first substep's own fluxes, and the later
+        /// substeps sample the field at their own clock, so a quarter is kept back for the field
+        /// having moved between them — which over half a second of a current whose phases turn in
+        /// thousands is a great deal more than it needs.
+        /// </remarks>
+        private const double OutflowMargin = 0.75;
+
+        /// <summary>
+        /// Carries the stock on face fluxes assembled from the current's vector potential — the
+        /// scheme of <c>logbook/specs/transport-conserves-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why edges and not centres.</b> A uniform dissolved concentration carried by
+        /// incompressible water in a closed container stays uniform. Through round 36 this grid
+        /// did not keep it so: it sampled the velocity at a cell's centre, used that for the
+        /// cell's east and front faces and a second sample at the lower interface for the
+        /// vertical, and ran the three axis passes one after another on the stock the last one
+        /// left. Those face velocities are not divergence-free on the grid, and a sequential sweep
+        /// compresses along one axis before the next expands. Conservation and positivity held;
+        /// the constant field did not — the campaign's own water turned 1 unit/m³ into 0.357 to
+        /// 2.454 in 600 s.
+        /// </para>
+        /// <para>
+        /// <b>Stokes, on the lattice.</b> Every current the campaign runs is the curl of a vector
+        /// potential (<see cref="CurrentField.PotentialAt(float, float, float, double)"/>), and the flux of a curl through a
+        /// face is the circulation of the potential round that face's edges. So each edge of the
+        /// lattice carries one number, <c>A</c> at its midpoint dotted with its direction times
+        /// the cell size, and each face's flux is the signed sum of its four. Every edge belongs
+        /// to two faces of any one cell with opposite sign, so the cell's net flux is
+        /// <i>identically</i> zero — not to a tolerance, and for any edge values whatever, which
+        /// is why a badly resolved mode or a rounded sample cannot break it. What it costs is
+        /// about three potential samples per live cell per substep against two velocity samples
+        /// before.
+        /// </para>
+        /// <para>
+        /// <b>The boundaries.</b> The surface plane and the floor plane carry no edge values at
+        /// all: both fields' potentials have <c>sin(qπy/D)</c> on every horizontal component, so
+        /// the analytic value there is zero, and leaving the planes empty makes "no flux through
+        /// the surface and none through the floor" a property of the loop bounds rather than of a
+        /// sampler agreeing to return zero. In a tank every edge that touches a dead cell — or a
+        /// cell off the array, which is the glass — is left at zero too, so every face between
+        /// live water and dead carries nothing while every live cell still telescopes to zero. The
+        /// consequence, and it is a real one: the discrete field is tangential to the mask's
+        /// stair-step rather than to the circle, so the rim's face speeds are lower than the
+        /// analytic field's. <c>ConservativeTransportTests</c> measures how much lower on 1 m and
+        /// 5 m cells and reports it rather than asserting a number nobody has derived.
+        /// </para>
+        /// <para>
+        /// <b>All three axes from one stock.</b> The three flux arrays are computed from the same
+        /// snapshot and only then applied, which is the other half of the fault: calling the three
+        /// existing applies in sequence on precomputed transfers is the same arithmetic as one
+        /// combined apply, because a transfer is an amount and not a fraction.
+        /// </para>
+        /// <para>
+        /// <b>No clamp, and the substeps decide instead.</b> A clamped face fraction is a
+        /// divergence: it moves less than the water does across that one face and nothing else
+        /// changes, which is exactly the thing being repaired. So the transfer across a face is
+        /// the upwind cell's stock times <c>Q·dt/cell³</c> whatever that comes to, and the step is
+        /// split until the largest per-cell outflow sum is at or below
+        /// <see cref="OutflowMargin"/>. The fluxes decide that count; the a-priori Courant bound
+        /// is kept as the refusal past <see cref="MaximumSubsteps"/> and nothing else, so a config
+        /// that was refused before is refused now — see <see cref="CourantSubsteps"/> for why the
+        /// two must not be the same number.
+        /// </para>
+        /// </remarks>
+        private void AdvectFromThePotential(CurrentField current, double seconds, float dt)
+        {
+            // Still water carries nothing, and a field at Speed 0 must not be built to find that
+            // out: the streams' construction is a lattice of measurements.
+            if (!(current.Speed > 0f)) return;
+
+            // The a-priori bound, first, and as a refusal only: a config the grid refused before
+            // this repair is refused after it, and for the same reason in the same words. It does
+            // not set the count. CourantSubsteps' own remarks say why.
+            CourantSubsteps(current, dt);
+
+            EnsureFaceBuffers();
+            SampleEdges(current, seconds);
+            AssembleFaces();
+
+            double outflow = LargestOutflowFraction(dt);
+            int substeps = outflow <= OutflowMargin
+                ? 1
+                : (int)Math.Ceiling(outflow / OutflowMargin);
+
+            if (substeps > MaximumSubsteps)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"A cell would be asked for {outflow:0.###} of its own stock in {dt} s, and ") +
+                    "upwind transport can hand out at most its whole stock, so the step is split " +
+                    FormattableString.Invariant(
+                        $"until the largest outflow sum is under {OutflowMargin}. That needs ") +
+                    FormattableString.Invariant(
+                        $"{substeps} substeps and the ceiling is {MaximumSubsteps}. ") +
+                    "Shorten the step, widen the cell, or slow the current. This is the Courant " +
+                    "condition read off the face fluxes rather than off the field's ceiling.",
+                    nameof(current));
+            }
+
+            float step = dt / substeps;
+
+            // The first substep reuses the fluxes already assembled, scaled by the shorter step;
+            // every later one samples the field at its own clock, so a split step is a shorter
+            // step run n times and not one snapshot applied n times.
+            ApplyFaces(step);
+
+            for (int i = 1; i < substeps; i++)
+            {
+                SampleEdges(current, seconds + i * (double)step);
+                AssembleFaces();
+                ApplyFaces(step);
+            }
+        }
+
+        /// <summary>
+        /// What one step's face fluxes come to, without moving anything — for the build report.
+        /// </summary>
+        /// <param name="current">The flow.</param>
+        /// <param name="seconds">The world's clock, s.</param>
+        /// <param name="dt">Step length, s.</param>
+        /// <remarks>
+        /// <para>
+        /// Reports the substep count <see cref="Advect"/> would take, the largest per-cell outflow
+        /// sum it was chosen from, and the two readings the spec asks for at each cell size: the
+        /// RMS of the face-normal speeds the scheme actually carries (<c>Q/cell²</c>) and the RMS
+        /// of the analytic field's own normal component at the same face centres. The two part
+        /// company at a tank's rim, where the discrete field is tangential to the mask's
+        /// stair-step and the analytic one to the circle.
+        /// </para>
+        /// <para>
+        /// <b>And the worst net face flux over the live cells</b>, which is the scheme's own
+        /// invariant and the one number here that is asserted rather than reported: a cell's six
+        /// signed fluxes are built from twelve edge values, each of which appears twice with
+        /// opposite sign, so the sum is exactly zero for any edge values at all. It is returned
+        /// from here rather than from a test-only accessor so that the invariant is checked on the
+        /// same arithmetic a step runs.
+        /// </para>
+        /// <para>
+        /// A measurement rather than an assertion: it exists so that the difference between a
+        /// grid and the water it stands for is a number in the record instead of a shrug.
+        /// </para>
+        /// </remarks>
+        public (int Substeps, double LargestOutflow, double DiscreteRms, double AnalyticRms,
+                int OpenFaces, double WorstNetFlux)
+            MeasureFaceFluxes(CurrentField current, double seconds, float dt)
+        {
+            if (current == null) throw new ArgumentNullException(nameof(current));
+            if (!current.HasPotential)
+            {
+                throw new ArgumentException(
+                    "This water has no vector potential, so it has no face fluxes to measure. " +
+                    "logbook/specs/transport-conserves-spec.md.",
+                    nameof(current));
+            }
+
+            EnsureFaceBuffers();
+            SampleEdges(current, seconds);
+            AssembleFaces();
+
+            CourantSubsteps(current, dt);
+
+            double outflow = LargestOutflowFraction(dt);
+            int substeps = outflow <= OutflowMargin ? 1 : (int)Math.Ceiling(outflow / OutflowMargin);
+
+            double h = CellMetres;
+            double area = h * h;
+            double discrete = 0d, analytic = 0d;
+            double worstNet = 0d;
+            int faces = 0;
+
+            for (int iy = 0; iy < _ny; iy++)
+            {
+                for (int ix = 0; ix < _nx; ix++)
+                {
+                    for (int iz = 0; iz < _nz; iz++)
+                    {
+                        int cell = Index(ix, iy, iz);
+                        if (_live != null && !_live[cell]) continue;
+
+                        float centreY = -(float)((iy + 0.5) * h);
+
+                        // The invariant: outward through all six faces, which cancels term for
+                        // term. A neighbour that is off the array contributes nothing, which is
+                        // the same statement as its face being closed.
+                        double net = _faceX[cell] + _faceZ[cell] + _faceY[cell];
+
+                        int west = ix == 0 ? (Shape == WorldShape.Tank ? -1 : _nx - 1) : ix - 1;
+                        if (west >= 0) net -= _faceX[Index(west, iy, iz)];
+
+                        int back = iz == 0 ? (Shape == WorldShape.Tank ? -1 : _nz - 1) : iz - 1;
+                        if (back >= 0) net -= _faceZ[Index(ix, iy, back)];
+
+                        if (iy > 0) net -= _faceY[Index(ix, iy - 1, iz)];
+
+                        if (Math.Abs(net) > worstNet) worstNet = Math.Abs(net);
+
+                        if (_nx >= 2 && EastOf(ix, iy, iz) >= 0)
+                        {
+                            discrete += Square(_faceX[cell] / area);
+                            analytic += Square(
+                                current.VelocityAt(
+                                    (float)((ix + 1) * h), centreY, (float)((iz + 0.5) * h), seconds).X);
+                            faces++;
+                        }
+
+                        if (_nz >= 2 && FrontOf(ix, iy, iz) >= 0)
+                        {
+                            discrete += Square(_faceZ[cell] / area);
+                            analytic += Square(
+                                current.VelocityAt(
+                                    (float)((ix + 0.5) * h), centreY, (float)((iz + 1) * h), seconds).Z);
+                            faces++;
+                        }
+
+                        if (_ny >= 2 && iy < _ny - 1)
+                        {
+                            discrete += Square(_faceY[cell] / area);
+                            analytic += Square(
+                                current.VelocityAt(
+                                    (float)((ix + 0.5) * h), -(float)((iy + 1) * h),
+                                    (float)((iz + 0.5) * h), seconds).Y);
+                            faces++;
+                        }
+                    }
+                }
+            }
+
+            return (
+                substeps, outflow,
+                faces == 0 ? 0d : Math.Sqrt(discrete / faces),
+                faces == 0 ? 0d : Math.Sqrt(analytic / faces),
+                faces, worstNet);
+        }
+
+        private static double Square(double v) => v * v;
+
+        // ---------------------------------------------------------- the lattice's edges and faces
+
+        // An edge is named by the lattice node it starts at and the axis it runs along. Nodes run
+        // 0..n on each axis, so the x edges are indexed by the cell's own ix (the edge from node
+        // ix to node ix+1) and by nodes on the other two, and so on round. In a box the far planes
+        // are copies of the near ones rather than fresh samples: the field is periodic on both
+        // rings, but 2*pi*n computed in double is not exactly 2*pi*n, and a copy is what makes the
+        // telescoping at the seam exact rather than nearly so.
+        private int EdgeXIndex(int i, int j, int k) => (j * _nx + i) * (_nz + 1) + k;
+
+        private int EdgeYIndex(int i, int j, int k) => (j * (_nx + 1) + i) * (_nz + 1) + k;
+
+        private int EdgeZIndex(int i, int j, int k) => (j * (_nx + 1) + i) * _nz + k;
+
+        /// <summary>
+        /// Allocates the edge and face buffers, on the first step that takes the conservative
+        /// route and never in a world that does not.
+        /// </summary>
+        /// <remarks>
+        /// Three edge arrays of about one double per cell each and three face arrays of exactly
+        /// one, which on the campaign's 6,000-cell detritus grid is under 400 kB in total. Lazy
+        /// for <see cref="EnsureCellVelocities"/>'s reason: a rolls world carries the memory it
+        /// always did.
+        /// </remarks>
+        private void EnsureFaceBuffers()
+        {
+            if (_edgeX != null) return;
+
+            _edgeX = new double[_nx * (_ny + 1) * (_nz + 1)];
+            _edgeY = new double[(_nx + 1) * _ny * (_nz + 1)];
+            _edgeZ = new double[(_nx + 1) * (_ny + 1) * _nz];
+
+            _faceX = new double[_stock.Length];
+            _faceY = new double[_stock.Length];
+            _faceZ = new double[_stock.Length];
+        }
+
+        /// <summary>
+        /// Whether the cell at these indices is water, for indices that may be off the array:
+        /// wrapped on x and z in a box, and dead off the array in a tank.
+        /// </summary>
+        /// <remarks>
+        /// What makes the glass a wall for the edges as well as for the faces. A cell off the
+        /// array's y range is never water, which is what keeps the surface and the floor closed.
+        /// </remarks>
+        private bool CellIsWater(int ix, int iy, int iz)
+        {
+            if (iy < 0 || iy >= _ny) return false;
+
+            if (Shape == WorldShape.Tank)
+            {
+                if (ix < 0 || ix >= _nx || iz < 0 || iz >= _nz) return false;
+            }
+            else
+            {
+                if (ix < 0) ix += _nx;
+                else if (ix >= _nx) ix -= _nx;
+
+                if (iz < 0) iz += _nz;
+                else if (iz >= _nz) iz -= _nz;
+            }
+
+            return _live == null || _live[Index(ix, iy, iz)];
+        }
+
+        /// <summary>Fills the three edge families from the current's potential at one clock.</summary>
+        private void SampleEdges(CurrentField current, double seconds)
+        {
+            Array.Clear(_edgeX, 0, _edgeX.Length);
+            Array.Clear(_edgeY, 0, _edgeY.Length);
+            Array.Clear(_edgeZ, 0, _edgeZ.Length);
+
+            double h = CellMetres;
+            bool tank = Shape == WorldShape.Tank;
+
+            // The x and z edges, on the interior node planes only: at y = 0 and y = -D the
+            // potential's horizontal components are analytically zero, and an empty plane says so
+            // without depending on Math.Sin(-Math.PI) being 0 rather than -1.2e-16.
+            for (int j = 1; j < _ny; j++)
+            {
+                float y = -(float)(j * h);
+
+                for (int i = 0; i < _nx; i++)
+                {
+                    float x = (float)((i + 0.5) * h);
+
+                    for (int k = 0; k <= _nz; k++)
+                    {
+                        if (!tank && k == _nz)
+                        {
+                            _edgeX[EdgeXIndex(i, j, k)] = _edgeX[EdgeXIndex(i, j, 0)];
+                            continue;
+                        }
+
+                        // The four cells this edge belongs to. One dead one and the edge is zero,
+                        // which is what makes every face onto the glass carry nothing.
+                        if (!CellIsWater(i, j - 1, k - 1) || !CellIsWater(i, j - 1, k) ||
+                            !CellIsWater(i, j, k - 1) || !CellIsWater(i, j, k))
+                        {
+                            continue;
+                        }
+
+                        _edgeX[EdgeXIndex(i, j, k)] =
+                            current.PotentialAt(x, y, (float)(k * h), seconds).X * h;
+                    }
+                }
+
+                for (int i = 0; i <= _nx; i++)
+                {
+                    for (int k = 0; k < _nz; k++)
+                    {
+                        if (!tank && i == _nx)
+                        {
+                            _edgeZ[EdgeZIndex(i, j, k)] = _edgeZ[EdgeZIndex(0, j, k)];
+                            continue;
+                        }
+
+                        if (!CellIsWater(i - 1, j - 1, k) || !CellIsWater(i - 1, j, k) ||
+                            !CellIsWater(i, j - 1, k) || !CellIsWater(i, j, k))
+                        {
+                            continue;
+                        }
+
+                        _edgeZ[EdgeZIndex(i, j, k)] =
+                            current.PotentialAt((float)(i * h), y, (float)((k + 0.5) * h), seconds).Z * h;
+                    }
+                }
+            }
+
+            // The y edges, which run inside a layer rather than across an interface, so every one
+            // of them has a midpoint at an interior depth and none is on a boundary plane.
+            for (int j = 0; j < _ny; j++)
+            {
+                float y = -(float)((j + 0.5) * h);
+
+                for (int i = 0; i <= _nx; i++)
+                {
+                    for (int k = 0; k <= _nz; k++)
+                    {
+                        if (!tank && (i == _nx || k == _nz))
+                        {
+                            _edgeY[EdgeYIndex(i, j, k)] =
+                                _edgeY[EdgeYIndex(i == _nx ? 0 : i, j, k == _nz ? 0 : k)];
+                            continue;
+                        }
+
+                        if (!CellIsWater(i - 1, j, k - 1) || !CellIsWater(i - 1, j, k) ||
+                            !CellIsWater(i, j, k - 1) || !CellIsWater(i, j, k))
+                        {
+                            continue;
+                        }
+
+                        _edgeY[EdgeYIndex(i, j, k)] =
+                            current.PotentialAt((float)(i * h), y, (float)(k * h), seconds).Y * h;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Assembles each open face's volumetric flux, m³/s, as the circulation of the edges round
+        /// it in right-hand order about its outward normal.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>East face</b> (normal +x), at node plane <c>i = ix+1</c>: up the near z edge, along
+        /// the shallow x-plane, down the far one, back along the deep one. <b>Front face</b>
+        /// (normal +z) and <b>lower face</b> (stored as the flux <i>downward</i>, which is the
+        /// sign <see cref="ApplyDown"/> wants) the same way about their own normals.
+        /// </para>
+        /// <para>
+        /// <b>Closed faces are left at zero</b> rather than computed. The two agree — all four
+        /// edges of a face onto the glass are zero, so its circulation is zero — and skipping is
+        /// what keeps the cost down in a tank, whose array is about a fifth dry. That they agree
+        /// is the thing <c>ConservativeTransportTests</c> checks by summing every live cell's six
+        /// faces and finding exactly zero.
+        /// </para>
+        /// </remarks>
+        private void AssembleFaces()
+        {
+            Array.Clear(_faceX, 0, _faceX.Length);
+            Array.Clear(_faceY, 0, _faceY.Length);
+            Array.Clear(_faceZ, 0, _faceZ.Length);
+
+            for (int iy = 0; iy < _ny; iy++)
+            {
+                for (int ix = 0; ix < _nx; ix++)
+                {
+                    for (int iz = 0; iz < _nz; iz++)
+                    {
+                        int cell = Index(ix, iy, iz);
+                        if (_live != null && !_live[cell]) continue;
+
+                        if (_nx >= 2 && EastOf(ix, iy, iz) >= 0)
+                        {
+                            _faceX[cell] =
+                                _edgeY[EdgeYIndex(ix + 1, iy, iz)] +
+                                _edgeZ[EdgeZIndex(ix + 1, iy, iz)] -
+                                _edgeY[EdgeYIndex(ix + 1, iy, iz + 1)] -
+                                _edgeZ[EdgeZIndex(ix + 1, iy + 1, iz)];
+                        }
+
+                        if (_nz >= 2 && FrontOf(ix, iy, iz) >= 0)
+                        {
+                            _faceZ[cell] =
+                                _edgeX[EdgeXIndex(ix, iy + 1, iz + 1)] +
+                                _edgeY[EdgeYIndex(ix + 1, iy, iz + 1)] -
+                                _edgeX[EdgeXIndex(ix, iy, iz + 1)] -
+                                _edgeY[EdgeYIndex(ix, iy, iz + 1)];
+                        }
+
+                        // A dead column is dead all the way down, so a live cell's lower face is
+                        // open whenever there is a layer below it.
+                        if (_ny >= 2 && iy < _ny - 1)
+                        {
+                            _faceY[cell] =
+                                _edgeZ[EdgeZIndex(ix + 1, iy + 1, iz)] +
+                                _edgeX[EdgeXIndex(ix, iy + 1, iz)] -
+                                _edgeZ[EdgeZIndex(ix, iy + 1, iz)] -
+                                _edgeX[EdgeXIndex(ix, iy + 1, iz + 1)];
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// The largest share of its own stock any live cell would be asked to hand out over
+        /// <paramref name="dt"/>.
+        /// </summary>
+        /// <remarks>
+        /// A cell's signed face fluxes sum to zero, so its outflow and its inflow are equal and
+        /// each is half the sum of the six magnitudes. That identity is why this needs no sign
+        /// bookkeeping, and it is the same identity the scheme rests on.
+        /// </remarks>
+        private double LargestOutflowFraction(float dt)
+        {
+            double scale = 0.5 * dt / CellVolume;
+            double largest = 0d;
+
+            for (int iy = 0; iy < _ny; iy++)
+            {
+                for (int ix = 0; ix < _nx; ix++)
+                {
+                    for (int iz = 0; iz < _nz; iz++)
+                    {
+                        int cell = Index(ix, iy, iz);
+                        if (_live != null && !_live[cell]) continue;
+
+                        double sum = Math.Abs(_faceX[cell]) + Math.Abs(_faceZ[cell]) + Math.Abs(_faceY[cell]);
+
+                        int west = ix == 0 ? (Shape == WorldShape.Tank ? -1 : _nx - 1) : ix - 1;
+                        if (west >= 0) sum += Math.Abs(_faceX[Index(west, iy, iz)]);
+
+                        int back = iz == 0 ? (Shape == WorldShape.Tank ? -1 : _nz - 1) : iz - 1;
+                        if (back >= 0) sum += Math.Abs(_faceZ[Index(ix, iy, back)]);
+
+                        if (iy > 0) sum += Math.Abs(_faceY[Index(ix, iy - 1, iz)]);
+
+                        double outflow = sum * scale;
+                        if (outflow > largest) largest = outflow;
+                    }
+                }
+            }
+
+            return largest;
+        }
+
+        /// <summary>
+        /// Turns the face fluxes into transfers from one snapshot of the stock and applies all
+        /// three axes.
+        /// </summary>
+        /// <remarks>
+        /// Upwind: each face moves <c>Q·dt/cell³</c> of the cell the water is coming <i>from</i>,
+        /// never clamped — a clamped fraction would move less than the water does across that one
+        /// face and nothing else, which is a divergence, and a divergence is the fault this scheme
+        /// exists to remove. The three transfer arrays are built before any of them is applied, so
+        /// the result does not depend on the order the axes run in.
+        /// </remarks>
+        private void ApplyFaces(float dt)
+        {
+            double scale = dt / CellVolume;
+
+            Array.Clear(_fluxX, 0, _fluxX.Length);
+            Array.Clear(_fluxY, 0, _fluxY.Length);
+            Array.Clear(_fluxZ, 0, _fluxZ.Length);
+
+            for (int iy = 0; iy < _ny; iy++)
+            {
+                for (int ix = 0; ix < _nx; ix++)
+                {
+                    for (int iz = 0; iz < _nz; iz++)
+                    {
+                        int cell = Index(ix, iy, iz);
+                        if (_live != null && !_live[cell]) continue;
+
+                        double q = _faceX[cell];
+                        if (q != 0d)
+                        {
+                            // q > 0 takes from this cell, q < 0 from the one east of it, and
+                            // writing it as one product keeps the two branches the same arithmetic.
+                            int east = EastOf(ix, iy, iz);
+                            _fluxX[cell] = (q > 0d ? _stock[cell] : _stock[east]) * q * scale;
+                        }
+
+                        q = _faceZ[cell];
+                        if (q != 0d)
+                        {
+                            int front = FrontOf(ix, iy, iz);
+                            _fluxZ[cell] = (q > 0d ? _stock[cell] : _stock[front]) * q * scale;
+                        }
+
+                        // Positive is downward, which is what ApplyDown means by a flux: sinking
+                        // water carries what is above it down, rising water what is below it up.
+                        q = _faceY[cell];
+                        if (q != 0d)
+                        {
+                            _fluxY[cell] = (q > 0d ? _stock[cell] : _stock[Index(ix, iy + 1, iz)]) * q * scale;
+                        }
+                    }
+                }
+            }
+
+            if (_nx >= 2) ApplyEast(_fluxX);
+            if (_ny >= 2) ApplyDown(_fluxY);
+            if (_nz >= 2) ApplyFront(_fluxZ);
+        }
+
         /// <summary>One pass of the three upwind axes at one clock. <see cref="Advect"/>'s body.</summary>
         private void Sweep(CurrentField current, double seconds, float dt, bool transport)
         {
@@ -1359,8 +2017,8 @@ namespace Evosim.Core
                             int cell = Index(ix, iy, iz);
 
                             // Dead cells are never a source or a destination, so the field is not
-                            // asked about them: a sample is five Fourier modes or three parts of a
-                            // gyre, and a tank's array is about a fifth dry.
+                            // asked about them: a sample is five Fourier modes or twenty-seven
+                            // terms of the tank's streams, and a tank's array is about a fifth dry.
                             if (_live != null && !_live[cell]) continue;
 
                             Float3 atCentre = current.VelocityAt(x, centreY, z, seconds);

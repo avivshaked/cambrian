@@ -44,9 +44,11 @@ namespace Evosim.Sim
     /// area rather than a square; the boundary is <see cref="TankWall"/>'s collider rather than
     /// the translation above, so <see cref="TryWrap"/> always says no and
     /// <see cref="ShortestDistance"/> is the plain distance; and a founder is drawn uniformly over
-    /// the disc while a newborn is drawn exactly as it always was and refused if it lands past the
-    /// glass. Nothing else in this class is different, which is the point: the tank is a
-    /// container, not a second set of rules about who may be born.
+    /// the disc while a newborn is drawn exactly as it always was and refused if its own bounding
+    /// sphere — not just its centre — reaches past the glass
+    /// (<c>logbook/specs/wall-clearance-spec.md</c>, Astra review F2). Nothing else in this
+    /// class is different, which is the point: the tank is a container, not a second set of
+    /// rules about who may be born.
     /// </para>
     /// <para>
     /// <b>Placement is rejection-sampled on bounding spheres and never overlaps</b>, because two
@@ -227,13 +229,23 @@ namespace Evosim.Sim
         public float WidthMetres =>
             Shape == WorldShape.Tank ? 2f * TankRadiusMetres : PatchWidthMetres * PatchesAcross;
 
-        /// <summary>Whether a horizontal position is in the water. Always true in a box.</summary>
+        /// <summary>
+        /// Whether a horizontal position is in the water, with <paramref name="clearance"/> held
+        /// back from the glass. Always true in a box.
+        /// </summary>
         /// <remarks>
         /// The box's own answer is "yes, after wrapping", since a periodic footprint has no
-        /// outside; the tank's is the circle. <c>TankGeometry.Inside</c>.
+        /// outside; the tank's is the circle, shrunk by <paramref name="clearance"/> —
+        /// <c>TankGeometry.Inside</c>. <see cref="Free"/> asks this with a candidate's own
+        /// bounding radius as the clearance, which is the whole of
+        /// <c>logbook/specs/wall-clearance-spec.md</c>'s repair (Astra review F2): a centre
+        /// alone said nothing about whether the body around it fit, so a draw one centimetre
+        /// inside the circle with a half-metre bounding sphere was accepted with a corner
+        /// outside it. Defaulted to 0 rather than overloaded, so every existing call —
+        /// including the smoke's own arithmetic-only checks — reads exactly as it did.
         /// </remarks>
-        public bool InTheWater(float x, float z) =>
-            Shape != WorldShape.Tank || TankGeometry.Inside(x, z, TankRadiusMetres);
+        public bool InTheWater(float x, float z, float clearance = 0f) =>
+            Shape != WorldShape.Tank || TankGeometry.Inside(x, z, TankRadiusMetres, clearance);
 
         /// <summary>Bodies translated at a seam, running total.</summary>
         public long Wraps { get; private set; }
@@ -449,17 +461,27 @@ namespace Evosim.Sim
 
         /// <summary>Whether a sphere of <paramref name="radius"/> at <paramref name="p"/> is clear.</summary>
         /// <remarks>
-        /// <b>And in the water.</b> A box has no outside — a draw past a face is folded back in —
-        /// so until the tank this only ever asked about other bodies. The tank's glass is asked
-        /// here rather than at each call site so that both reservation paths get the same answer
-        /// from the same place, and so that a refusal counts as a rejection exactly as a draw onto
-        /// an occupied spot does: a child that cannot be set down inside the tank in
-        /// <see cref="AttemptBudget"/> tries is a crowded stillbirth, which is the honest reading
-        /// of a world with no room in it (logbook/specs/tank-spec.md).
+        /// <b>And in the water — the whole sphere, not the centre.</b> A box has no outside — a
+        /// draw past a face is folded back in — so until the tank this only ever asked about
+        /// other bodies. The tank's glass is asked here rather than at each call site so that
+        /// both reservation paths get the same answer from the same place, and so that a refusal
+        /// counts as a rejection exactly as a draw onto an occupied spot does: a child that
+        /// cannot be set down inside the tank in <see cref="AttemptBudget"/> tries is a crowded
+        /// stillbirth, which is the honest reading of a world with no room in it
+        /// (logbook/specs/tank-spec.md).
+        /// <para>
+        /// <b>The water test takes <paramref name="radius"/> as a clearance</b>
+        /// (<see cref="InTheWater(float, float, float)"/>), not just the centre point —
+        /// <c>logbook/specs/wall-clearance-spec.md</c> (Astra review F2). Before this a candidate
+        /// one centimetre inside the circle with a half-metre bounding sphere was accepted with a
+        /// corner outside the glass, because the water test only ever looked at <c>p</c> itself;
+        /// a body born through a static collider is a contact the solver resolves on its first
+        /// step, which is exactly the throw this gate exists to prevent.
+        /// </para>
         /// </remarks>
         private bool Free(Vector3 p, float radius)
         {
-            if (!InTheWater(p.x, p.z)) return false;
+            if (!InTheWater(p.x, p.z, radius)) return false;
 
             if (!_gridBuilt) Build();
 

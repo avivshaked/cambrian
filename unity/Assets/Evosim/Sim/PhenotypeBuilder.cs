@@ -28,6 +28,51 @@ namespace Evosim.Sim
         public int TotalDof { get; internal set; }
 
         /// <summary>
+        /// The mass PhysX carries for each link, kg, as of the last build or resize —
+        /// <c>logbook/specs/throw-trace-spec.md</c> step 1.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Read back off the <see cref="ArticulationBody"/> rather than recomputed from the
+        /// phenotype</b>, because the two are not the same number: <see cref="PhenotypeBuilder.Build"/>
+        /// writes the plain mass and then <c>FluidEnvironment.ApplyAddedMass</c> inflates it, and
+        /// <see cref="PhenotypeBuilder.Resize"/> writes the inflated one directly. The question
+        /// this instrument exists for is what the solver was given, so it is the solver's own
+        /// value that is kept. Non-finite is possible and is recorded as it stands; the ratio
+        /// below is what refuses it.
+        /// </para>
+        /// <para>
+        /// Allocated once at build and refilled in place by every resize, so growth costs no
+        /// garbage.
+        /// </para>
+        /// </remarks>
+        public float[] LinkMasses { get; internal set; }
+
+        /// <summary>
+        /// Each link's mass ratio against its own parent — <c>max / min</c>, so it is never
+        /// below 1. 0 for the root, which has no joint.
+        /// </summary>
+        /// <remarks>
+        /// PhysX's joint documentation puts the practical ceiling at about 10: an impulse applied
+        /// to a heavy link becomes a very large velocity when it is propagated into a light one,
+        /// and the solver stops converging. Whether this world's divergences sit above that line
+        /// is the question <c>scratch/research-throws/notes.txt</c> ranked first, and nothing
+        /// measured it until this build — see <c>logbook/specs/throw-trace-spec.md</c>.
+        /// </remarks>
+        public float[] JointMassRatios { get; internal set; }
+
+        /// <summary>
+        /// The largest of <see cref="JointMassRatios"/>, or 0 for a body with no joint.
+        /// </summary>
+        /// <remarks>
+        /// Kept as one number per body so the hot loop that counts bodies over the threshold does
+        /// not walk the links. Finite by construction: a ratio computed from a non-finite or
+        /// non-positive mass is not a ratio, and is dropped rather than propagated into a run
+        /// maximum that a JSON writer would then refuse.
+        /// </remarks>
+        public float MaxJointMassRatio { get; internal set; }
+
+        /// <summary>
         /// Drag panels for each part, built once. Owned by <see cref="FluidEnvironment"/>.
         /// </summary>
         /// <remarks>
@@ -288,7 +333,7 @@ namespace Evosim.Sim
                 }
             }
 
-            return new CreatureInstance
+            var instance = new CreatureInstance
             {
                 Root = root,
                 Bodies = bodies,
@@ -298,6 +343,118 @@ namespace Evosim.Sim
                 Renderers = _renderers.ToArray(),
                 RendererPart = _rendererPart.ToArray(),
             };
+
+            // logbook/specs/throw-trace-spec.md step 1: the masses as written, before anything
+            // has stepped. Added mass is applied by the caller a moment later and moves every one
+            // of them, which is why Ecosystem asks again after that — see the method's remarks.
+            MeasureJointMassRatios(instance);
+
+            return instance;
+        }
+
+        /// <summary>
+        /// Reads every link's mass off the articulation and fills in the body's joint mass ratios
+        /// — <c>logbook/specs/throw-trace-spec.md</c> step 1.
+        /// </summary>
+        /// <returns><see cref="CreatureInstance.MaxJointMassRatio"/>, for a caller that wants it
+        /// without reading the instance back.</returns>
+        /// <remarks>
+        /// <para>
+        /// <b>A diagnostic and nothing else.</b> It reads <c>ArticulationBody.mass</c> and writes
+        /// three fields on the instance; it sets no force, no mass and no clamp, and it runs only
+        /// where a body is built or resized — never inside the physics loop. A state digest under
+        /// this build must therefore be identical to one without it.
+        /// </para>
+        /// <para>
+        /// <b>Called three times rather than once, and the third is the one that matters when the
+        /// fluid is on.</b> <see cref="Build"/> writes the plain mass, <c>Ecosystem.Build</c> then
+        /// calls <c>FluidEnvironment.ApplyAddedMass</c> which multiplies it, and
+        /// <see cref="Resize"/> writes the inflated value itself. So the ratio is taken at the end
+        /// of each of those, and what a run reports is the effective mass whenever
+        /// <c>FluidConfig.AddedMassCoefficient</c> is above 0 — which is no recorded run, where
+        /// the coefficient is 0 and the three readings agree.
+        /// </para>
+        /// <para>
+        /// <b>Parentage from the phenotype, not from the articulation.</b> A link's parent is a
+        /// fact about the developed body, and <see cref="PhenotypePart.ParentIndex"/> is the same
+        /// index <see cref="Build"/> parented the GameObjects by, so the two cannot drift. A part
+        /// list shorter than the body's links is treated as unknown parentage and scores 0 rather
+        /// than indexing off the end: that mismatch is impossible from
+        /// <see cref="Resize"/>, which refuses a count change outright, but the dump path must
+        /// never be the thing that throws.
+        /// </para>
+        /// </remarks>
+        public static float MeasureJointMassRatios(CreatureInstance instance)
+        {
+            if (instance == null) return 0f;
+
+            ArticulationBody[] bodies = instance.Bodies;
+            if (bodies == null || bodies.Length == 0)
+            {
+                instance.MaxJointMassRatio = 0f;
+                return 0f;
+            }
+
+            if (instance.LinkMasses == null || instance.LinkMasses.Length != bodies.Length)
+            {
+                instance.LinkMasses = new float[bodies.Length];
+                instance.JointMassRatios = new float[bodies.Length];
+            }
+
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                instance.LinkMasses[i] = bodies[i] != null ? bodies[i].mass : 0f;
+            }
+
+            Phenotype phenotype = instance.Phenotype;
+            int parts = phenotype?.Parts != null ? phenotype.Parts.Count : 0;
+            float worst = 0f;
+
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                float ratio = 0f;
+
+                if (i < parts)
+                {
+                    PhenotypePart part = phenotype.Parts[i];
+
+                    if (part != null && !part.IsRoot &&
+                        part.ParentIndex >= 0 && part.ParentIndex < bodies.Length)
+                    {
+                        ratio = MassRatio(
+                            instance.LinkMasses[part.ParentIndex], instance.LinkMasses[i]);
+                    }
+                }
+
+                instance.JointMassRatios[i] = ratio;
+                if (ratio > worst) worst = ratio;
+            }
+
+            instance.MaxJointMassRatio = worst;
+            return worst;
+        }
+
+        /// <summary>
+        /// The heavier of two link masses over the lighter, or 0 where that is not a number.
+        /// </summary>
+        /// <remarks>
+        /// 0 rather than infinity for a zero or non-finite mass, because this value is summarised
+        /// into a run maximum that <see cref="Json.Writer"/> would refuse to write — and a
+        /// divergence is exactly when a mass can stop being a number. The per-link masses in the
+        /// trace dump carry the raw value, so nothing is hidden: only the summary declines to
+        /// make a ratio out of it. In practice the floor in <see cref="Build"/> keeps every mass
+        /// at or above a gram, so this cannot fire on a healthy body.
+        /// </remarks>
+        private static float MassRatio(float parentMass, float childMass)
+        {
+            float heavier = parentMass > childMass ? parentMass : childMass;
+            float lighter = parentMass > childMass ? childMass : parentMass;
+
+            if (!(lighter > 0f) || float.IsNaN(heavier) || float.IsInfinity(heavier)) return 0f;
+
+            float ratio = heavier / lighter;
+
+            return float.IsNaN(ratio) || float.IsInfinity(ratio) ? 0f : ratio;
         }
 
         /// <summary>
@@ -395,6 +552,13 @@ namespace Evosim.Sim
             }
 
             instance.Phenotype = scaled;
+
+            // logbook/specs/throw-trace-spec.md step 1, after the new phenotype is in place
+            // because the parentage this reads is the phenotype's. Growth scales every part by
+            // one length, so a ratio is ordinarily invariant across a resize — the reading is
+            // taken anyway, because the mass floor in Build and the effective-mass inflation
+            // above are both size-dependent and neither is invariant.
+            MeasureJointMassRatios(instance);
 
             // Dropped rather than rebuilt here, so that FluidEnvironment.EnsurePanels stays the
             // one place a panel set is made. Two places building panels is how a resolution

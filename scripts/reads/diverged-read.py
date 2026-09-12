@@ -35,7 +35,34 @@ is not Fixed). "Has an active joint" below means any node with `joint != "Fixed"
 equal deathT - birthT); this script cross-checks that and flags a mismatch rather than
 silently trusting one over the other.
 
-Usage: python scripts/reads/diverged-read.py <arm> [<arm> ...]
+Since the throw trace (`logbook/specs/throw-trace-spec.md`, 2026-09-12) a jointed body's
+dump may be joined by `diverged/<id>-trace.json`, and this script reads it when it is
+there. That file carries, at the top level: creatureId, t, physicsStep,
+physicsDtSeconds, ageSeconds, parts, totalDof, maxJointMassRatio (the largest
+`max(parentMass,childMass)/min(...)` across the body's joints, as PhysX held the masses),
+lastResizeStep and stepsSinceLastResize (-1 for a body that was never resized),
+links[] (index, name, parentIndex, jointType, jointDof, massKg, jointMassRatio -- the
+ratio against that link's own parent, 0 for the root), framesHeld, and frames[]: the
+last three physics steps before the dump, oldest to newest, each with step, t,
+resizedJustBefore (true on the first frame taken after a growth resize) and links[]
+(index, position, velocity, angularVelocity, jointVelocity{v0,v1,v2} -- the joint's
+reduced-space velocity, meaningful in the first `jointDof` slots). Non-finite numbers
+arrive as the quoted strings "NaN"/"Infinity"/"-Infinity" throughout, as in the dump.
+
+Three columns come from it -- `ratio` (maxJointMassRatio), `dResize` (stepsSinceLastResize)
+and `maxV`/`maxW` (the largest link speed and angular speed in the newest frame whose
+velocities are all finite) -- and two shares are added to the summary line: how many
+dumps carry a ratio over 10, the number PhysX's own joint documentation avoids, and how
+many were within 5 steps of a resize. A dump with no trace prints a dash in all four,
+which is what a rigid one-part body and every dump recorded before this build both look
+like.
+
+Usage: python scripts/reads/diverged-read.py <arm|run-directory> [<arm|run-directory> ...]
+
+An argument that names an existing directory is read as a run directory (or an arm
+directory holding one), so a checkout with no `runs/` of its own can point at another
+tree's run, or at a fixture, with an absolute path. Anything else is an arm name under
+this tree's `runs/`.
 
 Never writes, never polls; reads runs/<arm>/<run>/{diverged/*.json,lineage.jsonl,
 config.json} directly with a tolerant open (a running arm's lineage.jsonl may still be
@@ -48,7 +75,24 @@ os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 
 def run_dir(arm):
     """The one run directory under runs/<arm>/ that has a diverged/ folder, or the
-    latest run directory if none do (so a clean error still names *a* path)."""
+    latest run directory if none do (so a clean error still names *a* path).
+
+    An argument that is already a directory is taken as given: either a run directory
+    (it has a diverged/ folder or a config.json of its own) or an arm directory holding
+    run directories, which is searched the same way runs/<arm>/ is. That is what lets a
+    checkout without a runs/ tree -- a worktree, say -- read another tree's run, or a
+    fixture, by absolute path."""
+    if os.path.isdir(arm):
+        here = arm.rstrip("/\\")
+        if os.path.isdir(os.path.join(here, "diverged")) or \
+                os.path.isfile(os.path.join(here, "config.json")):
+            return here
+        candidates = sorted(d for d in glob.glob(os.path.join(here, "*/")) if os.path.isdir(d))
+        if not candidates:
+            raise SystemExit(f"no run directory under {here}")
+        with_diverged = [d for d in candidates if os.path.isdir(os.path.join(d, "diverged"))]
+        return (with_diverged or candidates)[-1].rstrip("/\\")
+
     candidates = sorted(d for d in glob.glob(f"runs/{arm}/*/") if os.path.isdir(d))
     if not candidates:
         raise SystemExit(f"no run directory under runs/{arm}/")
@@ -122,6 +166,67 @@ def genome_stats(genome):
     return n_nodes, n_edges, has_active_joint
 
 
+def load_trace(rdir, cid):
+    """The throw trace beside dump <cid>, or None when there is none -- a rigid one-part
+    body is never traced, and no run before 2026-09-12 wrote one at all."""
+    path = os.path.join(rdir, "diverged", f"{cid}-trace.json")
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def finite(*values):
+    return all(not (math.isnan(v) or math.isinf(v)) for v in values)
+
+
+def newest_finite_frame(trace):
+    """The last frame in which every link's velocity and angular velocity is finite, or
+    None. Newest first, because the question is what the body was doing as late as it can
+    still be said to have been doing anything -- the frames after that are the ones where
+    the solver had already lost it, and their numbers are NaN rather than large."""
+    for frame in reversed(trace.get("frames", [])):
+        speeds = []
+        spins = []
+        ok = True
+        for link in frame.get("links", []):
+            v = [as_float(link["velocity"][a]) for a in "xyz"]
+            w = [as_float(link["angularVelocity"][a]) for a in "xyz"]
+            if not finite(*v, *w):
+                ok = False
+                break
+            speeds.append(math.sqrt(sum(c * c for c in v)))
+            spins.append(math.sqrt(sum(c * c for c in w)))
+        if ok and speeds:
+            return frame, max(speeds), max(spins)
+    return None
+
+
+def trace_columns(trace):
+    """(ratio, steps_since_resize, max_speed, max_spin) as display strings, with a dash
+    wherever the trace cannot answer. Also returns the two numbers the summary shares are
+    counted from, as (ratio_value, steps_value) or None each."""
+    if trace is None:
+        return ("-", "-", "-", "-"), (None, None)
+
+    ratio = as_float(trace.get("maxJointMassRatio", 0))
+    ratio_disp = f"{ratio:.1f}" if finite(ratio) else "nonfin"
+
+    since = trace.get("stepsSinceLastResize", -1)
+    since_disp = "never" if since is None or since < 0 else f"{int(since)}"
+    since_value = None if since is None or since < 0 else int(since)
+
+    latest = newest_finite_frame(trace)
+    if latest is None:
+        return (ratio_disp, since_disp, "-", "-"), (ratio if finite(ratio) else None, since_value)
+
+    _, max_speed, max_spin = latest
+    return (
+        (ratio_disp, since_disp, f"{max_speed:.4g}", f"{max_spin:.4g}"),
+        (ratio if finite(ratio) else None, since_value),
+    )
+
+
 def load_lineage(rdir, wanted_ids):
     """Streams lineage.jsonl once, keeping only rows for the ids we need. Returns
     {id: {"birthT":.., "bf":.., "jnt":.., "deathT":.., "cause":..}}."""
@@ -175,13 +280,19 @@ def read_arm(arm):
 
     print(f"\n=== {arm}  ({rdir})  world depth={depth:g} m ===")
     header = (f"{'id':>6} {'t_div':>10} {'age_s':>8} {'jnt':>3} {'nodes':>5} {'edges':>5} "
-              f"{'activeJoint':>11} {'bf':>7}  reason (offending value)")
+              f"{'activeJoint':>11} {'bf':>7} {'ratio':>7} {'dResize':>7} {'maxV':>9} "
+              f"{'maxW':>9}  reason (offending value)")
     print(header)
     print("-" * len(header))
 
     ages = []
     n_jointed = 0
     times = []
+
+    # The throw trace's two shares, counted over the dumps that carry one.
+    n_traced = 0
+    n_over_ten = 0
+    n_near_resize = 0
     for cid in sorted(dumps):
         d = dumps[cid]
         lin = lineage.get(cid, {})
@@ -214,11 +325,23 @@ def read_arm(arm):
         ages.append(age)
         times.append(t_div)
 
+        trace = load_trace(rdir, cid)
+        (ratio_disp, since_disp, v_disp, w_disp), (ratio_value, since_value) = \
+            trace_columns(trace)
+
+        if trace is not None:
+            n_traced += 1
+            if ratio_value is not None and ratio_value > 10:
+                n_over_ten += 1
+            if since_value is not None and since_value <= 5:
+                n_near_resize += 1
+
         bf_disp = f"{bf:.3f}" if isinstance(bf, (int, float)) else "?"
         t_disp = f"{t_div:.1f}" if isinstance(t_div, (int, float)) else "?"
         age_disp = f"{age:.1f}" if isinstance(age, (int, float)) else "?"
         print(f"{cid:>6} {t_disp:>10} {age_disp:>8} {jnt_disp:>3} {n_nodes:>5} {n_edges:>5} "
-              f"{str(active_joint):>11} {bf_disp:>7}  {reason} ({offending}){note}")
+              f"{str(active_joint):>11} {bf_disp:>7} {ratio_disp:>7} {since_disp:>7} "
+              f"{v_disp:>9} {w_disp:>9}  {reason} ({offending}){note}")
 
     numeric_ages = [a for a in ages if isinstance(a, (int, float))]
     numeric_times = [t for t in times if isinstance(t, (int, float))]
@@ -230,10 +353,26 @@ def read_arm(arm):
           if numeric_ages and numeric_times else
           f"count={len(dumps)}  jointed={n_jointed}  (ages/times not all resolvable)")
 
+    # The throw trace's shares, over the dumps that carry a trace rather than over all of
+    # them: a dump with no trace is a body that was never traced or a run recorded before
+    # the instrument existed, and counting either in the denominator would report a world
+    # with no jointed bodies as a world whose joints are all well balanced.
+    if n_traced:
+        print(f"traced={n_traced}/{len(dumps)}  "
+              f"ratio_over_10={n_over_ten}/{n_traced} "
+              f"({100.0 * n_over_ten / n_traced:.0f}%)  "
+              f"within_5_steps_of_a_resize={n_near_resize}/{n_traced} "
+              f"({100.0 * n_near_resize / n_traced:.0f}%)")
+    else:
+        print(f"traced=0/{len(dumps)}  (no throw traces: rigid bodies, or a run recorded "
+              f"before logbook/specs/throw-trace-spec.md)")
+
 
 if __name__ == "__main__":
     arms = sys.argv[1:]
     if not arms:
-        raise SystemExit("usage: python scripts/reads/diverged-read.py <arm> [<arm> ...]")
+        raise SystemExit(
+            "usage: python scripts/reads/diverged-read.py <arm|run-directory> "
+            "[<arm|run-directory> ...]")
     for arm in arms:
         read_arm(arm)

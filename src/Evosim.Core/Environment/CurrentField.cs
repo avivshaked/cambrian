@@ -508,7 +508,7 @@ namespace Evosim.Core
             // Built lazily on the first sample, so a Rolls world never pays for it and a config
             // handed to two worlds of different geometry rebuilds rather than describing the first.
             _transportAmplitude = null;
-            _gyreBuilt = false;
+            _streamsBuilt = false;
         }
 
         private int _patchCount;
@@ -523,10 +523,11 @@ namespace Evosim.Core
         /// <see cref="WorldShape.Box"/> until a world says otherwise.
         /// </summary>
         /// <remarks>
-        /// <b>The gyre is selected by the shape, not by the mode</b> (logbook/specs/tank-spec.md).
+        /// <b>The streams are selected by the shape, not by the mode</b>
+        /// (logbook/specs/streams-spec.md; logbook/specs/tank-spec.md for the gyre they replace).
         /// D037's standing waves and D066's rolls are a field over a row of patches and the
         /// transport field is periodic on two rings; neither is a thing a walled cylinder can
-        /// hold. So in a tank <see cref="Speed"/> is the RMS of the gyre, whatever
+        /// hold. So in a tank <see cref="Speed"/> is the RMS of the streams, whatever
         /// <see cref="Mode"/> says, and <see cref="World"/> refuses a tank under
         /// <see cref="CurrentMode.Rolls"/> at a nonzero speed rather than letting a config name a
         /// field the water is not.
@@ -679,9 +680,9 @@ namespace Evosim.Core
         /// is honest about being one, and any harness that has only a depth.
         /// </remarks>
         /// <remarks>
-        /// <b>In a tank it samples the gyre at the ring's mid-radius</b>, on the <c>θ = 0</c> ray,
-        /// for the same reason the transport field samples at the patch's centre: a ring index is
-        /// all this signature carries and the gyre is a function of a place. A tank runs a grid
+        /// <b>In a tank it samples the streams at the ring's mid-radius</b>, on the <c>θ = 0</c>
+        /// ray, for the same reason the transport field samples at the patch's centre: a ring index
+        /// is all this signature carries and the streams are a function of a place. A tank runs a grid
         /// (<see cref="World"/> refuses the cell field there), so the field that actually carries
         /// stock reads <see cref="VelocityAt(float, float, float, double)"/> per cell and this
         /// overload is left to whatever holds only a depth and a patch.
@@ -689,7 +690,7 @@ namespace Evosim.Core
         public Float3 VelocityAt(float heightY, double seconds, int patch, int patchCount)
         {
             Float3 flow = _shape == WorldShape.Tank
-                ? GyreAt(PatchCentreX(patch), heightY, PatchCentreZ(patch), seconds)
+                ? StreamsAt(PatchCentreX(patch), heightY, PatchCentreZ(patch), seconds)
                 : Mode == CurrentMode.Transport
                     ? TransportAt(PatchCentreX(patch), heightY, PatchCentreZ(patch), seconds)
                     : RollOrSteady(heightY, seconds, patch, patchCount);
@@ -728,7 +729,7 @@ namespace Evosim.Core
         /// </remarks>
         public Float3 VelocityAt(float x, float y, float z, double seconds)
         {
-            // The tank's water is the gyre whatever the mode says — see Shape. The vent is added
+            // The tank's water is the streams whatever the mode says — see Shape. The vent is added
             // exactly as it is to the other two fields, and is off in every launcher that has a
             // tank in it.
             if (_shape != WorldShape.Tank && Mode != CurrentMode.Transport)
@@ -737,7 +738,7 @@ namespace Evosim.Core
             }
 
             Float3 flow = _shape == WorldShape.Tank
-                ? GyreAt(x, y, z, seconds)
+                ? StreamsAt(x, y, z, seconds)
                 : TransportAt(x, y, z, seconds);
             if (!VentActive(_patchCount)) return flow;
 
@@ -752,6 +753,455 @@ namespace Evosim.Core
 
         /// <summary>Water velocity at a place and a time, m/s.</summary>
         public Float3 VelocityAt(Float3 at, double seconds) => VelocityAt(at.X, at.Y, at.Z, seconds);
+
+        // ------------------------------------------------------------- the vector potential
+
+        /// <summary>
+        /// Whether this water is the curl of a vector potential <see cref="PotentialAt(float, float, float, double)"/> can
+        /// return — which is what lets <see cref="GridField.Advect"/> carry a uniform
+        /// concentration without disturbing it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Every field here except two is a curl by construction</b>
+        /// (<see cref="TransportAt"/>, <see cref="StreamsAt"/>), and the potential they are the
+        /// curl of is written down in closed form below. The two exceptions:
+        /// </para>
+        /// <para>
+        /// <b><see cref="CurrentMode.Rolls"/> has no potential here</b>, and keeps the
+        /// centre-sampled transport it always had. D037's standing waves are a field of depth,
+        /// time and patch, so a horizontal coordinate buys only a bookkeeping slot and there is
+        /// no face for a circulation to be taken round; every recorded world through round 33
+        /// ran on that scheme and replays on it byte for byte
+        /// (<c>logbook/specs/transport-conserves-spec.md</c>).
+        /// </para>
+        /// <para>
+        /// <b>The vent is not a curl</b>, and is not meant to be: D067's plume and return are
+        /// piecewise constant in the patch and pump water up one patch and down the others, which
+        /// is a source at one seam and a sink at the next as far as any face-flux scheme can see.
+        /// So an active vent takes this to false whatever the mode, and
+        /// <see cref="GridField.Advect"/> refuses such a world rather than carrying it on a
+        /// scheme that would not keep uniform water uniform. No launcher has ever combined the
+        /// vent with the transport field or with a tank.
+        /// </para>
+        /// </remarks>
+        public bool HasPotential =>
+            (_shape == WorldShape.Tank || Mode == CurrentMode.Transport) && !VentActive(_patchCount);
+
+        /// <summary>
+        /// The vector potential <c>A</c> whose curl is <see cref="VelocityAt(float, float, float, double)"/>,
+        /// in Cartesian components, m²/s.
+        /// </summary>
+        /// <param name="x">World x, m.</param>
+        /// <param name="y">World height, m. Zero is the waterline, negative is down.</param>
+        /// <param name="z">World z, m.</param>
+        /// <param name="seconds">The world's clock, s.</param>
+        /// <remarks>
+        /// <para>
+        /// <b>What it is for.</b> The flux of a curl through a face is the circulation of the
+        /// potential round the face's edges, by Stokes, so a grid that samples <i>edges</i> and
+        /// assembles its face fluxes from them gets a discretely divergence-free velocity: every
+        /// edge appears in two faces of a cell with opposite sign, so every cell's net flux is
+        /// exactly zero for any edge values whatever, and a uniform concentration carried by it
+        /// stays uniform to rounding. Sampling the velocity at cell centres, as the grid did
+        /// through round 36, does not have that property: the campaign's own field turned 1
+        /// unit/m³ into 0.36 to 2.45 in 600 s (<c>logbook/specs/transport-conserves-spec.md</c>,
+        /// the Astra review's F1). This is the repair's other half; the grid's edge assembly is
+        /// <see cref="GridField.Advect"/>.
+        /// </para>
+        /// <para>
+        /// <b>Scaled exactly as the velocity is.</b> <see cref="Speed"/>, the measured RMS scale,
+        /// every phase and every envelope are the same numbers the sampler uses, from the same
+        /// tables and the same per-instant memo, because a potential that described a slightly
+        /// different field would put a slow leak in the grid's books that no test of either
+        /// function alone could see. <c>ConservativeTransportTests</c> takes the central-difference
+        /// curl of this and holds it against <see cref="VelocityAt(float, float, float, double)"/>.
+        /// </para>
+        /// <para>
+        /// <b>The horizontal components vanish at the waterline and at the bed</b>, exactly and
+        /// not nearly, for the reason the vertical velocity does: both fields carry
+        /// <c>sin(qπy/D)</c> on every horizontal component of <c>A</c>, and both are special-cased
+        /// to zero at the two faces rather than computed, because <c>Math.Sin(-Math.PI)</c> is
+        /// −1.2e-16. A grid reads that as no flux through the surface and none through the floor.
+        /// </para>
+        /// <para>
+        /// <b>Refuses rather than returning something.</b> A caller that gets an answer here is
+        /// entitled to assume its curl is the water; see <see cref="HasPotential"/> for the two
+        /// fields that have no potential to give.
+        /// </para>
+        /// </remarks>
+        public Float3 PotentialAt(float x, float y, float z, double seconds)
+        {
+            if (!HasPotential)
+            {
+                throw new InvalidOperationException(
+                    "This water is not the curl of a potential this class can write down: " +
+                    FormattableString.Invariant($"mode {Mode}, shape {_shape}, ") +
+                    FormattableString.Invariant($"vent {(VentActive(_patchCount) ? "on" : "off")}. ") +
+                    "Ask HasPotential first. logbook/specs/transport-conserves-spec.md.");
+            }
+
+            if (_speed <= 0f) return Float3.Zero;
+
+            if (_shape == WorldShape.Tank)
+            {
+                EnsureStreams();
+
+                return StreamsPotentialUnit(
+                           x, y, z, 2.0 * Math.PI * seconds / _periodSeconds, _streamsOverturning)
+                       * (_speed * _streamsScale);
+            }
+
+            EnsureTransport();
+
+            return PotentialUnit(x, y, z, 2.0 * Math.PI * seconds / _periodSeconds)
+                   * (_speed * _transportScale);
+        }
+
+        /// <summary>The potential at a place and a time, m²/s.</summary>
+        public Float3 PotentialAt(Float3 at, double seconds) =>
+            PotentialAt(at.X, at.Y, at.Z, seconds);
+
+        /// <summary>
+        /// The transport field's potential at unit <see cref="Speed"/> and unit scale, at a place
+        /// and an already-scaled phase — <see cref="Unit"/>'s own <c>A</c>.
+        /// </summary>
+        /// <remarks>
+        /// <c>A = (Φ·f, 0, Φ·g)</c> term for term with <see cref="Unit"/>'s remarks:
+        /// <c>Φ = sin(k_y·y)</c>, <c>f = a·cos(χ_f)</c>, <c>g = a·cos(χ_g)</c>. Written beside
+        /// <see cref="Unit"/> rather than derived from it so that the two can be read against each
+        /// other in one screen, which is how the curl test's failure would be diagnosed; the same
+        /// clamps, the same <c>atFace</c> zero, and the same tables, so the only way they can part
+        /// is an edit to one and not the other.
+        /// </remarks>
+        private Float3 PotentialUnit(double x, double y, double z, double t)
+        {
+            double depth = _depthMetres;
+
+            if (y > 0d) y = 0d;
+            else if (y < -depth) y = -depth;
+
+            bool atFace = y >= 0d || y <= -depth;
+            if (atFace) return Float3.Zero;
+
+            double ax = 0d, az = 0d;
+
+            for (int m = 0; m < TransportModes; m++)
+            {
+                double phase = _transportKx[m] * x + _transportKz[m] * z;
+                double a = _transportAmplitude[m];
+                double profile = Math.Sin(_transportKy[m] * y);
+
+                ax += profile * a * Math.Cos(phase + _transportPhaseF[m] + _transportRateF[m] * t);
+                az += profile * a * Math.Cos(phase + _transportPhaseG[m] + _transportRateG[m] * t);
+            }
+
+            // A_y is zero for every mode of this field, which is why its x faces read only the
+            // z edges and its z faces only the x edges.
+            return new Float3((float)ax, 0f, (float)az);
+        }
+
+        /// <summary>
+        /// The streams' potential at unit <see cref="Speed"/> and unit scale, at a place and an
+        /// already-scaled phase, with the overturning at <paramref name="overturning"/> —
+        /// <see cref="StreamsUnit"/>'s own <c>A</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Both signs are the ones this frame forces, and neither is the one the cylindrical
+        /// formulae are written in.</b> <c>θ</c> is measured from <c>+x</c> towards <c>+z</c> and
+        /// the third axis is <c>y</c>, so <c>r̂ × θ̂ = −ŷ</c>: the triple <c>(r̂, θ̂, ŷ)</c> is
+        /// <i>left</i>-handed, and every cylindrical curl written the textbook way comes out with
+        /// its sign reversed in Cartesian components. <see cref="StreamsUnit"/>'s remarks are
+        /// written in the cylindrical convention, so this method carries the flip, once for each
+        /// half. Both were derived and then checked numerically against the sampler, which is what
+        /// <c>ConservativeTransportTests</c>'s curl case does at 500 places and five instants.
+        /// </para>
+        /// <para>
+        /// <b>The eddies' half is vertical.</b>
+        /// <c>A_y = −Σ a_k·f_j(s)·cos(mθ + ψ_k)·sin(qπy/D)</c> — the sum
+        /// <see cref="StreamsUnit"/> differentiates in <c>r</c> and <c>θ</c>, negated by the
+        /// paragraph above, with <c>f_1 = s^m(1 − s²)</c> and
+        /// <c>f_2 = s^m(1 − s²)(1 − 2s²)</c>. There the code carries <c>f_j/r</c> because the
+        /// <c>1/r</c> of <c>v_r</c> is cancelled analytically against <c>s^m</c>; here the
+        /// potential itself is wanted, so it is <c>f_j</c>, which is that same expression times
+        /// <c>r</c>. The Cartesian curl of <c>A_y ŷ</c> is <c>v_r = −(1/r)∂A_y/∂θ</c> and
+        /// <c>v_θ = +∂A_y/∂r</c>, which is where the minus comes from.
+        /// </para>
+        /// <para>
+        /// <b>The overturning's half is horizontal.</b> An axisymmetric Stokes stream function
+        /// <c>Ψ</c> comes from an azimuthal potential <c>A_θ</c>, and the flip makes it
+        /// <c>A_θ = −Ψ/r</c> rather than <c>+Ψ/r</c>. Writing <c>W = Ψ/r²</c>, that is
+        /// <c>A = (W·Δz, ·, −W·Δx)</c> in Cartesian components, whose curl is
+        /// <c>v_r = −r·∂W/∂y</c> and <c>v_y = r·∂W/∂r + 2W</c>, term for term the two lines
+        /// <see cref="StreamsUnit"/> accumulates.
+        /// </para>
+        /// </remarks>
+        private Float3 StreamsPotentialUnit(double x, double y, double z, double t, double overturning)
+        {
+            double depth = _depthMetres;
+            double radius = _tankRadiusMetres;
+
+            if (y > 0d) y = 0d;
+            else if (y < -depth) y = -depth;
+
+            // Both halves carry sin(q*pi*y/D) on every component, so at the waterline and at the
+            // bed the whole potential is zero and a grid's surface and floor faces carry nothing.
+            if (y >= 0d || y <= -depth) return Float3.Zero;
+
+            double dx = x - radius;
+            double dz = z - radius;
+            double r = Math.Sqrt(dx * dx + dz * dz);
+            double s = r / radius;
+            if (s > 1d) s = 1d;
+
+            double cosTheta = r > 0d ? dx / r : 1d;
+            double sinTheta = r > 0d ? dz / r : 0d;
+
+            EnsureInstant(t);
+
+            double phi = Math.PI * y / depth;
+            double cosPhi = Math.Cos(phi);
+            double sinPhi = Math.Sin(phi);
+
+            double sin1 = sinPhi;
+            double sin2 = 2d * sinPhi * cosPhi;
+            double sin3 = sinPhi * (4d * cosPhi * cosPhi - 1d);
+
+            // 1. The eddies, into A_y.
+            double ay = 0d;
+
+            double cosM = cosTheta;
+            double sinM = sinTheta;
+
+            int k = 0;
+
+            for (int m = 1; m <= StreamsAzimuthal; m++)
+            {
+                // s^m, which is f_j's leading factor — StreamsUnit keeps s^(m−1) because it
+                // carries f_j/r rather than f_j.
+                double sPow = 1d;
+                for (int i = 0; i < m; i++) sPow *= s;
+
+                double wall = 1d - s * s;
+                double node = 1d - 2d * s * s;
+
+                for (int j = 1; j <= StreamsFamilies; j++)
+                {
+                    double f = j == 1 ? sPow * wall : sPow * wall * node;
+
+                    for (int q = 1; q <= StreamsVertical; q++, k++)
+                    {
+                        double profile = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
+
+                        double amplitude =
+                            _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(k) * profile;
+
+                        double cosChi = cosM * _instantCos[k] - sinM * _instantSin[k];
+
+                        // Minus, for the left-handed frame — see the remarks.
+                        ay -= amplitude * f * cosChi;
+                    }
+                }
+
+                double nextCos = cosM * cosTheta - sinM * sinTheta;
+                double nextSin = sinM * cosTheta + cosM * sinTheta;
+                cosM = nextCos;
+                sinM = nextSin;
+            }
+
+            // 2. The overturning, into the horizontal pair.
+            double w = 0d;
+
+            if (overturning != 0d)
+            {
+                double wall = 1d - s;
+
+                for (int c = 0; c < StreamsCells; c++)
+                {
+                    int q = c + 1;
+                    double amplitude =
+                        overturning * _cellAmplitude[c] * CellEnvelopeOf(c) * _instantCell[c];
+
+                    double sinKy = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
+
+                    w += amplitude * wall * wall * sinKy;
+                }
+            }
+
+            return new Float3((float)(w * dz), (float)ay, (float)(-w * dx));
+        }
+
+        // -------------------------------------------------------- the water's own acceleration
+
+        /// <summary>
+        /// The water's acceleration along its own path at a place and a time, m/s²:
+        /// <c>Du/Dt = ∂u/∂t + (u·∇)u</c>. Zero when <see cref="Speed"/> is 0.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it is for.</b> A parcel of water on a curved streamline is held on it by the
+        /// pressure gradient across the flow, and a body in that water feels the same gradient as
+        /// a force proportional to this — the second term of the Morison equation, D090's
+        /// <see cref="FluidConfig.FluidAccelerationCoefficient"/>,
+        /// <c>logbook/specs/water-carries-spec.md</c>. Without it a body is tied to the water by
+        /// drag alone, fails to turn as sharply as the water does, and drifts outward on every
+        /// curve: a tank becomes a centrifuge, which is what round 37 measured and what
+        /// <c>StreamsTests</c> derives.
+        /// </para>
+        /// <para>
+        /// <b>By central differences on the field itself, not on any grid.</b> The field is
+        /// analytic in place and time, so the honest derivative is a difference of the same
+        /// function a body feels — <see cref="VelocityAt(float, float, float, double)"/>, clamps
+        /// and all. Differencing the water instead against the grid's cells would read the
+        /// advection scheme rather than the water. The steps are
+        /// <see cref="AccelerationSeconds"/> in time and <see cref="AccelerationMetres"/> in
+        /// space: small against every length and time this field varies on (the shortest radial
+        /// stream is about a metre in the campaign's tank, the fastest phase a full turn in
+        /// thousands of seconds), and large enough that the difference of two floats is not
+        /// mostly rounding. <c>FluidAccelerationTests</c> holds it against a difference four
+        /// times finer.
+        /// </para>
+        /// <para>
+        /// <b>The clamps come for free and that is the point.</b> Each of the nine samples goes
+        /// through <see cref="VelocityAt(float, float, float, double)"/>, which reads the nearest
+        /// face outside the box and the glass outside the circle, so a stencil that straddles a
+        /// boundary differences the water that exists rather than an extrapolation of it — and
+        /// the vertical component of the answer is exactly zero at and above the waterline,
+        /// because the field's vertical velocity is exactly zero on that whole plane and the
+        /// remaining term carries <c>u_y</c> = 0 as a factor. D050's rule therefore holds here by
+        /// construction rather than by a clamp; <c>FluidEnvironment</c> applies the clamp anyway,
+        /// and says why.
+        /// </para>
+        /// <para>
+        /// <b>Horizontal differences only where the horizontal is a place.</b> Under
+        /// <see cref="CurrentMode.Rolls"/> the water is a function of depth, time and patch, and
+        /// the patch is a bookkeeping slot (§6.3): differencing x across a patch seam would read
+        /// the step between one roll and the next as an enormous acceleration. So in that mode
+        /// this is <c>∂u/∂t + u_y ∂u/∂y</c>, which is the whole material derivative of a field
+        /// that depends on nothing else. In a tank and under
+        /// <see cref="CurrentMode.Transport"/> the horizontal is a place and all three axes are
+        /// differenced.
+        /// </para>
+        /// <para>
+        /// ⚠ <b>The vent is a step in x and z and this term does not know it.</b> D067's plume and
+        /// return are piecewise constant in the patch, so with a vent active a stencil straddling
+        /// a patch seam reads that step as a spike. Every launcher that has a tank in it leaves
+        /// the vent off, and the coefficient is 0 in every world the vent ever ran in, so the two
+        /// have never met; a world that wants both needs the vent's own derivative written down
+        /// rather than differenced.
+        /// </para>
+        /// <para>
+        /// <b>Nine samples per call</b>, which is why the caller must not ask for it at
+        /// coefficient 0: <c>FluidEnvironment</c> skips this entirely when the term is off. The
+        /// three instants it touches are memoised (see <see cref="EnsureInstant"/>), so the
+        /// 27 terms' trigonometry is rebuilt three times a step rather than three times a call.
+        /// </para>
+        /// <para>
+        /// <b>The tank does not pay that, because the streams are differentiated in closed
+        /// form.</b> Nine samples came to ten times a velocity sample and the build's own estimate
+        /// was that it halved the farm's pace in a tank, which is the campaign's world; so in a
+        /// tank without a vent this calls <see cref="StreamsAccelerationAt"/>, which takes every
+        /// derivative analytically from the same term loop
+        /// (<c>logbook/specs/streams-analytic-spec.md</c>). The stencil above stays for the box —
+        /// the transport field and the rolls — where no round has ever run with the term on and
+        /// the cost is nobody's problem, and for a tank with a vent, whose plume is a step in
+        /// <c>x</c> that neither route differentiates honestly and which is off in every launcher
+        /// that has a tank in it. Which route answered is not observable to a caller beyond the
+        /// accuracy the tests pin: <c>FluidAccelerationTests</c> holds the two against each other
+        /// at 400 places and several instants.
+        /// </para>
+        /// </remarks>
+        public Float3 AccelerationAt(float x, float y, float z, double seconds)
+        {
+            if (_speed <= 0f) return Float3.Zero;
+
+            if (_shape == WorldShape.Tank && !VentActive(_patchCount))
+            {
+                return StreamsAccelerationAt(x, y, z, seconds);
+            }
+
+            return MaterialDerivative(
+                _sampler ?? (_sampler = VelocityAt),
+                x, y, z, seconds,
+                horizontal: _shape == WorldShape.Tank || Mode == CurrentMode.Transport);
+        }
+
+        /// <summary>The water's acceleration at a place and a time, m/s².</summary>
+        public Float3 AccelerationAt(Float3 at, double seconds) =>
+            AccelerationAt(at.X, at.Y, at.Z, seconds);
+
+        /// <summary>
+        /// Held rather than made per call: a method group converted to a delegate allocates, and
+        /// this one would allocate once per part per physics step.
+        /// </summary>
+        private Func<float, float, float, double, Float3> _sampler;
+
+        /// <summary>Half the interval the clock is differenced over, s.</summary>
+        private const double AccelerationSeconds = 0.01d;
+
+        /// <summary>Half the distance each axis is differenced over, m.</summary>
+        private const float AccelerationMetres = 0.05f;
+
+        /// <summary>
+        /// <c>Du/Dt = ∂u/∂t + (u·∇)u</c> of any velocity field, by central differences on the
+        /// field itself — <see cref="AccelerationAt(float, float, float, double)"/>'s arithmetic,
+        /// with the field an argument.
+        /// </summary>
+        /// <param name="water">The field: place and clock in, velocity out.</param>
+        /// <param name="x">World x, m.</param>
+        /// <param name="y">World height, m. Zero is the waterline, negative is down.</param>
+        /// <param name="z">World z, m.</param>
+        /// <param name="seconds">The world's clock, s.</param>
+        /// <param name="horizontal">
+        /// Whether the field's horizontal derivatives mean anything — false leaves
+        /// <c>∂u/∂t + u_y ∂u/∂y</c>, which is the whole answer for a field of depth and time.
+        /// See the remarks on <see cref="AccelerationAt(float, float, float, double)"/>.
+        /// </param>
+        /// <remarks>
+        /// <b>One copy of the stencil, and the field handed in, so that it can be run on fields
+        /// whose answer is known in closed form.</b> A uniform steady flow must give exactly
+        /// zero and a solid-body rotation must give <c>−Ω²r</c>, and neither is a shape this
+        /// class can be configured into; a transcription of the stencil in the test file would
+        /// check the transcription instead (the same argument <c>DragEquivalenceTests</c> makes
+        /// in the other direction). <c>logbook/specs/water-carries-spec.md</c>.
+        /// <para>
+        /// The samples are ordered so that the seven at <paramref name="seconds"/> come before
+        /// the two that move the clock, which keeps a memoised field's instant rebuilds to the
+        /// three distinct times the call asks for.
+        /// </para>
+        /// </remarks>
+        public static Float3 MaterialDerivative(
+            Func<float, float, float, double, Float3> water,
+            float x, float y, float z, double seconds, bool horizontal = true)
+        {
+            if (water == null) throw new ArgumentNullException(nameof(water));
+
+            const float h = AccelerationMetres;
+            const float perMetre = 1f / (2f * h);
+
+            Float3 u = water(x, y, z, seconds);
+            Float3 total = Float3.Zero;
+
+            if (horizontal)
+            {
+                total += (water(x + h, y, z, seconds) - water(x - h, y, z, seconds)) *
+                         (perMetre * u.X);
+                total += (water(x, y, z + h, seconds) - water(x, y, z - h, seconds)) *
+                         (perMetre * u.Z);
+            }
+
+            total += (water(x, y + h, z, seconds) - water(x, y - h, z, seconds)) *
+                     (perMetre * u.Y);
+
+            // The clock last, for the ordering reason in the remarks.
+            const float perSecond = (float)(1d / (2d * AccelerationSeconds));
+
+            total += (water(x, y, z, seconds + AccelerationSeconds) -
+                      water(x, y, z, seconds - AccelerationSeconds)) * perSecond;
+
+            return total;
+        }
 
         /// <summary>
         /// The patch a horizontal position falls in — <c>iz · (K / A) + ix</c>, D077's rule as
@@ -831,10 +1281,10 @@ namespace Evosim.Core
         /// and the fastest water is where the trouble is.
         /// </remarks>
         /// <remarks>
-        /// <b>In a tank it is the gyre's own ceiling</b>, which is measured rather than summed:
-        /// the gyre's three parts are normalised numerically, so there is no closed form to add
+        /// <b>In a tank it is the streams' own ceiling</b>, which is measured rather than summed:
+        /// the streams' two parts are normalised numerically, so there is no closed form to add
         /// up, and the fastest sample on the construction lattice times 1.1 is the bound
-        /// (<see cref="BuildGyre"/>). Same contract either way — a number no argument reaches, so
+        /// (<see cref="BuildStreams"/>). Same contract either way — a number no argument reaches, so
         /// <see cref="GridField.Advect"/>'s Courant logic is unchanged by the shape.
         /// </remarks>
         public float MaximumTransportSpeed
@@ -845,8 +1295,8 @@ namespace Evosim.Core
 
                 if (_shape == WorldShape.Tank)
                 {
-                    EnsureGyre();
-                    return _speed * _gyreBound;
+                    EnsureStreams();
+                    return _speed * _streamsBound;
                 }
 
                 if (Mode != CurrentMode.Transport) return 0f;
@@ -1191,21 +1641,35 @@ namespace Evosim.Core
             return Math.Sqrt(TransportModes) / 2.0;
         }
 
-        // ----------------------------------------------------------------------------- the gyre
+        // --------------------------------------------------------------------------- the streams
 
         /// <summary>
-        /// The tank's water: a slow swirl about the axis, two overturning cells on top of it and
-        /// two horizontal eddies, in units of <see cref="Speed"/>.
-        /// <c>logbook/specs/tank-spec.md</c>, <c>fable-propose-aquarium.md</c> ruling 1.
+        /// The tank's water: a spectrum of horizontal streams with no swirl about the axis, and a
+        /// few overturning cells under them, in units of <see cref="Speed"/>.
+        /// <c>logbook/specs/streams-spec.md</c> and <c>fable-propose-streams.md</c>, ruled
+        /// 2026-09-12. It replaces D089's gyre, whose contract was
+        /// <c>logbook/specs/tank-spec.md</c>.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>Prescribed, divergence-free, and tangential at the glass by construction.</b> Not by
-        /// correction: each of the three parts is either a pure swirl or a curl, so
-        /// <c>div v = 0</c> holds identically rather than at the points a test happens to look —
-        /// the same discipline <see cref="TransportAt"/> keeps and for the same reason. A wall the
-        /// water piled against would be a source of stock at the rim and a sink at the axis, and
-        /// the grid's transfers would carry it faithfully.
+        /// <b>Why the swirl had to go.</b> §5.2's fluid model pulls a body toward the water by
+        /// drag and by nothing else. Real water also holds a parcel on a curved streamline through
+        /// its own pressure gradient, which is the term that keeps plankton with the water; without
+        /// it, any coherent rotation about the axis is a centrifuge for every body in it, whatever
+        /// its density — the body lags the turning water, its inertia carries it straight, and it
+        /// drifts to the rim. Round 37 measured exactly that: the rim ring, a quarter of the area,
+        /// held 58 to 96% of the bodies at every sample of every seed, and at the peaks the
+        /// population was a crust one body thick against the glass in the top three metres. The
+        /// box's D088 transport field is a sum of eddies whose phases drift and never repeat, no
+        /// eddy keeps a centre for long, and round 36 filled the box evenly. That field is the
+        /// model this one follows, in a cylinder.
+        /// </para>
+        /// <para>
+        /// <b>Prescribed, divergence-free, and tangential at the glass by construction</b> — not by
+        /// correction. Every term is a curl, so <c>div v = 0</c> holds identically rather than at
+        /// the points a test happens to look, the same discipline <see cref="TransportAt"/> keeps
+        /// and for the same reason: water piling against a wall would be a source of stock at the
+        /// rim and a sink at the axis, and the grid's transfers would carry it faithfully.
         /// </para>
         /// <para>
         /// <b>In cylindrical coordinates about the axis</b>, with <c>r</c> from the axis at
@@ -1213,42 +1677,70 @@ namespace Evosim.Core
         /// <c>−D</c> to the waterline at 0. Write <c>s = r/R</c>.
         /// </para>
         /// <para>
-        /// <b>1. The swirl</b>, azimuthal only:
-        /// <c>v_θ = S·s(1 − s²)·(1 + ½cos(π y/D))</c>. It depends on <c>r</c> and <c>y</c> and
-        /// nothing else, so its divergence — <c>(1/r)∂v_θ/∂θ</c> — is zero term for term. It
-        /// vanishes on the axis and at the glass, and it turns three times faster at the surface
-        /// than at the bed, which is what a wind-driven tank does.
+        /// <b>1. The streams</b>, horizontal, from a vertical vector potential over a spectrum of
+        /// 24 modes — azimuthal <c>m</c> = 1..4, two radial families <c>j</c> = 1, 2, vertical
+        /// <c>q</c> = 1..3:
+        /// <c>A_y = Σ a_k·f_j(s)·cos(m θ + ψ_k(t))·sin(q π y/D)</c> with
+        /// <c>f_1(s) = s^m(1 − s²)</c> and <c>f_2(s) = s^m(1 − s²)(1 − 2s²)</c>, the second
+        /// carrying an interior node so that a mode's stream is not always one ring wide. The curl
+        /// of a purely vertical potential has no vertical component, so these move water sideways
+        /// only: <c>v_r = (1/r)∂A_y/∂θ</c>, whose <c>1/r</c> is cancelled analytically against
+        /// <c>s^m</c> — <c>f_j(s)/r</c> is <c>s^(m−1)(1 − s²)…/R</c> — which is what makes the axis
+        /// an ordinary point of the field instead of a hole with a tolerance round it, and which
+        /// makes <c>v_r</c> vanish at the glass through the <c>(1 − s²)</c>; and
+        /// <c>v_θ = −∂A_y/∂r</c>, which is free to be anything at the glass because water sliding
+        /// along a vertical cylinder is water in a tank.
         /// </para>
         /// <para>
-        /// <b>2. The overturning</b>, axisymmetric, from a Stokes stream function
-        /// <c>Ψ(r, y) = Ψ₀·r²(1 − r/R)·sin(qπy/D)</c> with <c>v_r = −(1/r)∂Ψ/∂y</c> and
-        /// <c>v_y = (1/r)∂Ψ/∂r</c>, which is divergence-free for any <c>Ψ</c> whatever because the
-        /// two mixed partials cancel. So <c>v_r = −Ψ₀·r(1 − s)(qπ/D)cos(qπy/D)</c>, which vanishes
-        /// at the axis and at the glass, and <c>v_y = Ψ₀(2 − 3s)sin(qπy/D)</c>, which vanishes at
-        /// the surface and at the floor for every whole <c>q</c>. Two cells, <c>q</c> = 1 and 2,
-        /// each with its own slow phase, so the pattern does not stand still.
+        /// <b>The raw amplitudes fall with the mode's wavenumber</b>, <c>a_k = 1/√(m² + j² + q²)</c>,
+        /// so the large streams carry most of the energy as an ocean spectrum does and the small
+        /// ones stir inside them. A flat spectrum would put most of the motion in the fastest,
+        /// smallest modes, which is mixing at a scale below a body and a current a body cannot
+        /// ride.
         /// </para>
         /// <para>
-        /// <b>3. The eddies</b>, horizontal, from a vertical vector potential
-        /// <c>A_y = Σ a_m·f_m(r)·cos(mθ + φ_m + ω_m t)·sin(q_m πy/D)</c> with
-        /// <c>f_m(r) = s^m(1 − s²)</c> for <c>m</c> = 1 and 2. The curl of a purely vertical
-        /// potential has no vertical component, so these move water sideways only:
-        /// <c>v_r = (1/r)∂A_y/∂θ</c>, which carries <c>f_m(r)/r = s^(m−1)(1 − s²)/R</c> and
-        /// therefore vanishes at the glass and is finite on the axis, and
-        /// <c>v_θ = −∂A_y/∂r</c>. The <c>1/r</c> is cancelled analytically rather than guarded
-        /// numerically, which is what makes the axis an ordinary point of the field instead of a
-        /// hole with a tolerance round it.
+        /// <b>2. The overturning</b>, axisymmetric, three cells, from Stokes stream functions
+        /// <c>Ψ_q = Ψ₀·c_q·r²(1 − s)²·sin(qπy/D)</c> with <c>c_q = 1/q</c>,
+        /// <c>v_r = −(1/r)∂Ψ/∂y</c> and <c>v_y = (1/r)∂Ψ/∂r</c>, which is divergence-free for any
+        /// <c>Ψ</c> whatever because the two mixed partials cancel. So
+        /// <c>v_r = −Ψ_q·r(1 − s)²(qπ/D)cos(qπy/D)</c> and
+        /// <c>v_y = 2Ψ_q(1 − s)(1 − 2s)sin(qπy/D)</c>: the wall factor is squared rather than
+        /// linear, which is D089's one change here, so that <i>neither</i> component reaches the
+        /// glass. The gyre's linear <c>(1 − s)</c> left <c>v_y ∝ (2 − 3s)</c>, an upwelling of two
+        /// thirds of the cell's strength <i>along</i> the glass, and that is what held round 37's
+        /// crust at the surface once the swirl had put it at the rim.
         /// </para>
         /// <para>
-        /// <b>The three are balanced numerically, because there is no closed form to balance
-        /// them by.</b> <see cref="BuildGyre"/> measures each part's mean square on a lattice over
-        /// the live volume and a few phases, scales the overturning so that the vertical per-axis
-        /// RMS equals the horizontal per-axis RMS — the owner's "up and down, left and right, in
-        /// all directions really" of 2026-09-10, applied to a second field — and then scales the
-        /// whole thing so the RMS speed is <see cref="Speed"/>. The transport field could do that
-        /// in algebra (<see cref="MeasureTransportScale"/>); three parts of different families
-        /// with cross terms between them cannot, and a measurement that the tests re-take on a
-        /// different lattice is the honest substitute.
+        /// <b>3. Nothing stands still and nothing switches off.</b> Every term's phase advances at
+        /// its own rate <c>ω_k = (2π/Period)(1 + k/φ)</c> — <see cref="Incommensurate"/>'s
+        /// argument, applied to 27 terms rather than two: the ratio of any two rates is irrational,
+        /// so the sum has no period and no parcel is returned to where it started. On top of that
+        /// each term's amplitude is modulated by <c>0.75 + 0.25·sin(ω'_k t + χ_k)</c>, at a rate
+        /// slower than its own phase and turning the other way, so a term breathes between half and
+        /// full strength and never reaches zero. Initial phases and modulation phases are drawn
+        /// from the run seed through this field's own <see cref="Rng"/>, so five seeds of a round
+        /// are five draws of the water as well as of the genome, and one seed replays.
+        /// </para>
+        /// <para>
+        /// <b>A cell's phase still reverses and a stream's does not, and that asymmetry is
+        /// deliberate.</b> A stream's phase sits inside <c>cos(mθ + ψ)</c>, where advancing it
+        /// travels the pattern round the axis rather than turning it off. An axisymmetric cell has
+        /// no <c>θ</c> to travel in, so its phase can only multiply it, and a cell held at one sign
+        /// would be a standing meridional circulation — a steady outward flow at some depths, which
+        /// is a gathering mechanism of exactly the kind this field exists to remove. So the cell
+        /// keeps the gyre's reversing <c>cos(ω_q t + φ_q)</c> and carries the breathing envelope on
+        /// top of it; the envelope is what never switches off.
+        /// </para>
+        /// <para>
+        /// <b>The two parts are balanced numerically, because there is no closed form to balance
+        /// them by.</b> <see cref="BuildStreams"/> measures each part's mean square on a lattice
+        /// over the live volume and many phases, scales the overturning so that the vertical
+        /// per-axis RMS equals the horizontal per-axis RMS — the owner's "up and down, left and
+        /// right, in all directions really" of 2026-09-10 — and then scales the whole thing so the
+        /// RMS speed is <see cref="Speed"/>. The transport field can do that in algebra
+        /// (<see cref="MeasureTransportScale"/>); two families of different shape with cross terms
+        /// between them cannot, and a measurement the tests re-take on a different lattice is the
+        /// honest substitute.
         /// </para>
         /// <para>
         /// <b>Outside the water reads the nearest surface.</b> <c>y</c> is clamped to the box and
@@ -1261,68 +1753,97 @@ namespace Evosim.Core
         /// population six metres into the air (logbook/0022).
         /// </para>
         /// </remarks>
-        private Float3 GyreAt(float x, float y, float z, double seconds)
+        private Float3 StreamsAt(float x, float y, float z, double seconds)
         {
             if (_speed <= 0f) return Float3.Zero;
 
-            EnsureGyre();
+            EnsureStreams();
 
-            return GyreUnit(x, y, z, 2.0 * Math.PI * seconds / _periodSeconds, _gyreOverturning)
-                * (_speed * _gyreScale);
+            return StreamsUnit(x, y, z, 2.0 * Math.PI * seconds / _periodSeconds, _streamsOverturning)
+                * (_speed * _streamsScale);
         }
 
-        /// <summary>How many horizontal eddies the vector potential carries — <c>m</c> = 1 and 2.</summary>
-        private const int GyreEddies = 2;
+        /// <summary>Azimuthal modes the vector potential carries — <c>m</c> = 1..4.</summary>
+        private const int StreamsAzimuthal = 4;
 
-        /// <summary>How many overturning cells the stream function carries — <c>q</c> = 1 and 2.</summary>
-        private const int GyreCells = 2;
+        /// <summary>Radial families per azimuthal mode — <c>j</c> = 1, 2.</summary>
+        private const int StreamsFamilies = 2;
 
-        private bool _gyreBuilt;
-        private double[] _gyreEddyPhase;
-        private double[] _gyreEddyRate;
-        private double[] _gyreCellPhase;
-        private double[] _gyreCellRate;
-        private double _gyreSwirlWeight;
-        private double _gyreEddyWeight;
-        private double _gyreOverturningWeight;
-        private double _gyreOverturning;
-        private float _gyreScale;
-        private float _gyreBound;
+        /// <summary>Vertical modes per stream — <c>q</c> = 1..3.</summary>
+        private const int StreamsVertical = 3;
 
-        /// <summary>The three parts' RMS speeds at the field's own scale, m/s — for the tests.</summary>
+        /// <summary>Stream terms: every combination of <c>m</c>, <c>j</c> and <c>q</c>.</summary>
+        private const int StreamsTerms = StreamsAzimuthal * StreamsFamilies * StreamsVertical;
+
+        /// <summary>Overturning cells the stream functions carry — <c>q</c> = 1..3.</summary>
+        private const int StreamsCells = 3;
+
+        /// <summary>
+        /// Turns per phase step on both construction lattices — deliberately not
+        /// <c>1/</c><see cref="Incommensurate"/>, and <see cref="Walk"/>'s remarks say why.
+        /// </summary>
+        private const double PhaseStepTurns = 1.4142135623730951;
+
+        /// <summary>
+        /// The RMS of a term's breathing envelope, <c>sqrt(0.5625 + 0.03125)</c> — the mean square
+        /// of <c>0.75 + 0.25·sin</c>, in closed form. <see cref="BuildStreams"/> measures with it.
+        /// </summary>
+        private static readonly double EnvelopeRms = Math.Sqrt(0.59375d);
+
+        private bool _streamsBuilt;
+
+        // Per stream term, in the order m (outer), j, q (inner) — which is also the order the seed
+        // is drawn in, so the map from a seed to a field is fixed by this loop and not by chance.
+        private double[] _streamAmplitude;
+        private double[] _streamPhase;
+        private double[] _streamRate;
+        private double[] _streamBreathPhase;
+        private double[] _streamBreathRate;
+
+        // Per overturning cell.
+        private double[] _cellAmplitude;
+        private double[] _cellPhase;
+        private double[] _cellRate;
+        private double[] _cellBreathPhase;
+        private double[] _cellBreathRate;
+
+        private double _streamsEddyWeight;
+        private double _streamsOverturning;
+        private float _streamsScale;
+        private float _streamsBound;
+        private double _streamsRmsEddies;
+        private double _streamsRmsOverturning;
+
+        /// <summary>The two parts' RMS speeds at the field's own scale, m/s — for the tests.</summary>
         /// <remarks>
         /// Exposed so that the dead-pocket and balance checks report the field rather than
         /// asserting it: a number a test prints is a number the caller can read in a build report,
-        /// which is what <c>logbook/specs/tank-spec.md</c> asks of this field before a round runs
-        /// on it.
+        /// which is what <c>logbook/specs/streams-spec.md</c> asks of this field before a round
+        /// runs on it. It was <c>GyreComponentRms</c> and carried a third component, the swirl,
+        /// which no longer exists.
         /// </remarks>
-        public (float Swirl, float Overturning, float Eddies) GyreComponentRms
+        public (float Eddies, float Overturning) StreamsComponentRms
         {
             get
             {
-                if (_shape != WorldShape.Tank) return (0f, 0f, 0f);
-                EnsureGyre();
+                if (_shape != WorldShape.Tank) return (0f, 0f);
+                EnsureStreams();
 
-                float scale = _speed * _gyreScale;
+                float scale = _speed * _streamsScale;
                 return (
-                    (float)(_gyreRmsSwirl * scale),
-                    (float)(_gyreRmsOverturning * _gyreOverturning * scale),
-                    (float)(_gyreRmsEddies * scale));
+                    (float)(_streamsRmsEddies * scale),
+                    (float)(_streamsRmsOverturning * _streamsOverturning * scale));
             }
         }
 
-        private double _gyreRmsSwirl;
-        private double _gyreRmsOverturning;
-        private double _gyreRmsEddies;
-
-        private void EnsureGyre()
+        private void EnsureStreams()
         {
-            if (_gyreBuilt) return;
+            if (_streamsBuilt) return;
 
             if (_shape != WorldShape.Tank)
             {
                 throw new InvalidOperationException(
-                    "The gyre is the tank's water and this field is in a box. Call " +
+                    "The streams are the tank's water and this field is in a box. Call " +
                     "SetBox(..., WorldShape.Tank, radius) first; World's constructor does it for " +
                     "every tank.");
             }
@@ -1330,39 +1851,50 @@ namespace Evosim.Core
             if (!(_tankRadiusMetres > 0f) || !(_depthMetres > 0f))
             {
                 throw new InvalidOperationException(
-                    "The gyre is a field over a tank, and this field has not been told what tank " +
-                    "it is in. " +
+                    "The streams are a field over a tank, and this field has not been told what " +
+                    "tank it is in. " +
                     FormattableString.Invariant(
                         $"Have radius {_tankRadiusMetres} m, depth {_depthMetres} m."));
             }
 
-            BuildGyre();
-            _gyreBuilt = true;
+            BuildStreams();
+            _streamsBuilt = true;
         }
 
         /// <summary>
-        /// Draws the parts' phases from the run's seed, balances the axes and fixes the scale that
+        /// Draws the terms' phases from the run's seed, balances the axes and fixes the scale that
         /// makes the RMS speed the knob.
         /// </summary>
         /// <remarks>
         /// <para>
         /// <b>The balance is one quadratic.</b> Write the overturning's amplitude as <c>β</c> and
-        /// hold the other two at their own unit RMS. The vertical mean square is <c>β²V</c>,
-        /// since only the overturning has a vertical component; the horizontal mean square is
+        /// hold the streams at their own unit RMS. The vertical mean square is <c>β²V</c>, since
+        /// only the overturning has a vertical component; the horizontal mean square is
         /// <c>H₀ + 2βC + β²H₁</c>, with <c>C</c> the cross term between the overturning's radial
-        /// flow and the rest, which is small but is measured rather than assumed away. Per-axis
-        /// equality is <c>β²V = ½(H₀ + 2βC + β²H₁)</c>, so
-        /// <c>β²(V − H₁/2) − βC − H₀/2 = 0</c> and <c>β</c> is its positive root. The
-        /// overturning is about ninety-nine parts vertical in a tank this shape — <c>v_r</c>
-        /// carries a factor <c>qπ/D</c>, which is 0.05 per metre at 60 m — so the root is real and
-        /// well away from the degenerate case; the code checks anyway rather than trusting the
-        /// geometry it happens to be built with.
+        /// flow and the streams, which is small but is measured rather than assumed away. Per-axis
+        /// equality is <c>β²V = ½(H₀ + 2βC + β²H₁)</c>, so <c>β²(V − H₁/2) − βC − H₀/2 = 0</c> and
+        /// <c>β</c> is its positive root. The overturning is nearly all vertical in a tank this
+        /// shape — <c>v_r</c> carries a factor <c>qπ/D</c>, which is 0.05 per metre at 60 m — so
+        /// the root is real and well away from the degenerate case; the code checks anyway rather
+        /// than trusting the geometry it happens to be built with.
         /// </para>
         /// <para>
         /// <b>The lattice is Cartesian over the bounding square and keeps what is inside the
-        /// circle</b>, which is the live volume the mask calls live
-        /// (<see cref="GridField"/>), so the RMS the knob names is the RMS of the water that
-        /// exists rather than of a square that includes four dry corners.
+        /// circle</b>, which is the live volume the mask calls live (<see cref="GridField"/>), so
+        /// the RMS the knob names is the RMS of the water that exists rather than of a square that
+        /// includes four dry corners.
+        /// </para>
+        /// <para>
+        /// <b>The envelopes are averaged in closed form rather than sampled</b>, and that is what
+        /// makes "the RMS is the knob" a statement a second lattice can confirm to 1%. Each term
+        /// breathes as <c>0.75 + 0.25·sin</c>, whose mean square is exactly
+        /// <c>0.5625 + 0.03125 = 0.59375</c>; instantaneously, the field's own RMS runs about 0.75
+        /// to 1.27 of its mean as two dozen envelopes wander in and out of step, and no affordable
+        /// number of phases averages that to a per cent. So the three measurement passes hold every
+        /// envelope at <see cref="EnvelopeRms"/> and the knob names the <i>time-mean</i> RMS
+        /// exactly, leaving the walk to average only the phases — which is what its step is chosen
+        /// for. The fourth pass, the Courant bound, is the exception: a ceiling has to be a
+        /// ceiling, so it runs with every envelope at 1.
         /// </para>
         /// <para>
         /// <b>Independent of <see cref="Speed"/> and <see cref="PeriodSeconds"/></b>, for
@@ -1371,76 +1903,123 @@ namespace Evosim.Core
         /// sample.
         /// </para>
         /// </remarks>
-        private void BuildGyre()
+        private void BuildStreams()
         {
-            _gyreEddyPhase = new double[GyreEddies];
-            _gyreEddyRate = new double[GyreEddies];
-            _gyreCellPhase = new double[GyreCells];
-            _gyreCellRate = new double[GyreCells];
+            _streamAmplitude = new double[StreamsTerms];
+            _streamPhase = new double[StreamsTerms];
+            _streamRate = new double[StreamsTerms];
+            _streamBreathPhase = new double[StreamsTerms];
+            _streamBreathRate = new double[StreamsTerms];
+
+            _cellAmplitude = new double[StreamsCells];
+            _cellPhase = new double[StreamsCells];
+            _cellRate = new double[StreamsCells];
+            _cellBreathPhase = new double[StreamsCells];
+            _cellBreathRate = new double[StreamsCells];
+
+            _slotCos = new double[InstantSlots][];
+            _slotSin = new double[InstantSlots][];
+            _slotEnvelope = new double[InstantSlots][];
+            _slotCellEnvelope = new double[InstantSlots][];
+            _slotCell = new double[InstantSlots][];
+            _slotEnvelopeRate = new double[InstantSlots][];
+            _slotCellEnvelopeRate = new double[InstantSlots][];
+            _slotCellRate = new double[InstantSlots][];
+            _instantAt = new double[InstantSlots];
+            _instantNext = 0;
+
+            for (int slot = 0; slot < InstantSlots; slot++)
+            {
+                _slotCos[slot] = new double[StreamsTerms];
+                _slotSin[slot] = new double[StreamsTerms];
+                _slotEnvelope[slot] = new double[StreamsTerms];
+                _slotCellEnvelope[slot] = new double[StreamsCells];
+                _slotCell[slot] = new double[StreamsCells];
+                _slotEnvelopeRate[slot] = new double[StreamsTerms];
+                _slotCellEnvelopeRate[slot] = new double[StreamsCells];
+                _slotCellRate[slot] = new double[StreamsCells];
+                _instantAt[slot] = double.NaN;
+            }
+
+            Select(0);
 
             var rng = new Rng(_seed);
 
-            // σ_j = 1 + j·φ with φ the golden ratio's reciprocal and alternating signs, over the
-            // four moving halves of the field: the ratio of any two is irrational, so the sum has
-            // no period, no parcel is returned to where it started, and the stirring cannot switch
-            // itself off at a timescale nobody chose. Incommensurate's own argument, applied to
-            // four terms rather than two.
-            for (int m = 0; m < GyreEddies; m++)
+            int k = 0;
+
+            for (int m = 1; m <= StreamsAzimuthal; m++)
             {
-                _gyreEddyPhase[m] = 2.0 * Math.PI * rng.NextFloat();
-                _gyreEddyRate[m] = Rate(m);
+                for (int j = 1; j <= StreamsFamilies; j++)
+                {
+                    for (int q = 1; q <= StreamsVertical; q++)
+                    {
+                        // 1/sqrt(m² + j² + q²): the mode's own wavenumber, counting the radial
+                        // family as a radial wavenumber because that is what the interior node is.
+                        _streamAmplitude[k] = 1d / Math.Sqrt(m * m + j * j + q * q);
+
+                        _streamPhase[k] = 2.0 * Math.PI * rng.NextFloat();
+                        _streamBreathPhase[k] = 2.0 * Math.PI * rng.NextFloat();
+                        _streamRate[k] = Rate(k);
+                        _streamBreathRate[k] = BreathRate(k);
+
+                        k++;
+                    }
+                }
             }
 
-            for (int q = 0; q < GyreCells; q++)
+            for (int q = 1; q <= StreamsCells; q++)
             {
-                _gyreCellPhase[q] = 2.0 * Math.PI * rng.NextFloat();
-                _gyreCellRate[q] = Rate(GyreEddies + q);
+                int c = q - 1;
+
+                _cellAmplitude[c] = 1d / q;
+                _cellPhase[c] = 2.0 * Math.PI * rng.NextFloat();
+                _cellBreathPhase[c] = 2.0 * Math.PI * rng.NextFloat();
+                _cellRate[c] = Rate(StreamsTerms + c);
+                _cellBreathRate[c] = BreathRate(StreamsTerms + c);
             }
 
             // Two passes, because the parts must be comparable before they can be balanced. The
-            // first measures the swirl and the eddies at raw amplitude 1 and gives each the weight
-            // that makes its RMS speed 1; the second measures the balanced pair against the
-            // overturning and solves for the amplitude that squares the axes. Without the first
-            // pass the two horizontal parts would be in whatever ratio their formulae happen to
-            // produce in a tank of this shape, which is a number nobody chose.
-            _gyreSwirlWeight = 1d;
-            _gyreEddyWeight = 1d;
-            _gyreOverturningWeight = 1d;
+            // first measures the streams alone and gives them the weight that makes their RMS
+            // speed 1; the second measures them against the overturning and solves for the
+            // amplitude that squares the axes. Without the first pass the two would be in whatever
+            // ratio their formulae happen to produce in a tank of this shape, which is a number
+            // nobody chose.
+            _streamsEddyWeight = 1d;
 
-            double rawSwirl = 0d, rawEddies = 0d;
+            // Every measurement below holds each envelope at its own RMS rather than at whatever
+            // the sampled phase happens to give it — see the remarks. Cleared before every exit
+            // from this method, the two throws included, so a sampler can never see it.
+            _envelopeOverride = EnvelopeRms;
+
+            double rawEddies = 0d;
             int counted = Walk((x, y, z, t) =>
             {
-                Float3 swirl = GyreUnit(x, y, z, t, 0d, eddies: false);
-                Float3 both = GyreUnit(x, y, z, t, 0d);
-
-                rawSwirl += (double)swirl.X * swirl.X + (double)swirl.Z * swirl.Z;
-
-                double eddyX = both.X - swirl.X;
-                double eddyZ = both.Z - swirl.Z;
-                rawEddies += eddyX * eddyX + eddyZ * eddyZ;
+                Float3 eddies = StreamsUnit(x, y, z, t, 0d);
+                rawEddies += (double)eddies.X * eddies.X + (double)eddies.Z * eddies.Z;
             });
 
-            if (counted == 0 || !(rawSwirl > 0d) || !(rawEddies > 0d))
+            if (counted == 0 || !(rawEddies > 0d))
             {
+                _envelopeOverride = 0d;
+
                 throw new InvalidOperationException(
-                    "The gyre measured nothing over its own tank, which means the lattice found " +
+                    "The streams measured nothing over their own tank, which means the lattice " +
                     FormattableString.Invariant(
-                        $"no live water at radius {_tankRadiusMetres} m and depth {_depthMetres} m."));
+                        $"found no live water at radius {_tankRadiusMetres} m and depth {_depthMetres} m."));
             }
 
-            _gyreSwirlWeight = Math.Sqrt(counted / rawSwirl);
-            _gyreEddyWeight = Math.Sqrt(counted / rawEddies);
+            _streamsEddyWeight = Math.Sqrt(counted / rawEddies);
 
-            // The second pass. `h0` is the mean square of the horizontal flow without the
-            // overturning, `h1` the overturning's own horizontal mean square at unit amplitude,
-            // `cross` the term between them — small, since the overturning is nearly all vertical,
-            // but measured rather than assumed away — and `vertical` its vertical mean square.
+            // The second pass. `h0` is the mean square of the streams' horizontal flow, `h1` the
+            // overturning's own horizontal mean square at unit amplitude, `cross` the term between
+            // them — small, since the overturning is nearly all vertical, but measured rather than
+            // assumed away — and `vertical` its vertical mean square.
             double h0 = 0d, h1 = 0d, cross = 0d, vertical = 0d;
 
             Walk((x, y, z, t) =>
             {
-                Float3 rest = GyreUnit(x, y, z, t, 0d);
-                Float3 whole = GyreUnit(x, y, z, t, 1d);
+                Float3 rest = StreamsUnit(x, y, z, t, 0d);
+                Float3 whole = StreamsUnit(x, y, z, t, 1d);
 
                 double overX = whole.X - rest.X;
                 double overZ = whole.Z - rest.Z;
@@ -1456,49 +2035,63 @@ namespace Evosim.Core
             // and z together, so the condition is beta^2*V = (h0 + 2*beta*C + beta^2*h1)/2.
             double a = (vertical - 0.5 * h1) / counted;
             double b = -cross / counted;
-            double c = -0.5 * h0 / counted;
+            double c0 = -0.5 * h0 / counted;
 
             if (!(a > 1e-12))
             {
+                _envelopeOverride = 0d;
+
                 throw new InvalidOperationException(
                     "The overturning carries no more vertical motion than horizontal, so there is " +
                     "no amplitude at which the axes balance. A tank whose depth is of the order " +
                     "of its radius would do that; this one is not meant to be.");
             }
 
-            _gyreOverturning = (-b + Math.Sqrt(b * b - 4d * a * c)) / (2d * a);
+            _streamsOverturning = (-b + Math.Sqrt(b * b - 4d * a * c0)) / (2d * a);
 
             double meanSquare =
-                (h0 + 2d * _gyreOverturning * cross +
-                 _gyreOverturning * _gyreOverturning * (h1 + vertical)) / counted;
+                (h0 + 2d * _streamsOverturning * cross +
+                 _streamsOverturning * _streamsOverturning * (h1 + vertical)) / counted;
 
-            _gyreScale = (float)(1d / Math.Sqrt(meanSquare));
+            _streamsScale = (float)(1d / Math.Sqrt(meanSquare));
 
-            // The three parts' own RMS speeds at unit Speed and unit scale, kept so that
-            // GyreComponentRms can report them without measuring again. The first two are 1 by
+            // The two parts' own RMS speeds at unit Speed and unit scale, kept so that
+            // StreamsComponentRms can report them without measuring again. The streams' is 1 by
             // construction after the first pass; the overturning's is at unit amplitude, and the
             // property multiplies it by the amplitude just solved for.
-            _gyreRmsSwirl = 1d;
-            _gyreRmsEddies = 1d;
-            _gyreRmsOverturning = Math.Sqrt((h1 + vertical) / counted);
+            _streamsRmsEddies = 1d;
+            _streamsRmsOverturning = Math.Sqrt((h1 + vertical) / counted);
 
-            // The bound, measured on the same lattice with everything applied and lifted a tenth.
-            // The transport field can sum its modes' amplitudes for a ceiling no argument reaches;
-            // three numerically balanced parts have no such sum, so this is the fastest water the
-            // lattice saw plus a margin for the water between its points. GridField.Advect refuses
-            // a step this would carry more than half a cell in, and an under-estimate there would
-            // pass a step the fastest water breaks, so the margin errs upward.
+            // The bound, and it gets a lattice of its own — see WalkForBound. The transport field
+            // can sum its modes' amplitudes for a ceiling no argument reaches; two numerically
+            // balanced parts have no such sum, so this is the fastest water a lattice saw plus a
+            // margin for the water between its points. GridField.Advect refuses a step this would
+            // carry more than half a cell in, and an under-estimate there would pass a step the
+            // fastest water breaks, so the margin errs upward. Every envelope at full for the same
+            // reason: a ceiling has to be a ceiling, and an envelope can reach 1 at any time.
+            _envelopeOverride = 1d;
+
             double fastest = 0d;
 
-            Walk((x, y, z, t) =>
+            WalkForBound((x, y, z, t) =>
             {
-                double speed = (GyreUnit(x, y, z, t, _gyreOverturning) * _gyreScale).Magnitude;
+                double speed = (StreamsUnit(x, y, z, t, _streamsOverturning) * _streamsScale).Magnitude;
                 if (speed > fastest) fastest = speed;
             });
 
-            _gyreBound = (float)(1.1d * fastest);
+            _envelopeOverride = 0d;
 
+            _streamsBound = (float)(1.1d * fastest);
+
+            // The phase rates, in units of 2*pi/Period. Alternating signs, so that the streams do
+            // not all travel round the axis the same way: 24 patterns drifting in one sense would
+            // be a slow rotation of the whole field, which is the swirl this construction exists
+            // to remove, arrived at by the back door.
             double Rate(int j) => ((j & 1) == 0 ? 1.0 : -1.0) * (1.0 + j * Incommensurate);
+
+            // The breathing rate: slower than the term's own phase by a factor of phi and turning
+            // the other way, so that a term's envelope and its phase share no period either.
+            double BreathRate(int j) => -Incommensurate * Rate(j);
         }
 
         /// <summary>
@@ -1507,42 +2100,45 @@ namespace Evosim.Core
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>One walk, three measurements.</b> <see cref="BuildGyre"/> passes over the same
-        /// points three times — to weigh the two horizontal parts against each other, to balance
-        /// them against the overturning, and to find the fastest water — and three copies of a
-        /// triple loop is three places for a lattice to drift.
+        /// <b>One walk, three measurements.</b> <see cref="BuildStreams"/> passes over the same
+        /// points three times — to weigh the streams, to balance them against the overturning, and
+        /// to find the fastest water — and three copies of a triple loop is three places for a
+        /// lattice to drift.
         /// </para>
         /// <para>
         /// <b>Cartesian over the bounding square, keeping what is inside the circle</b>, so the
-        /// measurement is over the live volume the grid's mask calls live rather than over a
-        /// square with four dry corners in it. The lattice is fine enough that a mode with two
-        /// half-sines down the depth and two wavelengths round the rim is sampled many times over,
-        /// and coarse enough that the whole construction is a fraction of a second: about 150,000
-        /// samples a pass.
+        /// measurement is over the live volume the grid's mask calls live rather than over a square
+        /// with four dry corners in it. The lattice is fine enough that a mode with three
+        /// half-sines down the depth and four wavelengths round the rim is sampled several times
+        /// over, and coarse enough that the whole construction is a fraction of a second.
         /// </para>
         /// <para>
-        /// <b>The clock is sampled more finely than the space, and the first build had that the
-        /// wrong way round.</b> Twenty-eight points across and five phases put the RMS 19% above
-        /// the knob and left the vertical axis 1.47 times the horizontal on a second lattice: the
-        /// space is smooth at the scale of the tank and five samples of a cosine are not five
-        /// samples of its mean square. The phases are a golden-ratio sequence,
-        /// <c>t_p = 2π·p/φ</c>, and every drift rate here is <c>±(1 + jφ)</c>, so each mode's own
-        /// phase walks the circle in equal steps of <c>φ</c> and thirty-two of them cover it
-        /// evenly. The same argument <see cref="Incommensurate"/> records, used to sample rather
-        /// than to stir.
+        /// <b>The clock is sampled more finely than the space</b>, and by a step that is
+        /// deliberately <i>not</i> the golden one the gyre used. Every rate here is
+        /// <c>±(1 + k/φ)</c>, so a phase step of <c>φ</c> turns advances term <c>k</c> by
+        /// <c>φ + k</c> turns — the same fraction of a turn for every <c>k</c>. That samples each
+        /// term's own phase evenly and freezes every <i>relative</i> phase at the value the seed
+        /// drew, which cost nothing when the two eddies were orthogonal in <c>θ</c> and costs the
+        /// balance now: the two radial families share an <c>m</c> and a <c>q</c>, so they have a
+        /// cross term, and a measurement that never varies their phase difference measures one
+        /// slice rather than the mean. The step is <c>√2</c> turns instead, for which the
+        /// difference of two terms' advances is <c>√2(k − l)/φ</c> — irrational, so the relative
+        /// phases are sampled too. The breathing envelopes need the phases to be many, since each
+        /// wanders the mean square by a few per cent; 64 of them put the knob and a second
+        /// lattice's reading of it inside the spec's 1%.
         /// </para>
         /// </remarks>
         private int Walk(Action<float, float, float, double> visit)
         {
             const int Horizontal = 22;
             const int Vertical = 16;
-            const int Phases = 32;
+            const int Phases = 64;
 
             int taken = 0;
 
             for (int p = 0; p < Phases; p++)
             {
-                double t = 2.0 * Math.PI * p / Incommensurate;
+                double t = 2.0 * Math.PI * PhaseStepTurns * p;
 
                 for (int iy = 0; iy < Vertical; iy++)
                 {
@@ -1568,23 +2164,229 @@ namespace Evosim.Core
         }
 
         /// <summary>
-        /// The gyre at unit <see cref="Speed"/> and unit scale, at a place and an already-scaled
+        /// Visits a cylindrical lattice that includes the glass itself, for the Courant bound.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The fastest water in this field is at the glass, and a Cartesian lattice never goes
+        /// there.</b> Every stream's radial part carries <c>(1 − s²)</c> and vanishes at the wall
+        /// while its azimuthal part carries <c>f'(s)</c>, which is largest there — <c>∓2</c> for
+        /// every <c>m</c> in the first family and <c>+2</c> in the second — so the wall is where
+        /// two dozen terms are all at full strength at once. <see cref="Walk"/>'s square lattice
+        /// stops half a cell short of it, and the first build's bound came out under the fastest
+        /// sample a test on a finer lattice found: the ceiling was measured on a lattice that
+        /// could not see the ceiling.
+        /// </para>
+        /// <para>
+        /// So this one is polar — <c>s</c> from the axis to 1 <i>inclusive</i>, <c>θ</c> round,
+        /// <c>y</c> through the interior — and it is finer in the two directions the peak is thin
+        /// in. It costs a few hundred thousand samples once per world, which is the same order as
+        /// the three measurement passes together.
+        /// </para>
+        /// </remarks>
+        private void WalkForBound(Action<float, float, float, double> visit)
+        {
+            const int Radial = 24;
+            const int Around = 32;
+            const int Vertical = 20;
+            const int Phases = 48;
+
+            for (int p = 0; p < Phases; p++)
+            {
+                double t = 2.0 * Math.PI * PhaseStepTurns * p;
+
+                for (int iy = 0; iy < Vertical; iy++)
+                {
+                    float y = -(float)((iy + 0.5) * _depthMetres / Vertical);
+
+                    for (int ir = 0; ir < Radial; ir++)
+                    {
+                        double r = _tankRadiusMetres * ir / (Radial - 1.0);
+
+                        for (int ia = 0; ia < Around; ia++)
+                        {
+                            double theta = 2.0 * Math.PI * ia / Around;
+
+                            visit(
+                                (float)(_tankRadiusMetres + r * Math.Cos(theta)),
+                                y,
+                                (float)(_tankRadiusMetres + r * Math.Sin(theta)),
+                                t);
+                        }
+                    }
+                }
+            }
+        }
+
+        // The clock is not a place. Every term's phase, and every term's breathing envelope, is a
+        // function of t alone, and a tank is sampled thousands of times at one t — once per part of
+        // every living body in the drag pass, once per cell in the grid's advection, hundreds of
+        // times a lattice row in the construction. So the 27 terms' temporal factors are computed
+        // once per instant and held here, keyed on the scaled clock itself: a caller that moves the
+        // clock rebuilds them, a caller that does not pays three multiplies a term. Keyed by exact
+        // equality, so the field is the same function of (place, t) whatever order it is asked in;
+        // NaN until the first build, which no t equals.
+        //
+        // A FEW INSTANTS RATHER THAN ONE, since the water's acceleration
+        // (logbook/specs/water-carries-spec.md) differences the field about the clock: every
+        // AccelerationAt call asks for t, t − dt and t + dt, and a one-deep memo would rebuild 27
+        // terms' trigonometry three times per call — about twice the arithmetic of the nine field
+        // samples it is there to serve, paid per part per physics step and per tracer per tracer
+        // step. Four slots hold the three instants a step uses with one spare for the grid's
+        // advection, which runs on the metabolic clock, so the rebuilds are three per step rather
+        // than three per sample. Round-robin eviction, exact-equality lookup: which slot a given t
+        // lands in changes nothing a caller can read, because a slot's contents are a pure
+        // function of t.
+        //
+        // Still single-threaded, and more sharply so than before: a lookup reassigns the five
+        // array fields below, so two threads sampling one field would see each other's slot. No
+        // caller does — FluidEnvironment samples the water in its main-thread gather phase and its
+        // parallel phase touches no field (see the remarks there).
+        private const int InstantSlots = 4;
+
+        private double[] _instantAt;
+        private int _instantNext;
+
+        private double[][] _slotCos;
+        private double[][] _slotSin;
+        private double[][] _slotEnvelope;
+        private double[][] _slotCellEnvelope;
+        private double[][] _slotCell;
+
+        // THE CLOCK DERIVATIVES OF THE SAME THREE, for the analytic acceleration
+        // (logbook/specs/streams-analytic-spec.md). A term's envelope and a cell's reversing phase
+        // are functions of t alone, so their derivatives belong beside them rather than in the
+        // sampler: without this a gradient call would cost 27 Math.Cos and 3 Math.Sin of its own,
+        // per part per physics step, which is most of what the analytic route exists to save.
+        private double[][] _slotEnvelopeRate;
+        private double[][] _slotCellEnvelopeRate;
+        private double[][] _slotCellRate;
+
+        // The slot the last EnsureInstant selected — what StreamsUnit reads.
+        private double[] _instantCos;
+        private double[] _instantSin;
+        private double[] _instantEnvelope;
+        private double[] _instantCellEnvelope;
+        private double[] _instantCell;
+        private double[] _instantEnvelopeRate;
+        private double[] _instantCellEnvelopeRate;
+        private double[] _instantCellRate;
+
+        // Set only inside BuildStreams, and only around the measurement walks — see the remarks
+        // there. Null everywhere else, which is what makes the water a run feels the breathing
+        // field and not a measurement's convenience.
+        private double _envelopeOverride;
+
+        private void EnsureInstant(double t)
+        {
+            for (int slot = 0; slot < InstantSlots; slot++)
+            {
+                // NaN never equals t, so an unfilled slot is simply a miss.
+                if (_instantAt[slot] != t) continue;
+
+                Select(slot);
+                return;
+            }
+
+            int fill = _instantNext;
+            _instantNext = fill + 1 == InstantSlots ? 0 : fill + 1;
+
+            Select(fill);
+
+            // Unkeyed while it is half written, so that a slot can never answer for one instant
+            // with another's trigonometry.
+            _instantAt[fill] = double.NaN;
+
+            for (int k = 0; k < StreamsTerms; k++)
+            {
+                double psi = _streamPhase[k] + _streamRate[k] * t;
+
+                _instantCos[k] = Math.Cos(psi);
+                _instantSin[k] = Math.Sin(psi);
+
+                // Between half and full, never off — the spec's 0.75 + 0.25 sin.
+                double breath = _streamBreathRate[k] * t + _streamBreathPhase[k];
+
+                _instantEnvelope[k] = 0.75d + 0.25d * Math.Sin(breath);
+                _instantEnvelopeRate[k] = 0.25d * _streamBreathRate[k] * Math.Cos(breath);
+            }
+
+            for (int c = 0; c < StreamsCells; c++)
+            {
+                double breath = _cellBreathRate[c] * t + _cellBreathPhase[c];
+                double turn = _cellRate[c] * t + _cellPhase[c];
+
+                _instantCellEnvelope[c] = 0.75d + 0.25d * Math.Sin(breath);
+                _instantCellEnvelopeRate[c] = 0.25d * _cellBreathRate[c] * Math.Cos(breath);
+                _instantCell[c] = Math.Cos(turn);
+                _instantCellRate[c] = -_cellRate[c] * Math.Sin(turn);
+            }
+
+            _instantAt[fill] = t;
+        }
+
+        private void Select(int slot)
+        {
+            _instantCos = _slotCos[slot];
+            _instantSin = _slotSin[slot];
+            _instantEnvelope = _slotEnvelope[slot];
+            _instantCellEnvelope = _slotCellEnvelope[slot];
+            _instantCell = _slotCell[slot];
+            _instantEnvelopeRate = _slotEnvelopeRate[slot];
+            _instantCellEnvelopeRate = _slotCellEnvelopeRate[slot];
+            _instantCellRate = _slotCellRate[slot];
+        }
+
+        /// <summary>
+        /// The envelope term <paramref name="k"/> is at, or whatever
+        /// <see cref="BuildStreams"/>'s measurement is holding every envelope at.
+        /// </summary>
+        private double EnvelopeOf(int k) =>
+            _envelopeOverride > 0d ? _envelopeOverride : _instantEnvelope[k];
+
+        private double CellEnvelopeOf(int c) =>
+            _envelopeOverride > 0d ? _envelopeOverride : _instantCellEnvelope[c];
+
+        /// <summary>
+        /// The clock derivative of the same envelope, which is zero whenever
+        /// <see cref="BuildStreams"/> is holding it at a constant — a held envelope does not
+        /// breathe, and a derivative taken through the override would describe a field the
+        /// measurement is not looking at.
+        /// </summary>
+        private double EnvelopeRateOf(int k) =>
+            _envelopeOverride > 0d ? 0d : _instantEnvelopeRate[k];
+
+        private double CellEnvelopeRateOf(int c) =>
+            _envelopeOverride > 0d ? 0d : _instantCellEnvelopeRate[c];
+
+        /// <summary>
+        /// The streams at unit <see cref="Speed"/> and unit scale, at a place and an already-scaled
         /// phase, with the overturning at <paramref name="overturning"/>.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// One function for the sampler and for the measurement, so the water a run feels and the
         /// water the scale was measured on cannot be two different fields — the discipline
         /// <see cref="Unit"/> keeps for the transport. The overturning's amplitude is an argument
-        /// rather than a field so that <see cref="BuildGyre"/> can separate it from the rest with
-        /// two calls instead of a second copy of the arithmetic.
+        /// rather than a field so that <see cref="BuildStreams"/> can separate it from the streams
+        /// with two calls instead of a second copy of the arithmetic.
+        /// </para>
+        /// <para>
+        /// <b>No trigonometry inside the term loop.</b> <c>cos θ</c> and <c>sin θ</c> are
+        /// <c>dx/r</c> and <c>dz/r</c> already, the multiples <c>cos mθ</c> and <c>sin mθ</c> come
+        /// from them by the angle-sum recurrence, the three <c>sin qπy/D</c> and
+        /// <c>cos qπy/D</c> come from one pair of calls the same way, and each term's own phase and
+        /// envelope were computed once for this instant (<see cref="EnsureInstant"/>). Two dozen
+        /// terms sampled per part per step is a hot loop, and <c>Math.Atan2</c> plus three calls a
+        /// term would be most of it.
+        /// </para>
         /// </remarks>
-        private Float3 GyreUnit(
-            double x, double y, double z, double t, double overturning, bool eddies = true)
+        private Float3 StreamsUnit(double x, double y, double z, double t, double overturning)
         {
             double depth = _depthMetres;
             double radius = _tankRadiusMetres;
 
-            // Outside reads the nearest face — see the remarks on GyreAt.
+            // Outside reads the nearest face — see the remarks on StreamsAt.
             if (y > 0d) y = 0d;
             else if (y < -depth) y = -depth;
 
@@ -1596,65 +2398,567 @@ namespace Evosim.Core
             double s = r / radius;
             if (s > 1d) s = 1d;
 
-            // θ = 0 on the axis, which is not a choice but the limit: the m = 1 eddy's Cartesian
+            // θ = 0 on the axis, which is not a choice but the limit: the m = 1 stream's Cartesian
             // velocity there is the same whichever ray it is approached along (the r and θ terms
             // combine into a constant), and every other term vanishes as r goes to zero.
-            double theta = r > 0d ? Math.Atan2(dz, dx) : 0d;
+            double cosTheta = r > 0d ? dx / r : 1d;
+            double sinTheta = r > 0d ? dz / r : 0d;
+
+            EnsureInstant(t);
 
             double radial = 0d;
             double azimuthal = 0d;
             double vy = 0d;
 
-            // 1. The swirl.
-            azimuthal += _gyreSwirlWeight * s * (1d - s * s) *
-                (1d + 0.5d * Math.Cos(Math.PI * y / depth));
+            // The vertical profiles, sin(q*pi*y/D) and cos(q*pi*y/D) for q = 1..3, by the angle-sum
+            // recurrence from one pair. Exactly zero at the waterline and at the bed, not nearly —
+            // see the remarks on StreamsAt.
+            double phi = Math.PI * y / depth;
+            double cosPhi = Math.Cos(phi);
+            double sinPhi = Math.Sin(phi);
 
-            // 2. The overturning, two cells.
+            double sin1 = atFace ? 0d : sinPhi;
+            double sin2 = atFace ? 0d : 2d * sinPhi * cosPhi;
+            double sin3 = atFace ? 0d : sinPhi * (4d * cosPhi * cosPhi - 1d);
+
+            // 1. The streams.
+            double cosM = cosTheta;
+            double sinM = sinTheta;
+
+            int k = 0;
+
+            for (int m = 1; m <= StreamsAzimuthal; m++)
+            {
+                // s^(m−1), which is what the analytic 1/r cancellation leaves.
+                double sPow = 1d;
+                for (int i = 1; i < m; i++) sPow *= s;
+
+                double wall = 1d - s * s;
+                double node = 1d - 2d * s * s;
+
+                for (int j = 1; j <= StreamsFamilies; j++)
+                {
+                    // f_j(s)/r, written so the axis needs no guard, and f_j'(s), both over R:
+                    //   f_1 = s^m(1 − s²),            f_1' = m·s^(m−1) − (m+2)·s^(m+1)
+                    //   f_2 = s^m(1 − s²)(1 − 2s²),   f_2' = m·s^(m−1) − 3(m+2)·s^(m+1) + 2(m+4)·s^(m+3)
+                    double overR;
+                    double slope;
+
+                    if (j == 1)
+                    {
+                        overR = sPow * wall / radius;
+                        slope = (m * sPow - (m + 2) * sPow * s * s) / radius;
+                    }
+                    else
+                    {
+                        overR = sPow * wall * node / radius;
+                        slope = (m * sPow
+                                 - 3d * (m + 2) * sPow * s * s
+                                 + 2d * (m + 4) * sPow * s * s * s * s) / radius;
+                    }
+
+                    for (int q = 1; q <= StreamsVertical; q++, k++)
+                    {
+                        double profile = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
+                        if (profile == 0d) continue;
+
+                        double amplitude =
+                            _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(k) * profile;
+
+                        // cos(mθ + ψ) and sin(mθ + ψ) from the multiples and the instant's phase.
+                        double cosChi = cosM * _instantCos[k] - sinM * _instantSin[k];
+                        double sinChi = sinM * _instantCos[k] + cosM * _instantSin[k];
+
+                        radial -= amplitude * m * overR * sinChi;
+                        azimuthal -= amplitude * slope * cosChi;
+                    }
+                }
+
+                double nextCos = cosM * cosTheta - sinM * sinTheta;
+                double nextSin = sinM * cosTheta + cosM * sinTheta;
+                cosM = nextCos;
+                sinM = nextSin;
+            }
+
+            // 2. The overturning, three cells.
             if (overturning != 0d)
             {
-                for (int q = 0; q < GyreCells; q++)
+                double cos1 = cosPhi;
+                double cos2 = cosPhi * cosPhi - sinPhi * sinPhi;
+                double cos3 = cosPhi * (4d * cosPhi * cosPhi - 3d);
+
+                double wall = 1d - s;
+
+                for (int c = 0; c < StreamsCells; c++)
                 {
-                    double ky = (q + 1) * Math.PI / depth;
-                    double amplitude = overturning * _gyreOverturningWeight *
-                        Math.Cos(_gyreCellRate[q] * t + _gyreCellPhase[q]);
+                    int q = c + 1;
+                    double ky = q * Math.PI / depth;
+                    double amplitude =
+                        overturning * _cellAmplitude[c] * CellEnvelopeOf(c) * _instantCell[c];
 
-                    radial -= amplitude * r * (1d - s) * ky * Math.Cos(ky * y);
+                    double cosKy = q == 1 ? cos1 : q == 2 ? cos2 : cos3;
+                    double sinKy = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
 
-                    // Exactly zero at the waterline and at the bed, not nearly — see the remarks.
-                    if (!atFace) vy += amplitude * (2d - 3d * s) * Math.Sin(ky * y);
+                    radial -= amplitude * r * wall * wall * ky * cosKy;
+
+                    // Exactly zero at the waterline and at the bed, because sinKy is.
+                    vy += 2d * amplitude * wall * (1d - 2d * s) * sinKy;
                 }
             }
-
-            // 3. The eddies, horizontal only.
-            if (eddies)
-            {
-                for (int e = 0; e < GyreEddies; e++)
-                {
-                    int m = e + 1;
-                    double ky = m * Math.PI / depth;
-                    double profile = atFace ? 0d : Math.Sin(ky * y);
-                    if (profile == 0d) continue;
-
-                    double chi = m * theta + _gyreEddyPhase[e] + _gyreEddyRate[e] * t;
-
-                    // f_m(r)/r, written as s^(m−1)(1 − s²)/R so the axis needs no guard, and
-                    // f_m'(r) = [m·s^(m−1) − (m + 2)·s^(m+1)]/R.
-                    double sPow = Math.Pow(s, m - 1);
-                    double overR = sPow * (1d - s * s) / radius;
-                    double slope = (m * sPow - (m + 2) * sPow * s * s) / radius;
-
-                    radial -= _gyreEddyWeight * m * overR * Math.Sin(chi) * profile;
-                    azimuthal -= _gyreEddyWeight * slope * Math.Cos(chi) * profile;
-                }
-            }
-
-            double cos = r > 0d ? dx / r : 1d;
-            double sin = r > 0d ? dz / r : 0d;
 
             return new Float3(
-                (float)(radial * cos - azimuthal * sin),
+                (float)(radial * cosTheta - azimuthal * sinTheta),
                 (float)vy,
-                (float)(radial * sin + azimuthal * cos));
+                (float)(radial * sinTheta + azimuthal * cosTheta));
+        }
+
+        /// <summary>
+        /// The streams at unit <see cref="Speed"/> and unit scale, with their clock derivative and
+        /// their Cartesian Jacobian — what <see cref="StreamsUnitWithGradient"/> returns.
+        /// </summary>
+        /// <remarks>
+        /// A struct rather than a tuple of twelve, and returned by value: this is built once per
+        /// part per physics step and an allocation there would be a per-step allocation.
+        /// </remarks>
+        private struct StreamsGradient
+        {
+            /// <summary>The velocity, m/s per unit of scale.</summary>
+            public double Vx, Vy, Vz;
+
+            /// <summary>
+            /// <c>∂u/∂t</c> at a fixed place, per unit of <see cref="StreamsUnit"/>'s <i>scaled</i>
+            /// clock — the caller multiplies by <c>2π/Period</c> to get seconds.
+            /// </summary>
+            public double Tx, Ty, Tz;
+
+            /// <summary><c>∂v_x/∂x</c>, <c>∂v_x/∂y</c>, <c>∂v_x/∂z</c>, per metre.</summary>
+            public double Xx, Xy, Xz;
+
+            /// <summary><c>∂v_y/∂x</c>, <c>∂v_y/∂y</c>, <c>∂v_y/∂z</c>, per metre.</summary>
+            public double Yx, Yy, Yz;
+
+            /// <summary><c>∂v_z/∂x</c>, <c>∂v_z/∂y</c>, <c>∂v_z/∂z</c>, per metre.</summary>
+            public double Zx, Zy, Zz;
+        }
+
+        /// <summary>
+        /// <see cref="StreamsUnit"/>'s field, its clock derivative and its 3×3 Jacobian, all in
+        /// closed form from one pass over the same 27 terms —
+        /// <c>logbook/specs/streams-analytic-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why at all.</b> <see cref="AccelerationAt(float, float, float, double)"/> differenced
+        /// the field nine times per part per physics step, about ten times a velocity sample, and
+        /// the term was measured to halve the farm's pace in a tank. Every factor of this field is
+        /// a polynomial in place, a cosine in <c>θ</c>, a sine in <c>y</c> and a phase and an
+        /// envelope in <c>t</c>, so all twelve derivatives are available from the factors already
+        /// being multiplied together, and <c>(u·∇)u</c> becomes one matrix-vector product.
+        /// </para>
+        /// <para>
+        /// <b>In Cartesian from the start, and that is the whole trick.</b> The cylindrical
+        /// derivatives of this field are individually infinite on the axis — <c>v_r</c> and
+        /// <c>v_θ</c> of the <c>m</c> = 1 stream both go as <c>sin(θ + ψ)</c> there, whose
+        /// <c>θ</c> derivative divided by <c>r</c> diverges — and they cancel only in the sum, so a
+        /// Jacobian assembled from them would lose most of its digits near the axis. Written in
+        /// <c>C_n = s^n cos nθ</c> and <c>S_n = s^n sin nθ</c>, which are the real and imaginary
+        /// parts of <c>((x + iz)/R)^n</c> and therefore honest polynomials, every derivative is a
+        /// product of finite things: <c>∂C_n/∂x = n·C_{n-1}/R</c> and <c>∂S_n/∂x = n·S_{n-1}/R</c>,
+        /// with <c>∂C_n/∂z = −n·S_{n-1}/R</c> and <c>∂S_n/∂z = n·C_{n-1}/R</c>. The axis needs no
+        /// more of a guard here than <see cref="StreamsUnit"/> gives it.
+        /// </para>
+        /// <para>
+        /// <b>The one identity this rests on.</b> A stream term's two cylindrical components carry
+        /// <c>sin(mθ + ψ)</c> and <c>cos(mθ + ψ)</c> against <c>cos θ</c> and <c>sin θ</c> when
+        /// they are rotated into Cartesian, and the products split into <c>(m ± 1)θ</c>. Writing
+        /// <c>u = s²</c>, <c>m·f_j(s)/r − f_j'(s)</c> is <c>2s^{m+1}α_j(u)/R</c> and
+        /// <c>m·f_j(s)/r + f_j'(s)</c> is <c>2s^{m-1}β_j(u)/R</c> with
+        /// <c>α_1 = 1</c>, <c>β_1 = m − (m+1)u</c>, <c>α_2 = 3 − 4u</c> and
+        /// <c>β_2 = m − 3(m+1)u + (2m+4)u²</c> — polynomials, the odd powers of <c>s</c> gone. So
+        /// <c>v_x = −(B/R)[α·Ps_{m+1} + β·Ps_{m-1}]</c> and
+        /// <c>v_z = −(B/R)[−α·Pc_{m+1} + β·Pc_{m-1}]</c>, writing <c>Ps_n = s^n sin(nθ + ψ)</c>,
+        /// <c>Pc_n = s^n cos(nθ + ψ)</c> and <c>B</c> for the term's amplitude, envelope and
+        /// vertical profile. Everything below is those two expressions differentiated.
+        /// </para>
+        /// <para>
+        /// <b>Six terms at a time, not one.</b> <c>α</c>, <c>β</c> and the four <c>(C_n, S_n)</c>
+        /// pairs depend only on <c>m</c>, <c>j</c> and the place, so the three vertical modes of
+        /// one <c>(m, j)</c> can be summed into four <c>(Σw·cos ψ, Σw·sin ψ)</c> pairs first and
+        /// rotated into Cartesian once — <c>Σw·Ps_n = S_n·Σw cos ψ + C_n·Σw sin ψ</c>, which is
+        /// what makes a weighted sum over terms as cheap as one term. The four weights are the
+        /// amplitude itself, its <c>y</c> derivative, its envelope's clock derivative and the
+        /// amplitude against the term's own phase rate; the last two are <c>∂u/∂t</c>'s two
+        /// halves, the envelope's and the travelling phase's.
+        /// </para>
+        /// <para>
+        /// <b>The overturning needs no such care.</b> Its radial velocity carries a factor
+        /// <c>r</c> which cancels the <c>1/r</c> of the rotation exactly, so
+        /// <c>v_x = −A·k_q·cos(k_q y)·(1 − s)²·x</c> in Cartesian directly. Its one rough edge is
+        /// the axis, where <c>(1 − s)</c> has a <c>|r|</c> kink: <c>∂s/∂x = x/(rR)</c> is bounded
+        /// but direction-dependent there, and it is set to zero at <c>r</c> = 0 exactly, which is
+        /// the mean over directions. <see cref="StreamsUnit"/> has the same kink and the finite
+        /// difference smeared it over 5 cm; neither is a statement about water a body can be in.
+        /// </para>
+        /// <para>
+        /// <b>Outside the water, the boundary's own derivative.</b> <c>y</c> is clamped to the box
+        /// and <c>s</c> to 1 before anything is computed, exactly as
+        /// <see cref="StreamsUnit"/> clamps them, and the derivatives are then the field's at the
+        /// clamped place — the nearest point of the surface, the bed or the glass. That is a
+        /// choice and not a derivation: the clamped field is constant along the direction it was
+        /// clamped in, so its true derivative there is zero on one side and the interior's on the
+        /// other, and a central difference returned half of the interior's. The boundary's own is
+        /// the one that keeps <c>Du/Dt</c> continuous as a body crosses back in, and the vertical
+        /// component still comes out exactly zero at and above the waterline for the reason
+        /// <see cref="AccelerationAt(float, float, float, double)"/> gives: every term of it
+        /// carries <c>sin(qπy/D)</c> or <c>v_y</c> as a factor and both are exactly zero there.
+        /// </para>
+        /// <para>
+        /// <b>Checked against the stencil rather than argued for.</b> A second derivation of a
+        /// field is exactly the kind of code that is wrong quietly, so
+        /// <c>FluidAccelerationTests</c> holds this against
+        /// <see cref="MaterialDerivative"/> at 400 places and several instants, holds the
+        /// velocity it computes on the way against <see cref="StreamsAt"/>'s, and holds the
+        /// Jacobian's trace against zero — the field is divergence-free by construction, and a
+        /// trace that is not zero is a Jacobian with a term in the wrong place.
+        /// </para>
+        /// </remarks>
+        private StreamsGradient StreamsUnitWithGradient(
+            double x, double y, double z, double t, double overturning)
+        {
+            double depth = _depthMetres;
+            double radius = _tankRadiusMetres;
+
+            // The clamps, before anything is computed — see the remarks.
+            if (y > 0d) y = 0d;
+            else if (y < -depth) y = -depth;
+
+            bool atFace = y >= 0d || y <= -depth;
+
+            double dx = x - radius;
+            double dz = z - radius;
+            double r = Math.Sqrt(dx * dx + dz * dz);
+
+            double cosTheta = r > 0d ? dx / r : 1d;
+            double sinTheta = r > 0d ? dz / r : 0d;
+
+            // Past the glass, the whole point is moved onto it rather than only its s — so that
+            // every factor below, the offsets dx and dz included, describes one place. The
+            // velocity is unchanged by that (StreamsUnit clamps s and its overturning carries a
+            // (1 - s) that is zero there anyway, so the two still agree to the float); the
+            // derivatives become the glass's own rather than a mixture of the glass's angle and
+            // the point's offset.
+            if (r > radius)
+            {
+                dx = radius * cosTheta;
+                dz = radius * sinTheta;
+                r = radius;
+            }
+
+            double s = r / radius;
+            double u = s * s;
+
+            EnsureInstant(t);
+
+            // The vertical profiles and their y derivatives: d sin(q*pi*y/D)/dy is
+            // (q*pi/D)*cos(q*pi*y/D), and the cosines are wanted by the overturning anyway.
+            double phi = Math.PI * y / depth;
+            double cosPhi = Math.Cos(phi);
+            double sinPhi = Math.Sin(phi);
+
+            double sin1 = atFace ? 0d : sinPhi;
+            double sin2 = atFace ? 0d : 2d * sinPhi * cosPhi;
+            double sin3 = atFace ? 0d : sinPhi * (4d * cosPhi * cosPhi - 1d);
+
+            double cos1 = cosPhi;
+            double cos2 = cosPhi * cosPhi - sinPhi * sinPhi;
+            double cos3 = cosPhi * (4d * cosPhi * cosPhi - 3d);
+
+            // du/dx and du/dz of u = s^2 = (dx^2 + dz^2)/R^2, which is how alpha and beta vary
+            // with place.
+            double invR = 1d / radius;
+            double gx = 2d * dx * invR * invR;
+            double gz = 2d * dz * invR * invR;
+
+            // The eddies' sums, without the common -1/R which is applied once at the end.
+            double eVx = 0d, eVz = 0d;
+            double eTx = 0d, eTz = 0d;
+            double eXx = 0d, eXy = 0d, eXz = 0d;
+            double eZx = 0d, eZy = 0d, eZz = 0d;
+
+            // A sliding window of (C_n, S_n) over n = m-2, m-1, m, m+1, by the same angle-sum
+            // recurrence StreamsUnit uses for cos m*theta: C_{n+1} = s*(C_n*cos - S_n*sin).
+            // n = -1 at m = 1 is never read, because its coefficient carries a factor (m - 1).
+            double ca = 0d, sa = 0d;
+            double cb = 1d, sb = 0d;
+            double cc = s * cosTheta, sc = s * sinTheta;
+            double cd = s * (cc * cosTheta - sc * sinTheta);
+            double sd = s * (sc * cosTheta + cc * sinTheta);
+
+            int k = 0;
+
+            for (int m = 1; m <= StreamsAzimuthal; m++)
+            {
+                double mp = (m + 1) * invR;
+                double mm = (m - 1) * invR;
+
+                for (int j = 1; j <= StreamsFamilies; j++)
+                {
+                    double alpha, alphaU, beta, betaU;
+
+                    if (j == 1)
+                    {
+                        alpha = 1d;
+                        alphaU = 0d;
+                        beta = m - (m + 1) * u;
+                        betaU = -(m + 1);
+                    }
+                    else
+                    {
+                        alpha = 3d - 4d * u;
+                        alphaU = -4d;
+                        beta = m - 3d * (m + 1) * u + (2 * m + 4) * u * u;
+                        betaU = -3d * (m + 1) + 2d * (2 * m + 4) * u;
+                    }
+
+                    // The three vertical modes, summed against four weights before any rotation.
+                    double bc = 0d, bs = 0d;
+                    double yc = 0d, ys = 0d;
+                    double tc = 0d, ts = 0d;
+                    double wc = 0d, ws = 0d;
+
+                    for (int q = 1; q <= StreamsVertical; q++, k++)
+                    {
+                        double profile = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
+                        double ky = q * Math.PI / depth;
+                        double slope = ky * (q == 1 ? cos1 : q == 2 ? cos2 : cos3);
+
+                        double raw = _streamsEddyWeight * _streamAmplitude[k];
+                        double envelope = EnvelopeOf(k);
+
+                        // The amplitude, its y derivative, its envelope's clock derivative, and
+                        // itself against the phase rate. No test for a zero profile: at a face the
+                        // amplitude is zero and its y derivative is not.
+                        double b = raw * envelope * profile;
+                        double by = raw * envelope * slope;
+                        double bt = raw * EnvelopeRateOf(k) * profile;
+                        double bw = b * _streamRate[k];
+
+                        double cosPsi = _instantCos[k];
+                        double sinPsi = _instantSin[k];
+
+                        bc += b * cosPsi;
+                        bs += b * sinPsi;
+                        yc += by * cosPsi;
+                        ys += by * sinPsi;
+                        tc += bt * cosPsi;
+                        ts += bt * sinPsi;
+                        wc += bw * cosPsi;
+                        ws += bw * sinPsi;
+                    }
+
+                    // Ps_n and Pc_n of each weighted sum, at the four radial orders. Ps at n = m+1
+                    // and n = m-1 carry the velocity; n = m and n = m-2 appear only through the
+                    // derivative of Ps_n and Pc_n, which drops the order by one.
+                    double psD = sd * bc + cd * bs, pcD = cd * bc - sd * bs;
+                    double psC = sc * bc + cc * bs, pcC = cc * bc - sc * bs;
+                    double psB = sb * bc + cb * bs, pcB = cb * bc - sb * bs;
+                    double psA = sa * bc + ca * bs, pcA = ca * bc - sa * bs;
+
+                    double ysD = sd * yc + cd * ys, ycD = cd * yc - sd * ys;
+                    double ysB = sb * yc + cb * ys, ycB = cb * yc - sb * ys;
+
+                    double tsD = sd * tc + cd * ts, tcD = cd * tc - sd * ts;
+                    double tsB = sb * tc + cb * ts, tcB = cb * tc - sb * ts;
+
+                    double wsD = sd * wc + cd * ws, wcD = cd * wc - sd * ws;
+                    double wsB = sb * wc + cb * ws, wcB = cb * wc - sb * ws;
+
+                    eVx += alpha * psD + beta * psB;
+                    eVz += -alpha * pcD + beta * pcB;
+
+                    eXx += alphaU * gx * psD + alpha * mp * psC +
+                           betaU * gx * psB + beta * mm * psA;
+                    eXz += alphaU * gz * psD + alpha * mp * pcC +
+                           betaU * gz * psB + beta * mm * pcA;
+                    eZx += -alphaU * gx * pcD - alpha * mp * pcC +
+                           betaU * gx * pcB + beta * mm * pcA;
+                    eZz += -alphaU * gz * pcD + alpha * mp * psC +
+                           betaU * gz * pcB - beta * mm * psA;
+
+                    eXy += alpha * ysD + beta * ysB;
+                    eZy += -alpha * ycD + beta * ycB;
+
+                    // The envelope's half of d/dt, and the travelling phase's: d Ps_n/d psi is
+                    // Pc_n and d Pc_n/d psi is -Ps_n.
+                    eTx += alpha * tsD + beta * tsB + alpha * wcD + beta * wcB;
+                    eTz += -alpha * tcD + beta * tcB + alpha * wsD - beta * wsB;
+                }
+
+                ca = cb; sa = sb;
+                cb = cc; sb = sc;
+                cc = cd; sc = sd;
+
+                double nextC = s * (cc * cosTheta - sc * sinTheta);
+                double nextS = s * (sc * cosTheta + cc * sinTheta);
+                cd = nextC; sd = nextS;
+            }
+
+            var g = default(StreamsGradient);
+
+            g.Vx = -eVx * invR;
+            g.Vz = -eVz * invR;
+            g.Tx = -eTx * invR;
+            g.Tz = -eTz * invR;
+            g.Xx = -eXx * invR;
+            g.Xy = -eXy * invR;
+            g.Xz = -eXz * invR;
+            g.Zx = -eZx * invR;
+            g.Zy = -eZy * invR;
+            g.Zz = -eZz * invR;
+
+            // The eddies are the curl of a purely vertical potential, so they carry no vertical
+            // velocity at all and nothing of v_y comes from them.
+
+            if (overturning == 0d) return g;
+
+            double wall = 1d - s;
+            double wallSquared = wall * wall;
+            double wallSlope = -2d * wall;
+
+            // V(s) = 2(1 - s)(1 - 2s) is the vertical profile's radial shape and V'(s) its slope.
+            double vertical = 2d * wall * (1d - 2d * s);
+            double verticalSlope = 2d * (4d * s - 3d);
+
+            // ds/dx and ds/dz. Zero on the axis, where |r| has a kink — see the remarks.
+            double sx = r > 0d ? dx / (r * radius) : 0d;
+            double sz = r > 0d ? dz / (r * radius) : 0d;
+
+            for (int c = 0; c < StreamsCells; c++)
+            {
+                int q = c + 1;
+                double ky = q * Math.PI / depth;
+
+                double raw = overturning * _cellAmplitude[c];
+                double envelope = CellEnvelopeOf(c);
+                double turn = _instantCell[c];
+
+                double amplitude = raw * envelope * turn;
+                double rate = raw * (CellEnvelopeRateOf(c) * turn +
+                                     envelope * _instantCellRate[c]);
+
+                double cosKy = q == 1 ? cos1 : q == 2 ? cos2 : cos3;
+                double sinKy = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
+
+                // v_x = -A*k*cos(k y)*(1 - s)^2*dx, v_z the same in dz, v_y = A*V(s)*sin(k y).
+                double horizontal = amplitude * ky * cosKy;
+                double horizontalRate = rate * ky * cosKy;
+
+                g.Vx -= horizontal * wallSquared * dx;
+                g.Vz -= horizontal * wallSquared * dz;
+                g.Vy += amplitude * vertical * sinKy;
+
+                g.Xx -= horizontal * (wallSquared + wallSlope * sx * dx);
+                g.Xz -= horizontal * wallSlope * sz * dx;
+                g.Zx -= horizontal * wallSlope * sx * dz;
+                g.Zz -= horizontal * (wallSquared + wallSlope * sz * dz);
+
+                // d cos(k y)/dy = -k sin(k y), so the y derivative of the horizontal flips sign.
+                g.Xy += amplitude * ky * ky * sinKy * wallSquared * dx;
+                g.Zy += amplitude * ky * ky * sinKy * wallSquared * dz;
+
+                g.Yx += amplitude * verticalSlope * sx * sinKy;
+                g.Yz += amplitude * verticalSlope * sz * sinKy;
+                g.Yy += amplitude * vertical * ky * cosKy;
+
+                g.Tx -= horizontalRate * wallSquared * dx;
+                g.Tz -= horizontalRate * wallSquared * dz;
+                g.Ty += rate * vertical * sinKy;
+            }
+
+            return g;
+        }
+
+        /// <summary>
+        /// <c>Du/Dt</c> of the tank's streams in closed form —
+        /// <see cref="AccelerationAt(float, float, float, double)"/>'s analytic route.
+        /// </summary>
+        /// <remarks>
+        /// <b>The scale enters twice and not once.</b> <see cref="StreamsUnitWithGradient"/>
+        /// returns the field at unit <see cref="Speed"/> and unit scale, and the real field is
+        /// <c>σ</c> times it with <c>σ = Speed·scale</c>. So <c>∂u/∂t</c> carries one factor of
+        /// <c>σ</c> and <c>(u·∇)u</c> carries two, which is the one place a normalisation can be
+        /// got wrong without any test of the velocity noticing. The clock carries its own factor:
+        /// <see cref="StreamsUnit"/>'s <c>t</c> is <c>2π·seconds/Period</c>.
+        /// </remarks>
+        private Float3 StreamsAccelerationAt(float x, float y, float z, double seconds)
+        {
+            EnsureStreams();
+
+            double clock = 2.0 * Math.PI / _periodSeconds;
+
+            StreamsGradient g = StreamsUnitWithGradient(
+                x, y, z, clock * seconds, _streamsOverturning);
+
+            double sigma = (double)_speed * _streamsScale;
+            double perSecond = sigma * clock;
+            double squared = sigma * sigma;
+
+            return new Float3(
+                (float)(perSecond * g.Tx +
+                        squared * (g.Vx * g.Xx + g.Vy * g.Xy + g.Vz * g.Xz)),
+                (float)(perSecond * g.Ty +
+                        squared * (g.Vx * g.Yx + g.Vy * g.Yy + g.Vz * g.Yz)),
+                (float)(perSecond * g.Tz +
+                        squared * (g.Vx * g.Zx + g.Vy * g.Zy + g.Vz * g.Zz)));
+        }
+
+        /// <summary>
+        /// The analytic route's three pieces at a place and a time, at the field's own scale: the
+        /// velocity it computes on the way, <c>∂u/∂t</c> in seconds, and the divergence of its
+        /// Jacobian, per second.
+        /// </summary>
+        /// <remarks>
+        /// <b>Public for the tests, and for the reason <see cref="StreamsComponentRms"/> is.</b>
+        /// <see cref="AccelerationAt(float, float, float, double)"/> returns one vector in which
+        /// <c>∂u/∂t</c> and <c>(u·∇)u</c> are already added together and the Jacobian's nine
+        /// entries appear only contracted against <c>u</c>, so a disagreement with the stencil
+        /// cannot be localised from it. These three can be checked one at a time: the velocity
+        /// against <see cref="VelocityAt(float, float, float, double)"/>, the clock derivative
+        /// against a difference in <c>t</c> alone, and the divergence against zero — which the
+        /// field is by construction, both parts of it being curls.
+        /// </remarks>
+        /// <param name="x">World x, m.</param>
+        /// <param name="y">World height, m. Zero is the waterline, negative is down.</param>
+        /// <param name="z">World z, m.</param>
+        /// <param name="seconds">The world's clock, s.</param>
+        public (Float3 Velocity, Float3 TimeDerivative, float Divergence) StreamsGradientAt(
+            float x, float y, float z, double seconds)
+        {
+            if (_shape != WorldShape.Tank)
+            {
+                throw new InvalidOperationException(
+                    "The streams are the tank's water and this field is in a box.");
+            }
+
+            if (_speed <= 0f) return (Float3.Zero, Float3.Zero, 0f);
+
+            EnsureStreams();
+
+            double clock = 2.0 * Math.PI / _periodSeconds;
+
+            StreamsGradient g = StreamsUnitWithGradient(
+                x, y, z, clock * seconds, _streamsOverturning);
+
+            double sigma = (double)_speed * _streamsScale;
+            double perSecond = sigma * clock;
+
+            return (
+                new Float3((float)(sigma * g.Vx), (float)(sigma * g.Vy), (float)(sigma * g.Vz)),
+                new Float3(
+                    (float)(perSecond * g.Tx),
+                    (float)(perSecond * g.Ty),
+                    (float)(perSecond * g.Tz)),
+                (float)(sigma * (g.Xx + g.Yy + g.Zz)));
         }
 
         /// <summary>
@@ -2044,11 +3348,13 @@ namespace Evosim.Core
             (_speed <= 0f
                 ? "still water"
                 : (_shape == WorldShape.Tank
-                      // The gyre is chosen by the shape and not by the mode, so the string says
-                      // gyre wherever the water is a tank's — a header that printed "transport"
-                      // for a field with no rings in it would name a knob the run did not spend.
+                      // The streams are chosen by the shape and not by the mode, so the string
+                      // says streams wherever the water is a tank's — a header that printed
+                      // "transport" for a field with no rings in it would name a knob the run did
+                      // not spend. It read "gyre" until 2026-09-12; a header naming the field the
+                      // run did not have is how a reading gets filed under the wrong water.
                       ? FormattableString.Invariant(
-                            $"{_speed:0.###} m/s RMS gyre, {_periodSeconds:0.#} s period")
+                            $"{_speed:0.###} m/s RMS streams, {_periodSeconds:0.#} s period")
                       : Mode == CurrentMode.Transport
                       // The knob means the RMS over the box here and the peak under the rolls, so
                       // the string says which rather than printing one number under two meanings.

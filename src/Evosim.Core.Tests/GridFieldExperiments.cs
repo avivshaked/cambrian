@@ -139,11 +139,11 @@ namespace Evosim.Core.Tests
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>No gyre.</b> This reruns the box variant's own scripted mover — a straight track at
-        /// a fixed speed — rather than driving either body with <see cref="CurrentField"/>'s gyre;
+        /// <b>No current.</b> This reruns the box variant's own scripted mover — a straight track
+        /// at a fixed speed — rather than driving either body with the tank's own streams;
         /// the check asks what the mask and the mixing do to a mouth's reach, the same question
         /// the box asked, not what the current adds on top of it. That is a deliberate narrowing
-        /// to keep this cheap, not a claim the gyre does nothing — a current-driven version is a
+        /// to keep this cheap, not a claim the current does nothing — a current-driven version is a
         /// different, larger check than the proposal's check 6 asks for.
         /// </para>
         /// <para>

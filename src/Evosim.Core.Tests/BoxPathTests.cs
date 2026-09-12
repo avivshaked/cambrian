@@ -26,10 +26,24 @@ namespace Evosim.Core.Tests
     /// recorded world, and the second kind is a decision, not an edit.
     /// </para>
     /// <para>
+    /// <b>Two of the four were re-recorded on 2026-09-12, and that is the second kind.</b>
+    /// <c>logbook/specs/transport-conserves-spec.md</c> replaced the grid's centre-sampled
+    /// transport with face fluxes assembled from the current's vector potential, because the old
+    /// one turned a uniform concentration into 0.36 to 2.45 of itself in 600 s. The water itself
+    /// is untouched — <see cref="TheTransportFieldIsUnchanged"/> still holds its six samples and
+    /// its bound to the bit, and so does <see cref="ThePlacementStreamIsUnchanged"/> — but what
+    /// the grid does with that water is different arithmetic on purpose, so
+    /// <see cref="TheBoxGridIsUnchanged"/> and
+    /// <see cref="ABoxWorldRunsTheSameFourHundredSteps"/> carry new numbers and every world that
+    /// ran on <see cref="CurrentMode.Transport"/> — rounds 34 to 37 — is a new realisation of its
+    /// seed. Worlds on <see cref="CurrentMode.Rolls"/>, which is every round through 33, replay:
+    /// the rolls have no potential and keep the scheme they always had.
+    /// </para>
+    /// <para>
     /// <b>Why these four.</b> They are the four places the tank build reached into and the four
     /// the box path runs through: the periodic transport field's construction and its bound,
-    /// which must keep their 28x24x5 lattice and closed-form RMS while the gyre gets a lattice of
-    /// its own; the grid's cells, seeding, stirring and advection, which gained a mask that must
+    /// which must keep their 28x24x5 lattice and closed-form RMS while the tank's streams get two
+    /// lattices of their own; the grid's cells, seeding, stirring and advection, which gained a mask that must
     /// stay null in a box; the placement RNG stream, which is what the Sim-side placer draws a
     /// founder's spot from and must advance by the same draws in the same order; and a whole
     /// world stepped four hundred times, which is every one of them at once plus the economy.
@@ -72,8 +86,8 @@ namespace Evosim.Core.Tests
         /// <see cref="GridField.Advect"/> substeps against, so it decides how many times a step
         /// stirs the water as well as how fast the fastest parcel goes; the six samples are the
         /// field itself, at six places and six times chosen only to be unremarkable. The tank
-        /// added a second branch to both — the gyre's measured ceiling and
-        /// <c>GyreAt</c> — and this is the assertion that the first branch still answers.
+        /// added a second branch to both — the streams' measured ceiling and
+        /// <c>StreamsAt</c> — and this is the assertion that the first branch still answers.
         /// </remarks>
         [Fact]
         public void TheTransportFieldIsUnchanged()
@@ -113,6 +127,7 @@ namespace Evosim.Core.Tests
         /// leave it where they always did.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// The mask is the tank's one change to this class and it is a <c>null</c> array in a
         /// box, so what is asserted first is that it is absent — every cell live, the live volume
         /// the box's own volume — and then that the stock two hundred steps later is the same
@@ -120,6 +135,16 @@ namespace Evosim.Core.Tests
         /// because a total can hide a pair of equal and opposite errors, and a seam cell
         /// (<c>ix = 19</c>, the last column, whose east face is the wrap) because the wrap is what
         /// the tank replaced with glass.
+        /// </para>
+        /// <para>
+        /// <b>The seam cell now reads exactly 2 and no longer pins the wrap</b>, and saying so is
+        /// better than leaving a number that looks like it is still doing the job. A uniform seed
+        /// plus sinking plus stirring is uniform across every layer, and the repaired transport
+        /// keeps a uniform field uniform, so the horizontal passes have nothing to carry and the
+        /// cell holds what it was seeded with. What took the job over is
+        /// <c>ConservativeTransportTests.TheNewRouteIsStillLocalStillUpwindAndStillWrapsAtTheSeam</c>,
+        /// which puts a lump in that same last column and watches it cross.
+        /// </para>
         /// </remarks>
         [Fact]
         public void TheBoxGridIsUnchanged()
@@ -149,9 +174,9 @@ namespace Evosim.Core.Tests
             }
 
             Assert.Equal(12000d, grid.TotalJoules);
-            Assert.Equal(1.9025794375944831d, grid.JoulesAt(0, 0, 0));
-            Assert.Equal(2.826822159604495d, grid.JoulesAt(19, 30, 4));
-            Assert.Equal(44.529613031689905d, grid.StockInLayer(0, 0));
+            Assert.Equal(1.9059117348309726d, grid.JoulesAt(0, 0, 0));
+            Assert.Equal(2d, grid.JoulesAt(19, 30, 4));
+            Assert.Equal(46.26154862916448d, grid.StockInLayer(0, 0));
         }
 
         /// <summary>
@@ -257,16 +282,16 @@ namespace Evosim.Core.Tests
             double sumY = 0d;
             for (int i = 0; i < world.Living.Count; i++) sumY += world.Living[i].HeightY;
 
-            Assert.Equal(74, world.Living.Count);
-            Assert.Equal(65L, world.Births);
-            Assert.Equal(101L, world.Deaths);
-            Assert.Equal(110L, world.FloorSpawns);
+            Assert.Equal(77, world.Living.Count);
+            Assert.Equal(67L, world.Births);
+            Assert.Equal(97L, world.Deaths);
+            Assert.Equal(107L, world.FloorSpawns);
 
-            Assert.Equal(-5.346921920776367d, sumY / world.Living.Count);
+            Assert.Equal(-5.282669079768193d, sumY / world.Living.Count);
             Assert.Equal(6000d, world.StandingMatter);
-            Assert.Equal(4374.748106960524d, world.Nutrients.TotalJoules);
+            Assert.Equal(4297.9588841974455d, world.Nutrients.TotalJoules);
             Assert.Equal(6000d, world.Matter.TotalJoules);
-            Assert.Equal(-9.389765546075068E-05d, world.AuditResidual);
+            Assert.Equal(2.07525026780786E-05d, world.AuditResidual);
         }
     }
 }

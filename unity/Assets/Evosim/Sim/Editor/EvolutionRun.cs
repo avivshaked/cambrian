@@ -98,6 +98,8 @@ namespace Evosim.Sim.EditorTools
                                     ? CurrentManifest.LastContactPairsTotal /
                                         (double)CurrentManifest.LastPhysicsSteps
                                     : 0d,
+                                MaxJointMassRatio = CurrentManifest.LastMaxJointMassRatio,
+                                BodiesOverMassRatio10 = CurrentManifest.LastBodiesOverMassRatio10,
                             });
                     }
                     catch (Exception writeFailure)
@@ -390,6 +392,17 @@ namespace Evosim.Sim.EditorTools
             // per-step term, so any nonzero value is a new realisation of every seed.
             float addedMass = Env("EVOSIM_ADDED_MASS", 0f);
 
+            // D090 (2026-09-12, logbook/specs/water-carries-spec.md). How much of the water's own
+            // acceleration a part feels, FluidConfig.FluidAccelerationCoefficient: the pressure
+            // gradient that holds a parcel of water on a curved streamline, felt by the body that
+            // displaces it. 1 is the physical value; 0 is drag alone, which is every world on
+            // file, and what the default keeps so that a recorded config still describes the world
+            // it ran. Without it a body cannot turn as sharply as the water and drifts outward on
+            // every curve — round 37's population at the glass within the hour — and with it a
+            // neutral body rides the water as a tracer does. A per-step term like the added mass
+            // above, so any nonzero value is a new realisation of every seed.
+            float fluidAccel = Env("EVOSIM_FLUID_ACCEL", 0f);
+
             // D082 (2026-09-07). The price of a bud: what a neuron, one of its inputs and a
             // joule of mechanical work cost. All three are RunConfig tunables since 5A.2 and
             // none had a launch knob, so every recorded world ran at their defaults (0.05 W,
@@ -599,6 +612,7 @@ namespace Evosim.Sim.EditorTools
                 Fluid = new FluidConfig
                 {
                     AddedMassCoefficient = addedMass,
+                    FluidAccelerationCoefficient = fluidAccel,
                     TissueExcessDensity = excessDensity,
                     NeutralBodyVolume = neutralVolume,
                     SurfaceRestoringFraction = surfaceRestore,
@@ -966,6 +980,12 @@ namespace Evosim.Sim.EditorTools
                 // read the same for "added mass off" and "written before the knob existed", and
                 // every world through round 28 is the first of those.
                 " · addedMass " + addedMass +
+                // D090, beside `addedMass` because it is the same kind of fact — what the water
+                // does to a body that is not swimming — and rendered unconditionally for D065's
+                // reason: a header without the token would read the same for "the water carries"
+                // and "written before the term existed", and every world through round 37 is the
+                // second of those.
+                " · fluidAccel " + fluidAccel +
                 // D082, appended after `addedMass` per the same convention and rendered
                 // unconditionally for D065's reason: every world through round 29 ran at the
                 // defaults, and a header without the token would not say so.
@@ -1052,6 +1072,8 @@ namespace Evosim.Sim.EditorTools
                         manifest.LastWraps = eco.Wraps;
                         manifest.LastCrowdedTotal = eco.Crowded;
                         manifest.LastContactPairsTotal = eco.ContactPairs;
+                        manifest.LastMaxJointMassRatio = eco.MaxJointMassRatio;
+                        manifest.LastBodiesOverMassRatio10 = eco.BodiesOverMassRatio10;
                         manifest.LastWallClockMinutes = clock.Elapsed.TotalMinutes;
                     }
 
@@ -1234,6 +1256,8 @@ namespace Evosim.Sim.EditorTools
                         Crowded = eco.Crowded,
                         ContactPairsPerStep =
                             eco.Steps > 0 ? eco.ContactPairs / (double)eco.Steps : 0d,
+                        MaxJointMassRatio = eco.MaxJointMassRatio,
+                        BodiesOverMassRatio10 = eco.BodiesOverMassRatio10,
                     });
                 }
 
@@ -1510,6 +1534,13 @@ namespace Evosim.Sim.EditorTools
             public long LastWraps;
             public long LastCrowdedTotal;
             public long LastContactPairsTotal;
+
+            /// <summary>
+            /// The throw trace's readings as of the last metabolic step —
+            /// <c>logbook/specs/throw-trace-spec.md</c> step 1.
+            /// </summary>
+            public double LastMaxJointMassRatio;
+            public long LastBodiesOverMassRatio10;
         }
 
         /// <summary>How a run stopped. Null while it is still going.</summary>
@@ -1554,6 +1585,19 @@ namespace Evosim.Sim.EditorTools
 
             public double BestSpeed;
             public double BestSpeedAtSeconds;
+
+            /// <summary>
+            /// The throw trace's two run-level readings —
+            /// <c>logbook/specs/throw-trace-spec.md</c> step 1.
+            /// </summary>
+            /// <remarks>
+            /// Both 0 in a world that never built a jointed body, and both written on the error
+            /// path from the manifest's last known values for <see cref="MatterInfluxedTotal"/>'s
+            /// reason: a censored arm's <c>run.json</c> is the only machine-readable account of it
+            /// there will be, and a zero that means "not measured" is worse than no field at all.
+            /// </remarks>
+            public double MaxJointMassRatio;
+            public long BodiesOverMassRatio10;
         }
 
         /// <summary>
@@ -1765,6 +1809,14 @@ namespace Evosim.Sim.EditorTools
                 w.Field("wraps", ending.Wraps);
                 w.Field("crowded", ending.Crowded);
                 w.Field("contactPairsPerStep", ending.ContactPairsPerStep);
+
+                // The throw trace — logbook/specs/throw-trace-spec.md step 1, appended after
+                // contactPairsPerStep per the same append-only rule. The largest joint mass ratio
+                // any body carried, and how many bodies were ever over the 10 PhysX's own joint
+                // documentation avoids. Both 0 in a world with no jointed body in it, which is
+                // what `divergedTotal` above is read beside.
+                w.Field("maxJointMassRatio", ending.MaxJointMassRatio);
+                w.Field("bodiesOverMassRatio10", ending.BodiesOverMassRatio10);
             }
 
             w.EndObject();
@@ -2586,7 +2638,14 @@ namespace Evosim.Sim.EditorTools
                 .Field("totalColumns", spread.TotalColumns)
                 .Field("occupiedColumnsAbsorptive", spread.OccupiedColumnsAbsorptive)
                 .Field("xSpreadMetres", spread.XSpreadMetres)
-                .Field("zSpreadMetres", spread.ZSpreadMetres);
+                .Field("zSpreadMetres", spread.ZSpreadMetres)
+                // The throw trace (logbook/specs/throw-trace-spec.md step 1), appended after the
+                // spread per the same append-only rule. Both are running readings over the whole
+                // run rather than windows: the maximum ratio any body has carried, and the number
+                // of bodies ever over 10 — so a reader can see when evolution started building
+                // them and not merely that it did. 0 and 0 in a world whose bodies have no joints.
+                .Field("maxJointMassRatio", eco.MaxJointMassRatio)
+                .Field("bodiesOverMassRatio10", eco.BodiesOverMassRatio10);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a

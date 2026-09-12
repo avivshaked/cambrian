@@ -158,5 +158,51 @@ namespace Evosim.Core
         /// </remarks>
         public static float EffectiveMass(float mass, float volume, FluidConfig config) =>
             mass + config.AddedMassCoefficient * config.Density * volume;
+
+        /// <summary>
+        /// The force the water's own acceleration puts on a part —
+        /// <c>c·(ρV + m_added)·Du/Dt</c>, the second term of the Morison equation.
+        /// <c>logbook/specs/water-carries-spec.md</c>.
+        /// </summary>
+        /// <param name="waterAcceleration">
+        /// <c>Du/Dt</c> at the part's position, m/s² —
+        /// <see cref="CurrentField.AccelerationAt(float, float, float, double)"/>.
+        /// </param>
+        /// <param name="volume">The part's volume, m³, so <c>ρV</c> is the water it displaces.</param>
+        /// <param name="config">
+        /// <see cref="FluidConfig.FluidAccelerationCoefficient"/> is <c>c</c> and 0 is off;
+        /// <see cref="FluidConfig.AddedMassCoefficient"/> supplies <c>m_added</c>.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>The mass is the displaced water plus the added mass, and the added mass is the same
+        /// one the part already carries.</b> <see cref="EffectiveMass"/> folds
+        /// <c>Ca·ρV</c> into the part's mass, so <c>m_added</c> is that product and the coefficient
+        /// here multiplies <c>ρV(1 + Ca)</c>. Read from the config and the part's volume rather
+        /// than from the solver's inflated mass, so that the term is the same number whether or
+        /// not the caller has applied added mass yet, and so that a part whose mass has been
+        /// changed for any other reason cannot quietly rescale the water.
+        /// </para>
+        /// <para>
+        /// <b>At <c>c</c> = 0 this is exactly zero</b>, not nearly — one multiplication by a
+        /// literal 0, so a run whose config leaves the coefficient at its default feels no force
+        /// and the caller is free to skip sampling the field at all (which is what
+        /// <c>FluidEnvironment</c> does: nine field samples per part per step is not a cost to pay
+        /// for a vector of zeroes).
+        /// </para>
+        /// <para>
+        /// <b>No work is booked for it anywhere.</b> A body at rest relative to the water feels
+        /// this force and the force does no work on it, and every metre of motion relative to the
+        /// water is already priced by <see cref="Drag"/>, whose dissipation is what the energy
+        /// audit integrates. So this term appears in no accounting term, by intent —
+        /// <see cref="FluidConfig.FluidAccelerationCoefficient"/> says so, and
+        /// <c>FluidEnvironment.Settle</c> is where it is kept out.
+        /// </para>
+        /// </remarks>
+        public static Float3 AccelerationForce(
+            Float3 waterAcceleration, float volume, FluidConfig config) =>
+            waterAcceleration *
+                (config.FluidAccelerationCoefficient * config.Density * volume *
+                 (1f + config.AddedMassCoefficient));
     }
 }
