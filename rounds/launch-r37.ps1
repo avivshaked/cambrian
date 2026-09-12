@@ -17,7 +17,7 @@
 #   ./rounds/launch-r37.ps1 -Seed 3 -Worker 6 -Seconds 600 -Name r37smoke -Dt 0.02        # the smoke
 # Verify the header: everything launch-r36.ps1 lists, and
 #   'space tank r=5.64 m (100 m2), depth 60, wall, bed'
-# where every round before reads 'shared 4x1x5 m, depth 60, wrap, bed'. Also 'driveLimit >0.01'
+# where every round before reads 'shared 4x5x5 m, depth 60, wrap, bed'. Also 'driveLimit >0.01'
 # unless -DriveLimitAlways is passed, and 'matterBudget 0' (the density rule, round 36's).
 # A build that does not know EVOSIM_SHAPE ignores it silently and runs the old box; the header is
 # the only proof the container arrived. Read 'wraps', which is 0 in a tank by construction, and
