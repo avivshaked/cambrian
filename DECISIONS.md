@@ -113,6 +113,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D088](#d088) | The third dimension: a newborn dispersed over a disc about its parent (`OffspringDispersalMetres`, 0 = D077's rule, first cut 5 m); a current that carries (`CurrentMode Transport`, divergence-free, equal on every axis, RMS at the knob, substepped advection; the rolls kept for replay); destroy immediately in either mode and a Play-mode identity check; the placer reserves the adult | 2026-09-10 | ruled (owner: "lets start the fix please", "in all directions really"); built in three parts and smoked the same afternoon (logbook/0085), identity in Play mode 6 of 6; the agent's first look 2026-09-10 evening (logbook/0086: the fixed world fills the box, the old rules recreated give two ribbons); the owner ruled the five open values the same evening (dispersal 5 m, box unchanged, 0.1 m/s, founders reserve the adult); round 35 is the base round (logbook/0087) |
 | [D089](#d089) | The aquarium: a cylinder of water of the configured area with a glass wall of 48 slabs, ring patches, a masked grid and a gyre (`WorldShape Tank`, `EVOSIM_SHAPE`, default `Box`); the area decoupled from the matter (`MatterBudgetUnits`, 0 = the density rule; round 38 at 400 m² with 6,000 units held); corpses as objects from round 38; the drive limiter at every step built as a tunable and not adopted | 2026-09-11 | the container ruled by the owner ("yes proceed" to the cylinder, the wall and the round shape their own questions); dilution and concentrators on the agent's recommendation under "follow your suggestions", open to overrule before round 38; built on branch `tank` (`logbook/specs/tank-spec.md`), six checks run 2026-09-11 and 12 (the limiter's failed: 27 divergences against 17 with the same signature); round 37 is the first world in the tank (logbook/0093) |
 | [D090](#d090) | The water carries as water does: in a tank the current is a 27-term spectrum of streams with no swirl about the axis (amends D089's gyre), and every part feels the water's acceleration force `(ρV + m_added)·Du/Dt` (`FluidAccelerationCoefficient`, `EVOSIM_FLUID_ACCEL`, default 0, 1 from round 37b); round 37b repeats the tank on both before the dilution | 2026-09-12 | ruled by the owner in two steps ("the currents should not act as unified fields but more like streams"; "Agreed. Proceed") after round 37's early read showed the rim ring holding 58 to 96% of the bodies and the streams build's tracer check showed the lag, not the field, does the gathering; built on branch `streams` with the throw trace, checked on worker 7, merged after round 37's last render |
+| [D091](#d091) | Two kinds of change: a replacement (what the world is) becomes the base on the owner's ruling and reads the goal rule without requiring it; a treatment (a price, a sense, a rule of the ecology on a fixed world) joins the base only when its round meets its pre-registered bar; D081's adoption clause applies to treatments; every entry names which kind its round is | 2026-09-12 | ruled by the owner ("proceed with your recommendations") on the agent's proposal after the Astra review found D081's rule and the practice since the grid disagreeing; with it, a fresh-seed batch on round 37b's world before round 38 |
 
 ---
 
@@ -4902,3 +4903,48 @@ Checked on worker 2 the same night: the shared-space smoke passed with the clear
 a 600 s box digest parts from the old reference (a changed transport is a new realisation),
 and a 600 s tank smoke at `c` = 1 (`r37bsmoke3`) read 36, 39, 34 and 20 in the four rings
 with wraps, divergences, crowding and stillbirths 0; the Core suite 671 green.
+
+### D091
+**Two kinds of change: a replacement is ruled, a treatment earns its place** · 2026-09-12
+
+**Status:** ruled by the owner on the evening of 2026-09-12 ("proceed with your
+recommendations"), on `fable-propose-adoption-rule.md`, written after the Astra review of the
+same day found D081's adoption clause and the record's practice disagreeing. Amends D081.
+
+**Context.** D081 (2026-09-07) says a change joins the base world only when it matches the
+reference world's passing-seed count. Since then the grid became the base after round 32
+read two of five against the vertex world's four (D086), growth on round 33's five of five
+(D087), and the box, the carrying current, the tank and the streams each replaced the base
+on the owner's ruling, round 37 reading the goal rule without requiring it (logbook/0093).
+None of those was wrong: each was a correction to what the world *is*, or a change of scope,
+and not a treatment competing on the ecology's terms. The rule as written could not say so.
+
+**Ruled.**
+
+1. **A replacement** changes what the world is: its container, its fluid, its fields, its
+   growth, a numerical repair. It becomes the base on the owner's ruling, its round is the
+   new base round, the goal rule is read in that round and not required, and the round
+   before it is its control for the mechanism predictions only. The grid, growth, the box,
+   the tank, the streams with the fluid force and the conservative transporter are
+   replacements.
+2. **A treatment** changes one price, one sense, one rule of the ecology on a fixed world.
+   It is adopted into the base only when its round meets the bar its pre-registration
+   names: D081's clause, the reference world's passing count, or a named mechanism bar
+   when the goal rule is not the question. The link that earns, the stroke priced alone, a
+   light sense and predation are treatments.
+3. **Every round's entry says which kind it is** in its first paragraph. D081's adoption
+   clause applies to treatments from this ruling on. Nothing in the record moves.
+
+**With it, two more of the agent's recommendations of the same evening, ruled in the same
+words.** Round 37b is read as a fresh baseline rather than as round 37 repaired: its three
+changes (the streams, the fluid force, the transporter) are not attributed one by one unless
+a later question needs it. And a fresh-seed batch, seeds 6 to 10 on round 37b's world, runs
+before round 38, because the five founding lotteries have guided nine rounds of adaptive
+change and the standing jointed populations of round 37 have to be shown to be the world's
+and not the seeds'. Rounds 32 and 33, whose transport scheme fails the constant-field test
+worse than the transport field's (D086's note), are not chased: they are superseded worlds
+and their verdicts stand as measured.
+
+**Rejected.** Keeping D081 as written with every replacement an exception: six exceptions in
+six days is not a rule. Dropping the adoption bar: a treatment would then join the base by
+being built, which is the drift D081 was written against.

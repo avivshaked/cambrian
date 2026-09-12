@@ -370,6 +370,12 @@ round 28) set the base and the order.
       dilution would otherwise be read against an invented food field. Replaces 37 as the
       tank's base; 38 reads against it. Pre-registered as 0095, committed before the queue
       starts, launched with `-Prereg`.
+   2c. **Fresh seeds on the base** (owner 2026-09-12 evening, "proceed with your
+      recommendations"; D091): round 37b's world on seeds 6 to 10, no build, read against
+      37b's five as a second draw of the same world. Moved here from queued item 22 because
+      the five founding lotteries have guided nine rounds of adaptive change and round 37's
+      standing jointed populations (seed 3 ended with 148 jointed bodies) have to be shown to
+      be the world's. Launches when 37b's read is in; round 38 follows it.
    3. **Round 38, the dilute tank** (rulings 2 and 3): four times the area, 400 m², with the
       matter held at 6,000 units by a new tunable whose default is today's scaling; corpses
       as objects at 0.005/s; no new build (`rounds/launch-r38.ps1` is written). The dilute

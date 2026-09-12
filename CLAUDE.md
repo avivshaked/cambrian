@@ -803,6 +803,13 @@ actually verifying it.
   scratchpad and TEMP by name; "write under scratch/" alone was not enough on 2026-09-12.
   The same rule binds the calling agent: nothing of the project's is written outside the
   repository (Conventions, below).
+- **Sample the pictures while a round runs, not only when it is written up** (owner,
+  2026-09-12 evening: "sometimes you can't really evaluate something without actually
+  seeing it"). The theatre-watch rule above covers the entry; this one covers the run. Take
+  a frame or two from a live arm every few thousand simulated seconds (`theatre-snap.ps1`
+  on a worker the queue is not using, one frame at a time on a loaded machine) and look at
+  them, and say in the status what was seen. Round 37's crust at the glass was in the table
+  for hours before anyone read it as a crust.
 - **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
   amendments, scope and round design forks, pushes of anything that is not code/prose, and
   anything irreversible or outward-facing. Instruments, diagnostics, replays of scored
