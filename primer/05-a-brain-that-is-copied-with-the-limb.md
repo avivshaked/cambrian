@@ -275,6 +275,7 @@ argument.)*
 | `[K12]` | Per-part local neuro-controllers; oscillatory transfer functions to speed the discovery of swimming |
 | `[C18]` | Non-harmonic actuation mattering in unsteady aquatic locomotion, and why a pure sine is a real limitation |
 | `[EA23]` | Morphology and control co-evolving rather than being optimised separately |
+| `[MK72]` | Bacterial chemotaxis reads a temporal gradient, a concentration against its own recent past, and no difference across the body |
 
 Four things here are mine rather than the literature's.
 

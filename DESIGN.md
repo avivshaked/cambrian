@@ -2,7 +2,7 @@
 
 **Status:** Draft 5 — endogenous selection (§5A) specified, then largely implemented and
 measured; findings are recorded inline with ✅/⚠/strikethrough marks as they land, and the
-decision trail is `DECISIONS.md` D017–D088. Milestones 0–5 of §10 are complete (out of the
+decision trail is `DECISIONS.md` D017–D090. Milestones 0–5 of §10 are complete (out of the
 listed order); perception (§4.4) is partial. There is no fitness function and no directed
 search — that is §5A working as specified, not something missing.
 **Date:** 2026-09-10 (draft 5 specified 2026-08-07; document begun 2026-08-02)
@@ -274,7 +274,8 @@ Diffusion is Fick's law between face neighbours at the field's own rate on every
 refused above the explicit scheme's limit `D·dt/cell² = 1/6`; a grid world refuses a
 sideways rate that differs from the detritus rate, and the matter grid mixes at
 `MatterMixingDiffusivity` on every axis. The current moves stock by upwind transfer between
-cells, wrapping at the seams, and spreads a patch along the flow by about half the speed
+cells across face fluxes taken from the current's vector potential (from 2026-09-12, §0w; a
+uniform field stays uniform), wrapping at the seams, and spreads a patch along the flow by about half the speed
 times the cell size (0.13 m²/s at 0.3 m/s and 1 m). Sinking is the same transfer downward.
 A death founds a corpse (`Corpse`) that sinks, rides the current and pays
 `CorpseDecayPerSecond` of what it holds into the fields at its position; both books count it
@@ -297,6 +298,35 @@ grid substepping its advection where the Courant number would pass a half. The r
 as in batch, which is why the theatre's replay parted at 200 s, and a Play-mode identity
 check exists beside the edit-mode one. The table gains `cols`, `cols abs` and `x sd`; the
 header gains `dispersal=` and the current's mode. Built and smoked 2026-09-10 (logbook/0085).
+
+## 0w. Changelog — the aquarium, the streams, and water that stays uniform (2026-09-11 and 12, D089, D090, the Astra review)
+
+The container is a setting (`RunConfig.WorldShape`, `EVOSIM_SHAPE`, default `Box`). A `Tank`
+is a cylinder of the configured area, radius `sqrt(area / π)`, with a glass wall of 48 static
+slabs circumscribing the circle (`TankWall`, 12 mm proud of it at the joins), ring patches
+of equal area from the centre out, a masked grid whose cells with centres outside the circle
+are dead, and no seam, so `wraps` reads 0 by construction (D089). `MatterBudgetUnits`
+decouples the matter from the area (0 is the density rule). In a tank the current is D090's
+streams and not a swirl: 24 horizontal eddies from a vertical vector potential over
+azimuthal modes 1 to 4, two radial families and three vertical modes, and three axisymmetric
+overturning cells from Stokes stream functions whose radial and vertical flow both vanish at
+the glass, every term's phase and envelope advancing at its own irrational rate from the run
+seed; tangential at the glass and divergence-free by construction, no tunable beyond the RMS
+speed. §5.2's fluid model gains the fluid acceleration force,
+`F = c · (ρ_water · V_part + m_added) · Du/Dt` (`FluidConfig.FluidAccelerationCoefficient`,
+`EVOSIM_FLUID_ACCEL`, default 0, 1 from round 37b), because a drag-only fluid is a
+centrifuge: a body lagging the water drifts outward on every curved streamline, and round 37
+piled the whole world against the glass (D090; the derivative is analytic in a tank). And the
+grid's transporter takes its face fluxes from the current's vector potential
+(`CurrentField.PotentialAt`; the circulation round each face's edges), all three axes from
+one stock, substeps from the fluxes, so that a uniform field stays uniform to rounding. Until
+2026-09-12 it sampled velocities at cell centres and swept the axes in turn, which turned
+uniform water into 30% patchiness on 1 m cells within 600 s while conserving the total (the
+Astra review's F1); every grid round, 32 to 37, carries the artefact, the rolls' scheme worse
+than the transport field's and beyond this repair (D086's note). The placer tests a body's
+whole reserved sphere against the glass, not its centre (F2). Built on branches `tank`,
+`streams` and `clearance`; round 37 ran the tank with the gyre (logbook/0093) and round 37b
+runs all of it.
 
 ## 0u. Changelog — bodies that grow (2026-09-09, D087)
 
@@ -871,6 +901,18 @@ projection makes paddling work — a flat part moving broadside must generate fa
 thrust than the same part edge-on. Get it wrong and oscillating limbs produce no net
 thrust and nothing ever swims. Three lines of code; decides whether the project works.
 
+**The water's acceleration (D090, 2026-09-12).** Drag and added mass are not the whole of
+what a fluid does to a body: a parcel of water is held on a curved path by the pressure
+gradient across the flow, and a neutral body in its place feels that gradient as a force.
+Every part therefore feels `F = c · (ρ_water · V_part + m_added) · Du/Dt`, the water's
+acceleration along the part's path (`∂u/∂t + (u·∇)u`, analytic in a tank, a central
+difference elsewhere), beside the drag every physics step, its vertical component under
+D050's rule. `c` is `FluidConfig.FluidAccelerationCoefficient` (`EVOSIM_FLUID_ACCEL`), default
+0 so every recorded world replays, 1 the physical value and the campaign's from round 37b.
+Without it a body lagging the water in any turning current drifts outward, and a walled world
+shows it as a crust at the wall (logbook/0093, D090). The force does no work on a body at
+rest in the water and no accounting term reads it.
+
 ### 5.3 ⚠ This model is exploitable — and has already been exploited in print
 
 **The most important correction in draft 2.**
@@ -1372,7 +1414,8 @@ joules in cells, 1 m a side for detritus and 5 m for matter, and a body feeds fr
 it stands in, so the hole a sitter eats is one cell wide and centred on the mouth, and the
 cell beside it keeps its water. Diffusion is Fick's law between face neighbours at the
 field's own rate on every axis, refused above the scheme's stability limit; the current
-carries stock downstream by upwind transfer and spreads it along the flow by about half the
+carries stock downstream by upwind transfer across face fluxes taken from its vector
+potential (§0w) and spreads it along the flow by about half the
 speed times the cell size, which is the current's stirring; sinking is the same transfer
 downward. A dead body is a corpse that sinks, drifts and decays into its cell at
 `CorpseDecayPerSecond`, counted as standing by both books until it is gone. On the grid a
@@ -1581,6 +1624,17 @@ the bed; phases drifting at pairwise irrational rates so that a parcel is carrie
 returned; the knob its RMS speed. Bodies feel it through drag at their root, corpses drift by it,
 and the grid's cells are advected by the water at their centres, substepped where the Courant
 number would pass a half. The rolls remain as `CurrentMode Rolls` so that the record replays.
+
+**Built a third time, for the tank (D089 and D090, §0w).** In a `Tank` the shape selects the
+current: a gyre first (D089, round 37), then the streams (D090), a spectrum of eddies and
+small overturning cells with no swirl about the axis, tangential at the glass by construction.
+The field was never what gathered round 37 at the wall; the lag was. A body pulled toward the
+water by drag alone fails to turn as sharply as the water and drifts outward by about
+`τ·u_θ²/r` a second on any curved streamline, and the fluid acceleration force of §5.2 is
+what holds it on its curve. And the grid no longer samples the water at cell centres: each
+face's flux is the circulation of the current's vector potential round the face's edges, so
+every cell's net flux is zero by telescoping and a uniform field stays uniform, which the
+centre-sampled scheme did not keep (§0w).
 
 **Light and depth.** Irradiance falls off with depth; dead matter sinks. This is the cheapest
 available source of **spatial heterogeneity**, and heterogeneity is what stops one strategy
