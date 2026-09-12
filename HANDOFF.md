@@ -28,7 +28,9 @@ proposals are absorbed into D089 and deleted. The box's header token had drifted
 on the branch and was put back to the recorded `4x5x5 m`. Round 37 is round 36's world in the
 tank, pre-registered as logbook/0093 with seven predictions (M1: the rim ring holds 15 to 40%
 of the bodies; M2: the middle is not empty; M3: the crowd is round 36's), launched on the merged
-build after round 36's last render; the Launch section carries workers, times and hashes.
+build after round 36's last render: all five seeds between 08:28 and 08:31 on workers 2 to 6
+(`simHash c50c465b…`, `coreHash e6797e6e…`, `configHash 96d4bce6`; the full suite 666 green
+first), the render queue beside them; every header verified.
 Worker 7 ran the tank checks off the worktree's Core and was restored to the main tree's before
 the launch. Round 38's launcher (`rounds/launch-r38.ps1`: area 400, budget 6,000, corpse decay
 0.005) is ready and needs no build.
