@@ -8,6 +8,31 @@ chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things st
 The whole record (logbook, primer, research) was restyled under STYLE.md and landed on
 2026-09-07 after a pair-by-pair review; the git history holds every original.
 
+**Round 36 is read and round 37, the tank, is launching (logbook/0092 and 0093, 2026-09-12
+morning).** Round 36 passed five of five; its pre-registered bar for a standing jointed line
+failed in all five, but every seed carried its inherited jointed line further than round 34's
+twin, two to the last birth, and seed 1 ended with 75 jointed bodies, all absorptive and all
+from one jointed absorptive founder: the record's first standing jointed population, on a body
+plan the round did not predict. The ledger (R1) reads the hinge neutral to a tenth of a percent
+and the link's earning symmetric between jointed and rigid, so the round raised the income of
+any body with a link and did not price the hinge; why seed 1's jointed eaters bred better than
+their rigid neighbours is not on the books. Divergences rose with jointed adult-seconds (33, 55,
+20, 6, 17); seed 2 hit the 50-dump cap. The tank (D089; branch `tank`, `logbook/specs/tank-spec.md`)
+passed its six checks: Core 653 green, the box digest identical under the new build, dead
+pockets 0.004, the dilute arithmetic, a 600 s smoke with pictures (`scratch/snaps/r37tank2/`,
+wraps 0, no body outside the glass), and the sitter-against-mover rerun on the dilute tank
+(mover over sitter 3.0 at low mixing, the box's number). The limiter's check failed: round 34
+seed 5 rerun with it on bound 2.58 million drives and read 27 divergences against 17 with the
+same signature, so it is not adopted and round 37 runs with `driveLimit >0.01`. The three
+proposals are absorbed into D089 and deleted. The box's header token had drifted to `4x1x5 m`
+on the branch and was put back to the recorded `4x5x5 m`. Round 37 is round 36's world in the
+tank, pre-registered as logbook/0093 with seven predictions (M1: the rim ring holds 15 to 40%
+of the bodies; M2: the middle is not empty; M3: the crowd is round 36's), launched on the merged
+build after round 36's last render; the Launch section carries workers, times and hashes.
+Worker 7 ran the tank checks off the worktree's Core and was restored to the main tree's before
+the launch. Round 38's launcher (`rounds/launch-r38.ps1`: area 400, budget 6,000, corpse decay
+0.005) is ready and needs no build.
+
 **Round 34 is read (logbook/0090, 2026-09-11 midday): five seeds of five pass the goal
 rule, the free joint founds in every seed (46 to 140 inherited at 1,000 s) and is gone from
 every seed by 23,100 s, re-invented by mutation to the end and never re-founded. The ledger
@@ -257,25 +282,28 @@ round 28) set the base and the order.
    is its control and never a replay where a build moved the hashes. Rounds 34 (the free
    joint, running) and 35 (the base, read) stand before it.
    1. **Round 36, the link that earns**: `EVOSIM_LINK_PHOTO` 0.5 on round 34's launcher; no
-      build; pre-registered as logbook/0089; all five seeds launched 2026-09-11 (three
-      landed: jointed inherited at 30,000 s of 73, 4 and 0).
+      build; pre-registered as logbook/0089; read 2026-09-12 as logbook/0092 (five of five;
+      jointed inherited at 30,000 s of 73, 4, 0, 0, 0; the standing line a clade of jointed
+      eaters in seed 1).
    *Resequenced 2026-09-11 evening by the agent under the owner's grant, after the owner
    watched `r36-s1` in the theatre and saw two things the report had been counting without
    anyone reading them: bodies teleported at the seams (the wrap, once per body per hundred
    seconds since the current carries) and a crowd a body apart (median nearest neighbour
    0.65 m), which is read as the reason movement has never paid: a sitter eats as well as a
-   swimmer when food is a body length away. `fable-propose-aquarium.md` carries the design
-   and the three rulings; the old order is in the proposal's table and in git.*
-   2. **Round 37, the tank** (`fable-propose-aquarium.md`, ruling 1): a cylinder of the same
-      100 m² with a glass wall, a gyre current from a stream function that vanishes on the
-      wall, a cell mask on the grid, rings for patches; the walled 10 by 10 m square as the
-      fallback if the mask misbehaves in the digest. The limiter on if its check passes
-      (`fable-propose-limiter.md`). One build for 37 and 38, and the 2 by 2 box's shape
-      code (`scratch/wt-box`) absorbed into it. Supersedes the box round.
+   swimmer when food is a body length away. D089 carries the design
+   and the three rulings; the old order is in D089's sequence table and in git.*
+   2. **Round 37, the tank** (D089, ruling 1): a cylinder of the same 100 m² with a glass
+      wall, a gyre from stream functions that vanish on the wall, a cell mask on the grid,
+      rings for patches. Built on branch `tank`, checked six ways (0093's sources), merged
+      2026-09-12 and launched as logbook/0093 on round 36's world. The limiter is not on: its
+      check failed (D089's check 4). The 2 by 2 box's shape code is absorbed and no round runs
+      it.
    3. **Round 38, the dilute tank** (rulings 2 and 3): four times the area, 400 m², with the
       matter held at 6,000 units by a new tunable whose default is today's scaling; corpses
-      as objects at 0.005/s; no new build. The ledger screens founding first. Read: nearest
-      neighbour, founding, the gyre's downwelling as the first patch, sitter against mover.
+      as objects at 0.005/s; no new build (`rounds/launch-r38.ps1` is written). The dilute
+      arithmetic passed (a 5 m matter cell holds 31 units at 0.235/m³; the 5 m mask overshoots
+      the disc by 6%, D089's check 6). Read: nearest neighbour, founding (`mat blk`, `mat short`
+      against births), the gyre's downwelling as the first patch, sitter against mover.
    4. **Round 39, a bed with shape** (was round 42): rocks, ridges, hollows; the current
       flows around them, detritus settles into them, the grid's floor follows; the theatre
       draws the same data. Moved up because in a dilute world it is a coast. Proposal first.
@@ -302,10 +330,9 @@ round 28) set the base and the order.
       build.
    11. **Round 46, the long arm**: one seed, 300,000 s, on the richest standing world, the
       stroke read against the water every 1,000 s; one worker for a week.
-   Also from round 34, proposed 2026-09-11 (`fable-propose-limiter.md`): the drive impulse
-   limiter at every step, not only above dt 0.01, since an unpriced stroke at 0.01 is what
-   the limiter was never asked to bound; folded into round 37's build if the owner rules for
-   it.
+   Also from round 34: the drive impulse limiter at every step was built as a tunable in the
+   tank build and failed its check (D089), so no round runs it; what throws a jointed adult
+   is open, and the next instrument is a per-link dump at the step before the non-finite one.
    Beside the ten and not in them: 0084's bin 3 screens (dispersed against undispersed on
    round 32's seeds, mixing 0.2 against 0.02, corpses off) on any free worker; the skin in
    the genome and the theatre's sun, which need no round; predation, which the owner ruled
@@ -546,10 +573,14 @@ captures, probe output, one-off edit scripts, stale copies; nothing was deleted.
   set aside for now and not yet named. The agent reads stills only, so when they are named
   the route is a Game Bar or Recorder film of the session and frames pulled from it at the
   seconds in question, read as pictures beside the numbers.
-- **The drive impulse limiter at every step** (`fable-propose-limiter.md`, 2026-09-11, from
-  round 34's M3): one tunable, default off so every recorded world replays, on for the rounds
-  after the box; a replay of `r34-s5` with it on is the check before it is trusted. The
-  agent recommends landing it with the box build so the record's configs break once.
+- **The aquarium's second and third rulings** (D089, 2026-09-11): the dilution to 400 m² with
+  the matter held at 6,000 units, and corpses as objects at 0.005/s from round 38, go ahead on
+  the agent's recommendation under "follow your suggestions" and can be overruled before
+  round 38 launches. The limiter of the same entry was built, failed its check (27
+  divergences against 17, same signature) and is not adopted; no ruling is needed unless the
+  owner wants it kept on anyway.
+- **The pillow dial** (skin day 3, logbook/0091): 0.34 (the old rounding, the default) or
+  0.5 (every box a bean); two pictures in `scratch/snaps/skin3-*/`.
 - **The producer threshold** is unsettled. D063's amendment asks for one living inherited
   member with a recent photosynthetic birth; the scorer substituted 10 members through two
   lifetimes. Both will be printed, and the ruling picks one.

@@ -111,6 +111,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D086](#d086) | The water as a grid: cells that hold amounts, a body feeding from the cell it stands in, Fick's law between neighbours, upwind advection, corpses as particles; 1 m detritus cells, 5 m matter cells, matter mixed at 2 m²/s on every axis; the base from round 32 | 2026-09-09 | ruled (owner: "sgtm... proceed", "proceed"); built and screened the same night (logbook/0078); round 32 read 2026-09-09 evening (0079): every mechanism prediction holds in five arms, the population 6 to 13% above the vertex world's, and the goal rule holds in two seeds of five against four, the inherited stomach lines thinner from founding and falling to the end; the base stands, the eaters' recruitment is the open question |
 | [D087](#d087) | Bodies that grow: a child is born at a fraction of its adult body and grows; `BirthInvestment` (a fraction of the parent's tissue) replaces the endowment, `AdultScale` scales the plan, brood stays; `NewbornReserveFraction` 0.2, `GrowthReserveFloor` 0.1, `MinNewbornPartKilograms` 0.5, `GrowthStepSeconds` 10; investment 0.5, one gate of 0.08, founders 0.25 to 1.0, the reserve capped beside the body, a runaway ceiling on biomass | 2026-09-09 | ruled (owner: "love it! go ahead" on the design, "proceed with your recommendations" on the five constants); built in both halves and smoked (logbook/0081); round 33 read 2026-09-10 (logbook/0082): the goal rule in five seeds of five, every line recruiting, four founded by a late child; adult scale, investment and litter walked the same way in every seed and stopped at the mass floor; the placer's birth-size reservation is the suspect for one contact divergence |
 | [D088](#d088) | The third dimension: a newborn dispersed over a disc about its parent (`OffspringDispersalMetres`, 0 = D077's rule, first cut 5 m); a current that carries (`CurrentMode Transport`, divergence-free, equal on every axis, RMS at the knob, substepped advection; the rolls kept for replay); destroy immediately in either mode and a Play-mode identity check; the placer reserves the adult | 2026-09-10 | ruled (owner: "lets start the fix please", "in all directions really"); built in three parts and smoked the same afternoon (logbook/0085), identity in Play mode 6 of 6; the agent's first look 2026-09-10 evening (logbook/0086: the fixed world fills the box, the old rules recreated give two ribbons); the owner ruled the five open values the same evening (dispersal 5 m, box unchanged, 0.1 m/s, founders reserve the adult); round 35 is the base round (logbook/0087) |
+| [D089](#d089) | The aquarium: a cylinder of water of the configured area with a glass wall of 48 slabs, ring patches, a masked grid and a gyre (`WorldShape Tank`, `EVOSIM_SHAPE`, default `Box`); the area decoupled from the matter (`MatterBudgetUnits`, 0 = the density rule; round 38 at 400 m² with 6,000 units held); corpses as objects from round 38; the drive limiter at every step built as a tunable and not adopted | 2026-09-11 | the container ruled by the owner ("yes proceed" to the cylinder, the wall and the round shape their own questions); dilution and concentrators on the agent's recommendation under "follow your suggestions", open to overrule before round 38; built on branch `tank` (`logbook/specs/tank-spec.md`), six checks run 2026-09-11 and 12 (the limiter's failed: 27 divergences against 17 with the same signature); round 37 is the first world in the tank (logbook/0093) |
 
 ---
 
@@ -4636,3 +4637,137 @@ refusal was biting the campaign's own 0.3 m/s at 1 m cells. Balancing the axes b
 component by hand: it would give up divergence-free, which is the whole reason the field
 is a curl. A measured RMS scale on a lattice: twelve samples in depth cannot see
 twenty-seven half-sines, and the closed form needs no lattice.
+
+### D089
+**The aquarium — a cylinder of water with a glass wall and a gyre; the area decoupled from the matter; corpses as objects; the drive limiter at every step** · 2026-09-11
+
+**Status:** the container ruled by the owner in conversation on 2026-09-11 evening. The wall
+and the round shape were the owner's own questions: "what if instead we had a literal wall of
+glass around the world?", and "instead of a box shape, we could use a circle shape?". The
+agent recommended the cylinder over the walled square and the octagon, and the owner ruled it
+("yes proceed"). The dilution and the concentrators, rulings 2 and 3 of
+`fable-propose-aquarium.md`, go ahead on the agent's recommendation under the owner's "follow
+your suggestions, and keep up the autonomic work". Either can be overruled before round 38
+launches. The limiter of `fable-propose-limiter.md` is built as a tunable, and its adoption
+from round 37 waits on its own check below. `fable-propose-box.md`, the 2 by 2 layout, is
+superseded by this entry. Its layout code stays as the shared volume's shape code with
+`PatchesAcross` at 1, and no round runs it. Built on branch `tank`
+(`logbook/specs/tank-spec.md`) and merged after round 36's renders. Round 37 is the first
+world in the tank and round 38 the first dilute one.
+
+**Context.** The owner watched round 36 seed 1 in the theatre and saw bodies jump. It was
+D077's periodic wrap. The wrap was chosen when no body reached a seam, and since D088's
+carrying current every body crossed one about once per hundred seconds (`wraps` 1,143 per
+window at 1,154 alive), which the table had printed for two rounds. The owner also saw the
+crowd, a body every metre in the upper band (round 35's median nearest neighbour 0.63 to
+0.70 m), and asked why the ocean is not like that. We read it, as inference, this way: with
+food within a body length in every direction a sitter eats as well as a swimmer, and that is
+why movement has never paid in thirty-six rounds. The literature review has nothing on a
+boundary. D077's wrap was a cheapness rather than a finding.
+
+**Ruled.**
+
+1. **The container.** `WorldShape Tank` (`EVOSIM_SHAPE`, default `Box`) is a cylinder of the
+   configured area, `WorldDepthMetres` deep, with `R = sqrt(area / π)`: 5.64 m at 100 m².
+   A glass wall of 48 static slabs stands tangent to the circle from the bed to above the
+   surface, on the creature layer with the floor's material. A body stops at the glass where
+   the seam used to move it, and `wraps` reads 0 by construction. A root farther than R + 1 m
+   from the axis dies as a counted `Diverged` death with a dump, as a height outside the box
+   does. The patches are K rings of equal area, centre to rim, so the four per-patch columns
+   keep their count and read centre against rim. The grid carries a mask, live where a cell's
+   centre is inside the circle (6,000 live cells at 1 m and 100 m²). No flux crosses a face
+   between a live and a dead cell, and a point outside the circle reads its nearest live cell
+   along the ray to the axis. Founders are drawn uniformly over the disc. A child's dispersal
+   disc (D088) is clipped at the glass by the existing rejection loop. The header's space
+   token reads `space tank r=5.64 m (100 m2), depth 60, wall, bed`, and a box's token is
+   unchanged to the character. Refused at construction: a tank with the cell field, with more
+   than one row of patches, with D061's lottery above 0, or with the returning current at a
+   nonzero speed.
+
+2. **The gyre.** In the tank the transport current is a third construction beside the rolls
+   and the box's periodic field, selected by shape. Three parts are summed. A swirl about the
+   axis vanishes on the axis and at the glass. Two overturning cells come from a Stokes stream
+   function that vanishes at the wall and puts no vertical velocity through the surface or the
+   bed. Two horizontal eddies come from a vertical vector potential. Every part is a curl or a
+   pure swirl, so the sum is divergence-free by construction, and slow independent phases keep
+   it from repeating. It is normalised numerically on a lattice: the vertical RMS is matched
+   to the horizontal, and the total RMS is the knob, measured to within 1% on each axis. The
+   fastest water is 3.82 times the RMS and the Courant bound is 1.05 times the measured
+   maximum. The divergence at random points is 6e-5 of the RMS per metre, and the radial
+   velocity at the glass 6.7e-8. The dead-pocket fraction, live cells slower than a tenth of
+   the RMS, is 0.004 (the proposal's check 2).
+
+3. **The area decoupled from the matter.** `MatterBudgetUnits` (`EVOSIM_MATTER_BUDGET`,
+   default 0). At 0 the matter is seeded at `MatterInitial` per cubic metre of live water, as
+   every recorded run was. Above 0 it is the seeded total and the density is derived over the
+   live volume. Round 38 runs the tank at 400 m² (R 11.28 m) with the budget held at 6,000
+   units: a quarter of the density with the same matter. The body count does not grow, and
+   compute follows bodies rather than cubic metres. The header prints `matterBudget`.
+
+4. **The concentrators.** Light and sinking already concentrate, and the gyre's downwelling
+   is measured from the grid rather than assumed. `CorpseDecayPerSecond` is 0.005 from round
+   38, D086's figure, so a dead body is a parcel that decays in place rather than a deposit
+   into its cell. The bed with shape moves up the path to right behind the dilution, because
+   in a dilute world it is the difference between a desert and a coast.
+
+5. **The limiter at every step.** `DriveLimitAtEveryStep` (`EVOSIM_DRIVE_LIMIT_ALWAYS`,
+   default false). At true the 30 rad/s per-step cap that engages only above dt 0.01 engages
+   at 0.01 too, with binds counted as `driveImpulsesLimited`. The header prints `driveLimit
+   always` or `driveLimit >0.01`. Round 34 read the unthrottled stroke throwing about two
+   percent of jointed adults out of the world (logbook/0090), bodies the world had not
+   selected against. Built so that the check below could be run; the check failed, so it is
+   not adopted and no round runs it. The 30 rad/s stays a constant.
+
+**The checks before round 37**, the proposal's six, run on 2026-09-11 and 12:
+
+1. The Core suite: 653 pass, `GyreTests` 6, `TankTests` 16 and `BoxPathTests` 4 among them.
+   A 600 s box digest under the new build is identical to the old build's over all 31 steps
+   (`boxdig-old` against `boxdig-tank2`). The tank smoke's `wraps` reads 0.
+2. Dead pockets 0.004, above.
+3. The dilute density by arithmetic, since the ledger does not carry the matter draw. At
+   400 m² with 6,000 units a 5 m matter cell holds 31 units, two to four children's worth
+   at 8 to 16 each. Matter mixing at 2 m²/s crosses the tank within founding time (a
+   diffusion length of about 110 m in 3,000 s), so the pool is effectively shared and
+   founding is not starved. What rises is the stranded fraction after a cell's first brood,
+   and round 38 is read on `mat blk` and `mat short` against births for it.
+4. The limiter's check, round 34 seed 5 rerun at 0.01 with the limiter on (`r34lim-s5`, a
+   new realisation of the seed). Binds 2.58 million over 30,000 s, about three per jointed
+   body per second against a hundred drive steps, so the cap is not a gait. But the
+   divergences rose from 17 to 27 rather than falling, 26 of the 27 jointed at a median age
+   of 1,171 s with the root's height going non-finite, the same signature as the recorded
+   run's. The limiter does not remove what it was built to remove: the throw is not a
+   single step's over-drive. By the proposal's own criterion it is not adopted. The tunable
+   stays, default off, and round 37 prints `driveLimit >0.01`. What throws a jointed adult
+   is open again, and the next instrument for it is a per-link dump at the step before the
+   non-finite one.
+5. A 600 s smoke in the tank (`r37tank2`, dt 0.02, seed 3): audit 0, matter residual 0,
+   wraps 0, diverged 0, and 51 of 100 live columns occupied at 600 s. `SharedSpaceSmoke`'s
+   tank part walks five bodies at the glass; the furthest reaches 5.569 m of 5.642 m, with
+   8,195 wall and bed contacts counted apart from the creature pairs. Pictures from the side,
+   the sky and close are in `scratch/snaps/r37tank2/`.
+6. The sitter-against-mover experiment (`GridFieldExperiments`) asked of the tank at 400 m²
+   with the budget held, the mover bouncing along a diameter where the box's circled an
+   annulus, no gyre. Detritus at round 30's mean density, which ruling 2 does not dilute:
+   the mover eats 3.0 times the sitter at 0.02 m²/s and 0.3 m/s and about the same at
+   0.2 m²/s, within a few percent of the box's own numbers, so the movement rounds keep
+   their null. Matter, seeded at the budget over the live volume and grazed by the same
+   probe: mover over sitter 0.99 to 1.21. One artefact to carry: at 5 m cells the mask's
+   live volume is 25,500 m³ against the nominal 24,000, so the seeded matter density in the
+   dilute tank is 0.235 units/m³ rather than 0.25; the total is exact, the density is not.
+
+**Rejected.** The walled square at the same area, 10 by 10 m with a sine-mode current in
+closed form: kept as the fallback if the mask misbehaved in the digest, which it did not. The
+octagon: priced between the two on looks and above both on work, since its diagonal walls
+cut cells like the circle's and its current has no closed form. A radius tunable: the area
+keeps its meaning across shapes, so the radius is derived. Sectors as patches: rings put the
+tank's one ecological axis, centre against rim, into the columns. A uniformly dilute world
+without concentrators: a desert. A bigger population with the area: compute follows bodies.
+A second dial on the limiter's 30 rad/s: a physical bound rather than a knob. The box
+proposal's layout as a round of its own: the tear was the container's fault, and the
+container is one change.
+
+**Cost.** Three tunables, so every earlier `config.json` is refused by the build, rounds 35
+and 36 included; they replay under their own builds. The cost is paid once for the three
+together. The driver edit and the harness moved `simHash`. In the tank a body's patch is a
+ring, so a reader comparing round 37's `p0` against round 36's is comparing the centre
+against a strip, and the entries say so.
