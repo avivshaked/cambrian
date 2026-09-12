@@ -720,6 +720,25 @@ actually verifying it.
   `diverged` column only below 50: `r36-s2` counted 55 and dumped 50, and its last five
   throws have no post-mortem (logbook/0092). Read the column for the count and the dumps
   for the anatomy, and say when the second is censored.
+- **A drag-only fluid is a centrifuge, and a walled world shows it.** A body pulled toward the
+  water's velocity by drag alone drifts outward on every curved streamline by about
+  `τ·u_θ²/r` per second (`τ` its response time, 0.4 to 1.3 s at the campaign's sizes), so any
+  current with any turning in it piles bodies against a wall: round 37's tank put 58 to 96% of
+  every seed in the rim quarter and the whole world in a crust at the glass at the peaks
+  (D090, 2026-09-12; the owner called it a centrifuge before the agent did). The box never
+  showed it because the seams wrapped. From D090 `EVOSIM_FLUID_ACCEL` (`FluidConfig.
+  FluidAccelerationCoefficient`, default 0 so every recorded world replays; 1 from round 37b)
+  adds the water's acceleration force, and with it a lagging body keeps an even spread (rim
+  quarter 0.25 to 0.27 in `StreamsTests`) where it read 0.83 to 0.98 without. Read `fluidAccel`
+  in the header, and read `p3` over `alive` in any walled world before anything else. The term
+  costs nine field samples per part per step (about half the pace of round 37) until the
+  streams' analytic derivative lands. In a tank the current is D090's streams, selected by the
+  shape; the header's `current` token still names the mode (`transport`), and the shape token
+  is what says the streams are running.
+- **A theatre snapshot of a live run can time out before its later frames.** The early pictures
+  of `r37-s1` at 5,000 and 15,000 s on a machine running five arms reached the first in about
+  forty minutes and timed out at ninety before the second (2026-09-12); a live run replays no
+  faster than the farm did. Take early frames one at a time, or wait for the queue.
 - **A pass that touches `Assets/Evosim` orphans the smoke recorded before it.** The tank's
   second pass moved `simHash` after `r37tank` was recorded, and the theatre refused its
   pictures on the mismatch (2026-09-12). Record the smoke you will photograph on the tree

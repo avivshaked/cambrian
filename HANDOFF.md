@@ -53,9 +53,16 @@ streams". Ruled the same afternoon (`fable-propose-streams.md`): no swirl about 
 spectrum of eddies and small overturning cells with random-walking phases and amplitudes,
 tangential at the glass; a passive-tracer test that the radial distribution stays uniform. Built
 on branch `streams` off `throws`, so the two land in one merge after round 37's renders; round
-37b, the same world on the streams, replaces 37 as the tank's base before round 38. Queued for
-its own proposal: the pressure-gradient term in the fluid model, the force that keeps a neutral
-body on a streamline, which would let any current carry bodies faithfully (DESIGN §5.2).
+37b, the same world on the streams, replaces 37 as the tank's base before round 38. The streams
+build's own tracer check then showed the field was never the cause: a perfect parcel keeps its
+spread in any of them and a body lagging the water by a drag response time gathers in all of
+them (rim 0.83 to 0.98), so the agent proposed the fluid acceleration force and the owner ruled it
+the same evening ("Agreed. Proceed"; D090 carries both rulings and the withdrawn slip wall). Built
+on the same branch (`FluidAccelerationCoefficient`, `EVOSIM_FLUID_ACCEL`, default 0, 1 from 37b):
+with it a lagging body reads 0.25 to 0.27 at the rim; the box digest is identical at 0; a 600 s
+tank smoke at 1 spreads evenly (`r37bsmoke`). Cost about half the pace; the streams' analytic
+derivative is queued to take it back during 37b, verified by digest identity, before round 38.
+Round 37b launches from `rounds/launch-r37b.ps1` on the merged build after round 37's last render.
 
 **Round 34 is read (logbook/0090, 2026-09-11 midday): five seeds of five pass the goal
 rule, the free joint founds in every seed (46 to 140 inherited at 1,000 s) and is gone from

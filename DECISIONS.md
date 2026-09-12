@@ -112,6 +112,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D087](#d087) | Bodies that grow: a child is born at a fraction of its adult body and grows; `BirthInvestment` (a fraction of the parent's tissue) replaces the endowment, `AdultScale` scales the plan, brood stays; `NewbornReserveFraction` 0.2, `GrowthReserveFloor` 0.1, `MinNewbornPartKilograms` 0.5, `GrowthStepSeconds` 10; investment 0.5, one gate of 0.08, founders 0.25 to 1.0, the reserve capped beside the body, a runaway ceiling on biomass | 2026-09-09 | ruled (owner: "love it! go ahead" on the design, "proceed with your recommendations" on the five constants); built in both halves and smoked (logbook/0081); round 33 read 2026-09-10 (logbook/0082): the goal rule in five seeds of five, every line recruiting, four founded by a late child; adult scale, investment and litter walked the same way in every seed and stopped at the mass floor; the placer's birth-size reservation is the suspect for one contact divergence |
 | [D088](#d088) | The third dimension: a newborn dispersed over a disc about its parent (`OffspringDispersalMetres`, 0 = D077's rule, first cut 5 m); a current that carries (`CurrentMode Transport`, divergence-free, equal on every axis, RMS at the knob, substepped advection; the rolls kept for replay); destroy immediately in either mode and a Play-mode identity check; the placer reserves the adult | 2026-09-10 | ruled (owner: "lets start the fix please", "in all directions really"); built in three parts and smoked the same afternoon (logbook/0085), identity in Play mode 6 of 6; the agent's first look 2026-09-10 evening (logbook/0086: the fixed world fills the box, the old rules recreated give two ribbons); the owner ruled the five open values the same evening (dispersal 5 m, box unchanged, 0.1 m/s, founders reserve the adult); round 35 is the base round (logbook/0087) |
 | [D089](#d089) | The aquarium: a cylinder of water of the configured area with a glass wall of 48 slabs, ring patches, a masked grid and a gyre (`WorldShape Tank`, `EVOSIM_SHAPE`, default `Box`); the area decoupled from the matter (`MatterBudgetUnits`, 0 = the density rule; round 38 at 400 m² with 6,000 units held); corpses as objects from round 38; the drive limiter at every step built as a tunable and not adopted | 2026-09-11 | the container ruled by the owner ("yes proceed" to the cylinder, the wall and the round shape their own questions); dilution and concentrators on the agent's recommendation under "follow your suggestions", open to overrule before round 38; built on branch `tank` (`logbook/specs/tank-spec.md`), six checks run 2026-09-11 and 12 (the limiter's failed: 27 divergences against 17 with the same signature); round 37 is the first world in the tank (logbook/0093) |
+| [D090](#d090) | The water carries as water does: in a tank the current is a 27-term spectrum of streams with no swirl about the axis (amends D089's gyre), and every part feels the water's acceleration force `(ρV + m_added)·Du/Dt` (`FluidAccelerationCoefficient`, `EVOSIM_FLUID_ACCEL`, default 0, 1 from round 37b); round 37b repeats the tank on both before the dilution | 2026-09-12 | ruled by the owner in two steps ("the currents should not act as unified fields but more like streams"; "Agreed. Proceed") after round 37's early read showed the rim ring holding 58 to 96% of the bodies and the streams build's tracer check showed the lag, not the field, does the gathering; built on branch `streams` with the throw trace, checked on worker 7, merged after round 37's last render |
 
 ---
 
@@ -4771,3 +4772,93 @@ and 36 included; they replay under their own builds. The cost is paid once for t
 together. The driver edit and the harness moved `simHash`. In the tank a body's patch is a
 ring, so a reader comparing round 37's `p0` against round 36's is comparing the centre
 against a strip, and the entries say so.
+
+### D090
+**The water carries as water does — streams instead of a gyre, and the fluid acceleration force; round 37b repeats the tank on both before the dilution** · 2026-09-12
+
+**Status:** ruled by the owner in two steps on 2026-09-12. The streams in the afternoon, on the
+owner's own diagnosis of round 37's early read ("What we don't want is a current that creates
+centrifugal forces that send all the creatures to the rim. The currents should not act as
+unified fields but more like streams"; "Yes. It reads right" to the agent's amended proposal).
+The fluid force in the evening ("Agreed. Proceed" to the agent's recommendations), after the
+streams build's own tracer check showed that no prescribed current can keep a lagging body
+spread. Both built on branch `streams` with the throw trace (`logbook/specs/streams-spec.md`,
+`water-carries-spec.md`, `throw-trace-spec.md`), verified on worker 7 the same evening, and
+merged after round 37's last render. Amends D089's second clause (the gyre) and DESIGN §5.2's
+fluid model; the slip-wall proposal of the same afternoon is recorded below as withdrawn.
+
+**Context.** Round 37, the first world in the tank (logbook/0093, 0094), fixed the wrap and
+threw no body, and gathered: the rim ring, a quarter of the area, held 58 to 96% of the bodies
+at every sample of every seed, the population swung 700 to 1,750 on a 10,000 s cycle, and at
+the peaks the whole world was a crust one body thick at the glass in the top three metres. The
+agent first read it as the gyre's construction at the wall and proposed a swirl that slipped
+along the glass. The owner read it as a centrifuge. The streams build then measured both
+readings in one test: 200 tracers integrated through the field alone for 5,000 s, as a perfect
+parcel of water and as a body lagging the water by a drag response time.
+
+| what is carried | rim quarter (0.25 is even) |
+|---|---|
+| a perfect tracer, in the streams | 0.251 |
+| a body lagging by 0.5 s, in the streams | 0.914 |
+| a body lagging by 2 s, in the streams | 0.830 |
+| a body lagging by 2 s, in D089's gyre | 0.977 |
+| a body lagging by 2 s, in the streams, with the fluid force | 0.248 |
+| a body lagging by 2 s, in D089's gyre, with the fluid force | 0.270 |
+
+The field keeps water spread, as an incompressible flow must. The lag gathers, and it gathers
+in any current with any azimuthal motion: a body pulled toward the water's velocity by drag
+alone fails to turn as sharply as the water and drifts outward by about `τ·u_θ²/r` per
+second. Real water holds a parcel on its curve by the pressure gradient across the flow, and a
+neutral body feels that gradient as a force. D081's model had the drag and the added mass and
+not that term, which a box with no walls and a returning current never exposed.
+
+**Ruled.**
+
+1. **Streams, not a gyre.** In a tank the current is a spectrum of 27 terms and no swirl about
+   the axis: horizontal eddies from a vertical vector potential over azimuthal modes 1 to 4,
+   two radial families (`s^m(1 − s²)` and `s^m(1 − s²)(1 − 2s²)`) and vertical modes 1 to 3,
+   amplitudes falling as `1/sqrt(m² + j² + q²)`; three axisymmetric overturning cells from
+   Stokes stream functions `r²(1 − s)²·sin(qπy/D)`, so neither their radial nor their vertical
+   flow reaches the glass; every term's phase advancing at its own irrational rate with
+   alternating signs, and its amplitude modulated between three quarters and one at a slower
+   irrational rate, all seeded by the run. Tangential at the glass by construction, finite on
+   the axis, divergence-free to 2e-4 of the RMS per metre; the wall layer moves at 0.96 of the
+   RMS; dead pockets 0.034; the fastest water 9 times the RMS, so the advection takes two
+   substeps at 0.1 m/s on 1 m cells where the gyre took one. No tunable: the tank's shape
+   selects it as it selected the gyre.
+
+2. **The fluid acceleration force.** Every part feels
+   `F = c · (ρ_water · V_part + m_added) · Du/Dt`, the water's acceleration along the part's path
+   (`∂u/∂t + (u·∇)u`, from the current field by a central difference of 0.05 m and 0.01 s on the
+   field itself, exact to 0.2 to 0.4% of the RMS acceleration against a finer stencil), applied
+   beside the drag every physics step in every current mode, its vertical component under
+   D050's rule. `FluidConfig.FluidAccelerationCoefficient` (`EVOSIM_FLUID_ACCEL`) is `c`,
+   default 0 so every recorded world replays under its own config; 1 is the physical value and
+   the campaign's from round 37b; the header prints `fluidAccel`. The force does no work on a
+   body at rest in the water and no accounting term reads it, so the energy books are
+   untouched; as an external force it invalidates the mechanical energy and momentum checks of
+   DESIGN §11.2 exactly as lift and a moving current already do, and those run at 0. Cost: nine
+   field samples per part per step, about eight times a velocity sample; round 37b runs at
+   about half round 37's pace, and the analytic derivative of the streams is queued to take it
+   back, verified by digest identity, before round 38.
+
+3. **The sequence.** Round 37 completes and is read as pre-registered. Round 37b, the same
+   world on the streams with `c` = 1 and the throw trace, replaces it as the tank's base; round
+   38's dilution reads against 37b. One change per round is kept in the owner's terms: 37b
+   makes the water carry bodies as water, and nothing else moves. The throw trace is read in
+   37b's dumps before any mitigation of the throws is proposed.
+
+**Checks run before the ruling** (worker 7, 2026-09-12 evening): the shared-space smoke with
+the tank and trace parts passed on the branch's Core and assets; a 600 s box digest under the
+new build is identical to the reference over all 31 steps at the defaults; a 600 s tank smoke
+with `c` = 1 (`r37bsmoke`, dt 0.02, seed 3) put 37, 41, 42 and 26 bodies in the four rings at
+600 s with a spread of 3.1 m against 2.8 m for a uniform disc, wraps 0, divergences 0, audit 0,
+matter residual 0; the Core suite 662 green.
+
+**Rejected.** The slip wall (a swirl fastest at the rim; proposed and withdrawn the same
+afternoon): a faster swirl centrifuges harder. A radial return layer near the glass: not
+divergence-free without a source, and a force the world does not have. Tuning the spectrum
+toward high azimuthal modes: the area-integrated drift is outward for any azimuthal motion at
+all, so no spectrum reaches an even spread without the force. Reading round 37 as it is: every
+reading in a trapped tank is confounded by the trap. Running 38 on 37 with two changes: the
+dilution would be read against a crust.
