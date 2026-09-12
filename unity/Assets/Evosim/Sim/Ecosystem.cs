@@ -5,6 +5,14 @@ using System.Text;
 using UnityEngine;
 using Evosim.Core;
 
+// The editor harnesses are a separate assembly, so `internal` alone does not reach them.
+// One member needs it — Ecosystem.CondemnForTest, the throw trace's test hook
+// (logbook/specs/throw-trace-spec.md) — and this is the narrowest way to grant it: the smoke's
+// own assembly and nothing else, rather than making a simulation entry point public where every
+// caller in the project could reach it. Declared here rather than in an AssemblyInfo.cs of its
+// own, because a whole file for one line is a file to keep in sync.
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Evosim.Sim.Editor")]
+
 namespace Evosim.Sim
 {
     /// <summary>
@@ -271,6 +279,51 @@ namespace Evosim.Sim
         /// </remarks>
         public double MaxResizeStepMetres { get; private set; }
 
+        /// <summary>
+        /// The largest joint mass ratio any body has carried at any build or resize this run, or
+        /// 0 in a world that has never had a jointed body —
+        /// <c>logbook/specs/throw-trace-spec.md</c> step 1.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The first reading this project has of the cause its own research ranked first.</b>
+        /// PhysX's joint documentation avoids mass ratios above about 10, because an impulse that
+        /// is large for a heavy link is enormous for a light one and the solver stops converging;
+        /// nothing here measured what ratios evolution was actually building
+        /// (<c>scratch/research-throws/notes.txt</c>). A maximum over the run rather than a
+        /// distribution, because the distribution is what the per-dump traces carry and this is
+        /// the number a reader of one row wants.
+        /// </para>
+        /// <para>
+        /// Finite by construction — see <c>PhenotypeBuilder.MeasureJointMassRatios</c>, which
+        /// declines to make a ratio out of a non-finite mass rather than handing one to a JSON
+        /// writer that would refuse the whole row.
+        /// </para>
+        /// </remarks>
+        public double MaxJointMassRatio { get; private set; }
+
+        /// <summary>
+        /// Bodies whose joint mass ratio was over 10 at any build or resize, counted once each.
+        /// </summary>
+        /// <remarks>
+        /// <b>Bodies, not body-resizes</b>, unlike <see cref="Resizes"/> beside it: growth scales
+        /// every link by one length, so a body born over the line stays over it and counting each
+        /// growth step would turn the number into a measure of how long the animals lived. Read it
+        /// against <c>births</c>, the way <c>mat blk</c> and <c>crowded</c> are read (CLAUDE.md).
+        /// </remarks>
+        public long BodiesOverMassRatio10 { get; private set; }
+
+        /// <summary>
+        /// The ratio above which a body is counted in <see cref="BodiesOverMassRatio10"/>.
+        /// </summary>
+        /// <remarks>
+        /// 10 because that is the number PhysX's own joint documentation names, quoted in
+        /// <c>scratch/research-throws/notes.txt</c>: "mass ratios of higher than 10 are best
+        /// avoided". It is a reading threshold and not a world rule — nothing is refused, capped
+        /// or clamped at it, and it reaches no config and no hash.
+        /// </remarks>
+        private const float MassRatioThreshold = 10f;
+
         private readonly Dictionary<long, Body> _bodies = new Dictionary<long, Body>();
 
         /// <summary>The bodies to step, and whose creature each one is. Parallel, same order.</summary>
@@ -480,7 +533,106 @@ namespace Evosim.Sim
             /// population is grown.
             /// </remarks>
             public bool ResizedLastStep;
+
+            /// <summary>
+            /// The last <see cref="TraceFrames"/> physics steps of every link's motion, or null
+            /// for a body that is not traced — <c>logbook/specs/throw-trace-spec.md</c> step 2.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// Laid out flat as frame-major: frame <i>f</i>, link <i>b</i> starts at
+            /// <c>(f * links + b) * TraceFloatsPerLink</c> and holds position, linear velocity,
+            /// angular velocity and the joint's reduced-space velocity, three floats each. One
+            /// array per body, allocated at build and overwritten in place forever after, because
+            /// this is written on every physics step and an allocation there would be a garbage
+            /// collection in the solver's own loop.
+            /// </para>
+            /// <para>
+            /// Null for a rigid body. A creature with no actuated joint has no joint state to
+            /// lose and cannot be the case this instrument was built for, and the majority of
+            /// every population on record is rigid.
+            /// </para>
+            /// </remarks>
+            public float[] Trace;
+
+            /// <summary>Step number of each frame in <see cref="Trace"/>, same slot order.</summary>
+            public long[] TraceStep;
+
+            /// <summary>Simulated time of each frame, seconds.</summary>
+            public double[] TraceTime;
+
+            /// <summary>
+            /// Whether this body was resized between the previous frame and this one.
+            /// </summary>
+            /// <remarks>
+            /// A resize happens at the end of a metabolic step, after that step's frame has been
+            /// recorded, so it is the <i>next</i> frame that is the first one taken with the new
+            /// colliders, masses and anchors in place. The flag is therefore "the resize happened
+            /// just before this frame" rather than "during this step", which is the reading a
+            /// post-mortem wants: it names the first frame that could show the kick.
+            /// </remarks>
+            public bool[] TraceResized;
+
+            /// <summary>Frames held, 0 to <see cref="TraceFrames"/>.</summary>
+            public int TraceHeld;
+
+            /// <summary>The slot the next frame goes into.</summary>
+            public int TraceCursor;
+
+            /// <summary>Set by a resize, cleared by the next frame that records it.</summary>
+            public bool ResizedSinceLastFrame;
+
+            /// <summary>
+            /// Physics step at which this body was last resized, or −1 if it never has been.
+            /// </summary>
+            public long ResizedAtStep;
+
+            /// <summary>
+            /// True once this body has been counted in <see cref="BodiesOverMassRatio10"/>.
+            /// </summary>
+            /// <remarks>
+            /// The counter is bodies and not body-resizes, unlike <see cref="Resizes"/>: a body
+            /// that is born over the threshold is over it for the whole of its life, because
+            /// growth scales every link by one length and leaves the ratio where it was, so
+            /// counting each resize would report the same animal a hundred times and make the
+            /// number a function of how long it lived.
+            /// </remarks>
+            public bool CountedOverMassRatio;
+
+            /// <summary>
+            /// Test-only: makes the next divergence check condemn this body —
+            /// <c>logbook/specs/throw-trace-spec.md</c>'s smoke.
+            /// </summary>
+            /// <remarks>
+            /// See <see cref="CondemnForTest"/>. False for the whole of every run.
+            /// </remarks>
+            public bool CondemnedForTest;
         }
+
+        /// <summary>
+        /// Frames of per-link motion kept per body — <c>logbook/specs/throw-trace-spec.md</c>
+        /// step 2 asks for the last three.
+        /// </summary>
+        /// <remarks>
+        /// Three is what the question needs: the step a body went non-finite, and two before it
+        /// to say whether anything was already growing. A longer ring would answer a different
+        /// question (how a body got there) at a cost per body per step that this one does not
+        /// need to pay.
+        /// </remarks>
+        private const int TraceFrames = 3;
+
+        /// <summary>
+        /// Floats per link per frame: position, linear velocity, angular velocity and joint
+        /// velocity, three each.
+        /// </summary>
+        /// <remarks>
+        /// The joint's velocity is PhysX's reduced-space vector, up to three actuated degrees of
+        /// freedom, and it is the one quantity here that is about the <i>joint</i> rather than
+        /// about the link's motion through the water. Unused components read 0, and the dump
+        /// writes the link's real DOF count beside them so a reader can tell a locked axis from a
+        /// still one.
+        /// </remarks>
+        private const int TraceFloatsPerLink = 12;
 
         public Ecosystem(RunConfig config, ulong seed = 1, Transform parent = null)
         {
@@ -1062,6 +1214,14 @@ namespace Evosim.Sim
 
             Steps++;
 
+            // The throw trace — logbook/specs/throw-trace-spec.md step 2. Here for the digest's
+            // reason, immediately below: neither Settle writes to a body, so this is the state
+            // the solver left, with the step counter already advanced to name it. It reads four
+            // quantities per link and writes them into an array the body already owns; it sets
+            // nothing the world will read back, so a state digest under this build is identical
+            // to one without it.
+            RecordTrace();
+
             // The state digest — logbook/specs/digest-spec.md. One null test per physics step when it
             // is off, which is every run that does not set EVOSIM_DIGEST_EVERY: the instrument
             // reads the solver and writes a file, and touches nothing the world will read back.
@@ -1397,7 +1557,11 @@ namespace Evosim.Sim
                 Vector3 root = bodies[0].transform.position;
                 float horizontal = root.x + root.z;
 
-                bool intact = World.HeightIsInTheWorld(root.y, depth) &&
+                // The test-only condemnation is folded into the same expression rather than given
+                // a branch of its own: see CondemnForTest. False for the whole of every run, so
+                // the short-circuit reads it and stops.
+                bool intact = !body.CondemnedForTest &&
+                              World.HeightIsInTheWorld(root.y, depth) &&
                               !float.IsNaN(horizontal) && !float.IsInfinity(horizontal);
 
                 if (intact && tank)
@@ -1465,6 +1629,154 @@ namespace Evosim.Sim
 
                 if (Volume.TryWrap(t.position, out Vector3 wrapped)) root.TeleportRoot(wrapped, t.rotation);
             }
+        }
+
+        /// <summary>
+        /// Writes one frame of every traced body's per-link motion into its ring —
+        /// <c>logbook/specs/throw-trace-spec.md</c> step 2.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What the dumps could not say.</b> A divergence dump carries the state at the moment
+        /// the check found the body, and the check runs at the metabolic cadence — so by the time
+        /// anyone looks, the body may have been non-finite for fifty steps and every number in it
+        /// reads NaN. The last finite root position was the only thing rescued from before that,
+        /// and it is one position for the whole creature. This keeps the three steps before the
+        /// dump, per link, which is the difference between "it blew up" and "the light link was
+        /// already turning at a thousand radians a second while the heavy one had not moved".
+        /// </para>
+        /// <para>
+        /// <b>Jointed bodies only, and no allocation.</b> The ring is sized at build and
+        /// overwritten forever after, and a rigid body has none, so the cost is one null test per
+        /// creature per step plus four native reads per link on the minority that have a joint.
+        /// The array's length cannot disagree with the body's link count —
+        /// <c>PhenotypeBuilder.Resize</c> refuses a phenotype whose part count changed, and
+        /// nothing else resizes a live articulation — so an index is taken rather than guarded: a
+        /// throw here would be a real fault and is worth hearing about.
+        /// </para>
+        /// <para>
+        /// The root's joint velocity is not read. It has no joint, and asking PhysX for the
+        /// reduced-space velocity of a link that has none is a question with no answer rather than
+        /// an answer of zero.
+        /// </para>
+        /// </remarks>
+        private void RecordTrace()
+        {
+            for (int i = 0; i < _order.Count; i++)
+            {
+                Body body = _order[i];
+                float[] trace = body.Trace;
+                if (trace == null) continue;
+
+                ArticulationBody[] bodies = body.Instance.Bodies;
+                if (bodies == null || bodies.Length == 0) continue;
+
+                int links = bodies.Length;
+                int slot = body.TraceCursor;
+                int at = slot * links * TraceFloatsPerLink;
+
+                for (int b = 0; b < links; b++)
+                {
+                    ArticulationBody link = bodies[b];
+                    int o = at + b * TraceFloatsPerLink;
+
+                    Vector3 p = link.transform.position;
+                    Vector3 v = link.linearVelocity;
+                    Vector3 w = link.angularVelocity;
+
+                    trace[o + 0] = p.x;
+                    trace[o + 1] = p.y;
+                    trace[o + 2] = p.z;
+                    trace[o + 3] = v.x;
+                    trace[o + 4] = v.y;
+                    trace[o + 5] = v.z;
+                    trace[o + 6] = w.x;
+                    trace[o + 7] = w.y;
+                    trace[o + 8] = w.z;
+
+                    float j0 = 0f, j1 = 0f, j2 = 0f;
+
+                    if (b > 0)
+                    {
+                        ArticulationReducedSpace joint = link.jointVelocity;
+
+                        if (joint.dofCount > 0) j0 = joint[0];
+                        if (joint.dofCount > 1) j1 = joint[1];
+                        if (joint.dofCount > 2) j2 = joint[2];
+                    }
+
+                    trace[o + 9] = j0;
+                    trace[o + 10] = j1;
+                    trace[o + 11] = j2;
+                }
+
+                body.TraceStep[slot] = Steps;
+                body.TraceTime[slot] = Steps * (double)FixedDt;
+
+                // Cleared as it is recorded, so exactly one frame per resize carries the flag —
+                // the first frame taken after the new anchors and masses were written.
+                body.TraceResized[slot] = body.ResizedSinceLastFrame;
+                body.ResizedSinceLastFrame = false;
+
+                body.TraceCursor = slot + 1 == TraceFrames ? 0 : slot + 1;
+                if (body.TraceHeld < TraceFrames) body.TraceHeld++;
+            }
+        }
+
+        /// <summary>
+        /// Takes one body's joint mass ratio into the run's own maximum and threshold count —
+        /// <c>logbook/specs/throw-trace-spec.md</c> step 1.
+        /// </summary>
+        /// <remarks>
+        /// Called where a body's masses are written and nowhere else: once when it is built, after
+        /// added mass has been applied, and once per resize. A ratio of 0 is a body with no joint
+        /// or a mass the ratio declined to divide by, and neither is a reading.
+        /// </remarks>
+        private void NoteMassRatio(Body body)
+        {
+            float ratio = body.Instance.MaxJointMassRatio;
+            if (!(ratio > 0f)) return;
+
+            if (ratio > MaxJointMassRatio) MaxJointMassRatio = ratio;
+
+            if (ratio > MassRatioThreshold && !body.CountedOverMassRatio)
+            {
+                body.CountedOverMassRatio = true;
+                BodiesOverMassRatio10++;
+            }
+        }
+
+        /// <summary>
+        /// Test-only: condemns one living body, so that the next divergence check kills and dumps
+        /// it as though the solver had lost it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why a hook rather than a real NaN.</b> The trace dump has to be exercised by a smoke
+        /// (<c>logbook/specs/throw-trace-spec.md</c>), and there is no way in through the front
+        /// door: <see cref="CheckFinite"/> reads positions, and a position is written by the
+        /// solver rather than by anyone who could poison it. Writing a non-finite velocity into a
+        /// link instead asks Unity to accept a value it validates and rejects, and in a shared box
+        /// it would spread through contacts to bodies the test never set up — so the body that got
+        /// dumped might not be the one under test. This instead asks the check to fail on a named
+        /// creature, which exercises every line from the check to the file and none of the physics.
+        /// </para>
+        /// <para>
+        /// <b>What it costs a run: nothing measurable, and no branch in the hot loop.</b> The flag
+        /// is read inside the same test <see cref="CheckFinite"/> already makes per body per
+        /// metabolic step, and it is false for the whole of every run — no environment variable
+        /// sets it, no config carries it, and it is <c>internal</c>, so only this assembly's own
+        /// editor harnesses can reach it.
+        /// </para>
+        /// </remarks>
+        /// <param name="organismId">The creature to condemn.</param>
+        /// <returns>False if no living body has that id.</returns>
+        internal bool CondemnForTest(long organismId)
+        {
+            if (!_bodies.TryGetValue(organismId, out Body body)) return false;
+
+            body.CondemnedForTest = true;
+            return true;
         }
 
         /// <summary>Records one diverged creature and kills it. Dump first, then the death.</summary>
@@ -1583,12 +1895,185 @@ namespace Evosim.Sim
                     new UTF8Encoding(false));
 
                 _dumpsWritten++;
+
+                // The trace beside the post-mortem, under the same cap — this is inside the
+                // guard at the top of the method, and it runs after the dump has been written so
+                // that a body which has one file always has the more important one. Its own
+                // try/catch, so an IO failure writing the trace cannot lose the dump that is
+                // already on disk (see DumpTrace).
+                DumpTrace(body, creature);
             }
             catch (Exception e)
             {
                 Debug.LogWarning("diverged dump not written: " + e.Message);
             }
         }
+
+        /// <summary>
+        /// Writes the three physics steps before a divergence, per link, beside the body's
+        /// post-mortem — <c>logbook/specs/throw-trace-spec.md</c> step 3.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A second file rather than more fields on the first.</b> The dump is one object per
+        /// creature and this is a small time series per link; a reader of either wants its own
+        /// shape, and every tool that reads the existing dumps keeps working untouched. It lands
+        /// as <c>&lt;id&gt;-trace.json</c>, so the pair sorts together.
+        /// </para>
+        /// <para>
+        /// <b>Nothing is written for a rigid body</b>, which has no ring: the reader prints a dash
+        /// for a dump with no trace, and that dash means the same thing for a one-part body as it
+        /// does for a dump recorded before this build existed.
+        /// </para>
+        /// <para>
+        /// Every number goes through <see cref="Number"/>, which writes a non-finite value as its
+        /// own name in quotes. This file exists because something stopped being finite, so a
+        /// writer that threw on NaN would record nothing exactly when there was something to
+        /// record — <see cref="Number"/>'s own remarks say it at length. That is also why nothing
+        /// here uses <c>Json.Writer.Value(float)</c>, which does not make that allowance.
+        /// </para>
+        /// </remarks>
+        private void DumpTrace(Body body, Organism creature)
+        {
+            float[] trace = body.Trace;
+            if (trace == null || body.TraceHeld == 0) return;
+
+            try
+            {
+                ArticulationBody[] bodies = body.Instance.Bodies;
+                Phenotype phenotype = body.Instance.Phenotype;
+                int links = bodies.Length;
+
+                var w = new Json.Writer(indent: true);
+                w.BeginObject();
+
+                w.Field("creatureId", creature.Id);
+                w.Field("t", World.ElapsedSeconds);
+                w.Field("physicsStep", Steps + 1);
+                w.Field("physicsDtSeconds", FixedDt);
+                w.Field("ageSeconds", creature.Age);
+                w.Field("parts", links);
+                w.Field("totalDof", body.Instance.TotalDof);
+
+                Number(w, "maxJointMassRatio", body.Instance.MaxJointMassRatio);
+
+                // How long ago the body was last resized, in the units the growth question is
+                // asked in. −1 for a body that has never been resized, which is every body that
+                // was born adult and every body younger than one growth step.
+                w.Field("lastResizeStep", body.ResizedAtStep);
+                w.Field(
+                    "stepsSinceLastResize",
+                    body.ResizedAtStep < 0 ? -1L : Steps - body.ResizedAtStep);
+
+                // The masses as the solver holds them, and each link's ratio against its own
+                // parent. Written per link rather than as a summary because the summary is the
+                // one number above it and the arrangement is the thing worth reading: a ratio of
+                // 70 between a heavy root and one light leaf is a different animal from the same
+                // ratio spread over a chain.
+                w.BeginArray("links");
+
+                for (int b = 0; b < links; b++)
+                {
+                    PhenotypePart shape = phenotype != null && b < phenotype.Parts.Count
+                        ? phenotype.Parts[b]
+                        : null;
+
+                    w.BeginObject();
+                    w.Field("index", b);
+                    w.Field("name", bodies[b] != null ? bodies[b].name : null);
+                    w.Field("parentIndex", shape != null ? shape.ParentIndex : -1);
+                    w.Field("jointType", shape != null ? shape.JointType.ToString() : "unknown");
+                    w.Field("jointDof", shape != null ? shape.JointType.DofCount() : 0);
+                    Number(w, "massKg", Element(body.Instance.LinkMasses, b));
+                    Number(w, "jointMassRatio", Element(body.Instance.JointMassRatios, b));
+                    w.EndObject();
+                }
+
+                w.EndArray();
+
+                // Oldest to newest. The ring's cursor points at the slot the next frame would
+                // overwrite, which is the oldest one it holds once it is full, so that is where
+                // the walk starts; a body younger than three steps has held fewer and its frames
+                // sit in slots 0 upward.
+                int held = body.TraceHeld;
+                int first = held == TraceFrames ? body.TraceCursor : 0;
+
+                w.Field("framesHeld", held);
+                w.BeginArray("frames");
+
+                for (int f = 0; f < held; f++)
+                {
+                    int slot = (first + f) % TraceFrames;
+                    int at = slot * links * TraceFloatsPerLink;
+
+                    w.BeginObject();
+                    w.Field("step", body.TraceStep[slot]);
+                    w.Field("t", body.TraceTime[slot]);
+                    w.Field("resizedJustBefore", body.TraceResized[slot]);
+                    w.BeginArray("links");
+
+                    for (int b = 0; b < links; b++)
+                    {
+                        int o = at + b * TraceFloatsPerLink;
+
+                        w.BeginObject();
+                        w.Field("index", b);
+                        TraceVector(w, "position", trace, o);
+                        TraceVector(w, "velocity", trace, o + 3);
+                        TraceVector(w, "angularVelocity", trace, o + 6);
+
+                        // The reduced-space joint velocity, named by slot rather than by axis:
+                        // these are degrees of freedom in the order PhysX drives them, not a
+                        // direction in the water. A link whose jointDof is 1 has a reading in v0
+                        // and zeros after it.
+                        w.BeginObject("jointVelocity");
+                        Number(w, "v0", trace[o + 9]);
+                        Number(w, "v1", trace[o + 10]);
+                        Number(w, "v2", trace[o + 11]);
+                        w.EndObject();
+
+                        w.EndObject();
+                    }
+
+                    w.EndArray();
+                    w.EndObject();
+                }
+
+                w.EndArray();
+                w.EndObject();
+
+                Directory.CreateDirectory(DivergenceDumpDirectory);
+                File.WriteAllText(
+                    Path.Combine(DivergenceDumpDirectory, creature.Id + "-trace.json"),
+                    w.ToString(),
+                    new UTF8Encoding(false));
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("diverged trace not written: " + e.Message);
+            }
+        }
+
+        /// <summary>Three consecutive floats out of a trace frame, as an object.</summary>
+        private static void TraceVector(Json.Writer w, string name, float[] trace, int at)
+        {
+            w.BeginObject(name);
+            Number(w, "x", trace[at]);
+            Number(w, "y", trace[at + 1]);
+            Number(w, "z", trace[at + 2]);
+            w.EndObject();
+        }
+
+        /// <summary>
+        /// One element of a per-link array, or 0 where there is none.
+        /// </summary>
+        /// <remarks>
+        /// The mass arrays are filled by <c>PhenotypeBuilder.MeasureJointMassRatios</c> at every
+        /// build and resize, so they are always present and always the right length for a body
+        /// this build made. A dump is the wrong place to find out otherwise.
+        /// </remarks>
+        private static float Element(float[] values, int index) =>
+            values != null && index < values.Length ? values[index] : 0f;
 
         /// <summary>One vector, as an object of three numbers.</summary>
         private static void Vector(Json.Writer w, string name, Vector3 v)
@@ -1849,6 +2334,14 @@ namespace Evosim.Sim
                 body.AppliedBodyFraction = creature.BodyFraction;
                 body.ResizedLastStep = true;
 
+                // logbook/specs/throw-trace-spec.md steps 1 and 2. Resize has just rewritten
+                // every mass, so the ratio is re-read from the articulation; and the next frame
+                // the ring records is the first one taken with the new anchors in place, which is
+                // the frame a post-mortem asks about.
+                NoteMassRatio(body);
+                body.ResizedAtStep = Steps;
+                body.ResizedSinceLastFrame = true;
+
                 // The placer's picture of how much room this body needs, refreshed with the body.
                 if (Volume != null) body.Radius = SharedVolume.BoundingRadius(creature.Phenotype);
 
@@ -2005,7 +2498,28 @@ namespace Evosim.Sim
                 // hand every newborn an adult's colliders and an adult's mass, which is the exact
                 // mismatch rule 8 exists to close.
                 AppliedBodyFraction = creature.BodyFraction,
+
+                // logbook/specs/throw-trace-spec.md step 3: "never" and "at step 0" are different
+                // facts about a body, and a newborn's dump has to be able to say which.
+                ResizedAtStep = -1,
             };
+
+            // logbook/specs/throw-trace-spec.md steps 1 and 2, after ApplyAddedMass above: the
+            // masses the solver will actually carry, and the ring the trace is written into. The
+            // ring is allocated here, once, for any body of more than one link — a fixed joint
+            // can still go non-finite (`r35old-s3`, CLAUDE.md), so the test is the link count
+            // rather than the actuated degrees of freedom — and the array is overwritten in place
+            // on every physics step for the rest of the creature's life.
+            PhenotypeBuilder.MeasureJointMassRatios(instance);
+            NoteMassRatio(body);
+
+            if (instance.Bodies.Length > 1)
+            {
+                body.Trace = new float[TraceFrames * instance.Bodies.Length * TraceFloatsPerLink];
+                body.TraceStep = new long[TraceFrames];
+                body.TraceTime = new double[TraceFrames];
+                body.TraceResized = new bool[TraceFrames];
+            }
 
             // D077. Contact reporting is opt-in per collider and defaults off — without it PhysX
             // resolves a contact and tells nobody, which is how the spike's first contact-check

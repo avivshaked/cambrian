@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.IO;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
@@ -13,7 +14,7 @@ namespace Evosim.Sim.EditorTools
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Three parts, cheapest first. <b>Part 1</b> is the restoring boundary's arithmetic —
+    /// Five parts, cheapest first. <b>Part 1</b> is the restoring boundary's arithmetic —
     /// <see cref="FluidEnvironment.Restore"/> is a pure function and its sign, its continuity at
     /// y = 0 and its magnitude are assertable without a scene at all. It lives here rather than in
     /// <c>Evosim.Core.Tests</c> because §6.1 keeps <c>UnityEngine</c> out of Core and the buoyancy
@@ -41,6 +42,15 @@ namespace Evosim.Sim.EditorTools
     /// into the wall at three times the fastest speed anything here has ever swum, to see them
     /// stopped. The three box parts above are untouched: a Box world must stay bit-identical to
     /// every recording, which is the tank build's one invariant.
+    /// </para>
+    /// <para>
+    /// <b>Part 5</b> is the throw trace (<c>logbook/specs/throw-trace-spec.md</c>), and it is not
+    /// about the box at all: the ring and the divergence dump belong to <see cref="Ecosystem"/>,
+    /// and this is the harness that builds one. One deliberately lopsided two-link body — 72 : 1
+    /// across its joint — is inoculated into a tiled world, grown by the real growth path, and
+    /// then condemned through <c>Ecosystem.CondemnForTest</c>, and what is asserted is the
+    /// contents of the file that lands: three frames oldest to newest, the mass ratio and its
+    /// per-link table, the step of the last resize, and the one frame the resize flagged.
     /// </para>
     /// <para>
     /// <b>The bed is a collider now</b> (<c>logbook/specs/floor-spec.md</c>, <see cref="SeaFloor"/>), so
@@ -172,6 +182,7 @@ namespace Evosim.Sim.EditorTools
                 ok &= Geometry(report);
                 ok &= TheBox(report);
                 ok &= TheTank(report);
+                ok &= TheThrowTrace(report);
             }
             catch (Exception e)
             {
@@ -1301,6 +1312,386 @@ namespace Evosim.Sim.EditorTools
             }
 
             return back;
+        }
+
+        // --------------------------------------------------------------- part 5: the throw trace
+
+        /// <summary>
+        /// Physics step part 5 runs at, seconds.
+        /// </summary>
+        /// <remarks>
+        /// <b>Coarse on purpose, and it is the only way this part can assert the resize flag.</b>
+        /// <c>Ecosystem.CheckFinite</c> runs once per metabolic step, so at the smoke's own 0.01 s
+        /// the divergence is caught fifty steps after the resize and the one frame the resize
+        /// flagged has long been overwritten in a three-frame ring. At 0.25 s a metabolic step is
+        /// two physics steps, so the flagged frame is still held when the dump is written. Nothing
+        /// in this part asserts a physical quantity — it asserts what is in a file — so the step
+        /// is free to be whatever makes the timing legible. Restored afterwards, because the
+        /// setting is process-wide.
+        /// </remarks>
+        private const float TraceDt = 0.25f;
+
+        /// <summary>
+        /// Does the throw trace record and dump what it claims to? —
+        /// <c>logbook/specs/throw-trace-spec.md</c>'s smoke.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>One body, built deliberately lopsided.</b> A 1 m³ root and a 0.24 m limb put about
+        /// 72 : 1 across the one joint, which is seven times the ratio PhysX's joint documentation
+        /// says to stay under — so the ratio instrument has something to read and the
+        /// over-ten count has something to count. The limb is a link with capacity and no
+        /// neurons, so nothing drives it: the trace is under test here, not swimming.
+        /// </para>
+        /// <para>
+        /// <b>Tiled rather than shared, in a smoke about the shared box.</b> The trace is not a
+        /// box rule — it reads articulations — and one body on the lattice is the smallest harness
+        /// that exercises every line of it. It lives in this file rather than in
+        /// <c>Milestone1Smoke</c> because the ring and the dump belong to <c>Ecosystem</c>, and
+        /// this is the harness that builds one.
+        /// </para>
+        /// <para>
+        /// <b>The world is arranged so that exactly one thing happens.</b> Reproduction is priced
+        /// out of reach with a per-offspring overhead of a gigajoule, the population floor is
+        /// switched off, and the inoculant is given enough energy to reach its adult size in a
+        /// single growth pass — so there is one body, one resize, and one divergence, at steps the
+        /// assertions can name. The overhead and the floor are knobs of the world; nothing here
+        /// touches the trace's own behaviour.
+        /// </para>
+        /// </remarks>
+        private static bool TheThrowTrace(StringBuilder report)
+        {
+            report.AppendLine();
+            report.AppendLine("**5. The throw trace** (`logbook/specs/throw-trace-spec.md`)");
+            report.AppendLine();
+
+            SimulationMode previousMode = Physics.simulationMode;
+            Vector3 previousGravity = Physics.gravity;
+
+            Physics.simulationMode = SimulationMode.Script;
+            FluidEnvironment.ConfigureScene(selfCollision: true);
+            Ecosystem.ConfigurePhysicsStep(TraceDt);
+
+            var config = new RunConfig
+            {
+                Light = new LightModel(200f, 12f),
+                SharedSpace = false,
+                HorizontalPatches = 1f,
+                WorldAreaSquareMetres = 400f,
+                WorldDepthMetres = 60f,
+
+                // Nothing but the inoculant: no floor trickle, and a reproduction event priced
+                // beyond any reserve this creature can hold.
+                MinimumPopulation = 0,
+                FloorSpawnsPerStep = 0,
+                PerOffspringOverheadJoules = 1e9f,
+
+                // Grown to adult in one pass on the first metabolic step: the growth cadence is
+                // one metabolic step, the reserve keeps nothing back, and the purse is far larger
+                // than the body costs.
+                GrowthStepSeconds = Ecosystem.MetabolicStepSeconds,
+                GrowthReserveFloor = 0f,
+                FounderEnergyJoules = 100000f,
+
+                // The newborn mass floor would refuse nothing at these sizes, and is switched off
+                // so that the fixture's dimensions are the only thing deciding what is built.
+                MinNewbornPartKilograms = 0f,
+
+                // A record rather than a rule — nothing in Core reads it — but a config that
+                // said 0.01 while the solver ran at 0.25 would mislead anyone who read it back.
+                PhysicsStepSeconds = TraceDt,
+            };
+
+            var eco = new Ecosystem(config, seed: 91);
+            string dumpDirectory = TraceDumpDirectory();
+            eco.DivergenceDumpDirectory = dumpDirectory;
+
+            bool ok = true;
+
+            try
+            {
+                if (Directory.Exists(dumpDirectory)) Directory.Delete(dumpDirectory, recursive: true);
+
+                eco.World.Inoculate(HeavyRootAndLightLimb(), 1, -2f);
+
+                // One step to give the inoculant a body. Reconcile builds it at the top of the
+                // step, so the ring exists and holds its first frame by the time this returns.
+                eco.Step();
+
+                if (eco.World.Living.Count != 1 || eco.Instances.Count != 1)
+                {
+                    report.AppendLine(
+                        "- FAIL the fixture did not produce exactly one body: " +
+                        eco.World.Living.Count + " alive, " + eco.Instances.Count + " built");
+                    return false;
+                }
+
+                long id = eco.World.Living[0].Id;
+                CreatureInstance instance = eco.Instances[0];
+
+                bool built = Same(report, "links built", instance.Bodies.Length, 2);
+                ok &= built;
+                ok &= Same(report, "actuated DOF", instance.TotalDof, 1);
+
+                // Everything below reads link 1 by index, so a body that developed into something
+                // else is reported and abandoned rather than indexed off the end.
+                if (!built) return false;
+
+                float ratioBefore = instance.MaxJointMassRatio;
+                report.AppendLine(
+                    "- note mass ratio at birth: " +
+                    ratioBefore.ToString("0.##", CultureInfo.InvariantCulture) + " : 1 across " +
+                    instance.LinkMasses[0].ToString("0.###", CultureInfo.InvariantCulture) +
+                    " kg and " +
+                    instance.LinkMasses[1].ToString("0.###", CultureInfo.InvariantCulture) + " kg");
+
+                bool overTen = ratioBefore > 10f;
+                report.AppendLine(
+                    (overTen ? "- ok   " : "- FAIL ") +
+                    "the fixture is over the ratio PhysX's joints documentation avoids (10)");
+                ok &= overTen;
+
+                ok &= Same(report, "bodies over ratio 10", (int)eco.BodiesOverMassRatio10, 1);
+
+                // The growth path, not a hand-made resize: World.Grow moves the joules and scales
+                // the phenotype, and Ecosystem.ApplyGrowth calls PhenotypeBuilder.Resize.
+                long resizeStep = -1;
+                for (int s = 0; s < 200 && resizeStep < 0; s++)
+                {
+                    eco.Step();
+                    if (eco.Resizes > 0) resizeStep = eco.Steps;
+                }
+
+                if (resizeStep < 0)
+                {
+                    report.AppendLine("- FAIL the body never grew, so the resize path never ran");
+                    return false;
+                }
+
+                // Everything below reads the body and the creature. A world of one animal that
+                // has lost it has nothing left to assert, and reading a destroyed articulation
+                // would throw rather than fail.
+                if (eco.World.Living.Count != 1)
+                {
+                    report.AppendLine(
+                        "- FAIL the body did not survive to be condemned: " +
+                        eco.World.Living.Count + " alive");
+                    return false;
+                }
+
+                report.AppendLine(
+                    "- ok   resized by the growth path at step " + resizeStep + " (" +
+                    eco.Resizes + " resize(s), body fraction " +
+                    eco.World.Living[0].BodyFraction.ToString("0.###", CultureInfo.InvariantCulture) +
+                    ")");
+
+                float ratioAfter = instance.MaxJointMassRatio;
+
+                // Growth scales every link by one length, so the ratio is a property of the
+                // genome and not of the body's size. Asserting that it survives the resize is
+                // what says the resize path re-read the masses rather than leaving the birth
+                // reading standing.
+                bool ratioHeld = Mathf.Abs(ratioAfter - ratioBefore) <= 1e-2f * ratioBefore;
+                report.AppendLine(
+                    (ratioHeld ? "- ok   " : "- FAIL ") + "mass ratio after the resize: " +
+                    ratioAfter.ToString("0.##", CultureInfo.InvariantCulture) +
+                    " : 1, from masses " +
+                    instance.LinkMasses[0].ToString("0.###", CultureInfo.InvariantCulture) +
+                    " kg and " +
+                    instance.LinkMasses[1].ToString("0.###", CultureInfo.InvariantCulture) +
+                    " kg — a uniform scale leaves it where it was");
+                ok &= ratioHeld;
+
+                // One more step, so the frame that follows the resize is recorded and carries the
+                // flag; then the divergence, so that frame is still in the three-frame ring when
+                // the dump is written.
+                eco.Step();
+
+                if (!eco.CondemnForTest(id))
+                {
+                    report.AppendLine("- FAIL the body was gone before it could be condemned");
+                    return false;
+                }
+
+                string tracePath = Path.Combine(dumpDirectory, id + "-trace.json");
+
+                for (int s = 0; s < 20 && !File.Exists(tracePath); s++) eco.Step();
+
+                bool landed = File.Exists(tracePath);
+                report.AppendLine(
+                    (landed ? "- ok   " : "- FAIL ") + "trace written: " + tracePath);
+                if (!landed) return false;
+
+                ok &= Same(report, "diverged deaths", (int)eco.World.Diverged, 1);
+
+                bool dumped = File.Exists(Path.Combine(dumpDirectory, id + ".json"));
+                report.AppendLine(
+                    (dumped ? "- ok   " : "- FAIL ") + "the post-mortem landed beside it");
+                ok &= dumped;
+
+                JsonNode trace = Json.Parse(File.ReadAllText(tracePath));
+
+                ok &= Same(report, "frames held", trace["framesHeld"].AsInt(), 3);
+
+                // Checked before anything indexes a frame: JsonNode's indexer throws on a missing
+                // member rather than returning null, and a smoke that dies inside its own
+                // assertion reports an exception where it should report a count.
+                bool three = Same(report, "frames written", trace["frames"].Count, 3);
+                ok &= three;
+                if (!three) return false;
+
+                ok &= Same(report, "links in the newest frame", trace["frames"][2]["links"].Count, 2);
+
+                ok &= Same(
+                    report, "trace mass ratio",
+                    trace["maxJointMassRatio"].AsFloat(), ratioAfter);
+
+                ok &= Same(
+                    report, "last resize step",
+                    (int)trace["lastResizeStep"].AsDouble(), (int)resizeStep);
+
+                // Oldest to newest, so the steps must ascend and end at the step the check fired
+                // on. This is the assertion that says the ring was unwound in the right order.
+                bool ascending = true;
+                var steps = new StringBuilder();
+
+                for (int f = 0; f < trace["frames"].Count; f++)
+                {
+                    double step = trace["frames"][f]["step"].AsDouble();
+                    if (f > 0) steps.Append(", ");
+                    steps.Append(step.ToString("0", CultureInfo.InvariantCulture));
+
+                    if (f > 0 && step <= trace["frames"][f - 1]["step"].AsDouble()) ascending = false;
+                }
+
+                report.AppendLine(
+                    (ascending ? "- ok   " : "- FAIL ") +
+                    "frames run oldest to newest: steps " + steps.ToString());
+                ok &= ascending;
+
+                // The resize flag names the first frame taken after the new anchors and masses
+                // went in, which is the step after the resize itself.
+                int flagged = 0;
+                double flaggedStep = -1d;
+
+                for (int f = 0; f < trace["frames"].Count; f++)
+                {
+                    if (!trace["frames"][f]["resizedJustBefore"].AsBool()) continue;
+
+                    flagged++;
+                    flaggedStep = trace["frames"][f]["step"].AsDouble();
+                }
+
+                ok &= Same(report, "frames flagged as post-resize", flagged, 1);
+                ok &= Same(report, "the flagged frame's step", (int)flaggedStep, (int)resizeStep + 1);
+
+                // The per-link masses and ratios, as the dump carries them.
+                bool two = Same(report, "links in the trace's mass table", trace["links"].Count, 2);
+                ok &= two;
+                if (!two) return false;
+
+                ok &= Same(
+                    report, "the root's ratio (it has no joint)",
+                    trace["links"][0]["jointMassRatio"].AsFloat(), 0f);
+                ok &= Same(
+                    report, "the limb's ratio against its parent",
+                    trace["links"][1]["jointMassRatio"].AsFloat(), ratioAfter);
+                ok &= Same(report, "the limb's joint DOF", trace["links"][1]["jointDof"].AsInt(), 1);
+
+                bool aged = trace["ageSeconds"].AsFloat() > 0f;
+                report.AppendLine(
+                    (aged ? "- ok   " : "- FAIL ") + "the body's age is recorded: " +
+                    trace["ageSeconds"].AsFloat().ToString("0.###", CultureInfo.InvariantCulture) +
+                    " s");
+                ok &= aged;
+            }
+            finally
+            {
+                eco.DestroyAll();
+                Ecosystem.ConfigurePhysicsStep(FixedDt);
+                Physics.simulationMode = previousMode;
+                Physics.gravity = previousGravity;
+            }
+
+            return ok;
+        }
+
+        /// <summary>
+        /// Where part 5's dumps go: <c>scratch/throw-trace-smoke/</c> under the repository.
+        /// </summary>
+        /// <remarks>
+        /// <b>Inside the repository and gitignored</b> — the owner's rule (CLAUDE.md's
+        /// conventions): nothing of the project's is written outside the tree, TEMP included, and
+        /// a transient goes in <c>scratch/</c>. The root is found the way
+        /// <c>SharedSpaceSpike.OutputDirectory</c> and <c>BuildIdentity.RepositoryRoot</c> find
+        /// it: <c>EVOSIM_REPO_ROOT</c> if it is set, else the parent of this project, which is
+        /// where <c>new-worker.ps1</c> puts a worker.
+        /// </remarks>
+        private static string TraceDumpDirectory()
+        {
+            string root = Environment.GetEnvironmentVariable("EVOSIM_REPO_ROOT");
+
+            if (string.IsNullOrEmpty(root))
+            {
+                string project = Path.GetDirectoryName(Application.dataPath);
+                root = Path.GetFullPath(Path.Combine(project, ".."));
+            }
+
+            return Path.Combine(root, "scratch", "throw-trace-smoke");
+        }
+
+        /// <summary>
+        /// Part 5's fixture: a 1 m³ root carrying one 0.24 m link on a hinge — about 72 : 1 across
+        /// the joint.
+        /// </summary>
+        /// <remarks>
+        /// Hand-built rather than drawn from <c>GenomeFactory.RandomViable</c>, because the whole
+        /// point is a known mass ratio: a random genome's ratio is whatever it is, and an
+        /// assertion against it would be an assertion about the seed. The root photosynthesises
+        /// so the creature is not dead on arrival; the link carries capacity because §5A.1 and
+        /// <c>Genome.Validate</c> both refuse a joint without it, and no neuron reads it, so
+        /// nothing drives the joint.
+        /// </remarks>
+        private static Genome HeavyRootAndLightLimb()
+        {
+            var genome = new Genome();
+
+            var root = new MorphNode
+            {
+                Dimensions = new Float3(0.5f, 0.5f, 0.5f),
+                JointType = JointType.Fixed,
+                CellTypeId = CellTypeIds.Photosynthetic,
+                Power = 0f,
+                RecursiveLimit = 1,
+            };
+            root.ResampleJointLimits(new Float2(-1f, 1f));
+
+            var limb = new MorphNode
+            {
+                Dimensions = new Float3(0.12f, 0.12f, 0.12f),
+                JointType = JointType.Hinge,
+                CellTypeId = CellTypeIds.Link,
+                Power = 20f,
+                RecursiveLimit = 1,
+            };
+            limb.ResampleJointLimits(new Float2(-1f, 1f));
+
+            // The child's −X face onto the parent's +X face, the same attachment every hand-built
+            // fixture in Evosim.Core.Tests uses.
+            root.Edges.Add(new MorphEdge
+            {
+                Child = 1,
+                ParentAnchor = new Float3(1f, 0f, 0f),
+                ChildAnchor = new Float3(-1f, 0f, 0f),
+                Orientation = Quat.Identity,
+                Scale = Float3.One,
+            });
+
+            genome.Nodes.Add(root);
+            genome.Nodes.Add(limb);
+            genome.RootIndex = 0;
+
+            return genome;
         }
     }
 }

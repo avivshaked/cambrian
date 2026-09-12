@@ -98,6 +98,8 @@ namespace Evosim.Sim.EditorTools
                                     ? CurrentManifest.LastContactPairsTotal /
                                         (double)CurrentManifest.LastPhysicsSteps
                                     : 0d,
+                                MaxJointMassRatio = CurrentManifest.LastMaxJointMassRatio,
+                                BodiesOverMassRatio10 = CurrentManifest.LastBodiesOverMassRatio10,
                             });
                     }
                     catch (Exception writeFailure)
@@ -1052,6 +1054,8 @@ namespace Evosim.Sim.EditorTools
                         manifest.LastWraps = eco.Wraps;
                         manifest.LastCrowdedTotal = eco.Crowded;
                         manifest.LastContactPairsTotal = eco.ContactPairs;
+                        manifest.LastMaxJointMassRatio = eco.MaxJointMassRatio;
+                        manifest.LastBodiesOverMassRatio10 = eco.BodiesOverMassRatio10;
                         manifest.LastWallClockMinutes = clock.Elapsed.TotalMinutes;
                     }
 
@@ -1234,6 +1238,8 @@ namespace Evosim.Sim.EditorTools
                         Crowded = eco.Crowded,
                         ContactPairsPerStep =
                             eco.Steps > 0 ? eco.ContactPairs / (double)eco.Steps : 0d,
+                        MaxJointMassRatio = eco.MaxJointMassRatio,
+                        BodiesOverMassRatio10 = eco.BodiesOverMassRatio10,
                     });
                 }
 
@@ -1510,6 +1516,13 @@ namespace Evosim.Sim.EditorTools
             public long LastWraps;
             public long LastCrowdedTotal;
             public long LastContactPairsTotal;
+
+            /// <summary>
+            /// The throw trace's readings as of the last metabolic step —
+            /// <c>logbook/specs/throw-trace-spec.md</c> step 1.
+            /// </summary>
+            public double LastMaxJointMassRatio;
+            public long LastBodiesOverMassRatio10;
         }
 
         /// <summary>How a run stopped. Null while it is still going.</summary>
@@ -1554,6 +1567,19 @@ namespace Evosim.Sim.EditorTools
 
             public double BestSpeed;
             public double BestSpeedAtSeconds;
+
+            /// <summary>
+            /// The throw trace's two run-level readings —
+            /// <c>logbook/specs/throw-trace-spec.md</c> step 1.
+            /// </summary>
+            /// <remarks>
+            /// Both 0 in a world that never built a jointed body, and both written on the error
+            /// path from the manifest's last known values for <see cref="MatterInfluxedTotal"/>'s
+            /// reason: a censored arm's <c>run.json</c> is the only machine-readable account of it
+            /// there will be, and a zero that means "not measured" is worse than no field at all.
+            /// </remarks>
+            public double MaxJointMassRatio;
+            public long BodiesOverMassRatio10;
         }
 
         /// <summary>
@@ -1765,6 +1791,14 @@ namespace Evosim.Sim.EditorTools
                 w.Field("wraps", ending.Wraps);
                 w.Field("crowded", ending.Crowded);
                 w.Field("contactPairsPerStep", ending.ContactPairsPerStep);
+
+                // The throw trace — logbook/specs/throw-trace-spec.md step 1, appended after
+                // contactPairsPerStep per the same append-only rule. The largest joint mass ratio
+                // any body carried, and how many bodies were ever over the 10 PhysX's own joint
+                // documentation avoids. Both 0 in a world with no jointed body in it, which is
+                // what `divergedTotal` above is read beside.
+                w.Field("maxJointMassRatio", ending.MaxJointMassRatio);
+                w.Field("bodiesOverMassRatio10", ending.BodiesOverMassRatio10);
             }
 
             w.EndObject();
@@ -2586,7 +2620,14 @@ namespace Evosim.Sim.EditorTools
                 .Field("totalColumns", spread.TotalColumns)
                 .Field("occupiedColumnsAbsorptive", spread.OccupiedColumnsAbsorptive)
                 .Field("xSpreadMetres", spread.XSpreadMetres)
-                .Field("zSpreadMetres", spread.ZSpreadMetres);
+                .Field("zSpreadMetres", spread.ZSpreadMetres)
+                // The throw trace (logbook/specs/throw-trace-spec.md step 1), appended after the
+                // spread per the same append-only rule. Both are running readings over the whole
+                // run rather than windows: the maximum ratio any body has carried, and the number
+                // of bodies ever over 10 — so a reader can see when evolution started building
+                // them and not merely that it did. 0 and 0 in a world whose bodies have no joints.
+                .Field("maxJointMassRatio", eco.MaxJointMassRatio)
+                .Field("bodiesOverMassRatio10", eco.BodiesOverMassRatio10);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
