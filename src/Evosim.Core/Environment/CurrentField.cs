@@ -754,6 +754,284 @@ namespace Evosim.Core
         /// <summary>Water velocity at a place and a time, m/s.</summary>
         public Float3 VelocityAt(Float3 at, double seconds) => VelocityAt(at.X, at.Y, at.Z, seconds);
 
+        // ------------------------------------------------------------- the vector potential
+
+        /// <summary>
+        /// Whether this water is the curl of a vector potential <see cref="PotentialAt(float, float, float, double)"/> can
+        /// return — which is what lets <see cref="GridField.Advect"/> carry a uniform
+        /// concentration without disturbing it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Every field here except two is a curl by construction</b>
+        /// (<see cref="TransportAt"/>, <see cref="StreamsAt"/>), and the potential they are the
+        /// curl of is written down in closed form below. The two exceptions:
+        /// </para>
+        /// <para>
+        /// <b><see cref="CurrentMode.Rolls"/> has no potential here</b>, and keeps the
+        /// centre-sampled transport it always had. D037's standing waves are a field of depth,
+        /// time and patch, so a horizontal coordinate buys only a bookkeeping slot and there is
+        /// no face for a circulation to be taken round; every recorded world through round 33
+        /// ran on that scheme and replays on it byte for byte
+        /// (<c>logbook/specs/transport-conserves-spec.md</c>).
+        /// </para>
+        /// <para>
+        /// <b>The vent is not a curl</b>, and is not meant to be: D067's plume and return are
+        /// piecewise constant in the patch and pump water up one patch and down the others, which
+        /// is a source at one seam and a sink at the next as far as any face-flux scheme can see.
+        /// So an active vent takes this to false whatever the mode, and
+        /// <see cref="GridField.Advect"/> refuses such a world rather than carrying it on a
+        /// scheme that would not keep uniform water uniform. No launcher has ever combined the
+        /// vent with the transport field or with a tank.
+        /// </para>
+        /// </remarks>
+        public bool HasPotential =>
+            (_shape == WorldShape.Tank || Mode == CurrentMode.Transport) && !VentActive(_patchCount);
+
+        /// <summary>
+        /// The vector potential <c>A</c> whose curl is <see cref="VelocityAt(float, float, float, double)"/>,
+        /// in Cartesian components, m²/s.
+        /// </summary>
+        /// <param name="x">World x, m.</param>
+        /// <param name="y">World height, m. Zero is the waterline, negative is down.</param>
+        /// <param name="z">World z, m.</param>
+        /// <param name="seconds">The world's clock, s.</param>
+        /// <remarks>
+        /// <para>
+        /// <b>What it is for.</b> The flux of a curl through a face is the circulation of the
+        /// potential round the face's edges, by Stokes, so a grid that samples <i>edges</i> and
+        /// assembles its face fluxes from them gets a discretely divergence-free velocity: every
+        /// edge appears in two faces of a cell with opposite sign, so every cell's net flux is
+        /// exactly zero for any edge values whatever, and a uniform concentration carried by it
+        /// stays uniform to rounding. Sampling the velocity at cell centres, as the grid did
+        /// through round 36, does not have that property: the campaign's own field turned 1
+        /// unit/m³ into 0.36 to 2.45 in 600 s (<c>logbook/specs/transport-conserves-spec.md</c>,
+        /// the Astra review's F1). This is the repair's other half; the grid's edge assembly is
+        /// <see cref="GridField.Advect"/>.
+        /// </para>
+        /// <para>
+        /// <b>Scaled exactly as the velocity is.</b> <see cref="Speed"/>, the measured RMS scale,
+        /// every phase and every envelope are the same numbers the sampler uses, from the same
+        /// tables and the same per-instant memo, because a potential that described a slightly
+        /// different field would put a slow leak in the grid's books that no test of either
+        /// function alone could see. <c>ConservativeTransportTests</c> takes the central-difference
+        /// curl of this and holds it against <see cref="VelocityAt(float, float, float, double)"/>.
+        /// </para>
+        /// <para>
+        /// <b>The horizontal components vanish at the waterline and at the bed</b>, exactly and
+        /// not nearly, for the reason the vertical velocity does: both fields carry
+        /// <c>sin(qπy/D)</c> on every horizontal component of <c>A</c>, and both are special-cased
+        /// to zero at the two faces rather than computed, because <c>Math.Sin(-Math.PI)</c> is
+        /// −1.2e-16. A grid reads that as no flux through the surface and none through the floor.
+        /// </para>
+        /// <para>
+        /// <b>Refuses rather than returning something.</b> A caller that gets an answer here is
+        /// entitled to assume its curl is the water; see <see cref="HasPotential"/> for the two
+        /// fields that have no potential to give.
+        /// </para>
+        /// </remarks>
+        public Float3 PotentialAt(float x, float y, float z, double seconds)
+        {
+            if (!HasPotential)
+            {
+                throw new InvalidOperationException(
+                    "This water is not the curl of a potential this class can write down: " +
+                    FormattableString.Invariant($"mode {Mode}, shape {_shape}, ") +
+                    FormattableString.Invariant($"vent {(VentActive(_patchCount) ? "on" : "off")}. ") +
+                    "Ask HasPotential first. logbook/specs/transport-conserves-spec.md.");
+            }
+
+            if (_speed <= 0f) return Float3.Zero;
+
+            if (_shape == WorldShape.Tank)
+            {
+                EnsureStreams();
+
+                return StreamsPotentialUnit(
+                           x, y, z, 2.0 * Math.PI * seconds / _periodSeconds, _streamsOverturning)
+                       * (_speed * _streamsScale);
+            }
+
+            EnsureTransport();
+
+            return PotentialUnit(x, y, z, 2.0 * Math.PI * seconds / _periodSeconds)
+                   * (_speed * _transportScale);
+        }
+
+        /// <summary>The potential at a place and a time, m²/s.</summary>
+        public Float3 PotentialAt(Float3 at, double seconds) =>
+            PotentialAt(at.X, at.Y, at.Z, seconds);
+
+        /// <summary>
+        /// The transport field's potential at unit <see cref="Speed"/> and unit scale, at a place
+        /// and an already-scaled phase — <see cref="Unit"/>'s own <c>A</c>.
+        /// </summary>
+        /// <remarks>
+        /// <c>A = (Φ·f, 0, Φ·g)</c> term for term with <see cref="Unit"/>'s remarks:
+        /// <c>Φ = sin(k_y·y)</c>, <c>f = a·cos(χ_f)</c>, <c>g = a·cos(χ_g)</c>. Written beside
+        /// <see cref="Unit"/> rather than derived from it so that the two can be read against each
+        /// other in one screen, which is how the curl test's failure would be diagnosed; the same
+        /// clamps, the same <c>atFace</c> zero, and the same tables, so the only way they can part
+        /// is an edit to one and not the other.
+        /// </remarks>
+        private Float3 PotentialUnit(double x, double y, double z, double t)
+        {
+            double depth = _depthMetres;
+
+            if (y > 0d) y = 0d;
+            else if (y < -depth) y = -depth;
+
+            bool atFace = y >= 0d || y <= -depth;
+            if (atFace) return Float3.Zero;
+
+            double ax = 0d, az = 0d;
+
+            for (int m = 0; m < TransportModes; m++)
+            {
+                double phase = _transportKx[m] * x + _transportKz[m] * z;
+                double a = _transportAmplitude[m];
+                double profile = Math.Sin(_transportKy[m] * y);
+
+                ax += profile * a * Math.Cos(phase + _transportPhaseF[m] + _transportRateF[m] * t);
+                az += profile * a * Math.Cos(phase + _transportPhaseG[m] + _transportRateG[m] * t);
+            }
+
+            // A_y is zero for every mode of this field, which is why its x faces read only the
+            // z edges and its z faces only the x edges.
+            return new Float3((float)ax, 0f, (float)az);
+        }
+
+        /// <summary>
+        /// The streams' potential at unit <see cref="Speed"/> and unit scale, at a place and an
+        /// already-scaled phase, with the overturning at <paramref name="overturning"/> —
+        /// <see cref="StreamsUnit"/>'s own <c>A</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Both signs are the ones this frame forces, and neither is the one the cylindrical
+        /// formulae are written in.</b> <c>θ</c> is measured from <c>+x</c> towards <c>+z</c> and
+        /// the third axis is <c>y</c>, so <c>r̂ × θ̂ = −ŷ</c>: the triple <c>(r̂, θ̂, ŷ)</c> is
+        /// <i>left</i>-handed, and every cylindrical curl written the textbook way comes out with
+        /// its sign reversed in Cartesian components. <see cref="StreamsUnit"/>'s remarks are
+        /// written in the cylindrical convention, so this method carries the flip, once for each
+        /// half. Both were derived and then checked numerically against the sampler, which is what
+        /// <c>ConservativeTransportTests</c>'s curl case does at 500 places and five instants.
+        /// </para>
+        /// <para>
+        /// <b>The eddies' half is vertical.</b>
+        /// <c>A_y = −Σ a_k·f_j(s)·cos(mθ + ψ_k)·sin(qπy/D)</c> — the sum
+        /// <see cref="StreamsUnit"/> differentiates in <c>r</c> and <c>θ</c>, negated by the
+        /// paragraph above, with <c>f_1 = s^m(1 − s²)</c> and
+        /// <c>f_2 = s^m(1 − s²)(1 − 2s²)</c>. There the code carries <c>f_j/r</c> because the
+        /// <c>1/r</c> of <c>v_r</c> is cancelled analytically against <c>s^m</c>; here the
+        /// potential itself is wanted, so it is <c>f_j</c>, which is that same expression times
+        /// <c>r</c>. The Cartesian curl of <c>A_y ŷ</c> is <c>v_r = −(1/r)∂A_y/∂θ</c> and
+        /// <c>v_θ = +∂A_y/∂r</c>, which is where the minus comes from.
+        /// </para>
+        /// <para>
+        /// <b>The overturning's half is horizontal.</b> An axisymmetric Stokes stream function
+        /// <c>Ψ</c> comes from an azimuthal potential <c>A_θ</c>, and the flip makes it
+        /// <c>A_θ = −Ψ/r</c> rather than <c>+Ψ/r</c>. Writing <c>W = Ψ/r²</c>, that is
+        /// <c>A = (W·Δz, ·, −W·Δx)</c> in Cartesian components, whose curl is
+        /// <c>v_r = −r·∂W/∂y</c> and <c>v_y = r·∂W/∂r + 2W</c>, term for term the two lines
+        /// <see cref="StreamsUnit"/> accumulates.
+        /// </para>
+        /// </remarks>
+        private Float3 StreamsPotentialUnit(double x, double y, double z, double t, double overturning)
+        {
+            double depth = _depthMetres;
+            double radius = _tankRadiusMetres;
+
+            if (y > 0d) y = 0d;
+            else if (y < -depth) y = -depth;
+
+            // Both halves carry sin(q*pi*y/D) on every component, so at the waterline and at the
+            // bed the whole potential is zero and a grid's surface and floor faces carry nothing.
+            if (y >= 0d || y <= -depth) return Float3.Zero;
+
+            double dx = x - radius;
+            double dz = z - radius;
+            double r = Math.Sqrt(dx * dx + dz * dz);
+            double s = r / radius;
+            if (s > 1d) s = 1d;
+
+            double cosTheta = r > 0d ? dx / r : 1d;
+            double sinTheta = r > 0d ? dz / r : 0d;
+
+            EnsureInstant(t);
+
+            double phi = Math.PI * y / depth;
+            double cosPhi = Math.Cos(phi);
+            double sinPhi = Math.Sin(phi);
+
+            double sin1 = sinPhi;
+            double sin2 = 2d * sinPhi * cosPhi;
+            double sin3 = sinPhi * (4d * cosPhi * cosPhi - 1d);
+
+            // 1. The eddies, into A_y.
+            double ay = 0d;
+
+            double cosM = cosTheta;
+            double sinM = sinTheta;
+
+            int k = 0;
+
+            for (int m = 1; m <= StreamsAzimuthal; m++)
+            {
+                // s^m, which is f_j's leading factor — StreamsUnit keeps s^(m−1) because it
+                // carries f_j/r rather than f_j.
+                double sPow = 1d;
+                for (int i = 0; i < m; i++) sPow *= s;
+
+                double wall = 1d - s * s;
+                double node = 1d - 2d * s * s;
+
+                for (int j = 1; j <= StreamsFamilies; j++)
+                {
+                    double f = j == 1 ? sPow * wall : sPow * wall * node;
+
+                    for (int q = 1; q <= StreamsVertical; q++, k++)
+                    {
+                        double profile = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
+
+                        double amplitude =
+                            _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(k) * profile;
+
+                        double cosChi = cosM * _instantCos[k] - sinM * _instantSin[k];
+
+                        // Minus, for the left-handed frame — see the remarks.
+                        ay -= amplitude * f * cosChi;
+                    }
+                }
+
+                double nextCos = cosM * cosTheta - sinM * sinTheta;
+                double nextSin = sinM * cosTheta + cosM * sinTheta;
+                cosM = nextCos;
+                sinM = nextSin;
+            }
+
+            // 2. The overturning, into the horizontal pair.
+            double w = 0d;
+
+            if (overturning != 0d)
+            {
+                double wall = 1d - s;
+
+                for (int c = 0; c < StreamsCells; c++)
+                {
+                    int q = c + 1;
+                    double amplitude =
+                        overturning * _cellAmplitude[c] * CellEnvelopeOf(c) * _instantCell[c];
+
+                    double sinKy = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
+
+                    w += amplitude * wall * wall * sinKy;
+                }
+            }
+
+            return new Float3((float)(w * dz), (float)ay, (float)(-w * dx));
+        }
+
         // -------------------------------------------------------- the water's own acceleration
 
         /// <summary>
