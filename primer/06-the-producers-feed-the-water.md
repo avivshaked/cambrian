@@ -102,7 +102,10 @@ runs near a fifth of production and stays flat across a 150-fold range of produc
 p.5].
 
 It does not depend on the size of the cell or its growth stage [LS13, p.1]. So a rule that
-leaks a flat fraction is the rule the evidence supports rather than a simplification of it.
+leaks a flat fraction takes its size from the evidence. Its shape it does not: release is
+not proportional to light and is highest where photosynthesis is lowest [MCP05, p.1], and
+the rule does not model that. The review's Q10 records the limitation, and this piece had
+left it out until 2026-09-12.
 
 There is a second number that explains why one percent was always going to fail. The
 efficiency with which energy moves from producers to the animals that eat them is around

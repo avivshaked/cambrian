@@ -215,7 +215,11 @@ hopeless and the other said go and look.
 
 That was not the end of it, and the reason is the most interesting thing in this piece.
 
-Every sensor channel is still unwired. The interface exists; every call site passes nothing.
+Every sensor channel was still unwired when this was written (D033): the interface existed
+and every call site passed nothing. Three senses have been wired since, chemical, energy and
+flow, each read at a part's own position every physics step (D081 and D083, 2026-09-07);
+what follows describes the brain as it was before them, which is the brain that was measured
+here.
 So the brain is a pure central pattern generator: a function of time and of its own internal
 state, and of nothing whatsoever about the world.
 
@@ -254,8 +258,11 @@ The difference between those readings is a direction.
 
 That makes morphology part of the sensory apparatus. A long creature resolves a gradient
 better than a compact one, and a bilaterally symmetric one can compare left against right.
-It is also how chemotaxis works, and bacteria have been doing it for a very long time
-without anything resembling a bearing sensor.
+It is not how a bacterium does it, as it happens: a cell too small to read a difference
+across its own body compares a concentration with its own recent past as it moves, a reading
+in time rather than in space [MK72, p.1], and the comparison across a body is what a larger
+animal can afford. The review's round 6 draws that line (Q11), and this piece had it the
+wrong way round until 2026-09-12.
 
 *(That locomotion is negative-expected-value while open-loop is the author's inference from the
 economy's structure, supported by the measurement above; no source in the corpus makes the
@@ -298,4 +305,4 @@ Four things here are mine rather than the literature's.
 | [`EffectorDriver.cs`](../unity/Assets/Evosim/Sim/EffectorDriver.cs) | the other half of piece 02: drive value to torque |
 | [`BrainTests.cs`](../src/Evosim.Core.Tests/BrainTests.cs) | distinct signals, one-node-per-step latency, and that `sigmoid` is centred |
 | [`SwimSurvey.cs`](../unity/Assets/Evosim/Sim/Editor/SwimSurvey.cs) | the distribution the mean was hiding |
-| [`DESIGN.md`](../DESIGN.md) §4.3, §4.4 | the brain, and the sensors: four channels read as of [`DECISIONS.md` D033](../DECISIONS.md#d033), with `Chemical`, `Energy` and `Flow` still unimplemented |
+| [`DESIGN.md`](../DESIGN.md) §4.3, §4.4 | the brain, and the sensors: four channels read as of [`DECISIONS.md` D033](../DECISIONS.md#d033), with `Chemical`, `Energy` and `Flow` wired since D081 and D083 |

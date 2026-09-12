@@ -603,8 +603,9 @@ contains a local neuro-controller (an artificial neural network), as well as a l
 sensor and effector."*
 
 Input references restricted to: a sensor on the owning part, another neuron in the same
-node, a neuron in the parent or child node, a global-brain neuron, or a constant. This
-restriction preserves the duplication semantics.
+node, a neuron in the parent or child node, or a constant (a global-brain neuron was a fifth kind
+until D081 retired the global brain, §0q; a stored genome may still carry one that nothing
+reads). This restriction preserves the duplication semantics.
 
 **Operator set** (Sims' set, lightly trimmed):
 
