@@ -98,5 +98,19 @@ reading queued for this round's read is the instrument for that, not a rule.
 
 ## Launch
 
-*(filled after the launch: the merge commit, the hashes from the manifests, the workers and
-times, the render queue.)*
+The `streams` branch (the transporter, the clearance, the reader's `cols`, the streams, the
+force, the trace) merged into main as `867408f` after the full suite ran green on its
+checkout (687 tests, 19 minutes); the arms run on main's checkout, whose `simHash` is
+`5e164d01...` (the branch checkout's `13a906a3...` differs by line endings on 39 files and
+nothing else, the CLAUDE.md gotcha), `coreHash ad5c952a...`, `configHash 2430e660`,
+`physicsJobWorkers 0`. Seed 1 launched at 23:26 on 2026-09-12 on worker 5, its header
+verified (`space tank r=5.64 m (100 m2), depth 60, wall, bed`, `fluidAccel 1`,
+`dispersal=5 m`, `driveLimit >0.01`, `linkPhoto 0.5`, `addedMass 0.5`, `dt=0.01`, seed 1).
+Seeds 2 to 5 are queued behind round 37's last four renders, which hold workers 2, 3, 4 and
+7 under the cap of five editors: the queue (`launch-queue.ps1 -Refresh`, added tonight)
+refreshes each worker as a render releases it and launches the next seed on it, worker 6
+first, so the seeds start hours apart on one build; the render queue for the five arms
+follows the last launch. The queue's first pass could not read the arm name from the
+launcher (it reports with `Write-Host`, which the capture missed), so seed 1's
+`prereg.json` was written by hand from the queue's log with a note saying so, and the
+capture was fixed for the rest. The chain's log is `scratch/logs/r37b-chain.out`.

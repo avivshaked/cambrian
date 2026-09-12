@@ -62,7 +62,14 @@ on the same branch (`FluidAccelerationCoefficient`, `EVOSIM_FLUID_ACCEL`, defaul
 with it a lagging body reads 0.25 to 0.27 at the rim; the box digest is identical at 0; a 600 s
 tank smoke at 1 spreads evenly (`r37bsmoke`). Cost about half the pace; the streams' analytic
 derivative is queued to take it back during 37b, verified by digest identity, before round 38.
-Round 37b launches from `rounds/launch-r37b.ps1` on the merged build after round 37's last render.
+**Round 37b is launched** (2026-09-12 23:26, logbook/0095 committed first as `0de5d5d`): the
+branch merged as `867408f` after the full suite (687 green on the branch checkout), seed 1 on
+worker 5 with its header verified (`simHash 5e164d01...`, `coreHash ad5c952a...`,
+`configHash 2430e660`), and seeds 2 to 5 queued behind round 37's four remaining renders,
+each worker refreshed as its render exits (`launch-queue.ps1 -Refresh`), the render queue
+after the last launch (`scratch/r37b-chain.ps1`, log `scratch/logs/r37b-chain.out`). The
+round's seeds start hours apart on one build. Next: frames of seed 1 at about 3,000 and
+6,000 s, then the theatre's interface build.
 
 **Round 37 is read (logbook/0094, 2026-09-12 night).** Five of five on the population, four
 of five on the goal rule, and a ring: the rim quarter held 45 to 98% of the bodies at every
@@ -387,7 +394,8 @@ round 28) set the base and the order.
       None is a world rule; each makes the world what D088 and D089 say it is, and the
       dilution would otherwise be read against an invented food field. Replaces 37 as the
       tank's base; 38 reads against it. Pre-registered as 0095, committed before the queue
-      starts, launched with `-Prereg`.
+      starts, launched with `-Prereg`. Launched 2026-09-12 23:26 (seed 1 on worker 5; seeds
+      2 to 5 queued behind round 37's renders on one build; 0095's launch section).
    2c. **Fresh seeds on the base** (owner 2026-09-12 evening, "proceed with your
       recommendations"; D091): round 37b's world on seeds 6 to 10, no build, read against
       37b's five as a second draw of the same world. Moved here from queued item 22 because
