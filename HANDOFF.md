@@ -644,6 +644,39 @@ alone): eighteen comments in nine C# files still cite `scratch/floor-spec.md`, `
 (logbook/specs/scratch-migration-spec.md's companion, 2026-09-10): 70 MB of logs, review
 captures, probe output, one-off edit scripts, stale copies; nothing was deleted.
 
+## The owner's idea of 2026-09-12 night: pockets, then a bigger tank
+
+"If we find a way to properly make pockets of matter and energy in the world, then we could
+really expand the tank properly. Think about it and if you get a good idea at some point,
+write it down." The agent's first thoughts, written the same night; a proposal follows when
+round 37b has shown how the streams move sinking matter, because the answer depends on it.
+
+1. **A pocket has to be made by physics, not painted.** An incompressible current cannot
+   concentrate a dissolved field (that is the constant-field rule the transporter now
+   keeps), so a pocket of dissolved matter needs a source, a sink or slow mixing. What a
+   current *can* concentrate is anything that sinks: falling particles gather under
+   downwelling and are swept from under upwelling, so corpses and marine snow in D090's
+   overturning cells should already collect in moving bands. Round 37b's `det patch sd` and
+   `patch max share`, and a picture of where the corpses are, say whether they do.
+2. **Three sources of pockets the design already half-owns.** A bed with shape (round 39):
+   hollows that sinking detritus settles into and cannot leave, ridges that shed it; an
+   energy pocket wherever the floor is lowest. A matter seep (D067's vent, off since its
+   round): a point on the bed that leaks matter at a rate, a matter pocket whose size is the
+   rate over the mixing. A shelf: a bed that rises to a few metres under the surface on one
+   side of the tank, sunlit and settled on at once, which is what a reef is. Each is a
+   physical rule with one dial, and a bigger tank is then dilute between pockets and rich in
+   them, which is the ocean's own arrangement.
+3. **A reading first.** The report has no measure of how patchy the fields are that can be
+   trusted before 2026-09-12, because the transporter invented the patchiness. Now it does
+   not, a `field cv` pair (sd over mean of the detritus and matter fields over live cells)
+   is an honest instrument, and it belongs in the table before any pocket is built, so that
+   a pocket is a number and a dial and not an impression. Agent work; queued for 37b's read.
+4. **What not to do.** Slow the mixing further to make pockets: the detritus already mixes
+   at 0.02 m²/s, a tenth of before (D085), the prize for moving it was meant to make has not
+   appeared, and a matter grid stirred slower strands stock in cells too small to afford a
+   child (0078). Paint patches into the field: a source that nothing feeds is a rule the
+   world cannot explain.
+
 ## The decisions in front of the owner
 
 - **Things wrong in motion** (owner, 2026-09-11 evening, after watching `r36-s1` in the
