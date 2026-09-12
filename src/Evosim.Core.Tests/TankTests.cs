@@ -105,6 +105,42 @@ namespace Evosim.Core.Tests
             Assert.False(TankGeometry.Inside(2f * Radius + 0.01f, Radius, Radius));
         }
 
+        [Fact]
+        public void InsideWithClearanceKeepsBackFromTheGlass()
+        {
+            // wall-clearance-spec.md: Free asks whether a whole sphere clears the glass, not
+            // just its centre point, so Inside gains a clearance and the existing three-argument
+            // form is exactly its clearance-0 case.
+            double r = Radius;
+
+            // A point 0.49 m short of the glass with a 0.5 m clearance demanded is 0.01 m too
+            // close: out.
+            Assert.False(TankGeometry.Inside(2d * r - 0.49d, r, r, 0.5d));
+
+            // 0.51 m short of the glass clears a 0.5 m clearance by a centimetre: in.
+            Assert.True(TankGeometry.Inside(2d * r - 0.51d, r, r, 0.5d));
+
+            // The axis is inside for any clearance below the radius — nowhere is further from
+            // the glass than the axis is.
+            Assert.True(TankGeometry.Inside(r, r, r, 0.5d));
+            Assert.True(TankGeometry.Inside(r, r, r, r - 0.001d));
+
+            // Clearance at or above the radius refuses everything, the axis included: there is
+            // no point left that can hold that much distance from a wall this close.
+            Assert.False(TankGeometry.Inside(r, r, r, r));
+            Assert.False(TankGeometry.Inside(r, r, r, r + 1d));
+
+            // Clearance 0 is exactly the existing three-argument form's case.
+            Assert.Equal(
+                TankGeometry.Inside(r + 0.3d, r, r),
+                TankGeometry.Inside(r + 0.3d, r, r, 0d));
+
+            _output.WriteLine(
+                $"R {r:0.000}: R-0.49 at clearance 0.5 -> " +
+                $"{TankGeometry.Inside(2d * r - 0.49d, r, r, 0.5d)}, " +
+                $"R-0.51 at clearance 0.5 -> {TankGeometry.Inside(2d * r - 0.51d, r, r, 0.5d)}");
+        }
+
         // ---------------------------------------------------------------------------------
         // The mask
         // ---------------------------------------------------------------------------------

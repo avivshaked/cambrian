@@ -24,12 +24,28 @@ namespace Evosim.Sim
     /// forty-eight-sided prism, not a circle. PhysX has a cylinder primitive for nothing and a
     /// mesh collider would be a mesh to keep in step with a radius; a prism of flat slabs is the
     /// same shape <see cref="SeaFloor"/> is made of, and its error against the true circle is
-    /// <c>R(sec(π/48) − 1)</c>, which is 1.2 mm in a 5.6 m tank and 2.4 mm in an 11.3 m one.
+    /// <c>R(sec(π/48) − 1)</c>, which is 12.1 mm in a 5.64 m tank and 24.2 mm in an 11.3 m one —
+    /// ten times what an earlier pass here claimed (a decimal slipped and stood uncaught until
+    /// <c>logbook/specs/wall-clearance-spec.md</c>'s review, Astra F2), and above the default
+    /// contact offset (0.01 m) rather than under a quarter of it.
     /// <b>The glass circumscribes the circle</b> — each slab's inner face is tangent at its own
-    /// segment's midpoint, so the water is the circle everywhere plus those two millimetres at the
-    /// corners, and never less. That is the direction that matters: the fields, the placer and the
-    /// gyre all agree that the water is the circle, and a wall cutting inside it would be a wall
-    /// standing in cells the grid calls live.
+    /// segment's midpoint, so the water is the circle everywhere plus those twelve millimetres at
+    /// the corners, and never less. That is the direction that matters: the fields, the placer
+    /// and the gyre all agree that the water is the circle, and a wall cutting inside it would be
+    /// a wall standing in cells the grid calls live.
+    /// </para>
+    /// <para>
+    /// <b>What twelve millimetres of excess means for a body.</b> A body at a slab join can
+    /// stand up to about 12 mm outside the mathematical circle before the glass itself stops it.
+    /// The placer never puts one there — <see cref="SharedVolume.Free(Vector3, float)"/> tests a
+    /// candidate's whole bounding sphere against the circle, not the prism, so nothing is ever
+    /// placed relying on the corners' extra room. <see cref="CurrentField"/> reads the glass for
+    /// it instead: its gyre clamps the normalised radius <c>s = r/R</c> to 1, so a point in the
+    /// prism's corner reads the same velocity the wall itself does rather than a value the field
+    /// was never built past. And the tank smoke's own tolerance
+    /// (<see cref="Evosim.Sim.EditorTools.SharedSpaceSmoke"/> part 4, a quarter of a metre) is an
+    /// order of magnitude past either number, so a body this test passes is inside the water by
+    /// any of these readings.
     /// </para>
     /// <para>
     /// <b>It runs from inside the bed to well above the waterline.</b> The bottom is the floor's
@@ -62,11 +78,14 @@ namespace Evosim.Sim
         /// </summary>
         /// <remarks>
         /// Forty-eight, the spec's number. How far a corner of the prism stands outside the circle
-        /// is <c>R(sec(π/n) − 1)</c>, which at n = 48 is 0.0012 m in a 5.64 m tank and 0.0024 m in
-        /// an 11.3 m one: under a quarter of the default contact offset either way, so the prism
-        /// is a circle as far as the solver is concerned. Doubling n would quarter that and double
-        /// the static colliders; halving it would put the error at half a centimetre, which a body
-        /// could feel.
+        /// is <c>R(sec(π/n) − 1)</c>, which at n = 48 is 0.0121 m in a 5.64 m tank and 0.0242 m in
+        /// an 11.3 m one — above the default contact offset (0.01 m) rather than under a quarter
+        /// of it, as an earlier pass here claimed on a decimal that slipped
+        /// (<c>logbook/specs/wall-clearance-spec.md</c>, Astra review F2). The class remarks say
+        /// what keeps that excess from mattering: nothing is ever placed relying on it, and the
+        /// field reads the glass rather than the prism there. Doubling n would quarter the error
+        /// and double the static colliders; halving it would put the error at several
+        /// centimetres, which a body could feel.
         /// </remarks>
         public const int Segments = 48;
 

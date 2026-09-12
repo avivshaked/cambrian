@@ -68,6 +68,39 @@ namespace Evosim.Core
             SquaredRadiusAt(x, z, radius) <= radius * radius;
 
         /// <summary>
+        /// Whether a horizontal position is at least <paramref name="clearance"/> inside the
+        /// glass: <c>(x−R)² + (z−R)² ≤ (R − clearance)²</c>.
+        /// <c>logbook/specs/wall-clearance-spec.md</c> (Astra review F2).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The three-argument form above is exactly this one at clearance 0</b> — a point
+        /// asked to be inside the circle itself, with nothing held back from the glass. This
+        /// overload is what <c>Evosim.Sim.SharedVolume.Free</c> needed and did not have: the
+        /// birth gate tested a candidate's centre against the water and every other body's
+        /// sphere, never the candidate's own bounding radius against the glass, so a body drawn
+        /// one centimetre inside the circle with a half-metre bounding sphere was accepted with
+        /// a corner outside it — the review's arithmetic probe found a corner outside the disc
+        /// in 208 of 1,000 unit-cube founders drawn over the full circle, no physics involved.
+        /// </para>
+        /// <para>
+        /// <b>A clearance at or above the radius refuses every point, the axis included.</b>
+        /// There is no longer any point that can hold that much distance from a wall this
+        /// close, so the axis is not a special case here the way it is in
+        /// <see cref="Inside(double, double, double)"/> and <see cref="RingOf"/> — those read a
+        /// boundary case as "still water"; this one
+        /// reads a clearance that has eaten the whole tank as "no water at all".
+        /// </para>
+        /// </remarks>
+        public static bool Inside(double x, double z, double radius, double clearance)
+        {
+            if (clearance >= radius) return false;
+
+            double effectiveRadius = radius - clearance;
+            return SquaredRadiusAt(x, z, radius) <= effectiveRadius * effectiveRadius;
+        }
+
+        /// <summary>
         /// Which ring of equal area a horizontal position falls in, 0 at the axis and
         /// <paramref name="rings"/>−1 at the glass.
         /// </summary>
