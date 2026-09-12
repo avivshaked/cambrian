@@ -580,6 +580,41 @@ Written down here so that none is lost; each is agent work unless marked as the 
 
 The round work stays first: round 35 read, then round 34 on this base.
 
+## The theatre's interface (owner 2026-09-12 night: `design/SPEC.md`, "review and let's discuss")
+
+Pencilled in, not yet ruled. The spec is a build spec for replacing the theatre's IMGUI
+text block with a UI Toolkit interface: the identity strip, the census, the warnings, the
+transport bar and timeline, the provenance popover, the inspector in three states; the
+single-creature mode as a mode of the same screen; charts, the run picker, the lineage view
+and the gallery deliberately left for a later pass. Everything lands under
+`unity/Assets/Theatre/UI/` and nothing under `Assets/Evosim`, so `simHash` does not move and
+no recording is orphaned. The agent's review of 2026-09-12 night: the data contract checks
+against the code (every named field exists, `OnGUI` is at the line it says, the retired
+global-brain readout is at line 822 and goes), the cadence split is the right performance
+contract, the lineage index's three constraints are the codebase's own rules, and the
+"verify first" list is honest about what USS has not been tried on. Four things to settle
+before it is built, in the agent's reading:
+
+1. **What "invariant broken" means.** The vermilion plate must fire on the two identities,
+   the energy audit and the matter residual, and never on a reading such as mean depth or
+   matter here, which a healthy world moves. `WorldCensus` carries the audit and not the
+   matter residual, so the plumbing list gains one field from `stats.jsonl`.
+2. **What "faithful" covers.** The strip's identity line says how many samples matched
+   through what time, and the thread caveat (`physicsJobWorkers` above 0) is its own state,
+   never folded into "faithful". The spec has both; the done-list should name them.
+3. **The pictures.** `theatre-snap.ps1` labels its frames itself and the agent reads them;
+   the new chrome either hides under `H` for a snapshot or replaces the label, and the
+   done-list says which, so that `logbook/images/` stays consistent.
+4. **The fonts.** IBM Plex under `Resources/Fonts/` is a third-party OFL asset committed
+   to the tree: its licence file rides beside it and `LICENSE-DOCS` names it.
+
+Where it goes: agent work, a day's build by a subagent from the spec plus these four points,
+verified by the agent from snapshots over the three reference frames (`design/reference-frames/`)
+on a worker the queues are not using; it needs no round and no world change, so it runs
+beside round 37b once 37b is launched and read once, and before the fresh-seed batch's
+read. The design folder itself is the owner's work and is committed with `LICENSE-DOCS`'s
+pending lines when the owner says so.
+
 ## The owner's ideas of 2026-09-11 morning, with the agent's view on each
 
 After round 34's first seed (a free joint survives founding and thins afterwards; 0080),
