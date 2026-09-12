@@ -28,9 +28,12 @@ the entry pattern stands. The check:
    index) and asserts died-at, lived and children against a count the check makes itself
    from `lineage.jsonl`; asks for a selection on a run whose ids are unreliable and asserts
    the unavailable state.
-4. Runs a second time with `EVOSIM_THEATRE_OVERRIDE=1` against a run recorded under another
-   build (the caller names one; after the streams merge, `runs/r37-s1` is such a run) and
-   asserts the cousin and mismatch states, with the identity line's coverage text.
+4. Runs a second time with `EVOSIM_THEATRE_OVERRIDE=1` against `runs/r37bsmoke3` and asserts
+   the cousin and mismatch states, with the identity line's coverage text. That fixture was
+   recorded on this build's tunables under a different `simHash`, a checkout of the same code
+   with different line endings, so it opens as a cousin. Not `runs/r37-s1`: its `config.json`
+   predates two of D089's tunables, so §9's refuse-rather-than-default rule turns it away
+   before any replay exists.
 5. Runs once in solo mode (`EVOSIM_THEATRE_GENOME`) and asserts the solo census and that
    the text `global neurons` appears nowhere.
 6. Writes a screenshot per state into `scratch/snaps/ui/<run>/` with `ScreenCapture`, at

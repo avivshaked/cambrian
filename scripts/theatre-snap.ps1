@@ -72,9 +72,13 @@
   The four framed views never carry it. They are rendered through a camera of the theatre's own
   into a RenderTexture, and a screen-space UI panel does not draw into one — which is also why
   each view's label is stamped into the pixels by hand. So -Chrome adds a fifth file,
-  <arm>-t<second>-chrome.png, which is a capture of the Game View at whatever size the batch
-  Editor's view is: a picture of the interface, not a framed view of the world, and -Size does
-  not reach it.
+  <arm>-t<second>-chrome.png: the viewer's own camera and the interface's panel pointed at one
+  texture and read back, at -Size, the world under the chrome. It is the theatre as a person
+  sees it rather than one of the four framings, and it carries no burnt-in label.
+
+  It is not a screen capture. ScreenCapture.CaptureScreenshot writes nothing under -batchmode —
+  a graphics device with no presented backbuffer queues the capture and no file ever lands — and
+  this switch produced exactly that silence on its first run (2026-09-13).
 
   Off by default, and deliberately: every picture in logbook/images/ carries the burnt-in label
   and no chrome, and a frame that suddenly grew a census panel would not be comparable with any
@@ -243,7 +247,7 @@ try {
     Write-Host "  carve  $($env:EVOSIM_THEATRE_CARVE)"
     Write-Host "  out    $snapDirectory"
     Write-Host "  log    $log"
-    if ($Chrome) { Write-Host "  chrome on: one extra screen capture per second, at the Game View's size" }
+    if ($Chrome) { Write-Host "  chrome on: one extra picture per second, the interface over the world, at -Size" }
     if ($AllowSourceMismatch) { Write-Host "  source mismatch allowed: the pictures are of a cousin world, and say so" }
 
     # No -quit and no -nographics. See the description.

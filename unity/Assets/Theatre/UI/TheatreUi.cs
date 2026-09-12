@@ -188,6 +188,16 @@ namespace Evosim.Theatre
         /// <summary>The panel the interface is drawn on, made at Start and owned by this.</summary>
         public UIDocument Document => _document;
 
+        /// <summary>
+        /// The panel's settings, for <see cref="TheatreUiCapture"/> to point at a texture.
+        /// </summary>
+        /// <remarks>
+        /// Handing this out is the whole of how the interface is photographed: a screen-space
+        /// panel draws into no camera's target, and <c>targetTexture</c> is the one hook UI
+        /// Toolkit offers for taking its pixels. Nothing else should write to it.
+        /// </remarks>
+        public PanelSettings Panel => _settings;
+
         /// <summary>H. The whole interface, on or off, so a picture carries the render alone.</summary>
         public bool Visible
         {

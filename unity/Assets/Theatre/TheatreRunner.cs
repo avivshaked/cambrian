@@ -190,6 +190,13 @@ namespace Evosim.Theatre
         /// <summary>The interface, for the Play-mode check to query. Null when it did not load.</summary>
         public TheatreUi Ui => _ui;
 
+        /// <summary>
+        /// The camera the viewer flies, or null. What <see cref="TheatreUiCapture"/> renders under
+        /// the chrome, so a picture of the interface is a picture of the theatre and not of a
+        /// panel floating on nothing.
+        /// </summary>
+        public Camera ViewCamera => FlyCamera != null ? FlyCamera.GetComponent<Camera>() : null;
+
         /// <summary>The creature the viewer has selected, or -1.</summary>
         public long SelectedId => _selectedId;
 

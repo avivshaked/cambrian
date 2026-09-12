@@ -78,6 +78,29 @@ namespace Evosim.Theatre.EditorTools
 
         private static TheatreRunner _runner;
         private static readonly List<string> _shots = new List<string>();
+        private static readonly List<Wanted> _queue = new List<Wanted>();
+
+        /// <summary>A picture that has been asked for and not yet taken.</summary>
+        private struct Wanted
+        {
+            public string State;
+            public string Path;
+            public int Width;
+            public int Height;
+        }
+
+        /// <summary>
+        /// The two sizes every state is photographed at.
+        /// </summary>
+        /// <remarks>
+        /// Not one size and a supersize multiplier, which is what a screen capture offered and
+        /// what this used to ask for. A panel pointed at a texture lays out at that texture's
+        /// pixels (<see cref="TheatreUiCapture"/>), so the second size is not the first one
+        /// enlarged — it is the interface at 3840 across, which is the only way the design's
+        /// 3400-pixel density step (<c>.is-wider</c>) is reached on a machine whose Game View is
+        /// smaller than that. The first is the ordinary desk, below the 2240 step.
+        /// </remarks>
+        private static readonly int[,] Sizes = { { 1920, 1080 }, { 3840, 2160 } };
 
         // ------------------------------------------------------------------ the entry
 
@@ -193,6 +216,9 @@ namespace Evosim.Theatre.EditorTools
             _selected = -1L;
             _runner = null;
 
+            _queue.Clear();
+            TheatreUiCapture.Disarm();
+
             if (_driving) return;
 
             _driving = true;
@@ -242,9 +268,28 @@ namespace Evosim.Theatre.EditorTools
                     return;
                 }
 
+                // A run was named and no run opened. Before this guard, Step() read a null replay
+                // as Mode A and walked the solo assertions instead, so a world the build refuses
+                // to open passed as a creature: runs/r37-s1's config predates two of D089's
+                // tunables, §9's refuse-rather-than-default rule turned it away, and the cousin
+                // check reported "solo mode checked, 6 of 6" (2026-09-13). Mode A is what
+                // EVOSIM_THEATRE_GENOME asks for and nothing else.
+                if (_runner.Replay == null && WorldWasAsked())
+                {
+                    Finish(1,
+                        "EVOSIM_THEATRE_RUN was set and no world opened, so there is no interface " +
+                        "to check: " + (_runner.Error ?? "the runner gave no reason"));
+
+                    return;
+                }
+
                 if (_settle > 0) { _settle--; return; }
 
                 if (!_paceSet) SetThePace();
+
+                // A picture takes two ticks (arm, then read back), so the phases wait while one
+                // is in flight rather than every phase learning to span a tick.
+                if (Photographing()) return;
 
                 Step();
             }
@@ -822,13 +867,24 @@ namespace Evosim.Theatre.EditorTools
         // ------------------------------------------------------------------ the pictures
 
         /// <summary>
-        /// A screenshot of the state just asserted, for the agent to read afterwards.
+        /// Asks for a picture of the state just asserted, at both sizes, for the agent to read
+        /// afterwards. It is taken over the ticks that follow, not here.
         /// </summary>
         /// <remarks>
-        /// <c>ScreenCapture</c> rather than the snapshot entry's camera, and deliberately: that
-        /// one renders a camera into a RenderTexture, which a screen-space UI panel never draws
-        /// into. What is wanted here is the screen, chrome and all. The file lands a frame or two
-        /// after this returns, which is what the settle between phases is for.
+        /// <para>
+        /// <b>This used to call <c>ScreenCapture.CaptureScreenshot</c> and produce nothing.</b>
+        /// Under <c>-batchmode</c> there is a graphics device and no presented backbuffer, so
+        /// every capture was queued and none landed: a full pass logged a shot for each of its
+        /// states and left <c>scratch/snaps/ui/</c> empty (2026-09-13). The route now is
+        /// <see cref="TheatreUiCapture"/> — a RenderTexture the world and the panel are both
+        /// pointed at, read back with <c>ReadPixels</c>, which is what
+        /// <see cref="SnapshotCamera"/> has always done for the four framed views.
+        /// </para>
+        /// <para>
+        /// <b>Two ticks per picture</b>, because the panel draws on its own next repaint, so the
+        /// request is queued here and <see cref="Photographing"/> services it while the phase
+        /// machine waits.
+        /// </para>
         /// </remarks>
         private static void Shot(string state)
         {
@@ -845,26 +901,82 @@ namespace Evosim.Theatre.EditorTools
                 directory = Path.Combine(directory, arm);
                 Directory.CreateDirectory(directory);
 
-                int supersize = IntFrom("EVOSIM_THEATRE_UI_SUPERSIZE", 2, 1, 4);
+                for (int i = 0; i < Sizes.GetLength(0); i++)
+                {
+                    int w = Sizes[i, 0];
+                    int h = Sizes[i, 1];
 
-                string one = Path.Combine(directory, arm + "-" + state + "-1x.png");
-                string big = Path.Combine(directory, arm + "-" + state + "-" + supersize + "x.png");
-
-                ScreenCapture.CaptureScreenshot(one);
-                ScreenCapture.CaptureScreenshot(big, supersize);
-
-                _shots.Add(one);
-                _shots.Add(big);
-
-                Debug.Log(
-                    "[Theatre] ui shot: " + state + " at " + Screen.width + "x" + Screen.height +
-                    " and " + supersize + " times that, into " + directory);
+                    _queue.Add(new Wanted
+                    {
+                        State = state,
+                        Width = w,
+                        Height = h,
+                        Path = Path.Combine(
+                            directory, arm + "-" + state + "-" + w + "x" + h + ".png"),
+                    });
+                }
             }
             catch (Exception e)
             {
-                Debug.LogWarning("[Theatre] could not photograph " + state + ": " + e.Message);
+                Debug.LogWarning("[Theatre] could not ask for a picture of " + state + ": " + e.Message);
             }
         }
+
+        /// <summary>
+        /// Takes one queued picture over two ticks: arm, let a frame draw the panel, read back.
+        /// </summary>
+        /// <returns>True while a picture is being taken, so the phase machine holds still.</returns>
+        private static bool Photographing()
+        {
+            if (TheatreUiCapture.Armed)
+            {
+                Wanted taken = _queue.Count > 0 ? _queue[0] : default;
+                if (_queue.Count > 0) _queue.RemoveAt(0);
+
+                int bytes = TheatreUiCapture.Shoot(taken.Path, out string wrote);
+
+                if (bytes > 0)
+                {
+                    _shots.Add(taken.Path);
+                    Debug.Log("[Theatre] ui shot: " + taken.State + " " + wrote + " -> " + taken.Path);
+                }
+                else
+                {
+                    Debug.LogWarning(
+                        "[Theatre] the picture of " + taken.State + " was not written: " + wrote);
+                }
+
+                // The panel has just been handed back to the screen, and it was laid out at the
+                // texture's width until a moment ago. Let the density classes settle before the
+                // next phase reads anything off it.
+                if (_queue.Count == 0) _settle = SettleFrames;
+
+                return true;
+            }
+
+            if (_queue.Count == 0) return false;
+
+            Wanted next = _queue[0];
+
+            if (!TheatreUiCapture.Arm(
+                    next.Width, next.Height, _runner.ViewCamera, _runner.Ui?.Panel, out string why))
+            {
+                Debug.LogWarning(
+                    "[Theatre] could not photograph " + next.State + " at " + next.Width + "x" +
+                    next.Height + ": " + why);
+
+                _queue.RemoveAt(0);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Whether a run was named. Mode A is what <c>EVOSIM_THEATRE_GENOME</c> asks for, and a
+        /// null replay is only ever Mode A when no run was named at all.
+        /// </summary>
+        private static bool WorldWasAsked() =>
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_RUN"));
 
         // ------------------------------------------------------------------ saying so
 
@@ -984,6 +1096,11 @@ namespace Evosim.Theatre.EditorTools
             EditorApplication.update -= Drive;
             _driving = false;
             SessionState.EraseString(PendingKey);
+
+            // An armed capture holds the panel's target texture, which would leave the interface
+            // drawing into a texture nobody reads for the rest of the session.
+            TheatreUiCapture.Disarm();
+            _queue.Clear();
 
             var files = new StringBuilder();
             foreach (string path in _shots) files.Append("\n  ").Append(path);

@@ -62,8 +62,9 @@ namespace Evosim.Theatre.EditorTools
         /// </summary>
         /// <remarks>
         /// U+03A3 is here even though IBM Plex Mono does not have it: the design uses the sigma
-        /// only in <c>.section__title</c>, which is Sans, and the log saying "mono is missing
-        /// U+03A3" is the record of that being checked rather than a fault.
+        /// only in <c>.section__title</c>, which is Sans, and the log saying "mono has no
+        /// U+03A3" is the record of that being checked rather than a fault. <see cref="Expected"/>
+        /// is where that judgement lives, so the build passes on it and fails on anything else.
         /// </remarks>
         private static readonly int[] Design =
         {
@@ -75,9 +76,21 @@ namespace Evosim.Theatre.EditorTools
         public static void FromMenu() => Build();
 
         /// <summary>Batchmode entry point: exits 0 when all four were written.</summary>
+        /// <remarks>
+        /// <b>A documented gap is not a failure.</b> The first batch build exited 1 because the
+        /// two Mono faces reported the sigma missing, which is the outcome the design predicts
+        /// and this file has said in a comment since it was written (2026-09-13). The rule is now
+        /// in the code rather than only in the prose: <see cref="Expected"/> names the gaps that
+        /// are supposed to be there, they are logged plainly, and the build succeeds. A gap that
+        /// is not on that list is still an error and still exits 1 — the point of pre-baking the
+        /// glyph set is to be told when a character the design uses is not in the face.
+        /// </remarks>
         public static void Run()
         {
             bool ok = Build();
+
+            Debug.Log("[Theatre] UI fonts: exiting " + (ok ? "0" : "1") + ".");
+
             if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
         }
 
@@ -175,16 +188,20 @@ namespace Evosim.Theatre.EditorTools
                 AssetDatabase.AddObjectToAsset(asset.material, asset);
             }
 
-            Populate(asset, assetName);
+            bool filled = Populate(asset, face, assetName);
 
             EditorUtility.SetDirty(asset);
-            return true;
+            return filled;
         }
 
         /// <summary>
         /// Puts printable ASCII and the design's twelve into the atlas, and says what was missing.
         /// </summary>
-        private static void Populate(FontAsset asset, string assetName)
+        /// <returns>
+        /// False only when a character the design needs in <em>this</em> face is absent. A gap
+        /// <see cref="Expected"/> knows about is logged and passes.
+        /// </returns>
+        private static bool Populate(FontAsset asset, string face, string assetName)
         {
             var characters = new StringBuilder();
 
@@ -195,15 +212,27 @@ namespace Evosim.Theatre.EditorTools
             {
                 bool all = asset.TryAddCharacters(characters.ToString(), out string missing);
 
-                if (!all && !string.IsNullOrEmpty(missing))
+                if (all || string.IsNullOrEmpty(missing)) return true;
+
+                if (Expected(face, missing))
                 {
-                    Debug.LogWarning(
-                        "[Theatre] " + assetName + " could not supply " + missing.Length +
-                        " character(s): " + CodePoints(missing) + ". A character the face does " +
-                        "not have draws as a blank box; check it is one the design does not use " +
-                        "in this face before ignoring it (IBM Plex Mono has no U+03A3, and the " +
-                        "design only ever sets the sigma in Sans).");
+                    Debug.Log(
+                        "[Theatre] " + assetName + ": " + face + " has no " + CodePoints(missing) +
+                        ", which is expected and not a fault. The design sets the sigma only in " +
+                        ".section__title, which is Sans; IBM Plex Mono has no U+03A3 and never " +
+                        "needs one. This line is the record of that being checked.");
+
+                    return true;
                 }
+
+                Debug.LogError(
+                    "[Theatre] " + assetName + " could not supply " + missing.Length +
+                    " character(s): " + CodePoints(missing) + ". That is not one of the gaps this " +
+                    "build expects (" + face + "), so a character the design uses in this face " +
+                    "would draw as a blank box. Either the face is not the one committed under " +
+                    SourceFolder + ", or the design's glyph set has grown past what it carries.");
+
+                return false;
             }
             catch (Exception e)
             {
@@ -212,7 +241,36 @@ namespace Evosim.Theatre.EditorTools
                     "). The asset is dynamic, so a missing glyph is rendered on demand at runtime " +
                     "instead — which works in the Editor and is worth fixing before anything is " +
                     "built.");
+
+                return true;
             }
+        }
+
+        /// <summary>
+        /// Whether every character the atlas could not take is one this face is known not to have.
+        /// </summary>
+        /// <remarks>
+        /// One entry, and it is the one the design's glyph-set note already names: the sigma is
+        /// in IBM Plex Sans and not in IBM Plex Mono, verified in the three faces' <c>cmap</c>
+        /// tables before the stylesheet was written. Adding a code point to <see cref="Design"/>
+        /// that a face lacks must fail this build until someone decides it is fine and says so
+        /// here — that is the whole value of pre-baking rather than letting the dynamic atlas
+        /// discover it at runtime in front of a viewer.
+        /// </remarks>
+        private static bool Expected(string face, string missing)
+        {
+            bool mono = face.StartsWith("IBMPlexMono", StringComparison.Ordinal);
+
+            for (int i = 0; i < missing.Length; i++)
+            {
+                // Written as its code point, never as a literal: a sigma typed into a source file
+                // is one mis-set encoding away from being a different character, and this is the
+                // comparison that decides whether the build passes.
+                if (mono && missing[i] == (char)0x03A3) continue;
+                return false;
+            }
+
+            return true;
         }
 
         private static string CodePoints(string text)

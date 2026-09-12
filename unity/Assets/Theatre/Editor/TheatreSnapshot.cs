@@ -101,6 +101,9 @@ namespace Evosim.Theatre.EditorTools
         /// </remarks>
         private static bool _chrome;
 
+        /// <summary>Where the armed chrome picture will be written, or null.</summary>
+        private static string _chromePath;
+
         private static double _wallSecondsAllowed;
         private static double _deadline;
         private static int _next;
@@ -506,7 +509,22 @@ namespace Evosim.Theatre.EditorTools
                 }
 
                 _runner.Paused = true;
-                Shoot(replay, target);
+
+                // A chrome picture takes two ticks: the panel draws into the texture on its own
+                // next repaint, so the frame is armed on one tick and read back on the next. The
+                // world is paused across the pair, so both layers are the same instant.
+                if (TheatreUiCapture.Armed)
+                {
+                    LandTheChromeShot();
+                }
+                else
+                {
+                    Shoot(replay, target);
+
+                    // Armed by Shoot when -Chrome was asked for. Come back for it.
+                    if (TheatreUiCapture.Armed) return;
+                }
+
                 _next++;
                 SessionState.SetString(PendingKey, Pack());
 
@@ -602,37 +620,67 @@ namespace Evosim.Theatre.EditorTools
                     "  " + replay.IdentityLine());
             }
 
-            if (_chrome) ShootTheScreen(arm, stamp);
+            if (_chrome) ArmTheChromeShot(arm, stamp);
         }
 
         /// <summary>
-        /// The interface, photographed the only way it can be: off the screen.
+        /// Arms the interface's picture: the viewer's camera and the panel are pointed at one
+        /// texture, and <see cref="LandTheChromeShot"/> reads it back on the next tick.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// <b>The four views cannot carry it.</b> <see cref="SnapshotCamera"/> renders a camera of
         /// its own into a <c>RenderTexture</c>, and a screen-space UI panel never draws into one —
         /// the same reason that class stamps its label into the pixels by hand rather than using
-        /// <c>GUI.Label</c>. So a chrome picture is a screen capture of the Game View, at whatever
-        /// size the batch Editor's view happens to be, and it is a picture of the interface rather
-        /// than a framed view of the world. The file lands a frame or two after this returns,
-        /// which is why it is not in the count the entry prints.
+        /// <c>GUI.Label</c>.
+        /// </para>
+        /// <para>
+        /// <b>A screen capture is not the answer either, which cost a run to learn.</b> This was
+        /// <c>ScreenCapture.CaptureScreenshot</c> until 2026-09-13, and under <c>-batchmode</c>
+        /// that logs "queued" and writes nothing at all. <see cref="TheatreUiCapture"/> does it
+        /// the way the four views are done, so the chrome frame is a real file at the run's
+        /// <c>-Size</c> rather than a Game View of whatever shape the batch Editor happened to
+        /// have. It is the viewer's own camera, though, not one of the four framings: what is
+        /// wanted is the theatre as a person sees it, interface and all.
+        /// </para>
         /// </remarks>
-        private static void ShootTheScreen(string arm, string stamp)
+        private static void ArmTheChromeShot(string arm, string stamp)
         {
             try
             {
-                string path = Path.Combine(_directory, arm + "-t" + stamp + "-chrome.png");
+                _chromePath = Path.Combine(_directory, arm + "-t" + stamp + "-chrome.png");
 
-                ScreenCapture.CaptureScreenshot(path);
-
-                Debug.Log(
-                    "[Theatre] chrome: screen capture queued to " + path + " at " +
-                    Screen.width + "x" + Screen.height + ". It is the Game View, interface and " +
-                    "all, not one of the four framed views; -Size does not reach it.");
+                if (!TheatreUiCapture.Arm(
+                        _width, _height, _runner.ViewCamera, _runner.Ui?.Panel, out string note))
+                {
+                    Debug.LogWarning("[Theatre] no chrome picture: " + note);
+                    _chromePath = null;
+                }
             }
             catch (Exception e)
             {
+                TheatreUiCapture.Disarm();
+                _chromePath = null;
                 Debug.LogWarning("[Theatre] the chrome capture failed: " + e.Message);
+            }
+        }
+
+        /// <summary>Reads the armed chrome picture back and writes it.</summary>
+        private static void LandTheChromeShot()
+        {
+            string path = _chromePath;
+            _chromePath = null;
+
+            int bytes = TheatreUiCapture.Shoot(path, out string note);
+
+            if (bytes > 0)
+            {
+                _written.Add(path);
+                Debug.Log("[Theatre] chrome: " + note + " -> " + path);
+            }
+            else
+            {
+                Debug.LogWarning("[Theatre] the chrome picture was not written: " + note);
             }
         }
 
@@ -644,6 +692,11 @@ namespace Evosim.Theatre.EditorTools
             SessionState.EraseString(PendingKey);
 
             if (_camera != null) { _camera.Dispose(); _camera = null; }
+
+            // An armed capture holds the panel's target texture, and the viewer would never see
+            // the interface again in this session.
+            TheatreUiCapture.Disarm();
+            _chromePath = null;
 
             var files = new System.Text.StringBuilder();
             foreach (string path in _written) files.Append("\n  ").Append(path);
