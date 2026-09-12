@@ -4431,6 +4431,16 @@ the geometry argument above as its record; the halo was withdrawn under D083.
 (`rounds/launch-r32.ps1`), the header carrying `cell=`, `mcell=` and `corpse=`. Round 32
 is the grid at round 31's prices and mixing, five seeds at 0.01, read under logbook/0079's
 predictions with round 31's same seed as the reference.
+**Note, 2026-09-12 (from the Astra review's transporter finding).** The rolls' advection of
+the grid, which rounds 32 and 33 ran, fails the constant-field test the transport field
+failed, and worse: 1 unit/m³ carried by the rolls at 0.1 m/s became 2e-6 to 7.2 on 1 m cells
+in 600 s (sd over mean 113%; 31% on 5 m cells), against the transport field's 55%
+(`ConservativeTransportTests`, a Core probe with no organisms). The rolls have no vector
+potential (D037's field is a function of depth, time and patch), so the repair that fixed
+the transport field cannot reach them; their scheme is left as recorded, both rounds replay
+byte for byte under their builds, and every claim in them about where food sits relative to
+bodies carries the artefact, as the D088 note says of rounds 34 to 37.
+
 ### D087
 
 **2026-09-09 — Bodies that grow**
@@ -4648,8 +4658,9 @@ campaign's mixing, and 5% on the 5 m matter cells (reproduced with the reviewer'
 Rounds 34 to 37 ran on it; their verdicts stand as measured, and every claim in them about
 where food sits relative to bodies carries the artefact. Repaired for round 37b
 (`logbook/specs/transport-conserves-spec.md`): face fluxes from the current's vector
-potential, which keeps a uniform field uniform to rounding. The rolls' scheme, rounds 32 and
-33's, is untouched.
+potential, which keeps a uniform field uniform to rounding (built the same night: 1e-15 in
+every case; `ConservativeTransportTests`). The rolls' scheme, rounds 32 and 33's, is untouched
+and fails the same test, worse (the note under D086).
 
 ### D089
 **The aquarium — a cylinder of water with a glass wall and a gyre; the area decoupled from the matter; corpses as objects; the drive limiter at every step** · 2026-09-11

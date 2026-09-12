@@ -71,10 +71,17 @@ turns uniform water into 30% patchiness on 1 m cells within 600 s (34% on the st
 three axis passes run in sequence. The total is conserved throughout, and that was all the
 tests asked. Its second is real: the tank's placer tests a candidate's centre against the glass and
 never its radius. Its third, the `cols` numerator, was fixed on `streams` before the review
-arrived. Both repairs build tonight (`logbook/specs/transport-conserves-spec.md` on
-`streams`: face fluxes from the current's vector potential, so a uniform field stays uniform
-to rounding; `wall-clearance-spec.md` on branch `clearance`) and land in round 37b's build
-beside the streams, the fluid force and the throw trace. The script contracts
+arrived. Both repairs are built and green in Core (`streams` at `aa649b4`, with `clearance` merged
+in; `logbook/specs/transport-conserves-spec.md`: face fluxes from the current's vector
+potential, a uniform field holding to 1e-15 where it drifted to 30 to 100%, one substep where
+the old Courant check asked two; `wall-clearance-spec.md`) and land in round 37b's build
+beside the streams, the fluid force and the throw trace; the same probe found the rolls'
+scheme of rounds 32 and 33 worse (113%) and unrepairable by this route (the note under
+D086). The box path's transport goldens moved, as every per-step change must: rounds 34 to
+37 are new realisations under this build and replay under their own. The sitter-against-mover
+experiments rerun on the repaired grid read as recorded (3.03 to 3.05 in the box, 0.99 to
+1.21 in the dilute tank), and the shared-space smoke on worker 2 passed with the clearance
+checks (200 founders' reserved spheres, worst 5.637 m of 5.642 m). The script contracts
 (`compare-det.py` exit codes, the scorer's `SHORT` and floor qualifiers, the positions suite
 under PowerShell 5.1, `launch-queue.ps1 -Prereg`) build on main from
 `script-contracts-spec.md`. The adoption-rule inconsistency the review found (D081 against

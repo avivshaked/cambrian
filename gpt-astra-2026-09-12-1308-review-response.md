@@ -14,7 +14,7 @@ merge), *next* (in the sequence below, building or queued), *owner* (needs a rul
 
 | Finding | Real? | What I measured | Exposure in the record | Status |
 |---|---|---|---|---|
-| F1. The transporter makes gradients from uniform water | yes, reproduced with the reviewer's probe on main and on branch `streams` | 1 m cells at the campaign's mixing: 30% patchiness in the box after 600 s, 34% in the tank on the streams (102% with mixing off); 5 m matter cells at 2 m²/s: 5 to 6% | every round on the carrying current or the gyre, 34 to 37; the detritus field more than the matter field; rounds 32 and 33 ran the rolls' own staggered scheme, which the probe did not test | *next*: building on `streams` for round 37b (`logbook/specs/transport-conserves-spec.md`) |
+| F1. The transporter makes gradients from uniform water | yes, reproduced with the reviewer's probe on main and on branch `streams` | 1 m cells at the campaign's mixing: 30% patchiness in the box after 600 s, 34% in the tank on the streams (102% with mixing off); 5 m matter cells at 2 m²/s: 5 to 6% | every grid round: 34 to 37 on the carrying current or the gyre, and 32 and 33 on the rolls, whose scheme the build's own probe found worse (113% on 1 m cells) and which has no potential to repair it with; the detritus field more than the matter field | *done* on `streams` (commit `6c6e696`, `logbook/specs/transport-conserves-spec.md`): a uniform field holds to 1e-15 in every case, the potential's curl matches the field to 6e-5, the campaign's grids run one substep where they ran two; Unity checks tonight, round 37b carries it |
 | F2. The tank places a body's centre inside the glass and not its body | yes, by reading `SharedVolume.Free`: the radius is tested against bodies and never against the wall | the reviewer's shim: 208 unit-cube founders of 1,000 with a corner past the circle; the smoke checks centres and a quarter-metre root tolerance | round 37 only (the first tank); its `diverged` reads 0 in every seed so far, so a body born through a slab is depenetrated rather than thrown, as far as the count can see | *next*: building on branch `clearance` for round 37b (`logbook/specs/wall-clearance-spec.md`); the `TankWall` comment's 1.2 mm is 12.1 mm and is corrected with it |
 | F3. `cols` counts a numerator and a denominator on different columns | yes | round 37 printed `104/100` and `110/100` | round 37's M2 | *done* before the review reached me: fixed on `streams` on the morning of 2026-09-12 (commit `70b0bea`) in the report and in `positions-read.py`; round 37's M2 is read from `positions.jsonl` with the corrected reader |
 | F4. `compare-det.py` exits 0 on a disagreement | yes, by reading it | the shared world's identity checks run on `digest-diff.py`, which exits 1; `compare-det.py` was the tiled world's tool and is still public | *next*: building (`logbook/specs/script-contracts-spec.md`): exit codes for disagreement, no shared samples, unequal coverage, a missing field and an ambiguous run directory, with fixtures |
@@ -36,8 +36,9 @@ transporter that invents food gradients, and every claim in rounds 34 to 37 abou
 is relative to bodies carries it; those claims were already listed as confounded in
 logbook/0084 for the column world and 0092 reads round 36's ecology at the population scale.
 The verdicts stand as measured under their recorded builds. The sitter-against-mover
-number (mover over sitter 3.0) comes from the hole a sitter eats, not from the background,
-and is rerun on the repaired grid before 37b launches. The matter field, on 5 m cells at
+number (mover over sitter 3.0) comes from the hole a sitter eats, not from the background:
+rerun on the repaired grid the same night it reads 3.03 to 3.05 in the box at 0.02 m²/s and
+0.3 m/s, and 0.99 to 1.21 in the dilute tank, the recorded numbers. The matter field, on 5 m cells at
 2 m²/s, is within 6% of uniform and founding reads through it; the detritus field is the
 one that was wrong.
 

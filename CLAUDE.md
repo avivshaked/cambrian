@@ -687,7 +687,8 @@ actually verifying it.
   of the knob because the water does, so the column that was the locomotion readout is not one,
   and there is no relative-speed column yet. The grid substeps its advection when the fastest
   water (2.45 times the RMS) would cross more than half a cell in a metabolic step and refuses
-  above eight substeps; 0.3 m/s on 1 m cells is two, and about a quarter of the throughput.
+  above eight substeps; 0.3 m/s on 1 m cells was two, and about a quarter of the throughput, until the conservative
+  transporter (2026-09-12), whose substeps come from the largest per-cell outflow and read one.
   Dispersal is `EVOSIM_OFFSPRING_DISPERSAL` (`OffspringDispersalMetres`, 0 = D077's touching
   rule), **not `EVOSIM_DISPERSAL`**, which is D061's retired patch lottery and still bound; the
   header prints `dispersal=`. The placer reserves a child's adult radius from this build, so
@@ -761,8 +762,13 @@ actually verifying it.
   potential (`CurrentField.PotentialAt`; `logbook/specs/transport-conserves-spec.md`), so
   every cell's net flux is zero by telescoping; the rolls' scheme is untouched and every
   recorded world replays. A new current mode needs a potential, not only a velocity, before
-  the grid will carry it faithfully. The Astra review's probe that found it is
-  `scratch/astra-check/Program.cs`.
+  the grid will carry it faithfully, and the rolls have none: their scheme, rounds 32 and
+  33's, fails the same test worse (113% on 1 m cells) and is left as recorded. Two readings
+  come with the repair: the substep count now comes from the fluxes themselves (one substep
+  in both campaign cases where the a-priori Courant check asked two, so the transport is
+  cheaper per step), and a 5 m grid carries only 0.3 to 0.4 of the water's RMS because it
+  samples the eddies about once per wavelength (the 1 m grid carries 0.96 to 1.07). The
+  Astra review's probe that found it is `scratch/astra-check/Program.cs`.
 - **A pre-registration is committed before the queue starts.** Round 37's predictions were
   committed at 08:31:49 and its first manifest written at 08:28:48 (the Astra review of
   2026-09-12): the thresholds were in the working tree and not in history when the world
