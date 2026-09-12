@@ -2148,9 +2148,10 @@ it configures* (logbook/0007, logbook/0008, logbook/0013).
 - Fixed timestep and solver iteration counts, both in the config hash. ⚠ *Partly true as
   built (2026-09-03, D069): the physics timestep is configurable (`EVOSIM_DT`,
   `Ecosystem.ConfigurePhysicsStep`; it must divide the 0.5 s metabolic step exactly) and is
-  printed in every run header (`dt=`) and in the run identity record — but it is still
-  outside `RunConfig.Hash()`, so two runs at different steps can share a hash. Compare
-  headers, not hashes, across a step change. Hashing it is queued.* **The step policy
+  printed in every run header (`dt=`) and in the run identity record, and it has been inside
+  `RunConfig.Hash()` since 2026-09-04 (§7), so two runs at different steps never share a
+  hash. This note said the opposite until 2026-09-12, when the Astra review read the two
+  sections against each other; §7 was right.* **The step policy
   (logbook/0052):** 0.01 s is the confirmation step and the only step at which the
   historical record replays; 0.02 s is the screening step, ~3× the pace, its deviations
   from 0.01 inside the same-seed butterfly (§7); 0.05 s is rejected — unstable on the

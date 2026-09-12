@@ -5,8 +5,8 @@
 commit messages. It exists because the owner read logbook/0069 and could not follow it,
 and because the record is meant to become a book one day. It is written for two readers
 at once: a person reading the research cold, and an agent writing or rewriting a piece
-who needs rules it can check. Adopted 2026-09-06. Licensed CC BY 4.0 with the rest of
-the prose.*
+who needs rules it can check. Adopted 2026-09-06. Licensed CC BY-NC 4.0 with the rest of
+the prose (CC BY 4.0 until D080, 2026-09-07).*
 
 ## 1. Who is talking, and to whom
 

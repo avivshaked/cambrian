@@ -108,3 +108,9 @@ local clock an hour behind the launch log's.
 - `fable-propose-aquarium.md` as absorbed into D089; `logbook/specs/tank-spec.md`.
 - logbook/0089 (round 36 pre-registered), 0092 (round 36 read), 0091 (what the theatre showed).
 - `rounds/launch-r37.ps1`; `scratch/snaps/r37tank2/` for the smoke's pictures.
+
+*Note, 2026-09-12 evening (from the Astra review).* This entry's predictions were committed
+at 08:31:49, after the first manifest (08:28:48) and the fifth (08:31:07). The thresholds
+were in the working tree before the queue started and did not change after it; the record
+calls that delayed archival. From round 37b the launcher refuses to start without a
+committed entry (`launch-queue.ps1 -Prereg`).

@@ -64,6 +64,26 @@ tank smoke at 1 spreads evenly (`r37bsmoke`). Cost about half the pace; the stre
 derivative is queued to take it back during 37b, verified by digest identity, before round 38.
 Round 37b launches from `rounds/launch-r37b.ps1` on the merged build after round 37's last render.
 
+**The Astra review of 2026-09-12 is answered (`gpt-astra-2026-09-12-1308-review-response.md`,
+evening).** Its first finding is real and reproduced on both trees: the grid's transporter
+turns uniform water into 30% patchiness on 1 m cells within 600 s (34% on the streams; 5 to
+6% on the 5 m matter cells), because face velocities are sampled at cell centres and the
+three axis passes run in sequence. The total is conserved throughout, and that was all the
+tests asked. Its second is real: the tank's placer tests a candidate's centre against the glass and
+never its radius. Its third, the `cols` numerator, was fixed on `streams` before the review
+arrived. Both repairs build tonight (`logbook/specs/transport-conserves-spec.md` on
+`streams`: face fluxes from the current's vector potential, so a uniform field stays uniform
+to rounding; `wall-clearance-spec.md` on branch `clearance`) and land in round 37b's build
+beside the streams, the fluid force and the throw trace. The script contracts
+(`compare-det.py` exit codes, the scorer's `SHORT` and floor qualifiers, the positions suite
+under PowerShell 5.1, `launch-queue.ps1 -Prereg`) build on main from
+`script-contracts-spec.md`. The adoption-rule inconsistency the review found (D081 against
+the practice since the grid) is put to the owner as `fable-propose-adoption-rule.md`. A
+documentation pass (DESIGN through D090 and the repairs, README, primer 05 and 06, the
+predation proposal's premise, the licence summaries, the research counts) and a HANDOFF
+rewritten as the present state are queued for 37b's run; the review's document claims are
+being verified row by row first.
+
 **Round 34 is read (logbook/0090, 2026-09-11 midday): five seeds of five pass the goal
 rule, the free joint founds in every seed (46 to 140 inherited at 1,000 s) and is gone from
 every seed by 23,100 s, re-invented by mutation to the end and never re-founded. The ledger
@@ -329,6 +349,16 @@ round 28) set the base and the order.
       2026-09-12 and launched as logbook/0093 on round 36's world. The limiter is not on: its
       check failed (D089's check 4). The 2 by 2 box's shape code is absorbed and no round runs
       it.
+   2b. **Round 37b, the water carried as water** (D090; resequenced 2026-09-12 afternoon by
+      the agent under the owner's grant, on the owner's diagnosis of round 37's gathering):
+      round 37's world on the streams with the fluid acceleration force at 1, and the throw
+      trace. *Amended 2026-09-12 evening after the Astra review:* the build also carries the
+      conservative transporter (review F1: the old scheme made 30% patchiness from uniform
+      water), the whole-body wall clearance at birth (F2) and the corrected `cols` (F3).
+      None is a world rule; each makes the world what D088 and D089 say it is, and the
+      dilution would otherwise be read against an invented food field. Replaces 37 as the
+      tank's base; 38 reads against it. Pre-registered as 0095, committed before the queue
+      starts, launched with `-Prereg`.
    3. **Round 38, the dilute tank** (rulings 2 and 3): four times the area, 400 m², with the
       matter held at 6,000 units by a new tunable whose default is today's scaling; corpses
       as objects at 0.005/s; no new build (`rounds/launch-r38.ps1` is written). The dilute
@@ -605,7 +635,8 @@ captures, probe output, one-off edit scripts, stale copies; nothing was deleted.
   the route is a Game Bar or Recorder film of the session and frames pulled from it at the
   seconds in question, read as pictures beside the numbers.
 - **The aquarium's second and third rulings** (D089, 2026-09-11): the dilution to 400 m² with
-  the matter held at 6,000 units, and corpses as objects at 0.005/s from round 38, go ahead on
+  the matter held at 6,000 units, and corpses as objects at 0.005/s (already the setting since
+  round 32, D086; D089 restated it and did not change it), go ahead on
   the agent's recommendation under "follow your suggestions" and can be overruled before
   round 38 launches. The limiter of the same entry was built, failed its check (27
   divergences against 17, same signature) and is not adopted; no ruling is needed unless the

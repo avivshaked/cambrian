@@ -13,9 +13,16 @@ is paraphrase/quote from those pages, not verified against Unity/PhysX source by
      very large velocities when propagated to a body with small mass." Recommends avoiding
      large mass AND inertia ratios together.
      https://docs.omniverse.nvidia.com/kit/docs/omni_physics/latest/dev_guide/guides/articulation_stability_guide.html
-   - MATCH: strong. Repo's roots are heavier, links down to 0.14 kg — ratio could exceed 10:1,
-     worsened every 10s by the resize step (mass changes, ratio can drift past the threshold
-     without anyone re-checking it).
+   - CORRECTION 2026-09-12 (Astra review): under uniform growth every part scales by one
+     length factor and both dry and added mass scale with volume, so the ratio between two
+     links is constant through a resize except where a clamp bites (the 0.001 kg mass floor,
+     minPartVolume). The trace measures maxJointMassRatio at every build and resize rather
+     than assuming drift; absolute inertia, contact geometry and anchor moves do change with
+     size and are what a resize can disturb.
+   - MATCH: partial (revised 2026-09-12, see the correction above). Repo's roots are heavier,
+     links down to 0.14 kg, so a ratio over 10:1 is possible at build; a resize does not move
+     the ratio except at a clamp. Whether any thrown body stood over 10:1 is what the trace's
+     maxJointMassRatio answers.
 
 2. Stiff joint drives / competing hard constraints
    - Same Omniverse guide: "Stiff drives can often lead to very large drive forces... a

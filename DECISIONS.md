@@ -4639,6 +4639,18 @@ component by hand: it would give up divergence-free, which is the whole reason t
 is a curl. A measured RMS scale on a lattice: twelve samples in depth cannot see
 twenty-seven half-sines, and the closed form needs no lattice.
 
+**Note, 2026-09-12 (from the Astra review).** The grid's transport of stock under this
+current was not the flow it described. `GridField.Sweep` sampled the horizontal velocity at
+a cell's centre for its east and front faces and applied the three axis passes in sequence.
+A uniform field carried by it developed 30% patchiness on 1 m cells within 600 s at the
+campaign's mixing, and 5% on the 5 m matter cells (reproduced with the reviewer's probe,
+`scratch/astra-check`). The total was conserved throughout, which is what the tests checked.
+Rounds 34 to 37 ran on it; their verdicts stand as measured, and every claim in them about
+where food sits relative to bodies carries the artefact. Repaired for round 37b
+(`logbook/specs/transport-conserves-spec.md`): face fluxes from the current's vector
+potential, which keeps a uniform field uniform to rounding. The rolls' scheme, rounds 32 and
+33's, is untouched.
+
 ### D089
 **The aquarium — a cylinder of water with a glass wall and a gyre; the area decoupled from the matter; corpses as objects; the drive limiter at every step** · 2026-09-11
 
@@ -4773,6 +4785,12 @@ together. The driver edit and the harness moved `simHash`. In the tank a body's 
 ring, so a reader comparing round 37's `p0` against round 36's is comparing the centre
 against a strip, and the entries say so.
 
+**Note, 2026-09-12 (from the Astra review).** The fourth item above reads as if corpses
+become objects in round 38. They have been objects since round 32: every launcher from
+`rounds/launch-r32.ps1` on sets `EVOSIM_CORPSE_DECAY` 0.005 (D086), and D089 restated the
+setting without changing it. Round 38 changes the area and the matter budget and nothing
+about corpses.
+
 ### D090
 **The water carries as water does — streams instead of a gyre, and the fluid acceleration force; round 37b repeats the tank on both before the dilution** · 2026-09-12
 
@@ -4862,3 +4880,10 @@ toward high azimuthal modes: the area-integrated drift is outward for any azimut
 all, so no spectrum reaches an even spread without the force. Reading round 37 as it is: every
 reading in a trapped tank is confounded by the trap. Running 38 on 37 with two changes: the
 dilution would be read against a crust.
+
+**Note, 2026-09-12, evening (from the Astra review).** Clause 3's "nothing else moves" is
+amended by the agent under the owner's grant to reorder: round 37b's build also carries the
+conservative transporter (the note under D088), a birth gate that tests a body's whole
+reserved sphere against the glass (`SharedVolume.Free` tested the centre alone), and a
+`cols` numerator counted on the same columns as its denominator. None is a world rule. The
+owner can overrule before the launch; the response file at the root has the reasoning.

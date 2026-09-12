@@ -743,6 +743,24 @@ actually verifying it.
   second pass moved `simHash` after `r37tank` was recorded, and the theatre refused its
   pictures on the mismatch (2026-09-12). Record the smoke you will photograph on the tree
   you will merge, after the last pass, or photograph before the next one.
+- **Uniform water made its own patches until 2026-09-12.** A dissolved field carried by
+  incompressible water stays uniform, and the grid's transporter did not keep it so: face
+  velocities sampled at cell centres and three axis passes applied in sequence turned
+  1 unit/m³ into 30% patchiness on 1 m cells within 600 s at the campaign's mixing (34% on
+  the streams, 102% with mixing off; 5 to 6% on the 5 m matter cells) while the total held to
+  1e-15, which is all the transport tests asked. Conservation, positivity and dry cells can
+  all hold on a field that is wrong; a constant-field check belongs beside every conservation
+  check. From round 37b's build the grid takes its face fluxes from the current's vector
+  potential (`CurrentField.PotentialAt`; `logbook/specs/transport-conserves-spec.md`), so
+  every cell's net flux is zero by telescoping; the rolls' scheme is untouched and every
+  recorded world replays. A new current mode needs a potential, not only a velocity, before
+  the grid will carry it faithfully. The Astra review's probe that found it is
+  `scratch/astra-check/Program.cs`.
+- **A pre-registration is committed before the queue starts.** Round 37's predictions were
+  committed at 08:31:49 and its first manifest written at 08:28:48 (the Astra review of
+  2026-09-12): the thresholds were in the working tree and not in history when the world
+  started. `launch-queue.ps1 -Prereg logbook/NNNN-….md` refuses to launch unless the entry
+  is tracked and clean, and writes `runs/<arm>/prereg.json` with the commit beside each run.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.
