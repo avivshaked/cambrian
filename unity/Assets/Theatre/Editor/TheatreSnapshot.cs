@@ -89,6 +89,18 @@ namespace Evosim.Theatre.EditorTools
         private static int _width = 1600;
         private static int _height = 900;
 
+        /// <summary>
+        /// Whether the interface is left on. Off by default, which is the whole record's format.
+        /// </summary>
+        /// <remarks>
+        /// <b>Every picture in <c>logbook/images/</c> carries the burnt-in label and no chrome</b>,
+        /// and a frame that suddenly grew a census panel would not be comparable with any of them.
+        /// So <c>H</c>'s effect is the default here, exactly as it was when the overlay was an
+        /// IMGUI block, and <c>EVOSIM_THEATRE_CHROME=1</c> (<c>theatre-snap.ps1 -Chrome</c>) is how
+        /// the interface itself gets photographed for review.
+        /// </remarks>
+        private static bool _chrome;
+
         private static double _wallSecondsAllowed;
         private static double _deadline;
         private static int _next;
@@ -204,6 +216,8 @@ namespace Evosim.Theatre.EditorTools
 
             _wallSecondsAllowed =
                 60d * IntFrom("EVOSIM_THEATRE_WALL_MINUTES", 30, 1, 1440);
+
+            _chrome = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHROME") == "1";
 
             return null;
         }
@@ -363,7 +377,8 @@ namespace Evosim.Theatre.EditorTools
                    _width.ToString(CultureInfo.InvariantCulture) + "x" +
                    _height.ToString(CultureInfo.InvariantCulture) + "|" +
                    _wallSecondsAllowed.ToString("R", CultureInfo.InvariantCulture) + "|" +
-                   _next.ToString(CultureInfo.InvariantCulture);
+                   _next.ToString(CultureInfo.InvariantCulture) + "|" +
+                   (_chrome ? "1" : "0");
         }
 
         /// <summary>
@@ -414,6 +429,8 @@ namespace Evosim.Theatre.EditorTools
                         out int taken)
                 ? taken
                 : 0;
+
+            _chrome = fields.Length > 6 && fields[6] == "1";
 
             if (_times == null || _views == null) { SessionState.EraseString(PendingKey); return; }
             if (_next >= _times.Length) { SessionState.EraseString(PendingKey); return; }
@@ -521,7 +538,7 @@ namespace Evosim.Theatre.EditorTools
             _runner.Paused = false;
             _runner.Rate = 10000f;
             _runner.FrameBudgetSeconds = 0.25f;
-            _runner.ShowOverlay = false;
+            _runner.ShowOverlay = _chrome;
 
             Debug.Log(
                 "[Theatre] " + replay.Record.Path + "\n" +
@@ -583,6 +600,39 @@ namespace Evosim.Theatre.EditorTools
                     " s, asked for " + stamp + " s\n" +
                     "  " + remark + "\n" +
                     "  " + replay.IdentityLine());
+            }
+
+            if (_chrome) ShootTheScreen(arm, stamp);
+        }
+
+        /// <summary>
+        /// The interface, photographed the only way it can be: off the screen.
+        /// </summary>
+        /// <remarks>
+        /// <b>The four views cannot carry it.</b> <see cref="SnapshotCamera"/> renders a camera of
+        /// its own into a <c>RenderTexture</c>, and a screen-space UI panel never draws into one —
+        /// the same reason that class stamps its label into the pixels by hand rather than using
+        /// <c>GUI.Label</c>. So a chrome picture is a screen capture of the Game View, at whatever
+        /// size the batch Editor's view happens to be, and it is a picture of the interface rather
+        /// than a framed view of the world. The file lands a frame or two after this returns,
+        /// which is why it is not in the count the entry prints.
+        /// </remarks>
+        private static void ShootTheScreen(string arm, string stamp)
+        {
+            try
+            {
+                string path = Path.Combine(_directory, arm + "-t" + stamp + "-chrome.png");
+
+                ScreenCapture.CaptureScreenshot(path);
+
+                Debug.Log(
+                    "[Theatre] chrome: screen capture queued to " + path + " at " +
+                    Screen.width + "x" + Screen.height + ". It is the Game View, interface and " +
+                    "all, not one of the four framed views; -Size does not reach it.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[Theatre] the chrome capture failed: " + e.Message);
             }
         }
 

@@ -148,9 +148,9 @@ namespace Evosim.Theatre
         private double _pending;
         private bool _seeking;
         private double _seekTarget;
+        private double _seekFrom;
 
         private long _selectedId = -1;
-        private readonly List<string> _sensorLines = new List<string>();
 
         private readonly Stopwatch _clock = Stopwatch.StartNew();
         private double _pacedFrom;
@@ -158,8 +158,19 @@ namespace Evosim.Theatre
         private double _measuredPace;
         private long _repaintCursor;
 
-        private GUIStyle _panel;
-        private GUIStyle _text;
+        /// <summary>
+        /// The interface — the strip, the census, the warnings, the popover, the inspector and the
+        /// bar. Null when its assets are missing, in which case the run plays with nothing drawn
+        /// over it rather than not at all.
+        /// </summary>
+        /// <remarks>
+        /// It replaced an <c>OnGUI</c> block of five methods on 2026-09-12 (design/SPEC.md). The
+        /// runner keeps what it always kept — the pace, the pause, the seek and the selection —
+        /// and hands them over once a frame; the interface reads the replay, the census and the
+        /// record for itself. Nothing in it can decide a trajectory, and all of it sits under
+        /// <c>Assets/Theatre</c>, outside <c>simHash</c>.
+        /// </remarks>
+        private TheatreUi _ui;
 
         /// <summary>
         /// The replay on screen, or null when Mode B has not opened one.
@@ -173,8 +184,23 @@ namespace Evosim.Theatre
         /// </remarks>
         public TheatreReplay Replay => _replay;
 
-        /// <summary>Why nothing opened, or null. The same string the overlay prints.</summary>
+        /// <summary>Why nothing opened, or null. The same string the interface prints.</summary>
         public string Error => _error;
+
+        /// <summary>The interface, for the Play-mode check to query. Null when it did not load.</summary>
+        public TheatreUi Ui => _ui;
+
+        /// <summary>The creature the viewer has selected, or -1.</summary>
+        public long SelectedId => _selectedId;
+
+        /// <summary>True while the world is being run forward with the camera off.</summary>
+        public bool Seeking => _seeking;
+
+        /// <summary>Where a seek is heading, when one is running.</summary>
+        public double SeekTarget => _seekTarget;
+
+        /// <summary>Simulated seconds per wall-clock second, measured over a window.</summary>
+        public double MeasuredPace => _measuredPace;
 
         private void Start()
         {
@@ -211,6 +237,10 @@ namespace Evosim.Theatre
                 AllowSourceMismatch = true;
             }
 
+            // Before the run opens, because opening is what fills it in.
+            _ui = TheatreUi.Create();
+            if (_ui != null) _ui.Visible = ShowOverlay;
+
             OpenWhateverModeSays();
         }
 
@@ -229,6 +259,20 @@ namespace Evosim.Theatre
                 _error = e.GetType().Name + ": " + e.Message;
                 Debug.LogError("[Theatre] " + _error);
             }
+
+            TellTheInterface();
+        }
+
+        /// <summary>What opened, or what stopped it opening.</summary>
+        private void TellTheInterface()
+        {
+            if (_ui == null) return;
+
+            if (_error != null) { _ui.ShowError(_error); return; }
+            if (_replay != null) { _ui.OpenWorld(_replay, _map, _replay.Record.Path); return; }
+            if (_solo != null) { _ui.OpenSolo(_solo); return; }
+
+            _ui.ShowError("nothing opened, and nothing said why");
         }
 
         private void OpenWorld()
@@ -389,11 +433,20 @@ namespace Evosim.Theatre
         private void OnDisable() => Close();
 
         /// <summary>
-        /// Puts the render settings back. The fog and the ambient are global, so leaving Play mode
-        /// with the theatre's dark field still set would follow the owner into the next scene they
-        /// opened.
+        /// Puts the render settings back, and takes the interface's panel down with it.
         /// </summary>
-        private void OnDestroy() => _skin.Dispose();
+        /// <remarks>
+        /// The fog and the ambient are global, so leaving Play mode with the theatre's dark field
+        /// still set would follow the owner into the next scene they opened. The panel is the same
+        /// kind of thing: a UIDocument and its PanelSettings are objects this component made, and
+        /// an interface still drawing over a scene nobody opened it in is the same surprise.
+        /// </remarks>
+        private void OnDestroy()
+        {
+            _skin.Dispose();
+            _ui?.Dispose();
+            _ui = null;
+        }
 
         // ---------------------------------------------------------------- the loop
 
@@ -403,6 +456,54 @@ namespace Evosim.Theatre
 
             if (_replay != null) StepWorld();
             else if (_solo != null) StepSolo();
+
+            DrawTheInterface();
+        }
+
+        /// <summary>
+        /// Hands the interface the four things it cannot see for itself, once a frame.
+        /// </summary>
+        /// <remarks>
+        /// The pace, the pause, the seek and the selection all live here, because they are the
+        /// viewer's state rather than the world's; everything else on screen the interface reads
+        /// off the replay, the census and the record. What it does with them is four text fields
+        /// and one width per frame — the cadence contract of design/SPEC.md §9 item 6.
+        /// </remarks>
+        private void DrawTheInterface()
+        {
+            if (_ui == null) return;
+
+            _ui.Visible = ShowOverlay;
+
+            _ui.Tick(new TheatreUiState
+            {
+                Paused = Paused,
+                Rate = Rate,
+                MeasuredPace = _measuredPace,
+                Seeking = _seeking,
+                SeekFrom = _seekFrom,
+                SeekTarget = _seekTarget,
+                SelectedId = _selectedId,
+                SelectedSpeed = SelectedSpeed(),
+            });
+        }
+
+        /// <summary>
+        /// The selected creature's root speed, m/s, or 0.
+        /// </summary>
+        /// <remarks>
+        /// Read here rather than in the interface because the scene is the runner's: the map, the
+        /// transform and the articulation are all things the interface deliberately never touches.
+        /// </remarks>
+        private float SelectedSpeed()
+        {
+            if (_replay == null || _selectedId < 0) return 0f;
+
+            Transform root = _map.RootOf(_selectedId);
+            if (root == null || root.childCount == 0) return 0f;
+
+            var body = root.GetChild(0).GetComponent<ArticulationBody>();
+            return body != null ? body.linearVelocity.magnitude : 0f;
         }
 
         private void StepWorld()
@@ -534,14 +635,53 @@ namespace Evosim.Theatre
             if (_repaintCursor % 512 == 0) _palette.PurgeDead();
         }
 
-        private void BeginSeek(double target)
+        /// <summary>
+        /// Runs the world forward to a simulated second with the camera off.
+        /// </summary>
+        /// <remarks>
+        /// Public since 2026-09-12 so the Play-mode interface check can put the theatre into its
+        /// seeking state without synthesising a keypress: <c>K</c> calls this and nothing else, so
+        /// what the check exercises is the path a person's hands take.
+        /// </remarks>
+        public void BeginSeek(double target)
         {
             if (_replay == null) return;
 
+            _seekFrom = _replay.ElapsedSeconds;
             _seekTarget = target;
             _seeking = target > _replay.ElapsedSeconds;
 
             if (!_seeking) EndSeek();
+        }
+
+        /// <summary>Space, without the key: pause or carry on.</summary>
+        public void TogglePause() => Paused = !Paused;
+
+        /// <summary>P, without the key: the provenance popover, which hides the warnings.</summary>
+        public void ToggleProvenance() => _ui?.ToggleProvenance();
+
+        /// <summary>
+        /// Selects a creature by id, as a click does — the same call, without the raycast.
+        /// </summary>
+        /// <remarks>
+        /// Returns false when the id map is unreliable, which is the one case where a click can
+        /// point at a body and not name it: a viewer confidently naming the wrong creature is
+        /// worse than one that admits it cannot (<see cref="CreatureIdMap"/>).
+        /// </remarks>
+        public bool SelectById(long id)
+        {
+            if (_replay == null || !_map.Reliable) return false;
+
+            _selectedId = id;
+            FollowSelection();
+            return true;
+        }
+
+        /// <summary>Esc, without the key.</summary>
+        public void Deselect()
+        {
+            _selectedId = -1;
+            FlyCamera?.StopFollowing();
         }
 
         private void EndSeek()
@@ -555,8 +695,13 @@ namespace Evosim.Theatre
 
         private void ReadKeys()
         {
-            if (Input.GetKeyDown(KeyCode.Space)) Paused = !Paused;
+            if (Input.GetKeyDown(KeyCode.Space)) TogglePause();
             if (Input.GetKeyDown(KeyCode.H)) ShowOverlay = !ShowOverlay;
+
+            // P, added by the design: the evidence behind the strip's one word, and gone again on
+            // the next press. It shares an anchor with the warnings and replaces them, because it
+            // says everything a warning says and more.
+            if (Input.GetKeyDown(KeyCode.P)) ToggleProvenance();
 
             if (Input.GetKeyDown(KeyCode.C))
             {
@@ -568,7 +713,7 @@ namespace Evosim.Theatre
             if (Input.GetKeyDown(KeyCode.RightBracket)) Rate = Mathf.Min(512f, Rate * 2f);
 
             if (Input.GetKeyDown(KeyCode.K) && SeekToSeconds > 0f) BeginSeek(SeekToSeconds);
-            if (Input.GetKeyDown(KeyCode.Escape)) { _selectedId = -1; FlyCamera?.StopFollowing(); }
+            if (Input.GetKeyDown(KeyCode.Escape)) Deselect();
 
             if (Input.GetKeyDown(KeyCode.T)) { TestSine = !TestSine; }
             if (Input.GetKeyDown(KeyCode.G)) { Starve = !Starve; }
@@ -632,250 +777,5 @@ namespace Evosim.Theatre
 
             return worst;
         }
-
-        // ---------------------------------------------------------------- the overlay
-
-        private void OnGUI()
-        {
-            if (!ShowOverlay) return;
-
-            if (_panel == null)
-            {
-                var background = new Texture2D(1, 1);
-                background.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.62f));
-                background.Apply();
-
-                _panel = new GUIStyle { normal = { background = background } };
-                _text = new GUIStyle(GUI.skin.label)
-                {
-                    fontSize = 13,
-                    normal = { textColor = Color.white },
-                    richText = true,
-                };
-            }
-
-            if (_error != null)
-            {
-                GUILayout.BeginArea(new Rect(12f, 12f, 720f, 140f), _panel);
-                GUILayout.Space(8f);
-                GUILayout.Label("<b>The theatre could not open this.</b>", _text);
-                GUILayout.Label(_error, _text);
-                GUILayout.EndArea();
-                return;
-            }
-
-            if (_replay != null) WorldOverlay();
-            else if (_solo != null) SoloOverlay();
-        }
-
-        private void WorldOverlay()
-        {
-            WorldCensus c = _replay.Census;
-            RunRecord r = _replay.Record;
-
-            GUILayout.BeginArea(new Rect(12f, 12f, 560f, 400f), _panel);
-            GUILayout.Space(8f);
-
-            GUILayout.Label(
-                $"<b>{r.ArmName ?? "run"}</b>  seed {r.Seed}  dt {r.PhysicsDtSeconds}  " +
-                $"config {Shorten(r.ConfigHash)}", _text);
-
-            // D078. The thread count rides on the faithfulness line rather than on one of its own,
-            // because it decides the same question: is this the run, or a cousin of it? A run
-            // recorded before the manifest carried the count was made at the old default, where
-            // the shared world forks from itself after about 148,000 steps — so that case can
-            // never read green however well the hashes match.
-            string threadNote = _replay.ThreadCaveat ??
-                "physics jobs " + _replay.PhysicsJobWorkers + ", as recorded";
-
-            GUILayout.Label(
-                _replay.Faithful && _replay.ThreadCaveat == null
-                    ? "<color=#9fe6a0>same source as the recording — this is the run (" +
-                      threadNote + ")</color>"
-                    : "<color=#ff8080><b>NOT A FAITHFUL REPLAY</b> — " +
-                      (_replay.SourceDifference ?? "the build matches the recording") +
-                      "; " + threadNote + "</color>",
-                _text);
-
-            GUILayout.Space(6f);
-
-            string pace = _seeking
-                ? $"<b>SEEKING</b> to t={_seekTarget:0} — {_measuredPace:0.#}x real time, " +
-                  $"{Remaining()} to go"
-                : Paused ? "<b>paused</b>" : $"{Rate:0.##}x requested, {_measuredPace:0.#}x actual";
-
-            GUILayout.Label($"t = <b>{c.T:0.#} s</b>   {pace}", _text);
-
-            GUILayout.Space(6f);
-            GUILayout.Label(
-                $"alive <b>{c.Alive}</b>   births {c.Births}   deaths {c.Deaths}   " +
-                $"jointed {c.Jointed}", _text);
-            GUILayout.Label(
-                $"absorptive <b>{c.Absorptive}</b>   photosynthetic <b>{c.Photosynthetic}</b>" +
-                (c.Diverged > 0 ? $"   <color=#ff8080>diverged {c.Diverged}</color>" : ""), _text);
-            GUILayout.Label(
-                $"mean depth {c.MeanHeight:0.#} m   audit {c.AuditPercent:0.0000}%   " +
-                $"matter here {c.MatterHere:0.###}", _text);
-
-            GUILayout.Space(6f);
-
-            string identity = _replay.IdentityLine();
-            GUILayout.Label(
-                _replay.FirstMismatch != null
-                    ? "<color=#ff8080><b>" + identity + "</b></color>"
-                    : "<color=#9fe6a0>" + identity + "</color>",
-                _text);
-
-            // Past the last recorded sample there is nothing left to check against, and a green
-            // "all samples match" line above a world nobody ever recorded would read as though
-            // it were still being verified. It is the same world, still deterministic, and no
-            // longer a replay of anything.
-            if (_replay.ElapsedSeconds > _replay.RecordedThroughSeconds + 1e-6)
-            {
-                GUILayout.Label(
-                    $"<color=#ffd080>past the record's last sample " +
-                    $"(t={_replay.RecordedThroughSeconds:0.#} s): the world is running on, and " +
-                    "nothing after that instant is checked against anything</color>", _text);
-            }
-
-            if (r.ConfigHashMismatch != null)
-            {
-                GUILayout.Label("<color=#ffd080>" + r.ConfigHashMismatch + "</color>", _text);
-            }
-
-            if (r.StepDisagreement != null)
-            {
-                GUILayout.Label("<color=#ffd080>" + r.StepDisagreement + "</color>", _text);
-            }
-
-            if (r.SamplesNote != null)
-            {
-                GUILayout.Label("<color=#ffd080>" + r.SamplesNote + "</color>", _text);
-            }
-
-            GUILayout.Space(6f);
-            GUILayout.Label(SelectionLine(), _text);
-
-            GUILayout.EndArea();
-
-            Keys(
-                "<b>Space</b> pause   <b>[</b> <b>]</b> pace   <b>K</b> seek to the field's second   " +
-                "<b>C</b> colour   <b>R</b> reload",
-                "click a creature to select and follow   <b>F</b> follow/free   <b>Esc</b> deselect   " +
-                "<b>H</b> hide",
-                "fly: <b>WASD</b> + <b>QE</b>, right-drag to look, wheel for speed, <b>Shift</b> to boost");
-        }
-
-        private string Remaining()
-        {
-            double left = _seekTarget - _replay.ElapsedSeconds;
-            if (_measuredPace <= 0.001d) return "measuring";
-
-            double seconds = left / _measuredPace;
-            return seconds > 90d ? $"about {seconds / 60d:0} min" : $"about {seconds:0} s";
-        }
-
-        private string SelectionLine()
-        {
-            if (!_map.Reliable)
-            {
-                return "<color=#ffd080>selection unavailable: the id map could not be verified (" +
-                       _map.Note + ")</color>";
-            }
-
-            if (_selectedId < 0) return "no creature selected — click one";
-
-            Organism creature = CreatureIdMap.Find(_replay.Eco.World, _selectedId);
-            if (creature == null) return $"creature {_selectedId} — <b>dead</b>";
-
-            Transform root = _map.RootOf(_selectedId);
-            float speed = 0f;
-
-            if (root != null && root.childCount > 0)
-            {
-                var body = root.GetChild(0).GetComponent<ArticulationBody>();
-                if (body != null) speed = body.linearVelocity.magnitude;
-            }
-
-            string reserve = float.IsPositiveInfinity(creature.SecondsOfReserve)
-                ? "∞"
-                : creature.SecondsOfReserve.ToString("0");
-
-            return
-                $"creature <b>{creature.Id}</b>  gen {creature.GenerationDepth}  " +
-                $"parent {(creature.ParentId >= 0 ? creature.ParentId.ToString() : "founder")}  " +
-                $"age {creature.Age:0} s  reserve {reserve} s  " +
-                $"depth {-creature.HeightY:0.#} m  speed {speed:0.###} m/s  " +
-                $"patch {creature.Patch}  " +
-                (creature.HasPhotosyntheticTissue ? "photo " : "") +
-                (creature.HasAbsorptiveTissue ? "absorptive" : "");
-        }
-
-        private void SoloOverlay()
-        {
-            GUILayout.BeginArea(new Rect(12f, 12f, 560f, 400f), _panel);
-            GUILayout.Space(8f);
-
-            GUILayout.Label("<b>one creature</b>   " + _solo.Source, _text);
-            GUILayout.Label(
-                $"{_solo.Phenotype.PartCount} parts   {_solo.Instance.TotalDof} DOF   " +
-                $"{_solo.Genome.GlobalBrain.Length} global neurons", _text);
-
-            GUILayout.Space(6f);
-            GUILayout.Label(
-                $"t = <b>{_solo.ElapsedSeconds:0.#} s</b>   " +
-                (Paused ? "<b>paused</b>" : $"{Rate:0.##}x requested, {_measuredPace:0.#}x actual"),
-                _text);
-
-            GUILayout.Label(
-                $"speed <b>{_solo.Speed:0.###} m/s</b>   travelled {_solo.Travelled:0.##} m   " +
-                $"depth {_solo.Depth:0.#} m   joint rate {_solo.MeanJointRate():0.00} rad/s", _text);
-
-            string reserve = _solo.Starving
-                ? $"reserve {_solo.ReserveSeconds:0} s and falling"
-                : $"reserve held at {_solo.ReserveSeconds:0} s (no economy in this mode)";
-
-            GUILayout.Label(
-                (_solo.UseTestSine
-                    ? "<color=#ffd080><b>driven by the test sine</b> — not its brain</color>"
-                    : "driven by its own brain") + "   " + reserve,
-                _text);
-
-            GUILayout.Space(6f);
-            GUILayout.Label(
-                _solo.SmellDensity > 0f
-                    ? $"<color=#ffd080>smell field set by hand to {_solo.SmellDensity:0.###} J/m3 " +
-                      "— not the run's detritus, which no run stores</color>"
-                    : "smell field: the world's initial detritus (empty in a reference world)",
-                _text);
-
-            _solo.ReadSensors(_sensorLines);
-            for (int i = 0; i < _sensorLines.Count; i++)
-            {
-                GUILayout.Label(_sensorLines[i] + "   <i>(at the root part)</i>", _text);
-            }
-
-            GUILayout.EndArea();
-
-            Keys(
-                "<b>Space</b> pause   <b>[</b> <b>]</b> pace   <b>T</b> brain/test sine   " +
-                "<b>G</b> starve   <b>C</b> colour   <b>R</b> regrow",
-                "<b>F</b> follow/free   <b>H</b> hide",
-                "fly: <b>WASD</b> + <b>QE</b>, right-drag to look, wheel for speed");
-        }
-
-        private void Keys(params string[] lines)
-        {
-            GUILayout.BeginArea(
-                new Rect(12f, Screen.height - 20f - 18f * lines.Length, 720f, 18f * lines.Length + 14f),
-                _panel);
-            GUILayout.Space(6f);
-            for (int i = 0; i < lines.Length; i++) GUILayout.Label(lines[i], _text);
-            GUILayout.EndArea();
-        }
-
-        private static string Shorten(string hash) =>
-            string.IsNullOrEmpty(hash) ? "(none)" :
-            hash.Length <= 10 ? hash : hash.Substring(0, 10);
     }
 }

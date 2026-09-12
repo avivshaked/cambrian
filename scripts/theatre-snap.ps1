@@ -66,6 +66,20 @@
 .PARAMETER Out
   Where the pictures go. Default scratch/snaps/<Arm>/. Must be inside the repository.
 
+.PARAMETER Chrome
+  Leave the theatre's interface on, and take one extra picture of the screen with it.
+
+  The four framed views never carry it. They are rendered through a camera of the theatre's own
+  into a RenderTexture, and a screen-space UI panel does not draw into one — which is also why
+  each view's label is stamped into the pixels by hand. So -Chrome adds a fifth file,
+  <arm>-t<second>-chrome.png, which is a capture of the Game View at whatever size the batch
+  Editor's view is: a picture of the interface, not a framed view of the world, and -Size does
+  not reach it.
+
+  Off by default, and deliberately: every picture in logbook/images/ carries the burnt-in label
+  and no chrome, and a frame that suddenly grew a census panel would not be comparable with any
+  of them. This switch is how the interface itself is photographed for review.
+
 .PARAMETER AllowSourceMismatch
   Photograph a run this build did not record. What comes out is a plausible world rather than
   that run, and every label says so.
@@ -91,6 +105,7 @@ param(
     [string]$Size = '1600x900',
     [double]$Carve = 0.35,
     [string]$Out,
+    [switch]$Chrome,
     [switch]$AllowSourceMismatch,
     [int]$WallMinutes = 30
 )
@@ -192,7 +207,7 @@ $names = @(
     'EVOSIM_THEATRE_RUN', 'EVOSIM_THEATRE_SNAP_TIMES', 'EVOSIM_THEATRE_SNAP_VIEWS',
     'EVOSIM_THEATRE_SNAP_OUT', 'EVOSIM_THEATRE_SNAP_SIZE', 'EVOSIM_THEATRE_WALL_MINUTES',
     'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_SEEK', 'EVOSIM_REPO_ROOT',
-    'EVOSIM_THEATRE_CARVE')
+    'EVOSIM_THEATRE_CARVE', 'EVOSIM_THEATRE_CHROME')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -212,6 +227,11 @@ try {
     if ($AllowSourceMismatch) { $env:EVOSIM_THEATRE_OVERRIDE = '1' }
     else { Remove-Item env:EVOSIM_THEATRE_OVERRIDE -ErrorAction SilentlyContinue }
 
+    # Removed rather than set to 0 when it is off, so that a shell which photographed with the
+    # chrome once cannot leave it on for every picture taken afterwards.
+    if ($Chrome) { $env:EVOSIM_THEATRE_CHROME = '1' }
+    else { Remove-Item env:EVOSIM_THEATRE_CHROME -ErrorAction SilentlyContinue }
+
     # The theatre seeks with the camera off, which would skip the world past the first picture.
     Remove-Item env:EVOSIM_THEATRE_SEEK -ErrorAction SilentlyContinue
 
@@ -223,6 +243,7 @@ try {
     Write-Host "  carve  $($env:EVOSIM_THEATRE_CARVE)"
     Write-Host "  out    $snapDirectory"
     Write-Host "  log    $log"
+    if ($Chrome) { Write-Host "  chrome on: one extra screen capture per second, at the Game View's size" }
     if ($AllowSourceMismatch) { Write-Host "  source mismatch allowed: the pictures are of a cousin world, and say so" }
 
     # No -quit and no -nographics. See the description.

@@ -1,0 +1,12 @@
+/* The runtime panel's theme.
+
+   A PanelSettings without one logs "No Theme Style Sheet set to PanelSettings,
+   UI will not render properly" and goes on without the default control styles.
+   The theatre uses no built-in control — every element in TheatreUiDocument.uxml
+   is a VisualElement or a Label, and every value it is drawn with is in
+   TheatreUiStyles.uss — so the import below is there to silence a true warning
+   rather than to style anything.
+
+   One line is the whole file, and it is the same line Unity's own generated
+   UnityDefaultRuntimeTheme.tss carries. */
+@import url("unity-theme://default");

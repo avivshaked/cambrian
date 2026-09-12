@@ -36,6 +36,15 @@ rounds/** is source: one launcher per round, each setting a world's knobs and
 calling scripts/run-arm.ps1. It is covered by the code licence, PolyForm
 Noncommercial 1.0.0, alongside scripts/.
 
+unity/Assets/Theatre/UI/Fonts/** is neither: IBM Plex Mono (Regular and
+SemiBold) and IBM Plex Sans (Regular), copyright IBM Corp., redistributed
+under the SIL Open Font License 1.1 with its text beside them in OFL.txt.
+They are third-party files carried under their own licence, which neither of
+this repository's licences replaces or extends; the SDF font assets generated
+from them by Evosim/Theatre/Build UI Fonts are the same fonts and the same
+licence. design/** is prose, under CC BY-NC 4.0 with the rest of the written
+work.
+
 
 THE LICENCE
 ───────────
