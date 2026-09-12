@@ -12,7 +12,9 @@ DECISIONS.md on ruling, then deleted.*
 > bodies grow (colliders, mass and anchors are reset in place every growth step, and a
 > newborn is a fraction of its adult). So the integrity pool cannot be pinned at birth, the
 > resize this proposal said was not possible is built, and every "layer" below is a cell.
-> The proposal is re-cut before it is put up for ruling.
+> The proposal is re-cut before it is put up for ruling. *Re-cut 2026-09-12 (the Astra
+> review found rule 4 and the checklist still carrying the fixed-geometry pool): the unit of
+> loss is now tissue, and the body follows it through the growth machinery.*
 
 ## What the world now has that it did not
 
@@ -55,16 +57,20 @@ and how it is all counted.
    `BiteJoulesPerSecond` is a tunable (`EVOSIM_BITE`), **default 0**, so every recorded world
    replays byte for byte; the screen sets it. A part cannot bite its own creature.
 
-4. **What the bitten loses: an injury pool with fixed geometry.** `TissueJoules` is a figure
-   for the whole creature while part volumes come from the phenotype, so a per-part loss of
-   tissue and volume has no balance and would need a collider to change size mid-life. A
-   creature therefore carries an integrity pool, equal to its tissue joules at birth, that
-   bites draw down; its body does not change shape. Lifecycle: the pool is full at birth,
-   nothing heals it in the first cut, it is separate from the energy reserve (a bite does not
-   make the bitten hungrier; it makes it closer to dead), and a creature whose pool reaches
-   zero dies with `DeathCause.Eaten`, the third cause, through the normal death path. What
-   death releases is what it releases today: the remaining tissue joules and the locked
-   matter, less what bites already carried away.
+4. **What the bitten loses: tissue, and the body follows it.** The first cut of this rule
+   was an integrity pool pinned at birth, because a collider could not change size mid-life;
+   D087 resizes every living body in place every growth step, so that premise is gone. A
+   bite takes tissue joules from the bitten's `TissueJoules` and the matter locked in that
+   tissue at the body's own tissue-to-matter ratio, and its fraction of the adult plan falls
+   with them; the next growth step resizes the articulation down exactly as it resizes a
+   growing one up, so the shape stays the plan's and only the scale moves. Nothing heals in
+   the first cut beyond ordinary growth, which a bitten body with a reserve resumes. A bite
+   is separate from the energy reserve (it makes the bitten smaller, not hungrier). A
+   creature whose body falls under the newborn mass floor, the same floor a conception is
+   refused under, dies with `DeathCause.Eaten`, the third cause, through the normal death
+   path, and what death releases is what it releases today: the remaining tissue joules and
+   the locked matter, less what bites already carried away. Both books close by the same
+   arithmetic growth already closes them with.
 
 5. **Matter moves with the bite, into a named reserve.** The joules taken carry their
    `MatterPerTissueJoule` share out of the bitten creature's locked matter. The yield's share
@@ -131,8 +137,9 @@ death discriminates anything in the record.
 
 1. A bite is a held contact between a mouth and another creature's part, with the identity
    and ordering of rule 2.
-2. The unit of loss is an integrity pool with fixed geometry; death at zero;
-   `DeathCause.Eaten` as the third cause; no limb loss and no healing in the first cut.
+2. The unit of loss is tissue, the body rescaled by the growth machinery; death under the
+   newborn mass floor; `DeathCause.Eaten` as the third cause; no limb loss and no healing
+   beyond ordinary growth in the first cut.
 3. Matter moves with the bite into a named captured-matter reserve that a conception draws
    from first.
 4. Bites priced after the feeding allocation, each target capped before mouths divide it.

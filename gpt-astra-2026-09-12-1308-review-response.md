@@ -118,10 +118,10 @@ it. A general migration framework: the review agrees.
 | F3 occupancy | done on `streams` (`70b0bea`), read applied in 0094 |
 | F4 `compare-det.py` exits | building, `logbook/specs/script-contracts-spec.md` |
 | F5 scorer qualifiers | building, same spec; producer clause and goal eligibility: owner |
-| F6 documentation | verified (twelve of fifteen true); five fixes tonight; the rest in the pass during 37b |
+| F6 documentation | verified (twelve of fifteen true); done the same night: DESIGN through D090 and the repairs, README, primer 05 and 06, STYLE, the D089 note; the HANDOFF rewrite waits for 37b's launch |
 | adoption rule | owner, `fable-propose-adoption-rule.md` |
 | pre-registration commit before launch | building (`-Prereg`); rule in CLAUDE.md |
-| research counts and manifests | verifying; pass during 37b |
+| research counts and manifests | done: the review's counts reconciled to round 6, the seven missing PDFs and forty-six missing manifests recorded as limitations |
 | theatre inspection view | queued after 37b's launch |
 | build path per round | HANDOFF 6b, owner's call |
 | fresh seeds | queued, HANDOFF 22 |
