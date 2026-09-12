@@ -23,18 +23,21 @@ namespace Evosim.Core.Tests
     /// which is where round 37's population lived.
     /// </para>
     /// <para>
-    /// <b>The tracer is the check the ruling turns on, and it is the one that fails.</b> The
-    /// spec asks that 200 passive tracers with a body's drag response still be spread uniformly in
-    /// area after a round's length. They are not: they gather at the glass, at a rim share of 0.83
-    /// at τ = 2 s and 0.91 at τ = 0.5 s where uniform is 0.25, and the retired gyre reads 0.98
-    /// under the same instrument. <see cref="APerfectTracerKeepsItsSpread"/> is what separates the two possible
+    /// <b>The tracer is the check the ruling turns on, and it took a second force to pass it.</b>
+    /// The spec asks that 200 passive tracers with a body's drag response still be spread
+    /// uniformly in area after a round's length. On §5.2's drag alone they are not: they gather at
+    /// the glass, at a rim share of 0.83 at τ = 2 s and 0.91 at τ = 0.5 s where uniform is 0.25,
+    /// and the retired gyre reads 0.98 under the same instrument.
+    /// <see cref="APerfectTracerKeepsItsSpread"/> is what separates the two possible
     /// causes, and it acquits the field: a tracer that carries <i>no</i> lag keeps its spread
-    /// exactly, as an incompressible flow obliges it to. So what gathers the bodies is the lag
-    /// itself — §5.2's drag is the only term tying a body to the water, and a body that lags on a
-    /// curved streamline drifts outward. <see cref="ABodyLikeTracerGathersAtTheRim"/> carries the
-    /// four readings that place the cause, and the doc comment there has the derivation, the
-    /// reason the wall-layer check and the tracer check cannot both be met, and the consequence
-    /// for the design.
+    /// exactly, as an incompressible flow obliges it to. So what gathered the bodies was the lag
+    /// itself — drag was the only term tying a body to the water, and a body that lags on a
+    /// curved streamline drifts outward. The fix is therefore a force and not a field:
+    /// <c>logbook/specs/water-carries-spec.md</c>'s fluid acceleration term, at which the same
+    /// bodies in the same water hold the band. <see cref="ABodyRidesTheWater"/> carries every
+    /// reading with the term off and on, and the doc comment there has the derivation, the reason
+    /// the wall-layer check and the tracer check could not both be met without it, and the
+    /// consequence for the design.
     /// </para>
     /// <para>
     /// <b>Measured on a lattice of this test's own</b>, coprime with the one the field balances
@@ -277,10 +280,12 @@ namespace Evosim.Core.Tests
         /// stream's radial part carries <c>(1 − s²)</c> and vanishes at the glass while its
         /// azimuthal part carries <c>f'(s)</c>, which is <i>largest</i> there — <c>∓2</c> for every
         /// <c>m</c> — so the wall is where this field is fastest and the flow there is almost
-        /// entirely azimuthal. That is a wall jet, and
-        /// <see cref="ABodyLikeTracerGathersAtTheRim"/> shows that it is also the thing that pins
-        /// a lagging body to the glass: passing this check at all is what makes that one
-        /// unpassable, and the two are the same inequality read from either end.
+        /// entirely azimuthal. That is a wall jet, and it is the same water that pins a
+        /// drag-coupled body to the glass: on drag alone, passing this check is what made
+        /// <see cref="ABodyRidesTheWater"/>'s check unpassable, the two being one inequality read
+        /// from either end. The fluid acceleration force is what unties them — it removes the
+        /// <c>τ</c> the drift is proportional to — so this field can now be fast at the glass
+        /// without the glass collecting the population.
         /// </para>
         /// </remarks>
         [Fact]
@@ -368,7 +373,7 @@ namespace Evosim.Core.Tests
         /// </para>
         /// <para>
         /// <b>It is also the control that makes the body-like reading mean something.</b> With it,
-        /// the rim share that <see cref="ABodyLikeTracerGathersAtTheRim"/> reads can only be the
+        /// the rim share that <see cref="ABodyRidesTheWater"/> reads can only be the
         /// lag; without it the two candidate causes — the water and the instrument — are not
         /// separated. It earns its place in the default run on that: it is the one tracer run whose
         /// answer is known in advance from a theorem, so it is the one that can fail informatively.
@@ -397,16 +402,30 @@ namespace Evosim.Core.Tests
         }
 
         /// <summary>
-        /// A tracer with a body's drag response does <b>not</b> keep its spread: it gathers at the
-        /// glass, and so does one in the retired gyre, and one in a swirl-free field does not.
+        /// A tracer with a body's drag response gathers at the glass on drag alone, and rides the
+        /// water once it feels the water's own acceleration — the reading the term was built for.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>The spec's check, and it fails.</b> <c>logbook/specs/streams-spec.md</c> asks that
-        /// the rim quarter hold between 0.2 and 0.3 of the tracers; it holds about 0.85, where
-        /// D089's gyre holds 0.80 to 0.86 under the same instrument. The streams are not a
-        /// materially better tank for a lagging body than the gyre was, and this test records the
-        /// three numbers that say why rather than asserting a band the field cannot meet.
+        /// <b>The spec's check, and it now passes — but only with the second force.</b>
+        /// <c>logbook/specs/streams-spec.md</c> asks that the rim quarter hold between 0.2 and 0.3
+        /// of the tracers. On §5.2's drag alone it holds about 0.85, where D089's gyre holds 0.80
+        /// to 0.86 under the same instrument: the streams were not a materially better tank for a
+        /// lagging body than the gyre was, which is what made the case for
+        /// <c>fable-propose-water-carries.md</c>. With
+        /// <see cref="FluidConfig.FluidAccelerationCoefficient"/> at 1 — <c>c</c> below — the same
+        /// bodies in the same water hold the band, and so do the gyre's. The two columns are
+        /// printed side by side so the record carries both.
+        /// </para>
+        /// <para>
+        /// <b><c>c</c> = 1 is the neutral body, and that is an assumption worth stating.</b> The
+        /// tracer's equation of motion here is <c>dv/dt = (u − v)/τ + c·Du/Dt</c>, which is the
+        /// Morison term divided by the body's own effective mass on the assumption that the mass
+        /// it displaces equals the mass it has — neutral buoyancy, which is what §5.2 hands every
+        /// creature, and which makes the added mass cancel between the two sides. A body denser
+        /// than the water it displaces feels a smaller fraction and still drifts;
+        /// <c>FluidConfig.TissueExcessDensity</c> is where that would come from, and this
+        /// instrument does not carry it.
         /// </para>
         /// <para>
         /// <b>The cause is not the field but the coupling, and the identity is short.</b> For a
@@ -445,41 +464,72 @@ namespace Evosim.Core.Tests
         /// prescribed current, and where it ends up is read off <c>⟨u_r²⟩</c> and <c>⟨u_θ²⟩</c>.
         /// </para>
         /// <para>
-        /// <b>What would fix it is the term the proposal queued.</b> Real water holds a parcel on a
-        /// curved streamline through its own pressure gradient, and §5.2 has no such term; a body
-        /// in this world is a drag-coupled particle and nothing else. <c>fable-propose-streams.md</c>
-        /// names that force under "Queued, not in this build", and these four readings are the
-        /// argument for taking it off the queue: no choice of prescribed current removes the drift,
-        /// because the identity above does not care which current it is.
+        /// <b>What fixes it is not a current but a force, and that is why no field could.</b> Real
+        /// water holds a parcel on a curved streamline through its own pressure gradient, and a
+        /// body immersed in it feels the same gradient — the second term of the Morison equation,
+        /// <c>(ρV + m_added)·Du/Dt</c>, which §5.2 did not have. Put it in and the first-order slip
+        /// the identity is built on cancels identically: <c>v = u</c> solves the equation of motion
+        /// above, so the body is a tracer to first order in <c>τ</c> and what is left is
+        /// <c>O(τ²)</c>. The identity does not care which current it is, so the fix could not have
+        /// been one; <c>logbook/specs/water-carries-spec.md</c> is the build and
+        /// <c>FluidAccelerationTests</c> holds the term itself.
         /// </para>
         /// <para>
-        /// Marked <c>Slow</c>: four runs of 5,000 s at a 0.02 s step is 200 million samples of the
-        /// field, and it asserts nothing a rule depends on.
+        /// <b>The wall layer and the rim are no longer mutually exclusive either</b>, which is the
+        /// second thing the term buys. The identity's outward drift is <c>τ</c> times a positive
+        /// quantity, and the term removes the <c>τ</c>: a field can now move at the glass —
+        /// <see cref="TheWallLayerMoves"/> — without that motion sweeping the population into it.
+        /// Both of the streams spec's checks are met at once, by two rules rather than by one.
+        /// </para>
+        /// <para>
+        /// Marked <c>Slow</c>: seven runs of 5,000 s at a 0.02 s step, and the four that carry the
+        /// term sample the field nine times where the others sample it once — some 2.1 billion
+        /// field evaluations, a quarter of an hour of one core. The assertion it now makes is a
+        /// property of a world rule, so it is worth the money, but not on every filtered run.
         /// </para>
         /// </remarks>
         [Trait("Category", "Slow")]
         [Fact]
-        public void ABodyLikeTracerGathersAtTheRim()
+        public void ABodyRidesTheWater()
         {
             CurrentField field = Streams();
 
             foreach (double tau in new[] { 0.5d, 2d })
             {
-                Report(
-                    FormattableString.Invariant($"the streams at {Speed} m/s, τ = {tau} s"),
-                    Tracers((x, y, z, t) => field.VelocityAt(x, y, z, t), tau, 5000d, 2000d));
+                foreach (double carry in new[] { 0d, 1d })
+                {
+                    Drift drift = Tracers(
+                        (x, y, z, t) => field.VelocityAt(x, y, z, t), tau, 5000d, 2000d,
+                        carry: carry);
+
+                    Report(
+                        FormattableString.Invariant(
+                            $"the streams at {Speed} m/s, τ = {tau} s, c = {carry}"),
+                        drift);
+
+                    // The streams spec's band, reachable now that a body feels the water's turns
+                    // as well as its speed. Asserted at both response times, because the failure
+                    // it replaces was worse at the shorter one — the drift is first order in τ and
+                    // the gathering was not (0.91 at 0.5 s against 0.83 at 2 s), so a term that
+                    // only worked for a slow body would be no fix at all.
+                    if (carry > 0d) Assert.InRange(drift.RimShare, 0.2, 0.3);
+                }
             }
 
             var gyre = new OldGyre(Radius, Depth, Period, Speed, Seed);
 
-            Report(
-                FormattableString.Invariant($"D089's gyre at {Speed} m/s, τ = 2 s"),
-                Tracers((x, y, z, t) => gyre.At(x, y, z, t), 2d, 5000d, 2000d));
+            foreach (double carry in new[] { 0d, 1d })
+            {
+                Report(
+                    FormattableString.Invariant(
+                        $"D089's gyre at {Speed} m/s, τ = 2 s, c = {carry}"),
+                    Tracers((x, y, z, t) => gyre.At(x, y, z, t), 2d, 5000d, 2000d, carry: carry));
+            }
 
             double scale = SwirlFreeScale(Speed);
 
             Report(
-                FormattableString.Invariant($"the overturning alone at {Speed} m/s, τ = 2 s"),
+                FormattableString.Invariant($"the overturning alone at {Speed} m/s, τ = 2 s, c = 0"),
                 Tracers((x, y, z, t) => SwirlFree(x, y, z, t, scale), 2d, 5000d, 2000d));
 
             void Report(string what, Drift drift)
@@ -582,8 +632,18 @@ namespace Evosim.Core.Tests
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>First-order drag response, integrated by the midpoint rule.</b>
-        /// <c>dv/dt = (u − v)/τ</c>, which is the spec's, and <c>τ = 0</c> means the tracer
+        /// <b>First-order drag response and the water's own acceleration, integrated by the
+        /// midpoint rule.</b>
+        /// <c>dv/dt = (u − v)/τ + c·Du/Dt</c>, the streams spec's equation plus
+        /// <c>logbook/specs/water-carries-spec.md</c>'s term — <c>c</c> is
+        /// <paramref name="carry"/>, 0 is drag alone and every reading taken before
+        /// 2026-09-12, and 1 is a neutrally buoyant body, for which the Morison force divided by
+        /// the body's effective mass is the water's acceleration exactly (see
+        /// <see cref="ABodyRidesTheWater"/> on that assumption). The derivative is taken by
+        /// <see cref="CurrentField.MaterialDerivative"/> on whichever field was handed in, so the
+        /// four fields this class measures are all read through the one stencil the farm uses, and
+        /// a carried run costs nine field samples where an uncarried one costs one.
+        /// And <c>τ = 0</c> means the tracer
         /// <i>is</i> the water — a fluid particle, whose distribution an incompressible flow cannot
         /// change. The point is not to integrate the water accurately, since the physics does that
         /// with PhysX and a quadratic drag, but to carry the one property a prescribed field can
@@ -624,7 +684,8 @@ namespace Evosim.Core.Tests
         /// </remarks>
         private static Drift Tracers(
             Func<float, float, float, double, Float3> water,
-            double tau, double seconds, double window, double step = TracerStep, bool euler = false)
+            double tau, double seconds, double window, double step = TracerStep, bool euler = false,
+            double carry = 0d)
         {
             var rng = new Rng(31UL);
 
@@ -679,6 +740,15 @@ namespace Evosim.Core.Tests
                 {
                     Float3 u = water((float)x[i], (float)y[i], (float)z[i], t);
 
+                    // The water's own acceleration, through the same stencil the fluid model uses
+                    // — CurrentField.MaterialDerivative rather than a copy of it, so that what a
+                    // tracer feels here and what a part feels in the farm are one function. Nine
+                    // samples of the field, which is why a carried run costs what it does.
+                    Float3 a = carry > 0d && !perfect
+                        ? CurrentField.MaterialDerivative(
+                            water, (float)x[i], (float)y[i], (float)z[i], t)
+                        : Float3.Zero;
+
                     if (euler)
                     {
                         if (perfect)
@@ -687,9 +757,9 @@ namespace Evosim.Core.Tests
                         }
                         else
                         {
-                            vx[i] += (u.X - vx[i]) * step / tau;
-                            vy[i] += (u.Y - vy[i]) * step / tau;
-                            vz[i] += (u.Z - vz[i]) * step / tau;
+                            vx[i] += (u.X - vx[i]) * step / tau + carry * a.X * step;
+                            vy[i] += (u.Y - vy[i]) * step / tau + carry * a.Y * step;
+                            vz[i] += (u.Z - vz[i]) * step / tau + carry * a.Z * step;
                         }
 
                         x[i] += vx[i] * step;
@@ -706,9 +776,9 @@ namespace Evosim.Core.Tests
                     }
                     else
                     {
-                        nx[i] = vx[i] + (u.X - vx[i]) * step / (2d * tau);
-                        ny[i] = vy[i] + (u.Y - vy[i]) * step / (2d * tau);
-                        nz[i] = vz[i] + (u.Z - vz[i]) * step / (2d * tau);
+                        nx[i] = vx[i] + (u.X - vx[i]) * step / (2d * tau) + carry * a.X * step / 2d;
+                        ny[i] = vy[i] + (u.Y - vy[i]) * step / (2d * tau) + carry * a.Y * step / 2d;
+                        nz[i] = vz[i] + (u.Z - vz[i]) * step / (2d * tau) + carry * a.Z * step / 2d;
                     }
 
                     mx[i] = x[i] + (perfect ? u.X : vx[i]) * step / 2d;
@@ -733,13 +803,18 @@ namespace Evosim.Core.Tests
                         }
                         else
                         {
+                            Float3 a = carry > 0d
+                                ? CurrentField.MaterialDerivative(
+                                    water, (float)mx[i], (float)my[i], (float)mz[i], half)
+                                : Float3.Zero;
+
                             x[i] += nx[i] * step;
                             y[i] += ny[i] * step;
                             z[i] += nz[i] * step;
 
-                            vx[i] += (u.X - nx[i]) * step / tau;
-                            vy[i] += (u.Y - ny[i]) * step / tau;
-                            vz[i] += (u.Z - nz[i]) * step / tau;
+                            vx[i] += (u.X - nx[i]) * step / tau + carry * a.X * step;
+                            vy[i] += (u.Y - ny[i]) * step / tau + carry * a.Y * step;
+                            vz[i] += (u.Z - nz[i]) * step / tau + carry * a.Z * step;
                         }
 
                         Settle(i);

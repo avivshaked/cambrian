@@ -754,6 +754,158 @@ namespace Evosim.Core
         /// <summary>Water velocity at a place and a time, m/s.</summary>
         public Float3 VelocityAt(Float3 at, double seconds) => VelocityAt(at.X, at.Y, at.Z, seconds);
 
+        // -------------------------------------------------------- the water's own acceleration
+
+        /// <summary>
+        /// The water's acceleration along its own path at a place and a time, m/s²:
+        /// <c>Du/Dt = ∂u/∂t + (u·∇)u</c>. Zero when <see cref="Speed"/> is 0.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it is for.</b> A parcel of water on a curved streamline is held on it by the
+        /// pressure gradient across the flow, and a body in that water feels the same gradient as
+        /// a force proportional to this — the second term of the Morison equation, D090's
+        /// <see cref="FluidConfig.FluidAccelerationCoefficient"/>,
+        /// <c>logbook/specs/water-carries-spec.md</c>. Without it a body is tied to the water by
+        /// drag alone, fails to turn as sharply as the water does, and drifts outward on every
+        /// curve: a tank becomes a centrifuge, which is what round 37 measured and what
+        /// <c>StreamsTests</c> derives.
+        /// </para>
+        /// <para>
+        /// <b>By central differences on the field itself, not on any grid.</b> The field is
+        /// analytic in place and time, so the honest derivative is a difference of the same
+        /// function a body feels — <see cref="VelocityAt(float, float, float, double)"/>, clamps
+        /// and all. Differencing the water instead against the grid's cells would read the
+        /// advection scheme rather than the water. The steps are
+        /// <see cref="AccelerationSeconds"/> in time and <see cref="AccelerationMetres"/> in
+        /// space: small against every length and time this field varies on (the shortest radial
+        /// stream is about a metre in the campaign's tank, the fastest phase a full turn in
+        /// thousands of seconds), and large enough that the difference of two floats is not
+        /// mostly rounding. <c>FluidAccelerationTests</c> holds it against a difference four
+        /// times finer.
+        /// </para>
+        /// <para>
+        /// <b>The clamps come for free and that is the point.</b> Each of the nine samples goes
+        /// through <see cref="VelocityAt(float, float, float, double)"/>, which reads the nearest
+        /// face outside the box and the glass outside the circle, so a stencil that straddles a
+        /// boundary differences the water that exists rather than an extrapolation of it — and
+        /// the vertical component of the answer is exactly zero at and above the waterline,
+        /// because the field's vertical velocity is exactly zero on that whole plane and the
+        /// remaining term carries <c>u_y</c> = 0 as a factor. D050's rule therefore holds here by
+        /// construction rather than by a clamp; <c>FluidEnvironment</c> applies the clamp anyway,
+        /// and says why.
+        /// </para>
+        /// <para>
+        /// <b>Horizontal differences only where the horizontal is a place.</b> Under
+        /// <see cref="CurrentMode.Rolls"/> the water is a function of depth, time and patch, and
+        /// the patch is a bookkeeping slot (§6.3): differencing x across a patch seam would read
+        /// the step between one roll and the next as an enormous acceleration. So in that mode
+        /// this is <c>∂u/∂t + u_y ∂u/∂y</c>, which is the whole material derivative of a field
+        /// that depends on nothing else. In a tank and under
+        /// <see cref="CurrentMode.Transport"/> the horizontal is a place and all three axes are
+        /// differenced.
+        /// </para>
+        /// <para>
+        /// ⚠ <b>The vent is a step in x and z and this term does not know it.</b> D067's plume and
+        /// return are piecewise constant in the patch, so with a vent active a stencil straddling
+        /// a patch seam reads that step as a spike. Every launcher that has a tank in it leaves
+        /// the vent off, and the coefficient is 0 in every world the vent ever ran in, so the two
+        /// have never met; a world that wants both needs the vent's own derivative written down
+        /// rather than differenced.
+        /// </para>
+        /// <para>
+        /// <b>Nine samples per call</b>, which is why the caller must not ask for it at
+        /// coefficient 0: <c>FluidEnvironment</c> skips this entirely when the term is off. The
+        /// three instants it touches are memoised (see <see cref="EnsureInstant"/>), so the
+        /// 27 terms' trigonometry is rebuilt three times a step rather than three times a call.
+        /// </para>
+        /// </remarks>
+        public Float3 AccelerationAt(float x, float y, float z, double seconds)
+        {
+            if (_speed <= 0f) return Float3.Zero;
+
+            return MaterialDerivative(
+                _sampler ?? (_sampler = VelocityAt),
+                x, y, z, seconds,
+                horizontal: _shape == WorldShape.Tank || Mode == CurrentMode.Transport);
+        }
+
+        /// <summary>The water's acceleration at a place and a time, m/s².</summary>
+        public Float3 AccelerationAt(Float3 at, double seconds) =>
+            AccelerationAt(at.X, at.Y, at.Z, seconds);
+
+        /// <summary>
+        /// Held rather than made per call: a method group converted to a delegate allocates, and
+        /// this one would allocate once per part per physics step.
+        /// </summary>
+        private Func<float, float, float, double, Float3> _sampler;
+
+        /// <summary>Half the interval the clock is differenced over, s.</summary>
+        private const double AccelerationSeconds = 0.01d;
+
+        /// <summary>Half the distance each axis is differenced over, m.</summary>
+        private const float AccelerationMetres = 0.05f;
+
+        /// <summary>
+        /// <c>Du/Dt = ∂u/∂t + (u·∇)u</c> of any velocity field, by central differences on the
+        /// field itself — <see cref="AccelerationAt(float, float, float, double)"/>'s arithmetic,
+        /// with the field an argument.
+        /// </summary>
+        /// <param name="water">The field: place and clock in, velocity out.</param>
+        /// <param name="x">World x, m.</param>
+        /// <param name="y">World height, m. Zero is the waterline, negative is down.</param>
+        /// <param name="z">World z, m.</param>
+        /// <param name="seconds">The world's clock, s.</param>
+        /// <param name="horizontal">
+        /// Whether the field's horizontal derivatives mean anything — false leaves
+        /// <c>∂u/∂t + u_y ∂u/∂y</c>, which is the whole answer for a field of depth and time.
+        /// See the remarks on <see cref="AccelerationAt(float, float, float, double)"/>.
+        /// </param>
+        /// <remarks>
+        /// <b>One copy of the stencil, and the field handed in, so that it can be run on fields
+        /// whose answer is known in closed form.</b> A uniform steady flow must give exactly
+        /// zero and a solid-body rotation must give <c>−Ω²r</c>, and neither is a shape this
+        /// class can be configured into; a transcription of the stencil in the test file would
+        /// check the transcription instead (the same argument <c>DragEquivalenceTests</c> makes
+        /// in the other direction). <c>logbook/specs/water-carries-spec.md</c>.
+        /// <para>
+        /// The samples are ordered so that the seven at <paramref name="seconds"/> come before
+        /// the two that move the clock, which keeps a memoised field's instant rebuilds to the
+        /// three distinct times the call asks for.
+        /// </para>
+        /// </remarks>
+        public static Float3 MaterialDerivative(
+            Func<float, float, float, double, Float3> water,
+            float x, float y, float z, double seconds, bool horizontal = true)
+        {
+            if (water == null) throw new ArgumentNullException(nameof(water));
+
+            const float h = AccelerationMetres;
+            const float perMetre = 1f / (2f * h);
+
+            Float3 u = water(x, y, z, seconds);
+            Float3 total = Float3.Zero;
+
+            if (horizontal)
+            {
+                total += (water(x + h, y, z, seconds) - water(x - h, y, z, seconds)) *
+                         (perMetre * u.X);
+                total += (water(x, y, z + h, seconds) - water(x, y, z - h, seconds)) *
+                         (perMetre * u.Z);
+            }
+
+            total += (water(x, y + h, z, seconds) - water(x, y - h, z, seconds)) *
+                     (perMetre * u.Y);
+
+            // The clock last, for the ordering reason in the remarks.
+            const float perSecond = (float)(1d / (2d * AccelerationSeconds));
+
+            total += (water(x, y, z, seconds + AccelerationSeconds) -
+                      water(x, y, z, seconds - AccelerationSeconds)) * perSecond;
+
+            return total;
+        }
+
         /// <summary>
         /// The patch a horizontal position falls in — <c>iz · (K / A) + ix</c>, D077's rule as
         /// fable-propose-box.md's clause 3 generalises it, and <c>floor(x / W) mod K</c> term for
@@ -1468,12 +1620,25 @@ namespace Evosim.Core
             _cellBreathPhase = new double[StreamsCells];
             _cellBreathRate = new double[StreamsCells];
 
-            _instantCos = new double[StreamsTerms];
-            _instantSin = new double[StreamsTerms];
-            _instantEnvelope = new double[StreamsTerms];
-            _instantCellEnvelope = new double[StreamsCells];
-            _instantCell = new double[StreamsCells];
-            _instantAt = double.NaN;
+            _slotCos = new double[InstantSlots][];
+            _slotSin = new double[InstantSlots][];
+            _slotEnvelope = new double[InstantSlots][];
+            _slotCellEnvelope = new double[InstantSlots][];
+            _slotCell = new double[InstantSlots][];
+            _instantAt = new double[InstantSlots];
+            _instantNext = 0;
+
+            for (int slot = 0; slot < InstantSlots; slot++)
+            {
+                _slotCos[slot] = new double[StreamsTerms];
+                _slotSin[slot] = new double[StreamsTerms];
+                _slotEnvelope[slot] = new double[StreamsTerms];
+                _slotCellEnvelope[slot] = new double[StreamsCells];
+                _slotCell[slot] = new double[StreamsCells];
+                _instantAt[slot] = double.NaN;
+            }
+
+            Select(0);
 
             var rng = new Rng(_seed);
 
@@ -1758,7 +1923,34 @@ namespace Evosim.Core
         // clock rebuilds them, a caller that does not pays three multiplies a term. Keyed by exact
         // equality, so the field is the same function of (place, t) whatever order it is asked in;
         // NaN until the first build, which no t equals.
-        private double _instantAt = double.NaN;
+        //
+        // A FEW INSTANTS RATHER THAN ONE, since the water's acceleration
+        // (logbook/specs/water-carries-spec.md) differences the field about the clock: every
+        // AccelerationAt call asks for t, t − dt and t + dt, and a one-deep memo would rebuild 27
+        // terms' trigonometry three times per call — about twice the arithmetic of the nine field
+        // samples it is there to serve, paid per part per physics step and per tracer per tracer
+        // step. Four slots hold the three instants a step uses with one spare for the grid's
+        // advection, which runs on the metabolic clock, so the rebuilds are three per step rather
+        // than three per sample. Round-robin eviction, exact-equality lookup: which slot a given t
+        // lands in changes nothing a caller can read, because a slot's contents are a pure
+        // function of t.
+        //
+        // Still single-threaded, and more sharply so than before: a lookup reassigns the five
+        // array fields below, so two threads sampling one field would see each other's slot. No
+        // caller does — FluidEnvironment samples the water in its main-thread gather phase and its
+        // parallel phase touches no field (see the remarks there).
+        private const int InstantSlots = 4;
+
+        private double[] _instantAt;
+        private int _instantNext;
+
+        private double[][] _slotCos;
+        private double[][] _slotSin;
+        private double[][] _slotEnvelope;
+        private double[][] _slotCellEnvelope;
+        private double[][] _slotCell;
+
+        // The slot the last EnsureInstant selected — what StreamsUnit reads.
         private double[] _instantCos;
         private double[] _instantSin;
         private double[] _instantEnvelope;
@@ -1772,7 +1964,23 @@ namespace Evosim.Core
 
         private void EnsureInstant(double t)
         {
-            if (t == _instantAt) return;
+            for (int slot = 0; slot < InstantSlots; slot++)
+            {
+                // NaN never equals t, so an unfilled slot is simply a miss.
+                if (_instantAt[slot] != t) continue;
+
+                Select(slot);
+                return;
+            }
+
+            int fill = _instantNext;
+            _instantNext = fill + 1 == InstantSlots ? 0 : fill + 1;
+
+            Select(fill);
+
+            // Unkeyed while it is half written, so that a slot can never answer for one instant
+            // with another's trigonometry.
+            _instantAt[fill] = double.NaN;
 
             for (int k = 0; k < StreamsTerms; k++)
             {
@@ -1793,7 +2001,16 @@ namespace Evosim.Core
                 _instantCell[c] = Math.Cos(_cellRate[c] * t + _cellPhase[c]);
             }
 
-            _instantAt = t;
+            _instantAt[fill] = t;
+        }
+
+        private void Select(int slot)
+        {
+            _instantCos = _slotCos[slot];
+            _instantSin = _slotSin[slot];
+            _instantEnvelope = _slotEnvelope[slot];
+            _instantCellEnvelope = _slotCellEnvelope[slot];
+            _instantCell = _slotCell[slot];
         }
 
         /// <summary>

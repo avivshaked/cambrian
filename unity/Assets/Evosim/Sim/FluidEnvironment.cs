@@ -54,6 +54,16 @@ namespace Evosim.Sim
         /// moving water now feels exactly the force it would feel swimming through still water at
         /// the same relative speed, which is the whole of the physics.
         /// </remarks>
+        /// <remarks>
+        /// <b>Two points since D090, and the second is the water's acceleration rather than its
+        /// velocity.</b> Drag ties a body to the water's speed and nothing tied it to the water's
+        /// turns, so a body on a curved streamline drifted off it and a tank was a centrifuge
+        /// (logbook/specs/water-carries-spec.md).
+        /// <see cref="FluidConfig.FluidAccelerationCoefficient"/> is the second point — off in
+        /// every recorded config — and it reads
+        /// <see cref="CurrentField.AccelerationAt(float, float, float, double)"/> at the same
+        /// place, in the same gather phase, for the price of nine evaluations per part.
+        /// </remarks>
         public CurrentField Current { get; set; }
 
         /// <summary>Seconds the world has been running, for <see cref="Current"/>.</summary>
@@ -253,6 +263,11 @@ namespace Evosim.Sim
             int bodies = Layout(creatures);
             if (bodies == 0) return;
 
+            // D090, read once per Apply rather than per part: whether the water's own
+            // acceleration acts at all. Off is every recorded config, and off means the field is
+            // never sampled for it — see the gather phase below.
+            _accelerating = Config.FluidAccelerationCoefficient > 0f && Current != null;
+
             // ---- gather (main thread): everything the solver owns, copied out
             for (int c = 0; c < creatures.Count; c++)
             {
@@ -292,6 +307,59 @@ namespace Evosim.Sim
                         : Float3.Zero;
 
                     _velocity[at + i] = body.linearVelocity.ToFloat3() - water;
+
+                    // D090's fluid acceleration force, beside the drag and sampled here for the
+                    // same reason: it needs the body's position, which is a Transform read.
+                    // F = c·(ρV + m_added)·Du/Dt — the pressure gradient that holds a parcel of
+                    // water on a curved streamline, felt by the body that displaces it, which is
+                    // the only thing that makes a lagging body follow the water instead of
+                    // drifting off every curve (logbook/specs/water-carries-spec.md,
+                    // FluidConfig.FluidAccelerationCoefficient).
+                    //
+                    // Skipped entirely at coefficient 0, which is every recorded config: the term
+                    // would be exactly zero (FluidModel.AccelerationForce multiplies by it), and
+                    // CurrentField.AccelerationAt costs nine field samples per part per step, so
+                    // the guard is what keeps the record's worlds both unchanged and as cheap as
+                    // they were. It is a per-step force like the drag, so any nonzero value is a
+                    // new realisation of every seed.
+                    //
+                    // Sampled at the body's position in every current mode. Under the rolls that
+                    // is the patch the position falls in rather than the patch the world assigned
+                    // the creature — one step apart at a seam, and unreachable in practice, since
+                    // the rolls are a tiled world's field and this term is the tank's; the
+                    // acceleration of a depth-and-time field is taken without horizontal
+                    // differences in any case (AccelerationAt says why).
+                    if (_accelerating)
+                    {
+                        Float3 acceleration =
+                            Current.AccelerationAt(where.x, where.y, where.z, ElapsedSeconds);
+
+                        // Guarded like the lift lookup below rather than indexed straight: a
+                        // phenotype with fewer parts than the articulation has bodies is a state
+                        // this class already declines to trust, and a missing volume displaces no
+                        // water, so the force is zero rather than an exception.
+                        float volume = creature.Phenotype != null &&
+                                       i < creature.Phenotype.Parts.Count
+                            ? creature.Phenotype.Parts[i].Volume
+                            : 0f;
+
+                        Vector3 force = FluidModel
+                            .AccelerationForce(acceleration, volume, Config)
+                            .ToVector3();
+
+                        // D050's rule, said here in the same terms the buoyancy term below says
+                        // it: no upward net force at or above the waterline. It never binds —
+                        // the field's vertical velocity is exactly zero on that plane and stays
+                        // zero above it, so the vertical component of Du/Dt is exactly zero there
+                        // (CurrentField.AccelerationAt's remarks, FluidAccelerationTests holds
+                        // it) — and it is written anyway, because "the guard is unnecessary" is a
+                        // claim about a field, and the next field to be built is not obliged to
+                        // keep it. The ocean's top is a hole three clamps hide (CLAUDE.md); every
+                        // force that can push a body up gets asked the same question.
+                        if (force.y > 0f && where.y >= 0f) force.y = 0f;
+
+                        _accelForce[at + i] = force;
+                    }
 
                     // The lateral line, taken from the drag pass rather than recomputed —
                     // CreatureInstance.RelativeVelocity's remarks say why it lives on the
@@ -431,6 +499,19 @@ namespace Evosim.Sim
 
                     body.AddForce(dragForce);
                     body.AddTorque(dragTorque);
+
+                    // D090, added as its own force and never folded into dragForce. Two reasons,
+                    // both load-bearing. Settle integrates _force against the body's velocity to
+                    // get DissipatedJoules, and this term is not dissipation — it does no work on
+                    // a body at rest relative to the water and the drag already prices every
+                    // metre of motion relative to it, so adding it there would book a pressure
+                    // gradient as food (logbook/specs/water-carries-spec.md's clause 4; the energy
+                    // audit reads DissipatedJoules and nothing else here). And the limiter above
+                    // exists for a force quadratic in the relative velocity, which can reverse
+                    // the velocity it is computed from; this one does not depend on the body's
+                    // motion at all, so capping it against the body's momentum would throttle a
+                    // still body's ride for no stability reason.
+                    if (_accelerating) body.AddForce(_accelForce[at + i]);
 
                     // Excess weight, applied here rather than in Compute because it does not
                     // depend on velocity — drag does, and the balance of the two is what sets the
@@ -746,6 +827,12 @@ namespace Evosim.Sim
         private DragPanelSet[] _panelsAt = System.Array.Empty<DragPanelSet>();
         private Vector3[] _force = System.Array.Empty<Vector3>();
         private Vector3[] _torque = System.Array.Empty<Vector3>();
+
+        // D090's fluid acceleration force, in an array of its own beside the drag's rather than
+        // summed into it — the reason is at the call site, and it is that Settle must not see it.
+        private Vector3[] _accelForce = System.Array.Empty<Vector3>();
+        private bool _accelerating;
+
         private Vector3[] _preV = System.Array.Empty<Vector3>();
         private Vector3[] _preW = System.Array.Empty<Vector3>();
         private float _pendingStep;
@@ -762,6 +849,7 @@ namespace Evosim.Sim
             _panelsAt = new DragPanelSet[size];
             _force = new Vector3[size];
             _torque = new Vector3[size];
+            _accelForce = new Vector3[size];
             _preV = new Vector3[size];
             _preW = new Vector3[size];
         }

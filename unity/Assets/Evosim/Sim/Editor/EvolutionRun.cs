@@ -392,6 +392,17 @@ namespace Evosim.Sim.EditorTools
             // per-step term, so any nonzero value is a new realisation of every seed.
             float addedMass = Env("EVOSIM_ADDED_MASS", 0f);
 
+            // D090 (2026-09-12, logbook/specs/water-carries-spec.md). How much of the water's own
+            // acceleration a part feels, FluidConfig.FluidAccelerationCoefficient: the pressure
+            // gradient that holds a parcel of water on a curved streamline, felt by the body that
+            // displaces it. 1 is the physical value; 0 is drag alone, which is every world on
+            // file, and what the default keeps so that a recorded config still describes the world
+            // it ran. Without it a body cannot turn as sharply as the water and drifts outward on
+            // every curve — round 37's population at the glass within the hour — and with it a
+            // neutral body rides the water as a tracer does. A per-step term like the added mass
+            // above, so any nonzero value is a new realisation of every seed.
+            float fluidAccel = Env("EVOSIM_FLUID_ACCEL", 0f);
+
             // D082 (2026-09-07). The price of a bud: what a neuron, one of its inputs and a
             // joule of mechanical work cost. All three are RunConfig tunables since 5A.2 and
             // none had a launch knob, so every recorded world ran at their defaults (0.05 W,
@@ -601,6 +612,7 @@ namespace Evosim.Sim.EditorTools
                 Fluid = new FluidConfig
                 {
                     AddedMassCoefficient = addedMass,
+                    FluidAccelerationCoefficient = fluidAccel,
                     TissueExcessDensity = excessDensity,
                     NeutralBodyVolume = neutralVolume,
                     SurfaceRestoringFraction = surfaceRestore,
@@ -968,6 +980,12 @@ namespace Evosim.Sim.EditorTools
                 // read the same for "added mass off" and "written before the knob existed", and
                 // every world through round 28 is the first of those.
                 " · addedMass " + addedMass +
+                // D090, beside `addedMass` because it is the same kind of fact — what the water
+                // does to a body that is not swimming — and rendered unconditionally for D065's
+                // reason: a header without the token would read the same for "the water carries"
+                // and "written before the term existed", and every world through round 37 is the
+                // second of those.
+                " · fluidAccel " + fluidAccel +
                 // D082, appended after `addedMass` per the same convention and rendered
                 // unconditionally for D065's reason: every world through round 29 ran at the
                 // defaults, and a header without the token would not say so.
