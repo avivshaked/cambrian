@@ -1021,13 +1021,26 @@ namespace Evosim.Sim
                 int iz = Mathf.Clamp(Mathf.FloorToInt(root.z / ColumnMetres), 0, nz - 1);
                 int column = iz * nx + ix;
 
-                if (!_columnHeld[column])
+                // The numerator has to count the same columns the denominator does, and until
+                // 2026-09-12 it did not: `live` above keeps only the columns whose own centres are
+                // inside the circle, while this counted any column of the bounding square a body
+                // stood in. A body a few centimetres inside the glass stands in a column whose
+                // centre is outside it, so round 37 printed `cols 104/100` — and a share above one
+                // is not a spread, it is a numerator and a denominator counting different things
+                // (logbook/specs/streams-spec.md). The body is still a body: it counts in `bodies`
+                // and in the x and z sums below. What it does not get is a column of a footprint
+                // it is not standing on.
+                bool inTheFootprint = !tank || TankGeometry.Inside(
+                    (ix + 0.5f) * ColumnMetres, (iz + 0.5f) * ColumnMetres, Volume.TankRadiusMetres);
+
+                if (inTheFootprint && !_columnHeld[column])
                 {
                     _columnHeld[column] = true;
                     reading.OccupiedColumns++;
                 }
 
-                if (absorptive != null && absorptive.Contains(creature.Id) && !_columnHeldAbsorptive[column])
+                if (inTheFootprint && absorptive != null && absorptive.Contains(creature.Id) &&
+                    !_columnHeldAbsorptive[column])
                 {
                     _columnHeldAbsorptive[column] = true;
                     reading.OccupiedColumnsAbsorptive++;

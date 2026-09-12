@@ -630,7 +630,7 @@ namespace Evosim.Core
         /// (<see cref="TankGeometry"/>); the patches are rings of equal area rather than a row of
         /// squares; the horizontal boundary is a static collider rather than a translation, so
         /// <c>wraps</c> reads 0 by construction; the grid carries a mask and stirs and advects
-        /// only between live cells; the current is a gyre about the axis, tangential at the glass
+        /// only between live cells; the current is a spectrum of streams, tangential at the glass
         /// by construction; and the placer draws founders over the disc. The area, the depth, the
         /// patch count, the prices and every other rule are untouched.
         /// </para>
@@ -1893,7 +1893,7 @@ namespace Evosim.Core
         /// <summary>
         /// A cylinder of water with a glass wall: a disc of <c>R = sqrt(area/π)</c> in a bounding
         /// square <c>[0, 2R)²</c> about an axis at <c>(R, R)</c>, <c>K</c> rings of equal area
-        /// for patches, and a gyre for a current.
+        /// for patches, and a spectrum of streams for a current.
         /// </summary>
         /// <remarks>
         /// The wall replaces the seam a carrying current made visible, and the disc has a centre

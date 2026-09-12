@@ -823,7 +823,7 @@ namespace Evosim.Core
                         FormattableString.Invariant(
                             $"WorldShape is Tank and the current is Rolls at {config.Current.Speed} m/s. ") +
                         "The rolls are a field over the box's row of patches — patch k rising " +
-                        "while k+1 sinks — and a tank has no such row. Its water is the gyre, " +
+                        "while k+1 sinks — and a tank has no such row. Its water is the streams, " +
                         "which is selected by the shape: set CurrentMode.Transport to say so, or " +
                         "the speed to 0 for still water.",
                         nameof(config));
@@ -1003,7 +1003,7 @@ namespace Evosim.Core
             // length is the width times the patch count and the floor is at minus the depth, and
             // the seed is what makes one round's five seeds five draws of the water as well as of
             // the genome. Same geometry the fields were built with, for the same reason.
-            // And the shape, which is what selects the gyre: the tank's water is not the rolls or
+            // And the shape, which is what selects the streams: the tank's water is not the rolls or
             // the transport field, and the field has to be told the container rather than inferring
             // one from a mode (fable-propose-aquarium.md ruling 1).
             config.Current?.SetBox(
@@ -1582,7 +1582,7 @@ namespace Evosim.Core
 
                     if (tank)
                     {
-                        // The glass, not a seam. The gyre has no radial flow at the wall, so a
+                        // The glass, not a seam. The streams have no radial flow at the wall, so a
                         // corpse is not carried into it; what this catches is the step's own
                         // arithmetic — an explicit half-second of a flow that curves — and it
                         // catches it by sliding the parcel back onto the rim rather than by

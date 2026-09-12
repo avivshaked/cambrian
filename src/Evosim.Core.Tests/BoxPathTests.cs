@@ -28,8 +28,8 @@ namespace Evosim.Core.Tests
     /// <para>
     /// <b>Why these four.</b> They are the four places the tank build reached into and the four
     /// the box path runs through: the periodic transport field's construction and its bound,
-    /// which must keep their 28x24x5 lattice and closed-form RMS while the gyre gets a lattice of
-    /// its own; the grid's cells, seeding, stirring and advection, which gained a mask that must
+    /// which must keep their 28x24x5 lattice and closed-form RMS while the tank's streams get two
+    /// lattices of their own; the grid's cells, seeding, stirring and advection, which gained a mask that must
     /// stay null in a box; the placement RNG stream, which is what the Sim-side placer draws a
     /// founder's spot from and must advance by the same draws in the same order; and a whole
     /// world stepped four hundred times, which is every one of them at once plus the economy.
@@ -72,8 +72,8 @@ namespace Evosim.Core.Tests
         /// <see cref="GridField.Advect"/> substeps against, so it decides how many times a step
         /// stirs the water as well as how fast the fastest parcel goes; the six samples are the
         /// field itself, at six places and six times chosen only to be unremarkable. The tank
-        /// added a second branch to both — the gyre's measured ceiling and
-        /// <c>GyreAt</c> — and this is the assertion that the first branch still answers.
+        /// added a second branch to both — the streams' measured ceiling and
+        /// <c>StreamsAt</c> — and this is the assertion that the first branch still answers.
         /// </remarks>
         [Fact]
         public void TheTransportFieldIsUnchanged()

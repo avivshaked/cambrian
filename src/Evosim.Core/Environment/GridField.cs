@@ -1359,8 +1359,8 @@ namespace Evosim.Core
                             int cell = Index(ix, iy, iz);
 
                             // Dead cells are never a source or a destination, so the field is not
-                            // asked about them: a sample is five Fourier modes or three parts of a
-                            // gyre, and a tank's array is about a fifth dry.
+                            // asked about them: a sample is five Fourier modes or twenty-seven
+                            // terms of the tank's streams, and a tank's array is about a fifth dry.
                             if (_live != null && !_live[cell]) continue;
 
                             Float3 atCentre = current.VelocityAt(x, centreY, z, seconds);

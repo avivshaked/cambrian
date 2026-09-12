@@ -19,7 +19,7 @@ namespace Evosim.Core.Tests
     /// unlike the one its config names.
     /// </para>
     /// <para>
-    /// <b>The water itself is <see cref="GyreTests"/>.</b> Here the water only has to exist; there
+    /// <b>The water itself is <see cref="StreamsTests"/>.</b> Here the water only has to exist; there
     /// it has to be divergence-free, tangential at the glass and at the speed the knob says.
     /// </para>
     /// </remarks>
@@ -228,7 +228,7 @@ namespace Evosim.Core.Tests
             GridField field = Tank(1f);
             field.SeedUniform(1f);
 
-            // A body is stopped by a collider and the gyre has no radial flow at the wall, so a
+            // A body is stopped by a collider and the streams have no radial flow at the wall, so a
             // point past the circle is arithmetic rather than an event — and it must land in water
             // rather than in a dead cell, where a deposit would be lost to every sum.
             foreach (double theta in new[] { 0d, 1d, 2.5d, 4d, 5.8d })
