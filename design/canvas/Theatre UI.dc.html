@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400&display=swap" rel="stylesheet">
+<style>
+  /* Notation, not design: Unity's Yoga layout is border-box always.
+     This reset makes the mockup measure the way the port will. */
+  * { box-sizing: border-box; }
+  body { margin:0; background:#0B0E10; }
+  a { color:#EDF3F5; } a:hover { color:#FF4A2B; }
+</style>
+</helmet>
+
+<div style="display:flex;flex-direction:column;padding:56px;background:#0B0E10;font-family:'IBM Plex Sans',sans-serif;color:#A6B4BA;width:2672px">
+
+  <div style="display:flex;flex-direction:column;max-width:1100px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.6px;color:#48545A">THE THEATRE · OVERLAY DESIGN · PASS 2 · RECONCILED 2026-09-12</div>
+    <div style="font-size:30px;color:#EDF3F5;font-weight:600;letter-spacing:-0.2px;margin-top:10px">World view, transport, inspector</div>
+    <div style="font-size:14px;line-height:1.6;color:#A6B4BA;text-wrap:pretty;margin-top:10px">Pass 1's design, unchanged. What changed is that every element below now carries the class that draws it in <a href="theatre.uss">theatre.uss</a>, and every inline style here is a mirror of that rule. No <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">gap</span> in either file; spacing is owned by the following sibling. Settled dimensions: strip 40, clock 20, <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">.numeric</span> 104, census top 56, inspector 340.</div>
+    <div style="font-size:13px;line-height:1.6;color:#6B787E;text-wrap:pretty;margin-top:10px">Three declarations here are notation, not design: <span style="font-family:'IBM Plex Mono',monospace">text-align:right</span> is <span style="font-family:'IBM Plex Mono',monospace">-unity-text-align:middle-right</span>, <span style="font-family:'IBM Plex Mono',monospace">font-weight:600</span> is the semibold font asset on four named elements, and <span style="font-family:'IBM Plex Mono',monospace">line-height:1.5</span> is the second Plex Sans asset baked at 1.5 line spacing, used only by <span style="font-family:'IBM Plex Mono',monospace">.prose</span>. Artboard frames and this commentary carry no class attributes, because they are not part of the interface.</div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;border-top:1px solid rgba(237,243,245,0.14);padding-top:14px;margin-top:56px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5">5.1 — World view</div>
+    <div style="font-size:12px;color:#6B787E;margin-left:14px">1920 × 1080 · faithful · playing · nothing selected</div>
+  </div>
+
+  <div style="position:relative;width:1920px;height:1080px;overflow:hidden;background-color:#04070A;background-image:url('assets/bg-crowd.png');background-size:cover;background-position:center;flex-shrink:0;margin-top:20px">
+
+    <div class="panel panel--census" style="position:absolute;top:56px;right:16px;width:280px;background:rgba(5,9,11,0.82);border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:12px;display:flex;flex-direction:column">
+      <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">NOW</div>
+      <div class="census-row census-row--hero field" style="display:flex;flex-direction:row;align-items:baseline;height:34px">
+        <div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">alive</div>
+        <div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:#EDF3F5;width:104px;text-align:right;display:flex;flex-direction:row;align-items:baseline;justify-content:flex-end">1&#8201;842</div>
+      </div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px">
+        <div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">jointed</div>
+        <div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;flex-direction:row;align-items:baseline;justify-content:flex-end">612</div>
+      </div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px">
+        <div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">absorptive</div>
+        <div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;flex-direction:row;align-items:baseline;justify-content:flex-end">118</div>
+      </div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px">
+        <div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">photosynthetic</div>
+        <div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;flex-direction:row;align-items:baseline;justify-content:flex-end">1&#8201;640</div>
+      </div>
+
+      <div class="section" style="display:flex;flex-direction:column;border-top:1px solid rgba(237,243,245,0.12);padding-top:8px;margin-top:10px">
+        <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">Σ SINCE t=0</div>
+        <div class="census-row field field--cumulative" style="display:flex;flex-direction:row;align-items:center;height:22px">
+          <div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">births</div>
+          <div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A6B4BA;width:104px;text-align:right;display:flex;flex-direction:row;align-items:baseline;justify-content:flex-end">9&#8201;204</div>
+        </div>
+        <div class="census-row field field--cumulative" style="display:flex;flex-direction:row;align-items:center;height:22px">
+          <div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">deaths</div>
+          <div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A6B4BA;width:104px;text-align:right;display:flex;flex-direction:row;align-items:baseline;justify-content:flex-end">7&#8201;362</div>
+        </div>
+      </div>
+
+      <div class="section" style="display:flex;flex-direction:column;border-top:1px solid rgba(237,243,245,0.12);padding-top:8px;margin-top:10px">
+        <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">INVARIANTS</div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px">
+          <div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">audit</div>
+          <div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;flex-direction:row;align-items:baseline;justify-content:flex-end">0.0000<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">%</div></div>
+        </div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px">
+          <div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">matter here</div>
+          <div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;flex-direction:row;align-items:baseline;justify-content:flex-end">0.63</div>
+        </div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px">
+          <div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">mean depth</div>
+          <div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;flex-direction:row;align-items:baseline;justify-content:flex-end">−9.8<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">m</div></div>
+        </div>
+      </div>
+      <div class="census__cadence" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.5px;margin-top:10px">sample 24 · every 100 s</div>
+    </div>
+
+    <div class="panel panel--strip" style="position:absolute;top:0;left:0;right:0;height:40px;display:flex;flex-direction:row;align-items:center;padding:0 16px;background:rgba(5,9,11,0.92);border:0;border-bottom:1px solid rgba(237,243,245,0.12);border-radius:0">
+      <div class="status" style="display:flex;flex-direction:row;align-items:center">
+        <div class="marker marker--faithful" style="width:12px;height:12px;flex-shrink:0;border:1px solid #6B787E;border-radius:6px"></div>
+        <div class="status__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#A6B4BA;margin-left:8px">FAITHFUL</div>
+      </div>
+      <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+      <div class="ident" style="display:flex;flex-direction:row;align-items:flex-end">
+        <div class="ident__arm" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5;letter-spacing:0.4px">r37-s1</div>
+        <div class="ident__meta" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-left:14px">seed 1 · dt 0.01 · 96d4bce667 · physics jobs 0</div>
+        <div class="badge" style="border:1px solid rgba(237,243,245,0.30);border-radius:2px;padding:1px 5px;font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#6B787E;letter-spacing:0.8px;margin-left:14px">AS RECORDED</div>
+      </div>
+      <div style="flex-grow:1"></div>
+      <div class="pace is-per-frame" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-right:16px">1.00× requested · 0.70× actual</div>
+      <div class="clock is-per-frame" style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#EDF3F5;letter-spacing:0.5px;display:flex;flex-direction:row;align-items:flex-end">t 2&#8201;400.0<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">s</div></div>
+      <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+      <div class="keyhint lead" style="display:flex;flex-direction:row;align-items:center;margin-left:0">
+        <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">P</div>
+        <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">provenance</div>
+      </div>
+      <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px">
+        <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">H</div>
+        <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">hide</div>
+      </div>
+    </div>
+
+    <div class="panel panel--bar" style="position:absolute;left:0;right:0;bottom:0;height:68px;display:flex;flex-direction:row;align-items:center;background:rgba(5,9,11,0.92);border:0;border-top:1px solid rgba(237,243,245,0.12);border-radius:0;padding:12px 16px">
+      <div class="transport" style="display:flex;flex-direction:row;align-items:center;width:196px;flex-shrink:0">
+        <div class="transport__state" style="display:flex;flex-direction:row;align-items:center">
+          <div class="glyph glyph--play" style="width:12px;height:12px;flex-shrink:0;border-left:12px solid #EDF3F5;border-top:6px solid transparent;border-bottom:6px solid transparent;box-sizing:border-box"></div>
+          <div class="transport__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#EDF3F5;margin-left:8px">PLAYING</div>
+        </div>
+        <div style="flex-grow:1"></div>
+        <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px">
+          <div class="keyhint__key keyhint__key--wide" style="min-width:36px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">Space</div>
+        </div>
+      </div>
+
+      <div class="timeline" style="display:flex;flex-direction:column;flex-grow:1;margin-left:20px">
+        <div class="timeline__track" style="display:flex;flex-direction:row;height:12px;align-items:stretch;position:relative">
+          <div class="timeline__elapsed" style="flex:8 0 0;background:#6B787E"></div>
+          <div class="timeline__head is-per-frame" style="width:2px;flex-shrink:0;background:#EDF3F5"></div>
+          <div class="timeline__recorded" style="flex:73 0 0;background:rgba(237,243,245,0.16)"></div>
+          <div class="timeline__beyond" style="flex:19 0 0;display:flex;flex-direction:row;align-items:center;overflow:hidden">
+            <div class="timeline__dash lead" style="width:4px;height:2px;background:#48545A;margin-left:0"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div>
+          </div>
+          <div class="timeline__mark timeline__mark--peak" style="position:absolute;width:1px;background:rgba(237,243,245,0.30);left:32%;top:-8px;height:8px"></div>
+          <div class="timeline__mark timeline__mark--snapshot" style="position:absolute;background:#48545A;left:12%;top:14px;width:3px;height:3px"></div>
+          <div class="timeline__mark timeline__mark--snapshot" style="position:absolute;background:#48545A;left:38%;top:14px;width:3px;height:3px"></div>
+          <div class="timeline__mark timeline__mark--snapshot" style="position:absolute;background:#48545A;left:61%;top:14px;width:3px;height:3px"></div>
+          <div class="timeline__mark timeline__mark--record-end" style="position:absolute;width:1px;background:rgba(237,243,245,0.30);left:81%;top:-8px;height:28px"></div>
+        </div>
+        <div class="timeline__axis" style="display:flex;flex-direction:row;position:relative;height:14px;margin-top:8px">
+          <div class="timeline__tick" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#48545A">0</div>
+          <div class="timeline__tick timeline__tick--anchored" style="position:absolute;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;left:32%;transform:translateX(-50%)">peak 4&#8201;918</div>
+          <div class="timeline__tick timeline__tick--anchored timeline__tick--loud" style="position:absolute;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#EDF3F5;left:81%;transform:translateX(-50%)">record ends 24&#8201;300 s</div>
+          <div style="flex-grow:1"></div>
+          <div class="timeline__tick" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#48545A">30&#8201;000 s</div>
+        </div>
+      </div>
+
+      <div class="timeline__legend" style="display:flex;flex-direction:column;width:250px;flex-shrink:0;margin-left:20px">
+        <div class="seek-note" style="display:flex;flex-direction:row;align-items:center">
+          <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">K</div>
+          <div class="seek-note__text" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#6B787E;letter-spacing:0.5px;margin-left:6px">seek forward — simulated, minutes</div>
+        </div>
+        <div class="seek-note__text seek-note__text--dim" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.5px;margin-left:24px;margin-top:3px">backward — restarts from t=0</div>
+      </div>
+
+      <div class="keys" style="display:flex;flex-direction:row;align-items:center;flex-shrink:0;margin-left:20px">
+        <div class="keyhint lead" style="display:flex;flex-direction:row;align-items:center;margin-left:0">
+          <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">[ ]</div>
+          <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">pace</div>
+        </div>
+        <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px">
+          <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">C</div>
+          <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">colour</div>
+        </div>
+        <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px">
+          <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">F</div>
+          <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">follow</div>
+        </div>
+        <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px">
+          <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">R</div>
+          <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">reload</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;border-top:1px solid rgba(237,243,245,0.14);padding-top:14px;margin-top:56px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5">5.1 — Selected creature, one warning</div>
+    <div style="font-size:12px;color:#6B787E;margin-left:14px">faithful but unverified · paused · warnings grow down the left, so the census never moves</div>
+  </div>
+
+  <div style="position:relative;width:1920px;height:1080px;overflow:hidden;background-color:#04070A;background-image:url('assets/bg-sky.png');background-size:cover;background-position:center;flex-shrink:0;margin-top:20px">
+
+    <div class="panel panel--census" style="position:absolute;top:56px;right:16px;width:280px;background:rgba(5,9,11,0.82);border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:12px;display:flex;flex-direction:column">
+      <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">NOW</div>
+      <div class="census-row census-row--hero field" style="display:flex;flex-direction:row;align-items:baseline;height:34px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">alive</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">307</div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">jointed</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">44</div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">absorptive</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">31</div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">photosynthetic</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">281</div></div>
+      <div class="section" style="display:flex;flex-direction:column;border-top:1px solid rgba(237,243,245,0.12);padding-top:8px;margin-top:10px">
+        <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">Σ SINCE t=0</div>
+        <div class="census-row field field--cumulative" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">births</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A6B4BA;width:104px;text-align:right;display:flex;justify-content:flex-end">41&#8201;207</div></div>
+        <div class="census-row field field--cumulative" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">deaths</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A6B4BA;width:104px;text-align:right;display:flex;justify-content:flex-end">40&#8201;900</div></div>
+      </div>
+      <div class="section" style="display:flex;flex-direction:column;border-top:1px solid rgba(237,243,245,0.12);padding-top:8px;margin-top:10px">
+        <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">INVARIANTS</div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">audit</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end;align-items:baseline">0.0000<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">%</div></div></div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">matter here</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">0.61</div></div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">mean depth</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end;align-items:baseline">−11.2<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">m</div></div></div>
+      </div>
+      <div class="census__cadence" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.5px;margin-top:10px">sample 251 · every 100 s</div>
+    </div>
+
+    <div class="panel panel--inspector" style="position:absolute;left:16px;bottom:88px;width:340px;background:rgba(5,9,11,0.82);border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:12px;display:flex;flex-direction:column">
+      <div class="inspector__head" style="display:flex;flex-direction:row;align-items:center;margin-bottom:10px">
+        <div class="inspector__id" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5">creature 4821</div>
+        <div class="badge" style="border:1px solid rgba(237,243,245,0.30);border-radius:2px;padding:1px 5px;font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#6B787E;letter-spacing:0.8px;margin-left:14px">ALIVE</div>
+      </div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">generation</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">12</div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">parent</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">4390</div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">reserve</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end;align-items:baseline">640<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">s</div></div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">speed</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end;align-items:baseline">0.07<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">m/s</div></div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">parts · dof</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">9 · 6</div></div>
+      <div class="guilds" style="display:flex;flex-direction:row;margin-top:10px">
+        <div class="filter-chip filter-chip--on lead" style="border:1px solid #EDF3F5;background:#EDF3F5;color:#05090B;border-radius:2px;padding:2px 7px;font-family:'IBM Plex Sans',sans-serif;font-size:11px;margin-left:0">absorptive</div>
+        <div class="filter-chip filter-chip--on" style="border:1px solid #EDF3F5;background:#EDF3F5;color:#05090B;border-radius:2px;padding:2px 7px;font-family:'IBM Plex Sans',sans-serif;font-size:11px;margin-left:6px">jointed</div>
+        <div class="struck struck--after-chip" style="position:relative;display:flex;flex-direction:row;align-items:center;margin-left:6px">
+          <div class="filter-chip filter-chip--off lead" style="border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:2px 7px;font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:0">photosynthetic</div>
+          <div class="struck__rule" style="position:absolute;left:0;right:0;top:50%;height:1px;background:#6B787E"></div>
+        </div>
+      </div>
+      <div class="section" style="display:flex;flex-direction:column;border-top:1px solid rgba(237,243,245,0.12);padding-top:8px;margin-top:10px">
+        <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">ANCESTRY</div>
+        <div class="ancestry__chain" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A6B4BA;margin-top:4px">4821 ← 4390 ← 3711 ← 2904 ← … ← <span class="ancestry__founder" style="color:#EDF3F5">17</span></div>
+        <div class="ancestry__note" style="display:flex;flex-direction:row;align-items:center;margin-top:4px">
+          <div class="keyhint__label lead" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:0">4 of 12 shown · founder 17</div>
+          <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px">
+            <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">L</div>
+            <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">lineage</div>
+          </div>
+        </div>
+      </div>
+      <div class="ancestry__note" style="display:flex;flex-direction:row;align-items:center;margin-top:10px">
+        <div class="keyhint lead" style="display:flex;flex-direction:row;align-items:center;margin-left:0">
+          <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">Esc</div>
+          <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">deselect</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel--warnings" style="position:absolute;top:52px;left:16px;width:430px;background:rgba(5,9,11,0.82);border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:10px 12px;display:flex;flex-direction:column">
+      <div class="warning lead" style="display:flex;flex-direction:row;align-items:flex-start;margin-top:0">
+        <div class="marker marker--unverified marker--sm" style="width:10px;height:10px;flex-shrink:0;border:1px solid #EDF3F5;border-radius:6px;overflow:hidden;display:flex;flex-direction:row;margin-top:3px"><div class="marker__half" style="width:50%;height:100%;background:#EDF3F5"></div></div>
+        <div class="warning__body" style="display:flex;flex-direction:column;margin-left:8px">
+          <div class="warning__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#EDF3F5">Running past the record</div>
+          <div class="warning__detail" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-top:2px">last recorded sample t=24&#8201;300 · 8 samples beyond · nothing left to check against</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel--strip" style="position:absolute;top:0;left:0;right:0;height:40px;display:flex;flex-direction:row;align-items:center;padding:0 16px;background:rgba(5,9,11,0.92);border:0;border-bottom:1px solid rgba(237,243,245,0.12);border-radius:0">
+      <div class="status status--abnormal" style="display:flex;flex-direction:row;align-items:center">
+        <div class="marker marker--unverified" style="width:12px;height:12px;flex-shrink:0;border:1px solid #EDF3F5;border-radius:6px;overflow:hidden;display:flex;flex-direction:row"><div class="marker__half" style="width:50%;height:100%;background:#EDF3F5"></div></div>
+        <div class="status__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#EDF3F5;margin-left:8px">FAITHFUL · UNVERIFIED</div>
+      </div>
+      <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+      <div class="ident" style="display:flex;flex-direction:row;align-items:flex-end">
+        <div class="ident__arm" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5;letter-spacing:0.4px">r36-s1</div>
+        <div class="ident__meta" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-left:14px">seed 1 · dt 0.01 · 96d4bce667 · physics jobs 0</div>
+        <div class="badge" style="border:1px solid rgba(237,243,245,0.30);border-radius:2px;padding:1px 5px;font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#6B787E;letter-spacing:0.8px;margin-left:14px">AS RECORDED</div>
+      </div>
+      <div style="flex-grow:1"></div>
+      <div class="pace pace--paused is-per-frame" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#EDF3F5;letter-spacing:1px;margin-right:16px">PAUSED</div>
+      <div class="clock is-per-frame" style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#EDF3F5;letter-spacing:0.5px;display:flex;flex-direction:row;align-items:flex-end">t 25&#8201;100.0<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">s</div></div>
+      <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+      <div class="keyhint lead" style="display:flex;flex-direction:row;align-items:center;margin-left:0">
+        <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">H</div>
+        <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">hide</div>
+      </div>
+    </div>
+
+    <div class="panel panel--bar" style="position:absolute;left:0;right:0;bottom:0;height:68px;display:flex;flex-direction:row;align-items:center;background:rgba(5,9,11,0.92);border:0;border-top:1px solid rgba(237,243,245,0.12);border-radius:0;padding:12px 16px">
+      <div class="transport" style="display:flex;flex-direction:row;align-items:center;width:196px;flex-shrink:0">
+        <div class="transport__state" style="display:flex;flex-direction:row;align-items:center">
+          <div class="glyph glyph--pause" style="width:12px;height:12px;flex-shrink:0;display:flex;flex-direction:row;justify-content:space-between">
+            <div class="glyph__bar" style="width:3px;height:12px;background:#EDF3F5"></div>
+            <div class="glyph__bar" style="width:3px;height:12px;background:#EDF3F5"></div>
+          </div>
+          <div class="transport__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#EDF3F5;margin-left:8px">PAUSED</div>
+        </div>
+        <div style="flex-grow:1"></div>
+        <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px">
+          <div class="keyhint__key keyhint__key--wide" style="min-width:36px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">Space</div>
+        </div>
+      </div>
+      <div class="timeline" style="display:flex;flex-direction:column;flex-grow:1;margin-left:20px">
+        <div class="timeline__track" style="display:flex;flex-direction:row;height:12px;align-items:stretch;position:relative">
+          <div class="timeline__elapsed" style="flex:81 0 0;background:#6B787E"></div>
+          <div class="timeline__elapsed timeline__elapsed--beyond" style="flex:3 0 0;background:#48545A"></div>
+          <div class="timeline__head is-per-frame" style="width:2px;flex-shrink:0;background:#EDF3F5"></div>
+          <div class="timeline__beyond" style="flex:16 0 0;display:flex;flex-direction:row;align-items:center;overflow:hidden">
+            <div class="timeline__dash lead" style="width:4px;height:2px;background:#48545A;margin-left:0"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div>
+          </div>
+          <div class="timeline__mark timeline__mark--record-end" style="position:absolute;width:1px;background:#EDF3F5;left:81%;top:-8px;height:28px"></div>
+        </div>
+        <div class="timeline__axis" style="display:flex;flex-direction:row;position:relative;height:14px;margin-top:8px">
+          <div class="timeline__tick" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#48545A">0</div>
+          <div class="timeline__tick timeline__tick--anchored timeline__tick--loud" style="position:absolute;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#EDF3F5;left:81%;transform:translateX(-50%)">record ends 24&#8201;300 s — beyond here, unverified</div>
+          <div style="flex-grow:1"></div>
+          <div class="timeline__tick" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#48545A">30&#8201;000 s</div>
+        </div>
+      </div>
+      <div class="keys" style="display:flex;flex-direction:row;align-items:center;flex-shrink:0;margin-left:20px">
+        <div class="keyhint lead" style="display:flex;flex-direction:row;align-items:center;margin-left:0">
+          <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">K</div>
+          <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">seek</div>
+        </div>
+        <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px">
+          <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">[ ]</div>
+          <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">pace</div>
+        </div>
+        <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px">
+          <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">F</div>
+          <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">follow</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;border-top:1px solid rgba(237,243,245,0.14);padding-top:14px;margin-top:56px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5">5.1 — Invariant broken</div>
+    <div style="font-size:12px;color:#6B787E;margin-left:14px">the only loud state · one hue, inverted plate, plus the C#-driven pulse of exception 1</div>
+  </div>
+
+  <div style="position:relative;width:1920px;height:1080px;overflow:hidden;background-color:#04070A;background-image:url('assets/bg-iso.png');background-size:cover;background-position:center;flex-shrink:0;margin-top:20px">
+    <div class="panel panel--census panel--census-alarm" style="position:absolute;top:56px;right:16px;width:280px;background:rgba(5,9,11,0.82);border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:12px;display:flex;flex-direction:column">
+      <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">NOW</div>
+      <div class="census-row census-row--hero field" style="display:flex;flex-direction:row;align-items:baseline;height:34px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">alive</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">576</div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">jointed</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">88</div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">absorptive</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">52</div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">photosynthetic</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">524</div></div>
+      <div class="census-row census-row--diverged field" style="display:flex;flex-direction:row;align-items:center;height:22px;margin-top:4px"><div class="field__label" style="font-size:11px;color:#EDF3F5;flex-grow:1">diverged</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#05090B;background:#FF4A2B;border-radius:2px;padding:0 4px;width:104px;text-align:right;display:flex;justify-content:flex-end">3</div></div>
+      <div class="section" style="display:flex;flex-direction:column;border-top:1px solid rgba(237,243,245,0.12);padding-top:8px;margin-top:10px">
+        <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">INVARIANTS</div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#EDF3F5;flex-grow:1">audit</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:#05090B;background:#FF4A2B;border-radius:2px;padding:0 4px;width:104px;text-align:right;display:flex;justify-content:flex-end">0.0412 %</div></div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">matter here</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">0.63</div></div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">mean depth</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end;align-items:baseline">−28.4<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">m</div></div></div>
+      </div>
+    </div>
+
+    <div class="panel panel--strip panel--strip-alarm" style="position:absolute;top:0;left:0;right:0;height:40px;display:flex;flex-direction:row;align-items:center;padding:0 16px;background:rgba(5,9,11,0.92);border:0;border-bottom:2px solid #FF4A2B;border-radius:0">
+      <div class="plate" style="display:flex;flex-direction:row;align-items:center;background:#FF4A2B;padding:3px 8px;border-radius:2px">
+        <div class="plate__mark" style="width:10px;height:10px;background:#05090B"></div>
+        <div class="plate__text" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:#05090B;letter-spacing:0.8px;margin-left:8px">AUDIT 0.0412 % — ENERGY LEDGER DOES NOT BALANCE</div>
+      </div>
+      <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+      <div class="ident" style="display:flex;flex-direction:row;align-items:flex-end">
+        <div class="ident__arm" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5;letter-spacing:0.4px">r36-s1</div>
+        <div class="ident__meta" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-left:14px">first failing sample 251 · t=25&#8201;100</div>
+      </div>
+      <div style="flex-grow:1"></div>
+      <div class="clock is-per-frame" style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#EDF3F5;letter-spacing:0.5px;display:flex;flex-direction:row;align-items:flex-end">t 25&#8201;100.0<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">s</div></div>
+    </div>
+
+    <div class="panel panel--bar" style="position:absolute;left:0;right:0;bottom:0;height:68px;display:flex;flex-direction:row;align-items:center;background:rgba(5,9,11,0.92);border:0;border-top:1px solid rgba(237,243,245,0.12);border-radius:0;padding:12px 16px">
+      <div class="transport" style="display:flex;flex-direction:row;align-items:center;width:196px;flex-shrink:0">
+        <div class="transport__state" style="display:flex;flex-direction:row;align-items:center">
+          <div class="glyph glyph--pause" style="width:12px;height:12px;flex-shrink:0;display:flex;flex-direction:row;justify-content:space-between">
+            <div class="glyph__bar" style="width:3px;height:12px;background:#EDF3F5"></div>
+            <div class="glyph__bar" style="width:3px;height:12px;background:#EDF3F5"></div>
+          </div>
+          <div class="transport__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#EDF3F5;margin-left:8px">PAUSED AT FAILURE</div>
+        </div>
+      </div>
+      <div class="timeline" style="display:flex;flex-direction:column;flex-grow:1;margin-left:20px">
+        <div class="timeline__track" style="display:flex;flex-direction:row;height:12px;align-items:stretch;position:relative">
+          <div class="timeline__elapsed" style="flex:84 0 0;background:#6B787E"></div>
+          <div class="timeline__head timeline__head--broken" style="width:3px;flex-shrink:0;background:#FF4A2B"></div>
+          <div class="timeline__recorded" style="flex:16 0 0;background:rgba(237,243,245,0.16)"></div>
+          <div class="timeline__mark timeline__mark--break" style="position:absolute;width:1px;background:#FF4A2B;left:84%;top:-8px;height:28px"></div>
+        </div>
+        <div class="timeline__axis" style="display:flex;flex-direction:row;position:relative;height:14px;margin-top:8px">
+          <div class="timeline__tick" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#48545A">0</div>
+          <div class="timeline__tick timeline__tick--anchored timeline__tick--loud" style="position:absolute;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#EDF3F5;left:84%;transform:translateX(-50%)">ledger broke at sample 251</div>
+          <div style="flex-grow:1"></div>
+          <div class="timeline__tick" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#48545A">30&#8201;000 s</div>
+        </div>
+      </div>
+      <div class="keys" style="display:flex;flex-direction:row;align-items:center;flex-shrink:0;margin-left:20px">
+        <div class="keyhint lead" style="display:flex;flex-direction:row;align-items:center;margin-left:0">
+          <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">R</div>
+          <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">reload</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;border-top:1px solid rgba(237,243,245,0.14);padding-top:14px;margin-top:56px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5">The five provenance states, and seeking</div>
+    <div style="font-size:12px;color:#6B787E;margin-left:14px">strip crops at 1:1 · shape and fill carry the state, not hue</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;margin-top:20px">
+
+    <div style="display:flex;flex-direction:column">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-bottom:6px">1 · FAITHFUL — hollow ring, dim. the quietest thing on screen.</div>
+      <div class="panel panel--strip is-crop" style="position:relative;width:1920px;height:40px;overflow:hidden;display:flex;flex-direction:row;align-items:center;padding:0 16px;background:rgba(5,9,11,0.92);border:0;border-bottom:1px solid rgba(237,243,245,0.12);border-radius:0">
+        <div class="status" style="display:flex;flex-direction:row;align-items:center">
+          <div class="marker marker--faithful" style="width:12px;height:12px;flex-shrink:0;border:1px solid #6B787E;border-radius:6px"></div>
+          <div class="status__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#A6B4BA;margin-left:8px">FAITHFUL</div>
+        </div>
+        <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+        <div class="ident" style="display:flex;flex-direction:row;align-items:flex-end">
+          <div class="ident__arm" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5;letter-spacing:0.4px">r37-s1</div>
+          <div class="ident__meta" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-left:14px">24 of 24 samples match exactly · physics jobs 0, as recorded</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;margin-top:26px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-bottom:6px">2 · FAITHFUL BUT UNVERIFIED — half-filled ring, bright. normal, but the checking has run out.</div>
+      <div class="panel panel--strip is-crop" style="position:relative;width:1920px;height:40px;overflow:hidden;display:flex;flex-direction:row;align-items:center;padding:0 16px;background:rgba(5,9,11,0.92);border:0;border-bottom:1px solid rgba(237,243,245,0.12);border-radius:0">
+        <div class="status status--abnormal" style="display:flex;flex-direction:row;align-items:center">
+          <div class="marker marker--unverified" style="width:12px;height:12px;flex-shrink:0;border:1px solid #EDF3F5;border-radius:6px;overflow:hidden;display:flex;flex-direction:row"><div class="marker__half" style="width:50%;height:100%;background:#EDF3F5"></div></div>
+          <div class="status__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#EDF3F5;margin-left:8px">FAITHFUL · UNVERIFIED</div>
+        </div>
+        <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+        <div class="ident" style="display:flex;flex-direction:row;align-items:flex-end">
+          <div class="ident__arm" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5;letter-spacing:0.4px">r36-s1</div>
+          <div class="ident__meta" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-left:14px">past the record since t=24&#8201;300 · same world, nothing left to check against</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;margin-top:26px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-bottom:6px">3 · COUSIN — filled diamond. a different shape entirely, because it is a different world. zero to two badges trail it, each owning its own 6px.</div>
+      <div class="panel panel--strip is-crop" style="position:relative;width:1920px;height:40px;overflow:hidden;display:flex;flex-direction:row;align-items:center;padding:0 16px;background:rgba(5,9,11,0.92);border:0;border-bottom:1px solid rgba(237,243,245,0.12);border-radius:0">
+        <div class="status status--abnormal" style="display:flex;flex-direction:row;align-items:center">
+          <div class="marker marker--cousin" style="width:12px;height:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center"><div class="marker__diamond" style="width:9px;height:9px;border:1px solid #EDF3F5;background:#48545A;transform:rotate(45deg)"></div></div>
+          <div class="status__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#EDF3F5;margin-left:8px">COUSIN</div>
+        </div>
+        <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+        <div class="ident" style="display:flex;flex-direction:row;align-items:flex-end">
+          <div class="ident__arm" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5;letter-spacing:0.4px">r37-s1</div>
+          <div class="ident__meta" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-left:14px">a valid world, not this run</div>
+          <div class="badge badge--differs" style="border:1px solid #EDF3F5;border-radius:2px;padding:1px 5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#EDF3F5;margin-left:6px">physics jobs 4 ≠ 0</div>
+          <div class="badge badge--differs" style="border:1px solid #EDF3F5;border-radius:2px;padding:1px 5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#EDF3F5;margin-left:6px">build 6000.5.7f1 ≠ 6000.5.6f1</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;margin-top:26px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-bottom:6px">4 · DIVERGED — struck solid block, plus the 1.4 s pulse of exception 1. the only provenance state that gets motion.</div>
+      <div class="panel panel--strip is-crop" style="position:relative;width:1920px;height:40px;overflow:hidden;display:flex;flex-direction:row;align-items:center;padding:0 16px;background:rgba(5,9,11,0.92);border:0;border-bottom:1px solid rgba(237,243,245,0.12);border-radius:0">
+        <div class="status status--abnormal" style="display:flex;flex-direction:row;align-items:center">
+          <div class="marker marker--diverged" style="width:12px;height:12px;flex-shrink:0;background:#EDF3F5;display:flex;align-items:center;justify-content:center"><div class="marker__bar" style="width:100%;height:2px;background:#05090B"></div></div>
+          <div class="status__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#EDF3F5;margin-left:8px">DIVERGED</div>
+        </div>
+        <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+        <div class="ident" style="display:flex;flex-direction:row;align-items:flex-end">
+          <div class="ident__arm" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5;letter-spacing:0.4px">r37-s1</div>
+          <div class="ident__meta" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#EDF3F5;margin-left:14px">parted from the record at sample 112 · t=11&#8201;200 · alive 1&#8201;204 against 1&#8201;209 recorded</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;margin-top:26px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-bottom:6px">5 · UNVERIFIABLE — hollow square, one quadrant filled: partial knowledge. selection is struck wherever it appears, with .struck__rule rather than text-decoration.</div>
+      <div class="panel panel--strip is-crop" style="position:relative;width:1920px;height:40px;overflow:hidden;display:flex;flex-direction:row;align-items:center;padding:0 16px;background:rgba(5,9,11,0.92);border:0;border-bottom:1px solid rgba(237,243,245,0.12);border-radius:0">
+        <div class="status status--abnormal" style="display:flex;flex-direction:row;align-items:center">
+          <div class="marker marker--unverifiable" style="width:12px;height:12px;flex-shrink:0;border:1px solid #EDF3F5;display:flex"><div class="marker__quad" style="width:50%;height:50%;background:#EDF3F5"></div></div>
+          <div class="status__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#EDF3F5;margin-left:8px">IDS UNVERIFIABLE</div>
+        </div>
+        <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+        <div class="ident" style="display:flex;flex-direction:row;align-items:flex-end">
+          <div class="ident__arm" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5;letter-spacing:0.4px">r37-s3</div>
+          <div class="ident__meta" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-left:14px">the world is right · clicking a body cannot name it</div>
+          <div class="struck struck--after-meta" style="position:relative;display:flex;flex-direction:row;align-items:center;margin-left:14px">
+            <div class="badge lead" style="border:1px solid rgba(237,243,245,0.30);border-radius:2px;padding:1px 5px;font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#A6B4BA;letter-spacing:0.8px;margin-left:0">SELECTION</div>
+            <div class="struck__rule" style="position:absolute;left:0;right:0;top:50%;height:1px;background:#6B787E"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;margin-top:26px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-bottom:6px">6 · SEEKING — a minutes-long modal state, so it gets the hue-free inverted plate and the strip's own 3px progress. provenance is unaffected and stays where it was.</div>
+      <div class="panel panel--strip is-crop" style="position:relative;width:1920px;height:40px;overflow:hidden;display:flex;flex-direction:column;padding:0;background:rgba(5,9,11,0.92);border:0;border-bottom:1px solid rgba(237,243,245,0.12);border-radius:0">
+        <div style="display:flex;flex-direction:row;align-items:center;padding:0 16px;flex-grow:1">
+          <div class="status" style="display:flex;flex-direction:row;align-items:center">
+            <div class="marker marker--faithful" style="width:12px;height:12px;flex-shrink:0;border:1px solid #6B787E;border-radius:6px"></div>
+            <div class="status__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#A6B4BA;margin-left:8px">FAITHFUL</div>
+          </div>
+          <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+          <div class="ident" style="display:flex;flex-direction:row;align-items:flex-end">
+            <div class="ident__arm" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5;letter-spacing:0.4px">r37-s1</div>
+          </div>
+          <div class="plate plate--quiet" style="display:flex;flex-direction:row;align-items:center;background:#EDF3F5;padding:1px 8px;border-radius:2px;margin-left:18px">
+            <div class="plate__text" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#05090B;letter-spacing:1.2px;margin-left:0">SEEKING → t 5&#8201;000.0 s</div>
+          </div>
+          <div class="ident__meta" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-left:14px">simulating · 0.7× real time · about 4 min to go</div>
+          <div style="flex-grow:1"></div>
+          <div class="clock is-per-frame" style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#EDF3F5;letter-spacing:0.5px;display:flex;flex-direction:row;align-items:flex-end">t 3&#8201;120.0<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">s</div></div>
+          <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+          <div class="keyhint lead" style="display:flex;flex-direction:row;align-items:center;margin-left:0">
+            <div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">Esc</div>
+            <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">stop here</div>
+          </div>
+        </div>
+        <div class="seekbar" style="display:flex;flex-direction:row;height:3px;flex-shrink:0">
+          <div class="timeline__seeking is-per-frame" style="flex:44 0 0;background:#EDF3F5"></div>
+          <div class="seekbar__remain" style="flex:56 0 0;background:rgba(237,243,245,0.16)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;border-top:1px solid rgba(237,243,245,0.14);padding-top:14px;margin-top:56px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5">Provenance detail, on demand</div>
+    <div style="font-size:12px;color:#6B787E;margin-left:14px">key P · shares the warnings anchor and replaces them, because it says everything a warning says and more</div>
+  </div>
+
+  <div style="display:flex;flex-direction:row;align-items:flex-start;margin-top:20px">
+    <div style="position:relative;width:492px;height:300px;flex-shrink:0">
+      <div class="panel panel--popover" style="position:absolute;top:52px;left:16px;width:460px;background:rgba(5,9,11,0.92);border:1px solid rgba(237,243,245,0.30);border-radius:2px;padding:14px;display:flex;flex-direction:column">
+        <div class="status status--abnormal" style="display:flex;flex-direction:row;align-items:center">
+          <div class="marker marker--cousin" style="width:12px;height:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center"><div class="marker__diamond" style="width:9px;height:9px;border:1px solid #EDF3F5;background:#48545A;transform:rotate(45deg)"></div></div>
+          <div class="status__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#EDF3F5;margin-left:8px">COUSIN</div>
+          <div style="flex-grow:1"></div>
+          <div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">a valid world · not this run</div>
+        </div>
+        <div class="section section--flush" style="display:flex;flex-direction:column;border-top:0;padding-top:0;margin-top:10px">
+          <div class="prov-row" style="display:flex;flex-direction:row;align-items:center;height:24px;border-top:1px solid rgba(237,243,245,0.12)">
+            <div class="prov-row__mark" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDF3F5;width:14px">×</div>
+            <div class="prov-row__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#6B787E;width:110px">physics jobs</div>
+            <div class="prov-row__value" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDF3F5;flex-grow:1">4</div>
+            <div class="prov-row__recorded" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6B787E">recorded 0</div>
+          </div>
+          <div class="prov-row" style="display:flex;flex-direction:row;align-items:center;height:24px;border-top:1px solid rgba(237,243,245,0.12)">
+            <div class="prov-row__mark" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDF3F5;width:14px">×</div>
+            <div class="prov-row__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#6B787E;width:110px">build</div>
+            <div class="prov-row__value" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDF3F5;flex-grow:1">6000.5.7f1</div>
+            <div class="prov-row__recorded" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6B787E">recorded 6000.5.6f1</div>
+          </div>
+          <div class="prov-row" style="display:flex;flex-direction:row;align-items:center;height:24px;border-top:1px solid rgba(237,243,245,0.12)">
+            <div class="prov-row__mark prov-row__mark--ok" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6B787E;width:14px">·</div>
+            <div class="prov-row__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#6B787E;width:110px">config hash</div>
+            <div class="prov-row__value prov-row__value--ok" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A6B4BA;flex-grow:1">96d4bce667</div>
+            <div class="prov-row__recorded prov-row__recorded--ok" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#48545A">match</div>
+          </div>
+          <div class="prov-row" style="display:flex;flex-direction:row;align-items:center;height:24px;border-top:1px solid rgba(237,243,245,0.12)">
+            <div class="prov-row__mark prov-row__mark--ok" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6B787E;width:14px">·</div>
+            <div class="prov-row__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#6B787E;width:110px">seed</div>
+            <div class="prov-row__value prov-row__value--ok" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A6B4BA;flex-grow:1">1</div>
+            <div class="prov-row__recorded prov-row__recorded--ok" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#48545A">match</div>
+          </div>
+          <div class="prov-row" style="display:flex;flex-direction:row;align-items:center;height:24px;border-top:1px solid rgba(237,243,245,0.12)">
+            <div class="prov-row__mark prov-row__mark--ok" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6B787E;width:14px">·</div>
+            <div class="prov-row__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#6B787E;width:110px">id map</div>
+            <div class="prov-row__value prov-row__value--ok" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A6B4BA;flex-grow:1">checked</div>
+            <div class="prov-row__recorded prov-row__recorded--ok" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#48545A">selection ok</div>
+          </div>
+        </div>
+        <div class="section" style="display:flex;flex-direction:column;border-top:1px solid rgba(237,243,245,0.12);padding-top:8px;margin-top:10px">
+          <div class="prose" style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#6B787E;line-height:1.5;text-wrap:pretty">Nothing here is written back. What you are watching is a legitimate world grown from the same config and seed, but it is not the run in the logbook — do not quote its numbers as that run's.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;width:440px;font-size:13px;line-height:1.6;color:#A6B4BA;margin-left:28px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px">WHY THIS SHAPE</div>
+      <div style="text-wrap:pretty;margin-top:12px">The marker never leaves the strip, so provenance is always on screen and always in the same place. The evidence is a keypress away and disappears again. Reading the strip is free; reading the evidence is a decision.</div>
+      <div style="text-wrap:pretty;margin-top:12px">A cousin gets a diamond rather than a coloured dot because a diamond survives greyscale, colour blindness, a compressed screenshot, and a body drifting behind it. Faithful is dimmer than the abnormal states, so the normal case recedes and the two amber-equivalent states read as attention rather than failure: brighter ink, sharper fill, no hue, no red.</div>
+      <div style="text-wrap:pretty;margin-top:12px">The popover and the warnings share one anchor on purpose. They are mutually exclusive: pressing P hides the warnings and shows the popover, which restates the same fact with its evidence. Two panels stacked in the same corner would have been two ways of saying one thing.</div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;border-top:1px solid rgba(237,243,245,0.14);padding-top:14px;margin-top:56px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5">5.3 — Inspector states</div>
+    <div style="font-size:12px;color:#6B787E;margin-left:14px">nothing selected · selected and dead · selection unavailable · each shown in its own anchor frame at 1:1</div>
+  </div>
+
+  <div style="display:flex;flex-direction:row;align-items:flex-start;margin-top:20px">
+    <div style="position:relative;width:372px;height:260px;flex-shrink:0">
+      <div class="panel panel--inspector panel--inspector-empty" style="position:absolute;left:16px;bottom:88px;width:340px;background:rgba(5,9,11,0.82);border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:12px;display:flex;flex-direction:column">
+        <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">NOTHING SELECTED</div>
+        <div class="prose" style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#6B787E;line-height:1.5">Left-click a body in the water.</div>
+      </div>
+    </div>
+
+    <div style="position:relative;width:372px;height:320px;flex-shrink:0;margin-left:24px">
+      <div class="panel panel--inspector panel--inspector-dead" style="position:absolute;left:16px;bottom:88px;width:340px;background:rgba(5,9,11,0.82);border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:12px;display:flex;flex-direction:column">
+        <div class="inspector__head" style="display:flex;flex-direction:row;align-items:center;margin-bottom:10px">
+          <div class="struck" style="position:relative;display:flex;flex-direction:row;align-items:center">
+            <div class="inspector__id inspector__id--dead" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#6B787E">creature 4821</div>
+            <div class="struck__rule" style="position:absolute;left:0;right:0;top:50%;height:1px;background:#6B787E"></div>
+          </div>
+          <div class="badge badge--dead" style="border:1px solid rgba(237,243,245,0.30);border-radius:2px;padding:1px 5px;font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#EDF3F5;letter-spacing:0.8px;margin-left:14px">DIED t=25&#8201;040</div>
+        </div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">lived</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A6B4BA;width:104px;text-align:right;display:flex;justify-content:flex-end;align-items:baseline">3&#8201;120<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">s</div></div></div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">generation</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A6B4BA;width:104px;text-align:right;display:flex;justify-content:flex-end">12</div></div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">children</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A6B4BA;width:104px;text-align:right;display:flex;justify-content:flex-end">4</div></div>
+        <div class="section" style="display:flex;flex-direction:column;border-top:1px solid rgba(237,243,245,0.12);padding-top:8px;margin-top:10px">
+          <div class="prose" style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#6B787E;line-height:1.5;text-wrap:pretty">Last known values, held. The panel does not empty itself — you were looking at something.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:relative;width:372px;height:300px;flex-shrink:0;margin-left:24px">
+      <div class="panel panel--inspector panel--inspector-unverifiable" style="position:absolute;left:16px;bottom:88px;width:340px;background:rgba(5,9,11,0.82);border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:12px;display:flex;flex-direction:column">
+        <div class="status status--abnormal" style="display:flex;flex-direction:row;align-items:center">
+          <div class="marker marker--unverifiable" style="width:12px;height:12px;flex-shrink:0;border:1px solid #EDF3F5;display:flex"><div class="marker__quad" style="width:50%;height:50%;background:#EDF3F5"></div></div>
+          <div class="status__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#EDF3F5;margin-left:8px">SELECTION UNAVAILABLE</div>
+        </div>
+        <div class="section section--flush" style="display:flex;flex-direction:column;border-top:0;padding-top:0;margin-top:10px">
+          <div class="prose prose--bright" style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#A6B4BA;line-height:1.5;text-wrap:pretty">The creature-id map could not be checked against the recording, so a click can point at a body but cannot name it.</div>
+        </div>
+        <div class="inspector__note" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-top:10px">clicking still moves the camera · nothing identifying is shown</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;border-top:1px solid rgba(237,243,245,0.14);padding-top:14px;margin-top:56px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5">Component sheet</div>
+    <div style="font-size:12px;color:#6B787E;margin-left:14px">every named element below is drawn by its rule in theatre.uss · the swatches and captions are documentation and carry no classes</div>
+  </div>
+
+  <div style="display:flex;flex-direction:row;flex-wrap:wrap;margin-top:20px">
+
+    <div style="display:flex;flex-direction:column;width:300px;margin-right:40px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px">PALETTE</div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:12px"><div style="width:28px;height:18px;background:#EDF3F5;border-radius:2px"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A6B4BA;flex-grow:1;margin-left:10px">--ink-hi</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A">EDF3F5</div></div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:6px"><div style="width:28px;height:18px;background:#A6B4BA;border-radius:2px"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A6B4BA;flex-grow:1;margin-left:10px">--ink</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A">A6B4BA</div></div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:6px"><div style="width:28px;height:18px;background:#6B787E;border-radius:2px"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A6B4BA;flex-grow:1;margin-left:10px">--ink-lo</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A">6B787E</div></div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:6px"><div style="width:28px;height:18px;background:#48545A;border-radius:2px"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A6B4BA;flex-grow:1;margin-left:10px">--ink-dim</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A">48545A</div></div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:6px"><div style="width:28px;height:18px;background:rgba(5,9,11,0.92);border:1px solid rgba(237,243,245,0.12);border-radius:2px"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A6B4BA;flex-grow:1;margin-left:10px">--panel-deep</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A">05090B 92%</div></div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:6px"><div style="width:28px;height:18px;background:#FF4A2B;border-radius:2px"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#EDF3F5;flex-grow:1;margin-left:10px">--sig-alarm</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A">FF4A2B</div></div>
+      <div style="font-size:11px;color:#6B787E;line-height:1.5;text-wrap:pretty;margin-top:12px">The one hue, and only ever a background plate behind near-black text. It appears on a broken invariant and nowhere else. The body colours are absent from the chrome by rule.</div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:8px">
+        <div style="width:44px;height:14px;background:#57B85C;border-radius:2px"></div>
+        <div style="width:44px;height:14px;background:#E68C38;border-radius:2px;margin-left:6px"></div>
+        <div style="width:44px;height:14px;background:#B8BDC7;border-radius:2px;margin-left:6px"></div>
+        <div style="width:44px;height:14px;background:#F259B2;border-radius:2px;margin-left:6px"></div>
+        <div style="font-size:10px;color:#48545A;margin-left:8px">reserved for bodies</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;width:340px;margin-right:40px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px">TYPE</div>
+      <div style="display:flex;flex-direction:row;align-items:baseline;margin-top:12px"><div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#EDF3F5">t 2&#8201;400.0 s</div><div style="font-size:11px;color:#48545A;margin-left:10px">--t-clock 20 · mono</div></div>
+      <div style="display:flex;flex-direction:row;align-items:baseline;margin-top:10px"><div style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:#EDF3F5">1&#8201;842</div><div style="font-size:11px;color:#48545A;margin-left:10px">--t-xl 22 · mono semibold</div></div>
+      <div style="display:flex;flex-direction:row;align-items:baseline;margin-top:10px"><div style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5">r37-s1</div><div style="font-size:11px;color:#48545A;margin-left:10px">--t-lg 16 · mono semibold</div></div>
+      <div style="display:flex;flex-direction:row;align-items:baseline;margin-top:10px"><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5">0.0000 %</div><div style="font-size:11px;color:#48545A;margin-left:10px">--t-md 13 · mono</div></div>
+      <div style="display:flex;flex-direction:row;align-items:baseline;margin-top:10px"><div style="font-size:11px;color:#6B787E">photosynthetic</div><div style="font-size:11px;color:#48545A;margin-left:10px">--t-sm 11 · sans</div></div>
+      <div style="font-size:10px;color:#48545A;letter-spacing:1.4px;margin-top:10px">INVARIANTS · --t-micro 10 · sans, tracked</div>
+      <div style="font-size:11px;color:#6B787E;line-height:1.5;text-wrap:pretty;margin-top:12px">IBM Plex Mono for every number, identifier and hash — true tabular figures, a slashed zero, unmistakable 1/l/I. IBM Plex Sans for labels and prose. Both SIL OFL. Four imported FontAssets: mono regular, mono semibold, sans regular, and sans regular again baked at 1.5 line spacing for <span style="font-family:'IBM Plex Mono',monospace;color:#A6B4BA">.prose</span>, because USS has no line-height. Weight is an asset, not a property: semibold appears on four elements only.</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;width:300px;margin-right:40px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px">MARKERS · .marker--*</div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:12px"><div class="marker marker--faithful" style="width:12px;height:12px;flex-shrink:0;border:1px solid #6B787E;border-radius:6px"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A6B4BA;margin-left:12px">--faithful</div></div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:10px"><div class="marker marker--unverified" style="width:12px;height:12px;flex-shrink:0;border:1px solid #EDF3F5;border-radius:6px;overflow:hidden;display:flex;flex-direction:row"><div class="marker__half" style="width:50%;height:100%;background:#EDF3F5"></div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A6B4BA;margin-left:12px">--unverified</div></div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:10px"><div class="marker marker--cousin" style="width:12px;height:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center"><div class="marker__diamond" style="width:9px;height:9px;border:1px solid #EDF3F5;background:#48545A;transform:rotate(45deg)"></div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A6B4BA;margin-left:12px">--cousin</div></div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:10px"><div class="marker marker--diverged" style="width:12px;height:12px;flex-shrink:0;background:#EDF3F5;display:flex;align-items:center;justify-content:center"><div class="marker__bar" style="width:100%;height:2px;background:#05090B"></div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A6B4BA;margin-left:12px">--diverged</div></div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:10px"><div class="marker marker--unverifiable" style="width:12px;height:12px;flex-shrink:0;border:1px solid #EDF3F5;display:flex"><div class="marker__quad" style="width:50%;height:50%;background:#EDF3F5"></div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A6B4BA;margin-left:12px">--unverifiable</div></div>
+      <div style="font-size:11px;color:#6B787E;line-height:1.5;text-wrap:pretty;margin-top:12px">All five are bordered boxes — no icon asset, no vector, nothing the stylesheet cannot draw. Each is distinguishable at 12 px in greyscale.</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px;margin-top:16px">SPACING · follower owns the margin</div>
+      <div style="display:flex;flex-direction:row;align-items:flex-end;margin-top:10px">
+        <div style="width:2px;height:2px;background:#6B787E"></div><div style="width:4px;height:4px;background:#6B787E;margin-left:8px"></div><div style="width:8px;height:8px;background:#6B787E;margin-left:8px"></div><div style="width:12px;height:12px;background:#6B787E;margin-left:8px"></div><div style="width:16px;height:16px;background:#6B787E;margin-left:8px"></div><div style="width:24px;height:24px;background:#6B787E;margin-left:8px"></div><div style="width:32px;height:32px;background:#6B787E;margin-left:8px"></div>
+        <div style="font-size:10px;color:#48545A;margin-left:8px">2 4 8 12 16 24 32</div>
+      </div>
+      <div style="font-size:11px;color:#6B787E;line-height:1.5;margin-top:12px;text-wrap:pretty">No gap anywhere. Margin-left in a row, margin-top in a column, always on the following sibling; first children carry <span style="font-family:'IBM Plex Mono',monospace;color:#A6B4BA">.lead</span> where their own class would otherwise add one. Chosen because every conditional element in this design is a trailing one.</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;width:340px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px">TABULAR NUMBER · .numeric</div>
+      <div style="display:flex;flex-direction:column;border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:8px;margin-top:12px">
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">alive</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">40</div></div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">alive</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">576</div></div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">alive</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">5&#8201;842</div></div>
+        <div class="census-row field field--cumulative" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">births</div><div class="field__value numeric numeric--wide" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A6B4BA;width:132px;text-align:right;display:flex;justify-content:flex-end">412&#8201;073</div></div>
+      </div>
+      <div style="font-size:11px;color:#6B787E;line-height:1.5;text-wrap:pretty;margin-top:12px">Fixed 104 px column, right-aligned, mono; <span style="font-family:'IBM Plex Mono',monospace;color:#A6B4BA">.numeric--wide</span> at 132 for six-digit cumulatives. Quantities and times group every three digits with a thin space from 1 000 up; identifiers — creature 4821, seed 1, sample 251 — never group. The thin space says "a magnitude you may compare"; its absence says "a name".</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px;margin-top:16px">KEY HINT · .keyhint</div>
+      <div style="display:flex;flex-direction:row;margin-top:10px">
+        <div class="keyhint lead" style="display:flex;flex-direction:row;align-items:center;margin-left:0"><div class="keyhint__key keyhint__key--wide" style="min-width:36px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">Space</div><div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">pause</div></div>
+        <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px"><div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">K</div><div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">seek</div></div>
+        <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px"><div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">H</div><div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">hide</div></div>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px;margin-top:16px">CHIP · PLATE · GLYPH</div>
+      <div style="display:flex;flex-direction:row;margin-top:10px">
+        <div class="filter-chip filter-chip--on lead" style="border:1px solid #EDF3F5;background:#EDF3F5;color:#05090B;border-radius:2px;padding:2px 7px;font-family:'IBM Plex Sans',sans-serif;font-size:11px;margin-left:0">checked</div>
+        <div class="filter-chip" style="border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:2px 7px;font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#6B787E;margin-left:6px">default</div>
+        <div class="filter-chip filter-chip--off" style="border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:2px 7px;font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:6px">off</div>
+      </div>
+      <div style="display:flex;flex-direction:row;align-items:center;margin-top:10px">
+        <div class="plate plate--quiet lead" style="display:flex;flex-direction:row;align-items:center;background:#EDF3F5;padding:1px 8px;border-radius:2px;margin-left:0">
+          <div class="plate__text" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#05090B;letter-spacing:1.2px;margin-left:0">SEEKING</div>
+        </div>
+        <div style="width:10px"></div>
+        <div class="plate" style="display:flex;flex-direction:row;align-items:center;background:#FF4A2B;padding:3px 8px;border-radius:2px">
+          <div class="plate__mark" style="width:10px;height:10px;background:#05090B"></div>
+          <div class="plate__text" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:#05090B;letter-spacing:0.8px;margin-left:8px">AUDIT</div>
+        </div>
+        <div style="width:14px"></div>
+        <div class="glyph glyph--play" style="width:12px;height:12px;flex-shrink:0;border-left:12px solid #EDF3F5;border-top:6px solid transparent;border-bottom:6px solid transparent;box-sizing:border-box"></div>
+        <div style="width:14px"></div>
+        <div class="glyph glyph--pause" style="width:12px;height:12px;flex-shrink:0;display:flex;flex-direction:row;justify-content:space-between"><div class="glyph__bar" style="width:3px;height:12px;background:#EDF3F5"></div><div class="glyph__bar" style="width:3px;height:12px;background:#EDF3F5"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;border-top:1px solid rgba(237,243,245,0.14);padding-top:14px;margin-top:56px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5">Answers</div>
+    <div style="font-size:12px;color:#6B787E;margin-left:14px">the six decisions pass 2 asked for · full text in theatre.uss</div>
+  </div>
+
+  <div style="display:flex;flex-direction:row;flex-wrap:wrap;margin-top:20px">
+    <div style="width:520px;display:flex;flex-direction:column;font-size:13px;line-height:1.6;margin-right:40px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px">RESOLUTION · one stylesheet, chrome fixed in pixels</div>
+      <div style="text-wrap:pretty;margin-top:10px">PanelSettings at Constant Pixel Size, scale 1. The type scale never changes at any resolution. One density step, written from C# as three custom-property overrides at panel init and on resize — not a second stylesheet: at panel width ≥ 2240, <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">--strip-h</span> 40→44, <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">--panel-w</span> 280→320, <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">--pad-edge</span> 16→20. 2240 rather than 2560 so an unmaximised 2560 window still gets it. Dropping the step entirely is acceptable — the 1920 chrome is correct at 2560, just tighter.</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px;margin-top:20px">SHARED ANCHOR · the popover replaces the warnings</div>
+      <div style="text-wrap:pretty;margin-top:10px">Both stay at <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">--panel-top</span> / <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">--pad-edge</span> and are mutually exclusive. P hides the warnings and shows the popover; Esc or P again reverses it. The popover restates everything a warning says and adds the recorded values, so stacking them would be two ways of saying one thing. Declaration order is six, not four: census, inspector, warnings, popover, strip, bar.</div>
+    </div>
+    <div style="width:520px;display:flex;flex-direction:column;font-size:13px;line-height:1.6">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px">FOUR PROPERTIES USS LACKS · three resolved, one yours</div>
+      <div style="text-wrap:pretty;margin-top:10px"><span style="color:#EDF3F5">line-height</span> becomes a second Plex Sans FontAsset baked at 1.5 line spacing, used only by <span style="font-family:'IBM Plex Mono',monospace">.prose</span>. <span style="color:#EDF3F5">font-weight</span> becomes the semibold mono asset on four elements: <span style="font-family:'IBM Plex Mono',monospace">.ident__arm</span>, <span style="font-family:'IBM Plex Mono',monospace">.inspector__id</span>, <span style="font-family:'IBM Plex Mono',monospace">.plate__text</span>, <span style="font-family:'IBM Plex Mono',monospace">.census-row--hero .field__value</span>; the other eleven uses were incidental and are gone. <span style="color:#EDF3F5">line-through</span> becomes <span style="font-family:'IBM Plex Mono',monospace">.struck</span> + <span style="font-family:'IBM Plex Mono',monospace">.struck__rule</span>, a 1 px absolute child. <span style="color:#EDF3F5">text-align</span> is notation for <span style="font-family:'IBM Plex Mono',monospace">-unity-text-align</span>. None of these needs an exception.</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#48545A;letter-spacing:1.4px;margin-top:20px">GLYPHS · confirmed, minus one</div>
+      <div style="text-wrap:pretty;margin-top:10px">The set is deliberate. <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">·</span> carries the identity line and is load-bearing; <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">−</span> U+2212 is a true minus and only ever a depth; <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">≠</span> only ever a cousin badge. <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">✕</span> U+2715 is gone — the popover's mismatch mark is now <span style="font-family:'IBM Plex Mono',monospace;color:#EDF3F5">×</span> U+00D7, already in the set. Add U+2009 THIN SPACE: it is the thousands separator and appears in every grouped number.</div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;border-top:1px solid rgba(237,243,245,0.14);padding-top:14px;margin-top:56px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5">2560 × 1440</div>
+    <div style="font-size:12px;color:#6B787E;margin-left:14px">the same stylesheet with three tokens stepped from C# · type scale unchanged · the water gains the area, not the chrome</div>
+  </div>
+
+  <div style="position:relative;width:2560px;height:1440px;overflow:hidden;background-color:#04070A;background-image:url('assets/bg-crowd.png');background-size:cover;background-position:center;flex-shrink:0;margin-top:20px">
+    <div class="panel panel--census" style="position:absolute;top:56px;right:20px;width:320px;background:rgba(5,9,11,0.82);border:1px solid rgba(237,243,245,0.12);border-radius:2px;padding:12px;display:flex;flex-direction:column">
+      <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">NOW</div>
+      <div class="census-row census-row--hero field" style="display:flex;flex-direction:row;align-items:baseline;height:34px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">alive</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">1&#8201;842</div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">jointed</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">612</div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">absorptive</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">118</div></div>
+      <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">photosynthetic</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">1&#8201;640</div></div>
+      <div class="section" style="display:flex;flex-direction:column;border-top:1px solid rgba(237,243,245,0.12);padding-top:8px;margin-top:10px">
+        <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">Σ SINCE t=0</div>
+        <div class="census-row field field--cumulative" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">births</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A6B4BA;width:104px;text-align:right;display:flex;justify-content:flex-end">9&#8201;204</div></div>
+        <div class="census-row field field--cumulative" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">deaths</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A6B4BA;width:104px;text-align:right;display:flex;justify-content:flex-end">7&#8201;362</div></div>
+      </div>
+      <div class="section" style="display:flex;flex-direction:column;border-top:1px solid rgba(237,243,245,0.12);padding-top:8px;margin-top:10px">
+        <div class="section__title" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:1.4px;margin-bottom:8px">INVARIANTS</div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">audit</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end;align-items:baseline">0.0000<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">%</div></div></div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">matter here</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end">0.63</div></div>
+        <div class="census-row field" style="display:flex;flex-direction:row;align-items:center;height:22px"><div class="field__label" style="font-size:11px;color:#6B787E;flex-grow:1">mean depth</div><div class="field__value numeric" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDF3F5;width:104px;text-align:right;display:flex;justify-content:flex-end;align-items:baseline">−9.8<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">m</div></div></div>
+      </div>
+    </div>
+
+    <div class="panel panel--strip" style="position:absolute;top:0;left:0;right:0;height:44px;display:flex;flex-direction:row;align-items:center;padding:0 20px;background:rgba(5,9,11,0.92);border:0;border-bottom:1px solid rgba(237,243,245,0.12);border-radius:0">
+      <div class="status" style="display:flex;flex-direction:row;align-items:center">
+        <div class="marker marker--faithful" style="width:12px;height:12px;flex-shrink:0;border:1px solid #6B787E;border-radius:6px"></div>
+        <div class="status__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#A6B4BA;margin-left:8px">FAITHFUL</div>
+      </div>
+      <div class="rule-v" style="width:1px;height:16px;background:rgba(237,243,245,0.12);margin-left:14px;margin-right:14px"></div>
+      <div class="ident" style="display:flex;flex-direction:row;align-items:flex-end">
+        <div class="ident__arm" style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;color:#EDF3F5;letter-spacing:0.4px">r37-s1</div>
+        <div class="ident__meta" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-left:14px">seed 1 · dt 0.01 · 96d4bce667 · physics jobs 0</div>
+      </div>
+      <div style="flex-grow:1"></div>
+      <div class="pace is-per-frame" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B787E;margin-right:16px">1.00× requested · 0.70× actual</div>
+      <div class="clock is-per-frame" style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#EDF3F5;letter-spacing:0.5px;display:flex;flex-direction:row;align-items:flex-end">t 2&#8201;400.0<div class="unit" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#48545A;margin-left:3px">s</div></div>
+    </div>
+
+    <div class="panel panel--bar" style="position:absolute;left:0;right:0;bottom:0;height:68px;display:flex;flex-direction:row;align-items:center;background:rgba(5,9,11,0.92);border:0;border-top:1px solid rgba(237,243,245,0.12);border-radius:0;padding:12px 20px">
+      <div class="transport" style="display:flex;flex-direction:row;align-items:center;width:196px;flex-shrink:0">
+        <div class="transport__state" style="display:flex;flex-direction:row;align-items:center">
+          <div class="glyph glyph--play" style="width:12px;height:12px;flex-shrink:0;border-left:12px solid #EDF3F5;border-top:6px solid transparent;border-bottom:6px solid transparent;box-sizing:border-box"></div>
+          <div class="transport__word" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:1.2px;color:#EDF3F5;margin-left:8px">PLAYING</div>
+        </div>
+      </div>
+      <div class="timeline" style="display:flex;flex-direction:column;flex-grow:1;margin-left:20px">
+        <div class="timeline__track" style="display:flex;flex-direction:row;height:12px;align-items:stretch;position:relative">
+          <div class="timeline__elapsed" style="flex:8 0 0;background:#6B787E"></div>
+          <div class="timeline__head is-per-frame" style="width:2px;flex-shrink:0;background:#EDF3F5"></div>
+          <div class="timeline__recorded" style="flex:73 0 0;background:rgba(237,243,245,0.16)"></div>
+          <div class="timeline__beyond" style="flex:19 0 0;display:flex;flex-direction:row;align-items:center;overflow:hidden">
+            <div class="timeline__dash lead" style="width:4px;height:2px;background:#48545A;margin-left:0"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div><div class="timeline__dash" style="width:4px;height:2px;background:#48545A;margin-left:3px"></div>
+          </div>
+          <div class="timeline__mark timeline__mark--record-end" style="position:absolute;width:1px;background:rgba(237,243,245,0.30);left:81%;top:-8px;height:28px"></div>
+        </div>
+        <div class="timeline__axis" style="display:flex;flex-direction:row;position:relative;height:14px;margin-top:8px">
+          <div class="timeline__tick" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#48545A">0</div>
+          <div class="timeline__tick timeline__tick--anchored" style="position:absolute;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;left:81%;transform:translateX(-50%)">record ends 24&#8201;300 s</div>
+          <div style="flex-grow:1"></div>
+          <div class="timeline__tick" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#48545A">30&#8201;000 s</div>
+        </div>
+      </div>
+      <div class="keys" style="display:flex;flex-direction:row;align-items:center;flex-shrink:0;margin-left:20px">
+        <div class="keyhint lead" style="display:flex;flex-direction:row;align-items:center;margin-left:0"><div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">K</div><div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">seek</div></div>
+        <div class="keyhint" style="display:flex;flex-direction:row;align-items:center;margin-left:14px"><div class="keyhint__key" style="min-width:18px;height:16px;border:1px solid rgba(237,243,245,0.30);border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A6B4BA;text-align:center;padding:0 4px;display:flex;align-items:center;justify-content:center">H</div><div class="keyhint__label" style="font-family:'IBM Plex Sans',sans-serif;font-size:10px;color:#48545A;letter-spacing:0.6px;margin-left:5px">hide</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

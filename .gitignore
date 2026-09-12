@@ -165,3 +165,8 @@ scratch/
 # unity/ or regenerated, so tracking them would duplicate every script in the repository.
 unity-w*/
 scripts/tests/positions/fixtures/
+
+# Claude Design handoff bundles: the extracted project lives in design/canvas/
+design/*.zip
+# Claude Design canvas runtime, not this project's work (see design/canvas/README.md)
+design/canvas/support.js

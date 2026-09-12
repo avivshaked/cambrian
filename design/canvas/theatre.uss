@@ -1,0 +1,740 @@
+/* ============================================================
+   theatre.uss — the deliverable
+   Pass 2. Reconciled against Theatre UI.dc.html on 2026-09-12.
+
+   This stylesheet can build every picture in the mockup. Where the
+   two documents disagreed, THE MOCKUP WON and its value is recorded
+   here (see SETTLED VALUES). The mockup's inline styles are now a
+   character-for-character mirror of the rules below; the class
+   attribute on each element names the rule that draws it.
+
+   Flexbox only. No gap, no grid, no float, no z-index, no shadows,
+   no blurs, no gradients, no pseudo-elements, no media queries.
+
+   Read the four notes at the bottom before porting:
+     NOTATION · SETTLED VALUES · SPACING · EXCEPTIONS
+     RESOLUTION · DECLARATION ORDER · GLYPH SET · NUMBERS
+   ============================================================ */
+
+:root {
+    /* --- palette -------------------------------------------------
+       Status carries NO hue except --sig-alarm, and --sig-alarm is
+       only ever a background plate behind near-black text, never
+       text colour. One hue total means no two hues can be confused.
+       Body colours (57B85C green, E68C38 orange, B8BDC7 grey,
+       F259B2 pink) are absent from the chrome by rule, so nothing
+       in the UI can be mistaken for biology. ------------------- */
+    --ink-hi:      rgb(237, 243, 245);
+    --ink:         rgb(166, 180, 186);
+    --ink-lo:      rgb(107, 120, 126);
+    --ink-dim:     rgb(72, 84, 90);
+
+    --panel:       rgba(5, 9, 11, 0.82);
+    --panel-deep:  rgba(5, 9, 11, 0.92);
+    --plate:       rgb(237, 243, 245);   /* inverted plate ground */
+    --plate-ink:   rgb(5, 9, 11);        /* text on an inverted plate */
+
+    --rule:        rgba(237, 243, 245, 0.12);
+    --rule-strong: rgba(237, 243, 245, 0.30);
+    --track:       rgba(237, 243, 245, 0.16);
+    --row-hover:   rgba(237, 243, 245, 0.05);
+
+    --sig-alarm:   rgb(255, 74, 43);     /* plate only. never text. */
+
+    /* --- type ----------------------------------------------------
+       IBM Plex Mono for every number, identifier and hash.
+       IBM Plex Sans for labels and prose. Both SIL OFL.
+       Four imported FontAssets, SDF enabled. Weight is an asset,
+       not a property — see EXCEPTIONS 3.
+       --font-sans-prose is the same face as --font-sans baked with
+       line spacing 1.5, because USS has no line-height. It is used
+       by .prose and nowhere else. --------------------------------- */
+    --font-mono:       resource("Fonts/IBMPlexMono-Regular SDF");
+    --font-mono-b:     resource("Fonts/IBMPlexMono-SemiBold SDF");
+    --font-sans:       resource("Fonts/IBMPlexSans-Regular SDF");
+    --font-sans-prose: resource("Fonts/IBMPlexSans-Regular Prose SDF");
+
+    --t-micro: 10px;   /* key hints, axis ticks, section titles */
+    --t-sm:    11px;   /* field labels, status words */
+    --t-md:    13px;   /* values, body */
+    --t-lg:    16px;   /* arm name, creature id */
+    --t-xl:    22px;   /* the alive count */
+    --t-clock: 20px;   /* the clock. 20, not 28 — see SETTLED VALUES */
+
+    /* --- spacing -------------------------------------------------- */
+    --s1: 2px;  --s2: 4px;  --s3: 8px;  --s4: 12px;
+    --s5: 16px; --s6: 24px; --s7: 32px;
+
+    /* --- geometry, settled against the mockup at 1920 ------------- */
+    --radius:     2px;     /* everything. the UI is not soft. */
+    --strip-h:    40px;
+    --bar-h:      68px;
+    --panel-w:    280px;   /* census */
+    --inspector-w:340px;
+    --warnings-w: 430px;
+    --popover-w:  460px;
+    --numeric-w:  104px;
+    --pad-edge:   16px;    /* strip, bar and panel inset from screen */
+    --census-top: 56px;
+    --panel-top:  52px;    /* warnings and popover share this anchor */
+}
+
+/* ---------- spacing convention -------------------------------
+   Spacing is owned by the FOLLOWING sibling: margin-left in a row,
+   margin-top in a column. USS has no :first-child, so a first child
+   whose own class carries a margin is given .lead, which zeroes it.
+   See SPACING at the bottom for why this direction. ------------- */
+
+.lead { margin-left: 0; margin-top: 0; }
+
+/* ---------- surfaces ------------------------------------------ */
+
+.panel {
+    background-color: var(--panel);
+    border-width: 1px;
+    border-color: var(--rule);
+    border-radius: var(--radius);
+    padding: var(--s4);
+    flex-direction: column;
+}
+
+.panel--strip {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: var(--strip-h);
+    flex-direction: row;
+    align-items: center;
+    padding-top: 0; padding-bottom: 0;
+    padding-left: var(--pad-edge); padding-right: var(--pad-edge);
+    background-color: var(--panel-deep);
+    border-width: 0;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rule);
+    border-radius: 0;
+}
+/* A broken invariant is the only loud state in the design. The
+   strip keeps its ground and gains a 2px rule; the plate does the
+   shouting. */
+.panel--strip-alarm {
+    border-bottom-width: 2px;
+    border-bottom-color: var(--sig-alarm);
+}
+
+.panel--bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: var(--bar-h);
+    flex-direction: row;
+    align-items: center;
+    background-color: var(--panel-deep);
+    border-width: 0;
+    border-top-width: 1px;
+    border-top-color: var(--rule);
+    border-radius: 0;
+    padding: var(--s4) var(--pad-edge);
+}
+
+.panel--census {
+    position: absolute;
+    top: var(--census-top); right: var(--pad-edge);
+    width: var(--panel-w);
+}
+/* No visual change. Present so the alarm census is addressable from
+   C# and so the diverged row has a parent to hang off. */
+.panel--census-alarm { }
+
+.panel--inspector {
+    position: absolute;
+    left: var(--pad-edge); bottom: 88px;
+    width: var(--inspector-w);
+}
+.panel--inspector-empty { }          /* copy differs, box does not */
+.panel--inspector-dead { }
+.panel--inspector-unverifiable { }
+
+/* Grows DOWNWARD from the strip, on the left, over open water, so
+   the census never moves when a warning appears or clears. */
+.panel--warnings {
+    position: absolute;
+    top: var(--panel-top); left: var(--pad-edge);
+    width: var(--warnings-w);
+    padding: 10px var(--s4);
+}
+
+/* Shares the warnings anchor deliberately — see DECLARATION ORDER.
+   P shows the popover and HIDES the warnings; they are mutually
+   exclusive because the popover's content is a superset of the
+   warning's. Never both. */
+.panel--popover {
+    position: absolute;
+    top: var(--panel-top); left: var(--pad-edge);
+    width: var(--popover-w);
+    background-color: var(--panel-deep);
+    border-color: var(--rule-strong);
+    padding: 14px;
+}
+
+.section {
+    flex-direction: column;
+    border-top-width: 1px;
+    border-top-color: var(--rule);
+    padding-top: var(--s3);
+    margin-top: 10px;
+}
+.section--flush  { border-top-width: 0; padding-top: 0; }
+.section__title {
+    -unity-font-definition: var(--font-sans);
+    font-size: var(--t-micro);
+    color: var(--ink-dim);
+    letter-spacing: 1.4px;
+    margin-bottom: var(--s3);
+}
+.rule-v {
+    width: 1px; height: var(--s5);
+    background-color: var(--rule);
+    margin-left: 14px; margin-right: 14px;
+}
+
+/* ---------- identity, clock, pace ----------------------------- */
+
+.ident { flex-direction: row; align-items: flex-end; }
+.ident__arm {
+    -unity-font-definition: var(--font-mono-b);
+    font-size: var(--t-lg);
+    color: var(--ink-hi);
+    letter-spacing: 0.4px;
+}
+.ident__meta {
+    -unity-font-definition: var(--font-mono);
+    font-size: var(--t-sm);
+    color: var(--ink-lo);
+    margin-left: 14px;
+}
+.clock {                              /* .is-per-frame */
+    -unity-font-definition: var(--font-mono);
+    font-size: var(--t-clock);
+    color: var(--ink-hi);
+    letter-spacing: 0.5px;
+    flex-direction: row;
+    align-items: flex-end;
+}
+.pace {                               /* .is-per-frame */
+    -unity-font-definition: var(--font-mono);
+    font-size: var(--t-sm);
+    color: var(--ink-lo);
+    margin-right: var(--s5);
+}
+.pace--paused { color: var(--ink-hi); letter-spacing: 1px; }
+
+/* ---------- label / value ------------------------------------- */
+
+.field        { flex-direction: row; align-items: center; height: 22px; }
+.field__label { -unity-font-definition: var(--font-sans);
+                font-size: var(--t-sm); color: var(--ink-lo); flex-grow: 1; }
+.field__value { -unity-font-definition: var(--font-mono);
+                font-size: var(--t-md); color: var(--ink-hi);
+                flex-direction: row; align-items: baseline; }
+/* Fixed column. Four orders of magnitude pass through it without a
+   single element moving. */
+.numeric      { -unity-text-align: middle-right;
+                width: var(--numeric-w); justify-content: flex-end; }
+.numeric--wide{ width: 132px; }
+.unit         { -unity-font-definition: var(--font-sans);
+                font-size: var(--t-sm); color: var(--ink-dim);
+                margin-left: 3px; }
+/* Cumulative reads quieter than instantaneous; the Σ in the section
+   title does the rest. */
+.field--cumulative .field__value { color: var(--ink); }
+
+/* ---------- census rows --------------------------------------- */
+
+.census-row       { flex-direction: row; align-items: center; height: 22px; }
+.census-row:hover { background-color: var(--row-hover); }
+.census-row--hero { height: 34px; align-items: baseline; }
+.census-row--hero .field__value {
+    -unity-font-definition: var(--font-mono-b);
+    font-size: var(--t-xl);
+}
+/* Added to and removed from the tree, never hidden — a zero costs
+   nothing. It is the last child of NOW, so under the following-
+   sibling rule it brings its own 4px and disturbs nothing. */
+.census-row--diverged { margin-top: var(--s2); }
+.census-row--diverged .field__label { color: var(--ink-hi); }
+.census-row--diverged .field__value {
+    background-color: var(--sig-alarm);
+    color: var(--plate-ink);
+    border-radius: var(--radius);
+    padding-left: var(--s2); padding-right: var(--s2);
+}
+.census__cadence {
+    -unity-font-definition: var(--font-sans);
+    font-size: var(--t-micro); color: var(--ink-dim);
+    letter-spacing: 0.5px; margin-top: 10px;
+}
+
+/* ---------- status markers ------------------------------------
+   12×12. Shape and fill carry the state; hue carries nothing.
+   All five are bordered boxes — no icon asset, no vector.
+   Each is distinguishable at 12px in greyscale. -------------- */
+
+.marker { width: 12px; height: 12px; flex-shrink: 0; }
+
+.marker--faithful     { border-width: 1px; border-color: var(--ink-lo);
+                        border-radius: 6px; }
+.marker--unverified   { border-width: 1px; border-color: var(--ink-hi);
+                        border-radius: 6px; overflow: hidden;
+                        flex-direction: row; }
+.marker__half         { width: 50%; height: 100%;
+                        background-color: var(--ink-hi); }
+/* 9px box inside a 12px slot: rotation happens after layout, so the
+   diamond cannot clip its neighbours. */
+.marker--cousin       { align-items: center; justify-content: center; }
+.marker__diamond      { width: 9px; height: 9px;
+                        border-width: 1px; border-color: var(--ink-hi);
+                        background-color: var(--ink-dim);
+                        rotate: 45deg; }
+.marker--diverged     { background-color: var(--ink-hi);
+                        align-items: center; justify-content: center; }
+.marker__bar          { width: 100%; height: 2px;
+                        background-color: var(--plate-ink); }
+.marker--unverifiable { border-width: 1px; border-color: var(--ink-hi); }
+.marker__quad         { width: 50%; height: 50%;
+                        background-color: var(--ink-hi); }
+.marker--sm           { width: 10px; height: 10px; margin-top: 3px; }
+
+.status        { flex-direction: row; align-items: center; }
+.status__word  { -unity-font-definition: var(--font-sans);
+                 font-size: var(--t-sm); letter-spacing: 1.2px;
+                 color: var(--ink); margin-left: var(--s3); }
+.status--abnormal .status__word { color: var(--ink-hi); }
+
+/* ---------- plates -------------------------------------------- */
+
+.plate       { flex-direction: row; align-items: center;
+               background-color: var(--sig-alarm);
+               padding: 3px var(--s3);
+               border-radius: var(--radius); }
+.plate__mark { width: 10px; height: 10px;
+               background-color: var(--plate-ink); }
+.plate__text { -unity-font-definition: var(--font-mono-b);
+               font-size: var(--t-md); color: var(--plate-ink);
+               letter-spacing: 0.8px; margin-left: var(--s3); }
+/* Attention, not alarm: hue-free inverted plate. Used by SEEKING,
+   which is a minutes-long modal state and must not read as normal
+   play, but is not a failure. */
+.plate--quiet { background-color: var(--plate); padding: 1px var(--s3);
+                margin-left: 18px; }
+.plate--quiet .plate__text { -unity-font-definition: var(--font-sans);
+               font-size: var(--t-sm); letter-spacing: 1.2px;
+               margin-left: 0; }
+
+/* ---------- badges, key hints --------------------------------- */
+
+.badge          { border-width: 1px; border-color: var(--rule-strong);
+                  border-radius: var(--radius);
+                  padding: 1px 5px;
+                  -unity-font-definition: var(--font-sans);
+                  font-size: var(--t-micro); color: var(--ink-lo);
+                  letter-spacing: 0.8px; margin-left: 14px; }
+/* Zero to two of these trail the cousin strip. Following-sibling
+   spacing means the first one owns the gap to the run id and the
+   second owns the gap to the first: removing either leaves the rest
+   correctly spaced. */
+.badge--differs { -unity-font-definition: var(--font-mono);
+                  border-color: var(--ink-hi); color: var(--ink-hi);
+                  letter-spacing: 0; margin-left: 6px; }
+.badge--dead    { color: var(--ink-hi); }
+
+.keyhint        { flex-direction: row; align-items: center;
+                  margin-left: 14px; }
+.keyhint__key   { min-width: 18px; height: var(--s5);
+                  border-width: 1px; border-color: var(--rule-strong);
+                  border-radius: var(--radius);
+                  -unity-font-definition: var(--font-mono);
+                  font-size: var(--t-micro); color: var(--ink);
+                  -unity-text-align: middle-center;
+                  padding-left: var(--s2); padding-right: var(--s2); }
+.keyhint__key--wide { min-width: 36px; }
+.keyhint__label { -unity-font-definition: var(--font-sans);
+                  font-size: var(--t-micro); color: var(--ink-dim);
+                  letter-spacing: 0.6px; margin-left: 5px; }
+.keys           { flex-direction: row; align-items: center;
+                  flex-shrink: 0; }
+
+/* ---------- transport ----------------------------------------- */
+
+.transport        { flex-direction: row; align-items: center;
+                    width: 196px; flex-shrink: 0; }
+.transport__state { flex-direction: row; align-items: center; }
+.transport__word  { -unity-font-definition: var(--font-sans);
+                    font-size: var(--t-sm); letter-spacing: 1.2px;
+                    color: var(--ink-hi); margin-left: var(--s3); }
+/* See EXCEPTIONS 5: the glyph geometry is yours to resolve. The
+   design asks only for a 12px-tall play triangle and a two-bar
+   pause at the same optical weight. */
+.glyph            { width: 12px; height: 12px; flex-shrink: 0; }
+.glyph--play      { }
+.glyph--pause     { flex-direction: row; justify-content: space-between; }
+.glyph__bar       { width: 3px; height: 12px;
+                    background-color: var(--ink-hi); }
+
+/* ---------- timeline ------------------------------------------ */
+
+.timeline            { flex-direction: column; flex-grow: 1;
+                       margin-left: 20px; }
+.timeline__track     { flex-direction: row; height: 12px;
+                       align-items: stretch; position: relative; }
+.timeline__elapsed   { background-color: var(--ink-lo); }
+/* Elapsed, but past the last recorded sample: same bar, dimmer. */
+.timeline__elapsed--beyond { background-color: var(--ink-dim); }
+.timeline__recorded  { background-color: var(--track); }
+/* Unverified future. A dashed rule is not a USS border, so it is a
+   row of 4×2 children — cheap, and it ports exactly. */
+.timeline__beyond    { flex-direction: row; align-items: center;
+                       overflow: hidden; }
+.timeline__dash      { width: 4px; height: 2px;
+                       background-color: var(--ink-dim);
+                       margin-left: 3px; }
+.timeline__head      { width: 2px; flex-shrink: 0;
+                       background-color: var(--ink-hi); }
+.timeline__head--broken { width: 3px; background-color: var(--sig-alarm); }
+
+.timeline__mark            { position: absolute; width: 1px;
+                             background-color: var(--rule-strong); }
+.timeline__mark--peak      { top: -8px; height: var(--s3); }
+.timeline__mark--snapshot  { top: 14px; width: 3px; height: 3px;
+                             background-color: var(--ink-dim); }
+.timeline__mark--record-end{ top: -8px; height: 28px; }
+.timeline__mark--break     { top: -8px; height: 28px;
+                             background-color: var(--sig-alarm); }
+
+.timeline__axis      { flex-direction: row; position: relative;
+                       height: 14px; margin-top: var(--s3); }
+.timeline__tick      { -unity-font-definition: var(--font-mono);
+                       font-size: var(--t-micro); color: var(--ink-dim); }
+/* Anchored ticks sit under their mark. USS has no transform-based
+   centring shorthand that survives text measurement, so these are
+   positioned with an explicit left computed in C# from the mark's
+   resolved x minus half the label's resolved width. */
+.timeline__tick--anchored { position: absolute; color: var(--ink); }
+.timeline__tick--loud     { color: var(--ink-hi); }
+.timeline__legend    { flex-direction: column; width: 250px;
+                       flex-shrink: 0; margin-left: 20px; }
+.seek-note           { flex-direction: row; align-items: center; }
+.seek-note__text     { -unity-font-definition: var(--font-sans);
+                       font-size: var(--t-micro); color: var(--ink-lo);
+                       letter-spacing: 0.5px; margin-left: 6px; }
+.seek-note__text--dim{ color: var(--ink-dim); margin-left: 24px;
+                       margin-top: 3px; }
+
+/* The strip's own progress while seeking: 3px, full bleed, no
+   radius. Minutes long, so it gets geometry, not a line of text. */
+.seekbar             { flex-direction: row; height: 3px; flex-shrink: 0; }
+.timeline__seeking   { background-color: var(--ink-hi); }
+.seekbar__remain     { background-color: var(--track); }
+
+/* ---------- warnings ------------------------------------------ */
+
+.warning         { flex-direction: row; align-items: flex-start;
+                   margin-top: 6px; }
+.warning__body   { flex-direction: column; margin-left: var(--s3); }
+.warning__title  { -unity-font-definition: var(--font-sans);
+                   font-size: 12px; color: var(--ink-hi); }
+.warning__detail { -unity-font-definition: var(--font-mono);
+                   font-size: var(--t-sm); color: var(--ink-lo);
+                   margin-top: var(--s1); }
+
+/* ---------- provenance popover -------------------------------- */
+
+.prov-row           { flex-direction: row; align-items: center;
+                      height: 24px;
+                      border-top-width: 1px; border-top-color: var(--rule); }
+.prov-row__mark     { -unity-font-definition: var(--font-mono);
+                      font-size: 12px; color: var(--ink-hi); width: 14px; }
+.prov-row__mark--ok { color: var(--ink-lo); }
+.prov-row__label    { -unity-font-definition: var(--font-sans);
+                      font-size: var(--t-sm); color: var(--ink-lo);
+                      width: 110px; }
+.prov-row__value    { -unity-font-definition: var(--font-mono);
+                      font-size: 12px; color: var(--ink-hi); flex-grow: 1; }
+.prov-row__value--ok{ color: var(--ink); }
+.prov-row__recorded { -unity-font-definition: var(--font-mono);
+                      font-size: 12px; color: var(--ink-lo); }
+.prov-row__recorded--ok { color: var(--ink-dim); }
+
+/* ---------- inspector ----------------------------------------- */
+
+.inspector__head { flex-direction: row; align-items: center;
+                   margin-bottom: 10px; }
+.inspector__id   { -unity-font-definition: var(--font-mono-b);
+                   font-size: var(--t-lg); color: var(--ink-hi); }
+.inspector__id--dead { color: var(--ink-lo); }
+.guilds          { flex-direction: row; margin-top: 10px; }
+.inspector__note { -unity-font-definition: var(--font-mono);
+                   font-size: var(--t-sm); color: var(--ink-lo);
+                   margin-top: 10px; }
+.ancestry__chain { -unity-font-definition: var(--font-mono);
+                   font-size: var(--t-sm); color: var(--ink);
+                   margin-top: var(--s2); }
+.ancestry__founder { color: var(--ink-hi); }
+.ancestry__note  { flex-direction: row; align-items: center;
+                   margin-top: var(--s2); }
+
+/* ---------- strike, without text-decoration -------------------
+   USS has no text-decoration and no pseudo-elements, so a strike is
+   a 1px child laid over a relative container. Used by the dead
+   creature's id and by the struck SELECTION badge in provenance
+   state 5. ---------------------------------------------------- */
+
+.struck        { position: relative; flex-direction: row;
+                 align-items: center; }
+.struck__rule  { position: absolute; left: 0; right: 0; top: 50%;
+                 height: 1px; background-color: var(--ink-lo); }
+/* The strike spans the wrapper, so the wrapper owns the spacing and
+   the wrapped Label carries .lead. */
+.struck--after-chip { margin-left: 6px; }
+.struck--after-meta { margin-left: 14px; }
+
+/* ---------- prose --------------------------------------------- */
+
+.prose { -unity-font-definition: var(--font-sans-prose);
+         font-size: 12px; color: var(--ink-lo);
+         white-space: normal; }
+.prose--bright { color: var(--ink); }
+
+/* ---------- chips --------------------------------------------- */
+
+.filter-chip         { border-width: 1px; border-color: var(--rule);
+                       border-radius: var(--radius);
+                       padding: 2px 7px;
+                       -unity-font-definition: var(--font-sans);
+                       font-size: var(--t-sm); color: var(--ink-lo);
+                       margin-left: 6px; }
+.filter-chip:hover   { border-color: var(--rule-strong); color: var(--ink); }
+.filter-chip--on,
+.filter-chip:checked { background-color: var(--plate);
+                       border-color: var(--plate);
+                       color: var(--plate-ink); }
+.filter-chip--off    { color: var(--ink-dim); }
+
+/* ---------- mockup-only ---------------------------------------
+   .is-crop exists so the mockup can print .panel--strip inline as a
+   1:1 crop instead of anchoring it to a screen. It has no place in
+   the UXML; nothing in the shipped UI carries it. ---------------- */
+
+.is-crop { position: relative; }
+
+/* ---------- chart frame (FORWARD-LOOKING) ---------------------
+   Unused in pass 2 on purpose. These are the frame §5.6's charts
+   will be painted into in pass 3; they are here so the port does
+   not have to invent them later. Not dropped. ------------------ */
+
+.chart-frame        { flex-direction: column;
+                      border-width: 1px; border-color: var(--rule);
+                      border-radius: var(--radius); padding: var(--s4); }
+.chart-frame__title { -unity-font-definition: var(--font-sans);
+                      font-size: var(--t-sm); color: var(--ink); }
+.chart-frame__plot  { flex-grow: 1; }   /* C# painter draws in here */
+
+/* ============================================================
+   NOTATION — how to read the mockup
+   ------------------------------------------------------------
+   The mockup is HTML and has to render in a browser, so three
+   declarations there are notation for a USS equivalent:
+
+     box-sizing: border-box   =>  nothing. Yoga is ALWAYS border-box,
+                                  so width INCLUDES padding and
+                                  border. The mockup sets it as a
+                                  global reset purely so it measures
+                                  the way the port will; without it
+                                  every padded fixed-width box in
+                                  this stylesheet renders ~25px
+                                  wider in a browser than in Unity.
+                                  Every width below is a BORDER-BOX
+                                  width: .panel--census is 280 total
+                                  and 255 of content, .numeric is
+                                  104 with no padding.
+     text-align: right        =>  -unity-text-align: middle-right
+     line-height: 1.5         =>  --font-sans-prose, the second Sans
+                                  asset baked at 1.5 line spacing
+     font-weight: 600         =>  -unity-font-definition: --font-mono-b
+                                  (four elements only, listed below)
+     text-wrap: pretty        =>  nothing. mockup readability only.
+
+   Nothing else in the mockup's inline styles differs from the rule
+   named by its class. There is no `gap` in either file.
+
+   The mockup's artboard frames, section headings and explanatory
+   prose carry NO class attributes at all — they are not part of the
+   interface and must not appear in the class diff. The one
+   exception is .is-crop, below.
+
+   One rich-text note: .ancestry__founder highlights a single token
+   inside the ancestry Label. UI Toolkit does this with an inline
+   <color> rich-text tag on the Label, not a child element.
+
+   SEMIBOLD is an imported asset, not a property. Exactly four
+   elements use it: .ident__arm, .inspector__id, .plate__text, and
+   .census-row--hero .field__value. Everywhere else is regular.
+
+   ============================================================
+   SETTLED VALUES — the mockup won, every time
+   ------------------------------------------------------------
+     --strip-h     34 -> 40
+     --t-clock     28 -> 20
+     .numeric      78 -> 104   (the 78 never existed on screen)
+     census top    50 -> 56
+     inspector w  320 -> 340
+     --bar-h       68, --panel-w 280   unchanged, already agreed
+   The 2560 column of the pass-2 table is not a second set of
+   values; see RESOLUTION.
+
+   ============================================================
+   SPACING — why the follower owns the margin
+   ------------------------------------------------------------
+   USS has no `gap`. Every one of the mockup's 106 gaps is now a
+   margin on the FOLLOWING sibling: margin-left in a row, margin-top
+   in a column. First children that would inherit an unwanted margin
+   carry .lead, which zeroes it — USS has no :first-child, so this is
+   explicit in the UXML.
+
+   The direction is chosen for the conditional elements, all three of
+   which are trailing:
+     · .census-row--diverged is the last row of NOW. It owns its own
+       4px top margin, so adding or removing it changes nothing else.
+     · .warning children each own 6px of top margin. Zero, one, two
+       or three warnings all space correctly, and an empty warnings
+       panel collapses to its padding.
+     · .badge--differs trails the cousin strip. Each owns its 6px
+       left margin, so either badge can be absent.
+   Had the leader owned the spacing, removing a trailing element
+   would have left a dangling margin at the end of every one of
+   those three containers.
+
+   ============================================================
+   EXCEPTIONS — argue before building
+   ------------------------------------------------------------
+   1. PULSE. The diverged marker and the alarm plate want a slow
+      1.4 s fade between full and 55% opacity. USS has transitions
+      but no keyframes, so this is a C# tween on one element,
+      running only while the state is abnormal. If unwelcome: the
+      design still reads — the shape and the plate carry the state.
+
+   2. LINE-HEIGHT does not exist in USS. Resolved without an
+      exception: --font-sans-prose is the same IBM Plex Sans face
+      imported a second time with line spacing 1.5 baked into the
+      FontAsset, used only by .prose. Costs one extra atlas; needs
+      no new property. Eighteen mockup uses collapse to this.
+
+   3. FONT-WEIGHT does not exist in USS. Resolved without an
+      exception: semibold is --font-mono-b on the four elements
+      named under NOTATION. Everything else drops to regular; the
+      mockup's other eleven uses were incidental.
+
+   4. TEXT-DECORATION: LINE-THROUGH does not exist in USS. Resolved
+      without an exception: .struck + .struck__rule, a 1px absolute
+      child over a relative parent. Three uses, all ported.
+
+   5. PLAY AND PAUSE GLYPHS. The zero-sized transparent-border
+      triangle in the mockup is a browser technique and is NOT
+      specified. .glyph fixes the box at 12×12 and .glyph__bar
+      specifies the pause; the play triangle's geometry is yours
+      (font glyph or vector painter), per your §4.
+
+   6. NO BLUR, NO SHADOW, NO GRADIENT, NO TEXTURE, ANYWHERE.
+      Panel legibility over moving water is an 82-92% black ground
+      plus a 1px hairline. Both port exactly. The five status
+      markers, the pause glyph and the whole timeline are bordered
+      boxes with background colours. The backdrops in the mockup
+      are your own screenshots standing in for the render.
+
+   7. ROTATION. .marker__diamond rotates 45deg inside a 12px slot
+      at 9px, so it cannot clip. Supported; flagged because
+      rotation is applied after layout.
+
+   ============================================================
+   RESOLUTION — one stylesheet, chrome fixed in pixels
+   ------------------------------------------------------------
+   USS has no media queries and Unity's panel scaling would scale
+   the type, which the design rules out. So: PanelSettings scale
+   mode = Constant Pixel Size, scale 1. The chrome is fixed in
+   pixels and the water gains the area. The type scale never
+   changes at any resolution.
+
+   One density step, written from C# as three custom-property
+   overrides on the root element at panel init and on resize —
+   not a second stylesheet:
+
+     panel width >= 2240px:
+       --strip-h   40 -> 44
+       --panel-w  280 -> 320
+       --pad-edge  16 -> 20
+
+   Breakpoint 2240, not 2560, so a 2560 window that is not
+   maximised still gets the denser chrome. Nothing else moves, and
+   below 2240 nothing is read at all. If you would rather not write
+   tokens from C#, dropping the step entirely is acceptable: the
+   1920 chrome is correct at 2560, just slightly tighter.
+
+   ============================================================
+   DECLARATION ORDER — six absolute children, not four
+   ------------------------------------------------------------
+   Stacking is hierarchy order, so this is the declaration order of
+   the world view's root, which is position: relative:
+
+     1. .panel--census        2. .panel--inspector
+     3. .panel--warnings      4. .panel--popover
+     5. .panel--strip         6. .panel--bar
+
+   Strip and bar last: they win wherever they meet a panel.
+   Warnings and popover share one anchor (--panel-top, --pad-edge)
+   and are mutually exclusive — P shows the popover and hides the
+   warnings, because the popover says everything the warning says
+   and more. Nothing else in the tree is absolute.
+
+   Nothing scrolls in the world view. The census and the inspector
+   have fixed row counts. The warnings panel is the only element
+   whose height changes.
+
+   PER-FRAME, marked .is-per-frame in the mockup and given no rule
+   on purpose — it is an implementation marker, not a visual class:
+   .clock, .pace, .timeline__head, and .timeline__seeking while
+   seeking. Four text updates and one width. Everything else is
+   touched once per sample, roughly every 100 simulated seconds.
+
+   ============================================================
+   GLYPH SET — bake these into the SDF atlas
+   ------------------------------------------------------------
+   Confirmed deliberate, not incidental:
+
+     ·  U+00B7   separator, load-bearing in the identity line
+     —  U+2014   em dash, sentence-level
+     ×  U+00D7   multiplication: pace, and mismatch in the popover
+     ←  U+2190   ancestry chain
+     →  U+2192   seek target
+     Σ  U+03A3   cumulative section title
+     −  U+2212   true minus, depth values only
+     ≠  U+2260   cousin badges
+     …  U+2026   elided ancestry
+     §  U+00A7   prose references, mockup only
+     –  U+2013   en dash, ranges
+     U+2009      THIN SPACE — thousands separator, see NUMBERS
+
+   U+2715 is GONE. It was a dingbat and almost certainly absent
+   from IBM Plex; the popover's mismatch mark is now × U+00D7,
+   which was already in the set.
+
+   ============================================================
+   NUMBERS — grouping is settled
+   ------------------------------------------------------------
+   QUANTITIES and TIMES group every three digits with a thin space
+   (U+2009) from 1 000 up: alive 1 842, births 41 207, t 24 300 s,
+   lived 3 120 s.
+
+   IDENTIFIERS never group: creature 4821, parent 4390, founder 17,
+   seed 1, sample 251, config hash 96d4bce667.
+
+   The rule is semantic, not typographic: a thin space says "this is
+   a magnitude you may compare", its absence says "this is a name".
+   .numeric stays 104px, which holds 412 073 at 13px mono with room.
+   ============================================================ */

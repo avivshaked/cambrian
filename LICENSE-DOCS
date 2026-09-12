@@ -21,6 +21,8 @@ The written work in this repository:
     logbook/**             (dated entries on what was tried and what broke)
     logbook/specs/**       (the briefs builds were made from, and the reports back)
     logbook/images/**      (the pictures those entries cite)
+    design/*.md            (briefs and review notes for the theatre's interface)
+    design/reference-frames/**  (frames from the theatre those briefs design against)
     primer/**              (explanatory writing about what was built)
     spikes/**/README.md
     spikes/**/results/FINDINGS.md
@@ -35,6 +37,15 @@ are covered by the code licence alongside the code that reads them.
 rounds/** is source: one launcher per round, each setting a world's knobs and
 calling scripts/run-arm.ps1. It is covered by the code licence, PolyForm
 Noncommercial 1.0.0, alongside scripts/.
+
+design/canvas/** is a commissioned design deliverable, not prose and not yet
+source: the interface mockup (Theatre UI.dc.html) and its stylesheet
+(theatre.uss), made to this project's brief and owned by this project. They are
+covered by the code licence alongside the Unity code they will become.
+design/canvas/support.js is excluded — it is Claude Design's own generated
+canvas runtime, not this project's work, and is gitignored rather than
+relicensed. The handoff archives (design/*.zip) are gitignored for the same
+reason.
 
 
 THE LICENCE
