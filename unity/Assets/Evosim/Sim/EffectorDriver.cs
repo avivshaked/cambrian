@@ -113,8 +113,8 @@ namespace Evosim.Sim
         public const float MaxJointAngularVelocity = 30f;
 
         /// <summary>
-        /// Times a drive torque was capped at <see cref="MaxJointAngularVelocity"/>. Always 0 at
-        /// dt 0.01, where the limiter is gated off.
+        /// Times a drive torque was capped at <see cref="MaxJointAngularVelocity"/>. 0 at dt 0.01
+        /// unless <c>RunConfig.DriveLimitAtEveryStep</c> is on, where the limiter is gated off.
         /// </summary>
         public long ImpulsesLimited { get; private set; }
 
@@ -132,12 +132,14 @@ namespace Evosim.Sim
         }
 
         /// <summary>
-        /// Whether <see cref="MaxJointAngularVelocity"/> applies at this driver's timestep.
+        /// Whether <see cref="MaxJointAngularVelocity"/> applies at this driver's timestep — or at
+        /// every step, under <c>RunConfig.DriveLimitAtEveryStep</c>.
         /// </summary>
         /// <remarks>
         /// Decided once, in the constructor, from the same threshold and for the same reason the
         /// drag limiter uses: a comparison per DOF per step would be the identical answer a
-        /// million times over, and the inertia read below is not free.
+        /// million times over, and the inertia read below is not free. The tunable is read there
+        /// too, and once, so that a run cannot change the rule halfway through.
         /// </remarks>
         private readonly bool _limitDrive;
 
@@ -196,7 +198,12 @@ namespace Evosim.Sim
         /// <c>Physics.Simulate</c> with their own dt, which is not the project setting, and a
         /// silently wrong dt would corrupt every energy figure while leaving the torques right.
         /// </param>
-        public EffectorDriver(CreatureInstance creature, float stepSeconds)
+        /// <param name="limitAtEveryStep">
+        /// <c>RunConfig.DriveLimitAtEveryStep</c> — <c>fable-propose-limiter.md</c>. False is the
+        /// rule every recorded run was driven under, and the default so that every harness that
+        /// does not carry a config is that run.
+        /// </param>
+        public EffectorDriver(CreatureInstance creature, float stepSeconds, bool limitAtEveryStep = false)
         {
             _creature = creature;
             _stepSeconds = stepSeconds;
@@ -204,7 +211,15 @@ namespace Evosim.Sim
             // The same threshold, to the same bit, as FluidEnvironment's drag limiter: the two
             // stabilisers must switch on together or "dt 0.01 replays the historical record" is
             // true of one of them and not the other.
-            _limitDrive = stepSeconds > 0.0100001f;
+            //
+            // Or at every step, which is the tunable's whole content (fable-propose-limiter.md).
+            // The gate was replay: every published number was measured at 0.01 and a limiter that
+            // engaged there would have made a different world of every historical run under its
+            // own config hash. Round 34 is the case against leaving it: with every price at zero
+            // the stroke is driven flat out and fifty bodies were thrown out of the world by the
+            // solver across five seeds, every dump read carrying an active joint (logbook/0080,
+            // logbook/0090). At false this is still the same comparison it always was.
+            _limitDrive = stepSeconds > 0.0100001f || limitAtEveryStep;
             _spinBudgetPerStep = stepSeconds > 0f ? MaxJointAngularVelocity / stepSeconds : 0f;
 
             int dof = Mathf.Max(1, creature.TotalDof);

@@ -109,6 +109,26 @@ namespace Evosim.Core
         public float PatchWidthMetres { get; }
 
         /// <summary>
+        /// Always 1: a cell field's patches are a ring, and a ring is one row.
+        /// </summary>
+        /// <remarks>
+        /// <b>A constant rather than a constructor argument</b>, because this field cannot
+        /// represent any other layout: <see cref="Mix"/>'s horizontal pass and
+        /// <see cref="Advect"/> both walk the patches as a one-dimensional ring, wrapping from
+        /// K−1 back to 0. <see cref="World"/> refuses a world with
+        /// <see cref="RunConfig.PatchesAcross"/> above 1 on cells rather than letting this class
+        /// report a shape it does not stir (fable-propose-box.md clause 5), so this property is
+        /// the honest answer for every field that exists.
+        /// </remarks>
+        public int PatchesAcross => 1;
+
+        /// <summary>The box's extent along x, m: every patch side by side.</summary>
+        public float LengthMetres => PatchWidthMetres * PatchCount;
+
+        /// <summary>The box's extent along z, m: one patch.</summary>
+        public float WidthMetres => PatchWidthMetres;
+
+        /// <summary>
         /// Layers, counted up from the floor, that no mouth can reach — D055.
         /// </summary>
         /// <remarks>0 when the field was built with no refuge, which is the field's whole history

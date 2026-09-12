@@ -38,6 +38,44 @@
   A second arm, fx-no-positions, is a run directory with a config.json and no positions.jsonl:
   a tiled world writes no such file, and neither does any run recorded before 2026-09-10, and
   the reader has to refuse both rather than read them as a world with nothing in it.
+
+  A third arm, fx-square, is the same three samples in the same 100 m^2 of water laid out two
+  patches by two (fable-propose-box.md): a 10 x 10 m box rather than a 20 x 5 m one. The bodies
+  do not move, so what the arm holds fixed is the reader -- it has to take the layout out of
+  config.json and describe the box the run was in, and the footprint is a hundred columns
+  either way.
+
+  A fourth arm, fx-tank, is the same 100 m^2 as a tank (fable-propose-aquarium.md ruling 1,
+  logbook/specs/tank-spec.md): a cylinder of R = sqrt(100/pi) = 5.6419 m in a bounding square
+  11.2838 m on a side, four rings of equal area, 60 m deep. Its bodies are the first arm's laid
+  out about the axis rather than about the origin, so the two arms can be read against each
+  other:
+
+  Sample 1 (t = 100), four bodies at z = 5.5, one from each guild:
+
+      id 1  (4.0, -10, 5.5)  plain     clade 1
+      id 2  (5.0, -10, 5.5)  stomach   clade 1, child of 1
+      id 3  (8.0, -10, 5.5)  leaf      clade 3
+      id 4  (8.5, -20, 5.5)  mixotroph clade 3, child of 3
+
+    The separations are the plain ones, because a tank has a wall where a box has a seam, and
+    the layout is the box arm's shifted by three metres: flat nearest neighbours 1.0, 1.0, 0.5,
+    0.5, median 0.75 m; in three dimensions 1.0, 1.0, 3.0 and 10.01, median 2.00 m. Three of the
+    footprint's columns are occupied.
+
+    The spreads are where the two shapes part. x sd is the ordinary standard deviation of
+    4, 5, 8 and 8.5, which is 1.92 m, where the box arm's circular statistic on the same shape
+    of population reads 1.97.
+
+    The denominator is the whole point of the arm: the bounding square holds 12 x 12 = 144
+    columns and only 100 of them have their centres in the water, so `cols` reads n/100 and a
+    reader that had forgotten the mask would read n/144. That the number comes out at exactly a
+    hundred is the circle's area being a hundred square metres and nothing deeper.
+
+  Sample 2 (t = 200), the ribbon again: three bodies of one clade at x = 5.0, 5.2 and 5.4, all
+  at z = 5.0 and y = -5. One column, both medians 0.2 m, x sd 0.16 m.
+
+  Sample 3 (t = 300), nothing alive.
 #>
 param(
     [string]$Root = $PSScriptRoot
@@ -97,5 +135,63 @@ $absentDir = Join-Path $fixtures 'fx-no-positions/2026-01-01-000000-fixture'
 New-Item -ItemType Directory -Path $absentDir -Force | Out-Null
 [System.IO.File]::WriteAllText((Join-Path $absentDir 'config.json'), $config, $utf8)
 
+# The same world, two patches by two. Only the one added key differs, so anything the reader
+# prints differently for this arm is the layout and nothing else.
+$square = @'
+{
+  "format": 2,
+  "configHash": "fixture",
+  "world": {
+    "worldAreaSquareMetres": 100,
+    "worldDepthMetres": 60
+  },
+  "patches": {
+    "horizontalPatches": 4,
+    "patchesAcross": 2
+  }
+}
+'@
+
+$squareDir = Join-Path $fixtures 'fx-square/2026-01-01-000000-fixture'
+New-Item -ItemType Directory -Path $squareDir -Force | Out-Null
+[System.IO.File]::WriteAllText((Join-Path $squareDir 'config.json'), $square, $utf8)
+[System.IO.File]::WriteAllText((Join-Path $squareDir 'positions.jsonl'), ($positions -join "`n") + "`n", $utf8)
+[System.IO.File]::WriteAllText((Join-Path $squareDir 'lineage.jsonl'), ($lineage -join "`n") + "`n", $utf8)
+
+# The tank. Same area, same depth, same patch count, one added key -- so anything the reader
+# prints differently for this arm is the shape and nothing else. worldShape is written as the
+# enum's own name, which is how RunConfigJson writes every enum (by name, never by ordinal).
+$tank = @'
+{
+  "format": 2,
+  "configHash": "fixture",
+  "world": {
+    "worldAreaSquareMetres": 100,
+    "worldDepthMetres": 60,
+    "worldShape": "Tank"
+  },
+  "patches": {
+    "horizontalPatches": 4
+  }
+}
+'@
+
+# The first arm's bodies moved three metres along x, so that they stand about the tank's axis at
+# (5.6419, 5.6419) rather than in the corner of the bounding square. Every one of them is inside
+# the glass: the furthest, id 4, is 2.86 m from the axis in a tank of 5.64 m.
+$tankPositions = @(
+    '{"t":100,"n":4,"b":[[1,4,-10,5.5,0],[2,5,-10,5.5,1],[3,8,-10,5.5,4],[4,8.5,-20,5.5,5]]}'
+    '{"t":200,"n":3,"b":[[5,5,-5,5,2],[6,5.2,-5,5,3],[7,5.4,-5,5,7]]}'
+    '{"t":300,"n":0,"b":[]}'
+)
+
+$tankDir = Join-Path $fixtures 'fx-tank/2026-01-01-000000-fixture'
+New-Item -ItemType Directory -Path $tankDir -Force | Out-Null
+[System.IO.File]::WriteAllText((Join-Path $tankDir 'config.json'), $tank, $utf8)
+[System.IO.File]::WriteAllText((Join-Path $tankDir 'positions.jsonl'), ($tankPositions -join "`n") + "`n", $utf8)
+[System.IO.File]::WriteAllText((Join-Path $tankDir 'lineage.jsonl'), ($lineage -join "`n") + "`n", $utf8)
+
 Write-Host "wrote $runDir"
 Write-Host "wrote $absentDir"
+Write-Host "wrote $squareDir"
+Write-Host "wrote $tankDir"

@@ -244,14 +244,15 @@ namespace Evosim.Theatre
                       $"it stands at y={root.position.y}";
             }
 
-            // The box. The patch is read from the x the placer reserved, which is the x this root
-            // stands at, so the two must agree.
-            int patch = _volume.PatchOf(root.position.x);
+            // The box. The patch is read from the x and z the placer reserved, which is where this
+            // root stands, so the two must agree.
+            int patch = _volume.PatchOf(root.position.x, root.position.z);
 
             if (patch != _pendingPatches[i])
             {
                 return $"creature {id} was admitted into patch {_pendingPatches[i]} and the root " +
-                       $"paired with it stands at x={root.position.x}, which is patch {patch}";
+                       $"paired with it stands at x={root.position.x}, z={root.position.z}, " +
+                       $"which is patch {patch}";
             }
 
             // And the placer only ever raises the height it is offered, so a body cannot have

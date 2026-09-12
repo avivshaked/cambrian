@@ -249,6 +249,28 @@ namespace Evosim.Core
         /// </summary>
         private int PatchCount => Math.Max(1, (int)Config.HorizontalPatches);
 
+        /// <summary>
+        /// Patches across z, A ≥ 1 — <see cref="RunConfig.PatchesAcross"/>, clamped the way
+        /// <see cref="PatchCount"/> is. fable-propose-box.md; the constructor refuses an A that
+        /// does not divide K.
+        /// </summary>
+        private int PatchesAcross => Math.Max(1, (int)Config.PatchesAcross);
+
+        /// <summary>Patches along x, <c>K / A</c>.</summary>
+        private int PatchesAlong => PatchCount / PatchesAcross;
+
+        /// <summary>
+        /// The tank's radius, m — <c>sqrt(area/π)</c>, and 0 in a <see cref="WorldShape.Box"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Derived once, here, and handed to everything that needs it</b> — the two fields, the
+        /// water and (through <c>Ecosystem</c>) the placer and the wall. The alternative is four
+        /// square roots of the same area, which is four chances to disagree about where the glass
+        /// is; the same discipline that makes <see cref="IMatterField.PatchWidthMetres"/> the one
+        /// answer to how wide a patch is. <see cref="TankGeometry"/> carries the arithmetic.
+        /// </remarks>
+        public float TankRadiusMetres { get; }
+
         /// <summary>Dead matter in the water, and what feeds on it — §5A.2c.</summary>
         public IMatterField Nutrients { get; }
 
@@ -709,6 +731,123 @@ namespace Evosim.Core
             // (Config was just assigned above) and every field below is built with the same K.
             int patchCount = PatchCount;
 
+            // fable-propose-box.md. The layout, and the three worlds it cannot describe. A is
+            // read once here so that every field, the placer and the current below are built with
+            // one answer, the way K already is.
+            int patchesAcross = PatchesAcross;
+
+            if (patchCount % patchesAcross != 0)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"PatchesAcross is {patchesAcross} and HorizontalPatches is {patchCount}, ") +
+                    FormattableString.Invariant(
+                        $"which leaves {patchCount % patchesAcross} patches over. A layout is a ") +
+                    "whole number of rows: four patches lie one by four or two by two, and nine " +
+                    "lie one by nine or three by three.",
+                    nameof(config));
+            }
+
+            if (patchesAcross > 1 && config.FieldModel == MatterField.Cells)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"PatchesAcross is {patchesAcross} and FieldModel is Cells. The cell ") +
+                    "field mixes and advects across a one-dimensional ring of patches, wrapping " +
+                    "from K−1 back to 0, which is not the geometry of a layout more than one " +
+                    "patch deep: patch 0 and patch K−1 are not neighbours in it. Run a grid or a " +
+                    "vertex field, or leave the box a row.",
+                    nameof(config));
+            }
+
+            // fable-propose-aquarium.md ruling 1, logbook/specs/tank-spec.md. The tank is a third
+            // container beside the box rather than a rewrite of it, and these are the four worlds
+            // it cannot describe. Each is refused rather than quietly reinterpreted, for the
+            // reason every refusal in this constructor exists: a world that ran one geometry under
+            // a config naming another would be filed under settings it did not have.
+            if (config.WorldShape == WorldShape.Tank)
+            {
+                if (config.FieldModel == MatterField.Cells)
+                {
+                    throw new ArgumentException(
+                        "WorldShape is Tank and FieldModel is Cells. The cell field mixes and " +
+                        "advects along a one-dimensional ring of patches, wrapping from K−1 back " +
+                        "to 0; a tank's patches are concentric rings, where patch 0 is the axis " +
+                        "and patch K−1 is against the glass and the two are as far apart as the " +
+                        "world goes. Run a grid.",
+                        nameof(config));
+                }
+
+                // Not on the spec's list, and refused for the list's own reason. The vertex field
+                // holds positions in a box, wraps them on two rings and knows nothing about a
+                // mask; a tank built on it would place its quanta over the bounding square, walk
+                // them through the glass and read its patches as a row. That is the failure the
+                // Cells refusal above exists to stop, arriving through the other door. The build
+                // is grid-only (logbook/specs/tank-spec.md), so nothing is lost by saying so.
+                if (config.FieldModel == MatterField.Vertices)
+                {
+                    throw new ArgumentException(
+                        "WorldShape is Tank and FieldModel is Vertices. The vertex field is a " +
+                        "set of positions in a periodic box: it wraps a quantum at a seam the " +
+                        "tank does not have, has no mask to keep one out of the glass, and reads " +
+                        "its patches as a row rather than as rings. Run a grid.",
+                        nameof(config));
+                }
+
+                if (patchesAcross > 1)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"WorldShape is Tank and PatchesAcross is {patchesAcross}. A layout ") +
+                        "is the box's: the tank's patches are rings of equal area about one axis, " +
+                        "so there are no rows to lay them in. Leave PatchesAcross at 1.",
+                        nameof(config));
+                }
+
+                if (config.DispersalChancePerStep > 0f)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"WorldShape is Tank and DispersalChancePerStep is ") +
+                        FormattableString.Invariant($"{config.DispersalChancePerStep}. ") +
+                        "D061's lottery walks one patch ahead or one behind modulo K, which on a " +
+                        "set of rings is a creature teleporting between the axis and the glass. " +
+                        "The tank moves a body by carrying it.",
+                        nameof(config));
+                }
+
+                if (config.Current != null &&
+                    config.Current.Mode == CurrentMode.Rolls && config.Current.Speed > 0f)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"WorldShape is Tank and the current is Rolls at {config.Current.Speed} m/s. ") +
+                        "The rolls are a field over the box's row of patches — patch k rising " +
+                        "while k+1 sinks — and a tank has no such row. Its water is the gyre, " +
+                        "which is selected by the shape: set CurrentMode.Transport to say so, or " +
+                        "the speed to 0 for still water.",
+                        nameof(config));
+                }
+            }
+
+            if (patchesAcross > 1 && config.DispersalChancePerStep > 0f)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"PatchesAcross is {patchesAcross} and DispersalChancePerStep is ") +
+                    FormattableString.Invariant($"{config.DispersalChancePerStep}. ") +
+                    "D061's lottery walks the same ring the cell field does — one patch ahead or " +
+                    "one behind, modulo K — and on a layout that is not a ring it would move a " +
+                    "creature diagonally across the box as often as sideways.",
+                    nameof(config));
+            }
+
+            // After the refusals and before anything is built with it, so that one radius reaches
+            // the fields, the water and the placer — see TankRadiusMetres.
+            TankRadiusMetres = config.WorldShape == WorldShape.Tank
+                ? TankGeometry.RadiusFor(config.WorldAreaSquareMetres)
+                : 0f;
+
             ValidateVent(config, patchCount);
             ValidateMatterInflux(config, patchCount);
 
@@ -734,7 +873,7 @@ namespace Evosim.Core
                     config.NutrientSinkMetresPerSecond, config.WorldDepthMetres,
                     config.FloorRefugeMetres, config.RefugeEdibleFraction, patchCount,
                     config.FieldKernelMetres, config.FieldMergeMetres, config.FieldVertexCap,
-                    config.FieldVertexJoules, Rng.SeedFor(seed, DetritusFieldIndex));
+                    config.FieldVertexJoules, Rng.SeedFor(seed, DetritusFieldIndex), patchesAcross);
 
                 // Its own reach: the cell's volume, so the matter gate binds where it bound in
                 // the base world (RunConfig.FieldMatterKernelMetres).
@@ -743,7 +882,7 @@ namespace Evosim.Core
                     config.MatterSinkMetresPerSecond, config.WorldDepthMetres,
                     0f, 0f, patchCount,
                     config.FieldMatterKernelMetres, config.FieldMergeMetres, config.FieldVertexCap,
-                    config.FieldVertexJoules, Rng.SeedFor(seed, MatterFieldIndex));
+                    config.FieldVertexJoules, Rng.SeedFor(seed, MatterFieldIndex), patchesAcross);
             }
             else if (config.FieldModel == MatterField.Grid)
             {
@@ -784,13 +923,15 @@ namespace Evosim.Core
                 Nutrients = new GridField(
                     config.WorldAreaSquareMetres, config.NutrientSinkMetresPerSecond,
                     config.WorldDepthMetres, config.FloorRefugeMetres, config.RefugeEdibleFraction,
-                    patchCount, config.FieldCellMetres);
+                    patchCount, config.FieldCellMetres, patchesAcross,
+                    config.WorldShape, TankRadiusMetres);
 
                 // Its own, coarser cell: matter is drawn in whole conceptions rather than grazed,
                 // and a metre of water cannot afford a child (RunConfig.FieldMatterCellMetres).
                 Matter = new GridField(
                     config.WorldAreaSquareMetres, config.MatterSinkMetresPerSecond,
-                    config.WorldDepthMetres, 0f, 0f, patchCount, config.FieldMatterCellMetres);
+                    config.WorldDepthMetres, 0f, 0f, patchCount, config.FieldMatterCellMetres,
+                    patchesAcross, config.WorldShape, TankRadiusMetres);
             }
             else
             {
@@ -812,22 +953,32 @@ namespace Evosim.Core
             // is called directly rather than the pre-D061 one, so this loop needs no guard of its
             // own: it is correct at K=1 (one patch, same total deposited as before D061 existed)
             // and at K>1 alike.
+            // fable-propose-aquarium.md ruling 2. At a budget of 0 this is
+            // InitialMatterPerCubicMetre unchanged, which is every run on file; above 0 the
+            // density is whatever spreads the budget over the water that exists, so the area dial
+            // and the matter budget come apart. The divisor is the live volume rather than the
+            // box's, which in a tank on a grid is the cells the mask calls live: a budget that
+            // included the dry corners would seed less than it says.
+            float seedDensity = config.MatterBudgetUnits > 0f
+                ? (float)(config.MatterBudgetUnits / LiveVolumeOf(Matter, config))
+                : config.InitialMatterPerCubicMetre;
+
             if (Matter is VertexField matterVertices)
             {
                 // D083. A lattice holding the same total the cells would, spaced for one quantum
                 // per vertex; nothing here when the density is 0, exactly like the cells.
-                matterVertices.SeedUniform(config.InitialMatterPerCubicMetre);
+                matterVertices.SeedUniform(seedDensity);
             }
             else if (Matter is GridField matterGrid)
             {
                 // The same total again, one share per cell. The grid's cells tile the box exactly
                 // (GridField refuses a cell size that does not), so this is the cells' own seed
                 // read at a finer scale and not an approximation of it.
-                matterGrid.SeedUniform(config.InitialMatterPerCubicMetre);
+                matterGrid.SeedUniform(seedDensity);
             }
-            else if (config.InitialMatterPerCubicMetre > 0f)
+            else if (seedDensity > 0f)
             {
-                float perCell = config.InitialMatterPerCubicMetre * Matter.LayerVolume;
+                float perCell = seedDensity * Matter.LayerVolume;
                 for (int i = 0; i < Matter.LayerCount; i++)
                 {
                     float depth = -((i + 0.5f) * Matter.LayerMetres);
@@ -852,9 +1003,13 @@ namespace Evosim.Core
             // length is the width times the patch count and the floor is at minus the depth, and
             // the seed is what makes one round's five seeds five draws of the water as well as of
             // the genome. Same geometry the fields were built with, for the same reason.
+            // And the shape, which is what selects the gyre: the tank's water is not the rolls or
+            // the transport field, and the field has to be told the container rather than inferring
+            // one from a mode (fable-propose-aquarium.md ruling 1).
             config.Current?.SetBox(
                 Nutrients.PatchWidthMetres, patchCount, config.WorldDepthMetres,
-                Rng.SeedFor(seed, CurrentFieldIndex));
+                Rng.SeedFor(seed, CurrentFieldIndex), patchesAcross,
+                config.WorldShape, TankRadiusMetres);
 
             Seed = seed;
 
@@ -1251,16 +1406,21 @@ namespace Evosim.Core
                     CurrentField plume = Config.Current;
                     emitted = vertices.Emit(
                         amount,
-                        new Float3((plume.VentPatch + 0.5f) * width, -plume.VentDepthMetres + half, 0.5f * width),
+                        new Float3(
+                            PatchCentreX(plume.VentPatch), -plume.VentDepthMetres + half,
+                            PatchCentreZ(plume.VentPatch)),
                         new Float3(0.5f * width, half, 0.5f * width));
                 }
                 else
                 {
-                    float length = width * PatchCount;
+                    // The whole surface, which is the field's own box rather than a length
+                    // derived from a width here (fable-propose-box.md).
+                    float length = Matter.LengthMetres;
+                    float across = Matter.WidthMetres;
                     emitted = vertices.Emit(
                         amount,
-                        new Float3(0.5f * length, 0f, 0.5f * width),
-                        new Float3(0.5f * length, 0f, 0.5f * width));
+                        new Float3(0.5f * length, 0f, 0.5f * across),
+                        new Float3(0.5f * length, 0f, 0.5f * across));
                 }
 
                 MatterInfluxedTotal += emitted;
@@ -1283,16 +1443,19 @@ namespace Evosim.Core
                     CurrentField plume = Config.Current;
                     MatterInfluxedTotal += grid.DepositBox(
                         amount,
-                        new Float3((plume.VentPatch + 0.5f) * gridWidth, -plume.VentDepthMetres + gridHalf, 0.5f * gridWidth),
+                        new Float3(
+                            PatchCentreX(plume.VentPatch), -plume.VentDepthMetres + gridHalf,
+                            PatchCentreZ(plume.VentPatch)),
                         new Float3(0.5f * gridWidth, gridHalf, 0.5f * gridWidth));
                     return;
                 }
 
-                float gridLength = gridWidth * PatchCount;
+                float gridLength = Matter.LengthMetres;
+                float gridAcross = Matter.WidthMetres;
                 MatterInfluxedTotal += grid.DepositBox(
                     amount,
-                    new Float3(0.5f * gridLength, -gridHalf, 0.5f * gridWidth),
-                    new Float3(0.5f * gridLength, gridHalf, 0.5f * gridWidth));
+                    new Float3(0.5f * gridLength, -gridHalf, 0.5f * gridAcross),
+                    new Float3(0.5f * gridLength, gridHalf, 0.5f * gridAcross));
                 return;
             }
 
@@ -1386,9 +1549,10 @@ namespace Evosim.Core
             CurrentField current = Config.Current;
             bool drifts = Config.SharedSpace && current != null && current.AdvectFields;
 
-            float length = Nutrients.PatchWidthMetres * PatchCount;
-            float width = Nutrients.PatchWidthMetres;
+            float length = Nutrients.LengthMetres;
+            float width = Nutrients.WidthMetres;
             float depth = Config.WorldDepthMetres;
+            bool tank = Config.WorldShape == WorldShape.Tank;
 
             double fraction = (double)Config.CorpseDecayPerSecond * seconds;
             if (fraction > 1.0) fraction = 1.0;
@@ -1410,19 +1574,33 @@ namespace Evosim.Core
                     // water where it actually is rather than the water at its patch's centre.
                     // The rolls take the patch, which is all that field is a function of, so
                     // every run in the record drifts on the same arithmetic it always did.
-                    Float3 v = current.Mode == CurrentMode.Transport
+                    Float3 v = current.Mode == CurrentMode.Transport || tank
                         ? current.VelocityAt(p.X, p.Y, p.Z, ElapsedSeconds)
                         : current.VelocityAt(p.Y, ElapsedSeconds, corpse.Patch, PatchCount);
-                    x = WrapAxis(x + v.X * seconds, length);
+
                     y += v.Y * seconds;
-                    z = WrapAxis(z + v.Z * seconds, width);
+
+                    if (tank)
+                    {
+                        // The glass, not a seam. The gyre has no radial flow at the wall, so a
+                        // corpse is not carried into it; what this catches is the step's own
+                        // arithmetic — an explicit half-second of a flow that curves — and it
+                        // catches it by sliding the parcel back onto the rim rather than by
+                        // wrapping it to the far side of the same tank.
+                        KeepInTheWater(x + v.X * seconds, z + v.Z * seconds, out x, out z);
+                    }
+                    else
+                    {
+                        x = WrapAxis(x + v.X * seconds, length);
+                        z = WrapAxis(z + v.Z * seconds, width);
+                    }
                 }
 
                 if (y > 0f) y = 0f;
                 else if (y < -depth) y = -depth;
 
                 corpse.Position = new Float3(x, y, z);
-                if (drifts) corpse.Patch = PatchOfX(x, width);
+                if (drifts) corpse.Patch = PatchOfXZ(x, z);
 
                 // The last instalment: everything that is left, in one go. Both stocks have to be
                 // under the floor value, because one empties before the other. A body that
@@ -1476,13 +1654,95 @@ namespace Evosim.Core
             if (kept < _corpses.Count) _corpses.RemoveRange(kept, _corpses.Count - kept);
         }
 
-        /// <summary>The ring's patch for a world x: D077's rule, <c>floor(x / W) mod K</c>.</summary>
-        private int PatchOfX(float x, float patchWidthMetres)
+        /// <summary>
+        /// The water a field actually holds, m³ — what <see cref="RunConfig.MatterBudgetUnits"/>
+        /// divides a total by.
+        /// </summary>
+        /// <remarks>
+        /// A grid knows (<see cref="GridField.LiveVolumeCubicMetres"/>), because it is the one
+        /// representation whose cells can be outside the water. Everything else fills the box, so
+        /// the answer is the box's own volume — and a tank is only ever run on a grid, since
+        /// <see cref="World"/>'s constructor refuses the cell field there.
+        /// </remarks>
+        private static double LiveVolumeOf(IMatterField field, RunConfig config) =>
+            field is GridField grid
+                ? grid.LiveVolumeCubicMetres
+                : (double)config.WorldAreaSquareMetres * config.WorldDepthMetres;
+
+        /// <summary>
+        /// The patch a horizontal position falls in: <c>iz · (K / A) + ix</c>, numbered along x
+        /// first — D077's rule as fable-propose-box.md's clause 3 lays it out, and
+        /// <c>floor(x / W) mod K</c> term for term at A = 1.
+        /// </summary>
+        /// <remarks>
+        /// <b>In a tank it is the ring of equal area the point falls in</b>, 0 at the axis and
+        /// K−1 against the glass — <see cref="TankGeometry.RingOf"/>.
+        /// </remarks>
+        private int PatchOfXZ(float x, float z)
         {
-            int patch = (int)Math.Floor(x / patchWidthMetres);
-            patch %= PatchCount;
-            if (patch < 0) patch += PatchCount;
-            return patch;
+            if (Config.WorldShape == WorldShape.Tank)
+            {
+                return TankGeometry.RingOf(x, z, TankRadiusMetres, PatchCount);
+            }
+
+            float width = Nutrients.PatchWidthMetres;
+            int along = PatchesAlong;
+
+            int ix = (int)Math.Floor(x / width);
+            ix %= along;
+            if (ix < 0) ix += along;
+
+            if (PatchesAcross == 1) return ix;
+
+            int iz = (int)Math.Floor(z / width);
+            iz %= PatchesAcross;
+            if (iz < 0) iz += PatchesAcross;
+
+            return iz * along + ix;
+        }
+
+        /// <summary>
+        /// The x of a patch's centre, m. <c>(patch + ½)·W</c> at A = 1; in a tank, the ring's
+        /// mid-radius on the <c>θ = 0</c> ray, which is the ray every other reader of this
+        /// geometry picks.
+        /// </summary>
+        private float PatchCentreX(int patch) =>
+            Config.WorldShape == WorldShape.Tank
+                ? TankRadiusMetres + TankGeometry.MidRadiusOf(patch, TankRadiusMetres, PatchCount)
+                : (patch % PatchesAlong + 0.5f) * Nutrients.PatchWidthMetres;
+
+        /// <summary>
+        /// The z of a patch's centre, m. Half the box's width at A = 1; the axis in a tank.
+        /// </summary>
+        private float PatchCentreZ(int patch) =>
+            Config.WorldShape == WorldShape.Tank
+                ? TankRadiusMetres
+                : (patch / PatchesAlong + 0.5f) * Nutrients.PatchWidthMetres;
+
+        /// <summary>
+        /// A horizontal position kept inside the glass: itself when it is in the water, and the
+        /// nearest point of the rim when it is not.
+        /// </summary>
+        /// <remarks>
+        /// The tank's answer to <see cref="WrapAxis"/>, and deliberately a different one: a wrap
+        /// is a boundary with nothing on the other side of it, and this boundary has a wall.
+        /// </remarks>
+        private void KeepInTheWater(float x, float z, out float insideX, out float insideZ)
+        {
+            float radius = TankRadiusMetres;
+            double dx = x - radius;
+            double dz = z - radius;
+            double r = Math.Sqrt(dx * dx + dz * dz);
+
+            if (!(r > radius))
+            {
+                insideX = x;
+                insideZ = z;
+                return;
+            }
+
+            insideX = (float)(radius + dx * radius / r);
+            insideZ = (float)(radius + dz * radius / r);
         }
 
         /// <summary>A coordinate folded back onto a ring of the given extent. <see cref="GridField"/>'s own.</summary>
@@ -2632,7 +2892,7 @@ namespace Evosim.Core
 
             // The depth the child is admitted at. Its parent's, as it has always been, and the
             // placer may raise it — a parent resting on a solid sea bed breeds beside itself, not
-            // into the rock (scratch/floor-spec.md rule 2). A local rather than the expression
+            // into the rock (logbook/specs/floor-spec.md rule 2). A local rather than the expression
             // inline at Admit so that the height the body is built at and the height the economy
             // charges are the same number; in the tiled world nothing touches it and the
             // expression is parent.HeightY exactly, as before.
@@ -3144,8 +3404,8 @@ namespace Evosim.Core
                 // D083. Beside the parent until the simulator reports where the body actually
                 // is, and at the patch's centre for a body with no parent — the cell field never
                 // reads these, and in a shared volume the next Observe overwrites them.
-                X = parent != null ? parent.X : (patch + 0.5f) * Nutrients.PatchWidthMetres,
-                Z = parent != null ? parent.Z : 0.5f * Nutrients.PatchWidthMetres,
+                X = parent != null ? parent.X : PatchCentreX(patch),
+                Z = parent != null ? parent.Z : PatchCentreZ(patch),
                 StandingWatts = Metabolism.StandingWatts(phenotype, Config),
             };
 

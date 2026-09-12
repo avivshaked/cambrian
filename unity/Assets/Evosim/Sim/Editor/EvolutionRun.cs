@@ -127,7 +127,7 @@ namespace Evosim.Sim.EditorTools
             int reportEvery = (int)Env("EVOSIM_REPORT_EVERY", 200f);
             ulong seed = EnvULong("EVOSIM_SEED", 1UL);
 
-            // The state digest — scratch/digest-spec.md. A runner setting like the wall budget,
+            // The state digest — logbook/specs/digest-spec.md. A runner setting like the wall budget,
             // deliberately *not* a RunConfig tunable: it changes nothing the world does, so it
             // must not reach config.json or its hash, and a run with the digest on has to stay
             // hash-compatible with the same run without it. 0 is off, which is every run so far.
@@ -302,6 +302,12 @@ namespace Evosim.Sim.EditorTools
             // other knob at 0 is the world every earlier run measured — a single, perfectly-mixed
             // column per layer, exactly D061's own "today's world" baseline.
             float patches = Env("EVOSIM_PATCHES", new RunConfig().HorizontalPatches);
+
+            // fable-propose-box.md. How many of those patches lie across z: the box is
+            // K/A patches long and A wide, so four at A=2 is a 10 by 10 m footprint where
+            // four in a row is 20 by 5. 1 is the world every run on file was measured in,
+            // at which no arithmetic anywhere changes.
+            float patchesAcross = Env("EVOSIM_PATCHES_ACROSS", new RunConfig().PatchesAcross);
             float horizontalMixing = Env("EVOSIM_H_MIXING", new RunConfig().HorizontalMixingDiffusivity);
             float dispersalChance = Env("EVOSIM_DISPERSAL", new RunConfig().DispersalChancePerStep);
             float patchShading = Env("EVOSIM_PATCH_SHADING", new RunConfig().PerPatchShading);
@@ -422,6 +428,22 @@ namespace Evosim.Sim.EditorTools
             // below reads 0 on an arm that never asked for it and the world it describes is the
             // one the record already has.
             float corpseDecay = Env("EVOSIM_CORPSE_DECAY", new RunConfig().CorpseDecayPerSecond);
+
+            // fable-propose-aquarium.md ruling 1 (logbook/specs/tank-spec.md). The container:
+            // `box` is D077's periodic footprint and every run on file, `tank` is the walled
+            // cylinder of the same area. Unset is box, at which no arithmetic anywhere changes.
+            WorldShape worldShape = EnvWorldShape("EVOSIM_SHAPE");
+
+            // Ruling 2. The matter the world is seeded with, as a total rather than a density. 0
+            // is InitialMatterPerCubicMetre times the live volume, which is every run on file;
+            // above 0 the density is derived, so the area dial and the matter budget come apart
+            // and a world can be diluted without being made smaller.
+            float matterBudget = Env("EVOSIM_MATTER_BUDGET", new RunConfig().MatterBudgetUnits);
+
+            // fable-propose-limiter.md. Whether EffectorDriver's 30 rad/s cap applies at every
+            // step rather than only above dt 0.01. False is the rule every recorded run was
+            // driven under.
+            bool driveLimitAlways = Env("EVOSIM_DRIVE_LIMIT_ALWAYS", 0f) > 0.5f;
 
             // fable-propose-growth.md (2026-09-08). A child is born at a fraction of its adult
             // body and grows into the rest, so the world needs four numbers it never had: the
@@ -634,6 +656,7 @@ namespace Evosim.Sim.EditorTools
             config.MatterBurialPerSecond = matterBurial;
             config.SpeciesDriftThreshold = speciesTheta;
             config.HorizontalPatches = patches;
+            config.PatchesAcross = patchesAcross;
             config.HorizontalMixingDiffusivity = horizontalMixing;
             config.DispersalChancePerStep = dispersalChance;
             config.PerPatchShading = patchShading;
@@ -672,6 +695,9 @@ namespace Evosim.Sim.EditorTools
             config.FieldCellMetres = fieldCell;
             config.FieldMatterCellMetres = fieldMatterCell;
             config.CorpseDecayPerSecond = corpseDecay;
+            config.WorldShape = worldShape;
+            config.MatterBudgetUnits = matterBudget;
+            config.DriveLimitAtEveryStep = driveLimitAlways;
 
             // fable-propose-growth.md. The founder range is ordered here rather than trusted from
             // the launcher: a minimum above the maximum is a silent empty draw, and the genome
@@ -791,23 +817,7 @@ namespace Evosim.Sim.EditorTools
                 }
             }
 
-            // D077's header token, built from the world the run actually constructed rather than
-            // from the environment it was launched with: the patch width is the fields' own
-            // sqrt(area / K) (World's constructor hands it to the current field too), so the
-            // header cannot describe a box the simulation does not have. Rendered unconditionally
-            // for D065's reason — a reader must never have to work out whether a missing token
-            // means "tiled" or "written before the box existed".
-            float patchWidth = eco.World.Nutrients.PatchWidthMetres;
-            string spaceToken = sharedSpace
-                ? "shared " + Math.Max(1, (int)patches) + "x" +
-                  patchWidth.ToString("0.###", CultureInfo.InvariantCulture) + "x" +
-                  patchWidth.ToString("0.###", CultureInfo.InvariantCulture) + " m, depth " +
-                  config.WorldDepthMetres + ", wrap, " +
-                  // The bed, read off the Ecosystem rather than off the config: it is built or not
-                  // built by the constructor, and a header that inferred it from SharedSpace would
-                  // still say "bed" on the day something stops it being built.
-                  (eco.Floor != null ? "bed" : "no bed")
-                : "tiled " + Ecosystem.TileSpacing + " m";
+            string spaceToken = SpaceToken(config, eco);
 
             // The table's shape, fixed before the header names it: D077 appends one column per
             // patch, so the width is a function of the config.
@@ -883,6 +893,10 @@ namespace Evosim.Sim.EditorTools
                     ? " · patches " + (int)patches + ", h-mix " + horizontalMixing + " m2/s, " +
                       "disperse " + dispersalChance + ", patchShade " + patchShading
                     : "") +
+                // The layout is in the space token below, where the box is; this is the
+                // launcher's own number, printed only where it is not the default, for the
+                // reason every other above-default knob is.
+                (patchesAcross > 1f ? " · across " + (int)patchesAcross : "") +
                 " · area " + area + " m2" +
                 // D077 — appended after `area`, which is the setting the box is derived from.
                 " · space " + spaceToken +
@@ -935,6 +949,18 @@ namespace Evosim.Sim.EditorTools
                 // the world it produces at 0 and at 15 obeys the same rules — it is only the
                 // realisation that differs.
                 " · physics jobs " + physicsJobWorkers +
+                // fable-propose-limiter.md, beside `physics jobs` because it is the same kind of
+                // fact — what the harness does to the solver — and rendered unconditionally for
+                // D065's reason: a header without the token would read the same for "gated to
+                // steps above 0.01" and "written before the knob existed", and every run on file
+                // is the first of those. The bind count is `driveImpulsesLimited` in the manifest.
+                " · driveLimit " + (driveLimitAlways ? "always" : ">0.01") +
+                // fable-propose-aquarium.md ruling 2, beside the limiter and rendered
+                // unconditionally for the same reason: 0 is the density rule and a header written
+                // before the budget existed must not read the same as one that names it. The
+                // density the world actually seeded at is `matter ... from N/m3` above, which at a
+                // budget above 0 is derived from this rather than from the launcher.
+                " · matterBudget " + matterBudget +
                 // D081, appended after `physics jobs` per the header's append-only convention and
                 // rendered unconditionally for D065's reason: a header without the token would
                 // read the same for "added mass off" and "written before the knob existed", and
@@ -1167,7 +1193,7 @@ namespace Evosim.Sim.EditorTools
             // The last window's lineage rows. They are drained at every sample and nowhere else,
             // so a run that ended between samples put its final births in the snapshot below and
             // never in lineage.jsonl: r25-s2's wall end left 38 snapshot ids with no birth row
-            // (scratch/floor-build-report.md; the Astra review, 2026-09-07).
+            // (logbook/specs/floor-build-report.md; the Astra review, 2026-09-07).
             IReadOnlyList<LineageEvent> lineageTail = eco.World.DrainLineageEvents();
             if (dir != null)
             {
@@ -2496,7 +2522,7 @@ namespace Evosim.Sim.EditorTools
                 .Field("contactPairs", eco.ContactPairs)
                 .Field("contactPairsPerStep",
                     contactSteps > 0 ? contactPairsWindow / (double)contactSteps : 0d)
-                // The sea bed's pairs, appended after the crowd's — scratch/floor-spec.md rule 3.
+                // The sea bed's pairs, appended after the crowd's — logbook/specs/floor-spec.md rule 3.
                 // Written for every run: 0 with no floor is the same shape as `sharedSpace` beside
                 // it, and the flag is what says which of the two facts a 0 is.
                 .Field("floorContactPairs", eco.FloorContactPairs)
@@ -2937,7 +2963,7 @@ namespace Evosim.Sim.EditorTools
             // table whose width depends on the config.
             "above", "wraps", "crowded", "contacts",
 
-            // The sea bed — scratch/floor-spec.md rule 3, appended after `contacts` per the same
+            // The sea bed — logbook/specs/floor-spec.md rule 3, appended after `contacts` per the same
             // rule. `contacts` is creature-creature pairs only; this is pairs against the floor
             // collider, so a benthic crowd is visible instead of being summed into the other. An
             // em-dash where there is no bed, for `contacts`' own reason: 0 pairs and no floor are
@@ -2996,8 +3022,91 @@ namespace Evosim.Sim.EditorTools
             // in round 33 seed 3, and a mean depth and four patch bins cannot show it. An
             // em-dash in a tiled world, where there is no box. `z sd` is in stats.jsonl only, to
             // keep the table's growth to three.
+            //
+            // In a tank the denominator is the columns inside the circle rather than the bounding
+            // square, so a full tank still reads n/n; and the two spreads are ordinary standard
+            // deviations, because a tank has a wall where the box has a seam and the circular
+            // statistic would read a population packed against the glass as evenly spread
+            // (logbook/specs/tank-spec.md).
             "cols", "cols abs", "x sd",
         };
+
+        /// <summary>
+        /// The header's <c>space</c> token: which container this run was in, in one string.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// D077's token, <b>built from the world the run actually constructed rather than from the
+        /// environment it was launched with</b>: the patch width is the fields' own
+        /// <c>sqrt(area / K)</c> (World's constructor hands it to the current field too), so the
+        /// header cannot describe a box the simulation does not have. Rendered unconditionally for
+        /// D065's reason — a reader must never have to work out whether a missing token means
+        /// "tiled" or "written before the box existed".
+        /// </para>
+        /// <para>
+        /// fable-propose-box.md clause 4 asked for three numbers, the patches along x, the patches
+        /// across z and the patch side, so that a token could say whether four patches are a row
+        /// or a square. fable-propose-aquarium.md superseded that layout and tank-spec.md's
+        /// invariant keeps the box's header to the character, so one row of patches prints the
+        /// recorded form ("4x5x5 m": the count and the width twice) and only a second row prints
+        /// the count on each axis. The recorded form is what every box header in the record
+        /// carries, and a reader comparing headers across rounds should not find them differing
+        /// by a string that names the same box.
+        /// </para>
+        /// <para>
+        /// fable-propose-aquarium.md ruling 1: the third shape, named by its radius and the area
+        /// that radius comes from, and by the wall where the box says wrap. Read off the world
+        /// rather than off the environment for the token's own reason — the radius is
+        /// <c>World.TankRadiusMetres</c>, the one the fields and the placer were built with, so
+        /// the header cannot describe a tank the simulation does not have. The box's token is
+        /// unchanged to the character.
+        /// </para>
+        /// <para>
+        /// <b>A method rather than the three branches it used to be inline</b>, so that
+        /// <see cref="SharedSpaceSmoke"/> can assert the string a tank run's header will carry by
+        /// calling the code that writes it (<c>logbook/specs/tank-spec.md</c>). A smoke holding a
+        /// second copy of the format would pass on the day the header changed, which is the one
+        /// day it exists to fail on.
+        /// </para>
+        /// </remarks>
+        public static string SpaceToken(RunConfig config, Ecosystem eco)
+        {
+            if (!config.SharedSpace) return "tiled " + Ecosystem.TileSpacing + " m";
+
+            if (config.WorldShape == WorldShape.Tank)
+            {
+                return
+                    "tank r=" +
+                    eco.World.TankRadiusMetres.ToString("0.##", CultureInfo.InvariantCulture) +
+                    " m (" +
+                    config.WorldAreaSquareMetres.ToString("0.###", CultureInfo.InvariantCulture) +
+                    " m2), depth " + config.WorldDepthMetres + ", " +
+                    // The glass, read off the Ecosystem for the bed's reason below: it is built or
+                    // not built by the constructor, and a header that inferred it from the shape
+                    // would still say "wall" on the day something stops it being built.
+                    (eco.Wall != null ? "wall" : "no wall") + ", " +
+                    (eco.Floor != null ? "bed" : "no bed");
+            }
+
+            float patchWidth = eco.World.Nutrients.PatchWidthMetres;
+            int patchesAcross = eco.World.Nutrients.PatchesAcross;
+            int patchesAlong = eco.World.Nutrients.PatchCount / patchesAcross;
+            string width = patchWidth.ToString("0.###", CultureInfo.InvariantCulture);
+            // One row of patches prints the form every recording carries ("4x5x5 m": the patch
+            // count and the patch width twice), so a box header reads as it always has; only a
+            // second row of patches prints the count on each axis (tank-spec.md's invariant).
+            string layout = patchesAcross > 1
+                ? patchesAlong + "x" + patchesAcross + "x" + width
+                : patchesAlong + "x" + width + "x" + width;
+
+            return
+                "shared " + layout + " m, depth " +
+                config.WorldDepthMetres + ", wrap, " +
+                // The bed, read off the Ecosystem rather than off the config: it is built or not
+                // built by the constructor, and a header that inferred it from SharedSpace would
+                // still say "bed" on the day something stops it being built.
+                (eco.Floor != null ? "bed" : "no bed");
+        }
 
         /// <summary>
         /// Fixes the table's shape for this run: the base columns plus one per patch.
@@ -3138,6 +3247,25 @@ namespace Evosim.Sim.EditorTools
 
             throw new ArgumentException(
                 name + " is '" + raw + "', which is neither 'rolls' nor 'transport'.");
+        }
+
+        /// <summary>
+        /// The container from the environment: `box` or `tank`, case-insensitive; unset is Box.
+        /// Anything else stops the launch, for <see cref="Env(string, float)"/>'s reason.
+        /// </summary>
+        private static WorldShape EnvWorldShape(string name)
+        {
+            string raw = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrEmpty(raw)) return WorldShape.Box;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "box": return WorldShape.Box;
+                case "tank": return WorldShape.Tank;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is neither 'box' nor 'tank'.");
         }
 
         private static float Env(string name, float fallback)

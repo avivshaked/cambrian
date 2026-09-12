@@ -13,10 +13,15 @@ Usage:
     python scripts/positions-read.py <arm> --at 1000,5000,20000 [--out scratch/positions/<arm>]
 
 --summary prints, per printed sample: how many bodies the row carries, how many 1 m columns of
-the box's footprint they stand on, the circular spread of x and z (circular because the box wraps,
-the same statistic the report's `x sd` is), the median nearest-neighbour distance flat and in
-three dimensions, the count and mean depth of each guild, and, when lineage.jsonl is present, how
-many bodies have another body of their own clade within a metre.
+the footprint they stand on, the spread of x and z (the same statistic the report's `x sd` is:
+circular in a box, because it wraps, and plain in a tank, because it does not), the median
+nearest-neighbour distance flat and in three dimensions, the count and mean depth of each guild,
+and, when lineage.jsonl is present, how many bodies have another body of their own clade within
+a metre.
+
+The water is whatever shape the run's config.json says it is: D077's periodic box, or the walled
+cylinder of fable-propose-aquarium.md ruling 1 (logbook/specs/tank-spec.md). Everything that
+depends on the shape lives in the two geometry classes below and nowhere else.
 
 --at prints the same numbers for the sample nearest each time and, when matplotlib is installed,
 writes four pictures per time: the box from the side, from the end, from above, and the side again
@@ -130,37 +135,200 @@ def find_field(node, name):
     return None
 
 
-class Box:
-    """The water, as the run's own settings describe it: K patches of W metres, D metres deep."""
+def world_of(config):
+    """The water this run was in — a Box or a Tank, read from config.json and never guessed.
 
-    def __init__(self, config):
-        area = find_field(config, 'worldAreaSquareMetres')
-        patches = find_field(config, 'horizontalPatches')
-        depth = find_field(config, 'worldDepthMetres')
+    The shape is a world rule (RunConfig.WorldShape, fable-propose-aquarium.md ruling 1), and the
+    two geometries disagree about everything this reader prints: what a separation is, what a
+    spread means, how many columns the footprint has, which patch a position is in. Defaulted to
+    the box where the key is absent, for the same reason the layout is: every config written
+    before the knob describes a periodic box, and those runs have no other shape to be.
+    """
+    area = find_field(config, 'worldAreaSquareMetres')
+    patches = find_field(config, 'horizontalPatches')
+    depth = find_field(config, 'worldDepthMetres')
 
-        missing = [n for n, v in (('worldAreaSquareMetres', area),
-                                  ('horizontalPatches', patches),
-                                  ('worldDepthMetres', depth)) if v is None]
-        if missing:
-            fail('config.json carries none of: ' + ', '.join(missing))
+    missing = [n for n, v in (('worldAreaSquareMetres', area),
+                              ('horizontalPatches', patches),
+                              ('worldDepthMetres', depth)) if v is None]
+    if missing:
+        fail('config.json carries none of: ' + ', '.join(missing))
 
-        # SharedVolume's own arithmetic: K = max(1, patches), W = sqrt(area / K), the box's z
-        # extent and one patch's side; the length is K x W, the way around the ring.
-        self.patches = max(1, int(patches))
-        self.width = math.sqrt(float(area) / self.patches)
-        self.length = self.width * self.patches
+    shape = find_field(config, 'worldShape')
+
+    if shape is not None and str(shape).lower() == 'tank':
+        return Tank(float(area), patches, float(depth))
+
+    return Box(config, float(area), patches, float(depth))
+
+
+class Water:
+    """What both shapes have in common: a depth, a bounding rectangle, and a grid of columns.
+
+    The bounding rectangle is the box itself in a box and the circle's bounding square in a tank
+    (TankGeometry), so the pictures, the column grid and everything that wants an extent can be
+    written once.
+    """
+
+    def __init__(self, length, width, depth):
+        self.length = length
+        self.width = width
         self.depth = float(depth)
 
         self.columns_x = max(1, math.ceil(self.length / COLUMN_METRES))
         self.columns_z = max(1, math.ceil(self.width / COLUMN_METRES))
 
+    def column_of(self, x, z):
+        """Which 1 m column a position stands in, clamped — Ecosystem.MeasureHorizontalSpread."""
+        ix = min(self.columns_x - 1, max(0, int(math.floor(x / COLUMN_METRES))))
+        iz = min(self.columns_z - 1, max(0, int(math.floor(z / COLUMN_METRES))))
+        return ix, iz
+
+    def occupied_columns(self, xs, zs):
+        return len({self.column_of(xs[i], zs[i]) for i in range(len(xs))})
+
+    @property
+    def rim(self):
+        """(x, z, radius) of the glass, or None in a box. What a picture draws the water as."""
+        return None
+
+
+class Box(Water):
+    """D077's water: K patches of W metres laid K/A along x by A across z, D metres deep."""
+
+    def __init__(self, config, area, patches, depth):
+        # The layout (fable-propose-box.md), defaulted to 1 rather than demanded: every config
+        # written before the knob describes a row of patches, and this reader's whole job is to
+        # read runs that already exist. The C# refuses a missing key because a simulation that
+        # guessed a world rule would run a world nobody asked for; a reader that guessed the
+        # shape of a box already on disk would be wrong in a way the run could contradict, and
+        # the runs on disk cannot: they have no other shape.
+        across = find_field(config, 'patchesAcross')
+
+        # SharedVolume's own arithmetic: K = max(1, patches), W = sqrt(area / K), one patch's
+        # side; the box is K/A patches long and A wide.
+        self.patches = max(1, int(patches))
+        self.across = min(self.patches, max(1, int(across))) if across is not None else 1
+        self.along = max(1, self.patches // self.across)
+        self.patch_metres = math.sqrt(area / self.patches)
+
+        Water.__init__(self, self.patch_metres * self.along, self.patch_metres * self.across, depth)
+
     @property
     def total_columns(self):
+        """Every column of the box: a periodic footprint has no outside to exclude."""
         return self.columns_x * self.columns_z
 
+    def dx(self, delta):
+        return wrapped(delta, self.length)
+
+    def dz(self, delta):
+        return wrapped(delta, self.width)
+
+    def spreads(self, xs, zs):
+        """Circular standard deviations, as Ecosystem.CircularSpread takes them."""
+        n = len(xs)
+        sin_x = cos_x = sin_z = cos_z = 0.0
+
+        for i in range(n):
+            angle_x = 2.0 * math.pi * xs[i] / self.length
+            angle_z = 2.0 * math.pi * zs[i] / self.width
+
+            sin_x += math.sin(angle_x)
+            cos_x += math.cos(angle_x)
+            sin_z += math.sin(angle_z)
+            cos_z += math.cos(angle_z)
+
+        return (circular_spread(sin_x, cos_x, n, self.length),
+                circular_spread(sin_z, cos_z, n, self.width))
+
+    def patch_of(self, x, z):
+        """The patch a position is in — World.PatchOfXZ, iz·(K/A) + ix, numbered along x first."""
+        ix = int(math.floor((x % self.length) / self.patch_metres)) % self.along
+        if self.across == 1:
+            return ix
+
+        iz = int(math.floor((z % self.width) / self.patch_metres)) % self.across
+        return iz * self.along + ix
+
     def __str__(self):
-        return (f'{self.length:.3g} x {self.width:.3g} m, {self.depth:.3g} m deep, '
-                f'{self.patches} patch(es)')
+        # The layout is named only where it is not a row, so a reading of a run recorded before
+        # the knob says exactly what it always said.
+        layout = '' if self.across == 1 else f' laid {self.along} x {self.across}'
+
+        # The noun is the shape's own, not the caller's: "box 20 x 5 m" and "tank r=5.64 m"
+        # are printed by one format string, and a reading of a box says exactly what it always
+        # said.
+        return (f'box {self.length:.3g} x {self.width:.3g} m, {self.depth:.3g} m deep, '
+                f'{self.patches} patch(es){layout}')
+
+
+class Tank(Water):
+    """The aquarium: a cylinder of R = sqrt(area/pi) with a glass wall, D metres deep.
+
+    fable-propose-aquarium.md ruling 1, logbook/specs/tank-spec.md. The bounding square is
+    [0, 2R) x [0, 2R) with the axis at (R, R), so the storage and every picture stay rectangles
+    (TankGeometry); the patches are rings of equal area rather than squares; and there is no seam
+    anywhere, which is why the separations and the spreads below are the plain ones.
+    """
+
+    def __init__(self, area, patches, depth):
+        self.rings = max(1, int(patches))
+        self.radius = math.sqrt(area / math.pi)
+
+        Water.__init__(self, 2.0 * self.radius, 2.0 * self.radius, depth)
+
+        # The denominator is the footprint the population could be standing on, which is the
+        # columns whose own centres are in the water -- the same test Ecosystem makes at the same
+        # 1 m scale, so this reader's `cols` reproduces the report's. Counting the bounding square
+        # instead would report a world packed into 79% of the columns as packed into 100% of them.
+        self._live_columns = sum(
+            1
+            for ix in range(self.columns_x)
+            for iz in range(self.columns_z)
+            if self.inside((ix + 0.5) * COLUMN_METRES, (iz + 0.5) * COLUMN_METRES))
+
+    def inside(self, x, z):
+        """TankGeometry.Inside: (x-R)^2 + (z-R)^2 <= R^2."""
+        dx = x - self.radius
+        dz = z - self.radius
+        return dx * dx + dz * dz <= self.radius * self.radius
+
+    @property
+    def total_columns(self):
+        return self._live_columns
+
+    @property
+    def rim(self):
+        return self.radius, self.radius, self.radius
+
+    def dx(self, delta):
+        """The plain separation. A tank has a wall where the box has a seam: nothing is ever
+        translated, and folding a separation would make two bodies on opposite sides of the glass
+        read as neighbours."""
+        return abs(delta)
+
+    def dz(self, delta):
+        return abs(delta)
+
+    def spreads(self, xs, zs):
+        """Ordinary (population) standard deviations, as Ecosystem.PlainSpread takes them."""
+        return plain_spread(xs), plain_spread(zs)
+
+    def patch_of(self, x, z):
+        """The ring of equal area a position falls in — TankGeometry.RingOf, floor(K.(r/R)^2)."""
+        if self.radius <= 0:
+            return 0
+
+        dx = x - self.radius
+        dz = z - self.radius
+        ring = int((dx * dx + dz * dz) / (self.radius * self.radius) * self.rings)
+
+        return min(self.rings - 1, max(0, ring))
+
+    def __str__(self):
+        return (f'tank r={self.radius:.3g} m ({math.pi * self.radius * self.radius:.3g} m2), '
+                f'{self.depth:.3g} m deep, {self.rings} ring(s)')
 
 
 # ---------------------------------------------------------------- the statistics
@@ -183,13 +351,31 @@ def circular_spread(sin_sum, cos_sum, count, extent):
     return min(extent, radians * extent / (2.0 * math.pi))
 
 
+def plain_spread(values):
+    """The ordinary standard deviation, as Ecosystem.PlainSpread computes it — the tank's.
+
+    The population form rather than the sample one, so that it is comparable with the depths
+    beside it; 0 for fewer than two bodies, where there is no spread to speak of rather than a
+    spread of nothing. There is no seam in a tank, so the circular statistic above would read a
+    population packed against one side of the glass as evenly spread.
+    """
+    n = len(values)
+    if n < 2:
+        return 0.0
+
+    mean = sum(values) / n
+    variance = sum(v * v for v in values) / n - mean * mean
+
+    return math.sqrt(variance) if variance > 0 else 0.0
+
+
 def wrapped(delta, extent):
     """Separation on a periodic axis: the shorter way round."""
     delta = abs(delta)
     return extent - delta if delta > extent * 0.5 else delta
 
 
-def nearest_neighbours(xs, ys, zs, box, max_queries):
+def nearest_neighbours(xs, ys, zs, water, max_queries):
     """Median nearest-neighbour distance, flat and in three dimensions.
 
     Brute force. A KD-tree is unnecessary at the populations this project runs and would be one
@@ -220,8 +406,8 @@ def nearest_neighbours(xs, ys, zs, box, max_queries):
             if j == i:
                 continue
 
-            dx = wrapped(xi - xs[j], box.length)
-            dz = wrapped(zi - zs[j], box.width)
+            dx = water.dx(xi - xs[j])
+            dz = water.dz(zi - zs[j])
             dy = yi - ys[j]
 
             f = dx * dx + dz * dz
@@ -247,7 +433,7 @@ def median(values):
     return ordered[mid] if n % 2 else 0.5 * (ordered[mid - 1] + ordered[mid])
 
 
-def close_kin(ids, xs, ys, zs, box, clade_of):
+def close_kin(ids, xs, ys, zs, water, clade_of):
     """Bodies with another body of their own clade within CLADE_RADIUS_METRES, in three dimensions.
 
     The question logbook/0083 leaves behind: a clade packed around its founder's spot and a clade
@@ -271,8 +457,8 @@ def close_kin(ids, xs, ys, zs, box, clade_of):
             if j == i or clades[j] != ci:
                 continue
 
-            dx = wrapped(xs[i] - xs[j], box.length)
-            dz = wrapped(zs[i] - zs[j], box.width)
+            dx = water.dx(xs[i] - xs[j])
+            dz = water.dz(zs[i] - zs[j])
             dy = ys[i] - ys[j]
 
             if dx * dx + dz * dz + dy * dy <= radius:
@@ -386,7 +572,7 @@ def unpack(line):
 # ---------------------------------------------------------------- one sample, measured
 
 class Sample:
-    def __init__(self, t, ids, xs, ys, zs, flags, box, clade_of, max_queries):
+    def __init__(self, t, ids, xs, ys, zs, flags, water, clade_of, max_queries):
         self.t = t
         self.ids = ids
         self.xs = xs
@@ -394,31 +580,18 @@ class Sample:
         self.zs = zs
         self.flags = flags
         self.n = len(ids)
-        self.box = box
+        self.water = water
         self.guilds = [guild_of(f) for f in flags]
 
-        columns = set()
-        sin_x = cos_x = sin_z = cos_z = 0.0
-
-        for i in range(self.n):
-            ix = min(box.columns_x - 1, max(0, int(math.floor(xs[i] / COLUMN_METRES))))
-            iz = min(box.columns_z - 1, max(0, int(math.floor(zs[i] / COLUMN_METRES))))
-            columns.add((ix, iz))
-
-            angle_x = 2.0 * math.pi * xs[i] / box.length
-            angle_z = 2.0 * math.pi * zs[i] / box.width
-
-            sin_x += math.sin(angle_x)
-            cos_x += math.cos(angle_x)
-            sin_z += math.sin(angle_z)
-            cos_z += math.cos(angle_z)
-
-        self.columns = len(columns)
-        self.x_spread = circular_spread(sin_x, cos_x, self.n, box.length)
-        self.z_spread = circular_spread(sin_z, cos_z, self.n, box.width)
+        # Both of these are the water's own business and neither is computed here: a box counts
+        # every column of its footprint and takes circular deviations, a tank counts the columns
+        # inside the glass and takes plain ones, and a Sample that knew which was which would be a
+        # second opinion about the shape of the world.
+        self.columns = water.occupied_columns(xs, zs)
+        self.x_spread, self.z_spread = water.spreads(xs, zs)
 
         self.nn_flat, self.nn_solid, self.nn_approximate = nearest_neighbours(
-            xs, ys, zs, box, max_queries)
+            xs, ys, zs, water, max_queries)
 
         self.guild_count = {g: 0 for g in GUILDS}
         depth_sum = {g: 0.0 for g in GUILDS}
@@ -444,7 +617,7 @@ class Sample:
         rigid_n = self.n - len(jointed)
         self.rigid_depth = ((sum(ys) - sum(ys[i] for i in jointed)) / rigid_n) if rigid_n else None
 
-        self.close_kin = close_kin(ids, xs, ys, zs, box, clade_of)
+        self.close_kin = close_kin(ids, xs, ys, zs, water, clade_of)
 
 
 # ---------------------------------------------------------------- printing
@@ -470,7 +643,7 @@ def sample_line(s):
     values = [
         f'{s.t:.1f}',
         str(s.n),
-        f'{s.columns}/{s.box.total_columns}',
+        f'{s.columns}/{s.water.total_columns}',
         number(s.x_spread),
         number(s.z_spread),
         tilde + number(s.nn_flat),
@@ -504,17 +677,25 @@ def matplotlib_or_none():
 def draw(plt, sample, arm, out_dir, clade_of):
     """Four pictures of one sample: side, end, top, and the side again coloured by clade."""
     os.makedirs(out_dir, exist_ok=True)
-    box = sample.box
+    water = sample.water
     written = []
 
     views = [
-        ('side', 'x (m)', 'y (m)', sample.xs, sample.ys, (0, box.length), (-box.depth, 0)),
-        ('end', 'z (m)', 'y (m)', sample.zs, sample.ys, (0, box.width), (-box.depth, 0)),
-        ('top', 'x (m)', 'z (m)', sample.xs, sample.zs, (0, box.length), (0, box.width)),
+        ('side', 'x (m)', 'y (m)', sample.xs, sample.ys, (0, water.length), (-water.depth, 0)),
+        ('end', 'z (m)', 'y (m)', sample.zs, sample.ys, (0, water.width), (-water.depth, 0)),
+        ('top', 'x (m)', 'z (m)', sample.xs, sample.zs, (0, water.length), (0, water.width)),
     ]
 
     for name, xlabel, ylabel, horizontal, vertical, xlim, ylim in views:
         fig, ax = plt.subplots(figsize=(9, 6))
+
+        # The glass, on the one view that looks down it. In a tank the frame is the circle's
+        # bounding square, so without this a viewer cannot tell a population against the wall
+        # from one in open water -- the reason the theatre draws the same circle.
+        if name == 'top' and water.rim is not None:
+            cx, cz, radius = water.rim
+            ax.add_patch(plt.Circle((cx, cz), radius, fill=False,
+                                    edgecolor='#3b6fb6', linewidth=0.8, alpha=0.7))
 
         for g in GUILDS:
             picked = [i for i in range(sample.n) if sample.guilds[i] == g]
@@ -546,7 +727,12 @@ def draw(plt, sample, arm, out_dir, clade_of):
 
 
 def frame(ax, xlim, ylim):
-    """The whole box in frame, so that two samples of one run can be laid side by side."""
+    """The whole water in frame, so that two samples of one run can be laid side by side.
+
+    A tank is framed by the circle's bounding square, for the reason SnapshotCamera.BoxOf frames
+    one that way: the square and the circle touch on all four sides, so nothing is cropped and the
+    corners cost a few percent of the picture.
+    """
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
     ax.set_aspect('equal', adjustable='box')
@@ -586,7 +772,7 @@ def draw_clades(plt, sample, arm, out_dir, clade_of):
                    s=8, c=palette[rank % len(palette)],
                    label=f'clade {clade} ({counts[clade]})', alpha=0.85, linewidths=0)
 
-    frame(ax, (0, sample.box.length), (-sample.box.depth, 0))
+    frame(ax, (0, sample.water.length), (-sample.water.depth, 0))
     ax.set_xlabel('x (m)')
     ax.set_ylabel('y (m)')
     ax.set_title(f'{arm} | t = {sample.t:.0f} s | alive {sample.n} | side view by clade')
@@ -602,9 +788,9 @@ def draw_clades(plt, sample, arm, out_dir, clade_of):
 
 # ---------------------------------------------------------------- the two modes
 
-def summarise(args, run_dir, positions, box, clade_of, births):
-    print(f'arm {args.arm} | run {os.path.basename(run_dir)} | box {box}')
-    print(f'columns of {COLUMN_METRES:.0f} m: {box.total_columns} | '
+def summarise(args, run_dir, positions, water, clade_of, births):
+    print(f'arm {args.arm} | run {os.path.basename(run_dir)} | {water}')
+    print(f'columns of {COLUMN_METRES:.0f} m: {water.total_columns} | '
           + (f'lineage.jsonl: {births} births, '
              f'{len(set(clade_of.values()))} clades' if clade_of is not None
              else 'no lineage.jsonl: the clade column is a dash'))
@@ -620,7 +806,7 @@ def summarise(args, run_dir, positions, box, clade_of, births):
             continue
 
         _, ids, xs, ys, zs, flags = unpack(line)
-        sample = Sample(t, ids, xs, ys, zs, flags, box, clade_of, args.nn_max)
+        sample = Sample(t, ids, xs, ys, zs, flags, water, clade_of, args.nn_max)
         print(sample_line(sample))
         printed += 1
 
@@ -633,7 +819,7 @@ def summarise(args, run_dir, positions, box, clade_of, births):
               'means the run was killed before its first sample.')
 
 
-def at_times(args, run_dir, positions, box, clade_of, births):
+def at_times(args, run_dir, positions, water, clade_of, births):
     wanted = []
     for piece in args.at.split(','):
         piece = piece.strip()
@@ -661,7 +847,7 @@ def at_times(args, run_dir, positions, box, clade_of, births):
 
     out_dir = args.out
 
-    print(f'arm {args.arm} | run {os.path.basename(run_dir)} | box {box}')
+    print(f'arm {args.arm} | run {os.path.basename(run_dir)} | {water}')
     if clade_of is not None:
         print(f'lineage.jsonl: {births} births, {len(set(clade_of.values()))} clades')
     print()
@@ -675,7 +861,7 @@ def at_times(args, run_dir, positions, box, clade_of, births):
             continue
 
         t, ids, xs, ys, zs, flags = unpack(line)
-        sample = Sample(t, ids, xs, ys, zs, flags, box, clade_of, args.nn_max)
+        sample = Sample(t, ids, xs, ys, zs, flags, water, clade_of, args.nn_max)
         samples.append((target, gap, sample))
         print(sample_line(sample))
 
@@ -737,17 +923,17 @@ def main():
         fail(f'{args.arm}: no config.json in {run_dir}, so the box has no dimensions.')
 
     with open(config_path, encoding='utf-8') as f:
-        box = Box(json.load(f))
+        water = world_of(json.load(f))
 
     clade_of, births = read_clades(os.path.join(run_dir, 'lineage.jsonl'))
 
     if args.summary:
-        summarise(args, run_dir, positions, box, clade_of, births)
+        summarise(args, run_dir, positions, water, clade_of, births)
 
     if args.at:
         if args.summary:
             print()
-        at_times(args, run_dir, positions, box, clade_of, births)
+        at_times(args, run_dir, positions, water, clade_of, births)
 
     return 0
 

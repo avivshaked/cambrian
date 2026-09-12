@@ -12,19 +12,19 @@ namespace Evosim.Sim
     /// <para>
     /// <b>The box is literal, and it is the one the ecology was already priced against.</b>
     /// <c>RunConfig.WorldAreaSquareMetres</c> is the sun's aperture and the denominator of every
-    /// density the world reads (<c>scratch/footprint-survey.md</c>), and
-    /// <c>RunConfig.HorizontalPatches</c> already divides it into K columns of
+    /// density the world reads (<c>logbook/specs/footprint-survey.md</c>), and
+    /// <c>RunConfig.HorizontalPatches</c> already divides it into K patches of
     /// <c>sqrt(area / K)</c> metres — the width <c>NutrientField.PatchWidthMetres</c> computes and
-    /// the vent's drag term already uses. So the box is K of those columns side by side on a ring:
-    /// x ∈ [0, K·W), y ∈ [−D, 0], z ∈ [0, W). Nothing new is chosen here; a geometry that was
-    /// inert becomes load-bearing.
+    /// the vent's drag term already uses. So the box is those patches laid out K/A along x by
+    /// <c>RunConfig.PatchesAcross</c> across z: x ∈ [0, W·K/A), y ∈ [−D, 0], z ∈ [0, W·A).
+    /// Nothing new is chosen here; a geometry that was inert becomes load-bearing.
     /// </para>
     /// <para>
     /// <b>A patch is a place, not an index.</b> Until D077 a creature carried a patch number it
     /// inherited at birth and changed only by lottery, while its body sat on a lattice a hundred
     /// metres from its neighbours and unrelated to either. Here the number is read from where the
-    /// root actually is — <c>floor(x / W) mod K</c> — so a creature is in the water it is swimming
-    /// in, and it changes patch because something moved it.
+    /// root actually is — <see cref="PatchOf(float, float)"/> — so a creature is in the water it
+    /// is swimming in, and it changes patch because something moved it.
     /// </para>
     /// <para>
     /// <b>The horizontal boundary is periodic</b> (<see cref="TryWrap"/>): a root that leaves by
@@ -34,6 +34,19 @@ namespace Evosim.Sim
     /// the ring describes, and are K·W metres apart to PhysX and to the placement below — so they
     /// neither collide nor block each other's births. The alternative is ghost bodies at every
     /// face, which is six copies of a population that already sets the throughput ceiling.
+    /// </para>
+    /// <para>
+    /// <b>Or the water is a tank</b> — <c>fable-propose-aquarium.md</c> ruling 1,
+    /// <c>logbook/specs/tank-spec.md</c>. Then the footprint is a disc of
+    /// <c>R = sqrt(area/π)</c> in a bounding square <c>[0, 2R)²</c> about an axis at
+    /// <c>(R, R)</c>, so every reader of <see cref="LengthMetres"/> and <see cref="WidthMetres"/>
+    /// still sees a rectangle and the hash is still a hash over one; a patch is a ring of equal
+    /// area rather than a square; the boundary is <see cref="TankWall"/>'s collider rather than
+    /// the translation above, so <see cref="TryWrap"/> always says no and
+    /// <see cref="ShortestDistance"/> is the plain distance; and a founder is drawn uniformly over
+    /// the disc while a newborn is drawn exactly as it always was and refused if it lands past the
+    /// glass. Nothing else in this class is different, which is the point: the tank is a
+    /// container, not a second set of rules about who may be born.
     /// </para>
     /// <para>
     /// <b>Placement is rejection-sampled on bounding spheres and never overlaps</b>, because two
@@ -100,11 +113,29 @@ namespace Evosim.Sim
             float patchWidthMetres,
             float depthMetres,
             ulong seed,
-            float offspringDispersalMetres = 0f)
+            float offspringDispersalMetres = 0f,
+            int patchesAcross = 1,
+            WorldShape shape = WorldShape.Box,
+            float tankRadiusMetres = 0f)
         {
             PatchCount = Mathf.Max(1, patchCount);
             PatchWidthMetres = Mathf.Max(0.01f, patchWidthMetres);
             DepthMetres = Mathf.Max(0.01f, depthMetres);
+
+            // fable-propose-aquarium.md ruling 1. Clamped rather than refused, the way the patch
+            // count and the layout above are: World has already refused every tank it cannot
+            // build, and a placer that threw on a shape the world accepted would be a second
+            // opinion about the same geometry. A tank with no radius falls back to the box, which
+            // is the one direction that cannot invent water.
+            Shape = tankRadiusMetres > 0f ? shape : WorldShape.Box;
+            TankRadiusMetres = Shape == WorldShape.Tank ? tankRadiusMetres : 0f;
+
+            // fable-propose-box.md's layout. Clamped rather than refused, the way the patch
+            // count above is: World has already refused a world whose A does not divide K,
+            // and a placer that threw on a number the world accepted would be a second
+            // opinion about the same geometry.
+            PatchesAcross = Mathf.Clamp(patchesAcross, 1, PatchCount);
+            PatchesAlong = Mathf.Max(1, PatchCount / PatchesAcross);
 
             // Floored at 0 rather than trusted: a negative radius would pass Mathf.Sqrt as NaN and
             // put a newborn nowhere, which the free test would then reject 64 times over and file
@@ -126,7 +157,7 @@ namespace Evosim.Sim
         public float OffspringDispersalMetres { get; }
 
         /// <summary>
-        /// The sea bed, once there is one — <c>scratch/floor-spec.md</c> rule 2. Null leaves the
+        /// The sea bed, once there is one — <c>logbook/specs/floor-spec.md</c> rule 2. Null leaves the
         /// depth a body is offered untouched, which is the pre-floor behaviour.
         /// </summary>
         /// <remarks>
@@ -154,14 +185,55 @@ namespace Evosim.Sim
         /// <summary>K — <see cref="RunConfig.HorizontalPatches"/>, floored at 1.</summary>
         public int PatchCount { get; }
 
-        /// <summary>W = sqrt(area / K), metres. One patch's side, and the box's z extent.</summary>
+        /// <summary>W = sqrt(area / K), metres. One patch's side, on both horizontal axes.</summary>
         public float PatchWidthMetres { get; }
 
         /// <summary>D — <see cref="RunConfig.WorldDepthMetres"/>.</summary>
         public float DepthMetres { get; }
 
-        /// <summary>K·W: the box's x extent, the way around the ring.</summary>
-        public float LengthMetres => PatchWidthMetres * PatchCount;
+        /// <summary>A — <see cref="RunConfig.PatchesAcross"/>, the patches across z.</summary>
+        public int PatchesAcross { get; }
+
+        /// <summary>K / A — the patches along x.</summary>
+        public int PatchesAlong { get; }
+
+        /// <summary>
+        /// The container — <c>RunConfig.WorldShape</c>. <c>Box</c> is D077's periodic footprint
+        /// and every run on file; <c>Tank</c> is the walled cylinder of
+        /// <c>fable-propose-aquarium.md</c> ruling 1.
+        /// </summary>
+        /// <remarks>
+        /// <b>Three of this class's rules change with it and no others.</b> The boundary is a wall
+        /// rather than a translation, so <see cref="TryWrap"/> always says no and
+        /// <see cref="Wraps"/> reads 0 by construction; the distance between two bodies is the
+        /// plain one, because there is no shorter way round; and a patch is a ring of equal area
+        /// about the axis. Placement, the spatial hash, the bed's clearance, the attempt budget
+        /// and the dispersal disc are the same rules in both, which is what makes the tank a
+        /// container and not a second ecology.
+        /// </remarks>
+        public WorldShape Shape { get; }
+
+        /// <summary>The tank's radius, m — 0 in a box. <c>World.TankRadiusMetres</c>.</summary>
+        public float TankRadiusMetres { get; }
+
+        /// <summary>Where the axis stands in the bounding square: <c>(R, R)</c>.</summary>
+        private float Axis => TankRadiusMetres;
+
+        /// <summary>W·K/A: the box's x extent, the way around the ring. 2R in a tank.</summary>
+        public float LengthMetres =>
+            Shape == WorldShape.Tank ? 2f * TankRadiusMetres : PatchWidthMetres * PatchesAlong;
+
+        /// <summary>W·A: the box's z extent, the way around the other ring. 2R in a tank.</summary>
+        public float WidthMetres =>
+            Shape == WorldShape.Tank ? 2f * TankRadiusMetres : PatchWidthMetres * PatchesAcross;
+
+        /// <summary>Whether a horizontal position is in the water. Always true in a box.</summary>
+        /// <remarks>
+        /// The box's own answer is "yes, after wrapping", since a periodic footprint has no
+        /// outside; the tank's is the circle. <c>TankGeometry.Inside</c>.
+        /// </remarks>
+        public bool InTheWater(float x, float z) =>
+            Shape != WorldShape.Tank || TankGeometry.Inside(x, z, TankRadiusMetres);
 
         /// <summary>Bodies translated at a seam, running total.</summary>
         public long Wraps { get; private set; }
@@ -180,21 +252,40 @@ namespace Evosim.Sim
 
         // ------------------------------------------------------------------------- the geometry
 
-        /// <summary>The patch a horizontal position falls in — <c>floor(x / W) mod K</c>.</summary>
+        /// <summary>
+        /// The patch a horizontal position falls in — <c>iz·(K/A) + ix</c>, numbered along x
+        /// first, and <c>floor(x / W) mod K</c> term for term at A = 1.
+        /// </summary>
         /// <remarks>
         /// The wrap is applied first, so a body that has drifted past a face between the last wrap
         /// and this read still reads a patch that exists. The second fold is there because C#'s
         /// <c>%</c> keeps the sign of its left operand.
         /// </remarks>
-        public int PatchOf(float x)
+        /// <remarks>
+        /// <b>In a tank it is the ring of equal area the position falls in</b>, 0 at the axis and
+        /// K−1 against the glass — <c>TankGeometry.RingOf</c>, the same arithmetic the fields and
+        /// the water read, so a body's patch and the water it is feeding from cannot disagree.
+        /// </remarks>
+        public int PatchOf(float x, float z)
         {
-            float wrapped = WrapAxis(x, LengthMetres);
-            int patch = (int)Mathf.Floor(wrapped / PatchWidthMetres);
+            if (Shape == WorldShape.Tank)
+            {
+                return TankGeometry.RingOf(x, z, TankRadiusMetres, PatchCount);
+            }
 
-            patch %= PatchCount;
-            if (patch < 0) patch += PatchCount;
+            int along = PatchesAlong;
 
-            return patch;
+            int ix = (int)Mathf.Floor(WrapAxis(x, LengthMetres) / PatchWidthMetres);
+            ix %= along;
+            if (ix < 0) ix += along;
+
+            if (PatchesAcross == 1) return ix;
+
+            int iz = (int)Mathf.Floor(WrapAxis(z, WidthMetres) / PatchWidthMetres);
+            iz %= PatchesAcross;
+            if (iz < 0) iz += PatchesAcross;
+
+            return iz * along + ix;
         }
 
         /// <summary>
@@ -209,11 +300,19 @@ namespace Evosim.Sim
         /// that keeps a periodic box's kinematics honest: on a ring the distance between two points
         /// is the shorter of the two arcs.
         /// </remarks>
+        /// <remarks>
+        /// <b>In a tank it is the plain distance.</b> The minimum image is a periodic box's fix
+        /// for a body that was translated at a seam; a tank has a wall there, nothing is ever
+        /// translated, and folding a separation would make two bodies on opposite sides of the
+        /// glass read as neighbours.
+        /// </remarks>
         public float ShortestDistance(Vector3 a, Vector3 b)
         {
+            if (Shape == WorldShape.Tank) return Vector3.Distance(a, b);
+
             float dx = Shortest(a.x - b.x, LengthMetres);
             float dy = a.y - b.y;
-            float dz = Shortest(a.z - b.z, PatchWidthMetres);
+            float dz = Shortest(a.z - b.z, WidthMetres);
 
             return Mathf.Sqrt(dx * dx + dy * dy + dz * dz);
         }
@@ -227,12 +326,23 @@ namespace Evosim.Sim
         }
 
         /// <summary>Where a root that has left the box belongs, or false if it is still inside.</summary>
+        /// <remarks>
+        /// <b>Always false in a tank</b>, where the boundary is a static collider
+        /// (<see cref="TankWall"/>) and a body is stopped rather than moved. That is the whole of
+        /// ruling 1: the owner watched round 36 seed 1 in the theatre and saw bodies displaced — a
+        /// jump, not a death and a birth — because D088's carrying current pushes a body across a
+        /// seam about every hundred seconds. So <see cref="Wraps"/> reads 0 in a tank by
+        /// construction, and the column is kept rather than dropped precisely so that a reader can
+        /// see that it does.
+        /// </remarks>
         public bool TryWrap(Vector3 p, out Vector3 wrapped)
         {
             wrapped = p;
 
+            if (Shape == WorldShape.Tank) return false;
+
             float length = LengthMetres;
-            float width = PatchWidthMetres;
+            float width = WidthMetres;
 
             if (p.x >= 0f && p.x < length && p.z >= 0f && p.z < width) return false;
 
@@ -338,8 +448,19 @@ namespace Evosim.Sim
             ((long)ix * 73856093L) ^ ((long)iy * 19349663L) ^ ((long)iz * 83492791L);
 
         /// <summary>Whether a sphere of <paramref name="radius"/> at <paramref name="p"/> is clear.</summary>
+        /// <remarks>
+        /// <b>And in the water.</b> A box has no outside — a draw past a face is folded back in —
+        /// so until the tank this only ever asked about other bodies. The tank's glass is asked
+        /// here rather than at each call site so that both reservation paths get the same answer
+        /// from the same place, and so that a refusal counts as a rejection exactly as a draw onto
+        /// an occupied spot does: a child that cannot be set down inside the tank in
+        /// <see cref="AttemptBudget"/> tries is a crowded stillbirth, which is the honest reading
+        /// of a world with no room in it (logbook/specs/tank-spec.md).
+        /// </remarks>
         private bool Free(Vector3 p, float radius)
         {
+            if (!InTheWater(p.x, p.z)) return false;
+
             if (!_gridBuilt) Build();
 
             // How far the search has to reach: the largest thing in the hash plus the thing being
@@ -383,7 +504,7 @@ namespace Evosim.Sim
             if (creature == null) return 0;
 
             return _known.TryGetValue(creature.Id, out Occupant at)
-                ? PatchOf(at.Position.x)
+                ? PatchOf(at.Position.x, at.Position.z)
                 : creature.Patch;
         }
 
@@ -476,15 +597,21 @@ namespace Evosim.Sim
                     ? Mathf.Max(distance, OffspringDispersalMetres * Mathf.Sqrt(_rng.NextFloat()))
                     : distance;
 
-                var candidate = new Vector3(
-                    WrapAxis(at.Position.x + reach * Mathf.Cos(angle), LengthMetres),
-                    y,
-                    WrapAxis(at.Position.z + reach * Mathf.Sin(angle), PatchWidthMetres));
+                // The box folds the draw back in at the far face; the tank has a wall there, so the
+                // draw stands as it fell and Free refuses it if it landed past the glass. A clamp
+                // to the rim instead would pile every outward draw against the wall.
+                float candidateX = at.Position.x + reach * Mathf.Cos(angle);
+                float candidateZ = at.Position.z + reach * Mathf.Sin(angle);
+
+                var candidate = Shape == WorldShape.Tank
+                    ? new Vector3(candidateX, y, candidateZ)
+                    : new Vector3(
+                        WrapAxis(candidateX, LengthMetres), y, WrapAxis(candidateZ, WidthMetres));
 
                 if (!Free(candidate, radius)) { Rejections++; continue; }
 
                 Reserve(candidate, radius);
-                patch = PatchOf(candidate.x);
+                patch = PatchOf(candidate.x, candidate.z);
 
                 // Only when the bed actually moved it. The height the world admits the child at
                 // has to be the height its body is built at, or the economy charges one layer for
@@ -517,13 +644,33 @@ namespace Evosim.Sim
                 // Uniform in the box at the depth the world drew, per D077: the depth is the
                 // founder lottery's business (RunConfig.FounderDepthSpread) and the horizontal
                 // position is this one's.
-                var candidate = new Vector3(
-                    _rng.Range(0f, LengthMetres), y, _rng.Range(0f, PatchWidthMetres));
+                //
+                // Uniform over the disc in a tank, which is r = R·sqrt(u) and not R·u: drawing the
+                // radius flat would put a quarter of the founders inside the innermost sixteenth
+                // of the water and call it a uniform world. Two draws either way, so the stream
+                // advances by the same amount in both shapes — it is a different world, not a
+                // different number of draws, which is the discipline every branch in this class
+                // keeps.
+                Vector3 candidate;
+
+                if (Shape == WorldShape.Tank)
+                {
+                    float r = TankRadiusMetres * Mathf.Sqrt(_rng.NextFloat());
+                    float theta = _rng.Range(0f, 2f * Mathf.PI);
+
+                    candidate = new Vector3(
+                        Axis + r * Mathf.Cos(theta), y, Axis + r * Mathf.Sin(theta));
+                }
+                else
+                {
+                    candidate = new Vector3(
+                        _rng.Range(0f, LengthMetres), y, _rng.Range(0f, WidthMetres));
+                }
 
                 if (!Free(candidate, radius)) { Rejections++; continue; }
 
                 Reserve(candidate, radius);
-                patch = PatchOf(candidate.x);
+                patch = PatchOf(candidate.x, candidate.z);
 
                 if (y > heightY) heightY = y;
 

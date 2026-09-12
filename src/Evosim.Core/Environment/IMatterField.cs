@@ -97,6 +97,26 @@ namespace Evosim.Core
         int LayerCount { get; }
         int PatchCount { get; }
         float PatchWidthMetres { get; }
+
+        /// <summary>
+        /// How many patches lie across z — <see cref="RunConfig.PatchesAcross"/>, A. 1 is the
+        /// row of patches every run on file was measured in.
+        /// </summary>
+        int PatchesAcross { get; }
+
+        /// <summary>The box's extent along x, m: <c>W · K / A</c>.</summary>
+        /// <remarks>
+        /// <b>On the interface so that no caller derives a box from a width.</b> Until
+        /// fable-propose-box.md the length was the patch width times the patch count wherever it
+        /// was wanted, which is true of one layout only; <see cref="World"/> recomputed it by hand
+        /// in three places and each would have had to learn the layout separately. A field knows
+        /// the box it was built with, so the box is read rather than rebuilt.
+        /// </remarks>
+        float LengthMetres { get; }
+
+        /// <summary>The box's extent along z, m: <c>W · A</c>.</summary>
+        float WidthMetres { get; }
+
         float LayerVolume { get; }
 
         /// <summary>Everything the field holds, J. Part of §5A.2's audit.</summary>

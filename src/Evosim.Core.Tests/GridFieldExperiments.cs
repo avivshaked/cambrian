@@ -126,6 +126,204 @@ namespace Evosim.Core.Tests
         }
 
         /// <summary>
+        /// Check 6 of <c>fable-propose-aquarium.md</c>: the same sitter-against-mover question,
+        /// asked of the world round 38 actually runs rather than the loose 144 m² box above —
+        /// <see cref="WorldShape.Tank"/> at the quadrupled footprint (400 m², radius
+        /// <see cref="TankGeometry.RadiusFor"/> of it) with the matter held at
+        /// <see cref="RunConfig.MatterBudgetUnits"/> 6,000. The detritus cell is the campaign's
+        /// 1 m (<see cref="RunConfig.FieldCellMetres"/>) and the matter cell its 5 m
+        /// (<see cref="RunConfig.FieldMatterCellMetres"/>); the depth is the world's own 60 m,
+        /// because 24 m — the box variant's toy depth — does not divide by 5. A tank has a wall
+        /// where the box had a seam, so the mover cannot wrap: it crosses the full diameter
+        /// through the axis and bounces off the glass, and the sitter sits on the axis itself.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>No gyre.</b> This reruns the box variant's own scripted mover — a straight track at
+        /// a fixed speed — rather than driving either body with <see cref="CurrentField"/>'s gyre;
+        /// the check asks what the mask and the mixing do to a mouth's reach, the same question
+        /// the box asked, not what the current adds on top of it. That is a deliberate narrowing
+        /// to keep this cheap, not a claim the gyre does nothing — a current-driven version is a
+        /// different, larger check than the proposal's check 6 asks for.
+        /// </para>
+        /// <para>
+        /// <b>Detritus is not the matter budget.</b> Ruling 2 dilutes
+        /// <see cref="RunConfig.MatterBudgetUnits"/>, which is <c>World.Matter</c>'s own field —
+        /// the reproduction currency — and not the food a mouth grazes (<c>World.Nutrients</c>):
+        /// light still makes detritus at the same rate per square metre wherever the glass sits,
+        /// so the first table keeps the food density at round 30's mean (rho = 2) exactly as the
+        /// box variant does and changes only the shape. The second table is what ruling 2 is
+        /// actually about: it reuses the identical demand/take mechanic on a field built like
+        /// <c>World.Matter</c>, seeded at the budget divided by the tank's own live volume — the
+        /// same division <see cref="World"/> itself seeds with — so it reads whether a mover
+        /// reaches materially more matter than a sitter once the budget is spread over four times
+        /// the footprint at the same total. There is no continuous matter grazing in the real
+        /// world (D055: a body draws matter in one lump at conception), so this is a probe built
+        /// from the field's own API and not a model of conception; it answers "is there more
+        /// matter near the mover's track than the sitter's spot", which is the quantity a founder
+        /// actually needs, in the units <see cref="RunConfig.MatterBudgetUnits"/> is priced in
+        /// rather than joules.
+        /// </para>
+        /// </remarks>
+        [Fact]
+        public void HowDeepAHoleASitterEatsInTheDiluteTank()
+        {
+            const float area = 400f;          // ruling 2's round 38 footprint, 4x the 100 m2 campaign
+            const float depth = 60f;          // the world's own depth; 24 (the box toy) does not divide by 5
+            const float matterBudget = 6000f; // ruling 2's held total
+            const int rings = 2;              // centre and rim — ruling 1's "the agent's pick is two rings"
+            const float detritusCell = 1f;    // RunConfig.FieldCellMetres
+            const float matterCell = 5f;      // RunConfig.FieldMatterCellMetres, D086's ruled value
+            const float rho = 2f;             // unchanged: detritus is not what ruling 2 dilutes
+            const float clearance = 10f;
+            const float volume = 0.05f;
+            const float dt = 0.5f;
+            const int steps = 400;            // 200 s, the box variant's own duration
+
+            float radius = TankGeometry.RadiusFor(area);
+            float diameter = 2f * radius;
+
+            // A tank has no seam to wrap at, so the mover bounces along the diameter through the
+            // axis instead of circling an annulus — the longest chord, and the one line guaranteed
+            // to stay inside the glass at every point between its ends.
+            float MoverXAt(double travelledMetres)
+            {
+                double period = 2d * diameter;
+                double onLine = travelledMetres % period;
+                if (onLine < 0) onLine += period;
+                return (float)(onLine <= diameter ? onLine : period - onLine);
+            }
+
+            FieldPoint TankPoint(float x, float y, float z) =>
+                new FieldPoint(new Float3(x, y, z), TankGeometry.RingOf(x, z, radius, rings));
+
+            _output.WriteLine(
+                $"tank: area {area:0} m2, radius {radius:0.000} m, depth {depth:0} m, matter budget {matterBudget:0} units, rings {rings}");
+
+            float[] mixing = { 0.2f, 0.02f };
+            float[] speeds = { 0.03f, 0.3f };
+            bool[] sourced = { false, true };
+
+            _output.WriteLine("-- detritus: rho fixed at round 30's mean, unchanged by ruling 2 --");
+            _output.WriteLine("cell(m)  reach m3  D(m2/s)  v(m/s)  sources  sitter J  mover J  mover/sitter  rho@sitter/mean  rho@mover/mean");
+
+            foreach (float d in mixing)
+            foreach (float v in speeds)
+            foreach (bool src in sourced)
+            {
+                var field = new GridField(area, 0f, depth, 0f, 0f, rings, detritusCell, 1, WorldShape.Tank, radius);
+                field.SeedUniform(rho);
+                double reach = field.CellVolume;
+
+                // Fixed sources at round 30's exudate rate per cubic metre, rejection-sampled into
+                // the disc rather than the bounding square: a corner deposit would be walked to the
+                // nearest live cell by GridField itself, but that would pile every corner's share
+                // onto the rim rather than spreading it the way real producers would.
+                var rng = new Rng(5UL);
+                int sources = src ? (int)(1.5f * area * depth) : 0;
+                var sx = new float[sources]; var sy = new float[sources]; var sz = new float[sources];
+                for (int i = 0; i < sources; i++)
+                {
+                    float x, z;
+                    do
+                    {
+                        x = rng.NextFloat() * diameter;
+                        z = rng.NextFloat() * diameter;
+                    } while (!TankGeometry.Inside(x, z, radius));
+
+                    sx[i] = x; sy[i] = -rng.NextFloat() * depth; sz[i] = z;
+                }
+                float perSource = sources > 0 ? 0.005f * area * depth * dt / sources : 0f;
+
+                FieldPoint sitter = TankPoint(radius, -10f, radius);
+                double sitterAte = 0, moverAte = 0;
+                double before = field.TotalJoules, deposited = 0;
+
+                for (int step = 0; step < steps; step++)
+                {
+                    FieldPoint mover = TankPoint(MoverXAt(v * dt * step), -10f, radius);
+
+                    field.ClearDemand();
+                    float wantS = field.EdibleDensityAt(sitter) * clearance * volume * dt;
+                    float wantM = field.EdibleDensityAt(mover) * clearance * volume * dt;
+                    field.Demand(sitter, wantS);
+                    field.Demand(mover, wantM);
+                    field.FreezeAvailability();
+                    sitterAte += field.Take(sitter, wantS * field.ShareAt(sitter));
+                    moverAte += field.Take(mover, wantM * field.ShareAt(mover));
+
+                    field.Mix(dt, d, d);
+                    for (int i = 0; i < sources; i++)
+                    {
+                        field.Deposit(TankPoint(sx[i], sy[i], sz[i]), perSource);
+                        deposited += perSource;
+                    }
+                }
+
+                FieldPoint moverEnd = TankPoint(MoverXAt(v * dt * steps), -10f, radius);
+                double mean = field.TotalJoules / field.LiveVolumeCubicMetres;
+                double atSitter = field.EdibleDensityAt(sitter) / mean;
+                double atMover = field.EdibleDensityAt(moverEnd) / mean;
+
+                _output.WriteLine(
+                    $"{detritusCell,7:0.0}  {reach,8:0.0}  {d,7:0.00}  {v,6:0.00}  {(src ? "on " : "off"),7}  {sitterAte,8:0.0}  {moverAte,7:0.0}  {moverAte / sitterAte,12:0.00}  {atSitter,15:0.00}  {atMover,14:0.00}");
+
+                Assert.Equal(before + deposited - sitterAte - moverAte, field.Recount(), 2);
+            }
+
+            // The matter field itself: cheap because GridField's Demand/Take/Mix API knows
+            // nothing about which substance it holds, so the same mechanic runs on a field built
+            // and seeded exactly the way World.cs builds and seeds World.Matter — see LiveVolumeOf
+            // and the seedDensity computation in World's constructor.
+            _output.WriteLine("-- matter: World.Matter's own field, seeded at the budget over the tank's live volume --");
+
+            var probe = new GridField(area, 0f, depth, 0f, 0f, rings, matterCell, 1, WorldShape.Tank, radius);
+            double liveVolume = probe.LiveVolumeCubicMetres;
+            float matterDensity = (float)(matterBudget / liveVolume);
+            _output.WriteLine(
+                $"matter cell live volume {liveVolume:0} m3 of a {diameter:0.00}x{diameter:0.00}x{depth:0} m bounding array -> seed density {matterDensity:0.000} units/m3");
+            _output.WriteLine("cell(m)  reach m3  D(m2/s)  v(m/s)  sitter units  mover units  mover/sitter  rho@sitter/mean  rho@mover/mean");
+
+            foreach (float d in mixing)
+            foreach (float v in speeds)
+            {
+                var field = new GridField(area, 0f, depth, 0f, 0f, rings, matterCell, 1, WorldShape.Tank, radius);
+                field.SeedUniform(matterDensity);
+                double reach = field.CellVolume;
+
+                FieldPoint sitter = TankPoint(radius, -10f, radius);
+                double sitterAte = 0, moverAte = 0;
+                double before = field.TotalJoules;
+
+                for (int step = 0; step < steps; step++)
+                {
+                    FieldPoint mover = TankPoint(MoverXAt(v * dt * step), -10f, radius);
+
+                    field.ClearDemand();
+                    float wantS = field.EdibleDensityAt(sitter) * clearance * volume * dt;
+                    float wantM = field.EdibleDensityAt(mover) * clearance * volume * dt;
+                    field.Demand(sitter, wantS);
+                    field.Demand(mover, wantM);
+                    field.FreezeAvailability();
+                    sitterAte += field.Take(sitter, wantS * field.ShareAt(sitter));
+                    moverAte += field.Take(mover, wantM * field.ShareAt(mover));
+
+                    field.Mix(dt, d, d);
+                }
+
+                FieldPoint moverEnd = TankPoint(MoverXAt(v * dt * steps), -10f, radius);
+                double mean = field.TotalJoules / field.LiveVolumeCubicMetres;
+                double atSitter = field.EdibleDensityAt(sitter) / mean;
+                double atMover = field.EdibleDensityAt(moverEnd) / mean;
+
+                _output.WriteLine(
+                    $"{matterCell,7:0.0}  {reach,8:0.0}  {d,7:0.00}  {v,6:0.00}  {sitterAte,12:0.000}  {moverAte,11:0.000}  {moverAte / sitterAte,12:0.00}  {atSitter,15:0.00}  {atMover,14:0.00}");
+
+                Assert.Equal(before - sitterAte - moverAte, field.Recount(), 2);
+            }
+        }
+
+        /// <summary>
         /// Where the food sits when the mixing comes down. Exudate at round 30's rate enters a band
         /// where its producers stand (−5 to −12 m) in a 60 m column, sinks at the world's rate, and
         /// is stirred at 0.2 or 0.02 m²/s with remineralisation off or on. No mouths: the profile

@@ -262,17 +262,33 @@ namespace Evosim.Theatre
                 RunConfig water = _replay.Record.Config;
 
                 // D077. A recording of a shared-space run has a literal box, so the theatre draws
-                // that box and the K-1 seams inside it rather than a lattice grid — the patch
-                // width from the world's own fields (sqrt(area / K)), never recomputed here. A
-                // tiled recording gets the grid it always got.
-                if (water.SharedSpace)
+                // that box and the seams inside it rather than a lattice grid — the patch width
+                // from the world's own fields (sqrt(area / K)), never recomputed here. The layout
+                // comes off the config too (fable-propose-box.md), or the picture would be of a
+                // box the run was not in. A tiled recording gets the grid it always got.
+                // fable-propose-aquarium.md ruling 1: the shape is read from the config like every
+                // other number here, never inferred. A tank of 100 m2 and a square box of 100 m2
+                // differ by their corners, and a viewer who cannot tell which they are watching
+                // cannot tell whether a body is against the glass or in open water. The radius
+                // comes from TankGeometry, the same square root World derived it with, rather than
+                // from a second one taken here — the rule the patch width below is read under.
+                if (water.SharedSpace && water.WorldShape == WorldShape.Tank)
+                {
+                    Water.ShowTank(
+                        water.WorldDepthMetres,
+                        TankGeometry.RadiusFor(water.WorldAreaSquareMetres),
+                        Mathf.Max(1, (int)water.HorizontalPatches));
+                }
+                else if (water.SharedSpace)
                 {
                     int patches = Mathf.Max(1, (int)water.HorizontalPatches);
+                    int across = Mathf.Clamp((int)water.PatchesAcross, 1, patches);
 
                     Water.ShowBox(
                         water.WorldDepthMetres,
                         Mathf.Sqrt(water.WorldAreaSquareMetres / patches),
-                        patches);
+                        Mathf.Max(1, patches / across),
+                        across);
                 }
                 else
                 {

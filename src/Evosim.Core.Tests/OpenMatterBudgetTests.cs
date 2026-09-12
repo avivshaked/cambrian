@@ -495,5 +495,71 @@ namespace Evosim.Core.Tests
 
             return $"({key} not in the file)";
         }
+
+        // ---------------------------------------------------------------------------------
+        // 5. The identity in a square box (fable-propose-box.md).
+        // ---------------------------------------------------------------------------------
+
+        [Fact]
+        public void TheIdentityClosesOverATwoByTwoWorld()
+        {
+            // The influx box and the burial loop are both derived from the box, and the box
+            // is what the layout moves: the surface deposit spans the whole footprint and
+            // burial walks every patch's floor. A layout that reached one and not the other
+            // would leak matter, and this is the identity that would say so.
+            //
+            // A grid world, because the cell field is refused above one patch across, and
+            // 144 m² over four patches laid two by two is 12 by 12 by 24 m: the detritus cell
+            // of 1 m and the matter cell of 3 m both divide it.
+            var config = new RunConfig
+            {
+                Light = new LightModel(100f, 12f),
+                SharedSpace = true,
+                FieldModel = MatterField.Grid,
+                WorldAreaSquareMetres = 144f,
+                WorldDepthMetres = 24f,
+                HorizontalPatches = 4f,
+                PatchesAcross = 2f,
+                MatterPerCreature = 1f,
+                MatterInfluxPerSecond = 0.5f,
+                MatterBurialPerSecond = 0.005f,
+                NutrientMixingDiffusivity = 0.2f,
+                HorizontalMixingDiffusivity = 0.2f,
+                MatterMixingDiffusivity = 0.2f,
+            };
+
+            var world = new World(config, seed: 11);
+
+            Assert.Equal(12f, ((GridField)world.Matter).LengthMetres);
+            Assert.Equal(12f, ((GridField)world.Matter).WidthMetres);
+
+            for (int step = 0; step < 1_000; step++) world.Step(0.5f);
+
+            double expected =
+                world.MatterInitialTotal + world.MatterInfluxedTotal - world.MatterBuriedTotal;
+            double actual = world.Matter.TotalJoules + world.MatterInBodies;
+
+            _output.WriteLine(Describe("two by two", world));
+            _output.WriteLine(
+                FormattableString.Invariant(
+                    $"initial {world.MatterInitialTotal:0.###} + in {world.MatterInfluxedTotal:0.###} ") +
+                FormattableString.Invariant(
+                    $"- buried {world.MatterBuriedTotal:0.###} = {expected:0.###} against ") +
+                FormattableString.Invariant(
+                    $"{world.Matter.TotalJoules:0.###} free + {world.MatterInBodies:0.###} locked"));
+
+            Assert.True(world.Births > 0, "nothing was born");
+            Assert.True(world.MatterInfluxedTotal > 0d, "the influx never fired");
+            Assert.True(world.MatterBuriedTotal > 0d, "the burial never fired");
+
+            Assert.True(
+                Math.Abs(expected - actual) <= 1e-3 * Math.Max(1d, Math.Abs(expected)),
+                FormattableString.Invariant($"identity open by {expected - actual:0.######}"));
+
+            // And the energy books, which the same passes move.
+            Assert.True(
+                Math.Abs(world.AuditResidual) <= 1e-6 * Math.Max(1d, world.EnergyIn),
+                FormattableString.Invariant($"audit residual {world.AuditResidual:R}"));
+        }
     }
 }

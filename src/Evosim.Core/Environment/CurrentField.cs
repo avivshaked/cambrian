@@ -423,10 +423,14 @@ namespace Evosim.Core
         /// <see cref="CurrentMode.Transport"/> needs and more than <see cref="CurrentMode.Rolls"/>
         /// reads.
         /// </summary>
-        /// <param name="patchWidthMetres">One patch's side, m. Also the box's z extent.</param>
-        /// <param name="patchCount">D061's patches, so the box is this many patches long in x.</param>
+        /// <param name="patchWidthMetres">One patch's side, m, on both horizontal axes.</param>
+        /// <param name="patchCount">D061's patches, K, laid out K/A along x by A across z.</param>
         /// <param name="depthMetres">The box's depth, m. The floor sits at −this.</param>
         /// <param name="seed">The run's seed, which the transport field's phases are drawn from.</param>
+        /// <param name="patchesAcross">
+        /// <see cref="RunConfig.PatchesAcross"/>, A. 1 is the row of patches this field has always
+        /// been built over, at which every number below is the one it always held.
+        /// </param>
         /// <remarks>
         /// <para>
         /// <b>State, not tunables, for <see cref="PatchWidthMetres"/>'s reason.</b> Every number
@@ -443,14 +447,49 @@ namespace Evosim.Core
         /// a replicate.
         /// </para>
         /// </remarks>
-        public void SetBox(float patchWidthMetres, int patchCount, float depthMetres, ulong seed)
+        /// <param name="shape">
+        /// <see cref="RunConfig.WorldShape"/>. <see cref="WorldShape.Box"/> is the container every
+        /// run on file was measured in, at which every number below is the one it always held.
+        /// </param>
+        /// <param name="tankRadiusMetres">
+        /// <c>sqrt(area/π)</c> when the shape is a tank, and unread otherwise — the world derives
+        /// it (<see cref="TankGeometry.RadiusFor"/>) rather than the field, so one geometry
+        /// reaches the fields, the placer and the water.
+        /// </param>
+        public void SetBox(
+            float patchWidthMetres, int patchCount, float depthMetres, ulong seed,
+            int patchesAcross = 1, WorldShape shape = WorldShape.Box, float tankRadiusMetres = 0f)
         {
             SetPatchWidth(patchWidthMetres);
+
+            if (shape == WorldShape.Tank && (!(tankRadiusMetres > 0f) || float.IsInfinity(tankRadiusMetres)))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(tankRadiusMetres), tankRadiusMetres,
+                    "A tank's water is a disc, so its radius is positive and finite. " +
+                    "logbook/specs/tank-spec.md.");
+            }
 
             if (patchCount < 1)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(patchCount), patchCount, "A box is at least one patch long.");
+            }
+
+            if (patchesAcross < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(patchesAcross), patchesAcross, "A box is at least one patch wide.");
+            }
+
+            if (patchCount % patchesAcross != 0)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"{patchesAcross} patches across do not divide {patchCount} patches, so ") +
+                    "the layout leaves a part row. The water is a field over a box, and a part " +
+                    "row is not a box.",
+                    nameof(patchesAcross));
             }
 
             if (!(depthMetres > 0f) || float.IsInfinity(depthMetres))
@@ -460,20 +499,65 @@ namespace Evosim.Core
             }
 
             _patchCount = patchCount;
+            _patchesAcross = patchesAcross;
             _depthMetres = depthMetres;
             _seed = seed;
+            _shape = shape;
+            _tankRadiusMetres = shape == WorldShape.Tank ? tankRadiusMetres : 0f;
 
             // Built lazily on the first sample, so a Rolls world never pays for it and a config
             // handed to two worlds of different geometry rebuilds rather than describing the first.
             _transportAmplitude = null;
+            _gyreBuilt = false;
         }
 
         private int _patchCount;
+        private int _patchesAcross = 1;
         private float _depthMetres;
         private ulong _seed;
+        private WorldShape _shape = WorldShape.Box;
+        private float _tankRadiusMetres;
 
-        /// <summary>The box's length along x, m: every patch side by side. 0 until a world says.</summary>
-        public float LengthMetres => _patchWidthMetres * _patchCount;
+        /// <summary>
+        /// The container this water is in — <see cref="RunConfig.WorldShape"/>.
+        /// <see cref="WorldShape.Box"/> until a world says otherwise.
+        /// </summary>
+        /// <remarks>
+        /// <b>The gyre is selected by the shape, not by the mode</b> (logbook/specs/tank-spec.md).
+        /// D037's standing waves and D066's rolls are a field over a row of patches and the
+        /// transport field is periodic on two rings; neither is a thing a walled cylinder can
+        /// hold. So in a tank <see cref="Speed"/> is the RMS of the gyre, whatever
+        /// <see cref="Mode"/> says, and <see cref="World"/> refuses a tank under
+        /// <see cref="CurrentMode.Rolls"/> at a nonzero speed rather than letting a config name a
+        /// field the water is not.
+        /// </remarks>
+        public WorldShape Shape => _shape;
+
+        /// <summary>The tank's radius, m — 0 in a box. <see cref="TankGeometry"/>.</summary>
+        public float TankRadiusMetres => _tankRadiusMetres;
+
+        /// <summary>
+        /// How many patches lie across z — <see cref="RunConfig.PatchesAcross"/>, A. 1 until a
+        /// world says otherwise, which is the row of patches every run on file was measured in.
+        /// </summary>
+        public int PatchesAcross => _patchesAcross;
+
+        /// <summary>Patches along x, <c>K / A</c>. 0 until a world says.</summary>
+        public int PatchesAlong => _patchesAcross < 1 ? 0 : _patchCount / _patchesAcross;
+
+        /// <summary>
+        /// The box's length along x, m: <c>W · K / A</c>, and <c>2R</c> in a tank. 0 until a
+        /// world says.
+        /// </summary>
+        public float LengthMetres =>
+            _shape == WorldShape.Tank ? 2f * _tankRadiusMetres : _patchWidthMetres * PatchesAlong;
+
+        /// <summary>
+        /// The box's extent along z, m: <c>W · A</c>, and <c>2R</c> in a tank. 0 until a world
+        /// says.
+        /// </summary>
+        public float WidthMetres =>
+            _shape == WorldShape.Tank ? 2f * _tankRadiusMetres : _patchWidthMetres * _patchesAcross;
 
         /// <summary>The box's depth, m. 0 until a world says.</summary>
         public float DepthMetres => _depthMetres;
@@ -594,11 +678,21 @@ namespace Evosim.Core
         /// cell and vertex fields' patch-level transport, which is a coarse-graining already and
         /// is honest about being one, and any harness that has only a depth.
         /// </remarks>
+        /// <remarks>
+        /// <b>In a tank it samples the gyre at the ring's mid-radius</b>, on the <c>θ = 0</c> ray,
+        /// for the same reason the transport field samples at the patch's centre: a ring index is
+        /// all this signature carries and the gyre is a function of a place. A tank runs a grid
+        /// (<see cref="World"/> refuses the cell field there), so the field that actually carries
+        /// stock reads <see cref="VelocityAt(float, float, float, double)"/> per cell and this
+        /// overload is left to whatever holds only a depth and a patch.
+        /// </remarks>
         public Float3 VelocityAt(float heightY, double seconds, int patch, int patchCount)
         {
-            Float3 flow = Mode == CurrentMode.Transport
-                ? TransportAt(PatchCentreX(patch), heightY, 0.5f * _patchWidthMetres, seconds)
-                : RollOrSteady(heightY, seconds, patch, patchCount);
+            Float3 flow = _shape == WorldShape.Tank
+                ? GyreAt(PatchCentreX(patch), heightY, PatchCentreZ(patch), seconds)
+                : Mode == CurrentMode.Transport
+                    ? TransportAt(PatchCentreX(patch), heightY, PatchCentreZ(patch), seconds)
+                    : RollOrSteady(heightY, seconds, patch, patchCount);
 
             if (!VentActive(patchCount)) return flow;
 
@@ -622,7 +716,7 @@ namespace Evosim.Core
         /// </summary>
         /// <param name="x">World x, m. The box is a ring <see cref="LengthMetres"/> long.</param>
         /// <param name="y">World height, m. Zero is the waterline, negative is down.</param>
-        /// <param name="z">World z, m. The box is a ring <see cref="PatchWidthMetres"/> wide.</param>
+        /// <param name="z">World z, m. The box is a ring <see cref="WidthMetres"/> wide.</param>
         /// <param name="seconds">The world's clock, s.</param>
         /// <remarks>
         /// <b>In <see cref="CurrentMode.Rolls"/> the horizontal coordinates buy only the patch</b>,
@@ -634,16 +728,21 @@ namespace Evosim.Core
         /// </remarks>
         public Float3 VelocityAt(float x, float y, float z, double seconds)
         {
-            if (Mode != CurrentMode.Transport)
+            // The tank's water is the gyre whatever the mode says — see Shape. The vent is added
+            // exactly as it is to the other two fields, and is off in every launcher that has a
+            // tank in it.
+            if (_shape != WorldShape.Tank && Mode != CurrentMode.Transport)
             {
-                return VelocityAt(y, seconds, PatchOfX(x), Math.Max(1, _patchCount));
+                return VelocityAt(y, seconds, PatchOfXZ(x, z), Math.Max(1, _patchCount));
             }
 
-            Float3 flow = TransportAt(x, y, z, seconds);
+            Float3 flow = _shape == WorldShape.Tank
+                ? GyreAt(x, y, z, seconds)
+                : TransportAt(x, y, z, seconds);
             if (!VentActive(_patchCount)) return flow;
 
             double depth = -(double)y;
-            int patch = PatchOfX(x);
+            int patch = PatchOfXZ(x, z);
 
             float u = (float)VentHorizontal(depth, patch, _patchCount);
             float w = (float)VentVertical(depth, patch, _patchCount);
@@ -654,23 +753,60 @@ namespace Evosim.Core
         /// <summary>Water velocity at a place and a time, m/s.</summary>
         public Float3 VelocityAt(Float3 at, double seconds) => VelocityAt(at.X, at.Y, at.Z, seconds);
 
-        /// <summary>The patch an x falls in on the ring, <c>floor(x / W) mod K</c> — D077's rule.</summary>
+        /// <summary>
+        /// The patch a horizontal position falls in — <c>iz · (K / A) + ix</c>, D077's rule as
+        /// fable-propose-box.md's clause 3 generalises it, and <c>floor(x / W) mod K</c> term for
+        /// term at A = 1.
+        /// </summary>
         /// <remarks>
         /// <see cref="GridField.PatchOf"/>'s arithmetic, repeated here rather than shared because
         /// this class knows nothing about fields and a world may have none of them. The two are
         /// held together by <see cref="World"/> handing both the same geometry.
         /// </remarks>
-        public int PatchOfX(float x)
+        public int PatchOfXZ(float x, float z)
         {
             if (_patchCount < 1 || !(_patchWidthMetres > 0f)) return 0;
 
-            int patch = (int)Math.Floor(WrapAxis(x, LengthMetres) / _patchWidthMetres);
-            patch %= _patchCount;
-            if (patch < 0) patch += _patchCount;
-            return patch;
+            // A tank's patches are rings of equal area about the axis, so "which patch" is a
+            // radius rather than a pair of divisions — logbook/specs/tank-spec.md.
+            if (_shape == WorldShape.Tank)
+            {
+                return TankGeometry.RingOf(x, z, _tankRadiusMetres, _patchCount);
+            }
+
+            int along = PatchesAlong;
+            if (along < 1) return 0;
+
+            int ix = (int)Math.Floor(WrapAxis(x, LengthMetres) / _patchWidthMetres);
+            ix %= along;
+            if (ix < 0) ix += along;
+
+            if (_patchesAcross == 1) return ix;
+
+            int iz = (int)Math.Floor(WrapAxis(z, WidthMetres) / _patchWidthMetres);
+            iz %= _patchesAcross;
+            if (iz < 0) iz += _patchesAcross;
+
+            return iz * along + ix;
         }
 
-        private float PatchCentreX(int patch) => (patch + 0.5f) * _patchWidthMetres;
+        /// <summary>
+        /// The x of a patch's centre, m. At A = 1 this is <c>(patch + ½)·W</c>; in a tank it is
+        /// the ring's mid-radius on the <c>θ = 0</c> ray from the axis.
+        /// </summary>
+        private float PatchCentreX(int patch) =>
+            _shape == WorldShape.Tank
+                ? _tankRadiusMetres + TankGeometry.MidRadiusOf(patch, _tankRadiusMetres, Math.Max(1, _patchCount))
+                : (patch % Math.Max(1, PatchesAlong) + 0.5f) * _patchWidthMetres;
+
+        /// <summary>
+        /// The z of a patch's centre, m. At A = 1 this is half the box's width; in a tank every
+        /// ring's representative point lies on the <c>θ = 0</c> ray, so this is the axis.
+        /// </summary>
+        private float PatchCentreZ(int patch) =>
+            _shape == WorldShape.Tank
+                ? _tankRadiusMetres
+                : (patch / Math.Max(1, PatchesAlong) + 0.5f) * _patchWidthMetres;
 
         private static float WrapAxis(float v, float extent)
         {
@@ -694,11 +830,26 @@ namespace Evosim.Core
         /// cell in, which is what the RMS knob cannot answer: the knob is an average over the box
         /// and the fastest water is where the trouble is.
         /// </remarks>
+        /// <remarks>
+        /// <b>In a tank it is the gyre's own ceiling</b>, which is measured rather than summed:
+        /// the gyre's three parts are normalised numerically, so there is no closed form to add
+        /// up, and the fastest sample on the construction lattice times 1.1 is the bound
+        /// (<see cref="BuildGyre"/>). Same contract either way — a number no argument reaches, so
+        /// <see cref="GridField.Advect"/>'s Courant logic is unchanged by the shape.
+        /// </remarks>
         public float MaximumTransportSpeed
         {
             get
             {
-                if (Mode != CurrentMode.Transport || _speed <= 0f) return 0f;
+                if (_speed <= 0f) return 0f;
+
+                if (_shape == WorldShape.Tank)
+                {
+                    EnsureGyre();
+                    return _speed * _gyreBound;
+                }
+
+                if (Mode != CurrentMode.Transport) return 0f;
                 EnsureTransport();
                 return _speed * _transportBound;
             }
@@ -931,7 +1082,7 @@ namespace Evosim.Core
         private void BuildTransport()
         {
             double length = LengthMetres;
-            double width = _patchWidthMetres;
+            double width = WidthMetres;
             double depth = _depthMetres;
 
             _transportKx = new double[TransportModes];
@@ -1038,6 +1189,472 @@ namespace Evosim.Core
             }
 
             return Math.Sqrt(TransportModes) / 2.0;
+        }
+
+        // ----------------------------------------------------------------------------- the gyre
+
+        /// <summary>
+        /// The tank's water: a slow swirl about the axis, two overturning cells on top of it and
+        /// two horizontal eddies, in units of <see cref="Speed"/>.
+        /// <c>logbook/specs/tank-spec.md</c>, <c>fable-propose-aquarium.md</c> ruling 1.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Prescribed, divergence-free, and tangential at the glass by construction.</b> Not by
+        /// correction: each of the three parts is either a pure swirl or a curl, so
+        /// <c>div v = 0</c> holds identically rather than at the points a test happens to look —
+        /// the same discipline <see cref="TransportAt"/> keeps and for the same reason. A wall the
+        /// water piled against would be a source of stock at the rim and a sink at the axis, and
+        /// the grid's transfers would carry it faithfully.
+        /// </para>
+        /// <para>
+        /// <b>In cylindrical coordinates about the axis</b>, with <c>r</c> from the axis at
+        /// <c>(R, R)</c>, <c>θ</c> from the <c>+x</c> ray, and <c>y</c> from the floor at
+        /// <c>−D</c> to the waterline at 0. Write <c>s = r/R</c>.
+        /// </para>
+        /// <para>
+        /// <b>1. The swirl</b>, azimuthal only:
+        /// <c>v_θ = S·s(1 − s²)·(1 + ½cos(π y/D))</c>. It depends on <c>r</c> and <c>y</c> and
+        /// nothing else, so its divergence — <c>(1/r)∂v_θ/∂θ</c> — is zero term for term. It
+        /// vanishes on the axis and at the glass, and it turns three times faster at the surface
+        /// than at the bed, which is what a wind-driven tank does.
+        /// </para>
+        /// <para>
+        /// <b>2. The overturning</b>, axisymmetric, from a Stokes stream function
+        /// <c>Ψ(r, y) = Ψ₀·r²(1 − r/R)·sin(qπy/D)</c> with <c>v_r = −(1/r)∂Ψ/∂y</c> and
+        /// <c>v_y = (1/r)∂Ψ/∂r</c>, which is divergence-free for any <c>Ψ</c> whatever because the
+        /// two mixed partials cancel. So <c>v_r = −Ψ₀·r(1 − s)(qπ/D)cos(qπy/D)</c>, which vanishes
+        /// at the axis and at the glass, and <c>v_y = Ψ₀(2 − 3s)sin(qπy/D)</c>, which vanishes at
+        /// the surface and at the floor for every whole <c>q</c>. Two cells, <c>q</c> = 1 and 2,
+        /// each with its own slow phase, so the pattern does not stand still.
+        /// </para>
+        /// <para>
+        /// <b>3. The eddies</b>, horizontal, from a vertical vector potential
+        /// <c>A_y = Σ a_m·f_m(r)·cos(mθ + φ_m + ω_m t)·sin(q_m πy/D)</c> with
+        /// <c>f_m(r) = s^m(1 − s²)</c> for <c>m</c> = 1 and 2. The curl of a purely vertical
+        /// potential has no vertical component, so these move water sideways only:
+        /// <c>v_r = (1/r)∂A_y/∂θ</c>, which carries <c>f_m(r)/r = s^(m−1)(1 − s²)/R</c> and
+        /// therefore vanishes at the glass and is finite on the axis, and
+        /// <c>v_θ = −∂A_y/∂r</c>. The <c>1/r</c> is cancelled analytically rather than guarded
+        /// numerically, which is what makes the axis an ordinary point of the field instead of a
+        /// hole with a tolerance round it.
+        /// </para>
+        /// <para>
+        /// <b>The three are balanced numerically, because there is no closed form to balance
+        /// them by.</b> <see cref="BuildGyre"/> measures each part's mean square on a lattice over
+        /// the live volume and a few phases, scales the overturning so that the vertical per-axis
+        /// RMS equals the horizontal per-axis RMS — the owner's "up and down, left and right, in
+        /// all directions really" of 2026-09-10, applied to a second field — and then scales the
+        /// whole thing so the RMS speed is <see cref="Speed"/>. The transport field could do that
+        /// in algebra (<see cref="MeasureTransportScale"/>); three parts of different families
+        /// with cross terms between them cannot, and a measurement that the tests re-take on a
+        /// different lattice is the honest substitute.
+        /// </para>
+        /// <para>
+        /// <b>Outside the water reads the nearest surface.</b> <c>y</c> is clamped to the box and
+        /// <c>s</c> to 1, so a body that has overshot the waterline is not pushed further up, a
+        /// parcel at the bed is not pushed further down, and a float-error metre past the glass
+        /// reads the water at the glass rather than an extrapolation. The vertical component is
+        /// special-cased to exactly zero at both faces for the reason the rolls' is:
+        /// <c>Math.Sin(-Math.PI)</c> is −1.2e-16 and a vertical velocity of 1.2e-16 at the
+        /// waterline is still a velocity, integrated over a run into the lift that carried a whole
+        /// population six metres into the air (logbook/0022).
+        /// </para>
+        /// </remarks>
+        private Float3 GyreAt(float x, float y, float z, double seconds)
+        {
+            if (_speed <= 0f) return Float3.Zero;
+
+            EnsureGyre();
+
+            return GyreUnit(x, y, z, 2.0 * Math.PI * seconds / _periodSeconds, _gyreOverturning)
+                * (_speed * _gyreScale);
+        }
+
+        /// <summary>How many horizontal eddies the vector potential carries — <c>m</c> = 1 and 2.</summary>
+        private const int GyreEddies = 2;
+
+        /// <summary>How many overturning cells the stream function carries — <c>q</c> = 1 and 2.</summary>
+        private const int GyreCells = 2;
+
+        private bool _gyreBuilt;
+        private double[] _gyreEddyPhase;
+        private double[] _gyreEddyRate;
+        private double[] _gyreCellPhase;
+        private double[] _gyreCellRate;
+        private double _gyreSwirlWeight;
+        private double _gyreEddyWeight;
+        private double _gyreOverturningWeight;
+        private double _gyreOverturning;
+        private float _gyreScale;
+        private float _gyreBound;
+
+        /// <summary>The three parts' RMS speeds at the field's own scale, m/s — for the tests.</summary>
+        /// <remarks>
+        /// Exposed so that the dead-pocket and balance checks report the field rather than
+        /// asserting it: a number a test prints is a number the caller can read in a build report,
+        /// which is what <c>logbook/specs/tank-spec.md</c> asks of this field before a round runs
+        /// on it.
+        /// </remarks>
+        public (float Swirl, float Overturning, float Eddies) GyreComponentRms
+        {
+            get
+            {
+                if (_shape != WorldShape.Tank) return (0f, 0f, 0f);
+                EnsureGyre();
+
+                float scale = _speed * _gyreScale;
+                return (
+                    (float)(_gyreRmsSwirl * scale),
+                    (float)(_gyreRmsOverturning * _gyreOverturning * scale),
+                    (float)(_gyreRmsEddies * scale));
+            }
+        }
+
+        private double _gyreRmsSwirl;
+        private double _gyreRmsOverturning;
+        private double _gyreRmsEddies;
+
+        private void EnsureGyre()
+        {
+            if (_gyreBuilt) return;
+
+            if (_shape != WorldShape.Tank)
+            {
+                throw new InvalidOperationException(
+                    "The gyre is the tank's water and this field is in a box. Call " +
+                    "SetBox(..., WorldShape.Tank, radius) first; World's constructor does it for " +
+                    "every tank.");
+            }
+
+            if (!(_tankRadiusMetres > 0f) || !(_depthMetres > 0f))
+            {
+                throw new InvalidOperationException(
+                    "The gyre is a field over a tank, and this field has not been told what tank " +
+                    "it is in. " +
+                    FormattableString.Invariant(
+                        $"Have radius {_tankRadiusMetres} m, depth {_depthMetres} m."));
+            }
+
+            BuildGyre();
+            _gyreBuilt = true;
+        }
+
+        /// <summary>
+        /// Draws the parts' phases from the run's seed, balances the axes and fixes the scale that
+        /// makes the RMS speed the knob.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The balance is one quadratic.</b> Write the overturning's amplitude as <c>β</c> and
+        /// hold the other two at their own unit RMS. The vertical mean square is <c>β²V</c>,
+        /// since only the overturning has a vertical component; the horizontal mean square is
+        /// <c>H₀ + 2βC + β²H₁</c>, with <c>C</c> the cross term between the overturning's radial
+        /// flow and the rest, which is small but is measured rather than assumed away. Per-axis
+        /// equality is <c>β²V = ½(H₀ + 2βC + β²H₁)</c>, so
+        /// <c>β²(V − H₁/2) − βC − H₀/2 = 0</c> and <c>β</c> is its positive root. The
+        /// overturning is about ninety-nine parts vertical in a tank this shape — <c>v_r</c>
+        /// carries a factor <c>qπ/D</c>, which is 0.05 per metre at 60 m — so the root is real and
+        /// well away from the degenerate case; the code checks anyway rather than trusting the
+        /// geometry it happens to be built with.
+        /// </para>
+        /// <para>
+        /// <b>The lattice is Cartesian over the bounding square and keeps what is inside the
+        /// circle</b>, which is the live volume the mask calls live
+        /// (<see cref="GridField"/>), so the RMS the knob names is the RMS of the water that
+        /// exists rather than of a square that includes four dry corners.
+        /// </para>
+        /// <para>
+        /// <b>Independent of <see cref="Speed"/> and <see cref="PeriodSeconds"/></b>, for
+        /// <see cref="BuildTransport"/>'s reason: the speed multiplies the whole field and the
+        /// period only rescales the clock, so sweeping either is a sweep rather than a rebuild per
+        /// sample.
+        /// </para>
+        /// </remarks>
+        private void BuildGyre()
+        {
+            _gyreEddyPhase = new double[GyreEddies];
+            _gyreEddyRate = new double[GyreEddies];
+            _gyreCellPhase = new double[GyreCells];
+            _gyreCellRate = new double[GyreCells];
+
+            var rng = new Rng(_seed);
+
+            // σ_j = 1 + j·φ with φ the golden ratio's reciprocal and alternating signs, over the
+            // four moving halves of the field: the ratio of any two is irrational, so the sum has
+            // no period, no parcel is returned to where it started, and the stirring cannot switch
+            // itself off at a timescale nobody chose. Incommensurate's own argument, applied to
+            // four terms rather than two.
+            for (int m = 0; m < GyreEddies; m++)
+            {
+                _gyreEddyPhase[m] = 2.0 * Math.PI * rng.NextFloat();
+                _gyreEddyRate[m] = Rate(m);
+            }
+
+            for (int q = 0; q < GyreCells; q++)
+            {
+                _gyreCellPhase[q] = 2.0 * Math.PI * rng.NextFloat();
+                _gyreCellRate[q] = Rate(GyreEddies + q);
+            }
+
+            // Two passes, because the parts must be comparable before they can be balanced. The
+            // first measures the swirl and the eddies at raw amplitude 1 and gives each the weight
+            // that makes its RMS speed 1; the second measures the balanced pair against the
+            // overturning and solves for the amplitude that squares the axes. Without the first
+            // pass the two horizontal parts would be in whatever ratio their formulae happen to
+            // produce in a tank of this shape, which is a number nobody chose.
+            _gyreSwirlWeight = 1d;
+            _gyreEddyWeight = 1d;
+            _gyreOverturningWeight = 1d;
+
+            double rawSwirl = 0d, rawEddies = 0d;
+            int counted = Walk((x, y, z, t) =>
+            {
+                Float3 swirl = GyreUnit(x, y, z, t, 0d, eddies: false);
+                Float3 both = GyreUnit(x, y, z, t, 0d);
+
+                rawSwirl += (double)swirl.X * swirl.X + (double)swirl.Z * swirl.Z;
+
+                double eddyX = both.X - swirl.X;
+                double eddyZ = both.Z - swirl.Z;
+                rawEddies += eddyX * eddyX + eddyZ * eddyZ;
+            });
+
+            if (counted == 0 || !(rawSwirl > 0d) || !(rawEddies > 0d))
+            {
+                throw new InvalidOperationException(
+                    "The gyre measured nothing over its own tank, which means the lattice found " +
+                    FormattableString.Invariant(
+                        $"no live water at radius {_tankRadiusMetres} m and depth {_depthMetres} m."));
+            }
+
+            _gyreSwirlWeight = Math.Sqrt(counted / rawSwirl);
+            _gyreEddyWeight = Math.Sqrt(counted / rawEddies);
+
+            // The second pass. `h0` is the mean square of the horizontal flow without the
+            // overturning, `h1` the overturning's own horizontal mean square at unit amplitude,
+            // `cross` the term between them — small, since the overturning is nearly all vertical,
+            // but measured rather than assumed away — and `vertical` its vertical mean square.
+            double h0 = 0d, h1 = 0d, cross = 0d, vertical = 0d;
+
+            Walk((x, y, z, t) =>
+            {
+                Float3 rest = GyreUnit(x, y, z, t, 0d);
+                Float3 whole = GyreUnit(x, y, z, t, 1d);
+
+                double overX = whole.X - rest.X;
+                double overZ = whole.Z - rest.Z;
+
+                h0 += (double)rest.X * rest.X + (double)rest.Z * rest.Z;
+                h1 += overX * overX + overZ * overZ;
+                cross += rest.X * overX + rest.Z * overZ;
+                vertical += (double)whole.Y * whole.Y;
+            });
+
+            // Per-axis equality, which is what "the vertical RMS equals the horizontal" means in a
+            // field with two horizontal axes and one vertical: the horizontal sums above carry x
+            // and z together, so the condition is beta^2*V = (h0 + 2*beta*C + beta^2*h1)/2.
+            double a = (vertical - 0.5 * h1) / counted;
+            double b = -cross / counted;
+            double c = -0.5 * h0 / counted;
+
+            if (!(a > 1e-12))
+            {
+                throw new InvalidOperationException(
+                    "The overturning carries no more vertical motion than horizontal, so there is " +
+                    "no amplitude at which the axes balance. A tank whose depth is of the order " +
+                    "of its radius would do that; this one is not meant to be.");
+            }
+
+            _gyreOverturning = (-b + Math.Sqrt(b * b - 4d * a * c)) / (2d * a);
+
+            double meanSquare =
+                (h0 + 2d * _gyreOverturning * cross +
+                 _gyreOverturning * _gyreOverturning * (h1 + vertical)) / counted;
+
+            _gyreScale = (float)(1d / Math.Sqrt(meanSquare));
+
+            // The three parts' own RMS speeds at unit Speed and unit scale, kept so that
+            // GyreComponentRms can report them without measuring again. The first two are 1 by
+            // construction after the first pass; the overturning's is at unit amplitude, and the
+            // property multiplies it by the amplitude just solved for.
+            _gyreRmsSwirl = 1d;
+            _gyreRmsEddies = 1d;
+            _gyreRmsOverturning = Math.Sqrt((h1 + vertical) / counted);
+
+            // The bound, measured on the same lattice with everything applied and lifted a tenth.
+            // The transport field can sum its modes' amplitudes for a ceiling no argument reaches;
+            // three numerically balanced parts have no such sum, so this is the fastest water the
+            // lattice saw plus a margin for the water between its points. GridField.Advect refuses
+            // a step this would carry more than half a cell in, and an under-estimate there would
+            // pass a step the fastest water breaks, so the margin errs upward.
+            double fastest = 0d;
+
+            Walk((x, y, z, t) =>
+            {
+                double speed = (GyreUnit(x, y, z, t, _gyreOverturning) * _gyreScale).Magnitude;
+                if (speed > fastest) fastest = speed;
+            });
+
+            _gyreBound = (float)(1.1d * fastest);
+
+            double Rate(int j) => ((j & 1) == 0 ? 1.0 : -1.0) * (1.0 + j * Incommensurate);
+        }
+
+        /// <summary>
+        /// Visits every live point of the construction lattice at every phase, and returns how
+        /// many there were.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>One walk, three measurements.</b> <see cref="BuildGyre"/> passes over the same
+        /// points three times — to weigh the two horizontal parts against each other, to balance
+        /// them against the overturning, and to find the fastest water — and three copies of a
+        /// triple loop is three places for a lattice to drift.
+        /// </para>
+        /// <para>
+        /// <b>Cartesian over the bounding square, keeping what is inside the circle</b>, so the
+        /// measurement is over the live volume the grid's mask calls live rather than over a
+        /// square with four dry corners in it. The lattice is fine enough that a mode with two
+        /// half-sines down the depth and two wavelengths round the rim is sampled many times over,
+        /// and coarse enough that the whole construction is a fraction of a second: about 150,000
+        /// samples a pass.
+        /// </para>
+        /// <para>
+        /// <b>The clock is sampled more finely than the space, and the first build had that the
+        /// wrong way round.</b> Twenty-eight points across and five phases put the RMS 19% above
+        /// the knob and left the vertical axis 1.47 times the horizontal on a second lattice: the
+        /// space is smooth at the scale of the tank and five samples of a cosine are not five
+        /// samples of its mean square. The phases are a golden-ratio sequence,
+        /// <c>t_p = 2π·p/φ</c>, and every drift rate here is <c>±(1 + jφ)</c>, so each mode's own
+        /// phase walks the circle in equal steps of <c>φ</c> and thirty-two of them cover it
+        /// evenly. The same argument <see cref="Incommensurate"/> records, used to sample rather
+        /// than to stir.
+        /// </para>
+        /// </remarks>
+        private int Walk(Action<float, float, float, double> visit)
+        {
+            const int Horizontal = 22;
+            const int Vertical = 16;
+            const int Phases = 32;
+
+            int taken = 0;
+
+            for (int p = 0; p < Phases; p++)
+            {
+                double t = 2.0 * Math.PI * p / Incommensurate;
+
+                for (int iy = 0; iy < Vertical; iy++)
+                {
+                    float y = -(float)((iy + 0.5) * _depthMetres / Vertical);
+
+                    for (int ix = 0; ix < Horizontal; ix++)
+                    {
+                        float x = (float)((ix + 0.5) * 2d * _tankRadiusMetres / Horizontal);
+
+                        for (int iz = 0; iz < Horizontal; iz++)
+                        {
+                            float z = (float)((iz + 0.5) * 2d * _tankRadiusMetres / Horizontal);
+                            if (!TankGeometry.Inside(x, z, _tankRadiusMetres)) continue;
+
+                            visit(x, y, z, t);
+                            taken++;
+                        }
+                    }
+                }
+            }
+
+            return taken;
+        }
+
+        /// <summary>
+        /// The gyre at unit <see cref="Speed"/> and unit scale, at a place and an already-scaled
+        /// phase, with the overturning at <paramref name="overturning"/>.
+        /// </summary>
+        /// <remarks>
+        /// One function for the sampler and for the measurement, so the water a run feels and the
+        /// water the scale was measured on cannot be two different fields — the discipline
+        /// <see cref="Unit"/> keeps for the transport. The overturning's amplitude is an argument
+        /// rather than a field so that <see cref="BuildGyre"/> can separate it from the rest with
+        /// two calls instead of a second copy of the arithmetic.
+        /// </remarks>
+        private Float3 GyreUnit(
+            double x, double y, double z, double t, double overturning, bool eddies = true)
+        {
+            double depth = _depthMetres;
+            double radius = _tankRadiusMetres;
+
+            // Outside reads the nearest face — see the remarks on GyreAt.
+            if (y > 0d) y = 0d;
+            else if (y < -depth) y = -depth;
+
+            bool atFace = y >= 0d || y <= -depth;
+
+            double dx = x - radius;
+            double dz = z - radius;
+            double r = Math.Sqrt(dx * dx + dz * dz);
+            double s = r / radius;
+            if (s > 1d) s = 1d;
+
+            // θ = 0 on the axis, which is not a choice but the limit: the m = 1 eddy's Cartesian
+            // velocity there is the same whichever ray it is approached along (the r and θ terms
+            // combine into a constant), and every other term vanishes as r goes to zero.
+            double theta = r > 0d ? Math.Atan2(dz, dx) : 0d;
+
+            double radial = 0d;
+            double azimuthal = 0d;
+            double vy = 0d;
+
+            // 1. The swirl.
+            azimuthal += _gyreSwirlWeight * s * (1d - s * s) *
+                (1d + 0.5d * Math.Cos(Math.PI * y / depth));
+
+            // 2. The overturning, two cells.
+            if (overturning != 0d)
+            {
+                for (int q = 0; q < GyreCells; q++)
+                {
+                    double ky = (q + 1) * Math.PI / depth;
+                    double amplitude = overturning * _gyreOverturningWeight *
+                        Math.Cos(_gyreCellRate[q] * t + _gyreCellPhase[q]);
+
+                    radial -= amplitude * r * (1d - s) * ky * Math.Cos(ky * y);
+
+                    // Exactly zero at the waterline and at the bed, not nearly — see the remarks.
+                    if (!atFace) vy += amplitude * (2d - 3d * s) * Math.Sin(ky * y);
+                }
+            }
+
+            // 3. The eddies, horizontal only.
+            if (eddies)
+            {
+                for (int e = 0; e < GyreEddies; e++)
+                {
+                    int m = e + 1;
+                    double ky = m * Math.PI / depth;
+                    double profile = atFace ? 0d : Math.Sin(ky * y);
+                    if (profile == 0d) continue;
+
+                    double chi = m * theta + _gyreEddyPhase[e] + _gyreEddyRate[e] * t;
+
+                    // f_m(r)/r, written as s^(m−1)(1 − s²)/R so the axis needs no guard, and
+                    // f_m'(r) = [m·s^(m−1) − (m + 2)·s^(m+1)]/R.
+                    double sPow = Math.Pow(s, m - 1);
+                    double overR = sPow * (1d - s * s) / radius;
+                    double slope = (m * sPow - (m + 2) * sPow * s * s) / radius;
+
+                    radial -= _gyreEddyWeight * m * overR * Math.Sin(chi) * profile;
+                    azimuthal -= _gyreEddyWeight * slope * Math.Cos(chi) * profile;
+                }
+            }
+
+            double cos = r > 0d ? dx / r : 1d;
+            double sin = r > 0d ? dz / r : 0d;
+
+            return new Float3(
+                (float)(radial * cos - azimuthal * sin),
+                (float)vy,
+                (float)(radial * sin + azimuthal * cos));
         }
 
         /// <summary>
@@ -1426,7 +2043,13 @@ namespace Evosim.Core
         public override string ToString() =>
             (_speed <= 0f
                 ? "still water"
-                : (Mode == CurrentMode.Transport
+                : (_shape == WorldShape.Tank
+                      // The gyre is chosen by the shape and not by the mode, so the string says
+                      // gyre wherever the water is a tank's — a header that printed "transport"
+                      // for a field with no rings in it would name a knob the run did not spend.
+                      ? FormattableString.Invariant(
+                            $"{_speed:0.###} m/s RMS gyre, {_periodSeconds:0.#} s period")
+                      : Mode == CurrentMode.Transport
                       // The knob means the RMS over the box here and the peak under the rolls, so
                       // the string says which rather than printing one number under two meanings.
                       // CellMetres is a roll's own geometry and is not named in a mode that has no

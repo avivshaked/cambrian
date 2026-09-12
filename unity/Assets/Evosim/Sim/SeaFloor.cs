@@ -125,7 +125,7 @@ namespace Evosim.Sim
             if (volume == null) return null;
 
             float length = volume.LengthMetres;
-            float width = volume.PatchWidthMetres;
+            float width = volume.WidthMetres;
             float topY = -volume.DepthMetres;
 
             var go = new GameObject("SeaFloor") { layer = PhenotypeBuilder.CreatureLayer };
