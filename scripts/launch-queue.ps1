@@ -55,7 +55,7 @@
   ./scripts/launch-queue.ps1 -Launcher rounds/launch-r38.ps1 -Seeds 1,2,3,4,5 -Prereg logbook/specs/r38-prereg.json
 
 .EXAMPLE
-  ./scripts/launch-queue.ps1 -Launcher rounds/launch-r37b.ps1 -Seeds 1,2,3,4,5 -Workers 5,6,2,3,4,7 -Refresh -ExpectSimHash 13a906a3 -Prereg logbook/0095-the-water-carried-as-water.md
+  ./scripts/launch-queue.ps1 -Launcher rounds/launch-r37b.ps1 -Seeds 1,2,3,4,5 -Workers 5,6,2,3,4,7 -Refresh -ExpectSimHash 5e164d01 -Prereg logbook/0095-the-water-carried-as-water.md
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
