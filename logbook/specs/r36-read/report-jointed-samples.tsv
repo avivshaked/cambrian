@@ -1,0 +1,6 @@
+arm	last_sample_jntinh>=1	samples_after_with_jointed_no_inh	last_sample_jointed>=1	min_jointed_last6000	min_jntinh_last6000	jntinh/alive@30000
+r36-s1	30000	0	30000	64	62	0.0633
+r36-s2	30000	0	30000	3	2	0.0025
+r36-s3	27300	27	30000	1	0	0.0000
+r36-s4	11600	0	11600	0	0	0.0000
+r36-s5	26100	0	26100	0	0	0.0000

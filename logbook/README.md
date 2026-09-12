@@ -291,3 +291,4 @@ key only translates the entries' reporting shorthand.
 | [0089](0089-a-hinge-on-a-producer.md) | 2026-09-11 | A hinge on a producer |
 | [0090](0090-the-stroke-that-nothing-charged.md) | 2026-09-11 | The stroke that nothing charged |
 | [0091](0091-the-box-that-stopped-looking-made-and-the-sun.md) | 2026-09-11 | The box that stopped looking made, and the sun |
+| [0092](0092-the-hinge-that-stood-was-on-an-eater.md) | 2026-09-12 | The hinge that stood was on an eater |

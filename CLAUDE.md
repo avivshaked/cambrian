@@ -695,6 +695,35 @@ actually verifying it.
   saw bodies teleport (2026-09-11; `fable-propose-aquarium.md`). Read `wraps` with `alive`,
   and when a world rule changes, list the rules that were chosen for cheapness under the old
   one and ask each whether it still holds.
+- **From D089 (2026-09-12) the world can be a tank, and five things read differently.**
+  `EVOSIM_SHAPE Tank` (`RunConfig.WorldShape`, default `Box`) makes the footprint a disc of
+  `sqrt(area / π)` with a glass wall of 48 collider slabs, ring patches of equal area (`p0`
+  the centre, `p3` the rim), a masked grid (6,000 live cells at 1 m and 100 m²) and a gyre
+  in place of the periodic transport field; the header reads
+  `space tank r=5.64 m (100 m2), depth 60, wall, bed` and a box's token is unchanged
+  (`shared 4x5x5 m`; the box branch had changed it to `4x1x5 m` and the tank spec put it
+  back). In a tank `wraps` reads 0 by construction and a nonzero is a bug; `x sd` is a plain
+  deviation, not a circular one; `cols` is counted against the columns inside the circle;
+  and a root farther than R + 1 m from the axis dies as a counted `Diverged` death with a
+  dump whose reason names the radius guard. **The 5 m matter cell's mask overshoots the
+  disc**: its live volume at 400 m² is 25,500 m³ against the nominal 24,000, so a held
+  `MatterBudgetUnits` (`EVOSIM_MATTER_BUDGET`, 0 = the density rule) seeds 0.235 units/m³
+  where the arithmetic says 0.25; the total is exact and the density is not, and the 1 m
+  detritus mask is within a cell ring of the disc. The three tunables of D089 refuse every
+  `config.json` written before them, rounds 35 and 36 included. **The drive limiter at
+  every step exists and is off** (`EVOSIM_DRIVE_LIMIT_ALWAYS`, header `driveLimit >0.01`
+  or `always`): its check, round 34 seed 5 rerun with it on, bound 2.58 million drives and
+  read 27 divergences against 17 with the same signature (jointed adults, median age
+  1,171 s, the root's height going non-finite), so the throw of a jointed adult is not a
+  single step's over-drive and remains unexplained (`r34lim-s5`, D089's check 4).
+- **A run writes at most 50 diverged dumps** (`Ecosystem.MaxDumps`), so `diverged/` equals the
+  `diverged` column only below 50: `r36-s2` counted 55 and dumped 50, and its last five
+  throws have no post-mortem (logbook/0092). Read the column for the count and the dumps
+  for the anatomy, and say when the second is censored.
+- **A pass that touches `Assets/Evosim` orphans the smoke recorded before it.** The tank's
+  second pass moved `simHash` after `r37tank` was recorded, and the theatre refused its
+  pictures on the mismatch (2026-09-12). Record the smoke you will photograph on the tree
+  you will merge, after the last pass, or photograph before the next one.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.
@@ -716,6 +745,14 @@ actually verifying it.
   and the owner had to stop the session (logbook/0081). An agent's task ends when its edits
   and the fast filtered tests are in; the caller launches anything long in the background,
   where a completion notice costs nothing, and reads the result.
+- **A subagent's default temporary location is its session scratchpad, which is outside the
+  project.** A hook blocks any write outside the repository and stalls the agent until the
+  owner approves it, which is a blocked task the caller may not notice for an hour. Every
+  subagent brief therefore names the absolute path under `scratch/` it may write to
+  (`D:\Projects\experiments\evolution-simulator\scratch\<task>\`) and forbids the session
+  scratchpad and TEMP by name; "write under scratch/" alone was not enough on 2026-09-12.
+  The same rule binds the calling agent: nothing of the project's is written outside the
+  repository (Conventions, below).
 - **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
   amendments, scope and round design forks, pushes of anything that is not code/prose, and
   anything irreversible or outward-facing. Instruments, diagnostics, replays of scored

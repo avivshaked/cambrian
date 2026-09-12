@@ -1,0 +1,6 @@
+arm	births	jointed_births	inherited_jnt_births	reinventions	last_inh_jnt_birth_t	reinv_after	inh_after	last_jnt_birth_t	last_jnt_death_t
+r36-s1	17455	4186	4046	140	29965.5	0	0	29965.5	29950.5
+r36-s2	18696	1089	932	157	29660	0	0	29660	29868
+r36-s3	23352	1553	1270	283	24519.5	24	0	29832.5	29944.5
+r36-s4	22977	332	268	64	9926	4	0	18708.5	18730.5
+r36-s5	13922	1196	1108	88	17990.5	2	0	25418	26125.5

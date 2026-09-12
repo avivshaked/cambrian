@@ -1,0 +1,6 @@
+arm	jnt_births	inh	mut_reinv(p!=-1)	founder_jnt(p=-1)	last_inh_t	mut_reinv_after	founder_jnt_after	first_reinv_after_3000
+r36-s1	4186	4046	85	55	29965.5	0	0	3592
+r36-s2	1089	932	127	30	29660	0	0	3395.5
+r36-s3	1553	1270	247	36	24519.5	24	0	3042.5
+r36-s4	332	268	24	40	9926	4	0	4593
+r36-s5	1196	1108	54	34	17990.5	2	0	3080.5

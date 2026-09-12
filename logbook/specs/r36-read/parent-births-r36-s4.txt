@@ -1,0 +1,33 @@
+# r36-s4: runs\r36-s4\2026-09-11-170833-55a61291\lineage.jsonl
+# organisms recorded: 22977, last event at t=29999.5 s
+
+== r36-s4: parents born 0-5,000 s (n=2501) ==
+  by own joint (jnt) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    jointed (jnt=1)    238           1.303             0.000           2078.6          1.8327
+    rigid (jnt=0)    2263           3.093             0.000           3517.8          0.8718
+  by own absorptive (abs) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    absorptive (abs=1)    817           2.621             1.000           4260.1          0.8644
+    non-abs (abs=0)   1684           3.069             0.000           2954.2          1.0112
+
+== r36-s4: parents born 5,000-15,000 s (n=8524) ==
+  by own joint (jnt) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    jointed (jnt=1)     93           0.000             0.000             31.3          0.0000
+    rigid (jnt=0)    8431           0.936             0.000           1545.4          0.1659
+  by own absorptive (abs) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    absorptive (abs=1)   1383           0.240             0.000           2113.2          0.0443
+    non-abs (abs=0)   7141           1.059             0.000           1415.7          0.1873
+
+== r36-s4: parents born 0-30,000 s (n=22977) ==
+  by own joint (jnt) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    jointed (jnt=1)    332           0.934             0.000           1498.9          1.3138
+    rigid (jnt=0)   22645           0.997             0.000           1624.4          0.2148
+  by own absorptive (abs) flag
+    group               n   mean children   median children  mean lifetime s  children/1000s
+    absorptive (abs=1)   3070           0.994             0.000           2956.3          0.2898
+    non-abs (abs=0)  19907           0.997             0.000           1416.9          0.2216
+

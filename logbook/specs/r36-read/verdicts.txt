@@ -1,0 +1,35 @@
+Round 36 read ("the link earns", linkPhoto 0.5) -- 2026-09-12
+Base: round 34 (linkPhoto 0), same launcher, headers identical except linkPhoto and configHash.
+
+VERIFICATION
+V1 HOLDS. All five headers: linkPhoto 0.5, idle 0.0001 W/N.m, current 0.1 m/s transport,
+   space shared 4x5x5 m, configHash 55a61291b63c883f. All five manifests: status ended /
+   reason budget, simHash b5d31a48..., coreHash cafcb692..., physicsJobWorkers 0.
+   Diff of r34-s1 vs r36-s1 header lines: only "linkPhoto 0 -> 0.5" and the configHash.
+V2 HOLDS. audit = 0.0000% and mat resid = 0 on all 300 rows of all five arms.
+   (mat orphan nonzero on most rows, max 0.005 units -- the standing known break.)
+V3 read below (M3).
+
+CLADE SCORE (D063 as amended)
+arm      verdict  passing clade root (kind, born)  alive@end  min last 6000  inherited births last 20  living clades  photo
+r36-s1   PASS     3  (f, born 1)                   124        108            115                       3              held x3
+r36-s2   PASS     2783 (r, born 4927)              46         42             32                        3              held x3
+r36-s3   PASS     79 (f, born 44.5)                106        85             71                        5              held x3
+r36-s4   PASS     816 (r, born 1896)               171        171            78                        5              held x3
+r36-s5   PASS     3932 (r, born 9138)              74         69             25                        3              held x3
+
+M0 HOLDS 5/5   alive@30000 r36/r34 same seed: 1154/1305=0.88, 1624/1593=1.02, 1342/1557=0.86,
+               1329/1766=0.75, 1650/1281=1.29 -- all inside 0.5-1.5. D063 5/5 PASS.
+M1 FAILS 5/5   jnt inh / alive @30000: 0.063, 0.0025, 0, 0, 0. Bar 0.1 in 3 of 5; 0 of 5 reach it.
+               Second clause (>=10 jointed at every sample of last 6,000 s) holds in s1 only
+               (min jointed 64, min jnt inh 62); s2 min 3, s3 min 1, s4 0, s5 0.
+M2 HOLDS 5/5   jnt inh @5000 / @1000: 166/99=1.68, 92/113=0.81, 113/133=0.85, 47/97=0.48, 78/118=0.66.
+               Bar 0.25 in 3 of 5.
+M3 FAILS 4/5   diverged r36 vs r34-same-seed+2: 33 vs 5, 55 vs 29, 20 vs 2, 6 vs 4, 17 vs 19.
+               Only s5 holds. NOTE: r36-s2's dump directory hit the MaxDumps=50 cap
+               (Ecosystem.cs:1184); 50 dumps on disk against 55 counted deaths, the 5 after
+               t=12,135 s unrecorded.
+M4 FAILS 0/5   |joint y - rigid y| m at 5,000 / 15,000 / 30,000 s (positions-read.py):
+               s1 4.48 / 0.03 / 4.28; s2 0.41 / 7.68 / 2.69; s3 0.35 / 7.10 / 16.03 (n=2);
+               s4 7.09 / -- / --; s5 0.99 / 4.43 / --. Needs all three within 3 m in 3 of 5.
+               Shallower-jointed sub-clause fires at 5,000 s only (4 of 5: s1, s2, s4, s5).
