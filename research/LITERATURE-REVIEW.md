@@ -13,11 +13,16 @@
 > Struck text is a claim a later round replaced, and ↻ marks the replacement that
 > supersedes it. Both are kept, here and throughout.
 >
-> ~~After round 3, sixteen retrieved papers are held, three read in full,~~ ↻ **after round
-> 5, thirty-seven are held** (round 4 added thirteen, round 5 seven). Twenty-eight of those
-> inform the synthesis and five were read in full. The rest were read in part, where "in
-> part" mostly means *specific claims verified against the primary text* rather than
-> cover-to-cover reading.
+> ~~After round 3, sixteen retrieved papers are held, three read in full,~~ ~~↻ after round
+> 5, thirty-seven are held (round 4 added thirteen, round 5 seven). Twenty-eight of those
+> inform the synthesis and five were read in full.~~ ↻ **after round 6, fifty-four are
+> held** (round 4 added thirteen, round 5 seven, round 6 seventeen; reconciled 2026-09-12
+> after the Astra review found this box stopped at round 5). Forty-five of those inform the
+> synthesis and five were read in full. The rest were read in part, where "in part" mostly
+> means *specific claims verified against the primary text* rather than cover-to-cover
+> reading. Forty-seven of the fifty-four have their PDF on disk; seven round-4 entries are
+> held as extracted text only, and only the eight round-1 and round-2 packages carry an
+> extraction manifest (§7.2).
 >
 > ~~Round 2 opened a seventh question (endogenous selection, `DESIGN.md` §5A) that **has
 > never been searched for at all**~~ **Round 3 (2026-08-29)** searched it. §5A is no longer
@@ -1174,13 +1179,26 @@ al. 2009 (mirrors only).
   page and read at the passage cited, which catches a wrong paper and not a wrong volume
   or a retraction. The next round that touches these keys should run the batch.
 
+- ⚠ **Most packages have no extraction manifest** (recorded 2026-09-12, from the Astra
+  review). Eight of the fifty-four packages, the round-1 and round-2 corpus, carry a
+  `manifest.json` naming the tool, its version and the command that turned the PDF into
+  `source.md`; the forty-six from rounds 3 to 6 do not. The PDF hashes in
+  `FETCH-RESULTS.md` identify the papers and do not reproduce the extracted text or its
+  page mapping, so a page-anchored claim is verifiable against the PDF and not against a
+  re-extraction. Seven round-4 packages have no PDF on disk at all and are held as
+  extracted text only. Each package gains a manifest when it is next touched; until then
+  this is a limit on the page mapping, not on the paper's identity.
+
 ### 7.3 Synthesis validity
 
 - The n is small. ~~Eleven papers inform the synthesis (five from rounds 1–2, six added in
   round 3);~~ ~~↻ **Twenty-one after round 4** (ten added 2026-09-01).~~
 
-  ↻ **Twenty-eight after round 5**, with seven added on 2026-09-03. Two of those seven were
-  read in full, so five are read in full across the whole corpus, up from three.
+  ~~↻ **Twenty-eight after round 5**, with seven added on 2026-09-03. Two of those seven were
+  read in full, so five are read in full across the whole corpus, up from three.~~ ↻
+  **Forty-five after round 6**, with seventeen added on 2026-09-07 and none of them read in
+  full, so five are still read in full across the whole corpus (the bullet below carries
+  the round's own note; this one was left unstruck until 2026-09-12).
 
   The round-3, round-4 and most round-5 additions were read at targeted passages against
   specific claims. That is honest for provenance-checking and weaker than a full read for
