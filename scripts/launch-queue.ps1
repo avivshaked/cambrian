@@ -30,6 +30,14 @@
 .PARAMETER MaxUnity
   The cap on Unity editors at once, counting the ones already running. Default 5.
 
+.PARAMETER Refresh
+  Refresh each worker (new-worker.ps1, which copies Assets/, ProjectSettings/ and Packages/
+  from unity/ and leaves Library/ alone) just before launching on it. For a queue that
+  starts while older builds still run on some of its workers: a worker freed by a render of
+  an earlier round carries that round's tree, and the -ExpectSimHash check would refuse it.
+  The refresh runs only on a worker no Unity process is using, which is the only kind the
+  queue launches on anyway.
+
 .PARAMETER Prereg
   Path to a pre-registration file, relative to the repo root (script-contracts-spec.md
   section 4). Optional; when given, the queue refuses to launch anything unless the file is
@@ -45,6 +53,9 @@
 
 .EXAMPLE
   ./scripts/launch-queue.ps1 -Launcher rounds/launch-r38.ps1 -Seeds 1,2,3,4,5 -Prereg logbook/specs/r38-prereg.json
+
+.EXAMPLE
+  ./scripts/launch-queue.ps1 -Launcher rounds/launch-r37b.ps1 -Seeds 1,2,3,4,5 -Workers 5,6,2,3,4,7 -Refresh -ExpectSimHash 13a906a3 -Prereg logbook/0095-the-water-carried-as-water.md
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
@@ -54,7 +65,8 @@ param(
     [string]$ExpectSimHash = '',
     [int]$MaxUnity = 5,
     [int]$PollSeconds = 60,
-    [string]$Prereg = ''
+    [string]$Prereg = '',
+    [switch]$Refresh
 )
 
 $ErrorActionPreference = 'Stop'
@@ -135,6 +147,13 @@ while ($pending.Count -gt 0) {
 
         Write-Output "$(Stamp) launching seed $seed on worker $worker ($editors editors running)$preregNote"
         try {
+            if ($Refresh) {
+                $refreshed = @(& (Join-Path $PSScriptRoot 'new-worker.ps1') -Workers @($worker) 2>&1 | ForEach-Object { [string]$_ })
+                $refreshed | ForEach-Object { Write-Output "    $_" }
+                if (($refreshed -join "`n") -notmatch 'refreshed|created') {
+                    throw "new-worker.ps1 did not report worker $worker refreshed."
+                }
+            }
             $extra = @{}
             if ($ExpectSimHash -ne '') { $extra.ExpectSimHash = $ExpectSimHash }
             $said = @(& $launcherPath -Seed $seed -Worker $worker @extra 2>&1 | ForEach-Object { [string]$_ })
