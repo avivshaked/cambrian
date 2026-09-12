@@ -960,6 +960,8 @@ namespace Evosim.Sim.EditorTools
             int outside = 0;
             int badRing = 0;
             float furthest = 0f;
+            float worstReservedSphere = 0f;
+            int reservedSpheresChecked = 0;
             var ringCount = new int[TankRings];
 
             for (int i = 0; i < Founders; i++)
@@ -983,7 +985,15 @@ namespace Evosim.Sim.EditorTools
 
                 float dx = at.x - radius;
                 float dz = at.z - radius;
-                furthest = Mathf.Max(furthest, Mathf.Sqrt(dx * dx + dz * dz));
+                float centreDistance = Mathf.Sqrt(dx * dx + dz * dz);
+                furthest = Mathf.Max(furthest, centreDistance);
+
+                // wall-clearance-spec.md item 5: the centre alone is not what Free tests any
+                // more, so the smoke should not either — the reserved sphere (centre radius
+                // plus the body's own bounding radius) is what has to stay at or below R.
+                float bodyRadius = SharedVolume.BoundingRadius(body);
+                worstReservedSphere = Mathf.Max(worstReservedSphere, centreDistance + bodyRadius);
+                reservedSpheresChecked++;
             }
 
             report.AppendLine(
@@ -992,9 +1002,17 @@ namespace Evosim.Sim.EditorTools
                 furthest.ToString("0.###", CultureInfo.InvariantCulture) + " m of " +
                 radius.ToString("0.###", CultureInfo.InvariantCulture) + "; by ring " +
                 string.Join("/", System.Array.ConvertAll(ringCount, c => c.ToString(CultureInfo.InvariantCulture))));
+            report.AppendLine(
+                "- " + reservedSpheresChecked + " reserved spheres checked against the glass, " +
+                "worst centre + bounding radius " +
+                worstReservedSphere.ToString("0.####", CultureInfo.InvariantCulture) + " m of " +
+                radius.ToString("0.####", CultureInfo.InvariantCulture) + " m");
 
             ok &= Same(report, "founders placed outside the glass", outside, 0);
             ok &= Same(report, "founders placed in a ring that does not exist", badRing, 0);
+            ok &= Within(
+                report, "founders' reserved sphere (centre + bounding radius) from the axis",
+                worstReservedSphere, radius);
 
             // And the draw has to have happened, or both zeroes above are true of a world in which
             // no founder was ever set down — part 2's `anyRaised` rule.
@@ -1077,6 +1095,21 @@ namespace Evosim.Sim.EditorTools
                 float furthestWalker = 0f;
                 int outsideEver = 0;
 
+                // wall-clearance-spec.md item 5: the reserved sphere, checked on real bodies
+                // rather than on the no-scene arithmetic above — every founder and every
+                // offspring born during the walk, the first step it is seen, since that is the
+                // step nearest the moment its spot was reserved and before growth (D087) has
+                // moved its own radius away from what was reserved.
+                var seenForReservation = new System.Collections.Generic.HashSet<EntityId>();
+                int reservationsChecked = 0;
+                float worstReservedSphere = 0f;
+
+                // Item 5's second half: not the root alone but every part, at every step, each
+                // against its own bounding extent — the root-only check above answers for the
+                // placer; this one answers for a limb that has swum out past where its root sits.
+                int partsChecked = 0;
+                float worstPartRadius = 0f;
+
                 for (int step = 1; step <= TankSteps; step++)
                 {
                     eco.Step();
@@ -1111,6 +1144,34 @@ namespace Evosim.Sim.EditorTools
 
                         worstRadius = Mathf.Max(worstRadius, r);
                         if (r > radius + WallToleranceMetres) outsideEver++;
+
+                        if (instance.Root != null && seenForReservation.Add(instance.Root.GetEntityId()))
+                        {
+                            reservationsChecked++;
+
+                            float bodyRadius = SharedVolume.BoundingRadius(instance.Phenotype);
+                            worstReservedSphere = Mathf.Max(worstReservedSphere, r + bodyRadius);
+                        }
+
+                        Phenotype phenotype = instance.Phenotype;
+
+                        for (int b = 0; b < bodies.Length; b++)
+                        {
+                            Vector3 partPosition = bodies[b].transform.position;
+                            float partSum = partPosition.x + partPosition.z;
+                            if (float.IsNaN(partSum) || float.IsInfinity(partSum)) continue;
+
+                            float partDx = partPosition.x - radius;
+                            float partDz = partPosition.z - radius;
+                            float partCentreDistance = Mathf.Sqrt(partDx * partDx + partDz * partDz);
+
+                            float partExtent = phenotype != null && b < phenotype.PartCount
+                                ? PartExtent(phenotype.Parts[b])
+                                : 0f;
+
+                            worstPartRadius = Mathf.Max(worstPartRadius, partCentreDistance + partExtent);
+                            partsChecked++;
+                        }
                     }
 
                     for (int i = 0; i < walkers.Count; i++)
@@ -1149,6 +1210,17 @@ namespace Evosim.Sim.EditorTools
                     "- the glass and the bed: " + eco.FloorContactPairs +
                     " contact pairs, counted apart from the " + eco.ContactPairs +
                     " creature-creature pairs");
+                report.AppendLine(
+                    "- " + reservationsChecked + " reserved spheres checked (founders and " +
+                    "offspring born in the walk, first sight), worst centre + bounding radius " +
+                    worstReservedSphere.ToString("0.####", CultureInfo.InvariantCulture) + " m of " +
+                    radius.ToString("0.####", CultureInfo.InvariantCulture) + " m");
+                report.AppendLine(
+                    "- " + partsChecked + " part placements checked across the run, worst " +
+                    "position + own bounding extent " +
+                    worstPartRadius.ToString("0.####", CultureInfo.InvariantCulture) + " m of " +
+                    radius.ToString("0.####", CultureInfo.InvariantCulture) + " m (tolerance R + " +
+                    WallToleranceMetres + " m)");
 
                 // The walk has to have happened, or every zero below is a statement about a world
                 // in which nothing ever went near the wall.
@@ -1162,6 +1234,21 @@ namespace Evosim.Sim.EditorTools
                 ok &= Same(report, "roots seen past R + tolerance, any step", outsideEver, 0);
                 ok &= Within(report, "furthest any root got from the axis",
                     worstRadius, radius + WallToleranceMetres);
+
+                // wall-clearance-spec.md item 5: the reserved sphere is the placer's own promise
+                // and carries no wall tolerance — it is arithmetic Free already enforced, not a
+                // contact with the prism's corners.
+                ok &= Within(
+                    report, "reserved spheres (centre + bounding radius) from the axis",
+                    worstReservedSphere, radius);
+
+                // Every part, not just the root — a limb can reach further than the root it
+                // hangs from. This one does carry the wall tolerance, because a part actually
+                // touching the glass is a contact with the twelve-millimetre prism, not with the
+                // mathematical circle the placer reasons about.
+                ok &= Within(
+                    report, "every part's own position + bounding extent from the axis",
+                    worstPartRadius, radius + WallToleranceMetres);
 
                 // 0 by construction, and the column is kept in the report precisely so that a
                 // reader can see that it is (SharedVolume.TryWrap).
@@ -1188,6 +1275,21 @@ namespace Evosim.Sim.EditorTools
             }
 
             return ok;
+        }
+
+        /// <summary>
+        /// One part's own bounding extent, m: its half-diagonal about its own centre.
+        /// </summary>
+        /// <remarks>
+        /// <c>SharedVolume.BoundingRadius</c>'s per-part term, read on its own rather than
+        /// maximised over the whole phenotype about the root — wall-clearance-spec.md item 5
+        /// asks of every part's own world position, not the root's, so this is the piece of that
+        /// method a part-level check needs.
+        /// </remarks>
+        private static float PartExtent(PhenotypePart part)
+        {
+            Float3 h = part.HalfExtents;
+            return Mathf.Sqrt(h.X * h.X + h.Y * h.Y + h.Z * h.Z);
         }
 
         /// <summary>Picks the bodies that will be walked into the glass.</summary>
