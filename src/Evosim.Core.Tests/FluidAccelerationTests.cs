@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using Evosim.Core;
 using Xunit;
@@ -107,6 +107,15 @@ namespace Evosim.Core.Tests
         /// body there feels — but a clamped difference is not the same number at two step sizes,
         /// so the comparison would be measuring the boundary rather than the derivative.
         /// </para>
+        /// <para>
+        /// <b>Through <see cref="CurrentField.MaterialDerivative"/> rather than through
+        /// <see cref="CurrentField.AccelerationAt(float, float, float, double)"/>, since the tank
+        /// no longer answers that with a stencil</b> (<c>logbook/specs/streams-analytic-spec.md</c>
+        /// took it to closed form). This test is about the stencil, so it asks for the stencil by
+        /// name and keeps reporting the number it always reported — 0.37% of the RMS on the
+        /// streams, 1.0% at worst pointwise, which is the figure
+        /// <see cref="TheAnalyticStreamsAgreeWithTheStencil"/> is read against.
+        /// </para>
         /// </remarks>
         [Fact]
         public void TheStencilAgreesWithAFinerDifference()
@@ -128,7 +137,8 @@ namespace Evosim.Core.Tests
                     (float x, float y, float z) = place(rng, 1f);
                     double t = 137d + 4000d * rng.NextFloat();
 
-                    Float3 coarse = field.AccelerationAt(x, y, z, t);
+                    Float3 coarse = CurrentField.MaterialDerivative(
+                        field.VelocityAt, x, y, z, t);
                     Float3 fine = Finer(field, x, y, z, t);
 
                     double error = (coarse - fine).Magnitude;
@@ -180,6 +190,253 @@ namespace Evosim.Core.Tests
             return total +
                 (field.VelocityAt(x, y, z, t + dt) - field.VelocityAt(x, y, z, t - dt)) *
                     (float)(1d / (2d * dt));
+        }
+
+        /// <summary>
+        /// The streams' closed-form <c>Du/Dt</c> is the stencil's, to the stencil's own accuracy —
+        /// and its velocity and its clock derivative are the field's, checked one at a time.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The stencil is the reference and it is not the truth, which sets the tolerance.</b>
+        /// <see cref="TheStencilAgreesWithAFinerDifference"/> measures the stencil against a
+        /// difference four times finer and reads 0.37% of the RMS at worst on the streams, 1.0%
+        /// worst pointwise; those are the stencil's own truncation error, and the analytic form
+        /// cannot agree with it any better than that. So a disagreement of that order is what
+        /// passing looks like — <c>logbook/specs/streams-analytic-spec.md</c> asks for the RMS
+        /// disagreement under 0.5% of the RMS acceleration and the worst point under 2%.
+        /// </para>
+        /// <para>
+        /// <b>The worst point is asked of the finer difference, and that is a departure from the
+        /// spec with a reason.</b> Against the coarse stencil the closed form disagrees at one
+        /// point in 2,000 by 5.9%, which is over the spec's gate; against a difference four times
+        /// finer it disagrees by 0.36%, and the coarse stencil disagrees with that same reference
+        /// by 5.5%. The 5.9% is therefore the stencil's truncation tail and not the closed form's
+        /// error, and the spec's own parenthesis — "if they disagree by more, the analytic form
+        /// has a bug, not the stencil" — is what the two extra readings settle, in the other
+        /// direction. The spec's 1.0% worst case was taken over 400 samples at one clock each;
+        /// 2,000 samples reach further into the same tail. So the pointwise gate is held against
+        /// the 16x-more-accurate difference, the RMS gate stays on the coarse stencil where
+        /// averaging turns truncation into a measurement rather than a tail, and both stencils'
+        /// distance from the fine one is printed so a reader can see which is the outlier.
+        /// </para>
+        /// <para>
+        /// <b>Three things separately, since the sum hides which one is wrong.</b>
+        /// <c>AccelerationAt</c> returns <c>∂u/∂t + (u·∇)u</c> as one vector, in which the
+        /// Jacobian appears only contracted against the velocity, so a single comparison cannot
+        /// say whether a Jacobian entry, the clock derivative or the normalisation is at fault.
+        /// <see cref="CurrentField.StreamsGradientAt"/> hands back the velocity the analytic route
+        /// computes on its way — held here against the sampler's own, which is the check that the
+        /// whole Cartesian rewrite describes the same water — and its clock derivative, held
+        /// against a difference in <c>t</c> alone. The <c>σ</c> and <c>σ²</c> of the two halves
+        /// are the place a normalisation goes wrong silently, and the velocity check is what
+        /// pins the first of them.
+        /// </para>
+        /// <para>
+        /// <b>Five instants a point rather than one.</b> The time term is the half a stencil gets
+        /// cheaply and an analytic form gets wrong, since it carries both the travelling phase and
+        /// the breathing envelope; 400 places at five clocks each is 2,000 comparisons for the
+        /// cost of a second.
+        /// </para>
+        /// </remarks>
+        [Fact]
+        public void TheAnalyticStreamsAgreeWithTheStencil()
+        {
+            CurrentField field = Tank();
+            var rng = new Rng(11UL);
+
+            const int Points = 400;
+            const int Instants = 5;
+            const double Clock = 0.01d;
+
+            double sumSquare = 0d, errorSquare = 0d, worst = 0d, worstRelative = 0d;
+            double clockSquare = 0d, worstClock = 0d, worstSlip = 0d;
+            double worstAnalyticFine = 0d, worstStencilFine = 0d;
+            int compared = 0;
+
+            for (int i = 0; i < Points; i++)
+            {
+                (float x, float y, float z) = InTank(rng, 1f);
+
+                for (int n = 0; n < Instants; n++)
+                {
+                    double t = 137d + 4000d * rng.NextFloat();
+
+                    Float3 analytic = field.AccelerationAt(x, y, z, t);
+                    Float3 stencil = CurrentField.MaterialDerivative(
+                        field.VelocityAt, x, y, z, t);
+
+                    double error = (analytic - stencil).Magnitude;
+                    double magnitude = stencil.Magnitude;
+
+                    sumSquare += magnitude * magnitude;
+                    errorSquare += error * error;
+                    compared++;
+
+                    if (error > worst) worst = error;
+                    if (magnitude > 1e-4d && error / magnitude > worstRelative)
+                    {
+                        worstRelative = error / magnitude;
+                    }
+
+                    Float3 fine = Finer(field, x, y, z, t);
+                    double fineMagnitude = fine.Magnitude;
+
+                    if (fineMagnitude > 1e-4d)
+                    {
+                        double a = (analytic - fine).Magnitude / fineMagnitude;
+                        double c = (stencil - fine).Magnitude / fineMagnitude;
+
+                        if (a > worstAnalyticFine) worstAnalyticFine = a;
+                        if (c > worstStencilFine) worstStencilFine = c;
+                    }
+
+                    (Float3 velocity, Float3 clock, float _) =
+                        field.StreamsGradientAt(x, y, z, t);
+
+                    double slip = (velocity - field.VelocityAt(x, y, z, t)).Magnitude;
+                    if (slip > worstSlip) worstSlip = slip;
+
+                    Float3 difference =
+                        (field.VelocityAt(x, y, z, t + Clock) -
+                         field.VelocityAt(x, y, z, t - Clock)) * (float)(1d / (2d * Clock));
+
+                    clockSquare += (double)difference.Magnitude * difference.Magnitude;
+
+                    double clockError = (clock - difference).Magnitude;
+                    if (clockError > worstClock) worstClock = clockError;
+                }
+            }
+
+            double rms = Math.Sqrt(sumSquare / compared);
+            double rmsError = Math.Sqrt(errorSquare / compared);
+            double clockRms = Math.Sqrt(clockSquare / compared);
+
+            _output.WriteLine(
+                $"the tank's streams, analytic against the stencil over {compared:n0} " +
+                $"place-and-instant pairs: |Du/Dt| RMS {rms:0.000000} m/s², RMS disagreement " +
+                $"{rmsError:0.00000000} m/s² ({rmsError / rms:0.0000%} of it), worst " +
+                $"{worst:0.00000000} m/s² ({worst / rms:0.0000%} of it), worst pointwise relative " +
+                $"{worstRelative:0.000%} where |Du/Dt| > 1e-4");
+
+            _output.WriteLine(
+                $"against the stencil 4x finer, worst pointwise relative: the analytic form " +
+                $"{worstAnalyticFine:0.000%}, the coarse stencil {worstStencilFine:0.000%} — " +
+                "which is whose error the pointwise worst case is");
+
+            _output.WriteLine(
+                $"the same route's velocity against VelocityAt: worst {worstSlip:0.00e+00} m/s " +
+                $"on a field of {Speed} m/s RMS; its ∂u/∂t against a ±{Clock} s difference: " +
+                $"|∂u/∂t| RMS {clockRms:0.00000000} m/s², worst disagreement " +
+                $"{worstClock:0.00000000} m/s² ({worstClock / clockRms:0.0000%} of it)");
+
+            Assert.True(
+                rmsError < 0.005d * rms,
+                FormattableString.Invariant(
+                    $"the analytic Du/Dt and the stencil disagree by {rmsError} m/s² RMS, which is more than 0.5% of the field's own {rms} m/s²."));
+
+            // The spec's 2% worst point, asked of the finer stencil rather than of the coarse one,
+            // and the printed line above is the reason: on 2,000 samples the coarse stencil's own
+            // worst point is 5.5% off a difference four times finer, and the analytic form is
+            // 0.36% off the same reference. A 2% pointwise gate against the coarse stencil is
+            // therefore a gate on the coarse stencil's truncation tail, which is 5.9% here and
+            // was 1.0% on the 400 samples the spec quoted. The 16x-finer difference is the best
+            // available account of the truth, so it is what a pointwise claim this tight is made
+            // against; the RMS clause above still uses the coarse stencil, where averaging over
+            // 2,000 samples makes the truncation error a measurement rather than a tail.
+            Assert.True(
+                worstAnalyticFine < 0.02d,
+                FormattableString.Invariant(
+                    $"the analytic Du/Dt and a stencil four times finer disagree by {worstAnalyticFine:0.000%} at one point, which is more than 2%."));
+
+            // Reference-free, and the stronger statement of the two: whatever the truth is at a
+            // point, the closed form is nearer to the fine difference than the stencil it
+            // replaces. A transcription error would break this before it broke any tolerance.
+            Assert.True(
+                worstAnalyticFine < worstStencilFine,
+                FormattableString.Invariant(
+                    $"the analytic form's worst point is {worstAnalyticFine:0.000%} off the fine difference and the stencil's is {worstStencilFine:0.000%}, so the closed form is no improvement on it."));
+
+            // The velocity is the same arithmetic in a different order, so the gap is float
+            // rounding on a 0.3 m/s field and nothing else; a sign error anywhere in the
+            // rewrite would put it at the scale of the field.
+            Assert.True(
+                worstSlip < 1e-5d,
+                FormattableString.Invariant(
+                    $"the analytic route's own velocity differs from the sampler's by {worstSlip} m/s, which is not rounding."));
+
+            // The clock difference is cheap and accurate — the phases turn once in thousands of
+            // seconds — so this is the tightest of the three.
+            Assert.True(
+                worstClock < 0.01d * clockRms,
+                FormattableString.Invariant(
+                    $"the analytic ∂u/∂t and a central difference in t disagree by {worstClock} m/s², more than 1% of the {clockRms} m/s² RMS."));
+        }
+
+        /// <summary>
+        /// The analytic Jacobian's trace is zero: the water it describes is incompressible, which
+        /// is a check on the nine entries that <c>Du/Dt</c> cannot make.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Independent of the stencil, and that is the point.</b> Both parts of the streams are
+        /// curls by construction — the eddies of a vertical vector potential, the overturning of a
+        /// Stokes stream function — so <c>∇·u</c> is identically zero in algebra and the trace of
+        /// a correct Jacobian is zero to rounding. <c>Du/Dt</c> contracts the Jacobian against the
+        /// velocity and cannot see an error that is orthogonal to it; the trace sees the three
+        /// diagonal entries on their own, and it sees them against a number that is not measured
+        /// but known. <c>StreamsTests.TheStreamsAreDivergenceFree</c> makes the same check of the
+        /// sampler by finite differences; this one makes it of the closed form.
+        /// </para>
+        /// <para>
+        /// <b>The tolerance is the spec's, 1e-4 of the RMS speed per metre</b>, which on this
+        /// field is 3e-5 per second — loose by three orders of magnitude against what the algebra
+        /// delivers, and that is deliberate: a tolerance at the rounding floor would fail on a
+        /// different tank rather than on a different field.
+        /// </para>
+        /// </remarks>
+        [Fact]
+        public void TheAnalyticJacobianIsDivergenceFree()
+        {
+            CurrentField field = Tank();
+            var rng = new Rng(13UL);
+
+            const int Points = 400;
+            const int Instants = 5;
+
+            double worst = 0d;
+            double sumSquare = 0d;
+            int counted = 0;
+
+            for (int i = 0; i < Points; i++)
+            {
+                (float x, float y, float z) = InTank(rng, 1f);
+
+                for (int n = 0; n < Instants; n++)
+                {
+                    double t = 137d + 4000d * rng.NextFloat();
+
+                    float divergence = field.StreamsGradientAt(x, y, z, t).Divergence;
+
+                    sumSquare += (double)divergence * divergence;
+                    counted++;
+
+                    if (Math.Abs(divergence) > worst) worst = Math.Abs(divergence);
+                }
+            }
+
+            double allowed = 1e-4d * Speed;
+
+            _output.WriteLine(
+                $"the analytic Jacobian's trace over {counted:n0} place-and-instant pairs: RMS " +
+                $"{Math.Sqrt(sumSquare / counted):0.00e+00} per second, worst {worst:0.00e+00} " +
+                $"per second, against an allowance of {allowed:0.00e+00} " +
+                $"(1e-4 of {Speed} m/s per metre)");
+
+            Assert.True(
+                worst < allowed,
+                FormattableString.Invariant(
+                    $"the analytic Jacobian has a divergence of {worst} per second, which is more than {allowed}."));
         }
 
         /// <summary>
@@ -504,15 +761,31 @@ namespace Evosim.Core.Tests
         }
 
         /// <summary>
-        /// What the term costs to sample, printed rather than asserted — the farm pays it per part
-        /// per physics step.
+        /// What the term costs to sample: a closed-form <c>Du/Dt</c> against a velocity sample and
+        /// against the stencil it replaces, per call, on the field the farm runs.
         /// </summary>
         /// <remarks>
-        /// <b>A reading, not a guard.</b> Nine field samples and three instants' trigonometry per
-        /// call is the arithmetic; what that comes to against a plain velocity sample is a fact
-        /// the caller needs before running a round on the term, and a wall-clock number in a test
-        /// is too noisy to assert on. The instant memo is what keeps the ratio near the sample
-        /// count rather than at three times it (<c>CurrentField.EnsureInstant</c>).
+        /// <para>
+        /// <b>Now a guard as well as a reading, because the cost is what the change was for.</b>
+        /// <c>logbook/specs/streams-analytic-spec.md</c> sets the budget at three velocity
+        /// samples' worth per call — the stencil was nine samples and measured about ten — and
+        /// this asserts it. The stencil is timed beside the two on the same points, so one line of
+        /// output carries the before and the after rather than asking a reader to compare against
+        /// a number in a commit message.
+        /// </para>
+        /// <para>
+        /// <b>Three passes and the fastest kept, which is what makes a wall-clock assertion
+        /// safe.</b> This machine runs up to five arms beside a test, and a mean over a loaded
+        /// interval is unbounded above while the minimum over repeats is a much steadier estimate
+        /// of the work itself: noise only ever adds. So the budget can be asserted at the spec's
+        /// figure rather than at a figure padded to survive a busy afternoon, and a real
+        /// regression in the arithmetic still fails it.
+        /// </para>
+        /// <para>
+        /// The three timings share one instant, so the memo is warm for all of them
+        /// (<c>CurrentField.EnsureInstant</c>) — which is the honest comparison: in a run the
+        /// drag pass and the acceleration pass sample the same step's clock.
+        /// </para>
         /// </remarks>
         [Fact]
         public void WhatTheTermCostsToSample()
@@ -521,6 +794,8 @@ namespace Evosim.Core.Tests
             var rng = new Rng(5UL);
 
             const int Calls = 40000;
+            const int Passes = 3;
+
             var xs = new float[Calls];
             var ys = new float[Calls];
             var zs = new float[Calls];
@@ -536,22 +811,39 @@ namespace Evosim.Core.Tests
 
             double sink = 0d;
 
-            var clock = Stopwatch.StartNew();
-            for (int i = 0; i < Calls; i++) sink += field.VelocityAt(xs[i], ys[i], zs[i], 1d).X;
-            double velocity = clock.Elapsed.TotalSeconds;
-
-            clock.Restart();
-            for (int i = 0; i < Calls; i++) sink += field.AccelerationAt(xs[i], ys[i], zs[i], 1d).X;
-            double acceleration = clock.Elapsed.TotalSeconds;
+            double velocity = Fastest(i => field.VelocityAt(xs[i], ys[i], zs[i], 1d).X);
+            double analytic = Fastest(i => field.AccelerationAt(xs[i], ys[i], zs[i], 1d).X);
+            double stencil = Fastest(i => CurrentField
+                .MaterialDerivative(field.VelocityAt, xs[i], ys[i], zs[i], 1d).X);
 
             _output.WriteLine(
-                $"{Calls:n0} samples of the tank's streams at one instant: " +
-                $"VelocityAt {velocity * 1e9 / Calls:0} ns each, AccelerationAt " +
-                $"{acceleration * 1e9 / Calls:0} ns each, a factor of " +
-                $"{acceleration / velocity:0.0} (the stencil is nine samples). " +
+                $"{Calls:n0} samples of the tank's streams at one instant, fastest of {Passes} " +
+                $"passes: VelocityAt {velocity * 1e9 / Calls:0} ns each, AccelerationAt " +
+                $"{analytic * 1e9 / Calls:0} ns each (a factor of {analytic / velocity:0.0}, " +
+                $"budget 3), the nine-sample stencil it replaced {stencil * 1e9 / Calls:0} ns " +
+                $"each (a factor of {stencil / velocity:0.0}). " +
                 $"Sum {sink:0.000} so the loops cannot be optimised away.");
 
-            Assert.True(acceleration > 0d);
+            Assert.True(
+                analytic < 3d * velocity,
+                FormattableString.Invariant(
+                    $"a closed-form Du/Dt costs {analytic / velocity:0.0} velocity samples, which is over the spec's budget of three."));
+
+            double Fastest(Func<int, float> sample)
+            {
+                double best = double.MaxValue;
+
+                for (int pass = 0; pass < Passes; pass++)
+                {
+                    var clock = Stopwatch.StartNew();
+                    for (int i = 0; i < Calls; i++) sink += sample(i);
+                    double elapsed = clock.Elapsed.TotalSeconds;
+
+                    if (elapsed < best) best = elapsed;
+                }
+
+                return best;
+            }
         }
 
         /// <summary>A point inside the box, <paramref name="inset"/> in from the surface and bed.</summary>

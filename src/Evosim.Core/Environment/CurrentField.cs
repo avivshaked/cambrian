@@ -819,10 +819,29 @@ namespace Evosim.Core
         /// three instants it touches are memoised (see <see cref="EnsureInstant"/>), so the
         /// 27 terms' trigonometry is rebuilt three times a step rather than three times a call.
         /// </para>
+        /// <para>
+        /// <b>The tank does not pay that, because the streams are differentiated in closed
+        /// form.</b> Nine samples came to ten times a velocity sample and the build's own estimate
+        /// was that it halved the farm's pace in a tank, which is the campaign's world; so in a
+        /// tank without a vent this calls <see cref="StreamsAccelerationAt"/>, which takes every
+        /// derivative analytically from the same term loop
+        /// (<c>logbook/specs/streams-analytic-spec.md</c>). The stencil above stays for the box —
+        /// the transport field and the rolls — where no round has ever run with the term on and
+        /// the cost is nobody's problem, and for a tank with a vent, whose plume is a step in
+        /// <c>x</c> that neither route differentiates honestly and which is off in every launcher
+        /// that has a tank in it. Which route answered is not observable to a caller beyond the
+        /// accuracy the tests pin: <c>FluidAccelerationTests</c> holds the two against each other
+        /// at 400 places and several instants.
+        /// </para>
         /// </remarks>
         public Float3 AccelerationAt(float x, float y, float z, double seconds)
         {
             if (_speed <= 0f) return Float3.Zero;
+
+            if (_shape == WorldShape.Tank && !VentActive(_patchCount))
+            {
+                return StreamsAccelerationAt(x, y, z, seconds);
+            }
 
             return MaterialDerivative(
                 _sampler ?? (_sampler = VelocityAt),
@@ -1625,6 +1644,9 @@ namespace Evosim.Core
             _slotEnvelope = new double[InstantSlots][];
             _slotCellEnvelope = new double[InstantSlots][];
             _slotCell = new double[InstantSlots][];
+            _slotEnvelopeRate = new double[InstantSlots][];
+            _slotCellEnvelopeRate = new double[InstantSlots][];
+            _slotCellRate = new double[InstantSlots][];
             _instantAt = new double[InstantSlots];
             _instantNext = 0;
 
@@ -1635,6 +1657,9 @@ namespace Evosim.Core
                 _slotEnvelope[slot] = new double[StreamsTerms];
                 _slotCellEnvelope[slot] = new double[StreamsCells];
                 _slotCell[slot] = new double[StreamsCells];
+                _slotEnvelopeRate[slot] = new double[StreamsTerms];
+                _slotCellEnvelopeRate[slot] = new double[StreamsCells];
+                _slotCellRate[slot] = new double[StreamsCells];
                 _instantAt[slot] = double.NaN;
             }
 
@@ -1950,12 +1975,24 @@ namespace Evosim.Core
         private double[][] _slotCellEnvelope;
         private double[][] _slotCell;
 
+        // THE CLOCK DERIVATIVES OF THE SAME THREE, for the analytic acceleration
+        // (logbook/specs/streams-analytic-spec.md). A term's envelope and a cell's reversing phase
+        // are functions of t alone, so their derivatives belong beside them rather than in the
+        // sampler: without this a gradient call would cost 27 Math.Cos and 3 Math.Sin of its own,
+        // per part per physics step, which is most of what the analytic route exists to save.
+        private double[][] _slotEnvelopeRate;
+        private double[][] _slotCellEnvelopeRate;
+        private double[][] _slotCellRate;
+
         // The slot the last EnsureInstant selected — what StreamsUnit reads.
         private double[] _instantCos;
         private double[] _instantSin;
         private double[] _instantEnvelope;
         private double[] _instantCellEnvelope;
         private double[] _instantCell;
+        private double[] _instantEnvelopeRate;
+        private double[] _instantCellEnvelopeRate;
+        private double[] _instantCellRate;
 
         // Set only inside BuildStreams, and only around the measurement walks — see the remarks
         // there. Null everywhere else, which is what makes the water a run feels the breathing
@@ -1990,15 +2027,21 @@ namespace Evosim.Core
                 _instantSin[k] = Math.Sin(psi);
 
                 // Between half and full, never off — the spec's 0.75 + 0.25 sin.
-                _instantEnvelope[k] =
-                    0.75d + 0.25d * Math.Sin(_streamBreathRate[k] * t + _streamBreathPhase[k]);
+                double breath = _streamBreathRate[k] * t + _streamBreathPhase[k];
+
+                _instantEnvelope[k] = 0.75d + 0.25d * Math.Sin(breath);
+                _instantEnvelopeRate[k] = 0.25d * _streamBreathRate[k] * Math.Cos(breath);
             }
 
             for (int c = 0; c < StreamsCells; c++)
             {
-                _instantCellEnvelope[c] =
-                    0.75d + 0.25d * Math.Sin(_cellBreathRate[c] * t + _cellBreathPhase[c]);
-                _instantCell[c] = Math.Cos(_cellRate[c] * t + _cellPhase[c]);
+                double breath = _cellBreathRate[c] * t + _cellBreathPhase[c];
+                double turn = _cellRate[c] * t + _cellPhase[c];
+
+                _instantCellEnvelope[c] = 0.75d + 0.25d * Math.Sin(breath);
+                _instantCellEnvelopeRate[c] = 0.25d * _cellBreathRate[c] * Math.Cos(breath);
+                _instantCell[c] = Math.Cos(turn);
+                _instantCellRate[c] = -_cellRate[c] * Math.Sin(turn);
             }
 
             _instantAt[fill] = t;
@@ -2011,6 +2054,9 @@ namespace Evosim.Core
             _instantEnvelope = _slotEnvelope[slot];
             _instantCellEnvelope = _slotCellEnvelope[slot];
             _instantCell = _slotCell[slot];
+            _instantEnvelopeRate = _slotEnvelopeRate[slot];
+            _instantCellEnvelopeRate = _slotCellEnvelopeRate[slot];
+            _instantCellRate = _slotCellRate[slot];
         }
 
         /// <summary>
@@ -2022,6 +2068,18 @@ namespace Evosim.Core
 
         private double CellEnvelopeOf(int c) =>
             _envelopeOverride > 0d ? _envelopeOverride : _instantCellEnvelope[c];
+
+        /// <summary>
+        /// The clock derivative of the same envelope, which is zero whenever
+        /// <see cref="BuildStreams"/> is holding it at a constant — a held envelope does not
+        /// breathe, and a derivative taken through the override would describe a field the
+        /// measurement is not looking at.
+        /// </summary>
+        private double EnvelopeRateOf(int k) =>
+            _envelopeOverride > 0d ? 0d : _instantEnvelopeRate[k];
+
+        private double CellEnvelopeRateOf(int c) =>
+            _envelopeOverride > 0d ? 0d : _instantCellEnvelopeRate[c];
 
         /// <summary>
         /// The streams at unit <see cref="Speed"/> and unit scale, at a place and an already-scaled
@@ -2174,6 +2232,455 @@ namespace Evosim.Core
                 (float)(radial * cosTheta - azimuthal * sinTheta),
                 (float)vy,
                 (float)(radial * sinTheta + azimuthal * cosTheta));
+        }
+
+        /// <summary>
+        /// The streams at unit <see cref="Speed"/> and unit scale, with their clock derivative and
+        /// their Cartesian Jacobian — what <see cref="StreamsUnitWithGradient"/> returns.
+        /// </summary>
+        /// <remarks>
+        /// A struct rather than a tuple of twelve, and returned by value: this is built once per
+        /// part per physics step and an allocation there would be a per-step allocation.
+        /// </remarks>
+        private struct StreamsGradient
+        {
+            /// <summary>The velocity, m/s per unit of scale.</summary>
+            public double Vx, Vy, Vz;
+
+            /// <summary>
+            /// <c>∂u/∂t</c> at a fixed place, per unit of <see cref="StreamsUnit"/>'s <i>scaled</i>
+            /// clock — the caller multiplies by <c>2π/Period</c> to get seconds.
+            /// </summary>
+            public double Tx, Ty, Tz;
+
+            /// <summary><c>∂v_x/∂x</c>, <c>∂v_x/∂y</c>, <c>∂v_x/∂z</c>, per metre.</summary>
+            public double Xx, Xy, Xz;
+
+            /// <summary><c>∂v_y/∂x</c>, <c>∂v_y/∂y</c>, <c>∂v_y/∂z</c>, per metre.</summary>
+            public double Yx, Yy, Yz;
+
+            /// <summary><c>∂v_z/∂x</c>, <c>∂v_z/∂y</c>, <c>∂v_z/∂z</c>, per metre.</summary>
+            public double Zx, Zy, Zz;
+        }
+
+        /// <summary>
+        /// <see cref="StreamsUnit"/>'s field, its clock derivative and its 3×3 Jacobian, all in
+        /// closed form from one pass over the same 27 terms —
+        /// <c>logbook/specs/streams-analytic-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why at all.</b> <see cref="AccelerationAt(float, float, float, double)"/> differenced
+        /// the field nine times per part per physics step, about ten times a velocity sample, and
+        /// the term was measured to halve the farm's pace in a tank. Every factor of this field is
+        /// a polynomial in place, a cosine in <c>θ</c>, a sine in <c>y</c> and a phase and an
+        /// envelope in <c>t</c>, so all twelve derivatives are available from the factors already
+        /// being multiplied together, and <c>(u·∇)u</c> becomes one matrix-vector product.
+        /// </para>
+        /// <para>
+        /// <b>In Cartesian from the start, and that is the whole trick.</b> The cylindrical
+        /// derivatives of this field are individually infinite on the axis — <c>v_r</c> and
+        /// <c>v_θ</c> of the <c>m</c> = 1 stream both go as <c>sin(θ + ψ)</c> there, whose
+        /// <c>θ</c> derivative divided by <c>r</c> diverges — and they cancel only in the sum, so a
+        /// Jacobian assembled from them would lose most of its digits near the axis. Written in
+        /// <c>C_n = s^n cos nθ</c> and <c>S_n = s^n sin nθ</c>, which are the real and imaginary
+        /// parts of <c>((x + iz)/R)^n</c> and therefore honest polynomials, every derivative is a
+        /// product of finite things: <c>∂C_n/∂x = n·C_{n-1}/R</c> and <c>∂S_n/∂x = n·S_{n-1}/R</c>,
+        /// with <c>∂C_n/∂z = −n·S_{n-1}/R</c> and <c>∂S_n/∂z = n·C_{n-1}/R</c>. The axis needs no
+        /// more of a guard here than <see cref="StreamsUnit"/> gives it.
+        /// </para>
+        /// <para>
+        /// <b>The one identity this rests on.</b> A stream term's two cylindrical components carry
+        /// <c>sin(mθ + ψ)</c> and <c>cos(mθ + ψ)</c> against <c>cos θ</c> and <c>sin θ</c> when
+        /// they are rotated into Cartesian, and the products split into <c>(m ± 1)θ</c>. Writing
+        /// <c>u = s²</c>, <c>m·f_j(s)/r − f_j'(s)</c> is <c>2s^{m+1}α_j(u)/R</c> and
+        /// <c>m·f_j(s)/r + f_j'(s)</c> is <c>2s^{m-1}β_j(u)/R</c> with
+        /// <c>α_1 = 1</c>, <c>β_1 = m − (m+1)u</c>, <c>α_2 = 3 − 4u</c> and
+        /// <c>β_2 = m − 3(m+1)u + (2m+4)u²</c> — polynomials, the odd powers of <c>s</c> gone. So
+        /// <c>v_x = −(B/R)[α·Ps_{m+1} + β·Ps_{m-1}]</c> and
+        /// <c>v_z = −(B/R)[−α·Pc_{m+1} + β·Pc_{m-1}]</c>, writing <c>Ps_n = s^n sin(nθ + ψ)</c>,
+        /// <c>Pc_n = s^n cos(nθ + ψ)</c> and <c>B</c> for the term's amplitude, envelope and
+        /// vertical profile. Everything below is those two expressions differentiated.
+        /// </para>
+        /// <para>
+        /// <b>Six terms at a time, not one.</b> <c>α</c>, <c>β</c> and the four <c>(C_n, S_n)</c>
+        /// pairs depend only on <c>m</c>, <c>j</c> and the place, so the three vertical modes of
+        /// one <c>(m, j)</c> can be summed into four <c>(Σw·cos ψ, Σw·sin ψ)</c> pairs first and
+        /// rotated into Cartesian once — <c>Σw·Ps_n = S_n·Σw cos ψ + C_n·Σw sin ψ</c>, which is
+        /// what makes a weighted sum over terms as cheap as one term. The four weights are the
+        /// amplitude itself, its <c>y</c> derivative, its envelope's clock derivative and the
+        /// amplitude against the term's own phase rate; the last two are <c>∂u/∂t</c>'s two
+        /// halves, the envelope's and the travelling phase's.
+        /// </para>
+        /// <para>
+        /// <b>The overturning needs no such care.</b> Its radial velocity carries a factor
+        /// <c>r</c> which cancels the <c>1/r</c> of the rotation exactly, so
+        /// <c>v_x = −A·k_q·cos(k_q y)·(1 − s)²·x</c> in Cartesian directly. Its one rough edge is
+        /// the axis, where <c>(1 − s)</c> has a <c>|r|</c> kink: <c>∂s/∂x = x/(rR)</c> is bounded
+        /// but direction-dependent there, and it is set to zero at <c>r</c> = 0 exactly, which is
+        /// the mean over directions. <see cref="StreamsUnit"/> has the same kink and the finite
+        /// difference smeared it over 5 cm; neither is a statement about water a body can be in.
+        /// </para>
+        /// <para>
+        /// <b>Outside the water, the boundary's own derivative.</b> <c>y</c> is clamped to the box
+        /// and <c>s</c> to 1 before anything is computed, exactly as
+        /// <see cref="StreamsUnit"/> clamps them, and the derivatives are then the field's at the
+        /// clamped place — the nearest point of the surface, the bed or the glass. That is a
+        /// choice and not a derivation: the clamped field is constant along the direction it was
+        /// clamped in, so its true derivative there is zero on one side and the interior's on the
+        /// other, and a central difference returned half of the interior's. The boundary's own is
+        /// the one that keeps <c>Du/Dt</c> continuous as a body crosses back in, and the vertical
+        /// component still comes out exactly zero at and above the waterline for the reason
+        /// <see cref="AccelerationAt(float, float, float, double)"/> gives: every term of it
+        /// carries <c>sin(qπy/D)</c> or <c>v_y</c> as a factor and both are exactly zero there.
+        /// </para>
+        /// <para>
+        /// <b>Checked against the stencil rather than argued for.</b> A second derivation of a
+        /// field is exactly the kind of code that is wrong quietly, so
+        /// <c>FluidAccelerationTests</c> holds this against
+        /// <see cref="MaterialDerivative"/> at 400 places and several instants, holds the
+        /// velocity it computes on the way against <see cref="StreamsAt"/>'s, and holds the
+        /// Jacobian's trace against zero — the field is divergence-free by construction, and a
+        /// trace that is not zero is a Jacobian with a term in the wrong place.
+        /// </para>
+        /// </remarks>
+        private StreamsGradient StreamsUnitWithGradient(
+            double x, double y, double z, double t, double overturning)
+        {
+            double depth = _depthMetres;
+            double radius = _tankRadiusMetres;
+
+            // The clamps, before anything is computed — see the remarks.
+            if (y > 0d) y = 0d;
+            else if (y < -depth) y = -depth;
+
+            bool atFace = y >= 0d || y <= -depth;
+
+            double dx = x - radius;
+            double dz = z - radius;
+            double r = Math.Sqrt(dx * dx + dz * dz);
+
+            double cosTheta = r > 0d ? dx / r : 1d;
+            double sinTheta = r > 0d ? dz / r : 0d;
+
+            // Past the glass, the whole point is moved onto it rather than only its s — so that
+            // every factor below, the offsets dx and dz included, describes one place. The
+            // velocity is unchanged by that (StreamsUnit clamps s and its overturning carries a
+            // (1 - s) that is zero there anyway, so the two still agree to the float); the
+            // derivatives become the glass's own rather than a mixture of the glass's angle and
+            // the point's offset.
+            if (r > radius)
+            {
+                dx = radius * cosTheta;
+                dz = radius * sinTheta;
+                r = radius;
+            }
+
+            double s = r / radius;
+            double u = s * s;
+
+            EnsureInstant(t);
+
+            // The vertical profiles and their y derivatives: d sin(q*pi*y/D)/dy is
+            // (q*pi/D)*cos(q*pi*y/D), and the cosines are wanted by the overturning anyway.
+            double phi = Math.PI * y / depth;
+            double cosPhi = Math.Cos(phi);
+            double sinPhi = Math.Sin(phi);
+
+            double sin1 = atFace ? 0d : sinPhi;
+            double sin2 = atFace ? 0d : 2d * sinPhi * cosPhi;
+            double sin3 = atFace ? 0d : sinPhi * (4d * cosPhi * cosPhi - 1d);
+
+            double cos1 = cosPhi;
+            double cos2 = cosPhi * cosPhi - sinPhi * sinPhi;
+            double cos3 = cosPhi * (4d * cosPhi * cosPhi - 3d);
+
+            // du/dx and du/dz of u = s^2 = (dx^2 + dz^2)/R^2, which is how alpha and beta vary
+            // with place.
+            double invR = 1d / radius;
+            double gx = 2d * dx * invR * invR;
+            double gz = 2d * dz * invR * invR;
+
+            // The eddies' sums, without the common -1/R which is applied once at the end.
+            double eVx = 0d, eVz = 0d;
+            double eTx = 0d, eTz = 0d;
+            double eXx = 0d, eXy = 0d, eXz = 0d;
+            double eZx = 0d, eZy = 0d, eZz = 0d;
+
+            // A sliding window of (C_n, S_n) over n = m-2, m-1, m, m+1, by the same angle-sum
+            // recurrence StreamsUnit uses for cos m*theta: C_{n+1} = s*(C_n*cos - S_n*sin).
+            // n = -1 at m = 1 is never read, because its coefficient carries a factor (m - 1).
+            double ca = 0d, sa = 0d;
+            double cb = 1d, sb = 0d;
+            double cc = s * cosTheta, sc = s * sinTheta;
+            double cd = s * (cc * cosTheta - sc * sinTheta);
+            double sd = s * (sc * cosTheta + cc * sinTheta);
+
+            int k = 0;
+
+            for (int m = 1; m <= StreamsAzimuthal; m++)
+            {
+                double mp = (m + 1) * invR;
+                double mm = (m - 1) * invR;
+
+                for (int j = 1; j <= StreamsFamilies; j++)
+                {
+                    double alpha, alphaU, beta, betaU;
+
+                    if (j == 1)
+                    {
+                        alpha = 1d;
+                        alphaU = 0d;
+                        beta = m - (m + 1) * u;
+                        betaU = -(m + 1);
+                    }
+                    else
+                    {
+                        alpha = 3d - 4d * u;
+                        alphaU = -4d;
+                        beta = m - 3d * (m + 1) * u + (2 * m + 4) * u * u;
+                        betaU = -3d * (m + 1) + 2d * (2 * m + 4) * u;
+                    }
+
+                    // The three vertical modes, summed against four weights before any rotation.
+                    double bc = 0d, bs = 0d;
+                    double yc = 0d, ys = 0d;
+                    double tc = 0d, ts = 0d;
+                    double wc = 0d, ws = 0d;
+
+                    for (int q = 1; q <= StreamsVertical; q++, k++)
+                    {
+                        double profile = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
+                        double ky = q * Math.PI / depth;
+                        double slope = ky * (q == 1 ? cos1 : q == 2 ? cos2 : cos3);
+
+                        double raw = _streamsEddyWeight * _streamAmplitude[k];
+                        double envelope = EnvelopeOf(k);
+
+                        // The amplitude, its y derivative, its envelope's clock derivative, and
+                        // itself against the phase rate. No test for a zero profile: at a face the
+                        // amplitude is zero and its y derivative is not.
+                        double b = raw * envelope * profile;
+                        double by = raw * envelope * slope;
+                        double bt = raw * EnvelopeRateOf(k) * profile;
+                        double bw = b * _streamRate[k];
+
+                        double cosPsi = _instantCos[k];
+                        double sinPsi = _instantSin[k];
+
+                        bc += b * cosPsi;
+                        bs += b * sinPsi;
+                        yc += by * cosPsi;
+                        ys += by * sinPsi;
+                        tc += bt * cosPsi;
+                        ts += bt * sinPsi;
+                        wc += bw * cosPsi;
+                        ws += bw * sinPsi;
+                    }
+
+                    // Ps_n and Pc_n of each weighted sum, at the four radial orders. Ps at n = m+1
+                    // and n = m-1 carry the velocity; n = m and n = m-2 appear only through the
+                    // derivative of Ps_n and Pc_n, which drops the order by one.
+                    double psD = sd * bc + cd * bs, pcD = cd * bc - sd * bs;
+                    double psC = sc * bc + cc * bs, pcC = cc * bc - sc * bs;
+                    double psB = sb * bc + cb * bs, pcB = cb * bc - sb * bs;
+                    double psA = sa * bc + ca * bs, pcA = ca * bc - sa * bs;
+
+                    double ysD = sd * yc + cd * ys, ycD = cd * yc - sd * ys;
+                    double ysB = sb * yc + cb * ys, ycB = cb * yc - sb * ys;
+
+                    double tsD = sd * tc + cd * ts, tcD = cd * tc - sd * ts;
+                    double tsB = sb * tc + cb * ts, tcB = cb * tc - sb * ts;
+
+                    double wsD = sd * wc + cd * ws, wcD = cd * wc - sd * ws;
+                    double wsB = sb * wc + cb * ws, wcB = cb * wc - sb * ws;
+
+                    eVx += alpha * psD + beta * psB;
+                    eVz += -alpha * pcD + beta * pcB;
+
+                    eXx += alphaU * gx * psD + alpha * mp * psC +
+                           betaU * gx * psB + beta * mm * psA;
+                    eXz += alphaU * gz * psD + alpha * mp * pcC +
+                           betaU * gz * psB + beta * mm * pcA;
+                    eZx += -alphaU * gx * pcD - alpha * mp * pcC +
+                           betaU * gx * pcB + beta * mm * pcA;
+                    eZz += -alphaU * gz * pcD + alpha * mp * psC +
+                           betaU * gz * pcB - beta * mm * psA;
+
+                    eXy += alpha * ysD + beta * ysB;
+                    eZy += -alpha * ycD + beta * ycB;
+
+                    // The envelope's half of d/dt, and the travelling phase's: d Ps_n/d psi is
+                    // Pc_n and d Pc_n/d psi is -Ps_n.
+                    eTx += alpha * tsD + beta * tsB + alpha * wcD + beta * wcB;
+                    eTz += -alpha * tcD + beta * tcB + alpha * wsD - beta * wsB;
+                }
+
+                ca = cb; sa = sb;
+                cb = cc; sb = sc;
+                cc = cd; sc = sd;
+
+                double nextC = s * (cc * cosTheta - sc * sinTheta);
+                double nextS = s * (sc * cosTheta + cc * sinTheta);
+                cd = nextC; sd = nextS;
+            }
+
+            var g = default(StreamsGradient);
+
+            g.Vx = -eVx * invR;
+            g.Vz = -eVz * invR;
+            g.Tx = -eTx * invR;
+            g.Tz = -eTz * invR;
+            g.Xx = -eXx * invR;
+            g.Xy = -eXy * invR;
+            g.Xz = -eXz * invR;
+            g.Zx = -eZx * invR;
+            g.Zy = -eZy * invR;
+            g.Zz = -eZz * invR;
+
+            // The eddies are the curl of a purely vertical potential, so they carry no vertical
+            // velocity at all and nothing of v_y comes from them.
+
+            if (overturning == 0d) return g;
+
+            double wall = 1d - s;
+            double wallSquared = wall * wall;
+            double wallSlope = -2d * wall;
+
+            // V(s) = 2(1 - s)(1 - 2s) is the vertical profile's radial shape and V'(s) its slope.
+            double vertical = 2d * wall * (1d - 2d * s);
+            double verticalSlope = 2d * (4d * s - 3d);
+
+            // ds/dx and ds/dz. Zero on the axis, where |r| has a kink — see the remarks.
+            double sx = r > 0d ? dx / (r * radius) : 0d;
+            double sz = r > 0d ? dz / (r * radius) : 0d;
+
+            for (int c = 0; c < StreamsCells; c++)
+            {
+                int q = c + 1;
+                double ky = q * Math.PI / depth;
+
+                double raw = overturning * _cellAmplitude[c];
+                double envelope = CellEnvelopeOf(c);
+                double turn = _instantCell[c];
+
+                double amplitude = raw * envelope * turn;
+                double rate = raw * (CellEnvelopeRateOf(c) * turn +
+                                     envelope * _instantCellRate[c]);
+
+                double cosKy = q == 1 ? cos1 : q == 2 ? cos2 : cos3;
+                double sinKy = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
+
+                // v_x = -A*k*cos(k y)*(1 - s)^2*dx, v_z the same in dz, v_y = A*V(s)*sin(k y).
+                double horizontal = amplitude * ky * cosKy;
+                double horizontalRate = rate * ky * cosKy;
+
+                g.Vx -= horizontal * wallSquared * dx;
+                g.Vz -= horizontal * wallSquared * dz;
+                g.Vy += amplitude * vertical * sinKy;
+
+                g.Xx -= horizontal * (wallSquared + wallSlope * sx * dx);
+                g.Xz -= horizontal * wallSlope * sz * dx;
+                g.Zx -= horizontal * wallSlope * sx * dz;
+                g.Zz -= horizontal * (wallSquared + wallSlope * sz * dz);
+
+                // d cos(k y)/dy = -k sin(k y), so the y derivative of the horizontal flips sign.
+                g.Xy += amplitude * ky * ky * sinKy * wallSquared * dx;
+                g.Zy += amplitude * ky * ky * sinKy * wallSquared * dz;
+
+                g.Yx += amplitude * verticalSlope * sx * sinKy;
+                g.Yz += amplitude * verticalSlope * sz * sinKy;
+                g.Yy += amplitude * vertical * ky * cosKy;
+
+                g.Tx -= horizontalRate * wallSquared * dx;
+                g.Tz -= horizontalRate * wallSquared * dz;
+                g.Ty += rate * vertical * sinKy;
+            }
+
+            return g;
+        }
+
+        /// <summary>
+        /// <c>Du/Dt</c> of the tank's streams in closed form —
+        /// <see cref="AccelerationAt(float, float, float, double)"/>'s analytic route.
+        /// </summary>
+        /// <remarks>
+        /// <b>The scale enters twice and not once.</b> <see cref="StreamsUnitWithGradient"/>
+        /// returns the field at unit <see cref="Speed"/> and unit scale, and the real field is
+        /// <c>σ</c> times it with <c>σ = Speed·scale</c>. So <c>∂u/∂t</c> carries one factor of
+        /// <c>σ</c> and <c>(u·∇)u</c> carries two, which is the one place a normalisation can be
+        /// got wrong without any test of the velocity noticing. The clock carries its own factor:
+        /// <see cref="StreamsUnit"/>'s <c>t</c> is <c>2π·seconds/Period</c>.
+        /// </remarks>
+        private Float3 StreamsAccelerationAt(float x, float y, float z, double seconds)
+        {
+            EnsureStreams();
+
+            double clock = 2.0 * Math.PI / _periodSeconds;
+
+            StreamsGradient g = StreamsUnitWithGradient(
+                x, y, z, clock * seconds, _streamsOverturning);
+
+            double sigma = (double)_speed * _streamsScale;
+            double perSecond = sigma * clock;
+            double squared = sigma * sigma;
+
+            return new Float3(
+                (float)(perSecond * g.Tx +
+                        squared * (g.Vx * g.Xx + g.Vy * g.Xy + g.Vz * g.Xz)),
+                (float)(perSecond * g.Ty +
+                        squared * (g.Vx * g.Yx + g.Vy * g.Yy + g.Vz * g.Yz)),
+                (float)(perSecond * g.Tz +
+                        squared * (g.Vx * g.Zx + g.Vy * g.Zy + g.Vz * g.Zz)));
+        }
+
+        /// <summary>
+        /// The analytic route's three pieces at a place and a time, at the field's own scale: the
+        /// velocity it computes on the way, <c>∂u/∂t</c> in seconds, and the divergence of its
+        /// Jacobian, per second.
+        /// </summary>
+        /// <remarks>
+        /// <b>Public for the tests, and for the reason <see cref="StreamsComponentRms"/> is.</b>
+        /// <see cref="AccelerationAt(float, float, float, double)"/> returns one vector in which
+        /// <c>∂u/∂t</c> and <c>(u·∇)u</c> are already added together and the Jacobian's nine
+        /// entries appear only contracted against <c>u</c>, so a disagreement with the stencil
+        /// cannot be localised from it. These three can be checked one at a time: the velocity
+        /// against <see cref="VelocityAt(float, float, float, double)"/>, the clock derivative
+        /// against a difference in <c>t</c> alone, and the divergence against zero — which the
+        /// field is by construction, both parts of it being curls.
+        /// </remarks>
+        /// <param name="x">World x, m.</param>
+        /// <param name="y">World height, m. Zero is the waterline, negative is down.</param>
+        /// <param name="z">World z, m.</param>
+        /// <param name="seconds">The world's clock, s.</param>
+        public (Float3 Velocity, Float3 TimeDerivative, float Divergence) StreamsGradientAt(
+            float x, float y, float z, double seconds)
+        {
+            if (_shape != WorldShape.Tank)
+            {
+                throw new InvalidOperationException(
+                    "The streams are the tank's water and this field is in a box.");
+            }
+
+            if (_speed <= 0f) return (Float3.Zero, Float3.Zero, 0f);
+
+            EnsureStreams();
+
+            double clock = 2.0 * Math.PI / _periodSeconds;
+
+            StreamsGradient g = StreamsUnitWithGradient(
+                x, y, z, clock * seconds, _streamsOverturning);
+
+            double sigma = (double)_speed * _streamsScale;
+            double perSecond = sigma * clock;
+
+            return (
+                new Float3((float)(sigma * g.Vx), (float)(sigma * g.Vy), (float)(sigma * g.Vz)),
+                new Float3(
+                    (float)(perSecond * g.Tx),
+                    (float)(perSecond * g.Ty),
+                    (float)(perSecond * g.Tz)),
+                (float)(sigma * (g.Xx + g.Yy + g.Zz)));
         }
 
         /// <summary>

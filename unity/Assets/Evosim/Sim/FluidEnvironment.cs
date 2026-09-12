@@ -318,7 +318,7 @@ namespace Evosim.Sim
                     //
                     // Skipped entirely at coefficient 0, which is every recorded config: the term
                     // would be exactly zero (FluidModel.AccelerationForce multiplies by it), and
-                    // CurrentField.AccelerationAt costs nine field samples per part per step, so
+                    // CurrentField.AccelerationAt costs a closed-form acceleration in a tank (about two velocity samples' worth) and a nine-sample stencil elsewhere, so
                     // the guard is what keeps the record's worlds both unchanged and as cheap as
                     // they were. It is a per-step force like the drag, so any nonzero value is a
                     // new realisation of every seed.

@@ -482,10 +482,15 @@ namespace Evosim.Core.Tests
         /// Both of the streams spec's checks are met at once, by two rules rather than by one.
         /// </para>
         /// <para>
-        /// Marked <c>Slow</c>: seven runs of 5,000 s at a 0.02 s step, and the four that carry the
-        /// term sample the field nine times where the others sample it once — some 2.1 billion
-        /// field evaluations, a quarter of an hour of one core. The assertion it now makes is a
-        /// property of a world rule, so it is worth the money, but not on every filtered run.
+        /// Marked <c>Slow</c>: seven runs of 5,000 s at a 0.02 s step, 200 tracers apiece and two
+        /// passes a step, which is 400 samples of the field per step and hundreds of millions
+        /// across the test, before the carried term is counted at all. The two streams runs that
+        /// carry it now pay a closed form rather than nine samples
+        /// (<c>logbook/specs/streams-analytic-spec.md</c>, about a quarter of what the stencil
+        /// cost); the gyre's carried run still differences its field, because the old
+        /// construction is kept for one reading and not given a derivative. The assertion it
+        /// makes is a property of a world rule, so it is worth the money, but not on every
+        /// filtered run.
         /// </para>
         /// </remarks>
         [Trait("Category", "Slow")]
@@ -498,9 +503,17 @@ namespace Evosim.Core.Tests
             {
                 foreach (double carry in new[] { 0d, 1d })
                 {
+                    // The field's own AccelerationAt, which in a tank is the closed form
+                    // (logbook/specs/streams-analytic-spec.md) — so this reading is of the route
+                    // the farm runs, and it is the check that swapping the stencil for algebra did
+                    // not move the property the term was added for. The stencil's own reading of
+                    // the same four runs is the D090 build's, and it is not restated here: the
+                    // two routes agree to 0.15% of the RMS acceleration, which FluidAccelerationTests
+                    // measures, and a rim share is not sensitive at that scale.
                     Drift drift = Tracers(
                         (x, y, z, t) => field.VelocityAt(x, y, z, t), tau, 5000d, 2000d,
-                        carry: carry);
+                        carry: carry,
+                        acceleration: field.AccelerationAt);
 
                     Report(
                         FormattableString.Invariant(
@@ -639,10 +652,14 @@ namespace Evosim.Core.Tests
         /// <paramref name="carry"/>, 0 is drag alone and every reading taken before
         /// 2026-09-12, and 1 is a neutrally buoyant body, for which the Morison force divided by
         /// the body's effective mass is the water's acceleration exactly (see
-        /// <see cref="ABodyRidesTheWater"/> on that assumption). The derivative is taken by
-        /// <see cref="CurrentField.MaterialDerivative"/> on whichever field was handed in, so the
-        /// four fields this class measures are all read through the one stencil the farm uses, and
-        /// a carried run costs nine field samples where an uncarried one costs one.
+        /// <see cref="ABodyRidesTheWater"/> on that assumption). The derivative comes from
+        /// <paramref name="acceleration"/> when the caller has a field that can give it —
+        /// <c>CurrentField.AccelerationAt</c>, which for the streams is now closed form
+        /// (<c>logbook/specs/streams-analytic-spec.md</c>) — and otherwise from
+        /// <see cref="CurrentField.MaterialDerivative"/> differencing whatever field was handed
+        /// in, at nine samples a call. Either way it is the farm's own route and not a copy of
+        /// it, which is the property that matters: what a tracer feels here and what a part feels
+        /// in a run are one function.
         /// And <c>τ = 0</c> means the tracer
         /// <i>is</i> the water — a fluid particle, whose distribution an incompressible flow cannot
         /// change. The point is not to integrate the water accurately, since the physics does that
@@ -685,9 +702,15 @@ namespace Evosim.Core.Tests
         private static Drift Tracers(
             Func<float, float, float, double, Float3> water,
             double tau, double seconds, double window, double step = TracerStep, bool euler = false,
-            double carry = 0d)
+            double carry = 0d,
+            Func<float, float, float, double, Float3> acceleration = null)
         {
             var rng = new Rng(31UL);
+
+            // The field's own Du/Dt where it has one, the stencil on the sampler where it does
+            // not — see the remarks. Bound once rather than tested per tracer per step.
+            Func<float, float, float, double, Float3> derivative = acceleration ??
+                ((px, py, pz, pt) => CurrentField.MaterialDerivative(water, px, py, pz, pt));
 
             var x = new double[TracerCount];
             var y = new double[TracerCount];
@@ -740,13 +763,12 @@ namespace Evosim.Core.Tests
                 {
                     Float3 u = water((float)x[i], (float)y[i], (float)z[i], t);
 
-                    // The water's own acceleration, through the same stencil the fluid model uses
-                    // — CurrentField.MaterialDerivative rather than a copy of it, so that what a
-                    // tracer feels here and what a part feels in the farm are one function. Nine
-                    // samples of the field, which is why a carried run costs what it does.
+                    // The water's own acceleration, through the same route the fluid model uses —
+                    // the field's AccelerationAt, or the stencil on the sampler for a field that
+                    // has no closed form — rather than a copy of it, so that what a tracer feels
+                    // here and what a part feels in the farm are one function.
                     Float3 a = carry > 0d && !perfect
-                        ? CurrentField.MaterialDerivative(
-                            water, (float)x[i], (float)y[i], (float)z[i], t)
+                        ? derivative((float)x[i], (float)y[i], (float)z[i], t)
                         : Float3.Zero;
 
                     if (euler)
@@ -804,8 +826,7 @@ namespace Evosim.Core.Tests
                         else
                         {
                             Float3 a = carry > 0d
-                                ? CurrentField.MaterialDerivative(
-                                    water, (float)mx[i], (float)my[i], (float)mz[i], half)
+                                ? derivative((float)mx[i], (float)my[i], (float)mz[i], half)
                                 : Float3.Zero;
 
                             x[i] += nx[i] * step;
