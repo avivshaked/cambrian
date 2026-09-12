@@ -156,7 +156,10 @@ while ($pending.Count -gt 0) {
             }
             $extra = @{}
             if ($ExpectSimHash -ne '') { $extra.ExpectSimHash = $ExpectSimHash }
-            $said = @(& $launcherPath -Seed $seed -Worker $worker @extra 2>&1 | ForEach-Object { [string]$_ })
+            # *>&1: run-arm.ps1 reports with Write-Host and warns with Write-Warning, and 2>&1
+            # captured neither (round 37b's first seed, 2026-09-12: no arm name, no prereg.json,
+            # and a failed launch would have passed the check below unseen).
+            $said = @(& $launcherPath -Seed $seed -Worker $worker @extra *>&1 | ForEach-Object { [string]$_ })
             $said | ForEach-Object { Write-Output "    $_" }
             # run-arm.ps1 warns rather than throws when Unity exits before the manifest, so the
             # launcher returns normally from a launch that did not happen (round 34 seed 1,
