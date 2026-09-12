@@ -23,7 +23,7 @@ plans**, which is what an open-ended ecosystem is being built to produce.
 > brains, and energy is a conserved budget audited to 0.0000% across the whole food web. A
 > finite competed-for sun, currents and mixing, senescence, a matter currency, a buoyancy
 > organ, living excretion, marine snow and a vent are all in and measured
-> ([`DECISIONS.md`](DECISIONS.md) D023–D088). Thirty-three rounds, each read by a person against a rule written down before launch,
+> ([`DECISIONS.md`](DECISIONS.md) D023–D090). Thirty-seven rounds, each read by a person against a rule written down before launch,
 > ([logbook/0036](logbook/0036-the-floor-gives-back.md) onward) found the constraint one
 > layer at a time — the floor, the drowning, the matter ratchet, the stomach's gearing — and
 > the last of them was the flux: the second trophic level was fed at one percent of the
@@ -34,7 +34,11 @@ plans**, which is what an open-ended ecosystem is being built to produce.
 > metre-wide column in a world whose current returned bodies to where it found them
 > (`logbook/0083`); a dispersed birth and a current that carries replaced those rules the same
 > day (D088, `logbook/0085`), and which of the thirty-three rounds' readings survive the
-> three-dimensional world is the open question (`logbook/0084`). Movement has never paid its energy cost — the cost side is
+> three-dimensional world is the open question (`logbook/0084`). The box became a tank with a
+> glass wall (D089, `logbook/0093`) whose water streams rather than swirls (D090), and an
+> outside review then found the grid's transporter making patches from uniform water,
+> repaired for round 37b, so every claim in rounds 32 to 37 about where food sits relative to
+> bodies carries that artefact (`gpt-astra-2026-09-12-1308-review-response.md`). Movement has never paid its energy cost — the cost side is
 > closed, the prize side is open — and throughput binds every remaining question.
 
 ---
@@ -81,7 +85,8 @@ confirmed several of its bets at the primary sources.
 Most decisions in [`DESIGN.md`](DESIGN.md) cite peer-reviewed literature with page-level
 locators — `[K12 §2.3, p.7]` resolves to an exact page of an exact paper.
 [`research/`](research/) holds the review those citations came from; §7 lists what the review
-did not establish, and two of its six questions remain only partly answered.
+did not establish; its status table says which of its eleven questions remain only partly
+answered.
 
 **The ecosystem's part of the design was reasoned first and read later.** Energy, cell
 types, feeding and reproduction were built from first principles with §5A saying so in the
@@ -192,7 +197,8 @@ runs/                         NOT COMMITTED — simulation output, see below
 `lineage.jsonl` holds one row per creature ever born and one per death — a compact
 `{"e":"b",...}` / `{"e":"d",...}` pair per event, drained from the world every report row;
 `stats.jsonl` one row per sample;
-`snapshots/` the world state. The two high-volume files are append-only and line-oriented, so
+`snapshots/` the genomes of the living, a genome pool and not a world state, since a row
+carries no reserve, age or position. The two high-volume files are append-only and line-oriented, so
 a run killed halfway leaves every completed row valid and readable — and can be watched live
 by tailing it. Creatures are **rows, not files**: a genome measures ~5 KB and the working
 estimate is 40,000 births an hour.
@@ -325,7 +331,9 @@ in a second terminal (`Get-Content $log -Wait -Tail 5`) rather than guessing.
 
 The theatre (logbook/0063) is the project's viewer. **It is the simulation, not a video.**
 A run directory stores its configuration, its seed, samples every hundred seconds and
-the genomes of the living at each snapshot — never positions. The theatre rebuilds the
+the genomes of the living at each snapshot and, in a shared world from 2026-09-10, every
+living body's position and guild flags at each sample (`positions.jsonl`); never a state a
+run could resume from. The theatre rebuilds the
 world from the configuration and the seed and runs the same simulation again, live, with
 a camera in it. Because the physics replays bit for bit on one machine and one build, the
 live world reproduces the recorded one, and at every sample the theatre compares its own
@@ -345,8 +353,11 @@ with the physics on one thread, replay.
 2. Open `Assets/Scenes/Theatre.unity`. If it looks empty or broken, run the menu item
    `Evosim > Rebuild Theatre Scene` and open it again.
 3. Select `Theatre Runner` in the Hierarchy. In the Inspector set `Mode` to `World` and
-   put a run directory in `Run Directory` — an arm directory such as `runs/r27-s4` (its
-   newest run is taken) or the dated directory inside it. A run replays only under the
+   put a run directory in `Run Directory` — an arm directory (its newest run is taken) or
+   the dated directory inside it. `runs/` is not committed, so record one first: with a
+   worker copy from `scripts/new-worker.ps1`, `./rounds/launch-r37b.ps1 -Seed 3 -Worker 2
+   -Dt 0.02 -Seconds 600 -Name demo` records ten minutes of the current world in a few
+   minutes, and `runs/demo` is the directory to name. A run replays only under the
    build that recorded it, and the farm compiles from the main tree, so every code change
    orphans the runs before it; the growth build of 2026-09-09 orphaned every run then on
    disk (HANDOFF item 6b).
