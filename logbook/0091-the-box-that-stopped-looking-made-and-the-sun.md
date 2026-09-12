@@ -56,6 +56,13 @@ bodies. Two more frames were taken for the owner's ruling. Carve 0.5 turned the 
 burrs and the boxes ragged, and the agent's reading was to refuse it. Pillow 0.5 turned every
 box into a bean, pleasant and uniform, and the ruling on it is the owner's.
 
+*Ruled 2026-09-12 night, by the agent at the owner's word ("you can do those things for
+me"): the pillow stays at 0.34.* Side by side, the two frames of round 35 seed 1 differ by
+a softer edge and nothing a viewer would name. At 0.5 every silhouette is the same bean,
+and the straight long edge the default keeps is the genome's, a flat plate drawn as a flat
+plate. Round 37's close frames (0094) are slabs with mouths, and that reading depends on
+the edge. The dial stays for anyone who wants the beans.
+
 The fourth day's first frame, round 36 seed 1 at 5,000 s looking up:
 
 ![Round 36 seed 1 at 5,000 s, the sky view, first waves](images/skin4-r36-s1-t5000-sky-steep.png)

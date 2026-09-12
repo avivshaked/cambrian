@@ -137,7 +137,8 @@ slot). The theatre skin's third day landed (commit `e4d6540`, `logbook/specs/ski
 taper, bend, pillow dial, carve default 0.35, softer rim; boxes only, all inside the
 collider); the three comparison pictures of `r35-s1` at 5,000 s are in
 `scratch/snaps/skin3-*/`, the agent's reading is keep the defaults and refuse carve 0.5,
-and the pillow (0.34 or 0.5) is the owner's ruling. The fourth day, the sun and the surface
+and the pillow was ruled 0.34 on 2026-09-12 night, by the agent at the owner's word (0091's
+addendum). The fourth day, the sun and the surface
 (`logbook/specs/skin-spec-4.md`: rippling surface from below, Snell's window and a sun,
 light shafts, caustics on bodies and bed from one ripple, a `sky` snapshot view), compiled
 first time on worker 3, rendered `r36-s1` at 5,000 s (`scratch/snaps/skin4/`) and merged
@@ -145,7 +146,7 @@ into main the same evening (branch `skin4`); its five dials (`EVOSIM_THEATRE_WAV
 `_WAVELENGTH`, `_WAVE_SPEED`, `_LIGHT_REACH`, `_SHAFTS`) are unjudged by the owner, and
 the agent's first reading is that the surface reads as bands rather than water, which is
 the wave steepness. Both skin days are written up as logbook/0091; the calm sea (0.022 m over 3.2 m) is the
-wave default, picked from two pictures; the pillow ruling is still the owner's. The owner
+wave default, picked from two pictures; the pillow stays at 0.34 (ruled). The owner
 ruled the aquarium's shape the same evening ("yes proceed" on the cylinder, the square as
 fallback; `fable-propose-aquarium.md`), so the tank build starts on a branch off `box`, with
 a code survey first and the proposal's six checks before any scored round; rulings 2 and 3
@@ -772,8 +773,6 @@ round 37b has shown how the streams move sinking matter, because the answer depe
   round 38 launches. The limiter of the same entry was built, failed its check (27
   divergences against 17, same signature) and is not adopted; no ruling is needed unless the
   owner wants it kept on anyway.
-- **The pillow dial** (skin day 3, logbook/0091): 0.34 (the old rounding, the default) or
-  0.5 (every box a bean); two pictures in `scratch/snaps/skin3-*/`.
 - **The producer threshold** is unsettled. D063's amendment asks for one living inherited
   member with a recent photosynthetic birth; the scorer substituted 10 members through two
   lifetimes. Both will be printed, and the ruling picks one.
