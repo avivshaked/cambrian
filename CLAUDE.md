@@ -235,9 +235,35 @@ renders on 2026-09-10 died in a minute on `'close' is not a view`). Refresh the 
 first; `Assets/Evosim` is unchanged by it, so the recording still replays.
 
 Keys: `Space` pause, `[` `]` pace, `K` seek, `C` colour, `F` follow, `R` reload, `H` hide,
-click to select; fly with `WASD`+`QE`, right-drag to look, wheel for speed. `EVOSIM_THEATRE_RUN`,
-`EVOSIM_THEATRE_GENOME`, `EVOSIM_THEATRE_SEEK` and `EVOSIM_THEATRE_OVERRIDE` set the same fields
-from a script. Both modes also run headless, which is how they are tested:
+`P` provenance, click to select; fly with `WASD`+`QE`, right-drag to look, wheel for speed.
+`EVOSIM_THEATRE_RUN`, `EVOSIM_THEATRE_GENOME`, `EVOSIM_THEATRE_SEEK` and
+`EVOSIM_THEATRE_OVERRIDE` set the same fields from a script.
+
+**The interface is UI Toolkit under `Assets/Theatre/UI/`** (logbook/0096, built 2026-09-13 from
+the owner's `design/SPEC.md` and `logbook/specs/theatre-ui-spec.md`): the strip with the
+provenance word and the identity's coverage, the transport bar and timeline, the census with
+the audit and the matter residual, the popover, the inspector, the solo census. Four things
+about it bite. **A cousin's ids are unverifiable**: the runner's id map names the body on
+screen, but the recording's `lineage.jsonl` belongs to another realisation, so under
+`EVOSIM_THEATRE_OVERRIDE` the ancestry and the dead panel are withheld and only what the live
+body carries is shown. **`ScreenCapture` writes nothing under `-batchmode`**: every picture of
+the interface goes through `TheatreUiCapture` (the world camera and the panel into one
+`RenderTexture`, read back), which is what `TheatreUiCheck` and `theatre-snap.ps1 -Chrome`
+use; the default snapshot stays chromeless so `logbook/images/` stays comparable. **The type
+and the rhythm take a 1.5 step at 3400 px** (the agent's ruling for the owner's 3840 monitor;
+the design's rule is against uniform panel scaling, not against a density step), carried by
+literal mirrors under `.is-wider` because a custom property declared there reached nothing,
+cause unsettled: the stylesheet states the six sizes twice and both move together. **The
+font assets are dynamic**: a few KB each, rasterised at runtime from the three Plex TTFs
+beside them, so a player build would have to carry the TTFs. The end-to-end is
+`Evosim.Theatre.EditorTools.TheatreUiCheck.Run` (`-batchmode`, no `-quit`, no `-nographics`;
+`EVOSIM_THEATRE_RUN` for a world, `EVOSIM_THEATRE_GENOME` for solo, `EVOSIM_THEATRE_OVERRIDE=1`
+against `runs/r37bsmoke3` for the cousin states, which is the one recorded run this build
+opens under another `simHash`; `runs/r37-s1` cannot serve, its config predates two tunables),
+asserting every field against the replay and writing every state at 1920 and 3840 into
+`scratch/snaps/ui/`; a fixture is a 300 s smoke recorded on the worker that runs it.
+
+Both modes also run headless, which is how they are tested:
 
 ```powershell
 $env:EVOSIM_THEATRE_RUN = "$PWD/runs/th-ref"

@@ -294,3 +294,5 @@ key only translates the entries' reporting shorthand.
 | [0092](0092-the-hinge-that-stood-was-on-an-eater.md) | 2026-09-12 | The hinge that stood was on an eater |
 | [0093](0093-the-water-gets-a-wall.md) | 2026-09-12 | The water gets a wall |
 | [0094](0094-the-glass-the-centrifuge-and-the-throws-that-stopped.md) | 2026-09-12 | The glass, the centrifuge, and the throws that stopped |
+| [0095](0095-the-water-carried-as-water.md) | 2026-09-13 | The water carried as water (round 37b pre-registered and launched) |
+| [0096](0096-the-theatre-gets-a-face-that-checks-itself.md) | 2026-09-13 | The theatre gets a face that checks itself |

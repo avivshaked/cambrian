@@ -641,12 +641,18 @@ at 3840 and 1920 that the agent reads against the spec's done-list, and `simHash
 before and after. Unity's Test Framework was the other route and is not taken: it is not in
 the manifest and the theatre's checks are all `-executeMethod` entries already.
 
-Where it goes: agent work, a day's build by a subagent from the two specs, compiled and run
-by the agent on a worker the queues are not using, read from the pictures. It needs no round
-and no world change, so it is **pencilled after round 37b has launched and been looked at
-once (its 3,000 and 6,000 s frames), while 37b runs**, and before the fresh-seed batch's
-read; `design/SPEC.md` points at both specs. The design folder itself is the owner's work
-and is committed with `LICENSE-DOCS`'s pending lines when the owner says so.
+**Built and merged, 2026-09-13 night (logbook/0096).** A subagent built it from the two
+specs in six passes on branch `theatre-ui`; the agent ran each pass on worker 6 (a 300 s
+fixture, the font build, the world, cousin and solo checks, the pictures) and sent back what
+the pictures and the check found: no picture from `ScreenCapture` under `-batchmode` (an
+offscreen capture replaced it), the cousin fixture the test spec named cannot be opened by
+the build (`r37bsmoke3` serves), a cousin's lineage fields shown as this body's (withheld
+now), the timeline's end labels on one spot, the 3840 type and rhythm not stepping (the
+agent ruled the 1.5 step for both; item 5 of the build spec), and a row-height assertion
+that read a row the solo census lacks. Last run: world 81 of 81, cousin 79 of 79, solo 6 of
+6, 3 honest skips each. Not verified: use by a person, a player build, the prose leading at
+3840, and why a custom property under `.is-wider` reaches nothing. The design folder is
+committed with `LICENSE-DOCS`'s lines (the owner's word, 2026-09-13 night).
 
 ## The owner's ideas of 2026-09-11 morning, with the agent's view on each
 

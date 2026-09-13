@@ -347,6 +347,15 @@ about 1,500 simulated seconds and then part. The theatre will follow a cousin of
 rather than the run, and its identity check is what tells you so. Runs made on D078's build,
 with the physics on one thread, replay.
 
+Since 2026-09-13 the theatre wears the interface the owner designed (`design/SPEC.md`,
+logbook/0096): a strip that names the run, its build and how many samples have matched so
+far; a timeline with the record's end and the peak marked; a census with the two identities,
+the energy audit and the matter residual, that goes vermilion if either opens; a provenance
+popover (`P`) with every hash; an inspector for the body under the cursor with its ancestry
+read from the run's lineage file, or withheld when the replay is a cousin and the ids could
+name someone else. An end-to-end check drives every state in Play mode on a worker and
+photographs each at 1920 and at 3840 wide.
+
 1. Open the project at `unity/` in the Unity Editor. Experiment arms run on the worker
    copies (`unity-w2` …), so they are unaffected — but never run a `-batchmode` command
    against `unity/` while the Editor has it open.
