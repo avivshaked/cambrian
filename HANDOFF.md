@@ -121,8 +121,8 @@ ahead of the idle charge.
    build (the throw trace it was waiting for landed in 37b's). The dilute arithmetic passed
    (a 5 m matter cell holds 31 units at 0.235/m³; the mask overshoots the disc by 6%). Read:
    nearest neighbour, founding (`mat blk`, `mat short` against births), the downwelling as the
-   first patch, sitter against mover. The two builds queued between the fresh seeds and this
-   round (the queue's items 2 and 3) land first if they are ready, since each moves a hash.
+   first patch, sitter against mover. The build queued between the fresh seeds and this
+   round (the queue's item 2, `field cv`) lands first, since it moves both hashes.
 4. **Round 39, a bed with shape** (was 42): rocks, ridges, hollows; the current flows around
    them, detritus settles into them, the grid's floor follows, the theatre draws the same
    data. Moved up because in a dilute world it is a coast. Proposal first.
@@ -192,10 +192,12 @@ the background and never handed to a subagent, which cannot wait.
    branch; the 600 s box digest and a smoke that prints the columns wait for a free worker.
    Both hashes move, so it merges after the fresh-seed batch has launched and before round 38,
    never mid-round.
-3. **The streams' analytic derivative**: the fluid force costs nine field samples per part per
-   step (about half round 37's pace); the derivative from the stream functions takes it back,
-   verified by digest identity against a 37b arm's cadence before it lands. Same window as
-   item 2, one build.
+3. **The streams' analytic derivative is already in round 37b's build** (`dcc9a24`, inside
+   the `streams` merge; `logbook/specs/streams-analytic-spec.md`): in a tank the force takes
+   a closed-form time derivative and Jacobian at 2.3 velocity samples per call where the
+   stencil cost 9.6, agreeing to 0.15% of the RMS. The nine-sample stencil survives only for
+   the box's transport field, where no round has run the force. This item was carried in
+   the old handoff as queued after it had landed; M8 reads the pace it actually costs.
 4. **Pockets, then a bigger tank** (owner, 2026-09-12 night): the proposal follows round 37b's
    read, because it depends on how the streams move sinking matter (below).
 5. **The fluid terms' proposal** (path item 6) and, after it has read once, the §5.4 harness.
@@ -315,4 +317,4 @@ CLAUDE.md holds the commands and the gotchas. This is where each tool sits.
 | scoring | `scripts/clade-score.ps1` for D063, `scripts/absorptive-log.ps1 <arm>` for what a stomach earned, `scripts/lineage-invasion.ps1` for an inoculated lineage, `scripts/ledger.ps1` (D069) before a worker |
 | monitoring | one script per round under `scratch/` (`r37b-watch.sh` today): ending, error signature, and a stall on the report's byte size at 30 minutes read as a suspicion; `scripts/monitor-r13.sh` over a watch list is the older form |
 | identity | `scripts/compare-det.py` (exit 1 on a difference, 2 missing, 3 unequal coverage) and `digest-diff.py` on a zero-worker pair; `scripts/theatre-check.ps1` for the replay |
-| throughput | about 1,800 bodies at dt 0.01 with five arms sharing the machine is five to six hours per 30,000 s; the fluid force at 1 costs about half the pace until the analytic derivative lands; the ceilings (`EVOSIM_MAX_POP`, `EVOSIM_MAX_TISSUE`) end a run as a censored runaway |
+| throughput | about 1,800 bodies at dt 0.01 with five arms sharing the machine is five to six hours per 30,000 s; the fluid force at 1 takes the streams' closed form in a tank (2.3 velocity samples per call; M8 of 0095 reads what it costs); the ceilings (`EVOSIM_MAX_POP`, `EVOSIM_MAX_TISSUE`) end a run as a censored runaway |

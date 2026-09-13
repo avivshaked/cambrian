@@ -771,9 +771,11 @@ actually verifying it.
   FluidAccelerationCoefficient`, default 0 so every recorded world replays; 1 from round 37b)
   adds the water's acceleration force, and with it a lagging body keeps an even spread (rim
   quarter 0.25 to 0.27 in `StreamsTests`) where it read 0.83 to 0.98 without. Read `fluidAccel`
-  in the header, and read `p3` over `alive` in any walled world before anything else. The term
-  costs nine field samples per part per step (about half the pace of round 37) until the
-  streams' analytic derivative lands. In a tank the current is D090's streams, selected by the
+  in the header, and read `p3` over `alive` in any walled world before anything else. In a
+  tank the term takes the streams' closed-form derivative (`StreamsAccelerationAt`, 2.3
+  velocity samples per call, `logbook/specs/streams-analytic-spec.md`); the nine-sample
+  stencil (`MaterialDerivative`, about ten velocity samples) serves only the box's transport
+  field, where no round has run the force. In a tank the current is D090's streams, selected by the
   shape; the header's `current` token still names the mode (`transport`), and the shape token
   is what says the streams are running.
 - **A theatre snapshot of a live run can time out before its later frames.** The early pictures
