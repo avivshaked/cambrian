@@ -1,7 +1,9 @@
 ﻿# Round 38 (fable-propose-aquarium.md rulings 2 and 3): round 37's tank, diluted. Four times the
 # footprint -- 400 m2, radius 11.28 m -- with the matter held at 6,000 units, so the density falls
-# by four and the body count does not. Everything else is launch-r37.ps1 verbatim: same depth,
-# cells, dose, prices, dispersal radius, current and container.
+# by four and the body count does not. Everything else is launch-r37b.ps1 verbatim: same depth,
+# cells, dose, prices, dispersal radius, container, the streams and the water's acceleration
+# force at EVOSIM_FLUID_ACCEL 1 (D090; added 2026-09-13, since this file was written from
+# launch-r37.ps1 before the force existed and would have run the drag-only centrifuge).
 #
 # Why: round 35's median nearest neighbour is 0.63 to 0.70 m in three dimensions, a body every
 # metre in the upper band. That is a bloom, not an ocean, and read as inference it is why movement
@@ -21,7 +23,7 @@
 # ASCII only.
 #   ./rounds/launch-r38.ps1 -Seed 1 -Worker 2 -ExpectSimHash <hash>                       # r38-s1
 #   ./rounds/launch-r38.ps1 -Seed 3 -Worker 6 -Seconds 600 -Name r38smoke -Dt 0.02        # the smoke
-# Verify the header: everything launch-r37.ps1 lists, and
+# Verify the header: everything launch-r37b.ps1 lists ('fluidAccel 1' included), and
 #   'space tank r=11.28 m (400 m2), depth 60, wall, bed' with 'area 400 m2' and 'matterBudget 6000'
 # where round 37 reads 'r=5.64 m (100 m2)' and 'matterBudget 0'. Read 'mat here' and 'mat blk'
 # against 'births' in the first thousand seconds: a field four times thinner can leave every
@@ -47,6 +49,9 @@ param(
     # 100 m2 by 60 m world holds at 1 unit per cubic metre, which is what rounds 33 through 37
     # ran on, so this round changes the water a unit sits in and not how many there are.
     [float]$MatterBudget = 6000,
+    # D090's fluid acceleration force, 1 = physical, 0 = every world before round 37b (FluidConfig.
+    # FluidAccelerationCoefficient, EVOSIM_FLUID_ACCEL). Header token 'fluidAccel'.
+    [float]$FluidAccel = 1,
     # The detritus grid's cell, m. One metre is the vertex kernel's support, so a mouth gets
     # about the reach it had in round 31. In a tank the cells span the bounding square and the
     # mask decides which are water: at 400 m2 that is 23 by 23 columns of which about 400 are
@@ -167,6 +172,7 @@ $s = @{
     EVOSIM_NEURON_COST = $NeuronCost; EVOSIM_CONNECTION_COST = $ConnectionCost; EVOSIM_WORK_COST = $WorkCost
     EVOSIM_IDLE = $Idle
     EVOSIM_LINK_PHOTO = $LinkPhoto
+    EVOSIM_FLUID_ACCEL = $FluidAccel
     EVOSIM_H_MIXING = $HMix
     EVOSIM_CORPSE_DECAY = $CorpseDecay
     # fable-propose-growth.md: the three world constants, the harness cadence, the founder

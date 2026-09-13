@@ -118,7 +118,10 @@ ahead of the idle charge.
    jointed populations have to be shown to be the world's.* Launches when 37b's read is in.
 3. **Round 38, the dilute tank** (D089 rulings 2 and 3): 400 m² with the matter held at 6,000
    units, corpses as objects at 0.005/s; `rounds/launch-r38.ps1` is written and needs no
-   build (the throw trace it was waiting for landed in 37b's). The dilute arithmetic passed
+   build (the throw trace it was waiting for landed in 37b's). *Repaired 2026-09-13 morning:*
+   it had been written from round 37's launcher before D090 and carried no
+   `EVOSIM_FLUID_ACCEL`, so round 38 would have run the drag-only centrifuge; it now sets the
+   force at 1 and its header comment says to verify `fluidAccel 1`. The dilute arithmetic passed
    (a 5 m matter cell holds 31 units at 0.235/m³; the mask overshoots the disc by 6%). Read:
    nearest neighbour, founding (`mat blk`, `mat short` against births), the downwelling as the
    first patch, sitter against mover. The build queued between the fresh seeds and this
