@@ -86,6 +86,9 @@ namespace Evosim.Theatre.EditorTools
         /// <summary>One density reading per width, not one per photographed state.</summary>
         private static readonly HashSet<int> _densityRead = new HashSet<int>();
 
+        /// <summary>The same, for the axis labels.</summary>
+        private static readonly HashSet<int> _garbleRead = new HashSet<int>();
+
         /// <summary>A picture that has been asked for and not yet taken.</summary>
         private struct Wanted
         {
@@ -224,6 +227,7 @@ namespace Evosim.Theatre.EditorTools
 
             _queue.Clear();
             _densityRead.Clear();
+            _garbleRead.Clear();
             _armedTicks = 0;
             TheatreUiCapture.Disarm();
 
@@ -559,24 +563,42 @@ namespace Evosim.Theatre.EditorTools
                 Text(root, "tick-end").EndsWith(" s"),
                 Shown(root, "tick-end") ? Text(root, "tick-end") : "folded into the record's label");
 
-            NoGarble(root);
+            Skip("bar: the axis labels are read under the captures, where the panel is 1920 " +
+                 "and 3840 wide; this window's bar has no axis to lay them out on");
         }
 
         /// <summary>
         /// No two axis labels share a spot.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// The four of them are placed independently — zero is flush left, the axis's end flush
         /// right, the peak and the record's end anchored in percent — and on a run recorded to
         /// the second it was asked for, with its peak at the last sample, three of the four land
         /// on the same pixel. Every frame of the first Editor run had them drawn over each other
         /// at the bottom right, which reads as garble and not as a fault, so nobody would think
         /// to look at the numbers (2026-09-13). This is the assertion that would have said so.
+        /// </para>
+        /// <para>
+        /// <b>It is asked under the captures and not of the window.</b> The bar's row holds the
+        /// axis beside the key hints, and the hints are fixed text: in the 640 by 480 Game View a
+        /// batch Editor opens, they take the row and the axis resolves to about nothing. The
+        /// second Editor run read <c>tick-zero</c> at 234..237 with <c>tick-record-end</c>
+        /// spanning 180..285 around a centre of 232, which is an axis roughly zero pixels wide,
+        /// and no arbitration can separate labels on an axis with no length. At the width a
+        /// person watches in, and at both widths photographed, there is room and the labels are
+        /// apart.
+        /// </para>
         /// </remarks>
-        private static void NoGarble(VisualElement root)
+        private static void NoGarble(VisualElement root, int width)
         {
+            if (!_garbleRead.Add(width)) return;
+
             string[] names = { "tick-zero", "tick-peak", "tick-record-end", "tick-end" };
             var boxes = new List<KeyValuePair<string, Rect>>();
+
+            VisualElement axis = root.Q<VisualElement>("timeline-axis");
+            float span = axis != null ? axis.resolvedStyle.width : 0f;
 
             foreach (string name in names)
             {
@@ -587,6 +609,22 @@ namespace Evosim.Theatre.EditorTools
                 boxes.Add(new KeyValuePair<string, Rect>(name, tick.worldBound));
             }
 
+            // What the visible labels need side by side, which is the smallest axis on which the
+            // question has an answer. Below it the interface is out of room, not wrong.
+            float needed = 0f;
+            foreach (KeyValuePair<string, Rect> box in boxes) needed += box.Value.width;
+            needed += TheatreUi.LabelGapPixels * Math.Max(0, boxes.Count - 1);
+
+            if (span < needed)
+            {
+                Skip("bar at " + width + ": the axis is " +
+                     span.ToString("0", CultureInfo.InvariantCulture) + " px and its " +
+                     boxes.Count + " labels need " +
+                     needed.ToString("0", CultureInfo.InvariantCulture) +
+                     " px side by side, so they cannot be apart at any placement");
+                return;
+            }
+
             for (int i = 0; i < boxes.Count; i++)
             {
                 for (int j = i + 1; j < boxes.Count; j++)
@@ -594,7 +632,8 @@ namespace Evosim.Theatre.EditorTools
                     Rect a = boxes[i].Value;
                     Rect b = boxes[j].Value;
 
-                    True("bar: " + boxes[i].Key + " and " + boxes[j].Key + " do not overlap",
+                    True("bar at " + width + ": " + boxes[i].Key + " and " + boxes[j].Key +
+                         " do not overlap",
                         !a.Overlaps(b),
                         "x " + a.xMin.ToString("0", CultureInfo.InvariantCulture) + ".." +
                         a.xMax.ToString("0", CultureInfo.InvariantCulture) + " against " +
@@ -1066,8 +1105,9 @@ namespace Evosim.Theatre.EditorTools
                 if (_queue.Count > 0) _queue.RemoveAt(0);
 
                 // The panel is laid out at the texture's width right now, which is the one moment
-                // the density step can be read at a width no Game View here ever has.
+                // the density step and the axis can be read at a width no Game View here has.
                 Density(taken.Width);
+                NoGarble(_runner.Ui.Root, taken.Width);
 
                 int bytes = TheatreUiCapture.Shoot(taken.Path, out string wrote);
 
@@ -1148,6 +1188,29 @@ namespace Evosim.Theatre.EditorTools
 
             Near("density at " + width + ": the strip is " + wanted + " px",
                 strip.resolvedStyle.height, wanted, 1f);
+
+            // The type takes the step with the furniture at 3400 and nowhere else (the owner's
+            // ruling, 2026-09-13). Three labels, three of the six tokens: the census value reads
+            // --t-md, the clock --t-clock, the arm name --t-lg. Read off the resolved style
+            // rather than off the stylesheet, because the whole fault this catches was a rule
+            // that parsed, matched, and reached nothing.
+            Type(root, "value-jointed", wider ? 20f : 13f, width);
+            Type(root, "clock-value", wider ? 30f : 20f, width);
+            Type(root, "ident-arm", wider ? 24f : 16f, width);
+        }
+
+        private static void Type(VisualElement root, string name, float wanted, int width)
+        {
+            Label label = root.Q<Label>(name);
+
+            if (label == null)
+            {
+                Fail("density at " + width + ": " + name + " is in the document", "not found");
+                return;
+            }
+
+            Near("density at " + width + ": " + name + " is " + wanted + " px",
+                label.resolvedStyle.fontSize, wanted, 0.5d);
         }
 
         /// <summary>

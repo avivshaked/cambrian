@@ -1344,3 +1344,71 @@
     --t-xl: 33px;
     --t-clock: 30px;
 }
+
+/* The same six figures again, as font-size on every element that reads them.
+
+   The block above does not reach anything. Redeclaring a custom property on
+   .is-wider, which sits on theatre-root, leaves every consumer still resolving
+   the :root value: at 3840 the third Editor run photographed 66px furniture
+   around 13px type (2026-09-13). Why is not a thing this build could settle
+   without an Editor, and the mechanism that does work is not in doubt, because
+   the furniture above has used it since the step existed: a literal property
+   under a .is-wider descendant selector, which beats the base rule on
+   specificity and on order both.
+
+   So these are the base rules' own selectors with .is-wider in front, one group
+   per token, in the token block's order. Every use of a --t- token in this
+   stylesheet is a font-size and all twenty-eight are here; if you add a rule
+   that reads one, add its selector to the matching group. Change a size in the
+   block above and change it here, in the same group. */
+
+.is-wider .section__title,
+.is-wider .census__cadence,
+.is-wider .badge,
+.is-wider .keyhint__key,
+.is-wider .keyhint__label,
+.is-wider .timeline__tick,
+.is-wider .seek-note__text {
+    font-size: 15px;
+}
+
+.is-wider .ident__meta,
+.is-wider .pace,
+.is-wider .field__label,
+.is-wider .unit,
+.is-wider .status__word,
+.is-wider .transport__word,
+.is-wider .warning__detail,
+.is-wider .prov-row__label,
+.is-wider .inspector__note,
+.is-wider .ancestry__chain,
+.is-wider .filter-chip,
+.is-wider .chart-frame__title,
+.is-wider .error__detail {
+    font-size: 16px;
+}
+
+.is-wider .field__value,
+.is-wider .plate__text,
+.is-wider .error__title {
+    font-size: 20px;
+}
+
+/* Two rules the base sheet gives a second class to, so they are repeated at
+   their own specificity rather than left to lose to the group above. */
+.is-wider .plate--quiet .plate__text {
+    font-size: 16px;
+}
+
+.is-wider .ident__arm,
+.is-wider .inspector__id {
+    font-size: 24px;
+}
+
+.is-wider .census-row--hero .field__value {
+    font-size: 33px;
+}
+
+.is-wider .clock {
+    font-size: 30px;
+}
