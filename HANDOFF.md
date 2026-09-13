@@ -35,9 +35,22 @@ fails on 43 throws (0, 0, 1, 5, 37), M8 in one seed by a hundredth. The goal rul
 five, read not required. The tank's base stands as ruled (D091). The throws: all 43 are
 two-part jointed newborns dumped within seconds of birth, mass ratio under 2.4, not at the
 wall, not at a resize, clustered by parent; the trace ring missed the onset in 42 of 43
-(written after the check fires). Two things follow, both launched or queued below: the
-one-part control `r37bc-s5` (seed 5 on the same build with `fluidAccel 0`) and the trace
-fix. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
+(written after the check fires). **The control is read (0097's addendum, 2026-09-14
+small hours):** `r37bc-s5` (seed 5, `fluidAccel 0`) threw nothing in 1,421 jointed births
+where seed 5 threw 37 in 2,744, and without the force the streams alone gathered 42 to 51%
+at the rim, so the term is both what the round needed and the world in which the throws
+happen. The field is not the mechanism: a probe of the closed form (`scratch/accel-probe/`)
+reads at most 0.12 m/s² anywhere, nothing non-finite in three million calls. The genomes
+are: all 43 thrown are hinge bodies, small adults born large, and six of the seven parents
+that lost two or more children are one near-identical lineage in seed 5
+(`scratch/throw-parents/`), so the throw is a body plan driven at full power from its
+first step (round 34's failure in newborns) and the force's part is ecological. The trace's
+second pass is built on branch `trace2` (worktree `scratch/wt-trace2`, commit `7846cc3`:
+the ring keeps only finite frames, records the first non-finite step, and carries the
+step's drag, acceleration force and water acceleration per link; the smoke's forced case
+uses a poison hook on the ring's read because PhysX takes no velocity on a link), and
+waits for a worker under the cap to compile and run its smoke and the box digest. It
+moves `simHash` and lands with `field cv` after the fresh seeds have all launched. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
 seed 5's render cannot reach a 30,000 s frame and is stopped after its 15,000 s one.
 
 **The theatre has an interface (logbook/0096, 2026-09-13 night).** Built by a subagent from
