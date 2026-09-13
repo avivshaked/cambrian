@@ -175,6 +175,31 @@ a replay of a scored condition and not a round: read on `diverged` and the trace
 against seed 5's 37, and on the rim quarter, since without the force the streams alone
 should gather (D090's tracer check read 0.83 to 0.98 at the rim for a lagging body).
 
+## Addendum, 2026-09-14 small hours: the control
+
+`r37bc-s5` ended on its budget (30,000 s, 1,422 alive, the goal rule passed by a rigid
+eater clade of 111 founded at 3,021 s). Beside seed 5 with the force, the same seed on the
+same build without it:
+
+| | with the force (seed 5, to 29,200 s) | without it (`r37bc-s5`) |
+|---|---|---|
+| `diverged` | 37 | **0** |
+| stillbirths | 181 | **0** |
+| rim quarter at 5,000 / 15,000 / 30,000 s | 0.27 / 0.22 / 0.23 | **0.46 / 0.42 / 0.51** |
+| `mean m/s` | 0.07 to 0.09 | 0.03 to 0.05 |
+| inherited jointed at the end | 102 | 2 |
+| `alive` at the end | 1,764 | 1,422 |
+
+Two readings, the first firm and the second inference. The force is the cause of the
+throws and of the stillbirths: the one tunable that differs takes both from 37 and 181 to
+0 in the same seed, so 0097's suspicion of the wall clearance for the stillbirths is
+withdrawn. And the force is also what the round was for: without it the streams alone
+gather 42 to 51% of the bodies in the rim quarter (D090's tracer check said a lagging body
+would), and the bodies move at half the water's speed, so M1 and M5 are the force's doing.
+The world needs the term and the term kills newborns. What it does to a two-part body in
+its first seconds is not in the traces; the next step is the field itself, sampled
+without a body in it, and the trace fix, before anything is proposed to the owner.
+
 ## Sources
 
 `logbook/specs/r37b-read/` (the brief, `summary.tsv`, `p3-share.tsv`, `drift.tsv`,
