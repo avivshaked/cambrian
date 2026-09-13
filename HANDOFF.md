@@ -48,9 +48,12 @@ first step (round 34's failure in newborns) and the force's part is ecological. 
 second pass is built on branch `trace2` (worktree `scratch/wt-trace2`, commit `7846cc3`:
 the ring keeps only finite frames, records the first non-finite step, and carries the
 step's drag, acceleration force and water acceleration per link; the smoke's forced case
-uses a poison hook on the ring's read because PhysX takes no velocity on a link), and
-waits for a worker under the cap to compile and run its smoke and the box digest. It
-moves `simHash` and lands with `field cv` after the fresh seeds have all launched. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
+uses a poison hook on the ring's read because PhysX takes no velocity on a link). It
+compiled clean on worker 6 at 00:33 on 2026-09-14 (a compile-only pass, a sixth Editor
+for three minutes over the cap, noted; worker 6 was then restored from main and checked
+file for file), and waits for a worker under the cap to run its smoke and the box
+digest. It moves `simHash` and lands with `field cv` after the fresh seeds have all
+launched. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
 seed 5's render cannot reach a 30,000 s frame and is stopped after its 15,000 s one.
 
 **The theatre has an interface (logbook/0096, 2026-09-13 night).** Built by a subagent from
