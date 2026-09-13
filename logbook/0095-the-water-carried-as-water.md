@@ -140,4 +140,8 @@ bodies through the top 35 m with a thinning tail to the bed, where round 37 at t
 time had a 3 m film over a deep scatter (`scratch/positions/r37b-s1/`). The four seeds
 behind it read the same at 6,000 to 7,700 s: every column occupied, `x sd` 2.5 to 2.9 m,
 the three-dimensional nearest neighbour 0.65 to 0.77 m against round 37's 0.33 to 0.67 of
-round 36's.
+round 36's. *10:11.* Seed 1 ended on its budget (30,000 s, 12,237 births, 645 minutes of
+wall clock at 0.8 of real time beside four arms) and passes D063 as amended: clade root 70,
+51 alive at the end, at least 29 through the last two lifetimes, 35 inherited births in the
+last 20 samples; one living clade of five passes; the producer readings all held (1,597
+alive). Its render started on worker 5 the same minute. The read waits for the other four.
