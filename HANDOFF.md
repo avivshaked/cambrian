@@ -187,8 +187,11 @@ the background and never handed to a subagent, which cannot wait.
    pre-registration.
 2. **`field cv`**, a patchiness reading: sd over mean of the detritus and matter fields over
    live cells, in `stats.jsonl` and the table, so that a pocket is a number before any pocket
-   is built. It is a Core change (a hash moves), so it lands after the fresh-seed batch has
-   launched and before round 38, never mid-round.
+   is built. **Built 2026-09-13 morning** on branch `fieldcv` (worktree `scratch/wt-fieldcv`,
+   commit `0edb637`; `logbook/specs/field-cv-spec.md`): the full suite reads 691 green on the
+   branch; the 600 s box digest and a smoke that prints the columns wait for a free worker.
+   Both hashes move, so it merges after the fresh-seed batch has launched and before round 38,
+   never mid-round.
 3. **The streams' analytic derivative**: the fluid force costs nine field samples per part per
    step (about half round 37's pace); the derivative from the stream functions takes it back,
    verified by digest identity against a 37b arm's cadence before it lands. Same window as
