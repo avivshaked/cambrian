@@ -125,9 +125,10 @@ ahead of the idle charge.
    work), launched 2026-09-13 afternoon on worker 6 as the renders hold the other slots;
    read on `diverged` against 37 and the traces' anatomy. Then the fresh seeds (D091; owner
    2026-09-12, "proceed with your recommendations"): round 37b's world on seeds 6 to 10, no
-   build, `rounds/launch-r37b.ps1` with the seeds changed, pre-registered and launched with
-   `-Prereg` as the renders free workers; read against 37b's five as a second draw of the
-   same world. *Moved here from the old queue's item 22 because the five
+   build, **pre-registered as logbook/0098 (F1 to F8) and queued 2026-09-13 evening**
+   (`launch-queue.ps1 -Prereg` on workers 2, 3, 4, 5 and 7 as the renders free them, log
+   `scratch/logs/r37b-fresh-queue.out`); read against 37b's five as a second draw of the
+   same world, with F5 the joint's question and F6 the throws'. *Moved here from the old queue's item 22 because the five
    founding lotteries have guided nine rounds of adaptive change and round 37's standing
    jointed populations have to be shown to be the world's.* Launches when 37b's read is in.
 3. **Round 38, the dilute tank** (D089 rulings 2 and 3): 400 m² with the matter held at 6,000
@@ -198,9 +199,10 @@ old formats read-only.
 Agent work unless marked. Long steps (a suite, a smoke, a render) are launched by the agent in
 the background and never handed to a subagent, which cannot wait.
 
-1. **Round 37b's read is done** (0097, above). Next in this slot: the fresh seeds'
-   pre-registration (a short entry: the same nine readings as 0095 on seeds 6 to 10, read
-   against 37b's five as a second draw) and their launch as workers free; then **the throw
+1. **Round 37b's read is done** (0097, above) and the fresh seeds are pre-registered and
+   queued (0098). Next in this slot: watch the control and the fresh seeds (monitors on
+   `scratch/arms-watch.sh` and the queue's log; frames of a live arm every few thousand
+   seconds), stop seed 5's render after its 15,000 s frame; then **the throw
    trace fixed** to keep the last finite frames and the frame before the one that fails
    (`logbook/specs/throw-trace-spec.md` amended; Core and Sim, both hashes move, so it lands
    in the same window as item 2 below); and **the skin's rounding capped** so a near-cubic
