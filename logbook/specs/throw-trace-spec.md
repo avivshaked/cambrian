@@ -72,3 +72,54 @@ Tables: files changed; the manifest and stats fields added; the trace file's sch
 smoke's new assertions; the reader's new columns; what is unverified (everything under
 `unity/` is uncompiled until the caller compiles it) and any place the spec was ambiguous
 and what you chose.
+
+## Second pass, 2026-09-14: the ring must keep the last finite frames, and the forces
+
+**What the first pass could not say.** Round 37b threw 43 bodies and every dump carried a
+trace (0097); in 42 of 43 all three frames were already non-finite. The ring is written
+after every `Physics.Simulate` (`Ecosystem.RecordTrace`, called on every step), and
+`CheckFinite` runs at the metabolic cadence, so a body that goes non-finite inside one step
+overwrites its own last finite frames up to fifty times before it is found. The one dump
+with finite frames (seed 4's id 702) died on the height guard with finite numbers. The
+instrument caught the anatomy (two-part newborns, mass ratios under 2.4, away from the wall
+and from any resize) and missed the onset, and the control `r37bc-s5` then showed the
+onset is the fluid acceleration force's (0 throws without it, 37 with it, same seed and
+build). The next question is what the force did on the step before the blow-up, and the
+ring has to hold that step.
+
+Three changes, all in `Ecosystem.RecordTrace`, the frame layout and the dump; nothing in
+the physics, so the box digest stays identical (the trace reads and never writes):
+
+1. **A non-finite frame is not written.** Before a link's frame is stored, its position,
+   linear and angular velocity are tested finite (`float.IsFinite` on the nine numbers; the
+   joint velocities too where read). If any is not, the body's ring is left as it was, the
+   body's `FirstNonFiniteStep` is set once (the step number and the link index), and the
+   cursor does not advance. The ring then holds the last three finite frames of every link,
+   whatever the check's cadence, and the dump names the step at which the first non-finite
+   number appeared and how many steps before the dump that was.
+2. **The forces go into the frame.** `FluidEnvironment.Apply` already keeps the per-part
+   force arrays it adds (the drag force and, when the coefficient is above 0, the
+   acceleration force in `_accelForce`) and the water acceleration it sampled. Expose them
+   read-only per part for the step just taken (an array the environment fills and
+   `RecordTrace` reads; no allocation per step), and store per link in the frame: the drag
+   force, the acceleration force and the sampled water acceleration (nine floats more per
+   link; `TraceFloatsPerLink` grows and the dump's reader with it). The joint's drive
+   target and the drive's applied torque where the harness has them are worth the same
+   treatment if they are already in hand; otherwise not in this pass.
+3. **The dump reads the ring in order and says what it holds**: `firstNonFiniteStep`,
+   `stepsFromFirstNonFiniteToDump`, `framesFinite` (3, or fewer for a body younger than three
+   steps, which is most of 37b's), and per frame per link the forces beside the motion.
+   `scripts/reads/diverged-read.py` gains the largest acceleration-force magnitude and the
+   largest water acceleration in the newest frame, and prints them in the anatomy table.
+
+**Tests.** A Core-side test is not possible (the ring is Unity-side); the smoke's check
+(part 5 of the first pass) gains a forced case: a body whose link velocity is set
+non-finite by the test between two steps must dump with three finite frames and a
+`firstNonFiniteStep` equal to the step after the injection. The 600 s box digest must be
+identical to the current reference, as in the first pass, and a tank smoke with the force
+on must read `diverged` and `stillb` as the fixture does.
+
+**Hashes.** `Ecosystem.cs` and `FluidEnvironment.cs` are under `Assets/Evosim`, so
+`simHash` moves; Core is untouched unless the reader's shared JSON helper needs a field.
+It lands in the build window after the fresh seeds have launched (HANDOFF's queue), with
+`field cv`, before round 38.
