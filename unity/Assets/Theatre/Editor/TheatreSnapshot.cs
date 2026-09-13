@@ -104,6 +104,9 @@ namespace Evosim.Theatre.EditorTools
         /// <summary>Where the armed chrome picture will be written, or null.</summary>
         private static string _chromePath;
 
+        /// <summary>Editor ticks the chrome capture has been armed for.</summary>
+        private static int _chromeTicks;
+
         private static double _wallSecondsAllowed;
         private static double _deadline;
         private static int _next;
@@ -510,11 +513,15 @@ namespace Evosim.Theatre.EditorTools
 
                 _runner.Paused = true;
 
-                // A chrome picture takes two ticks: the panel draws into the texture on its own
-                // next repaint, so the frame is armed on one tick and read back on the next. The
-                // world is paused across the pair, so both layers are the same instant.
+                // A chrome picture takes three ticks: the panel is resized to the texture when it
+                // is armed, the density classes come off the geometry event that resize raises,
+                // and the layout they ask for lands a frame after that. The world is paused
+                // across the whole run of them, so every layer is the same instant.
                 if (TheatreUiCapture.Armed)
                 {
+                    if (++_chromeTicks < 2) return;
+                    _chromeTicks = 0;
+
                     LandTheChromeShot();
                 }
                 else
@@ -697,6 +704,7 @@ namespace Evosim.Theatre.EditorTools
             // the interface again in this session.
             TheatreUiCapture.Disarm();
             _chromePath = null;
+            _chromeTicks = 0;
 
             var files = new System.Text.StringBuilder();
             foreach (string path in _written) files.Append("\n  ").Append(path);

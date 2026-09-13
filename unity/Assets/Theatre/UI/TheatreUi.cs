@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Evosim.Core;
@@ -65,6 +66,9 @@ namespace Evosim.Theatre
 
         /// <summary>And the second step, for the owner's 3840-wide monitor.</summary>
         public const int WiderAtPixels = 3400;
+
+        /// <summary>Clear air two axis labels must keep between them, in pixels.</summary>
+        public const float LabelGapPixels = 8f;
 
         /// <summary>
         /// What the vermilion plate fires on: the energy audit, as a percentage of energy in.
@@ -148,6 +152,28 @@ namespace Evosim.Theatre
         private long _drawnSelection = long.MinValue;
         private bool _drawnReliable = true;
         private double _axisEndSeconds = 1d;
+
+        /// <summary>Where the two anchored axis labels sit, so a widened axis can re-place them.</summary>
+        private double _recordEndSeconds = double.NaN;
+        private double _peakSeconds = double.NaN;
+
+        /// <summary>
+        /// The last measured width of the axis's right-hand label, kept while it is hidden.
+        /// </summary>
+        /// <remarks>
+        /// Measuring a hidden label gives 0, and a rule that reads 0 would un-hide it, measure it
+        /// again and hide it again on every layout. Freezing the width is what stops that.
+        /// </remarks>
+        private float _endTickWidth;
+        private float _peakTickWidth;
+        private float _recordTickWidth;
+
+        /// <summary>What the peak label says and whether the run has one at all.</summary>
+        private string _peakText;
+        private bool _peakShown;
+        private bool _peakFolded;
+
+        private bool _decidingEnds;
         private double _soloDrawnAt = -1d;
         private int _widthStep = -1;
 
@@ -164,6 +190,7 @@ namespace Evosim.Theatre
         private VisualElement _seekPlate, _seekbar, _seekProgress, _glyphPlay, _glyphPause;
         private VisualElement _timeline, _timelineTrack, _timelineElapsed, _timelineElapsedBeyond;
         private VisualElement _timelineHead, _timelineBeyond, _popoverRows, _popoverMarker;
+        private VisualElement _timelineAxis;
         private VisualElement _legend, _popoverStatus;
         private VisualElement _inspectorEmpty, _inspectorLive, _inspectorDead, _inspectorGone;
         private VisualElement _guilds, _ancestry, _ancestryDead, _soloKeySine, _soloKeyStarve;
@@ -287,6 +314,12 @@ namespace Evosim.Theatre
             // rather than per run, so reloading with R does not stack a second callback.
             ui._root.RegisterCallback<GeometryChangedEvent>(_ => ui.ReadTheWidth());
             ui._timelineBeyond?.RegisterCallback<GeometryChangedEvent>(_ => ui.Dashes());
+
+            // The end labels are decided on measured widths, so the decision has to be made
+            // again whenever the axis or its type has been laid out.
+            ui._timelineAxis?.RegisterCallback<GeometryChangedEvent>(_ => ui.EndLabels());
+            ui._tickRecordEnd?.RegisterCallback<GeometryChangedEvent>(_ => ui.EndLabels());
+            ui._tickPeak?.RegisterCallback<GeometryChangedEvent>(_ => ui.EndLabels());
             Centre(ui._tickPeak);
             Centre(ui._tickRecordEnd);
             ui.ReadTheWidth();
@@ -323,6 +356,7 @@ namespace Evosim.Theatre
             _timelineElapsedBeyond = _root.Q<VisualElement>("timeline-elapsed-beyond");
             _timelineHead = _root.Q<VisualElement>("timeline-head");
             _timelineBeyond = _root.Q<VisualElement>("timeline-beyond");
+            _timelineAxis = _root.Q<VisualElement>("timeline-axis");
 
             _legend = _root.Q<VisualElement>("timeline-legend");
             _popoverRows = _root.Q<VisualElement>("popover-rows");
@@ -1188,9 +1222,18 @@ namespace Evosim.Theatre
 
             ProvRow("seed", TheatreUiFormat.Identifier((long)record.Seed), "as recorded", false);
 
+            // A cousin's map is sound and still cannot be trusted to name the recording's
+            // creatures, which is a different sentence from "the pairing failed" and has to read
+            // as one. Both end in the same place: an id here is not an id there.
             bool mapBroken = _map != null && !_map.Reliable;
-            ProvRow("id map", mapBroken ? "unverified" : "checked",
-                mapBroken ? _map.Note : "selection ok", mapBroken);
+            bool unnameable = !IdsNameTheRecording;
+
+            ProvRow("id map",
+                mapBroken ? "unverified" : unnameable ? "unverifiable" : "checked",
+                mapBroken
+                    ? _map.Note
+                    : unnameable ? "a cousin's ids are not the recording's" : "selection ok",
+                unnameable);
 
             ProvRow("samples", Coverage(),
                 TheatreUiFormat.Quantity(record.Samples.Count) + " recorded",
@@ -1296,10 +1339,7 @@ namespace Evosim.Theatre
             if (unreliable)
             {
                 _inspector.AddToClassList("panel--inspector-unverifiable");
-                _unavailableProse.text =
-                    "The creature-id map could not be checked against the recording, so a click " +
-                    "can point at a body but cannot name it." +
-                    (string.IsNullOrEmpty(_map.Note) ? "" : " " + _map.Note + ".");
+                _unavailableProse.text = WhyIdsAreUnnameable(selectedId);
 
                 Only(_inspectorGone);
                 return;
@@ -1321,9 +1361,63 @@ namespace Evosim.Theatre
                 return;
             }
 
+            // A cousin's ids name the cousin's own bodies, which is fine while the body is in
+            // front of you and worthless the moment it is not: the recording's row for that id is
+            // a different creature that happens to share a number. So a dead id on a cousin is
+            // the unavailable state, never a dead panel full of another creature's life.
+            if (!IdsNameTheRecording)
+            {
+                _inspector.AddToClassList("panel--inspector-unverifiable");
+                _unavailableProse.text = WhyIdsAreUnnameable(selectedId);
+                Only(_inspectorGone);
+                return;
+            }
+
             _inspector.AddToClassList("panel--inspector-dead");
             Dead(selectedId);
             Only(_inspectorDead);
+        }
+
+        /// <summary>
+        /// Whether an id on screen means the same creature as that id in the recording.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Two ways it can fail, and they are not the same failure. The id map itself can be
+        /// unreliable, which <see cref="CreatureIdMap.Reliable"/> reports and which means a click
+        /// cannot name the body under it at all. Or the replay can be a cousin: the map is sound,
+        /// the body under the click really is creature 149 of <em>this</em> world, and the
+        /// recording's creature 149 is somebody else entirely, because the two worlds parted.
+        /// </para>
+        /// <para>
+        /// The first Editor run showed the second one plainly: on r37bsmoke3 under override the
+        /// inspector read "creature 149, parent 106, ancestry 149 &lt;- 106 &lt;- 63" off the
+        /// recording's lineage.jsonl while the body on screen had a different history
+        /// (2026-09-13). Everything the live world says about that body is true; everything
+        /// lineage.jsonl says about its number is not.
+        /// </para>
+        /// </remarks>
+        public bool IdsNameTheRecording =>
+            _replay != null && _replay.Faithful && (_map == null || _map.Reliable);
+
+        /// <summary>Why a click cannot name a creature, in the words of whichever fault it is.</summary>
+        private string WhyIdsAreUnnameable(long id)
+        {
+            if (_map != null && !_map.Reliable)
+            {
+                return
+                    "The creature-id map could not be checked against the recording, so a click " +
+                    "can point at a body but cannot name it." +
+                    (string.IsNullOrEmpty(_map.Note) ? "" : " " + _map.Note + ".");
+            }
+
+            return
+                "This is a cousin of the recording, not the recording, so an id names a body in " +
+                "this world and nothing in the recorded one. Creature " +
+                TheatreUiFormat.Identifier(id) + " is alive or dead in lineage.jsonl, but that " +
+                "row is another creature that happens to share the number. The living readings " +
+                "below a selected body are this world's own and stand; its ancestry is not " +
+                "knowable from here.";
         }
 
         private void Only(VisualElement block)
@@ -1454,6 +1548,21 @@ namespace Evosim.Theatre
         {
             if (_lineage == null) _lineage = LineageIndex.Read(_runDirectory);
 
+            // On a cousin the chain would be read off the recording's lineage.jsonl for an id
+            // that means a different creature here. An em dash and the reason, never a chain.
+            if (!IdsNameTheRecording)
+            {
+                Show(section, true);
+                chain.text = TheatreUiFormat.EmDash;
+
+                if (note != null)
+                {
+                    note.text = "not knowable on a cousin: the recording's ids are not this world's";
+                }
+
+                return;
+            }
+
             int depth = 0;
             long founder = -1L;
             string text = _lineage.Available ? _lineage.Chain(id, out depth, out founder) : null;
@@ -1483,11 +1592,17 @@ namespace Evosim.Theatre
             double requested = _replay.Record.RequestedSeconds ?? 0d;
 
             _axisEndSeconds = Math.Max(1d, Math.Max(requested, recorded));
+            _recordEndSeconds = recorded;
+            _peakSeconds = double.NaN;
+            _peakText = null;
+            _peakShown = false;
+            _peakFolded = false;
+            _endTickWidth = 0f;
+            _peakTickWidth = 0f;
+            _recordTickWidth = 0f;
 
             double beyond = Math.Max(0d, _axisEndSeconds - recorded);
             _timelineBeyond.style.width = Length.Percent((float)(100d * beyond / _axisEndSeconds));
-
-            _tickEnd.text = TheatreUiFormat.Seconds(_axisEndSeconds) + " s";
 
             // R reopens the run into the same tree, so last time's marks have to go or the axis
             // would carry two record-ends and Marks would decline to draw the new one.
@@ -1502,6 +1617,146 @@ namespace Evosim.Theatre
 
             Dashes();
             Marks();
+            EndLabels();
+        }
+
+        /// <summary>
+        /// One label at the right-hand end of the axis, never two on top of each other.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Two labels live there and both can end up in the same place.</b> The record's end
+        /// is anchored in percent of the axis and the axis's own end is flush right, so when a
+        /// run is recorded to the second it was asked for, the two sit on each other and the
+        /// bottom-right of the screen reads as garble. Every frame of the first Editor run showed
+        /// it (2026-09-13), and a garbled number is worse than no number: a viewer cannot tell
+        /// which of the two digits they are reading.
+        /// </para>
+        /// <para>
+        /// The record's label wins, because it is the one that carries a fact the viewer cannot
+        /// get anywhere else, and it folds the axis's figure in when the two differ but collide.
+        /// The marks are untouched: it is only the type that cannot share a spot.
+        /// </para>
+        /// <para>
+        /// <b>Widths are measured, not guessed</b>, which is why this runs again on every layout
+        /// of the axis. The re-entrancy guard is not decoration: setting the text changes the
+        /// width, which is a geometry change, which lands back here.
+        /// </para>
+        /// </remarks>
+        private void EndLabels()
+        {
+            if (_replay == null || _tickEnd == null || _tickRecordEnd == null) return;
+            if (_decidingEnds) return;
+
+            _decidingEnds = true;
+
+            try
+            {
+                double recorded = _replay.RecordedThroughSeconds;
+
+                // Half a second: the axis and the record end together as far as a label reading
+                // whole seconds is concerned, so there is one figure and not two.
+                bool same = _axisEndSeconds - recorded <= 0.5d;
+
+                Remember(_tickEnd, ref _endTickWidth);
+                Remember(_tickPeak, ref _peakTickWidth);
+                if (!_peakFolded) Remember(_tickRecordEnd, ref _recordTickWidth);
+
+                // The peak first, because folding it changes how wide the record's label is and
+                // therefore whether that one reaches the axis's end.
+                _peakFolded = _peakShown && Overlaps(
+                    _peakSeconds, _peakTickWidth, _recordEndSeconds, _recordTickWidth);
+
+                bool endFolded = same || ReachesTheEnd();
+
+                Show(_tickPeak, _peakShown && !_peakFolded);
+                _tickPeak.text = _peakText ?? "";
+
+                _tickEnd.text = TheatreUiFormat.Seconds(_axisEndSeconds) + " s";
+                Show(_tickEnd, !endFolded);
+
+                var line = new StringBuilder();
+
+                if (_peakFolded && !string.IsNullOrEmpty(_peakText))
+                {
+                    line.Append(_peakText).Append(' ').Append(TheatreUiFormat.Dot).Append(' ');
+                }
+
+                line.Append("record ends ").Append(TheatreUiFormat.Seconds(recorded)).Append(" s");
+
+                if (endFolded && !same)
+                {
+                    line.Append(" of ").Append(TheatreUiFormat.Seconds(_axisEndSeconds)).Append(" s");
+                }
+
+                _tickRecordEnd.text = line.ToString();
+            }
+            finally
+            {
+                _decidingEnds = false;
+            }
+        }
+
+        /// <summary>
+        /// Puts everything positioned in percent of the axis back where the axis now says it
+        /// goes. Called whenever <see cref="_axisEndSeconds"/> grows.
+        /// </summary>
+        private void Relay()
+        {
+            if (_timelineTrack == null || _replay == null) return;
+
+            for (int i = 0; i < _timelineTrack.childCount; i++)
+            {
+                VisualElement mark = _timelineTrack[i];
+                if (mark.userData is double seconds) mark.style.left = Length.Percent(Percent(seconds));
+            }
+
+            if (!double.IsNaN(_peakSeconds)) Anchor(_tickPeak, _peakSeconds);
+            if (!double.IsNaN(_recordEndSeconds)) Anchor(_tickRecordEnd, _recordEndSeconds);
+
+            double beyond = Math.Max(0d, _axisEndSeconds - _replay.RecordedThroughSeconds);
+            _timelineBeyond.style.width = Length.Percent((float)(100d * beyond / _axisEndSeconds));
+
+            EndLabels();
+        }
+
+        /// <summary>Keeps a label's width from while it was visible, for a test made when it is not.</summary>
+        private static void Remember(VisualElement label, ref float width)
+        {
+            if (label == null || label.ClassListContains("is-gone")) return;
+            if (label.resolvedStyle.width > 1f) width = label.resolvedStyle.width;
+        }
+
+        /// <summary>Whether two centred labels on the axis would touch.</summary>
+        private bool Overlaps(double oneAt, float oneWide, double otherAt, float otherWide)
+        {
+            if (_timelineAxis == null) return false;
+
+            float axis = _timelineAxis.resolvedStyle.width;
+
+            // Nothing has been laid out yet. Say no and decide again when it has: the geometry
+            // callbacks on the axis and on the record's label are what bring this back.
+            if (axis <= 1f || oneWide <= 1f || otherWide <= 1f) return false;
+
+            float one = axis * Percent(oneAt) / 100f;
+            float other = axis * Percent(otherAt) / 100f;
+
+            return Mathf.Abs(one - other) < 0.5f * (oneWide + otherWide) + LabelGapPixels;
+        }
+
+        /// <summary>Whether the record's label would reach the axis's right-hand label.</summary>
+        private bool ReachesTheEnd()
+        {
+            if (_timelineAxis == null || _tickRecordEnd == null) return false;
+
+            float axis = _timelineAxis.resolvedStyle.width;
+            float mine = _recordTickWidth;
+
+            if (axis <= 1f || mine <= 1f) return false;
+
+            float centre = axis * Percent(_recordEndSeconds) / 100f;
+
+            return centre + 0.5f * mine + LabelGapPixels > axis - _endTickWidth;
         }
 
         /// <summary>The dashed rule of the unverified future, as many 4x2 children as it takes.</summary>
@@ -1551,7 +1806,10 @@ namespace Evosim.Theatre
                 mark.name = "mark-peak";
 
                 Show(_tickPeak, true);
-                _tickPeak.text = "peak " + TheatreUiFormat.Quantity(peak);
+                _peakText = "peak " + TheatreUiFormat.Quantity(peak);
+                _peakShown = true;
+                _tickPeak.text = _peakText;
+                _peakSeconds = peakAt;
                 Anchor(_tickPeak, peakAt);
             }
 
@@ -1564,14 +1822,18 @@ namespace Evosim.Theatre
             end.name = "mark-record-end";
 
             Show(_tickRecordEnd, true);
-            _tickRecordEnd.text = "record ends " + TheatreUiFormat.Seconds(recorded) + " s";
+            _recordEndSeconds = recorded;
             Anchor(_tickRecordEnd, recorded);
+            EndLabels();
         }
 
         private VisualElement Mark(string className, double seconds)
         {
             VisualElement mark = Child("timeline__mark");
             mark.AddToClassList(className);
+
+            // The second it stands for, so a widened axis can put it back where it belongs.
+            mark.userData = seconds;
             mark.style.left = Length.Percent(Percent(seconds));
             _timelineTrack.Add(mark);
             return mark;
@@ -1628,10 +1890,13 @@ namespace Evosim.Theatre
 
             if (t > _axisEndSeconds)
             {
-                // A run stepped past its own axis: widen once rather than pin the head at the end
-                // and lie about where it is.
+                // A run stepped past its own axis: widen rather than pin the head at the end and
+                // lie about where it is. Everything already on the axis is positioned in percent
+                // of it, so widening without re-placing them leaves every mark and both anchored
+                // labels where the old axis put them — which is how the record's end came to be
+                // drawn on top of the axis's own label (2026-09-13).
                 _axisEndSeconds = t;
-                _tickEnd.text = TheatreUiFormat.Seconds(_axisEndSeconds) + " s";
+                Relay();
             }
 
             _timelineElapsed.style.width = Length.Percent(Percent(Math.Min(t, recorded)));

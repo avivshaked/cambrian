@@ -16,13 +16,23 @@ namespace Evosim.Theatre.EditorTools
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>An SDF atlas contains only what you put in it.</b> The design uses twelve non-ASCII
-    /// characters and every one of them is load-bearing somewhere — U+00B7 carries the identity
+    /// <b>The atlases are dynamic, and that is a decision rather than a default.</b> Each asset
+    /// carries the face, its material and a reference to the TTF beside it, and rasterises a
+    /// glyph the first time something asks for it. Nothing is pre-baked: the first build believed
+    /// it was baking an atlas, and the files it wrote say otherwise — <c>m_GlyphTable: []</c>,
+    /// <c>m_CharacterTable: []</c> and a one-pixel atlas texture in all four, because a dynamic
+    /// asset does not keep what it rasterises (2026-09-13). The text rendered in Plex regardless,
+    /// which is the whole of why the mode is right: the alternative is a static bake this build
+    /// could not verify without an Editor.
+    /// </para>
+    /// <para>
+    /// <b>The glyph set is therefore checked rather than baked.</b> The design uses twelve
+    /// non-ASCII characters and every one is load-bearing somewhere — U+00B7 carries the identity
     /// line, U+2212 is the depth column's true minus, U+2260 is the cousin badge, and U+2009 THIN
     /// SPACE is the thousands separator of every number on screen. A glyph that is not in the
-    /// atlas draws as a blank box, which does not look like a font problem to anyone reading the
-    /// picture afterwards. So they are added explicitly, here, and the log says which ones the
-    /// face could not supply.
+    /// face draws as a blank box, which does not look like a font problem to anyone reading the
+    /// picture afterwards. So the face is asked for all of them at build time and the log says
+    /// what it has not got; the glyphs that rasterising produces are discarded with the asset.
     /// </para>
     /// <para>
     /// <b>The fourth asset is the third face again, with line spacing baked in.</b> USS has no
@@ -114,7 +124,10 @@ namespace Evosim.Theatre.EditorTools
 
             Debug.Log(
                 "[Theatre] UI fonts: " + (ok ? "all four written to " : "SOMETHING FAILED in ") +
-                AssetFolder + ". The stylesheet reaches them through resource(\"Fonts/<name>\").");
+                AssetFolder + ". They are dynamic font assets: each file carries the face, its " +
+                "material and a reference to the TTF beside it, and the atlas is rasterised at " +
+                "runtime from that TTF, so the files stay a few KB and no atlas is baked. The " +
+                "stylesheet reaches them through resource(\"Fonts/<name>\").");
 
             return ok;
         }
@@ -164,12 +177,29 @@ namespace Evosim.Theatre.EditorTools
 
             asset.name = assetName;
 
+            // Said in code as well as in the call above, because it decides what the file on disk
+            // is: a dynamic asset carries the face, the material and a reference to the TTF, and
+            // rasterises glyphs on demand. It never carries an atlas.
+            asset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+
             if (lineSpacing != 1f) BakeLineSpacing(asset, lineSpacing, assetName);
 
             AssetDatabase.CreateAsset(asset, path);
 
-            // The atlas and the material are objects the asset owns; not adding them to the file
-            // leaves a font asset whose texture is gone the next time the project opens.
+            // The material is an object the asset owns; not adding it to the file leaves a font
+            // asset with no material the next time the project opens.
+            if (asset.material != null)
+            {
+                asset.material.name = assetName + " Material";
+                AssetDatabase.AddObjectToAsset(asset.material, asset);
+            }
+
+            bool covered = Covered(asset, face, assetName);
+
+            // After the coverage check rather than before it: populating can replace the atlas
+            // texture with a larger one, and the old object is what would otherwise have been
+            // written into the file. It is written either way for a dynamic asset, which does not
+            // keep an atlas — see the remarks on this class.
             if (asset.atlasTextures != null)
             {
                 for (int i = 0; i < asset.atlasTextures.Length; i++)
@@ -182,26 +212,30 @@ namespace Evosim.Theatre.EditorTools
                 }
             }
 
-            if (asset.material != null)
-            {
-                asset.material.name = assetName + " Material";
-                AssetDatabase.AddObjectToAsset(asset.material, asset);
-            }
-
-            bool filled = Populate(asset, face, assetName);
-
             EditorUtility.SetDirty(asset);
-            return filled;
+
+            Debug.Log(
+                "[Theatre] " + assetName + ": dynamic atlas, up to " + AtlasWidth + "x" +
+                AtlasHeight + ", rasterised at runtime from " + face + ".ttf.");
+
+            return covered;
         }
 
         /// <summary>
-        /// Puts printable ASCII and the design's twelve into the atlas, and says what was missing.
+        /// Asks the face for printable ASCII and the design's twelve, and says what it has not got.
         /// </summary>
+        /// <remarks>
+        /// <b>A check, not a bake.</b> The glyphs this rasterises are thrown away when the asset
+        /// is written, because a dynamic asset does not carry an atlas. What survives is the
+        /// answer: whether every character the design uses is in this face. That answer is worth
+        /// the second it costs, because the alternative is discovering a blank box on screen in
+        /// front of a viewer.
+        /// </remarks>
         /// <returns>
         /// False only when a character the design needs in <em>this</em> face is absent. A gap
         /// <see cref="Expected"/> knows about is logged and passes.
         /// </returns>
-        private static bool Populate(FontAsset asset, string face, string assetName)
+        private static bool Covered(FontAsset asset, string face, string assetName)
         {
             var characters = new StringBuilder();
 
@@ -212,15 +246,22 @@ namespace Evosim.Theatre.EditorTools
             {
                 bool all = asset.TryAddCharacters(characters.ToString(), out string missing);
 
-                if (all || string.IsNullOrEmpty(missing)) return true;
+                if (all || string.IsNullOrEmpty(missing))
+                {
+                    Debug.Log(
+                        "[Theatre] " + assetName + ": coverage check passed: every " +
+                        "character the design uses is in " + face + ".");
+
+                    return true;
+                }
 
                 if (Expected(face, missing))
                 {
                     Debug.Log(
-                        "[Theatre] " + assetName + ": " + face + " has no " + CodePoints(missing) +
-                        ", which is expected and not a fault. The design sets the sigma only in " +
-                        ".section__title, which is Sans; IBM Plex Mono has no U+03A3 and never " +
-                        "needs one. This line is the record of that being checked.");
+                        "[Theatre] " + assetName + ": coverage check passed: " + face + " has no " + CodePoints(missing) + ", which is expected and " +
+                        "not a fault. The design sets the sigma only in .section__title, which " +
+                        "is Sans; IBM Plex Mono has no U+03A3 and never needs one. This line is " +
+                        "the record of that being checked.");
 
                     return true;
                 }
@@ -237,10 +278,10 @@ namespace Evosim.Theatre.EditorTools
             catch (Exception e)
             {
                 Debug.LogWarning(
-                    "[Theatre] " + assetName + ": the glyph set was not pre-baked (" + e.GetType().Name +
-                    "). The asset is dynamic, so a missing glyph is rendered on demand at runtime " +
-                    "instead — which works in the Editor and is worth fixing before anything is " +
-                    "built.");
+                    "[Theatre] " + assetName + ": the coverage check did not run (" +
+                    e.GetType().Name + "). Nothing is broken by it — the atlas is rasterised at " +
+                    "runtime either way — but a face missing a character the design uses will " +
+                    "now be found on screen rather than here.");
 
                 return true;
             }

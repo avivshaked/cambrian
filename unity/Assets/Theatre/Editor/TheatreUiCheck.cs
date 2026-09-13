@@ -80,6 +80,12 @@ namespace Evosim.Theatre.EditorTools
         private static readonly List<string> _shots = new List<string>();
         private static readonly List<Wanted> _queue = new List<Wanted>();
 
+        /// <summary>Editor ticks a capture has been armed for, so the panel settles before it.</summary>
+        private static int _armedTicks;
+
+        /// <summary>One density reading per width, not one per photographed state.</summary>
+        private static readonly HashSet<int> _densityRead = new HashSet<int>();
+
         /// <summary>A picture that has been asked for and not yet taken.</summary>
         private struct Wanted
         {
@@ -217,6 +223,8 @@ namespace Evosim.Theatre.EditorTools
             _runner = null;
 
             _queue.Clear();
+            _densityRead.Clear();
+            _armedTicks = 0;
             TheatreUiCapture.Disarm();
 
             if (_driving) return;
@@ -399,19 +407,20 @@ namespace Evosim.Theatre.EditorTools
                 case 15: Selection(root, replay); Shot("selected"); break;
                 case 16: SelectSomethingDead(runner, replay); break;
                 case 17: Dead(root); Shot("dead"); break;
-                case 18: Unavailable(root, runner); break;
+                case 18: AskForAnIdThatIsNotHere(runner); break;
+                case 19: Unavailable(root, runner); break;
 
-                case 19:
+                case 20:
                     runner.ShowOverlay = false;
                     break;
 
-                case 20: Hidden(root); Shot("hidden"); break;
+                case 21: Hidden(root); Shot("hidden"); break;
 
-                case 21:
+                case 22:
                     runner.ShowOverlay = true;
                     break;
 
-                case 22: Back(root); break;
+                case 23: Back(root); break;
 
                 default:
                     Finish(_failed == 0 ? 0 : 1,
@@ -547,7 +556,52 @@ namespace Evosim.Theatre.EditorTools
                 beyond.childCount + " dashes");
 
             True("bar: the axis ends with a second",
-                Text(root, "tick-end").EndsWith(" s"), Text(root, "tick-end"));
+                Text(root, "tick-end").EndsWith(" s"),
+                Shown(root, "tick-end") ? Text(root, "tick-end") : "folded into the record's label");
+
+            NoGarble(root);
+        }
+
+        /// <summary>
+        /// No two axis labels share a spot.
+        /// </summary>
+        /// <remarks>
+        /// The four of them are placed independently — zero is flush left, the axis's end flush
+        /// right, the peak and the record's end anchored in percent — and on a run recorded to
+        /// the second it was asked for, with its peak at the last sample, three of the four land
+        /// on the same pixel. Every frame of the first Editor run had them drawn over each other
+        /// at the bottom right, which reads as garble and not as a fault, so nobody would think
+        /// to look at the numbers (2026-09-13). This is the assertion that would have said so.
+        /// </remarks>
+        private static void NoGarble(VisualElement root)
+        {
+            string[] names = { "tick-zero", "tick-peak", "tick-record-end", "tick-end" };
+            var boxes = new List<KeyValuePair<string, Rect>>();
+
+            foreach (string name in names)
+            {
+                Label tick = root.Q<Label>(name);
+                if (tick == null || !Shown(root, name)) continue;
+                if (tick.resolvedStyle.width <= 1f) continue;
+
+                boxes.Add(new KeyValuePair<string, Rect>(name, tick.worldBound));
+            }
+
+            for (int i = 0; i < boxes.Count; i++)
+            {
+                for (int j = i + 1; j < boxes.Count; j++)
+                {
+                    Rect a = boxes[i].Value;
+                    Rect b = boxes[j].Value;
+
+                    True("bar: " + boxes[i].Key + " and " + boxes[j].Key + " do not overlap",
+                        !a.Overlaps(b),
+                        "x " + a.xMin.ToString("0", CultureInfo.InvariantCulture) + ".." +
+                        a.xMax.ToString("0", CultureInfo.InvariantCulture) + " against " +
+                        b.xMin.ToString("0", CultureInfo.InvariantCulture) + ".." +
+                        b.xMax.ToString("0", CultureInfo.InvariantCulture));
+                }
+            }
         }
 
         private static double AxisEnd(TheatreReplay replay) =>
@@ -675,6 +729,29 @@ namespace Evosim.Theatre.EditorTools
             True("selection: the guild chips are drawn",
                 root.Q<VisualElement>("guilds").childCount == 3,
                 root.Q<VisualElement>("guilds").childCount + " chips");
+
+            // The live readings are this world's own and stand on a cousin. The chain is read out
+            // of the recording's lineage.jsonl, and on a cousin that file is about other
+            // creatures, so it must not be shown as this one's.
+            if (!_runner.Ui.IdsNameTheRecording)
+            {
+                Is("selection on a cousin: no ancestry chain",
+                    Text(root, "ancestry-chain"), TheatreUiFormat.EmDash);
+
+                True("selection on a cousin: it says why",
+                    Text(root, "ancestry-note").Contains("cousin"), Text(root, "ancestry-note"));
+
+                True("selection on a cousin: the live readings stand",
+                    Text(root, "value-reserve").Length > 0 && Text(root, "value-speed").Length > 0,
+                    "a live reading is blank");
+            }
+            else
+            {
+                True("selection: the ancestry chain names the creature",
+                    Text(root, "ancestry-chain").Contains(
+                        TheatreUiFormat.Identifier(creature.Id)),
+                    Text(root, "ancestry-chain"));
+            }
         }
 
         /// <summary>
@@ -784,6 +861,35 @@ namespace Evosim.Theatre.EditorTools
         {
             if (_selected < 0) return;   // SelectSomethingDead already said why, as a skip.
 
+            // A cousin's ids name this world's bodies and nothing in the recording, so a dead id
+            // has no life to show: the interface owes the viewer the unavailable state instead of
+            // another creature's dates. The first Editor run showed the other thing — creature
+            // 149's ancestry off the recording's lineage.jsonl, over a body that never had it.
+            if (!_runner.Ui.IdsNameTheRecording)
+            {
+                // The id came out of the recording's lineage.jsonl, and in a cousin's world that
+                // number may well belong to something still swimming. Nothing is wrong when it
+                // does; there is simply no dead body to look at.
+                if (CreatureIdMap.Find(_runner.Replay.Eco.World, _selected) != null)
+                {
+                    Skip("dead on a cousin: the id taken from the recording is alive in this " +
+                         "world, so no dead selection could be made from it");
+                    return;
+                }
+
+                True("dead on a cousin: the unavailable panel is up, not a dead one",
+                    Shown(root, "inspector-unavailable"), "the dead panel");
+
+                True("dead on a cousin: no dead panel",
+                    !Shown(root, "inspector-dead"), "the dead panel is up too");
+
+                True("dead on a cousin: it says the ids are not the recording's",
+                    Text(root, "inspector-unavailable-prose").Contains("cousin"),
+                    Text(root, "inspector-unavailable-prose"));
+
+                return;
+            }
+
             True("dead: the dead panel is up", Shown(root, "inspector-dead"), "hidden");
 
             Is("dead: the id", Text(root, "inspector-dead-id"),
@@ -808,14 +914,33 @@ namespace Evosim.Theatre.EditorTools
                 root.Q<Label>("inspector-dead-id").parent.ClassListContains("struck"), "no .struck");
         }
 
+        /// <summary>
+        /// Selects an id no world can hold, so the unavailable state is reached on purpose.
+        /// </summary>
+        /// <remarks>
+        /// The state is what the interface shows when it cannot name what a click points at, and
+        /// the surest way to ask for it is to name something that is not there. On a faithful run
+        /// this lands on the empty state instead, which is why the assertion that follows is
+        /// skipped there.
+        /// </remarks>
+        private static void AskForAnIdThatIsNotHere(TheatreRunner runner)
+        {
+            if (runner.Ui == null || runner.Ui.IdsNameTheRecording) return;
+
+            runner.SelectById(long.MaxValue);
+        }
+
         private static void Unavailable(VisualElement root, TheatreRunner runner)
         {
             TheatreUi ui = runner.Ui;
 
-            if (ui.State != TheatreUi.Provenance.IdsUnverifiable)
+            // Two ways in, and a cousin is one of them: its pairing is sound and its ids still
+            // do not name the recording's creatures, which is the same thing to a viewer. Before
+            // this the phase skipped on every cousin run, so the state was never once read.
+            if (ui.IdsNameTheRecording)
             {
-                Skip("unavailable: this run's id map is reliable, so the state cannot be produced " +
-                     "here — it needs a run whose pairing failed");
+                Skip("unavailable: this run's ids name the recording's creatures, so the state " +
+                     "cannot be produced here — it needs a cousin or a run whose pairing failed");
                 return;
             }
 
@@ -930,8 +1055,19 @@ namespace Evosim.Theatre.EditorTools
         {
             if (TheatreUiCapture.Armed)
             {
+                // Two frames, not one. Pointing the panel at a texture resizes it, the density
+                // classes are set from the geometry event that resize raises, and the layout
+                // those classes ask for lands on the frame after that. One frame would photograph
+                // the interface mid-decision and read it the same way.
+                if (++_armedTicks < 2) return true;
+                _armedTicks = 0;
+
                 Wanted taken = _queue.Count > 0 ? _queue[0] : default;
                 if (_queue.Count > 0) _queue.RemoveAt(0);
+
+                // The panel is laid out at the texture's width right now, which is the one moment
+                // the density step can be read at a width no Game View here ever has.
+                Density(taken.Width);
 
                 int bytes = TheatreUiCapture.Shoot(taken.Path, out string wrote);
 
@@ -969,6 +1105,49 @@ namespace Evosim.Theatre.EditorTools
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// The design's density step, read at the width the armed capture gave the panel.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Pointing the panel at a texture lays it out at that texture's pixels, so this is the
+        /// only place in the project where the interface is ever 3840 wide. The step is a class
+        /// on the root (<c>.is-wide</c> at 2240, <c>.is-wider</c> at 3400) because UI Toolkit
+        /// cannot write a custom property from C#, and the three tokens it moves are the strip's
+        /// height, the panel width and the edge padding — never the type, which the design fixes
+        /// in pixels at every resolution.
+        /// </para>
+        /// <para>
+        /// Asserted once per arm rather than on all fourteen states: the classes do not depend on
+        /// what is on screen, and fourteen copies of one answer is noise in a log an agent reads.
+        /// </para>
+        /// </remarks>
+        private static void Density(int width)
+        {
+            if (_runner.Ui == null || !_densityRead.Add(width)) return;
+
+            VisualElement root = _runner.Ui.Root;
+            VisualElement strip = root.Q<VisualElement>("strip");
+
+            bool wide = width >= TheatreUi.WideAtPixels;
+            bool wider = width >= TheatreUi.WiderAtPixels;
+
+            True("density at " + width + ": the panel is that wide",
+                Mathf.Abs(root.resolvedStyle.width - width) <= 1f,
+                root.resolvedStyle.width.ToString("0.#", CultureInfo.InvariantCulture));
+
+            True("density at " + width + ": is-wide " + (wide ? "on" : "off"),
+                root.ClassListContains("is-wide") == wide, "the other way");
+
+            True("density at " + width + ": is-wider " + (wider ? "on" : "off"),
+                root.ClassListContains("is-wider") == wider, "the other way");
+
+            float wanted = wider ? 66f : wide ? 44f : 40f;
+
+            Near("density at " + width + ": the strip is " + wanted + " px",
+                strip.resolvedStyle.height, wanted, 1f);
         }
 
         /// <summary>
@@ -1101,6 +1280,7 @@ namespace Evosim.Theatre.EditorTools
             // drawing into a texture nobody reads for the rest of the session.
             TheatreUiCapture.Disarm();
             _queue.Clear();
+            _armedTicks = 0;
 
             var files = new StringBuilder();
             foreach (string path in _shots) files.Append("\n  ").Append(path);
