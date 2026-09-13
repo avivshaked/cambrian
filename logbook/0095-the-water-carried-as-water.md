@@ -133,4 +133,11 @@ all four rings with no crust, the rim quarter 20% of the living; at 6,000 s (1,1
 the same, eaters mixed through the producers, and the side view shows bodies spread through
 the top 50 m where round 37 kept a 3 m film. Frames in `scratch/snaps/r37b-s1/`; the
 6,000 s frame needed a 150-minute wall clock (the 30-minute default timed out on the live
-run).
+run). *03:05, at 13,500 s (1,681 alive), from `positions.jsonl` rather than the theatre,
+because five arms hold the Editor cap:* the top view is a disc filled evenly to the glass with
+no ring and no crust, the eaters scattered among the leaves; the side view spreads the
+bodies through the top 35 m with a thinning tail to the bed, where round 37 at the same
+time had a 3 m film over a deep scatter (`scratch/positions/r37b-s1/`). The four seeds
+behind it read the same at 6,000 to 7,700 s: every column occupied, `x sd` 2.5 to 2.9 m,
+the three-dimensional nearest neighbour 0.65 to 0.77 m against round 37's 0.33 to 0.67 of
+round 36's.
