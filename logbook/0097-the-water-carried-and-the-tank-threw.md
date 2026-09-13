@@ -164,6 +164,17 @@ reads against it. Open, and ahead of the fresh seeds' read: the throws, with the
 fixed to catch the step before the blow-up and the one-part control at `fluidAccel 0`; the
 wedge, one case; the stillbirths.
 
+## The control's launch
+
+*15:39.* `r37bc-s5` launched on worker 6 from `rounds/launch-r37b.ps1 -Seed 5 -FluidAccel 0
+-Name r37bc-s5`, its header verified (`space tank r=5.64 m (100 m2), depth 60, wall, bed`,
+`fluidAccel 0`, `dispersal=5 m`, `driveLimit >0.01`, `linkPhoto 0.5`, `addedMass 0.5`,
+`dt=0.01`, seed 5), `simHash 5e164d01…` and `coreHash ad5c952a…` as the round's,
+`configHash f203818b` (the force is the one changed tunable), `physicsJobWorkers 0`. It is
+a replay of a scored condition and not a round: read on `diverged` and the traces' anatomy
+against seed 5's 37, and on the rim quarter, since without the force the streams alone
+should gather (D090's tracer check read 0.83 to 0.98 at the rim for a lagging body).
+
 ## Sources
 
 `logbook/specs/r37b-read/` (the brief, `summary.tsv`, `p3-share.tsv`, `drift.tsv`,
