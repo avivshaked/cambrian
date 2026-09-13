@@ -92,4 +92,6 @@ eight hours behind round 37b's renders and the control. *23:30.* Seed 6 launched
 `fluidAccel 1`, `dispersal=5 m`, `driveLimit >0.01`, `linkPhoto 0.5`, `addedMass 0.5`,
 `dt=0.01`, seed 6), `simHash 5e164d01…`, `coreHash ad5c952a…`, `configHash 2430e660`,
 `physicsJobWorkers 0`, `prereg.json` naming this entry's commit. The queue's log is
-`scratch/logs/r37b-fresh-queue.out`.
+`scratch/logs/r37b-fresh-queue.out`. *2026-09-14 00:10 and 00:11.* Seeds 7 and 8 launched
+on workers 4 and 5 as the control and a render ended, each worker refreshed first, headers
+and hashes as seed 6's with their own seed.
