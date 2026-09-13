@@ -190,15 +190,33 @@ same build without it:
 | inherited jointed at the end | 102 | 2 |
 | `alive` at the end | 1,764 | 1,422 |
 
-Two readings, the first firm and the second inference. The force is the cause of the
-throws and of the stillbirths: the one tunable that differs takes both from 37 and 181 to
-0 in the same seed, so 0097's suspicion of the wall clearance for the stillbirths is
-withdrawn. And the force is also what the round was for: without it the streams alone
-gather 42 to 51% of the bodies in the rim quarter (D090's tracer check said a lagging body
-would), and the bodies move at half the water's speed, so M1 and M5 are the force's doing.
-The world needs the term and the term kills newborns. What it does to a two-part body in
-its first seconds is not in the traces; the next step is the field itself, sampled
-without a body in it, and the trace fix, before anything is proposed to the owner.
+Three readings. **The force is causal for the throws, per jointed birth and not only per
+run.** The joint also thinned without the force (152 inherited jointed bodies at 5,000 s to
+2 at the end), so the control had fewer jointed newborns to throw; counted from the lineage
+files, seed 5 with the force threw 37 in 2,744 jointed births (1.35%), the control 0 in
+1,421 (that rate predicts 19), and round 37's seed 5 threw 0 in 1,154. **The stillbirths
+are not the force's.** A stillbirth is a genome that developed into no parts at all
+(`World.Stillbirths`, a development count), so no fluid term can make one; the force
+changed which lineages bred, and the lineages it kept (the jointed ones) are the ones
+whose children sometimes develop into nothing. 0097's suspicion of the wall clearance is
+withdrawn either way. **And the force is what the round was for**: without it the streams
+alone gather 42 to 51% of the bodies in the rim quarter (D090's tracer check said a
+lagging body would), and the bodies move at half the water's speed, so M1 and M5 are the
+force's doing. The world needs the term and the term throws one jointed newborn in a
+hundred.
+
+The field itself, sampled without a body in it (`scratch/accel-probe/`, the closed form
+at 12 million points per seed over 20 instants), says the mechanism is not the force's
+size: the largest water acceleration anywhere in the live tank is 0.12 m/s², so a
+neutrally buoyant part feels at most 1.9% of its own weight; the difference across a
+newborn's 0.02 m is at most 4.5e-3 m/s², and the field moves by 1e-5 m/s² in a physics
+step; neither the axis nor the glass is singular (a smooth bowl, both rims four times the
+floor). The field is roughest at the glass, where the closed form is clamped with a kink
+in its derivative, and the nine-sample stencil disagrees with it by up to 55% within
+0.02 m of the wall (the stencil straddles the kink; the tank does not use the stencil).
+Whatever throws a newborn is not a large force; it is something the force's code path
+does to a body in its first steps, and the trace's second pass (the last finite frames
+with the forces in them, `throw-trace-spec.md`) is the instrument that will say what.
 
 ## Sources
 
