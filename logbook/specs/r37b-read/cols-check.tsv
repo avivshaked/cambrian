@@ -1,0 +1,7 @@
+## The report's cols and the reader's, on the same samples: they now agree (the corrected count, both sides)
+arm	samples compared	samples where they differ	max |difference|	any report cols over 100	report cols at t=5000/15000/30000	reader cols at the same
+r37b-s1	300	11	2	0	100/100/100	100/100/100
+r37b-s2	300	7	1	0	100/100/100	100/100/100
+r37b-s3	300	9	2	0	100/100/100	100/100/100
+r37b-s4	summary not written yet
+r37b-s5	summary not written yet

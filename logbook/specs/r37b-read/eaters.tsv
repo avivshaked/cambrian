@@ -1,0 +1,33 @@
+## The eaters: absorptive and inherited-absorptive standing counts
+seed	t	alive	absorpt	inherit	inherit/alive	food %	photo inh
+1	5000	988	515	513	0.519	17.53%	471
+1	15000	1745	35	34	0.019	2.65%	1708
+1	30000	1674	77	75	0.045	3.66%	1597
+2	5000	1425	0	0	0.000	0.52%	1416
+2	15000	1714	292	290	0.169	15.33%	1422
+2	30000	1735	152	147	0.085	4.55%	1583
+3	5000	1114	307	306	0.275	10.22%	798
+3	15000	1764	69	68	0.039	2.78%	1691
+3	30000	1840	30	29	0.016	3.1%	1809
+4	5000	1006	56	54	0.054	4.22%	944
+4	15000	1819	174	172	0.095	8.8%	1645
+4	30000	1782	76	74	0.042	3%	1706
+5	5000	771	59	59	0.077	8.06%	710
+5	15000	1714	142	138	0.081	7.44%	1586
+5	29200	1764	80	79	0.045	5.52%	1697
+
+## The eaters: the peak of the absorptive standing count
+arm	peak absorpt	at t	peak inherit	at t	last t with inherit>=10
+r37b-s1	527	5500	525	5500	30000
+r37b-s2	557	11800	555	11800	30000
+r37b-s3	308	4900	307	4900	30000
+r37b-s4	644	7700	642	7700	30000
+r37b-s5	247	12900	245	12900	29200
+
+## The passing clade of each seed, from clade-score.ps1 (see verdicts.txt)
+arm	verdict	clade root	kind	founded t	alive at end	min last 6000 s	inherited births in last 20 samples	living clades	passing clades	qualifier
+r37b-s1	PASS	70	f	25.5	51	29	35	5	1	
+r37b-s2	PASS	3686	r	8210	146	60	87	6	1	
+r37b-s3	PASS	370	r	1498	26	26	8	4	1	
+r37b-s4	PASS	2177	r	4567	74	51	48	3	1	
+r37b-s5	PASS	1876	r	5273	64	57	16	3	2	CENSORED at 29200 s

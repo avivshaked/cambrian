@@ -1,0 +1,24 @@
+## Round 37b read against logbook/0095's pre-registration. Seed 5 is censored at 29,200 s
+## (stopped, manual-stall): every seed-5 number below marked "29,200" is read at its last
+## sample and is a reading, not a verdict.
+##
+## Verification: every header carries `space tank r=5.64 m (100 m2), depth 60, wall, bed`,
+## `current 0.1 m/s transport`, `fluidAccel 1`, `dispersal=5 m`, `driveLimit >0.01`,
+## `linkPhoto 0.5`, `dt=0.01` and its own seed; one simHash 5e164d01, one coreHash ad5c952a,
+## one configHash 2430e660, physicsJobWorkers 0, prereg.json beside every arm naming
+## logbook/0095. V2 holds: audit 0.0000% and mat resid 0 on all 1,492 rows. V3 holds: wraps 0
+## on every row. V4 holds: 43 dumps, 43 trace files. V5: no manifest reads error; seed 5's
+## reads stopped.
+
+#	prediction	threshold	result	count
+M0	the world stands	alive at 30,000 s within 0.5-1.5 of round 37's same seed	FAILS on the upside	3 of 5 (2.455, 1.114, 1.989, 1.073, 0.963); seeds 1 and 3 hold 2.0 and 2.5 times what round 37 held. D063 as amended, read not required: 5 of 5 (seed 5 CENSORED).
+M1a	the water does not gather (the rim)	p3/alive in 15-40% at 5,000, 15,000 and 30,000 s in >=3 of 5	HOLDS	5 of 5, 15 of 15 readings (0.194 to 0.270). Over the whole run no sample of any seed exceeds 0.40; the 0-11 samples per arm below 0.15 are all at t <= 4,000 s.
+M1b	the water does not gather (the drift)	mean radial drift over 100 s within +-0.5 m in every bin inside 4 m in >=3 of 5	FAILS as written	0 of 5: +3.37 to +3.48 (0-1 m), +2.20 to +2.26 (1-2), +1.03 to +1.09 (2-3), +0.08 to +0.11 (3-4). But the observed drift is 0.40 to 1.14 of the fully-mixed bound in every bin, and the pooled net flux is +0.0025 to +0.0032 m per 100 s against round 37's +0.020 to +0.049. The threshold was not a well-posed test of a mixed disc.
+M2a	the middle is filled (cols)	corrected cols >= 60 from 5,000 s in >=3 of 5	HOLDS	5 of 5; the minimum over t >= 5,000 s is 98 of 100 in every seed, and no sample prints above 100.
+M2b	the middle is filled (x sd)	x sd 2.0-3.4 m at the three times in >=3 of 5	HOLDS	5 of 5, 15 of 15 (2.66 to 2.90). Run means 2.75 to 2.79 against 2.82 for a spread disc; the range over t >= 5,000 s is 2.48 to 3.03.
+M3	the crowd loosens to the box's	3d nearest-neighbour median at matched abundance within 0.8-1.25 of round 36's in >=3 of the anchors that find a match	HOLDS	6 of the 9 anchors that found a match (0.987 to 1.316); the three misses are all ABOVE the band, a crowd looser than the box's, not tighter. Round 37 read 0.33 to 0.67 at every one of its ten. Six anchors found no match because round 37b's populations (1,674-1,840) exceed anything round 36's box ever held.
+M4	the joint's fate is the world's	seeds with >= 10 inherited jointed bodies at 30,000 s within one of round 37's one	HOLDS	2 seeds (s4 38, s5 102 at 29,200); round 37 had 1 (s3 148). Within one either way.
+M5	the water carries	mean m/s within 0.7-1.3 of round 36's same seed at 5,000 and 30,000 s in >=3 of 5	HOLDS	5 of 5 at both times, 10 of 10 readings (0.812 to 1.235). Run means 0.946 to 0.974 of round 36's, against round 37's 0.68-0.71.
+M6	the tank still throws nothing	diverged 0 in >= 4 of 5, and every dump carries a trace	FAILS on the count, holds on the trace	0 in 2 of 5 (s1 0, s2 0, s3 1, s4 5, s5 37 at 29,200). 43 dumps, 43 traces.
+M7	the cycle damps	peak-to-trough ratio of alive over t >= 5,000 s below 2.5 in >=3 of 5	HOLDS	5 of 5 (1.79, 1.28, 1.66, 1.85, 2.35) against round 37's 1.9, 3.3, 5.4, 1.9, 3.2.
+M8	the pace holds	wall s per 1,000 simulated s within 1.5 of round 37's same seed	holds in 4 of 5, seed 1 at 1.507	1.507, 0.784, 1.458, 0.780, 1.085. Per 1,000 living bodies (a step costs per body, and 37b carried 1,386-1,536 where round 37 carried 887-1,458): 1.041, 0.717, 0.842, 0.744, 1.021.

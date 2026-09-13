@@ -296,3 +296,4 @@ key only translates the entries' reporting shorthand.
 | [0094](0094-the-glass-the-centrifuge-and-the-throws-that-stopped.md) | 2026-09-12 | The glass, the centrifuge, and the throws that stopped |
 | [0095](0095-the-water-carried-as-water.md) | 2026-09-13 | The water carried as water (round 37b pre-registered and launched) |
 | [0096](0096-the-theatre-gets-a-face-that-checks-itself.md) | 2026-09-13 | The theatre gets a face that checks itself |
+| [0097](0097-the-water-carried-and-the-tank-threw.md) | 2026-09-13 | The water carried, and the tank threw (round 37b read: the centrifuge gone, 43 throws at birth) |

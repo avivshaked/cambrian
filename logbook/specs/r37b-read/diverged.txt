@@ -1,0 +1,72 @@
+== r37b-s1
+r37b-s1: no diverged/ dumps under runs/r37b-s1\2026-09-12-222618-2430e660
+== r37b-s2
+r37b-s2: no diverged/ dumps under runs/r37b-s2\2026-09-13-001415-2430e660
+== r37b-s3
+
+=== r37b-s3  (runs/r37b-s3\2026-09-13-001451-2430e660)  world depth=60 m ===
+    id      t_div    age_s jnt nodes edges activeJoint      bf   ratio dResize      maxV      maxW  reason (offending value)
+----------------------------------------------------------------------------------------------------------------------------
+  8778    24289.0      0.0   1     2     1        True   0.612     1.0   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+----------------------------------------------------------------------------------------------------------------------------
+count=1  jointed=1  median_age=0.0s  under_100s=1  t_range=[24289.0, 24289.0]
+traced=1/1  ratio_over_10=0/1 (0%)  within_5_steps_of_a_resize=0/1 (0%)
+== r37b-s4
+
+=== r37b-s4  (runs/r37b-s4\2026-09-13-001528-2430e660)  world depth=60 m ===
+    id      t_div    age_s jnt nodes edges activeJoint      bf   ratio dResize      maxV      maxW  reason (offending value)
+----------------------------------------------------------------------------------------------------------------------------
+   702     2974.5    653.0   1     2     2        True   1.000     2.4   never     5.601     79.98  root height outside world box [-180, 60] m (finite, not NaN) (y=60.7703)
+  3680     7819.0      0.0   1     2     1        True   0.241     1.4   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  3761     7966.0      0.5   1     2     1        True   0.226     1.3   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  3775     7983.5      0.0   1     2     1        True   0.232     1.1   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  3792     8011.0      0.0   1     2     1        True   0.250     1.3   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+----------------------------------------------------------------------------------------------------------------------------
+count=5  jointed=5  median_age=0.0s  under_100s=4  t_range=[2974.5, 8011.0]
+traced=5/5  ratio_over_10=0/5 (0%)  within_5_steps_of_a_resize=0/5 (0%)
+== r37b-s5
+  (note: 1 unparsable line(s) at the tail of lineage.jsonl skipped -- the arm is likely still running and mid-write)
+
+=== r37b-s5  (runs/r37b-s5\2026-09-13-011711-2430e660)  world depth=60 m ===
+    id      t_div    age_s jnt nodes edges activeJoint      bf   ratio dResize      maxV      maxW  reason (offending value)
+----------------------------------------------------------------------------------------------------------------------------
+   923     3316.0      3.0   1     3     4        True   0.578     1.5   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  1023     4759.0   1237.0   1     2     3        True   1.000     1.6   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  2366     6115.0      0.5   1     2     3        True   0.524     1.3   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  3060     7463.5      0.5   1     2     5        True   0.578     1.4   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  3280     7925.5      0.5   1     2     4        True   0.516     1.1   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  3286     7940.0      0.5   1     2     4        True   0.920     1.1      50         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  3299     7970.5      0.0   1     2     4        True   0.513     1.1   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  3316     8004.5      0.5   1     2     4        True   0.672     1.1   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  3324     8023.0      0.5   1     2     4        True   0.508     1.1   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  3330     8035.0      1.5   1     2     3        True   0.525     1.1   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  5657    13093.0      1.5   1     2     4        True   0.523     1.1   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  6571    15109.5      0.5   1     2     4        True   0.519     1.3   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  6731    15628.0      0.5   1     2     3        True   0.759     1.1   never 5.527e+22 2.717e+24  root y (height) non-finite (NaN/Inf) (y=nan)
+  6864    16032.0      0.5   1     2     4        True   0.728     1.2   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  6866    16033.5      0.5   1     3     4        True   0.556     1.3   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  6922    16192.5      0.5   1     4     4        True   0.573     1.2   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  6924    16196.5      0.5   1     4     4        True   0.787     1.4   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  8340    19785.0      0.5   1     2     3        True   0.611     1.1   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  8437    20019.0      0.5   1     2     2        True   0.543     1.1   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  8934    21215.0      2.5   1     2     3        True   0.617     1.5   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  8951    21262.5      2.5   1     4     5        True   0.616     1.4   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  9153    21842.0      1.0   1     2     5        True   1.000     1.3   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  9264    22183.0      0.5   1     4     3        True   0.785     1.3   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  9479    22851.0      0.5   1     2     4        True   1.000     1.4   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  9926    24268.0      0.5   1     2     4        True   0.444     1.4   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  9942    24326.5      0.5   1     2     5        True   0.656     1.1   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+  9951    24358.5      0.5   1     2     4        True   0.442     1.4   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+ 10004    24514.5      2.5   1     4     3        True   0.688     1.5   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+ 10005    24517.5      0.5   1     4     3        True   0.645     1.6   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+ 10061    24709.0      0.5   1     2     3        True   0.435     1.0   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+ 11028    27777.5      0.5   1     2     3        True   0.578     1.6   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+ 11036    27807.0      0.5   1     2     3        True   0.673     1.3   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+ 11042    27823.0      0.5   1     2     2        True   0.572     1.6   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+ 11046    27837.5      0.5   1     2     3        True   0.578     1.6   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+ 11047    27839.5      0.0   1     2     3        True   0.581     1.4   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+ 11357    28699.0      8.5   1     2     4        True   0.599     1.4   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+ 11380    28744.5      0.5   1     2     4        True   0.515     1.1   never         -         -  root y (height) non-finite (NaN/Inf) (y=nan)
+----------------------------------------------------------------------------------------------------------------------------
+count=37  jointed=37  median_age=0.5s  under_100s=36  t_range=[3316.0, 28744.5]
+traced=37/37  ratio_over_10=0/37 (0%)  within_5_steps_of_a_resize=0/37 (0%)

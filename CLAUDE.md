@@ -753,10 +753,16 @@ actually verifying it.
   read 27 divergences against 17 with the same signature (jointed adults, median age
   1,171 s, the root's height going non-finite), so the throw of a jointed adult is not a
   single step's over-drive (`r34lim-s5`, D089's check 4). **Round 37, the tank, threw
-  nothing** across a third more jointed body-seconds than the box that threw 131
-  (logbook/0094), and the box's throws began with D088's seam crossings, so the wrap is the
-  leading candidate for the mechanism, as inference; round 37b's `diverged` is the test, and
-  a mass-ratio cap is not proposed until a tank throws.
+  nothing** across 9.17 million jointed body-seconds (logbook/0094) and 0094 read the wrap
+  as the mechanism; **round 37b threw 43 across 11.1 million** (logbook/0097), so the wrap
+  was not the whole of it. Every one of the 43 was a two-part jointed body dumped within
+  seconds of its birth, with a joint mass ratio under 2.4, away from the wall and from any
+  resize, and clustered by parent; the mass-ratio cap is excluded by the traces and not
+  proposed. **The throw trace as built misses the onset**: its three-frame ring is written
+  after the check that fires it, so in 42 of 43 dumps every frame is already non-finite;
+  read a dump's trace for the masses and the ratio, not for the first bad step, until the
+  ring keeps the last finite frames. The one-part control (seed 5 on 37b's build with
+  `fluidAccel 0`, `r37bc-s5`) is the test of the force.
 - **A run writes at most 50 diverged dumps** (`Ecosystem.MaxDumps`), so `diverged/` equals the
   `diverged` column only below 50: `r36-s2` counted 55 and dumped 50, and its last five
   throws have no post-mortem (logbook/0092). Read the column for the count and the dumps

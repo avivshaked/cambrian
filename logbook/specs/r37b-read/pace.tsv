@@ -1,0 +1,62 @@
+## M8  wall-clock seconds per 1,000 simulated seconds, from the manifests
+round	seed	startedAt	endedAt/stoppedAt	status	wall s	simulated s	s per 1000 sim s	footer wall minutes	footer timesRealTime
+r37b	1	2026-09-12T22:26:18	2026-09-13T09:10:59	ended	38681	30000	1289.4	644.6778707416667	0.7755811432223931
+r37b	2	2026-09-13T00:14:15	2026-09-13T10:51:14	ended	38219	30000	1274.0	636.9694732116667	0.784966974129777
+r37b	3	2026-09-13T00:14:51	2026-09-13T12:25:11	ended	43820	30000	1460.7	730.31279107	0.6846381524653802
+r37b	4	2026-09-13T00:15:28	2026-09-13T11:16:12	ended	39643	30000	1321.4	660.702600415	0.7567701408862936
+r37b	5	2026-09-13T01:17:11	2026-09-13T14:05:45	stopped	46114	29200	1579.3	(none: stopped)	(none: stopped)
+r37	1	2026-09-12T07:28:48	2026-09-12T14:36:40	ended	25672	30000	855.7	427.8420964466667	1.1686554552546897
+r37	2	2026-09-12T07:29:21	2026-09-12T21:01:20	ended	48719	30000	1624.0	811.9575277700001	0.61579575642734
+r37	3	2026-09-12T07:29:56	2026-09-12T15:50:57	ended	30061	30000	1002.0	500.991049385	0.9980218221738362
+r37	4	2026-09-12T07:30:31	2026-09-12T21:37:39	ended	50828	30000	1694.3	847.1025546366667	0.5902473050792021
+r37	5	2026-09-12T07:31:07	2026-09-12T19:38:54	ended	43667	30000	1455.6	727.7543015033333	0.6870450631032236
+
+## M8  ratio, r37b over r37, same seed
+seed	r37b s/1000	r37 s/1000	ratio	within 1.5
+1	1289.4	855.7	1.507	no
+2	1274.0	1624.0	0.784	yes
+3	1460.7	1002.0	1.458	yes
+4	1321.4	1694.3	0.780	yes
+5	1579.3	1455.6	1.085	yes
+## r37b arm overlap: the mean number of this round's arms running at once, over each arm's own life
+arm	start	end	hours	mean concurrent arms of the round	min	max
+r37b-s1	09-12 22:26	09-13 09:10	10.74	4.23	1	5
+r37b-s2	09-13 00:14	09-13 10:51	10.62	4.74	2	5
+r37b-s3	09-13 00:14	09-13 12:25	12.17	4.42	2	5
+r37b-s4	09-13 00:15	09-13 11:16	11.01	4.68	3	5
+r37b-s5	09-13 01:17	09-13 14:05	12.81	4.01	1	5
+
+## r37 arm overlap: the mean number of this round's arms running at once, over each arm's own life
+arm	start	end	hours	mean concurrent arms of the round	min	max
+r37-s1	09-12 07:28	09-12 14:36	7.13	4.99	1	5
+r37-s2	09-12 07:29	09-12 21:01	13.53	4.04	2	5
+r37-s3	09-12 07:29	09-12 15:50	8.35	4.85	3	5
+r37-s4	09-12 07:30	09-12 21:37	14.12	3.91	1	5
+r37-s5	09-12 07:31	09-12 19:38	12.13	4.27	3	5
+
+
+## M8  the pace normalised by the work the arm actually did: the cost per 1,000 simulated
+## seconds divided by the mean living population, since a step costs per body and round
+## 37b carried a bigger crowd for longer than round 37 did.
+round	seed	mean alive	s per 1000 sim s	s per 1000 sim s per 1000 bodies
+r37b	1	1386	1289.4	930.3
+r37b	2	1536	1274.0	829.7
+r37b	3	1535	1460.7	951.6
+r37b	4	1529	1321.4	864.3
+r37b	5	1440	1579.3	1096.5
+r37	1	957	855.7	893.9
+r37	2	1403	1624.0	1157.2
+r37	3	887	1002.0	1129.7
+r37	4	1458	1694.3	1161.9
+r37	5	1355	1455.6	1074.2
+
+seed	r37b per-1000-bodies	r37 per-1000-bodies	ratio
+1	930.3	893.9	1.041
+2	829.7	1157.2	0.717
+3	951.6	1129.7	0.842
+4	864.3	1161.9	0.744
+5	1096.5	1074.2	1.021
+
+## No per-step profile exists to separate the force's cost from the machine's load:
+## scratch/logs/evosim-r37b-s*.log carries only Unity's own domain-reload timings, and
+## the run report has no wall-clock column. 0095's M8 branch cannot be followed.

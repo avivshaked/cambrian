@@ -23,13 +23,22 @@ to free the workers, and 0095's launch section says why. At 02:20 seed 1 was at 
 round's nine predictions (M0 the world stands, M1 the water does not gather, M2 the middle is
 filled, M3 the crowd loosens to the box's, M4 the joint's fate, M5 the water carries, M6 the
 tank still throws nothing, M7 the cycle damps, M8 the pace holds) and their two-sided readings
-are in 0095. The monitor is `bash scratch/r37b-watch.sh` (one line per ending, error
-signature or 30-minute stall; a stall is a suspicion, confirmed with the CPU discriminator
-before anything is stopped), and the render queue for the five arms (5,000, 15,000 and 30,000
-s) runs from `scratch/r37b-chain.ps1`, log `scratch/logs/r37b-chain.out`. **What follows the
-round**: the agent samples a frame or two more of a live seed at about 15,000 s (the owner's
-rule); when the last arm ends, the read against M0 to M8 by subagents, the world watched in
-the theatre, entry 0097, the scorer, one notification.
+are in 0095. **Read 2026-09-13 afternoon as logbook/0097.** Seeds 1 to 4 ran to their
+budget; seed 5 wedged at 29,200 s (the 0043 signature, confirmed twice with the
+discriminator), was stopped as `manual-stall` and is censored. M1's rim clause, M2, M3, M4,
+M5 and M7 hold in every seed: the rim quarter 19 to 27% (round 37: 45 to 98%), the crowd
+the box's at matched abundance, the water at the box's speed, the cycle gone (it was the
+crust's). M0 fails on the upside (seeds 1 and 3 hold 2.0 and 2.5 times round 37's, which
+the crust had starved), M1's drift clause fails on an ill-posed threshold (a mixed disc
+cannot read zero drift by bin; against the fully-mixed bound every bin reads mixed), M6
+fails on 43 throws (0, 0, 1, 5, 37), M8 in one seed by a hundredth. The goal rule five of
+five, read not required. The tank's base stands as ruled (D091). The throws: all 43 are
+two-part jointed newborns dumped within seconds of birth, mass ratio under 2.4, not at the
+wall, not at a resize, clustered by parent; the trace ring missed the onset in 42 of 43
+(written after the check fires). Two things follow, both launched or queued below: the
+one-part control `r37bc-s5` (seed 5 on the same build with `fluidAccel 0`) and the trace
+fix. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
+seed 5's render cannot reach a 30,000 s frame and is stopped after its 15,000 s one.
 
 **The theatre has an interface (logbook/0096, 2026-09-13 night).** Built by a subagent from
 the owner's design (`design/SPEC.md`, committed with its `LICENSE-DOCS` lines at the owner's
@@ -110,10 +119,15 @@ ahead of the idle charge.
    the same evening after the Astra review to carry the transporter, the clearance and the
    corrected `cols`, none a world rule.* Read as a fresh baseline, not as round 37 repaired
    (D091): its changes are not attributed one by one unless a later question needs it.
-2. **Fresh seeds on the base** (D091; owner 2026-09-12, "proceed with your recommendations"):
-   round 37b's world on seeds 6 to 10, no build, `rounds/launch-r37b.ps1` with the seeds
-   changed, pre-registered and launched with `-Prereg`; read against 37b's five as a second
-   draw of the same world. *Moved here from the old queue's item 22 because the five
+2. **The one-part control and the fresh seeds on the base.** First `r37bc-s5` (0097's
+   control: seed 5 on 37b's build with `fluidAccel 0`, everything else 37b's, so the force
+   is the one difference from the streams alone; a replay of a scored condition, agent
+   work), launched 2026-09-13 afternoon on worker 6 as the renders hold the other slots;
+   read on `diverged` against 37 and the traces' anatomy. Then the fresh seeds (D091; owner
+   2026-09-12, "proceed with your recommendations"): round 37b's world on seeds 6 to 10, no
+   build, `rounds/launch-r37b.ps1` with the seeds changed, pre-registered and launched with
+   `-Prereg` as the renders free workers; read against 37b's five as a second draw of the
+   same world. *Moved here from the old queue's item 22 because the five
    founding lotteries have guided nine rounds of adaptive change and round 37's standing
    jointed populations have to be shown to be the world's.* Launches when 37b's read is in.
 3. **Round 38, the dilute tank** (D089 rulings 2 and 3): 400 m² with the matter held at 6,000
@@ -184,13 +198,18 @@ old formats read-only.
 Agent work unless marked. Long steps (a suite, a smoke, a render) are launched by the agent in
 the background and never handed to a subagent, which cannot wait.
 
-1. **Round 37b's read** (entry 0097): the nine predictions by subagents from round 37's read
-   scripts (`logbook/specs/r37-read/`: `dispersal.py`'s drift table, `nn_matched.py`, `cycle.tsv`'s method), the theatre
-   watched, the scorer, the pictures beside the entry; then the fresh-seed launcher and its
-   pre-registration.
+1. **Round 37b's read is done** (0097, above). Next in this slot: the fresh seeds'
+   pre-registration (a short entry: the same nine readings as 0095 on seeds 6 to 10, read
+   against 37b's five as a second draw) and their launch as workers free; then **the throw
+   trace fixed** to keep the last finite frames and the frame before the one that fails
+   (`logbook/specs/throw-trace-spec.md` amended; Core and Sim, both hashes move, so it lands
+   in the same window as item 2 below); and **the skin's rounding capped** so a near-cubic
+   box stays a box, with a key that shows the raw collider shapes (theatre only, no hash;
+   the owner's observation of 2026-09-13).
 2. **`field cv`**, a patchiness reading: sd over mean of the detritus and matter fields over
    live cells, in `stats.jsonl` and the table, so that a pocket is a number before any pocket
-   is built. **Built 2026-09-13 morning** on branch `fieldcv` (worktree `scratch/wt-fieldcv`,
+   is built. 0097's ring statistics read no pockets, which is why this finer one is needed.
+   **Built 2026-09-13 morning** on branch `fieldcv` (worktree `scratch/wt-fieldcv`,
    commit `0edb637`; `logbook/specs/field-cv-spec.md`): the full suite reads 691 green on the
    branch; the 600 s box digest and a smoke that prints the columns wait for a free worker.
    Both hashes move, so it merges after the fresh-seed batch has launched and before round 38,
