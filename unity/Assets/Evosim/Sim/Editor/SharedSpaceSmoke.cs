@@ -51,6 +51,11 @@ namespace Evosim.Sim.EditorTools
     /// then condemned through <c>Ecosystem.CondemnForTest</c>, and what is asserted is the
     /// contents of the file that lands: three frames oldest to newest, the mass ratio and its
     /// per-link table, the step of the last resize, and the one frame the resize flagged.
+    /// Since the spec's second pass it also forces the case the instrument was rebuilt for:
+    /// the limb's angular velocity is made non-finite between two steps through
+    /// <c>Ecosystem.InjectNonFiniteForTest</c>, and the dump must hold the three finite frames
+    /// taken before it, unchanged, with <c>firstNonFiniteStep</c> naming the step after the
+    /// injection and the water's three new vectors on every link of every frame.
     /// </para>
     /// <para>
     /// <b>The bed is a collider now</b> (<c>logbook/specs/floor-spec.md</c>, <see cref="SeaFloor"/>), so
@@ -1609,6 +1614,25 @@ namespace Evosim.Sim.EditorTools
                 // the dump is written.
                 eco.Step();
 
+                // The forced case, the spec's second pass. From here the trace reads the limb's
+                // angular velocity as NaN, which is what a body going non-finite between two
+                // steps looks like to the ring. The three frames already in it were all finite,
+                // so what the dump must show is those three unchanged and an onset naming the
+                // first step that was not: the whole point of refusing a frame rather than
+                // storing it, after logbook/0097 found 42 traces of 43 holding nothing but NaN.
+                if (!eco.InjectNonFiniteForTest(id, 1))
+                {
+                    report.AppendLine("- FAIL the body was gone before the injection");
+                    return false;
+                }
+
+                long lastFiniteStep = eco.Steps;
+
+                // One step with the injection in place. The ring must refuse this frame, so the
+                // newest frame it holds stays the one taken at lastFiniteStep.
+                eco.Step();
+                long injectedAt = eco.Steps;
+
                 if (!eco.CondemnForTest(id))
                 {
                     report.AppendLine("- FAIL the body was gone before it could be condemned");
@@ -1687,6 +1711,82 @@ namespace Evosim.Sim.EditorTools
                 ok &= Same(report, "frames flagged as post-resize", flagged, 1);
                 ok &= Same(report, "the flagged frame's step", (int)flaggedStep, (int)resizeStep + 1);
 
+                // ---- the forced case: what the ring did with a link that stopped being finite
+
+                ok &= Same(report, "frames finite", trace["framesFinite"].AsInt(), 3);
+                ok &= Same(
+                    report, "the newest frame's step (nothing after the injection was stored)",
+                    (int)trace["frames"][2]["step"].AsDouble(), (int)lastFiniteStep);
+                ok &= Same(
+                    report, "the first non-finite step",
+                    (int)trace["firstNonFiniteStep"].AsDouble(), (int)injectedAt);
+                ok &= Same(
+                    report, "the first non-finite link", trace["firstNonFiniteLink"].AsInt(), 1);
+
+                // Not asserted against a number: how many steps the body spent non-finite before
+                // the check found it is the metabolic cadence's business, and the reading this
+                // file has to support is only that it is a count and not a gap.
+                double toDump = trace["stepsFromFirstNonFiniteToDump"].AsDouble();
+                bool counted = toDump >= 0d;
+                report.AppendLine(
+                    (counted ? "- ok   " : "- FAIL ") +
+                    "steps from the first non-finite to the dump: " +
+                    toDump.ToString("0", CultureInfo.InvariantCulture));
+                ok &= counted;
+
+                // Every number in every held frame, including the nine the second pass added.
+                // The claim the refusal makes is about all of them, so this reads all of them:
+                // AsFloat throws on a non-finite value, which arrives as the quoted string
+                // "NaN", so a frame that slipped through is a caught exception rather than a
+                // silent pass.
+                bool allFinite = true;
+                bool forcesPresent = true;
+                bool waterIdle = true;
+
+                for (int f = 0; f < trace["frames"].Count; f++)
+                {
+                    JsonNode frameLinks = trace["frames"][f]["links"];
+
+                    for (int b = 0; b < frameLinks.Count; b++)
+                    {
+                        JsonNode link = frameLinks[b];
+
+                        forcesPresent &= link.Has("drag") && link.Has("accelForce") &&
+                                         link.Has("waterAccel");
+                        if (!forcesPresent) continue;
+
+                        allFinite &= VectorIsFinite(link["position"]) &&
+                                     VectorIsFinite(link["velocity"]) &&
+                                     VectorIsFinite(link["angularVelocity"]) &&
+                                     VectorIsFinite(link["drag"]) &&
+                                     VectorIsFinite(link["accelForce"]) &&
+                                     VectorIsFinite(link["waterAccel"]);
+
+                        // This fixture runs at FluidAccelerationCoefficient 0, which is every
+                        // config recorded before round 37b. Off must mean zero rather than
+                        // whatever the arrays last held, which is the one claim the accessor
+                        // makes that no arithmetic here can check.
+                        waterIdle &= VectorIsZero(link["accelForce"]) &&
+                                     VectorIsZero(link["waterAccel"]);
+                    }
+                }
+
+                report.AppendLine(
+                    (forcesPresent ? "- ok   " : "- FAIL ") +
+                    "every frame's links carry drag, accelForce and waterAccel");
+                ok &= forcesPresent;
+
+                report.AppendLine(
+                    (allFinite ? "- ok   " : "- FAIL ") +
+                    "every number in every held frame is finite");
+                ok &= allFinite;
+
+                report.AppendLine(
+                    (waterIdle ? "- ok   " : "- FAIL ") +
+                    "the acceleration force and the water acceleration read 0 with the "
+                    + "coefficient off");
+                ok &= waterIdle;
+
                 // The per-link masses and ratios, as the dump carries them.
                 bool two = Same(report, "links in the trace's mass table", trace["links"].Count, 2);
                 ok &= two;
@@ -1716,6 +1816,34 @@ namespace Evosim.Sim.EditorTools
             }
 
             return ok;
+        }
+
+        /// <summary>
+        /// True when a trace vector's three members are all finite numbers.
+        /// </summary>
+        /// <remarks>
+        /// A non-finite number arrives as the quoted string <c>"NaN"</c>, which is how
+        /// <c>Ecosystem.Number</c> writes one so that a file about a divergence can hold it, and
+        /// <c>JsonNode.AsFloat</c> throws on a string rather than returning 0. So the kind is
+        /// tested before the value, and a frame that slipped a NaN past the ring's guard reads
+        /// false here instead of reading as a legible zero.
+        /// </remarks>
+        private static bool VectorIsFinite(JsonNode vector) =>
+            IsFiniteNumber(vector["x"]) && IsFiniteNumber(vector["y"]) &&
+            IsFiniteNumber(vector["z"]);
+
+        /// <summary>True when a trace vector is exactly zero on all three axes.</summary>
+        private static bool VectorIsZero(JsonNode vector) =>
+            VectorIsFinite(vector) &&
+            vector["x"].AsFloat() == 0f && vector["y"].AsFloat() == 0f &&
+            vector["z"].AsFloat() == 0f;
+
+        private static bool IsFiniteNumber(JsonNode value)
+        {
+            if (value.Kind != JsonNode.NodeKind.Number) return false;
+
+            float number = value.AsFloat();
+            return !float.IsNaN(number) && !float.IsInfinity(number);
         }
 
         /// <summary>

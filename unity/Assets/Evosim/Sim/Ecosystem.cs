@@ -579,6 +579,38 @@ namespace Evosim.Sim
             /// <summary>The slot the next frame goes into.</summary>
             public int TraceCursor;
 
+            /// <summary>
+            /// The physics step on which one of this body's traced numbers was first not finite,
+            /// or −1 while every number it has ever held was finite.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// <b>This is the onset, and the first pass of the instrument could not name it.</b>
+            /// Round 37b threw 43 bodies and 42 of the 43 traces held three frames of NaN
+            /// (logbook/0097): the ring is written after every solver step and the divergence
+            /// check runs at the metabolic cadence, so a body that blew up inside one step
+            /// overwrote its own last finite frames up to fifty times before anyone looked. Since
+            /// a non-finite frame is refused rather than stored
+            /// (<c>logbook/specs/throw-trace-spec.md</c>'s second pass), the ring holds the last
+            /// three finite steps whatever the cadence, and this says how long ago they were.
+            /// </para>
+            /// <para>
+            /// Set once, on the first refusal, and never moved: what a post-mortem wants is when
+            /// the body stopped being finite, not the last time it was still not.
+            /// </para>
+            /// </remarks>
+            public long FirstNonFiniteStep = -1;
+
+            /// <summary>
+            /// The link whose numbers were the first not finite, or −1 while none has been.
+            /// </summary>
+            /// <remarks>
+            /// The link is recorded with the step because the two together are the anatomy: a
+            /// leaf that goes first is a joint driving something light, and a root that goes
+            /// first is the whole articulation being carried away.
+            /// </remarks>
+            public int FirstNonFiniteLink = -1;
+
             /// <summary>Set by a resize, cleared by the next frame that records it.</summary>
             public bool ResizedSinceLastFrame;
 
@@ -622,17 +654,48 @@ namespace Evosim.Sim
         private const int TraceFrames = 3;
 
         /// <summary>
-        /// Floats per link per frame: position, linear velocity, angular velocity and joint
-        /// velocity, three each.
+        /// Floats per link per frame: position, linear velocity, angular velocity, joint
+        /// velocity, drag force, fluid acceleration force and sampled water acceleration, three
+        /// each.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// The joint's velocity is PhysX's reduced-space vector, up to three actuated degrees of
         /// freedom, and it is the one quantity here that is about the <i>joint</i> rather than
         /// about the link's motion through the water. Unused components read 0, and the dump
         /// writes the link's real DOF count beside them so a reader can tell a locked axis from a
         /// still one.
+        /// </para>
+        /// <para>
+        /// <b>The last nine are the water's, and they are why this grew from twelve.</b> The
+        /// control run of 2026-09-13 threw nothing with D090's acceleration force off and 37
+        /// bodies with it on, same seed and build (logbook/0097), so the question the next dump
+        /// has to answer is what that force was doing on the step before the body left. The drag
+        /// is beside it because the two are what the water does to a body, and reading one
+        /// without the other says nothing about which dominated.
+        /// </para>
         /// </remarks>
-        private const int TraceFloatsPerLink = 12;
+        private const int TraceFloatsPerLink = 21;
+
+        /// <summary>Where a frame is assembled before it is accepted into a body's ring.</summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A frame is written here first because it may have to be thrown away.</b> A
+        /// non-finite frame is refused (<c>logbook/specs/throw-trace-spec.md</c>'s second pass),
+        /// and the slot it would have gone into is the oldest of the three the ring holds, so
+        /// writing link by link straight into the ring and then declining to advance the cursor
+        /// would destroy a finite frame to record a refusal, and leave the slot holding some
+        /// links from this step and some from three steps ago. Assembling here costs one copy of
+        /// at most a few hundred bytes per traced body per step and keeps the ring's contents
+        /// exactly what its name says.
+        /// </para>
+        /// <para>
+        /// One buffer for the whole population, grown to the largest body ever traced and reused
+        /// forever after: the trace is single-threaded, inside <see cref="RecordTrace"/>, and a
+        /// buffer per body would be the allocation the ring exists to avoid.
+        /// </para>
+        /// </remarks>
+        private float[] _traceFrame = System.Array.Empty<float>();
 
         public Ecosystem(RunConfig config, ulong seed = 1, Transform parent = null)
         {
@@ -1672,6 +1735,17 @@ namespace Evosim.Sim
         /// reduced-space velocity of a link that has none is a question with no answer rather than
         /// an answer of zero.
         /// </para>
+        /// <para>
+        /// <b>A frame with a number that is not finite is refused</b>, and the ring is left
+        /// exactly as it was. The spec's second pass asked for that, after logbook/0097 found
+        /// that 42 of round 37b's 43 traces held three frames of NaN and could not say when the
+        /// body left. The
+        /// check runs at the metabolic cadence and this runs every step, so a body that blows up
+        /// keeps writing NaN over its own last finite frames until somebody notices. Refusing the
+        /// frame turns the ring into the last three <i>finite</i> steps, which is the state the
+        /// question is about, and <see cref="Body.FirstNonFiniteStep"/> keeps the moment the
+        /// refusals started.
+        /// </para>
         /// </remarks>
         private void RecordTrace()
         {
@@ -1685,27 +1759,46 @@ namespace Evosim.Sim
                 if (bodies == null || bodies.Length == 0) continue;
 
                 int links = bodies.Length;
-                int slot = body.TraceCursor;
-                int at = slot * links * TraceFloatsPerLink;
+                int floats = links * TraceFloatsPerLink;
+
+                // Grown to the largest body ever traced and never again: a population's part
+                // counts are bounded by the genome's, so this stops allocating within the first
+                // steps of a run. See _traceFrame.
+                if (_traceFrame.Length < floats) _traceFrame = new float[floats];
+
+                float[] frame = _traceFrame;
+
+                // Test-only, and −1 for the whole of every run: see InjectNonFiniteForTest. One
+                // comparison against a field per traced body per step, short-circuited on the
+                // first half, and the link loop reads a local.
+                int poisoned = _injectNonFiniteId >= 0 && body.Creature.Id == _injectNonFiniteId
+                    ? _injectNonFiniteLink
+                    : -1;
+
+                int bad = -1;
 
                 for (int b = 0; b < links; b++)
                 {
                     ArticulationBody link = bodies[b];
-                    int o = at + b * TraceFloatsPerLink;
+                    int o = b * TraceFloatsPerLink;
 
                     Vector3 p = link.transform.position;
                     Vector3 v = link.linearVelocity;
                     Vector3 w = link.angularVelocity;
 
-                    trace[o + 0] = p.x;
-                    trace[o + 1] = p.y;
-                    trace[o + 2] = p.z;
-                    trace[o + 3] = v.x;
-                    trace[o + 4] = v.y;
-                    trace[o + 5] = v.z;
-                    trace[o + 6] = w.x;
-                    trace[o + 7] = w.y;
-                    trace[o + 8] = w.z;
+                    // The injection, written where the solver's own number would be so that what
+                    // refuses the frame below is the real test and not a second path around it.
+                    if (b == poisoned) w.x = float.NaN;
+
+                    frame[o + 0] = p.x;
+                    frame[o + 1] = p.y;
+                    frame[o + 2] = p.z;
+                    frame[o + 3] = v.x;
+                    frame[o + 4] = v.y;
+                    frame[o + 5] = v.z;
+                    frame[o + 6] = w.x;
+                    frame[o + 7] = w.y;
+                    frame[o + 8] = w.z;
 
                     float j0 = 0f, j1 = 0f, j2 = 0f;
 
@@ -1718,10 +1811,55 @@ namespace Evosim.Sim
                         if (joint.dofCount > 2) j2 = joint[2];
                     }
 
-                    trace[o + 9] = j0;
-                    trace[o + 10] = j1;
-                    trace[o + 11] = j2;
+                    frame[o + 9] = j0;
+                    frame[o + 10] = j1;
+                    frame[o + 11] = j2;
+
+                    // What the water did to this link on the step that has just been simulated.
+                    // Read out of the environment's own per-part arrays by the same index the
+                    // divergence dump's velocities come out of: the creature's place in the list
+                    // handed to Fluid.Apply, which is this loop's own index, since _order and
+                    // _instances are built together and in the same order. False when the slot was
+                    // never filled, in which case the three vectors read zero, which is what the
+                    // water contributed.
+                    Fluid.TryStepForces(i, b, out Vector3 drag, out Vector3 accel, out Vector3 water);
+
+                    frame[o + 12] = drag.x;
+                    frame[o + 13] = drag.y;
+                    frame[o + 14] = drag.z;
+                    frame[o + 15] = accel.x;
+                    frame[o + 16] = accel.y;
+                    frame[o + 17] = accel.z;
+                    frame[o + 18] = water.x;
+                    frame[o + 19] = water.y;
+                    frame[o + 20] = water.z;
+
+                    // Every number that would be stored, one at a time rather than through a sum
+                    // of them: two large finite forces of the same sign add to an infinity, and a
+                    // summed test would read that as a divergence the solver never had.
+                    if (!TraceLinkIsFinite(frame, o))
+                    {
+                        bad = b;
+                        break;
+                    }
                 }
+
+                if (bad >= 0)
+                {
+                    // Set once. The ring, the cursor, the held count and the pending resize flag
+                    // are all left alone, so what the body holds stays the last three steps on
+                    // which every one of its numbers was finite.
+                    if (body.FirstNonFiniteStep < 0)
+                    {
+                        body.FirstNonFiniteStep = Steps;
+                        body.FirstNonFiniteLink = bad;
+                    }
+
+                    continue;
+                }
+
+                int slot = body.TraceCursor;
+                Array.Copy(frame, 0, trace, slot * floats, floats);
 
                 body.TraceStep[slot] = Steps;
                 body.TraceTime[slot] = Steps * (double)FixedDt;
@@ -1735,6 +1873,77 @@ namespace Evosim.Sim
                 if (body.TraceHeld < TraceFrames) body.TraceHeld++;
             }
         }
+
+        /// <summary>
+        /// True when all <see cref="TraceFloatsPerLink"/> of one link's numbers are finite.
+        /// </summary>
+        /// <remarks>
+        /// <c>float.IsNaN</c> and <c>float.IsInfinity</c> rather than <c>float.IsFinite</c>,
+        /// which is what every other finiteness test in this file is written with: one spelling
+        /// for one question, so a search for either name finds all of them.
+        /// </remarks>
+        private static bool TraceLinkIsFinite(float[] frame, int at)
+        {
+            for (int k = 0; k < TraceFloatsPerLink; k++)
+            {
+                float value = frame[at + k];
+                if (float.IsNaN(value) || float.IsInfinity(value)) return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Test-only: makes the trace read one link's angular velocity as NaN from the next
+        /// physics step on. See <c>logbook/specs/throw-trace-spec.md</c>'s second pass, its smoke.
+        /// </summary>
+        /// <param name="organismId">The creature to poison, or −1 to stop poisoning anything.</param>
+        /// <param name="linkIndex">Which of its links.</param>
+        /// <returns>False when no living body carries that id.</returns>
+        /// <remarks>
+        /// <para>
+        /// <b>Why a hook and not a velocity written through the public surface.</b> The spec's
+        /// forced case wants a link that goes non-finite between two steps. PhysX derives an
+        /// articulation link's velocity from the joint coordinates and does not accept one set on
+        /// a link directly, so the only settable velocities on the public surface are the root's
+        /// and the joint's, and whether either survives Unity's own argument checks is not
+        /// something this file can assert. The first pass's spec allowed a test-only internal
+        /// hook for exactly this, and <see cref="CondemnForTest"/> is the precedent.
+        /// </para>
+        /// <para>
+        /// It poisons the value <see cref="RecordTrace"/> reads rather than the ring, so the
+        /// finiteness test, the refusal, the frozen cursor and the dump's fields are all the
+        /// production path. It stays on until it is cleared, because a body that goes non-finite
+        /// in this world stays non-finite, and a single-shot injection would let the ring start
+        /// moving again while the smoke waited for the check's cadence.
+        /// </para>
+        /// <para>
+        /// Costs one comparison per traced body per step and is off in every run.
+        /// </para>
+        /// </remarks>
+        internal bool InjectNonFiniteForTest(long organismId, int linkIndex)
+        {
+            if (organismId < 0)
+            {
+                _injectNonFiniteId = -1;
+                _injectNonFiniteLink = -1;
+                return true;
+            }
+
+            for (int i = 0; i < _order.Count; i++)
+            {
+                if (_order[i].Creature.Id != organismId) continue;
+
+                _injectNonFiniteId = organismId;
+                _injectNonFiniteLink = linkIndex;
+                return true;
+            }
+
+            return false;
+        }
+
+        private long _injectNonFiniteId = -1;
+        private int _injectNonFiniteLink = -1;
 
         /// <summary>
         /// Takes one body's joint mass ratio into the run's own maximum and threshold count —
@@ -1949,7 +2158,13 @@ namespace Evosim.Sim
         private void DumpTrace(Body body, Organism creature)
         {
             float[] trace = body.Trace;
-            if (trace == null || body.TraceHeld == 0) return;
+
+            // Written even for a body that holds no frame at all. Since a non-finite frame is
+            // refused, "no frames" is now a reading rather than a gap, a body that was never
+            // finite for a whole step after it was built, and firstNonFiniteStep below is the
+            // one number that says so. Only a body with no ring, which is every rigid one, has
+            // nothing to write.
+            if (trace == null) return;
 
             try
             {
@@ -2011,7 +2226,25 @@ namespace Evosim.Sim
                 int held = body.TraceHeld;
                 int first = held == TraceFrames ? body.TraceCursor : 0;
 
+                // The onset, and how long the body had been gone by the time the check found it.
+                // −1 for a body whose every number was still finite, which is what a dump from
+                // the height or radius guard looks like: those kill a body that is perfectly
+                // finite and merely somewhere it cannot be.
+                w.Field("firstNonFiniteStep", body.FirstNonFiniteStep);
+                w.Field("firstNonFiniteLink", body.FirstNonFiniteLink);
+                w.Field(
+                    "stepsFromFirstNonFiniteToDump",
+                    body.FirstNonFiniteStep < 0 ? -1L : Steps - body.FirstNonFiniteStep);
+
                 w.Field("framesHeld", held);
+
+                // Counted rather than asserted. Every frame in the ring is finite by
+                // construction now, so this must equal framesHeld; writing it as a count means a
+                // reader of the file can see that it does rather than take the claim on trust,
+                // and a future path that slipped a non-finite frame past the guard would show up
+                // here rather than be read as a measurement.
+                w.Field("framesFinite", CountFiniteFrames(body, links));
+
                 w.BeginArray("frames");
 
                 for (int f = 0; f < held; f++)
@@ -2045,6 +2278,15 @@ namespace Evosim.Sim
                         Number(w, "v2", trace[o + 11]);
                         w.EndObject();
 
+                        // What the water did to this link on this step: the drag as the solver
+                        // was handed it, D090's acceleration force, and the acceleration of the
+                        // water the second was computed from. The last two read zero in every
+                        // world that runs with FluidAccelerationCoefficient at 0, which is every
+                        // config recorded before round 37b.
+                        TraceVector(w, "drag", trace, o + 12);
+                        TraceVector(w, "accelForce", trace, o + 15);
+                        TraceVector(w, "waterAccel", trace, o + 18);
+
                         w.EndObject();
                     }
 
@@ -2065,6 +2307,38 @@ namespace Evosim.Sim
             {
                 Debug.LogWarning("diverged trace not written: " + e.Message);
             }
+        }
+
+        /// <summary>
+        /// How many of the frames a body holds carry nothing but finite numbers.
+        /// </summary>
+        /// <remarks>
+        /// Walked rather than trusted. See the <c>framesFinite</c> field's note in
+        /// <see cref="DumpTrace"/>. At most three frames of a handful of links, once per dump.
+        /// </remarks>
+        private static int CountFiniteFrames(Body body, int links)
+        {
+            float[] trace = body.Trace;
+            if (trace == null) return 0;
+
+            int held = body.TraceHeld;
+            int first = held == TraceFrames ? body.TraceCursor : 0;
+            int finite = 0;
+
+            for (int f = 0; f < held; f++)
+            {
+                int at = ((first + f) % TraceFrames) * links * TraceFloatsPerLink;
+                bool all = true;
+
+                for (int b = 0; b < links && all; b++)
+                {
+                    all = TraceLinkIsFinite(trace, at + b * TraceFloatsPerLink);
+                }
+
+                if (all) finite++;
+            }
+
+            return finite;
         }
 
         /// <summary>Three consecutive floats out of a trace frame, as an object.</summary>

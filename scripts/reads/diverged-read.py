@@ -49,28 +49,51 @@ resizedJustBefore (true on the first frame taken after a growth resize) and link
 reduced-space velocity, meaningful in the first `jointDof` slots). Non-finite numbers
 arrive as the quoted strings "NaN"/"Infinity"/"-Infinity" throughout, as in the dump.
 
-Three columns come from it -- `ratio` (maxJointMassRatio), `dResize` (stepsSinceLastResize)
-and `maxV`/`maxW` (the largest link speed and angular speed in the newest frame whose
-velocities are all finite) -- and two shares are added to the summary line: how many
-dumps carry a ratio over 10, the number PhysX's own joint documentation avoids, and how
-many were within 5 steps of a resize. A dump with no trace prints a dash in all four,
-which is what a rigid one-part body and every dump recorded before this build both look
-like.
+The spec's second pass (2026-09-14) added four top-level fields and three vectors per
+link per frame, and a trace written before it carries none of them. The fields are
+firstNonFiniteStep and firstNonFiniteLink (-1 while every number the body ever held was
+finite, which is what a height- or radius-guard death looks like),
+stepsFromFirstNonFiniteToDump, and framesFinite. The vectors are drag (the drag force as
+the solver was handed it, past the limiter), accelForce (D090's fluid acceleration force)
+and waterAccel (the water acceleration that force was computed from) -- the last two read
+0 in any world running at FluidAccelerationCoefficient 0. From that build a frame whose
+numbers are not all finite is refused rather than stored, so the frames a trace holds are
+the last finite ones and firstNonFiniteStep is the onset; before it, a body that blew up
+inside one step overwrote its own last finite frames until the check noticed, which is
+why 42 of round 37b's 43 traces hold nothing but NaN (logbook/0097).
+
+Seven columns come from the trace: `ratio` (maxJointMassRatio), `dResize`
+(stepsSinceLastResize), `maxV`/`maxW` (the largest link speed and angular speed in the
+newest frame whose velocities are all finite), `maxAcF`/`maxWAc` (the largest
+acceleration-force magnitude and the largest water acceleration across the links of the
+newest frame), and `firstNF`/`dNF` (the onset step and the steps from it to the dump).
+Two shares are added to the summary line: how many dumps carry a ratio over 10, the
+number PhysX's own joint documentation avoids, and how many were within 5 steps of a
+resize. A dump with no trace prints a dash in all of them, which is what a rigid one-part
+body and every dump recorded before the instrument existed both look like; a trace from
+the first pass prints a dash in the four fields the second pass added.
 
 Usage: python scripts/reads/diverged-read.py <arm|run-directory> [<arm|run-directory> ...]
+                                             [--runs-root <dir>]
 
 An argument that names an existing directory is read as a run directory (or an arm
 directory holding one), so a checkout with no `runs/` of its own can point at another
 tree's run, or at a fixture, with an absolute path. Anything else is an arm name under
-this tree's `runs/`.
+`--runs-root` (the repository's own `runs/` by default) -- which is the other way a
+worktree reads a run: name the arm and point the root at the tree that has it.
 
 Never writes, never polls; reads runs/<arm>/<run>/{diverged/*.json,lineage.jsonl,
 config.json} directly with a tolerant open (a running arm's lineage.jsonl may still be
 appended to).
 """
-import glob, json, math, os, statistics, sys
+import argparse, glob, json, math, os, statistics
 
 os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+# The runs/ directory an arm name is looked up under. Relative, so it resolves against the
+# repository root this script just changed into; --runs-root replaces it, which is how a
+# worktree with no runs/ of its own reads another tree's arm by name.
+RUNS_ROOT = "runs"
 
 
 def run_dir(arm):
@@ -93,9 +116,10 @@ def run_dir(arm):
         with_diverged = [d for d in candidates if os.path.isdir(os.path.join(d, "diverged"))]
         return (with_diverged or candidates)[-1].rstrip("/\\")
 
-    candidates = sorted(d for d in glob.glob(f"runs/{arm}/*/") if os.path.isdir(d))
+    candidates = sorted(
+        d for d in glob.glob(os.path.join(RUNS_ROOT, arm, "*/")) if os.path.isdir(d))
     if not candidates:
-        raise SystemExit(f"no run directory under runs/{arm}/")
+        raise SystemExit(f"no run directory under {os.path.join(RUNS_ROOT, arm)}")
     with_diverged = [d for d in candidates if os.path.isdir(os.path.join(d, "diverged"))]
     return (with_diverged or candidates)[-1].rstrip("/\\")
 
@@ -202,12 +226,70 @@ def newest_finite_frame(trace):
     return None
 
 
+def newest_frame_forces(trace):
+    """(largest accelForce magnitude, largest waterAccel magnitude) over the links of the
+    newest frame, as display strings, or ("-", "-") when the trace predates the second
+    pass -- the first pass wrote no forces at all, so a missing key is an old file rather
+    than a body that felt nothing.
+
+    The newest frame and not the newest *finite* one, unlike maxV/maxW above: from the
+    build that writes these, a frame is only stored if every number in it is finite, so
+    the newest frame is the last finite step and there is nothing to search back through.
+    A value that is somehow not finite is reported as such rather than skipped."""
+    frames = trace.get("frames", [])
+    if not frames:
+        return "-", "-"
+
+    links = frames[-1].get("links", [])
+    if not links or "accelForce" not in links[0] or "waterAccel" not in links[0]:
+        return "-", "-"
+
+    out = []
+    for key in ("accelForce", "waterAccel"):
+        biggest = None
+        nonfinite = False
+        for link in links:
+            v = [as_float(link[key][a]) for a in "xyz"]
+            if not finite(*v):
+                nonfinite = True
+                continue
+            magnitude = math.sqrt(sum(c * c for c in v))
+            if biggest is None or magnitude > biggest:
+                biggest = magnitude
+        if biggest is None:
+            out.append("nonfin" if nonfinite else "-")
+        else:
+            out.append(f"{biggest:.4g}" + ("*" if nonfinite else ""))
+
+    return out[0], out[1]
+
+
+def onset_columns(trace):
+    """(firstNonFiniteStep, stepsFromFirstNonFiniteToDump) as display strings. A dash for
+    a trace written before the second pass; "never" for a body every one of whose numbers
+    was still finite when it was killed, which is what the height and radius guards
+    produce."""
+    if "firstNonFiniteStep" not in trace:
+        return "-", "-"
+
+    first = trace.get("firstNonFiniteStep", -1)
+    since = trace.get("stepsFromFirstNonFiniteToDump", -1)
+
+    first_disp = "never" if first is None or first < 0 else f"{int(first)}"
+    since_disp = "never" if since is None or since < 0 else f"{int(since)}"
+    return first_disp, since_disp
+
+
 def trace_columns(trace):
-    """(ratio, steps_since_resize, max_speed, max_spin) as display strings, with a dash
-    wherever the trace cannot answer. Also returns the two numbers the summary shares are
-    counted from, as (ratio_value, steps_value) or None each."""
+    """(ratio, steps_since_resize, max_speed, max_spin, max_accel_force, max_water_accel,
+    first_non_finite, steps_to_dump) as display strings, with a dash wherever the trace
+    cannot answer. Also returns the two numbers the summary shares are counted from, as
+    (ratio_value, steps_value) or None each."""
     if trace is None:
-        return ("-", "-", "-", "-"), (None, None)
+        return ("-", "-", "-", "-", "-", "-", "-", "-"), (None, None)
+
+    accel_disp, water_disp = newest_frame_forces(trace)
+    first_disp, dnf_disp = onset_columns(trace)
 
     ratio = as_float(trace.get("maxJointMassRatio", 0))
     ratio_disp = f"{ratio:.1f}" if finite(ratio) else "nonfin"
@@ -218,11 +300,15 @@ def trace_columns(trace):
 
     latest = newest_finite_frame(trace)
     if latest is None:
-        return (ratio_disp, since_disp, "-", "-"), (ratio if finite(ratio) else None, since_value)
+        return (
+            (ratio_disp, since_disp, "-", "-", accel_disp, water_disp, first_disp, dnf_disp),
+            (ratio if finite(ratio) else None, since_value),
+        )
 
     _, max_speed, max_spin = latest
     return (
-        (ratio_disp, since_disp, f"{max_speed:.4g}", f"{max_spin:.4g}"),
+        (ratio_disp, since_disp, f"{max_speed:.4g}", f"{max_spin:.4g}",
+         accel_disp, water_disp, first_disp, dnf_disp),
         (ratio if finite(ratio) else None, since_value),
     )
 
@@ -281,7 +367,8 @@ def read_arm(arm):
     print(f"\n=== {arm}  ({rdir})  world depth={depth:g} m ===")
     header = (f"{'id':>6} {'t_div':>10} {'age_s':>8} {'jnt':>3} {'nodes':>5} {'edges':>5} "
               f"{'activeJoint':>11} {'bf':>7} {'ratio':>7} {'dResize':>7} {'maxV':>9} "
-              f"{'maxW':>9}  reason (offending value)")
+              f"{'maxW':>9} {'maxAcF':>9} {'maxWAc':>9} {'firstNF':>8} {'dNF':>6}  "
+              f"reason (offending value)")
     print(header)
     print("-" * len(header))
 
@@ -326,8 +413,8 @@ def read_arm(arm):
         times.append(t_div)
 
         trace = load_trace(rdir, cid)
-        (ratio_disp, since_disp, v_disp, w_disp), (ratio_value, since_value) = \
-            trace_columns(trace)
+        (ratio_disp, since_disp, v_disp, w_disp, accel_disp, water_disp,
+         first_disp, dnf_disp), (ratio_value, since_value) = trace_columns(trace)
 
         if trace is not None:
             n_traced += 1
@@ -341,7 +428,8 @@ def read_arm(arm):
         age_disp = f"{age:.1f}" if isinstance(age, (int, float)) else "?"
         print(f"{cid:>6} {t_disp:>10} {age_disp:>8} {jnt_disp:>3} {n_nodes:>5} {n_edges:>5} "
               f"{str(active_joint):>11} {bf_disp:>7} {ratio_disp:>7} {since_disp:>7} "
-              f"{v_disp:>9} {w_disp:>9}  {reason} ({offending}){note}")
+              f"{v_disp:>9} {w_disp:>9} {accel_disp:>9} {water_disp:>9} "
+              f"{first_disp:>8} {dnf_disp:>6}  {reason} ({offending}){note}")
 
     numeric_ages = [a for a in ages if isinstance(a, (int, float))]
     numeric_times = [t for t in times if isinstance(t, (int, float))]
@@ -369,10 +457,18 @@ def read_arm(arm):
 
 
 if __name__ == "__main__":
-    arms = sys.argv[1:]
-    if not arms:
-        raise SystemExit(
-            "usage: python scripts/reads/diverged-read.py <arm|run-directory> "
-            "[<arm|run-directory> ...]")
-    for arm in arms:
+    parser = argparse.ArgumentParser(
+        description="read an arm's diverged/ dumps and the throw traces beside them")
+    parser.add_argument("arms", nargs="+", metavar="arm|run-directory",
+                        help="an arm name under the runs root, or a path to a run or arm "
+                             "directory")
+    parser.add_argument("--runs-root", default=None,
+                        help="the runs/ directory (default: the repository's own)")
+
+    args = parser.parse_args()
+
+    if args.runs_root:
+        RUNS_ROOT = args.runs_root
+
+    for arm in args.arms:
         read_arm(arm)
