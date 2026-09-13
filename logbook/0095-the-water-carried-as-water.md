@@ -122,8 +122,11 @@ is written) and kept seed 3's, the jointed seed, on worker 2. A killed Editor le
 lock file and the queue read the three workers as busy until the agent removed them (the
 queue now removes a lock no process holds). Seeds 2, 3 and 4 launched at 01:14 to 01:15 on
 workers 3, 4 and 7, each refreshed first, headers and hashes as seed 1's, `prereg.json`
-written by the queue this time; seed 5 follows on worker 2 when seed 3's render ends. The
-seeds therefore start about two hours apart on one build.
+written by the queue this time. *02:17.* Seed 3's render was still at its 15,000 s frames
+after five and a half hours, so the agent stopped it too and seed 5 launched on worker 2
+at 02:17, header and hash as the others'. The five seeds start within three hours of one
+another on one build (`simHash 5e164d01`, `coreHash ad5c952a`, `configHash 2430e660` in
+every manifest).
 
 *Seed 1 looked at, per the owner's rule.* At 3,000 s (290 alive) the disc is filled across
 all four rings with no crust, the rim quarter 20% of the living; at 6,000 s (1,101 alive)

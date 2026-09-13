@@ -70,7 +70,8 @@ each worker refreshed as its render exits (`launch-queue.ps1 -Refresh`), the ren
 after the last launch (`scratch/r37b-chain.ps1`, log `scratch/logs/r37b-chain.out`). The
 round's seeds start hours apart on one build: seeds 2, 3 and 4 launched 01:14 to 01:15 on
 workers 3, 4 and 7 after the agent stopped round 37's three slow renders (0095's launch
-section says why; seed 3's render runs on), seed 5 follows on worker 2. Seed 1's frames at
+section says why), and seed 5 at 02:17 on worker 2 after seed 3's render was stopped at
+its 15,000 s frames for the same reason; all five on one build. Seed 1's frames at
 3,000 and 6,000 s show the disc filled evenly with no crust and the bodies spread through
 the top 50 m (rim quarter 20 to 24% in the table). The theatre's interface is built on
 branch `theatre-ui` (worktree `scratch/wt-theatre-ui`) and run twice on worker 6: the
