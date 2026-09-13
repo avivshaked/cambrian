@@ -309,19 +309,24 @@ write it down." The agent's first thoughts; a proposal follows round 37b's read.
 
 ## The decisions in front of the owner
 
-- **The theatre in person.** The interface has been reached only by the check's calls
-  (0096's unverified list); one session in the Editor before it carries a reading. Three
-  rulings the agent made under the owner's delegation are reversible on sight: the 1.5 type
-  step at 3400 px (build spec item 5), a cousin's lineage fields withheld, the pillow at 0.34
-  (0091's addendum). The carve is 0.35 by the owner's eye; carve 0.5 was refused by the agent
-  from pictures.
+- **The theatre in person: done.** The owner tried the interface on 2026-09-13 morning
+  ("not perfect yet, amazing progress"; good enough for now, the world comes first) and on
+  2026-09-13 at 23:47 ruled "proceed with your recommendations" on the agent's plain-language
+  brief, so the three rulings made under delegation stand: the 1.5 type step at 3400 px
+  (build spec item 5), a cousin's lineage fields withheld, the pillow at 0.34 (0091's
+  addendum). The carve is 0.35 by the owner's eye; carve 0.5 was refused by the agent from
+  pictures. Two things the owner raised that morning are open: a joint's moving link reads as
+  a ball on screen (the skin's rounding on near-cubic boxes; a cap on the rounding and a key
+  for raw collider shapes are queued), and the Recorder's capture hides the interface from
+  the Game View while it records (not intentional; to be reproduced on a worker with a
+  graphics device and fixed in theatre code).
 - **Things wrong in motion** (owner, 2026-09-11 evening: "there are some issues with the
   world that you can only see when rendering"), set aside and not yet named. The agent reads
   stills only; when they are named the route is a film of the session with frames pulled at
   the seconds in question.
 - **Round 38's two rulings** (D089's dilution to 400 m² with the matter held at 6,000 units,
-  and corpses as objects at 0.005/s) go ahead on the agent's recommendation and can be
-  overruled before it launches.
+  and corpses as objects at 0.005/s) were confirmed by the owner on 2026-09-13 at 23:47 with
+  the same ruling; they are no longer open.
 - **The producer threshold** is unsettled: D063's amendment asks for one living inherited
   member with a recent photosynthetic birth; the scorer prints that, the 10-through-two-
   lifetimes reading and the population-only column reading, and decides on none of them. The
