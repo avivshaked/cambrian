@@ -297,3 +297,4 @@ key only translates the entries' reporting shorthand.
 | [0095](0095-the-water-carried-as-water.md) | 2026-09-13 | The water carried as water (round 37b pre-registered and launched) |
 | [0096](0096-the-theatre-gets-a-face-that-checks-itself.md) | 2026-09-13 | The theatre gets a face that checks itself |
 | [0097](0097-the-water-carried-and-the-tank-threw.md) | 2026-09-13 | The water carried, and the tank threw (round 37b read: the centrifuge gone, 43 throws at birth) |
+| [0098](0098-a-second-draw-of-the-water.md) | 2026-09-13 | A second draw of the water (seeds 6 to 10 on round 37b's world, pre-registered) |
