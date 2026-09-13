@@ -455,7 +455,10 @@ actually verifying it.
   not a verdict — confirm with the discriminator before killing: sample the report's byte
   size and the process's cumulative CPU 90 s apart; wedged = zero byte growth **and** high
   CPU delta (the loop spins without simulating); slow-but-alive = a row appears or CPU is
-  quiet. After killing a wedged worker, refresh it — the Library dies with the process.
+  quiet. After killing a wedged worker, refresh it — the Library dies with the process — and
+  delete its `Temp/UnityLockfile`, which the kill leaves behind and which reads as a live
+  Editor to anything that checks it (`launch-queue.ps1` sat for an hour behind three
+  killed renders on 2026-09-13; it now removes a lock no process holds).
 - **PowerShell scripts need a UTF-8 BOM.** Windows PowerShell reads a BOM-less `.ps1` as ANSI, so
   an em-dash inside a double-quoted string becomes three bytes that terminate the string and the
   file will not parse — the error points at the following token and says nothing about encoding.

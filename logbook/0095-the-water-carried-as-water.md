@@ -114,3 +114,20 @@ follows the last launch. The queue's first pass could not read the arm name from
 launcher (it reports with `Write-Host`, which the capture missed), so seed 1's
 `prereg.json` was written by hand from the queue's log with a note saying so, and the
 capture was fixed for the rest. The chain's log is `scratch/logs/r37b-chain.out`.
+
+*01:15.* Round 37's renders of seeds 2, 4 and 5 were still at their 5,000 s frames after
+two and a half hours and would have held three workers until morning, so the agent stopped
+them (every seed of round 37 has its 5,000 s frames, seed 1 its 15,000 and 30,000, and 0094
+is written) and kept seed 3's, the jointed seed, on worker 2. A killed Editor leaves its
+lock file and the queue read the three workers as busy until the agent removed them (the
+queue now removes a lock no process holds). Seeds 2, 3 and 4 launched at 01:14 to 01:15 on
+workers 3, 4 and 7, each refreshed first, headers and hashes as seed 1's, `prereg.json`
+written by the queue this time; seed 5 follows on worker 2 when seed 3's render ends. The
+seeds therefore start about two hours apart on one build.
+
+*Seed 1 looked at, per the owner's rule.* At 3,000 s (290 alive) the disc is filled across
+all four rings with no crust, the rim quarter 20% of the living; at 6,000 s (1,101 alive)
+the same, eaters mixed through the producers, and the side view shows bodies spread through
+the top 50 m where round 37 kept a 3 m film. Frames in `scratch/snaps/r37b-s1/`; the
+6,000 s frame needed a 150-minute wall clock (the 30-minute default timed out on the live
+run).

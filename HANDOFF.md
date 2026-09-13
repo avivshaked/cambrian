@@ -68,8 +68,14 @@ worker 5 with its header verified (`simHash 5e164d01...`, `coreHash ad5c952a...`
 `configHash 2430e660`), and seeds 2 to 5 queued behind round 37's four remaining renders,
 each worker refreshed as its render exits (`launch-queue.ps1 -Refresh`), the render queue
 after the last launch (`scratch/r37b-chain.ps1`, log `scratch/logs/r37b-chain.out`). The
-round's seeds start hours apart on one build. Next: frames of seed 1 at about 3,000 and
-6,000 s, then the theatre's interface build.
+round's seeds start hours apart on one build: seeds 2, 3 and 4 launched 01:14 to 01:15 on
+workers 3, 4 and 7 after the agent stopped round 37's three slow renders (0095's launch
+section says why; seed 3's render runs on), seed 5 follows on worker 2. Seed 1's frames at
+3,000 and 6,000 s show the disc filled evenly with no crust and the bodies spread through
+the top 50 m (rim quarter 20 to 24% in the table). The theatre's interface is built on
+branch `theatre-ui` (worktree `scratch/wt-theatre-ui`) and run twice on worker 6: the
+world check 60 of 60, the solo check 6 of 6, the pictures land; a third pass fixes the wide
+step at 3840, the timeline's end labels and the cousin state's lineage fields.
 
 **Round 37 is read (logbook/0094, 2026-09-12 night).** Five of five on the population, four
 of five on the goal rule, and a ring: the rim quarter held 45 to 98% of the bodies at every
