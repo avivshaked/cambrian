@@ -2449,6 +2449,17 @@ namespace Evosim.Sim.EditorTools
                 out double speedJointedSum, out long speedJointedSamples,
                 out double speedRigidSum, out long speedRigidSamples);
 
+            // How far each field is from well mixed at this moment, over its live cells
+            // (logbook/specs/field-cv-spec.md). Read once here and handed to both the statistics
+            // file and the table, so the two cannot disagree. A vertex field has no cells to be
+            // patchy over and reads 0, as `vtx` reads 0 on a grid.
+            double detritusCv = world.Nutrients is GridField detritusGrid
+                ? detritusGrid.DensityCoefficientOfVariation()
+                : 0d;
+            double matterCv = world.Matter is GridField matterGrid
+                ? matterGrid.DensityCoefficientOfVariation()
+                : 0d;
+
             // The same sample, as data. Raw numbers and no percentages: a reader can divide, and
             // a stored percentage loses the denominator that says whether it means anything —
             // "food 100%" over two joules and over two hundred thousand are the same column.
@@ -2645,7 +2656,15 @@ namespace Evosim.Sim.EditorTools
                 // of bodies ever over 10 — so a reader can see when evolution started building
                 // them and not merely that it did. 0 and 0 in a world whose bodies have no joints.
                 .Field("maxJointMassRatio", eco.MaxJointMassRatio)
-                .Field("bodiesOverMassRatio10", eco.BodiesOverMassRatio10);
+                .Field("bodiesOverMassRatio10", eco.BodiesOverMassRatio10)
+                // The patchiness reading (logbook/specs/field-cv-spec.md), appended after the
+                // throw trace per the same append-only rule: the population standard deviation of
+                // the live cells' densities over their mean, in each field. 0 on a uniform field
+                // and on a vertex field, which has no cells. No earlier figure of this kind can
+                // be compared against these, because until the conservative transporter the grid
+                // invented patchiness of its own.
+                .Field("detritusCv", detritusCv)
+                .Field("matterCv", matterCv);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -2917,6 +2936,12 @@ namespace Evosim.Sim.EditorTools
                     ? spread.OccupiedColumnsAbsorptive.ToString(c) + "/" + spread.TotalColumns.ToString(c)
                     : "—",
                 spread.TotalColumns > 0 ? spread.XSpreadMetres.ToString("0.00", c) : "—",
+
+                // The patchiness reading (logbook/specs/field-cv-spec.md), appended after `x sd`
+                // per the append-only rule. An em-dash on a vertex field, as `vtx` prints one on
+                // a cell field: a vertex field has no cells and the number would be a fiction.
+                world.Nutrients is GridField ? detritusCv.ToString("0.###", c) : "—",
+                world.Matter is GridField ? matterCv.ToString("0.###", c) : "—",
             };
 
             // The per-patch populations, last, so everything before them keeps its index.
@@ -3088,6 +3113,15 @@ namespace Evosim.Sim.EditorTools
             // statistic would read a population packed against the glass as evenly spread
             // (logbook/specs/tank-spec.md).
             "cols", "cols abs", "x sd",
+
+            // The patchiness reading (logbook/specs/field-cv-spec.md), appended after `x sd` per
+            // the append-only rule: the population standard deviation of the live cells'
+            // densities over their mean, in the detritus field and in the matter field. A
+            // uniform field reads 0 and a field of cells holding 1 and 3 in equal numbers reads
+            // 0.5, so the column is the number a pocket proposal has to move. Over the live
+            // cells only, which is what stops a uniform tank reading as patchy. An em-dash on a
+            // vertex field, which has no cells, as `vtx` prints one on a cell field.
+            "det cv", "mat cv",
         };
 
         /// <summary>

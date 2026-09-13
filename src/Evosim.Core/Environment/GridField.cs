@@ -775,6 +775,51 @@ namespace Evosim.Core
             return sum;
         }
 
+        /// <summary>
+        /// How far the field is from well mixed: the population standard deviation of the live
+        /// cells' densities over their mean, 0 when the mean is 0.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// It reads <see cref="_stock"/> and nothing else, in one pass, allocating nothing and
+        /// writing nothing, so the sampler can ask it at every sample without touching a
+        /// trajectory. Stocks give the same figure densities would, because every cell holds the
+        /// same volume and the volume cancels between the deviation and the mean.
+        /// </para>
+        /// <para>
+        /// Dead cells are skipped exactly as <see cref="SeedUniform"/> and <see cref="Mix"/> skip
+        /// them. A tank's array is the bounding square and holds zeros outside the disc, so a
+        /// reading over the whole array would report a perfectly uniform tank as badly patchy.
+        /// </para>
+        /// </remarks>
+        public double DensityCoefficientOfVariation()
+        {
+            // Welford's running mean and sum of squared deviations rather than the mean square
+            // less the square of the mean. The second form loses every digit the two terms share,
+            // and on a uniform field they share all of them: it returns a deviation of about 1e-8
+            // of the mean where the honest answer is 0, which is the one reading this instrument
+            // most needs to get exactly right.
+            int n = 0;
+            double mean = 0.0;
+            double sumSquaredDeviations = 0.0;
+
+            for (int i = 0; i < _stock.Length; i++)
+            {
+                if (_live != null && !_live[i]) continue;
+
+                double s = _stock[i];
+                n++;
+                double before = s - mean;
+                mean += before / n;
+                sumSquaredDeviations += before * (s - mean);
+            }
+
+            if (n == 0 || !(mean > 0.0)) return 0.0;
+            if (!(sumSquaredDeviations > 0.0)) return 0.0;
+
+            return Math.Sqrt(sumSquaredDeviations / n) / mean;
+        }
+
         // ------------------------------------------------------------------ seeding
 
         /// <summary>
