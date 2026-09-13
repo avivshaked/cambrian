@@ -228,6 +228,25 @@ per jointed birth is lineage-clustered (0, 0, 0.08%, 0.25% and 1.35% by seed), s
 control realisation at 0 in 1,421 is strong beside round 37's 0 in every seed without the
 force, and not proof on its own.
 
+The genomes say how clustered. All 43 dumps carry their genome (`scratch/throw-parents/`,
+against 1,591 jointed adults from the snapshots nearest each dump): every thrown body's
+link is a hinge or a twist-hinge where 18% of the jointed population carries a
+multi-axis joint; the thrown are small adults (adult scale 0.26 to 0.32 for nine in ten,
+against a population spanning to 1.0) born at a large fraction of that size (the 90th
+percentile of the birth fraction 0.89 against 0.68), with a link a third larger relative
+to the root and a drive power that never falls below 12 W where the population reaches
+7 W. Six of the seven parents that lost two or more children are near-identical genomes
+in seed 5 (a sphere root, a box link on a hinge at 13.7 to 15.0 W, limits 1.22 to 1.26
+rad), one lineage and not seven draws, breeding at 2,300 to 5,900 s of age. So the throw
+is a body plan's: a small two-part hinge body driven at full power from its first step,
+which is the failure round 34 found in adults (the unthrottled stroke, 0090), arriving
+in newborns. What the force does, as inference, is ecological: it is the world in which
+that lineage stands (with it seed 5 held 100 to 260 jointed bodies; without it the joint
+thinned to 2), and so the world in which its children are born to be thrown. The
+mitigation is therefore not the force's and not the mass ratio's; it is the drive's,
+which is round 41's question and the owner's, and the trace's second pass says what the
+joint did on the step before the blow-up before anything is proposed.
+
 ## Sources
 
 `logbook/specs/r37b-read/` (the brief, `summary.tsv`, `p3-share.tsv`, `drift.tsv`,
