@@ -568,62 +568,85 @@ namespace Evosim.Theatre.EditorTools
         }
 
         /// <summary>
-        /// No two axis labels share a spot.
+        /// No two pieces of text in the bar share a spot.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// The four of them are placed independently — zero is flush left, the axis's end flush
+        /// The axis labels are placed independently — zero flush left, the axis's end flush
         /// right, the peak and the record's end anchored in percent — and on a run recorded to
         /// the second it was asked for, with its peak at the last sample, three of the four land
         /// on the same pixel. Every frame of the first Editor run had them drawn over each other
         /// at the bottom right, which reads as garble and not as a fault, so nobody would think
-        /// to look at the numbers (2026-09-13). This is the assertion that would have said so.
+        /// to look at the numbers (2026-09-13).
+        /// </para>
+        /// <para>
+        /// <b>The obstacles are every visible label in the bar, not only the axis's four.</b>
+        /// The first version of this assertion asked only about the axis, and the chrome frame
+        /// then caught what it could not see: an end label spilling past the axis into the
+        /// legend's "backward &#x2014; restarts from t=0". The axis is not the only thing in that
+        /// row, so the question has to be asked of the row.
         /// </para>
         /// <para>
         /// <b>It is asked under the captures and not of the window.</b> The bar's row holds the
-        /// axis beside the key hints, and the hints are fixed text: in the 640 by 480 Game View a
-        /// batch Editor opens, they take the row and the axis resolves to about nothing. The
-        /// second Editor run read <c>tick-zero</c> at 234..237 with <c>tick-record-end</c>
-        /// spanning 180..285 around a centre of 232, which is an axis roughly zero pixels wide,
-        /// and no arbitration can separate labels on an axis with no length. At the width a
-        /// person watches in, and at both widths photographed, there is room and the labels are
-        /// apart.
+        /// axis beside the legend and the key hints, and those are fixed text: in the 640 by 480
+        /// Game View a batch Editor opens, they take the row and the axis resolves to about
+        /// nothing. The second Editor run read <c>tick-zero</c> at 234..237 with
+        /// <c>tick-record-end</c> spanning 180..285 around a centre of 232, which is an axis
+        /// roughly zero pixels wide, and no placement can separate labels on an axis with no
+        /// length. At both widths photographed there is room.
         /// </para>
         /// </remarks>
         private static void NoGarble(VisualElement root, int width)
         {
             if (!_garbleRead.Add(width)) return;
 
-            string[] names = { "tick-zero", "tick-peak", "tick-record-end", "tick-end" };
-            var boxes = new List<KeyValuePair<string, Rect>>();
+            VisualElement bar = root.Q<VisualElement>("bar");
 
-            VisualElement axis = root.Q<VisualElement>("timeline-axis");
-            float span = axis != null ? axis.resolvedStyle.width : 0f;
-
-            foreach (string name in names)
+            if (bar == null)
             {
-                Label tick = root.Q<Label>(name);
-                if (tick == null || !Shown(root, name)) continue;
-                if (tick.resolvedStyle.width <= 1f) continue;
-
-                boxes.Add(new KeyValuePair<string, Rect>(name, tick.worldBound));
+                Skip("bar at " + width + ": no bar on screen");
+                return;
             }
 
-            // What the visible labels need side by side, which is the smallest axis on which the
+            var boxes = new List<KeyValuePair<string, Rect>>();
+
+            bar.Query<Label>().ForEach(label =>
+            {
+                // A zero width is a label under a display:none ancestor, or one with nothing in
+                // it. Either way there is nothing on screen to collide with.
+                if (label.resolvedStyle.width <= 1f || label.resolvedStyle.height <= 1f) return;
+                if (string.IsNullOrEmpty(label.text)) return;
+
+                // Only the leaves: a label that contains another would "overlap" its own child.
+                if (label.Q<Label>() != null) return;
+
+                boxes.Add(new KeyValuePair<string, Rect>(Named(label), label.worldBound));
+            });
+
+            if (boxes.Count < 2)
+            {
+                Skip("bar at " + width + ": " + boxes.Count + " label(s) laid out");
+                return;
+            }
+
+            // What the visible text needs side by side, which is the smallest bar on which the
             // question has an answer. Below it the interface is out of room, not wrong.
+            float span = bar.resolvedStyle.width;
             float needed = 0f;
             foreach (KeyValuePair<string, Rect> box in boxes) needed += box.Value.width;
-            needed += TheatreUi.LabelGapPixels * Math.Max(0, boxes.Count - 1);
+            needed += TheatreUi.LabelGapPixels * (boxes.Count - 1);
 
             if (span < needed)
             {
-                Skip("bar at " + width + ": the axis is " +
+                Skip("bar at " + width + ": the bar is " +
                      span.ToString("0", CultureInfo.InvariantCulture) + " px and its " +
                      boxes.Count + " labels need " +
                      needed.ToString("0", CultureInfo.InvariantCulture) +
                      " px side by side, so they cannot be apart at any placement");
                 return;
             }
+
+            int clashes = 0;
 
             for (int i = 0; i < boxes.Count; i++)
             {
@@ -632,15 +655,34 @@ namespace Evosim.Theatre.EditorTools
                     Rect a = boxes[i].Value;
                     Rect b = boxes[j].Value;
 
-                    True("bar at " + width + ": " + boxes[i].Key + " and " + boxes[j].Key +
+                    if (!a.Overlaps(b)) continue;
+
+                    clashes++;
+
+                    Fail("bar at " + width + ": " + boxes[i].Key + " and " + boxes[j].Key +
                          " do not overlap",
-                        !a.Overlaps(b),
-                        "x " + a.xMin.ToString("0", CultureInfo.InvariantCulture) + ".." +
-                        a.xMax.ToString("0", CultureInfo.InvariantCulture) + " against " +
-                        b.xMin.ToString("0", CultureInfo.InvariantCulture) + ".." +
-                        b.xMax.ToString("0", CultureInfo.InvariantCulture));
+                         "x " + a.xMin.ToString("0", CultureInfo.InvariantCulture) + ".." +
+                         a.xMax.ToString("0", CultureInfo.InvariantCulture) + " against " +
+                         b.xMin.ToString("0", CultureInfo.InvariantCulture) + ".." +
+                         b.xMax.ToString("0", CultureInfo.InvariantCulture));
                 }
             }
+
+            if (clashes == 0)
+            {
+                Pass("bar at " + width + ": none of the " + boxes.Count +
+                     " labels in the bar overlap");
+            }
+        }
+
+        /// <summary>A label's name, or the start of what it says, for a failure line.</summary>
+        private static string Named(Label label)
+        {
+            if (!string.IsNullOrEmpty(label.name)) return label.name;
+
+            string text = label.text.Replace('\n', ' ');
+
+            return text.Length <= 24 ? "'" + text + "'" : "'" + text.Substring(0, 24) + "...'";
         }
 
         private static double AxisEnd(TheatreReplay replay) =>
@@ -1198,11 +1240,6 @@ namespace Evosim.Theatre.EditorTools
             Type(root, "clock-value", wider ? 30f : 20f, width);
             Type(root, "ident-arm", wider ? 24f : 16f, width);
 
-            // The rhythm has to move with the type or the rows crowd: the fourth run put 20px
-            // values in 22px rows and the numbers rode over the labels (2026-09-13).
-            Near("density at " + width + ": a census row is " + (wider ? 33f : 22f) + " px",
-                root.Q<VisualElement>("row-jointed").resolvedStyle.height, wider ? 33f : 22f, 1f);
-
             Rhythm(root, width);
         }
 
@@ -1218,20 +1255,32 @@ namespace Evosim.Theatre.EditorTools
         /// </remarks>
         private static void Rhythm(VisualElement root, int width)
         {
-            VisualElement census = root.Q<VisualElement>("census-world");
+            // Whichever census is up. Mode A builds its own rows in C# and has none of Mode B's
+            // names, so the assertion asks the census on screen for its rows rather than naming
+            // one: the solo check failed here reading row-jointed, which Mode A does not have.
+            VisualElement census = Shown(root, "census-world")
+                ? root.Q<VisualElement>("census-world")
+                : root.Q<VisualElement>("census-solo");
 
             if (census == null)
             {
-                Skip("rhythm at " + width + ": no world census on screen");
+                Skip("rhythm at " + width + ": no census on screen");
                 return;
             }
 
             var rows = new List<KeyValuePair<string, Rect>>();
+            float plain = 0f;
 
             census.Query<VisualElement>(className: "census-row").ForEach(row =>
             {
                 if (row.ClassListContains("is-gone")) return;
                 if (row.resolvedStyle.height <= 1f) return;
+
+                // The hero row is its own height; the rest share one, and that one is the rhythm.
+                if (plain <= 0f && !row.ClassListContains("census-row--hero"))
+                {
+                    plain = row.resolvedStyle.height;
+                }
 
                 rows.Add(new KeyValuePair<string, Rect>(
                     string.IsNullOrEmpty(row.name) ? "a row" : row.name, row.worldBound));
@@ -1242,6 +1291,14 @@ namespace Evosim.Theatre.EditorTools
                 Skip("rhythm at " + width + ": " + rows.Count + " census row(s) laid out");
                 return;
             }
+
+            // The rhythm has to move with the type or the rows crowd: the fourth run put 20px
+            // values in 22px rows and the numbers rode over the labels (2026-09-13).
+            float wanted = width >= TheatreUi.WiderAtPixels ? 33f : 22f;
+
+            if (plain > 0f) Near("rhythm at " + width + ": a census row is " + wanted + " px",
+                plain, wanted, 1f);
+            else Skip("rhythm at " + width + ": every row on screen is the hero row");
 
             int clashes = 0;
 

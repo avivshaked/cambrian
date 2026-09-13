@@ -317,11 +317,9 @@ namespace Evosim.Theatre
 
             // The end labels are decided on measured widths, so the decision has to be made
             // again whenever the axis or its type has been laid out.
-            ui._timelineAxis?.RegisterCallback<GeometryChangedEvent>(_ => ui.EndLabels());
-            ui._tickRecordEnd?.RegisterCallback<GeometryChangedEvent>(_ => ui.EndLabels());
-            ui._tickPeak?.RegisterCallback<GeometryChangedEvent>(_ => ui.EndLabels());
-            Centre(ui._tickPeak);
-            Centre(ui._tickRecordEnd);
+            ui._timelineAxis?.RegisterCallback<GeometryChangedEvent>(_ => ui.AxisLaidOut());
+            ui._tickRecordEnd?.RegisterCallback<GeometryChangedEvent>(_ => ui.AxisLaidOut());
+            ui._tickPeak?.RegisterCallback<GeometryChangedEvent>(_ => ui.AxisLaidOut());
             ui.ReadTheWidth();
 
             return ui;
@@ -1727,7 +1725,19 @@ namespace Evosim.Theatre
             if (label.resolvedStyle.width > 1f) width = label.resolvedStyle.width;
         }
 
-        /// <summary>Whether two centred labels on the axis would touch.</summary>
+        /// <summary>
+        /// Where a label of this width ends up once <see cref="Clamp"/> has had it: its left edge
+        /// in pixels from the axis's start.
+        /// </summary>
+        private float Placed(double seconds, float width)
+        {
+            float axis = _timelineAxis.resolvedStyle.width;
+            float left = axis * Percent(seconds) / 100f - 0.5f * width;
+
+            return axis > width ? Mathf.Clamp(left, 0f, axis - width) : 0f;
+        }
+
+        /// <summary>Whether two labels on the axis would touch where they actually sit.</summary>
         private bool Overlaps(double oneAt, float oneWide, double otherAt, float otherWide)
         {
             if (_timelineAxis == null) return false;
@@ -1735,13 +1745,14 @@ namespace Evosim.Theatre
             float axis = _timelineAxis.resolvedStyle.width;
 
             // Nothing has been laid out yet. Say no and decide again when it has: the geometry
-            // callbacks on the axis and on the record's label are what bring this back.
+            // callbacks on the axis and on the two labels are what bring this back.
             if (axis <= 1f || oneWide <= 1f || otherWide <= 1f) return false;
 
-            float one = axis * Percent(oneAt) / 100f;
-            float other = axis * Percent(otherAt) / 100f;
+            float one = Placed(oneAt, oneWide);
+            float other = Placed(otherAt, otherWide);
 
-            return Mathf.Abs(one - other) < 0.5f * (oneWide + otherWide) + LabelGapPixels;
+            return one < other + otherWide + LabelGapPixels &&
+                   other < one + oneWide + LabelGapPixels;
         }
 
         /// <summary>Whether the record's label would reach the axis's right-hand label.</summary>
@@ -1754,9 +1765,7 @@ namespace Evosim.Theatre
 
             if (axis <= 1f || mine <= 1f) return false;
 
-            float centre = axis * Percent(_recordEndSeconds) / 100f;
-
-            return centre + 0.5f * mine + LabelGapPixels > axis - _endTickWidth;
+            return Placed(_recordEndSeconds, mine) + mine + LabelGapPixels > axis - _endTickWidth;
         }
 
         /// <summary>The dashed rule of the unverified future, as many 4x2 children as it takes.</summary>
@@ -1840,25 +1849,61 @@ namespace Evosim.Theatre
         }
 
         /// <summary>
-        /// An axis label centred under its mark: a left in percent, with half the label's own
-        /// width taken off as a negative margin by the callback registered at build time.
+        /// An axis label placed under its mark: a left in percent, with the label's own width
+        /// taken off as a negative margin once the text has been measured.
         /// </summary>
         /// <remarks>
         /// USS has no transform-based centring that survives text measurement, so the offset has
-        /// to be applied after the text has been laid out. The callback is registered once, in
-        /// <see cref="Centre"/>, rather than here: registering it per run would stack one
-        /// subscription per reload on the same two labels.
+        /// to be applied after layout. <see cref="AxisLaidOut"/> is registered once, in
+        /// <c>Create</c>, and brings it back on every layout of the axis or of either label;
+        /// registering per run would stack a subscription per reload on the same two labels.
         /// </remarks>
-        private void Anchor(Label tick, double seconds) =>
-            tick.style.left = Length.Percent(Percent(seconds));
-
-        /// <summary>Keeps a label centred on its own left edge, whatever it says.</summary>
-        private static void Centre(Label tick)
+        private void Anchor(Label tick, double seconds)
         {
             if (tick == null) return;
 
-            tick.RegisterCallback<GeometryChangedEvent>(
-                _ => tick.style.marginLeft = -0.5f * tick.resolvedStyle.width);
+            tick.style.left = Length.Percent(Percent(seconds));
+            Clamp(tick, seconds);
+        }
+
+        /// <summary>Everything the axis decides once it, or its type, has been laid out.</summary>
+        private void AxisLaidOut()
+        {
+            EndLabels();
+            Clamp(_tickPeak, _peakSeconds);
+            Clamp(_tickRecordEnd, _recordEndSeconds);
+        }
+
+        /// <summary>
+        /// Centres a label on its mark, and never lets it leave the axis.
+        /// </summary>
+        /// <remarks>
+        /// <b>Centring alone puts half a label outside the axis at either end.</b> A run recorded
+        /// to the second it was asked for anchors its end label at 100%, and half of it then sits
+        /// past the track: at 3840 the chrome frame had "peak 86 &#x00B7; record ends 300 s"
+        /// running 117 px beyond the axis and printing over the legend's "backward &#x2014;
+        /// restarts from t=0" (2026-09-13). So a label at the far end is flush with that end
+        /// rather than centred on it, and the same at zero. Between the two it is centred as
+        /// before, because a mark in the middle of the axis wants its label under it.
+        /// </remarks>
+        private void Clamp(Label tick, double seconds)
+        {
+            if (tick == null || _timelineAxis == null || double.IsNaN(seconds)) return;
+
+            float axis = _timelineAxis.resolvedStyle.width;
+            float mine = tick.resolvedStyle.width;
+
+            // Not laid out yet. The callbacks bring this back when it is.
+            if (mine <= 1f) return;
+
+            float centre = axis * Percent(seconds) / 100f;
+            float left = centre - 0.5f * mine;
+
+            // An axis too short to hold the label at all: put it at the start, where at least it
+            // begins where the viewer expects to read.
+            left = axis > mine ? Mathf.Clamp(left, 0f, axis - mine) : 0f;
+
+            tick.style.marginLeft = left - centre;
         }
 
         private float Percent(double seconds) =>
