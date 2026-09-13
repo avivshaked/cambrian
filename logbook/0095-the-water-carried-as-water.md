@@ -147,5 +147,8 @@ last 20 samples; one living clade of five passes; the producer readings all held
 alive). Its render started on worker 5 the same minute. *11:52.* Seed 2 ended on its
 budget (12,927 births, 637 minutes at 0.8 of real time) and passes: clade root 3686, a
 rigid line founded at 8,210 s, 146 alive at the end, at least 60 through the last two
-lifetimes; one of six living clades. Its render started on worker 3. The read waits for the
-other three.
+lifetimes; one of six living clades. Its render started on worker 3. *12:17.* Seed 4 ended
+on its budget (12,425 births, 661 minutes at 0.8 of real time) and passes: clade root 2177,
+a rigid line founded at 4,567 s, 74 alive at the end, at least 51 through the last two
+lifetimes; one of three living clades. Its render started on worker 7. Three of five have
+landed and all three pass; seeds 3 and 5 are at 28,000 and 25,700 s.
