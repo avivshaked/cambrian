@@ -85,4 +85,11 @@ lands after these seeds launch and reads round 38.
 
 ## Launch
 
-*(filled at launch: the queue's log, the commit, the workers, each header verified.)*
+The queue armed at 15:42 on 2026-09-13 (`launch-queue.ps1 -Refresh -Prereg` on this entry
+at `237e7ce`, seeds 6 to 10 on workers 2, 3, 4, 5 and 7 under the cap of five) and waited
+eight hours behind round 37b's renders and the control. *23:30.* Seed 6 launched on worker
+3, refreshed first, header verified (`space tank r=5.64 m (100 m2), depth 60, wall, bed`,
+`fluidAccel 1`, `dispersal=5 m`, `driveLimit >0.01`, `linkPhoto 0.5`, `addedMass 0.5`,
+`dt=0.01`, seed 6), `simHash 5e164d01…`, `coreHash ad5c952a…`, `configHash 2430e660`,
+`physicsJobWorkers 0`, `prereg.json` naming this entry's commit. The queue's log is
+`scratch/logs/r37b-fresh-queue.out`.
