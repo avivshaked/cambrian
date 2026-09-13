@@ -162,6 +162,17 @@ is what D090's streams keep both the radial and the vertical flow off the wall t
 
 ![Seed 1 from the side at 30,000 s: the crust at the surface and a sparse deep community under it.](images/r37-s1-t30000-side.png)
 
+*The other seeds' frames, added 2026-09-13 night.* The four remaining renders ran through
+the night on a machine also running round 37b, and the agent stopped three of them at their
+5,000 s frames and the fourth at 15,000 s to free the workers (0095's launch section). What
+they show agrees with seed 1: seed 2 at 5,000 s is a thick green ring at the glass with the
+centre empty at 1,456 alive, and its close view is a wall of producers with grey eaters
+among them; seed 4 at 5,000 s the same at 1,719; seed 5 at 5,000 s a thinner ring at 571.
+Seed 3, the jointed seed, at 15,000 s and 1,406 alive is a crescent rather than a full ring,
+the crust thick on one side of the tank and thin on the other, with the centre still empty;
+its close view is large flat green slabs with magenta mouths, the big-bodied producers that
+the crust is made of there. Frames in `scratch/snaps/r37-s2/` to `r37-s5/`.
+
 ## Verdict
 
 The container held (M0, M4, M6) and gathered (M1, M2's spread, M3, M5), and the gathering is
