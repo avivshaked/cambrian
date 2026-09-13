@@ -129,6 +129,12 @@ while ($pending.Count -gt 0) {
         foreach ($w in $Workers) {
             $lock = Join-Path $root "unity-w$w\Temp\UnityLockfile"
             $busy = @($lines | Where-Object { $_ -match "unity-w$w(\\|/|`"|\s|$)" }).Count -gt 0
+            if ((Test-Path $lock) -and -not $busy) {
+                # A lock file with no Unity process on the worker is a killed process's (three
+                # renders stopped by hand on 2026-09-13 left their workers reading busy for an hour).
+                Remove-Item $lock -Force -ErrorAction SilentlyContinue
+                Write-Output "$(Stamp) removed a stale lock file on worker $w (no Unity process holds it)"
+            }
             if (-not (Test-Path $lock) -and -not $busy) { $worker = $w; break }
         }
         if ($null -eq $worker) { break }
