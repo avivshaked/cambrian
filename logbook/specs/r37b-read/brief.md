@@ -17,8 +17,12 @@ resets between tool calls. Call the PowerShell scripts from `pwsh` with real arr
 
 The arms are `r37b-s1` to `r37b-s5` under `D:\Projects\experiments\evolution-simulator\runs\`.
 Their controls are `r37-s1` to `r37-s5` (M0, M1's drift, M4, M6, M7, M8) and `r36-s1` to
-`r36-s5` (M3, M5). Every manifest must read `ended` before you begin; a manifest reading
-`error` is censored and read as such. Renders may be running on some workers and write only
+`r36-s5` (M3, M5). Seeds 1 to 4 read `ended` at 30,000 s. **Seed 5 reads `stopped`
+(`manual-stall`): it wedged at 29,200 s and was stopped**, so it is censored 800 s short;
+read it at its last sample (29,200 s) wherever a prediction says 30,000 s, mark every such
+number `censored at 29,200 s`, and count it toward a "3 of 5" only when its reading at the
+last sample would meet the threshold, saying so. The scorer prints `CENSORED` for it with
+`t=?` (the stop does not write the simulated seconds; take 29,200 from the report). Renders may be running on some workers and write only
 under `scratch/snaps/`; ignore them.
 
 ## Instruments

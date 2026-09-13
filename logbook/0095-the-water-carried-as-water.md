@@ -154,4 +154,14 @@ lifetimes; one of three living clades. Its render started on worker 7. *13:2x.* 
 jointed seed, ended on its budget (10,359 births, 730 minutes at 0.7 of real time) and
 passes narrowly: clade root 370, a rigid line founded at 1,498 s, 26 alive at the end and
 26 through the last two lifetimes, 8 inherited births in the last 20 samples; one of four
-living clades. Four of five have landed and all four pass; seed 5 is at 27,500 s.
+living clades. Four of five have landed and all four pass; seed 5 is at 27,500 s. *15:05.*
+Seed 5 wedged at 29,200 s: every file of the run stopped at 14:29:11 and the process burned
+a full core for 36 minutes after it (report bytes unchanged over two samples of 90 and 120 s
+with the CPU delta equal to the wall time, the 0043 signature; the Unity log's last lines are
+the ordinary row at 29,200 s and nothing after). Stopped with `stop-arm.ps1 -Reason
+manual-stall` (the manifest reads `stopped`), worker 2 refreshed. The campaign's second hang;
+the cause is as unknown as the first's. The seed is censored 800 s short of its budget: read
+at its last sample, 29,200 s, where the scorer's reading is a pass (clade root 1876, a rigid
+line founded at 5,273 s, 64 alive, at least 57 through the last two lifetimes; two of three
+living clades pass), marked `CENSORED` and not a verdict. The five are landed; the read
+begins.
