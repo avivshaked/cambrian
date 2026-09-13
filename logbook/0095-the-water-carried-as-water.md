@@ -144,4 +144,8 @@ round 36's. *10:11.* Seed 1 ended on its budget (30,000 s, 12,237 births, 645 mi
 wall clock at 0.8 of real time beside four arms) and passes D063 as amended: clade root 70,
 51 alive at the end, at least 29 through the last two lifetimes, 35 inherited births in the
 last 20 samples; one living clade of five passes; the producer readings all held (1,597
-alive). Its render started on worker 5 the same minute. The read waits for the other four.
+alive). Its render started on worker 5 the same minute. *11:52.* Seed 2 ended on its
+budget (12,927 births, 637 minutes at 0.8 of real time) and passes: clade root 3686, a
+rigid line founded at 8,210 s, 146 alive at the end, at least 60 through the last two
+lifetimes; one of six living clades. Its render started on worker 3. The read waits for the
+other three.
