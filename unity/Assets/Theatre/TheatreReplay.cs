@@ -29,6 +29,23 @@ namespace Evosim.Theatre
         public double AuditResidual;
         public double MatterHere;
         public long Diverged;
+
+        /// <summary>
+        /// The matter identity: what the world was seeded with plus what came in, less what was
+        /// buried and what is standing. It must read 0, like the audit.
+        /// </summary>
+        /// <remarks>
+        /// The same four terms <c>EvolutionRun</c> builds the report's <c>mat resid</c> column
+        /// from, taken from the same properties on <see cref="World"/>, so the interface and the
+        /// run's own table cannot disagree about whether matter is conserved. It is here because
+        /// the energy audit does not see matter: a world once created 22,000 units in 3,000 s with
+        /// <c>audit</c> at 0.0000% on every row (CLAUDE.md), and an interface that showed only the
+        /// audit would have called that world healthy.
+        /// </remarks>
+        public double MatterResidual;
+
+        /// <summary>Matter standing in the fields, the bodies and the corpses.</summary>
+        public double MatterStanding;
     }
 
     /// <summary>
@@ -280,6 +297,10 @@ namespace Evosim.Theatre
                 AuditPercent = world.EnergyIn > 0d ? 100d * world.AuditResidual / world.EnergyIn : 0d,
                 MatterHere = world.Matter.DensityAt((float)meanHeight, 0),
                 Diverged = world.Diverged,
+                MatterStanding = world.StandingMatter,
+                MatterResidual =
+                    world.MatterInitialTotal + world.MatterInfluxedTotal -
+                    world.MatterBuriedTotal - world.StandingMatter,
             };
         }
 

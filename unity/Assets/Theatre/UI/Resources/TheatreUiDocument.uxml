@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    TheatreUiDocument.uxml — the theatre's interface, one screen.
+
+    THE SKELETON ONLY. Every panel, row and label that is always there is here,
+    named so that TheatreUi and the Play-mode check can find it with UQuery.
+    Everything that comes and goes with the world — warnings, timeline marks and
+    dashes, the badges that trail a cousin, the ancestry chain, the solo mode's
+    census and sensor rows — is built in C#, because its count depends on the run.
+
+    THE ORDER OF THE SIX ABSOLUTE CHILDREN IS THE DESIGN'S, and it is load-bearing:
+    stacking in UI Toolkit is hierarchy order, so census, inspector, warnings,
+    popover, strip, bar means the strip and the bar win wherever they meet a panel.
+
+    NOTHING HERE PICKS UP THE MOUSE. A left-click in the water selects a creature
+    and a right-drag looks around; the root is picking-mode Ignore so that the
+    interface can never stand in front of either, which is design/SPEC.md §9 item 5.
+
+    Classes are theatre.uss's, by the same names. The values are all in the
+    stylesheet (TheatreUiStyles.uss) and none of them are here.
+-->
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="theatre-root" class="theatre-root" picking-mode="Ignore">
+
+        <!-- 1 ========================================================== census -->
+        <ui:VisualElement name="census" class="panel panel--census" picking-mode="Ignore">
+
+            <ui:VisualElement name="census-world" picking-mode="Ignore">
+                <ui:Label name="census-now-title" class="section__title" text="NOW" />
+
+                <ui:VisualElement name="row-alive" class="census-row census-row--hero field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="alive" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-alive" text="0" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement name="row-jointed" class="census-row field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="jointed" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-jointed" text="0" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement name="row-absorptive" class="census-row field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="absorptive" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-absorptive" text="0" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement name="row-photosynthetic" class="census-row field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="photosynthetic" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-photosynthetic" text="0" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <!-- The last row of NOW, so under the following-sibling rule it
+                     brings its own 4px and disturbs nothing when it appears. -->
+                <ui:VisualElement name="row-diverged" class="census-row census-row--diverged field is-gone" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="diverged" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-diverged" text="0" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement name="census-cumulative" class="section" picking-mode="Ignore">
+                    <ui:Label class="section__title" text="&#x03A3; SINCE t=0" />
+
+                    <ui:VisualElement name="row-births" class="census-row field field--cumulative" picking-mode="Ignore">
+                        <ui:Label class="field__label" text="births" />
+                        <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                            <ui:Label name="value-births" text="0" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="row-deaths" class="census-row field field--cumulative" picking-mode="Ignore">
+                        <ui:Label class="field__label" text="deaths" />
+                        <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                            <ui:Label name="value-deaths" text="0" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement name="census-invariants" class="section" picking-mode="Ignore">
+                    <ui:Label class="section__title" text="INVARIANTS" />
+
+                    <ui:VisualElement name="row-audit" class="census-row field" picking-mode="Ignore">
+                        <ui:Label class="field__label" text="audit" />
+                        <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                            <ui:Label name="value-audit" text="0.0000" />
+                            <ui:Label class="unit" text="%" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="row-matter-residual" class="census-row field" picking-mode="Ignore">
+                        <ui:Label class="field__label" text="matter residual" />
+                        <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                            <ui:Label name="value-matter-residual" text="0.000" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="row-matter-here" class="census-row field" picking-mode="Ignore">
+                        <ui:Label class="field__label" text="matter here" />
+                        <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                            <ui:Label name="value-matter-here" text="0.00" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="row-mean-depth" class="census-row field" picking-mode="Ignore">
+                        <ui:Label class="field__label" text="mean depth" />
+                        <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                            <ui:Label name="value-mean-depth" text="0.0" />
+                            <ui:Label class="unit" text="m" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:Label name="census-cadence" class="census__cadence" text="" />
+            </ui:VisualElement>
+
+            <!-- Mode A's census: the same panel, different rows (design/SPEC.md §8).
+                 Built in C#, because the sensor channels are a list the build owns. -->
+            <ui:VisualElement name="census-solo" class="is-gone" picking-mode="Ignore" />
+        </ui:VisualElement>
+
+        <!-- 2 ======================================================= inspector -->
+        <ui:VisualElement name="inspector" class="panel panel--inspector panel--inspector-empty" picking-mode="Ignore">
+
+            <ui:VisualElement name="inspector-empty" picking-mode="Ignore">
+                <ui:Label class="section__title" text="NOTHING SELECTED" />
+                <ui:Label class="prose" text="Left-click a body in the water." />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="inspector-live" class="is-gone" picking-mode="Ignore">
+                <ui:VisualElement class="inspector__head" picking-mode="Ignore">
+                    <ui:Label name="inspector-id" class="inspector__id" text="creature" />
+                    <ui:Label name="inspector-badge" class="badge" text="ALIVE" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="census-row field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="generation" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-generation" text="0" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="census-row field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="parent" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-parent" text="founder" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="census-row field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="reserve" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-reserve" text="0" />
+                        <ui:Label class="unit" text="s" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="census-row field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="speed" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-speed" class="is-per-frame" text="0.00" />
+                        <ui:Label class="unit" text="m/s" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="census-row field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="parts &#x00B7; dof" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-parts-dof" text="0 &#x00B7; 0" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement name="guilds" class="guilds" picking-mode="Ignore" />
+
+                <ui:VisualElement name="ancestry" class="section" picking-mode="Ignore">
+                    <ui:Label class="section__title" text="ANCESTRY" />
+                    <ui:Label name="ancestry-chain" class="ancestry__chain" text="" />
+                    <ui:VisualElement class="ancestry__note" picking-mode="Ignore">
+                        <ui:Label name="ancestry-note" class="keyhint__label lead" text="" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="ancestry__note" picking-mode="Ignore">
+                    <ui:VisualElement class="keyhint lead" picking-mode="Ignore">
+                        <ui:Label class="keyhint__key" text="Esc" />
+                        <ui:Label class="keyhint__label" text="deselect" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="inspector-dead" class="is-gone" picking-mode="Ignore">
+                <ui:VisualElement class="inspector__head" picking-mode="Ignore">
+                    <ui:VisualElement class="struck" picking-mode="Ignore">
+                        <ui:Label name="inspector-dead-id" class="inspector__id inspector__id--dead lead" text="creature" />
+                        <ui:VisualElement class="struck__rule" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                    <ui:Label name="inspector-dead-badge" class="badge badge--dead" text="DIED" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="census-row field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="lived" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-lived" text="&#x2014;" />
+                        <ui:Label class="unit" text="s" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="census-row field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="generation" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-dead-generation" text="&#x2014;" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="census-row field" picking-mode="Ignore">
+                    <ui:Label class="field__label" text="children" />
+                    <ui:VisualElement class="field__value numeric" picking-mode="Ignore">
+                        <ui:Label name="value-children" text="&#x2014;" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement name="ancestry-dead" class="section" picking-mode="Ignore">
+                    <ui:Label class="section__title" text="ANCESTRY" />
+                    <ui:Label name="ancestry-dead-chain" class="ancestry__chain" text="" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="section" picking-mode="Ignore">
+                    <ui:Label class="prose" text="Last known values, held. The panel does not empty itself &#x2014; you were looking at something." />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="inspector-unavailable" class="is-gone" picking-mode="Ignore">
+                <ui:VisualElement class="status status--abnormal" picking-mode="Ignore">
+                    <ui:VisualElement class="marker marker--unverifiable" picking-mode="Ignore">
+                        <ui:VisualElement class="marker__quad" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                    <ui:Label class="status__word" text="SELECTION UNAVAILABLE" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="section section--flush" picking-mode="Ignore">
+                    <ui:Label name="inspector-unavailable-prose" class="prose prose--bright" text="" />
+                </ui:VisualElement>
+
+                <ui:Label class="inspector__note" text="clicking still moves the camera &#x00B7; nothing identifying is shown" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- 3 ======================================================== warnings -->
+        <ui:VisualElement name="warnings" class="panel panel--warnings is-gone" picking-mode="Ignore" />
+
+        <!-- 4 ========================================================= popover -->
+        <ui:VisualElement name="popover" class="panel panel--popover is-gone" picking-mode="Ignore">
+            <ui:VisualElement name="popover-status" class="status" picking-mode="Ignore">
+                <ui:VisualElement name="popover-marker" class="marker marker--faithful" picking-mode="Ignore" />
+                <ui:Label name="popover-word" class="status__word" text="FAITHFUL" />
+                <ui:Label name="popover-note" class="keyhint__label" text="" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="popover-rows" class="section section--flush" picking-mode="Ignore" />
+
+            <ui:VisualElement class="section" picking-mode="Ignore">
+                <ui:Label name="popover-prose" class="prose" text="" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- 5 =========================================================== strip -->
+        <ui:VisualElement name="strip" class="panel panel--strip" picking-mode="Ignore">
+            <ui:VisualElement name="status" class="status" picking-mode="Ignore">
+                <ui:VisualElement name="status-marker" class="marker marker--faithful" picking-mode="Ignore" />
+                <ui:Label name="status-word" class="status__word" text="FAITHFUL" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="alarm-plate" class="plate is-gone" picking-mode="Ignore">
+                <ui:VisualElement class="plate__mark" picking-mode="Ignore" />
+                <ui:Label name="alarm-text" class="plate__text" text="" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="strip-rule-1" class="rule-v" picking-mode="Ignore" />
+
+            <ui:VisualElement name="ident" class="ident" picking-mode="Ignore">
+                <ui:Label name="ident-arm" class="ident__arm" text="run" />
+                <ui:Label name="ident-meta" class="ident__meta" text="" />
+                <ui:VisualElement name="ident-badges" class="ident" picking-mode="Ignore" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="seek-plate" class="plate plate--quiet is-gone" picking-mode="Ignore">
+                <ui:Label name="seek-plate-text" class="plate__text" text="SEEKING" />
+            </ui:VisualElement>
+
+            <ui:Label name="seek-meta" class="ident__meta is-per-frame is-gone" text="" />
+
+            <ui:Label name="pace" class="pace is-per-frame" text="" />
+
+            <ui:VisualElement name="clock" class="clock is-per-frame" picking-mode="Ignore">
+                <ui:Label name="clock-value" text="t 0.0" />
+                <ui:Label class="unit" text="s" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="strip-rule-2" class="rule-v" picking-mode="Ignore" />
+
+            <ui:VisualElement name="strip-keys" class="keys" picking-mode="Ignore">
+                <ui:VisualElement class="keyhint lead" picking-mode="Ignore">
+                    <ui:Label class="keyhint__key" text="P" />
+                    <ui:Label class="keyhint__label" text="provenance" />
+                </ui:VisualElement>
+                <ui:VisualElement class="keyhint" picking-mode="Ignore">
+                    <ui:Label class="keyhint__key" text="H" />
+                    <ui:Label class="keyhint__label" text="hide" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="seekbar" class="seekbar is-gone" picking-mode="Ignore">
+                <ui:VisualElement name="seek-progress" class="timeline__seeking is-per-frame" picking-mode="Ignore" />
+                <ui:VisualElement class="seekbar__remain" picking-mode="Ignore" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- 6 ============================================================= bar -->
+        <ui:VisualElement name="bar" class="panel panel--bar" picking-mode="Ignore">
+            <ui:VisualElement name="transport" class="transport" picking-mode="Ignore">
+                <ui:VisualElement class="transport__state" picking-mode="Ignore">
+                    <ui:VisualElement name="glyph-play" class="glyph glyph--play" picking-mode="Ignore" />
+                    <ui:VisualElement name="glyph-pause" class="glyph glyph--pause is-gone" picking-mode="Ignore">
+                        <ui:VisualElement class="glyph__bar" picking-mode="Ignore" />
+                        <ui:VisualElement class="glyph__bar" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                    <ui:Label name="transport-word" class="transport__word" text="PLAYING" />
+                </ui:VisualElement>
+                <ui:VisualElement class="keyhint" picking-mode="Ignore">
+                    <ui:Label class="keyhint__key keyhint__key--wide" text="Space" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="timeline" class="timeline" picking-mode="Ignore">
+                <ui:VisualElement name="timeline-track" class="timeline__track" picking-mode="Ignore">
+                    <ui:VisualElement name="timeline-elapsed" class="timeline__elapsed is-per-frame" picking-mode="Ignore" />
+                    <ui:VisualElement name="timeline-elapsed-beyond" class="timeline__elapsed timeline__elapsed--beyond is-gone" picking-mode="Ignore" />
+                    <ui:VisualElement name="timeline-head" class="timeline__head" picking-mode="Ignore" />
+                    <ui:VisualElement name="timeline-recorded" class="timeline__recorded" picking-mode="Ignore" />
+                    <ui:VisualElement name="timeline-beyond" class="timeline__beyond" picking-mode="Ignore" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="timeline-axis" class="timeline__axis" picking-mode="Ignore">
+                    <ui:Label name="tick-zero" class="timeline__tick" text="0" />
+                    <ui:Label name="tick-peak" class="timeline__tick timeline__tick--anchored is-gone" text="" />
+                    <ui:Label name="tick-record-end" class="timeline__tick timeline__tick--anchored timeline__tick--loud is-gone" text="" />
+                    <ui:Label name="tick-end" class="timeline__tick timeline__tick--end" text="" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="timeline-legend" class="timeline__legend" picking-mode="Ignore">
+                <ui:VisualElement class="seek-note" picking-mode="Ignore">
+                    <ui:Label class="keyhint__key" text="K" />
+                    <ui:Label class="seek-note__text" text="seek forward &#x2014; simulated, minutes" />
+                </ui:VisualElement>
+                <ui:Label class="seek-note__text seek-note__text--dim" text="backward &#x2014; restarts from t=0" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="bar-keys" class="keys" picking-mode="Ignore">
+                <ui:VisualElement class="keyhint lead" picking-mode="Ignore">
+                    <ui:Label class="keyhint__key" text="[ ]" />
+                    <ui:Label class="keyhint__label" text="pace" />
+                </ui:VisualElement>
+                <ui:VisualElement class="keyhint" picking-mode="Ignore">
+                    <ui:Label class="keyhint__key" text="C" />
+                    <ui:Label class="keyhint__label" text="colour" />
+                </ui:VisualElement>
+                <ui:VisualElement class="keyhint" picking-mode="Ignore">
+                    <ui:Label class="keyhint__key" text="F" />
+                    <ui:Label class="keyhint__label" text="follow" />
+                </ui:VisualElement>
+                <ui:VisualElement name="keyhint-solo-sine" class="keyhint is-gone" picking-mode="Ignore">
+                    <ui:Label class="keyhint__key" text="T" />
+                    <ui:Label class="keyhint__label" text="brain/sine" />
+                </ui:VisualElement>
+                <ui:VisualElement name="keyhint-solo-starve" class="keyhint is-gone" picking-mode="Ignore">
+                    <ui:Label class="keyhint__key" text="G" />
+                    <ui:Label class="keyhint__label" text="starve" />
+                </ui:VisualElement>
+                <ui:VisualElement class="keyhint" picking-mode="Ignore">
+                    <ui:Label class="keyhint__key" text="R" />
+                    <ui:Label class="keyhint__label" text="reload" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Nothing opened: the one thing worth showing is why. -->
+        <ui:VisualElement name="error" class="panel panel--error is-gone" picking-mode="Ignore">
+            <ui:Label class="error__title" text="The theatre could not open this." />
+            <ui:Label name="error-detail" class="error__detail" text="" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -47,6 +47,14 @@ canvas runtime, not this project's work, and is gitignored rather than
 relicensed. The handoff archives (design/*.zip) are gitignored for the same
 reason.
 
+unity/Assets/Theatre/UI/Fonts/** is neither: IBM Plex Mono (Regular and
+SemiBold) and IBM Plex Sans (Regular), copyright IBM Corp., redistributed
+under the SIL Open Font License 1.1 with its text beside them in OFL.txt.
+They are third-party files carried under their own licence, which neither of
+this repository's licences replaces or extends; the SDF font assets generated
+from them by Evosim/Theatre/Build UI Fonts are the same fonts and the same
+licence.
+
 
 THE LICENCE
 ───────────

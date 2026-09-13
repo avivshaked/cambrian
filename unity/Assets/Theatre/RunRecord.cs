@@ -25,6 +25,22 @@ namespace Evosim.Theatre
         public long Deaths;
         public double AuditResidual;
         public double MeanHeight;
+
+        /// <summary>
+        /// The row's <c>matterResidual</c>, or 0 on a run recorded before that column existed —
+        /// <see cref="MatterResidualRecorded"/> says which.
+        /// </summary>
+        /// <remarks>
+        /// Read but not compared. The five columns above are the identity check, and adding a
+        /// sixth would make every run recorded before the column mismatch on its first sample for
+        /// a reason that has nothing to do with whether the replay is the run. What it is for is
+        /// the interface, which shows the live world's own matter residual beside the audit and
+        /// can say whether the recording carried one to put beside it.
+        /// </remarks>
+        public double MatterResidual;
+
+        /// <summary>False on a run recorded before <c>matterResidual</c> was a column.</summary>
+        public bool MatterResidualRecorded;
     }
 
     /// <summary>
@@ -77,6 +93,17 @@ namespace Evosim.Theatre
 
         /// <summary>The job-worker ceiling of the machine that recorded the run, or null.</summary>
         public int? JobWorkerMaximum { get; private set; }
+
+        /// <summary>
+        /// Simulated seconds the run was launched to reach, or null when the manifest does not
+        /// say — the timeline's axis, and nothing else.
+        /// </summary>
+        /// <remarks>
+        /// A run that was stopped, killed or censored never reaches it, which is exactly why the
+        /// timeline wants it: the distance between where the record ends and where it was meant to
+        /// end is a fact about the run that no other column carries.
+        /// </remarks>
+        public double? RequestedSeconds { get; private set; }
 
         public string ArmName { get; private set; }
         public string ConfigHash { get; private set; }
@@ -139,6 +166,11 @@ namespace Evosim.Theatre
             if (manifest.Has("jobWorkerMaximum"))
             {
                 record.JobWorkerMaximum = manifest["jobWorkerMaximum"].AsInt();
+            }
+
+            if (manifest.Has("requestedSeconds"))
+            {
+                record.RequestedSeconds = manifest["requestedSeconds"].AsDouble();
             }
 
             if (manifest.Has("source"))
@@ -245,6 +277,8 @@ namespace Evosim.Theatre
                 try
                 {
                     JsonNode n = Json.Parse(row);
+                    bool hasMatter = n.Has("matterResidual");
+
                     samples.Add(new RunSample
                     {
                         T = n["t"].AsDouble(),
@@ -253,6 +287,12 @@ namespace Evosim.Theatre
                         Deaths = (long)n["deaths"].AsDouble(),
                         AuditResidual = n["auditResidual"].AsDouble(),
                         MeanHeight = n["meanHeight"].AsDouble(),
+
+                        // Optional, like every column added after a run was recorded: the matter
+                        // identity arrived with the vertex field (2026-09-07) and every stats row
+                        // written before it has no such field.
+                        MatterResidual = hasMatter ? n["matterResidual"].AsDouble() : 0d,
+                        MatterResidualRecorded = hasMatter,
                     });
                 }
                 catch

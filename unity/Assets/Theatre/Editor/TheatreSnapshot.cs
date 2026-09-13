@@ -89,6 +89,24 @@ namespace Evosim.Theatre.EditorTools
         private static int _width = 1600;
         private static int _height = 900;
 
+        /// <summary>
+        /// Whether the interface is left on. Off by default, which is the whole record's format.
+        /// </summary>
+        /// <remarks>
+        /// <b>Every picture in <c>logbook/images/</c> carries the burnt-in label and no chrome</b>,
+        /// and a frame that suddenly grew a census panel would not be comparable with any of them.
+        /// So <c>H</c>'s effect is the default here, exactly as it was when the overlay was an
+        /// IMGUI block, and <c>EVOSIM_THEATRE_CHROME=1</c> (<c>theatre-snap.ps1 -Chrome</c>) is how
+        /// the interface itself gets photographed for review.
+        /// </remarks>
+        private static bool _chrome;
+
+        /// <summary>Where the armed chrome picture will be written, or null.</summary>
+        private static string _chromePath;
+
+        /// <summary>Editor ticks the chrome capture has been armed for.</summary>
+        private static int _chromeTicks;
+
         private static double _wallSecondsAllowed;
         private static double _deadline;
         private static int _next;
@@ -204,6 +222,8 @@ namespace Evosim.Theatre.EditorTools
 
             _wallSecondsAllowed =
                 60d * IntFrom("EVOSIM_THEATRE_WALL_MINUTES", 30, 1, 1440);
+
+            _chrome = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHROME") == "1";
 
             return null;
         }
@@ -363,7 +383,8 @@ namespace Evosim.Theatre.EditorTools
                    _width.ToString(CultureInfo.InvariantCulture) + "x" +
                    _height.ToString(CultureInfo.InvariantCulture) + "|" +
                    _wallSecondsAllowed.ToString("R", CultureInfo.InvariantCulture) + "|" +
-                   _next.ToString(CultureInfo.InvariantCulture);
+                   _next.ToString(CultureInfo.InvariantCulture) + "|" +
+                   (_chrome ? "1" : "0");
         }
 
         /// <summary>
@@ -414,6 +435,8 @@ namespace Evosim.Theatre.EditorTools
                         out int taken)
                 ? taken
                 : 0;
+
+            _chrome = fields.Length > 6 && fields[6] == "1";
 
             if (_times == null || _views == null) { SessionState.EraseString(PendingKey); return; }
             if (_next >= _times.Length) { SessionState.EraseString(PendingKey); return; }
@@ -489,7 +512,26 @@ namespace Evosim.Theatre.EditorTools
                 }
 
                 _runner.Paused = true;
-                Shoot(replay, target);
+
+                // A chrome picture takes three ticks: the panel is resized to the texture when it
+                // is armed, the density classes come off the geometry event that resize raises,
+                // and the layout they ask for lands a frame after that. The world is paused
+                // across the whole run of them, so every layer is the same instant.
+                if (TheatreUiCapture.Armed)
+                {
+                    if (++_chromeTicks < 2) return;
+                    _chromeTicks = 0;
+
+                    LandTheChromeShot();
+                }
+                else
+                {
+                    Shoot(replay, target);
+
+                    // Armed by Shoot when -Chrome was asked for. Come back for it.
+                    if (TheatreUiCapture.Armed) return;
+                }
+
                 _next++;
                 SessionState.SetString(PendingKey, Pack());
 
@@ -521,7 +563,7 @@ namespace Evosim.Theatre.EditorTools
             _runner.Paused = false;
             _runner.Rate = 10000f;
             _runner.FrameBudgetSeconds = 0.25f;
-            _runner.ShowOverlay = false;
+            _runner.ShowOverlay = _chrome;
 
             Debug.Log(
                 "[Theatre] " + replay.Record.Path + "\n" +
@@ -584,6 +626,69 @@ namespace Evosim.Theatre.EditorTools
                     "  " + remark + "\n" +
                     "  " + replay.IdentityLine());
             }
+
+            if (_chrome) ArmTheChromeShot(arm, stamp);
+        }
+
+        /// <summary>
+        /// Arms the interface's picture: the viewer's camera and the panel are pointed at one
+        /// texture, and <see cref="LandTheChromeShot"/> reads it back on the next tick.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The four views cannot carry it.</b> <see cref="SnapshotCamera"/> renders a camera of
+        /// its own into a <c>RenderTexture</c>, and a screen-space UI panel never draws into one —
+        /// the same reason that class stamps its label into the pixels by hand rather than using
+        /// <c>GUI.Label</c>.
+        /// </para>
+        /// <para>
+        /// <b>A screen capture is not the answer either, which cost a run to learn.</b> This was
+        /// <c>ScreenCapture.CaptureScreenshot</c> until 2026-09-13, and under <c>-batchmode</c>
+        /// that logs "queued" and writes nothing at all. <see cref="TheatreUiCapture"/> does it
+        /// the way the four views are done, so the chrome frame is a real file at the run's
+        /// <c>-Size</c> rather than a Game View of whatever shape the batch Editor happened to
+        /// have. It is the viewer's own camera, though, not one of the four framings: what is
+        /// wanted is the theatre as a person sees it, interface and all.
+        /// </para>
+        /// </remarks>
+        private static void ArmTheChromeShot(string arm, string stamp)
+        {
+            try
+            {
+                _chromePath = Path.Combine(_directory, arm + "-t" + stamp + "-chrome.png");
+
+                if (!TheatreUiCapture.Arm(
+                        _width, _height, _runner.ViewCamera, _runner.Ui?.Panel, out string note))
+                {
+                    Debug.LogWarning("[Theatre] no chrome picture: " + note);
+                    _chromePath = null;
+                }
+            }
+            catch (Exception e)
+            {
+                TheatreUiCapture.Disarm();
+                _chromePath = null;
+                Debug.LogWarning("[Theatre] the chrome capture failed: " + e.Message);
+            }
+        }
+
+        /// <summary>Reads the armed chrome picture back and writes it.</summary>
+        private static void LandTheChromeShot()
+        {
+            string path = _chromePath;
+            _chromePath = null;
+
+            int bytes = TheatreUiCapture.Shoot(path, out string note);
+
+            if (bytes > 0)
+            {
+                _written.Add(path);
+                Debug.Log("[Theatre] chrome: " + note + " -> " + path);
+            }
+            else
+            {
+                Debug.LogWarning("[Theatre] the chrome picture was not written: " + note);
+            }
         }
 
         /// <summary>Writes the verdict, stops Play mode, and arranges the exit code.</summary>
@@ -594,6 +699,12 @@ namespace Evosim.Theatre.EditorTools
             SessionState.EraseString(PendingKey);
 
             if (_camera != null) { _camera.Dispose(); _camera = null; }
+
+            // An armed capture holds the panel's target texture, and the viewer would never see
+            // the interface again in this session.
+            TheatreUiCapture.Disarm();
+            _chromePath = null;
+            _chromeTicks = 0;
 
             var files = new System.Text.StringBuilder();
             foreach (string path in _written) files.Append("\n  ").Append(path);
