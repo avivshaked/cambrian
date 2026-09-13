@@ -48,7 +48,12 @@ unverified.
    a second step at 3400 applies the same wide tokens at 1.5 times, driven from C# as the
    spec says; uniform panel scaling stays off. The 3840 case is the one the caller checks
    in the pictures first, and if the wide chrome reads small there the report says so with
-   the measured pixel heights of the type.
+   the measured pixel heights of the type. *Ruled 2026-09-13 after the second run's
+   pictures:* the furniture took its step at 3840 (strip 66 px, padding 30 px, measured)
+   and the type stayed at 13 px, which is too small on a 3840-wide monitor, so the type
+   tokens take the same 1.5 at the 3400 step (`.is-wider` in the stylesheet). The design's
+   rule against scaling the chrome is a rule against uniform panel scaling, and a second
+   density step is the design's own mechanism; the owner may reverse it in one block.
 6. **The single-creature mode** is the same strip with a different census (spec §8), and
    the retired global-brain readout goes (spec §7): `Brain.NeuronCount`.
 7. **The lineage index** is streamed with `JsonlWriter.ReadRows`, built lazily on the first

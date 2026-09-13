@@ -27,7 +27,9 @@
         property from C#; what it has is inline style and classes.
         .is-wide (>= 2240 px) and .is-wider (>= 3400 px) are set
         on the root by TheatreUi, and the rules that change are
-        below under RESOLUTION. The type scale never changes.
+        below under RESOLUTION. The type scale takes one step, at
+        .is-wider only (the agent's ruling of 2026-09-13; item 5 of
+        logbook/specs/theatre-ui-spec.md).
 
      4. A FEW CLASSES THE DESIGN DID NOT NEED are added at the
         bottom under PORT ADDITIONS: the solo mode's census, the
@@ -1253,7 +1255,10 @@
    C#, so the step is a class on the root instead — and a second
    one, .is-wider at >= 3400, which is the same three tokens at 1.5
    times (the owner's monitor is 3840 wide; logbook/specs/
-   theatre-ui-spec.md item 5). Nothing else moves.
+   theatre-ui-spec.md item 5). At .is-wider the type tokens take the
+   same 1.5 as well (below): 13 px type on a 3840-wide screen read
+   too small in the first pictures, and a density step is not the
+   uniform panel scaling the design rules out. Nothing else moves.
 
      .is-wide    strip-h 44, panel-w 320, pad-edge 20
      .is-wider   strip-h 66, panel-w 480, pad-edge 30
@@ -1329,4 +1334,13 @@
 .is-wider .panel--error {
     left: 30px;
     top: 78px;
+}
+
+.is-wider {
+    --t-micro: 15px;
+    --t-sm: 16px;
+    --t-md: 20px;
+    --t-lg: 24px;
+    --t-xl: 33px;
+    --t-clock: 30px;
 }
