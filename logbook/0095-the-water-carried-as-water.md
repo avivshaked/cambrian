@@ -150,5 +150,8 @@ rigid line founded at 8,210 s, 146 alive at the end, at least 60 through the las
 lifetimes; one of six living clades. Its render started on worker 3. *12:17.* Seed 4 ended
 on its budget (12,425 births, 661 minutes at 0.8 of real time) and passes: clade root 2177,
 a rigid line founded at 4,567 s, 74 alive at the end, at least 51 through the last two
-lifetimes; one of three living clades. Its render started on worker 7. Three of five have
-landed and all three pass; seeds 3 and 5 are at 28,000 and 25,700 s.
+lifetimes; one of three living clades. Its render started on worker 7. *13:2x.* Seed 3, the
+jointed seed, ended on its budget (10,359 births, 730 minutes at 0.7 of real time) and
+passes narrowly: clade root 370, a rigid line founded at 1,498 s, 26 alive at the end and
+26 through the last two lifetimes, 8 inherited births in the last 20 samples; one of four
+living clades. Four of five have landed and all four pass; seed 5 is at 27,500 s.
