@@ -618,7 +618,9 @@ namespace Evosim.Theatre.EditorTools
                 if (string.IsNullOrEmpty(label.text)) return;
 
                 // Only the leaves: a label that contains another would "overlap" its own child.
-                if (label.Q<Label>() != null) return;
+                // UQuery includes the element it starts from, so a Label always finds itself;
+                // the sixth run read every label as a parent and skipped with "0 laid out".
+                if (label.Query<Label>().Where(inner => inner != label).First() != null) return;
 
                 boxes.Add(new KeyValuePair<string, Rect>(Named(label), label.worldBound));
             });
