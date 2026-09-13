@@ -1197,6 +1197,79 @@ namespace Evosim.Theatre.EditorTools
             Type(root, "value-jointed", wider ? 20f : 13f, width);
             Type(root, "clock-value", wider ? 30f : 20f, width);
             Type(root, "ident-arm", wider ? 24f : 16f, width);
+
+            // The rhythm has to move with the type or the rows crowd: the fourth run put 20px
+            // values in 22px rows and the numbers rode over the labels (2026-09-13).
+            Near("density at " + width + ": a census row is " + (wider ? 33f : 22f) + " px",
+                root.Q<VisualElement>("row-jointed").resolvedStyle.height, wider ? 33f : 22f, 1f);
+
+            Rhythm(root, width);
+        }
+
+        /// <summary>
+        /// No two census rows share vertical space — the rows' version of
+        /// <see cref="NoGarble"/>.
+        /// </summary>
+        /// <remarks>
+        /// A row that is shorter than the type in it does not clip and does not warn: the label
+        /// and the value simply climb into the row above, which reads as bad spacing rather than
+        /// as a fault. Overlap is the thing that can be asserted, and it is the thing that was
+        /// true at 3840 before the rhythm took the step.
+        /// </remarks>
+        private static void Rhythm(VisualElement root, int width)
+        {
+            VisualElement census = root.Q<VisualElement>("census-world");
+
+            if (census == null)
+            {
+                Skip("rhythm at " + width + ": no world census on screen");
+                return;
+            }
+
+            var rows = new List<KeyValuePair<string, Rect>>();
+
+            census.Query<VisualElement>(className: "census-row").ForEach(row =>
+            {
+                if (row.ClassListContains("is-gone")) return;
+                if (row.resolvedStyle.height <= 1f) return;
+
+                rows.Add(new KeyValuePair<string, Rect>(
+                    string.IsNullOrEmpty(row.name) ? "a row" : row.name, row.worldBound));
+            });
+
+            if (rows.Count < 2)
+            {
+                Skip("rhythm at " + width + ": " + rows.Count + " census row(s) laid out");
+                return;
+            }
+
+            int clashes = 0;
+
+            for (int i = 0; i < rows.Count; i++)
+            {
+                for (int j = i + 1; j < rows.Count; j++)
+                {
+                    Rect a = rows[i].Value;
+                    Rect b = rows[j].Value;
+
+                    if (a.yMax <= b.yMin + 0.01f || b.yMax <= a.yMin + 0.01f) continue;
+
+                    clashes++;
+
+                    Fail("rhythm at " + width + ": " + rows[i].Key + " and " + rows[j].Key +
+                         " do not share vertical space",
+                         "y " + a.yMin.ToString("0.#", CultureInfo.InvariantCulture) + ".." +
+                         a.yMax.ToString("0.#", CultureInfo.InvariantCulture) + " against " +
+                         b.yMin.ToString("0.#", CultureInfo.InvariantCulture) + ".." +
+                         b.yMax.ToString("0.#", CultureInfo.InvariantCulture));
+                }
+            }
+
+            if (clashes == 0)
+            {
+                Pass("rhythm at " + width + ": the " + rows.Count +
+                     " census rows each keep their own band");
+            }
         }
 
         private static void Type(VisualElement root, string name, float wanted, int width)

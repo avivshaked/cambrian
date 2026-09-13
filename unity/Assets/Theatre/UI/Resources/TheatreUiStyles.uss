@@ -1412,3 +1412,365 @@
 .is-wider .clock {
     font-size: 30px;
 }
+
+/* The rhythm follows the type.
+
+   Type at 1.5 inside rows at the base height is type that crowds: at 3840 the
+   fourth Editor run put 20px values in 22px census rows, and the numbers rode
+   over the labels' baselines (2026-09-13). Everything that spaces the type has
+   to take the same step the type took, so these are 1.5 times the base value,
+   rounded to the pixel, for every rule that sets a height, a width that holds
+   type, a margin, a padding or an offset. The tokens behind them are the
+   spacing scale --s1..--s7 (2, 4, 8, 12, 16, 24, 32), --bar-h 68, --numeric-w
+   104, --inspector-w 340, --warnings-w 430 and --popover-w 460; the rest are
+   literal in the base rules and are mirrored literally here.
+
+   Same mechanism as the type step above, and for the same reason: a literal
+   property under a .is-wider descendant selector, which beats the base rule on
+   specificity and on order. Grouped by selector rather than by value, which is
+   the one place this block departs from the type block's shape — a rule that
+   sets four paddings wants them read together, and there are far more distinct
+   values here than there are tokens.
+
+   NOT stepped, deliberately: --radius (2px, a corner is a corner), every 1px
+   hairline (.struck__rule, .rule-v's width, .timeline__mark's width), and the
+   five values the owner already set at this step — the strip's 66, the census
+   panel's 480 and its top of 82, pad-edge's 30 and --panel-top's 78. Order
+   inside the block follows the stylesheet, so .panel's padding still loses to
+   .panel--warnings' and .panel--popover's, as it does at the base size. */
+
+.is-wider .panel {
+    padding-top: 18px;
+    padding-right: 18px;
+    padding-bottom: 18px;
+    padding-left: 18px;
+}
+
+.is-wider .panel--bar {
+    height: 102px;
+    padding-top: 18px;
+    padding-bottom: 18px;
+}
+
+.is-wider .panel--inspector {
+    bottom: 132px;
+    width: 510px;
+}
+
+.is-wider .panel--warnings {
+    width: 645px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    padding-left: 18px;
+    padding-right: 18px;
+}
+
+.is-wider .panel--popover {
+    width: 690px;
+    padding-top: 21px;
+    padding-right: 21px;
+    padding-bottom: 21px;
+    padding-left: 21px;
+}
+
+.is-wider .section {
+    padding-top: 12px;
+    margin-top: 15px;
+}
+
+.is-wider .section__title {
+    margin-bottom: 12px;
+}
+
+.is-wider .rule-v {
+    height: 24px;
+    margin-left: 21px;
+    margin-right: 21px;
+}
+
+.is-wider .ident__meta {
+    margin-left: 21px;
+}
+
+.is-wider .pace {
+    margin-right: 24px;
+}
+
+.is-wider .field {
+    height: 33px;
+}
+
+.is-wider .numeric {
+    width: 156px;
+}
+
+.is-wider .numeric--wide {
+    width: 198px;
+}
+
+.is-wider .unit {
+    margin-left: 5px;
+}
+
+.is-wider .census-row {
+    height: 33px;
+}
+
+.is-wider .census-row--hero {
+    height: 51px;
+}
+
+.is-wider .census-row--diverged {
+    margin-top: 6px;
+}
+
+.is-wider .census-row--diverged .field__value {
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.is-wider .census__cadence {
+    margin-top: 15px;
+}
+
+.is-wider .marker {
+    width: 18px;
+    height: 18px;
+}
+
+.is-wider .marker__diamond {
+    width: 14px;
+    height: 14px;
+}
+
+.is-wider .marker__bar {
+    height: 3px;
+}
+
+.is-wider .marker--sm {
+    width: 15px;
+    height: 15px;
+    margin-top: 5px;
+}
+
+.is-wider .status__word {
+    margin-left: 12px;
+}
+
+.is-wider .plate {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+.is-wider .plate__mark {
+    width: 15px;
+    height: 15px;
+}
+
+.is-wider .plate__text {
+    margin-left: 12px;
+}
+
+.is-wider .plate--quiet {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    padding-left: 12px;
+    padding-right: 12px;
+    margin-left: 27px;
+}
+
+.is-wider .badge {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    padding-left: 8px;
+    padding-right: 8px;
+    margin-left: 21px;
+}
+
+.is-wider .badge--differs {
+    margin-left: 9px;
+}
+
+.is-wider .keyhint {
+    margin-left: 21px;
+}
+
+.is-wider .keyhint__key {
+    min-width: 27px;
+    height: 24px;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.is-wider .keyhint__key--wide {
+    min-width: 54px;
+}
+
+.is-wider .keyhint__label {
+    margin-left: 8px;
+}
+
+.is-wider .transport {
+    width: 294px;
+}
+
+.is-wider .transport__word {
+    margin-left: 12px;
+}
+
+.is-wider .glyph {
+    width: 18px;
+    height: 18px;
+}
+
+.is-wider .glyph__bar {
+    width: 5px;
+    height: 18px;
+}
+
+.is-wider .timeline {
+    margin-left: 30px;
+}
+
+.is-wider .timeline__track {
+    height: 18px;
+}
+
+.is-wider .timeline__dash {
+    width: 6px;
+    height: 3px;
+    margin-left: 5px;
+}
+
+.is-wider .timeline__head {
+    width: 3px;
+}
+
+.is-wider .timeline__head--broken {
+    width: 5px;
+}
+
+.is-wider .timeline__mark--peak {
+    top: -12px;
+    height: 12px;
+}
+
+.is-wider .timeline__mark--snapshot {
+    top: 21px;
+    width: 5px;
+    height: 5px;
+}
+
+.is-wider .timeline__mark--record-end {
+    top: -12px;
+    height: 42px;
+}
+
+.is-wider .timeline__mark--break {
+    top: -12px;
+    height: 42px;
+}
+
+.is-wider .timeline__axis {
+    height: 21px;
+    margin-top: 12px;
+}
+
+.is-wider .timeline__legend {
+    width: 375px;
+    margin-left: 30px;
+}
+
+.is-wider .seek-note__text {
+    margin-left: 9px;
+}
+
+.is-wider .seek-note__text--dim {
+    margin-left: 36px;
+    margin-top: 5px;
+}
+
+.is-wider .seekbar {
+    height: 5px;
+}
+
+.is-wider .warning {
+    margin-top: 9px;
+}
+
+.is-wider .warning__body {
+    margin-left: 12px;
+}
+
+.is-wider .warning__detail {
+    margin-top: 3px;
+}
+
+.is-wider .prov-row {
+    height: 36px;
+}
+
+.is-wider .prov-row__mark {
+    width: 21px;
+}
+
+.is-wider .prov-row__label {
+    width: 165px;
+}
+
+.is-wider .inspector__head {
+    margin-bottom: 15px;
+}
+
+.is-wider .guilds {
+    margin-top: 15px;
+}
+
+.is-wider .inspector__note {
+    margin-top: 15px;
+}
+
+.is-wider .ancestry__chain {
+    margin-top: 6px;
+}
+
+.is-wider .ancestry__note {
+    margin-top: 6px;
+}
+
+.is-wider .struck--after-chip {
+    margin-left: 9px;
+}
+
+.is-wider .struck--after-meta {
+    margin-left: 21px;
+}
+
+.is-wider .filter-chip {
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left: 11px;
+    padding-right: 11px;
+    margin-left: 9px;
+}
+
+.is-wider .chart-frame {
+    padding-top: 18px;
+    padding-right: 18px;
+    padding-bottom: 18px;
+    padding-left: 18px;
+}
+
+.is-wider .panel--census-solo {
+    width: 480px;
+}
+
+.is-wider .panel--error {
+    width: 1080px;
+}
+
+.is-wider .error__title {
+    margin-bottom: 12px;
+}
