@@ -214,9 +214,19 @@ step; neither the axis nor the glass is singular (a smooth bowl, both rims four 
 floor). The field is roughest at the glass, where the closed form is clamped with a kink
 in its derivative, and the nine-sample stencil disagrees with it by up to 55% within
 0.02 m of the wall (the stencil straddles the kink; the tank does not use the stencil).
-Whatever throws a newborn is not a large force; it is something the force's code path
-does to a body in its first steps, and the trace's second pass (the last finite frames
-with the forces in them, `throw-trace-spec.md`) is the instrument that will say what.
+A second scan (three million calls per seed at exact boundaries, outside the glass, above
+the surface, below the bed, at t = 0 and before it) returned no non-finite and no large
+value anywhere; a NaN in gives a NaN out, and a body already at 10³¹ m gets ordinary water
+back, which is downstream of a throw and not a cause. One number from it bears on the
+anatomy: the water's speed peaks at the axis, 0.94 m/s where the RMS is 0.1, and the
+thrown newborns' birth rings skewed inward. Whatever throws a newborn is not a large
+force; it is something the term's application does to a body in its first steps in fast
+water, or a body plan that only the force-carrying world breeds, and the trace's second
+pass (the last finite frames with the forces in them, `throw-trace-spec.md`) is the
+instrument that will say which. One caution on the control itself: the with-force rate
+per jointed birth is lineage-clustered (0, 0, 0.08%, 0.25% and 1.35% by seed), so one
+control realisation at 0 in 1,421 is strong beside round 37's 0 in every seed without the
+force, and not proof on its own.
 
 ## Sources
 
