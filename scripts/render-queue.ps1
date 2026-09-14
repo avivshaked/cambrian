@@ -7,7 +7,9 @@
   run, which costs about what the run cost and needs a worker of its own. This is
   launch-queue.ps1's idea for renders: every minute it counts the Unity editors running, and
   while the count is under -MaxUnity it takes the next arm whose report carries its Ended
-  footer and the first listed worker with no lock file and no process, and starts
+  footer, or whose latest manifest reads a status other than running (a stopped or errored
+  run writes no footer; seed 5 of round 37b sat behind that for two hours on 2026-09-14),
+  and the first listed worker with no lock file and no process, and starts
   theatre-snap.ps1 for that arm on that worker, detached, with its output in scratch/logs.
   It exits when every arm has been started. It does not wait for a render to finish; the
   render's own log and the pictures say when it has.
@@ -67,7 +69,16 @@ while ($pending.Count -gt 0) {
         if (($editors + $started) -ge $MaxUnity) { break }
         $report = Join-Path $root "runs\$arm.md"
         if (-not (Test-Path $report)) { continue }
-        if (-not (Select-String -Path $report -Pattern '\*\*Ended:\*\*' -Quiet)) { continue }
+        $done = Select-String -Path $report -Pattern '\*\*Ended:\*\*' -Quiet
+        if (-not $done) {
+            $manifest = Get-ChildItem (Join-Path $root "runs\$arm") -Directory -ErrorAction SilentlyContinue |
+                Sort-Object Name | Select-Object -Last 1 | ForEach-Object { Join-Path $_.FullName 'run.json' }
+            if ($manifest -and (Test-Path $manifest)) {
+                $m = Select-String -Path $manifest -Pattern '"status":\s*"(\w+)"' | Select-Object -Last 1
+                if ($m -and $m.Matches[0].Groups[1].Value -ne 'running') { $done = $true }
+            }
+        }
+        if (-not $done) { continue }
 
         $worker = $null
         foreach ($w in $Workers) {

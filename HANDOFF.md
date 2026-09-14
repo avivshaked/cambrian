@@ -54,9 +54,10 @@ for three minutes over the cap, noted; worker 6 was then restored from main and 
 file for file), and waits for a worker under the cap to run its smoke and the box
 digest. It moves `simHash` and lands with `field cv` after the fresh seeds have all
 launched. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
-seed 5's render cannot reach a 30,000 s frame, and **the render queue never takes it**: a
-stopped run's report carries no Ended footer, which is what the queue waits for, so the
-chain sat two hours behind it on 2026-09-14 morning and was stopped; seed 5's frames at
+seed 5's render cannot reach a 30,000 s frame, and **the render queue did not take it**: a
+stopped run's report carries no Ended footer, which was all the queue read, so the chain
+sat two hours behind it on 2026-09-14 morning and was stopped (the queue now also reads
+the manifest's status, so a stopped or errored run is taken); seed 5's frames at
 5,000 and 15,000 s are taken by hand (`theatre-snap.ps1 r37b-s5 -At 5000,15000 -Worker 7`)
 when a slot frees, after the fresh seeds' renders. Its first attempt was killed the same
 morning for putting the machine one over the cap (the queue counted before its Editor was
