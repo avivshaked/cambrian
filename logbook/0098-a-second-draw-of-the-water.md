@@ -105,4 +105,6 @@ near 5,000 s and read 0 from 15,000 s; `diverged` 0, `wraps` 0, `stillb` 0, `aud
 `mat resid` 0 on every row; `cols` 100 of 100 and `x sd` 2.6 to 2.9 m throughout.
 *10:15.* Seed 8 landed at 30,000 s on its budget with 1,831 alive. *10:35.* Seed 6 landed
 the same way with 1,811 alive. *13:20.* Seed 9 landed the same way with 1,722 alive; the
-renders of seeds 7, 6 and 8 run on workers 6, 3 and 5.
+renders of seeds 7, 6 and 8 run on workers 6, 3 and 5. *22:20.* Seed 10 landed the same
+way with 1,759 alive, fourteen hours on a machine carrying three renders; every seed of
+the five ended on its budget, none threw a body. The read starts.
