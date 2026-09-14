@@ -135,3 +135,15 @@ refreshed first, headers verified (`space tank r=11.28 m (400 m2), depth 60, wal
 own seed), **`simHash ecc41ec5…`, `coreHash 16073c69…`, `configHash 30637fb0`**,
 `physicsJobWorkers 0`, `prereg.json` at `4cab313`. Seeds 3 to 5 wait in the queue for
 the renders of the fresh seeds to free their workers (log `scratch/logs/r38-queue.out`).
+
+*02:05, the 3,000 s look at seed 1* (positions plots, `scratch/positions/r38-s1/`; no
+Editor free for a theatre frame). Founding is well above D1's bar: 368 births by 1,100 s
+and 1,086 alive at 3,100 s, `mat here` 0.025 to 0.036 with about 85 blocked attempts per
+birth, no shortfall, two stillbirths. From above the disc is filling from the founders'
+spots outward, 366 of 402 columns occupied, a few metre-scale gaps still open, no crust
+(the rim quarter 21%), `x sd` 5.2 to 5.9 m on a disc that reads 5.64 spread. The
+three-dimensional nearest neighbour is 1.29 m against 0.66 to 0.74 in 37b, about 1.8
+times, inside D3's band at the first reading. From the side the crowd fills the top 35 m
+and thins to the bed. `det cv` fell from 2.4 to 0.56 as the field filled and `mat cv` sits
+at 0.11 to 0.44. The inherited jointed count holds at 70 from 1,600 s on, where 37b's
+seeds were already past their peaks; watched, not read.
