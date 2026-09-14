@@ -124,3 +124,14 @@ bodies drew the matter down. Main was fast-forwarded to the candidate (`582ee6a`
 workers refreshed. The manifest's `coreHash` on the candidate read main's, since it hashes
 the main tree's Core by path (CLAUDE.md's gotcha from this chain); the build's hashes are
 the first launched seed's, below.
+
+*00:25 and 00:26.* The queue's first attempt refused seed 1 on the hash: the candidate's
+copy hashed `43d4f251…` and main's checkout `ecc41ec5…`, and the two trees differ in line
+endings only (no file differs with carriage returns ignored; CLAUDE.md's checkout gotcha),
+so the queue was relaunched against main's. Seeds 1 and 2 launched on workers 2 and 3,
+refreshed first, headers verified (`space tank r=11.28 m (400 m2), depth 60, wall, bed`,
+`area 400 m2`, `matterBudget 6000`, `fluidAccel 1`, `current 0.1 m/s transport`,
+`dispersal=5 m`, `driveLimit >0.01`, `linkPhoto 0.5`, `addedMass 0.5`, `dt=0.01`, their
+own seed), **`simHash ecc41ec5…`, `coreHash 16073c69…`, `configHash 30637fb0`**,
+`physicsJobWorkers 0`, `prereg.json` at `4cab313`. Seeds 3 to 5 wait in the queue for
+the renders of the fresh seeds to free their workers (log `scratch/logs/r38-queue.out`).

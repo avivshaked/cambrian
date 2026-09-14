@@ -34,7 +34,10 @@ file for file), and waits for a worker under the cap to run its smoke and the bo
 digest. **Both landed 2026-09-15 00:25**: the candidate (main + `trace2` + `fieldcv`) passed the
 shared-space smoke with the forced case, the 600 s box digest identical to main's over 31
 steps, and the dilute tank smoke with 0100's header; main is fast-forwarded to `582ee6a`.
-Round 38 launches on it. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
+**Round 38 is running on it** (logbook/0100): seeds 1 and 2 launched 2026-09-15 00:25 on
+workers 2 and 3 (`simHash ecc41ec5…`, `coreHash 16073c69…`, `configHash 30637fb0`,
+headers verified), seeds 3 to 5 queued behind the fresh seeds' renders
+(`scratch/logs/r38-queue.out`). Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
 seed 5's render cannot reach a 30,000 s frame, and **the render queue did not take it**: a
 stopped run's report carries no Ended footer, which was all the queue read, so the chain
 sat two hours behind it on 2026-09-14 morning and was stopped (the queue now also reads
@@ -107,6 +110,7 @@ The rounds of the shared world, each read against the one before it:
 | 37 | 0094 | the tank: a glass wall, a gyre, ring patches; the crust at the glass | 4 of 5 |
 | 37b | 0095, 0097 | the streams, the fluid force, the conservative transporter; the base | 5 of 5 |
 | 6 to 10 | 0098, 0099 | 37b's world on five fresh seeds; not a round | 5 of 5 |
+| 38 | 0100 | the dilute tank: 400 m² with the matter held at 6,000 units | running |
 
 Round 34 ran after round 35 (the owner's theatre pause moved the base round first); the
 entries are in `logbook/README.md`'s key.
