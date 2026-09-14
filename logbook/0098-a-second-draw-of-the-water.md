@@ -104,4 +104,5 @@ on a rigid eater clade founded at 1,083 s (105 alive at the end); `jnt inh` peak
 near 5,000 s and read 0 from 15,000 s; `diverged` 0, `wraps` 0, `stillb` 0, `audit` and
 `mat resid` 0 on every row; `cols` 100 of 100 and `x sd` 2.6 to 2.9 m throughout.
 *10:15.* Seed 8 landed at 30,000 s on its budget with 1,831 alive. *10:35.* Seed 6 landed
-the same way with 1,811 alive.
+the same way with 1,811 alive. *13:20.* Seed 9 landed the same way with 1,722 alive; the
+renders of seeds 7, 6 and 8 run on workers 6, 3 and 5.
