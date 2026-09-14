@@ -911,5 +911,69 @@ namespace Evosim.Core.Tests
             Assert.Equal(0d, clean.StockInLayer(0, 1), 6);
             Assert.Equal(0d, clean.StockInLayer(0, 2), 6);
         }
+
+        // ---------------------------------------------------------------------------------
+        // The patchiness reading, logbook/specs/field-cv-spec.md
+        // ---------------------------------------------------------------------------------
+
+        [Fact]
+        public void AUniformFieldIsNotPatchy()
+        {
+            // The reading the report leans on hardest: water the transporter has kept uniform
+            // must say so, and say it to the last bit rather than to a few decimals.
+            var field = Field();
+            field.SeedUniform(100f);
+
+            Assert.Equal(0d, field.DensityCoefficientOfVariation(), 12);
+        }
+
+        [Fact]
+        public void HalvesAtOneAndThreeReadAHalf()
+        {
+            // Set through the two routes the class already offers and nothing else: SeedUniform
+            // puts 100 J in every cell of the 1 m grid, then Deposit at each cell's own centre
+            // adds 200 J to every cell of an even x, which is exactly half of the 24 x columns.
+            // So half the cells hold 100 and half hold 300; the mean is 200, the population
+            // deviation is 100, and the answer is a half with no rounding in it: the seed and the
+            // deposit are both exact in a float at these sizes and a 1 m cell holds 1 m³.
+            var field = Field();
+            field.SeedUniform(100f);
+
+            for (int ix = 0; ix < field.CellsX; ix += 2)
+            for (int iy = 0; iy < field.CellsY; iy++)
+            for (int iz = 0; iz < field.CellsZ; iz++)
+            {
+                field.Deposit(P(ix + 0.5f, -(iy + 0.5f), iz + 0.5f), 200f);
+            }
+
+            Assert.Equal(0.5d, field.DensityCoefficientOfVariation(), 9);
+        }
+
+        [Fact]
+        public void ATanksDeadCellsAreNotCounted()
+        {
+            // The guard the spec asks for. A tank's array is the bounding square and holds zeros
+            // outside the disc, so a reading over the whole array would call a perfectly uniform
+            // tank badly patchy. The fixture is TankTests': 100 m² over four rings, 60 m deep,
+            // on a 1 m cell that does not divide the bounding square.
+            var tank = new GridField(
+                100f, 0f, 60f, 0f, 0f, 4, 1f,
+                patchesAcross: 1, shape: WorldShape.Tank,
+                tankRadiusMetres: TankGeometry.RadiusFor(100f));
+
+            tank.SeedUniform(100f);
+
+            Assert.True(tank.LiveCellCount < tank.CellCount, "the mask should be leaving cells dead");
+            Assert.Equal(0d, tank.DensityCoefficientOfVariation(), 12);
+        }
+
+        [Fact]
+        public void AnEmptyFieldIsNotPatchy()
+        {
+            // A mean of zero has no coefficient of variation to take, and an empty field is not
+            // patchy in any sense a pocket proposal would have to answer. It reads 0 rather than
+            // a NaN the report would then have to print.
+            Assert.Equal(0d, Field().DensityCoefficientOfVariation(), 12);
+        }
     }
 }

@@ -656,7 +656,10 @@ actually verifying it.
   the detritus does; the matter grid stirs at its own `MatterMixingDiffusivity` on every axis,
   2 m²/s in the campaign, where the vertex world walked it sideways at 0.02. Explicit
   diffusion is refused above `D·dt/cell² = 1/6`, so 2 m²/s at a half-second step needs a
-  matter cell over 2.45 m. The `vtx` column prints a dash on a grid. The two cell tunables
+  matter cell over 2.45 m. The `vtx` column prints a dash on a grid. From round 37b's successor
+  build the table's `det cv` and `mat cv` read how far each field is from well mixed, the
+  standard deviation of the live cells' densities over their mean, and they print a dash on a
+  vertex field the way `vtx` prints one on a grid. The two cell tunables
   make every earlier `config.json` unreadable by the build, rounds 30 and 31 included; their
   arithmetic replays on the vertex field under their own builds. Read a grid field's shape
   from a run, as for vertices; the Core experiments (`GridFieldExperiments`) are the
