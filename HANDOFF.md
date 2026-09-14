@@ -31,7 +31,10 @@ uses a poison hook on the ring's read because PhysX takes no velocity on a link)
 compiled clean on worker 6 at 00:33 on 2026-09-14 (a compile-only pass, a sixth Editor
 for three minutes over the cap, noted; worker 6 was then restored from main and checked
 file for file), and waits for a worker under the cap to run its smoke and the box
-digest. It moves `simHash` and lands with `field cv`. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
+digest. **Both landed 2026-09-15 00:25**: the candidate (main + `trace2` + `fieldcv`) passed the
+shared-space smoke with the forced case, the 600 s box digest identical to main's over 31
+steps, and the dilute tank smoke with 0100's header; main is fast-forwarded to `582ee6a`.
+Round 38 launches on it. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
 seed 5's render cannot reach a 30,000 s frame, and **the render queue did not take it**: a
 stopped run's report carries no Ended footer, which was all the queue read, so the chain
 sat two hours behind it on 2026-09-14 morning and was stopped (the queue now also reads

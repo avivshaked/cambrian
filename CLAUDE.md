@@ -578,6 +578,12 @@ actually verifying it.
   after it, whatever its `Assets/` carry, and the manifest's `coreHash` records which. A round
   cannot be held on one build once Core has moved (round 24's fifth seed runs on the perception
   build for this reason, 0061); land Core changes between rounds or accept and record the split.
+- **`coreHash` is the main tree's Core, whatever the worker's manifest points at.**
+  `EvolutionRun` hashes `<repo>/src/Evosim.Core` by path, not the package the manifest
+  resolves, so a worker whose `Packages/manifest.json` is pointed at a worktree's Core for a
+  validation (the round 38 build's chain, 2026-09-15) compiles the branch and records main's
+  `coreHash`. On a normal worker the two are one tree. Read a validation run's `coreHash` as
+  the main tree's, and take the branch's from a manifest written after the merge.
 - **`scripts/simhash.py` is not the hash.** It agreed with `EvolutionRun.HashSourceTree` on every
   tree through 1ce2e71 and disagreed on e59f6af's (`93ef4e96…` against the C#'s and
   `run-arm.ps1`'s `30b96bf6…`), which cost one refused launch. Take the expected hash from a

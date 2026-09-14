@@ -109,5 +109,18 @@ or the fluid terms (before round 41).
 
 ## Launch
 
-*(written at launch: the merges' commits, the smokes and the digest, each seed's worker,
-header and hashes)*
+*2026-09-15, 00:20 to 00:23.* The build was validated one Editor at a time under the cap
+(`scratch/r38build-chain.ps1`, log `scratch/logs/r38build-chain.out`) on a candidate tree
+of main with `trace2` and `fieldcv` merged (worker 3 carrying its Assets and its Core).
+The shared-space smoke passed with part 5's forced case: three finite frames held, the
+first non-finite step and link named, every frame's links carrying drag, acceleration
+force and water acceleration. The 600 s box digest (`boxdig-r37b` on main's build against
+`boxdig-r38build` on the candidate, seed 3, dt 0.02) is identical over all 31 steps. The
+dilute tank smoke `r38smoke` (600 s, dt 0.02, seed 3) printed the header this entry's V1
+names and founded: 166 births by 600 s against 93 in 37b's seed 1 at the same time, with
+about 90 blocked attempts per birth as before, `mat here` 0.037, no stillbirth, both
+ledgers closed, `det cv` 2.4 falling to 1.2 and `mat cv` 0.17 rising to 0.47 as the first
+bodies drew the matter down. Main was fast-forwarded to the candidate (`582ee6a`) and the
+workers refreshed. The manifest's `coreHash` on the candidate read main's, since it hashes
+the main tree's Core by path (CLAUDE.md's gotcha from this chain); the build's hashes are
+the first launched seed's, below.
