@@ -138,9 +138,10 @@ ahead of the idle charge.
    same world, with F5 the joint's question and F6 the throws'. *Moved here from the old queue's item 22 because the five
    founding lotteries have guided nine rounds of adaptive change and round 37's standing
    jointed populations have to be shown to be the world's.* **Done 2026-09-14: both read (0097's addendum, 0099); F1 to F8 hold, the reference bar is ten of ten.**
-3. **Round 38, the dilute tank** (D089 rulings 2 and 3): 400 m² with the matter held at 6,000
-   units, corpses as objects at 0.005/s; `rounds/launch-r38.ps1` is written and needs no
-   build (the throw trace it was waiting for landed in 37b's). *Repaired 2026-09-13 morning:*
+3. **Round 38, the dilute tank** (D089 rulings 3 and 4): 400 m² with the matter held at 6,000
+   units, corpses as objects at 0.005/s; **pre-registered as logbook/0100 (D1 to D8)** on
+   2026-09-14 night, its hashes to be recorded at launch; `rounds/launch-r38.ps1` is written
+   and launches on the build that carries the two merges. *Repaired 2026-09-13 morning:*
    it had been written from round 37's launcher before D090 and carried no
    `EVOSIM_FLUID_ACCEL`, so round 38 would have run the drag-only centrifuge; it now sets the
    force at 1 and its header comment says to verify `fluidAccel 1`. The dilute arithmetic passed

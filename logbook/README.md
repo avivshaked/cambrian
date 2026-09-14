@@ -299,3 +299,4 @@ key only translates the entries' reporting shorthand.
 | [0097](0097-the-water-carried-and-the-tank-threw.md) | 2026-09-13 | The water carried, and the tank threw (round 37b read: the centrifuge gone, 43 throws at birth) |
 | [0098](0098-a-second-draw-of-the-water.md) | 2026-09-13 | A second draw of the water (seeds 6 to 10 on round 37b's world, pre-registered) |
 | [0099](0099-ten-seeds-one-world.md) | 2026-09-14 | Ten seeds, one world (the fresh seeds read: the base's readings are the world's; the joint survives founding in three of ten and grows in none; no throws) |
+| [0100](0100-a-tank-four-times-as-wide.md) | 2026-09-14 | A tank four times as wide (round 38, the dilute tank, pre-registered) |
