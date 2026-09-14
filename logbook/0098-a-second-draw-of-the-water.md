@@ -96,4 +96,10 @@ eight hours behind round 37b's renders and the control. *23:30.* Seed 6 launched
 on workers 4 and 5 as the control and a render ended, each worker refreshed first, headers
 and hashes as seed 6's with their own seed. *03:06.* Seed 9 launched on worker 2 as seed 3's
 render ended, worker refreshed first, header and hashes as seed 6's with seed 9,
-`prereg.json` at the same commit. Seed 10 waits for the next slot.
+`prereg.json` at the same commit. *08:23.* Seed 7 landed first, at 30,000 s on its budget
+after eight hours with 1,585 alive, and seed 10 launched on its worker, 4, refreshed first,
+header and hashes as seed 6's with seed 10, `prereg.json` at the same commit; the queue is
+done, every seed launched. Seed 7's provisional look, before the read: the goal rule passes
+on a rigid eater clade founded at 1,083 s (105 alive at the end); `jnt inh` peaked at 50
+near 5,000 s and read 0 from 15,000 s; `diverged` 0, `wraps` 0, `stillb` 0, `audit` and
+`mat resid` 0 on every row; `cols` 100 of 100 and `x sd` 2.6 to 2.9 m throughout.
