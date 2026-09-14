@@ -41,8 +41,12 @@ when a slot frees, after the fresh seeds' renders. Its first attempt was killed 
 morning for putting the machine one over the cap (the queue counted before its Editor was
 up), and worker 7 was refreshed after the kill. The fresh seeds' renders run on
 `scratch/r37b-fresh-chain.ps1` (seeds 7, 6 and 8 at the three times, 9 and 10 at 5,000 and
-15,000 s; seeds 7 and 6 started 10:59 on workers 6 and 3), and **the two merges wait for
-those frames**: both
+15,000 s; seeds 7 and 6 started 10:59 on workers 6 and 3). **A 30,000 s render does not
+fit the queue's 720-minute wall on a loaded machine**: seed 7's did (its 30,000 s frames
+are 0099's), seed 6's timed out at 22:59 with its 5,000 and 15,000 s frames only and is
+not re-run (seed 7 and the positions plots cover the end state), and seed 8's, started
+13:25, may go the same way. Seed 5's two frames started by hand on worker 7 at 23:10.
+**The two merges wait for those frames**: both
 branches move Core or `Assets/Evosim`, and an Editor started after the merge would refuse
 the fresh seeds' recordings, since every worker compiles Core from the main tree.
 
