@@ -1,0 +1,69 @@
+## F8  wall-clock seconds per 1,000 simulated seconds, from the manifests
+round	arm	startedAt	endedAt	status	wall s	simulated s	s per 1000 sim s	footer wall minutes	footer timesRealTime	worker
+fresh	r37b-s6	2026-09-13T22:30:18	2026-09-14T09:53:04	ended	40966	30000	1365.5	682.7568109183334	0.7323251734793849	unity-w3
+fresh	r37b-s7	2026-09-13T23:10:48	2026-09-14T07:23:07	ended	29539	30000	984.6	492.30976758	1.0156207187555961	unity-w4
+fresh	r37b-s8	2026-09-13T23:11:28	2026-09-14T09:06:45	ended	35717	30000	1190.6	595.2907213433333	0.839925740605699	unity-w5
+fresh	r37b-s9	2026-09-14T02:06:41	2026-09-14T12:25:17	ended	37116	30000	1237.2	618.6015278666666	0.8082747576203368	unity-w2
+fresh	r37b-s10	2026-09-14T07:23:28	2026-09-14T21:24:00	ended	50432	30000	1681.1	840.5017897166667	0.5948827309083424	unity-w4
+
+## F8  the pace normalised as pace.tsv normalises it: divided by the mean living population, since a step costs per body
+round	arm	mean alive	s per 1000 sim s	s per 1000 sim s per 1000 bodies	ratio to 37b s1-s5 range (829.7-1096.5)	in 0.7-1.4 of every one of 37b's five
+fresh	r37b-s6	1646	1365.5	829.5	0.892 1.000 0.872 0.960 0.756	yes
+fresh	r37b-s7	1323	984.6	744.2	0.800 0.897 0.782 0.861 0.679	NO
+fresh	r37b-s8	1544	1190.6	770.9	0.829 0.929 0.810 0.892 0.703	yes
+fresh	r37b-s9	1507	1237.2	821.1	0.883 0.990 0.863 0.950 0.749	yes
+fresh	r37b-s10	1659	1681.1	1013.0	1.089 1.221 1.065 1.172 0.924	yes
+count	4 of 5
+
+## comparison, NOT recomputed (logbook/specs/r37b-read/pace.tsv): round 37b seeds 1 to 5 read 1289.4 / 1274.0 / 1460.7 / 1321.4 / 1579.3 s per 1,000 simulated s and 930.3 / 829.7 / 951.6 / 864.3 / 1096.5 per 1,000 bodies.
+
+## the machine: how many of the five fresh arms ran at once, over each arm's own life (renders are not in this count and are named in the final message)
+arm	start	end	hours	mean concurrent fresh arms	min	max
+r37b-s6	09-13 22:30	09-14 09:53	11.38	3.49	1	4
+r37b-s7	09-13 23:10	09-14 07:23	8.21	3.64	2	4
+r37b-s8	09-13 23:11	09-14 09:06	9.92	3.70	3	4
+r37b-s9	09-14 02:06	09-14 12:25	10.31	3.43	2	4
+r37b-s10	09-14 07:23	09-14 21:24	14.01	1.66	1	4
+
+## F8  the machine, in LOCAL time (+01:00; the manifests are UTC). Arm windows are the
+## manifests; the control arm is scratch/logs/evosim-r37bc-s5.log, and each render is its
+## scratch/logs/theatre-snap-*.out birth to its .log mtime. A render is a Unity Play-mode
+## process, not an arm; the counts below keep them apart.
+arm	hours	mean concurrent arms (fresh + control)	min	max	mean concurrent renders	min	max	mean total Unity processes
+r37b-s6	11.38	3.55	1	4	0.37	0	2	3.93
+r37b-s7	8.22	3.64	2	4	0.36	0	1	4.00
+r37b-s8	9.92	3.71	3	4	0.29	0	1	4.00
+r37b-s9	10.32	3.43	2	4	0.48	0	3	3.91
+r37b-s10	14.02	1.66	1	4	2.27	0	3	3.93
+
+## the windows used
+name	start (local)	end (local)	hours
+r37b-s6	2026-09-13 23:30	2026-09-14 10:53	11.38
+r37b-s7	2026-09-14 00:10	2026-09-14 08:23	8.22
+r37b-s8	2026-09-14 00:11	2026-09-14 10:06	9.92
+r37b-s9	2026-09-14 03:06	2026-09-14 13:25	10.32
+r37b-s10	2026-09-14 08:23	2026-09-14 22:24	14.02
+r37bc-s5 (control arm)	2026-09-13 15:39	2026-09-14 00:09	8.50
+render r37b-s1 (w5)	2026-09-13 10:11	2026-09-13 21:49	11.63
+render r37b-s2 (w3)	2026-09-13 11:52	2026-09-13 23:29	11.62
+render r37b-s4 (w7)	2026-09-13 12:17	2026-09-14 00:09	11.87
+render r37b-s3 (w2)	2026-09-13 15:06	2026-09-14 03:06	12.00
+render r37b-s5 (w7)	2026-09-14 10:58	2026-09-14 11:01	0.05
+render r37b-s7 (w6)	2026-09-14 10:58	2026-09-14 19:58	9.00
+render r37b-s6 (w3)	2026-09-14 10:59	2026-09-14 22:26	11.45
+render r37b-s8 (w5)	2026-09-14 13:25	2026-09-14 22:26	9.02
+render r37b-s9 (w6)	2026-09-14 19:58	2026-09-14 22:26	2.47
+render r37b-s10 (w4)	2026-09-14 22:24	2026-09-14 22:26	0.03
+
+## F8, the other reading of "within 0.7 to 1.4 of 37b's five". The table above takes it
+## strictly (inside the band against EVERY one of the five), which reads 4 of 5: seed 7 sits
+## at 0.679 of round 37b seed 5, the slowest of the first draw. Read against the mean of
+## 37b's five (934.5) it is 5 of 5; read against 37b's range (829.7 to 1096.5), four of the
+## five sit at or below the bottom of it.
+arm	per 1000 bodies	ratio to 37b mean	in 0.7-1.4 of the mean	below 37b min (829.7)
+r37b-s6	829.5	0.888	yes	yes
+r37b-s7	744.2	0.796	yes	yes
+r37b-s8	770.9	0.825	yes	yes
+r37b-s9	821.1	0.879	yes	yes
+r37b-s10	1013.0	1.084	yes	no
+count	-	-	5 of 5	-

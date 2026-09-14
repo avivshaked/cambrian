@@ -1,0 +1,9 @@
+## Recorded and not predicted: stillbirths against births (cumulative counts)
+arm	t=5000 stillb	births	per 1000 births	t=15000 stillb	births	per 1000 births	t=30000 stillb	births	per 1000 births	end stillb	end births	per 1000 births	crowded at end	max crowded
+r37b-s6	2	2130	0.94	197	5046	39.04	439	10444	42.03	439	10444	42.03	0	1
+r37b-s7	0	2949	0.00	0	8826	0.00	0	16324	0.00	0	16324	0.00	0	14
+r37b-s8	0	2442	0.00	34	7843	4.34	130	12800	10.16	130	12800	10.16	0	1
+r37b-s9	1	2181	0.46	34	7613	4.47	104	12934	8.04	104	12934	8.04	0	1
+r37b-s10	10	2076	4.82	254	5545	45.81	709	9850	71.98	709	9850	71.98	0	0
+
+## comparison, round 37b seeds 1 to 5: stillbirths 12 / 196 / 449 / 201 / 181 with crowded 0 everywhere; round 37: 2 / 14 / 5 / 183 / 56. The control r37bc-s5 (fluidAccel 0) read 0 (0097 addendum).

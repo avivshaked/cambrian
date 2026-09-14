@@ -1,0 +1,8 @@
+## EMPTY BY MEASUREMENT, not by omission. Seeds 6 to 10 produced no diverged dumps:
+## divergedTotal 0 in every manifest, the `diverged` column 0 on every one of the 1,500
+## rows, and no runs/<arm>/<run>/diverged/ directory exists on any of the five.
+## There is therefore no anatomy to tabulate (parts, masses, ratio, age, jointed,
+## distance to the glass, steps since a resize) and F6's second clause is unreadable.
+## Round 37b seeds 1 to 5 threw 43; their anatomy is logbook/specs/r37b-read/diverged-anatomy.tsv.
+arm	dump	parts	masses	mass ratio	age s	jointed	r at dump	m to glass	steps since resize
+(none)

@@ -1,0 +1,13 @@
+## F6  divergences and the exposure that produced them. A sample is 100 s, so a column's standing count summed over samples times 100 is body-seconds.
+round	arm	samples	interval s	sum jnt inh	jnt-inh body-s	sum jointed	jointed body-s	diverged	per 1e6 jnt-inh body-s	per 1e6 jointed body-s	in 0 to 10 per 1e6 jointed
+fresh	r37b-s6	300	100	19917	1991700	21265	2126500	0	0.00	0.00	yes
+fresh	r37b-s7	300	100	4349	434900	4934	493400	0	0.00	0.00	yes
+fresh	r37b-s8	300	100	5335	533500	5685	568500	0	0.00	0.00	yes
+fresh	r37b-s9	300	100	4558	455800	4830	483000	0	0.00	0.00	yes
+fresh	r37b-s10	300	100	924	92400	1199	119900	0	0.00	0.00	yes
+fresh	all five	-	-	-	3508300	-	3791300	0	0.00	0.00	-
+
+## comparison, NOT recomputed (logbook/specs/r37b-read/exposure.tsv):
+r37b s1-s5	-	-	-	-	11133400	-	11792900	43	3.86	3.65	-
+r37 s1-s5	-	-	-	-	9173400	-	9491200	0	0.00	0.00	-
+r36 s1-s5	-	-	-	-	6913800	-	7367200	131	18.95	17.78	-

@@ -6,45 +6,24 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
-**Round 37b, the water carried as water, is running (logbook/0095; D090, D091).** It is round
-37's tank on the streams (a spectrum of eddies and overturning cells, no swirl about the axis)
-with the fluid acceleration force at 1, the conservative transporter, the whole-body wall
-clearance at birth, the corrected `cols` and the throw trace, and it replaces round 37 as the
-tank's base. Five seeds on one build (`simHash 5e164d01…`, `coreHash ad5c952a…`,
-`configHash 2430e660`, `physicsJobWorkers 0`, `prereg.json` beside each run from commit
-`0de5d5d`): seed 1 launched 2026-09-12 23:26 on worker 5, seeds 2, 3 and 4 at 01:14 to 01:15
-on workers 3, 4 and 7, seed 5 at 02:17 on worker 2, each header verified (`space tank r=5.64 m
-(100 m2), depth 60, wall, bed`, `fluidAccel 1`, `dispersal=5 m`, `driveLimit >0.01`,
-`linkPhoto 0.5`, `addedMass 0.5`, `dt=0.01`). Round 37's four unfinished renders were stopped
-to free the workers, and 0095's launch section says why. At 02:20 seed 1 was at 12,300 s with
-1,636 alive, seeds 2 to 4 at 5,900 to 6,100 s, seed 5 at 1,500 s. Seed 1's frames at 3,000 and
-6,000 s show the disc filled evenly with no crust, the rim quarter at 20 to 24% where round
-37 read 58 to 96%, and bodies spread through the top 50 m (`scratch/snaps/r37b-s1/`). The
-round's nine predictions (M0 the world stands, M1 the water does not gather, M2 the middle is
-filled, M3 the crowd loosens to the box's, M4 the joint's fate, M5 the water carries, M6 the
-tank still throws nothing, M7 the cycle damps, M8 the pace holds) and their two-sided readings
-are in 0095. **Read 2026-09-13 afternoon as logbook/0097.** Seeds 1 to 4 ran to their
-budget; seed 5 wedged at 29,200 s (the 0043 signature, confirmed twice with the
-discriminator), was stopped as `manual-stall` and is censored. M1's rim clause, M2, M3, M4,
-M5 and M7 hold in every seed: the rim quarter 19 to 27% (round 37: 45 to 98%), the crowd
-the box's at matched abundance, the water at the box's speed, the cycle gone (it was the
-crust's). M0 fails on the upside (seeds 1 and 3 hold 2.0 and 2.5 times round 37's, which
-the crust had starved), M1's drift clause fails on an ill-posed threshold (a mixed disc
-cannot read zero drift by bin; against the fully-mixed bound every bin reads mixed), M6
-fails on 43 throws (0, 0, 1, 5, 37), M8 in one seed by a hundredth. The goal rule five of
-five, read not required. The tank's base stands as ruled (D091). The throws: all 43 are
-two-part jointed newborns dumped within seconds of birth, mass ratio under 2.4, not at the
-wall, not at a resize, clustered by parent; the trace ring missed the onset in 42 of 43
-(written after the check fires). **The control is read (0097's addendum, 2026-09-14
-small hours):** `r37bc-s5` (seed 5, `fluidAccel 0`) threw nothing in 1,421 jointed births
-where seed 5 threw 37 in 2,744, and without the force the streams alone gathered 42 to 51%
-at the rim, so the term is both what the round needed and the world in which the throws
-happen. The field is not the mechanism: a probe of the closed form (`scratch/accel-probe/`)
-reads at most 0.12 m/s² anywhere, nothing non-finite in three million calls. The genomes
-are: all 43 thrown are hinge bodies, small adults born large, and six of the seven parents
-that lost two or more children are one near-identical lineage in seed 5
-(`scratch/throw-parents/`), so the throw is a body plan driven at full power from its
-first step (round 34's failure in newborns) and the force's part is ecological. The trace's
+**Round 37b, the water carried as water, is the base and is read (logbook/0095, 0097; D090,
+D091).** Round 37's tank on the streams with the fluid acceleration force at 1, the
+conservative transporter, the whole-body wall clearance at birth, the corrected `cols` and
+the throw trace; one build (`simHash 5e164d01…`, `coreHash ad5c952a…`, `configHash
+2430e660`, `physicsJobWorkers 0`). Read 2026-09-13 as 0097: the rim quarter 19 to 27%
+(round 37: 45 to 98%), the crowd the box's at matched abundance, the cycle gone, the goal
+rule five of five; seed 5 wedged at 29,200 s and is censored. M6 failed on 43 throws, all
+two-part jointed newborns, and the control `r37bc-s5` (seed 5 with `fluidAccel 0`) threw
+nothing, so the force is the world in which the throws happen; the field probe reads at
+most 0.12 m/s² and the genomes say the throw is one hinge lineage driven at full power from
+its first step (0097's addendum; `scratch/accel-probe/`, `scratch/throw-parents/`).
+**The fresh seeds are read (logbook/0098, 0099; 2026-09-14 night).** Seeds 6 to 10 on the
+same world and build, pre-registered, all ended on budget: F1 to F8 hold, so 37b's readings
+are the world's. Ten seeds of ten pass D063 on this base (the reference bar from here), the
+disc is mixed in ten of ten, the joint survives founding in three of ten and grows in none
+(every jointed peak is before 3,000 s and decays), and the fresh five threw nothing over
+3.79 million jointed body-seconds, so the 43 throws are lineage-bound (inference). The
+stillbirth reading of 0097's addendum does not hold on seed 10 and stays open. The trace's
 second pass is built on branch `trace2` (worktree `scratch/wt-trace2`, commit `7846cc3`:
 the ring keeps only finite frames, records the first non-finite step, and carries the
 step's drag, acceleration force and water acceleration per link; the smoke's forced case
@@ -52,8 +31,7 @@ uses a poison hook on the ring's read because PhysX takes no velocity on a link)
 compiled clean on worker 6 at 00:33 on 2026-09-14 (a compile-only pass, a sixth Editor
 for three minutes over the cap, noted; worker 6 was then restored from main and checked
 file for file), and waits for a worker under the cap to run its smoke and the box
-digest. It moves `simHash` and lands with `field cv` after the fresh seeds have all
-launched. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
+digest. It moves `simHash` and lands with `field cv`. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
 seed 5's render cannot reach a 30,000 s frame, and **the render queue did not take it**: a
 stopped run's report carries no Ended footer, which was all the queue read, so the chain
 sat two hours behind it on 2026-09-14 morning and was stopped (the queue now also reads
@@ -120,7 +98,8 @@ The rounds of the shared world, each read against the one before it:
 | 34 | 0090 | the joint made free: founds in every seed, gone from every seed by 23,100 s | 5 of 5 |
 | 36 | 0092 | the link earns at 0.5; a jointed absorptive population stands in seed 1 | 5 of 5 |
 | 37 | 0094 | the tank: a glass wall, a gyre, ring patches; the crust at the glass | 4 of 5 |
-| 37b | 0095 | the streams, the fluid force, the conservative transporter | running |
+| 37b | 0095, 0097 | the streams, the fluid force, the conservative transporter; the base | 5 of 5 |
+| 6 to 10 | 0098, 0099 | 37b's world on five fresh seeds; not a round | 5 of 5 |
 
 Round 34 ran after round 35 (the owner's theatre pause moved the base round first); the
 entries are in `logbook/README.md`'s key.
@@ -158,7 +137,7 @@ ahead of the idle charge.
    `scratch/logs/r37b-fresh-queue.out`); read against 37b's five as a second draw of the
    same world, with F5 the joint's question and F6 the throws'. *Moved here from the old queue's item 22 because the five
    founding lotteries have guided nine rounds of adaptive change and round 37's standing
-   jointed populations have to be shown to be the world's.* Launches when 37b's read is in.
+   jointed populations have to be shown to be the world's.* **Done 2026-09-14: both read (0097's addendum, 0099); F1 to F8 hold, the reference bar is ten of ten.**
 3. **Round 38, the dilute tank** (D089 rulings 2 and 3): 400 m² with the matter held at 6,000
    units, corpses as objects at 0.005/s; `rounds/launch-r38.ps1` is written and needs no
    build (the throw trace it was waiting for landed in 37b's). *Repaired 2026-09-13 morning:*

@@ -1,0 +1,15 @@
+## V1  the header tokens and the manifest hashes, per fresh seed. 0098 asks for the tokens 0095's V1 names with fluidAccel 1, one simHash 5e164d01, one coreHash ad5c952a, one configHash 2430e660, physicsJobWorkers 0 and a prereg.json naming 0098's commit.
+arm	seed	space	current	fluidAccel	dispersal	driveLimit	linkPhoto	addedMass	dt	field	configHash	simHash	coreHash	physicsJobWorkers	gitCommit	gitDirty	prereg file	prereg commit	status	reason	simulated s	worker
+r37b-s6	6	space tank r=5.64 m (100 m2), depth 60, wall, bed dispersal=5 m	current 0.1 m/s transport over 6000 s (cell 30 m unread)	fluidAccel 1	dispersal=5 m	driveLimit >0.01	linkPhoto 0.5	addedMass 0.5	dt=0.01	field grid h=1 mh=1.8 merge=0.25 cap=100000 q=0.125 cell=1 mcell=5 corpse=0.005/s	2430e6606247face	5e164d01	ad5c952a	0	6fac5375	False	logbook/0098-a-second-draw-of-the-water.md	237e7ceb	ended	budget	30000	unity-w3
+r37b-s7	7	space tank r=5.64 m (100 m2), depth 60, wall, bed dispersal=5 m	current 0.1 m/s transport over 6000 s (cell 30 m unread)	fluidAccel 1	dispersal=5 m	driveLimit >0.01	linkPhoto 0.5	addedMass 0.5	dt=0.01	field grid h=1 mh=1.8 merge=0.25 cap=100000 q=0.125 cell=1 mcell=5 corpse=0.005/s	2430e6606247face	5e164d01	ad5c952a	0	635e33bb	False	logbook/0098-a-second-draw-of-the-water.md	237e7ceb	ended	budget	30000	unity-w4
+r37b-s8	8	space tank r=5.64 m (100 m2), depth 60, wall, bed dispersal=5 m	current 0.1 m/s transport over 6000 s (cell 30 m unread)	fluidAccel 1	dispersal=5 m	driveLimit >0.01	linkPhoto 0.5	addedMass 0.5	dt=0.01	field grid h=1 mh=1.8 merge=0.25 cap=100000 q=0.125 cell=1 mcell=5 corpse=0.005/s	2430e6606247face	5e164d01	ad5c952a	0	635e33bb	False	logbook/0098-a-second-draw-of-the-water.md	237e7ceb	ended	budget	30000	unity-w5
+r37b-s9	9	space tank r=5.64 m (100 m2), depth 60, wall, bed dispersal=5 m	current 0.1 m/s transport over 6000 s (cell 30 m unread)	fluidAccel 1	dispersal=5 m	driveLimit >0.01	linkPhoto 0.5	addedMass 0.5	dt=0.01	field grid h=1 mh=1.8 merge=0.25 cap=100000 q=0.125 cell=1 mcell=5 corpse=0.005/s	2430e6606247face	5e164d01	ad5c952a	0	a8dcfd81	False	logbook/0098-a-second-draw-of-the-water.md	237e7ceb	ended	budget	30000	unity-w2
+r37b-s10	10	space tank r=5.64 m (100 m2), depth 60, wall, bed dispersal=5 m	current 0.1 m/s transport over 6000 s (cell 30 m unread)	fluidAccel 1	dispersal=5 m	driveLimit >0.01	linkPhoto 0.5	addedMass 0.5	dt=0.01	field grid h=1 mh=1.8 merge=0.25 cap=100000 q=0.125 cell=1 mcell=5 corpse=0.005/s	2430e6606247face	5e164d01	ad5c952a	0	d7cc0104	False	logbook/0098-a-second-draw-of-the-water.md	237e7ceb	ended	budget	30000	unity-w4
+
+## V2 to V5, checked on every row of every fresh seed
+arm	rows	samples	audit rows not 0.0000%	mat resid rows not 0	wraps rows not 0	max wraps	diverged at end	dumps on disk	trace files	max |mat orphan|	rows with mat orphan != 0	status
+r37b-s6	300	300	0	0	0	0	0	0	0	0	0	ended / budget
+r37b-s7	300	300	0	0	0	0	0	0	0	0.002	223	ended / budget
+r37b-s8	300	300	0	0	0	0	0	0	0	0.001	251	ended / budget
+r37b-s9	300	300	0	0	0	0	0	0	0	0.001	110	ended / budget
+r37b-s10	300	300	0	0	0	0	0	0	0	0.001	43	ended / budget

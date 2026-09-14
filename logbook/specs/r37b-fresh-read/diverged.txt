@@ -1,0 +1,12 @@
+r37b-s6: no diverged/ dumps under runs/r37b-s6\2026-09-13-223018-2430e660
+r37b-s7: no diverged/ dumps under runs/r37b-s7\2026-09-13-231048-2430e660
+r37b-s8: no diverged/ dumps under runs/r37b-s8\2026-09-13-231128-2430e660
+r37b-s9: no diverged/ dumps under runs/r37b-s9\2026-09-14-020641-2430e660
+r37b-s10: no diverged/ dumps under runs/r37b-s10\2026-09-14-072328-2430e660
+
+## F6: no seed of the five threw a body. `divergedTotal` is 0 in all five manifests, the
+## `diverged` column reads 0 on all 1,500 rows, and no run directory has a `diverged/`
+## directory at all, so there is nothing to dump and nothing to trace. V4 (a trace file
+## beside every dump) is vacuously satisfied: 0 dumps, 0 traces.
+## F6's anatomy clause ("every dump a jointed body under 10 s old with a mass ratio under
+## 3") CANNOT BE READ: it presupposes at least one dump. The data does not answer it.

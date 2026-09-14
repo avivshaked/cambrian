@@ -1,0 +1,42 @@
+## Radial drift, the fresh seeds (r37b build, seeds 6 to 10): for every body present in two consecutive samples (100 s apart), the change in its distance from the axis, binned by the starting radius. Positive is outward. Averaged over the whole run.
+ The fully-mixed bound is what a body starting in the bin would drift if its place 100 s later were drawn from the whole crowd (the sample's own mean r, less r0): a stationary disc CANNOT read zero in a bin away from the mean radius, so the bound, not zero, is what a well-mixed world looks like in this statistic. "all radii pooled" is the net flux and is zero at a stationary distribution.
+arm	r bin (m)	body pairs	mean dr (m per 100 s)	median dr	share moving outward	fully-mixed bound	observed / bound
+r37b-s6	0.00-1.00	12670	3.3887	3.7575	0.984	3.0266	1.120
+r37b-s6	1.00-2.00	45674	2.2030	2.3984	0.933	2.1416	1.029
+r37b-s6	2.00-3.00	81061	1.0330	1.0789	0.780	1.1736	0.880
+r37b-s6	3.00-4.00	113915	0.0751	0.1819	0.557	0.1865	0.402
+r37b-s6	4.00-5.00	142514	-0.7700	-0.4685	0.337	-0.8031	0.959
+r37b-s6	5.00-5.64	88381	-1.4145	-0.9823	0.140	-1.5676	0.902
+r37b-s6	all radii pooled	484215	0.0023	0.0005	0.500	0.0000	-
+r37b-s7	0.00-1.00	9277	3.4238	3.8056	0.988	3.0333	1.129
+r37b-s7	1.00-2.00	35104	2.2217	2.4324	0.935	2.1491	1.034
+r37b-s7	2.00-3.00	63266	1.0407	1.0880	0.780	1.1797	0.882
+r37b-s7	3.00-4.00	90765	0.0801	0.1758	0.557	0.1937	0.414
+r37b-s7	4.00-5.00	114282	-0.7562	-0.4537	0.333	-0.7943	0.952
+r37b-s7	5.00-5.64	68694	-1.3906	-0.9744	0.147	-1.5516	0.896
+r37b-s7	all radii pooled	381388	0.0024	-0.0033	0.498	0.0000	-
+r37b-s8	0.00-1.00	11237	3.3997	3.7502	0.987	3.0237	1.124
+r37b-s8	1.00-2.00	41734	2.2315	2.4161	0.938	2.1443	1.041
+r37b-s8	2.00-3.00	74936	1.0739	1.1229	0.787	1.1762	0.913
+r37b-s8	3.00-4.00	107726	0.0964	0.1961	0.562	0.1911	0.504
+r37b-s8	4.00-5.00	135166	-0.7583	-0.4563	0.334	-0.7964	0.952
+r37b-s8	5.00-5.64	80461	-1.4724	-1.0900	0.134	-1.5539	0.948
+r37b-s8	all radii pooled	451260	0.0027	0.0006	0.500	0.0000	-
+r37b-s9	0.00-1.00	10978	3.3732	3.7535	0.987	3.0193	1.117
+r37b-s9	1.00-2.00	41169	2.1662	2.3464	0.931	2.1378	1.013
+r37b-s9	2.00-3.00	73600	1.0072	1.0390	0.770	1.1725	0.859
+r37b-s9	3.00-4.00	104187	0.0702	0.1692	0.553	0.1876	0.374
+r37b-s9	4.00-5.00	131581	-0.7436	-0.4321	0.341	-0.8021	0.927
+r37b-s9	5.00-5.64	78446	-1.3850	-0.9734	0.146	-1.5593	0.888
+r37b-s9	all radii pooled	439961	0.0026	-0.0008	0.500	0.0000	-
+r37b-s10	0.00-1.00	12934	3.4372	3.7885	0.988	3.0348	1.133
+r37b-s10	1.00-2.00	45434	2.1974	2.3809	0.933	2.1573	1.019
+r37b-s10	2.00-3.00	80460	1.0267	1.0547	0.776	1.1848	0.867
+r37b-s10	3.00-4.00	114554	0.0821	0.1849	0.560	0.1981	0.414
+r37b-s10	4.00-5.00	144497	-0.7382	-0.4242	0.346	-0.7937	0.930
+r37b-s10	5.00-5.64	90639	-1.4170	-0.9819	0.148	-1.5560	0.911
+r37b-s10	all radii pooled	488518	0.0025	0.0044	0.502	0.0000	-
+
+## Comparison, NOT recomputed: round 37b seeds 1 to 5 and round 37 seeds 1 to 5
+## are in logbook/specs/r37b-read/drift.tsv. 37b pooled net flux +0.0025 to +0.0032 m
+## per 100 s; round 37 +0.0202 to +0.0486.

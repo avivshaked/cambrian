@@ -1,0 +1,32 @@
+## F1  the world stands: alive at 30,000 s between 1,250 and 2,300 in at least 4 of 5
+arm	t	alive	in 1250-2300	births	deaths	mean alive over the run	min alive after 5000 s	max alive after 5000 s
+r37b-s6	30000	1811	yes	10444	8708	1646	1596	1913
+r37b-s7	30000	1585	yes	16324	14839	1323	1085	1595
+r37b-s8	30000	1831	yes	12800	11036	1544	1470	1843
+r37b-s9	30000	1722	yes	12934	11300	1507	1349	1797
+r37b-s10	30000	1759	yes	9850	8167	1659	1668	1862
+count in band	5 of 5	(holds at 4)
+
+## comparison, round 37b seeds 1 to 5 at 30,000 s (seed 5 at 29,200 s): 1674 / 1735 / 1840 / 1782 / 1764
+
+## F3  the middle is filled: corrected cols at least 60 from 5,000 s, and x sd 2.0 to 3.4 m at the three times
+arm	cols at 5000	cols at 15000	cols at 30000	min cols over t>=5000	at t	x sd 5000	x sd 15000	x sd 30000	min x sd t>=5000	max x sd t>=5000	holds
+r37b-s6	100	100	100	99	20100	2.78	2.71	2.71	2.55	2.97	yes
+r37b-s7	100	100	100	97	7000	2.70	2.66	2.72	2.44	3.06	yes
+r37b-s8	100	100	100	99	8800	2.76	2.76	2.81	2.53	3.00	yes
+r37b-s9	100	100	100	99	5200	2.71	2.94	2.74	2.53	2.98	yes
+r37b-s10	100	100	100	99	10500	2.64	2.65	2.85	2.54	2.96	yes
+count	5 of 5	(holds at 4)
+
+## comparison, round 37b seeds 1 to 5: minimum cols 98 of 100 in every seed, x sd 2.66 to 2.90 (2.82 is a spread disc)
+
+## F5  the joint's fate: seeds holding at least 10 inherited jointed bodies at 30,000 s (0098 predicts between 0 and 3 of 5)
+arm	jnt inh at end	>=10	jointed at end	peak jnt inh	at t	peak jointed	at t	last t with jnt inh >= 10	first t with jnt inh = 0	samples with jnt inh = 0
+r37b-s6	14	yes	15	174	3000	190	3000	30000	(never)	0
+r37b-s7	0	no	0	110	1400	116	1400	8000	11000	191
+r37b-s8	1	no	1	77	2200	83	2100	12500	(never)	0
+r37b-s9	0	no	0	121	1400	129	1400	8400	11300	188
+r37b-s10	0	no	0	29	1000	34	1000	3700	11400	187
+count holding >= 10	1 of 5	(0098: 0 to 3 holds; 0 or 4-5 are the two-sided readings)
+
+## comparison, round 37b seeds 1 to 5: 0 / 0 / 8 / 55 / 102 at the end, so two seeds held >= 10
