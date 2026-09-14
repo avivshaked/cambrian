@@ -94,4 +94,6 @@ eight hours behind round 37b's renders and the control. *23:30.* Seed 6 launched
 `physicsJobWorkers 0`, `prereg.json` naming this entry's commit. The queue's log is
 `scratch/logs/r37b-fresh-queue.out`. *2026-09-14 00:10 and 00:11.* Seeds 7 and 8 launched
 on workers 4 and 5 as the control and a render ended, each worker refreshed first, headers
-and hashes as seed 6's with their own seed.
+and hashes as seed 6's with their own seed. *03:06.* Seed 9 launched on worker 2 as seed 3's
+render ended, worker refreshed first, header and hashes as seed 6's with seed 9,
+`prereg.json` at the same commit. Seed 10 waits for the next slot.
