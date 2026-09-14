@@ -103,3 +103,4 @@ done, every seed launched. Seed 7's provisional look, before the read: the goal 
 on a rigid eater clade founded at 1,083 s (105 alive at the end); `jnt inh` peaked at 50
 near 5,000 s and read 0 from 15,000 s; `diverged` 0, `wraps` 0, `stillb` 0, `audit` and
 `mat resid` 0 on every row; `cols` 100 of 100 and `x sd` 2.6 to 2.9 m throughout.
+*10:15.* Seed 8 landed at 30,000 s on its budget with 1,831 alive.
