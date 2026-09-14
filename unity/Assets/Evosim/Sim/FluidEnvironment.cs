@@ -359,6 +359,14 @@ namespace Evosim.Sim
                         if (force.y > 0f && where.y >= 0f) force.y = 0f;
 
                         _accelForce[at + i] = force;
+
+                        // The water's own acceleration, kept beside the force it produced, from
+                        // logbook/specs/throw-trace-spec.md's second pass. The force is the
+                        // acceleration times a volume and a coefficient, so a post-mortem that
+                        // holds only the force cannot say whether a body was thrown by a violent
+                        // patch of water or by its own size. One Vector3 store per part per step,
+                        // and only on the steps this term runs at all.
+                        _waterAccel[at + i] = acceleration.ToVector3();
                     }
 
                     // The lateral line, taken from the drag pass rather than recomputed —
@@ -496,6 +504,14 @@ namespace Evosim.Sim
                             }
                         }
                     }
+
+                    // The drag as it is about to be handed to the solver, after the limiter has
+                    // had its say, from logbook/specs/throw-trace-spec.md's second pass. _force holds
+                    // the gathered value and Settle needs it to stay that way, so this is a
+                    // separate slot rather than a write back into it. What a post-mortem wants is
+                    // the force the body actually felt, which above 0.01 s is not the one the
+                    // compute phase produced.
+                    _stepDrag[at + i] = dragForce;
 
                     body.AddForce(dragForce);
                     body.AddTorque(dragTorque);
@@ -833,6 +849,13 @@ namespace Evosim.Sim
         private Vector3[] _accelForce = System.Array.Empty<Vector3>();
         private bool _accelerating;
 
+        // The throw trace's two extra slots, from logbook/specs/throw-trace-spec.md's second pass.
+        // _stepDrag is the drag as applied (past the limiter, which _force is not) and
+        // _waterAccel is the acceleration the current was sampled at, written only on the steps
+        // the acceleration force runs. Neither is read by anything in the physics loop.
+        private Vector3[] _stepDrag = System.Array.Empty<Vector3>();
+        private Vector3[] _waterAccel = System.Array.Empty<Vector3>();
+
         private Vector3[] _preV = System.Array.Empty<Vector3>();
         private Vector3[] _preW = System.Array.Empty<Vector3>();
         private float _pendingStep;
@@ -850,8 +873,65 @@ namespace Evosim.Sim
             _force = new Vector3[size];
             _torque = new Vector3[size];
             _accelForce = new Vector3[size];
+            _stepDrag = new Vector3[size];
+            _waterAccel = new Vector3[size];
             _preV = new Vector3[size];
             _preW = new Vector3[size];
+        }
+
+        /// <summary>
+        /// The three fluid quantities one part felt on the step just applied: the drag force as
+        /// the solver was handed it, the acceleration force, and the water acceleration the second
+        /// was computed from. See <c>logbook/specs/throw-trace-spec.md</c>'s second pass.
+        /// </summary>
+        /// <param name="creatureIndex">
+        /// Index into the same list passed to <see cref="Apply(IReadOnlyList{CreatureInstance}, float)"/>,
+        /// in the same order, the mapping <see cref="TryLastVelocity"/> already uses.
+        /// </param>
+        /// <param name="partIndex">Index into that creature's <see cref="CreatureInstance.Bodies"/>.</param>
+        /// <returns>False when the slot was never filled, in which case all three read zero.</returns>
+        /// <remarks>
+        /// <para>
+        /// <b>Indexed rather than keyed by the instance.</b> The spec asks for something
+        /// <c>Ecosystem.RecordTrace</c> can call per link with no allocation, and the environment
+        /// already lays the population out in one flat array per step;
+        /// <see cref="_offset"/> is that mapping, and a dictionary from
+        /// <see cref="CreatureInstance"/> to an offset would be a second copy of it plus a hash
+        /// per link per step. The caller walks the same list in the same order, which is the
+        /// contract <see cref="TryLastVelocity"/> has had since the divergence dump.
+        /// </para>
+        /// <para>
+        /// <b>Zero when the acceleration force is off</b>, which is every recorded config: the
+        /// term is never computed then, so the two slots hold whatever the last world that did
+        /// run it left there. Reporting a stale force as this step's would be worse than
+        /// reporting nothing, and zero is what the term actually contributed.
+        /// </para>
+        /// </remarks>
+        public bool TryStepForces(
+            int creatureIndex,
+            int partIndex,
+            out Vector3 drag,
+            out Vector3 accelerationForce,
+            out Vector3 waterAcceleration)
+        {
+            drag = Vector3.zero;
+            accelerationForce = Vector3.zero;
+            waterAcceleration = Vector3.zero;
+
+            if (creatureIndex < 0 || creatureIndex >= _offset.Length || partIndex < 0) return false;
+
+            int j = _offset[creatureIndex] + partIndex;
+            if (j < 0 || j >= _stepDrag.Length) return false;
+
+            drag = _stepDrag[j];
+
+            if (_accelerating)
+            {
+                accelerationForce = _accelForce[j];
+                waterAcceleration = _waterAccel[j];
+            }
+
+            return true;
         }
 
         /// <summary>
