@@ -8,27 +8,29 @@ In every world so far the bodies sit a body length apart: round 35's median near
 neighbour was 0.63 to 0.70 m, round 37b's 0.66 to 0.74 m. With food within reach in every
 direction a sitter eats as well as a swimmer, and that, as inference, is why movement has
 never paid its price in thirty-seven rounds (D089's context). Round 38 keeps every unit of
-matter and gives it four times the water. The question is not whether the world stands, it
-is what a dilute world does to the crowd, to the food's shape and to founding, so that a
-stroke or a sense has something to buy when rounds 39 to 41 price it.
+matter and gives it four times the water. The question is not whether the world stands. It
+is what a dilute world does to the crowd, to the food's shape and to founding. Rounds 39
+to 41 then price a stroke and a sense in a world where they have something to buy.
 
 ## The world
 
-Round 37b's exactly (0095's five changes on the tank; ten seeds read the same, 0099) with
-one knob and one held value: `EVOSIM_AREA 400` (the disc's radius 5.64 m to 11.28 m) and
-`EVOSIM_MATTER_BUDGET 6000`, the total 37b's 100 m² held at one unit per cubic metre, so
-the seeded density falls to 0.235 units/m³ (the 5 m matter cell's mask overshoots the disc
-by 6%; the total is exact). Corpses decay at 0.005/s as since round 32. `rounds/launch-r38.ps1`,
-seeds 1 to 5, 30,000 s, dt 0.01, through `launch-queue.ps1 -Prereg` on this entry. The
-build is 37b's with the trace's second pass and `field cv` merged (both move the hashes;
-the smokes and the digest are run before the merge and named in the launch section), so
-the report carries `det cv` and `mat cv` for the first time and every diverged dump names
-its first non-finite step. Round 37b's ten seeds are the control for every reading below.
+Round 37b's world (0095's five changes on the tank; ten seeds read the same, 0099) with
+one knob turned and one value held. The area goes to 400 m², the disc's radius from
+5.64 m to 11.28 m. The matter budget is held at 6,000 units, which is what 37b's 100 m²
+held at one unit per cubic metre, so the seeded density falls to 0.235 units/m³. The 5 m
+matter cell's mask overshoots the disc by 6%; the total is exact. Corpses decay at
+0.005/s as since round 32. The launcher is `rounds/launch-r38.ps1`: seeds 1 to 5,
+30,000 s, dt 0.01, through the queue with the pre-registration check on this entry. The
+build is 37b's with the trace's second pass and the field's coefficient of variation
+merged. Both move the hashes, so the smokes and the digest are run before the merge and
+named in the launch section. The report carries `det cv` and `mat cv` for the first time,
+and every diverged dump names its first non-finite step. Round 37b's ten seeds are the
+control for every reading below.
 
-The arithmetic before launch (D089's check 3, run 2026-09-13): a 5 m matter cell holds 31
-units at the new density and a child costs 8 to 16, so a founder that reaches one cell can
-breed; the grid is about 24,000 detritus cells and 400 live columns, and the physics follows
-bodies, so the pace should follow the population and not the water.
+The arithmetic was checked before launch (D089's check 3, run 2026-09-13). A 5 m matter
+cell holds 31 units at the new density and a child costs 8 to 16, so a founder that
+reaches one cell can breed. The grid is about 24,000 detritus cells over 400 live columns.
+The physics follows bodies, so the pace should follow the population and not the water.
 
 ## Rules, before scoring
 
@@ -65,11 +67,12 @@ in the fresh five; peak-to-trough of `alive` after 5,000 s 1.1 to 2.4.
 | D8 | **the pace follows the bodies**: wall seconds per 1,000 simulated seconds per living body within 0.7 and 1.6 of 37b's ten-seed mean | `run.json`, `pace.tsv`'s normalisation |
 
 Recorded and not predicted, because the instrument is new or the baseline absent: `det cv`
-and `mat cv` at every 1,000 s per seed (the first reading of the field's coefficient of
-variation on any round; round 39's threshold is set from it); `corpses` and `det deep`;
-stillbirths against births; `mean m/s` (still the water's); the founding time and kind of
-every passing clade; the depth band's shape from the positions file, since a crowd that
-compresses into the lit band would read D3 below 1.3 for a reason the reading should name.
+and `mat cv` at every 1,000 s per seed, the first reading of the field's coefficient of
+variation on any round, from which round 39's threshold is set. Also recorded: `corpses`
+and `det deep`; stillbirths against births; `mean m/s`, still the water's; the founding
+time and kind of every passing clade. And the depth band's shape from the positions file,
+since a crowd that compresses into the lit band would read D3 below 1.3 for a reason the
+reading should name.
 
 ## The two-sided readings
 
