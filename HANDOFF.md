@@ -54,7 +54,11 @@ for three minutes over the cap, noted; worker 6 was then restored from main and 
 file for file), and waits for a worker under the cap to run its smoke and the box
 digest. It moves `simHash` and lands with `field cv` after the fresh seeds have all
 launched. Renders of the five seeds run on workers 2, 3, 5 and 7 (`scratch/r37b-chain.ps1`);
-seed 5's render cannot reach a 30,000 s frame and is stopped after its 15,000 s one.
+seed 5's render cannot reach a 30,000 s frame and is stopped after its 15,000 s one. The
+fresh seeds' renders follow on `scratch/r37b-fresh-chain.ps1` (seeds 7 and 6 at the three
+times, 8 to 10 at 5,000 and 15,000 s), and **the two merges wait for those frames**: both
+branches move Core or `Assets/Evosim`, and an Editor started after the merge would refuse
+the fresh seeds' recordings, since every worker compiles Core from the main tree.
 
 **The theatre has an interface (logbook/0096, 2026-09-13 night).** Built by a subagent from
 the owner's design (`design/SPEC.md`, committed with its `LICENSE-DOCS` lines at the owner's
