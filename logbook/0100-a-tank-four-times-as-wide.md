@@ -155,3 +155,6 @@ in four times the water: the matter builds the same number of bodies. The disc i
 jointed count is decaying after all (71 to 35), the dense worlds' shape arriving later.
 `det cv` fell to 0.17 and `mat cv` to 0.04 to 0.12 as the fields filled: uniform water,
 no pockets yet. Stillbirths 79.
+
+*03:09.* Seed 3 launched on worker 5 as seed 10's render finished, worker refreshed
+first, header and hashes as seeds 1 and 2's with seed 3, `prereg.json` at the same commit.
