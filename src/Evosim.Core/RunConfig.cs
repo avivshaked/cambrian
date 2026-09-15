@@ -649,6 +649,114 @@ namespace Evosim.Core
         [Tunable("world")]
         public WorldShape WorldShape { get; set; } = WorldShape.Box;
 
+        /// <summary>
+        /// The sea floor's total relief, m — the range of <see cref="BedShape"/>'s height map over
+        /// the disc. 0 is the flat bed, which is every recorded world. D092,
+        /// <c>logbook/specs/bed-spec.md</c> item 3, <c>EVOSIM_BED_RELIEF</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it buys.</b> A flat floor under uniform water gives food no place to gather, so
+        /// a stroke or a sense has nothing to buy: round 38's fields read near uniform once the
+        /// disc had filled. Relief makes places — hollows where sinking detritus collects and
+        /// stays, ridges that shed it, water that slows in a hollow and quickens over a rise. The
+        /// round's own default is picked from pictures rather than from this line.
+        /// </para>
+        /// <para>
+        /// <b>The map is fitted to it, and the slope bound may cut it.</b>
+        /// <see cref="BedShape"/> scales its three bands so their range over the disc is this
+        /// number, then scales them down again if the map together with
+        /// <see cref="BedTiltMetres"/> would be steeper than 30 degrees anywhere — a body settles
+        /// and detritus slides on that and sticks to a cliff. <see cref="BedShape.RangeMetres"/>
+        /// is what it came to and <see cref="BedShape.SlopeBoundBinds"/> says whether the dial or
+        /// the bound decided.
+        /// </para>
+        /// <para>
+        /// <b>The bed is the tank's.</b> <c>World</c> refuses a relief or a tilt in a
+        /// <see cref="WorldShape.Box"/>: the box is periodic on both horizontal axes, and a height
+        /// map on a ring would have to meet itself at both seams, which is a constraint the
+        /// spectrum has no way to satisfy. ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        [Tunable("bed", Unit = "m")]
+        public float BedReliefMetres
+        {
+            get => _bedReliefMetres;
+            set => _bedReliefMetres = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(BedReliefMetres), value,
+                    "A relief is finite and not negative; 0 is the flat bed.");
+        }
+
+        private float _bedReliefMetres;
+
+        /// <summary>
+        /// The depth difference between the deep side and the shallow arc, m — a tilt along one
+        /// diameter. 0 is a floor at one depth, which is every recorded world. D092,
+        /// <c>logbook/specs/bed-spec.md</c> item 5a, <c>EVOSIM_BED_TILT</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The owner's gradient</b> (2026-09-15: "the sea bed as a gradient so it's not all one
+        /// depth; this is something we wanted to do from the start"). In a cylinder the shallow arc
+        /// is a shore and the cross-section is a lake. It is mean-zero like the rest of the map, so
+        /// the water volume and the seeded matter density are unmoved by it.
+        /// </para>
+        /// <para>
+        /// <b>Round 39 keeps the shallowest floor under the band the crowd lives in</b>, about
+        /// 30 m, so the round reads pockets and not light. A tilt raised into the lit band is the
+        /// shelf and is a round of its own, because it changes the light economy on one side;
+        /// a floor that breaks the surface is the beach, which needs a dry mask in the grid and
+        /// rules for a body on sand. Both are refused here by the rule that the floor stays below
+        /// −1 m everywhere. ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        [Tunable("bed", Unit = "m")]
+        public float BedTiltMetres
+        {
+            get => _bedTiltMetres;
+            set => _bedTiltMetres = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(BedTiltMetres), value,
+                    "A tilt is finite and not negative; 0 is a floor at one depth.");
+        }
+
+        private float _bedTiltMetres;
+
+        /// <summary>
+        /// The largest feature band's wavelength, m. 0 (the default) is a third of the tank's
+        /// diameter, computed from <see cref="WorldAreaSquareMetres"/>. D092,
+        /// <c>logbook/specs/bed-spec.md</c> item 1, <c>EVOSIM_BED_SCALE</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>One dial for three bands.</b> The two smaller are a fixed fraction of this — a third
+        /// and a ninth (<see cref="BedShape.BandRatio"/>) — so that the spec's three scales, broad
+        /// basins spanning about a third of the tank, mounds a couple of metres across and ripples
+        /// under a metre, move together rather than as three knobs whose ratios nobody chose.
+        /// </para>
+        /// <para>
+        /// <b>Derived rather than fixed at the default</b>, for <see cref="TankGeometry"/>'s
+        /// reason: the radius comes from the area, so a fixed wavelength would mean a different
+        /// number of basins in every footprint and the hollow count would be a readout of the area
+        /// dial. ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        [Tunable("bed", Unit = "m")]
+        public float BedScaleMetres
+        {
+            get => _bedScaleMetres;
+            set => _bedScaleMetres = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(BedScaleMetres), value,
+                    "A feature scale is finite and not negative; 0 is a third of the diameter.");
+        }
+
+        private float _bedScaleMetres;
+
         /// <summary>How fast matter falls, m/s — D048.</summary>
         /// <remarks>
         /// Separate from <see cref="NutrientSinkMetresPerSecond"/> rather than shared. They
