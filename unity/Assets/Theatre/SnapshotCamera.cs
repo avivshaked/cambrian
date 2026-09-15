@@ -157,6 +157,15 @@ namespace Evosim.Theatre
             /// </para>
             /// </remarks>
             Sky = 5,
+
+            /// <summary>
+            /// The floor from low over the deep side, looking across it: the lowest fourteen
+            /// metres of the box framed from a shallow three quarters, so that a shaped bed's
+            /// hollows and its ridge read as shading where the census views cannot resolve a
+            /// metre of relief at thirteen pixels a metre (D092, 2026-09-15). A portrait of the
+            /// sand, never a census; not in the default set.
+            /// </summary>
+            Bed = 6,
         }
 
         /// <summary>How many bodies <see cref="View.Close"/> frames.</summary>
@@ -256,15 +265,6 @@ namespace Evosim.Theatre
             // An enabled second camera would render the whole world every frame of a run that
             // spends its frames stepping physics.
             _camera.enabled = false;
-            /// <summary>
-            /// The floor from low over the deep side, looking across it: the lowest fourteen
-            /// metres of the box framed from a shallow three quarters, so that a shaped bed's
-            /// hollows and its ridge read as shading where the census views cannot resolve a
-            /// metre of relief at thirteen pixels a metre (D092, 2026-09-15). A portrait of the
-            /// sand, never a census; not in the default set.
-            /// </summary>
-            Bed = 6,
-
         }
 
         /// <summary>
