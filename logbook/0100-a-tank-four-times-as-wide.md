@@ -158,3 +158,6 @@ no pockets yet. Stillbirths 79.
 
 *03:09.* Seed 3 launched on worker 5 as seed 10's render finished, worker refreshed
 first, header and hashes as seeds 1 and 2's with seed 3, `prereg.json` at the same commit.
+*03:51.* Seed 4 launched on worker 7 as seed 5's render of round 37b wrote its 15,000 s
+frames, worker refreshed first, header and hashes as the others' with seed 4, `prereg.json`
+at the same commit. Seed 5 waits for the next slot.
