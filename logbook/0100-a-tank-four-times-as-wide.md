@@ -180,4 +180,8 @@ fields stay near uniform.
 5 launched on its worker, 2, refreshed first, header and hashes as the others' with seed 5,
 `prereg.json` at the same commit; the queue is done, every seed launched. The round's
 render chain (`scratch/r38-render-chain.ps1`: seed 1 at the three times, seeds 2 to 5 at
-5,000 and 15,000 s) is armed after it.
+5,000 and 15,000 s) is armed after it. Seed 1's end row, recorded before the read: the
+eaters at 409 inherited by 10,000 s and 2 at 30,000 s, the jointed count 0, stillbirths
+1,146. *10:46.* Seed 2 landed the same way with 1,602 alive, no throws, stillbirths 317;
+its eaters read 467 inherited at 10,000 s, 1 at 20,000 and 300 at 30,000, a bust and a
+second boom where seed 1's bust held. Seed 1's render started on worker 6.
