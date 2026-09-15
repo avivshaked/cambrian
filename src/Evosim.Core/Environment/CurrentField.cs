@@ -550,6 +550,39 @@ namespace Evosim.Core
         private float _tankRadiusMetres;
         private BedShape _bed;
 
+        // D092's pace. The harness samples every part's velocity and then its acceleration at
+        // one point per physics step, and each sampled the bed's twelve cosines on its own: the
+        // pace pair of 2026-09-15 (tankpace-flat against tankpace-bed, 6,000 s at round
+        // population) read the shaped world 18% slower than the flat one, about what two such
+        // samples per part per step cost. One entry keyed on the exact point: the second call at
+        // the same (x, z) reuses the first's numbers bit for bit, since the map is a pure function
+        // of the point, and a first call pays the Hessian's three multiply-adds per mode so that
+        // the acceleration's call finds everything it needs. Not thread-safe; the harness samples
+        // on its main thread and a Core world is stepped on one (D078).
+        private double _bedX = double.NaN, _bedZ = double.NaN;
+        private double _bedH, _bedHx, _bedHz, _bedHxx, _bedHxz, _bedHzz;
+
+        private void BedSample(
+            double x, double z,
+            out double h, out double hx, out double hz,
+            out double hxx, out double hxz, out double hzz)
+        {
+            if (x != _bedX || z != _bedZ)
+            {
+                _bed.HeightGradientAndHessian(
+                    x, z, out _bedH, out _bedHx, out _bedHz, out _bedHxx, out _bedHxz, out _bedHzz);
+                _bedX = x;
+                _bedZ = z;
+            }
+
+            h = _bedH;
+            hx = _bedHx;
+            hz = _bedHz;
+            hxx = _bedHxx;
+            hxz = _bedHxz;
+            hzz = _bedHzz;
+        }
+
         /// <summary>
         /// The floor this water follows, or null for the flat bed — D092. Null is every recorded
         /// world.
@@ -1872,7 +1905,7 @@ namespace Evosim.Core
         {
             double depth = _depthMetres;
 
-            _bed.HeightAndGradient(x, z, out double h, out double hx, out double hz);
+            BedSample(x, z, out double h, out double hx, out double hz, out _, out _, out _);
 
             double d = depth - h;
             double floorY = -depth + h;
@@ -2018,7 +2051,7 @@ namespace Evosim.Core
         {
             double depth = _depthMetres;
 
-            _bed.HeightGradientAndHessian(
+            BedSample(
                 x, z, out double h, out double hx, out double hz,
                 out double hxx, out double hxz, out double hzz);
 
