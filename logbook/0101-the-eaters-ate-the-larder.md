@@ -140,19 +140,20 @@ round 39 counts a radius-guard dump apart from a throw.
 
 D1 to D4, D6 and D8 hold; D5 fails; D7's count holds and its anatomy does not. **The
 dilute tank is round 37b's world at a quarter of the density**, mixed, thin, standing at
-1,600, and it reads five of five as failing the goal rule because the eaters' line does
-not persist: it eats the standing crop in 15,000 s and starves, and a new line is
-founded from the leaves after. That is a finding about the world and not about the
+1,600. It reads five of five as failing the goal rule because the eaters' line does not
+persist: it eats the standing crop in 15,000 s and starves, and a new line is founded
+from the leaves after. That is a finding about the world and not about the
 dilution: 37b's ten seeds peaked as high and kept 3 to 7% because the trough had not
 arrived by 30,000 s at twice the density. The uniform fields say why no eater found
 refuge: there was nowhere in the water that was richer than anywhere else.
 
-Two things follow. Round 39's floor with places is the right next dial, and its
-pre-registration says what a pocket would have to do for an eater's line to survive the
-trough (0102). And a round that runs longer than the oscillation's period, 60,000 s or
-more, is the only way to read whether the second boom is a cycle or a coincidence; the
-long arm (path item 11) moves up the list.
+Two things follow from it. Round 39's floor with places is the right next dial, and
+its pre-registration says what a pocket would have to do for an eater's line to survive
+the trough (0102). A round longer than the oscillation's period, 60,000 s or more, is
+the only way to read whether the second boom is a cycle or a coincidence, so the long
+arm (path item 11) moves up the list.
 
-A personal note. The prediction I got wrong is the one I wrote with the least evidence:
-D5 assumed the eaters of 37b's ten seeds were standing, when they were on their way up
-at 30,000 s. The oscillation was in 37b's numbers and I read the last sample.
+The prediction I got wrong is the one I wrote with the least evidence, and I want that
+on the record in my own voice. D5 assumed the eaters of 37b's ten seeds were standing,
+when they were on their way up at 30,000 s. The oscillation was in 37b's numbers and I
+read the last sample.
