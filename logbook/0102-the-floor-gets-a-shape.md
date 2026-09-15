@@ -125,3 +125,16 @@ pays is round 41's question, the light sense round 40's, the anchoring cell roun
 ## Launch
 
 *Appended as the seeds launch; each with its header verified and its manifest's hashes.*
+
+*22:34 and 22:35.* Seeds 1 and 2 launched on workers 2 and 5, refreshed first, with the
+queue's hash check against the sizing smokes' `simHash 353e0dff…` passing and
+`prereg.json` at this entry's commit (`716e37a`). Seed 1's header verified: `space tank
+r=26.46 m (2200 m2), depth 45, wall, bed relief 1.5 m tilt 30 m scale 17.64 m (hollows 0,
+ridges 1, range 1.50 m, steepest 37° bands 16°, bound clear)`, `area 2200 m2`,
+`matterBudget 11000`, `founderDepth 45 m`, `fluidAccel 1`, `current 0.1 m/s transport`,
+`dispersal=5 m`, `corpse=0.005/s`, `dt=0.01`, `driveLimit >0.01`, `physics jobs 0`;
+**`simHash 353e0dff…`, `coreHash 96488dec…`, `configHash 8eab1085`**. The population
+ceiling reads 8,000, so E1's upper bound of 4,460 is not the instrument's. Seed 1's floor
+drew no hollow and one ridge, which V1 allows (the count is the seed's); the read's map
+carries it. Seeds 3 to 5 follow as workers free: the owner's Editor holds a slot, so four
+seeds run at once and the fifth waits, as in round 38.
