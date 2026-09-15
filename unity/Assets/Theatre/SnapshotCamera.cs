@@ -337,6 +337,8 @@ namespace Evosim.Theatre
                 : view == View.Bed ? FloorSlab(box, replay)
                 : box;
 
+            _bedLook = BedLook(replay);
+
             Frame(view, framed);
 
             _camera.backgroundColor = Water;
@@ -836,6 +838,21 @@ namespace Evosim.Theatre
                 round, total / round, flattest);
         }
 
+        /// <summary>The bed view's look: down the tilt from the shallow arc, or the first cut's fixed bearing on a flat bed.</summary>
+        private Vector3 _bedLook = new Vector3(-0.7f, -0.21f, 1f).normalized;
+
+        private static Vector3 BedLook(TheatreReplay replay)
+        {
+            BedShape bed = replay?.Eco?.World?.Bed;
+            if (bed == null || !bed.HasRelief || bed.TiltMetres <= 0f)
+                return new Vector3(-0.7f, -0.21f, 1f).normalized;
+
+            // The floor rises along (cos θ, sin θ), so the shallow arc is that way and the deep
+            // arc the other; the camera stands over the shallow arc and looks down the ramp.
+            float theta = bed.TiltDirectionRadians;
+            return new Vector3(-Mathf.Cos(theta), -0.36f, -Mathf.Sin(theta)).normalized;
+        }
+
         /// <summary>
         /// A light for the bed view alone: a directional light raking along the camera's own
         /// look, low over the floor, for the one render and destroyed after it. The sand is
@@ -852,7 +869,7 @@ namespace Evosim.Theatre
             var light = holder.AddComponent<Light>();
             light.type = LightType.Directional;
             light.color = new Color(0.9f, 0.95f, 1f);
-            light.intensity = 2.5f;
+            light.intensity = 4f;
             light.shadows = LightShadows.None;
             return light;
         }
@@ -926,12 +943,12 @@ namespace Evosim.Theatre
                     break;
 
                 case View.Bed:
-                    // Shallower than the close view and a longer look: a floor is read by the
-                    // light raking across it, and from twelve degrees above the horizon a metre
-                    // of relief throws a shadow a few metres long where from above it throws
-                    // none. The slab it is fitted to is the floor and the water just over it.
-                    rotation = Quaternion.LookRotation(
-                        new Vector3(-0.7f, -0.21f, 1f).normalized, Vector3.up);
+                    // Down the ramp from the shallow arc, twenty degrees under the horizon: a
+                    // floor is read by the light raking across it, and looking along the tilt
+                    // rather than across it (the first cut's fixed bearing read D093's floor as a
+                    // ribbon, 2026-09-15) puts the relief bands in profile against the deep arc.
+                    // The slab it is fitted to is the floor and the water just over it.
+                    rotation = Quaternion.LookRotation(_bedLook, Vector3.up);
                     perspective = true;
                     break;
 
