@@ -214,13 +214,25 @@ ahead of the idle charge.
    clear)`, the hollows holding 1.7% rising to 16.1% of the floor's detritus over the 600 s;
    its pictures (`scratch/snaps/r39smoke/`) show the tilt from the side and a faithful
    replay, and a metre of relief is below what the world views can show (a low-angle floor
-   view is a theatre item). One reading open: the bed smoke took 1.2 min of wall against
-   0.75 for the relief-0 tank on the same worker, 1.6 times at 100 to 170 bodies, most
-   likely the grid's potential samples through the floor map, which do not scale with the
-   population; spec item 8's pace pair at round population (`scratch/bed-pace.ps1`,
-   `tankpace-flat` against `tankpace-bed`, 6,000 s each) runs on worker 5 and decides it.
-   Then: `tankdig-r38` on a main worker, the merge, the workers refreshed, round 39's
-   prereg after round 38's read.
+   view is a theatre item). The tank digest reference on main's build (`tankdig-r38`)
+   is identical to the bed build at relief 0 over all 31 steps, so both of the spec's
+   digest checks hold. **The pace** (spec item 8; `scratch/bed-pace*.ps1`, 6,000 s at
+   dt 0.02, seed 3, the same worker and load): `tankpace-flat` 407 s of wall per 1,000 s
+   simulated at a mean of 921 alive; `tankpace-bed` 482 (18% over) at 843; after one bed
+   sample per part per step (`CurrentField.BedSample`, `f102104`) `tankpace-bed2` 455 (12%
+   over), bit-identical to the first over 301 digest steps. A Core probe
+   (`scratch/bed-build/unity/probe/`) split the rest: the grid's face fluxes paid the
+   floor-following pullback at every fixed edge point every step (the per-step transport
+   at 1 m cells 27 ms shaped against 9 flat, tilt alone the same as the full map), and
+   the water's per-part sample reads 3.4 µs against 2.4. The columns are now precomputed
+   once per edge point (`CurrentField.BedColumn`, `GridField` at construction, 105 kB at
+   400 m²; `c94a91f`; bit-identical by `ThePrecomputedBedIsTheSameWaterToTheBit`), which
+   takes the transport to 9.7 ms; `tankpace-bed3` measures the whole on worker 5 when a
+   slot frees. The per-part cost that remains is the map's twelve cosines and the
+   Jacobian at each part, about 1 µs a part-step, some 5% of the round's pace at 1,600
+   bodies; sharing one sample across a body's parts would not help (most bodies are one
+   part). Then: the merge, the workers refreshed, round 39's prereg after round 38's
+   read.
 5. **Round 40, a light sense** (was 38): one new input, light and its vertical gradient; read
    on jointed against rigid against buoyant depth, in a world with something to steer toward.
    Proposal first.
