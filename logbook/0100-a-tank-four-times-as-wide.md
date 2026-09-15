@@ -175,3 +175,9 @@ dense worlds' peaks were 29 to 174 and past by 3,000 s; seed 1's fell to 1 by 15
 and seed 2's to 10, so the early standing is not yet a line that grows. Stillbirths run
 high in seed 1 (551 by 15,000 s). `det cv` 0.11 to 0.39 and `mat cv` 0.02 to 0.22: the
 fields stay near uniform.
+
+*10:18.* Seed 1 landed at 30,000 s on its budget after ten hours with 1,597 alive, and seed
+5 launched on its worker, 2, refreshed first, header and hashes as the others' with seed 5,
+`prereg.json` at the same commit; the queue is done, every seed launched. The round's
+render chain (`scratch/r38-render-chain.ps1`: seed 1 at the three times, seeds 2 to 5 at
+5,000 and 15,000 s) is armed after it.
