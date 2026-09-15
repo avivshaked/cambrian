@@ -161,3 +161,17 @@ first, header and hashes as seeds 1 and 2's with seed 3, `prereg.json` at the sa
 *03:51.* Seed 4 launched on worker 7 as seed 5's render of round 37b wrote its 15,000 s
 frames, worker refreshed first, header and hashes as the others' with seed 4, `prereg.json`
 at the same commit. Seed 5 waits for the next slot.
+
+*10:30, the mid-run look* (seed 1 at 15,000 s, seed 2 at 14,500, seed 3 at 7,500, seed 4
+at 4,700; positions plots, no Editor free). Every seed reads the world of the 6,000 s
+look: the disc full (386 to 399 of 402 columns, the rim quarter 22 to 27%, `x sd` 5.5 to
+5.8 m), no throws, both ledgers closed, the nearest neighbour 1.32 m in seed 1. Two things
+are new and recorded, not read. The eaters are larger than in any dense world: seed 1
+holds 618 absorptive bodies at 15,000 s, 615 of them inherited, 38% of the living, sitting
+at 33 m against the leaves' 23 m; seed 2 rose to 471 by 10,000 s and fell to 234 by
+14,500. Round 37b's ten seeds peaked at 331 to 972 and held 3 to 7% at the end. And the
+jointed counts in seeds 3 and 4 stand at 117 and 170 in their first 7,500 s where the
+dense worlds' peaks were 29 to 174 and past by 3,000 s; seed 1's fell to 1 by 15,000 s
+and seed 2's to 10, so the early standing is not yet a line that grows. Stillbirths run
+high in seed 1 (551 by 15,000 s). `det cv` 0.11 to 0.39 and `mat cv` 0.02 to 0.22: the
+fields stay near uniform.
