@@ -63,6 +63,16 @@ Write-Output "$(Stamp) render queue: $($flatArms -join ',') at $atList on worker
 while ($pending.Count -gt 0) {
     $lines = Get-UnityCommandLines
     $editors = @($lines | Where-Object { $_ -notmatch 'AssetImportWorker' }).Count
+    # A render started in the last minute has a wrapper (theatre-snap.ps1 <arm>) and no Editor
+    # yet, so it counted as nothing and its worker read free: two renders landed on worker 6
+    # thirty seconds apart on 2026-09-15 that way. Count the wrappers as editors and their
+    # workers as busy.
+    $wrappers = @(Get-CimInstance Win32_Process -Filter "Name='pwsh.exe'" -ErrorAction SilentlyContinue |
+        ForEach-Object { [string]$_.CommandLine } | Where-Object { $_ -match 'theatre-snap' })
+    foreach ($wr in $wrappers) {
+        $ww = [regex]::Match($wr, '-Worker (\d+)').Groups[1].Value
+        if ($ww -and -not @($lines | Where-Object { $_ -match "unity-w$ww(\|/|`"|\s|$)" }).Count) { $editors++ }
+    }
     $started = 0
 
     foreach ($arm in @($pending)) {
@@ -84,7 +94,8 @@ while ($pending.Count -gt 0) {
         foreach ($w in $Workers) {
             $lock = Join-Path $root "unity-w$w\Temp\UnityLockfile"
             $busy = @($lines | Where-Object { $_ -match "unity-w$w(\\|/|`"|\s|$)" }).Count -gt 0
-            if (-not (Test-Path $lock) -and -not $busy) { $worker = $w; break }
+            $wrapped = @($wrappers | Where-Object { $_ -match "-Worker $w( |$)" }).Count -gt 0
+            if (-not (Test-Path $lock) -and -not $busy -and -not $wrapped) { $worker = $w; break }
         }
         if ($null -eq $worker) { break }
 
