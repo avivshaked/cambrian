@@ -185,3 +185,10 @@ eaters at 409 inherited by 10,000 s and 2 at 30,000 s, the jointed count 0, stil
 1,146. *10:46.* Seed 2 landed the same way with 1,602 alive, no throws, stillbirths 317;
 its eaters read 467 inherited at 10,000 s, 1 at 20,000 and 300 at 30,000, a bust and a
 second boom where seed 1's bust held. Seed 1's render started on worker 6.
+*13:15.* Seed 3 landed at 30,000 s on its budget with 1,641 alive, no throws, stillbirths
+214, the jointed count 0; its eaters read 278 inherited at 17,500 s, 0 at 25,000 and 11 at
+30,000, a bust with the first signs of a second boom in the last window. The scorer reads
+it as a fail (the best clade six alive at the end, founded at 25,179 s, unstable). The
+early renders of seeds 2 to 5 are set aside for the afternoon: the bed's Unity half took
+seed 3's worker for its validation (`scratch/bed-chain.ps1`), and the queue is re-armed
+after it.
