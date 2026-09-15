@@ -580,6 +580,23 @@ namespace Evosim.Theatre
         /// snow's volume and the close view's neighbourhood all read these bounds.
         /// </para>
         /// </remarks>
+        /// <summary>
+        /// How far the shaped floor's deepest point lies below the configured depth, m — 0 on a
+        /// flat bed and on any replay that has not built a world yet.
+        /// </summary>
+        /// <remarks>
+        /// <c>BedShape.LowestMetres</c> is signed and negative below the mean, so this is its
+        /// negation, floored at 0: a map whose lowest point happened to sit above −depth would
+        /// otherwise shrink the box and cut the water off at the bottom.
+        /// </remarks>
+        private static float BelowTheMeanFloor(TheatreReplay replay)
+        {
+            BedShape bed = replay?.Eco?.World?.Bed;
+            if (bed == null || !bed.HasRelief) return 0f;
+
+            return Mathf.Max(0f, (float)-bed.LowestMetres);
+        }
+
         public static Bounds BoxOf(TheatreReplay replay, out string note)
         {
             note = null;
@@ -590,9 +607,15 @@ namespace Evosim.Theatre
             {
                 float side = 2f * TankGeometry.RadiusFor(config.WorldAreaSquareMetres);
 
+                // D092: with a shaped floor the water reaches below −depth wherever a hollow does,
+                // so the box's bottom is the floor's own lowest point. Read off the world the
+                // replay built rather than rebuilt from the config here, so the camera frames the
+                // floor the physics has. Zero on a flat bed, where this is the box it always was.
+                float below = BelowTheMeanFloor(replay);
+
                 return new Bounds(
-                    new Vector3(0.5f * side, -0.5f * depth, 0.5f * side),
-                    new Vector3(side, depth, side));
+                    new Vector3(0.5f * side, -0.5f * (depth + below), 0.5f * side),
+                    new Vector3(side, depth + below, side));
             }
 
             if (config.SharedSpace)

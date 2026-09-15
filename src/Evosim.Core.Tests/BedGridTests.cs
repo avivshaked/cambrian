@@ -214,6 +214,66 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void TheRefugeStockIsTheFlatLayerAndFollowsAShapedFloor()
+        {
+            // Spec item 5's report clause. `refuge J` has always read
+            // StockInLayer(LayerCount - 1, 0), which on a shaped tank is a layer under all but the
+            // deepest hollow — so the report would read almost nothing while the sediment sat in
+            // the columns above it. GridField.RefugeStock reads each column's own floor cell
+            // instead, and the two things asserted here are the two the column needs: that on a
+            // flat grid it is the old expression to the bit, and that on a shaped one it is every
+            // live floor cell there is.
+            const float Area = 400f;
+            const float Cell = 1f;
+
+            GridField flat = Grid(Area, Cell, null, sink: 0.5f);
+            flat.SeedUniform(1f);
+            for (int step = 0; step < 1200; step++) flat.Settle(0.5f);
+
+            for (int patch = 0; patch < Patches; patch++)
+            {
+                Assert.Equal(flat.StockInLayer(flat.LayerCount - 1, patch), flat.RefugeStock(patch));
+            }
+
+            BedShape bed = Bed(Area);
+            GridField shaped = Grid(Area, Cell, bed, sink: 0.5f);
+            shaped.SeedUniform(1f);
+            for (int step = 0; step < 1200; step++) shaped.Settle(0.5f);
+
+            // Every live floor cell, counted here the long way round — over the columns, from the
+            // array rather than from the method under test — so the two can disagree.
+            double byHand = 0d;
+
+            for (int ix = 0; ix < shaped.CellsX; ix++)
+            for (int iz = 0; iz < shaped.CellsZ; iz++)
+            {
+                int lowest = shaped.LowestLiveLayer(ix, iz);
+                if (lowest >= 0) byHand += shaped.JoulesAt(ix, lowest, iz);
+            }
+
+            double byMethod = 0d;
+            for (int patch = 0; patch < Patches; patch++) byMethod += shaped.RefugeStock(patch);
+
+            double lastLayer = 0d;
+            for (int patch = 0; patch < Patches; patch++)
+            {
+                lastLayer += shaped.StockInLayer(shaped.LayerCount - 1, patch);
+            }
+
+            _output.WriteLine(
+                $"shaped tank: the floor cells hold {byMethod:0.0} J of {shaped.Recount():0.0} J, " +
+                $"where the array's last layer holds {lastLayer:0.0} J — " +
+                $"{lastLayer / Math.Max(1e-9d, byMethod):0.0%} of it");
+
+            Assert.Equal(byHand, byMethod, 6);
+            Assert.True(byMethod > 0.99d * shaped.Recount(), "the settled stock is not on the floor");
+            Assert.True(
+                lastLayer < 0.2d * byMethod,
+                "the array's last layer already holds the floor's stock, so this reading is not " +
+                "testing anything the old one did not do");
+        }
+
+        [Fact]
         public void SettlingStopsAtTheColumnsOwnFloor()
         {
             // Spec item 9's second clause: detritus that reaches the lowest live cell of its

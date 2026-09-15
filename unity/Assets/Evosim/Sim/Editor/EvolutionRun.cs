@@ -458,6 +458,17 @@ namespace Evosim.Sim.EditorTools
             // driven under.
             bool driveLimitAlways = Env("EVOSIM_DRIVE_LIMIT_ALWAYS", 0f) > 0.5f;
 
+            // D092 (2026-09-15, logbook/specs/bed-spec.md). The floor's shape: the total relief of
+            // the three cosine bands, the depth difference along one diameter, and the largest
+            // band's wavelength (0 takes a third of the tank's diameter). All three are RunConfig
+            // tunables with a default of 0, which is the flat bed every recorded world ran on and
+            // is bit-identical to it, so the fallbacks describe the record. The bed is the tank's
+            // — World refuses relief or tilt in a box — and BedShape refuses a floor that would
+            // reach the surface, because the shelf and the beach are rounds of their own.
+            float bedRelief = Env("EVOSIM_BED_RELIEF", new RunConfig().BedReliefMetres);
+            float bedTilt = Env("EVOSIM_BED_TILT", new RunConfig().BedTiltMetres);
+            float bedScale = Env("EVOSIM_BED_SCALE", new RunConfig().BedScaleMetres);
+
             // fable-propose-growth.md (2026-09-08). A child is born at a fraction of its adult
             // body and grows into the rest, so the world needs four numbers it never had: the
             // share of a newborn's start that is reserve rather than body, the buffer a growing
@@ -713,6 +724,11 @@ namespace Evosim.Sim.EditorTools
             config.MatterBudgetUnits = matterBudget;
             config.DriveLimitAtEveryStep = driveLimitAlways;
 
+            // D092, beside the shape because the bed is a property of the tank.
+            config.BedReliefMetres = bedRelief;
+            config.BedTiltMetres = bedTilt;
+            config.BedScaleMetres = bedScale;
+
             // fable-propose-growth.md. The founder range is ordered here rather than trusted from
             // the launcher: a minimum above the maximum is a silent empty draw, and the genome
             // factory would hand every founder the same number without saying so.
@@ -782,6 +798,22 @@ namespace Evosim.Sim.EditorTools
                 manifest = BuildManifest(
                     seed, budgetSeconds, wallMinutes, outPath, config.Hash(),
                     inoculatePath, inoculumHash, physicsJobWorkers, jobWorkerMaximum);
+
+                // D092. Set here rather than passed into BuildManifest, which takes the launch's
+                // own facts: these come from the world the launch produced, and the last four
+                // exist nowhere else. All seven stay 0 on a flat world.
+                BedShape bed = eco.World.Bed;
+
+                if (bed != null && bed.HasRelief)
+                {
+                    manifest.BedRelief = bed.ReliefMetres;
+                    manifest.BedTilt = bed.TiltMetres;
+                    manifest.BedScale = bed.ScaleMetres;
+                    manifest.BedHollows = bed.Hollows;
+                    manifest.BedRidges = bed.Ridges;
+                    manifest.BedRangeMetres = bed.RangeMetres;
+                    manifest.BedSteepestDegrees = bed.SteepestTotalSlopeRadians * 180d / Math.PI;
+                }
 
                 CurrentManifest = manifest;
                 CurrentManifestDir = dir;
@@ -1191,7 +1223,16 @@ namespace Evosim.Sim.EditorTools
                 (eco.Volume != null && eco.Steps > 0
                     ? (eco.ContactPairs / (double)eco.Steps).ToString("0.####", CultureInfo.InvariantCulture)
                     : "—") +
-                " · sea bed " + (eco.Floor != null ? "collider at -" + eco.Volume.DepthMetres + " m" : "none") +
+                // D092: a shaped floor is a mesh and has no single height, so the footer names the
+                // deepest rock instead of a plane that is not there. A flat bed prints the string
+                // it always printed — the collider's top face is −depth and LowestTopY is that
+                // number — which is what keeps the footers of round 38 and earlier comparable.
+                " · sea bed " + (eco.Floor != null
+                    ? eco.Floor.HasRelief
+                        ? "mesh collider, lowest rock " +
+                          eco.Floor.LowestTopY.ToString("0.##", CultureInfo.InvariantCulture) + " m"
+                        : "collider at -" + eco.Volume.DepthMetres + " m"
+                    : "none") +
                 " · floor pairs per physics step " +
                 (eco.Floor != null && eco.Steps > 0
                     ? (eco.FloorContactPairs / (double)eco.Steps).ToString("0.####", CultureInfo.InvariantCulture)
@@ -1511,6 +1552,26 @@ namespace Evosim.Sim.EditorTools
             public string Note;
 
             /// <summary>
+            /// The floor this world ran on — D092, <c>logbook/specs/bed-spec.md</c> item 12. The
+            /// three dials as the config carried them, and the four things the map measured of
+            /// itself once it was drawn.
+            /// </summary>
+            /// <remarks>
+            /// Beside the config's own facts rather than only inside <c>config.json</c>, because
+            /// the last four are not config at all: a seed and three dials produce a floor with a
+            /// range, a hollow count and a slope, and the only way to know which floor a run had
+            /// without rebuilding it is to have written them down. All seven read 0 on a flat
+            /// world, which is every recording before this build.
+            /// </remarks>
+            public float BedRelief;
+            public float BedTilt;
+            public float BedScale;
+            public int BedHollows;
+            public int BedRidges;
+            public double BedRangeMetres;
+            public double BedSteepestDegrees;
+
+            /// <summary>
             /// What was true as of the last metabolic step, for the error path.
             /// </summary>
             /// <remarks>
@@ -1772,6 +1833,17 @@ namespace Evosim.Sim.EditorTools
             w.Field("repoRoot", m.RepoRoot);
             w.Field("note", m.Note);
             w.EndObject();
+
+            // D092 — appended after the source block, per the same append-only rule the report's
+            // columns follow. Seven zeros on a flat world, which is every recording before this
+            // build; a shaped one carries the dials it was given and the floor they produced.
+            w.Field("bedRelief", m.BedRelief);
+            w.Field("bedTilt", m.BedTilt);
+            w.Field("bedScale", m.BedScale);
+            w.Field("bedHollows", m.BedHollows);
+            w.Field("bedRidges", m.BedRidges);
+            w.Field("bedRangeMetres", m.BedRangeMetres);
+            w.Field("bedSteepestDegrees", m.BedSteepestDegrees);
 
             w.Field("startedAt", StartedAtUtc);
 
@@ -2318,7 +2390,7 @@ namespace Evosim.Sim.EditorTools
             // whole world and nothing here changes. "det patch sd" and "patch max share" below
             // are the columns that carry the cross-patch picture.
             double edibleHere = world.Nutrients.EdibleDensityAt((float)meanDepth, 0);
-            double refugeStock = world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1, 0);
+            double refugeStock = FloorStock(world.Nutrients);
 
             // D052's flux, not its balance: MatterInBodies and Matter.TotalJoules already show
             // what excretion moved by comparing before and after, but neither shows the rate it
@@ -2460,6 +2532,44 @@ namespace Evosim.Sim.EditorTools
                 ? matterGrid.DensityCoefficientOfVariation()
                 : 0d;
 
+            // What the floor's own low ground holds — D092, logbook/specs/bed-spec.md's "what the
+            // round reads". Taken only where there is a floor to be low: the reading is a
+            // correlation between a column's floor height and what its floor cell holds, and on a
+            // flat bed every column's floor is the same height, so the share would be a statement
+            // about float ties rather than about pockets. A few hundred columns and two arrays a
+            // sample on the shaped path; nothing at all on the flat one.
+            bool shapedBed = world.Bed != null && world.Bed.HasRelief && world.Nutrients is GridField;
+            double floorStockJoules = 0d;
+            double floorLowQuarterShare = 0d;
+
+            if (shapedBed)
+            {
+                (float[] floors, double[] stocks) = ((GridField)world.Nutrients).ColumnFloorAndFloorStock();
+
+                float lowest = float.MaxValue;
+                float highest = float.MinValue;
+
+                for (int i = 0; i < floors.Length; i++)
+                {
+                    if (floors[i] < lowest) lowest = floors[i];
+                    if (floors[i] > highest) highest = floors[i];
+                }
+
+                // The lowest quarter of the floor's own range, which is where the hollows are —
+                // a quarter of the range rather than a quarter of the columns, so a world with one
+                // deep basin reads one basin and not a quarter of its floor plan.
+                double threshold = lowest + 0.25d * (highest - lowest);
+                double low = 0d;
+
+                for (int i = 0; i < stocks.Length; i++)
+                {
+                    floorStockJoules += stocks[i];
+                    if (floors[i] <= threshold) low += stocks[i];
+                }
+
+                floorLowQuarterShare = floorStockJoules > 0d ? low / floorStockJoules : 0d;
+            }
+
             // The same sample, as data. Raw numbers and no percentages: a reader can divide, and
             // a stored percentage loses the denominator that says whether it means anything —
             // "food 100%" over two joules and over two hundred thousand are the same column.
@@ -2484,8 +2594,7 @@ namespace Evosim.Sim.EditorTools
                 .Field("absorptiveInherited", inherited)
                 .Field("detritusJoules", world.Nutrients.TotalJoules)
                 .Field("detritusHere", world.Nutrients.DensityAt((float)meanDepth, 0))
-                .Field("detritusOnFloor",
-                    world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1, 0))
+                .Field("detritusOnFloor", refugeStock)
                 .Field("detritusDeep",
                     world.Nutrients.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f, 0))
                 .Field("meanHeight", meanDepth)
@@ -2664,7 +2773,15 @@ namespace Evosim.Sim.EditorTools
                 // be compared against these, because until the conservative transporter the grid
                 // invented patchiness of its own.
                 .Field("detritusCv", detritusCv)
-                .Field("matterCv", matterCv);
+                .Field("matterCv", matterCv)
+                // The shaped bed's pockets (D092, logbook/specs/bed-spec.md), appended after the
+                // patchiness reading per the same append-only rule: what the floor cells of every
+                // live column hold, and how much of that lies in the lowest quarter of the floor's
+                // range. Both 0 on a flat bed, where the columns share one floor height and the
+                // share would be a statement about float ties; the table prints a dash there for
+                // the same reason `vtx` prints one on a grid.
+                .Field("floorStockJoules", floorStockJoules)
+                .Field("floorStockLowQuarterShare", floorLowQuarterShare);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -2732,8 +2849,7 @@ namespace Evosim.Sim.EditorTools
                 // above for why these legacy columns are not redefined as a cross-patch aggregate.
                 "**" + world.Nutrients.DensityAt((float)meanDepth, 0).ToString("0.####", c) + "**",
                 "**" + (world.Nutrients.TotalJoules > 0d
-                    ? 100d * world.Nutrients.StockInLayer(world.Nutrients.LayerCount - 1, 0) /
-                      world.Nutrients.TotalJoules
+                    ? 100d * refugeStock / world.Nutrients.TotalJoules
                     : 0d).ToString("0.#", c) + "%**",
 
                 // D051's return leg: detritus density in the deep water, 90% of depth — the same
@@ -2942,6 +3058,16 @@ namespace Evosim.Sim.EditorTools
                 // a cell field: a vertex field has no cells and the number would be a fiction.
                 world.Nutrients is GridField ? detritusCv.ToString("0.###", c) : "—",
                 world.Matter is GridField ? matterCv.ToString("0.###", c) : "—",
+
+                // The shaped bed's pockets (D092), appended after `mat cv` per the append-only
+                // rule. `floor low %` is the share of the floor's own stock that lies in columns
+                // whose floor is in the lowest quarter of the floor's range — the hollows — and
+                // `floor J` is what the floor cells hold altogether. Read the first against the
+                // second: a high share of nothing is a world with no sediment, not a pocket. An
+                // em-dash on a flat bed, where every column's floor is at one height and the
+                // quarter is not a place.
+                shapedBed ? (100d * floorLowQuarterShare).ToString("0.#", c) + "%" : "—",
+                shapedBed ? floorStockJoules.ToString("0.#", c) : "—",
             };
 
             // The per-patch populations, last, so everything before them keeps its index.
@@ -3122,6 +3248,14 @@ namespace Evosim.Sim.EditorTools
             // cells only, which is what stops a uniform tank reading as patchy. An em-dash on a
             // vertex field, which has no cells, as `vtx` prints one on a cell field.
             "det cv", "mat cv",
+
+            // The shaped bed (D092, logbook/specs/bed-spec.md), appended after `mat cv` per the
+            // append-only rule: the share of the floor's own detritus that lies in the hollows —
+            // columns whose floor is in the lowest quarter of the floor's range — and what the
+            // floor cells hold altogether. A dash on a flat bed, as `vtx` prints one on a grid:
+            // with one floor height there is no lowest quarter, and a number would read as a
+            // finding. The pockets question is this column against round 38's flat control.
+            "floor low %", "floor J",
         };
 
         /// <summary>
@@ -3178,7 +3312,7 @@ namespace Evosim.Sim.EditorTools
                     // not built by the constructor, and a header that inferred it from the shape
                     // would still say "wall" on the day something stops it being built.
                     (eco.Wall != null ? "wall" : "no wall") + ", " +
-                    (eco.Floor != null ? "bed" : "no bed");
+                    (eco.Floor != null ? BedToken(eco) : "no bed");
             }
 
             float patchWidth = eco.World.Nutrients.PatchWidthMetres;
@@ -3199,6 +3333,69 @@ namespace Evosim.Sim.EditorTools
                 // built by the constructor, and a header that inferred it from SharedSpace would
                 // still say "bed" on the day something stops it being built.
                 (eco.Floor != null ? "bed" : "no bed");
+        }
+
+        /// <summary>
+        /// What is standing on the floor, J — the number <c>refuge J</c>, <c>% on floor</c> and
+        /// <c>detritusOnFloor</c> have always meant, read so that it still means it under a shaped
+        /// bed (D092, <c>logbook/specs/bed-spec.md</c> item 5).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The old expression was <c>StockInLayer(LayerCount − 1, 0)</c></b>, and on a flat
+        /// world it still is: <see cref="GridField.RefugeStock"/> sums the same cells in the same
+        /// order and returns the same double. On a shaped tank the array reaches below the mean
+        /// depth so that no hollow is cut off (<see cref="GridField.ArrayDepthMetres"/>), and the
+        /// last layer is then rock under all but the deepest column — the old reading would report
+        /// a near-empty floor while the sediment sat in the columns above it.
+        /// </para>
+        /// <para>
+        /// Patch 0, as the three legacy columns have always been: they predate patches and read
+        /// one column's worth of the world. The vertex and cell fields keep the old expression,
+        /// having no columns to sum over.
+        /// </para>
+        /// </remarks>
+        private static double FloorStock(IMatterField field) =>
+            field is GridField grid
+                ? grid.RefugeStock(0)
+                : field.StockInLayer(field.LayerCount - 1, 0);
+
+        /// <summary>
+        /// The bed's half of the space token: <c>bed</c> on a flat floor and the whole shape on a
+        /// shaped one — D092, <c>logbook/specs/bed-spec.md</c> item 12.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The flat word is unchanged to the character</b>, which is the invariant every header
+        /// in the record is compared against: a run at relief 0 prints <c>…, wall, bed</c> exactly
+        /// as round 38's did. A shaped floor spends the same token on the dials that made it and
+        /// the four facts the map measured of itself — the hollow and ridge counts, the range the
+        /// bands actually came out at, and both steepest slopes, the bands' own and the total with
+        /// the tilt, since only the first is bounded (<see cref="BedShape.SteepestTotalSlopeRadians"/>).
+        /// </para>
+        /// <para>
+        /// Read off <c>World.Bed</c> rather than off the config, for the radius's reason: the
+        /// header must describe the floor the simulation built, and the dial and the range are
+        /// different numbers whenever the slope bound bound.
+        /// </para>
+        /// </remarks>
+        private static string BedToken(Ecosystem eco)
+        {
+            BedShape bed = eco.World.Bed;
+            if (bed == null || !bed.HasRelief) return "bed";
+
+            CultureInfo c = CultureInfo.InvariantCulture;
+
+            return
+                "bed relief " + bed.ReliefMetres.ToString("0.##", c) +
+                " m tilt " + bed.TiltMetres.ToString("0.##", c) +
+                " m scale " + bed.ScaleMetres.ToString("0.##", c) +
+                " m (hollows " + bed.Hollows.ToString(c) +
+                ", ridges " + bed.Ridges.ToString(c) +
+                ", range " + bed.RangeMetres.ToString("0.00", c) +
+                " m, steepest " + (bed.SteepestTotalSlopeRadians * 180d / Math.PI).ToString("0", c) +
+                "° bands " + (bed.SteepestSlopeRadians * 180d / Math.PI).ToString("0", c) +
+                "°, bound " + (bed.SlopeBoundBinds ? "binds" : "clear") + ")";
         }
 
         /// <summary>

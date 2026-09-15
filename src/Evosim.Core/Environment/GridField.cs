@@ -2560,6 +2560,69 @@ namespace Evosim.Core
         /// <summary>The pre-D061 signature: patch 0 of a one-patch field, a refusal otherwise.</summary>
         public double StockInLayer(int layer) => StockInLayer(layer, SinglePatchOrThrow());
 
+        /// <summary>
+        /// What is standing on the floor across a patch, J: the lowest live cells of every column
+        /// in it, as many deep as the refuge is. D092, <c>logbook/specs/bed-spec.md</c> item 5's
+        /// report clause.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Per column rather than per layer, because with a bed those stopped being the same
+        /// thing.</b> The report has always read this as <c>StockInLayer(LayerCount − 1)</c>, and
+        /// on a flat grid that is exactly what this returns, cell for cell and in the same order:
+        /// every column's lowest live cell <i>is</i> the last layer. On a shaped grid the last
+        /// layer lies under all but the deepest hollow (<see cref="ArrayDepthMetres"/>), so the old
+        /// expression would read a floor of dead cells and report almost nothing while the
+        /// sediment sat in the columns above it.
+        /// </para>
+        /// <para>
+        /// <b>As deep as the refuge, and at least one cell.</b> <see cref="RefugeLayerCount"/> is 0
+        /// in every run on file (<c>RunConfig.FloorRefugeMetres</c> defaults to 0 and no launcher
+        /// has ever set it), at which this is one cell per column and the column named
+        /// <c>refuge J</c> keeps the number it has always printed. With a refuge set it is the band
+        /// feeding cannot price, measured up from each column's own floor rather than from the
+        /// array's — which on a flat grid is the same band and on a shaped one is where the
+        /// sediment actually is. ⚠ That is a widening of the old reading for a world with
+        /// <c>FloorRefugeMetres</c> above 0, and no such world has been run.
+        /// </para>
+        /// <para>
+        /// A dead column — one the glass or the floor leaves no water in — contributes nothing and
+        /// is not an error: <see cref="LowestLiveLayer"/> answers −1 for it.
+        /// </para>
+        /// </remarks>
+        public double RefugeStock(int patch)
+        {
+            ValidatePatch(patch);
+
+            int band = RefugeLayerCount > 1 ? RefugeLayerCount : 1;
+            double sum = 0.0;
+
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    if (PatchOfColumn(ix, iz) != patch) continue;
+
+                    int lowest = _lowestLive[ix * _nz + iz];
+                    if (lowest < 0) continue;
+
+                    // Up from the floor, stopping at the top of the column: a band thicker than
+                    // the water in a shallow column is the whole of it and not a read past the
+                    // surface.
+                    int top = lowest - band + 1;
+                    if (top < 0) top = 0;
+
+                    for (int iy = lowest; iy >= top; iy--)
+                    {
+                        if (!IsLive(ix, iy, iz)) break;
+                        sum += _stock[Index(ix, iy, iz)];
+                    }
+                }
+            }
+
+            return sum;
+        }
+
         /// <summary>The density in a patch's centre column at this depth, J/m³.</summary>
         public float DensityAt(float heightY, int patch) => (float)(_stock[CentreCell(heightY, patch)] / CellVolume);
 

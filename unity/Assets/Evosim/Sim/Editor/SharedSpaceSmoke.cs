@@ -402,7 +402,7 @@ namespace Evosim.Sim.EditorTools
 
                 float bottom = at.y - radius;
                 deepestSphere = Mathf.Min(deepestSphere, bottom);
-                worstIntoTheBed = Mathf.Max(worstIntoTheBed, bed.TopY - bottom);
+                worstIntoTheBed = Mathf.Max(worstIntoTheBed, bed.FloorYAt(at.x, at.z) - bottom);
 
                 placed.Add(at);
                 radii.Add(radius);
@@ -429,7 +429,7 @@ namespace Evosim.Sim.EditorTools
                 volume.CellMetres.ToString("0.###", CultureInfo.InvariantCulture) + " m");
 
             report.AppendLine(
-                "- bed at y=" + bed.TopY.ToString("0.##", CultureInfo.InvariantCulture) +
+                "- bed at y=" + bed.LowestTopY.ToString("0.##", CultureInfo.InvariantCulture) +
                 " m, BoxCollider " + bed.Collider.size.x.ToString("0.##", CultureInfo.InvariantCulture) +
                 " x " + bed.Collider.size.y.ToString("0.##", CultureInfo.InvariantCulture) +
                 " x " + bed.Collider.size.z.ToString("0.##", CultureInfo.InvariantCulture) +
@@ -575,7 +575,7 @@ namespace Evosim.Sim.EditorTools
 
                             float radius = SharedVolume.BoundingRadius(instance.Phenotype);
                             worstBuiltIntoTheBed = Mathf.Max(
-                                worstBuiltIntoTheBed, eco.Floor.TopY - (p.y - radius));
+                                worstBuiltIntoTheBed, eco.Floor.FloorYAt(p.x, p.z) - (p.y - radius));
                         }
                     }
 
@@ -596,10 +596,13 @@ namespace Evosim.Sim.EditorTools
                         ArticulationBody[] bodies = pushedDown[i].Bodies;
                         if (bodies == null || bodies.Length == 0) continue;
 
-                        float y = bodies[0].transform.position.y;
+                        Vector3 root = bodies[0].transform.position;
+                        float y = root.y;
                         if (float.IsNaN(y) || float.IsInfinity(y)) continue;
 
-                        deepestNow = Mathf.Max(deepestNow, eco.Floor.TopY - y);
+                        // The floor under this body rather than a single depth — D092. On the flat
+                        // bed part 3 runs in, every place gives −D and the number is what it was.
+                        deepestNow = Mathf.Max(deepestNow, eco.Floor.FloorYAt(root.x, root.z) - y);
                     }
 
                     deepestPartEver = Mathf.Max(deepestPartEver, deepestNow);
@@ -1034,7 +1037,415 @@ namespace Evosim.Sim.EditorTools
             ok &= TheGlass(report, radius);
 
             report.AppendLine();
+            ok &= TheShapedBed(report);
+
+            report.AppendLine();
             return ok;
+        }
+
+        /// <summary>The footprint the shaped bed is read at, m² — D092.</summary>
+        /// <remarks>
+        /// Round 38's own tank rather than part 4's 100 m², and the reason is the tilt: a ramp's
+        /// slope is its dial over the diameter, so six metres across an 11.3 m tank is 28° and
+        /// <see cref="BedShape.SteepestTiltSlope"/> refuses it, while across a 22.6 m one it is
+        /// 15° and is the floor the round will actually run on.
+        /// </remarks>
+        private const float BedArea = 400f;
+
+        /// <summary>The relief and the tilt the bed case builds, m — the spec's visible floor.</summary>
+        private const float BedRelief = 4f;
+
+        private const float BedTilt = 6f;
+
+        /// <summary>Steps the buried body is given to come out or be killed.</summary>
+        /// <remarks>
+        /// The floor's guard runs at the metabolic cadence, not every step
+        /// (<c>Ecosystem.CheckFinite</c>), so this has to be several of those: three hundred steps
+        /// at dt 0.01 is six metabolic steps, and the body is put two metres under the rock, which
+        /// is far past its own radius and therefore past the guard on the first of them.
+        /// </remarks>
+        private const int BedSteps = 300;
+
+        /// <summary>The seed the bed case's floor is drawn from.</summary>
+        /// <remarks>
+        /// <b>Fixed, and chosen from the map it produces.</b> The hollow count is a property of
+        /// the mode draw, so at 400 m² with a 4 m dial some seeds give three hollows and some give
+        /// none (<see cref="BedShape.Hollows"/>'s rule) — and a smoke that asserted "the map has
+        /// hollows" against an arbitrary seed would be asserting the draw rather than the
+        /// mechanism. Seed 3 gives three hollows and one ridge, and both halves of the case use
+        /// it, so the floor the placer is read against is the floor the world builds.
+        /// </remarks>
+        private const ulong BedSeed = 3UL;
+
+        /// <summary>
+        /// The floor with a shape in it — D092, <c>logbook/specs/bed-spec.md</c> items 10 and 11.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Two halves, as part 4 has.</b> First the placer against a real height map with no
+        /// scene: every founder the disc draw sets down has to clear the rock <i>under its own
+        /// column</i>, which is the one thing a single global clamp could not do, and the two
+        /// founders that landed on the highest and the lowest floor are named so that the reading
+        /// is about the extremes rather than about the average. Then a world with rock in it: a
+        /// body teleported two metres into a hollow must either come back out or die as the
+        /// counted <c>Diverged</c> death the guard makes of it, and the header token has to carry
+        /// the floor it ran on.
+        /// </para>
+        /// <para>
+        /// <b>And the flat token, unchanged.</b> Part 4's <c>TheGlass</c> already asserts the whole
+        /// string; this asserts the one word that changed, at relief 0, so that a build which
+        /// accidentally made the shaped token the general case fails here rather than in a
+        /// header-to-header comparison across rounds.
+        /// </para>
+        /// </remarks>
+        private static bool TheShapedBed(StringBuilder report)
+        {
+            report.AppendLine("**4b. The shaped bed** (`BedShape`, `SeaFloor`, D092)");
+            report.AppendLine();
+
+            bool ok = true;
+
+            float radius = TankGeometry.RadiusFor(BedArea);
+
+            var shape = new BedShape(
+                radius, 60f, BedRelief, BedTilt, 0f, Rng.SeedFor(BedSeed, World.BedShapeIndex));
+
+            report.AppendLine("- " + shape);
+            report.AppendLine(
+                "- highest floor " +
+                (-60d + shape.HighestMetres).ToString("0.##", CultureInfo.InvariantCulture) +
+                " m, lowest " +
+                (-60d + shape.LowestMetres).ToString("0.##", CultureInfo.InvariantCulture) +
+                " m, total range " +
+                shape.TotalRangeMetres.ToString("0.##", CultureInfo.InvariantCulture) + " m");
+
+            // The spec asks the smoke to be able to say it (item 4), and a floor with no hollow in
+            // it is a floor the round cannot read pockets off.
+            bool hollowed = shape.Hollows > 0;
+            report.AppendLine(
+                (hollowed ? "- ok   " : "- FAIL ") + "the map has hollows: " + shape.Hollows +
+                " hollows and " + shape.Ridges + " ridges");
+            ok &= hollowed;
+
+            var volume = new SharedVolume(
+                patchCount: TankRings,
+                patchWidthMetres: Mathf.Sqrt(BedArea / TankRings),
+                depthMetres: 60f,
+                seed: 1,
+                offspringDispersalMetres: 0f,
+                patchesAcross: 1,
+                shape: WorldShape.Tank,
+                tankRadiusMetres: radius);
+
+            SeaFloor floor = SeaFloor.Build(volume, null, shape);
+            volume.Floor = floor;
+
+            try
+            {
+                ok &= TheShapedPlacer(report, volume, floor, shape);
+            }
+            finally
+            {
+                floor.Destroy();
+                volume.Floor = null;
+            }
+
+            report.AppendLine();
+            ok &= TheBuriedBody(report);
+
+            return ok;
+        }
+
+        /// <summary>The placer against a shaped floor, with no scene — the first half of 4b.</summary>
+        private static bool TheShapedPlacer(
+            StringBuilder report, SharedVolume volume, SeaFloor floor, BedShape shape)
+        {
+            bool ok = true;
+
+            report.AppendLine(
+                "- the collider: " +
+                (floor.Surface != null ? floor.Surface.sharedMesh.triangles.Length / 3 : 0) +
+                " triangles at " + SeaFloor.LatticeMetres +
+                " m, convex " + (floor.Surface != null && floor.Surface.convex) +
+                ", lowest rock " +
+                floor.LowestTopY.ToString("0.##", CultureInfo.InvariantCulture) +
+                " m, backstop top " +
+                (floor.LowestTopY - SeaFloor.BackstopClearanceMetres)
+                    .ToString("0.##", CultureInfo.InvariantCulture) + " m");
+
+            var config = new RunConfig();
+
+            int placed = 0;
+            int inTheRock = 0;
+            float worstIntoTheRock = 0f;
+
+            // The two extremes of the floor that a founder actually landed on, with the clearance
+            // each of them kept. Tracked rather than chosen, because the disc draw is the placer's
+            // and a founder put somewhere by hand would be testing this test.
+            float highestFloor = float.MinValue, lowestFloor = float.MaxValue;
+            float highestClearance = 0f, lowestClearance = 0f;
+
+            for (int i = 0; i < Founders; i++)
+            {
+                var rng = new Rng(Rng.SeedFor(8484UL, (ulong)i));
+                Genome genome = GenomeFactory.Founder(rng, config.Genome, config.SensorPool());
+                Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
+                if (body.PartCount == 0) continue;
+
+                // The whole 60 m, as the reference world's founder lottery draws it: most of these
+                // land inside the rock and every one of them has to come back raised.
+                float height = -rng.Range(0f, 60f);
+
+                if (!volume.TryReserveFounder(body, ref height, out int _)) continue;
+
+                volume.Commit(i);
+                volume.TryTakePlacement(i, out Vector3 at);
+
+                placed++;
+
+                float bodyRadius = SharedVolume.BoundingRadius(body);
+                float floorHere = floor.FloorYAt(at.x, at.z);
+                float clearance = at.y - floorHere;
+
+                if (clearance < bodyRadius)
+                {
+                    inTheRock++;
+                    worstIntoTheRock = Mathf.Max(worstIntoTheRock, bodyRadius - clearance);
+                }
+
+                if (floorHere > highestFloor)
+                {
+                    highestFloor = floorHere;
+                    highestClearance = clearance - bodyRadius;
+                }
+
+                if (floorHere < lowestFloor)
+                {
+                    lowestFloor = floorHere;
+                    lowestClearance = clearance - bodyRadius;
+                }
+            }
+
+            CultureInfo c = CultureInfo.InvariantCulture;
+
+            report.AppendLine(
+                "- placed " + placed + " founders over a shaped disc; the highest floor any of " +
+                "them landed on was " + highestFloor.ToString("0.##", c) + " m (of " +
+                (-60d + shape.HighestMetres).ToString("0.##", c) + " m) with " +
+                highestClearance.ToString("0.###", c) + " m over its own radius, the lowest " +
+                lowestFloor.ToString("0.##", c) + " m (of " +
+                (-60d + shape.LowestMetres).ToString("0.##", c) + " m) with " +
+                lowestClearance.ToString("0.###", c) + " m");
+
+            ok &= Same(report, "founders left with their sphere inside the rock", inTheRock, 0);
+
+            if (inTheRock > 0)
+            {
+                report.AppendLine(
+                    "  worst " + worstIntoTheRock.ToString("0.####", c) + " m into the floor");
+            }
+
+            // The draw has to have reached both ends of the floor, or the two clearances above are
+            // statements about the middle of a map whose extremes were never visited.
+            float span = highestFloor - lowestFloor;
+            bool reached = placed > 0 && span > 0.5d * shape.TotalRangeMetres;
+            report.AppendLine(
+                (reached ? "- ok   " : "- FAIL ") + "the draw reached the floor's range: " +
+                span.ToString("0.##", c) + " m of " +
+                shape.TotalRangeMetres.ToString("0.##", c) + " m");
+            ok &= reached;
+
+            return ok;
+        }
+
+        /// <summary>A body put inside a hollow, and the header's token — the second half of 4b.</summary>
+        private static bool TheBuriedBody(StringBuilder report)
+        {
+            SimulationMode previousMode = Physics.simulationMode;
+            Vector3 previousGravity = Physics.gravity;
+
+            Physics.simulationMode = SimulationMode.Script;
+            FluidEnvironment.ConfigureScene(selfCollision: true);
+            Ecosystem.ConfigurePhysicsStep(FixedDt);
+
+            var config = new RunConfig
+            {
+                Light = new LightModel(200f, 12f),
+                SharedSpace = true,
+                WorldShape = WorldShape.Tank,
+                FieldModel = MatterField.Grid,
+                HorizontalPatches = TankRings,
+                WorldAreaSquareMetres = BedArea,
+                WorldDepthMetres = 60f,
+                FounderDepthSpread = 60f,
+                BedReliefMetres = BedRelief,
+                BedTiltMetres = BedTilt,
+                MinimumPopulation = TankFounders,
+                FloorSpawnsPerStep = TankFounders,
+                MaximumPopulation = 4000,
+            };
+
+            config.Fluid.TissueExcessDensity = ExcessDensity;
+            config.Fluid.SurfaceRestoringFraction = 1f;
+
+            var eco = new Ecosystem(config, seed: BedSeed);
+            bool ok = true;
+
+            try
+            {
+                string token = EvolutionRun.SpaceToken(config, eco);
+                bool tokenOk = token.Contains("bed relief") && token.Contains("hollows");
+
+                report.AppendLine(
+                    (tokenOk ? "- ok   " : "- FAIL ") + "the header's space token names the " +
+                    "floor: `" + token + "`");
+                ok &= tokenOk;
+
+                // The seven numbers run.json copies out of the world (D092). Asserted at their
+                // source rather than by writing a manifest, which is EvolutionRun's own business
+                // and needs a run directory: what a smoke can say is that the world has them and
+                // that they are the ones the launcher asked for.
+                BedShape bed = eco.World.Bed;
+                bool manifestOk =
+                    bed != null && bed.HasRelief &&
+                    Mathf.Approximately(bed.ReliefMetres, BedRelief) &&
+                    Mathf.Approximately(bed.TiltMetres, BedTilt) &&
+                    bed.ScaleMetres > 0f && bed.RangeMetres > 0d && bed.Hollows >= 0;
+
+                report.AppendLine(
+                    (manifestOk ? "- ok   " : "- FAIL ") + "the manifest's bed fields: relief " +
+                    (bed != null ? bed.ReliefMetres : 0f) + ", tilt " +
+                    (bed != null ? bed.TiltMetres : 0f) + ", scale " +
+                    (bed != null ? bed.ScaleMetres : 0f) + ", hollows " +
+                    (bed != null ? bed.Hollows : 0) + ", ridges " +
+                    (bed != null ? bed.Ridges : 0));
+                ok &= manifestOk;
+
+                // Founding, so there is a body to bury.
+                for (int step = 1; step <= Ecosystem.StepsPerMetabolicStep * 2; step++) eco.Step();
+
+                CreatureInstance buried = null;
+
+                foreach (CreatureInstance instance in eco.Instances)
+                {
+                    ArticulationBody[] bodies = instance.Bodies;
+                    if (bodies == null || bodies.Length == 0) continue;
+
+                    Vector3 p = bodies[0].transform.position;
+
+                    // Two metres under the rock where it stands: far past any body's own radius,
+                    // which is the threshold the guard uses, and inside the mesh rather than under
+                    // the backstop.
+                    var target = new Vector3(p.x, eco.Floor.FloorYAt(p.x, p.z) - 2f, p.z);
+
+                    bodies[0].TeleportRoot(target, bodies[0].transform.rotation);
+                    bodies[0].linearVelocity = Vector3.zero;
+
+                    buried = instance;
+                    break;
+                }
+
+                bool haveOne = buried != null;
+                report.AppendLine(
+                    (haveOne ? "- ok   " : "- FAIL ") + "a body to bury: " +
+                    eco.World.Living.Count + " alive after founding");
+                ok &= haveOne;
+
+                if (haveOne)
+                {
+                    long divergedBefore = eco.World.Diverged;
+                    bool resolved = false;
+                    float deepest = 2f;
+
+                    for (int step = 1; step <= BedSteps && !resolved; step++)
+                    {
+                        eco.Step();
+
+                        // Killed by the floor's guard is one of the two right answers, and the one
+                        // two metres under the rock should produce.
+                        if (eco.World.Diverged > divergedBefore) { resolved = true; break; }
+
+                        if (buried.Root == null) { resolved = true; break; }
+
+                        ArticulationBody[] bodies = buried.Bodies;
+                        if (bodies == null || bodies.Length == 0) { resolved = true; break; }
+
+                        Vector3 p = bodies[0].transform.position;
+                        float sum = p.x + p.y + p.z;
+                        if (float.IsNaN(sum) || float.IsInfinity(sum)) { resolved = true; break; }
+
+                        float under = eco.Floor.FloorYAt(p.x, p.z) - p.y;
+                        deepest = Mathf.Min(deepest, under);
+
+                        // Or it came back out: at or above the rock under it, which is the other
+                        // right answer and the one the depenetration cap gives a shallow burial.
+                        if (under <= 0f) { resolved = true; break; }
+                    }
+
+                    report.AppendLine(
+                        (resolved ? "- ok   " : "- FAIL ") + "a body two metres inside the rock " +
+                        "came out or was killed within " + BedSteps + " steps: " +
+                        (eco.World.Diverged > divergedBefore
+                            ? "killed as a counted Diverged death"
+                            : "still under the floor by " +
+                              deepest.ToString("0.###", CultureInfo.InvariantCulture) + " m"));
+                    ok &= resolved;
+                }
+            }
+            finally
+            {
+                eco.DestroyAll();
+                Physics.simulationMode = previousMode;
+                Physics.gravity = previousGravity;
+            }
+
+            // And the flat token is the string it always was — the invariant every header in the
+            // record is read against.
+            ok &= TheFlatToken(report);
+
+            return ok;
+        }
+
+        /// <summary>A tank at relief 0 still prints the word <c>bed</c> and nothing else.</summary>
+        private static bool TheFlatToken(StringBuilder report)
+        {
+            SimulationMode previousMode = Physics.simulationMode;
+
+            Physics.simulationMode = SimulationMode.Script;
+            Ecosystem.ConfigurePhysicsStep(FixedDt);
+
+            var config = new RunConfig
+            {
+                Light = new LightModel(200f, 12f),
+                SharedSpace = true,
+                WorldShape = WorldShape.Tank,
+                FieldModel = MatterField.Grid,
+                HorizontalPatches = TankRings,
+                WorldAreaSquareMetres = TankArea,
+                WorldDepthMetres = 60f,
+                MinimumPopulation = 0,
+                FloorSpawnsPerStep = 0,
+            };
+
+            var eco = new Ecosystem(config, seed: 77);
+
+            try
+            {
+                string token = EvolutionRun.SpaceToken(config, eco);
+                const string wanted = "tank r=5.64 m (100 m2), depth 60, wall, bed";
+
+                bool tokenOk = token == wanted;
+                report.AppendLine(
+                    (tokenOk ? "- ok   " : "- FAIL ") + "a flat tank's token is unchanged: `" +
+                    token + "`" + (tokenOk ? "" : " — wanted `" + wanted + "`"));
+
+                return tokenOk;
+            }
+            finally
+            {
+                eco.DestroyAll();
+                Physics.simulationMode = previousMode;
+            }
         }
 
         /// <summary>

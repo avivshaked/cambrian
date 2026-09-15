@@ -181,8 +181,35 @@ namespace Evosim.Sim
         /// inoculant and newborn is put with its whole bounding sphere clear of the rock, plus
         /// <c>SeaFloor.ClearanceMetres</c>.
         /// </remarks>
+        /// <remarks>
+        /// <b>Under the point, since D092.</b> A shaped floor has a different height under every
+        /// column (<c>logbook/specs/bed-spec.md</c> item 11), so the clamp has to be taken after
+        /// the horizontal candidate is drawn rather than once before the loop. On the flat path
+        /// this returns the same number for every <c>(x, z)</c>, which is what lets the shaped
+        /// branch be a second clamp inside the loop rather than a rewrite of the draw: the flat
+        /// path's RNG draws and its arithmetic are untouched, and a run at relief 0 replays.
+        /// </remarks>
+        private float LowestPlacement(float x, float z, float radius) =>
+            Floor != null ? Floor.MinimumPlacementY(x, z, radius) : float.NegativeInfinity;
+
+        /// <summary>
+        /// The floor's clamp before any candidate exists — the flat path's one answer, and the
+        /// shaped path's starting point at the axis.
+        /// </summary>
+        /// <remarks>
+        /// Read at the middle of the footprint, which on the flat path is the same number as
+        /// anywhere else and on the shaped path is only a first guess: every candidate raises it
+        /// again under its own column before the body is reserved there.
+        /// </remarks>
         private float LowestPlacement(float radius) =>
-            Floor != null ? Floor.MinimumPlacementY(radius) : float.NegativeInfinity;
+            LowestPlacement(0.5f * LengthMetres, 0.5f * WidthMetres, radius);
+
+        /// <summary>Whether the floor under this world has a shape — <c>SeaFloor.HasRelief</c>.</summary>
+        /// <remarks>
+        /// Read once per placement rather than per candidate, and false for every recorded world:
+        /// the branch it guards is the only thing D092 adds to a draw.
+        /// </remarks>
+        private bool ShapedFloor => Floor != null && Floor.HasRelief;
 
         /// <summary>K — <see cref="RunConfig.HorizontalPatches"/>, floored at 1.</summary>
         public int PatchCount { get; }
@@ -591,6 +618,11 @@ namespace Evosim.Sim
             // newborn one, so a lineage living on the floor is born a little further off it.
             float y = Mathf.Max(at.Position.y, LowestPlacement(radius));
 
+            // D092, logbook/specs/bed-spec.md item 11. Read once for the whole draw: false for
+            // every recorded world, and where it is true the clamp above is only a starting point
+            // — the floor under a candidate is not the floor under the axis.
+            bool shaped = ShapedFloor;
+
             for (int attempt = 0; attempt < AttemptBudget; attempt++)
             {
                 // A direction in the horizontal plane and nowhere else: a newborn beside its
@@ -630,6 +662,20 @@ namespace Evosim.Sim
                     : new Vector3(
                         WrapAxis(candidateX, LengthMetres), y, WrapAxis(candidateZ, WidthMetres));
 
+                // The floor under this candidate rather than under the axis — D092. Taken after
+                // the horizontal draw and before everything that reads the height, so the
+                // reservation, the free test and the wall test all see the body where it will
+                // actually be built. Never lowered: a child beside a parent keeps its parent's
+                // depth wherever the rock allows it, which is the depth the parent's income was
+                // earned at.
+                float placedY = y;
+
+                if (shaped)
+                {
+                    placedY = Mathf.Max(y, LowestPlacement(candidate.x, candidate.z, radius));
+                    candidate.y = placedY;
+                }
+
                 if (!Free(candidate, radius)) { Rejections++; continue; }
 
                 Reserve(candidate, radius);
@@ -638,7 +684,7 @@ namespace Evosim.Sim
                 // Only when the bed actually moved it. The height the world admits the child at
                 // has to be the height its body is built at, or the economy charges one layer for
                 // a creature living in another (IBodyPlacement.TryReserveOffspring).
-                if (y > heightY) heightY = y;
+                if (placedY > heightY) heightY = placedY;
 
                 return true;
             }
@@ -660,6 +706,9 @@ namespace Evosim.Sim
             // depth distribution founding is calibrated on (§5A.2), where a clamp only moves the
             // handful of bodies that were about to be buried.
             float y = Mathf.Max(heightY, LowestPlacement(radius));
+
+            // D092, as in TryReserveOffspring above and for the same reason.
+            bool shaped = ShapedFloor;
 
             for (int attempt = 0; attempt < AttemptBudget; attempt++)
             {
@@ -689,12 +738,24 @@ namespace Evosim.Sim
                         _rng.Range(0f, LengthMetres), y, _rng.Range(0f, WidthMetres));
                 }
 
+                // The floor under the point — D092. The disc draw above is untouched and stays
+                // uniform in area; only the height it is offered at is read again here, which is
+                // the same clamp the founder lottery has always had, taken where the founder
+                // actually landed.
+                float placedY = y;
+
+                if (shaped)
+                {
+                    placedY = Mathf.Max(y, LowestPlacement(candidate.x, candidate.z, radius));
+                    candidate.y = placedY;
+                }
+
                 if (!Free(candidate, radius)) { Rejections++; continue; }
 
                 Reserve(candidate, radius);
                 patch = PatchOf(candidate.x, candidate.z);
 
-                if (y > heightY) heightY = y;
+                if (placedY > heightY) heightY = placedY;
 
                 return true;
             }

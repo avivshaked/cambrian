@@ -1,4 +1,5 @@
 using UnityEngine;
+using Evosim.Core;
 
 namespace Evosim.Sim
 {
@@ -27,6 +28,26 @@ namespace Evosim.Sim
     /// world it always read. It spans the whole ring with <see cref="SeamMarginMetres"/> of
     /// overhang past each face, because a root is wrapped at a seam while its limbs may still
     /// hang over the edge, and a body half over the end of the floor would fall past it.
+    /// </para>
+    /// <para>
+    /// <b>Or the floor has a shape</b> — D092, <c>logbook/specs/bed-spec.md</c> item 10. When the
+    /// world carries a <see cref="BedShape"/> with relief in it, the flat slab is replaced by one
+    /// static <see cref="MeshCollider"/> built once at world start: a lattice at
+    /// <see cref="LatticeMetres"/> over exactly the square the slab covered, each vertex at
+    /// <c>Bed.FloorY(x, z)</c>. The map is defined past the rim (<see cref="BedShape.Height"/>'s
+    /// own remark), so the mesh runs on under the glass with no clamp and therefore no crease at
+    /// the wall. It is <c>convex</c> false — a height field is not convex and a convex hull of one
+    /// would fill every hollow with rock — and is cooked by PhysX at construction, which is a cost
+    /// paid once per world rather than once per step.
+    /// </para>
+    /// <para>
+    /// <b>And the slab stays under it, as a backstop.</b> A thin triangle mesh is the one shape a
+    /// fast body can pass through between two steps, and there is no sea bed below it to catch
+    /// what does. So the box is kept, its top face <see cref="BackstopClearanceMetres"/> below the
+    /// lowest vertex of the mesh: in ordinary play nothing ever touches it — a body resting in the
+    /// deepest hollow is a metre above it — and a body that tunnels the mesh still meets rock
+    /// rather than falling out of the world. It hangs on a child object of its own because two
+    /// colliders on one transform cannot stand in two places.
     /// </para>
     /// <para>
     /// <b>The default physics material</b>, deliberately: <c>sharedMaterial</c> is left null, which
@@ -90,18 +111,62 @@ namespace Evosim.Sim
         /// </remarks>
         public const float ClearanceMetres = 0.05f;
 
-        private SeaFloor(GameObject root, BoxCollider collider, float topY)
+        /// <summary>The shaped bed's lattice, metres — <c>logbook/specs/bed-spec.md</c> item 10.</summary>
+        /// <remarks>
+        /// <b>Half a metre, which is the map's own column.</b> <see cref="BedShape"/> measures its
+        /// range, its slope and its hollows on a half-metre lattice
+        /// (<see cref="BedShape.MeasureStepMetres"/>), and the grid's own columns are a metre, so a
+        /// finer collider would be resolving a floor nothing else in the world can see. At the
+        /// campaign's 400 m² it is 8,712 triangles and at 100 m² it is 3,698 — a fifth of the
+        /// spec's estimate, because the tank's footprint is small and the seam margin is most of
+        /// what is being meshed.
+        /// </remarks>
+        public const float LatticeMetres = 0.5f;
+
+        /// <summary>How far under the mesh's lowest point the backstop's top face sits, metres.</summary>
+        /// <remarks>
+        /// One metre: far enough that a body lying in the deepest hollow never touches it — the
+        /// clearance a placed body keeps is five centimetres, and no body this world has grown is
+        /// a metre across — and near enough that a body which has passed through the mesh is
+        /// caught before it has left the water. It is a net and not a floor, and the class remarks
+        /// say why there is one.
+        /// </remarks>
+        public const float BackstopClearanceMetres = 1f;
+
+        private readonly BedShape _bed;
+        private readonly float _topY;
+        private readonly Mesh _mesh;
+
+        private SeaFloor(
+            GameObject root, BoxCollider collider, MeshCollider surface, Mesh mesh,
+            BedShape bed, float topY, float lowestTopY)
         {
             Root = root;
             Collider = collider;
-            ColliderEntityId = collider.GetEntityId();
-            TopY = topY;
+            Surface = surface;
+            _mesh = mesh;
+            _bed = bed;
+            _topY = topY;
+            LowestTopY = lowestTopY;
+
+            // The one bodies actually land on: the mesh where there is one, the slab otherwise.
+            // The backstop is deliberately not in this: it makes no contact in ordinary play, and
+            // a world in which it does has a fault the `diverged` column will be saying more about
+            // than the contact counter would.
+            ColliderEntityId = surface != null ? surface.GetEntityId() : collider.GetEntityId();
         }
 
         /// <summary>The GameObject the collider hangs on, so the harness can find and destroy it.</summary>
         public GameObject Root { get; }
 
+        /// <summary>
+        /// The box: the whole floor on the flat path, and the backstop under the mesh on the
+        /// shaped one.
+        /// </summary>
         public BoxCollider Collider { get; }
+
+        /// <summary>The shaped floor's mesh, or null on the flat path where the box is the floor.</summary>
+        public MeshCollider Surface { get; }
 
         /// <summary>
         /// The collider's engine id, cached: contact reports arrive on a worker thread and
@@ -109,8 +174,21 @@ namespace Evosim.Sim
         /// </summary>
         public EntityId ColliderEntityId { get; }
 
-        /// <summary>y of the top face — −<c>WorldDepthMetres</c>.</summary>
-        public float TopY { get; }
+        /// <summary>Whether this floor has a shape — <c>World.Bed.HasRelief</c>.</summary>
+        public bool HasRelief => _bed != null;
+
+        /// <summary>
+        /// The lowest rock in the world, m: −<c>WorldDepthMetres</c> on the flat path and the
+        /// mesh's own deepest vertex on the shaped one.
+        /// </summary>
+        /// <remarks>
+        /// Measured off the mesh that was built rather than taken from
+        /// <see cref="BedShape.LowestMetres"/>, which is the extreme over the <i>disc</i>: the
+        /// mesh runs a seam margin past the rim, where the map carries on and a tilt keeps
+        /// falling. <see cref="TankWall"/> starts the glass below this, so a hollow deeper than
+        /// the old five-metre margin can never open a gap at the rim.
+        /// </remarks>
+        public float LowestTopY { get; }
 
         /// <summary>
         /// Builds the bed under <paramref name="volume"/>'s box.
@@ -120,7 +198,13 @@ namespace Evosim.Sim
         /// The transform creatures are built under, so the floor moves with them if a harness ever
         /// offsets the world. Null puts it at the scene root, where the creatures also are.
         /// </param>
-        public static SeaFloor Build(SharedVolume volume, Transform parent = null)
+        /// <param name="bed">
+        /// The floor's shape — <c>World.Bed</c> — or null for the flat slab, which is every
+        /// recorded world. A bed with no relief is treated as none: the flat path has to be the
+        /// code it always was, not the general one with a zero in it
+        /// (<c>logbook/specs/bed-spec.md</c> item 12).
+        /// </param>
+        public static SeaFloor Build(SharedVolume volume, Transform parent = null, BedShape bed = null)
         {
             if (volume == null) return null;
 
@@ -131,6 +215,14 @@ namespace Evosim.Sim
             var go = new GameObject("SeaFloor") { layer = PhenotypeBuilder.CreatureLayer };
             go.transform.SetParent(parent, worldPositionStays: false);
 
+            if (bed == null || !bed.HasRelief) return Flat(go, length, width, topY);
+
+            return Shaped(go, bed, length, width, topY);
+        }
+
+        /// <summary>The flat slab — D077's bed, unchanged to the character.</summary>
+        private static SeaFloor Flat(GameObject go, float length, float width, float topY)
+        {
             // The slab's centre: horizontally the middle of the ring, vertically half a thickness
             // below the top face, so that the *face* lands on −D rather than the centre.
             go.transform.localPosition = new Vector3(
@@ -156,15 +248,165 @@ namespace Evosim.Sim
             // question of whether the first step saw the bed where we put it or at the origin.
             Physics.SyncTransforms();
 
-            return new SeaFloor(go, collider, topY);
+            return new SeaFloor(go, collider, null, null, null, topY, topY);
+        }
+
+        /// <summary>The shaped floor — D092, <c>logbook/specs/bed-spec.md</c> item 10.</summary>
+        private static SeaFloor Shaped(
+            GameObject go, BedShape bed, float length, float width, float topY)
+        {
+            // The mesh carries world coordinates in its vertices, so the object itself stands at
+            // the origin: one place where a height means what the map says it means, rather than a
+            // height plus an offset that a reader of either has to remember.
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+
+            Mesh mesh = HeightMesh(bed, length, width, out float lowestVertexY);
+
+            var surface = go.AddComponent<MeshCollider>();
+            surface.sharedMesh = mesh;
+
+            // A height field is not convex, and the convex hull of one is a lid over every hollow
+            // the round exists to make.
+            surface.convex = false;
+
+            // The project default and the contact report, both for the flat slab's reasons.
+            surface.sharedMaterial = null;
+            surface.providesContacts = true;
+
+            // The net under the mesh — see the class remarks. Its own object, because a second
+            // collider on this transform would have to stand where the mesh stands.
+            float backstopTopY = lowestVertexY - BackstopClearanceMetres;
+
+            var backstopGo = new GameObject("SeaFloorBackstop")
+            {
+                layer = PhenotypeBuilder.CreatureLayer,
+            };
+
+            backstopGo.transform.SetParent(go.transform, worldPositionStays: false);
+            backstopGo.transform.localPosition = new Vector3(
+                0.5f * length, backstopTopY - 0.5f * ThicknessMetres, 0.5f * width);
+            backstopGo.transform.localRotation = Quaternion.identity;
+
+            var backstop = backstopGo.AddComponent<BoxCollider>();
+            backstop.size = new Vector3(
+                length + 2f * SeamMarginMetres,
+                ThicknessMetres,
+                width + 2f * SeamMarginMetres);
+
+            backstop.sharedMaterial = null;
+            backstop.providesContacts = true;
+
+            Physics.SyncTransforms();
+
+            return new SeaFloor(go, backstop, surface, mesh, bed, topY, lowestVertexY);
         }
 
         /// <summary>
-        /// The shallowest y a body of <paramref name="boundingRadius"/> may be placed at without
-        /// its sphere reaching into the rock — D077's floor rule 2.
+        /// The height map as a triangle mesh over the square the flat slab covers, facing up.
         /// </summary>
-        public float MinimumPlacementY(float boundingRadius) =>
-            TopY + Mathf.Max(0f, boundingRadius) + ClearanceMetres;
+        /// <remarks>
+        /// <para>
+        /// <b>No clamp at the rim.</b> The map is defined past the disc and deliberately not
+        /// clamped there (<see cref="BedShape.Height"/>), so the lattice simply carries on under
+        /// the glass. Clamping would put a crease exactly where the glass stands and exactly where
+        /// a body is most likely to be pressed against something.
+        /// </para>
+        /// <para>
+        /// <b>Wound so the normals point up</b>, which for Unity's left-handed clockwise-front
+        /// convention is <c>(a, c, b)</c> and <c>(b, c, d)</c> with <c>a</c> the near-x, near-z
+        /// corner, <c>b</c> the next along x and <c>c</c> the next along z — the same winding
+        /// <c>TheatreSkin.Grid</c> uses for the sand it draws, so a collider and a drawing of it
+        /// face the same way. Normals are not written at all: a <see cref="MeshCollider"/> takes
+        /// its faces from the triangles, and a normal array on a collision mesh is bytes PhysX
+        /// never reads.
+        /// </para>
+        /// </remarks>
+        private static Mesh HeightMesh(
+            BedShape bed, float length, float width, out float lowestVertexY)
+        {
+            float x0 = -SeamMarginMetres;
+            float z0 = -SeamMarginMetres;
+            float spanX = length + 2f * SeamMarginMetres;
+            float spanZ = width + 2f * SeamMarginMetres;
+
+            int nx = Mathf.Max(1, Mathf.CeilToInt(spanX / LatticeMetres));
+            int nz = Mathf.Max(1, Mathf.CeilToInt(spanZ / LatticeMetres));
+
+            int stride = nx + 1;
+            var vertices = new Vector3[stride * (nz + 1)];
+            var triangles = new int[nx * nz * 6];
+
+            float lowest = float.MaxValue;
+
+            for (int j = 0; j <= nz; j++)
+            {
+                float z = z0 + spanZ * j / nz;
+
+                for (int i = 0; i <= nx; i++)
+                {
+                    float x = x0 + spanX * i / nx;
+                    var y = (float)bed.FloorY(x, z);
+
+                    vertices[j * stride + i] = new Vector3(x, y, z);
+                    if (y < lowest) lowest = y;
+                }
+            }
+
+            int t = 0;
+
+            for (int j = 0; j < nz; j++)
+            {
+                for (int i = 0; i < nx; i++)
+                {
+                    int a = j * stride + i;
+                    int b = a + 1;
+                    int c = a + stride;
+                    int d = c + 1;
+
+                    triangles[t++] = a;
+                    triangles[t++] = c;
+                    triangles[t++] = b;
+
+                    triangles[t++] = b;
+                    triangles[t++] = c;
+                    triangles[t++] = d;
+                }
+            }
+
+            var mesh = new Mesh { name = "SeaFloor Height Map", hideFlags = HideFlags.DontSave };
+
+            // A 400 m² tank is 4,489 vertices and a larger footprint scales as the area, so the
+            // 16-bit index format would wrap silently rather than refuse at about five times this.
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+
+            mesh.vertices = vertices;
+            mesh.triangles = triangles;
+            mesh.RecalculateBounds();
+
+            lowestVertexY = lowest;
+            return mesh;
+        }
+
+        /// <summary>
+        /// The floor's own height at a place, m — the box's top face on the flat path and the
+        /// map's height on the shaped one.
+        /// </summary>
+        /// <remarks>
+        /// The scalar <c>TopY</c> this replaced was the same number everywhere, which is exactly
+        /// what stopped being true (<c>logbook/specs/bed-spec.md</c> item 11). Every reader of the
+        /// floor's height now names the place it is asking about, and on the flat path every place
+        /// gives the same answer, so the arithmetic is unchanged.
+        /// </remarks>
+        public float FloorYAt(float x, float z) =>
+            _bed != null ? (float)_bed.FloorY(x, z) : _topY;
+
+        /// <summary>
+        /// The shallowest y a body of <paramref name="boundingRadius"/> may be placed at over
+        /// <c>(x, z)</c> without its sphere reaching into the rock — D077's floor rule 2.
+        /// </summary>
+        public float MinimumPlacementY(float x, float z, float boundingRadius) =>
+            FloorYAt(x, z) + Mathf.Max(0f, boundingRadius) + ClearanceMetres;
 
         /// <summary>Takes the bed out of the scene, immediately and in either mode.</summary>
         /// <remarks>
@@ -178,6 +420,11 @@ namespace Evosim.Sim
             if (Root == null) return;
 
             Object.DestroyImmediate(Root);
+
+            // The mesh is an asset of our own making rather than a component, so destroying the
+            // object it hung on leaves it behind: a run that rebuilds its world would leak one
+            // height map per world.
+            if (_mesh != null) Object.DestroyImmediate(_mesh);
         }
     }
 }
