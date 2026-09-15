@@ -40,9 +40,20 @@ between two seconds of one shot thousands of seconds apart.
   body, sometimes horizontally, sometimes vertically, sometimes both, a quarter to a half
   turn by default and a full circle only when asked. The subject stays off centre; the
   camera keeps a slight lead so the body swims into the frame; consecutive scenes draw
-  different arcs; a sitter gets a slower, tighter arc than a swimmer.
+  different arcs; a sitter gets a slower, tighter arc than a swimmer. The arc's radius
+  sets the lens, and the speed never exceeds a body length every few seconds. Each scene
+  ends with the camera parked, so the next begins with a cut rather than a rush.
 - **Strong camera movements ease in and out**, the stronger the move the longer the ease;
   small drifts inside a hold may stay linear.
+
+**Two candidate first stories** (the agent's, not yet chosen by the owner): "The world
+that stood", thirty-eight rounds from creatures swimming in vacuum to a tank where 1,600
+bodies live on a closed budget, told through the failures (the energy audit, the ribbons,
+the centrifuge), every picture already in the record; and "The boom and the bust", round
+38's eaters rising to seven hundred and collapsing in every seed, with round 39's floor as
+the next experiment, filmed as it happens. The cut is the owner's: the safari produces
+clips and a caption log with timecodes, and the narration is the owner's, drafted by an
+agent from the cards and the entry if wanted, the facts never coming from the prose.
 
 **Rules the agent holds to** (accepted): one move per shot; nothing faster than a body
 swims; light from above and slightly behind the camera; captions one short sentence, white,
