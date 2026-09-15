@@ -549,5 +549,131 @@ namespace Evosim.Core.Tests
                 () => current.SetBox(
                     5f, Patches, Depth, 1UL, 1, WorldShape.Tank, RadiusOf(400f), bed));
         }
+
+        [Fact]
+        public void ThePrecomputedBedIsTheSameWaterToTheBit()
+        {
+            // D092's fixed cost. The floor does not move and does not depend on the clock or on a
+            // depth, and the grid's edges sit on a lattice that never moves either, so the bed's
+            // twelve cosines can be bought once per column instead of once per edge. That is a
+            // speed and nothing else, which is a claim that has to be checked rather than argued:
+            // the two paths are asked for the same world at three clocks and every face flux has
+            // to agree in every bit, not to a tolerance. A tolerance here would pass a change that
+            // reorders the arithmetic, and a reordered map is a different realisation of every
+            // seed (CLAUDE.md's butterfly rule).
+            const float Area = 400f;
+            const float Cell = 1f;
+
+            BedShape bed = Bed(Area);
+            CurrentField current = Streams(Area, bed);
+
+            GridField precomputed = Grid(Area, Cell, bed);
+            GridField direct = Grid(Area, Cell, bed);
+
+            Assert.True(precomputed.PrecomputeBedColumns);
+            direct.PrecomputeBedColumns = false;
+
+            foreach (double seconds in new[] { 0d, 137.5d, 4321.25d })
+            {
+                var fast = precomputed.MeasureFaceFluxes(current, seconds, 0.5f);
+                var slow = direct.MeasureFaceFluxes(current, seconds, 0.5f);
+
+                Assert.Equal(slow.Substeps, fast.Substeps);
+                Assert.Equal(slow.OpenFaces, fast.OpenFaces);
+                SameBits(slow.LargestOutflow, fast.LargestOutflow, "largest outflow", seconds);
+                SameBits(slow.DiscreteRms, fast.DiscreteRms, "discrete rms", seconds);
+                SameBits(slow.AnalyticRms, fast.AnalyticRms, "analytic rms", seconds);
+                SameBits(slow.WorstNetFlux, fast.WorstNetFlux, "worst net flux", seconds);
+
+                (double[] fastEast, double[] fastLower, double[] fastFront) =
+                    precomputed.FaceFluxesForReading();
+                (double[] slowEast, double[] slowLower, double[] slowFront) =
+                    direct.FaceFluxesForReading();
+
+                int carried = 0;
+                carried += SameFaces(slowEast, fastEast, "east", seconds);
+                carried += SameFaces(slowLower, fastLower, "lower", seconds);
+                carried += SameFaces(slowFront, fastFront, "front", seconds);
+
+                // A run of zeros would agree with anything, so the test says how much water it
+                // actually compared.
+                Assert.True(carried > 10000, $"only {carried} faces carried anything at {seconds} s");
+
+                _output.WriteLine(
+                    $"t {seconds,9:0.00} s: {carried} carrying faces identical, " +
+                    $"discrete rms {fast.DiscreteRms:0.######} m/s, worst net {fast.WorstNetFlux:0.###e+00}");
+            }
+
+            // And the step itself, which is the thing the face fluxes are for: a run of Advect
+            // takes the substep loop as well as the first pass, and a substep samples the field at
+            // its own clock against the same columns. The stock is compared and not the fluxes,
+            // because a step that agrees face for face and then lands a different stock would be a
+            // different world whatever the fluxes said.
+            GridField movedFast = Grid(Area, Cell, bed);
+            GridField movedSlow = Grid(Area, Cell, bed);
+            movedSlow.PrecomputeBedColumns = false;
+
+            movedFast.SeedUniform(1f);
+            movedSlow.SeedUniform(1f);
+
+            float patchWidth = (float)Math.Sqrt(Area / Patches);
+
+            for (int step = 0; step < 4; step++)
+            {
+                movedFast.Advect(current, 0.5d * step, 0.5f, patchWidth);
+                movedSlow.Advect(current, 0.5d * step, 0.5f, patchWidth);
+            }
+
+            int cells = 0;
+
+            for (int ix = 0; ix < movedFast.CellsX; ix++)
+            for (int iy = 0; iy < movedFast.CellsY; iy++)
+            for (int iz = 0; iz < movedFast.CellsZ; iz++)
+            {
+                if (!movedFast.IsLive(ix, iy, iz)) continue;
+
+                SameBits(
+                    movedSlow.JoulesAt(ix, iy, iz), movedFast.JoulesAt(ix, iy, iz),
+                    $"cell {ix},{iy},{iz}", 2d);
+
+                cells++;
+            }
+
+            Assert.True(cells > 20000, $"only {cells} live cells carried the step");
+            _output.WriteLine($"four steps of Advect: {cells} live cells identical");
+        }
+
+        private static void SameBits(double expected, double actual, string what, double seconds)
+        {
+            if (BitConverter.DoubleToInt64Bits(expected) == BitConverter.DoubleToInt64Bits(actual))
+            {
+                return;
+            }
+
+            Assert.Fail(
+                $"{what} at {seconds} s: direct {expected:R} against precomputed {actual:R}");
+        }
+
+        private static int SameFaces(double[] expected, double[] actual, string family, double seconds)
+        {
+            Assert.Equal(expected.Length, actual.Length);
+
+            int carried = 0;
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                if (BitConverter.DoubleToInt64Bits(expected[i]) !=
+                    BitConverter.DoubleToInt64Bits(actual[i]))
+                {
+                    Assert.Fail(
+                        $"{family} face {i} at {seconds} s: direct {expected[i]:R} against " +
+                        $"precomputed {actual[i]:R}");
+                }
+
+                if (expected[i] != 0d) carried++;
+            }
+
+            return carried;
+        }
     }
 }

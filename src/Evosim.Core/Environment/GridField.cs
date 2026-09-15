@@ -120,6 +120,17 @@ namespace Evosim.Core
         private double[] _faceY;
         private double[] _faceZ;
 
+        // The shaped floor's numbers at each of the three edge families' own (x, z) lattices,
+        // built once per current and read at every depth, every substep and every step - D092 and
+        // CurrentField.BedColumn's remarks for why. Null on a flat bed, which is every recorded
+        // world, and null until the first conservative step on a shaped one. _bedColumnsFor is the
+        // current they were built against: a grid handed a second field rebuilds rather than
+        // reusing a floor that is not that water's.
+        private CurrentField _bedColumnsFor;
+        private CurrentField.BedColumn[] _bedColumnX;
+        private CurrentField.BedColumn[] _bedColumnY;
+        private CurrentField.BedColumn[] _bedColumnZ;
+
         private readonly int[] _patchOfColumn;
 
         // Reused by DepositBox so a per-step influx allocates nothing.
@@ -1957,6 +1968,24 @@ namespace Evosim.Core
                 faces, worstNet);
         }
 
+        /// <summary>
+        /// A copy of the east, lower and front face fluxes the last
+        /// <see cref="MeasureFaceFluxes"/> or conservative step left standing, m³/s, one entry
+        /// per cell. Empty until one has run.
+        /// </summary>
+        /// <remarks>
+        /// A reading and not a handle: the arrays are copied, so nothing a caller does with them
+        /// reaches the scheme. It exists because the tuple <see cref="MeasureFaceFluxes"/> returns
+        /// is two sums and a worst case, and the identity D092's precomputed bed has to meet is
+        /// per face rather than in aggregate.
+        /// </remarks>
+        public (double[] East, double[] Lower, double[] Front) FaceFluxesForReading()
+        {
+            if (_faceX == null) return (new double[0], new double[0], new double[0]);
+
+            return ((double[])_faceX.Clone(), (double[])_faceY.Clone(), (double[])_faceZ.Clone());
+        }
+
         private static double Square(double v) => v * v;
 
         // ---------------------------------------------------------- the lattice's edges and faces
@@ -2024,12 +2053,101 @@ namespace Evosim.Core
             return _live == null || _live[Index(ix, iy, iz)];
         }
 
+        /// <summary>
+        /// Whether the shaped floor's per-column numbers are precomputed for the edge lattices
+        /// rather than sampled at every edge — D092. True, and the two paths are the same
+        /// arithmetic in the same order, so this decides speed and nothing else.
+        /// </summary>
+        /// <remarks>
+        /// It exists so that <c>BedGridTests</c> can measure one grid both ways and assert the
+        /// fluxes agree bit for bit. A flat bed takes neither path: it has no column to precompute
+        /// and this flag reaches nothing.
+        /// </remarks>
+        public bool PrecomputeBedColumns { get; set; } = true;
+
+        /// <summary>
+        /// Builds the three edge families' bed columns for this current, or clears them for water
+        /// with no shaped floor.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The three lattices <see cref="SampleEdges"/> visits.</b> The x edges sit at
+        /// <c>((i+½)h, kh)</c> for <c>i &lt; nx</c> and <c>k ≤ nz</c>, the z edges at
+        /// <c>(ih, (k+½)h)</c> for <c>i ≤ nx</c> and <c>k &lt; nz</c>, and the y edges at
+        /// <c>(ih, kh)</c> for both ≤ n. Three arrays rather than one half-cell lattice because
+        /// the loops index them as they stand and a shared lattice would cost an index map at
+        /// every edge to save nothing.
+        /// </para>
+        /// <para>
+        /// <b>Sampled at the float the edge loop passes</b>, not at the double the arithmetic would
+        /// give: <see cref="CurrentField.ColumnAt"/> takes floats for that reason, so the column is
+        /// the floor at the point the direct call would have read.
+        /// </para>
+        /// </remarks>
+        private void EnsureBedColumns(CurrentField current)
+        {
+            if (ReferenceEquals(_bedColumnsFor, current)) return;
+
+            _bedColumnsFor = null;
+            _bedColumnX = null;
+            _bedColumnY = null;
+            _bedColumnZ = null;
+
+            if (current.Bed != null)
+            {
+                double h = CellMetres;
+
+                _bedColumnX = new CurrentField.BedColumn[_nx * (_nz + 1)];
+                for (int i = 0; i < _nx; i++)
+                {
+                    float x = (float)((i + 0.5) * h);
+                    for (int k = 0; k <= _nz; k++)
+                    {
+                        _bedColumnX[i * (_nz + 1) + k] = current.ColumnAt(x, (float)(k * h));
+                    }
+                }
+
+                _bedColumnZ = new CurrentField.BedColumn[(_nx + 1) * _nz];
+                for (int i = 0; i <= _nx; i++)
+                {
+                    float x = (float)(i * h);
+                    for (int k = 0; k < _nz; k++)
+                    {
+                        _bedColumnZ[i * _nz + k] = current.ColumnAt(x, (float)((k + 0.5) * h));
+                    }
+                }
+
+                _bedColumnY = new CurrentField.BedColumn[(_nx + 1) * (_nz + 1)];
+                for (int i = 0; i <= _nx; i++)
+                {
+                    float x = (float)(i * h);
+                    for (int k = 0; k <= _nz; k++)
+                    {
+                        _bedColumnY[i * (_nz + 1) + k] = current.ColumnAt(x, (float)(k * h));
+                    }
+                }
+            }
+
+            _bedColumnsFor = current;
+        }
+
         /// <summary>Fills the three edge families from the current's potential at one clock.</summary>
         private void SampleEdges(CurrentField current, double seconds)
         {
             Array.Clear(_edgeX, 0, _edgeX.Length);
             Array.Clear(_edgeY, 0, _edgeY.Length);
             Array.Clear(_edgeZ, 0, _edgeZ.Length);
+
+            CurrentField.BedColumn[] bedX = null, bedY = null, bedZ = null;
+
+            if (PrecomputeBedColumns)
+            {
+                EnsureBedColumns(current);
+
+                bedX = _bedColumnX;
+                bedY = _bedColumnY;
+                bedZ = _bedColumnZ;
+            }
 
             double h = CellMetres;
             bool tank = Shape == WorldShape.Tank;
@@ -2061,8 +2179,11 @@ namespace Evosim.Core
                             continue;
                         }
 
-                        _edgeX[EdgeXIndex(i, j, k)] =
-                            current.PotentialAt(x, y, (float)(k * h), seconds).X * h;
+                        _edgeX[EdgeXIndex(i, j, k)] = bedX == null
+                            ? current.PotentialAt(x, y, (float)(k * h), seconds).X * h
+                            : current.PotentialAt(
+                                  x, y, (float)(k * h), seconds,
+                                  bedX[i * (_nz + 1) + k]).X * h;
                     }
                 }
 
@@ -2082,8 +2203,12 @@ namespace Evosim.Core
                             continue;
                         }
 
-                        _edgeZ[EdgeZIndex(i, j, k)] =
-                            current.PotentialAt((float)(i * h), y, (float)((k + 0.5) * h), seconds).Z * h;
+                        _edgeZ[EdgeZIndex(i, j, k)] = bedZ == null
+                            ? current.PotentialAt(
+                                  (float)(i * h), y, (float)((k + 0.5) * h), seconds).Z * h
+                            : current.PotentialAt(
+                                  (float)(i * h), y, (float)((k + 0.5) * h), seconds,
+                                  bedZ[i * _nz + k]).Z * h;
                     }
                 }
             }
@@ -2111,8 +2236,11 @@ namespace Evosim.Core
                             continue;
                         }
 
-                        _edgeY[EdgeYIndex(i, j, k)] =
-                            current.PotentialAt((float)(i * h), y, (float)(k * h), seconds).Y * h;
+                        _edgeY[EdgeYIndex(i, j, k)] = bedY == null
+                            ? current.PotentialAt((float)(i * h), y, (float)(k * h), seconds).Y * h
+                            : current.PotentialAt(
+                                  (float)(i * h), y, (float)(k * h), seconds,
+                                  bedY[i * (_nz + 1) + k]).Y * h;
                     }
                 }
             }

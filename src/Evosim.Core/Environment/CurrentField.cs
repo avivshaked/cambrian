@@ -941,6 +941,56 @@ namespace Evosim.Core
             PotentialAt(at.X, at.Y, at.Z, seconds);
 
         /// <summary>
+        /// The potential at a place and a time with the floor's own numbers at that column
+        /// supplied rather than sampled — <see cref="ColumnAt"/>'s answer, and the same bits as
+        /// <see cref="PotentialAt(float, float, float, double)"/>. D092.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>For a caller whose sample points never move.</b> The grid's face fluxes read the
+        /// potential at a fixed lattice of <c>(x, z)</c> at every metabolic step, every substep and
+        /// fifty-nine depths on each column, and the bed depends on neither <c>y</c> nor the clock;
+        /// see <see cref="BedColumn"/> for what that cost. Nothing else about the answer changes:
+        /// the flat field at the mapped point, the scale and the guards are the ones the direct
+        /// call uses, in the order it uses them.
+        /// </para>
+        /// <para>
+        /// <b>Refuses a column this water cannot use.</b> A <c>default</c> struct, or a call on
+        /// water with no shaped floor, is a caller who has precomputed against a different world;
+        /// the answer would be a plausible number rather than this field's, so it throws.
+        /// </para>
+        /// </remarks>
+        public Float3 PotentialAt(float x, float y, float z, double seconds, in BedColumn column)
+        {
+            if (!HasPotential)
+            {
+                throw new InvalidOperationException(
+                    "This water is not the curl of a potential this class can write down: " +
+                    FormattableString.Invariant($"mode {Mode}, shape {_shape}, ") +
+                    FormattableString.Invariant($"vent {(VentActive(_patchCount) ? "on" : "off")}. ") +
+                    "Ask HasPotential first. logbook/specs/transport-conserves-spec.md.");
+            }
+
+            if (_bed == null || !column.Sampled)
+            {
+                throw new InvalidOperationException(
+                    "A precomputed bed column was handed to water that has no shaped floor, or a " +
+                    FormattableString.Invariant($"column that was never sampled (bed {(_bed == null ? "absent" : "present")}, ") +
+                    FormattableString.Invariant($"column {(column.Sampled ? "sampled" : "default")}). ") +
+                    "Ask Bed first and take the column from ColumnAt. D092.");
+            }
+
+            if (_speed <= 0f) return Float3.Zero;
+
+            EnsureStreams();
+
+            double t = 2.0 * Math.PI * seconds / _periodSeconds;
+
+            return StreamsSlopedPotentialUnit(x, y, z, t, _streamsOverturning, column)
+                   * (float)(_speed * _streamsScale * _bedScale);
+        }
+
+        /// <summary>
         /// The transport field's potential at unit <see cref="Speed"/> and unit scale, at a place
         /// and an already-scaled phase — <see cref="Unit"/>'s own <c>A</c>.
         /// </summary>
@@ -1901,6 +1951,107 @@ namespace Evosim.Core
             public double Depth;
         }
 
+        /// <summary>
+        /// Everything the floor-following map needs at one column that does not depend on
+        /// <c>y</c> or on the clock — the bed's height and slope there, and the three numbers
+        /// <see cref="MapAt"/> derives from them before it has looked at <c>y</c> at all.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it is for.</b> The bed is twelve cosines and a tilt, and a grid's face fluxes
+        /// sample the potential at the same fixed lattice of <c>(x, z)</c> at every metabolic step
+        /// and every substep, at fifty-nine depths on each column. The map is a pure function of
+        /// the point, so every one of those samples was buying the same twelve cosines over again:
+        /// the probe of 2026-09-15 read <see cref="GridField.MeasureFaceFluxes"/> at 400 m² and
+        /// 1 m cells as 15 ms on a flat floor and 37 ms on a shaped one, and a tilt-only floor —
+        /// one plane, no cosines — cost the same as the full map, so the price was the map's
+        /// algebra at every sample and not the cosine count. A caller that knows its sample points
+        /// never move computes one of these per column and hands it to
+        /// <see cref="CurrentField.PotentialAt(float, float, float, double, in CurrentField.BedColumn)"/>.
+        /// </para>
+        /// <para>
+        /// <b>It carries the derived numbers, not only the bed's.</b> <c>d = D − h</c>, the floor's
+        /// own <c>y</c>, the stretch <c>c = D/d</c> and <c>d²</c> are each computed here in the
+        /// same order <see cref="MapAt"/> computed them, so the overload's arithmetic is the
+        /// original's operation for operation and the bits agree rather than nearly agree. <c>d²</c>
+        /// is held rather than recovered from <c>d</c> for exactly that reason: <c>y·D/(d·d)</c>
+        /// and <c>y·D·(1/(d·d))</c> are not the same double.
+        /// </para>
+        /// <para>
+        /// <b>Named for the column and not for the sample</b> because <see cref="CurrentField"/>
+        /// already has a <c>BedSample</c> — the one-entry memo the harness's velocity and
+        /// acceleration pair share — and a nested type may not wear a method's name.
+        /// </para>
+        /// </remarks>
+        public readonly struct BedColumn
+        {
+            internal BedColumn(double depth, double h, double hx, double hz)
+            {
+                double d = depth - h;
+
+                Height = h;
+                SlopeX = hx;
+                SlopeZ = hz;
+                Depth = d;
+                FloorY = -depth + h;
+                Stretch = depth / d;
+                DepthSquared = d * d;
+                Sampled = true;
+            }
+
+            /// <summary>The floor's height above the flat bed at this column, m: <c>h</c>.</summary>
+            public double Height { get; }
+
+            /// <summary><c>∂h/∂x</c>, dimensionless.</summary>
+            public double SlopeX { get; }
+
+            /// <summary><c>∂h/∂z</c>, dimensionless.</summary>
+            public double SlopeZ { get; }
+
+            /// <summary>The water's own depth here, m: <c>D − h</c>.</summary>
+            public double Depth { get; }
+
+            /// <summary>The floor's own <c>y</c> in the world, m: <c>−D + h</c>.</summary>
+            public double FloorY { get; }
+
+            /// <summary><c>det J = D/d</c>, the horizontal stretch.</summary>
+            public double Stretch { get; }
+
+            /// <summary><c>d²</c>, held so that the overload divides by the same double.</summary>
+            public double DepthSquared { get; }
+
+            /// <summary>
+            /// False on a <c>default</c> value, which is the one thing that must not reach the map:
+            /// a zero depth divides by zero rather than refusing.
+            /// </summary>
+            public bool Sampled { get; }
+        }
+
+        /// <summary>
+        /// The <see cref="BedColumn"/> at a place — everything the map needs there that does not
+        /// depend on <c>y</c> or the clock. D092.
+        /// </summary>
+        /// <remarks>
+        /// Takes floats because its callers sample on a lattice of floats and the widened float is
+        /// what the bed is read at inside <see cref="PotentialAt(float, float, float, double)"/>;
+        /// taking doubles would let a caller precompute at a point a hair from the one the direct
+        /// path uses and get an answer that is right and not identical. Refuses on a flat bed
+        /// rather than handing back a column of a floor that is not there.
+        /// </remarks>
+        public BedColumn ColumnAt(float x, float z)
+        {
+            if (_bed == null)
+            {
+                throw new InvalidOperationException(
+                    "This water has no shaped floor, so it has no column to precompute: its " +
+                    "potential is the flat tank's or the box's. Ask Bed first. D092.");
+            }
+
+            _bed.HeightAndGradient(x, z, out double h, out double hx, out double hz);
+
+            return new BedColumn(_depthMetres, h, hx, hz);
+        }
+
         private BedMap MapAt(double x, double y, double z)
         {
             double depth = _depthMetres;
@@ -1926,6 +2077,40 @@ namespace Evosim.Core
             double scale = y * depth / (d * d);
             map.A = scale * hx;
             map.B = scale * hz;
+
+            return map;
+        }
+
+        /// <summary>
+        /// <see cref="MapAt"/> with the column's numbers supplied rather than sampled — the same
+        /// arithmetic in the same order, from <c>h</c>, <c>∇h</c>, <c>d</c>, <c>d²</c> and the
+        /// floor's <c>y</c> a <see cref="BedColumn"/> already holds.
+        /// </summary>
+        /// <remarks>
+        /// <b>The clamp still comes first</b>, against the precomputed floor, for the reason
+        /// <see cref="MapAt"/>'s remarks give: it is what makes <c>ỹ</c> land exactly on <c>−D</c>
+        /// at the bed.
+        /// </remarks>
+        private BedMap MapFrom(in BedColumn column, double y)
+        {
+            double depth = _depthMetres;
+
+            if (y > 0d) y = 0d;
+            else if (y < column.FloorY) y = column.FloorY;
+
+            var map = default(BedMap);
+
+            map.Y = y;
+            map.Height = column.Height;
+            map.SlopeX = column.SlopeX;
+            map.SlopeZ = column.SlopeZ;
+            map.Depth = column.Depth;
+            map.C = column.Stretch;
+            map.MappedY = y * map.C;
+
+            double scale = y * depth / column.DepthSquared;
+            map.A = scale * column.SlopeX;
+            map.B = scale * column.SlopeZ;
 
             return map;
         }
@@ -2010,6 +2195,23 @@ namespace Evosim.Core
             double x, double y, double z, double t, double overturning)
         {
             BedMap m = MapAt(x, y, z);
+
+            Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
+
+            return new Float3(
+                (float)(a.X + m.A * a.Y),
+                (float)(m.C * a.Y),
+                (float)(a.Z + m.B * a.Y));
+        }
+
+        /// <summary>
+        /// <see cref="StreamsSlopedPotentialUnit(double, double, double, double, double)"/> with
+        /// the column's bed already sampled — the same three lines over the same map.
+        /// </summary>
+        private Float3 StreamsSlopedPotentialUnit(
+            double x, double y, double z, double t, double overturning, in BedColumn column)
+        {
+            BedMap m = MapFrom(column, y);
 
             Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
 
