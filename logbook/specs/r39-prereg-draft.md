@@ -28,12 +28,14 @@ Round 38's launcher with the tank resized and three bed dials (`rounds/launch-r3
 `EVOSIM_DEPTH` 45 m (new; every round through 38 ran the 60 m default), the founders
 drawn over the 45 m, `EVOSIM_BED_RELIEF` 1.5 m, `EVOSIM_BED_TILT` 30 m (a 29.6° ramp under
 the 30° cap), `EVOSIM_BED_SCALE` 0 (a third of the diameter, 17.6 m), `EVOSIM_MATTER_BUDGET`
-«smoke» units (D093's ruling 4: the smallest of 6,000, 9,000 and 12,000 that founds like
-round 38's smoke, whose 600 s at dt 0.02 read 166 births). Everything else is round 38's:
+11,000 units (D093's ruling 4 as run: five founding smokes at 600 s and dt 0.02 read 25,
+61, 179, 159 and 301 births at 6,000, 9,000, 10,500, 11,000 and 12,000 units against
+round 38's smoke's 166, a cliff under 10,500; 11,000 is the smallest that founds like
+round 38 with a margin above the cliff). Everything else is round 38's:
 the streams at 0.1 m/s with the acceleration force, corpses at 0.005/s, dt 0.01, 30,000 s,
 five seeds. The water is five and a half times round 38's. The floor a seed gets is drawn
-from the seed: seed 3's reads «smoke» hollows and «smoke» ridges with a range of «smoke» m,
-the bands' steepest slope «smoke»° and «smoke»° with the tilt (`r39big-m9`'s header).
+from the seed: seed 3's reads 2 hollows and 1 ridge with a range of 1.50 m, the bands' steepest
+slope 17° and 40° with the tilt (`r39big-m110`'s header).
 
 ## Rules, before scoring
 
@@ -65,7 +67,7 @@ the eaters' inherited peak «0101» and trough «0101»; the rim quarter «0101�
 | E5 | **the boom and bust is not the floor's to fix**: the eaters' inherited count peaks above 300 times the budget over 6,000 and falls below a sixth of its peak within 10,000 s of the peak in at least 3 of 5, as in round 38 («0101») | `inherit` at every 1,000 s |
 | E6 | **the disc stays mixed on a slope**: the rim quarter 15 to 40% at 5,000, 15,000 and 30,000 s in 4 of 5; `cols` at least 60% of the live columns from 5,000 s | `p3` over `alive`; `cols` |
 | E7 | **the rock throws nothing new**: no dump whose reason names the bed in 5 of 5; `diverged` between 0 and 10 per million jointed body-seconds in 4 of 5 | the manifests, `diverged-read.py` |
-| E8 | **the pace holds**: wall seconds per 1,000 simulated seconds per living body within 0.8 and 2.0 of round 38's five-seed mean («0101»), the grid five times the cells and the smoke's step cost «smoke» | `run.json`, `pace.tsv` |
+| E8 | **the pace is the grid's**: wall seconds per 1,000 simulated seconds per living body within 1.5 and 3.5 of round 38's five-seed mean («0101»); the smokes read 3.0 at matched founding bodies, the grid at five and a half times the cells, and the physics' share grows with the crowd | `run.json`, `pace.tsv` |
 | E9 | **light: the leaves take the shallow side**: the photosynthetic bodies' centre along the tilt's diameter at least 4 m toward the shallow arc from the axis at 15,000 and 30,000 s in 4 of 5, and the leaves within 2 m of the floor on the shallow half at least twice those on the deep half at the same times | the reader with the tilt direction from the manifest; the map |
 | E10 | **light: the floor in the light is lived on**: bodies within 2 m of the floor as a share of the living at 15,000 s at least twice round 38's («0101», where the floor is 30 m below the crowd) in 4 of 5 | `positions-read.py` against the map |
 | E11 | **light: the eaters go where the leaves are, and the sediment goes the other way**: the absorptive centre along the diameter within 3 m of the leaves' at 15,000 s in at least 3 of 5, so that E4 (above the low ground) and E9 (with the leaves) cannot both hold in the same seed; the entry says which held | the two centres from the reader |

@@ -1,6 +1,7 @@
 ﻿# Round 39 (D092, logbook/specs/bed-spec.md): round 38's dilute tank on a shaped floor. Everything
-# is launch-r38.ps1 verbatim -- 400 m2, 6,000 units of matter, the streams with the acceleration
-# force, the corpses, the prices -- plus the bed's three dials: EVOSIM_BED_RELIEF, the range of the
+# is launch-r38.ps1 verbatim -- the streams with the acceleration
+# force, the corpses, the prices -- at D093's size (2,200 m2, 45 m deep, 11,000 units of matter
+# from the founding smokes of 2026-09-15) plus the bed's three dials: EVOSIM_BED_RELIEF, the range of the
 # three cosine bands (about 1 m at this footprint, where the 30-degree slope bound binds at any
 # larger dial; the table in HANDOFF's path item and BedShapeTests say how much); EVOSIM_BED_TILT,
 # the depth difference along one diameter (6 m, a 15-degree ramp, the shallow arc 3 m above the
@@ -41,7 +42,7 @@ param(
     # EVOSIM_MATTER_BUDGET). 0 is the density rule and every run before this one. 6,000 is what a
     # 100 m2 by 60 m world holds at 1 unit per cubic metre, which is what rounds 33 through 37
     # ran on, so this round changes the water a unit sits in and not how many there are.
-    [float]$MatterBudget = 6000,
+    [float]$MatterBudget = 11000,
     # D090's fluid acceleration force, 1 = physical, 0 = every world before round 37b (FluidConfig.
     # FluidAccelerationCoefficient, EVOSIM_FLUID_ACCEL). Header token 'fluidAccel'.
     [float]$FluidAccel = 1,

@@ -5049,3 +5049,18 @@ observation from the side view was the numbers'.
 recommendation, to keep the pockets question alone; the owner chose the visible gradient).
 Steeper than 30° (the owner named the decline). Keeping the depth at 60 m with a bigger
 tilt (a 30 m tilt into the light at 60 m depth needs a 3,700 m² tank at 30°).
+
+**As run (2026-09-15 night, the agent under ruling 4).** Five founding smokes at the ruled
+size, 600 s at dt 0.02, seed 3, births by 600 s against round 38's smoke's 166: 6,000
+units 25; 9,000 61; 10,500 179; 11,000 159; 12,000 301. The response is a cliff between
+9,000 and 10,500, where a 5 m matter cell (125 m³, 0.235 units per m³ per 6,000 units at
+this footprint's mask) comes to hold more than the cheapest child costs; above it the
+world founds like round 38's, below it at a third of the rate or less. The ruling's letter
+is 10,500, the smallest that founds like round 38's; the agent set **11,000**, five
+percent more crowd for a margin above the cliff, since one seed's bed masks a different
+share of the cells and the 10,500 point sits within a seed's variation of the knee. The
+owner may move it before launch. The cost of the sizing, read from the same smokes: the
+grid at five and a half times the cells takes three times round 38's wall time at the
+same body count (2.2 minutes against 0.76 for 600 s at about 100 bodies), so round 39's
+seeds at about 2,900 bodies run two to three days each. Seed 3's floor: 2 hollows, 1
+ridge, range 1.50 m, the steepest slope 40° with the tilt and 17° on the bands.
