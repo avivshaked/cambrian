@@ -256,6 +256,15 @@ namespace Evosim.Theatre
             // An enabled second camera would render the whole world every frame of a run that
             // spends its frames stepping physics.
             _camera.enabled = false;
+            /// <summary>
+            /// The floor from low over the deep side, looking across it: the lowest fourteen
+            /// metres of the box framed from a shallow three quarters, so that a shaped bed's
+            /// hollows and its ridge read as shading where the census views cannot resolve a
+            /// metre of relief at thirteen pixels a metre (D092, 2026-09-15). A portrait of the
+            /// sand, never a census; not in the default set.
+            /// </summary>
+            Bed = 6,
+
         }
 
         /// <summary>
@@ -287,7 +296,7 @@ namespace Evosim.Theatre
                 {
                     refusal =
                         "'" + trimmed +
-                        "' is not a view; the views are side, end, top, iso, close, sky.";
+                        "' is not a view; the views are side, end, top, iso, close, sky, bed.";
                     return null;
                 }
 
@@ -323,7 +332,10 @@ namespace Evosim.Theatre
             // What the camera is fitted to, which is the whole water for every view but the close
             // one. The sky view is fitted to nothing at all and stands where it stands, but it is
             // handed the box too, because the fog below is spanned across whatever is passed here.
-            Bounds framed = view == View.Close ? CloseOn(replay, box, ref boxNote) : box;
+            Bounds framed =
+                view == View.Close ? CloseOn(replay, box, ref boxNote)
+                : view == View.Bed ? FloorSlab(box)
+                : box;
 
             Frame(view, framed);
 
@@ -365,7 +377,7 @@ namespace Evosim.Theatre
             // Neither the close view nor the sky view carries the box. The close view's frame cuts
             // the water's edges at odd angles, and the sky view stands inside the box looking up,
             // where the wireframe would be stamped straight across the window.
-            if (view != View.Close && view != View.Sky) DrawBox(box, replay);
+            if (view != View.Close && view != View.Sky && view != View.Bed) DrawBox(box, replay);
 
             DrawBodies(replay, view, out int marked, out int outside, out int bodies);
             DrawLabel(Label(replay, view));
@@ -541,7 +553,7 @@ namespace Evosim.Theatre
         {
             var hidden = new List<Renderer>(2);
 
-            if (view == View.Close || view == View.Sky) return hidden;
+            if (view == View.Close || view == View.Sky || view == View.Bed) return hidden;
 
             foreach (TheatreInsideOnly mark in
                      UnityEngine.Object.FindObjectsByType<TheatreInsideOnly>(FindObjectsSortMode.None))
@@ -829,6 +841,19 @@ namespace Evosim.Theatre
         /// picture. The margin is the only slack, and it is small enough that the box's edges are
         /// visible as edges.
         /// </remarks>
+        /// <summary>
+        /// The lowest fourteen metres of the box: the floor with its whole relief and tilt (a
+        /// 6 m tilt over a metre of bands spans about seven from the deepest rock) and the water
+        /// a body lies in on it.
+        /// </summary>
+        private static Bounds FloorSlab(Bounds box)
+        {
+            const float height = 14f;
+            Vector3 size = new Vector3(box.size.x, Mathf.Min(height, box.size.y), box.size.z);
+            Vector3 centre = new Vector3(box.center.x, box.min.y + 0.5f * size.y, box.center.z);
+            return new Bounds(centre, size);
+        }
+
         private void Frame(View view, Bounds box)
         {
             const float margin = 1.06f;
@@ -869,6 +894,16 @@ namespace Evosim.Theatre
                     // key rakes across the carve, which is what a carve has to be seen by.
                     rotation = Quaternion.LookRotation(
                         new Vector3(-0.78f, -0.34f, 1f).normalized, Vector3.up);
+                    perspective = true;
+                    break;
+
+                case View.Bed:
+                    // Shallower than the close view and a longer look: a floor is read by the
+                    // light raking across it, and from twelve degrees above the horizon a metre
+                    // of relief throws a shadow a few metres long where from above it throws
+                    // none. The slab it is fitted to is the floor and the water just over it.
+                    rotation = Quaternion.LookRotation(
+                        new Vector3(-0.7f, -0.21f, 1f).normalized, Vector3.up);
                     perspective = true;
                     break;
 
