@@ -2542,6 +2542,11 @@ namespace Evosim.Sim.EditorTools
             double floorStockJoules = 0d;
             double floorLowQuarterShare = 0d;
 
+            // The floor's stock by decile of floor height over the live columns (D092; round
+            // 39's E3): ten shares from the lowest tenth of the columns to the highest, so a read
+            // can see the whole profile rather than one threshold. Empty on a flat bed.
+            var floorDecileShares = new float[0];
+
             if (shapedBed)
             {
                 (float[] floors, double[] stocks) = ((GridField)world.Nutrients).ColumnFloorAndFloorStock();
@@ -2568,6 +2573,25 @@ namespace Evosim.Sim.EditorTools
                 }
 
                 floorLowQuarterShare = floorStockJoules > 0d ? low / floorStockJoules : 0d;
+
+                // Deciles by column count: sort the columns by floor height and cut the order
+                // into ten equal runs, so each bin is a tenth of the floor plan and the shares
+                // compare against a tenth each. A quarter of the range above is a place; a tenth
+                // of the columns is a share, and the two answer different questions.
+                if (floors.Length >= 10 && floorStockJoules > 0d)
+                {
+                    var order = new int[floors.Length];
+                    for (int i = 0; i < order.Length; i++) order[i] = i;
+                    Array.Sort(order, (a, b) => floors[a].CompareTo(floors[b]));
+
+                    floorDecileShares = new float[10];
+
+                    for (int rank = 0; rank < order.Length; rank++)
+                    {
+                        int bin = Math.Min(9, rank * 10 / order.Length);
+                        floorDecileShares[bin] += (float)(stocks[order[rank]] / floorStockJoules);
+                    }
+                }
             }
 
             // The same sample, as data. Raw numbers and no percentages: a reader can divide, and
@@ -2788,6 +2812,12 @@ namespace Evosim.Sim.EditorTools
                 // four-patch world for p3 in an eight-patch one.
                 w.BeginArray("alivePerPatch");
                 for (int p = 0; p < alivePerPatch.Length; p++) w.Value(alivePerPatch[p]);
+                w.EndArray();
+
+                // D092: the floor's stock by decile of floor height, lowest tenth of the columns
+                // first; ten shares summing to one on a shaped bed, an empty array on a flat one.
+                w.BeginArray("floorStockByFloorDecile");
+                for (int d = 0; d < floorDecileShares.Length; d++) w.Value(floorDecileShares[d]);
                 w.EndArray();
             });
 
