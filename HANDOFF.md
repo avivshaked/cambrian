@@ -247,7 +247,12 @@ the background and never handed to a subagent, which cannot wait.
    the fifth slot while four seeds run, so seed 5 lands about a day after seed 1 unless it
    closes), and **arm round 38's render queue only after seed 5 has launched**, so the
    launch queue and the render queue never count the cap in the same minute (a render's
-   Editor takes a minute to appear, and 2026-09-14 morning ran six for that reason). Then
+   Editor takes a minute to appear, and 2026-09-14 morning ran six for that reason; since
+   2026-09-15 the render queue counts a just-started render's wrapper, so its own two
+   queues no longer race). **The render queue does not refresh a worker**: after a merge
+   every render worker is refreshed by hand (`new-worker.ps1`) before the chain starts, or
+   the theatre refuses the new round's recordings on the hash and the render exits in a
+   minute with no frames, as workers 4 and 6 did on 2026-09-15 morning. Then
    the read against D1 to D8 as 0101, one notification. Two theatre items wait for a
    worker with a graphics device and move no hash: **the skin's rounding capped** so a
    near-cubic box stays a box, with a key that shows the raw collider shapes (the owner's
