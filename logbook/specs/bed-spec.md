@@ -108,6 +108,15 @@ point source; any change to the eaters, the prices or the senses.
 - The sloped current's divergence, floor flux and glass flux measured as the flat one's
   were (D089's check 2, D090's): divergence of the order of 1e-4 of the RMS per metre,
   normal velocity at the floor and the glass of the order of 1e-7.
+
+*As run (2026-09-15, `scratch/bed-chain.ps1`; the numbers are in HANDOFF's path item and
+the commits on branch `bed`): the constant-field check and the flux readings in
+`BedGridTests` and `BedStreamsTests` (floor flux 3e-7 of the RMS, divergence 3e-4 per
+metre, the acceleration analytic to 0.06%); the box digest at relief 0 identical over
+31 steps; the 600 s tank at relief 0 identical to round 38's smoke on every stats field;
+the shared-space smoke's bed case passed; the bed smoke `r39smoke` founded and closed
+both books with 3 hollows and 1 ridge at 1 m of relief and 6 m of tilt. Item 8's pace is
+read from a 6,000 s pair at round population, `tankpace-flat` against `tankpace-bed`.*
 - A settling test: `det cv` on a 600 s tank smoke with relief at its default rises above
   the flat world's, and the deepest columns hold the most detritus.
 - The pace check: within 15% of round 38's per-body pace on the smoke.

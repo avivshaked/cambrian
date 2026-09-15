@@ -191,9 +191,36 @@ ahead of the idle charge.
    and 40 to 42° at 10 m. Round 39 then runs about 1 m of relief at the default scale
    (a third of the diameter) with one or two hollows and a tilt of about 6 m, a 15° ramp
    with the shallow arc 3 m above the mean depth, far below the lit band. Every config
-   before the build is refused by the new `bed` group. The Unity half (the mesh collider, the
-   placer above the floor, the floor guard, `EVOSIM_BED_*`, the header tokens and the
-   report's hollow columns, the theatre's drape) is briefed after round 38 lands.
+   before the build is refused by the new `bed` group. **The Unity half is built and
+   validated** (2026-09-15 afternoon, `56b2713` on `bed`, from
+   `logbook/specs/bed-build/brief-unity.md`): a mesh collider from the height map at half
+   a metre (8,712 triangles at 400 m²) over a backstop slab a metre under the lowest rock,
+   the glass down to that rock, the placer's clamp read under each candidate after the
+   draw (no RNG draw moved), a root more than its radius under the floor killed as a
+   counted `Diverged` death whose dump names the bed, `EVOSIM_BED_RELIEF/_TILT/_SCALE`,
+   the header's `bed` token carrying the dials and the map's facts on a shaped floor and
+   unchanged on a flat one, seven `bed*` manifest fields, `refuge J` read from the grid's
+   refuge cells (`GridField.RefugeStock`), two columns `floor low %` and `floor J` (a dash
+   on a flat bed), the smoke's part 4b, and the theatre's drape, floor lines and camera box.
+   Validation on worker 5 (`scratch/bed-chain.ps1`, log `scratch/logs/bed-chain.out`): the
+   shared-space smoke passed with 4b (3 hollows, 1 ridge at a 4 m dial; 200 founders clear
+   of the rock under their own columns; a body pushed two metres into the rock killed as
+   the guard's death); the 600 s box digest at relief 0 identical to round 38's build over
+   all 31 steps; the 600 s tank at relief 0 identical to `r38smoke` on every stats field at
+   every sample (its bit-level reference on main's build, `tankdig-r38`, is still to run);
+   the bed smoke `r39smoke` (600 s, dt 0.02, seed 3, relief 1 m, tilt 6 m) founded 172
+   births against the flat smoke's 166, both books closed, no throws, header `bed relief 1 m
+   tilt 6 m scale 7.52 m (hollows 3, ridges 1, range 1.00 m, steepest 36° bands 26°, bound
+   clear)`, the hollows holding 1.7% rising to 16.1% of the floor's detritus over the 600 s;
+   its pictures (`scratch/snaps/r39smoke/`) show the tilt from the side and a faithful
+   replay, and a metre of relief is below what the world views can show (a low-angle floor
+   view is a theatre item). One reading open: the bed smoke took 1.2 min of wall against
+   0.75 for the relief-0 tank on the same worker, 1.6 times at 100 to 170 bodies, most
+   likely the grid's potential samples through the floor map, which do not scale with the
+   population; spec item 8's pace pair at round population (`scratch/bed-pace.ps1`,
+   `tankpace-flat` against `tankpace-bed`, 6,000 s each) runs on worker 5 and decides it.
+   Then: `tankdig-r38` on a main worker, the merge, the workers refreshed, round 39's
+   prereg after round 38's read.
 5. **Round 40, a light sense** (was 38): one new input, light and its vertical gradient; read
    on jointed against rigid against buoyant depth, in a world with something to steer toward.
    Proposal first.
