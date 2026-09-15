@@ -334,7 +334,7 @@ namespace Evosim.Theatre
             // handed the box too, because the fog below is spanned across whatever is passed here.
             Bounds framed =
                 view == View.Close ? CloseOn(replay, box, ref boxNote)
-                : view == View.Bed ? FloorSlab(box)
+                : view == View.Bed ? FloorSlab(box, replay)
                 : box;
 
             Frame(view, framed);
@@ -348,6 +348,7 @@ namespace Evosim.Theatre
             // view that is the point: a few metres of water put the rest of the world into the
             // background where it belongs, which is the dark field arrangement done with depth.
             Fog saved = FrameTheFog(framed);
+            Light rake = view == View.Bed ? RakeTheFloor() : null;
 
             try
             {
@@ -356,6 +357,7 @@ namespace Evosim.Theatre
             finally
             {
                 saved.Restore();
+                if (rake != null) UnityEngine.Object.DestroyImmediate(rake.gameObject);
                 for (int i = 0; i < silenced.Count; i++) silenced[i].enabled = true;
                 for (int i = 0; i < hidden.Count; i++) hidden[i].enabled = true;
             }
@@ -834,6 +836,45 @@ namespace Evosim.Theatre
                 round, total / round, flattest);
         }
 
+        /// <summary>
+        /// A light for the bed view alone: a directional light raking along the camera's own
+        /// look, low over the floor, for the one render and destroyed after it. The sand is
+        /// dark by design (<c>TheatreBed.shader</c>'s two greys) and the sun's light is spent
+        /// forty metres up, so the first bed pictures showed the drape as a shadow of itself
+        /// (the owner, 2026-09-15: "Can barely see anything"); the drape's shader reads URP's
+        /// additional lights, so a second directional light lifts it without touching the
+        /// bodies' skin more than a fill would. Theatre only, no hash moves.
+        /// </summary>
+        private Light RakeTheFloor()
+        {
+            var holder = new GameObject("Theatre Bed Rake") { hideFlags = HideFlags.HideAndDontSave };
+            holder.transform.rotation = _camera.transform.rotation;
+            var light = holder.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.color = new Color(0.9f, 0.95f, 1f);
+            light.intensity = 2.5f;
+            light.shadows = LightShadows.None;
+            return light;
+        }
+
+        /// <summary>
+        /// The floor and the water just over it: from the lowest rock to four metres above the
+        /// highest, so that a tilted bed is framed whole (D093's runs 30 m from arc to arc, and
+        /// the box's lowest fourteen metres caught a strip of it, 2026-09-15); on a flat bed, or
+        /// a recording with no bed, the lowest fourteen metres of the box as before.
+        /// </summary>
+        private static Bounds FloorSlab(Bounds box, TheatreReplay replay)
+        {
+            float height = 14f;
+            BedShape bed = replay?.Eco?.World?.Bed;
+            if (bed != null && bed.HasRelief)
+                height = (float)(bed.HighestMetres - bed.LowestMetres) + 4f;
+
+            Vector3 size = new Vector3(box.size.x, Mathf.Min(height, box.size.y), box.size.z);
+            Vector3 centre = new Vector3(box.center.x, box.min.y + 0.5f * size.y, box.center.z);
+            return new Bounds(centre, size);
+        }
+
         /// <summary>Points the camera and sizes it so the whole box is inside the picture.</summary>
         /// <remarks>
         /// Fitted from the box's eight corners rather than from its diagonal: the diagonal is a
@@ -841,19 +882,6 @@ namespace Evosim.Theatre
         /// picture. The margin is the only slack, and it is small enough that the box's edges are
         /// visible as edges.
         /// </remarks>
-        /// <summary>
-        /// The lowest fourteen metres of the box: the floor with its whole relief and tilt (a
-        /// 6 m tilt over a metre of bands spans about seven from the deepest rock) and the water
-        /// a body lies in on it.
-        /// </summary>
-        private static Bounds FloorSlab(Bounds box)
-        {
-            const float height = 14f;
-            Vector3 size = new Vector3(box.size.x, Mathf.Min(height, box.size.y), box.size.z);
-            Vector3 centre = new Vector3(box.center.x, box.min.y + 0.5f * size.y, box.center.z);
-            return new Bounds(centre, size);
-        }
-
         private void Frame(View view, Bounds box)
         {
             const float margin = 1.06f;
