@@ -218,23 +218,26 @@ old formats read-only.
 Agent work unless marked. Long steps (a suite, a smoke, a render) are launched by the agent in
 the background and never handed to a subagent, which cannot wait.
 
-1. **Round 37b's read is done** (0097, above) and the fresh seeds are pre-registered and
-   queued (0098). Next in this slot: watch the control and the fresh seeds (monitors on
-   `scratch/arms-watch.sh` and the queue's log; frames of a live arm every few thousand
-   seconds), stop seed 5's render after its 15,000 s frame; then **the throw
-   trace fixed** to keep the last finite frames and the frame before the one that fails
-   (`logbook/specs/throw-trace-spec.md` amended; Core and Sim, both hashes move, so it lands
-   in the same window as item 2 below); and **the skin's rounding capped** so a near-cubic
-   box stays a box, with a key that shows the raw collider shapes (theatre only, no hash;
-   the owner's observation of 2026-09-13).
-2. **`field cv`**, a patchiness reading: sd over mean of the detritus and matter fields over
-   live cells, in `stats.jsonl` and the table, so that a pocket is a number before any pocket
-   is built. 0097's ring statistics read no pockets, which is why this finer one is needed.
-   **Built 2026-09-13 morning** on branch `fieldcv` (worktree `scratch/wt-fieldcv`,
-   commit `0edb637`; `logbook/specs/field-cv-spec.md`): the full suite reads 691 green on the
-   branch; the 600 s box digest and a smoke that prints the columns wait for a free worker.
-   Both hashes move, so it merges after the fresh-seed batch has launched and before round 38,
-   never mid-round.
+1. **Round 38 is running** (0100, above): watch it (`scratch/arms-watch.sh r38-s1..s5`,
+   the queue's log), look at a live arm every few thousand seconds (3,000 and 6,000 s are
+   in 0100's launch section), launch seed 5 when a slot frees (the owner's Editor holds
+   the fifth slot while four seeds run, so seed 5 lands about a day after seed 1 unless it
+   closes), and **arm round 38's render queue only after seed 5 has launched**, so the
+   launch queue and the render queue never count the cap in the same minute (a render's
+   Editor takes a minute to appear, and 2026-09-14 morning ran six for that reason). Then
+   the read against D1 to D8 as 0101, one notification. Two theatre items wait for a
+   worker with a graphics device and move no hash: **the skin's rounding capped** so a
+   near-cubic box stays a box, with a key that shows the raw collider shapes (the owner's
+   observation of 2026-09-13), and **the Recorder's capture reproduced**, which hides the
+   interface from the Game View while it records (the owner, 2026-09-13; not intentional;
+   the likely fix draws the panel into a render texture the world camera composites, as
+   `TheatreUiCapture` already does for pictures).
+2. **Landed 2026-09-15 00:25 with the trace's second pass**: `field cv` (`det cv`, `mat cv`
+   in the table, `detritusCv` and `matterCv` in `stats.jsonl`; `logbook/specs/field-cv-spec.md`)
+   and the trace that keeps the last finite frames and names the first non-finite step
+   (`throw-trace-spec.md`'s second pass), validated together on one candidate tree (the
+   smoke with the forced case, the 600 s box digest identical, the dilute tank smoke) and
+   merged as `582ee6a`. Round 38 is the first round that reads both.
 3. **The streams' analytic derivative is already in round 37b's build** (`dcc9a24`, inside
    the `streams` merge; `logbook/specs/streams-analytic-spec.md`): in a tank the force takes
    a closed-form time derivative and Jacobian at 2.3 velocity samples per call where the
