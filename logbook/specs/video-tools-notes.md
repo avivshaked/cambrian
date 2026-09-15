@@ -4,9 +4,9 @@ The owner's aim, stated on the evening of 2026-09-15: YouTube videos about the w
 building, produced with the agent or a parallel agent, telling a story. "Whenever we do
 [have a story], I'd like to be able to click safari and record (as well as other things we
 might want to record and edit into the video). The safari should be both informative and
-cinematic in nature." These notes hold what was agreed in that conversation; each becomes a
-spec (`safari-spec.md`, `timeline-spec.md`, `checkpoint-spec.md`) before it is built, and
-the specs are put in front of the owner first. Order agreed: round 39 launches, then the
+cinematic in nature." These notes hold what was agreed in that conversation, checked against the transcript;
+the three specs written from them the same night are `timeline-spec.md`,
+`checkpoint-spec.md` and `safari-spec.md`, in front of the owner before any build. Order agreed: round 39 launches, then the
 timeline, then the checkpoints, then the safari director, with the Recorder overlay bug
 fixed on the way. None of it competes with the round for workers: the theatre work runs in
 the owner's Editor and the Core work in tests.

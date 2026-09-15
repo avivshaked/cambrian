@@ -324,27 +324,48 @@ the background and never handed to a subagent, which cannot wait.
    interface from the Game View while it records (the owner, 2026-09-13; not intentional;
    the likely fix draws the panel into a render texture the world camera composites, as
    `TheatreUiCapture` already does for pictures).
-2. **Landed 2026-09-15 00:25 with the trace's second pass**: `field cv` (`det cv`, `mat cv`
+2. **The video tools, pencilled in (owner, 2026-09-15 evening; `logbook/specs/video-tools-notes.md`,
+   the three specs beside it).** The owner wants YouTube videos of the world, with a
+   click to run a safari and a click to record; the tools are built during round 39's
+   run, in the owner's Editor and in Core's tests, so they take no worker from the round.
+   In order, each spec in front of the owner before its build starts:
+   (a) **the timeline** (`timeline-spec.md`, one to two days, 2026-09-16 to 17): a Record
+   mode that draws any sample of `positions.jsonl` instantly with no physics, and a charts
+   panel of `stats.jsonl` lanes with the lineage's events on the axis, clicking to seek;
+   (b) **the checkpoints** (`checkpoint-spec.md`, two to three days, 2026-09-17 to 19): the
+   whole state written every 1,000 s beside the snapshots (`EVOSIM_CHECKPOINT_EVERY`,
+   a recording, no hash moves), restored in Core and the harness, the theatre seeking
+   from the nearest one as a labelled cousin (the owner accepted the cousin);
+   (c) **the safari** (`safari-spec.md`, four to five days, 2026-09-19 to 23): the guide
+   script (clades, binomials, cards, a ranking), the director (the seven stations, a
+   scene per clade, next, previous, a picker, auto mode, orbits with eases), and record
+   through the Recorder with the overlay bug fixed on the way. The tank changes for round
+   39 are D093 (path item 4), already built and launched ahead of these. Round 39 is
+   watched and its pictures sampled through all of it; the read (0103) takes precedence
+   on the day it lands. Open for the owner: which first story, "the world that stood"
+   (the thirty-eight rounds) or "the boom and the bust" (round 38's eaters and round 39's
+   floor).
+3. **Landed 2026-09-15 00:25 with the trace's second pass**: `field cv` (`det cv`, `mat cv`
    in the table, `detritusCv` and `matterCv` in `stats.jsonl`; `logbook/specs/field-cv-spec.md`)
    and the trace that keeps the last finite frames and names the first non-finite step
    (`throw-trace-spec.md`'s second pass), validated together on one candidate tree (the
    smoke with the forced case, the 600 s box digest identical, the dilute tank smoke) and
    merged as `582ee6a`. Round 38 is the first round that reads both.
-3. **The streams' analytic derivative is already in round 37b's build** (`dcc9a24`, inside
+4. **The streams' analytic derivative is already in round 37b's build** (`dcc9a24`, inside
    the `streams` merge; `logbook/specs/streams-analytic-spec.md`): in a tank the force takes
    a closed-form time derivative and Jacobian at 2.3 velocity samples per call where the
    stencil cost 9.6, agreeing to 0.15% of the RMS. The nine-sample stencil survives only for
    the box's transport field, where no round has run the force. This item was carried in
    the old handoff as queued after it had landed; M8 reads the pace it actually costs.
-4. **Pockets, then a bigger tank** (owner, 2026-09-12 night): the proposal follows round 37b's
+5. **Pockets, then a bigger tank** (owner, 2026-09-12 night): the proposal follows round 37b's
    read, because it depends on how the streams move sinking matter (below).
-5. **The fluid terms' proposal** (path item 6) and, after it has read once, the §5.4 harness.
-6. **The throw's mitigation.** The trace is the per-link instrument; what it decides between
+6. **The fluid terms' proposal** (path item 6) and, after it has read once, the §5.4 harness.
+7. **The throw's mitigation.** The trace is the per-link instrument; what it decides between
    (a mass-ratio cap at build and resize; the search names the 10:1 rule,
    `logbook/specs/throw-trace-research.txt`) goes to the owner only if a tank throws.
-7. **0084's bin 3 screens** on any free worker: dispersed against undispersed on round 32's
+8. **0084's bin 3 screens** on any free worker: dispersed against undispersed on round 32's
    seeds, mixing 0.2 against 0.02, corpses off.
-8. **Older items still open, in the order they were captured**: the movement assay (active
+9. **Older items still open, in the order they were captured**: the movement assay (active
    against clamped on saved members of a jointed clade, repeated across orientations) and its
    ecological layer (a connected jointed clade persisting two lifetimes and paying positive net
    after work); round 18 as a committed reference (its config, hashes and a representative
@@ -352,14 +373,14 @@ the background and never handed to a subagent, which cannot wait.
    Unity boundary; D052's transactional guard test (force an `Admit` failure and close every
    book); two columns, gross photosynthesis per window and the matter drawn at conception per
    window; the scorer checking which round a report belongs to (`-ExpectSimHash` stands in).
-9. **Theatre work that needs no round**: the skin seeded from the genome so relatives resemble
+10. **Theatre work that needs no round**: the skin seeded from the genome so relatives resemble
    each other; the offline reading of whether any lineage's boxes have flattened under light
    (from the snapshots; it precedes round 42); inherited skin genes (six to ten neutral numbers
    under one gate, a genome format bump, no per-step effect; owner's rule, a proposal); the
    safari (below). The theatre's sun and surface dials (`EVOSIM_THEATRE_WAVE`, `_WAVELENGTH`,
    `_WAVE_SPEED`, `_LIGHT_REACH`, `_SHAFTS`, logbook/0091) are unjudged by the owner; the
    agent's reading is that the surface reads as bands, which is the wave steepness.
-10. **For the owner**: the `scratch/` cleanout list in the migration report (companion to
+11. **For the owner**: the `scratch/` cleanout list in the migration report (companion to
     `logbook/specs/scratch-migration-spec.md`, 2026-09-10; 70 MB of logs, review captures,
     probe output, one-off edit scripts, stale copies; nothing deleted). The worktrees under
     `scratch/wt-*` stay until the owner says otherwise.
@@ -375,7 +396,9 @@ the genome; its life from lineage rows; its economics from the ledger against it
 deterministic binomial from the genome hash; the explanation is a template with the facts in
 its slots, which says "the split changed X; the ledger reads Y" and stops. Three stages, none
 a round: a census script that writes the guide; pictures through `theatre-snap.ps1` with a
-view that frames a named body at a named second; the theatre's tour mode. An LLM, if ever, is
+view that frames a named body at a named second; the theatre's tour mode. **Specified on
+2026-09-15 as `logbook/specs/safari-spec.md`** (queued item 2c), with the owner's stations,
+the orbit family and the trip's navigation. An LLM, if ever, is
 a polish pass over the template's prose, off by default, and the facts never come from it.
 
 ## Pockets, then a bigger tank (owner, 2026-09-12 night)
