@@ -1,0 +1,30 @@
+## D5  the eaters' booms: where each boom's bodies came from. The line founder is the top of the unbroken absorptive parent chain above a body.
+arm	window	t	living eaters	distinct line founders	largest line founder id	founder born t	founder kind	share of the window on that founder	gen min	gen max	gen median	mean age s
+r38-s1	first peak	13500	725	6	951	2212	rigid eater	0.840	4	23	15.0	3451
+r38-s1	trough	23600	1	1	5913	18361	rigid eater	1.000	13	13	13.0	5239
+r38-s1	second peak	30000	6	4	8276	27712.5	rigid eater	0.333	9	17	14.5	1812
+r38-s1	end	30000	6	4	8276	27712.5	rigid eater	0.333	9	17	14.5	1812
+r38-s2	first peak	11800	599	5	1914	4164.5	rigid eater	0.795	4	17	11.0	2471
+r38-s2	trough	22700	1	1	1486	3368.5	rigid eater	1.000	11	11	11.0	6542
+r38-s2	second peak	30000	303	3	10744	26642	rigid eater	0.521	9	16	13.0	993
+r38-s2	end	30000	303	3	10744	26642	rigid eater	0.521	9	16	13.0	993
+r38-s3	first peak	17200	294	8	5453	8730.5	rigid eater	0.799	9	18	15.0	2285
+r38-s3	trough	24700	3	3	11992	20416	rigid eater	0.333	13	16	13.0	3890
+r38-s3	second peak	30000	15	4	14228	25179	rigid eater	0.400	13	20	17.0	1918
+r38-s3	end	30000	15	4	14228	25179	rigid eater	0.400	13	20	17.0	1918
+r38-s4	first peak	16400	703	3	3147	7777	rigid eater	0.956	8	18	13.0	3872
+r38-s4	trough	25400	2	1	3147	7777	rigid eater	1.000	10	12	11.0	1029
+r38-s4	second peak	25500	2	1	3147	7777	rigid eater	1.000	10	12	11.0	1129
+r38-s4	end	30000	2	1	3147	7777	rigid eater	1.000	10	12	11.0	5629
+r38-s5	first peak	14900	683	3	329	958.5	rigid eater	0.893	8	18	12.0	4156
+r38-s5	trough	22800	1	1	6602	18973.5	rigid eater	1.000	11	11	11.0	3826
+r38-s5	second peak	29900	7	3	8219	24363.5	rigid eater	0.571	10	12	11.0	2146
+r38-s5	end	30000	7	3	8219	24363.5	rigid eater	0.571	10	12	11.0	2246
+
+## D5  is the second boom the same line as the first?
+arm	first peak t	first peak founders (top 3 by count)	second window t	second founders (top 3)	shared founder	verdict
+r38-s1	13500	951(609) 416(73) 2066(40)	30000	8276(2) 8549(2) 7259(1)	none	a fresh line
+r38-s2	11800	1914(476) 1486(57) 709(34)	30000	10744(158) 11001(143) 9769(2)	none	a fresh line
+r38-s3	17200	5453(235) 8369(25) 7713(15)	30000	14228(6) 14266(5) 15456(3)	none	a fresh line
+r38-s4	16400	3147(672) 3856(30) 3182(1)	25500	3147(2)	3147	same line
+r38-s5	14900	329(610) 1741(70) 3715(3)	29900	8219(4) 9066(2) 9482(1)	none	a fresh line

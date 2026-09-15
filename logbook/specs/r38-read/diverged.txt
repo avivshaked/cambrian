@@ -1,0 +1,32 @@
+########## r38-s4
+
+=== r38-s4  (runs\r38-s4\2026-09-15-025137-30637fb0)  world depth=60 m ===
+    id      t_div    age_s jnt nodes edges activeJoint      bf   ratio dResize      maxV      maxW    maxAcF    maxWAc  firstNF    dNF  reason (offending value)
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+  2780     6719.5      0.0   1     2     3        True   1.000     1.5   never 3.265e+18 1.867e+18         0         0   671990     10  root y (height) non-finite (NaN/Inf) (y=nan)
+  2982     7336.0     20.5   1     3     3        True   1.000     1.4   never 6.924e+13  9.22e+13         0         0   733628     22  root y (height) non-finite (NaN/Inf) (y=nan)
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+count=2  jointed=2  median_age=10.2s  under_100s=2  t_range=[6719.5, 7336.0]
+traced=2/2  ratio_over_10=0/2 (0%)  within_5_steps_of_a_resize=0/2 (0%)
+########## r38-s5
+
+=== r38-s5  (runs\r38-s5\2026-09-15-091842-30637fb0)  world depth=60 m ===
+    id      t_div    age_s jnt nodes edges activeJoint      bf   ratio dResize      maxV      maxW    maxAcF    maxWAc  firstNF    dNF  reason (offending value)
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+   748     9508.5   7482.0   0     2     1        True   1.000       -       -         -         -         -         -        -      -  no CheckFinite test fails on this dump's partStates (root and links all finite and in box) ()
+   797    11000.5   8860.5   0     2     3        True   0.594       -       -         -         -         -         -        -      -  no CheckFinite test fails on this dump's partStates (root and links all finite and in box) ()
+   914     8345.0   5960.0   0     2     2        True   0.651       -       -         -         -         -         -        -      -  no CheckFinite test fails on this dump's partStates (root and links all finite and in box) ()
+  1050     7849.5   5249.5   0     2     2        True   0.578       -       -         -         -         -         -        -      -  no CheckFinite test fails on this dump's partStates (root and links all finite and in box) ()
+  1467    22503.0  19253.0   0     2     0        True   1.000       -       -         -         -         -         -        -      -  no CheckFinite test fails on this dump's partStates (root and links all finite and in box) ()
+  4956    23069.5   8820.5   0     2     2        True   0.594       -       -         -         -         -         -        -      -  no CheckFinite test fails on this dump's partStates (root and links all finite and in box) ()
+  5580    27733.0  11816.5   0     2     3        True   0.594       -       -         -         -         -         -        -      -  no CheckFinite test fails on this dump's partStates (root and links all finite and in box) ()
+  6068    22429.0   5250.5   0     2     2        True   0.640       -       -         -         -         -         -        -      -  no CheckFinite test fails on this dump's partStates (root and links all finite and in box) ()
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+count=8  jointed=0  median_age=8151.2s  under_100s=0  t_range=[7849.5, 27733.0]
+traced=0/8  (no throw traces: rigid bodies, or a run recorded before logbook/specs/throw-trace-spec.md)
+########## r38-s1
+r38-s1: no diverged/ dumps under runs\r38-s1\2026-09-14-232537-30637fb0
+########## r38-s2
+r38-s2: no diverged/ dumps under runs\r38-s2\2026-09-14-232617-30637fb0
+########## r38-s3
+r38-s3: no diverged/ dumps under runs\r38-s3\2026-09-15-020909-30637fb0

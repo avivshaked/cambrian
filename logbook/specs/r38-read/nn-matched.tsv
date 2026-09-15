@@ -1,0 +1,39 @@
+## D4 from the positions reader: the columns whose centres are inside the circle (402 live columns at 400 m2), the spreads, and the nearest-neighbour medians. A "~" in the reader's own output means the median is estimated from a sample of pairs; it is carried here as the reader printed it.
+arm	t	reader n	reader cols	reader x sd	reader z sd	reader nn h	reader nn 3d	leaf	leaf y	stom	stom y	mixo	mixo y	jointed	joint y
+r38-s1	5000	1606	396/402	5.62	5.52	~0.22	~1.24	1572	-21.68	30	-31.05	1	-22.41	54	-21.25
+r38-s1	15000	1635	396/402	5.53	5.65	~0.23	~1.32	1014	-23.24	618	-32.82	1	-45.22	3	-0.87
+r38-s1	30000	1597	397/402	5.58	5.58	~0.22	~1.32	1591	-22.98	6	-23.74	0	-	0	-
+r38-s2	5000	1487	392/402	5.67	5.70	~0.25	~1.22	1470	-21.14	16	-25.97	0	-	64	-20.37
+r38-s2	15000	1569	391/402	5.66	5.62	~0.24	~1.26	1423	-22.75	146	-24.53	0	-	8	-27.80
+r38-s2	30000	1602	390/402	5.69	5.53	~0.24	~1.33	1299	-24.32	303	-42.89	0	-	0	-
+r38-s3	5000	1339	375/402	5.85	5.82	~0.24	~1.30	1330	-18.97	0	-	0	-	177	-15.89
+r38-s3	15000	1462	383/402	5.64	5.48	~0.25	~1.41	1344	-25.12	116	-39.40	2	-26.71	44	-18.70
+r38-s3	30000	1641	396/402	5.73	5.68	~0.23	~1.27	1624	-24.00	15	-34.95	0	-	0	-
+r38-s4	5000	1609	387/402	5.43	5.71	~0.23	~1.22	1607	-20.61	0	-	0	-	169	-18.72
+r38-s4	15000	1716	392/402	5.64	5.60	~0.22	~1.36	1041	-21.67	626	-37.42	46	-33.15	36	-25.09
+r38-s4	30000	1642	392/402	5.43	5.56	~0.23	~1.26	1637	-22.80	2	-33.87	0	-	1	-16.15
+r38-s5	5000	1425	376/402	5.80	5.97	~0.24	~1.11	1377	-15.93	45	-22.13	1	-16.46	119	-13.60
+r38-s5	15000	1663	394/402	5.69	5.55	~0.24	~1.35	987	-21.63	674	-36.08	0	-	29	-16.26
+r38-s5	30000	1632	391/402	5.77	5.78	~0.24	~1.28	1621	-23.88	7	-36.98	0	-	14	-26.63
+
+## D3  nearest-neighbour median at MATCHED abundance. The control at each anchor is whichever of round 37b's TEN seeds has the `alive` nearest round 38's; an anchor counts as matched when the two are within 15%. D3 asks the ratio to sit between 1.3 and 1.9 in at least 3 of the anchors that match.
+arm	anchor t	n	nn h	nn 3d	control arm	control t	control n	control nn h	control nn 3d	n gap	matched	ratio nn h	ratio nn 3d	in 1.3-1.9
+r38-s1	5000	1606	~0.22	~1.24	r37b-s6	5000	1653	~0.10	~0.66	+0.029	yes	2.200	1.879	yes
+r38-s1	15000	1635	~0.23	~1.32	r37b-s6	15000	1617	~0.12	~0.78	-0.011	yes	1.917	1.692	yes
+r38-s1	30000	1597	~0.22	~1.32	r37b-s7	30000	1585	~0.11	~0.74	-0.008	yes	2.000	1.784	yes
+r38-s2	5000	1487	~0.25	~1.22	r37b-s8	5000	1469	~0.12	~0.74	-0.012	yes	2.083	1.649	yes
+r38-s2	15000	1569	~0.24	~1.26	r37b-s6	15000	1617	~0.12	~0.78	+0.031	yes	2.000	1.615	yes
+r38-s2	30000	1602	~0.24	~1.33	r37b-s7	30000	1585	~0.11	~0.74	-0.011	yes	2.182	1.797	yes
+r38-s3	5000	1339	~0.24	~1.30	r37b-s9	5000	1349	~0.12	~0.72	+0.007	yes	2.000	1.806	yes
+r38-s3	15000	1462	~0.25	~1.41	r37b-s7	15000	1438	~0.12	~0.73	-0.016	yes	2.083	1.932	no
+r38-s3	30000	1641	~0.23	~1.27	r37b-s1	30000	1674	~0.11	~0.70	+0.020	yes	2.091	1.814	yes
+r38-s4	5000	1609	~0.23	~1.22	r37b-s6	5000	1653	~0.10	~0.66	+0.027	yes	2.300	1.848	yes
+r38-s4	15000	1716	~0.22	~1.36	r37b-s5	15000	1714	~0.11	~0.75	-0.001	yes	2.000	1.813	yes
+r38-s4	30000	1642	~0.23	~1.26	r37b-s1	30000	1674	~0.11	~0.70	+0.019	yes	2.091	1.800	yes
+r38-s5	5000	1425	~0.24	~1.11	r37b-s2	5000	1425	~0.12	~0.72	+0.000	yes	2.000	1.542	yes
+r38-s5	15000	1663	~0.24	~1.35	r37b-s6	15000	1617	~0.12	~0.78	-0.028	yes	2.000	1.731	yes
+r38-s5	30000	1632	~0.24	~1.28	r37b-s1	30000	1674	~0.11	~0.70	+0.026	yes	2.182	1.829	yes
+
+anchors matched within 15%	15 of 15	in 1.3-1.9	14	(D3 holds at 3 of the matched anchors)
+
+## the same ratio at every anchor against the 37b seed nearest in abundance, ignoring the match test, so that the unmatched anchors can be read too. And the raw reading: 37b's ten seeds read nn 3d 0.66 to 0.79 at these anchors.

@@ -1,0 +1,29 @@
+## D1  founding survives the dilution: births by 1,000 s at least 40 in EVERY seed, and alive at 5,000 s at least 300 in 4 of 5
+arm	births by 1000 s	>=40	alive at 5000	>=300	births by 3000 s	mat blk by 3000 s	mat blk per birth	mat short by 3000 s	stillb by 3000 s	floor at 3000 s	gen max at 3000 s
+r38-s1	319	yes	1606	yes	1176	103903	88.4	0	1	0	12
+r38-s2	293	yes	1487	yes	1191	71669	60.2	0	2	0	11
+r38-s3	363	yes	1339	yes	1450	96535	66.6	0	1	0	15
+r38-s4	589	yes	1610	yes	1328	138274	104.1	0	8	0	16
+r38-s5	271	yes	1425	yes	1223	67333	55.1	0	2	0	13
+count	births>=40: 5 of 5 (needs 5)		alive>=300: 5 of 5 (needs 4)
+
+## comparison: round 37b (0100) read births by 1,100 s about 120 with mat blk near a hundred attempts per birth; the r38 smoke read 166 births by 600 s.
+## births every 500 s over the first 3,000 s
+t	r38-s1	r38-s2	r38-s3	r38-s4	r38-s5
+500	104	97	143	238	108
+1000	319	293	363	589	271
+1500	560	517	645	834	445
+2000	768	718	877	1003	669
+2500	977	936	1150	1152	919
+3000	1176	1191	1450	1328	1223
+
+## D2  the world stands: alive at 30,000 s between 700 and 2,300 in 4 of 5
+arm	t	alive	in 700-2300	births	deaths	mean alive over the run	min alive after 5000 s	at t	max alive after 5000 s	at t
+r38-s1	30000	1597	yes	8838	7342	1530	1529	17400	1720	12000
+r38-s2	30000	1602	yes	12393	10886	1446	1487	5000	1643	25300
+r38-s3	30000	1641	yes	16011	14448	1390	1333	5100	1641	30000
+r38-s4	30000	1642	yes	10217	8636	1535	1423	18600	1719	14600
+r38-s5	30000	1633	yes	9850	8287	1491	1425	5000	1734	10200
+count in band	5 of 5	(holds at 4)
+
+## comparison, round 37b at 30,000 s: seeds 1 to 5 1674 / 1735 / 1840 / 1782 / 1764 (seed 5 at 29,200 s); seeds 6 to 10 1811 / 1585 / 1831 / 1722 / 1759

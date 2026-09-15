@@ -1,0 +1,14 @@
+## D7  divergences and the exposure that produced them. A sample is 100 s, so a column's standing count summed over samples times 100 is body-seconds.
+round	arm	samples	interval s	sum jnt inh	jnt-inh body-s	sum jointed	jointed body-s	diverged	per 1e6 jnt-inh body-s	per 1e6 jointed body-s	in 0 to 10 per 1e6 jointed
+r38	r38-s1	300	100	4664	466400	5916	591600	0	0.00	0.00	yes
+r38	r38-s2	300	100	8400	840000	8885	888500	0	0.00	0.00	yes
+r38	r38-s3	300	100	19153	1915300	19473	1947300	0	0.00	0.00	yes
+r38	r38-s4	300	100	18101	1810100	18628	1862800	2	1.10	1.07	yes
+r38	r38-s5	300	100	14041	1404100	14673	1467300	8	5.70	5.45	yes
+r38	all five	-	-	-	6435900	-	6757500	10	1.55	1.48	5 of 5 in band
+
+## comparison, NOT recomputed:
+r37b s1-s5	-	-	-	-	11133400	-	11792900	43	3.86	3.65	-
+r37b s6-s10	-	-	-	-	3508300	-	3791300	0	0.00	0.00	-
+r37 s1-s5	-	-	-	-	9173400	-	9491200	0	0.00	0.00	-
+r36 s1-s5	-	-	-	-	6913800	-	7367200	131	18.95	17.78	-

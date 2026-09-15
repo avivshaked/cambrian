@@ -1,0 +1,42 @@
+## D7  every diverged dump of round 38, anatomy from the dump file. R = 11.2838 m (400 m2), so the radius guard fires past 12.2838 m from the axis. "kind" is derived: non-finite if any partState position is not finite, radius guard if every number is finite and the root sits past R + 1.
+arm	id	kind	t	age s	parts	jointed	dof	maxJointMassRatio	mass min kg	mass max kg	mass ratio	cellTypes	root y	root r at dump (m)	r - (R+1)	root r last intact (m)	lastResizeStep	steps since resize	firstNonFiniteStep	steps NF to dump	framesHeld	framesFinite	trace file	finite frame before first NF
+r38-s4	2780	non-finite	6719.5	0	2	True	2	1.4562	0.7768	1.1311	1.456	link|photosynthetic	-43.840	10.5100	-1.7738	10.5100	-1	-1	671990	10	3	3	2780-trace.json	yes
+r38-s4	2982	non-finite	7336	20.5	2	True	2	1.4456	0.7850	1.1348	1.446	link|photosynthetic	-49.256	1.3454	-10.9384	1.3454	-1	-1	733628	22	3	3	2982-trace.json	yes
+r38-s5	1050	radius guard	7849.5	5249.5	1	False	0	-	1.9368	1.9368	1.000	photosynthetic	-0.087	12.2856	+0.0018	12.2805	-	-	-	-	-	-	none	-
+r38-s5	1467	radius guard	22503	19253	1	False	0	-	0.7936	0.7936	1.000	photosynthetic	-0.561	12.2860	+0.0022	12.2836	-	-	-	-	-	-	none	-
+r38-s5	4956	radius guard	23069.5	8820.5	1	False	0	-	1.4054	1.4054	1.000	photosynthetic	-0.011	12.2853	+0.0015	12.2820	-	-	-	-	-	-	none	-
+r38-s5	5580	radius guard	27733	11816.5	1	False	0	-	1.7912	1.7912	1.000	photosynthetic	-2.688	12.2844	+0.0006	12.2833	-	-	-	-	-	-	none	-
+r38-s5	6068	radius guard	22429	5250.5	1	False	0	-	1.7508	1.7508	1.000	photosynthetic	-2.214	12.2846	+0.0009	12.2767	-	-	-	-	-	-	none	-
+r38-s5	748	radius guard	9508.5	7482	1	False	0	-	1.2026	1.2026	1.000	photosynthetic	-3.175	12.2840	+0.0002	12.2823	-	-	-	-	-	-	none	-
+r38-s5	797	radius guard	11000.5	8860.5	1	False	0	-	1.7912	1.7912	1.000	photosynthetic	-1.612	12.2841	+0.0003	12.2823	-	-	-	-	-	-	none	-
+r38-s5	914	radius guard	8345	5960	1	False	0	-	1.6025	1.6025	1.000	photosynthetic	-0.056	12.2840	+0.0002	12.2837	-	-	-	-	-	-	none	-
+
+## D7's clause "every dump a jointed body under 10 s old with a mass ratio under 3", asked of each dump
+arm	id	kind	jointed	age < 10 s	mass ratio < 3	all three
+r38-s4	2780	non-finite	True	True	True	yes
+r38-s4	2982	non-finite	True	False	True	NO
+r38-s5	1050	radius guard	False	False	True	NO
+r38-s5	1467	radius guard	False	False	True	NO
+r38-s5	4956	radius guard	False	False	True	NO
+r38-s5	5580	radius guard	False	False	True	NO
+r38-s5	6068	radius guard	False	False	True	NO
+r38-s5	748	radius guard	False	False	True	NO
+r38-s5	797	radius guard	False	False	True	NO
+r38-s5	914	radius guard	False	False	True	NO
+
+## the frames the two traced dumps held (each frame is one physics step of 0.01 s). Every frame is finite by construction from this build; the numbers say how far the body had already gone by the last finite step.
+arm	id	frame	step	t	link	|position| m	|velocity| m/s	|angularVelocity| rad/s	|drag| N
+r38-s4	2780	0	671987	6719.869850	0	3058	3.071e+05	3.995e+06	1.963e+07
+r38-s4	2780	0	671987	6719.869850	1	3058	4.974e+05	3.995e+06	2.698e+07
+r38-s4	2780	1	671988	6719.879850	0	8.825e+07	8.825e+09	1.113e+11	4.304e+11
+r38-s4	2780	1	671988	6719.879850	1	8.825e+07	1.122e+10	1.113e+11	9.739e+11
+r38-s4	2780	2	671989	6719.889850	0	3.265e+16	3.265e+18	1.867e+18	3.566e+20
+r38-s4	2780	2	671989	6719.889850	1	3.265e+16	3.265e+18	1.867e+18	5.576e+20
+r38-s4	2982	0	733625	7336.249836	0	65.08	4504	1.99e+05	1.122e+04
+r38-s4	2982	0	733625	7336.249836	1	65.02	2.308e+04	1.99e+05	2.146e+06
+r38-s4	2982	1	733626	7336.259836	0	2.882e+05	2.882e+07	2.743e+08	6.808e+07
+r38-s4	2982	1	733626	7336.259836	1	2.882e+05	2.971e+07	2.743e+08	3.019e+09
+r38-s4	2982	2	733627	7336.269836	0	5.532e+10	5.532e+12	9.22e+13	3.036e+15
+r38-s4	2982	2	733627	7336.269836	1	5.532e+10	6.924e+13	9.22e+13	3.131e+15
+
+## comparison, round 37b (0097): 43 throws in three seeds of ten, every one a two-part jointed body dumped within seconds of its birth with a joint mass ratio under 2.4, away from the wall and from any resize, clustered by parent; and in 42 of the 43 every held frame was already non-finite, so the trace could not name the onset. Round 38 is the first round whose ring keeps only finite frames.

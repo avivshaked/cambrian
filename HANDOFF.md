@@ -6,6 +6,20 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
+**Round 38, the dilute tank, is read (logbook/0101, 2026-09-15 night).** Five seeds on one
+build ended at 30,000 s; D1 to D4, D6 and D8 hold, D5 fails, D7's count holds and its
+anatomy does not. The world stands at 1,600 in every seed, mixed and thin, and every
+seed's eaters rise to a fifth to two fifths of the living by 12,000 to 17,000 s and
+starve to nothing by 23,000 to 25,000 s: a food crash (the detritus stock drawn from
+120 to 196 kJ to 24 to 40 kJ at the peak, the eaters' net watts crossing zero at the
+peak, `matterStanding` exact, shading falling), a consumer-resource oscillation with a
+period longer than the run, and each later boom a fresh line from the leaves. The goal
+rule fails five of five on its stability clause. The fields are uniform (`det cv` under
+0.5 after 5,000 s in every seed), which is round 39's baseline. Seed 5's eight "throws"
+are one-part bodies that leaked through the glass at the surface and were caught by the
+radius guard, which should never fire (queued). The read's files are
+`logbook/specs/r38-read/`.
+
 **Round 37b, the water carried as water, is the base and is read (logbook/0095, 0097; D090,
 D091).** Round 37's tank on the streams with the fluid acceleration force at 1, the
 conservative transporter, the whole-body wall clearance at birth, the corrected `cols` and
@@ -305,25 +319,22 @@ old formats read-only.
 Agent work unless marked. Long steps (a suite, a smoke, a render) are launched by the agent in
 the background and never handed to a subagent, which cannot wait.
 
-1. **Round 38 is running** (0100, above): watch it (`scratch/arms-watch.sh r38-s1..s5`,
-   the queue's log), look at a live arm every few thousand seconds (3,000 and 6,000 s are
-   in 0100's launch section), launch seed 5 when a slot frees (the owner's Editor holds
-   the fifth slot while four seeds run, so seed 5 lands about a day after seed 1 unless it
-   closes), and **arm round 38's render queue only after seed 5 has launched**, so the
-   launch queue and the render queue never count the cap in the same minute (a render's
-   Editor takes a minute to appear, and 2026-09-14 morning ran six for that reason; since
-   2026-09-15 the render queue counts a just-started render's wrapper, so its own two
-   queues no longer race). **The render queue does not refresh a worker**: after a merge
-   every render worker is refreshed by hand (`new-worker.ps1`) before the chain starts, or
-   the theatre refuses the new round's recordings on the hash and the render exits in a
-   minute with no frames, as workers 4 and 6 did on 2026-09-15 morning. Then
-   the read against D1 to D8 as 0101, one notification. Two theatre items wait for a
-   worker with a graphics device and move no hash: **the skin's rounding capped** so a
-   near-cubic box stays a box, with a key that shows the raw collider shapes (the owner's
-   observation of 2026-09-13), and **the Recorder's capture reproduced**, which hides the
-   interface from the Game View while it records (the owner, 2026-09-13; not intentional;
-   the likely fix draws the panel into a render texture the world camera composites, as
-   `TheatreUiCapture` already does for pictures).
+1. **Round 38 landed and is read (0101).** Round 39 launches next on D093's size once its
+   pre-registration (0102, from `logbook/specs/r39-prereg-draft.md`) is committed: five
+   seeds through `launch-queue.ps1 -Launcher rounds/launch-r39.ps1 -Refresh -ExpectSimHash
+   <a main-tree smoke's> -Prereg`, workers 2, 5 and 6 first and 3, 4 and 7 as their
+   round 38 renders end; the render queue armed after the last seed launches, with the bed
+   view among the frames. Two things the read left: **the glass leaks** (eight one-part
+   bodies at the surface of seed 5 passed the wall and died on the radius guard, spinning
+   at 9 to 48 rad/s; the dumps carry no contact history, so the reading is a contact log
+   at the wall or a film of a leak), and **the long arm moves up** (an oscillation with a
+   15,000 to 20,000 s period is read only by a run longer than it; path item 11). Two
+   theatre items wait for a worker with a graphics device and move no hash: **the skin's
+   rounding capped** so a near-cubic box stays a box, with a key that shows the raw
+   collider shapes (the owner's observation of 2026-09-13), and **the Recorder's capture
+   reproduced** (folded into the safari spec, item 2c). The bed view (`theatre-snap.ps1
+   -Views bed`) frames the floor whole down the tilt under a raking light since
+   2026-09-15 night; a tighter fit is queued.
 2. **The video tools, pencilled in (owner, 2026-09-15 evening; `logbook/specs/video-tools-notes.md`,
    the three specs beside it).** The owner wants YouTube videos of the world, with a
    click to run a safari and a click to record; the tools are built during round 39's

@@ -1,0 +1,63 @@
+## D8  wall-clock seconds per 1,000 simulated seconds, from the manifests
+round	arm	startedAt (UTC)	endedAt (UTC)	status	wall s	simulated s	s per 1000 sim s	footer wall minutes	footer timesRealTime	worker
+r38	r38-s1	2026-09-14T23:25:37	2026-09-15T09:18:02	ended	35545	30000	1184.8	592.4117979333333	0.8440074990813521	unity-w2
+r38	r38-s2	2026-09-14T23:26:17	2026-09-15T09:45:16	ended	37139	30000	1238.0	618.971503725	0.8077916301331745	unity-w3
+r38	r38-s3	2026-09-15T02:09:09	2026-09-15T12:15:21	ended	36372	30000	1212.4	606.2024186783334	0.8248070027337072	unity-w5
+r38	r38-s4	2026-09-15T02:51:37	2026-09-15T15:33:55	ended	45738	30000	1524.6	762.2913774633333	0.65591716603675	unity-w7
+r38	r38-s5	2026-09-15T09:18:42	2026-09-15T21:08:54	ended	42612	30000	1420.4	710.1971343433333	0.7040298753983469	unity-w2
+
+## D8  normalised by the mean living population, since a step costs per body. The ten-seed mean of the same statistic is 885.1 s per 1,000 sim s per 1,000 bodies (37b s1-s5 930.3 / 829.7 / 951.6 / 864.3 / 1096.5 from r37b-read/pace.tsv; s6-s10 829.5 / 744.2 / 770.9 / 821.1 / 1013.0 from r37b-fresh-read/pace.tsv).
+round	arm	mean alive	s per 1000 sim s	s per 1000 sim s per 1000 bodies	ratio to the ten-seed mean	in 0.7-1.6
+r38	r38-s1	1530	1184.8	774.4	0.875	yes
+r38	r38-s2	1446	1238.0	856.1	0.967	yes
+r38	r38-s3	1390	1212.4	872.2	0.985	yes
+r38	r38-s4	1535	1524.6	993.1	1.122	yes
+r38	r38-s5	1491	1420.4	952.9	1.077	yes
+count	5 of 5
+
+## the machine: how many r38 arms ran at once over each arm's own life (UTC manifest windows; renders are counted separately in the final message)
+arm	start	end	hours	mean concurrent r38 arms	min	max
+r38-s1	09-14 23:25	09-15 09:18	9.87	3.37	1	4
+r38-s2	09-14 23:26	09-15 09:45	10.32	3.40	2	4
+r38-s3	09-15 02:09	09-15 12:15	10.10	3.68	3	4
+r38-s4	09-15 02:51	09-15 15:33	12.71	3.28	2	4
+r38-s5	09-15 09:18	09-15 21:08	11.84	1.82	1	4
+
+## D8, the machine in LOCAL time (+01:00; the manifests are UTC). Arm windows are the
+## manifests; a render is its scratch/logs/theatre-snap-*.out creation to its .log mtime;
+## "other Unity" is every other batchmode process in scratch/logs over the same hours
+## (the r38 build chain, the bed chain, the tank pace probes, the r39 smokes and digests).
+arm	hours	mean concurrent r38 arms	min	max	mean concurrent renders	min	max	mean other Unity	mean total Unity processes	max total
+r38-s1	9.88	3.37	1	4	0.62	0	2	0.00	3.99	4
+r38-s2	10.32	3.41	2	4	0.59	0	2	0.00	4.00	4
+r38-s3	10.10	3.68	3	4	0.56	0	2	0.00	4.24	5
+r38-s4	12.70	3.28	2	4	0.91	0	3	0.18	4.38	5
+r38-s5	11.83	1.82	1	4	2.30	0	3	0.26	4.37	5
+
+## the windows used (local time)
+name	start	end	hours
+r38-s1	09-15 00:25	09-15 10:18	9.88
+r38-s2	09-15 00:26	09-15 10:45	10.32
+r38-s3	09-15 03:09	09-15 13:15	10.10
+r38-s4	09-15 03:51	09-15 16:33	12.70
+r38-s5	09-15 10:18	09-15 22:08	11.83
+render r37b-s5 (w7)	09-14 10:58	09-15 03:50	16.87
+render r37b-s8 (w5)	09-14 13:25	09-15 00:13	10.80
+render r37b-s9 (w6)	09-14 19:58	09-15 00:22	4.40
+render r37b-s10 (w4)	09-14 22:24	09-15 03:08	4.73
+render r38-s1	09-15 10:46	09-15 20:35	9.82
+render r38-s2	09-15 10:46	09-15 22:07	11.35
+render r39smoke	09-15 13:19	09-15 13:21	0.03
+render r38-s3	09-15 17:39	09-15 22:07	4.47
+render r38-s4	09-15 20:35	09-15 22:19	1.73
+render r39big-m9	09-15 22:16	09-15 22:18	0.03
+r38 build smokes+digests	09-15 00:19	09-15 00:22	0.05
+bed chain smokes+digests	09-15 13:15	09-15 13:18	0.05
+tankpace-flat	09-15 13:23	09-15 14:04	0.68
+tankpace-bed	09-15 14:04	09-15 14:52	0.80
+tankpace-bed2	09-15 14:56	09-15 15:41	0.75
+tankdig-r38	09-15 17:37	09-15 17:38	0.02
+tankpace-bed3	09-15 20:35	09-15 21:18	0.72
+bed recheck + r39smoke2	09-15 21:19	09-15 21:20	0.02
+r39big m6/m9/m12	09-15 22:09	09-15 22:16	0.12
+r39big m105/m110	09-15 22:19	09-15 22:23	0.07

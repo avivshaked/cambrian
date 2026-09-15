@@ -1,0 +1,9 @@
+## D5  the eaters booms, from the 100 s samples of the report
+arm	peak absorpt	at t	peak inherit	at t	peak inh/alive	trough inherit after peak	at t	inherit at end	absorpt at end	second boom	second peak inherit	at t	first t inherit>=10	last t inherit>=10	samples with inherit=0 after the peak
+r38-s1	725	13500	720	13500	0.426	0	23600	2	6	no	2	30000	3800	19300	64
+r38-s2	599	11800	596	11800	0.369	0	22800	300	303	yes	300	30000	4800	30000	43
+r38-s3	294	17200	288	17200	0.198	0	24700	11	15	no	11	30000	9100	30000	16
+r38-s4	703	16400	702	16400	0.411	2	25400	2	2	no	2	25500	9300	23600	0
+r38-s5	683	14900	682	14900	0.407	0	22800	4	7	no	4	29900	3500	20900	22
+
+## comparison, round 37b: peak absorptive 527 / 557 / 308 / 644 / 247 (seeds 1-5) and 708 / 341 / 972 / 535 / 331 (seeds 6-10); inherit at the end at least 10 in ten of ten, inherit/alive 0.016 to 0.085 (s1-5) and 0.032 to 0.072 (s6-10)
