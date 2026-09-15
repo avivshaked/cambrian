@@ -50,6 +50,9 @@ read and not required.
    light question); the floor breaking the surface is the beach, the first terrestrial
    round, which needs a minimum depth for the floor-following current, a dry mask in the
    grid and rules for a body on sand that the design puts after the aquatic work.
+   *As ruled the same evening (D093): the tank is 2,200 m² and 45 m deep and the tilt 30 m,
+   a 29.6° ramp under a cap raised to 30°, so the shallow arc sits at the lit band's floor
+   and the shelf is this round's after all; the beach stays a later round.*
 
 ## The water follows the floor (first version, not second)
 

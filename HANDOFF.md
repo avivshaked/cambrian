@@ -237,8 +237,19 @@ ahead of the idle charge.
    parts would not help (most bodies are one part). `floorStockByFloorDecile` (ten
    shares of the floor's detritus by decile of floor height) joined `stats.jsonl` for
    round 39's E3 (`ef7c85a`), rechecked by smoke on worker 5 (`scratch/bed-recheck.ps1`).
-   Then: the merge, the workers refreshed, round 39's prereg
-   (`logbook/specs/r39-prereg-draft.md`, baselines from 0101) after round 38's read.
+   Merged into main on the evening of 2026-09-15 (`999ee8f`), workers 5 and 6 refreshed.
+   **Then the owner saw the pictures and resized the tank (D093, `db15dba`)**: "Can barely
+   see anything. And I think we need a much bigger tank. Much." Round 39 runs at 2,200 m²
+   (radius 26.46 m), 45 m deep, a 30 m tilt (a 29.6° ramp, the shallow arc at 30 m, the
+   lit band's floor, the deep arc at 60 m), relief 1.5 m at scale 17.6 m; the tilt's cap
+   is 30°, `EVOSIM_DEPTH` is new, and the shelf is folded into the round. The matter
+   budget comes from three 600 s founding smokes at 6,000, 9,000 and 12,000 units
+   (`scratch/r39-big-chain.ps1`, worker 5; the water is 5.5 times round 38's, and a 5 m
+   matter cell at 6,000 units holds about one child's cost), with the floor's pictures
+   through the new `bed` view of `theatre-snap.ps1` (`352a4af`). Then round 39's prereg
+   (`logbook/specs/r39-prereg-draft.md`, rewritten for the size and the light, baselines
+   from 0101) after round 38's read, and the launch through `launch-queue.ps1 -Refresh
+   -ExpectSimHash` from the smoke's manifest.
 5. **Round 40, a light sense** (was 38): one new input, light and its vertical gradient; read
    on jointed against rigid against buoyant depth, in a world with something to steer toward.
    Proposal first.
