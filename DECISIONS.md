@@ -4989,6 +4989,16 @@ is a coast".
    from pictures, no hash moved.
 6. **Out**: rocks, boulders, overhangs (a solver, not a term); the shelf into the lit band
    (its own round later); the vent as a point source.
+7. **A gradient across the disc**, added the same morning at the owner's word ("what
+   about the sea bed as a gradient so it's not all one depth? this is something we wanted
+   to do from the start. we even thought of a beach"): a tilt along one diameter as the
+   map's largest scale, one dial (`BedTiltMetres`), mean-zero. In a cylinder the shallow
+   arc is a shore, a lake in cross-section, and the owner's doubt that a beach still makes
+   sense in a round tank is answered that way. Round 39's default keeps the shallowest
+   floor below the crowd's band so the round reads pockets and not light; the tilt raised
+   into the light is a shelf round, and the floor breaking the surface is the beach, the
+   first terrestrial round, which needs a dry mask, a minimum depth for the current and
+   rules for a body on sand.
 
 **Rejected.** Rocks as objects first (flow around obstacles is a solver and the grid has
 no cell under a ledge; the hollows should pay before that is bought). A shelf first (it

@@ -32,6 +32,17 @@ read and not required.
 5. **The floor meets the glass without a step**, and the mean depth stays the configured
    depth (60 m), so the water volume and the seeded matter density stay round 38's. The
    height map is mean-zero over the disc by construction.
+5a. **A gradient across the disc** (the owner, 2026-09-15: "the sea bed as a gradient so
+   it's not all one depth; this is something we wanted to do from the start"): a tilt
+   along one diameter, the largest scale of the same map, one dial for the depth
+   difference between the deep side and the shallow arc (`BedTiltMetres`,
+   `EVOSIM_BED_TILT`, mean-zero like the rest so the volume holds). In a cylinder the
+   shallow arc is a shore: a lake in cross-section. **Round 39's default keeps the
+   shallowest floor below the band the crowd lives in** (about 30 m), so the round reads
+   pockets and not light. The tilt raised into the lit band is a shelf, its own round (a
+   light question); the floor breaking the surface is the beach, the first terrestrial
+   round, which needs a minimum depth for the floor-following current, a dry mask in the
+   grid and rules for a body on sand that the design puts after the aquatic work.
 
 ## The water follows the floor (first version, not second)
 
@@ -76,9 +87,10 @@ read and not required.
 ## Not in this round
 
 Rocks, boulders and overhangs (objects in the water column need flow solved around
-obstacles, and the grid has no cell under a ledge); a shelf that rises into the lit band
-(a later round of its own, since it changes the light economy on one side); the vent
-(D067) as a point source; any change to the eaters, the prices or the senses.
+obstacles, and the grid has no cell under a ledge); the tilt raised into the lit band, the
+shelf (a later round of its own, since it changes the light economy on one side); the
+floor breaking the surface, the beach (the first terrestrial round); the vent (D067) as a
+point source; any change to the eaters, the prices or the senses.
 
 ## Validation before the round
 
