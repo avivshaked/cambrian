@@ -147,3 +147,11 @@ times, inside D3's band at the first reading. From the side the crowd fills the 
 and thins to the bed. `det cv` fell from 2.4 to 0.56 as the field filled and `mat cv` sits
 at 0.11 to 0.44. The inherited jointed count holds at 70 from 1,600 s on, where 37b's
 seeds were already past their peaks; watched, not read.
+
+*04:15, the 6,000 s look at seed 1.* 1,686 alive, which is 37b's count at the same time
+in four times the water: the matter builds the same number of bodies. The disc is full
+(398 of 402 columns, the rim quarter 24%, `x sd` 5.7 m) and the nearest neighbour holds at
+1.28 m. The eaters are recruiting (9 absorptive bodies at 3,000 s, 62 at 6,100 s) and the
+jointed count is decaying after all (71 to 35), the dense worlds' shape arriving later.
+`det cv` fell to 0.17 and `mat cv` to 0.04 to 0.12 as the fields filled: uniform water,
+no pockets yet. Stillbirths 79.
