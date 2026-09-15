@@ -160,9 +160,13 @@ ahead of the idle charge.
    nearest neighbour, founding (`mat blk`, `mat short` against births), the downwelling as the
    first patch, sitter against mover. The build queued between the fresh seeds and this
    round (the queue's item 2, `field cv`) lands first, since it moves both hashes.
-4. **Round 39, a bed with shape** (was 42): rocks, ridges, hollows; the current flows around
-   them, detritus settles into them, the grid's floor follows, the theatre draws the same
-   data. Moved up because in a dilute world it is a coast. Proposal first.
+4. **Round 39, a bed with shape** (was 42): **ruled 2026-09-15 morning (D092;
+   `logbook/specs/bed-spec.md`)**: a seeded height map at three scales, the streams'
+   potential in floor-following coordinates so the water slows in the hollows, the grid
+   masked below the floor, one static collider, relief 0 replaying the flat world; rocks
+   and the shelf out. Builds on a branch after round 38's read, validated (constant field
+   on the sloped grid, digest at relief 0, the current's divergence and floor flux, a
+   settling test, the pace within 15%), pre-registered, launched as round 39.
 5. **Round 40, a light sense** (was 38): one new input, light and its vertical gradient; read
    on jointed against rigid against buoyant depth, in a world with something to steer toward.
    Proposal first.

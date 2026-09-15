@@ -114,6 +114,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D089](#d089) | The aquarium: a cylinder of water of the configured area with a glass wall of 48 slabs, ring patches, a masked grid and a gyre (`WorldShape Tank`, `EVOSIM_SHAPE`, default `Box`); the area decoupled from the matter (`MatterBudgetUnits`, 0 = the density rule; round 38 at 400 m² with 6,000 units held); corpses as objects from round 38; the drive limiter at every step built as a tunable and not adopted | 2026-09-11 | the container ruled by the owner ("yes proceed" to the cylinder, the wall and the round shape their own questions); dilution and concentrators on the agent's recommendation under "follow your suggestions", open to overrule before round 38; built on branch `tank` (`logbook/specs/tank-spec.md`), six checks run 2026-09-11 and 12 (the limiter's failed: 27 divergences against 17 with the same signature); round 37 is the first world in the tank (logbook/0093) |
 | [D090](#d090) | The water carries as water does: in a tank the current is a 27-term spectrum of streams with no swirl about the axis (amends D089's gyre), and every part feels the water's acceleration force `(ρV + m_added)·Du/Dt` (`FluidAccelerationCoefficient`, `EVOSIM_FLUID_ACCEL`, default 0, 1 from round 37b); round 37b repeats the tank on both before the dilution | 2026-09-12 | ruled by the owner in two steps ("the currents should not act as unified fields but more like streams"; "Agreed. Proceed") after round 37's early read showed the rim ring holding 58 to 96% of the bodies and the streams build's tracer check showed the lag, not the field, does the gathering; built on branch `streams` with the throw trace, checked on worker 7, merged after round 37's last render |
 | [D091](#d091) | Two kinds of change: a replacement (what the world is) becomes the base on the owner's ruling and reads the goal rule without requiring it; a treatment (a price, a sense, a rule of the ecology on a fixed world) joins the base only when its round meets its pre-registered bar; D081's adoption clause applies to treatments; every entry names which kind its round is | 2026-09-12 | ruled by the owner ("proceed with your recommendations") on the agent's proposal after the Astra review found D081's rule and the practice since the grid disagreeing; with it, a fresh-seed batch on round 37b's world before round 38 |
+| [D092](#d092) | The bed with shape: a seeded height map at three scales under the tank, the streams' potential in floor-following coordinates so the water follows the floor, the grid masked below it, one static collider; relief 0 replays the flat world; rocks and overhangs out (`logbook/specs/bed-spec.md`) | 2026-09-15 | ruled by the owner in conversation ("I really want a shaped bed"; "life like without making it computationally problematic", then "not too expensive"); the requirements written by the agent and accepted; round 39, built after round 38's read |
 
 ---
 
@@ -4948,3 +4949,50 @@ and their verdicts stand as measured.
 **Rejected.** Keeping D081 as written with every replacement an exception: six exceptions in
 six days is not a rule. Dropping the adoption bar: a treatment would then join the base by
 being built, which is the drift D081 was written against.
+
+### D092
+**The bed with shape: a seeded height map, the water following the floor, the grid masked below it** · 2026-09-15
+
+**Status:** ruled by the owner in conversation on the morning of 2026-09-15, after the agent
+put the decision in plain terms (hollows and ridges from a height map; rocks as objects; a
+shelf) and recommended the first. The owner: "I really want a shaped bed, have wanted for a
+while!"; asked whether it is procedural and whether it needs skins (yes, and yes in the
+theatre only); asked for "life like without making it computationally problematic",
+converted to requirements, then relaxed the cost to "doesn't have to be outright cheap, just
+not too expensive", which moved the water following the floor from a second version into
+the first; and ruled "good, writeup the requirements and then pencil it in for the next
+round." The requirements are `logbook/specs/bed-spec.md`. Round 39; a replacement under
+D091; builds on a branch after round 38's read.
+
+**Context.** D089 read the crowd's density as why movement has never paid, and round 38
+diluted the water fourfold with the same matter. Its mid-run look (0100's launch section)
+read the fields near uniform once the disc filled: dilution alone makes no pockets. The
+path had the bed at round 39 already, moved up on 2026-09-12 because "in a dilute world it
+is a coast".
+
+**Ruled.**
+
+1. **The floor is a height map made from the seed** at three scales with a red spectrum,
+   bounded relief (`BedReliefMetres`, one dial), bounded slopes, no overhangs, a few real
+   hollows and at least a ridge per tank, mean-zero so the depth and the matter density
+   stay round 38's, meeting the glass without a step.
+2. **The water follows the floor from the first version**: the streams' potential in
+   floor-following coordinates, curled in real space, divergence-free with no flow through
+   the floor; the analytic derivative extends through the map; the grid's transporter
+   carries it from the same potential. The cost ceiling is 15% of round 38's per-body pace.
+3. **The grid is masked below the floor** with no new cells and today's settling rule;
+   **one static mesh collider** is the floor; bodies are placed above it and a body below
+   it dies as a counted `Diverged` death.
+4. **Relief 0 replays the flat world** to the digest; every tunable is in the config and
+   the hash.
+5. **The look is the theatre's alone**: the same map draped in the sand material, tuned
+   from pictures, no hash moved.
+6. **Out**: rocks, boulders, overhangs (a solver, not a term); the shelf into the lit band
+   (its own round later); the vent as a point source.
+
+**Rejected.** Rocks as objects first (flow around obstacles is a solver and the grid has
+no cell under a ledge; the hollows should pay before that is bought). A shelf first (it
+changes the light economy on one side and confounds what the pockets alone do). A second
+version for the current (the owner's relaxed cost bound buys it now, and a hollow without
+slower water in it is half a hollow).
+
