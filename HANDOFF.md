@@ -227,12 +227,18 @@ ahead of the idle charge.
    the water's per-part sample reads 3.4 µs against 2.4. The columns are now precomputed
    once per edge point (`CurrentField.BedColumn`, `GridField` at construction, 105 kB at
    400 m²; `c94a91f`; bit-identical by `ThePrecomputedBedIsTheSameWaterToTheBit`), which
-   takes the transport to 9.7 ms; `tankpace-bed3` measures the whole on worker 5 when a
-   slot frees. The per-part cost that remains is the map's twelve cosines and the
-   Jacobian at each part, about 1 µs a part-step, some 5% of the round's pace at 1,600
-   bodies; sharing one sample across a body's parts would not help (most bodies are one
-   part). Then: the merge, the workers refreshed, round 39's prereg after round 38's
-   read.
+   takes the transport to 9.7 ms, and `tankpace-bed3` (evening, the same load) reads
+   **433 s per 1,000 s, 6.4% over the flat run's 407**, bit-identical to the first bed run
+   over 301 digest steps. The per-body figure (0.513 against 0.441, 16%) is confounded:
+   the bed's realisation of seed 3 carried 8% fewer bodies (843 against 921 on average),
+   which is the seed's butterfly and not the bed's cost. Spec item 8 is read as met on
+   the whole run's pace. What remains per part is the map's twelve cosines and the
+   Jacobian at each part, about 1 µs a part-step; sharing one sample across a body's
+   parts would not help (most bodies are one part). `floorStockByFloorDecile` (ten
+   shares of the floor's detritus by decile of floor height) joined `stats.jsonl` for
+   round 39's E3 (`ef7c85a`), rechecked by smoke on worker 5 (`scratch/bed-recheck.ps1`).
+   Then: the merge, the workers refreshed, round 39's prereg
+   (`logbook/specs/r39-prereg-draft.md`, baselines from 0101) after round 38's read.
 5. **Round 40, a light sense** (was 38): one new input, light and its vertical gradient; read
    on jointed against rigid against buoyant depth, in a world with something to steer toward.
    Proposal first.

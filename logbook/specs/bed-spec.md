@@ -115,8 +115,12 @@ the commits on branch `bed`): the constant-field check and the flux readings in
 metre, the acceleration analytic to 0.06%); the box digest at relief 0 identical over
 31 steps; the 600 s tank at relief 0 identical to round 38's smoke on every stats field;
 the shared-space smoke's bed case passed; the bed smoke `r39smoke` founded and closed
-both books with 3 hollows and 1 ridge at 1 m of relief and 6 m of tilt. Item 8's pace is
-read from a 6,000 s pair at round population, `tankpace-flat` against `tankpace-bed`.*
+both books with 3 hollows and 1 ridge at 1 m of relief and 6 m of tilt. Item 8's pace was
+read from a 6,000 s pair at round population, `tankpace-flat` against `tankpace-bed`:
+18% over at first, 12% with one bed sample per part per step, 6.4% with the grid's face
+columns precomputed (433 against 407 s of wall per 1,000 s simulated), every bed run
+bit-identical to the first; the per-body figure is confounded by the realisation's body
+count and the ceiling is read on the whole run's pace.*
 - A settling test: `det cv` on a 600 s tank smoke with relief at its default rises above
   the flat world's, and the deepest columns hold the most detritus.
 - The pace check: within 15% of round 38's per-body pace on the smoke.
