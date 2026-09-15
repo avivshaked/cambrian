@@ -166,7 +166,26 @@ ahead of the idle charge.
    masked below the floor, one static collider, relief 0 replaying the flat world; rocks
    and the shelf out. Builds on a branch after round 38's read, validated (constant field
    on the sloped grid, digest at relief 0, the current's divergence and floor flux, a
-   settling test, the pace within 15%), pre-registered, launched as round 39.
+   settling test, the pace within 15%), pre-registered, launched as round 39. **The Core
+   half is built** (2026-09-15 midday, branch `bed`, worktree `scratch/wt-bed`, `4feb648`,
+   from `logbook/specs/bed-build/brief.md`; 27 tests, the suite 703 green): `BedShape`
+   (three cosine bands at a -1.5 spectrum plus the tilt, mean-zero over the disc, fitted
+   to the dial under the slope bound, hollows counted), the grid masked below the floor
+   with the array reaching under the mean depth (so `LayerCount` and the refuge layers are
+   no longer `depth/cell` in a tank with a bed; the Unity half must read them from the
+   grid), and the streams' potential pulled back as a 1-form with the velocity carried by
+   the Piola transform (the brief's velocity formula was inverted and the builder caught
+   it; floor flux 3e-7 of the RMS, divergence 3e-4 per metre, the acceleration analytic
+   to 0.06%, 1.3 times the flat field's cost). Two findings decide the dials: at 400 m² a
+   red spectrum under a 30° slope bound gives about 1 m of relief at basins a third of
+   the tank (the spec's "a few metres" needs a wider tank), and a tilt of any size spent
+   the whole bound and left no hollows, so the bound is being split (the bands at 30° on
+   their own, the tilt as a ramp under 25°, the sum allowed); round 39 then runs about
+   1 m of relief with one or two hollows and a tilt of about 6 m, a 15° ramp with the
+   shallow arc 3 m above the mean depth, far below the lit band. Every config before
+   the build is refused by the new `bed` group. The Unity half (the mesh collider, the
+   placer above the floor, the floor guard, `EVOSIM_BED_*`, the header tokens and the
+   report's hollow columns, the theatre's drape) is briefed after round 38 lands.
 5. **Round 40, a light sense** (was 38): one new input, light and its vertical gradient; read
    on jointed against rigid against buoyant depth, in a world with something to steer toward.
    Proposal first.
