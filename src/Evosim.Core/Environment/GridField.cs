@@ -69,6 +69,17 @@ namespace Evosim.Core
     /// priced as a whole one — is protected by the mask instead, and the depth is still refused
     /// unless it divides.
     /// </para>
+    /// <para>
+    /// <b>With a <see cref="BedShape"/> the mask gains a second condition and nothing else
+    /// changes</b> — D092, <c>logbook/specs/bed-spec.md</c> item 9. A cell is live when its centre
+    /// is inside the circle <i>and</i> above the floor at its own column, so a column is water from
+    /// the surface down to its own <see cref="FloorYAtColumn"/> and rock below that. Everything
+    /// that runs over live cells follows: no new cells, no flux into a dead one, seeding and the
+    /// totals over the water that exists, and settling stopping at the lowest live cell of a column
+    /// exactly as it stopped at the flat floor. The floor's low spots are therefore where the
+    /// columns are deepest, which is what makes a hollow a place detritus gathers in;
+    /// <see cref="ColumnFloorAndFloorStock"/> is the reading that says so.
+    /// </para>
     /// </remarks>
     public sealed class GridField : IMatterField
     {
@@ -109,6 +120,17 @@ namespace Evosim.Core
         private double[] _faceY;
         private double[] _faceZ;
 
+        // The shaped floor's numbers at each of the three edge families' own (x, z) lattices,
+        // built once per current and read at every depth, every substep and every step - D092 and
+        // CurrentField.BedColumn's remarks for why. Null on a flat bed, which is every recorded
+        // world, and null until the first conservative step on a shaped one. _bedColumnsFor is the
+        // current they were built against: a grid handed a second field rebuilds rather than
+        // reusing a floor that is not that water's.
+        private CurrentField _bedColumnsFor;
+        private CurrentField.BedColumn[] _bedColumnX;
+        private CurrentField.BedColumn[] _bedColumnY;
+        private CurrentField.BedColumn[] _bedColumnZ;
+
         private readonly int[] _patchOfColumn;
 
         // Reused by DepositBox so a per-step influx allocates nothing.
@@ -146,8 +168,15 @@ namespace Evosim.Core
         /// <summary>One patch's side, m: <c>sqrt(WorldArea / PatchCount)</c>, on both horizontal axes.</summary>
         public float PatchWidthMetres { get; }
 
-        /// <summary>The box's depth, m.</summary>
+        /// <summary>The box's depth, m — the configured one, which with a bed is the mean.</summary>
         public float DepthMetres { get; }
+
+        /// <summary>
+        /// How deep the array itself reaches, m: <see cref="LayerCount"/> cells. The same as
+        /// <see cref="DepthMetres"/> everywhere except a tank with a bed, where it reaches the
+        /// deepest column's floor so that no hollow is cut off at the mean depth (D092).
+        /// </summary>
+        public float ArrayDepthMetres => LayerCount * CellMetres;
 
         /// <summary>Layers, counted up from the floor, that no mouth can reach (D055).</summary>
         public int RefugeLayerCount { get; }
@@ -186,8 +215,13 @@ namespace Evosim.Core
         public float TankRadiusMetres { get; }
 
         /// <summary>
-        /// Cells the mask calls live: the whole array in a box, and the cells whose centres lie
-        /// inside the circle in a tank.
+        /// The floor's shape, or null for the flat bed — D092. A flat bed is every recorded world.
+        /// </summary>
+        public BedShape Bed { get; }
+
+        /// <summary>
+        /// Cells the mask calls live: the whole array in a box, the cells whose centres lie inside
+        /// the circle in a tank, and of those the ones above the floor when there is a bed.
         /// </summary>
         public int LiveCellCount { get; }
 
@@ -249,7 +283,8 @@ namespace Evosim.Core
         public GridField(
             float worldArea, float sinkMetresPerSecond, float worldDepth,
             float refugeMetres, float refugeEdibleFraction, int patchCount, float cellMetres,
-            int patchesAcross = 1, WorldShape shape = WorldShape.Box, float tankRadiusMetres = 0f)
+            int patchesAcross = 1, WorldShape shape = WorldShape.Box, float tankRadiusMetres = 0f,
+            BedShape bed = null)
         {
             if (!(worldArea > 0f) || float.IsInfinity(worldArea))
                 throw new ArgumentOutOfRangeException(nameof(worldArea), worldArea, "Must be positive and finite.");
@@ -283,6 +318,29 @@ namespace Evosim.Core
                     nameof(tankRadiusMetres), tankRadiusMetres,
                     "A tank's water is a disc, so its radius is positive and finite. " +
                     "logbook/specs/tank-spec.md.");
+            }
+
+            if (bed != null && bed.HasRelief && shape != WorldShape.Tank)
+            {
+                throw new ArgumentException(
+                    "A bed with relief was handed to a box. The height map is fitted over the " +
+                    "tank's disc and the box is periodic on both horizontal axes, where a floor " +
+                    "would have to meet itself at two seams. logbook/specs/bed-spec.md.",
+                    nameof(bed));
+            }
+
+            if (bed != null && bed.HasRelief &&
+                (Math.Abs(bed.DepthMetres - worldDepth) > 1e-4f ||
+                 Math.Abs(bed.RadiusMetres - tankRadiusMetres) > 1e-4f))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"The bed is a map over a tank {bed.RadiusMetres} m across and ") +
+                    FormattableString.Invariant($"{bed.DepthMetres} m deep, and this field is ") +
+                    FormattableString.Invariant($"{tankRadiusMetres} m and {worldDepth} m. One ") +
+                    "geometry reaches the fields, the water and the placer, or the mask and the " +
+                    "collider are two different floors.",
+                    nameof(bed));
             }
 
             WorldArea = worldArea;
@@ -343,6 +401,42 @@ namespace Evosim.Core
                 }
             }
 
+            // THE ARRAY REACHES THE DEEPEST FLOOR, not the mean one — D092. The height map is
+            // mean-zero over the disc (spec item 5), so half of it is below the configured depth,
+            // and an array that stopped at −depth would floor every hollow off at exactly the
+            // place the round is about: the deepest columns would be flat-bottomed, the water
+            // volume would come out under the floor's own integral, and the loss would be
+            // concentrated in the pockets rather than spread. So a tank with a bed gets as many
+            // extra layers as its lowest column needs, counted over the cell-centre columns
+            // themselves rather than over the map's own lattice, which makes it exact for the
+            // columns that exist rather than nearly right for all of them.
+            //
+            // What it costs a reader: LayerCount is no longer DepthMetres over the cell in such a
+            // world, and a layer index no longer maps to a depth band shared with a flat run. The
+            // report's per-depth bins are read against ArrayDepthMetres, and the refuge band
+            // (RefugeLayerCount, counted up from the array's floor) sits under the deepest column
+            // rather than under the mean one.
+            if (shape == WorldShape.Tank && bed != null && bed.HasRelief)
+            {
+                double lowest = 0d;
+
+                for (int ix = 0; ix < _nx; ix++)
+                {
+                    double cx = (ix + 0.5d) * cellMetres;
+
+                    for (int iz = 0; iz < _nz; iz++)
+                    {
+                        double cz = (iz + 0.5d) * cellMetres;
+                        if (!TankGeometry.Inside(cx, cz, tankRadiusMetres)) continue;
+
+                        double below = -bed.FloorY(cx, cz) - worldDepth;
+                        if (below > lowest) lowest = below;
+                    }
+                }
+
+                if (lowest > 0d) _ny += (int)Math.Ceiling(lowest / cellMetres - 1e-9);
+            }
+
             LayerCount = _ny;
             LayerVolume = (worldArea / patchCount) * cellMetres;
             RefugeLayerCount = Math.Min(LayerCount, (int)Math.Ceiling(refugeMetres / cellMetres));
@@ -382,6 +476,23 @@ namespace Evosim.Core
 
             LiveCellCount = cells;
 
+            // The floor of every column, as a layer index and as a height. In a box and in a flat
+            // tank it is the array's own last layer and −depth, which is what every line that
+            // reads it computed for itself before the bed existed; with a bed it is the lowest
+            // cell whose centre is above the floor, and −1 for a column that holds no water at
+            // all. Held rather than recomputed because Settle, Mix and Remineralise each ask it
+            // once per column per call and a height map is trigonometry.
+            _lowestLive = new int[_nx * _nz];
+            _floorYOfColumn = new float[_nx * _nz];
+
+            for (int i = 0; i < _lowestLive.Length; i++)
+            {
+                _lowestLive[i] = _ny - 1;
+                _floorYOfColumn[i] = -worldDepth;
+            }
+
+            Bed = bed != null && bed.HasRelief ? bed : null;
+
             if (shape != WorldShape.Tank) return;
 
             // The mask, built once — logbook/specs/tank-spec.md. A cell is live when its own
@@ -404,17 +515,34 @@ namespace Evosim.Core
                     float cz = (iz + 0.5f) * cellMetres;
                     bool inside = TankGeometry.Inside(cx, cz, tankRadiusMetres);
 
-                    // A dead column belongs to no patch. -1 rather than a ring index, so that
-                    // every per-patch sum — StockInLayer, TakeFromLayer, the roll's velocity
-                    // lookup — passes over it without needing to know about the mask.
-                    if (!inside) _patchOfColumn[ix * _nz + iz] = -1;
+                    // The bed's second condition — D092, logbook/specs/bed-spec.md item 9. A cell
+                    // is water when its own centre is above the floor under its own column, which
+                    // is the same test the glass gets and for the same reason: a cell the floor
+                    // cuts in half is either water or rock, and a fractional one would hold less
+                    // than a whole cell's worth while being priced as a whole cell.
+                    float floorY = Bed != null ? (float)Bed.FloorY(cx, cz) : -worldDepth;
+                    _floorYOfColumn[ix * _nz + iz] = floorY;
+
+                    int lowest = -1;
 
                     for (int iy = 0; iy < _ny; iy++)
                     {
                         if (!inside) continue;
+                        if (-((iy + 0.5f) * cellMetres) <= floorY) continue;
+
                         _live[Index(ix, iy, iz)] = true;
                         live++;
+                        lowest = iy;
                     }
+
+                    _lowestLive[ix * _nz + iz] = lowest;
+
+                    // A dead column belongs to no patch. -1 rather than a ring index, so that
+                    // every per-patch sum — StockInLayer, TakeFromLayer, the roll's velocity
+                    // lookup — passes over it without needing to know about the mask. A column the
+                    // floor has filled to the surface is as dead as one outside the glass, and is
+                    // named the same way.
+                    if (lowest < 0) _patchOfColumn[ix * _nz + iz] = -1;
                 }
             }
 
@@ -435,6 +563,98 @@ namespace Evosim.Core
         /// Which cells are water: null in a box, where every cell is — see the class remarks.
         /// </summary>
         private readonly bool[] _live;
+
+        // The lowest live layer of each column, −1 for a column with no water in it, and the
+        // floor's height under each column, m. Both are the array's last layer and −depth
+        // everywhere until a bed says otherwise (D092).
+        private readonly int[] _lowestLive;
+        private readonly float[] _floorYOfColumn;
+
+        /// <summary>
+        /// The floor's height under a column, m — <c>−depth</c> on a flat bed and the bed's own
+        /// height there otherwise. D092, <c>logbook/specs/bed-spec.md</c> item 9.
+        /// </summary>
+        /// <remarks>
+        /// Read at the column's centre and held from construction, so the mask, this reading and
+        /// the collider Unity builds are all the same floor rather than three samples of one
+        /// function. A column outside the glass answers with the flat bed's height, which is what
+        /// it was masked against; ask <see cref="LowestLiveLayer"/> whether there is any water in
+        /// it.
+        /// </remarks>
+        public float FloorYAtColumn(int ix, int iz)
+        {
+            if (ix < 0 || ix >= _nx || iz < 0 || iz >= _nz)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(ix), (ix, iz),
+                    FormattableString.Invariant($"This field is {_nx} by {_nz} columns."));
+            }
+
+            return _floorYOfColumn[ix * _nz + iz];
+        }
+
+        /// <summary>
+        /// The lowest layer of a column that is water — the cell that sits on the floor — or −1
+        /// when the column holds none.
+        /// </summary>
+        public int LowestLiveLayer(int ix, int iz)
+        {
+            if (ix < 0 || ix >= _nx || iz < 0 || iz >= _nz)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(ix), (ix, iz),
+                    FormattableString.Invariant($"This field is {_nx} by {_nz} columns."));
+            }
+
+            return _lowestLive[ix * _nz + iz];
+        }
+
+        /// <summary>
+        /// Every live column's floor height and what its floor cell holds, for the read that asks
+        /// whether the hollows hold the most — D092, <c>logbook/specs/bed-spec.md</c>'s "what the
+        /// round reads".
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The floor cell rather than the column</b>, because that is where the answer is:
+        /// settling stops at the lowest live cell (<see cref="Settle"/>), so a hollow holds what
+        /// it does by being the deepest place the stock can reach. A column total would mix the
+        /// floor's stock with the water above it and read the same in a hollow and over a ridge.
+        /// </para>
+        /// <para>
+        /// <b>Allocates its own arrays and is not a per-step call.</b> It is a sampler's reading,
+        /// taken at a sample or at the end of a run, in the shape a correlation wants: two arrays
+        /// of the same length, one floor height and one stock per live column.
+        /// </para>
+        /// </remarks>
+        public (float[] FloorY, double[] FloorStock) ColumnFloorAndFloorStock()
+        {
+            int columns = 0;
+            for (int i = 0; i < _lowestLive.Length; i++)
+            {
+                if (_lowestLive[i] >= 0) columns++;
+            }
+
+            var floors = new float[columns];
+            var stock = new double[columns];
+            int n = 0;
+
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    int column = ix * _nz + iz;
+                    int lowest = _lowestLive[column];
+                    if (lowest < 0) continue;
+
+                    floors[n] = _floorYOfColumn[column];
+                    stock[n] = _stock[Index(ix, lowest, iz)];
+                    n++;
+                }
+            }
+
+            return (floors, stock);
+        }
 
         // ------------------------------------------------------------------ geometry
 
@@ -604,27 +824,50 @@ namespace Evosim.Core
             {
                 for (double reach = r; reach > 0d; reach -= 0.5d * CellMetres)
                 {
-                    int cell = Index(
-                        Column((float)(TankRadiusMetres + dx * reach / r)), iy,
-                        Column((float)(TankRadiusMetres + dz * reach / r)));
+                    int cell = InColumn(
+                        Column((float)(TankRadiusMetres + dx * reach / r)),
+                        Column((float)(TankRadiusMetres + dz * reach / r)), iy);
 
-                    if (_live[cell]) return cell;
+                    if (cell >= 0) return cell;
                 }
             }
 
-            int axis = Index(Column(TankRadiusMetres), iy, Column(TankRadiusMetres));
-            if (_live[axis]) return axis;
+            int axis = InColumn(Column(TankRadiusMetres), Column(TankRadiusMetres), iy);
+            if (axis >= 0) return axis;
 
             // The cell holding the axis is live in any tank wider than a cell and a half, which is
             // every tank a round would run; the scan is here so that a small one answers rather
             // than putting stock in a dead cell, where it would sit outside every sum for the rest
             // of the run and break the audit quietly.
-            for (int i = iy * _layerStride; i < (iy + 1) * _layerStride; i++)
+            for (int i = 0; i < _lowestLive.Length; i++)
             {
-                if (_live[i]) return i;
+                int cell = InColumn(i / _nz, i % _nz, iy);
+                if (cell >= 0) return cell;
             }
 
-            return axis;
+            return Index(Column(TankRadiusMetres), iy, Column(TankRadiusMetres));
+        }
+
+        /// <summary>
+        /// The cell this column holds at this layer or at its floor, or −1 when the column holds
+        /// no water at all.
+        /// </summary>
+        /// <remarks>
+        /// <b>Clamped up to the floor rather than refused</b> — D092. Without a bed the two are
+        /// the same thing, because a live column is water to the last layer and the layer index is
+        /// already clamped to the array. With one, a point below the floor is a deposit at a body
+        /// that has settled into the sand or a corpse at the bed, and the honest cell for it is
+        /// the water immediately above the floor: refusing would take a run down over a
+        /// depenetration, and answering with the dead cell would put that stock outside every sum
+        /// for the rest of the run, which is exactly what <see cref="TankCellAt"/>'s own remarks
+        /// refuse to do at the glass.
+        /// </remarks>
+        private int InColumn(int ix, int iz, int iy)
+        {
+            int lowest = _lowestLive[ix * _nz + iz];
+            if (lowest < 0) return -1;
+
+            return Index(ix, iy < lowest ? iy : lowest, iz);
         }
 
         /// <summary>
@@ -1115,6 +1358,13 @@ namespace Evosim.Core
                 {
                     for (int iz = 0; iz < _nz; iz++)
                     {
+                        // Nothing sinks into rock. On a flat bed the test is free — a column is
+                        // water all the way down to the last layer, so every cell above the last
+                        // passes it and the arithmetic is the one this line always ran — and with
+                        // a bed it is what keeps spec item 9's rule: what reaches the lowest live
+                        // cell of a column stays there, whichever layer that is.
+                        if (iy >= _lowestLive[ix * _nz + iz]) continue;
+
                         int cell = Index(ix, iy, iz);
                         _fluxY[cell] = _stock[cell] * fraction;
                     }
@@ -1144,8 +1394,14 @@ namespace Evosim.Core
             {
                 for (int iz = 0; iz < _nz; iz++)
                 {
-                    int floor = Index(ix, _ny - 1, iz);
-                    int above = Index(ix, _ny - 2, iz);
+                    // The column's own floor, which with a bed is not the array's last layer
+                    // (D092). A column with no water, or with one cell and nothing above it to
+                    // leak into, is passed over.
+                    int lowest = _lowestLive[ix * _nz + iz];
+                    if (lowest < 1) continue;
+
+                    int floor = Index(ix, lowest, iz);
+                    int above = Index(ix, lowest - 1, iz);
                     double moved = _stock[floor] * fraction;
                     _stock[floor] -= moved;
                     _stock[above] += moved;
@@ -1245,7 +1501,10 @@ namespace Evosim.Core
                             if (front >= 0) _fluxZ[cell] = (_stock[cell] - _stock[front]) * fraction;
                         }
 
-                        if (iy < _ny - 1)
+                        // The floor is a face no stock crosses, and with a bed the floor is the
+                        // column's own (D092). On a flat bed the second test is the first one's
+                        // restatement, since a live column is water to the last layer.
+                        if (iy < _ny - 1 && iy < _lowestLive[ix * _nz + iz])
                         {
                             int below = Index(ix, iy + 1, iz);
                             _fluxY[cell] = (_stock[cell] - _stock[below]) * fraction;
@@ -1709,6 +1968,24 @@ namespace Evosim.Core
                 faces, worstNet);
         }
 
+        /// <summary>
+        /// A copy of the east, lower and front face fluxes the last
+        /// <see cref="MeasureFaceFluxes"/> or conservative step left standing, m³/s, one entry
+        /// per cell. Empty until one has run.
+        /// </summary>
+        /// <remarks>
+        /// A reading and not a handle: the arrays are copied, so nothing a caller does with them
+        /// reaches the scheme. It exists because the tuple <see cref="MeasureFaceFluxes"/> returns
+        /// is two sums and a worst case, and the identity D092's precomputed bed has to meet is
+        /// per face rather than in aggregate.
+        /// </remarks>
+        public (double[] East, double[] Lower, double[] Front) FaceFluxesForReading()
+        {
+            if (_faceX == null) return (new double[0], new double[0], new double[0]);
+
+            return ((double[])_faceX.Clone(), (double[])_faceY.Clone(), (double[])_faceZ.Clone());
+        }
+
         private static double Square(double v) => v * v;
 
         // ---------------------------------------------------------- the lattice's edges and faces
@@ -1776,12 +2053,101 @@ namespace Evosim.Core
             return _live == null || _live[Index(ix, iy, iz)];
         }
 
+        /// <summary>
+        /// Whether the shaped floor's per-column numbers are precomputed for the edge lattices
+        /// rather than sampled at every edge — D092. True, and the two paths are the same
+        /// arithmetic in the same order, so this decides speed and nothing else.
+        /// </summary>
+        /// <remarks>
+        /// It exists so that <c>BedGridTests</c> can measure one grid both ways and assert the
+        /// fluxes agree bit for bit. A flat bed takes neither path: it has no column to precompute
+        /// and this flag reaches nothing.
+        /// </remarks>
+        public bool PrecomputeBedColumns { get; set; } = true;
+
+        /// <summary>
+        /// Builds the three edge families' bed columns for this current, or clears them for water
+        /// with no shaped floor.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The three lattices <see cref="SampleEdges"/> visits.</b> The x edges sit at
+        /// <c>((i+½)h, kh)</c> for <c>i &lt; nx</c> and <c>k ≤ nz</c>, the z edges at
+        /// <c>(ih, (k+½)h)</c> for <c>i ≤ nx</c> and <c>k &lt; nz</c>, and the y edges at
+        /// <c>(ih, kh)</c> for both ≤ n. Three arrays rather than one half-cell lattice because
+        /// the loops index them as they stand and a shared lattice would cost an index map at
+        /// every edge to save nothing.
+        /// </para>
+        /// <para>
+        /// <b>Sampled at the float the edge loop passes</b>, not at the double the arithmetic would
+        /// give: <see cref="CurrentField.ColumnAt"/> takes floats for that reason, so the column is
+        /// the floor at the point the direct call would have read.
+        /// </para>
+        /// </remarks>
+        private void EnsureBedColumns(CurrentField current)
+        {
+            if (ReferenceEquals(_bedColumnsFor, current)) return;
+
+            _bedColumnsFor = null;
+            _bedColumnX = null;
+            _bedColumnY = null;
+            _bedColumnZ = null;
+
+            if (current.Bed != null)
+            {
+                double h = CellMetres;
+
+                _bedColumnX = new CurrentField.BedColumn[_nx * (_nz + 1)];
+                for (int i = 0; i < _nx; i++)
+                {
+                    float x = (float)((i + 0.5) * h);
+                    for (int k = 0; k <= _nz; k++)
+                    {
+                        _bedColumnX[i * (_nz + 1) + k] = current.ColumnAt(x, (float)(k * h));
+                    }
+                }
+
+                _bedColumnZ = new CurrentField.BedColumn[(_nx + 1) * _nz];
+                for (int i = 0; i <= _nx; i++)
+                {
+                    float x = (float)(i * h);
+                    for (int k = 0; k < _nz; k++)
+                    {
+                        _bedColumnZ[i * _nz + k] = current.ColumnAt(x, (float)((k + 0.5) * h));
+                    }
+                }
+
+                _bedColumnY = new CurrentField.BedColumn[(_nx + 1) * (_nz + 1)];
+                for (int i = 0; i <= _nx; i++)
+                {
+                    float x = (float)(i * h);
+                    for (int k = 0; k <= _nz; k++)
+                    {
+                        _bedColumnY[i * (_nz + 1) + k] = current.ColumnAt(x, (float)(k * h));
+                    }
+                }
+            }
+
+            _bedColumnsFor = current;
+        }
+
         /// <summary>Fills the three edge families from the current's potential at one clock.</summary>
         private void SampleEdges(CurrentField current, double seconds)
         {
             Array.Clear(_edgeX, 0, _edgeX.Length);
             Array.Clear(_edgeY, 0, _edgeY.Length);
             Array.Clear(_edgeZ, 0, _edgeZ.Length);
+
+            CurrentField.BedColumn[] bedX = null, bedY = null, bedZ = null;
+
+            if (PrecomputeBedColumns)
+            {
+                EnsureBedColumns(current);
+
+                bedX = _bedColumnX;
+                bedY = _bedColumnY;
+                bedZ = _bedColumnZ;
+            }
 
             double h = CellMetres;
             bool tank = Shape == WorldShape.Tank;
@@ -1813,8 +2179,11 @@ namespace Evosim.Core
                             continue;
                         }
 
-                        _edgeX[EdgeXIndex(i, j, k)] =
-                            current.PotentialAt(x, y, (float)(k * h), seconds).X * h;
+                        _edgeX[EdgeXIndex(i, j, k)] = bedX == null
+                            ? current.PotentialAt(x, y, (float)(k * h), seconds).X * h
+                            : current.PotentialAt(
+                                  x, y, (float)(k * h), seconds,
+                                  bedX[i * (_nz + 1) + k]).X * h;
                     }
                 }
 
@@ -1834,8 +2203,12 @@ namespace Evosim.Core
                             continue;
                         }
 
-                        _edgeZ[EdgeZIndex(i, j, k)] =
-                            current.PotentialAt((float)(i * h), y, (float)((k + 0.5) * h), seconds).Z * h;
+                        _edgeZ[EdgeZIndex(i, j, k)] = bedZ == null
+                            ? current.PotentialAt(
+                                  (float)(i * h), y, (float)((k + 0.5) * h), seconds).Z * h
+                            : current.PotentialAt(
+                                  (float)(i * h), y, (float)((k + 0.5) * h), seconds,
+                                  bedZ[i * _nz + k]).Z * h;
                     }
                 }
             }
@@ -1863,8 +2236,11 @@ namespace Evosim.Core
                             continue;
                         }
 
-                        _edgeY[EdgeYIndex(i, j, k)] =
-                            current.PotentialAt((float)(i * h), y, (float)(k * h), seconds).Y * h;
+                        _edgeY[EdgeYIndex(i, j, k)] = bedY == null
+                            ? current.PotentialAt((float)(i * h), y, (float)(k * h), seconds).Y * h
+                            : current.PotentialAt(
+                                  (float)(i * h), y, (float)(k * h), seconds,
+                                  bedY[i * (_nz + 1) + k]).Y * h;
                     }
                 }
             }
@@ -1922,9 +2298,13 @@ namespace Evosim.Core
                                 _edgeY[EdgeYIndex(ix, iy, iz + 1)];
                         }
 
-                        // A dead column is dead all the way down, so a live cell's lower face is
-                        // open whenever there is a layer below it.
-                        if (_ny >= 2 && iy < _ny - 1)
+                        // A live cell's lower face is open whenever the cell below it is water:
+                        // in a box and a flat tank that is any layer below the last, and with a
+                        // bed it stops at the column's own floor. The test is a saving rather
+                        // than a correction — all four edges of a face onto rock touch the dead
+                        // cell and were left at zero by SampleEdges, so the circulation would come
+                        // out zero anyway, which is what keeps the telescoping exact either way.
+                        if (_ny >= 2 && iy < _lowestLive[ix * _nz + iz])
                         {
                             _faceY[cell] =
                                 _edgeZ[EdgeZIndex(ix + 1, iy + 1, iz)] +
@@ -2307,6 +2687,69 @@ namespace Evosim.Core
 
         /// <summary>The pre-D061 signature: patch 0 of a one-patch field, a refusal otherwise.</summary>
         public double StockInLayer(int layer) => StockInLayer(layer, SinglePatchOrThrow());
+
+        /// <summary>
+        /// What is standing on the floor across a patch, J: the lowest live cells of every column
+        /// in it, as many deep as the refuge is. D092, <c>logbook/specs/bed-spec.md</c> item 5's
+        /// report clause.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Per column rather than per layer, because with a bed those stopped being the same
+        /// thing.</b> The report has always read this as <c>StockInLayer(LayerCount − 1)</c>, and
+        /// on a flat grid that is exactly what this returns, cell for cell and in the same order:
+        /// every column's lowest live cell <i>is</i> the last layer. On a shaped grid the last
+        /// layer lies under all but the deepest hollow (<see cref="ArrayDepthMetres"/>), so the old
+        /// expression would read a floor of dead cells and report almost nothing while the
+        /// sediment sat in the columns above it.
+        /// </para>
+        /// <para>
+        /// <b>As deep as the refuge, and at least one cell.</b> <see cref="RefugeLayerCount"/> is 0
+        /// in every run on file (<c>RunConfig.FloorRefugeMetres</c> defaults to 0 and no launcher
+        /// has ever set it), at which this is one cell per column and the column named
+        /// <c>refuge J</c> keeps the number it has always printed. With a refuge set it is the band
+        /// feeding cannot price, measured up from each column's own floor rather than from the
+        /// array's — which on a flat grid is the same band and on a shaped one is where the
+        /// sediment actually is. ⚠ That is a widening of the old reading for a world with
+        /// <c>FloorRefugeMetres</c> above 0, and no such world has been run.
+        /// </para>
+        /// <para>
+        /// A dead column — one the glass or the floor leaves no water in — contributes nothing and
+        /// is not an error: <see cref="LowestLiveLayer"/> answers −1 for it.
+        /// </para>
+        /// </remarks>
+        public double RefugeStock(int patch)
+        {
+            ValidatePatch(patch);
+
+            int band = RefugeLayerCount > 1 ? RefugeLayerCount : 1;
+            double sum = 0.0;
+
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    if (PatchOfColumn(ix, iz) != patch) continue;
+
+                    int lowest = _lowestLive[ix * _nz + iz];
+                    if (lowest < 0) continue;
+
+                    // Up from the floor, stopping at the top of the column: a band thicker than
+                    // the water in a shallow column is the whole of it and not a read past the
+                    // surface.
+                    int top = lowest - band + 1;
+                    if (top < 0) top = 0;
+
+                    for (int iy = lowest; iy >= top; iy--)
+                    {
+                        if (!IsLive(ix, iy, iz)) break;
+                        sum += _stock[Index(ix, iy, iz)];
+                    }
+                }
+            }
+
+            return sum;
+        }
 
         /// <summary>The density in a patch's centre column at this depth, J/m³.</summary>
         public float DensityAt(float heightY, int patch) => (float)(_stock[CentreCell(heightY, patch)] / CellVolume);

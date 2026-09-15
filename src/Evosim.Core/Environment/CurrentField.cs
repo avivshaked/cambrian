@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Evosim.Core
 {
@@ -456,9 +456,16 @@ namespace Evosim.Core
         /// it (<see cref="TankGeometry.RadiusFor"/>) rather than the field, so one geometry
         /// reaches the fields, the placer and the water.
         /// </param>
+        /// <param name="bed">
+        /// The floor's shape, or null for the flat bed — D092, <c>logbook/specs/bed-spec.md</c>
+        /// item 6. With one, the streams are the flat field pulled through a floor-following map
+        /// (<see cref="StreamsSlopedUnit"/>); without one, every line of arithmetic below is the
+        /// one every recorded world ran.
+        /// </param>
         public void SetBox(
             float patchWidthMetres, int patchCount, float depthMetres, ulong seed,
-            int patchesAcross = 1, WorldShape shape = WorldShape.Box, float tankRadiusMetres = 0f)
+            int patchesAcross = 1, WorldShape shape = WorldShape.Box, float tankRadiusMetres = 0f,
+            BedShape bed = null)
         {
             SetPatchWidth(patchWidthMetres);
 
@@ -498,12 +505,36 @@ namespace Evosim.Core
                     nameof(depthMetres), depthMetres, "A depth is positive and finite.");
             }
 
+            if (bed != null && bed.HasRelief && shape != WorldShape.Tank)
+            {
+                throw new ArgumentException(
+                    "A bed with relief was handed to a box. The height map is the tank's floor " +
+                    "and the box is periodic on both horizontal axes, where a floor would have " +
+                    "to meet itself at two seams. logbook/specs/bed-spec.md.",
+                    nameof(bed));
+            }
+
+            if (bed != null && bed.HasRelief &&
+                (Math.Abs(bed.DepthMetres - depthMetres) > 1e-4f ||
+                 Math.Abs(bed.RadiusMetres - tankRadiusMetres) > 1e-4f))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"The bed is a map over a tank {bed.RadiusMetres} m across and ") +
+                    FormattableString.Invariant($"{bed.DepthMetres} m deep, and this water is ") +
+                    FormattableString.Invariant($"{tankRadiusMetres} m and {depthMetres} m. The ") +
+                    "grid's mask and the water's map have to be the same floor, or the water " +
+                    "flows through the rock the mask believes in.",
+                    nameof(bed));
+            }
+
             _patchCount = patchCount;
             _patchesAcross = patchesAcross;
             _depthMetres = depthMetres;
             _seed = seed;
             _shape = shape;
             _tankRadiusMetres = shape == WorldShape.Tank ? tankRadiusMetres : 0f;
+            _bed = shape == WorldShape.Tank && bed != null && bed.HasRelief ? bed : null;
 
             // Built lazily on the first sample, so a Rolls world never pays for it and a config
             // handed to two worlds of different geometry rebuilds rather than describing the first.
@@ -517,6 +548,46 @@ namespace Evosim.Core
         private ulong _seed;
         private WorldShape _shape = WorldShape.Box;
         private float _tankRadiusMetres;
+        private BedShape _bed;
+
+        // D092's pace. The harness samples every part's velocity and then its acceleration at
+        // one point per physics step, and each sampled the bed's twelve cosines on its own: the
+        // pace pair of 2026-09-15 (tankpace-flat against tankpace-bed, 6,000 s at round
+        // population) read the shaped world 18% slower than the flat one, about what two such
+        // samples per part per step cost. One entry keyed on the exact point: the second call at
+        // the same (x, z) reuses the first's numbers bit for bit, since the map is a pure function
+        // of the point, and a first call pays the Hessian's three multiply-adds per mode so that
+        // the acceleration's call finds everything it needs. Not thread-safe; the harness samples
+        // on its main thread and a Core world is stepped on one (D078).
+        private double _bedX = double.NaN, _bedZ = double.NaN;
+        private double _bedH, _bedHx, _bedHz, _bedHxx, _bedHxz, _bedHzz;
+
+        private void BedSample(
+            double x, double z,
+            out double h, out double hx, out double hz,
+            out double hxx, out double hxz, out double hzz)
+        {
+            if (x != _bedX || z != _bedZ)
+            {
+                _bed.HeightGradientAndHessian(
+                    x, z, out _bedH, out _bedHx, out _bedHz, out _bedHxx, out _bedHxz, out _bedHzz);
+                _bedX = x;
+                _bedZ = z;
+            }
+
+            h = _bedH;
+            hx = _bedHx;
+            hz = _bedHz;
+            hxx = _bedHxx;
+            hxz = _bedHxz;
+            hzz = _bedHzz;
+        }
+
+        /// <summary>
+        /// The floor this water follows, or null for the flat bed — D092. Null is every recorded
+        /// world.
+        /// </summary>
+        public BedShape Bed => _bed;
 
         /// <summary>
         /// The container this water is in — <see cref="RunConfig.WorldShape"/>.
@@ -847,9 +918,16 @@ namespace Evosim.Core
             {
                 EnsureStreams();
 
-                return StreamsPotentialUnit(
-                           x, y, z, 2.0 * Math.PI * seconds / _periodSeconds, _streamsOverturning)
-                       * (_speed * _streamsScale);
+                double t = 2.0 * Math.PI * seconds / _periodSeconds;
+
+                if (_bed == null)
+                {
+                    return StreamsPotentialUnit(x, y, z, t, _streamsOverturning)
+                           * (_speed * _streamsScale);
+                }
+
+                return StreamsSlopedPotentialUnit(x, y, z, t, _streamsOverturning)
+                       * (float)(_speed * _streamsScale * _bedScale);
             }
 
             EnsureTransport();
@@ -861,6 +939,56 @@ namespace Evosim.Core
         /// <summary>The potential at a place and a time, m²/s.</summary>
         public Float3 PotentialAt(Float3 at, double seconds) =>
             PotentialAt(at.X, at.Y, at.Z, seconds);
+
+        /// <summary>
+        /// The potential at a place and a time with the floor's own numbers at that column
+        /// supplied rather than sampled — <see cref="ColumnAt"/>'s answer, and the same bits as
+        /// <see cref="PotentialAt(float, float, float, double)"/>. D092.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>For a caller whose sample points never move.</b> The grid's face fluxes read the
+        /// potential at a fixed lattice of <c>(x, z)</c> at every metabolic step, every substep and
+        /// fifty-nine depths on each column, and the bed depends on neither <c>y</c> nor the clock;
+        /// see <see cref="BedColumn"/> for what that cost. Nothing else about the answer changes:
+        /// the flat field at the mapped point, the scale and the guards are the ones the direct
+        /// call uses, in the order it uses them.
+        /// </para>
+        /// <para>
+        /// <b>Refuses a column this water cannot use.</b> A <c>default</c> struct, or a call on
+        /// water with no shaped floor, is a caller who has precomputed against a different world;
+        /// the answer would be a plausible number rather than this field's, so it throws.
+        /// </para>
+        /// </remarks>
+        public Float3 PotentialAt(float x, float y, float z, double seconds, in BedColumn column)
+        {
+            if (!HasPotential)
+            {
+                throw new InvalidOperationException(
+                    "This water is not the curl of a potential this class can write down: " +
+                    FormattableString.Invariant($"mode {Mode}, shape {_shape}, ") +
+                    FormattableString.Invariant($"vent {(VentActive(_patchCount) ? "on" : "off")}. ") +
+                    "Ask HasPotential first. logbook/specs/transport-conserves-spec.md.");
+            }
+
+            if (_bed == null || !column.Sampled)
+            {
+                throw new InvalidOperationException(
+                    "A precomputed bed column was handed to water that has no shaped floor, or a " +
+                    FormattableString.Invariant($"column that was never sampled (bed {(_bed == null ? "absent" : "present")}, ") +
+                    FormattableString.Invariant($"column {(column.Sampled ? "sampled" : "default")}). ") +
+                    "Ask Bed first and take the column from ColumnAt. D092.");
+            }
+
+            if (_speed <= 0f) return Float3.Zero;
+
+            EnsureStreams();
+
+            double t = 2.0 * Math.PI * seconds / _periodSeconds;
+
+            return StreamsSlopedPotentialUnit(x, y, z, t, _streamsOverturning, column)
+                   * (float)(_speed * _streamsScale * _bedScale);
+        }
 
         /// <summary>
         /// The transport field's potential at unit <see cref="Speed"/> and unit scale, at a place
@@ -1759,8 +1887,433 @@ namespace Evosim.Core
 
             EnsureStreams();
 
-            return StreamsUnit(x, y, z, 2.0 * Math.PI * seconds / _periodSeconds, _streamsOverturning)
-                * (_speed * _streamsScale);
+            double t = 2.0 * Math.PI * seconds / _periodSeconds;
+
+            // The flat bed's own arithmetic, unchanged, so that a world at relief 0 replays to the
+            // bit rather than going through the general formula with a unit Jacobian — D092,
+            // logbook/specs/bed-spec.md item 12.
+            if (_bed == null)
+            {
+                return StreamsUnit(x, y, z, t, _streamsOverturning) * (_speed * _streamsScale);
+            }
+
+            return StreamsSlopedUnit(x, y, z, t, _streamsOverturning)
+                * (float)(_speed * _streamsScale * _bedScale);
+        }
+
+        // ------------------------------------------------------- the water follows the floor
+
+        /// <summary>
+        /// The floor-following map at a place: everything the pullback needs about
+        /// <see cref="Bed"/> there. D092, <c>logbook/specs/bed-spec.md</c> item 6.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The map.</b> <c>Φ: (x, y, z) → (x, ỹ, z)</c> with <c>ỹ = y·D/d</c> and
+        /// <c>d = D − h(x, z)</c> the water's own depth over this column: the surface stays the
+        /// surface, the sloped floor <c>y = −D + h</c> goes to the flat one <c>ỹ = −D</c>, and
+        /// everything between is stretched linearly. That is the sigma coordinate the spec asks
+        /// for, and it is the one map that makes both boundaries exact rather than nearly so.
+        /// </para>
+        /// <para>
+        /// <b>The Jacobian is two off-diagonal entries and a stretch.</b>
+        /// <c>∂ỹ/∂x = y·D·h_x/d²</c>, <c>∂ỹ/∂z = y·D·h_z/d²</c>, <c>∂ỹ/∂y = D/d</c>, and the
+        /// determinant is that last one alone. Both off-diagonals carry a factor <c>y</c>, so the
+        /// map is the identity to first order at the waterline and does its whole stretching at
+        /// the floor, which is where the floor is.
+        /// </para>
+        /// <para>
+        /// <b>The clamp comes first</b>, exactly as <see cref="StreamsUnit"/>'s does and for the
+        /// same reason: a body that has overshot the surface or a point the collider has pushed a
+        /// centimetre into the sand reads the water at the nearest face of the water that exists,
+        /// rather than an extrapolation of it. Clamping <c>y</c> to the floor before the map is
+        /// applied is what makes <c>ỹ</c> land exactly on <c>−D</c> there.
+        /// </para>
+        /// </remarks>
+        private struct BedMap
+        {
+            /// <summary>The clamped height, m: <c>y</c> in <c>[FloorY, 0]</c>.</summary>
+            public double Y;
+
+            /// <summary><c>ỹ</c>, m — the same place in the flat field's coordinates.</summary>
+            public double MappedY;
+
+            /// <summary><c>det J = D/d</c>, the horizontal stretch.</summary>
+            public double C;
+
+            /// <summary><c>∂ỹ/∂x</c> and <c>∂ỹ/∂z</c>, dimensionless.</summary>
+            public double A, B;
+
+            /// <summary>The floor and its slope at this column.</summary>
+            public double Height, SlopeX, SlopeZ;
+
+            /// <summary>The water's own depth here, m: <c>D − h</c>.</summary>
+            public double Depth;
+        }
+
+        /// <summary>
+        /// Everything the floor-following map needs at one column that does not depend on
+        /// <c>y</c> or on the clock — the bed's height and slope there, and the three numbers
+        /// <see cref="MapAt"/> derives from them before it has looked at <c>y</c> at all.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it is for.</b> The bed is twelve cosines and a tilt, and a grid's face fluxes
+        /// sample the potential at the same fixed lattice of <c>(x, z)</c> at every metabolic step
+        /// and every substep, at fifty-nine depths on each column. The map is a pure function of
+        /// the point, so every one of those samples was buying the same twelve cosines over again:
+        /// the probe of 2026-09-15 read <see cref="GridField.MeasureFaceFluxes"/> at 400 m² and
+        /// 1 m cells as 15 ms on a flat floor and 37 ms on a shaped one, and a tilt-only floor —
+        /// one plane, no cosines — cost the same as the full map, so the price was the map's
+        /// algebra at every sample and not the cosine count. A caller that knows its sample points
+        /// never move computes one of these per column and hands it to
+        /// <see cref="CurrentField.PotentialAt(float, float, float, double, in CurrentField.BedColumn)"/>.
+        /// </para>
+        /// <para>
+        /// <b>It carries the derived numbers, not only the bed's.</b> <c>d = D − h</c>, the floor's
+        /// own <c>y</c>, the stretch <c>c = D/d</c> and <c>d²</c> are each computed here in the
+        /// same order <see cref="MapAt"/> computed them, so the overload's arithmetic is the
+        /// original's operation for operation and the bits agree rather than nearly agree. <c>d²</c>
+        /// is held rather than recovered from <c>d</c> for exactly that reason: <c>y·D/(d·d)</c>
+        /// and <c>y·D·(1/(d·d))</c> are not the same double.
+        /// </para>
+        /// <para>
+        /// <b>Named for the column and not for the sample</b> because <see cref="CurrentField"/>
+        /// already has a <c>BedSample</c> — the one-entry memo the harness's velocity and
+        /// acceleration pair share — and a nested type may not wear a method's name.
+        /// </para>
+        /// </remarks>
+        public readonly struct BedColumn
+        {
+            internal BedColumn(double depth, double h, double hx, double hz)
+            {
+                double d = depth - h;
+
+                Height = h;
+                SlopeX = hx;
+                SlopeZ = hz;
+                Depth = d;
+                FloorY = -depth + h;
+                Stretch = depth / d;
+                DepthSquared = d * d;
+                Sampled = true;
+            }
+
+            /// <summary>The floor's height above the flat bed at this column, m: <c>h</c>.</summary>
+            public double Height { get; }
+
+            /// <summary><c>∂h/∂x</c>, dimensionless.</summary>
+            public double SlopeX { get; }
+
+            /// <summary><c>∂h/∂z</c>, dimensionless.</summary>
+            public double SlopeZ { get; }
+
+            /// <summary>The water's own depth here, m: <c>D − h</c>.</summary>
+            public double Depth { get; }
+
+            /// <summary>The floor's own <c>y</c> in the world, m: <c>−D + h</c>.</summary>
+            public double FloorY { get; }
+
+            /// <summary><c>det J = D/d</c>, the horizontal stretch.</summary>
+            public double Stretch { get; }
+
+            /// <summary><c>d²</c>, held so that the overload divides by the same double.</summary>
+            public double DepthSquared { get; }
+
+            /// <summary>
+            /// False on a <c>default</c> value, which is the one thing that must not reach the map:
+            /// a zero depth divides by zero rather than refusing.
+            /// </summary>
+            public bool Sampled { get; }
+        }
+
+        /// <summary>
+        /// The <see cref="BedColumn"/> at a place — everything the map needs there that does not
+        /// depend on <c>y</c> or the clock. D092.
+        /// </summary>
+        /// <remarks>
+        /// Takes floats because its callers sample on a lattice of floats and the widened float is
+        /// what the bed is read at inside <see cref="PotentialAt(float, float, float, double)"/>;
+        /// taking doubles would let a caller precompute at a point a hair from the one the direct
+        /// path uses and get an answer that is right and not identical. Refuses on a flat bed
+        /// rather than handing back a column of a floor that is not there.
+        /// </remarks>
+        public BedColumn ColumnAt(float x, float z)
+        {
+            if (_bed == null)
+            {
+                throw new InvalidOperationException(
+                    "This water has no shaped floor, so it has no column to precompute: its " +
+                    "potential is the flat tank's or the box's. Ask Bed first. D092.");
+            }
+
+            _bed.HeightAndGradient(x, z, out double h, out double hx, out double hz);
+
+            return new BedColumn(_depthMetres, h, hx, hz);
+        }
+
+        private BedMap MapAt(double x, double y, double z)
+        {
+            double depth = _depthMetres;
+
+            BedSample(x, z, out double h, out double hx, out double hz, out _, out _, out _);
+
+            double d = depth - h;
+            double floorY = -depth + h;
+
+            if (y > 0d) y = 0d;
+            else if (y < floorY) y = floorY;
+
+            var map = default(BedMap);
+
+            map.Y = y;
+            map.Height = h;
+            map.SlopeX = hx;
+            map.SlopeZ = hz;
+            map.Depth = d;
+            map.C = depth / d;
+            map.MappedY = y * map.C;
+
+            double scale = y * depth / (d * d);
+            map.A = scale * hx;
+            map.B = scale * hz;
+
+            return map;
+        }
+
+        /// <summary>
+        /// <see cref="MapAt"/> with the column's numbers supplied rather than sampled — the same
+        /// arithmetic in the same order, from <c>h</c>, <c>∇h</c>, <c>d</c>, <c>d²</c> and the
+        /// floor's <c>y</c> a <see cref="BedColumn"/> already holds.
+        /// </summary>
+        /// <remarks>
+        /// <b>The clamp still comes first</b>, against the precomputed floor, for the reason
+        /// <see cref="MapAt"/>'s remarks give: it is what makes <c>ỹ</c> land exactly on <c>−D</c>
+        /// at the bed.
+        /// </remarks>
+        private BedMap MapFrom(in BedColumn column, double y)
+        {
+            double depth = _depthMetres;
+
+            if (y > 0d) y = 0d;
+            else if (y < column.FloorY) y = column.FloorY;
+
+            var map = default(BedMap);
+
+            map.Y = y;
+            map.Height = column.Height;
+            map.SlopeX = column.SlopeX;
+            map.SlopeZ = column.SlopeZ;
+            map.Depth = column.Depth;
+            map.C = column.Stretch;
+            map.MappedY = y * map.C;
+
+            double scale = y * depth / column.DepthSquared;
+            map.A = scale * column.SlopeX;
+            map.B = scale * column.SlopeZ;
+
+            return map;
+        }
+
+        /// <summary>
+        /// The sloped streams at unit <see cref="Speed"/> and unit scale: the flat field carried
+        /// through <see cref="MapAt"/> as a two-form.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>One formula, and everything the spec asks for follows from it.</b>
+        /// <c>u'(p) = det J · J⁻¹ · u(Φ(p))</c> — the Piola transform, which is what the pullback
+        /// of a <i>two-form</i> is in vector components. Written out, with <c>c = det J = D/d</c>:
+        /// <c>u'_x = c·u_x</c>, <c>u'_z = c·u_z</c>, <c>u'_y = u_y − a·u_x − b·u_z</c>. Three
+        /// properties come with it and none of them is a special case:
+        /// </para>
+        /// <para>
+        /// <b>Divergence-free</b>, because a Piola transform of a divergence-free field is
+        /// divergence-free for any diffeomorphism whatever — the Jacobian's trace cancels term for
+        /// term, which <c>BedStreamsTests</c> checks by finite differences rather than trusting.
+        /// <b>No flux through the sloped floor</b>: on <c>y = FloorY</c> the flat field's vertical
+        /// component is exactly zero and <c>a</c> and <c>b</c> become <c>−D·h_x/d</c> and
+        /// <c>−D·h_z/d</c>, so <c>u'·(−h_x, 1, −h_z)</c> cancels identically. <b>The glass and the
+        /// surface are untouched</b>: the map fixes <c>x</c> and <c>z</c>, so the radial component
+        /// is only scaled and still vanishes at the wall, and at <c>y = 0</c> both off-diagonals
+        /// are zero and <c>u'_y = u_y = 0</c>.
+        /// </para>
+        /// <para>
+        /// <b>What it looks like in the water.</b> <c>c = D/d</c> is above 1 where the floor rises
+        /// and below it in a hollow, so the water quickens and thins over a ridge and slows in a
+        /// hollow — spec item 6's whole point, and a consequence of incompressibility rather than
+        /// a term anyone added.
+        /// </para>
+        /// <para>
+        /// ⚠ <b>The brief's own formula was the inverse of this one.</b> It gives
+        /// <c>u' = (1/det J)·J·u(Φ)</c>, which is the push-forward in the wrong direction —
+        /// <c>Φ</c> maps the real world to the flat one, so the field has to be carried the other
+        /// way. With that form the normal velocity at the sloped floor is
+        /// <c>−(d/D)(h_x u_x + h_z u_z) − (h_x u_x + h_z u_z)</c>, which is not zero wherever the
+        /// flat field slides along its bed, and the flat field does: the overturning's radial
+        /// component carries <c>cos(qπy/D)</c> and is at full strength there. The 1-form rule for
+        /// the potential, <c>A' = Jᵀ·A(Φ)</c>, is the brief's and is kept — and the two are
+        /// consistent, because <c>curl(Jᵀ A∘Φ) = det J · J⁻¹ (curl A)∘Φ</c> is exactly the
+        /// naturality of <c>d</c> under pullback. That consistency is what lets the grid take its
+        /// face fluxes from the potential and get the sloped field's own water.
+        /// </para>
+        /// </remarks>
+        private Float3 StreamsSlopedUnit(double x, double y, double z, double t, double overturning)
+        {
+            BedMap m = MapAt(x, y, z);
+
+            Float3 u = StreamsUnit(x, m.MappedY, z, t, overturning);
+
+            return new Float3(
+                (float)(m.C * u.X),
+                (float)(u.Y - m.A * u.X - m.B * u.Z),
+                (float)(m.C * u.Z));
+        }
+
+        /// <summary>
+        /// The sloped streams' potential at unit <see cref="Speed"/> and unit scale: the flat
+        /// potential pulled back as a one-form, <c>A' = Jᵀ·A(Φ(p))</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <c>A'_x = A_x + a·A_y</c>, <c>A'_y = c·A_y</c>, <c>A'_z = A_z + b·A_y</c>, which is the
+        /// transpose of <see cref="MapAt"/>'s Jacobian applied to the flat potential at the mapped
+        /// point. Its curl is <see cref="StreamsSlopedUnit"/> exactly, by the naturality that
+        /// method's remarks state, so <see cref="GridField.Advect"/>'s edge circulations are the
+        /// sloped field's own face fluxes and a uniform concentration stays uniform on the sloped
+        /// grid for the same reason it does on the flat one.
+        /// </para>
+        /// <para>
+        /// <b>Zero on the sloped floor and on the surface, exactly.</b> The flat potential is
+        /// special-cased to zero on both of its faces, and the map sends both of this field's onto
+        /// them, so every component of <c>A'</c> is zero there however <c>a</c>, <c>b</c> and
+        /// <c>c</c> come out — which is what the grid needs at a face it must carry nothing
+        /// through.
+        /// </para>
+        /// </remarks>
+        private Float3 StreamsSlopedPotentialUnit(
+            double x, double y, double z, double t, double overturning)
+        {
+            BedMap m = MapAt(x, y, z);
+
+            Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
+
+            return new Float3(
+                (float)(a.X + m.A * a.Y),
+                (float)(m.C * a.Y),
+                (float)(a.Z + m.B * a.Y));
+        }
+
+        /// <summary>
+        /// <see cref="StreamsSlopedPotentialUnit(double, double, double, double, double)"/> with
+        /// the column's bed already sampled — the same three lines over the same map.
+        /// </summary>
+        private Float3 StreamsSlopedPotentialUnit(
+            double x, double y, double z, double t, double overturning, in BedColumn column)
+        {
+            BedMap m = MapFrom(column, y);
+
+            Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
+
+            return new Float3(
+                (float)(a.X + m.A * a.Y),
+                (float)(m.C * a.Y),
+                (float)(a.Z + m.B * a.Y));
+        }
+
+        /// <summary>
+        /// <see cref="StreamsSlopedUnit"/>'s field, its clock derivative and its 3×3 Jacobian, from
+        /// the flat field's own three at the mapped point and the bed's Hessian.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The chain rule, twice.</b> The velocity is <c>u' = M(p)·u(Φ(p))</c> with
+        /// <c>M = det J · J⁻¹</c>, so its Jacobian is <c>(∂M/∂x_k)·u + M·(∇̂u)·J_{·k}</c>: the
+        /// first term is the map's own variation, which needs <c>∇∇h</c>, and the second is the
+        /// flat field's Jacobian read along the map's columns. The clock is untouched by the map —
+        /// <c>Φ</c> does not move — so <c>∂u'/∂t</c> is <c>M·∂u/∂t</c> and nothing else.
+        /// </para>
+        /// <para>
+        /// <b>The trace still cancels, in algebra and not only numerically.</b> <c>∂c/∂x</c> is
+        /// <c>D·h_x/d²</c> and so is <c>∂a/∂y</c>; <c>∂c/∂z</c> is <c>D·h_z/d²</c> and so is
+        /// <c>∂b/∂y</c>; the cross terms <c>c·a·∂u_x/∂ŷ</c> appear once with each sign. What is
+        /// left is <c>c</c> times the flat field's divergence, which is zero. That identity is
+        /// the reason this is written out rather than differenced, and
+        /// <c>BedStreamsTests</c> asserts it on the assembled Jacobian.
+        /// </para>
+        /// <para>
+        /// <b>Cost: one flat gradient and one bed sample.</b> The bed is twelve cosines; the flat
+        /// gradient is the twenty-seven-term loop the analytic spec built. So the sloped
+        /// acceleration is about one and a half times the flat one and nowhere near the spec's
+        /// ceiling of two to three.
+        /// </para>
+        /// </remarks>
+        private StreamsGradient StreamsSlopedUnitWithGradient(
+            double x, double y, double z, double t, double overturning)
+        {
+            double depth = _depthMetres;
+
+            BedSample(
+                x, z, out double h, out double hx, out double hz,
+                out double hxx, out double hxz, out double hzz);
+
+            double d = depth - h;
+            double floorY = -depth + h;
+
+            if (y > 0d) y = 0d;
+            else if (y < floorY) y = floorY;
+
+            double inverseSquared = 1d / (d * d);
+            double inverseCubed = inverseSquared / d;
+
+            double c = depth / d;
+            double a = y * depth * hx * inverseSquared;
+            double b = y * depth * hz * inverseSquared;
+
+            // The map's own derivatives. c has none in y; a and b carry a factor y and so their y
+            // derivatives are the same two numbers c's x and z derivatives are — which is the
+            // cancellation the remarks name.
+            double cx = depth * hx * inverseSquared;
+            double cz = depth * hz * inverseSquared;
+
+            double ax = y * depth * (hxx * inverseSquared + 2d * hx * hx * inverseCubed);
+            double az = y * depth * (hxz * inverseSquared + 2d * hx * hz * inverseCubed);
+            double ay = cx;
+            double bx = az;
+            double bz = y * depth * (hzz * inverseSquared + 2d * hz * hz * inverseCubed);
+            double by = cz;
+
+            StreamsGradient f = StreamsUnitWithGradient(x, y * c, z, t, overturning);
+
+            // The flat field's partials read along the map's columns: d/dx = d/dx̂ + a·d/dŷ,
+            // d/dy = c·d/dŷ, d/dz = d/dẑ + b·d/dŷ.
+            double dxVx = f.Xx + a * f.Xy, dyVx = c * f.Xy, dzVx = f.Xz + b * f.Xy;
+            double dxVy = f.Yx + a * f.Yy, dyVy = c * f.Yy, dzVy = f.Yz + b * f.Yy;
+            double dxVz = f.Zx + a * f.Zy, dyVz = c * f.Zy, dzVz = f.Zz + b * f.Zy;
+
+            var g = default(StreamsGradient);
+
+            g.Vx = c * f.Vx;
+            g.Vz = c * f.Vz;
+            g.Vy = f.Vy - a * f.Vx - b * f.Vz;
+
+            g.Tx = c * f.Tx;
+            g.Tz = c * f.Tz;
+            g.Ty = f.Ty - a * f.Tx - b * f.Tz;
+
+            g.Xx = cx * f.Vx + c * dxVx;
+            g.Xy = c * dyVx;
+            g.Xz = cz * f.Vx + c * dzVx;
+
+            g.Zx = cx * f.Vz + c * dxVz;
+            g.Zy = c * dyVz;
+            g.Zz = cz * f.Vz + c * dzVz;
+
+            g.Yx = -ax * f.Vx - bx * f.Vz + (dxVy - a * dxVx - b * dxVz);
+            g.Yy = -ay * f.Vx - by * f.Vz + (dyVy - a * dyVx - b * dyVz);
+            g.Yz = -az * f.Vx - bz * f.Vz + (dzVy - a * dzVx - b * dzVz);
+
+            return g;
         }
 
         /// <summary>Azimuthal modes the vector potential carries — <c>m</c> = 1..4.</summary>
@@ -1814,6 +2367,11 @@ namespace Evosim.Core
         private double _streamsRmsEddies;
         private double _streamsRmsOverturning;
 
+        // The floor-following map's own scale, 1 on a flat bed and never anything else there:
+        // every product it enters is multiplied by exactly 1.0, which is exact, so a world at
+        // relief 0 is the arithmetic it always was (D092). BuildBed measures it.
+        private double _bedScale = 1d;
+
         /// <summary>The two parts' RMS speeds at the field's own scale, m/s — for the tests.</summary>
         /// <remarks>
         /// Exposed so that the dead-pocket and balance checks report the field rather than
@@ -1829,7 +2387,9 @@ namespace Evosim.Core
                 if (_shape != WorldShape.Tank) return (0f, 0f);
                 EnsureStreams();
 
-                float scale = _speed * _streamsScale;
+                // The bed's scale rides on both parts alike, because the map scales the whole field
+                // and not one family of it (D092). Exactly 1 on a flat bed.
+                double scale = _speed * _streamsScale * _bedScale;
                 return (
                     (float)(_streamsRmsEddies * scale),
                     (float)(_streamsRmsOverturning * _streamsOverturning * scale));
@@ -1858,7 +2418,169 @@ namespace Evosim.Core
             }
 
             BuildStreams();
+
+            // The bed's own pass, after the flat field is whole and never inside it, so that the
+            // flat construction is the arithmetic it always was and a world at relief 0 replays
+            // to the bit (D092, logbook/specs/bed-spec.md item 12).
+            if (_bed != null) BuildBed();
+
             _streamsBuilt = true;
+        }
+
+        /// <summary>
+        /// Re-measures the two numbers the floor-following map moves: the scale that makes the RMS
+        /// speed the knob, and the ceiling the grid's Courant check reads.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The map is not volume-preserving column by column, so the RMS moves.</b>
+        /// <see cref="MapAt"/>'s stretch <c>c = D/d</c> is above 1 over a rise and below it in a
+        /// hollow, and the water that exists is the sloped volume rather than the box. So the
+        /// sloped field is measured over its own water — a lattice in the sigma coordinate,
+        /// weighted by each column's depth so that the average is over cubic metres and not over
+        /// columns — and scaled so that <see cref="Speed"/> still names the RMS. The lattice and
+        /// the phase walk are <see cref="Walk"/>'s, and every envelope is held at
+        /// <see cref="EnvelopeRms"/> for the reason <see cref="BuildStreams"/> gives: the knob
+        /// names the time-mean RMS, and no affordable number of phases averages a breathing field
+        /// to a per cent.
+        /// </para>
+        /// <para>
+        /// <b>The ceiling has to be re-measured, not scaled.</b> The fastest water in a flat tank
+        /// is at the glass; over a rise it is faster again by <c>c</c>, and where the map's
+        /// off-diagonals are largest the vertical component gains a term the flat field has
+        /// nowhere. A bound that scaled the flat one by the largest <c>c</c> would be an argument
+        /// rather than a measurement, and <see cref="GridField.Advect"/> would pass a step the
+        /// fastest water breaks.
+        /// </para>
+        /// </remarks>
+        private void BuildBed()
+        {
+            _bedScale = 1d;
+
+            _envelopeOverride = EnvelopeRms;
+
+            double square = 0d;
+            double weight = 0d;
+
+            WalkSloped((x, y, z, t, w) =>
+            {
+                Float3 v = StreamsSlopedUnit(x, y, z, t, _streamsOverturning);
+                square += w * ((double)v.X * v.X + (double)v.Y * v.Y + (double)v.Z * v.Z);
+                weight += w;
+            });
+
+            if (!(weight > 0d) || !(square > 0d))
+            {
+                _envelopeOverride = 0d;
+
+                throw new InvalidOperationException(
+                    "The sloped streams measured nothing over their own tank, which means the " +
+                    FormattableString.Invariant(
+                        $"lattice found no water above a floor of relief {_bed.RangeMetres:0.###} m ") +
+                    FormattableString.Invariant($"in a tank {_depthMetres} m deep."));
+            }
+
+            _bedScale = 1d / (_streamsScale * Math.Sqrt(square / weight));
+
+            _envelopeOverride = 1d;
+
+            double fastest = 0d;
+
+            WalkSlopedForBound((x, y, z, t) =>
+            {
+                double speed =
+                    (StreamsSlopedUnit(x, y, z, t, _streamsOverturning)
+                     * (float)(_streamsScale * _bedScale)).Magnitude;
+
+                if (speed > fastest) fastest = speed;
+            });
+
+            _envelopeOverride = 0d;
+
+            _streamsBound = (float)(1.1d * fastest);
+        }
+
+        /// <summary>
+        /// <see cref="Walk"/>'s lattice and phases in the sigma coordinate: every live column of
+        /// the disc, sampled from its own floor to the surface, with the weight one cubic metre of
+        /// its water deserves.
+        /// </summary>
+        /// <remarks>
+        /// The weight is the column's depth over the world's, so a shallow column contributes less
+        /// than a deep one in proportion to the water it holds. Without it the average would be
+        /// per column rather than per cubic metre, and a tank whose rises were all at the rim
+        /// would report a different RMS from the same tank rotated.
+        /// </remarks>
+        private void WalkSloped(Action<float, float, float, double, double> visit)
+        {
+            const int Horizontal = 22;
+            const int Vertical = 16;
+            const int Phases = 64;
+
+            for (int p = 0; p < Phases; p++)
+            {
+                double t = 2.0 * Math.PI * PhaseStepTurns * p;
+
+                for (int ix = 0; ix < Horizontal; ix++)
+                {
+                    float x = (float)((ix + 0.5) * 2d * _tankRadiusMetres / Horizontal);
+
+                    for (int iz = 0; iz < Horizontal; iz++)
+                    {
+                        float z = (float)((iz + 0.5) * 2d * _tankRadiusMetres / Horizontal);
+                        if (!TankGeometry.Inside(x, z, _tankRadiusMetres)) continue;
+
+                        double d = _depthMetres - _bed.Height(x, z);
+                        if (!(d > 0d)) continue;
+
+                        double weight = d / _depthMetres;
+
+                        for (int iy = 0; iy < Vertical; iy++)
+                        {
+                            float y = -(float)((iy + 0.5) * d / Vertical);
+                            visit(x, y, z, t, weight);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// <see cref="WalkForBound"/>'s polar lattice in the sigma coordinate, including the glass
+        /// itself — where the fastest water still is.
+        /// </summary>
+        private void WalkSlopedForBound(Action<float, float, float, double> visit)
+        {
+            const int Radial = 24;
+            const int Around = 32;
+            const int Vertical = 20;
+            const int Phases = 48;
+
+            for (int p = 0; p < Phases; p++)
+            {
+                double t = 2.0 * Math.PI * PhaseStepTurns * p;
+
+                for (int ir = 0; ir < Radial; ir++)
+                {
+                    double r = _tankRadiusMetres * ir / (Radial - 1.0);
+
+                    for (int ia = 0; ia < Around; ia++)
+                    {
+                        double theta = 2.0 * Math.PI * ia / Around;
+
+                        float x = (float)(_tankRadiusMetres + r * Math.Cos(theta));
+                        float z = (float)(_tankRadiusMetres + r * Math.Sin(theta));
+
+                        double d = _depthMetres - _bed.Height(x, z);
+                        if (!(d > 0d)) continue;
+
+                        for (int iy = 0; iy < Vertical; iy++)
+                        {
+                            visit(x, -(float)((iy + 0.5) * d / Vertical), z, t);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -2896,10 +3618,13 @@ namespace Evosim.Core
 
             double clock = 2.0 * Math.PI / _periodSeconds;
 
-            StreamsGradient g = StreamsUnitWithGradient(
-                x, y, z, clock * seconds, _streamsOverturning);
+            // The sloped route through the same assembly, because the map changes the field and
+            // not the shape of Du/Dt — D092.
+            StreamsGradient g = _bed == null
+                ? StreamsUnitWithGradient(x, y, z, clock * seconds, _streamsOverturning)
+                : StreamsSlopedUnitWithGradient(x, y, z, clock * seconds, _streamsOverturning);
 
-            double sigma = (double)_speed * _streamsScale;
+            double sigma = (double)_speed * _streamsScale * _bedScale;
             double perSecond = sigma * clock;
             double squared = sigma * sigma;
 
@@ -2946,10 +3671,11 @@ namespace Evosim.Core
 
             double clock = 2.0 * Math.PI / _periodSeconds;
 
-            StreamsGradient g = StreamsUnitWithGradient(
-                x, y, z, clock * seconds, _streamsOverturning);
+            StreamsGradient g = _bed == null
+                ? StreamsUnitWithGradient(x, y, z, clock * seconds, _streamsOverturning)
+                : StreamsSlopedUnitWithGradient(x, y, z, clock * seconds, _streamsOverturning);
 
-            double sigma = (double)_speed * _streamsScale;
+            double sigma = (double)_speed * _streamsScale * _bedScale;
             double perSecond = sigma * clock;
 
             return (

@@ -328,7 +328,12 @@ namespace Evosim.Theatre
                     Water.ShowTank(
                         water.WorldDepthMetres,
                         TankGeometry.RadiusFor(water.WorldAreaSquareMetres),
-                        Mathf.Max(1, (int)water.HorizontalPatches));
+                        Mathf.Max(1, (int)water.HorizontalPatches),
+                        // D092: the floor's circles and its verticals are drawn at the floor's own
+                        // height where there is one, so the outline meets the sand rather than
+                        // cutting a plane through it. Null on every recording before it, at which
+                        // every line is at −depth exactly as it was.
+                        _replay.Eco?.World?.Bed);
                 }
                 else if (water.SharedSpace)
                 {
@@ -352,8 +357,10 @@ namespace Evosim.Theatre
             }
 
             // The box from the run's own config, taken from the one place that works it out
-            // (SnapshotCamera.BoxOf) rather than a second copy of sqrt(area / K) here.
-            _skin.Dress(SnapshotCamera.BoxOf(_replay, out _));
+            // (SnapshotCamera.BoxOf) rather than a second copy of sqrt(area / K) here. The floor's
+            // shape comes off the world the replay actually built (D092), so the sand is draped on
+            // the same height map the collider has; null on every recording before it.
+            _skin.Dress(SnapshotCamera.BoxOf(_replay, out _), _replay.Eco?.World?.Bed);
 
             if (SeekToSeconds > 0f) BeginSeek(SeekToSeconds);
         }

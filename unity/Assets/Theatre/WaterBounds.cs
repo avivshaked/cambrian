@@ -1,4 +1,5 @@
 using UnityEngine;
+using Evosim.Core;
 
 namespace Evosim.Theatre
 {
@@ -120,6 +121,25 @@ namespace Evosim.Theatre
         private float _tankRadius;
 
         /// <summary>
+        /// The floor's shape, or null for the flat floor — D092. Only the tank has one, and only
+        /// the lines drawn on the floor read it.
+        /// </summary>
+        /// <remarks>
+        /// Held rather than passed down each call because <c>OnRenderObject</c> takes no
+        /// arguments, and cleared by <see cref="ShowBox"/> and <see cref="Show"/> below for the
+        /// reason <c>_patchMetres</c> is cleared by <see cref="ShowTank"/>: a field left carrying
+        /// the last world's floor would draw one world's sand under another's water.
+        /// </remarks>
+        private BedShape _bed;
+
+        /// <summary>
+        /// The floor's height at a place, m — <c>−depth</c> on a flat floor and the map's own
+        /// height otherwise.
+        /// </summary>
+        private float FloorAt(float x, float z) =>
+            _bed != null ? (float)_bed.FloorY(x, z) : -_depth;
+
+        /// <summary>
         /// Sets the water up from a loaded run.
         /// </summary>
         /// <param name="depthMetres"><c>RunConfig.WorldDepthMetres</c>.</param>
@@ -127,6 +147,8 @@ namespace Evosim.Theatre
         /// <param name="spacingMetres">Grid pitch. The tile spacing makes the lattice legible.</param>
         public void Show(float depthMetres, float extentMetres, float spacingMetres)
         {
+            // Cleared, for the reason the field's own remark gives: only a tank has a floor shape.
+            _bed = null;
             _depth = Mathf.Max(0.1f, depthMetres);
             _extent = Mathf.Max(spacingMetres, extentMetres);
             _spacing = Mathf.Max(1f, spacingMetres);
@@ -152,6 +174,8 @@ namespace Evosim.Theatre
         public void ShowBox(
             float depthMetres, float patchWidthMetres, int patchesAlong, int patchesAcross = 1)
         {
+            // Cleared, as in Show above: the bed is the tank's and a box is refused one.
+            _bed = null;
             _depth = Mathf.Max(0.1f, depthMetres);
             _patches = Mathf.Max(1, patchesAlong);
             _patchesAcross = Mathf.Max(1, patchesAcross);
@@ -191,8 +215,15 @@ namespace Evosim.Theatre
         /// K — <c>RunConfig.HorizontalPatches</c>. In a tank a patch is a ring of equal area, so
         /// K−1 circles are drawn inside the glass and the glass itself is the last boundary.
         /// </param>
-        public void ShowTank(float depthMetres, float radiusMetres, int rings)
+        /// <param name="bed">
+        /// The floor's shape — <c>World.Bed</c> — or null for the flat floor, which is every
+        /// recording before D092. With one, every line this class draws on the floor is drawn at
+        /// the floor's own height under the point rather than at −D
+        /// (<c>logbook/specs/bed-spec.md</c> item 13).
+        /// </param>
+        public void ShowTank(float depthMetres, float radiusMetres, int rings, BedShape bed = null)
         {
+            _bed = bed != null && bed.HasRelief ? bed : null;
             _depth = Mathf.Max(0.1f, depthMetres);
             _tankRadius = Mathf.Max(0.1f, radiusMetres);
             _patches = Mathf.Max(1, rings);
@@ -355,7 +386,7 @@ namespace Evosim.Theatre
         private void Tank()
         {
             Circle(0f, _tankRadius, SurfaceColour);
-            Circle(-_depth, _tankRadius, FloorColour);
+            FloorCircle(_tankRadius, FloorColour);
 
             GL.Color(new Color(SurfaceColour.r, SurfaceColour.g, SurfaceColour.b, 0.35f));
 
@@ -376,7 +407,39 @@ namespace Evosim.Theatre
                 float r = RingBoundary(k);
 
                 Circle(0f, r, SeamColour);
-                Circle(-_depth, r, SeamColour);
+                FloorCircle(r, SeamColour);
+            }
+        }
+
+        /// <summary>
+        /// One circle about the axis, drawn on the floor rather than at a height — D092.
+        /// </summary>
+        /// <remarks>
+        /// Each segment's ends are sampled from the map, so the ring rises and falls with the sand
+        /// under it instead of cutting a horizontal plane through a shaped floor. On a flat bed
+        /// every sample is <c>−depth</c> and this is <see cref="Circle"/> at that height, vertex
+        /// for vertex.
+        /// </remarks>
+        private void FloorCircle(float radius, Color colour)
+        {
+            if (!(radius > 0f)) return;
+
+            GL.Color(colour);
+
+            float previousX = _tankRadius + radius;
+            float previousZ = _tankRadius;
+
+            for (int i = 1; i <= CircleSegments; i++)
+            {
+                float angle = 2f * Mathf.PI * i / CircleSegments;
+                float x = _tankRadius + radius * Mathf.Cos(angle);
+                float z = _tankRadius + radius * Mathf.Sin(angle);
+
+                GL.Vertex3(previousX, FloorAt(previousX, previousZ), previousZ);
+                GL.Vertex3(x, FloorAt(x, z), z);
+
+                previousX = x;
+                previousZ = z;
             }
         }
 
@@ -434,13 +497,15 @@ namespace Evosim.Theatre
                 float a = 2f * Mathf.PI * i / CircleSegments;
                 float b = 2f * Mathf.PI * (i + 1) / CircleSegments;
 
-                GL.Vertex3(_tankRadius, -_depth, _tankRadius);
-                GL.Vertex3(
-                    _tankRadius + _tankRadius * Mathf.Cos(a), -_depth,
-                    _tankRadius + _tankRadius * Mathf.Sin(a));
-                GL.Vertex3(
-                    _tankRadius + _tankRadius * Mathf.Cos(b), -_depth,
-                    _tankRadius + _tankRadius * Mathf.Sin(b));
+                float ax = _tankRadius + _tankRadius * Mathf.Cos(a);
+                float az = _tankRadius + _tankRadius * Mathf.Sin(a);
+                float bx = _tankRadius + _tankRadius * Mathf.Cos(b);
+                float bz = _tankRadius + _tankRadius * Mathf.Sin(b);
+
+                // Each corner on the floor under it (D092); −_depth everywhere on a flat bed.
+                GL.Vertex3(_tankRadius, FloorAt(_tankRadius, _tankRadius), _tankRadius);
+                GL.Vertex3(ax, FloorAt(ax, az), az);
+                GL.Vertex3(bx, FloorAt(bx, bz), bz);
             }
         }
 
@@ -458,7 +523,10 @@ namespace Evosim.Theatre
         private void Vertical(float x, float z)
         {
             GL.Vertex3(x, 0f, z);
-            GL.Vertex3(x, -_depth, z);
+
+            // To the floor under this point rather than to −D — D092. The two are the same number
+            // on a flat bed, so a box's verticals and a flat tank's are the lines they were.
+            GL.Vertex3(x, FloorAt(x, z), z);
         }
 
         private void BoxGrid(float y, Color colour)

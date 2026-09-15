@@ -163,8 +163,14 @@ Shader "Evosim/Theatre Bed"
                 // The normal of that surface: the height is h(x, z) = -depth * carve, so the
                 // surface normal is (-dh/dx, 1, -dh/dz) normalised, kept pointing the same way
                 // the flat quad's normal did.
+                //
+                // D092: the mesh itself may now be a height map rather than a plane, so the
+                // ripple's tilt is applied to the *mesh's* upward normal instead of to a hardwired
+                // (0, 1, 0). On the flat bed the upward normal is exactly (0, 1, 0) and the
+                // expression is the one this line always was, component for component.
                 float2 gradient = -_BedCarveMetres * slope;
-                float3 tilted = normalize(float3(-gradient.x, 1.0, -gradient.y));
+                float3 up = normalWS.y < 0.0 ? -normalWS : normalWS;
+                float3 tilted = normalize(float3(up.x - gradient.x, up.y, up.z - gradient.y));
 
                 output.positionWS = positionWS;
                 output.normalWS = normalWS.y < 0.0 ? -tilted : tilted;

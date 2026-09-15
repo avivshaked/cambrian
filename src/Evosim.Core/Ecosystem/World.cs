@@ -170,6 +170,13 @@ namespace Evosim.Core
         public const ulong CurrentFieldIndex = ulong.MaxValue - 5UL;
 
         /// <summary>
+        /// The stream behind the sea floor's shape — D092. Its own, so every seed of a round gets
+        /// its own floor and one seed's floor is unmoved by any other knob; no draw at all in a
+        /// world whose bed is flat, which is every world before round 39.
+        /// </summary>
+        public const ulong BedShapeIndex = ulong.MaxValue - 6UL;
+
+        /// <summary>
         /// The stream behind <see cref="ConceptionOrder.Shuffled"/> — D072. Constructed for every
         /// world and drawn from by none but a shuffled one.
         /// </summary>
@@ -270,6 +277,20 @@ namespace Evosim.Core
         /// answer to how wide a patch is. <see cref="TankGeometry"/> carries the arithmetic.
         /// </remarks>
         public float TankRadiusMetres { get; }
+
+        /// <summary>
+        /// The sea floor's shape, or null when the bed is flat — D092,
+        /// <c>logbook/specs/bed-spec.md</c>. Null in every world before round 39.
+        /// </summary>
+        /// <remarks>
+        /// <b>Built once, here, for <see cref="TankRadiusMetres"/>'s reason and more sharply.</b>
+        /// The grid masks its cells against this floor, the water is pulled through a map built
+        /// from it, the placer puts a body above it and Unity's collider is a mesh of it: four
+        /// readers of one function, where two floors built from one seed by two constructors would
+        /// be a body standing in rock or water flowing through it. Drawn from
+        /// <see cref="BedShapeIndex"/>, so the floor is the seed's and nothing else's.
+        /// </remarks>
+        public BedShape Bed { get; }
 
         /// <summary>Dead matter in the water, and what feeds on it — §5A.2c.</summary>
         public IMatterField Nutrients { get; }
@@ -848,6 +869,36 @@ namespace Evosim.Core
                 ? TankGeometry.RadiusFor(config.WorldAreaSquareMetres)
                 : 0f;
 
+            // D092, logbook/specs/bed-spec.md. The bed is the tank's: a height map on a periodic
+            // box would have to meet itself at both seams, which is a constraint the spectrum has
+            // no way to satisfy and which nothing in the round needs. Refused rather than ignored,
+            // for this constructor's usual reason — a run that recorded a relief and ran a flat
+            // floor would be filed under settings it did not have.
+            if (config.WorldShape != WorldShape.Tank &&
+                (config.BedReliefMetres > 0f || config.BedTiltMetres > 0f))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"WorldShape is {config.WorldShape} and the bed asks for a relief of ") +
+                    FormattableString.Invariant(
+                        $"{config.BedReliefMetres} m and a tilt of {config.BedTiltMetres} m. ") +
+                    "The bed is the tank's: the box is periodic on both horizontal axes, so a " +
+                    "height map over it would have to meet itself at two seams. Set " +
+                    "WorldShape.Tank, or leave both at 0 for the flat floor every recorded " +
+                    "world has.",
+                    nameof(config));
+            }
+
+            // Its own refusals — a negative or non-finite dial, and a floor that would reach the
+            // surface — are BedShape's, stated at the numbers rather than at the config; the
+            // shelf and the beach are rounds of their own.
+            Bed = config.WorldShape == WorldShape.Tank &&
+                  (config.BedReliefMetres > 0f || config.BedTiltMetres > 0f)
+                ? new BedShape(
+                    TankRadiusMetres, config.WorldDepthMetres, config.BedReliefMetres,
+                    config.BedTiltMetres, config.BedScaleMetres, Rng.SeedFor(seed, BedShapeIndex))
+                : null;
+
             ValidateVent(config, patchCount);
             ValidateMatterInflux(config, patchCount);
 
@@ -924,14 +975,16 @@ namespace Evosim.Core
                     config.WorldAreaSquareMetres, config.NutrientSinkMetresPerSecond,
                     config.WorldDepthMetres, config.FloorRefugeMetres, config.RefugeEdibleFraction,
                     patchCount, config.FieldCellMetres, patchesAcross,
-                    config.WorldShape, TankRadiusMetres);
+                    config.WorldShape, TankRadiusMetres, Bed);
 
                 // Its own, coarser cell: matter is drawn in whole conceptions rather than grazed,
                 // and a metre of water cannot afford a child (RunConfig.FieldMatterCellMetres).
+                // The same floor, on its own coarser cells: the two grids mask against one
+                // BedShape, so the matter and the detritus stop at the same rock (D092).
                 Matter = new GridField(
                     config.WorldAreaSquareMetres, config.MatterSinkMetresPerSecond,
                     config.WorldDepthMetres, 0f, 0f, patchCount, config.FieldMatterCellMetres,
-                    patchesAcross, config.WorldShape, TankRadiusMetres);
+                    patchesAcross, config.WorldShape, TankRadiusMetres, Bed);
             }
             else
             {
@@ -1009,7 +1062,7 @@ namespace Evosim.Core
             config.Current?.SetBox(
                 Nutrients.PatchWidthMetres, patchCount, config.WorldDepthMetres,
                 Rng.SeedFor(seed, CurrentFieldIndex), patchesAcross,
-                config.WorldShape, TankRadiusMetres);
+                config.WorldShape, TankRadiusMetres, Bed);
 
             Seed = seed;
 

@@ -732,13 +732,17 @@ namespace Evosim.Sim
 
                 // The sea bed, before anything is placed: SharedVolume asks it how much clearance
                 // a body needs, and the very first floor spawn of the run has to get the answer.
-                Floor = SeaFloor.Build(Volume, parent);
+                // The shape comes from the world rather than being rebuilt here (D092), so the
+                // rock a body lands on, the cells the grid calls live and the map the water is
+                // pulled through are one height map and cannot drift apart. Null relief is the
+                // flat slab and every recorded world.
+                Floor = SeaFloor.Build(Volume, parent, World.Bed);
                 Volume.Floor = Floor;
 
                 // The glass, right after the bed and for the same reason it is built at all: the
                 // wall starts inside the bed, so the bed has to exist to say where that is. Null
                 // in a box, where the boundary is D077's translation.
-                Wall = TankWall.Build(Volume, parent);
+                Wall = TankWall.Build(Volume, parent, Floor);
 
                 if (Floor != null)
                 {
@@ -1624,6 +1628,14 @@ namespace Evosim.Sim
             float outside = (radius + 1f) * (radius + 1f);
             float axis = radius;
 
+            // The floor's own guard, beside the tank's radius guard and for its reason — D092,
+            // logbook/specs/bed-spec.md item 11. A shaped floor is a mesh, and a mesh is the one
+            // collider a solver can put a body through; below it there is rock the world has no
+            // fields for and a grid whose cells are dead. On the flat path nothing is added at
+            // all: World.HeightIsInTheWorld is the bound it always was, and the backstop under
+            // the mesh is what catches an ordinary tunnelling before this ever fires.
+            BedShape bed = Floor != null && Floor.HasRelief ? World.Bed : null;
+
             for (int i = 0; i < _order.Count; i++)
             {
                 Body body = _order[i];
@@ -1632,6 +1644,10 @@ namespace Evosim.Sim
 
                 Vector3 root = bodies[0].transform.position;
                 float horizontal = root.x + root.z;
+
+                // How far under the rock this body is, m — 0 unless the bed's guard below is what
+                // condemned it, which is what the dump's reason is written from (D092).
+                float belowTheBedBy = 0f;
 
                 // The test-only condemnation is folded into the same expression rather than given
                 // a branch of its own: see CondemnForTest. False for the whole of every run, so
@@ -1651,6 +1667,23 @@ namespace Evosim.Sim
                     if (dx * dx + dz * dz > outside) intact = false;
                 }
 
+                // Below the rock — D092. Its own branch after the horizontal one, because the map
+                // has to be read at a place and a non-finite place is the test above's business:
+                // by here x and z are finite and FloorY is a sum of cosines of them. The margin is
+                // the body's own bounding radius rather than a fixed metre, for the radius guard's
+                // reason inverted — a body resting in a hollow touches the rock at its own radius,
+                // so anything deeper than that is a body inside it and not a body on it.
+                if (intact && bed != null)
+                {
+                    float floorY = (float)bed.FloorY(root.x, root.z);
+
+                    if (root.y < floorY - body.Radius)
+                    {
+                        intact = false;
+                        belowTheBedBy = floorY - root.y;
+                    }
+                }
+
                 for (int b = 1; intact && b < bodies.Length; b++)
                 {
                     Vector3 part = bodies[b].transform.position;
@@ -1665,7 +1698,15 @@ namespace Evosim.Sim
                     continue;
                 }
 
-                HandleDivergence(i);
+                // The reason, named for the dump. Built only on the path that has already failed,
+                // so a healthy step pays nothing for it; the bed's is the only one that carries a
+                // number, because it is the only guard whose threshold is the body's own size.
+                HandleDivergence(
+                    i,
+                    belowTheBedBy > 0f
+                        ? FormattableString.Invariant(
+                            $"below the bed by {belowTheBedBy:0.###} m at x {root.x:0.##}, z {root.z:0.##}")
+                        : null);
             }
         }
 
@@ -2002,19 +2043,21 @@ namespace Evosim.Sim
         }
 
         /// <summary>Records one diverged creature and kills it. Dump first, then the death.</summary>
-        private void HandleDivergence(int index)
+        private void HandleDivergence(int index, string reason = null)
         {
             Body body = _order[index];
             Organism creature = body.Creature;
 
             // The dump before the kill, because World.KillDiverged empties the organism — and
             // because a file written after a throw is a file that does not exist.
-            Dump(index, body, creature);
+            Dump(index, body, creature, reason);
 
             Debug.LogWarning(
                 $"Creature {creature.Id} diverged at t={World.ElapsedSeconds:0.#} s " +
                 $"(physics step {Steps + 1}, {body.Instance.Bodies.Length} parts, " +
-                $"{body.Instance.TotalDof} dof) — killed as a death, see the diverged/ dump.");
+                $"{body.Instance.TotalDof} dof" +
+                (reason != null ? ", " + reason : string.Empty) +
+                ") — killed as a death, see the diverged/ dump.");
 
             World.KillDiverged(creature);
         }
@@ -2028,7 +2071,7 @@ namespace Evosim.Sim
         /// divergence — that is the whole point — and losing the record of one body is a smaller
         /// loss than losing the rest of the arm to an IO error while writing it.
         /// </remarks>
-        private void Dump(int index, Body body, Organism creature)
+        private void Dump(int index, Body body, Organism creature, string reason = null)
         {
             if (string.IsNullOrEmpty(DivergenceDumpDirectory) || _dumpsWritten >= MaxDumps) return;
 
@@ -2045,6 +2088,14 @@ namespace Evosim.Sim
                 w.Field("t", World.ElapsedSeconds);
                 w.Field("physicsStep", Steps + 1);
                 w.Field("physicsDtSeconds", FixedDt);
+
+                // Which guard condemned it, where a guard can say — D092 wanted the bed's dump to
+                // name the bed and how far under it the body was. Null for every other route,
+                // which is every dump on file: the field is appended rather than the format
+                // changed, so a reader of an older dump sees nothing new and a reader of this one
+                // does not have to infer the cause from the numbers.
+                w.Field("divergenceReason", reason);
+
                 w.Field("lastObservedHeightY", creature.HeightY);
                 w.Field("generationDepth", creature.GenerationDepth);
                 w.Field("ageSeconds", creature.Age);

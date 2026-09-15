@@ -139,7 +139,12 @@ namespace Evosim.Sim
         /// The transform creatures are built under, so the glass moves with them if a harness ever
         /// offsets the world. Null puts it at the scene root, where the creatures also are.
         /// </param>
-        public static TankWall Build(SharedVolume volume, Transform parent = null)
+        /// <param name="floor">
+        /// The bed the glass has to meet, so a shaped floor's deepest hollow cannot open a gap at
+        /// the rim (D092). Null starts the glass at −depth, which is where a flat bed's top face
+        /// is and therefore what every recorded tank already ran.
+        /// </param>
+        public static TankWall Build(SharedVolume volume, Transform parent = null, SeaFloor floor = null)
         {
             if (volume == null || volume.Shape != WorldShape.Tank) return null;
 
@@ -153,7 +158,16 @@ namespace Evosim.Sim
             // From inside the bed to above the surface — see the class remarks. The bed's top face
             // is at −depth and it overhangs by its seam margin, so starting the glass that far
             // below the rock leaves no crack at the join.
-            float bottom = -volume.DepthMetres - SeaFloor.SeamMarginMetres;
+            //
+            // D092: with a shaped floor the rock's lowest point is no longer −depth, and a hollow
+            // deeper than the seam margin would open a gap at the rim between the glass's bottom
+            // and the sand. So the glass starts below the <i>lowest</i> rock there is
+            // (SeaFloor.LowestTopY), which on a flat bed is −depth to the bit and leaves this
+            // line's arithmetic exactly what it was (logbook/specs/bed-spec.md item 10's second
+            // clause). Null only where a harness builds glass with no bed, which is not a
+            // configuration the world produces.
+            float bottom =
+                (floor != null ? floor.LowestTopY : -volume.DepthMetres) - SeaFloor.SeamMarginMetres;
             float top = FreeboardMetres;
             float height = top - bottom;
 

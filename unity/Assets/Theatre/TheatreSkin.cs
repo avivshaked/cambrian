@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Evosim.Core;
 
 namespace Evosim.Theatre
 {
@@ -579,7 +580,14 @@ namespace Evosim.Theatre
         /// footprint, y runs from the floor to the waterline at zero. In a tank it is the
         /// circle's bounding square.
         /// </param>
-        public void Dress(Bounds box)
+        /// <param name="bed">
+        /// The floor's shape — <c>World.Bed</c> from the world the replay built, or null for the
+        /// flat bed, which is every recording before D092. The sand is draped on this rather than
+        /// on a map rebuilt here, so the drawing and the collider are the same height field and a
+        /// picture cannot show a floor the physics does not have
+        /// (<c>logbook/specs/bed-spec.md</c> item 13).
+        /// </param>
+        public void Dress(Bounds box, BedShape bed = null)
         {
             Undress();
             EnsureRoot();
@@ -592,13 +600,13 @@ namespace Evosim.Theatre
             // along the refracted ray this works out.
             PushWater();
 
-            BuildBed(min, size);
+            BuildBed(min, size, bed);
             BuildSurface(min, size);
             BuildShafts(min, size);
             BuildSnow(min, size);
         }
 
-        private void BuildBed(Vector3 min, Vector3 size)
+        private void BuildBed(Vector3 min, Vector3 size, BedShape bed)
         {
             Material material = _bedMaterial != null ? _bedMaterial : (_bedMaterial = MakeBedMaterial());
             if (material == null) return;
@@ -608,12 +616,20 @@ namespace Evosim.Theatre
             // line of background where the floor should be.
             float overhang = 0.02f * Mathf.Max(size.x, size.z);
 
-            _bed = new GameObject("Theatre Bed") { hideFlags = HideFlags.DontSave };
-            _bed.transform.SetParent(_root.transform, false);
-            _bed.transform.position = new Vector3(
+            var centre = new Vector3(
                 min.x + 0.5f * size.x, min.y, min.z + 0.5f * size.z);
 
-            _bed.AddComponent<MeshFilter>().sharedMesh = Bed(size.x + overhang, size.z + overhang);
+            _bed = new GameObject("Theatre Bed") { hideFlags = HideFlags.DontSave };
+            _bed.transform.SetParent(_root.transform, false);
+            _bed.transform.position = centre;
+
+            // D092: the sand takes the world's own height map where there is one, at the same
+            // 0.2 m pitch it always drew, and the flat quad otherwise — which is every recording
+            // before the shaped bed and has to keep drawing exactly as it did.
+            _bed.AddComponent<MeshFilter>().sharedMesh =
+                bed != null && bed.HasRelief
+                    ? ShapedBed(bed, centre, size.x + overhang, size.z + overhang)
+                    : Bed(size.x + overhang, size.z + overhang);
 
             MeshRenderer renderer = _bed.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
@@ -895,6 +911,101 @@ namespace Evosim.Theatre
 
             // The shader cuts the surface down and the bounds have to know, or the bed is culled
             // from a low camera the moment its flat plane leaves the frustum.
+            Bounds bounds = mesh.bounds;
+            bounds.Expand(new Vector3(0f, 8f, 0f));
+            mesh.bounds = bounds;
+
+            return mesh;
+        }
+
+        /// <summary>
+        /// The sand draped on the world's own height map — D092,
+        /// <c>logbook/specs/bed-spec.md</c> item 13.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The same map the collider has, at the theatre's own pitch.</b> The grid is the flat
+        /// bed's 0.2 m lattice, which is two and a half times finer than the collider's half
+        /// metre, so the drawing is smoother than the rock without ever being a different shape:
+        /// both are samples of one closed-form function
+        /// (<c>BedShape.HeightAndGradient</c>), not two approximations of each other.
+        /// </para>
+        /// <para>
+        /// <b>Normals from the gradient rather than from the triangles.</b> The map's slope is
+        /// exact and a face normal is a difference of two of its samples, and the shader's ripple
+        /// tilts whatever normal it is handed (<c>TheatreBed.shader</c>) — so a per-vertex normal
+        /// taken from <c>∇h</c> is both cheaper and smoother than recalculating them.
+        /// </para>
+        /// <para>
+        /// <b>Still safely inside the rock.</b> The shader only ever subtracts from the vertex it
+        /// is given, so the drawn sand is at or below the collider's surface wherever the two
+        /// agree, which is everywhere: the vertices are <c>FloorY</c> itself.
+        /// </para>
+        /// </remarks>
+        private static Mesh ShapedBed(BedShape bed, Vector3 centre, float length, float width)
+        {
+            // The flat bed's spacing and the flat bed's cap, so a shaped world is drawn at the
+            // same density as the flat one it is compared against.
+            const float metres = 0.2f;
+            const int most = 220;
+
+            int nx = Mathf.Clamp(Mathf.RoundToInt(length / metres), 1, most);
+            int nz = Mathf.Clamp(Mathf.RoundToInt(width / metres), 1, most);
+
+            float halfX = 0.5f * length;
+            float halfZ = 0.5f * width;
+
+            var vertices = new List<Vector3>((nx + 1) * (nz + 1));
+            var normals = new List<Vector3>((nx + 1) * (nz + 1));
+            var triangles = new List<int>(nx * nz * 6);
+
+            for (int j = 0; j <= nz; j++)
+            {
+                float localZ = Mathf.Lerp(-halfZ, halfZ, (float)j / nz);
+
+                for (int i = 0; i <= nx; i++)
+                {
+                    float localX = Mathf.Lerp(-halfX, halfX, (float)i / nx);
+
+                    bed.HeightAndGradient(
+                        centre.x + localX, centre.z + localZ,
+                        out double height, out double slopeX, out double slopeZ);
+
+                    // The object stands at the box's floor, so a world height becomes a local one
+                    // by subtracting where the object is.
+                    var y = (float)(-(double)bed.DepthMetres + height) - centre.y;
+
+                    vertices.Add(new Vector3(localX, y, localZ));
+                    normals.Add(new Vector3((float)-slopeX, 1f, (float)-slopeZ).normalized);
+                }
+            }
+
+            int stride = nx + 1;
+
+            for (int j = 0; j < nz; j++)
+            {
+                for (int i = 0; i < nx; i++)
+                {
+                    int a = j * stride + i;
+                    int b = a + 1;
+                    int c = a + stride;
+                    int d = c + 1;
+
+                    triangles.Add(a); triangles.Add(c); triangles.Add(b);
+                    triangles.Add(b); triangles.Add(c); triangles.Add(d);
+                }
+            }
+
+            var mesh = new Mesh { name = "Theatre Bed Map", hideFlags = HideFlags.DontSave };
+            mesh.indexFormat = IndexFormat.UInt32;
+
+            mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateBounds();
+
+            // The shader cuts the surface down, as it does for the flat bed, and the bounds have
+            // to allow for it or a low camera culls the sand the moment the plane leaves frame.
             Bounds bounds = mesh.bounds;
             bounds.Expand(new Vector3(0f, 8f, 0f));
             mesh.bounds = bounds;
