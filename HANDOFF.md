@@ -179,11 +179,19 @@ ahead of the idle charge.
    to 0.06%, 1.3 times the flat field's cost). Two findings decide the dials: at 400 m² a
    red spectrum under a 30° slope bound gives about 1 m of relief at basins a third of
    the tank (the spec's "a few metres" needs a wider tank), and a tilt of any size spent
-   the whole bound and left no hollows, so the bound is being split (the bands at 30° on
-   their own, the tilt as a ramp under 25°, the sum allowed); round 39 then runs about
-   1 m of relief with one or two hollows and a tilt of about 6 m, a 15° ramp with the
-   shallow arc 3 m above the mean depth, far below the lit band. Every config before
-   the build is refused by the new `bed` group. The Unity half (the mesh collider, the
+   the whole bound and left no hollows, so **the bound was split** (`4ce2ba0`, 2026-09-15
+   afternoon; 28 bed tests, the suite 704 green): the bands at 30° on their own, the tilt
+   refused above a 25° ramp, the sum allowed and reported as `SteepestTotalSlopeRadians`,
+   and the hollows counted on the bands alone (a ramp makes no basin; counted on the whole
+   map a 6 m tilt read 0 hollows against 3 on the same seed). The dial table at 400 m²,
+   relief dial 12 m so the bound binds, five seeds averaged: scale 7.52 m gives a range of
+   1.13 m and 1.6 hollows; 11.28 m, 1.75 m and 0.6; 15 m, 2.26 m and 0.6; 22.57 m, 3.09 m
+   and 0.2; the range and the hollow count are the same at tilt 0, 2, 6 and 10 m at every
+   scale, and the total slope reads 28.7° at tilt 0, 30 to 30° at 2 m, 34 to 36° at 6 m
+   and 40 to 42° at 10 m. Round 39 then runs about 1 m of relief at the default scale
+   (a third of the diameter) with one or two hollows and a tilt of about 6 m, a 15° ramp
+   with the shallow arc 3 m above the mean depth, far below the lit band. Every config
+   before the build is refused by the new `bed` group. The Unity half (the mesh collider, the
    placer above the floor, the floor guard, `EVOSIM_BED_*`, the header tokens and the
    report's hollow columns, the theatre's drape) is briefed after round 38 lands.
 5. **Round 40, a light sense** (was 38): one new input, light and its vertical gradient; read
@@ -344,23 +352,23 @@ write it down." The agent's first thoughts; a proposal follows round 37b's read.
 ## The decisions in front of the owner
 
 - **The theatre in person: done.** The owner tried the interface on 2026-09-13 morning
-  ("not perfect yet, amazing progress"; good enough for now, the world comes first) and on
-  2026-09-13 at 23:47 ruled "proceed with your recommendations" on the agent's plain-language
-  brief, so the three rulings made under delegation stand: the 1.5 type step at 3400 px
-  (build spec item 5), a cousin's lineage fields withheld, the pillow at 0.34 (0091's
-  addendum). The carve is 0.35 by the owner's eye; carve 0.5 was refused by the agent from
-  pictures. Two things the owner raised that morning are open: a joint's moving link reads as
-  a ball on screen (the skin's rounding on near-cubic boxes; a cap on the rounding and a key
-  for raw collider shapes are queued), and the Recorder's capture hides the interface from
-  the Game View while it records (not intentional; to be reproduced on a worker with a
-  graphics device and fixed in theatre code).
+  ("not perfect yet, amazing progress"; good enough for now, the world comes first). On
+  2026-09-13 at 23:47 the owner ruled "proceed with your recommendations" on the agent's
+  plain-language brief. So the three rulings made under delegation stand: the 1.5 type step
+  at 3400 px (build spec item 5), a cousin's lineage fields withheld, the pillow at 0.34
+  (0091's addendum). The carve is 0.35 by the owner's eye; carve 0.5 was refused by the
+  agent from pictures. Two things the owner raised that morning are open. A joint's moving
+  link reads as a ball on screen: the skin's rounding on near-cubic boxes, and a cap on the
+  rounding and a key for raw collider shapes are queued. And the Recorder's capture hides
+  the interface from the Game View while it records, which is not intentional; it is to be
+  reproduced on a worker with a graphics device and fixed in theatre code.
 - **Things wrong in motion** (owner, 2026-09-11 evening: "there are some issues with the
   world that you can only see when rendering"), set aside and not yet named. The agent reads
   stills only; when they are named the route is a film of the session with frames pulled at
   the seconds in question.
-- **Round 38's two rulings** (D089's dilution to 400 m² with the matter held at 6,000 units,
-  and corpses as objects at 0.005/s) were confirmed by the owner on 2026-09-13 at 23:47 with
-  the same ruling; they are no longer open.
+- **Round 38's two rulings** are no longer open. D089's dilution to 400 m² with the matter
+  held at 6,000 units, and corpses as objects at 0.005/s, were confirmed by the owner on
+  2026-09-13 at 23:47 with the same ruling.
 - **The producer threshold** is unsettled: D063's amendment asks for one living inherited
   member with a recent photosynthetic birth; the scorer prints that, the 10-through-two-
   lifetimes reading and the population-only column reading, and decides on none of them. The
