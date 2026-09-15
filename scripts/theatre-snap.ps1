@@ -156,10 +156,10 @@ foreach ($t in $timeList) {
 }
 
 $viewNames = @(Split-List $Views)
-$known = @('side', 'end', 'top', 'iso', 'close', 'sky')
+$known = @('side', 'end', 'top', 'iso', 'close', 'sky', 'bed')
 foreach ($v in $viewNames) {
     if ($known -notcontains $v.ToLowerInvariant()) {
-        throw "-Views: '$v' is not a view. The views are side, end, top, iso, close, sky."
+        throw "-Views: '$v' is not a view. The views are side, end, top, iso, close, sky, bed."
     }
 }
 
