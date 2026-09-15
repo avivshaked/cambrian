@@ -255,3 +255,10 @@ joint did on the step before the blow-up before anything is proposed.
 the scripts); the pictures in `scratch/snaps/r37b-s*/` and `scratch/positions/r37b-s*/`;
 the three beside this entry. The read was done by a subagent from the brief and checked by
 the agent against the reports' end rows, the exposure and pace tables and the manifests.
+
+*2026-09-15, 04:00.* Seed 5's frames at 5,000 and 15,000 s exist now
+(`scratch/snaps/r37b-s5/`), taken by hand after the render queue passed the stopped run
+over (a stopped run writes no Ended footer; the queue reads the manifest as well since
+this morning). At 15,000 s the disc is filled evenly to the glass with eaters in every
+ring and the thin two-part jointed bodies of its standing population among the leaves,
+the same world the other four seeds showed.
