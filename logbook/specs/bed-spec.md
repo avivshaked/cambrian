@@ -25,7 +25,14 @@ read and not required.
    default picked from pictures, of the order of a few metres in a 60 m tank); slopes never
    steeper than about 30 degrees, so bodies settle and detritus slides rather than sticking
    to a cliff. The feature scales are tunables with fixed defaults (`BedScaleMetres` for the
-   largest; the two smaller a fixed fraction of it).
+   largest; the two smaller a fixed fraction of it). *As built (2026-09-15, `4ce2ba0` on
+   branch `bed`): the 30° bound holds the three bands on their own, the tilt of item 5a is
+   refused above a 25° ramp, and the two add where the ramp runs up a hollow's wall, with
+   the total reported (`SteepestTotalSlopeRadians`) and not capped. One bound on the sum
+   let every metre of tilt buy itself out of the bands' budget: at 400 m² a 6 m tilt left
+   the bands a few decimetres and no hollow. At the round's dials (about 1 m of relief,
+   6 m of tilt) the total reads 33 to 38° on the seeds tried, on a few columns; the bands
+   alone read 28.7°.*
 4. **A few real places per tank**: two to four hollows a body can lie in and food can
    gather in, at least one ridge, the rest gentle. Measured on the generated map at build
    (the count of local minima deeper than a threshold), so the smoke can say it.
