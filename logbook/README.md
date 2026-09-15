@@ -301,3 +301,4 @@ key only translates the entries' reporting shorthand.
 | [0099](0099-ten-seeds-one-world.md) | 2026-09-14 | Ten seeds, one world (the fresh seeds read: the base's readings are the world's; the joint survives founding in three of ten and grows in none; no throws) |
 | [0100](0100-a-tank-four-times-as-wide.md) | 2026-09-14 | A tank four times as wide (round 38, the dilute tank, pre-registered) |
 | [0101](0101-the-eaters-ate-the-larder.md) | 2026-09-15 | The eaters ate the larder (round 38 read: the dilute tank stands at 1,600 in five of five and every seed's eaters boom to a third of the living and starve; a consumer-resource oscillation, fresh lines each cycle, the goal rule 0 of 5; the fields uniform; eight bodies leaked through the glass) |
+| [0102](0102-the-floor-gets-a-shape.md) | 2026-09-15 | The floor gets a shape, in a tank wide enough to slope (round 39, the shaped bed at 2,200 m² with a 30 m tilt into the light, pre-registered) |

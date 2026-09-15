@@ -319,12 +319,14 @@ old formats read-only.
 Agent work unless marked. Long steps (a suite, a smoke, a render) are launched by the agent in
 the background and never handed to a subagent, which cannot wait.
 
-1. **Round 38 landed and is read (0101).** Round 39 launches next on D093's size once its
-   pre-registration (0102, from `logbook/specs/r39-prereg-draft.md`) is committed: five
-   seeds through `launch-queue.ps1 -Launcher rounds/launch-r39.ps1 -Refresh -ExpectSimHash
-   <a main-tree smoke's> -Prereg`, workers 2, 5 and 6 first and 3, 4 and 7 as their
-   round 38 renders end; the render queue armed after the last seed launches, with the bed
-   view among the frames. Two things the read left: **the glass leaks** (eight one-part
+1. **Round 38 landed and is read (0101); round 39 is launching (0102, committed
+   `716e37a`).** Five seeds through the queue (`scratch/r39-queue.ps1`, log
+   `scratch/logs/r39-queue.out`): workers 2, 5 and 6 first and 3, 4 and 7 as their round
+   38 renders end, each refreshed, `-ExpectSimHash 353e0dff…` from the sizing smokes, the
+   pre-registration named. Watch it (`scratch/arms-watch.sh r39-s1..s5`), look at a live
+   arm at about 3,000 and 6,000 s with the bed view among the frames, and arm the render
+   queue only after the last seed has launched. Each seed runs two to three days at about
+   2,900 bodies (D093's as-run note), so the round lands around 2026-09-19. Two things the read left: **the glass leaks** (eight one-part
    bodies at the surface of seed 5 passed the wall and died on the radius guard, spinning
    at 9 to 48 rad/s; the dumps carry no contact history, so the reading is a contact log
    at the wall or a film of a leak), and **the long arm moves up** (an oscillation with a
