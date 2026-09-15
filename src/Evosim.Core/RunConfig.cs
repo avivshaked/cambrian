@@ -665,11 +665,12 @@ namespace Evosim.Core
         /// <para>
         /// <b>The map is fitted to it, and the slope bound may cut it.</b>
         /// <see cref="BedShape"/> scales its three bands so their range over the disc is this
-        /// number, then scales them down again if the map together with
-        /// <see cref="BedTiltMetres"/> would be steeper than 30 degrees anywhere — a body settles
-        /// and detritus slides on that and sticks to a cliff. <see cref="BedShape.RangeMetres"/>
-        /// is what it came to and <see cref="BedShape.SlopeBoundBinds"/> says whether the dial or
-        /// the bound decided.
+        /// number, then scales them down again if the bands alone would be steeper than 30 degrees
+        /// anywhere — a body settles and detritus slides on that and sticks to a cliff.
+        /// <see cref="BedTiltMetres"/> is bounded separately as a ramp and is not in this budget,
+        /// so the two dials do not fight (the owner's ruling of 2026-09-15).
+        /// <see cref="BedShape.RangeMetres"/> is what it came to and
+        /// <see cref="BedShape.SlopeBoundBinds"/> says whether the dial or the bound decided.
         /// </para>
         /// <para>
         /// <b>The bed is the tank's.</b> <c>World</c> refuses a relief or a tilt in a
@@ -709,7 +710,14 @@ namespace Evosim.Core
         /// shelf and is a round of its own, because it changes the light economy on one side;
         /// a floor that breaks the surface is the beach, which needs a dry mask in the grid and
         /// rules for a body on sand. Both are refused here by the rule that the floor stays below
-        /// −1 m everywhere. ⚠ Unmeasured (§5A.10).
+        /// −1 m everywhere.
+        /// </para>
+        /// <para>
+        /// <b>Bounded as a ramp on its own</b> (<see cref="BedShape.SteepestTiltSlope"/>, 25°),
+        /// rather than out of the relief's 30° budget: a plane is at its full slope at every
+        /// column, so a tilt inside that budget bought itself out of the relief — 10 m of tilt at
+        /// 400 m² left the bands a third of a metre and not one closed basin (the owner's ruling
+        /// of 2026-09-15). ⚠ Unmeasured (§5A.10).
         /// </para>
         /// </remarks>
         [Tunable("bed", Unit = "m")]

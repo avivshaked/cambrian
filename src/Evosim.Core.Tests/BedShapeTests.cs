@@ -132,38 +132,84 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
-        public void NoSlopeIsSteeperThanThirtyDegrees()
+        public void NoBandSlopeIsSteeperThanThirtyDegreesAndTheTiltIsItsOwnRamp()
         {
-            // Spec item 3: bodies settle and detritus slides on 30 degrees and stick to a cliff.
-            // Measured on this test's own lattice, which is finer than the fit's, so a bound that
-            // was satisfied only at the columns the construction happened to look at would fail
-            // here.
+            // Spec item 3 on the bands alone, and item 5a's tilt as a ramp of its own (the owner's
+            // ruling of 2026-09-15): the two are allowed to add, and the total is a reading. The
+            // whole map is measured on this test's own lattice, which is finer than the fit's, so
+            // the total the class reports has to agree with what a finer lattice finds, and the
+            // bands' own bound has to hold at the class's reading.
             foreach (ulong seed in new ulong[] { 1UL, 2UL, 3UL, 4UL, 5UL })
-            foreach ((float relief, float tilt) in new[] { (4f, 10f), (12f, 0f), (4f, 2f) })
+            foreach ((float relief, float tilt) in new[] { (4f, 10f), (12f, 0f), (4f, 2f), (4f, 6f) })
             {
                 BedShape bed = Bed(relief, tilt, seed);
                 (_, _, _, double steepest, _) = Measure(bed);
 
-                double degrees = Math.Atan(steepest) * 180d / Math.PI;
+                double total = Math.Atan(steepest) * 180d / Math.PI;
+                double bands = bed.SteepestSlopeRadians * 180d / Math.PI;
+                double reported = bed.SteepestTotalSlopeRadians * 180d / Math.PI;
                 double tiltAlone = Math.Atan(tilt / (2d * Radius)) * 180d / Math.PI;
 
                 _output.WriteLine(
-                    $"seed {seed} relief {relief} tilt {tilt}: steepest {degrees:0.0}° " +
-                    $"(the tilt alone is {tiltAlone:0.0}°), range {bed.RangeMetres:0.000} m, " +
-                    $"bound {(bed.SlopeBoundBinds ? "binds" : "clear")}");
+                    $"seed {seed} relief {relief} tilt {tilt}: bands {bands:0.0}°, total {reported:0.0}° " +
+                    $"reported and {total:0.0}° on the fine lattice (the tilt alone is {tiltAlone:0.0}°), " +
+                    $"range {bed.RangeMetres:0.000} m, bound {(bed.SlopeBoundBinds ? "binds" : "clear")}");
 
-                // A lattice finer than the fit's can find a little more slope between two of its
-                // columns than the fit saw, so the assertion is the bound plus the half degree
-                // that costs rather than the bound to the last digit.
-                Assert.True(degrees < 30.5d, $"seed {seed} at relief {relief}: {degrees:0.0}°");
+                // The bands' bound, at the class's own reading and with the half degree a finer
+                // lattice can add.
+                Assert.True(bands < 30.5d, $"seed {seed} at relief {relief}: the bands read {bands:0.0}°");
+
+                // The total is at most the two added (gradients add as vectors, so it is usually
+                // less), and the fine lattice agrees with the reported total to a reading's
+                // resolution: the class reads its steepest on the half-metre column lattice and
+                // the third band's wavelength is under a metre, so a lattice three times finer
+                // can find up to a tenth more tangent at the steepest column (seed 5 at tilt 10
+                // read 41.6° here against 39.6° reported, a 7% tangent). The bands' own bound
+                // holds 5% under for the same reason (SlopeFitMargin) and the assertion above it
+                // allows the half degree that leaves.
+                double added = Math.Atan(Math.Tan(bands * Math.PI / 180d) + tilt / (2d * Radius)) * 180d / Math.PI;
+                Assert.True(reported <= added + 0.01d, $"seed {seed}: the total {reported:0.0}° is more than the bands and the ramp added");
+                Assert.True(total >= reported - 0.5d, $"seed {seed}: fine lattice {total:0.0}° under reported {reported:0.0}°");
+                Assert.True(Math.Tan(total * Math.PI / 180d) <= 1.1d * Math.Tan(reported * Math.PI / 180d),
+                    $"seed {seed}: fine lattice {total:0.0}° against reported {reported:0.0}°, more than a tenth in tangent");
             }
 
-            // A tilt that is over the bound on its own is refused rather than allowed to scale the
-            // relief away — BedShape's own remarks say why. 30 m across a 22.6 m tank is 53°.
+            // The tilt's own bound: a ramp over 25° is refused whatever the relief, and one just
+            // under it is not. 30 m across a 22.6 m tank is 53°; 11 m is 26.0°; 10 m is 23.9°.
             ArgumentOutOfRangeException thrown =
                 Assert.Throws<ArgumentOutOfRangeException>(() => Bed(4f, 30f));
-
             _output.WriteLine(thrown.Message);
+            Assert.Throws<ArgumentOutOfRangeException>(() => Bed(4f, 11f));
+            Assert.True(Bed(4f, 10f).HasRelief);
+        }
+
+        [Fact]
+        public void TheTiltDoesNotEatTheRelief()
+        {
+            // The point of bounding the two apart: a tilt of 6 m (a 14.9° ramp on this tank)
+            // leaves the bands' range and the hollow count where a tilt of 0 has them, within a
+            // few percent on the range (the fit is the same fit; only the mean-zero shift and the
+            // hollow rule's neighbourhood see the ramp) and within one hollow per seed on average.
+            double range0 = 0d, range6 = 0d;
+            int hollows0 = 0, hollows6 = 0;
+
+            foreach (ulong seed in new ulong[] { 1UL, 2UL, 3UL, 4UL, 5UL })
+            {
+                BedShape flat = Bed(12f, 0f, seed);
+                BedShape tilted = Bed(12f, 6f, seed);
+                range0 += flat.RangeMetres / 5d;
+                range6 += tilted.RangeMetres / 5d;
+                hollows0 += flat.Hollows;
+                hollows6 += tilted.Hollows;
+
+                _output.WriteLine(
+                    $"seed {seed}: tilt 0 range {flat.RangeMetres:0.000} m, {flat.Hollows} hollows; " +
+                    $"tilt 6 range {tilted.RangeMetres:0.000} m, {tilted.Hollows} hollows, " +
+                    $"total slope {tilted.SteepestTotalSlopeRadians * 180d / Math.PI:0.0}°");
+            }
+
+            Assert.Equal(range0, range6, range0 * 0.05d);
+            Assert.True(Math.Abs(hollows0 - hollows6) <= 5, $"hollows {hollows0} against {hollows6} over five seeds");
         }
 
         /// <summary>
@@ -172,13 +218,15 @@ namespace Evosim.Core.Tests
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>Spec items 3 and 5a are in tension and this is the table that says by how much.</b>
-        /// A sum of cosines with a range <c>R</c> over a largest wavelength <c>λ</c> has a
-        /// steepest slope of about <c>4R/λ</c> — the maximum over fourteen thousand columns, not
-        /// the RMS — so at the default scale of a third of a 22.6 m tank the 30° bound caps the
-        /// relief near a metre and a half, and every metre of tilt eats the budget the bands were
-        /// going to use. Nothing here is asserted beyond the fit doing what it says; the table is
-        /// the reading, and the round's dials are the owner's.
+        /// <b>Spec item 3 caps the relief at this footprint and this is the table that says by
+        /// how much.</b> A sum of cosines with a range <c>R</c> over a largest wavelength <c>λ</c>
+        /// has a steepest slope of about <c>4R/λ</c> — the maximum over fourteen thousand
+        /// columns, not the RMS — so at the default scale of a third of a 22.6 m tank the 30°
+        /// bound caps the relief near a metre. The tilt no longer eats that budget (it is a ramp
+        /// bounded on its own, the owner's ruling of 2026-09-15), which the table shows by the
+        /// range and the hollow count holding down each column. Nothing here is asserted beyond
+        /// the fit doing what it says; the table is the reading, and the round's dials are the
+        /// owner's.
         /// </para>
         /// </remarks>
         [Fact]
@@ -187,13 +235,13 @@ namespace Evosim.Core.Tests
             _output.WriteLine(
                 $"a tank of {2d * Radius:0.00} m across, {Depth} m deep; the dial is 12 m so the " +
                 "bound always decides");
-            _output.WriteLine("scale m  tilt m  tilt°   range m  steepest°  hollows  ridges");
+            _output.WriteLine("scale m  tilt m  tilt°   range m  bands°  total°  hollows  ridges");
 
             foreach (float scale in new[] { 7.52f, 11.28f, 15f, 22.57f })
-            foreach (float tilt in new[] { 0f, 2f, 5f, 10f })
+            foreach (float tilt in new[] { 0f, 2f, 6f, 10f })
             {
                 int hollows = 0, ridges = 0;
-                double range = 0d, steepest = 0d;
+                double range = 0d, steepest = 0d, total = 0d;
 
                 foreach (ulong seed in new ulong[] { 1UL, 2UL, 3UL, 4UL, 5UL })
                 {
@@ -202,11 +250,12 @@ namespace Evosim.Core.Tests
                     ridges += bed.Ridges;
                     range += bed.RangeMetres / 5d;
                     steepest += bed.SteepestSlopeRadians * 180d / Math.PI / 5d;
+                    total += bed.SteepestTotalSlopeRadians * 180d / Math.PI / 5d;
                 }
 
                 _output.WriteLine(
                     $"{scale,7:0.00}  {tilt,6}  {Math.Atan(tilt / (2d * Radius)) * 180d / Math.PI,5:0.0}  " +
-                    $"{range,7:0.000}  {steepest,9:0.0}  {hollows / 5d,7:0.0}  {ridges / 5d,6:0.0}");
+                    $"{range,7:0.000}  {steepest,6:0.0}  {total,6:0.0}  {hollows / 5d,7:0.0}  {ridges / 5d,6:0.0}");
             }
         }
 
@@ -282,8 +331,13 @@ namespace Evosim.Core.Tests
             // gradient and the velocity's Jacobian is the Hessian.
             BedShape bed = Bed();
 
+            // A central difference's truncation error is h² times the third derivative over 6,
+            // and the bands' third derivative grew when the tilt stopped eating their budget (the
+            // bound is on the bands alone now, so at this relief they take the whole 30°): at
+            // h = 0.01 the worst gradient error read 1.08e-4 against a 1e-4 tolerance. Halving h
+            // quarters it and leaves the rounding error (1e-16 · 60 m / h) three orders under.
             var rng = new Rng(37UL);
-            const double H = 0.01d;
+            const double H = 0.005d;
             double worstGradient = 0d, worstHessian = 0d;
 
             for (int i = 0; i < 300; i++)

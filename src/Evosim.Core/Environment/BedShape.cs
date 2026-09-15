@@ -44,13 +44,25 @@ namespace Evosim.Core
     /// seeded matter density at round 38's: the mean depth is still <see cref="DepthMetres"/>.
     /// </para>
     /// <para>
-    /// <b>Two dials and a bound.</b> <see cref="RunConfig.BedReliefMetres"/> is the total range of
-    /// the cosine bands over the disc and <see cref="RunConfig.BedTiltMetres"/> is the depth
-    /// difference along one diameter (spec item 5a), and the relief is scaled down if the two
-    /// together would put a slope past <see cref="SteepestSlope"/> — 30 degrees, so bodies settle
-    /// and detritus slides rather than sticking to a cliff (spec item 3). When the bound binds,
-    /// <see cref="RangeMetres"/> comes out below the dial and <see cref="SlopeBoundBinds"/> says so
-    /// rather than the world quietly running a relief nobody asked for.
+    /// <b>Two dials and two bounds, one each.</b> <see cref="RunConfig.BedReliefMetres"/> is the
+    /// total range of the cosine bands over the disc and <see cref="RunConfig.BedTiltMetres"/> is
+    /// the depth difference along one diameter (spec item 5a). The bands are scaled down until
+    /// <i>their own</i> steepest slope is under <see cref="SteepestSlope"/>, 30 degrees; the tilt
+    /// is refused if its ramp is over <see cref="SteepestTiltSlope"/>, 25 degrees. When the bands'
+    /// bound binds, <see cref="RangeMetres"/> comes out below the dial and
+    /// <see cref="SlopeBoundBinds"/> says so rather than the world quietly running a relief nobody
+    /// asked for.
+    /// </para>
+    /// <para>
+    /// <b>The two are allowed to add, and that is the owner's ruling of 2026-09-15.</b> The first
+    /// build bounded the whole map at 30 degrees, tilt included, which made the two dials fight
+    /// over one budget: a ramp is at its full slope at every column of the disc, so at the
+    /// campaign's footprint a 10 m tilt spent 77% of the budget and left the bands a third of a
+    /// metre and not one closed basin. The bound exists for a body resting on the floor and for
+    /// the look of it, and a hollow's wall standing on a slope is what a sea floor is; the grid
+    /// settles column by column and is indifferent. So the steepest <i>total</i> slope is a
+    /// reading — <see cref="SteepestTotalSlopeRadians"/> beside <see cref="SteepestSlopeRadians"/>
+    /// — rather than a cap, and the smoke prints both.
     /// </para>
     /// <para>
     /// <b>Relief 0 and tilt 0 is the flat world to the bit.</b> <see cref="HasRelief"/> is false,
@@ -84,8 +96,27 @@ namespace Evosim.Core
         /// <summary>Amplitude falls as <c>k</c> to the minus this — the class remarks say why 1.5.</summary>
         public const double SpectrumExponent = 1.5;
 
-        /// <summary>The steepest slope the map is allowed, as a gradient: <c>tan 30°</c>.</summary>
+        /// <summary>
+        /// The steepest slope the <i>relief bands</i> are allowed, as a gradient: <c>tan 30°</c>.
+        /// </summary>
         public const double SteepestSlope = 0.57735026918962576;
+
+        /// <summary>
+        /// The steepest ramp a tilt is allowed, as a gradient: <c>tan 25°</c> — the owner's
+        /// ruling of 2026-09-15.
+        /// </summary>
+        /// <remarks>
+        /// <b>A bound of its own rather than a share of the bands'.</b> A tilt is a plane and is
+        /// therefore at its full slope at every column of the disc, so putting it inside the
+        /// bands' budget meant every metre of tilt bought itself out of the relief: at the
+        /// campaign's footprint 10 m of tilt is 23.9° and left the bands a third of a metre and no
+        /// closed basin anywhere. Bounded separately, the tilt is asked only to be a floor a body
+        /// can lie on by itself, and the two are allowed to add where they face the same way —
+        /// which is what a hollow's wall on a slope is. 25° rather than 30° because the ramp is
+        /// everywhere and the bands are somewhere: the arithmetic is exact, so the refusal can
+        /// say what would fit.
+        /// </remarks>
+        public const double SteepestTiltSlope = 0.46630765815499861;
 
         /// <summary>
         /// The share of <see cref="SteepestSlope"/> the fit actually aims at, leaving the rest as
@@ -150,16 +181,33 @@ namespace Evosim.Core
         /// <summary>The lowest floor over the disc, m, as a height above the flat bed (negative).</summary>
         public double LowestMetres { get; }
 
-        /// <summary>The steepest slope on the disc, radians — under <see cref="SteepestSlope"/> unless the tilt alone is over.</summary>
+        /// <summary>
+        /// The steepest slope of the relief bands alone, radians — the one the fit bounds, always
+        /// under <see cref="SteepestSlope"/>.
+        /// </summary>
         public double SteepestSlopeRadians { get; }
+
+        /// <summary>
+        /// The steepest slope of the whole floor, radians: the bands and the tilt together, where
+        /// the two happen to add. Reported and not bounded — see the class remarks.
+        /// </summary>
+        /// <remarks>
+        /// At most the two summed and typically less, since a band's steepest column rarely faces
+        /// exactly down the ramp. The smoke prints both, and the difference between them is the
+        /// tilt.
+        /// </remarks>
+        public double SteepestTotalSlopeRadians { get; }
 
         /// <summary>Whether the slope bound cut the relief below <see cref="ReliefMetres"/>.</summary>
         public bool SlopeBoundBinds { get; }
 
-        /// <summary>Hollows on the disc — spec item 4's count, the smoke prints it.</summary>
+        /// <summary>
+        /// Hollows on the disc — spec item 4's count, the smoke prints it. Counted on the bands
+        /// alone: the tilt is a ramp (spec item 5a), and a ramp makes no basin.
+        /// </summary>
         public int Hollows { get; }
 
-        /// <summary>Ridges on the disc, counted by the same rule on maxima.</summary>
+        /// <summary>Ridges on the disc, counted by the same rule on maxima, on the bands alone.</summary>
         public int Ridges { get; }
 
         /// <summary>
@@ -167,9 +215,13 @@ namespace Evosim.Core
         /// wavelength.
         /// </summary>
         /// <remarks>
-        /// <b>The rule, stated once.</b> A column is a hollow when it is strictly lower than every
-        /// lattice column within this radius and the mean height on the ring at that radius stands
-        /// at least a quarter of <see cref="RangeMetres"/> above it (spec item 4). A quarter of the
+        /// <b>The rule, stated once.</b> A column is a hollow when, on the bands alone, it is
+        /// strictly lower than every lattice column within this radius and the mean height on the
+        /// ring at that radius stands at least a quarter of <see cref="RangeMetres"/> above it
+        /// (spec item 4). The tilt is left out because it is a ramp and not a place: on the whole
+        /// map a 6 m tilt lifts one side of every ring by more than the threshold and the count
+        /// falls to zero while the basins are all still there (the first build counted the whole
+        /// map and read 0 hollows at tilt 6 against 3 at tilt 0 on the same seed). A quarter of the
         /// largest wavelength is the separator that distinguishes two basins of that band rather
         /// than two dimples of the smallest: minima of a wave are a wavelength apart, and at a
         /// quarter of one from a trough a cosine has risen by half its peak-to-trough range, which
@@ -258,15 +310,11 @@ namespace Evosim.Core
                     "rounds of their own (logbook/specs/bed-spec.md).");
             }
 
-            // The tilt's own slope, which nothing below can reduce. ⚠ NOT ON THE BRIEF'S LIST OF
-            // REFUSALS, and added because the alternative is worse: the fit scales the cosine
-            // bands down until the whole map is under the bound, so a tilt that is over it on its
-            // own drives the relief to zero and hands back a bare ramp under the name of a shaped
-            // bed. A dial that silently deletes another dial is the fault every refusal in this
-            // file exists to prevent. The arithmetic is exact — a tilt of T over a diameter of 2R
-            // is a plane of slope T/2R everywhere — so the message can say what would fit.
+            // The tilt's own ramp, bounded on its own — see SteepestTiltSlope. The arithmetic is
+            // exact, a tilt of T over a diameter of 2R being a plane of slope T/2R at every
+            // column, so the message can say what would fit.
             if (tiltMetres > 0f &&
-                tiltMetres / (2d * tankRadiusMetres) > SteepestSlope)
+                tiltMetres / (2d * tankRadiusMetres) > SteepestTiltSlope)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(tiltMetres), tiltMetres,
@@ -274,10 +322,10 @@ namespace Evosim.Core
                         $"A tilt of {tiltMetres} m across a tank {2d * tankRadiusMetres:0.##} m ") +
                     FormattableString.Invariant(
                         $"wide is a ramp at {Math.Atan(tiltMetres / (2d * tankRadiusMetres)) * 180d / Math.PI:0.#}") +
-                    "°, and the bed's slopes stay under 30° so that bodies settle and detritus " +
-                    FormattableString.Invariant(
-                        $"slides (logbook/specs/bed-spec.md item 3). This tank admits {2d * tankRadiusMetres * SteepestSlope:0.##} m ") +
-                    "of tilt, and that much leaves no slope at all for the relief.");
+                    "°, and a floor a body can lie on stays under 25° before any relief is laid " +
+                    "on it (logbook/specs/bed-spec.md items 3 and 5a). This tank admits " +
+                    (2d * tankRadiusMetres * SteepestTiltSlope).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) +
+                    " m of tilt.");
             }
 
             RadiusMetres = tankRadiusMetres;
@@ -419,11 +467,33 @@ namespace Evosim.Core
             double rawRange = rawHigh - rawLow;
             double alpha = rawRange > 0d && reliefMetres > 0f ? reliefMetres / rawRange : 0d;
 
-            // 2. The slope bound, on the whole map including the tilt: a body settles and detritus
-            //    slides on 30 degrees and sticks to a cliff. Bisected rather than solved, because
-            //    the steepest column is not the same column at every alpha — the tilt's constant
-            //    gradient adds to the bands' at one place and subtracts at another.
-            double SteepestAt(double scale)
+            // 2. The slope bound, ON THE BANDS ALONE — the owner's ruling of 2026-09-15, and the
+            //    change is the bound's scope rather than any arithmetic. The first build checked
+            //    the whole map, tilt included, and the tilt is a ramp that is present at every
+            //    column: at the campaign's footprint a 10 m tilt is 23.9°, which is 77% of the
+            //    budget, so the bands were scaled to a range of a third of a metre and the map had
+            //    no closed basin left in it at all. What the 30° is for is a body resting and the
+            //    look of the thing, and both are properties of the relief a body is lying in; the
+            //    grid settles column by column and does not care, and a ramp with a hollow's wall
+            //    on it is what a sea floor looks like. So the tilt is bounded on its own as a ramp
+            //    (above) and the two are allowed to add, with the total reported rather than
+            //    capped — SteepestTotalSlopeRadians.
+            double SteepestBandsAt(double scale)
+            {
+                double worst = 0d;
+
+                for (int i = 0; i < columns; i++)
+                {
+                    double gx = scale * rawGradientX[i];
+                    double gz = scale * rawGradientZ[i];
+                    double slope = Math.Sqrt(gx * gx + gz * gz);
+                    if (slope > worst) worst = slope;
+                }
+
+                return worst;
+            }
+
+            double SteepestTotalAt(double scale)
             {
                 double worst = 0d;
 
@@ -442,7 +512,7 @@ namespace Evosim.Core
 
             double target = SlopeFitMargin * SteepestSlope;
 
-            if (alpha > 0d && SteepestAt(alpha) > target)
+            if (alpha > 0d && SteepestBandsAt(alpha) > target)
             {
                 binds = true;
 
@@ -454,7 +524,7 @@ namespace Evosim.Core
                 for (int i = 0; i < 40; i++)
                 {
                     double mid = 0.5d * (low + high);
-                    if (SteepestAt(mid) > target) high = mid;
+                    if (SteepestBandsAt(mid) > target) high = mid;
                     else low = mid;
                 }
 
@@ -481,14 +551,15 @@ namespace Evosim.Core
             double low2 = double.MaxValue, high2 = double.MinValue;
             double bandLow = double.MaxValue, bandHigh = double.MinValue;
 
-            var height = new double[columns];
+            // The bands alone, for the hollow count: the tilt is a ramp and makes no basin.
+            var bandHeight = new double[columns];
 
             for (int i = 0; i < columns; i++)
             {
                 double band = alpha * rawHeight[i];
                 double h = band + _tiltX * columnX[i] + _tiltZ * columnZ[i] - _offset;
 
-                height[i] = h;
+                bandHeight[i] = band;
 
                 if (h < low2) low2 = h;
                 if (h > high2) high2 = h;
@@ -501,13 +572,15 @@ namespace Evosim.Core
             HighestMetres = high2;
             LowestMetres = low2;
 
-            // At the scale the bands were actually given, not at the one they were drawn with:
-            // this is the floor a body walks on.
-            SteepestSlopeRadians = Math.Atan(SteepestAt(alpha));
+            // At the scale the bands were actually given, not at the one they were drawn with.
+            // Two readings, and the difference between them is the tilt: the first is the one the
+            // bound holds, the second is the floor a body actually lies on.
+            SteepestSlopeRadians = Math.Atan(SteepestBandsAt(alpha));
+            SteepestTotalSlopeRadians = Math.Atan(SteepestTotalAt(alpha));
 
             HollowRadiusMetres = 0.25d * ScaleMetres;
 
-            (int hollows, int ridges) = CountPlaces(height, columnX, columnZ, columns);
+            (int hollows, int ridges) = CountPlaces(bandHeight, columnX, columnZ, columns);
             Hollows = hollows;
             Ridges = ridges;
         }
@@ -736,7 +809,9 @@ namespace Evosim.Core
                   FormattableString.Invariant(
                       $"scale {ScaleMetres:0.##} m, {Hollows} hollows, {Ridges} ridges, ") +
                   FormattableString.Invariant(
-                      $"steepest {SteepestSlopeRadians * 180d / Math.PI:0.#}°")
+                      $"steepest {SteepestSlopeRadians * 180d / Math.PI:0.#}° in the bands and ") +
+                  FormattableString.Invariant(
+                      $"{SteepestTotalSlopeRadians * 180d / Math.PI:0.#}° with the tilt")
                 : "bed flat";
     }
 }
