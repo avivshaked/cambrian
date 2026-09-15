@@ -713,7 +713,7 @@ namespace Evosim.Core
         /// −1 m everywhere.
         /// </para>
         /// <para>
-        /// <b>Bounded as a ramp on its own</b> (<see cref="BedShape.SteepestTiltSlope"/>, 25°),
+        /// <b>Bounded as a ramp on its own</b> (<see cref="BedShape.SteepestTiltSlope"/>, 30° since D093; 25° for an afternoon),
         /// rather than out of the relief's 30° budget: a plane is at its full slope at every
         /// column, so a tilt inside that budget bought itself out of the relief — 10 m of tilt at
         /// 400 m² left the bands a third of a metre and not one closed basin (the owner's ruling

@@ -48,7 +48,7 @@ namespace Evosim.Core
     /// total range of the cosine bands over the disc and <see cref="RunConfig.BedTiltMetres"/> is
     /// the depth difference along one diameter (spec item 5a). The bands are scaled down until
     /// <i>their own</i> steepest slope is under <see cref="SteepestSlope"/>, 30 degrees; the tilt
-    /// is refused if its ramp is over <see cref="SteepestTiltSlope"/>, 25 degrees. When the bands'
+    /// is refused if its ramp is over <see cref="SteepestTiltSlope"/>, 30 degrees. When the bands'
     /// bound binds, <see cref="RangeMetres"/> comes out below the dial and
     /// <see cref="SlopeBoundBinds"/> says so rather than the world quietly running a relief nobody
     /// asked for.
@@ -102,8 +102,9 @@ namespace Evosim.Core
         public const double SteepestSlope = 0.57735026918962576;
 
         /// <summary>
-        /// The steepest ramp a tilt is allowed, as a gradient: <c>tan 25°</c> — the owner's
-        /// ruling of 2026-09-15.
+        /// The steepest ramp a tilt is allowed, as a gradient: <c>tan 30°</c> — the owner's
+        /// ruling of 2026-09-15 (25° in the afternoon's build; 30° from the evening's, D093,
+        /// when the owner sized the tank for a 30° decline across it).
         /// </summary>
         /// <remarks>
         /// <b>A bound of its own rather than a share of the bands'.</b> A tilt is a plane and is
@@ -112,11 +113,11 @@ namespace Evosim.Core
         /// campaign's footprint 10 m of tilt is 23.9° and left the bands a third of a metre and no
         /// closed basin anywhere. Bounded separately, the tilt is asked only to be a floor a body
         /// can lie on by itself, and the two are allowed to add where they face the same way —
-        /// which is what a hollow's wall on a slope is. 25° rather than 30° because the ramp is
-        /// everywhere and the bands are somewhere: the arithmetic is exact, so the refusal can
-        /// say what would fit.
+        /// which is what a hollow's wall on a slope is. The same 30° as the bands' bound: the
+        /// owner's decline is 30° and a ramp at it is a floor a body can lie on; the arithmetic
+        /// is exact, so the refusal can say what would fit.
         /// </remarks>
-        public const double SteepestTiltSlope = 0.46630765815499861;
+        public const double SteepestTiltSlope = 0.57735026918962576;
 
         /// <summary>
         /// The share of <see cref="SteepestSlope"/> the fit actually aims at, leaving the rest as
@@ -322,7 +323,7 @@ namespace Evosim.Core
                         $"A tilt of {tiltMetres} m across a tank {2d * tankRadiusMetres:0.##} m ") +
                     FormattableString.Invariant(
                         $"wide is a ramp at {Math.Atan(tiltMetres / (2d * tankRadiusMetres)) * 180d / Math.PI:0.#}") +
-                    "°, and a floor a body can lie on stays under 25° before any relief is laid " +
+                    "°, and a floor a body can lie on stays under 30° before any relief is laid " +
                     "on it (logbook/specs/bed-spec.md items 3 and 5a). This tank admits " +
                     (2d * tankRadiusMetres * SteepestTiltSlope).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) +
                     " m of tilt.");

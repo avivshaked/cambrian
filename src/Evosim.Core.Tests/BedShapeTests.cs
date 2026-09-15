@@ -175,12 +175,13 @@ namespace Evosim.Core.Tests
             }
 
             // The tilt's own bound: a ramp over 25° is refused whatever the relief, and one just
-            // under it is not. 30 m across a 22.6 m tank is 53°; 11 m is 26.0°; 10 m is 23.9°.
+            // under it is not. 30 m across a 22.6 m tank is 53°; 14 m is 31.8°; 13 m is 29.9°
+            // (the cap moved from 25° to 30° on the evening of 2026-09-15, D093).
             ArgumentOutOfRangeException thrown =
                 Assert.Throws<ArgumentOutOfRangeException>(() => Bed(4f, 30f));
             _output.WriteLine(thrown.Message);
-            Assert.Throws<ArgumentOutOfRangeException>(() => Bed(4f, 11f));
-            Assert.True(Bed(4f, 10f).HasRelief);
+            Assert.Throws<ArgumentOutOfRangeException>(() => Bed(4f, 14f));
+            Assert.True(Bed(4f, 13f).HasRelief);
         }
 
         [Fact]

@@ -321,6 +321,11 @@ namespace Evosim.Sim.EditorTools
             // creature earns, not how many the world holds.
             float area = Env("EVOSIM_AREA", new RunConfig().WorldAreaSquareMetres);
 
+            // D093 (2026-09-15 evening): the depth from the environment, which it never was
+            // before — every round through 38 ran the 60 m default. Round 39's tank is 45 m
+            // deep so that a 30 m tilt puts the shallow arc at the lit band's floor.
+            float depth = Env("EVOSIM_DEPTH", new RunConfig().WorldDepthMetres);
+
             // D077. The footprint made literal: K patches of sqrt(area/K) metres side by side on
             // a ring, WorldDepthMetres deep, a periodic horizontal boundary, patches read from
             // position and newborns placed beside their parents. Off is every run before D077,
@@ -686,6 +691,7 @@ namespace Evosim.Sim.EditorTools
             config.DispersalChancePerStep = dispersalChance;
             config.PerPatchShading = patchShading;
             config.WorldAreaSquareMetres = area;
+            config.WorldDepthMetres = depth;
             config.SharedSpace = sharedSpace;
             config.OffspringDispersalMetres = offspringDispersal;
             // DESIGN.md §6.2's queued item, closed: the physics step is now a tunable, so it

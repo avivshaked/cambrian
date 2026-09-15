@@ -133,8 +133,17 @@ param(
     # it refuses and names the arithmetic.
     # D092: the bed's three dials (RunConfig.BedReliefMetres, BedTiltMetres, BedScaleMetres;
     # logbook/specs/bed-spec.md items 3, 5a and 1). 0, 0 and anything is the flat bed to the bit.
-    [float]$BedRelief = 1,
-    [float]$BedTilt = 6,
+    # D093 (the owner, 2026-09-15 evening: "we need a much bigger tank. Much. So that with 30 deg
+    # decline we give a lot more depth variation"): 2,200 m2 (radius 26.46 m, diameter 52.9 m,
+    # the smallest round area that takes a 30 m tilt under the 30-degree cap), 45 m deep, the
+    # tilt 30 m so the floor runs from 30 m on the shallow arc, the lit band's floor, to 60 m on
+    # the deep one; the founders drawn over the whole depth as before. EVOSIM_DEPTH is new with
+    # this round (every earlier round ran the 60 m default).
+    [float]$Area = 2200,
+    [float]$Depth = 45,
+    [float]$FounderDepth = 45,
+    [float]$BedRelief = 1.5,
+    [float]$BedTilt = 30,
     [float]$BedScale = 0,
     [float]$Current = 0.1
 )
@@ -146,12 +155,12 @@ $s = @{
     EVOSIM_SEED = $Seed
     EVOSIM_IRRADIANCE = 200; EVOSIM_CURRENT = $Current; EVOSIM_MIXING = $Mixing; EVOSIM_REMIN = 0
     EVOSIM_CURRENT_MODE = $CurrentMode
-    EVOSIM_EXCRETION = 0.01; EVOSIM_AREA = 400; EVOSIM_FLOOR_CLOSES = 3000; EVOSIM_MAX_POP = 8000
+    EVOSIM_EXCRETION = 0.01; EVOSIM_AREA = $Area; EVOSIM_DEPTH = $Depth; EVOSIM_FLOOR_CLOSES = 3000; EVOSIM_MAX_POP = 8000
     EVOSIM_MAX_TISSUE = $MaxTissue
     EVOSIM_SENESCENCE = 3000; EVOSIM_EXCESS_DENSITY = 0.02
     EVOSIM_MATTER_PER_TISSUE = 0.5; EVOSIM_MATTER_INITIAL = 1; EVOSIM_FOUNDER_FLOAT = 0.5
     EVOSIM_LIFT_COST = 0.05; EVOSIM_CELLTYPE_MUTATION = 0.005; EVOSIM_NEUTRAL_VOLUME = 0.25
-    EVOSIM_FOUNDER_DEPTH = 60; EVOSIM_MATTER_PER_CREATURE = 3; EVOSIM_PATCHES = 4
+    EVOSIM_FOUNDER_DEPTH = $FounderDepth; EVOSIM_MATTER_PER_CREATURE = 3; EVOSIM_PATCHES = 4
     EVOSIM_CURRENT_PERIOD = 6000; EVOSIM_CURRENT_CELL = 30; EVOSIM_CURRENT_ROLLS = 1
     EVOSIM_CURRENT_BLINK = 3000; EVOSIM_CURRENT_ADVECT = 1
     EVOSIM_SINK = 0.002; EVOSIM_MATTER_SINK = 0.002

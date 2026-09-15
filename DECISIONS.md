@@ -115,6 +115,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D090](#d090) | The water carries as water does: in a tank the current is a 27-term spectrum of streams with no swirl about the axis (amends D089's gyre), and every part feels the water's acceleration force `(ρV + m_added)·Du/Dt` (`FluidAccelerationCoefficient`, `EVOSIM_FLUID_ACCEL`, default 0, 1 from round 37b); round 37b repeats the tank on both before the dilution | 2026-09-12 | ruled by the owner in two steps ("the currents should not act as unified fields but more like streams"; "Agreed. Proceed") after round 37's early read showed the rim ring holding 58 to 96% of the bodies and the streams build's tracer check showed the lag, not the field, does the gathering; built on branch `streams` with the throw trace, checked on worker 7, merged after round 37's last render |
 | [D091](#d091) | Two kinds of change: a replacement (what the world is) becomes the base on the owner's ruling and reads the goal rule without requiring it; a treatment (a price, a sense, a rule of the ecology on a fixed world) joins the base only when its round meets its pre-registered bar; D081's adoption clause applies to treatments; every entry names which kind its round is | 2026-09-12 | ruled by the owner ("proceed with your recommendations") on the agent's proposal after the Astra review found D081's rule and the practice since the grid disagreeing; with it, a fresh-seed batch on round 37b's world before round 38 |
 | [D092](#d092) | The bed with shape: a seeded height map at three scales under the tank, the streams' potential in floor-following coordinates so the water follows the floor, the grid masked below it, one static collider; relief 0 replays the flat world; rocks and overhangs out (`logbook/specs/bed-spec.md`) | 2026-09-15 | ruled by the owner in conversation ("I really want a shaped bed"; "life like without making it computationally problematic", then "not too expensive"); the requirements written by the agent and accepted; round 39, built after round 38's read |
+| [D093](#d093) | Round 39's tank sized for the slope: 2,200 m² (a 52.9 m diameter, the smallest round area that takes a 30 m tilt under a 30° ramp), 45 m deep, the floor from 30 m on the shallow arc to 60 m on the deep one; the tilt's cap 30°; the shelf folded into the bed's round | 2026-09-15 | ruled by the owner in conversation on the evening of 2026-09-15 ("we need a much bigger tank. Much") and chosen from the agent's three sizings; the matter budget set from the founding smokes |
 
 ---
 
@@ -5006,3 +5007,45 @@ changes the light economy on one side and confounds what the pockets alone do). 
 version for the current (the owner's relaxed cost bound buys it now, and a hollow without
 slower water in it is half a hollow).
 
+### D093
+**Round 39's tank sized for the slope: 2,200 m², 45 m deep, a 30 m tilt from the lit band's floor to 60 m** · 2026-09-15
+
+**Status:** ruled by the owner on the evening of 2026-09-15, on the first pictures of the
+shaped bed at 400 m² ("Can barely see anything. And I think we need a much bigger tank.
+Much. So that with 30 Deg decline we give a lot more depth variation. As it is it looks
+like it barely has any effect because it is such a small side of the cylinder"). The agent
+put three sizings with their costs in front of the owner, who chose the second; the area
+is 2,200 m² rather than the 2,100 m² offered because a 30 m tilt across 51.7 m is a 30.1°
+ramp and the smallest round area under the cap is 2,121 m². Amends D092's ruling 7 and
+D089's ruling 3 for round 39; the requirements stay `logbook/specs/bed-spec.md`.
+
+**Context.** At 400 m² the tilt runs along a 22.6 m diameter, so a 30° decline can make
+at most 13 m of depth across the tank, and the round's 6 m was a tenth of the depth with
+the bands adding a metre: a shaped floor that changed nothing a body could feel. The owner's
+observation from the side view was the numbers'.
+
+**Ruled.**
+
+1. **The tank is 2,200 m²** (radius 26.46 m) **and 45 m deep**, set from the environment
+   (`EVOSIM_AREA`, and `EVOSIM_DEPTH`, which is new: every round through 38 ran the 60 m
+   default), the founders drawn over the whole depth.
+2. **The tilt is 30 m**, a 29.6° ramp, so the floor runs from 30 m below the surface on
+   the shallow arc, the bottom of the band the crowd lives in, to 60 m on the deep one; the
+   tilt's own cap moves from 25° to 30° (`BedShape.SteepestTiltSlope`), the owner's decline.
+   The relief dial is 1.5 m at the default scale (a third of the diameter, 17.6 m), so the
+   bands' slopes stay under the ramp's and the total on a hollow's wall stays near 40°.
+3. **The shelf is folded into this round.** D092's ruling 7 kept the shallowest floor
+   below the crowd's band so that round 39 read pockets and not light. The owner's sizing
+   raises the shallow arc into the band's floor, so the round reads both. Its
+   pre-registration says which prediction is the light's and which the pockets'.
+4. **The matter budget is set from founding smokes** at 6,000, 9,000 and 12,000 units
+   (600 s, dt 0.02, seed 3) before the pre-registration. The water is five and a half
+   times round 38's at the same 6,000 units, and a matter cell then holds about what one
+   child costs, so founding is the check (D089's ruling 2's own check, repeated). The body
+   count follows the matter, so a larger budget is a slower round. The smallest budget
+   that founds like round 38's smoke is the one.
+
+**Rejected.** 1,600 m² with a 20 m tilt and the floor below the light (the agent's
+recommendation, to keep the pockets question alone; the owner chose the visible gradient).
+Steeper than 30° (the owner named the decline). Keeping the depth at 60 m with a bigger
+tilt (a 30 m tilt into the light at 60 m depth needs a 3,700 m² tank at 30°).
