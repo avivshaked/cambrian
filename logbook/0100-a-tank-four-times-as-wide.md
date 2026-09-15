@@ -192,3 +192,8 @@ it as a fail (the best clade six alive at the end, founded at 25,179 s, unstable
 early renders of seeds 2 to 5 are set aside for the afternoon: the bed's Unity half took
 seed 3's worker for its validation (`scratch/bed-chain.ps1`), and the queue is re-armed
 after it.
+*16:34.* Seed 4 landed at 30,000 s on its budget with 1,642 alive, two throws, stillbirths
+1,294, the jointed count 1; its eaters peaked at 702 inherited at 16,400 s, the largest
+boom of the four, and read 4 at 25,000 and 2 at 30,000 (the scorer's best clade two alive,
+founded at 7,777 s, unstable). Four seeds in, the eaters' line has boomed to hundreds and
+bust to near nothing in every one, and only seed 2's boomed again; D5 now turns on seed 5.
