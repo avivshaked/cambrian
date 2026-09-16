@@ -357,7 +357,11 @@ the background and never handed to a subagent, which cannot wait.
    **The look is built (2026-09-16 afternoon, logbook/0104)**: the one-day and week passes
    in one day on the owner's ruling, everything below except the Recorder (with the safari)
    and the genome version of the skin genes (a proposal for a round boundary). Every picture
-   from the build carries `look 2`. The round 39 pictures on it come as the seeds land.
+   from the build carries `look 2`. Round 39's post-run renders on it run from
+   `scratch/r39-render-chain.ps1` (log `scratch/logs/r39-render-chain.out`): each landed
+   seed at 5,000, 15,000 and 30,000 s, side, close, bed and iso, on worker 7 under the
+   five-Editor cap and only after seed 5's queue has taken its slot. The pencilled dates
+   below move up by two days: the timeline from the 17th.
    **Re-pencilled 2026-09-16 morning after the look's design pass**
    (`logbook/specs/striking-theatre-menu.md`, the owner's rulings in it): first **the look**,
    because its pictures are what every later judgement is made from. 16th: the one-day pass
