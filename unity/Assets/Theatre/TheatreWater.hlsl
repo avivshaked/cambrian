@@ -103,6 +103,18 @@ float4 _EvoSun;
 // Unit, pointing down along the sun's ray after it has been refracted into the water.
 float4 _EvoSunRay;
 
+// The water column (2026-09-16, the look's design pass, R1 "lit top water"): x is the
+// waterline's height, y the metres over which the lit water at the top falls to the deep
+// colour, z is 1 when the lit water is on and 0 for the flat field the theatre had before, and
+// w is 1 once TheatreSkin has pushed any of this at all.
+float4 _EvoWaterColumn;
+
+// The deep water, the colour everything used to fade towards, and the lit water at the
+// waterline. Both as the skin set them; the deep falls back to the engine's fog colour for a
+// scene that never built a skin.
+float4 _EvoWaterDeep;
+float4 _EvoWaterShallow;
+
 // Each dial falls back rather than refusing, because a scene that never built a skin still draws
 // bodies and a bed, and a zero wavelength there would divide the sea by nothing. The fallbacks
 // are TheatreSkin's own defaults.
@@ -123,6 +135,50 @@ float3 EvoSunRayWS()
     return dot(_EvoSunRay.xyz, _EvoSunRay.xyz) > 1e-4
         ? normalize(_EvoSunRay.xyz)
         : normalize(float3(0.20, -0.96, 0.19));
+}
+
+float  EvoWaterlineY()       { return _EvoWaterColumn.w > 0.5 ? _EvoWaterColumn.x : 0.0; }
+float  EvoWaterReachMetres() { return _EvoWaterColumn.y > 0.01 ? _EvoWaterColumn.y : 18.0; }
+
+// How far through the water a look reaches before it is all water: three reaches. The
+// backdrop colours a direction by the column at the height that far along it, so a side
+// view of a deep box runs from the lit water at the top of the frame to the deep at the
+// bottom rather than one colour a few metres either side of the eye (the first lit-water
+// pictures, 2026-09-16, were one flat teal for that reason).
+float  EvoWaterViewMetres()  { return 3.0 * EvoWaterReachMetres(); }
+float3 EvoWaterDeep()        { return _EvoWaterColumn.w > 0.5 ? _EvoWaterDeep.rgb : unity_FogColor.rgb; }
+
+// The water's own colour at a height: the lit shallow at the waterline, falling by e-folds of
+// the reach to the deep, and the deep alone with the lit water off. Clamped at the waterline,
+// because the world has no top and the water above it is not brighter, it is not there.
+float3 EvoWaterColour(float y)
+{
+    float3 deep = EvoWaterDeep();
+    if (_EvoWaterColumn.z <= 0.5) return deep;
+
+    float depth = max(0.0, EvoWaterlineY() - y);
+    float t = exp(-depth / EvoWaterReachMetres());
+
+    return lerp(deep, _EvoWaterShallow.rgb, t);
+}
+
+// The colour the water between the eye and a point fades that point towards: the column at
+// the height halfway between the two, which is the fog colour of a ray through a column that
+// brightens upward, to first order. The eye's height is clamped at the waterline for the same
+// reason as above.
+float3 EvoWaterColourAlong(float3 positionWS)
+{
+    float eyeY = min(GetCameraPositionWS().y, EvoWaterlineY());
+
+    return EvoWaterColour(0.5 * (eyeY + positionWS.y));
+}
+
+// URP's MixFog, with the column's colour in place of the one flat fog colour. Every surface
+// that mixes towards the fog (a body, the bed, the ceiling) goes through this; the additive
+// things (the snow, the shafts) fade towards nothing and never did mix.
+float3 EvoMixFog(float3 colour, float fogFactor, float3 positionWS)
+{
+    return MixFogColor(colour, EvoWaterColourAlong(positionWS), fogFactor);
 }
 
 // The wave field: how high the water stands over a point, how it tilts there, and how it curves.
@@ -367,10 +423,19 @@ float3 EvoCarveOffset(float seed)
 // (TheatrePalette): a producer is more lobed, a stomach more wrinkled, a structural part
 // smoother. The sum is normalised by the gains, so changing the character changes the shape of
 // the carve and never its depth, which is the one number the size bound is stated in.
-float EvoCarve(float3 p, float seed, float lobeGain, float wrinkleGain, out float3 gradient)
+// How many more wrinkles a big part carries than a small one (the look's design pass, D5):
+// one at eight centimetres and below, rising as the square root of the smallest half extent
+// to three at seventy two, so a metre-long body is not a hand-sized one inflated. The lobes
+// stay at the part's own size, because a lobe is the part's shape and a wrinkle is its skin.
+float EvoCarveDetail(float smallestHalfMetres)
+{
+    return clamp(sqrt(smallestHalfMetres / 0.08), 1.0, 3.0);
+}
+
+float EvoCarve(float3 p, float seed, float lobeGain, float wrinkleGain, float detail, out float3 gradient)
 {
     const float lobeCycles = 1.8;
-    const float wrinkleCycles = 5.0 * lobeCycles;
+    float wrinkleCycles = 5.0 * lobeCycles * detail;
 
     float3 offset = EvoCarveOffset(seed);
 

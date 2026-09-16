@@ -62,6 +62,42 @@ namespace Evosim.Theatre
         /// <summary>Flat ambient. Low, because the dark field is the whole look.</summary>
         public Color Ambient = new Color(0.020f, 0.038f, 0.046f);
 
+        /// <summary>
+        /// The lit water at the waterline (2026-09-16, the look's design pass, R1). The water is
+        /// this at the surface and falls by e-folds of <see cref="WaterReachMetres"/> to
+        /// <see cref="Water"/>; every surface's fog mixes towards the column's colour at the
+        /// height it is seen through, the backdrop paints the same column, and the ambient is
+        /// graded from it (sky) to the deep (ground), so a body is lit a little from above the
+        /// way a thing in water is. <c>EVOSIM_THEATRE_SHALLOW</c> scales it (0 to 3, default 1)
+        /// and <c>EVOSIM_THEATRE_LIT_WATER=0</c> turns the whole of it off, which is the flat
+        /// field the theatre had before.
+        /// </summary>
+        // An sRGB value like every other colour here. The first pictures (2026-09-16) went up
+        // unconverted and turned the whole box one bright teal; at this value, converted, the
+        // field is still dark and the top of the water is lit only by comparison with the deep.
+        public Color Shallow = new Color(0.09f, 0.26f, 0.32f);
+        public float ShallowGain = Dial("EVOSIM_THEATRE_SHALLOW", 1f, 0f, 3f);
+        public bool LitWater = Dial("EVOSIM_THEATRE_LIT_WATER", 1f, 0f, 1f) >= 0.5f;
+
+        /// <summary>
+        /// Metres over which the lit water falls to the deep. 0, the default, takes
+        /// <see cref="SurfaceLightMetres"/>, so the water darkens where the caustics and the
+        /// shafts give out. <c>EVOSIM_THEATRE_WATER_REACH</c>.
+        /// </summary>
+        public float WaterReachMetres = Dial("EVOSIM_THEATRE_WATER_REACH", 0f, 0f, 200f);
+
+        /// <summary>
+        /// The key's and the fill's strength. 3.0 and 0.8 from the linear colour space
+        /// (2026-09-16): the same numbers that lit a body's face to 0.6 in gamma space light it
+        /// to 0.15 in linear, and the dark field wants the body bright against the dark, not
+        /// dark in it. <c>EVOSIM_THEATRE_KEY</c>, <c>EVOSIM_THEATRE_FILL</c>.
+        /// </summary>
+        public float KeyIntensity = Dial("EVOSIM_THEATRE_KEY", 3.0f, 0f, 12f);
+        public float FillIntensity = Dial("EVOSIM_THEATRE_FILL", 0.8f, 0f, 12f);
+
+        /// <summary>The lit water's colour as pushed: the shallow scaled, or the deep with it off.</summary>
+        public Color ShallowAsLit => LitWater ? Shallow * ShallowGain : Water;
+
         // ---------------------------------------------------------------- the carve
 
         /// <summary>
@@ -132,6 +168,24 @@ namespace Evosim.Theatre
         /// </para>
         /// </remarks>
         public float BendFraction = Dial("EVOSIM_THEATRE_BEND", 0.15f, 0f, 0.4f);
+
+        /// <summary>
+        /// Points the key and the fill from wherever the viewer now looks, keeping the offsets
+        /// <see cref="Apply"/> chose. Until 2026-09-16 the two were placed once from the fly
+        /// camera's starting rotation and never moved, so five of the six snapshot views and
+        /// every flight around a body were lit by the fill (the look's design pass,
+        /// <c>logbook/specs/striking-theatre-menu.md</c>). The runner calls this every frame
+        /// with the fly camera; the snapshot camera calls it around each render and puts the
+        /// previous bearing back, so two pictures of one second are lit the same way.
+        /// </summary>
+        /// <returns>The bearing the lights had, for putting back.</returns>
+        public Quaternion Aim(Quaternion behind)
+        {
+            Quaternion was = _key != null ? _key.transform.rotation * Quaternion.Inverse(KeyOffset) : Quaternion.identity;
+            if (_key != null) _key.transform.rotation = behind * KeyOffset;
+            if (_fill != null) _fill.transform.rotation = behind * FillOffset;
+            return was;
+        }
 
         // ---------------------------------------------------------------- the sea above
 
@@ -280,6 +334,13 @@ namespace Evosim.Theatre
         private GameObject _root;
         private Light _key;
         private Light _fill;
+
+        /// <summary>The one skin in the scene, for a camera that renders after it (the snapshot's).</summary>
+        public static TheatreSkin Current { get; private set; }
+
+        /// <summary>The key's and fill's offsets from the viewer's rotation, as <see cref="Apply"/> set them.</summary>
+        private static readonly Quaternion KeyOffset = Quaternion.Euler(38f, -26f, 0f);
+        private static readonly Quaternion FillOffset = Quaternion.Euler(-14f, 168f, 0f);
         private GameObject _bed;
         private GameObject _surface;
         private GameObject _shafts;
@@ -291,6 +352,10 @@ namespace Evosim.Theatre
         private Material _snowMaterial;
         private Material _surfaceMaterial;
         private Material _shaftMaterial;
+        private Material _backdropMaterial;
+
+        /// <summary>The waterline's height, from the last box dressed; zero until then, as in every recording.</summary>
+        private float _waterlineY;
 
         /// <summary>Unit, pointing at the sun from the water. See <see cref="ResolveSun"/>.</summary>
         private Vector3 _sun = new Vector3(0.28f, 0.92f, 0.27f);
@@ -305,6 +370,10 @@ namespace Evosim.Theatre
         private float _fogDensityWas;
         private AmbientMode _ambientModeWas;
         private Color _ambientWas;
+        private Color _ambientSkyWas;
+        private Color _ambientEquatorWas;
+        private Color _ambientGroundWas;
+        private Material _skyboxWas;
 
         /// <summary>The one material every body renderer is painted with.</summary>
         public Material BodyMaterial => _body != null ? _body : (_body = MakeBodyMaterial());
@@ -335,19 +404,37 @@ namespace Evosim.Theatre
             RenderSettings.fogColor = Water;
             RenderSettings.fogDensity = FogDensity;
 
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = Ambient;
+            // The ambient is the water column: the lit water from above, the deep from below,
+            // the flat ambient between. Low still, because the dark field is the whole look; but
+            // graded, so the top of a body is a little brighter than its underside the way a
+            // thing in water is (2026-09-16). Flat, as it was, with the lit water off.
+            if (LitWater)
+            {
+                RenderSettings.ambientMode = AmbientMode.Trilight;
+                RenderSettings.ambientSkyColor = ShallowAsLit * 0.9f;
+                RenderSettings.ambientEquatorColor = Ambient;
+                RenderSettings.ambientGroundColor = Water;
+            }
+            else
+            {
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = Ambient;
+            }
+
             RenderSettings.ambientIntensity = 1f;
 
-            // No skybox. The water has no sky in it, and a default skybox would light every body
-            // from every direction, which is the opposite of a dark field.
-            RenderSettings.skybox = null;
+            // The backdrop is the water column painted by the direction of the look
+            // (TheatreBackdrop.shader), in place of the one flat colour the camera cleared to
+            // until 2026-09-16. It lights nothing: the ambient above is set by hand, not from
+            // it, so a body is not lit from every direction the way a default skybox would.
+            if (_backdropMaterial == null) _backdropMaterial = MakeBackdropMaterial();
+            RenderSettings.skybox = _backdropMaterial;
 
             if (viewCamera == null) viewCamera = Camera.main;
 
             if (viewCamera != null)
             {
-                viewCamera.clearFlags = CameraClearFlags.SolidColor;
+                viewCamera.clearFlags = _backdropMaterial != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
                 viewCamera.backgroundColor = Water;
             }
 
@@ -359,20 +446,22 @@ namespace Evosim.Theatre
 
             // The key: down and forward from where the viewer stands, so it rakes across a body
             // rather than facing it. A light from the camera's own axis flattens everything.
+            Current = this;
+
             _key = MakeLight(
                 "Theatre Key",
-                behind * Quaternion.Euler(38f, -26f, 0f),
+                behind * KeyOffset,
                 new Color(0.86f, 0.94f, 1.0f),
-                2.1f,
+                KeyIntensity,
                 LightShadows.None);
 
             // The fill: weak, cold, from the other side, so the far side of a body is dark rather
             // than lost. The note's own wording.
             _fill = MakeLight(
                 "Theatre Fill",
-                behind * Quaternion.Euler(-14f, 168f, 0f),
+                behind * FillOffset,
                 new Color(0.30f, 0.52f, 0.68f),
-                0.55f,
+                FillIntensity,
                 LightShadows.None);
 
             // The sea, told to every shader that draws any of it, now that there is a light for
@@ -418,6 +507,18 @@ namespace Evosim.Theatre
 
             Shader.SetGlobalVector("_EvoSun", _sun);
             Shader.SetGlobalVector("_EvoSunRay", _sunRay);
+
+            // The water column (TheatreWater.hlsl, EvoWaterColour): the lit top water and how far
+            // down it reaches, for every surface's fog, the backdrop and the ambient.
+            float reach = WaterReachMetres > 0.01f ? WaterReachMetres : Mathf.Clamp(SurfaceLightMetres, 1f, 60f);
+
+            Shader.SetGlobalVector("_EvoWaterColumn", new Vector4(_waterlineY, reach, LitWater ? 1f : 0f, 1f));
+            // Converted here: a global colour is handed to the shader as it is, where a material
+            // colour and a render setting are converted from sRGB by the engine in a linear
+            // project. The first lit-water pictures (2026-09-16) were five times too bright
+            // because these two went up unconverted.
+            Shader.SetGlobalColor("_EvoWaterDeep", Water.linear);
+            Shader.SetGlobalColor("_EvoWaterShallow", ShallowAsLit.linear);
         }
 
         /// <summary>
@@ -594,6 +695,7 @@ namespace Evosim.Theatre
 
             Vector3 min = box.min;
             Vector3 size = box.size;
+            _waterlineY = min.y + size.y;
 
             // Again here, because the sea's dials are public fields a caller can set between
             // constructing the skin and dressing a run, and because the shafts below are built
@@ -1203,6 +1305,7 @@ namespace Evosim.Theatre
         /// </summary>
         public void Dispose()
         {
+            if (Current == this) Current = null;
             Undress();
 
             Discard(_root);
@@ -1216,6 +1319,7 @@ namespace Evosim.Theatre
             Discard(_snowMaterial); _snowMaterial = null;
             Discard(_surfaceMaterial); _surfaceMaterial = null;
             Discard(_shaftMaterial); _shaftMaterial = null;
+            Discard(_backdropMaterial); _backdropMaterial = null;
 
             TheatreMeshes.Release();
 
@@ -1259,6 +1363,21 @@ namespace Evosim.Theatre
             material.SetFloat("_CausticReach", Mathf.Clamp(SurfaceLightMetres, 1f, 60f));
 
             return material;
+        }
+
+        /// <summary>
+        /// The body material with its three outline dials on or off: off for the raw shapes
+        /// (<see cref="TheatrePalette.RawShapes"/>), so a primitive drawn with it is the
+        /// collider and nothing else.
+        /// </summary>
+        public void ShowRawShapes(bool raw)
+        {
+            Material material = BodyMaterial;
+            if (material == null) return;
+
+            material.SetFloat("_CarveFraction", raw ? 0f : Mathf.Clamp(CarveFraction, 0f, 0.5f));
+            material.SetFloat("_TaperFraction", raw ? 0f : Mathf.Clamp(TaperFraction, 0f, 0.8f));
+            material.SetFloat("_BendFraction", raw ? 0f : Mathf.Clamp(BendFraction, 0f, 0.4f));
         }
 
         private Material MakeNeckMaterial()
@@ -1308,6 +1427,18 @@ namespace Evosim.Theatre
         /// ceiling at all: a viewer would read it as the surface and take its flatness for the
         /// water's. A missing shader leaves the world as it was on the third day.
         /// </remarks>
+        private Material MakeBackdropMaterial()
+        {
+            Shader shader = Shader.Find("Evosim/Theatre Backdrop");
+            if (shader == null) return null;
+
+            return new Material(shader)
+            {
+                name = "Theatre Backdrop",
+                hideFlags = HideFlags.HideAndDontSave,
+            };
+        }
+
         private Material MakeSurfaceMaterial()
         {
             Shader shader = Shader.Find("Evosim/Theatre Surface");
@@ -1364,6 +1495,10 @@ namespace Evosim.Theatre
             _fogDensityWas = RenderSettings.fogDensity;
             _ambientModeWas = RenderSettings.ambientMode;
             _ambientWas = RenderSettings.ambientLight;
+            _ambientSkyWas = RenderSettings.ambientSkyColor;
+            _ambientEquatorWas = RenderSettings.ambientEquatorColor;
+            _ambientGroundWas = RenderSettings.ambientGroundColor;
+            _skyboxWas = RenderSettings.skybox;
             _fogSaved = true;
         }
 
@@ -1377,6 +1512,10 @@ namespace Evosim.Theatre
             RenderSettings.fogDensity = _fogDensityWas;
             RenderSettings.ambientMode = _ambientModeWas;
             RenderSettings.ambientLight = _ambientWas;
+            RenderSettings.ambientSkyColor = _ambientSkyWas;
+            RenderSettings.ambientEquatorColor = _ambientEquatorWas;
+            RenderSettings.ambientGroundColor = _ambientGroundWas;
+            RenderSettings.skybox = _skyboxWas;
             _fogSaved = false;
         }
 

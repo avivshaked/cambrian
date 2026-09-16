@@ -151,14 +151,61 @@ namespace Evosim.Theatre
 
         private const int CylinderCapRings = 5;
 
-        private static Mesh _cube;
+        /// <summary>
+        /// The rounding a near-cubic box keeps, as a fraction of <see cref="Pillow"/>. A slab or a
+        /// rod is rounded by the whole pillow; a box whose three sides are nearly equal is
+        /// rounded by this much of it, because a cube with a third of each half eaten by fillets
+        /// reads as a ball, and a ball is a different part (the owner's observation of
+        /// 2026-09-13, HANDOFF item 11; built in the look's pass, 2026-09-16).
+        /// <c>EVOSIM_THEATRE_CUBE_PILLOW</c>, 0 to 1, default 0.35.
+        /// </summary>
+        public static readonly float CubePillowFraction =
+            TheatreSkin.Dial("EVOSIM_THEATRE_CUBE_PILLOW", 0.35f, 0f, 1f);
+
+        /// <summary>The cubes, one per rounding bucket (<see cref="PillowFor"/>).</summary>
+        private static readonly Dictionary<int, Mesh> _cubes = new Dictionary<int, Mesh>();
         private static Mesh _sphere;
         private static Mesh _cylinder;
 
         /// <summary>
-        /// A unit cube of side one, rounded, inset, centred on the origin. Replaces Unity's Cube.
+        /// A unit cube of side one, rounded by the whole pillow, inset, centred on the origin.
+        /// Replaces Unity's Cube for a part that is not near-cubic.
         /// </summary>
-        public static Mesh RoundedCube() => _cube != null ? _cube : (_cube = BuildRoundedCube());
+        public static Mesh RoundedCube() => RoundedCube(Pillow);
+
+        /// <summary>The same cube rounded by a given fraction of its half, built once per bucket.</summary>
+        public static Mesh RoundedCube(float pillow)
+        {
+            int bucket = Bucket(pillow);
+            if (_cubes.TryGetValue(bucket, out Mesh cube) && cube != null) return cube;
+
+            cube = BuildRoundedCube(bucket / 100f);
+            _cubes[bucket] = cube;
+            return cube;
+        }
+
+        /// <summary>
+        /// The rounding for a box by how cubic it is: its smallest half extent over its largest,
+        /// one for a cube and towards zero for a slab or a rod. The full pillow up to 0.55, the
+        /// capped one from 0.85, a straight blend between. The ratio does not change as a body
+        /// grows, so the mesh chosen at birth is the mesh for life.
+        /// </summary>
+        public static float PillowFor(float cubicness)
+        {
+            float t = Mathf.Clamp01((cubicness - 0.55f) / 0.30f);
+            return Pillow * Mathf.Lerp(1f, CubePillowFraction, t);
+        }
+
+        /// <summary>Whole percents, so the blend above makes a handful of meshes and not one per body.</summary>
+        private static int Bucket(float pillow) => Mathf.Clamp(Mathf.RoundToInt(pillow * 100f / 4f) * 4, 0, 50);
+
+        /// <summary>True for any cube this class built, whatever its rounding.</summary>
+        public static bool IsRoundedCube(Mesh mesh)
+        {
+            if (mesh == null) return false;
+            foreach (Mesh cube in _cubes.Values) if (cube == mesh) return true;
+            return false;
+        }
 
         /// <summary>A unit sphere of diameter one, smooth, inset. Replaces Unity's Sphere.</summary>
         public static Mesh Sphere() => _sphere != null ? _sphere : (_sphere = BuildSphere());
@@ -181,23 +228,51 @@ namespace Evosim.Theatre
         /// else is left alone, so a part drawn with something new goes on being drawn with it
         /// rather than being silently replaced by a cube.
         /// </remarks>
-        public static Mesh RoundedFor(Mesh primitive)
+        public static Mesh RoundedFor(Mesh primitive) => RoundedFor(primitive, 0f);
+
+        /// <summary>
+        /// The same, with the part's cubicness (<see cref="PillowFor"/>) choosing the cube's
+        /// rounding. A cube this class already built is re-bucketed, so a body dressed again
+        /// after the raw shapes were shown gets the right cube back.
+        /// </summary>
+        public static Mesh RoundedFor(Mesh primitive, float cubicness)
         {
             if (primitive == null) return null;
+            if (IsRoundedCube(primitive)) return RoundedCube(PillowFor(cubicness));
 
             switch (primitive.name)
             {
-                case "Cube": return RoundedCube();
+                case "Cube": return RoundedCube(PillowFor(cubicness));
                 case "Sphere": return Sphere();
                 case "Cylinder": return Cylinder();
                 default: return null;
             }
         }
 
+        /// <summary>
+        /// The engine's own primitive for one of this class's meshes, for the raw-shapes key:
+        /// the collider's shape, drawn as the physics has it, with no rounding, carve, taper or
+        /// bend. Null for a mesh this class did not make.
+        /// </summary>
+        public static Mesh PrimitiveFor(Mesh rounded)
+        {
+            if (rounded == null) return null;
+            if (IsRoundedCube(rounded) || rounded.name == "Cube") return Resources.GetBuiltinResource<Mesh>("Cube.fbx");
+            if (rounded == _sphere || rounded.name == "Sphere") return Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
+            if (rounded == _cylinder || rounded.name == "Cylinder") return Resources.GetBuiltinResource<Mesh>("Cylinder.fbx");
+            return null;
+        }
+
         /// <summary>Drops the generated meshes. Called when the theatre closes.</summary>
         public static void Release()
         {
-            Discard(ref _cube);
+            foreach (int bucket in new List<int>(_cubes.Keys))
+            {
+                Mesh cube = _cubes[bucket];
+                Discard(ref cube);
+            }
+
+            _cubes.Clear();
             Discard(ref _sphere);
             Discard(ref _cylinder);
         }
@@ -214,10 +289,10 @@ namespace Evosim.Theatre
 
         // ---------------------------------------------------------------- the cube
 
-        private static Mesh BuildRoundedCube()
+        private static Mesh BuildRoundedCube(float pillow)
         {
             float half = 0.5f * Inset;
-            float radius = Pillow * half;
+            float radius = Mathf.Clamp(pillow, 0f, 0.5f) * half;
             float flat = half - radius;
 
             var vertices = new List<Vector3>();

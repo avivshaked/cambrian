@@ -225,6 +225,17 @@ namespace Evosim.Theatre
         private readonly int _height;
         private readonly RenderTexture _target;
         private readonly Texture2D _readback;
+
+        /// <summary>
+        /// How many rendered pixels make one output pixel on each axis: the picture is rendered
+        /// at this multiple and box-filtered down in the readback, which is the one anti-aliasing
+        /// that survives <c>-batchmode</c> without a graphics-side pass (2026-09-16).
+        /// <c>EVOSIM_THEATRE_SUPERSAMPLE</c>, 1 to 3, default 2.
+        /// </summary>
+        public static int Supersample => Mathf.Clamp(Mathf.RoundToInt(TheatreSkin.Dial("EVOSIM_THEATRE_SUPERSAMPLE", 2f, 1f, 3f)), 1, 3);
+
+        private readonly int _super;
+        private readonly Texture2D _readbackFull;
         private readonly GameObject _holder;
         private readonly Camera _camera;
 
@@ -238,13 +249,19 @@ namespace Evosim.Theatre
             _width = Mathf.Clamp(width, 64, MaximumSide);
             _height = Mathf.Clamp(height, 64, MaximumSide);
 
-            _target = new RenderTexture(_width, _height, 24, RenderTextureFormat.ARGB32)
+            _super = Supersample;
+            while (_super > 1 && Mathf.Max(_width, _height) * _super > 2 * MaximumSide) _super--;
+
+            _target = new RenderTexture(_width * _super, _height * _super, 24, RenderTextureFormat.ARGB32)
             {
                 name = "Theatre Snapshot",
                 antiAliasing = 1,
             };
 
             _readback = new Texture2D(_width, _height, TextureFormat.RGBA32, false);
+            _readbackFull = _super > 1
+                ? new Texture2D(_width * _super, _height * _super, TextureFormat.RGBA32, false)
+                : _readback;
 
             // Hidden and not saved: this camera belongs to one call and must never be caught by
             // a scene save or turn up in the hierarchy the owner is flying around in.
@@ -260,6 +277,7 @@ namespace Evosim.Theatre
             _camera.farClipPlane = 8000f;
             _camera.targetTexture = _target;
             _camera.cullingMask = ~0;
+            TheatreGrade.Attach(_camera);
 
             // Disabled, because this camera renders when it is asked to and never once a frame.
             // An enabled second camera would render the whole world every frame of a run that
@@ -278,10 +296,13 @@ namespace Evosim.Theatre
 
             if (string.IsNullOrWhiteSpace(text))
             {
-                // Close and sky are not in the default set. Each answers a different question
-                // from the other four and takes a picture nobody asked for whenever a caller
-                // wants a census, so each is named or it is not taken.
-                return new[] { View.Side, View.End, View.Top, View.Iso };
+                // Close and bed are not in the default set: each answers a different question
+                // from the census views and takes a picture nobody asked for whenever a caller
+                // wants a census, so each is named or it is not taken. The sky view joined the
+                // set on 2026-09-16 (the look's design pass read it as the most striking frame
+                // in the archive, and nobody had judged it): it costs one render and moves no
+                // census frame.
+                return new[] { View.Side, View.End, View.Top, View.Iso, View.Sky };
             }
 
             string[] words = text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
@@ -341,7 +362,10 @@ namespace Evosim.Theatre
 
             Frame(view, framed);
 
+            // The water column behind everything when the skin built one (TheatreBackdrop.shader),
+            // the flat deep colour otherwise: the same choice the fly camera makes in Apply.
             _camera.backgroundColor = Water;
+            _camera.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
 
             List<WaterBounds> silenced = SilenceTheWater();
             List<Renderer> hidden = HideWhatOnlyTheWaterSees(view);
@@ -349,8 +373,20 @@ namespace Evosim.Theatre
             // The fog is framed on what is being looked at rather than on the box. In the close
             // view that is the point: a few metres of water put the rest of the world into the
             // background where it belongs, which is the dark field arrangement done with depth.
-            Fog saved = FrameTheFog(framed);
-            Light rake = view == View.Bed ? RakeTheFloor() : null;
+            Fog saved = FrameTheFog(framed, view);
+            Light rake = view == View.Bed ? RakeTheFloor() : view == View.Close ? BackLight() : null;
+
+            // A portrait is focused on its subject and nothing else: the crowd in front and
+            // behind falls into the lens's own blur on top of the fog's (the look's design pass,
+            // F1). A census view is never focused, since a diagram in focus everywhere is the
+            // point of a diagram.
+            TheatreGrade grade = view == View.Close ? TheatreGrade.Current : null;
+            if (grade != null) grade.Focus(Vector3.Distance(_camera.transform.position, framed.center), 5.6f);
+
+            // The key rakes from behind this camera for this render, and goes back after, so a
+            // picture of one second is lit the same way whichever view was taken before it.
+            TheatreSkin skin = TheatreSkin.Current;
+            Quaternion lightsWere = skin != null ? skin.Aim(_camera.transform.rotation) : Quaternion.identity;
 
             try
             {
@@ -359,6 +395,8 @@ namespace Evosim.Theatre
             finally
             {
                 saved.Restore();
+                if (grade != null) grade.Unfocus();
+                if (skin != null) skin.Aim(lightsWere);
                 if (rake != null) UnityEngine.Object.DestroyImmediate(rake.gameObject);
                 for (int i = 0; i < silenced.Count; i++) silenced[i].enabled = true;
                 for (int i = 0; i < hidden.Count; i++) hidden[i].enabled = true;
@@ -369,14 +407,14 @@ namespace Evosim.Theatre
 
             try
             {
-                _readback.ReadPixels(new Rect(0f, 0f, _width, _height), 0, 0, false);
+                _readbackFull.ReadPixels(new Rect(0f, 0f, _width * _super, _height * _super), 0, 0, false);
             }
             finally
             {
                 RenderTexture.active = active;
             }
 
-            _pixels = _readback.GetPixels32();
+            _pixels = _super > 1 ? BoxDown(_readbackFull.GetPixels32(), _super) : _readbackFull.GetPixels32();
 
             // Neither the close view nor the sky view carries the box. The close view's frame cuts
             // the water's edges at odd angles, and the sky view stands inside the box looking up,
@@ -450,11 +488,18 @@ namespace Evosim.Theatre
         /// body's light at the back wall whatever the box's size. The look is the same look; only
         /// the depth it is measured over follows the frame.
         /// </remarks>
-        private Fog FrameTheFog(Bounds box)
+        private Fog FrameTheFog(Bounds box, View view)
         {
             Fog saved = Fog.Save();
 
             if (!RenderSettings.fog) return saved;
+
+            // A portrait is taken in the water the theatre shows a viewer, at the scene's own
+            // density: a few metres of it is nearly clear. The 1.54 spans below were chosen for
+            // a census view of near-black water, and over the two metres of a close view they
+            // fogged the subject a third of the way into the water; once the water was lit
+            // (2026-09-16) that read as a body dissolving into teal.
+            if (view == View.Close) return saved;
 
             Vector3 eye = _camera.transform.position;
             Vector3 forward = _camera.transform.forward;
@@ -862,6 +907,29 @@ namespace Evosim.Theatre
         /// additional lights, so a second directional light lifts it without touching the
         /// bodies' skin more than a fill would. Theatre only, no hash moves.
         /// </summary>
+        /// <summary>
+        /// The third light of a portrait: behind and above the subject, shining towards the
+        /// camera, so a body's edge is lit against the dark and a translucent part glows
+        /// through (the look's design pass, B2; the dark-field idea done properly rather than a
+        /// third front light). Destroyed after the render. Weaker than the key on purpose,
+        /// so URP keeps the key as the main light and the sun stays where the skin put it.
+        /// <c>EVOSIM_THEATRE_BACK</c>, default 2.4.
+        /// </summary>
+        private Light BackLight()
+        {
+            var holder = new GameObject("Theatre Back Light") { hideFlags = HideFlags.HideAndDontSave };
+            Vector3 towardsCamera = -_camera.transform.forward;
+            holder.transform.rotation = Quaternion.LookRotation(
+                (towardsCamera + Vector3.down * 0.45f).normalized, Vector3.up);
+
+            var light = holder.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.color = new Color(0.55f, 0.85f, 1f);
+            light.intensity = TheatreSkin.Dial("EVOSIM_THEATRE_BACK", 2.4f, 0f, 12f);
+            light.shadows = LightShadows.None;
+            return light;
+        }
+
         private Light RakeTheFloor()
         {
             var holder = new GameObject("Theatre Bed Rake") { hideFlags = HideFlags.HideAndDontSave };
@@ -869,7 +937,9 @@ namespace Evosim.Theatre
             var light = holder.AddComponent<Light>();
             light.type = LightType.Directional;
             light.color = new Color(0.9f, 0.95f, 1f);
-            light.intensity = 4f;
+            // 7 in linear colour space (2026-09-16), where the 4 that lit the sand's greys in
+            // gamma space left the floor a dark slab with no relief in it.
+            light.intensity = 7f;
             light.shadows = LightShadows.None;
             return light;
         }
@@ -1269,7 +1339,7 @@ namespace Evosim.Theatre
                     continue;
                 }
 
-                Vector3 screen = _camera.WorldToScreenPoint(world);
+                Vector3 screen = Project(world);
 
                 if (screen.z <= 0f ||
                     screen.x < 0f || screen.x >= _width ||
@@ -1337,10 +1407,45 @@ namespace Evosim.Theatre
                 ? ""
                 : "  NOT A FAITHFUL REPLAY";
 
+            string look = TheatreGrade.Current != null ? TheatreGrade.Current.LabelToken : "look 1";
+
             return string.Format(
                 CultureInfo.InvariantCulture,
-                "{0}  t={1:0.#}s  alive {2}  {3}{4}",
-                arm, replay.Census.T, replay.Census.Alive, NameOf(view), faithful);
+                "{0}  t={1:0.#}s  alive {2}  {3}  {5}{4}",
+                arm, replay.Census.T, replay.Census.Alive, NameOf(view), faithful, look);
+        }
+
+        /// <summary>
+        /// The rendered pixels box-filtered down by <paramref name="factor"/> on each axis, in
+        /// the readback's own bottom-up order, so the markers and the label stamp into output
+        /// pixels as they always did.
+        /// </summary>
+        private Color32[] BoxDown(Color32[] full, int factor)
+        {
+            int wide = _width * factor;
+            var down = new Color32[_width * _height];
+            int n = factor * factor;
+
+            for (int y = 0; y < _height; y++)
+            {
+                for (int x = 0; x < _width; x++)
+                {
+                    int r = 0, g = 0, b = 0;
+                    for (int dy = 0; dy < factor; dy++)
+                    {
+                        int row = (y * factor + dy) * wide + x * factor;
+                        for (int dx = 0; dx < factor; dx++)
+                        {
+                            Color32 c = full[row + dx];
+                            r += c.r; g += c.g; b += c.b;
+                        }
+                    }
+
+                    down[y * _width + x] = new Color32((byte)(r / n), (byte)(g / n), (byte)(b / n), 255);
+                }
+            }
+
+            return down;
         }
 
         // ---------------------------------------------------------------- pixels
@@ -1369,11 +1474,25 @@ namespace Evosim.Theatre
             }
         }
 
+        /// <summary>
+        /// A world point in output pixels. The camera renders at <c>_super</c> times the output
+        /// on each axis, so its own screen coordinates are that many times too large for the
+        /// pixel array the markers stamp into (the first supersampled side view, 2026-09-16,
+        /// drew a quarter of the box at twice the size).
+        /// </summary>
+        private Vector3 Project(Vector3 world)
+        {
+            Vector3 screen = _camera.WorldToScreenPoint(world);
+            screen.x /= _super;
+            screen.y /= _super;
+            return screen;
+        }
+
         /// <summary>A world-space segment, projected and drawn one pixel wide.</summary>
         private void Line(Vector3 from, Vector3 to, Color32 colour)
         {
-            Vector3 a = _camera.WorldToScreenPoint(from);
-            Vector3 b = _camera.WorldToScreenPoint(to);
+            Vector3 a = Project(from);
+            Vector3 b = Project(to);
 
             // Behind the camera the projection folds the point through the origin, which draws a
             // line across the whole picture that is not in the world. Dropped rather than
@@ -1544,6 +1663,7 @@ namespace Evosim.Theatre
 
             Discard(_holder);
             Discard(_target);
+            if (_readbackFull != _readback) Discard(_readbackFull);
             Discard(_readback);
         }
 

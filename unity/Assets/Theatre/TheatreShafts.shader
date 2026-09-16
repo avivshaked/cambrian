@@ -67,6 +67,7 @@ Shader "Evosim/Theatre Shafts"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "TheatreWater.hlsl"
+            #include "TheatreDepth.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _ShaftColor;
@@ -93,6 +94,7 @@ Shader "Evosim/Theatre Shafts"
                 float2 uv         : TEXCOORD2;
                 float4 shaft      : TEXCOORD3;
                 float fogFactor   : TEXCOORD4;
+                float eyeDepth    : TEXCOORD5;
             };
 
             Varyings Vertex(Attributes input)
@@ -107,6 +109,7 @@ Shader "Evosim/Theatre Shafts"
                 output.shaft = input.shaft;
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.fogFactor = ComputeFogFactor(output.positionCS.z);
+                output.eyeDepth = -TransformWorldToView(positionWS).z;
 
                 return output;
             }
@@ -138,6 +141,12 @@ Shader "Evosim/Theatre Shafts"
 
                 float alpha = _ShaftStrength * input.shaft.z * gain *
                               across * along * depth * square * inside;
+
+                // Softened over a metre and a half of water against whatever is behind the beam,
+                // so a shaft crossing a body fades into it rather than stopping at its edge, the
+                // one tell of a card that the edge-on fade above does not cover (the design
+                // pass, C1b).
+                alpha *= EvoSoftAgainstScene(input.positionCS, input.eyeDepth, 1.5);
 
                 // Faded towards nothing rather than towards the fog colour, for the marine snow's
                 // reason: an additive thing adds nothing once it is far away, and adding the fog

@@ -89,6 +89,14 @@ namespace Evosim.Theatre
         [Tooltip("Simulated seconds per wall-clock second. 1 is real time.")]
         public float Rate = 1f;
 
+        [Tooltip("For filming: hold the pace at or under real time whatever the rate says, so a " +
+                 "recorded frame is one physics step's worth of motion and not forty (the look's " +
+                 "design pass, F4). L toggles it.")]
+        public bool PaceLock;
+
+        /// <summary>The rate the world is actually stepped at: the rate, or one under the lock.</summary>
+        public float EffectiveRate => PaceLock ? Mathf.Min(1f, Rate) : Rate;
+
         [Tooltip("Never spend more than this fraction of a frame stepping, so the Editor stays " +
                  "responsive when the world is larger than the pace can serve.")]
         public float FrameBudgetSeconds = 0.05f;
@@ -143,6 +151,7 @@ namespace Evosim.Theatre
         /// cannot orphan a recording.
         /// </remarks>
         private readonly TheatreSkin _skin = new TheatreSkin();
+        private readonly TheatreGrade _grade = new TheatreGrade();
 
         private string _error;
         private double _pending;
@@ -218,6 +227,8 @@ namespace Evosim.Theatre
 
             _skin.Apply(view);
             _skin.SilenceSceneLights();
+            _grade.Apply();
+            TheatreGrade.Attach(view);
             _palette.Skin = _skin;
 
             _palette.Photosynthetic = PhotosyntheticColour;
@@ -457,6 +468,7 @@ namespace Evosim.Theatre
         /// </remarks>
         private void OnDestroy()
         {
+            _grade.Dispose();
             _skin.Dispose();
             _ui?.Dispose();
             _ui = null;
@@ -472,6 +484,12 @@ namespace Evosim.Theatre
             else if (_solo != null) StepSolo();
 
             DrawTheInterface();
+        }
+
+        /// <summary>The lights follow the viewer: the key rakes from behind wherever the fly camera looks.</summary>
+        private void LateUpdate()
+        {
+            if (FlyCamera != null) _skin.Aim(FlyCamera.transform.rotation);
         }
 
         /// <summary>
@@ -544,7 +562,7 @@ namespace Evosim.Theatre
             }
             else if (!Paused)
             {
-                _pending += Time.unscaledDeltaTime * Mathf.Max(0f, Rate);
+                _pending += Time.unscaledDeltaTime * Mathf.Max(0f, EffectiveRate);
 
                 float dt = _replay.Record.PhysicsDtSeconds;
                 double deadline = wallBefore + Mathf.Max(0.005f, FrameBudgetSeconds);
@@ -574,7 +592,7 @@ namespace Evosim.Theatre
 
             if (!Paused)
             {
-                _pending += Time.unscaledDeltaTime * Mathf.Max(0f, Rate);
+                _pending += Time.unscaledDeltaTime * Mathf.Max(0f, EffectiveRate);
 
                 float dt = Ecosystem.FixedDt;
                 double deadline = wallBefore + Mathf.Max(0.005f, FrameBudgetSeconds);
@@ -725,6 +743,15 @@ namespace Evosim.Theatre
 
             if (Input.GetKeyDown(KeyCode.LeftBracket)) Rate = Mathf.Max(0.05f, Rate * 0.5f);
             if (Input.GetKeyDown(KeyCode.RightBracket)) Rate = Mathf.Min(512f, Rate * 2f);
+            if (Input.GetKeyDown(KeyCode.L)) PaceLock = !PaceLock;
+
+            // X: the collider under the skin. Every body is dressed again on the next paint.
+            if (Input.GetKeyDown(KeyCode.X))
+            {
+                _palette.RawShapes = !_palette.RawShapes;
+                _skin.ShowRawShapes(_palette.RawShapes);
+                _palette.Clear();
+            }
 
             if (Input.GetKeyDown(KeyCode.K) && SeekToSeconds > 0f) BeginSeek(SeekToSeconds);
             if (Input.GetKeyDown(KeyCode.Escape)) Deselect();

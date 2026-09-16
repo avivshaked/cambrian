@@ -3,7 +3,9 @@
     "rootNamespace": "Evosim.Theatre",
     "references": [
         "Evosim.Core",
-        "Evosim.Sim"
+        "Evosim.Sim",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

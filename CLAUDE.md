@@ -71,7 +71,10 @@ Throughput still binds: dt 0.02
 screens, 0.01 confirms (logbook/0052). Experiments are *arms*, launched with
 `scripts/run-arm.ps1` against worker copies `unity-w2`..`unity-w7` — never two processes on
 one worker, at most five concurrent arms, and verify every arm's settings from the header its
-run report writes, not from the launch command.
+run report writes, not from the launch command. The owner's open Editor on `unity/` counts
+toward the five. A **sixth** Unity process is allowed for a short visual check that comes
+and goes (a compile, a render of a few frames; owner's ruling, 2026-09-16), never for an
+arm, and never beside a Core test suite: pictures or tests on top of five, not both.
 
 ## Commands
 
@@ -239,8 +242,9 @@ a skin change replays faithfully in the old skin, and refuses a view it has neve
 renders on 2026-09-10 died in a minute on `'close' is not a view`). Refresh the render worker
 first; `Assets/Evosim` is unchanged by it, so the recording still replays.
 
-Keys: `Space` pause, `[` `]` pace, `K` seek, `C` colour, `F` follow, `R` reload, `H` hide,
-`P` provenance, click to select; fly with `WASD`+`QE`, right-drag to look, wheel for speed.
+Keys: `Space` pause, `[` `]` pace, `L` pace lock (at or under real time, for filming), `K` seek,
+`C` colour, `X` raw shapes (the colliders as the physics has them, no rounding, carve, taper or
+bend), `F` follow, `R` reload, `H` hide, `P` provenance, click to select; fly with `WASD`+`QE`, right-drag to look, wheel for speed.
 `EVOSIM_THEATRE_RUN`, `EVOSIM_THEATRE_GENOME`, `EVOSIM_THEATRE_SEEK` and
 `EVOSIM_THEATRE_OVERRIDE` set the same fields from a script.
 

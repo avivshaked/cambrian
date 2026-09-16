@@ -55,6 +55,7 @@ Shader "Evosim/Theatre Snow"
             #pragma multi_compile_fog
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "TheatreDepth.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _TintColor;
@@ -77,6 +78,7 @@ Shader "Evosim/Theatre Snow"
                 float4 colour     : TEXCOORD1;
                 float fogFactor   : TEXCOORD2;
                 float3 positionWS : TEXCOORD3;
+                float eyeDepth    : TEXCOORD4;
             };
 
             Varyings Vertex(Attributes input)
@@ -90,6 +92,7 @@ Shader "Evosim/Theatre Snow"
                 output.uv = input.uv;
                 output.colour = input.colour;
                 output.fogFactor = ComputeFogFactor(output.positionCS.z);
+                output.eyeDepth = -TransformWorldToView(positionWS).z;
 
                 return output;
             }
@@ -120,6 +123,12 @@ Shader "Evosim/Theatre Snow"
 
                 float4 tint = _TintColor * input.colour;
                 float alpha = a * tint.a;
+
+                // A mote drawn across a body's face is a speck on the body, so it softens
+                // against the scene over a third of a metre; and one at the lens is a blob, so
+                // the first half metre in front of the eye fades in (the design pass, C2).
+                alpha *= EvoSoftAgainstScene(input.positionCS, input.eyeDepth, 0.35);
+                alpha *= saturate((input.eyeDepth - 0.15) / 0.6);
 
                 // Faded towards nothing rather than towards the fog colour: an additive mote adds
                 // nothing once it is far away, and adding the fog colour would build a bright haze

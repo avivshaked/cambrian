@@ -287,7 +287,7 @@ Shader "Evosim/Theatre Bed"
                     lit += _CausticColor.rgb * (net * fade * _CausticStrength) * (0.35 + 0.65 * sand);
                 }
 
-                lit = MixFog(lit, input.fogFactor);
+                lit = EvoMixFog(lit, input.fogFactor, input.positionWS);
 
                 return half4(lit, 1.0);
             }

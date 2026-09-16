@@ -227,7 +227,7 @@ Shader "Evosim/Theatre Surface"
                 float depthFade = lerp(1.0, _DeepFade, saturate(below / reach));
 
                 colour *= _SurfaceBrightness * depthFade;
-                colour = MixFog(colour, input.fogFactor);
+                colour = EvoMixFog(colour, input.fogFactor, input.positionWS);
 
                 return half4(colour, inside);
             }

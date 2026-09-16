@@ -71,8 +71,16 @@ namespace Evosim.Theatre
         /// </remarks>
         public Color Jointed = new Color(0.95f, 0.35f, 0.70f);
 
-        /// <summary>Brightness of a body with nothing left, as a fraction of a sated one.</summary>
-        public float Starving = 0.22f;
+        /// <summary>
+        /// Brightness of a body with nothing left, as a fraction of a sated one. Raised from
+        /// 0.22 to 0.45 on 2026-09-16 (the look's one-day pass): at 0.22 a starving world fell
+        /// off the bottom of the display range, so the reserve now also carries saturation
+        /// (<see cref="StarvingSaturation"/>) and a starving body reads as pale, not as absent.
+        /// </summary>
+        public float Starving = 0.45f;
+
+        /// <summary>Saturation of a body with nothing left, as a fraction of a sated one's.</summary>
+        public float StarvingSaturation = 0.35f;
 
         /// <summary>Saturation cap for the rim, in HSL. See the class remarks.</summary>
         public float RimSaturation = 0.62f;
@@ -106,6 +114,14 @@ namespace Evosim.Theatre
         /// checks that never build a runner still get.
         /// </remarks>
         public TheatreSkin Skin;
+
+        /// <summary>
+        /// Draw every body as the physics has it: the engine's primitives, no rounding, no
+        /// carve, taper or bend. The key X in the theatre (the owner's ask of 2026-09-13, built
+        /// 2026-09-16): a viewer who doubts a picture can see the collider under it. Bodies are
+        /// dressed again on the next paint after it changes (<see cref="Clear"/>).
+        /// </summary>
+        public bool RawShapes;
 
         private sealed class Body
         {
@@ -164,6 +180,8 @@ namespace Evosim.Theatre
         private static readonly int ColorId = Shader.PropertyToID("_Color");
         private static readonly int RimColorId = Shader.PropertyToID("_RimColor");
         private static readonly int ReserveId = Shader.PropertyToID("_Reserve");
+        private static readonly int TransTintId = Shader.PropertyToID("_TransTint");
+        private static readonly int TransGainId = Shader.PropertyToID("_TransGain");
         private static readonly int CarveId = Shader.PropertyToID("_Carve");
         private static readonly int PinchAId = Shader.PropertyToID("_PinchA");
         private static readonly int PinchBId = Shader.PropertyToID("_PinchB");
@@ -228,7 +246,7 @@ namespace Evosim.Theatre
                 Vector4 carve = Character(cellType, seed);
 
                 Set(renderer, guild, brightness, on ? reserve : 1f, on,
-                    carve, body.PinchA[i], body.PinchB[i]);
+                    carve, body.PinchA[i], body.PinchB[i], on ? TransmissionOf(cellType) : 0.4f);
             }
 
             RefreshNecks(body, phenotype, brightness, on ? reserve : 1f, on);
@@ -244,14 +262,20 @@ namespace Evosim.Theatre
         /// </remarks>
         private void Set(
             Renderer renderer, Color guild, float brightness, float reserve, bool on,
-            Vector4 carve, Vector4 pinchA, Vector4 pinchB)
+            Vector4 carve, Vector4 pinchA, Vector4 pinchB, float transmission)
         {
             Color rim = on
                 ? Muted(guild, RimSaturation, RimLightness)
                 : Color.white;
 
+            // The light that comes through the tissue is the guild's hue, a little lighter than
+            // the rim so that a backlit leaf reads as lit rather than as edged.
+            Color through = on
+                ? Muted(guild, RimSaturation, Mathf.Min(0.6f, RimLightness + 0.12f))
+                : Color.white;
+
             Color body = on
-                ? Muted(guild, BodySaturation, BodyLightness)
+                ? Muted(guild, BodySaturation * Mathf.Lerp(StarvingSaturation, 1f, reserve), BodyLightness)
                 : Color.white;
 
             rim *= brightness;
@@ -265,6 +289,8 @@ namespace Evosim.Theatre
             _block.SetColor(ColorId, body);
             _block.SetColor(RimColorId, rim);
             _block.SetFloat(ReserveId, reserve);
+            _block.SetColor(TransTintId, through);
+            _block.SetFloat(TransGainId, transmission);
             _block.SetVector(CarveId, carve);
             _block.SetVector(PinchAId, pinchA);
             _block.SetVector(PinchBId, pinchB);
@@ -366,6 +392,19 @@ namespace Evosim.Theatre
         /// number of parts.
         /// </para>
         /// </remarks>
+        /// <summary>
+        /// How much light a guild's tissue lets through when backlit (the design pass's R2,
+        /// 2026-09-16): a producer is a leaf and glows, an eater is a stomach wall and does not,
+        /// a strut is between. The one place the guild reaches a body's face, and it reaches it
+        /// as light, not as paint.
+        /// </summary>
+        private static float TransmissionOf(string cellTypeId)
+        {
+            if (cellTypeId == CellTypeIds.Photosynthetic) return 1.0f;
+            if (cellTypeId == CellTypeIds.Absorptive) return 0.12f;
+            return 0.4f;
+        }
+
         private static Vector4 Character(string cellTypeId, float seed)
         {
             if (cellTypeId == CellTypeIds.Photosynthetic)
@@ -410,16 +449,32 @@ namespace Evosim.Theatre
                 if (filter == null) continue;
 
                 Mesh mesh = filter.sharedMesh;
-                Mesh rounded = TheatreMeshes.RoundedFor(mesh);
 
-                if (rounded != null) { filter.sharedMesh = rounded; mesh = rounded; }
+                if (RawShapes)
+                {
+                    Mesh primitive = TheatreMeshes.PrimitiveFor(mesh);
+                    if (primitive != null) { filter.sharedMesh = primitive; mesh = primitive; }
+                }
+                else
+                {
+                    // How cubic the part is, from the visual's own scale: the plan sizes a unit
+                    // mesh by its local scale, so the three components are the part's sides.
+                    Vector3 sides = renderer.transform.localScale;
+                    float smallest = Mathf.Min(Mathf.Abs(sides.x), Mathf.Min(Mathf.Abs(sides.y), Mathf.Abs(sides.z)));
+                    float largest = Mathf.Max(Mathf.Abs(sides.x), Mathf.Max(Mathf.Abs(sides.y), Mathf.Abs(sides.z)));
+                    float cubicness = largest > 1e-6f ? smallest / largest : 1f;
+
+                    Mesh rounded = TheatreMeshes.RoundedFor(mesh, cubicness);
+                    if (rounded != null) { filter.sharedMesh = rounded; mesh = rounded; }
+                }
 
                 // Which solid this visual draws, by reference and not by name, so that dressing a
                 // body twice reads the same answer the second time: after the swap the mesh is
-                // one of the three this theatre generated, and RoundedFor would no longer
-                // recognise it by the engine's name for the primitive it replaced.
-                bool isSphere = mesh == TheatreMeshes.Sphere();
-                bool isCylinder = mesh == TheatreMeshes.Cylinder();
+                // one of the solids this theatre generated, and RoundedFor would no longer
+                // recognise it by the engine's name for the primitive it replaced. By name as
+                // well, for the raw shapes.
+                bool isSphere = mesh == TheatreMeshes.Sphere() || mesh.name == "Sphere";
+                bool isCylinder = mesh == TheatreMeshes.Cylinder() || mesh.name == "Cylinder";
 
                 int part = body.Part[i];
                 if (part < 0 || part >= phenotype.PartCount) continue;
@@ -743,7 +798,7 @@ namespace Evosim.Theatre
                 if (renderer != null)
                 {
                     Set(renderer, Jointed, brightness, reserve, true,
-                        new Vector4(0f, 1f, 0f, 0f), Vector4.zero, Vector4.zero);
+                        new Vector4(0f, 1f, 0f, 0f), Vector4.zero, Vector4.zero, 0f);
                 }
             }
         }

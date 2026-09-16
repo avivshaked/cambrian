@@ -48,6 +48,13 @@ Shader "Evosim/Theatre Body"
         _RimColor("Guild rim colour", Color) = (0.34, 0.72, 0.36, 1)
         _Reserve("Reserve fraction, 0 starving to 1 sated", Range(0, 1)) = 1
 
+        // The transmission is the guild's hue at a gain by guild (TheatrePalette): a producer
+        // glows through when backlit, an eater stays opaque, a strut between. The design pass's
+        // second ruling (2026-09-16): the guild reaches the face only as light coming through
+        // the tissue, never as paint on it.
+        _TransTint("Transmission tint, the guild's", Color) = (0.34, 0.72, 0.36, 1)
+        _TransGain("Transmission gain by guild", Range(0, 2)) = 1
+
         [Header(The look)]
         // Wider and softer than the second day's 2.6 and 1.5, by about a third. A Fresnel rim at
         // a high power is a bright line one or two pixels wide at the silhouette, which is the
@@ -160,6 +167,8 @@ Shader "Evosim/Theatre Body"
                 float4 _BaseColor;
                 float4 _RimColor;
                 float _Reserve;
+                float4 _TransTint;
+                float _TransGain;
                 float _RimPower;
                 float _RimStrength;
                 float _GlowStrength;
@@ -397,7 +406,8 @@ Shader "Evosim/Theatre Body"
 
                 float3 unusedGradient;
                 float carve = EvoCarve(
-                    input.positionOS.xyz, _Carve.x, _Carve.y, _Carve.z, unusedGradient);
+                    input.positionOS.xyz, _Carve.x, _Carve.y, _Carve.z,
+                    EvoCarveDetail(smallest), unusedGradient);
 
                 // Along the deformed normal, so the impressions cut into the bent surface rather
                 // than into the box the mesh started as.
@@ -459,8 +469,11 @@ Shader "Evosim/Theatre Body"
             // than over a wrinkle, so its slope is small beside the field's.
             float3 CarvedNormal(float3 normalWS, float3 positionOS, float depth)
             {
+                float3 he = HalfExtentsWS();
+                float smallest = min(he.x, min(he.y, he.z));
+
                 float3 gradientOS;
-                EvoCarve(positionOS, _Carve.x, _Carve.y, _Carve.z, gradientOS);
+                EvoCarve(positionOS, _Carve.x, _Carve.y, _Carve.z, EvoCarveDetail(smallest), gradientOS);
 
                 float3 cx = UNITY_MATRIX_M._m00_m10_m20;
                 float3 cy = UNITY_MATRIX_M._m01_m11_m21;
@@ -531,7 +544,7 @@ Shader "Evosim/Theatre Body"
                 // Key light.
                 Light main = GetMainLight();
                 float3 lit = body * main.color * (Wrapped(n, main.direction) * _KeyGain);
-                lit += body * _TransColor.rgb * Transmission(n, v, main.direction, main.color, thickness);
+                lit += _TransTint.rgb * (_TransGain * Transmission(n, v, main.direction, main.color, thickness));
 
                 // The fill, and any other light in the scene. TheatreSkin puts one weak
                 // directional light opposite the key so the far side of a body is dark rather
@@ -544,7 +557,7 @@ Shader "Evosim/Theatre Body"
                     float3 colour = extra.color * extra.distanceAttenuation;
 
                     lit += body * colour * Wrapped(n, extra.direction);
-                    lit += body * _TransColor.rgb * Transmission(n, v, extra.direction, colour, thickness);
+                    lit += _TransTint.rgb * (_TransGain * Transmission(n, v, extra.direction, colour, thickness));
                 }
                 #endif
 
@@ -581,7 +594,7 @@ Shader "Evosim/Theatre Body"
                     lit += _CausticColor.rgb * (net * fade * saturate(n.y) * _CausticStrength);
                 }
 
-                lit = MixFog(lit, input.fogAndThickness.x);
+                lit = EvoMixFog(lit, input.fogAndThickness.x, input.positionWS);
 
                 return half4(lit, 1.0);
             }

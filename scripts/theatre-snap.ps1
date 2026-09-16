@@ -36,7 +36,7 @@
   Worker number, default 6. Worker 1 is unity/ and is refused.
 
 .PARAMETER Views
-  Any of side, end, top, iso, close, sky. The first four by default. sky looks up from three
+  Any of side, end, top, iso, close, sky, bed. Side, end, top, iso and sky by default. sky looks up from three
   metres under the surface at the box's centre (the skin's fourth day), never by default. side looks along z (length by
   depth), end along x (width by depth), top straight down (length by width), iso from above one
   corner.
@@ -254,6 +254,10 @@ try {
     $arguments = @(
         '-projectPath', $proj, '-batchmode',
         '-executeMethod', 'Evosim.Theatre.EditorTools.TheatreSnapshot.Run',
+        # Four job workers rather than every core: a render is a sixth Editor beside five arms,
+        # and its start-up (the asset scan, the script and shader compiles) is what spins the
+        # machine up. The replay itself is single-threaded. Owner's note, 2026-09-16.
+        '-job-worker-count', '4',
         '-logFile', $log)
 
     $process = Start-Process -FilePath $unity -ArgumentList $arguments -NoNewWindow -PassThru -Wait
