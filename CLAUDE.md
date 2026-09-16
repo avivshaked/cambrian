@@ -842,6 +842,11 @@ actually verifying it.
   first lit-water pictures were five times too bright for exactly that. Every global colour
   takes `.linear` by hand, and the first picture after a new one is the check. The owner's
   open Editor on `unity/` reimports on the flip.
+- **`FindObjectsByType` does not see the skin's furniture.** Every piece of it is created with
+  `HideFlags.DontSave`, and the engine's finders leave such objects out, so the snapshot's
+  inside-only hiding found nothing for six days and the shafts stood in every side view
+  (logbook/0104). A marker on such an object keeps its own list (`TheatreInsideOnly.All`);
+  never look for the theatre's own objects with a finder.
 - **A theatre render is a sixth Editor, and its start-up is the load, not the replay.** The
   asset scan and the script and shader compiles run on every core; three renders in forty
   minutes had the owner hearing the fans. `theatre-snap.ps1` runs the Editor at four job

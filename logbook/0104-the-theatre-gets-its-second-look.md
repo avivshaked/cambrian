@@ -47,6 +47,15 @@ took six renders, and each found something.
 The before-and-after pair went to the owner after the fifth render:
 `images/0104-look1-close.png` against `images/0104-look2-close.png`, and the side views.
 
+A seventh render, of round 39's first seed at 1,500 s with 652 bodies alive, was the first
+crowd on the new look (`images/0104-r39-s1-t1500-close.png`): a shoal of glowing leaves
+with the eaters grey among them, the far ones falling into the lens's blur. It also showed
+the glass standing in the census views, where it is marked as something only the inside of
+the water sees. The marker had never worked. The skin's furniture is created with the
+engine's do-not-save flag, and the engine's object finder leaves such objects out, so the
+shafts had stood in every side view since the day they were built. The marker now keeps a
+list of itself.
+
 ## What the look is now
 
 Every picture from this build carries `look 2` in its label. Setting the grade dial to

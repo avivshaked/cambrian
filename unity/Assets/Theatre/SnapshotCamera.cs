@@ -609,8 +609,12 @@ namespace Evosim.Theatre
 
             if (view == View.Close || view == View.Sky) return hidden;
 
-            foreach (TheatreInsideOnly mark in
-                     UnityEngine.Object.FindObjectsByType<TheatreInsideOnly>(FindObjectsSortMode.None))
+            // From the marker's own list, not the engine's finder: the furniture is created with
+            // HideFlags.DontSave and FindObjectsByType leaves such objects out, which is why the
+            // shafts stood in every side view until 2026-09-16 (TheatreInsideOnly's remarks).
+            var marks = new List<TheatreInsideOnly>(TheatreInsideOnly.All);
+
+            foreach (TheatreInsideOnly mark in marks)
             {
                 if (mark == null) continue;
                 if (bedOnly && mark.gameObject.name != "Theatre Glass") continue;

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Evosim.Theatre
@@ -21,12 +22,30 @@ namespace Evosim.Theatre
     /// break silently.
     /// </para>
     /// <para>
-    /// It carries no state and does nothing. A component that is only ever looked for is the
-    /// cheapest way Unity has of saying what an object is.
+    /// <b>Why it keeps a list of itself.</b> Until 2026-09-16 the snapshot found these with
+    /// <c>FindObjectsByType</c>, and found none: every piece of the skin's furniture is created
+    /// with <c>HideFlags.DontSave</c>, and the engine's finders leave such objects out. The shafts
+    /// had therefore stood in every side view since the fourth day, and the glass (logbook/0104)
+    /// stood in the census views on its first picture. The marker now registers itself when it
+    /// is enabled and leaves when it is disabled, and the snapshot reads the list.
     /// </para>
     /// </remarks>
     [DisallowMultipleComponent]
     public sealed class TheatreInsideOnly : MonoBehaviour
     {
+        private static readonly List<TheatreInsideOnly> Registry = new List<TheatreInsideOnly>();
+
+        /// <summary>Every enabled marker in the scene, in the order they were enabled.</summary>
+        public static IReadOnlyList<TheatreInsideOnly> All => Registry;
+
+        private void OnEnable()
+        {
+            if (!Registry.Contains(this)) Registry.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            Registry.Remove(this);
+        }
     }
 }
