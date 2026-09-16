@@ -60,6 +60,13 @@ namespace Evosim.Theatre
         public float BloomScatter = 0.6f;
         public float VignetteIntensity = TheatreSkin.Dial("EVOSIM_THEATRE_VIGNETTE", 0.22f, 0f, 1f);
 
+        /// <summary>
+        /// Camera motion blur (the look's design pass, F5), for the fly camera and a recording:
+        /// URP's is camera-based, so a snapshot's still camera gets none, and a flight reads as
+        /// film rather than as a strobe. <c>EVOSIM_THEATRE_MOTION_BLUR</c>, 0 off, default 0.3.
+        /// </summary>
+        public float MotionBlurIntensity = TheatreSkin.Dial("EVOSIM_THEATRE_MOTION_BLUR", 0.3f, 0f, 1f);
+
         private GameObject _holder;
         private Volume _volume;
         private VolumeProfile _profile;
@@ -80,6 +87,11 @@ namespace Evosim.Theatre
             _profile = ScriptableObject.CreateInstance<VolumeProfile>();
             _profile.name = "Theatre Grade (built in code)";
             _profile.hideFlags = HideFlags.DontSave;
+
+            var blur = _profile.Add<MotionBlur>(true);
+            blur.intensity.Override(MotionBlurIntensity);
+            blur.quality.Override(MotionBlurQuality.Medium);
+            blur.active = MotionBlurIntensity > 0.001f;
 
             var tone = _profile.Add<Tonemapping>(true);
             tone.mode.Override(TonemappingMode.Neutral);

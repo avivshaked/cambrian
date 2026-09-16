@@ -354,6 +354,10 @@ the background and never handed to a subagent, which cannot wait.
    click to run a safari and a click to record; the tools are built during round 39's
    run, in the owner's Editor and in Core's tests, so they take no worker from the round.
    In order, each spec in front of the owner before its build starts:
+   **The look is built (2026-09-16 afternoon, logbook/0104)**: the one-day and week passes
+   in one day on the owner's ruling, everything below except the Recorder (with the safari)
+   and the genome version of the skin genes (a proposal for a round boundary). Every picture
+   from the build carries `look 2`. The round 39 pictures on it come as the seeds land.
    **Re-pencilled 2026-09-16 morning after the look's design pass**
    (`logbook/specs/striking-theatre-menu.md`, the owner's rulings in it): first **the look**,
    because its pictures are what every later judgement is made from. 16th: the one-day pass

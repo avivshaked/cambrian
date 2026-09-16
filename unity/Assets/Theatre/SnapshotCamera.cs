@@ -602,12 +602,18 @@ namespace Evosim.Theatre
         {
             var hidden = new List<Renderer>(2);
 
-            if (view == View.Close || view == View.Sky || view == View.Bed) return hidden;
+            // The bed view is inside the water and keeps the ceiling and the shafts, but the
+            // glass drew a bright tube around the floor in the first picture with it (2026-09-16)
+            // and the view is a diagram of the floor, so the wall alone goes.
+            bool bedOnly = view == View.Bed;
+
+            if (view == View.Close || view == View.Sky) return hidden;
 
             foreach (TheatreInsideOnly mark in
                      UnityEngine.Object.FindObjectsByType<TheatreInsideOnly>(FindObjectsSortMode.None))
             {
                 if (mark == null) continue;
+                if (bedOnly && mark.gameObject.name != "Theatre Glass") continue;
 
                 var renderer = mark.GetComponent<Renderer>();
                 if (renderer == null || !renderer.enabled) continue;

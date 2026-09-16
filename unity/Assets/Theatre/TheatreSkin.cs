@@ -353,6 +353,8 @@ namespace Evosim.Theatre
         private Material _surfaceMaterial;
         private Material _shaftMaterial;
         private Material _backdropMaterial;
+        private Material _glassMaterial;
+        private GameObject _glass;
 
         /// <summary>The waterline's height, from the last box dressed; zero until then, as in every recording.</summary>
         private float _waterlineY;
@@ -688,7 +690,11 @@ namespace Evosim.Theatre
         /// picture cannot show a floor the physics does not have
         /// (<c>logbook/specs/bed-spec.md</c> item 13).
         /// </param>
-        public void Dress(Bounds box, BedShape bed = null)
+        /// <param name="tankRadius">
+        /// The tank's radius when the world is one (D089), for the glass; zero for a box or a
+        /// solo creature, which get no wall.
+        /// </param>
+        public void Dress(Bounds box, BedShape bed = null, float tankRadius = 0f)
         {
             Undress();
             EnsureRoot();
@@ -706,6 +712,64 @@ namespace Evosim.Theatre
             BuildSurface(min, size);
             BuildShafts(min, size);
             BuildSnow(min, size);
+            if (tankRadius > 0f) BuildGlass(min, size, tankRadius);
+        }
+
+        /// <summary>
+        /// The tank's wall as a faint Fresnel sheet (<c>TheatreGlass.shader</c>; the look's
+        /// design pass, E3): a cylinder of 96 facets at the tank's radius from the floor to a
+        /// little over the waterline, drawn only for a viewer inside the water, so the census
+        /// views from outside are not touched by it.
+        /// </summary>
+        private void BuildGlass(Vector3 min, Vector3 size, float radius)
+        {
+            Material material =
+                _glassMaterial != null ? _glassMaterial : (_glassMaterial = MakeGlassMaterial());
+
+            if (material == null) return;
+
+            const int facets = 96;
+            float bottom = min.y;
+            float top = min.y + size.y + 0.3f;
+
+            var vertices = new Vector3[2 * (facets + 1)];
+            var normals = new Vector3[vertices.Length];
+            var triangles = new int[6 * facets];
+
+            for (int i = 0; i <= facets; i++)
+            {
+                float angle = 2f * Mathf.PI * i / facets;
+                var outward = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+
+                vertices[2 * i] = outward * radius + new Vector3(0f, bottom, 0f);
+                vertices[2 * i + 1] = outward * radius + new Vector3(0f, top, 0f);
+                normals[2 * i] = outward;
+                normals[2 * i + 1] = outward;
+
+                if (i == facets) continue;
+
+                int t = 6 * i;
+                triangles[t] = 2 * i; triangles[t + 1] = 2 * i + 1; triangles[t + 2] = 2 * i + 2;
+                triangles[t + 3] = 2 * i + 1; triangles[t + 4] = 2 * i + 3; triangles[t + 5] = 2 * i + 2;
+            }
+
+            var mesh = new Mesh { name = "Theatre Glass", hideFlags = HideFlags.DontSave };
+            mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.triangles = triangles;
+            mesh.RecalculateBounds();
+
+            _glass = new GameObject("Theatre Glass") { hideFlags = HideFlags.DontSave };
+            _glass.transform.SetParent(_root.transform, false);
+            _glass.transform.position = new Vector3(min.x + 0.5f * size.x, 0f, min.z + 0.5f * size.z);
+            _glass.AddComponent<MeshFilter>().sharedMesh = mesh;
+
+            MeshRenderer renderer = _glass.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+
+            _glass.AddComponent<TheatreInsideOnly>();
         }
 
         private void BuildBed(Vector3 min, Vector3 size, BedShape bed)
@@ -1297,6 +1361,14 @@ namespace Evosim.Theatre
 
             if (_snow != null) Discard(_snow.gameObject);
             _snow = null;
+
+            if (_glass != null)
+            {
+                var filter = _glass.GetComponent<MeshFilter>();
+                if (filter != null && filter.sharedMesh != null) Discard(filter.sharedMesh);
+                Discard(_glass);
+            }
+            _glass = null;
         }
 
         /// <summary>
@@ -1320,6 +1392,7 @@ namespace Evosim.Theatre
             Discard(_surfaceMaterial); _surfaceMaterial = null;
             Discard(_shaftMaterial); _shaftMaterial = null;
             Discard(_backdropMaterial); _backdropMaterial = null;
+            Discard(_glassMaterial); _glassMaterial = null;
 
             TheatreMeshes.Release();
 
@@ -1427,6 +1500,18 @@ namespace Evosim.Theatre
         /// ceiling at all: a viewer would read it as the surface and take its flatness for the
         /// water's. A missing shader leaves the world as it was on the third day.
         /// </remarks>
+        private Material MakeGlassMaterial()
+        {
+            Shader shader = Shader.Find("Evosim/Theatre Glass");
+            if (shader == null) return null;
+
+            return new Material(shader)
+            {
+                name = "Theatre Glass",
+                hideFlags = HideFlags.HideAndDontSave,
+            };
+        }
+
         private Material MakeBackdropMaterial()
         {
             Shader shader = Shader.Find("Evosim/Theatre Backdrop");

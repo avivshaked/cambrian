@@ -182,6 +182,7 @@ namespace Evosim.Theatre
         private static readonly int ReserveId = Shader.PropertyToID("_Reserve");
         private static readonly int TransTintId = Shader.PropertyToID("_TransTint");
         private static readonly int TransGainId = Shader.PropertyToID("_TransGain");
+        private static readonly int SheenId = Shader.PropertyToID("_Sheen");
         private static readonly int CarveId = Shader.PropertyToID("_Carve");
         private static readonly int PinchAId = Shader.PropertyToID("_PinchA");
         private static readonly int PinchBId = Shader.PropertyToID("_PinchB");
@@ -246,7 +247,8 @@ namespace Evosim.Theatre
                 Vector4 carve = Character(cellType, seed);
 
                 Set(renderer, guild, brightness, on ? reserve : 1f, on,
-                    carve, body.PinchA[i], body.PinchB[i], on ? TransmissionOf(cellType) : 0.4f);
+                    carve, body.PinchA[i], body.PinchB[i], on ? TransmissionOf(cellType) : 0.4f,
+                    on ? SheenOf(cellType) : 0.1f);
             }
 
             RefreshNecks(body, phenotype, brightness, on ? reserve : 1f, on);
@@ -262,7 +264,7 @@ namespace Evosim.Theatre
         /// </remarks>
         private void Set(
             Renderer renderer, Color guild, float brightness, float reserve, bool on,
-            Vector4 carve, Vector4 pinchA, Vector4 pinchB, float transmission)
+            Vector4 carve, Vector4 pinchA, Vector4 pinchB, float transmission, float sheen = 0.1f)
         {
             Color rim = on
                 ? Muted(guild, RimSaturation, RimLightness)
@@ -291,6 +293,7 @@ namespace Evosim.Theatre
             _block.SetFloat(ReserveId, reserve);
             _block.SetColor(TransTintId, through);
             _block.SetFloat(TransGainId, transmission);
+            _block.SetFloat(SheenId, sheen);
             _block.SetVector(CarveId, carve);
             _block.SetVector(PinchAId, pinchA);
             _block.SetVector(PinchBId, pinchB);
@@ -342,6 +345,57 @@ namespace Evosim.Theatre
             return ((mixed >> 13) & 0xFFFF) / 65536f;
         }
 
+        /// <summary>
+        /// The skin genes, theatre-only (the owner's ruling of 2026-09-16, the first of the two
+        /// versions): the seed every per-body choice is drawn from (the carve's offsets, which
+        /// end tapers, which way a part leans, TheatrePalette.Character and TheatreBody.shader's
+        /// ShapeBox) comes from the body plan rather than from the creature's id, so a child
+        /// that inherits its parent's plan wears its parent's skin and a cousin two mutations
+        /// away wears a cousin's. Hashed from what a plan is: the part count, and each part's
+        /// guild, parent, shape, mirroring and its shape's proportions in coarse steps, so a
+        /// growth or a small size mutation keeps the family look and a new part or a new guild
+        /// changes it. Nothing here reaches the simulation; the genome's own version, a few
+        /// neutral numbers the shader reads, is queued for a round boundary.
+        /// </summary>
+        /// <summary>A string's hash that is the same in every process, which string.GetHashCode is not.</summary>
+        private static long Stable(string text)
+        {
+            unchecked
+            {
+                long h = (long)14695981039346656037UL;
+                if (text != null) foreach (char c in text) h = (h ^ c) * 1099511628211L;
+                return h;
+            }
+        }
+
+        private static float SeedOf(Phenotype phenotype, long id)
+        {
+            if (phenotype == null || phenotype.PartCount == 0) return SeedOf(id);
+
+            unchecked
+            {
+                long h = 1469598103934665603L ^ phenotype.PartCount;
+
+                for (int i = 0; i < phenotype.PartCount; i++)
+                {
+                    PhenotypePart part = phenotype.Parts[i];
+                    Float3 he = part.HalfExtents;
+
+                    float longest = Mathf.Max(he.X, Mathf.Max(he.Y, he.Z));
+                    float shortest = Mathf.Max(1e-4f, Mathf.Min(he.X, Mathf.Min(he.Y, he.Z)));
+                    int proportion = Mathf.RoundToInt(2f * Mathf.Log(longest / shortest, 2f));
+
+                    h = (h ^ part.ParentIndex) * 1099511628211L;
+                    h = (h ^ Stable(part.CellTypeId)) * 1099511628211L;
+                    h = (h ^ Stable(part.ShapeId)) * 1099511628211L;
+                    h = (h ^ (part.Mirrored ? 1 : 0)) * 1099511628211L;
+                    h = (h ^ proportion) * 1099511628211L;
+                }
+
+                return ((h >> 17) & 0xFFFF) / 65536f;
+            }
+        }
+
         private Body Gather(long id, Transform root, Phenotype phenotype)
         {
             _scratch.Clear();
@@ -352,7 +406,7 @@ namespace Evosim.Theatre
                 Root = root,
                 Renderers = _scratch.ToArray(),
                 Part = new int[_scratch.Count],
-                Seed = SeedOf(id),
+                Seed = SeedOf(phenotype, id),
                 PinchA = new Vector4[_scratch.Count],
                 PinchB = new Vector4[_scratch.Count],
                 Shape = new Vector3[_scratch.Count],
@@ -398,6 +452,18 @@ namespace Evosim.Theatre
         /// a strut is between. The one place the guild reaches a body's face, and it reaches it
         /// as light, not as paint.
         /// </summary>
+        /// <summary>
+        /// The wet sheen by guild: a gut wall glossy, a leaf matte, a strut between. The
+        /// absorptive tissue's own surface (the owner, 2026-09-16), a highlight and never a
+        /// drawn organ.
+        /// </summary>
+        private static float SheenOf(string cellTypeId)
+        {
+            if (cellTypeId == CellTypeIds.Absorptive) return 0.35f;
+            if (cellTypeId == CellTypeIds.Photosynthetic) return 0.04f;
+            return 0.08f;
+        }
+
         private static float TransmissionOf(string cellTypeId)
         {
             if (cellTypeId == CellTypeIds.Photosynthetic) return 1.0f;

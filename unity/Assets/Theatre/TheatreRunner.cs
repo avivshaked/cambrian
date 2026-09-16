@@ -371,7 +371,12 @@ namespace Evosim.Theatre
             // (SnapshotCamera.BoxOf) rather than a second copy of sqrt(area / K) here. The floor's
             // shape comes off the world the replay actually built (D092), so the sand is draped on
             // the same height map the collider has; null on every recording before it.
-            _skin.Dress(SnapshotCamera.BoxOf(_replay, out _), _replay.Eco?.World?.Bed);
+            RunConfig dressed = _replay.Record.Config;
+            float glassRadius = dressed.SharedSpace && dressed.WorldShape == WorldShape.Tank
+                ? TankGeometry.RadiusFor(dressed.WorldAreaSquareMetres)
+                : 0f;
+
+            _skin.Dress(SnapshotCamera.BoxOf(_replay, out _), _replay.Eco?.World?.Bed, glassRadius);
 
             if (SeekToSeconds > 0f) BeginSeek(SeekToSeconds);
         }

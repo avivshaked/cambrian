@@ -55,6 +55,11 @@ Shader "Evosim/Theatre Body"
         _TransTint("Transmission tint, the guild's", Color) = (0.34, 0.72, 0.36, 1)
         _TransGain("Transmission gain by guild", Range(0, 2)) = 1
 
+        // A wet sheen, by guild (TheatrePalette): the one surface the owner allowed the
+        // absorptive tissue as its own (2026-09-16, "no organ the genome doesn't encode"), a
+        // gut wall's gloss against a leaf's matte, a strut between. A highlight, not a colour.
+        _Sheen("Sheen by guild", Range(0, 1)) = 0.1
+
         [Header(The look)]
         // Wider and softer than the second day's 2.6 and 1.5, by about a third. A Fresnel rim at
         // a high power is a bright line one or two pixels wide at the silhouette, which is the
@@ -169,6 +174,7 @@ Shader "Evosim/Theatre Body"
                 float _Reserve;
                 float4 _TransTint;
                 float _TransGain;
+                float _Sheen;
                 float _RimPower;
                 float _RimStrength;
                 float _GlowStrength;
@@ -545,6 +551,11 @@ Shader "Evosim/Theatre Body"
                 Light main = GetMainLight();
                 float3 lit = body * main.color * (Wrapped(n, main.direction) * _KeyGain);
                 lit += _TransTint.rgb * (_TransGain * Transmission(n, v, main.direction, main.color, thickness));
+
+                // The sheen: a tight highlight off the key, white rather than the body's colour,
+                // so it reads as wet skin catching the light and not as paint.
+                float3 halfway = normalize(main.direction + v);
+                lit += main.color * (_Sheen * pow(saturate(dot(n, halfway)), 28.0));
 
                 // The fill, and any other light in the scene. TheatreSkin puts one weak
                 // directional light opposite the key so the far side of a body is dark rather
