@@ -3,8 +3,9 @@
 
 Why this exists. The owner has a monthly token allowance on Leonardo (a Canva employee plan),
 wants it used through the API rather than by hand ("that's why api tokens exist"), and set three
-rules (2026-09-16): the key lives in the environment variable EVOSIM_LEONARDO_KEY on the machine
-and never in the repo; only prompts written for the purpose go up, nothing of the project's
+rules (2026-09-16): the key lives on the machine and never in the repo, as EVOSIM_LEONARDO_KEY in
+the environment or in a .env file at the repo root (gitignored, and the commit hook blocks *.env;
+the owner's choice, "isn't this standard?"), the environment winning if both are set; only prompts written for the purpose go up, nothing of the project's
 (no picture, no genome, no number derived from one) unless the owner approves that instance;
 and a session stops at a budget the owner sets. The survey the uses come from is
 logbook/specs/leonardo-survey.md: backdrops, title cards and thumbnails for the videos, never
@@ -26,6 +27,10 @@ estimate the API gave for the previous one of the same shape or, before any, on 
 (default 20 per image). The total spent is printed at the end and appended to
 scratch/leonardo/ledger.tsv. Nothing here retries a failed generation on its own.
 
+The .env file is KEY=value lines, one per line, # comments allowed, no quotes needed:
+
+    EVOSIM_LEONARDO_KEY=...
+
 No key: the script says so and exits 2. --dry-run prints what would be sent and sends nothing.
 """
 
@@ -46,6 +51,20 @@ API = "https://cloud.leonardo.ai/api/rest/v1"
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "scratch" / "leonardo"
 DEFAULT_MODEL = "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3"  # Phoenix 1.0, per the survey; override per prompt
+
+
+def load_dotenv(path: Path) -> dict[str, str]:
+    """KEY=value lines from a .env file, or nothing when there is no file. Never printed."""
+    found: dict[str, str] = {}
+    if not path.is_file():
+        return found
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        found[key.strip()] = value.strip().strip('"').strip("'")
+    return found
 
 
 def parse_prompts(path: Path) -> list[dict]:
@@ -115,9 +134,9 @@ def main() -> int:
         print("no prompts to run", file=sys.stderr)
         return 1
 
-    key = os.environ.get("EVOSIM_LEONARDO_KEY", "").strip()
+    key = os.environ.get("EVOSIM_LEONARDO_KEY", "").strip() or load_dotenv(ROOT / ".env").get("EVOSIM_LEONARDO_KEY", "").strip()
     if not key and not args.dry_run:
-        print("EVOSIM_LEONARDO_KEY is not set; nothing sent (set it in the environment, never in the repo)", file=sys.stderr)
+        print("EVOSIM_LEONARDO_KEY is not set in the environment or in .env at the repo root; nothing sent", file=sys.stderr)
         return 2
 
     OUT.mkdir(parents=True, exist_ok=True)

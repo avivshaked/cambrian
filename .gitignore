@@ -170,3 +170,7 @@ scripts/tests/positions/fixtures/
 design/*.zip
 # Claude Design canvas runtime, not this project's work (see design/canvas/README.md)
 design/canvas/support.js
+
+# Local secrets (the Leonardo key, scripts/leonardo-generate.py); the commit hook blocks *.env too.
+.env
+.env.*
