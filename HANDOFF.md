@@ -354,7 +354,21 @@ the background and never handed to a subagent, which cannot wait.
    click to run a safari and a click to record; the tools are built during round 39's
    run, in the owner's Editor and in Core's tests, so they take no worker from the round.
    In order, each spec in front of the owner before its build starts:
-   (a) **the timeline** (`timeline-spec.md`, one to two days, 2026-09-16 to 17): a Record
+   **Re-pencilled 2026-09-16 morning after the look's design pass**
+   (`logbook/specs/striking-theatre-menu.md`, the owner's rulings in it): first **the look**,
+   because its pictures are what every later judgement is made from. 16th: the one-day pass
+   (the post stack with tonemapping, bloom and vignette; the key light aimed at the rendering
+   camera; supersampling; a floor light; the sky view promoted; the starving floor) and linear
+   colour space with the re-tune, before-and-after pairs to the owner, the Leonardo prompt
+   sheet under `design/`. 17th: the week pass's first half (a back light for portraits,
+   ambient occlusion, depth-softened shafts, snow with depth, the rounding cap, size-dependent
+   detail, depth of field, motion blur, the pace lock) and round 39's read. 18th: the second
+   half (lit surface water, translucent leaves, the glass, the Recorder with its overlay bug,
+   the absorptive tissue's own surface, the skin from the genome's features). Then the three
+   tools: (a) the timeline 19th to 20th, (b) the checkpoints 21st to 23rd, (c) the safari
+   24th to 28th. Round 40's pre-registration in between. The genome version of the skin genes
+   is a proposal for a round boundary if the theatre version is not enough.
+   The original pencilling, kept: (a) **the timeline** (`timeline-spec.md`, one to two days, 2026-09-16 to 17): a Record
    mode that draws any sample of `positions.jsonl` instantly with no physics, and a charts
    panel of `stats.jsonl` lanes with the lineage's events on the axis, clicking to seek;
    (b) **the checkpoints** (`checkpoint-spec.md`, two to three days, 2026-09-17 to 19): the

@@ -38,6 +38,29 @@ the report's "target frames for the look" use the right first use: generate what
 should look like, put it beside a close view, and turn the dials toward it, uploading
 nothing.
 
+## The rulings (owner, 2026-09-16, in conversation)
+
+1. **Grade everything**: every picture from here on is taken through the post stack, the
+   look version stamped into the frame's label; the record's earlier pictures stand.
+2. **Linear colour space**, with the re-tune ("the initial intention was mesmerising").
+3. **R1 and R2 both yes**: the top of the water may read as lit, and guild hue may enter
+   through backlit translucency; the census views keep their framing (R3 as versioned).
+4. **No drawn eyes.** The owner wondered about a mouth for the absorptive or a fin and
+   called it cheating; the agent's line, accepted as the plan: no organ the genome does not
+   encode, but the absorptive tissue may have its own surface, since the part is the
+   stomach by function, and a sense that evolves gets drawn as the organ it is.
+5. **Inherited skin genes: wanted**, cost permitting. The plan: the theatre-only version
+   first (the skin derived from the genome's own features, one day, no hash moves), the
+   genome version (six to ten neutral numbers that mutate; a format bump; every stored
+   genome re-extracted; RNG draws that change every trajectory, so a round boundary) only
+   if the first is not enough.
+
+**Leonardo is a monthly token allowance, not free.** The loop: the agent writes a prompt
+sheet under `design/` naming each target image and what will be tuned toward it; the owner
+generates the few that appeal and drops the PNGs where the sheet says; the agent reads them
+and tunes, sending before-and-after pairs of real frames. Ten to fifteen images a pass, on
+target frames first and title cards later; nothing of the project's goes up.
+
 ## The report (Opus, 2026-09-16)
 
 ### 1. Diagnosis from the pictures
