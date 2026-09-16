@@ -851,6 +851,12 @@ actually verifying it.
   asset scan and the script and shader compiles run on every core; three renders in forty
   minutes had the owner hearing the fans. `theatre-snap.ps1` runs the Editor at four job
   workers; batch the changes and render once, and never beside a test suite.
+- **Set an arm's wall limit from the measured pace, not from the hoped-for one.** Round 39's
+  launcher gave 1,200 min for 30,000 s on an estimate of fourteen hours a seed; at five arms
+  and 2,000 bodies the seeds ran at 0.3x real time, twenty-eight hours, and seed 3 was
+  censored at 25,175 s with "ended wall" (2026-09-16). A running arm's wall cannot be
+  extended. Read `x real time` off a seed's footer or the early rows before launching the
+  rest, and give the wall half again what that says.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

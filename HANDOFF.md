@@ -341,6 +341,14 @@ the background and never handed to a subagent, which cannot wait.
    it), so the round lands about 2026-09-17 with seed 5 a slot behind. **State at
    2026-09-16 14:18**: seed 1 ended at its 30,000 s budget; seeds 2, 3 and 4 run on workers
    5, 6 and 3; seed 5 launched on worker 2 on the same build, and the queue is done.
+   **17:30: seed 2 landed at budget; seed 3 hit the launcher's 1,200 min wall at 25,175 s
+   (0.3x real time at five arms, "ended wall", censored SHORT).** Seeds 4 and 5 run at
+   about 1,310 s/h and will hit the same wall short of 30,000 s (seed 4 at 22:00 on the
+   16th near 27,000 s; seed 5 at 09:17 on the 17th near 26,000 s) unless the pace rises;
+   a running arm's wall cannot be extended. The render chain was stopped at 17:30 to give
+   them the machine; restart it after the round lands. The owner decides whether the read
+   takes the three censored seeds as they are or seeds 3 to 5 rerun after the restart with
+   a 1,800 min wall (about 28 h each).
    Landings at the afternoon's pace: seed 2 about 15:45, seeds 3 and 4 about 21:00 to 23:00,
    seed 5 the morning of the 17th. **A Windows update restart is planned for the morning
    of the 17th after seed 5 lands** (owner, 14:40): stop the arms with `stop-arm.ps1` and
