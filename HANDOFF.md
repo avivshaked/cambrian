@@ -338,7 +338,9 @@ the background and never handed to a subagent, which cannot wait.
    arm at about 3,000 and 6,000 s with the bed view among the frames, and arm the render
    queue only after the last seed has launched. Each seed runs about fourteen hours at about
    1,900 bodies (0102's early look: round 38's per-body pace, not the smokes' three times
-   it), so the round lands about 2026-09-17 with seed 5 a slot behind. Two things the read left: **the glass leaks** (eight one-part
+   it), so the round lands about 2026-09-17 with seed 5 a slot behind. **State at
+   2026-09-16 14:18**: seed 1 ended at its 30,000 s budget; seeds 2, 3 and 4 run on workers
+   5, 6 and 3; seed 5 launched on worker 2 on the same build, and the queue is done. Two things the read left: **the glass leaks** (eight one-part
    bodies at the surface of seed 5 passed the wall and died on the radius guard, spinning
    at 9 to 48 rad/s; the dumps carry no contact history, so the reading is a contact log
    at the wall or a film of a leak), and **the long arm moves up** (an oscillation with a
