@@ -40,6 +40,24 @@ any project image goes up. Do not use it for bodies, the bed or the water. Build
 inherited skin genes when the theatre work resumes, since that is what "skins" means
 for this world.
 
+## How the key will be handled (owner, 2026-09-16 afternoon)
+
+The script is `scripts/leonardo-generate.py` and the prompt sheet `design/leonardo-prompts.md`.
+The owner's chosen pattern for the key is the one the synthetic-signals project on this
+machine already runs: a **versioned `.env`** holding only 1Password references
+(`EVOSIM_LEONARDO_KEY=op://<vault>/<item>/credential`), resolved for one run at a time by
+`op run --env-file=.env -- python scripts/leonardo-generate.py ...`. The secret never sits on
+disk in the project, and the file documents which secrets exist. It needs three repo changes
+when it is set up: the commit hook's rule on `*.env` becomes "tracked and every value a
+reference or non-secret" with a check; the script refuses a value starting with `op://` and
+says to run under `op run`; the `.env` is un-ignored. One cost: `op run` may ask the app for
+approval, so the agent cannot start a generation unattended, which for Leonardo is no cost.
+
+**Until the owner has time for that, Leonardo is used by hand**: the agent writes the prompt
+into the sheet, the owner pastes it into Leonardo and drops the picture under
+`scratch/leonardo/<slug>/`. The script's `.env` reader and the ignore rule from the afternoon
+stay as the interim, unused.
+
 ## The survey (Sonnet, read 2026-09-16)
 
 ### 1. What Leonardo.ai offers today

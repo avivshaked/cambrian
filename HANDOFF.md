@@ -372,6 +372,10 @@ the background and never handed to a subagent, which cannot wait.
    seed at 5,000, 15,000 and 30,000 s, side, close, bed and iso, on worker 7 under the
    five-Editor cap and only after seed 5's queue has taken its slot. The pencilled dates
    below move up by two days: the timeline from the 17th.
+   **Leonardo** (owner, 16th afternoon): by hand for now, the agent writes the prompt into
+   `design/leonardo-prompts.md` and the owner pastes it; the 1Password `op run` pattern with
+   a versioned `.env` is captured in `logbook/specs/leonardo-survey.md` for when the owner
+   has time, three small repo changes listed there.
    **Re-pencilled 2026-09-16 morning after the look's design pass**
    (`logbook/specs/striking-theatre-menu.md`, the owner's rulings in it): first **the look**,
    because its pictures are what every later judgement is made from. 16th: the one-day pass
