@@ -138,3 +138,30 @@ ceiling reads 8,000, so E1's upper bound of 4,460 is not the instrument's. Seed 
 drew no hollow and one ridge, which V1 allows (the count is the seed's); the read's map
 carries it. Seeds 3 to 5 follow as workers free: the owner's Editor holds a slot, so four
 seeds run at once and the fifth waits, as in round 38.
+
+*2026-09-16, 03:05, the early look at seed 1* (seeds 1 to 3 running since 22:36; seed 4
+launched on worker 3 at 03:00 as seed 4's round 38 render ended; no Editor slot for a
+theatre frame, so the look is `positions-read.py` at 3,000, 6,000 and 10,000 s,
+`scratch/positions/r39-s1/`). The pace is four times what D093's as-run note guessed:
+10,400 s in four and a half hours at 1,900 bodies, about 820 wall seconds per 1,000
+simulated seconds per 1,000 bodies, round 38's figure rather than three times it, so the
+grid's cost is not the round's cost at the crowd, which is E8's two-sided reading
+arriving early. A seed takes about fourteen hours. `alive` 1,083 / 1,828 / 1,896 at the
+three times, 1,891 at 10,400 s, under E1's band so far; births 5,594; no throw; 57
+stillbirths; `mat blk` 150,000 per window against 700 births, the matter binding as in
+round 38. The crowd fills the whole 45 m evenly at the three times (leaf median depth
+16.6 / 18.4 / 19.9 m; the plot clips at the box's 45 m and the deep side's water below it
+is not drawn, a reader item for the read), the rim quarter 0.21, `cols` 1,241 of 2,211
+live columns, 56%. **E6's 60% bar is wrong for this geometry**: 1,900 bodies over 2,211
+columns occupy 58% of them even when placed at random (1 − e^(−1900/2211)), where round
+38's 1,600 over 402 columns occupied 95%; the read compares `cols` against the uniform
+expectation at the sample's body count and says the bar was miscalibrated, and the
+verdict on E6 rests on the rim quarter. The eaters founded near 9,000 s (`inherit` 43 /
+116 / 149 at 9,100 / 10,100 / 10,400 s) as one cluster at one side of the tank at 22 to
+35 m, the leaves' median 20 m and the eaters' 30 m; the joint founded (90 inherited by
+1,100 s) and was gone by 10,000 s. `det cv` fell to 0.07 at 7,100 s and reads 0.14 at
+10,400 s, under round 38's maximum at the same second, so no pocket yet; `floor low %`
+21.8% against the lowest quarter's share, so no gathering yet either; `floor J` 10,400
+against round 38's refuge of 500 to 1,000, the floor in the crowd's band collecting ten
+times what the deep floor did. The manifest carries the bed's counts and not the tilt's
+bearing, so the read rebuilds `BedShape` from the config and seed for E9 and E11.
