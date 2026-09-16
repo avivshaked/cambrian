@@ -836,6 +836,16 @@ actually verifying it.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.
+- **The project is in linear colour space from 2026-09-16 (logbook/0104), and a global shader
+  colour is not converted.** A material colour, a render setting and a camera's background are
+  converted from sRGB by the engine; `Shader.SetGlobalColor` hands the numbers over raw. The
+  first lit-water pictures were five times too bright for exactly that. Every global colour
+  takes `.linear` by hand, and the first picture after a new one is the check. The owner's
+  open Editor on `unity/` reimports on the flip.
+- **A theatre render is a sixth Editor, and its start-up is the load, not the replay.** The
+  asset scan and the script and shader compiles run on every core; three renders in forty
+  minutes had the owner hearing the fans. `theatre-snap.ps1` runs the Editor at four job
+  workers; batch the changes and render once, and never beside a test suite.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
