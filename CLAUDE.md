@@ -50,7 +50,10 @@ Current state: **the ecosystem runs**, in one shared box of water (D077) stepped
 thread so that it replays (D078). Genomes develop into phenotypes, articulations swim under
 their own evolved brains, and `Evosim.Core`'s world charges upkeep, feeds, breeds and kills
 with both books closed at every sample. The water is a grid of cells (D086, logbook/0078)
-and bodies are born small and grow (D087, logbook/0081). The goal rule (D063 as amended) was
+and bodies are born small and grow (D087, logbook/0081). The goal is a ladder of milestones since D094 (2026-09-16): rung 1, D063's
+self-sustaining food chain, is met and its scorer prints a state and not a verdict; rung 2,
+adaptation by degree, is a reading until its threshold is measured; every round is read on
+its own pre-registered predictions. Before that, the goal rule (D063 as amended) was
 last met five seeds of five in round 30 (logbook/0075); the grid's base round 32 read two of
 five with every mechanism prediction holding (0079); round 33, the growth base, met it five of five
 and was the first world in which a trait moved by degree rather than by switch (0082). Then
@@ -142,7 +145,9 @@ chain (logbook/0044):
 ./scripts/analyse-arm.ps1 r9-s1 -ListColumns          # the name -> index map
 ```
 
-**Score a run by connected clade** (D063 as amended, logbook/0054's addendum) with
+**Score a run by connected clade** (D063 as amended, logbook/0054's addendum; since D094
+the clauses are a state per seed and not the campaign's bar, and the verdict line is being
+rewritten to say *holds*, *cycles* or *no chain*, HANDOFF's queue) with
 `scripts/clade-score.ps1` — the goal rule's `inherit` column is an aggregate across every
 absorptive lineage in the world at once, so a set of unrelated short-lived clades can sum to
 a passing streak and an unrelated late mutant can satisfy recruitment for a sterile cohort.

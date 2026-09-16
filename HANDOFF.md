@@ -102,7 +102,17 @@ inconsistency it found is ruled as D091 (replacements and treatments). Round 36 
 logbook/0092 (five of five; a standing jointed population of absorptive bodies in seed 1, on a
 body plan the round did not predict).
 
-The goal has been met, and the base world keeps moving under it. D063, as amended
+**The goal is a ladder since D094 (owner, 2026-09-16; logbook/0103).** Rung 1, a self-sustaining food
+chain, was D063's question and is met (rounds 30, 33, 35, 37b); its clauses stay in the
+scorer as a state per seed (the chain holds, cycles, or no chain), never a verdict. Rung 2
+is adaptation by degree, a standing reading until its threshold is measured on three
+rounds; rungs 3 and 4 (a sense changes behaviour, a form changes earnings) are named and
+not worded. Every round is read on its own pre-registered predictions, committed before
+launch, held or failed one by one, and that is the whole of the discipline now. The
+paragraph and the table below are kept as the record of the bar as it stood through
+round 38; the goal-rule column is D063's count as recorded.
+
+*As it stood until D094:* the goal has been met, and the base world keeps moving under it. D063, as amended
 2026-09-04, asks for a clade that lasts: one connected absorptive clade alive for 20
 consecutive samples to the end of a 30,000 s run, 10 or more members through the last two
 lifetimes and still breeding, in at least 3 of 5 seeds, with the population floor closed, on
@@ -137,7 +147,8 @@ goal*, D063's 3 of 5; *the reference*, the base world's own count). D091 (owner,
 split the changes in two: a *replacement* changes what the world is and becomes the base on
 the owner's ruling, its round read for the mechanism and the goal rule not required; a
 *treatment* changes one price, sense or rule on a fixed world and joins the base only at its
-pre-registered bar. The owner's ten-round plan of 2026-09-11 ("plan the next 10 rounds and
+pre-registered bar. D094 (owner, 2026-09-16) deprecated D063 as the campaign's bar and set
+the ladder above; a treatment's bar is written in its own terms. The owner's ten-round plan of 2026-09-11 ("plan the next 10 rounds and
 change only if a result compels us"; "proceed autonomously") is the sequence below. The agent
 may reorder it when a result compels (owner's grant, 2026-09-11), records each reorder here
 with its date and reason, and never adds a world rule: those come to the owner as
@@ -359,27 +370,34 @@ the background and never handed to a subagent, which cannot wait.
    on the day it lands. Open for the owner: which first story, "the world that stood"
    (the thirty-eight rounds) or "the boom and the bust" (round 38's eaters and round 39's
    floor).
-3. **Landed 2026-09-15 00:25 with the trace's second pass**: `field cv` (`det cv`, `mat cv`
+3. **D094's two pieces of work** (owner, 2026-09-16): the scorer's verdict line becomes a
+   state per seed (*the chain holds* / *cycles*, with the period / *no chain*), every number
+   kept, PASS and FAIL gone, the 52 fixture assertions updated to the new line, and
+   CLAUDE.md's scorer paragraph with it; and **the trait-by-degree instrument** (0082's
+   reading from the snapshots, made on every round: per clade, a heritable number's
+   distribution by generation, against a neutral number's drift), built with the timeline
+   so rung 2 can be measured on rounds 39, 40 and 41 before its threshold is set.
+4. **Landed 2026-09-15 00:25 with the trace's second pass**: `field cv` (`det cv`, `mat cv`
    in the table, `detritusCv` and `matterCv` in `stats.jsonl`; `logbook/specs/field-cv-spec.md`)
    and the trace that keeps the last finite frames and names the first non-finite step
    (`throw-trace-spec.md`'s second pass), validated together on one candidate tree (the
    smoke with the forced case, the 600 s box digest identical, the dilute tank smoke) and
    merged as `582ee6a`. Round 38 is the first round that reads both.
-4. **The streams' analytic derivative is already in round 37b's build** (`dcc9a24`, inside
+5. **The streams' analytic derivative is already in round 37b's build** (`dcc9a24`, inside
    the `streams` merge; `logbook/specs/streams-analytic-spec.md`): in a tank the force takes
    a closed-form time derivative and Jacobian at 2.3 velocity samples per call where the
    stencil cost 9.6, agreeing to 0.15% of the RMS. The nine-sample stencil survives only for
    the box's transport field, where no round has run the force. This item was carried in
    the old handoff as queued after it had landed; M8 reads the pace it actually costs.
-5. **Pockets, then a bigger tank** (owner, 2026-09-12 night): the proposal follows round 37b's
+6. **Pockets, then a bigger tank** (owner, 2026-09-12 night): the proposal follows round 37b's
    read, because it depends on how the streams move sinking matter (below).
-6. **The fluid terms' proposal** (path item 6) and, after it has read once, the §5.4 harness.
-7. **The throw's mitigation.** The trace is the per-link instrument; what it decides between
+7. **The fluid terms' proposal** (path item 6) and, after it has read once, the §5.4 harness.
+8. **The throw's mitigation.** The trace is the per-link instrument; what it decides between
    (a mass-ratio cap at build and resize; the search names the 10:1 rule,
    `logbook/specs/throw-trace-research.txt`) goes to the owner only if a tank throws.
-8. **0084's bin 3 screens** on any free worker: dispersed against undispersed on round 32's
+9. **0084's bin 3 screens** on any free worker: dispersed against undispersed on round 32's
    seeds, mixing 0.2 against 0.02, corpses off.
-9. **Older items still open, in the order they were captured**: the movement assay (active
+10. **Older items still open, in the order they were captured**: the movement assay (active
    against clamped on saved members of a jointed clade, repeated across orientations) and its
    ecological layer (a connected jointed clade persisting two lifetimes and paying positive net
    after work); round 18 as a committed reference (its config, hashes and a representative
@@ -387,14 +405,14 @@ the background and never handed to a subagent, which cannot wait.
    Unity boundary; D052's transactional guard test (force an `Admit` failure and close every
    book); two columns, gross photosynthesis per window and the matter drawn at conception per
    window; the scorer checking which round a report belongs to (`-ExpectSimHash` stands in).
-10. **Theatre work that needs no round**: the skin seeded from the genome so relatives resemble
+11. **Theatre work that needs no round**: the skin seeded from the genome so relatives resemble
    each other; the offline reading of whether any lineage's boxes have flattened under light
    (from the snapshots; it precedes round 42); inherited skin genes (six to ten neutral numbers
    under one gate, a genome format bump, no per-step effect; owner's rule, a proposal); the
    safari (below). The theatre's sun and surface dials (`EVOSIM_THEATRE_WAVE`, `_WAVELENGTH`,
    `_WAVE_SPEED`, `_LIGHT_REACH`, `_SHAFTS`, logbook/0091) are unjudged by the owner; the
    agent's reading is that the surface reads as bands, which is the wave steepness.
-11. **For the owner**: the `scratch/` cleanout list in the migration report (companion to
+12. **For the owner**: the `scratch/` cleanout list in the migration report (companion to
     `logbook/specs/scratch-migration-spec.md`, 2026-09-10; 70 MB of logs, review captures,
     probe output, one-off edit scripts, stale copies; nothing deleted). The worktrees under
     `scratch/wt-*` stay until the owner says otherwise.

@@ -1031,7 +1031,8 @@ oscillation detector at 30 Hz. Proposed compromise for Milestone 2 measurement:
 
 **Status: most of this section runs the world.** Energy, matter, detritus, the nutrient
 field, upkeep, feeding, breeding and death are built and measured, and the goal rule of
-[D063](DECISIONS.md#d063) was met on 2026-09-04 (logbook/0054). Producers feed the water
+[D063](DECISIONS.md#d063) was met on 2026-09-04 (logbook/0054) and five of five by 2026-09-13;
+since [D094](DECISIONS.md#d094) it is rung 1 of a ladder, proven, and the next rung is adaptation by degree. Producers feed the water
 while they live ([D070](DECISIONS.md#d070)). Matter enters at the vent and leaves by
 burial, so the world's size is a flow ([D074](DECISIONS.md#d074)). Creatures share one box
 and touch ([D077](DECISIONS.md#d077)). Not built: predation and the `Consumer` cell's live

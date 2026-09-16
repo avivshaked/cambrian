@@ -116,6 +116,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D091](#d091) | Two kinds of change: a replacement (what the world is) becomes the base on the owner's ruling and reads the goal rule without requiring it; a treatment (a price, a sense, a rule of the ecology on a fixed world) joins the base only when its round meets its pre-registered bar; D081's adoption clause applies to treatments; every entry names which kind its round is | 2026-09-12 | ruled by the owner ("proceed with your recommendations") on the agent's proposal after the Astra review found D081's rule and the practice since the grid disagreeing; with it, a fresh-seed batch on round 37b's world before round 38 |
 | [D092](#d092) | The bed with shape: a seeded height map at three scales under the tank, the streams' potential in floor-following coordinates so the water follows the floor, the grid masked below it, one static collider; relief 0 replays the flat world; rocks and overhangs out (`logbook/specs/bed-spec.md`) | 2026-09-15 | ruled by the owner in conversation ("I really want a shaped bed"; "life like without making it computationally problematic", then "not too expensive"); the requirements written by the agent and accepted; round 39, built after round 38's read |
 | [D093](#d093) | Round 39's tank sized for the slope: 2,200 m² (a 52.9 m diameter, the smallest round area that takes a 30 m tilt under a 30° ramp), 45 m deep, the floor from 30 m on the shallow arc to 60 m on the deep one; the tilt's cap 30°; the shelf folded into the bed's round | 2026-09-15 | ruled by the owner in conversation on the evening of 2026-09-15 ("we need a much bigger tank. Much") and chosen from the agent's three sizings; the matter budget set from the founding smokes |
+| [D094](#d094) | The goal becomes a ladder of milestones: D063 deprecated as the campaign's bar (rung 1, met), the scorer to print a state and not a verdict, rung 2 adaptation by degree (a standing reading until its threshold is measured), rungs 3 and 4 named; every round still read on its own pre-registered predictions | 2026-09-16 | ruled by the owner in conversation on the morning of 2026-09-16 ("once we've proven that the goal is achievable we don't need to hold ourselves to that goal again"), on the agent's reasoning in the open |
 
 ---
 
@@ -2910,6 +2911,11 @@ lets the pool escape upward at low density, may be the half that matters.
 ### D063
 **The recruitment clause — a chain must be breeding, not merely surviving** · 2026-09-01
 
+**Deprecated as the campaign's bar 2026-09-16 by [D094](#d094)** (owner: "don't overwrite old
+rules. deprecate them, but keep the record"). The clauses stay in the scorer as a state per
+seed; every verdict recorded under this rule through round 38 stands. The entry below is
+unchanged.
+
 The goal rule's blind spot was demonstrated, not suspected (logbook/0043): "inherited
 ≥ 20 consecutive samples and ≥ 10 alive at the last sample" is satisfied for thousands
 of seconds by a sterile relic — s2's 104-sample streak was sterile from sample ~60,
@@ -4020,6 +4026,10 @@ publishers' copyright under fair dealing, as D014 and D015 already record.
 ### D081
 **Six rulings on round 28's reading** · 2026-09-07
 
+**Its two bars (the goal, D063's 3 of 5; the reference, the base's own count) are
+deprecated 2026-09-16 by [D094](#d094); D091's two kinds of change stand. The entry below
+is unchanged.**
+
 Put to the owner as questions with the options, their costs and a recommendation, after
 round 28 read 3 of 5 (logbook/0070) and the Astra review's response listed what needed a
 ruling. The owner's own words, where they reframed a question, are quoted.
@@ -5050,17 +5060,98 @@ recommendation, to keep the pockets question alone; the owner chose the visible 
 Steeper than 30° (the owner named the decline). Keeping the depth at 60 m with a bigger
 tilt (a 30 m tilt into the light at 60 m depth needs a 3,700 m² tank at 30°).
 
-**As run (2026-09-15 night, the agent under ruling 4).** Five founding smokes at the ruled
-size, 600 s at dt 0.02, seed 3, births by 600 s against round 38's smoke's 166: 6,000
-units 25; 9,000 61; 10,500 179; 11,000 159; 12,000 301. The response is a cliff between
-9,000 and 10,500, where a 5 m matter cell (125 m³, 0.235 units per m³ per 6,000 units at
-this footprint's mask) comes to hold more than the cheapest child costs; above it the
-world founds like round 38's, below it at a third of the rate or less. The ruling's letter
-is 10,500, the smallest that founds like round 38's; the agent set **11,000**, five
-percent more crowd for a margin above the cliff, since one seed's bed masks a different
-share of the cells and the 10,500 point sits within a seed's variation of the knee. The
-owner may move it before launch. The cost of the sizing, read from the same smokes: the
-grid at five and a half times the cells takes three times round 38's wall time at the
-same body count (2.2 minutes against 0.76 for 600 s at about 100 bodies), so round 39's
-seeds at about 2,900 bodies run two to three days each. Seed 3's floor: 2 hollows, 1
+**As run (2026-09-15 night, the agent under ruling 4).** Five founding smokes were run at
+the ruled size, 600 s at dt 0.02, seed 3. Births by 600 s, against round 38's smoke's 166:
+6,000 units 25; 9,000 61; 10,500 179; 11,000 159; 12,000 301. The response is a cliff
+between 9,000 and 10,500. There a 5 m matter cell (125 m³ at 0.235 units per m³ per 6,000
+units under this footprint's mask) comes to hold more than the cheapest child costs;
+above it the world founds like round 38's, below it at a third of the rate or less. The
+ruling's letter is 10,500, the smallest that founds like round 38's. The agent set
+**11,000**, five percent more crowd for a margin above the cliff, since one seed's bed
+masks a different share of the cells and the 10,500 point sits within a seed's variation
+of the knee. The owner may move it before launch. The cost of the sizing, read from the
+same smokes: the grid at five and a half times the cells takes three times round 38's
+wall time at the same body count (2.2 minutes against 0.76 for 600 s at about 100
+bodies). The guess from that, two to three days a seed, was wrong by four (0102's early
+look: the physics and not the grid is the cost at the crowd). Seed 3's floor: 2 hollows, 1
 ridge, range 1.50 m, the steepest slope 40° with the tilt and 17° on the bands.
+
+### D094
+**The goal becomes a ladder: the food chain is proven, adaptation by degree is next, and every round is read on its own predictions** · 2026-09-16
+
+**Status:** ruled by the owner on the morning of 2026-09-16, in conversation (logbook/0103).
+The owner opened it: "I think once we've proven that the goal is achievable we don't need
+to hold ourselves to that goal again for a while. as long as we see that things can
+happen. The future is a lot more complex with many more cell types and sensors etc. so
+lets revise the goal. we can clearly see selection working, right?" The agent's reasoning
+was laid out in the open and rewritten in plain words at the owner's request; the owner
+ruled "ok. i'm good with that", and on the record, "don't overwrite old rules. deprecate
+them, but keep the record". Deprecates D063 as the campaign's bar and D081's two bars;
+both entries stand as written, marked. D091's two kinds of change stand.
+
+**Context, in plain words.** D063 asked one question: can this world feed a line of eaters
+from its own leaves, for a long time, with the eaters breeding from their own members? It
+was answered yes, five seeds of five, in rounds 30, 33, 35 and 37b, on four versions of the
+world. The owner's own wording of the bar was "the minimum state from which we can move on".
+Asking it of every round since has been re-taking a passed test, and round 38 (logbook/0101)
+showed the cost: five seeds of five "failed" a world doing the most interesting thing any
+round had done, eaters rising to a third of the living, eating the larder, starving, and a
+fresh line rising after them. The rule wanted things to stay still, and this world cycles.
+
+What the campaign has shown is selection: lines rise and fall on their economics, not on
+chance. What it has shown only once (round 33, logbook/0082) is adaptation, a heritable
+number moving by degree over generations because it pays. Nothing in D063 asks for that,
+and it is the Karl Sims premise of the project. The owner's direction, more cell types and
+senses, is what gives selection a knob worth turning; the goal should pull that way.
+
+**Ruled.**
+
+1. **The campaign has no single pass or fail bar.** In its place, **a ladder of milestones**.
+   Each rung is a question asked, under a pre-registration, until one round answers it;
+   after that it is a reading kept on every round so that a later change cannot break it
+   unnoticed.
+2. **Rung 1, a self-sustaining food chain, is met** (rounds 30, 33, 35, 37b under D063 as
+   amended). D063's clauses stay in `scripts/clade-score.ps1` as a **state, not a verdict**:
+   the scorer prints, per seed, *the chain holds* (D063's clauses met), *the chain cycles*
+   (an inherited absorptive line that peaked and fell, with the period from peak to trough
+   and any second rise), or *no chain*, with every number it prints today; the words PASS
+   and FAIL leave the table. Every verdict recorded through round 38 stands as recorded.
+   Rung 1 binds in one place only: a base round reading *no chain* in most seeds is a
+   regression and stops the path until it is understood.
+3. **Rung 2 is adaptation by degree**: a heritable number within one clade (adult scale, a
+   part's proportions, drive power, brood size, birth investment) shifts across
+   generations by more than a neutral number drifts, in the direction the ledger says
+   pays, in three of five seeds. It is **a standing reading first and a bar later**: the
+   trait-by-degree instrument (0082's reading, made from the snapshots on every round)
+   is run on three rounds and the neutral drift measured before the threshold is set,
+   from data and not in advance. The instrument is built with the timeline
+   (`logbook/specs/timeline-spec.md`), which reads the same files.
+4. **Rungs 3 and 4 are named and not worded**: *a sense changes what a body does* and *a
+   body's form changes what it earns*. Each gets its wording when its rounds are near
+   (the light sense, round 40; the stroke, round 41; ellipsoids, round 42), from the
+   instruments that exist by then.
+5. **Every round is still read on its own pre-registered predictions**, committed before
+   the queue starts (`launch-queue.ps1 -Prereg`), each with a threshold and a two-sided
+   reading written before the numbers arrive, each judged held or failed, and the round's
+   degree of success is how many held and by how much. This is unchanged and is not to be
+   loosened: with the bar gone it is the whole of the campaign's discipline.
+6. **The matter question is not a goal.** How matter gathers in the world is a
+   replacement under D091 (the bed now, the seep and the shelf after), read by its own
+   predictions.
+7. **D081's two bars are deprecated with D063's**: a treatment still joins the base only at
+   the bar its own pre-registration names (D091's ruling 2), and that bar is written in
+   the treatment's own terms, never as a D063 count.
+
+**What this buys.** The record can say in four lines what is proven and what is next. A
+world that cycles is read as cycling. The path's complexity (senses, cell types, the
+stroke, the body) is what rungs 2 to 4 need, so the goal pulls toward it. **What it
+costs.** One instrument before rung 2 can be scored, and the scorer's verdict line
+rewritten with its 52 fixture assertions.
+
+**Rejected.** Loosening D063's clauses so a cycling world passes (a passed test, and every
+loosening invites the next). Predictions only, with no long horizon (the path becomes a
+feature list and nobody can say whether it is closer to anything). A new pass or fail bar
+for adaptation set now (the instrument does not exist, a bar set before its instrument is
+set wrong, as 0102's E6 was, and a world without knobs fails it for reasons that are not
+the round's). The reviewers' balance clauses as a goal (written for a world at
+equilibrium; this one oscillates).
