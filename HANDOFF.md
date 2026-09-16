@@ -343,9 +343,10 @@ the background and never handed to a subagent, which cannot wait.
    5, 6 and 3; seed 5 launched on worker 2 on the same build, and the queue is done.
    **17:30: seed 2 landed at budget; seed 3 hit the launcher's 1,200 min wall at 25,175 s
    (0.3x real time at five arms, "ended wall", censored SHORT).** Seeds 4 and 5 run at
-   1,400 and 1,640 s/h over their lives (local clock): seed 4's wall falls at 23:00 on
-   the 16th near 27,900 s, censored; seed 5, launched later into a lighter machine, is on
-   pace to land at budget near 08:00 on the 17th, ahead of its 10:17 wall. A running arm's
+   1,400 and 1,640 s/h over their lives (local clock). **23:00: seed 4 ended on the wall
+   at 27,800 s, censored.** Seed 5 alone on the machine ran 5,500 s in the four hours after
+   the render Editor stopped (12,600 s at 23:04) and is on pace to land at budget near
+   08:00 on the 17th, ahead of its 10:17 wall; the render chain stays paused until it does. A running arm's
    wall cannot be extended. A rerun on the same build at zero physics workers replays the
    censored prefix bit for bit (D078) and continues it, so a rerun of seeds 3 and 4 is an
    extension and not a new realisation. Every prediction of 0102 reads at 30,000 s by name. The render chain was stopped at 17:30 to give
