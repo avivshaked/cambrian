@@ -117,6 +117,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D092](#d092) | The bed with shape: a seeded height map at three scales under the tank, the streams' potential in floor-following coordinates so the water follows the floor, the grid masked below it, one static collider; relief 0 replays the flat world; rocks and overhangs out (`logbook/specs/bed-spec.md`) | 2026-09-15 | ruled by the owner in conversation ("I really want a shaped bed"; "life like without making it computationally problematic", then "not too expensive"); the requirements written by the agent and accepted; round 39, built after round 38's read |
 | [D093](#d093) | Round 39's tank sized for the slope: 2,200 m² (a 52.9 m diameter, the smallest round area that takes a 30 m tilt under a 30° ramp), 45 m deep, the floor from 30 m on the shallow arc to 60 m on the deep one; the tilt's cap 30°; the shelf folded into the bed's round | 2026-09-15 | ruled by the owner in conversation on the evening of 2026-09-15 ("we need a much bigger tank. Much") and chosen from the agent's three sizings; the matter budget set from the founding smokes |
 | [D094](#d094) | The goal becomes a ladder of milestones: D063 deprecated as the campaign's bar (rung 1, met), the scorer to print a state and not a verdict, rung 2 adaptation by degree (a standing reading until its threshold is measured), rungs 3 and 4 named; every round still read on its own pre-registered predictions | 2026-09-16 | ruled by the owner in conversation on the morning of 2026-09-16 ("once we've proven that the goal is achievable we don't need to hold ourselves to that goal again"), on the agent's reasoning in the open |
+| [D095](#d095) | Seeds per round and arms at a time: five seeds for population-level predictions, ten for a rare event or a 2-or-3-of-5 reading, a rare event pre-registered as a count; three concurrent arms, renders between rounds | 2026-09-17 |
 
 ---
 
@@ -5211,3 +5212,38 @@ for adaptation set now. The instrument does not exist, and a bar set before its 
 is set wrong, as 0102's E6 was. A world without knobs fails it for reasons that are not the
 round's. The reviewers' balance clauses as a goal (written for a world at
 equilibrium; this one oscillates).
+
+### D095
+**Five seeds, ten for a rare event, and three arms at a time** · 2026-09-17
+
+**Status:** ruled by the owner on 2026-09-17, in conversation ("proceed with your
+recommendations", twice, to the agent's answers on the cost of round 39 and on how many
+seeds a round needs). The rule on seeds is a reading rule and changes no world; the rule
+on arms is a rule of the machine and lives in CLAUDE.md as well.
+
+**Context, in plain words.** Round 39's seeds took fifteen to nineteen hours where round
+38's took ten to thirteen, and three of five were cut short. The owner asked whether the
+world had become expensive. It had not: per body, the world ran cheaper alone than round 38
+ever did (`scripts/pace-survey.py`). The hours went to a larger crowd, which the round
+asked for, and to five arms sharing eight fast cores with a day of renders. Five arms on
+this machine deliver about 1.7 times real time in total and three about 1.5, so the fourth
+and fifth arms only stretch every seed. The owner then asked how many seeds a round needs
+before its outcome is justified.
+
+**Ruled.** A round runs five seeds when its predictions are about the population: a
+living count, a spread, a share, a pace. Their seed-to-seed spread is about five percent
+(logbook/0099's ten seeds of one world), and five draws separate "usually" from "a coin
+toss", though not 0.7 from 0.9: a 4-of-5 pass would be wrong about one round in five if
+the mechanism were a coin toss, and the campaign leans on nine predictions read together,
+on effect sizes against the spread, and on the next base round's replication for the
+rest. A round runs ten seeds when a prediction is about a rare event, a joint surviving
+founding or a standing jointed line or a throw, or when a five-seed round comes back 2 or
+3 of 5 on the reading that matters, which is the region five cannot decide. A rare event
+is pre-registered as a count with its expected range and never as a 4-of-5 threshold.
+Three arms run at a time, and renders go between rounds or on a slot the arms are not
+using. A five-seed round is two batches of about seventeen hours; ten seeds are four.
+
+**Rejected.** Five arms for throughput: measured, and it buys little while putting
+every seed past its wall. Ten seeds as the default: doubles every round's cost for
+readings whose spread five already resolves.
+
