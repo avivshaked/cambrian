@@ -1,5 +1,10 @@
 """Replay-identity check between two arms: first stats.jsonl sample whose fields differ.
 Usage: python3 scripts/compare-det.py det0-a det0-b [--allow-partial] [--run NAME]
+       python3 scripts/compare-det.py r39-s5 r39-s5 --run-a <killed dir> --run-b <rerun dir> --allow-partial
+
+  --run-a and --run-b name a run directory for one side each, which is how one arm's rerun is
+  checked against its own censored copy (2026-09-17: a run Windows killed, relaunched on the
+  same build, replays its prefix bit for bit or the replay rule is broken).
 
 Exit codes (the Astra review's F4, logbook/specs/script-contracts-spec.md):
   0  every shared sample agrees (coverage need not match unless --allow-partial is absent);
@@ -60,10 +65,12 @@ def main():
     parser.add_argument('--run', metavar='NAME',
                          help='run directory name to use for whichever arm has more than '
                               'one under runs/<arm>/')
+    parser.add_argument('--run-a', metavar='NAME', help='run directory for arm a alone')
+    parser.add_argument('--run-b', metavar='NAME', help='run directory for arm b alone')
     args = parser.parse_args()
 
-    path_a = find_run_dir(args.a, args.run)
-    path_b = find_run_dir(args.b, args.run)
+    path_a = find_run_dir(args.a, args.run_a or args.run)
+    path_b = find_run_dir(args.b, args.run_b or args.run)
 
     A = {r['t']: r for r in rows(path_a)}
     B = {r['t']: r for r in rows(path_b)}

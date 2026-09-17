@@ -376,8 +376,14 @@ the background and never handed to a subagent, which cannot wait.
    (`simHash 6d38c45e…`; the 300 s smoke `tsplit-smoke` read physics 4%, world 85%,
    harness 11% at founding, so the grid's per-cell step is most of an empty world's cost
    and about a tenth of a full seed's). Round 39's reruns are unaffected: their workers
-   carry the round's tree. Refresh every worker before round 40. The restyle of 0102 waits
-   for round 39's read, since the entry is the live pre-registration. A running arm's
+   carry the round's tree. Refresh every worker before round 40. **The style pass is done and pushed** (0097 to 0101,
+   0103, 0104, seven specs, D090 to D094; frozen pre-registration blocks and the entry
+   skeleton untouched); 0102's restyle waits for round 39's read, since the entry is the
+   live pre-registration. D095 records the seed and arm rulings. **The reruns replay their
+   censored copies bit for bit so far**: `compare-det.py --run-a/--run-b --allow-partial`
+   (new switches, fixtures pass) reads identical on every shared sample to 2,600, 2,200 and
+   2,900 s at 10:40; run it again when each lands, over the full censored prefix, and put
+   the three lines in the round's entry. A running arm's
    wall cannot be extended. A rerun on the same build at zero physics workers replays the
    censored prefix bit for bit (D078) and continues it, so a rerun of seeds 3 and 4 is an
    extension and not a new realisation. Every prediction of 0102 reads at 30,000 s by name. The render chain was stopped at 17:30 to give
