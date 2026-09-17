@@ -70,11 +70,15 @@ cost (the cost side is closed, the prize side is open; `mean m/s` reads the wate
 Throughput still binds: dt 0.02
 screens, 0.01 confirms (logbook/0052). Experiments are *arms*, launched with
 `scripts/run-arm.ps1` against worker copies `unity-w2`..`unity-w7` — never two processes on
-one worker, at most five concurrent arms, and verify every arm's settings from the header its
-run report writes, not from the launch command. The owner's open Editor on `unity/` counts
-toward the five. A **sixth** Unity process is allowed for a short visual check that comes
-and goes (a compile, a render of a few frames; owner's ruling, 2026-09-16), never for an
-arm, and never beside a Core test suite: pictures or tests on top of five, not both.
+one worker, **three concurrent arms** (owner's ruling, 2026-09-17: five arms on this
+machine deliver about 1.7x real time in total and three about 1.5x, so the fourth and
+fifth buy little and put every seed a day later and past its wall; `scripts/pace-survey.py`
+is the reading), five Unity processes at most with the owner's open Editor on `unity/`
+counted, and verify every arm's settings from the header its run report writes, not from
+the launch command. Renders go between rounds or on a slot the arms are not using, never
+on top of a full set. A **sixth** Unity process is allowed for a short visual check that
+comes and goes (a compile, a render of a few frames; owner's ruling, 2026-09-16), never for
+an arm, and never beside a Core test suite: pictures or tests on top of the cap, not both.
 
 ## Commands
 

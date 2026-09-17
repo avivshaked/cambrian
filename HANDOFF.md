@@ -363,7 +363,17 @@ the background and never handed to a subagent, which cannot wait.
    applies to each against its censored directory. `unity/Temp/UnityLockfile` is stale
    from the restart and the owner's Editor clears it on open. Three Opus agents are
    restyling the recent prose (entries 0097 to 0104, the recent specs, D090 to D094) on
-   the owner's note of style drift; the caller reviews the diffs and commits. A running arm's
+   the owner's note of style drift; the caller reviews the diffs and commits. **Two rulings
+   of the 17th** ("proceed with your recommendations"): three concurrent arms, not five,
+   with renders between rounds (CLAUDE.md's cap; `scripts/pace-survey.py` is the evidence:
+   round 39 read 25 to 35% costlier per body beside five arms and renders and cheaper than
+   round 38 alone); and seeds per round, five for population-level predictions, ten when a
+   prediction is about a rare event or a five-seed round reads 2 or 3 of 5 on the reading
+   that matters, a rare event pre-registered as a count and never as a 4-of-5 threshold.
+   The second goes to DECISIONS.md as D095 once the style agent is out of that file. A
+   timing split for the run report (wall milliseconds per step in physics, the world, the
+   harness and the writers, in `stats.jsonl` and the footer) is being built for the next
+   build; it moves `simHash`, so it lands between rounds. A running arm's
    wall cannot be extended. A rerun on the same build at zero physics workers replays the
    censored prefix bit for bit (D078) and continues it, so a rerun of seeds 3 and 4 is an
    extension and not a new realisation. Every prediction of 0102 reads at 30,000 s by name. The render chain was stopped at 17:30 to give
