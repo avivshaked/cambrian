@@ -9,7 +9,7 @@ the same 6,000 units of matter and corpses decaying in place. That is D089's dil
 for its mechanism (0100). The short answer is that it stands, at 1,600 bodies in every
 seed, and that the dilution changed almost nothing 0100 predicted. What it did change was
 not in the predictions at all. Every seed's eaters rose to a third or more of the living
-and then starved to nothing. And the goal rule, which asks for a clade that holds, failed
+and then starved to nothing. The goal rule, which asks for a clade that holds, then failed
 five of five on a world that oscillates.
 
 ## The rules before scoring
@@ -19,8 +19,8 @@ depth 60, wall, bed`, `area 400 m2`, `matterBudget 6000`, `fluidAccel 1`, `curre
 0.1 m/s transport`, `dispersal=5 m`, `driveLimit >0.01`, `dt=0.01`, `field grid …
 cell=1 mcell=5 corpse=0.005/s`); every manifest the one build and `prereg.json` at 0100's
 commit (V1). `audit` 0.0000% and `mat resid` 0 on all 1,500 rows (V2); `wraps` 0 on all
-(V3). Every diverged dump of a jointed body carries its trace. And for the first time
-every trace holds three finite frames before the first non-finite step (V4; 0097's ring
+(V3). Every diverged dump of a jointed body carries its trace. For the first time every trace
+holds three finite frames before the first non-finite step (V4; 0097's ring
 was all non-finite in 42 of 43). Eight of seed 5's ten dumps have no trace because they
 are one-part bodies, for which no ring is allocated. No arm was censored (V5).
 
@@ -78,17 +78,17 @@ of ten with ten or more. The peaks here are inside that range. What changed is t
 a fifth to two fifths of the world, and the collapse.
 
 It is a food crash. No matter was lost: `matterStanding` reads 6,000.0 at every sample of
-every seed. And `shade %` falls through every boom (seed 1: 8.2 to 3.2%), so the eaters
-shaded nothing.
+every seed. The eaters shaded nothing either, since `shade %` falls through every boom
+(seed 1: 8.2 to 3.2%).
 
 The detritus they lived on collapsed. The standing stock peaked at 120 to 196 kJ between 6,600
 and 10,000 s. It read 24 to 40 kJ at the eaters' peak, and was back to 61 to 91 kJ and rising
-at 30,000 s. The column `refuge J` fell from 450 to 1,049 to 83 to 185 over the same interval.
-And `det deep` fell from 4.1 to 8.7 to 0.7 to 1.5.
+at 30,000 s. Over the same interval `refuge J` fell from 450 to 1,049 to 83 to 185, and `det deep` from
+4.1 to 8.7 to 0.7 to 1.5.
 
 The absorptive log closes it. The density each eater was fed at fell from about 4 J/m³ at the
-boom's start to 0.7 to 1.5 at the peak. And `share` read 1.000 in every window, so no eater was
-outbid. The mean net watts of the eaters crossed zero within one or two samples of the peak in
+boom's start to 0.7 to 1.5 at the peak. No eater was
+outbid: `share` read 1.000 in every window. The mean net watts of the eaters crossed zero within one or two samples of the peak in
 every seed. This is a consumer-resource oscillation with a period longer than the run: about
 15,000 to 20,000 s from a line's founding to its bust.
 
@@ -112,7 +112,7 @@ fail D063 as amended.
   falls as the field fills. `patch max share` 0.27 to 0.28 against 0.25 even. This is round
   39's baseline, and the reason a floor with places is the next dial.
 - **Stillbirths** 214 to 1,294 per seed (13 to 130 per 1,000 births), two seeds above
-  37b's whole range. And `crowded` reads 0 to 3 for the run, so crowding is again excluded.
+  37b's whole range. Crowding is again excluded, since `crowded` reads 0 to 3 for the run.
   The rate per window rides with the standing eater count in four seeds (r 0.21 to 0.58)
   and against the jointed count in four. So 0097's reading that stillbirths ride with the
   jointed lines does not survive. Their cause stays open: a genome that develops into no

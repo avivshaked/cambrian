@@ -115,6 +115,11 @@ def report(path):
             findings.append((first_n, f'{codes} code identifiers in one paragraph'))
         if re.match(r'^\s*(?:[-*]\s+|\d+\.\s+)?\*\*[^*]{1,60}[.:]\*\*', joined):
             findings.append((first_n, 'bold lead-in ending in a colon or stop'))
+        # STYLE.md 5: the stub after a split. One sentence opened with And or So is a
+        # colleague's; two in a paragraph is a long sentence cut in half and left.
+        stubs = [s for s in sentences(joined) if re.match(r'^(And|But|So)\s', s)]
+        if len(stubs) >= 2:
+            findings.append((first_n, f'{len(stubs)} sentences opened with And/But/So: "{stubs[0][:40]}..."'))
         for s in sentences(joined):
             n_words = len(re.findall(r"[A-Za-z0-9'’]+", s))
             if n_words > LONG_SENTENCE:

@@ -72,7 +72,7 @@ Recorded and not predicted, because the instrument is new or the baseline absent
 and `mat cv` at every 1,000 s per seed, the first reading of the field's coefficient of
 variation on any round, from which round 39's threshold is set. Also recorded: `corpses`
 and `det deep`; stillbirths against births; `mean m/s`, still the water's; the founding
-time and kind of every passing clade. And the depth band's shape from the positions file,
+time and kind of every passing clade; the depth band's shape from the positions file,
 since a crowd that compresses into the lit band would read D3 below 1.3 for a reason the
 reading should name.
 
@@ -123,9 +123,9 @@ build against `boxdig-r38build` on the candidate, seed 3, dt 0.02) is identical 
 
 The dilute tank smoke `r38smoke` (600 s, dt 0.02, seed 3) printed the header this entry's
 V1 names, and it founded. There were 166 births by 600 s against 93 in 37b's seed 1 at the
-same time, with about 90 blocked attempts per birth as before. The column `mat here` read
-0.037, with no stillbirth and both ledgers closed. And `det cv` fell from 2.4 to 1.2 while
-`mat cv` rose from 0.17 to 0.47, as the first bodies drew the matter down.
+same time, with about 90 blocked attempts per birth as before. The column `mat here` read 0.037, with no stillbirth and both ledgers closed. As the first
+bodies drew the matter down, `det cv` fell from 2.4 to 1.2 while `mat cv` rose from 0.17
+to 0.47.
 
 Main was fast-forwarded to the candidate (`582ee6a`) and the workers refreshed. The
 manifest's `coreHash` on the candidate read main's, since it hashes the main tree's Core by
@@ -162,7 +162,7 @@ seeds were already past their peaks; watched and not read.
 *04:15, the 6,000 s look at seed 1.* There are 1,686 alive, which is 37b's count at the same
 time in four times the water. The matter builds the same number of bodies. The disc is full
 (398 of 402 columns, the rim quarter 24%, `x sd` 5.7 m) and the nearest neighbour holds at 1.28
-m. The eaters are recruiting: 9 absorptive bodies at 3,000 s, 62 at 6,100 s. And the jointed
+m. The eaters are recruiting: 9 absorptive bodies at 3,000 s, 62 at 6,100 s. The jointed
 count is decaying after all (71 to 35), the dense worlds' shape arriving later.
 
 `det cv` fell to 0.17 and `mat cv` to 0.04 to 0.12 as the fields filled: uniform water,
@@ -185,7 +185,7 @@ The eaters are larger than in any dense world. Seed 1 holds 618 absorptive bodie
 to 471 by 10,000 s and fell to 234 by 14,500. Round 37b's ten seeds peaked at 331 to 972 and
 held 3 to 7% at the end.
 
-And the jointed counts in seeds 3 and 4 stand at 117 and 170 in their first 7,500 s. The dense
+The jointed counts in seeds 3 and 4 stand at 117 and 170 in their first 7,500 s. The dense
 worlds' peaks were 29 to 174 and past by 3,000 s. Seed 1's fell to 1 by 15,000 s and seed 2's
 to 10, so the early standing is not yet a line that grows. Stillbirths run high in seed 1 (551
 by 15,000 s). `det cv` 0.11 to 0.39 and `mat cv` 0.02 to 0.22: the fields stay near uniform.

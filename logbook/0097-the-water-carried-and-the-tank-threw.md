@@ -11,9 +11,8 @@ owner's ruling it replaces round 37 as the tank's base.
 
 0095 pre-registered nine predictions of what the carried water would do. It asked for no
 gathering at the glass (M1), a filled middle (M2), the box's crowd (M3), the box's water
-speed (M5) and a damped cycle (M7). It asked that the joint's fate be unchanged (M4) and
-that the population land within half to one and a half of round 37's (M0). And it asked for
-no throws (M6) and a pace held (M8).
+speed (M5) and a damped cycle (M7). It asked that the joint's fate be unchanged (M4) and that the population land within half
+to one and a half of round 37's (M0). It asked for no throws (M6) and a pace held (M8).
 
 The rules V1 to V4 hold on every row. The headers and hashes are as recorded. The audit
 reads 0.0000% and the matter residual 0 on all 1,492 rows, `wraps` reads 0, and a trace
@@ -84,8 +83,8 @@ M1's second clause failed for a reason that is the prediction's and not the worl
 asked the mean change in a body's radius over 100 s to lie within half a metre in every
 bin inside 4 m. A body drawn from a uniform disc and put back anywhere in it 100 s later
 drifts outward from the centre bins by construction. The mean radius of a disc is two
-thirds of its radius. So the fully-mixed bound is +3.0 m from the innermost bin and +2.2
-from the next. And 0.1 m/s water moves a body metres in 100 s. Every bin in every seed sits
+thirds of its radius. So the fully-mixed bound is +3.0 m from the innermost bin and +2.2 from the next. Water at
+0.1 m/s moves a body metres in 100 s. Every bin in every seed sits
 at 0.40 to 1.14 of that bound. The pooled net flux over all radii is +0.0025 to
 +0.0032 m per 100 s. Round 37's was +0.020 to +0.049, and outward in every bin including
 the rim's. Read against the bound rather than against zero, the drift says
@@ -100,7 +99,7 @@ are the box's too (mean −12 to −22 m, spread 8 to 13 m), so 0094's depth con
 closed. The water carries at the box's speed: `mean m/s` 0.81 to 1.24 of round 36's, the
 crust's slow water gone with the crust.
 
-And the cycle was founding. Every trough in every seed is the 5,000 s sample, and the
+The cycle was founding. Every trough in every seed is the 5,000 s sample, and the
 ratios are 1.3 to 2.4. The rim share at peak and trough alike is 0.18 to 0.27. So the
 population swing of round 37 was the crust's after all, and there is no cycle left to
 explain.
@@ -153,7 +152,7 @@ launches beside the fresh seeds. The mass-ratio cap is not proposed: the traces 
 
 The fields are as even as the crowd. `patch max share` over four equal-area rings reads
 0.26 to 0.46, with means of 0.28 to 0.29 against 0.25 for even. Round 37 read 0.45 to
-0.98. And `det patch sd` averages 0.03 to 0.06 against round 37's 0.08 to 1.31.
+0.98, and `det patch sd` averages 0.03 to 0.06 against round 37's 0.08 to 1.31.
 
 There are no pockets by ring. That is what the pockets question expected of a well-mixed
 tank. It is also why the `field cv` column is built and waiting: a ring statistic cannot
@@ -220,9 +219,9 @@ changed which lineages bred, and the lineages it kept, the jointed ones, are the
 children sometimes develop into nothing. Either way, 0097's suspicion of the wall clearance
 is withdrawn.
 
-And the force is what the round was for. Without it the streams alone gather 42 to 51% of
-the bodies in the rim quarter, as D090's tracer check said a lagging body would. And the
-bodies move at half the water's speed. So M1 and M5 are the force's doing. The world needs
+The force is what the round was for. Without it the streams alone gather 42 to 51% of the bodies in the rim quarter, as D090's
+tracer check said a lagging body would. Without it the bodies also move at half the
+water's speed. So M1 and M5 are the force's doing. The world needs
 the term and the term throws one jointed newborn in a hundred.
 
 The field itself, sampled without a body in it (`scratch/accel-probe/`, the closed form
@@ -273,8 +272,8 @@ What the force does, as inference, is ecological. It is the world in which that 
 stands: with the force seed 5 held 100 to 260 jointed bodies, and without it the joint
 thinned to 2. So it is the world in which that lineage's children are born to be thrown.
 The mitigation is therefore neither the force's nor the mass ratio's. It is the drive's,
-which is round 41's question and the owner's. And the trace's second pass says what the
-joint did on the step before the blow-up, before anything is proposed.
+which is round 41's question and the owner's. The trace's second pass comes before any
+proposal, and says what the joint did on the step before the blow-up.
 
 ## Sources
 

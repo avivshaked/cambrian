@@ -138,6 +138,7 @@ each one found is a reason to rewrite the sentence, and a page with several of t
 | "which is why / which is what / which is where" | "…within a single metabolic step, which is why the first visible difference is forty columns at once" | a new sentence: "That is why the first visible difference is forty columns at once." |
 | Rhetorical questions | "What would let a stomach live where the matter is?" | state the question as a question we hold: "The open question is what would let a stomach live where the matter is." |
 | The nominal subject | "What the audit did find were amplifiers" | "The audit found amplifiers" |
+| The stub after a split | "The rim share is 0.18 to 0.27. So the swing was the crust's. And the cycle was founding." | join the stub to its sentence with a comma, or give it a subject of its own; one "So" a paragraph is a colleague's, two are a long sentence cut in half |
 | Semicolon chains | "…the top holds; the populations live in the water; founding is safe; the stock levels" | a list, or sentences |
 | Numbers before meaning | "Identical through step 147,777" | "A step is a hundredth of a second, and a run has three million of them. The two runs agree through step 147,777." |
 | The teasing title | "One box", "The senses answer" | "The world becomes one box", "Three new senses, and they work" |
