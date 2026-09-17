@@ -356,9 +356,14 @@ the background and never handed to a subagent, which cannot wait.
    repeated; `launch-r39.ps1`'s wall is 1,800 min from this launch. At zero physics workers
    it replays the killed run's 26,600 s bit for bit (D078): check it with
    `scripts/compare-det.py --allow-partial` against the killed directory once the rerun is
-   past a few thousand seconds, and again at the end. Seeds 3 and 4 wait for the owner's
-   word on the rerun; `unity/Temp/UnityLockfile` is stale from the restart and the owner's
-   Editor clears it on open. A running arm's
+   past a few thousand seconds, and again at the end. **09:58: seeds 3 and 4 relaunched on
+   workers 3 and 4** the same way, on the owner's word ("proceed with your recommendations"),
+   so every seed of the round reads at the pre-registered 30,000 s; the three reruns at
+   three arms should land in about 17 h, the night of the 17th. The same replay check
+   applies to each against its censored directory. `unity/Temp/UnityLockfile` is stale
+   from the restart and the owner's Editor clears it on open. Three Opus agents are
+   restyling the recent prose (entries 0097 to 0104, the recent specs, D090 to D094) on
+   the owner's note of style drift; the caller reviews the diffs and commits. A running arm's
    wall cannot be extended. A rerun on the same build at zero physics workers replays the
    censored prefix bit for bit (D078) and continues it, so a rerun of seeds 3 and 4 is an
    extension and not a new realisation. Every prediction of 0102 reads at 30,000 s by name. The render chain was stopped at 17:30 to give
