@@ -346,7 +346,19 @@ the background and never handed to a subagent, which cannot wait.
    1,400 and 1,640 s/h over their lives (local clock). **23:00: seed 4 ended on the wall
    at 27,517 s, censored.** Seed 5 alone on the machine ran 5,500 s in the four hours after
    the render Editor stopped (12,600 s at 23:04) and is on pace to land at budget near
-   08:00 on the 17th, ahead of its 10:17 wall; the render chain stays paused until it does. A running arm's
+   08:00 on the 17th, ahead of its 10:17 wall; the render chain stays paused until it does.
+   **17th, 05:54: Windows restarted the machine for its update and killed seed 5 at 26,600 s**
+   (the event log's two restarts at 05:54 and 05:55, then the owner's at 09:31; the Editor's
+   log last written 05:53:16); its manifest is merged by hand the way `stop-arm.ps1` merges,
+   `stopped` / `windows-update-restart`. **09:53: seed 5 relaunched on worker 2** through the
+   queue with the prereg and the hash (`runs/r39-s5/2026-09-17-085303-…`, the killed run's
+   directory kept beside it), on the owner's standing word that a run Windows takes is
+   repeated; `launch-r39.ps1`'s wall is 1,800 min from this launch. At zero physics workers
+   it replays the killed run's 26,600 s bit for bit (D078): check it with
+   `scripts/compare-det.py --allow-partial` against the killed directory once the rerun is
+   past a few thousand seconds, and again at the end. Seeds 3 and 4 wait for the owner's
+   word on the rerun; `unity/Temp/UnityLockfile` is stale from the restart and the owner's
+   Editor clears it on open. A running arm's
    wall cannot be extended. A rerun on the same build at zero physics workers replays the
    censored prefix bit for bit (D078) and continues it, so a rerun of seeds 3 and 4 is an
    extension and not a new realisation. Every prediction of 0102 reads at 30,000 s by name. The render chain was stopped at 17:30 to give
