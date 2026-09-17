@@ -1,62 +1,85 @@
 # Leonardo.ai for the theatre's assets: a survey
 
-**2026-09-16**  ·  asked by the owner ("have a look at the latest leonardo.ai documentation and find out if you could use it for asset or skin creation for the theatre; capture the research and ideas"). A Sonnet subagent's web survey, read-only: no account, no upload, no API call, nothing installed. Several of Leonardo's own pages refused automated fetching (403 and 404), so the pricing and terms figures come from secondary summaries and are marked so; the feature claims come from Leonardo's own reference pages where they loaded. The agent's reading follows the survey.
+**2026-09-16**  ·  asked by the owner.
+
+> "have a look at the latest leonardo.ai documentation and find out if you could use it for
+> asset or skin creation for the theatre; capture the research and ideas"
+
+A Sonnet subagent did the reading on the web, read-only: no account, no upload, no API call,
+nothing installed. Several of Leonardo's own pages refused automated fetching, with 403 and
+404. So the pricing and terms figures come from secondary summaries and are marked as such,
+while the feature claims come from Leonardo's own reference pages, where they loaded. The
+agent's reading follows the survey.
 
 ## The reading (the agent's)
 
-**Where it fits: the video, not the skin.** Leonardo is a good tool for the presentation
-layer that sits outside the world: backdrops and matte paintings for the safari's arrival
-shot, title cards, thumbnails and concept art for the YouTube videos. None of that touches
-a rule. It is a poor tool for the skin itself, for three reasons that are the theatre's
-own and not Leonardo's.
+Leonardo belongs to the video and not to the skin. It is a good tool for the presentation
+layer that sits outside the world. That layer is backdrops and matte paintings for the
+safari's arrival shot, title cards, thumbnails and concept art for the YouTube videos. None of that touches a
+rule. It is a poor tool for the skin itself, for three reasons that are the theatre's own
+and not Leonardo's.
 
-1. **The skin is arithmetic on purpose.** `research/theatre-look/README.md` and
-   `TheatreSkin.cs` hold to no committed binary: every mesh, texture, material and shader
-   is built at start from code, the guild colour rides the Fresnel rim and nowhere else,
-   the carve is noise in object space, the caustics follow the sun the water model has. A
-   generated texture is a fixed file that has to be re-made when a dial moves, and it puts
-   colour where the design forbids it unless someone is careful every time.
-2. **The record needs reproducibility Leonardo does not promise.** Its `seed` parameter
-   reproduces an image today; nothing in its docs promises the same image after a model
-   is retired, and its model line has turned over twice in a year. A per-clade skin from
-   a genome hash, the idea that makes people's eyes light up, would not replay in a year.
-   The queued **inherited skin genes** (HANDOFF item 11: a few neutral numbers in the
-   genome that the procedural shader reads, so relatives resemble each other) does the
-   same job deterministically forever, with nothing leaving the machine. That is the
-   route for relatives looking alike.
-3. **Any upload is data leaving the machine.** A theatre picture, a body's shape, or a
+1. **The skin is arithmetic**, on purpose. `research/theatre-look/README.md` and
+   `TheatreSkin.cs` hold to no committed binary: every mesh, texture, material and shader is
+   built at start from code. The guild colour rides the Fresnel rim and nowhere else, the
+   carve is noise in object space, and the caustics follow the sun the water model has. A
+   generated texture is a fixed file that has to be re-made when a dial moves. It also puts
+   colour where the design forbids it, unless someone is careful every time.
+
+2. **Leonardo does not promise the reproducibility our record needs**. Its `seed` parameter
+   reproduces an image today. Nothing in its docs promises the same image after a model is
+   retired, and its model line has turned over twice in a year. A per-clade skin from a
+   genome hash, the idea that makes people's eyes light up, would not replay in a year. The
+   queued inherited skin genes do the same job deterministically forever, with nothing
+   leaving the machine. HANDOFF item 11 puts a few neutral numbers in the genome for the
+   procedural shader to read, so that relatives resemble each other. That is the route for
+   relatives looking alike.
+
+3. **Any upload is data leaving the machine**. A theatre picture, a body's shape, or a
    number derived from a genome sent to Leonardo needs the owner's approval for that
    instance, under the standing rule. For backdrops and title cards nothing of the
    project's has to go up; a prompt is enough.
 
-**For sand, a CC0 library beats a generator.** If the bed ever wants a texture rather
-than its two greys and its procedural ripple, Poly Haven or ambientCG give a tileable
-albedo, normal and roughness set under CC0, with nothing uploaded and nothing to
-reproduce, and Blender can bake a procedural one offline with the same guarantees.
+For sand, a CC0 library beats a generator. Suppose the bed ever wants a texture rather than
+its two greys and its procedural ripple. Poly Haven or ambientCG give a tileable albedo,
+normal and roughness set under CC0, with nothing uploaded and nothing to reproduce. Blender can
+bake a procedural one offline with the same guarantees.
 
-**Recommendation.** Keep Leonardo in mind for the videos (uses e and f below) when the
-first story is chosen, on a paid private tier so the outputs are the owner's; ask before
-any project image goes up. Do not use it for bodies, the bed or the water. Build the
-inherited skin genes when the theatre work resumes, since that is what "skins" means
-for this world.
+The recommendation is to keep Leonardo in mind for the videos, uses e and f below, once the
+first story is chosen. Run it on a paid private tier, so that the outputs are the owner's.
+Ask before any project image goes up. Do not use it for bodies, the bed or the water. Build
+the inherited skin genes when the theatre work resumes, since that is what "skins" means for
+this world.
 
 ## How the key will be handled (owner, 2026-09-16 afternoon)
 
-The script is `scripts/leonardo-generate.py` and the prompt sheet `design/leonardo-prompts.md`.
-The owner's chosen pattern for the key is the one the synthetic-signals project on this
-machine already runs: a **versioned `.env`** holding only 1Password references
-(`EVOSIM_LEONARDO_KEY=op://<vault>/<item>/credential`), resolved for one run at a time by
-`op run --env-file=.env -- python scripts/leonardo-generate.py ...`. The secret never sits on
-disk in the project, and the file documents which secrets exist. It needs three repo changes
-when it is set up: the commit hook's rule on `*.env` becomes "tracked and every value a
-reference or non-secret" with a check; the script refuses a value starting with `op://` and
-says to run under `op run`; the `.env` is un-ignored. One cost: `op run` may ask the app for
-approval, so the agent cannot start a generation unattended, which for Leonardo is no cost.
+The script is `scripts/leonardo-generate.py` and the prompt sheet is
+`design/leonardo-prompts.md`.
 
-**Until the owner has time for that, Leonardo is used by hand**: the agent writes the prompt
-into the sheet, the owner pastes it into Leonardo and drops the picture under
-`scratch/leonardo/<slug>/`. The script's `.env` reader and the ignore rule from the afternoon
-stay as the interim, unused.
+The owner chose the pattern the synthetic-signals project on this machine already runs: a
+versioned `.env` holding only 1Password references, as in
+`EVOSIM_LEONARDO_KEY=op://<vault>/<item>/credential`. The secret never sits on disk in the
+project, and the file documents which secrets exist.
+
+The command `op run --env-file=.env -- python scripts/leonardo-generate.py ...` resolves the
+reference for one run at a time.
+
+Setting it up needs three changes to the repository.
+
+- The commit hook's rule on `*.env` becomes "tracked and every value a reference or
+  non-secret", with a check.
+
+- The script refuses a value starting with `op://` and says to run it under `op run`.
+
+- The `.env` is un-ignored.
+
+There is one cost. `op run` may ask the app for approval, so the agent cannot start a
+generation unattended, which for Leonardo is no cost.
+
+Until the owner has time for that, Leonardo is used by hand. The agent writes the prompt
+into the sheet, and the owner pastes it into Leonardo and drops the picture under
+`scratch/leonardo/<slug>/`. The script's `.env` reader and the ignore rule from the
+afternoon stay as the interim, unused.
 
 ## The survey (Sonnet, read 2026-09-16)
 

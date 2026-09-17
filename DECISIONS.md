@@ -4818,25 +4818,30 @@ about corpses.
 ### D090
 **The water carries as water does — streams instead of a gyre, and the fluid acceleration force; round 37b repeats the tank on both before the dilution** · 2026-09-12
 
-**Status:** ruled by the owner in two steps on 2026-09-12. The streams in the afternoon, on the
-owner's own diagnosis of round 37's early read ("What we don't want is a current that creates
-centrifugal forces that send all the creatures to the rim. The currents should not act as
-unified fields but more like streams"; "Yes. It reads right" to the agent's amended proposal).
-The fluid force in the evening ("Agreed. Proceed" to the agent's recommendations), after the
-streams build's own tracer check showed that no prescribed current can keep a lagging body
-spread. Both built on branch `streams` with the throw trace (`logbook/specs/streams-spec.md`,
+**Status:** ruled by the owner in two steps on 2026-09-12. The streams came in the
+afternoon, on the owner's own diagnosis of round 37's early read. The owner: "What we don't
+want is a current that creates centrifugal forces that send all the creatures to the rim.
+The currents should not act as unified fields but more like streams"; and "Yes. It reads
+right" to the agent's amended proposal. The fluid force came in the evening ("Agreed.
+Proceed" to the agent's recommendations), after the streams build's own tracer check showed
+that no prescribed current can keep a lagging body spread.
+
+Both were built on branch `streams` with the throw trace (`logbook/specs/streams-spec.md`,
 `water-carries-spec.md`, `throw-trace-spec.md`), verified on worker 7 the same evening, and
-merged after round 37's last render. Amends D089's second clause (the gyre) and DESIGN §5.2's
-fluid model; the slip-wall proposal of the same afternoon is recorded below as withdrawn.
+merged after round 37's last render. This amends D089's second clause, the gyre, and
+DESIGN §5.2's fluid model. The slip-wall proposal of the same afternoon is recorded below
+as withdrawn.
 
 **Context.** Round 37, the first world in the tank (logbook/0093, 0094), fixed the wrap and
-threw no body, and gathered: the rim ring, a quarter of the area, held 58 to 96% of the bodies
-at every sample of every seed, the population swung 700 to 1,750 on a 10,000 s cycle, and at
-the peaks the whole world was a crust one body thick at the glass in the top three metres. The
-agent first read it as the gyre's construction at the wall and proposed a swirl that slipped
-along the glass. The owner read it as a centrifuge. The streams build then measured both
-readings in one test: 200 tracers integrated through the field alone for 5,000 s, as a perfect
-parcel of water and as a body lagging the water by a drag response time.
+threw no body. And it gathered: the rim ring, a quarter of the area, held 58 to 96% of the
+bodies at every sample of every seed. The population swung 700 to 1,750 on a 10,000 s
+cycle. At the peaks the whole world was a crust one body thick at the glass, in the top
+three metres.
+
+The agent first read it as the gyre's construction at the wall and proposed a swirl that
+slipped along the glass. The owner read it as a centrifuge. The streams build then measured
+both readings in one test. It integrated 200 tracers through the field alone for 5,000 s, as
+a perfect parcel of water and as a body lagging the water by a drag response time.
 
 | what is carried | rim quarter (0.25 is even) |
 |---|---|
@@ -4847,55 +4852,62 @@ parcel of water and as a body lagging the water by a drag response time.
 | a body lagging by 2 s, in the streams, with the fluid force | 0.248 |
 | a body lagging by 2 s, in D089's gyre, with the fluid force | 0.270 |
 
-The field keeps water spread, as an incompressible flow must. The lag gathers, and it gathers
-in any current with any azimuthal motion: a body pulled toward the water's velocity by drag
-alone fails to turn as sharply as the water and drifts outward by about `τ·u_θ²/r` per
-second. Real water holds a parcel on its curve by the pressure gradient across the flow, and a
-neutral body feels that gradient as a force. D081's model had the drag and the added mass and
-not that term, which a box with no walls and a returning current never exposed.
+The field keeps water spread, as an incompressible flow must. The lag gathers, and it
+gathers in any current with any azimuthal motion. A body pulled toward the water's velocity
+by drag alone fails to turn as sharply as the water, and drifts outward by about
+`τ·u_θ²/r` per second.
+
+Real water holds a parcel on its curve by the pressure gradient across the flow, and a
+neutral body feels that gradient as a force. D081's model had the drag and the added mass
+and not that term, which a box with no walls and a returning current never exposed.
 
 **Ruled.**
 
-1. **Streams, not a gyre.** In a tank the current is a spectrum of 27 terms and no swirl about
-   the axis: horizontal eddies from a vertical vector potential over azimuthal modes 1 to 4,
-   two radial families (`s^m(1 − s²)` and `s^m(1 − s²)(1 − 2s²)`) and vertical modes 1 to 3,
-   amplitudes falling as `1/sqrt(m² + j² + q²)`; three axisymmetric overturning cells from
-   Stokes stream functions `r²(1 − s)²·sin(qπy/D)`, so neither their radial nor their vertical
-   flow reaches the glass; every term's phase advancing at its own irrational rate with
-   alternating signs, and its amplitude modulated between three quarters and one at a slower
-   irrational rate, all seeded by the run. Tangential at the glass by construction, finite on
-   the axis, divergence-free to 2e-4 of the RMS per metre; the wall layer moves at 0.96 of the
-   RMS; dead pockets 0.034; the fastest water 9 times the RMS, so the advection takes two
-   substeps at 0.1 m/s on 1 m cells where the gyre took one. No tunable: the tank's shape
-   selects it as it selected the gyre.
+1. **Streams replace the gyre** in a tank: the current is a spectrum of 27 terms with no
+   swirl about the axis. Horizontal eddies come from a vertical vector potential over
+   azimuthal modes 1 to 4, two radial families (`s^m(1 − s²)` and `s^m(1 − s²)(1 − 2s²)`)
+   and vertical modes 1 to 3. Their amplitudes fall as `1/sqrt(m² + j² + q²)`. Three
+   axisymmetric overturning cells come from Stokes stream functions `r²(1 − s)²·sin(qπy/D)`,
+   so neither their radial nor their vertical flow reaches the glass. Every term's phase
+   advances at its own irrational rate, with alternating signs. Its amplitude is modulated
+   between three quarters and one at a slower irrational rate, all seeded by the run.
 
-2. **The fluid acceleration force.** Every part feels
-   `F = c · (ρ_water · V_part + m_added) · Du/Dt`, the water's acceleration along the part's path
-   (`∂u/∂t + (u·∇)u`, from the current field by a central difference of 0.05 m and 0.01 s on the
-   field itself, exact to 0.2 to 0.4% of the RMS acceleration against a finer stencil), applied
-   beside the drag every physics step in every current mode, its vertical component under
-   D050's rule. `FluidConfig.FluidAccelerationCoefficient` (`EVOSIM_FLUID_ACCEL`) is `c`,
-   default 0 so every recorded world replays under its own config; 1 is the physical value and
-   the campaign's from round 37b; the header prints `fluidAccel`. The force does no work on a
-   body at rest in the water and no accounting term reads it, so the energy books are
-   untouched; as an external force it invalidates the mechanical energy and momentum checks of
-   DESIGN §11.2 exactly as lift and a moving current already do, and those run at 0. Cost: nine
-   field samples per part per step, about eight times a velocity sample; round 37b runs at
-   about half round 37's pace, and the analytic derivative of the streams is queued to take it
-   back, verified by digest identity, before round 38.
+   The field is tangential at the glass by construction, finite on the axis, and
+   divergence-free to 2e-4 of the RMS per metre. The wall layer moves at 0.96 of the RMS and
+   the dead pockets at 0.034. The fastest water is 9 times the RMS, so the advection takes
+   two substeps at 0.1 m/s on 1 m cells where the gyre took one. No tunable: the tank's
+   shape selects it as it selected the gyre.
 
-3. **The sequence.** Round 37 completes and is read as pre-registered. Round 37b, the same
-   world on the streams with `c` = 1 and the throw trace, replaces it as the tank's base; round
-   38's dilution reads against 37b. One change per round is kept in the owner's terms: 37b
-   makes the water carry bodies as water, and nothing else moves. The throw trace is read in
-   37b's dumps before any mitigation of the throws is proposed.
+2. **The fluid acceleration force** acts on every part:
+   `F = c · (ρ_water · V_part + m_added) · Du/Dt`, the water's acceleration along the part's
+   path. That acceleration is `∂u/∂t + (u·∇)u`, taken from the current field by a central
+   difference of 0.05 m and 0.01 s on the field itself. It is accurate to 0.2 to 0.4% of the
+   RMS acceleration against a finer stencil. The force is applied beside the drag every
+   physics step in every current mode, with its vertical component under D050's rule.
 
-**Checks run before the ruling** (worker 7, 2026-09-12 evening): the shared-space smoke with
-the tank and trace parts passed on the branch's Core and assets; a 600 s box digest under the
-new build is identical to the reference over all 31 steps at the defaults; a 600 s tank smoke
-with `c` = 1 (`r37bsmoke`, dt 0.02, seed 3) put 37, 41, 42 and 26 bodies in the four rings at
-600 s with a spread of 3.1 m against 2.8 m for a uniform disc, wraps 0, divergences 0, audit 0,
-matter residual 0; the Core suite 662 green.
+   `FluidConfig.FluidAccelerationCoefficient` (`EVOSIM_FLUID_ACCEL`) is `c`. The default is
+   0, so every recorded world replays under its own config; 1 is the physical value and the
+   campaign's from round 37b. The header prints it as `fluidAccel`.
+
+   The force does no work on a body at rest in the water, and no accounting term reads it, so
+   the energy books are untouched. As an external force it invalidates the mechanical energy
+   and momentum checks of DESIGN §11.2, as lift and a moving current already do, and those
+   run at 0. The cost is nine field samples per part per step, about eight times a velocity
+   sample. Round 37b runs at about half round 37's pace, and the analytic derivative of the
+   streams is queued to take that back, verified by digest identity, before round 38.
+
+3. **The sequence** is fixed. Round 37 completes and is read as pre-registered. Round 37b,
+   the same world on the streams with `c` = 1 and the throw trace, replaces it as the tank's
+   base, and round 38's dilution reads against 37b. One change per round is kept in the
+   owner's terms: 37b makes the water carry bodies as water, and nothing else moves. The
+   throw trace is read in 37b's dumps before any mitigation of the throws is proposed.
+
+**Checks run before the ruling** (worker 7, 2026-09-12 evening). The shared-space smoke with
+the tank and trace parts passed on the branch's Core and assets. A 600 s box digest under the
+new build is identical to the reference over all 31 steps at the defaults. A 600 s tank smoke
+with `c` = 1 (`r37bsmoke`, dt 0.02, seed 3) put 37, 41, 42 and 26 bodies in the four rings
+at 600 s. Its spread was 3.1 m against 2.8 m for a uniform disc, and its wraps, divergences,
+audit and matter residual all read 0. The Core suite was 662 green.
 
 **Rejected.** The slip wall (a swirl fastest at the rim; proposed and withdrawn the same
 afternoon): a faster swirl centrifuges harder. A radial return layer near the glass: not
@@ -4906,56 +4918,67 @@ reading in a trapped tank is confounded by the trap. Running 38 on 37 with two c
 dilution would be read against a crust.
 
 **Note, 2026-09-12, evening (from the Astra review).** Clause 3's "nothing else moves" is
-amended by the agent under the owner's grant to reorder: round 37b's build also carries the
-conservative transporter (the note under D088), a birth gate that tests a body's whole
-reserved sphere against the glass (`SharedVolume.Free` tested the centre alone), and a
-`cols` numerator counted on the same columns as its denominator. None is a world rule. The
-owner can overrule before the launch; the response file at the root has the reasoning.
-Checked on worker 2 the same night: the shared-space smoke passed with the clearance checks,
-a 600 s box digest parts from the old reference (a changed transport is a new realisation),
-and a 600 s tank smoke at `c` = 1 (`r37bsmoke3`) read 36, 39, 34 and 20 in the four rings
-with wraps, divergences, crowding and stillbirths 0; the Core suite 671 green.
+amended by the agent under the owner's grant to reorder. Round 37b's build also carries the
+conservative transporter, which is the note under D088. It carries a birth gate that tests
+a body's whole reserved sphere against the glass, where `SharedVolume.Free` tested the
+centre alone. And it carries a `cols` numerator counted on the same columns as its
+denominator. None is a world rule. The
+owner can overrule before the launch, and the response file at the root has the reasoning.
+
+Checked on worker 2 the same night. The shared-space smoke passed with the clearance
+checks, and a 600 s box digest parts from the old reference, since a changed transport is a
+new realisation. A 600 s tank smoke at `c` = 1 (`r37bsmoke3`) read 36, 39, 34 and 20 in the
+four rings, with wraps, divergences, crowding and stillbirths 0. The Core suite was 671
+green.
 
 ### D091
 **Two kinds of change: a replacement is ruled, a treatment earns its place** · 2026-09-12
 
 **Status:** ruled by the owner on the evening of 2026-09-12 ("proceed with your
-recommendations"), on `fable-propose-adoption-rule.md`, written after the Astra review of the
-same day found D081's adoption clause and the record's practice disagreeing. Amends D081.
+recommendations"), on `fable-propose-adoption-rule.md`. That proposal was written after the
+Astra review of the same day found D081's adoption clause and our own practice disagreeing,
+and it amends D081.
 
 **Context.** D081 (2026-09-07) says a change joins the base world only when it matches the
-reference world's passing-seed count. Since then the grid became the base after round 32
-read two of five against the vertex world's four (D086), growth on round 33's five of five
-(D087), and the box, the carrying current, the tank and the streams each replaced the base
-on the owner's ruling, round 37 reading the goal rule without requiring it (logbook/0093).
-None of those was wrong: each was a correction to what the world *is*, or a change of scope,
-and not a treatment competing on the ecology's terms. The rule as written could not say so.
+reference world's passing-seed count. Since then the grid became the base, after round 32
+read two of five against the vertex world's four (D086). Growth became the base on round
+33's five of five (D087). The box, the carrying current, the tank and the streams each
+replaced the base on the owner's ruling, with round 37 reading the goal rule without
+requiring it (logbook/0093).
+
+None of those was wrong. Each was a correction to what the world *is*, or a change of scope,
+and none was a treatment competing on the ecology's terms. The rule as written could not say
+so.
 
 **Ruled.**
 
 1. **A replacement** changes what the world is: its container, its fluid, its fields, its
-   growth, a numerical repair. It becomes the base on the owner's ruling, its round is the
-   new base round, the goal rule is read in that round and not required, and the round
+   growth, a numerical repair. It becomes the base on the owner's ruling, and its round is
+   the new base round. The goal rule is read in that round and not required, and the round
    before it is its control for the mechanism predictions only. The grid, growth, the box,
    the tank, the streams with the fluid force and the conservative transporter are
    replacements.
+
 2. **A treatment** changes one price, one sense, one rule of the ecology on a fixed world.
    It is adopted into the base only when its round meets the bar its pre-registration
-   names: D081's clause, the reference world's passing count, or a named mechanism bar
-   when the goal rule is not the question. The link that earns, the stroke priced alone, a
-   light sense and predation are treatments.
-3. **Every round's entry says which kind it is** in its first paragraph. D081's adoption
-   clause applies to treatments from this ruling on. Nothing in the record moves.
+   names. That bar is D081's clause, the reference world's passing count, or a named
+   mechanism bar when the goal rule is not the question. The link that earns, the stroke
+   priced alone, a light sense and predation are treatments.
 
-**With it, two more of the agent's recommendations of the same evening, ruled in the same
-words.** Round 37b is read as a fresh baseline rather than as round 37 repaired: its three
-changes (the streams, the fluid force, the transporter) are not attributed one by one unless
-a later question needs it. And a fresh-seed batch, seeds 6 to 10 on round 37b's world, runs
-before round 38, because the five founding lotteries have guided nine rounds of adaptive
-change and the standing jointed populations of round 37 have to be shown to be the world's
-and not the seeds'. Rounds 32 and 33, whose transport scheme fails the constant-field test
-worse than the transport field's (D086's note), are not chased: they are superseded worlds
-and their verdicts stand as measured.
+3. **Every round's entry says which kind it is** in its first paragraph. D081's adoption
+   clause applies to treatments from this ruling on. Nothing already recorded is moved.
+
+With it, the owner ruled two more of the agent's recommendations of the same evening, in
+the same words. Round 37b is read as a fresh baseline rather than as round 37 repaired.
+Its three changes (the streams, the fluid force, the transporter) are not attributed one by
+one unless a later question needs it.
+
+A fresh-seed batch, seeds 6 to 10 on round 37b's world, runs before round 38. The five
+founding lotteries have guided nine rounds of adaptive change. The standing jointed
+populations of round 37 have to be shown to be the world's and not the seeds'. Rounds 32 and
+33 are not chased, though their transport scheme fails the constant-field test worse than
+the transport field's (D086's note). They are superseded worlds, and their verdicts stand as
+measured.
 
 **Rejected.** Keeping D081 as written with every replacement an exception: six exceptions in
 six days is not a rule. Dropping the adoption bar: a treatment would then join the base by
@@ -4964,16 +4987,20 @@ being built, which is the drift D081 was written against.
 ### D092
 **The bed with shape: a seeded height map, the water following the floor, the grid masked below it** · 2026-09-15
 
-**Status:** ruled by the owner in conversation on the morning of 2026-09-15, after the agent
-put the decision in plain terms (hollows and ridges from a height map; rocks as objects; a
-shelf) and recommended the first. The owner: "I really want a shaped bed, have wanted for a
-while!"; asked whether it is procedural and whether it needs skins (yes, and yes in the
-theatre only); asked for "life like without making it computationally problematic",
-converted to requirements, then relaxed the cost to "doesn't have to be outright cheap, just
-not too expensive", which moved the water following the floor from a second version into
-the first; and ruled "good, writeup the requirements and then pencil it in for the next
-round." The requirements are `logbook/specs/bed-spec.md`. Round 39; a replacement under
-D091; builds on a branch after round 38's read.
+**Status:** ruled by the owner in conversation on the morning of 2026-09-15. The agent had
+put the decision in plain terms, which were hollows and ridges from a height map, rocks as
+objects, or a shelf, and had recommended the first. The owner: "I really want a shaped bed,
+have wanted for a while!"
+
+The owner then asked whether it is procedural and whether it needs skins: yes, and yes in
+the theatre only. The owner also asked for "life like without making it computationally
+problematic", which the agent converted to requirements. The cost was then relaxed to "doesn't have to be
+outright cheap, just not too expensive", which moved the water following the floor from a
+second version into the first. The ruling was "good, writeup the requirements and then
+pencil it in for the next round."
+
+The requirements are `logbook/specs/bed-spec.md`. This is round 39, a replacement under
+D091, and it builds on a branch after round 38's read.
 
 **Context.** D089 read the crowd's density as why movement has never paid, and round 38
 diluted the water fourfold with the same matter. Its mid-run look (0100's launch section)
@@ -4983,33 +5010,41 @@ is a coast".
 
 **Ruled.**
 
-1. **The floor is a height map made from the seed** at three scales with a red spectrum,
-   bounded relief (`BedReliefMetres`, one dial), bounded slopes, no overhangs, a few real
-   hollows and at least a ridge per tank, mean-zero so the depth and the matter density
-   stay round 38's, meeting the glass without a step.
+1. **The floor is a height map made from the seed**, at three scales with a red spectrum.
+   The relief is bounded (`BedReliefMetres`, one dial) and so are the slopes, there are no
+   overhangs, and there are a few real hollows and at least a ridge per tank. It is
+   mean-zero, so the depth and the matter density stay round 38's, and it meets the glass
+   without a step.
+
 2. **The water follows the floor from the first version**: the streams' potential in
    floor-following coordinates, curled in real space, divergence-free with no flow through
-   the floor; the analytic derivative extends through the map; the grid's transporter
+   the floor. The analytic derivative extends through the map, and the grid's transporter
    carries it from the same potential. The cost ceiling is 15% of round 38's per-body pace.
-3. **The grid is masked below the floor** with no new cells and today's settling rule;
-   **one static mesh collider** is the floor; bodies are placed above it and a body below
+
+3. **The grid is masked below the floor**, with no new cells and today's settling rule, and
+   **one static mesh collider** is the floor. Bodies are placed above it, and a body below
    it dies as a counted `Diverged` death.
-4. **Relief 0 replays the flat world** to the digest; every tunable is in the config and
+
+4. **Relief 0 replays the flat world** to the digest, and every tunable is in the config and
    the hash.
+
 5. **The look is the theatre's alone**: the same map draped in the sand material, tuned
    from pictures, no hash moved.
-6. **Out**: rocks, boulders, overhangs (a solver, not a term); the shelf into the lit band
-   (its own round later); the vent as a point source.
-7. **A gradient across the disc**, added the same morning at the owner's word ("what
-   about the sea bed as a gradient so it's not all one depth? this is something we wanted
-   to do from the start. we even thought of a beach"): a tilt along one diameter as the
-   map's largest scale, one dial (`BedTiltMetres`), mean-zero. In a cylinder the shallow
-   arc is a shore, a lake in cross-section, and the owner's doubt that a beach still makes
-   sense in a round tank is answered that way. Round 39's default keeps the shallowest
-   floor below the crowd's band so the round reads pockets and not light; the tilt raised
-   into the light is a shelf round, and the floor breaking the surface is the beach, the
-   first terrestrial round, which needs a dry mask, a minimum depth for the current and
-   rules for a body on sand.
+
+6. **Out**: rocks, boulders and overhangs, which are a solver rather than a term. Also the
+   shelf into the lit band, which is its own round later, and the vent as a point source.
+
+7. **A gradient across the disc**, added the same morning at the owner's word. What the
+   owner asked: "what about the sea bed as a gradient so it's not all one depth? this is
+   something we wanted to do from the start. we even thought of a beach". It is a tilt along
+   one diameter as the map's largest scale, on one dial (`BedTiltMetres`), mean-zero. In a cylinder the
+   shallow arc is a shore, a lake in cross-section, and that answers the owner's doubt that
+   a beach still makes sense in a round tank.
+
+   Round 39's default keeps the shallowest floor below the crowd's band, so the round reads
+   pockets and not light. The tilt raised into the light is a shelf round. The floor
+   breaking the surface is the beach, the first terrestrial round, which needs a dry mask, a
+   minimum depth for the current and rules for a body on sand.
 
 **Rejected.** Rocks as objects first (flow around obstacles is a solver and the grid has
 no cell under a ledge; the hollows should pay before that is bought). A shelf first (it
@@ -5021,37 +5056,42 @@ slower water in it is half a hollow).
 **Round 39's tank sized for the slope: 2,200 m², 45 m deep, a 30 m tilt from the lit band's floor to 60 m** · 2026-09-15
 
 **Status:** ruled by the owner on the evening of 2026-09-15, on the first pictures of the
-shaped bed at 400 m² ("Can barely see anything. And I think we need a much bigger tank.
-Much. So that with 30 Deg decline we give a lot more depth variation. As it is it looks
-like it barely has any effect because it is such a small side of the cylinder"). The agent
-put three sizings with their costs in front of the owner, who chose the second; the area
-is 2,200 m² rather than the 2,100 m² offered because a 30 m tilt across 51.7 m is a 30.1°
-ramp and the smallest round area under the cap is 2,121 m². Amends D092's ruling 7 and
-D089's ruling 3 for round 39; the requirements stay `logbook/specs/bed-spec.md`.
+shaped bed at 400 m². The owner: "Can barely see anything. And I think we need a much bigger
+tank. Much. So that with 30 Deg decline we give a lot more depth variation. As it is it
+looks like it barely has any effect because it is such a small side of the cylinder".
+
+The agent put three sizings with their costs in front of the owner, who chose the second.
+The area is 2,200 m² rather than the 2,100 m² offered. A 30 m tilt across 51.7 m is a
+30.1° ramp, and the smallest round area under the cap is 2,121 m². This amends D092's
+ruling 7 and D089's ruling 3 for round 39, and the requirements stay
+`logbook/specs/bed-spec.md`.
 
 **Context.** At 400 m² the tilt runs along a 22.6 m diameter, so a 30° decline can make
-at most 13 m of depth across the tank, and the round's 6 m was a tenth of the depth with
-the bands adding a metre: a shaped floor that changed nothing a body could feel. The owner's
+at most 13 m of depth across the tank. The round's 6 m was a tenth of the depth, with the
+bands adding a metre: a shaped floor that changed nothing a body could feel. The owner's
 observation from the side view was the numbers'.
 
 **Ruled.**
 
-1. **The tank is 2,200 m²** (radius 26.46 m) **and 45 m deep**, set from the environment
-   (`EVOSIM_AREA`, and `EVOSIM_DEPTH`, which is new: every round through 38 ran the 60 m
-   default), the founders drawn over the whole depth.
-2. **The tilt is 30 m**, a 29.6° ramp, so the floor runs from 30 m below the surface on
-   the shallow arc, the bottom of the band the crowd lives in, to 60 m on the deep one; the
+1. **The tank is 2,200 m²** (radius 26.46 m) **and 45 m deep**, set from the environment.
+   `EVOSIM_AREA` carries the area, and `EVOSIM_DEPTH` is new: every round through 38 ran the
+   60 m default. The founders are drawn over the whole depth.
+
+2. **The tilt is 30 m**, a 29.6° ramp. The floor runs from 30 m below the surface on the
+   shallow arc, the bottom of the band the crowd lives in, to 60 m on the deep one. The
    tilt's own cap moves from 25° to 30° (`BedShape.SteepestTiltSlope`), the owner's decline.
-   The relief dial is 1.5 m at the default scale (a third of the diameter, 17.6 m), so the
-   bands' slopes stay under the ramp's and the total on a hollow's wall stays near 40°.
-3. **The shelf is folded into this round.** D092's ruling 7 kept the shallowest floor
-   below the crowd's band so that round 39 read pockets and not light. The owner's sizing
-   raises the shallow arc into the band's floor, so the round reads both. Its
+   The relief dial is 1.5 m at the default scale, a third of the diameter at 17.6 m. So the
+   bands' slopes stay under the ramp's, and the total on a hollow's wall stays near 40°.
+
+3. **The shelf is folded into this round**, where D092's ruling 7 had kept the shallowest
+   floor below the crowd's band so that round 39 read pockets and not light. The owner's
+   sizing raises the shallow arc into the band's floor, so the round reads both. Its
    pre-registration says which prediction is the light's and which the pockets'.
+
 4. **The matter budget is set from founding smokes** at 6,000, 9,000 and 12,000 units
    (600 s, dt 0.02, seed 3) before the pre-registration. The water is five and a half
    times round 38's at the same 6,000 units, and a matter cell then holds about what one
-   child costs, so founding is the check (D089's ruling 2's own check, repeated). The body
+   child costs. So founding is the check, D089's ruling 2's own check repeated. The body
    count follows the matter, so a larger budget is a slower round. The smallest budget
    that founds like round 38's smoke is the one.
 
@@ -5063,95 +5103,111 @@ tilt (a 30 m tilt into the light at 60 m depth needs a 3,700 m² tank at 30°).
 **As run (2026-09-15 night, the agent under ruling 4).** Five founding smokes were run at
 the ruled size, 600 s at dt 0.02, seed 3. Births by 600 s, against round 38's smoke's 166:
 6,000 units 25; 9,000 61; 10,500 179; 11,000 159; 12,000 301. The response is a cliff
-between 9,000 and 10,500. There a 5 m matter cell (125 m³ at 0.235 units per m³ per 6,000
-units under this footprint's mask) comes to hold more than the cheapest child costs;
-above it the world founds like round 38's, below it at a third of the rate or less. The
-ruling's letter is 10,500, the smallest that founds like round 38's. The agent set
-**11,000**, five percent more crowd for a margin above the cliff, since one seed's bed
-masks a different share of the cells and the 10,500 point sits within a seed's variation
-of the knee. The owner may move it before launch. The cost of the sizing, read from the
-same smokes: the grid at five and a half times the cells takes three times round 38's
-wall time at the same body count (2.2 minutes against 0.76 for 600 s at about 100
-bodies). The guess from that, two to three days a seed, was wrong by four (0102's early
-look: the physics and not the grid is the cost at the crowd). Seed 3's floor: 2 hollows, 1
-ridge, range 1.50 m, the steepest slope 40° with the tilt and 17° on the bands.
+between 9,000 and 10,500. There a 5 m matter cell comes to hold more than the cheapest child
+costs. The cell is 125 m³ at 0.235 units per m³ per 6,000 units, under this footprint's
+mask. Above that point the world founds like round 38's, and below it at a third of the rate
+or less.
+
+The ruling's letter is 10,500, the smallest that founds like round 38's. The agent set
+**11,000**, five percent more crowd for a margin above the cliff. One seed's bed masks a
+different share of the cells, and the 10,500 point sits within a seed's variation of the
+knee. The owner may move it before launch.
+
+The cost of the sizing was read from the same smokes. The grid at five and a half times the
+cells takes three times round 38's wall time at the same body count. That is 2.2 minutes
+against 0.76 for 600 s at about 100 bodies. The guess from that, two to three days a seed, was wrong
+by four (0102's early look: the physics and not the grid is the cost at the crowd). Seed 3's
+floor: 2 hollows, 1 ridge, range 1.50 m, the steepest slope 40° with the tilt and 17° on the
+bands.
 
 ### D094
 **The goal becomes a ladder: the food chain is proven, adaptation by degree is next, and every round is read on its own predictions** · 2026-09-16
 
-**Status:** ruled by the owner on the morning of 2026-09-16, in conversation (logbook/0103).
-The owner opened it: "I think once we've proven that the goal is achievable we don't need
-to hold ourselves to that goal again for a while. as long as we see that things can
-happen. The future is a lot more complex with many more cell types and sensors etc. so
-lets revise the goal. we can clearly see selection working, right?" The agent's reasoning
-was laid out in the open and rewritten in plain words at the owner's request; the owner
-ruled "ok. i'm good with that", and on the record, "don't overwrite old rules. deprecate
-them, but keep the record". Deprecates D063 as the campaign's bar and D081's two bars;
-both entries stand as written, marked. D091's two kinds of change stand.
+**Status:** ruled by the owner on the morning of 2026-09-16, in conversation
+(logbook/0103). The owner opened it: "I think once we've proven that the goal is achievable
+we don't need to hold ourselves to that goal again for a while. as long as we see that
+things can happen. The future is a lot more complex with many more cell types and sensors
+etc. so lets revise the goal. we can clearly see selection working, right?"
 
-**Context, in plain words.** D063 asked one question: can this world feed a line of eaters
-from its own leaves, for a long time, with the eaters breeding from their own members? It
-was answered yes, five seeds of five, in rounds 30, 33, 35 and 37b, on four versions of the
-world. The owner's own wording of the bar was "the minimum state from which we can move on".
+The agent's reasoning was laid out in the open and rewritten in plain words at the owner's
+request. The owner ruled "ok. i'm good with that", and on the record, "don't overwrite old
+rules. deprecate them, but keep the record".
+
+This deprecates D063 as the campaign's bar and D081's two bars. Both entries stand as
+written, marked. D091's two kinds of change stand.
+
+**Context, in plain words.** D063 asked one question: whether this world can feed a line of
+eaters from its own leaves, for a long time. The eaters had to breed from their own
+members. It was answered yes, five seeds of five, in rounds 30, 33, 35 and 37b, on four
+versions of the world. The owner's own wording of the bar was "the minimum state from which
+we can move on".
+
 Asking it of every round since has been re-taking a passed test, and round 38 (logbook/0101)
-showed the cost: five seeds of five "failed" a world doing the most interesting thing any
-round had done, eaters rising to a third of the living, eating the larder, starving, and a
-fresh line rising after them. The rule wanted things to stay still, and this world cycles.
+showed the cost. Five seeds of five "failed" a world doing the most interesting thing any
+round had done. The eaters rose to a third of the living, ate the larder and starved, and a
+fresh line rose after them. The rule wanted things to stay still, and this world cycles.
 
-What the campaign has shown is selection: lines rise and fall on their economics, not on
-chance. What it has shown only once (round 33, logbook/0082) is adaptation, a heritable
+The campaign has shown selection: lines rise and fall on their economics rather than on
+chance. It has shown adaptation only once (round 33, logbook/0082), which is a heritable
 number moving by degree over generations because it pays. Nothing in D063 asks for that,
 and it is the Karl Sims premise of the project. The owner's direction, more cell types and
-senses, is what gives selection a knob worth turning; the goal should pull that way.
+senses, is what gives selection a knob worth turning, and the goal should pull that way.
 
 **Ruled.**
 
-1. **The campaign has no single pass or fail bar.** In its place, **a ladder of milestones**.
-   Each rung is a question asked, under a pre-registration, until one round answers it;
-   after that it is a reading kept on every round so that a later change cannot break it
-   unnoticed.
+1. **The campaign has no single pass or fail bar**, and in its place stands **a ladder of
+   milestones**. Each rung is a question asked, under a pre-registration, until one round
+   answers it. After that it is a reading kept on every round, so that a later change
+   cannot break it unnoticed.
+
 2. **Rung 1, a self-sustaining food chain, is met** (rounds 30, 33, 35, 37b under D063 as
-   amended). D063's clauses stay in `scripts/clade-score.ps1` as a **state, not a verdict**:
-   the scorer prints, per seed, *the chain holds* (D063's clauses met), *the chain cycles*
-   (an inherited absorptive line that peaked and fell, with the period from peak to trough
-   and any second rise), or *no chain*, with every number it prints today; the words PASS
-   and FAIL leave the table. Every verdict recorded through round 38 stands as recorded.
+   amended). D063's clauses stay in `scripts/clade-score.ps1` as a **state and not a
+   verdict**. The scorer prints, per seed, *the chain holds* (D063's clauses met), *the
+   chain cycles*, or *no chain*, with every number it prints today. A cycle is an inherited
+   absorptive line that peaked and fell, with the period from peak to trough and any second
+   rise. The words PASS and FAIL leave the table, and every verdict recorded through round
+   38 stands as recorded.
    Rung 1 binds in one place only: a base round reading *no chain* in most seeds is a
    regression and stops the path until it is understood.
-3. **Rung 2 is adaptation by degree**: a heritable number within one clade (adult scale, a
-   part's proportions, drive power, brood size, birth investment) shifts across
-   generations by more than a neutral number drifts, in the direction the ledger says
-   pays, in three of five seeds. It is **a standing reading first and a bar later**: the
-   trait-by-degree instrument (0082's reading, made from the snapshots on every round)
-   is run on three rounds and the neutral drift measured before the threshold is set,
+
+3. **Rung 2 is adaptation by degree**: a heritable number within one clade shifts across
+   generations by more than a neutral number drifts. It shifts in the direction the ledger
+   says pays, in three of five seeds. The number can be adult scale, a part's proportions,
+   drive power, brood size or birth investment. It is **a standing reading first and a bar
+   later**. The trait-by-degree instrument (0082's reading, made from the snapshots on every
+   round) is run on three rounds. The neutral drift is measured before the threshold is set,
    from data and not in advance. The instrument is built with the timeline
    (`logbook/specs/timeline-spec.md`), which reads the same files.
+
 4. **Rungs 3 and 4 are named and not worded**: *a sense changes what a body does* and *a
    body's form changes what it earns*. Each gets its wording when its rounds are near
    (the light sense, round 40; the stroke, round 41; ellipsoids, round 42), from the
    instruments that exist by then.
+
 5. **Every round is still read on its own pre-registered predictions**, committed before
-   the queue starts (`launch-queue.ps1 -Prereg`), each with a threshold and a two-sided
-   reading written before the numbers arrive, each judged held or failed, and the round's
-   degree of success is how many held and by how much. This is unchanged and is not to be
-   loosened: with the bar gone it is the whole of the campaign's discipline.
-6. **The matter question is not a goal.** How matter gathers in the world is a
+   the queue starts (`launch-queue.ps1 -Prereg`). Each prediction carries a threshold and a
+   two-sided reading written before the numbers arrive, and each is judged held or failed.
+   The round's degree of success is how many held and by how much. This is unchanged and is
+   not to be loosened: with the bar gone it is the whole of the campaign's discipline.
+
+6. **The matter question is not a goal**. How matter gathers in the world is a
    replacement under D091 (the bed now, the seep and the shelf after), read by its own
    predictions.
-7. **D081's two bars are deprecated with D063's**: a treatment still joins the base only at
-   the bar its own pre-registration names (D091's ruling 2), and that bar is written in
-   the treatment's own terms, never as a D063 count.
 
-**What this buys.** The record can say in four lines what is proven and what is next. A
+7. **D081's two bars are deprecated with D063's**. A treatment still joins the base only at
+   the bar its own pre-registration names (D091's ruling 2). That bar is written in the
+   treatment's own terms, never as a D063 count.
+
+What this buys: our record can say in four lines what is proven and what is next. A
 world that cycles is read as cycling. The path's complexity (senses, cell types, the
-stroke, the body) is what rungs 2 to 4 need, so the goal pulls toward it. **What it
-costs.** One instrument before rung 2 can be scored, and the scorer's verdict line
-rewritten with its 52 fixture assertions.
+stroke, the body) is what rungs 2 to 4 need, so the goal pulls toward it. What it costs is
+one instrument before rung 2 can be scored, and the scorer's verdict line rewritten with its
+52 fixture assertions.
 
 **Rejected.** Loosening D063's clauses so a cycling world passes (a passed test, and every
 loosening invites the next). Predictions only, with no long horizon (the path becomes a
 feature list and nobody can say whether it is closer to anything). A new pass or fail bar
-for adaptation set now (the instrument does not exist, a bar set before its instrument is
-set wrong, as 0102's E6 was, and a world without knobs fails it for reasons that are not
-the round's). The reviewers' balance clauses as a goal (written for a world at
+for adaptation set now. The instrument does not exist, and a bar set before its instrument
+is set wrong, as 0102's E6 was. A world without knobs fails it for reasons that are not the
+round's. The reviewers' balance clauses as a goal (written for a world at
 equilibrium; this one oscillates).
