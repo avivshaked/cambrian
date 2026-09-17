@@ -26,7 +26,7 @@ param(
     [Parameter(Mandatory)][int]$Seed,
     [Parameter(Mandatory)][int]$Worker,
     [int]$Seconds = 30000,
-    [float]$WallMinutes = 1200,
+    [float]$WallMinutes = 1800,   # was 1200 until 2026-09-17: 30,000 s ran 28 h at five arms and seeds 3 and 4 were cut short
     [string]$ExpectSimHash = '',
     [string]$Name = '',
     [int]$DigestEvery = 0,
