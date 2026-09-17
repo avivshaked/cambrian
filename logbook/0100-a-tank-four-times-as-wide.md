@@ -1,12 +1,12 @@
 # 0100 — A tank four times as wide
 
-**2026-09-14, night, pre-registered before launch**  ·  round 38: round 37b's world at 400 m² with the matter held at 6,000 units and corpses as objects (D089 rulings 3 and 4, confirmed by the owner 2026-09-13); a replacement under D091, read for its mechanism, the goal rule read and not required
+**2026-09-14, night, pre-registered before launch**  ·  round 38: round 37b's world at 400 m² with the matter held at 6,000 units and corpses as objects. D089 rulings 3 and 4, confirmed by the owner 2026-09-13. A replacement under D091, read for its mechanism, the goal rule read and not required
 
 ## What it asks
 
-In every world so far the bodies sit a body length apart: round 35's median nearest
+In every world so far the bodies sit a body length apart. Round 35's median nearest
 neighbour was 0.63 to 0.70 m, round 37b's 0.66 to 0.74 m. With food within reach in every
-direction a sitter eats as well as a swimmer, and that, as inference, is why movement has
+direction a sitter eats as well as a swimmer. That, as inference, is why movement has
 never paid its price in thirty-seven rounds (D089's context). Round 38 keeps every unit of
 matter and gives it four times the water. The question is not whether the world stands. It
 is what a dilute world does to the crowd, to the food's shape and to founding. Rounds 39
@@ -16,16 +16,18 @@ to 41 then price a stroke and a sense in a world where they have something to bu
 
 Round 37b's world (0095's five changes on the tank; ten seeds read the same, 0099) with
 one knob turned and one value held. The area goes to 400 m², the disc's radius from
-5.64 m to 11.28 m. The matter budget is held at 6,000 units, which is what 37b's 100 m²
+5.64 m to 11.28 m. The matter budget is held at 6,000 units. That is what 37b's 100 m²
 held at one unit per cubic metre, so the seeded density falls to 0.235 units/m³. The 5 m
 matter cell's mask overshoots the disc by 6%; the total is exact. Corpses decay at
-0.005/s as since round 32. The launcher is `rounds/launch-r38.ps1`: seeds 1 to 5,
-30,000 s, dt 0.01, through the queue with the pre-registration check on this entry. The
-build is 37b's with the trace's second pass and the field's coefficient of variation
-merged. Both move the hashes, so the smokes and the digest are run before the merge and
-named in the launch section. The report carries `det cv` and `mat cv` for the first time,
-and every diverged dump names its first non-finite step. Round 37b's ten seeds are the
-control for every reading below.
+0.005/s as since round 32.
+
+The launcher is `rounds/launch-r38.ps1`: seeds 1 to 5, 30,000 s, dt 0.01, through the queue
+with the pre-registration check on this entry. The build is 37b's with the trace's second pass
+and the field's coefficient of variation merged. Both move the hashes, so the smokes and the
+digest are run before the merge and named in the launch section.
+
+The report carries `det cv` and `mat cv` for the first time, and every diverged dump names its
+first non-finite step. Round 37b's ten seeds are the control for every reading below.
 
 The arithmetic was checked before launch (D089's check 3, run 2026-09-13). A 5 m matter
 cell holds 31 units at the new density and a child costs 8 to 16, so a founder that
@@ -76,29 +78,29 @@ reading should name.
 
 ## The two-sided readings
 
-- **D1 fails:** the dilution starves founding. The round is censored as a world that cannot
-  start, and D089's ruling 3 is amended to the owner (a smaller step, 200 m², or more
-  matter) before anything else runs; the ledger's check was wrong about what a founder
+- If D1 fails, the dilution starves founding. The round is censored as a world that cannot
+  start. D089's ruling 3 goes to the owner for amendment (a smaller step, 200 m², or more
+  matter) before anything else runs. The ledger's check was wrong about what a founder
   reaches.
-- **D2 fails low (a seed under 700):** the world stands only where the food gathers, and the
-  entry reads where that is from `det cv` and the positions file; the bed with shape
+- If D2 fails low (a seed under 700), the world stands only where the food gathers. The
+  entry reads where that is from `det cv` and the positions file, and the bed with shape
   (round 39) is then a rescue and not a refinement.
-- **D3 reads below 1.3 with D4 holding:** the crowd did not thin with the water; it found
+- If D3 reads below 1.3 with D4 holding, the crowd did not thin with the water. It found
   the lit band and packed it, and the dilution bought nothing a sense could use. Read the
   depth band's spread against 37b's before saying so.
-- **D3 reads above 1.9:** the crowd is thinner than the water, so bodies are avoiding each
-  other or dying where they are dense; the eaters' distribution is the first thing to read.
-- **D5 fails:** thin water starves the eaters first, which is the reading the shading and
-  the eaters' recruitment questions (0079) wait on; the goal rule is not required, so the
+- If D3 reads above 1.9, the crowd is thinner than the water, so bodies are avoiding each
+  other or dying where they are dense. The eaters' distribution is the first thing to read.
+- If D5 fails, thin water starves the eaters first, which is the reading the shading and
+  the eaters' recruitment questions (0079) wait on. The goal rule is not required, so the
   base still moves to 400 m² on the owner's ruling, and the entry says the eaters' bar moved.
-- **D6 reads 3 or more of 5:** the dilute world keeps the joint where the dense one lost it,
-  which is the first sign in thirty-eight rounds of a stroke buying something; round 41
+- If D6 reads 3 or more of 5, the dilute world keeps the joint where the dense one lost it.
+  That is the first sign in thirty-eight rounds of a stroke buying something, and round 41
   moves up.
-- **D7 fails on the anatomy (an adult thrown):** a second mechanism; the trace is the
-  instrument. **D7 fails on the trace (no finite frame before the first non-finite step):**
-  the ring's second pass missed again and the blow-up is inside one step; the drive is read
-  next.
-- **D8 fails:** the grid or the field's reading costs more than the arithmetic said; the
+- If D7 fails on the anatomy (an adult thrown), there is a second mechanism, and the trace
+  is the instrument. If D7 fails on the trace (no finite frame before the first non-finite
+  step), the ring's second pass missed again and the blow-up is inside one step. The drive
+  is read next.
+- If D8 fails, the grid or the field's reading costs more than the arithmetic said. The
   per-step profile is not available and the entry says so.
 
 ## What the round does not ask
@@ -110,90 +112,104 @@ or the fluid terms (before round 41).
 ## Launch
 
 *2026-09-15, 00:20 to 00:23.* The build was validated one Editor at a time under the cap
-(`scratch/r38build-chain.ps1`, log `scratch/logs/r38build-chain.out`) on a candidate tree
-of main with `trace2` and `fieldcv` merged (worker 3 carrying its Assets and its Core).
-The shared-space smoke passed with part 5's forced case: three finite frames held, the
-first non-finite step and link named, every frame's links carrying drag, acceleration
-force and water acceleration. The 600 s box digest (`boxdig-r37b` on main's build against
-`boxdig-r38build` on the candidate, seed 3, dt 0.02) is identical over all 31 steps. The
-dilute tank smoke `r38smoke` (600 s, dt 0.02, seed 3) printed the header this entry's V1
-names and founded: 166 births by 600 s against 93 in 37b's seed 1 at the same time, with
-about 90 blocked attempts per birth as before, `mat here` 0.037, no stillbirth, both
-ledgers closed, `det cv` 2.4 falling to 1.2 and `mat cv` 0.17 rising to 0.47 as the first
-bodies drew the matter down. Main was fast-forwarded to the candidate (`582ee6a`) and the
-workers refreshed. The manifest's `coreHash` on the candidate read main's, since it hashes
-the main tree's Core by path (CLAUDE.md's gotcha from this chain); the build's hashes are
-the first launched seed's, below.
+(`scratch/r38build-chain.ps1`, log `scratch/logs/r38build-chain.out`). The candidate tree
+was main with `trace2` and `fieldcv` merged, on worker 3 carrying its Assets and its Core.
+
+The shared-space smoke passed with part 5's forced case. Three finite frames held, the
+first non-finite step and link were named, and every frame's links carried drag,
+acceleration force and water acceleration. The 600 s box digest (`boxdig-r37b` on main's
+build against `boxdig-r38build` on the candidate, seed 3, dt 0.02) is identical over all
+31 steps.
+
+The dilute tank smoke `r38smoke` (600 s, dt 0.02, seed 3) printed the header this entry's
+V1 names, and it founded. There were 166 births by 600 s against 93 in 37b's seed 1 at the
+same time, with about 90 blocked attempts per birth as before. The column `mat here` read
+0.037, with no stillbirth and both ledgers closed. And `det cv` fell from 2.4 to 1.2 while
+`mat cv` rose from 0.17 to 0.47, as the first bodies drew the matter down.
+
+Main was fast-forwarded to the candidate (`582ee6a`) and the workers refreshed. The
+manifest's `coreHash` on the candidate read main's, since it hashes the main tree's Core by
+path (CLAUDE.md's gotcha from this chain). The build's hashes are the first launched seed's,
+below.
 
 *00:25 and 00:26.* The queue's first attempt refused seed 1 on the hash: the candidate's
-copy hashed `43d4f251…` and main's checkout `ecc41ec5…`, and the two trees differ in line
-endings only (no file differs with carriage returns ignored; CLAUDE.md's checkout gotcha),
-so the queue was relaunched against main's. Seeds 1 and 2 launched on workers 2 and 3,
+copy hashed `43d4f251…` and main's checkout `ecc41ec5…`. The two trees differ in line
+endings only, since no file differs with carriage returns ignored (CLAUDE.md's checkout
+gotcha), so the queue was relaunched against main's. Seeds 1 and 2 launched on workers 2 and 3,
 refreshed first, headers verified (`space tank r=11.28 m (400 m2), depth 60, wall, bed`,
 `area 400 m2`, `matterBudget 6000`, `fluidAccel 1`, `current 0.1 m/s transport`,
 `dispersal=5 m`, `driveLimit >0.01`, `linkPhoto 0.5`, `addedMass 0.5`, `dt=0.01`, their
-own seed), **`simHash ecc41ec5…`, `coreHash 16073c69…`, `configHash 30637fb0`**,
-`physicsJobWorkers 0`, `prereg.json` at `4cab313`. Seeds 3 to 5 wait in the queue for
+own seed). The build's hashes are **`simHash ecc41ec5…`, `coreHash 16073c69…`,
+`configHash 30637fb0`**, with `physicsJobWorkers 0` and `prereg.json` at `4cab313`.
+Seeds 3 to 5 wait in the queue for
 the renders of the fresh seeds to free their workers (log `scratch/logs/r38-queue.out`).
 
-*02:05, the 3,000 s look at seed 1* (positions plots, `scratch/positions/r38-s1/`; no
-Editor free for a theatre frame). Founding is well above D1's bar: 368 births by 1,100 s
-and 1,086 alive at 3,100 s, `mat here` 0.025 to 0.036 with about 85 blocked attempts per
-birth, no shortfall, two stillbirths. From above the disc is filling from the founders'
-spots outward, 366 of 402 columns occupied, a few metre-scale gaps still open, no crust
-(the rim quarter 21%), `x sd` 5.2 to 5.9 m on a disc that reads 5.64 spread. The
-three-dimensional nearest neighbour is 1.29 m against 0.66 to 0.74 in 37b, about 1.8
-times, inside D3's band at the first reading. From the side the crowd fills the top 35 m
-and thins to the bed. `det cv` fell from 2.4 to 0.56 as the field filled and `mat cv` sits
-at 0.11 to 0.44. The inherited jointed count holds at 70 from 1,600 s on, where 37b's
-seeds were already past their peaks; watched, not read.
+*02:05, the 3,000 s look at seed 1* (positions plots, `scratch/positions/r38-s1/`; no Editor
+free for a theatre frame). Founding is well above D1's bar: 368 births by 1,100 s and 1,086
+alive at 3,100 s. The column `mat here` reads 0.025 to 0.036, with about 85 blocked attempts
+per birth, no shortfall and two stillbirths.
 
-*04:15, the 6,000 s look at seed 1.* 1,686 alive, which is 37b's count at the same time
-in four times the water: the matter builds the same number of bodies. The disc is full
-(398 of 402 columns, the rim quarter 24%, `x sd` 5.7 m) and the nearest neighbour holds at
-1.28 m. The eaters are recruiting (9 absorptive bodies at 3,000 s, 62 at 6,100 s) and the
-jointed count is decaying after all (71 to 35), the dense worlds' shape arriving later.
+From above the disc is filling from the founders' spots outward, 366 of 402 columns occupied, a
+few metre-scale gaps still open and no crust. The rim quarter reads 21% and `x sd` 5.2 to 5.9
+m, on a disc that reads 5.64 spread. The three-dimensional nearest neighbour is 1.29 m against
+0.66 to 0.74 in 37b, about 1.8 times, inside D3's band at the first reading. From the side the
+crowd fills the top 35 m and thins to the bed.
+
+`det cv` fell from 2.4 to 0.56 as the field filled and `mat cv` sits
+at 0.11 to 0.44. The inherited jointed count holds at 70 from 1,600 s on, where 37b's
+seeds were already past their peaks; watched and not read.
+
+*04:15, the 6,000 s look at seed 1.* There are 1,686 alive, which is 37b's count at the same
+time in four times the water. The matter builds the same number of bodies. The disc is full
+(398 of 402 columns, the rim quarter 24%, `x sd` 5.7 m) and the nearest neighbour holds at 1.28
+m. The eaters are recruiting: 9 absorptive bodies at 3,000 s, 62 at 6,100 s. And the jointed
+count is decaying after all (71 to 35), the dense worlds' shape arriving later.
+
 `det cv` fell to 0.17 and `mat cv` to 0.04 to 0.12 as the fields filled: uniform water,
-no pockets yet. Stillbirths 79.
+no pockets yet. There were 79 stillbirths.
 
 *03:09.* Seed 3 launched on worker 5 as seed 10's render finished, worker refreshed
-first, header and hashes as seeds 1 and 2's with seed 3, `prereg.json` at the same commit.
-*03:51.* Seed 4 launched on worker 7 as seed 5's render of round 37b wrote its 15,000 s
-frames, worker refreshed first, header and hashes as the others' with seed 4, `prereg.json`
-at the same commit. Seed 5 waits for the next slot.
+first. Its header and hashes are seeds 1 and 2's with seed 3, `prereg.json` at the same
+commit. *03:51.* Seed 4 launched on worker 7 as seed 5's render of round 37b wrote its
+15,000 s frames, worker refreshed first. Its header and hashes are the others' with seed 4,
+`prereg.json` at the same commit. Seed 5 waits for the next slot.
 
-*10:30, the mid-run look* (seed 1 at 15,000 s, seed 2 at 14,500, seed 3 at 7,500, seed 4
-at 4,700; positions plots, no Editor free). Every seed reads the world of the 6,000 s
-look: the disc full (386 to 399 of 402 columns, the rim quarter 22 to 27%, `x sd` 5.5 to
-5.8 m), no throws, both ledgers closed, the nearest neighbour 1.32 m in seed 1. Two things
-are new and recorded, not read. The eaters are larger than in any dense world: seed 1
-holds 618 absorptive bodies at 15,000 s, 615 of them inherited, 38% of the living, sitting
-at 33 m against the leaves' 23 m; seed 2 rose to 471 by 10,000 s and fell to 234 by
-14,500. Round 37b's ten seeds peaked at 331 to 972 and held 3 to 7% at the end. And the
-jointed counts in seeds 3 and 4 stand at 117 and 170 in their first 7,500 s where the
-dense worlds' peaks were 29 to 174 and past by 3,000 s; seed 1's fell to 1 by 15,000 s
-and seed 2's to 10, so the early standing is not yet a line that grows. Stillbirths run
-high in seed 1 (551 by 15,000 s). `det cv` 0.11 to 0.39 and `mat cv` 0.02 to 0.22: the
-fields stay near uniform.
+*10:30, the mid-run look* (seed 1 at 15,000 s, seed 2 at 14,500, seed 3 at 7,500, seed 4 at
+4,700). The plots are positions only, with no Editor free. Every seed reads the world of the
+6,000 s look. The disc is full: 386 to 399 of 402 columns, the rim quarter 22 to 27%, `x sd`
+5.5 to 5.8 m. There are no throws, both ledgers are closed, and the nearest neighbour is 1.32 m
+in seed 1. Two things are new, recorded and not read.
 
-*10:18.* Seed 1 landed at 30,000 s on its budget after ten hours with 1,597 alive, and seed
-5 launched on its worker, 2, refreshed first, header and hashes as the others' with seed 5,
-`prereg.json` at the same commit; the queue is done, every seed launched. The round's
-render chain (`scratch/r38-render-chain.ps1`: seed 1 at the three times, seeds 2 to 5 at
-5,000 and 15,000 s) is armed after it. Seed 1's end row, recorded before the read: the
-eaters at 409 inherited by 10,000 s and 2 at 30,000 s, the jointed count 0, stillbirths
-1,146. *10:46.* Seed 2 landed the same way with 1,602 alive, no throws, stillbirths 317;
-its eaters read 467 inherited at 10,000 s, 1 at 20,000 and 300 at 30,000, a bust and a
+The eaters are larger than in any dense world. Seed 1 holds 618 absorptive bodies at 15,000 s,
+615 of them inherited, 38% of the living, sitting at 33 m against the leaves' 23 m. Seed 2 rose
+to 471 by 10,000 s and fell to 234 by 14,500. Round 37b's ten seeds peaked at 331 to 972 and
+held 3 to 7% at the end.
+
+And the jointed counts in seeds 3 and 4 stand at 117 and 170 in their first 7,500 s. The dense
+worlds' peaks were 29 to 174 and past by 3,000 s. Seed 1's fell to 1 by 15,000 s and seed 2's
+to 10, so the early standing is not yet a line that grows. Stillbirths run high in seed 1 (551
+by 15,000 s). `det cv` 0.11 to 0.39 and `mat cv` 0.02 to 0.22: the fields stay near uniform.
+
+*10:18.* Seed 1 landed at 30,000 s on its budget after ten hours with 1,597 alive. Seed 5
+launched on its worker, 2, refreshed first, header and hashes as the others' with seed 5,
+`prereg.json` at the same commit. The queue is done, every seed launched. The round's render
+chain (`scratch/r38-render-chain.ps1`: seed 1 at the three times, seeds 2 to 5 at 5,000 and
+15,000 s) is armed after it. Seed 1's end row, recorded before the read: the eaters at 409
+inherited by 10,000 s and 2 at 30,000 s, the jointed count 0, stillbirths 1,146.
+
+*10:46.* Seed 2 landed the same way with 1,602 alive, no throws, stillbirths 317.
+Its eaters read 467 inherited at 10,000 s, 1 at 20,000 and 300 at 30,000, a bust and a
 second boom where seed 1's bust held. Seed 1's render started on worker 6.
-*13:15.* Seed 3 landed at 30,000 s on its budget with 1,641 alive, no throws, stillbirths
-214, the jointed count 0; its eaters read 278 inherited at 17,500 s, 0 at 25,000 and 11 at
-30,000, a bust with the first signs of a second boom in the last window. The scorer reads
-it as a fail (the best clade six alive at the end, founded at 25,179 s, unstable). The
-early renders of seeds 2 to 5 are set aside for the afternoon: the bed's Unity half took
-seed 3's worker for its validation (`scratch/bed-chain.ps1`), and the queue is re-armed
-after it.
+
+*13:15.* Seed 3 landed at 30,000 s on its budget with 1,641 alive, no throws, stillbirths 214,
+the jointed count 0. Its eaters read 278 inherited at 17,500 s, 0 at 25,000 and 11 at 30,000.
+That is a bust with the first signs of a second boom in the last window. The scorer reads it as
+a fail (the best clade six alive at the end, founded at 25,179 s, unstable). The early renders
+of seeds 2 to 5 are set aside for the afternoon. The bed's Unity half took seed 3's worker for
+its validation (`scratch/bed-chain.ps1`), and the queue is re-armed after it.
+
 *16:34.* Seed 4 landed at 30,000 s on its budget with 1,642 alive, two throws, stillbirths
-1,294, the jointed count 1; its eaters peaked at 702 inherited at 16,400 s, the largest
-boom of the four, and read 4 at 25,000 and 2 at 30,000 (the scorer's best clade two alive,
-founded at 7,777 s, unstable). Four seeds in, the eaters' line has boomed to hundreds and
-bust to near nothing in every one, and only seed 2's boomed again; D5 now turns on seed 5.
+1,294, the jointed count 1. Its eaters peaked at 702 inherited at 16,400 s, the largest boom of
+the four, and read 4 at 25,000 and 2 at 30,000. The scorer's best clade there is two alive,
+founded at 7,777 s, unstable. Four seeds in, the eaters' line has boomed to hundreds and bust
+to near nothing in every one, and only seed 2's boomed again. D5 now turns on seed 5.

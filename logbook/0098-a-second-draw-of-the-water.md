@@ -8,19 +8,20 @@ Every round from 28 to 37b has reused five founding lotteries, seeds 1 to 5, thr
 rounds of adaptive change (D091's own words). Round 37b read the goal rule five of five, a
 standing jointed population in two seeds and a rigid eater clade founded late in four
 (0097). Whether those are the world's or the seeds' is the one question a second draw
-answers, and it costs no build: the same launcher, the same hashes, five seeds nobody has
-run. It is a batch on the base and not a treatment: nothing is adopted or rejected on it,
+answers. It costs no build: the same launcher, the same hashes, five seeds nobody has
+run. It is a batch on the base and not a treatment. Nothing is adopted or rejected on it,
 and the goal rule is read as the base's own count for D081's reference bar from here on.
 
 ## The world
 
-Round 37b's exactly (0095's five changes on round 37's tank): `rounds/launch-r37b.ps1`
-with `-Seed 6` to `-Seed 10`, `simHash 5e164d01…`, `coreHash ad5c952a…`, `configHash
-2430e660` (the seed is not in the config hash, so every manifest must carry the same one),
-`physicsJobWorkers 0`, 30,000 s at dt 0.01, launched through `launch-queue.ps1 -Prereg`
-as the round 37b renders free workers, with the one-part control `r37bc-s5` (0097) already
-on worker 6. The trace fix and `field cv` are not in this build; they land after the last
-of these seeds has launched.
+Round 37b's world, unchanged: 0095's five changes on round 37's tank. The launcher is
+`rounds/launch-r37b.ps1` with `-Seed 6` to `-Seed 10`, at `simHash 5e164d01…`,
+`coreHash ad5c952a…`, `configHash
+2430e660` and `physicsJobWorkers 0`. The seed is not in the config hash, so every manifest
+must carry the same one. The seeds run 30,000 s at dt 0.01, launched through
+`launch-queue.ps1 -Prereg` as the round 37b renders free workers. The one-part control
+`r37bc-s5` (0097) is already on worker 6. The trace fix and `field cv` are not in this build;
+they land after the last of these seeds has launched.
 
 ## Rules, before scoring
 
@@ -55,27 +56,28 @@ sd` and `patch max share`, and the founding times and kinds of every passing cla
 
 ## The two-sided readings
 
-- **F1 to F8 hold:** round 37b's readings are the world's. The base's reference count is
+- If F1 to F8 hold, round 37b's readings are the world's. The base's reference count is
   ten seeds' worth; round 38 dilutes it.
-- **F4 fails on the count (fewer than 3 of 5):** the eaters' standing in 37b was the
-  seeds'. The base still stands (a replacement is not adopted on the goal rule), but D081's
-  reference bar for round 38 is the ten seeds' count, not five of five, and 0079's question
-  about the eaters' recruitment reopens on the tank.
-- **F4 fails on the founding time (the passing clades are founders' lines):** the late
+- If F4 fails on the count (fewer than 3 of 5), the eaters' standing in 37b was the
+  seeds'. The base still stands, since a replacement is not adopted on the goal rule.
+  D081's reference bar for round 38 is then the ten seeds' count rather than five of five,
+  and 0079's question about the eaters' recruitment reopens on the tank.
+- If F4 fails on the founding time (the passing clades are founders' lines), the late
   rigid eater of 37b was one draw's; the entry says so and nothing moves.
-- **F5 reads 0 of 5:** the jointed populations of the tank rounds were the lotteries'.
+- If F5 reads 0 of 5, the jointed populations of the tank rounds were the lotteries'.
   Round 41's stroke price and the fluid terms (the path's 6b) are read against that, and
   the fresh seeds become the joint's control from here on.
-- **F5 reads 4 or 5 of 5:** the joint stands more often in a second draw than in the
-  first, which the first five seeds under-read; the same consequence, the other way.
-- **F6 fails upward (a seed above 10 per million):** the throws are the world's and not
-  seed 5's; the control `r37bc-s5` and the trace fix say whether they are the force's.
-  **F6 fails on the anatomy (an adult thrown, or a mass ratio over 3):** a second mechanism
-  beside the newborn's; the trace, once fixed, is the instrument.
-- **F2 or F3 fails:** the mixed disc of 37b was not the world's, which would contradict a
+- If F5 reads 4 or 5 of 5, the joint stands more often in a second draw than in the
+  first, which the first five seeds under-read. That is the same consequence, arrived at
+  the other way.
+- If F6 fails upward (a seed above 10 per million), the throws are the world's and not
+  seed 5's. The control `r37bc-s5` and the trace fix say whether they are the force's.
+  If F6 fails on the anatomy (an adult thrown, or a mass ratio over 3), there is a second
+  mechanism beside the newborn's; the trace, once fixed, is the instrument.
+- If F2 or F3 fails, the mixed disc of 37b was not the world's, which would contradict a
   tracer theorem; the reading is the reader's before it is the water's.
-- **F8 fails:** the pace moved with nothing in the build changed, so the machine is the
-  cause (the renders, the control); recorded, not read.
+- If F8 fails, the pace moved with nothing in the build changed, so the machine is the
+  cause (the renders, the control); recorded and not read.
 
 ## What the batch does not ask
 
@@ -85,26 +87,30 @@ lands after these seeds launch and reads round 38.
 
 ## Launch
 
-The queue armed at 15:42 on 2026-09-13 (`launch-queue.ps1 -Refresh -Prereg` on this entry
-at `237e7ce`, seeds 6 to 10 on workers 2, 3, 4, 5 and 7 under the cap of five) and waited
-eight hours behind round 37b's renders and the control. *23:30.* Seed 6 launched on worker
-3, refreshed first, header verified (`space tank r=5.64 m (100 m2), depth 60, wall, bed`,
+The queue armed at 15:42 on 2026-09-13, `launch-queue.ps1 -Refresh -Prereg` on this entry at
+`237e7ce`. It held seeds 6 to 10 on workers 2, 3, 4, 5 and 7 under the cap of five, and waited
+eight hours behind round 37b's renders and the control. *23:30.* Seed 6 launched on worker 3,
+refreshed first, header verified (`space tank r=5.64 m (100 m2), depth 60, wall, bed`,
 `fluidAccel 1`, `dispersal=5 m`, `driveLimit >0.01`, `linkPhoto 0.5`, `addedMass 0.5`,
 `dt=0.01`, seed 6), `simHash 5e164d01…`, `coreHash ad5c952a…`, `configHash 2430e660`,
 `physicsJobWorkers 0`, `prereg.json` naming this entry's commit. The queue's log is
-`scratch/logs/r37b-fresh-queue.out`. *2026-09-14 00:10 and 00:11.* Seeds 7 and 8 launched
-on workers 4 and 5 as the control and a render ended, each worker refreshed first, headers
-and hashes as seed 6's with their own seed. *03:06.* Seed 9 launched on worker 2 as seed 3's
-render ended, worker refreshed first, header and hashes as seed 6's with seed 9,
-`prereg.json` at the same commit. *08:23.* Seed 7 landed first, at 30,000 s on its budget
-after eight hours with 1,585 alive, and seed 10 launched on its worker, 4, refreshed first,
-header and hashes as seed 6's with seed 10, `prereg.json` at the same commit; the queue is
-done, every seed launched. Seed 7's provisional look, before the read: the goal rule passes
-on a rigid eater clade founded at 1,083 s (105 alive at the end); `jnt inh` peaked at 50
-near 5,000 s and read 0 from 15,000 s; `diverged` 0, `wraps` 0, `stillb` 0, `audit` and
-`mat resid` 0 on every row; `cols` 100 of 100 and `x sd` 2.6 to 2.9 m throughout.
+`scratch/logs/r37b-fresh-queue.out`. *2026-09-14 00:10 and 00:11.* Seeds 7 and 8 launched on
+workers 4 and 5 as the control and a render ended. Each worker was refreshed first, with
+headers and hashes as seed 6's and their own seed. *03:06.* Seed 9 launched on worker 2 as seed
+3's render ended, worker refreshed first, header and hashes as seed 6's with seed 9,
+`prereg.json` at the same commit. *08:23.* Seed 7 landed first, at 30,000 s on its budget after
+eight hours with 1,585 alive. Seed 10 launched on its worker, 4, refreshed first, header and
+hashes as seed 6's with seed 10, `prereg.json` at the same commit. The queue is done, every
+seed launched.
+
+Seed 7's provisional look, before the read: the goal rule passes on a rigid eater clade
+founded at 1,083 s, with 105 alive at the end. The column `jnt inh` peaked at 50 near
+5,000 s and read 0 from 15,000 s. Then `diverged`, `wraps` and `stillb` read 0, with
+`audit` and `mat resid` 0 on every row. And `cols` reads 100 of 100, `x sd` 2.6 to 2.9 m
+throughout.
+
 *10:15.* Seed 8 landed at 30,000 s on its budget with 1,831 alive. *10:35.* Seed 6 landed
 the same way with 1,811 alive. *13:20.* Seed 9 landed the same way with 1,722 alive; the
 renders of seeds 7, 6 and 8 run on workers 6, 3 and 5. *22:20.* Seed 10 landed the same
-way with 1,759 alive, fourteen hours on a machine carrying three renders; every seed of
-the five ended on its budget, none threw a body. The read starts.
+way with 1,759 alive, fourteen hours on a machine carrying three renders. Every seed of
+the five ended on its budget, and none threw a body. With that, the read starts.

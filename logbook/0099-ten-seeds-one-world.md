@@ -1,6 +1,6 @@
 # 0099 — Ten seeds, one world
 
-**2026-09-14, night**  ·  the fresh seeds read against 0098's F1 to F8. The base world's readings are the world's; the joint survives founding in three draws of ten and grows in none; the tank with the force threw nothing in five new seeds
+**2026-09-14, night**  ·  the fresh seeds read against 0098's F1 to F8. The base world's readings are the world's. The joint survives founding in three draws of ten and grows in none, and the tank with the force threw nothing in five new seeds
 
 ## What was asked
 
@@ -8,15 +8,15 @@ Every round from 28 to 37b reused five founding lotteries. Round 37b read the go
 five of five, a standing jointed population in two seeds and a late rigid eater in four
 (0097). The question 0098 pre-registered was whether those were the world's or the seeds'.
 Seeds 6 to 10 ran on 37b's exact world and build. They launched between 2026-09-13 23:30
-and 2026-09-14 08:23 as the round's renders freed workers, and every one ended on its
+and 2026-09-14 08:23 as the round's renders freed workers. Every one ended on its
 budget at 30,000 s. The read is `logbook/specs/r37b-fresh-read/` (the brief, the tables,
 the scripts); the comparison numbers are 0097's.
 
 ## The rules before scoring
 
 All five of 0098's rules held. Every header carries the tokens V1 names, with the force at
-1, and every manifest the same three hashes, zero physics threads and a pre-registration
-file at the entry's commit. The five manifests name four different repository commits, all
+1. Every manifest carries the same three hashes, zero physics threads and a
+pre-registration file at the entry's commit. The five manifests name four different repository commits, all
 clean, because the prose moved between launches while the simulation source did not; the
 hashes are what the identity asks. The audit read 0.0000% and the matter residual 0 on all
 1,500 rows. No seed wrapped, none was censored, and none wrote a diverged dump, so the trace
@@ -42,8 +42,8 @@ it a check that the two draws share one crowd, rather than the box-against-tank 
 0097. Twelve of fifteen anchors matched within 10%, and the three that did not land in the
 band anyway.
 
-F8's wording did not say whether "37b's five" meant each seed or their spread. I take the
-spread. A seed at 0.68 of the slowest 37b seed's per-body pace has not changed pace; it has
+F8's wording did not say whether "37b's five" meant each seed or their spread. I read it as
+the spread. A seed at 0.68 of the slowest 37b seed's per-body pace has not changed pace; it has
 drawn a faster machine. Four of the five fresh seeds ran faster per body than any 37b seed
 did. The reader's machine accounting is recorded and not read. Seed 10, the slowest per
 body, shared the machine with two to three renders and fewer than two arms; seed 7, the
@@ -56,6 +56,7 @@ Seed 7 at 30,000 s from above is `logbook/images/r37b-s7-t30000-top.png`. The di
 filled evenly to the glass with no crust and no clumps, leaves everywhere and the brown
 eaters scattered among them in every ring. From the corner (`r37b-s7-t30000-iso.png`) the
 crowd fills the top forty metres and thins to a tail on the bed, the shape 37b's seeds had.
+
 Close at 5,000 s (`r37b-s7-t5000-close.png`) is a mixed crowd: leaves at every size, brown
 and grey eaters, and a few two-part jointed bodies with their necks showing. Every body
 reads as a ball. That is the skin's rounding on near-cubic boxes, which the owner noticed
