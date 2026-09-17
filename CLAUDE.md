@@ -861,6 +861,18 @@ actually verifying it.
   censored at 25,175 s with "ended wall" (2026-09-16). A running arm's wall cannot be
   extended. Read `x real time` off a seed's footer or the early rows before launching the
   rest, and give the wall half again what that says.
+- **The run footer says where the wall clock went, and the world's step is priced per cell,
+  not per body.** From the timing-split build (2026-09-17) every `stats.jsonl` row carries
+  cumulative `wallPhysicsMs`, `wallWorldMs`, `wallHarnessMs`, `wallWritersMs` and
+  `wallTotalMs`, `run.json`'s ending block carries the totals, and the footer prints
+  `wall split: physics 4%, world 85%, harness 11%, writers 0%, other 0%`. That line is the
+  300 s smoke on round 39's world at founding, fifty bodies: the Core step (the 1 m grid over
+  2,200 m² × 45 m, stirred and carried every half second) cost 83 ms per metabolic step
+  whatever the crowd, which is about a tenth of a full seed's wall and most of an empty one's.
+  Read the split from two rows' differences for a window, and from the footer for the run;
+  every row and manifest before this build reads 0. The instrument is two timestamps
+  around each call and changes no trajectory, but it lives under `Assets/Evosim`, so it
+  moved `simHash` (`6d38c45e…`) and every worker needs a refresh before the next round.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

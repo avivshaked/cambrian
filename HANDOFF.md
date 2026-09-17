@@ -372,8 +372,12 @@ the background and never handed to a subagent, which cannot wait.
    that matters, a rare event pre-registered as a count and never as a 4-of-5 threshold.
    The second goes to DECISIONS.md as D095 once the style agent is out of that file. A
    timing split for the run report (wall milliseconds per step in physics, the world, the
-   harness and the writers, in `stats.jsonl` and the footer) is being built for the next
-   build; it moves `simHash`, so it lands between rounds. A running arm's
+   harness and the writers, in `stats.jsonl` and the footer) is built and committed
+   (`simHash 6d38c45e…`; the 300 s smoke `tsplit-smoke` read physics 4%, world 85%,
+   harness 11% at founding, so the grid's per-cell step is most of an empty world's cost
+   and about a tenth of a full seed's). Round 39's reruns are unaffected: their workers
+   carry the round's tree. Refresh every worker before round 40. The restyle of 0102 waits
+   for round 39's read, since the entry is the live pre-registration. A running arm's
    wall cannot be extended. A rerun on the same build at zero physics workers replays the
    censored prefix bit for bit (D078) and continues it, so a rerun of seeds 3 and 4 is an
    extension and not a new realisation. Every prediction of 0102 reads at 30,000 s by name. The render chain was stopped at 17:30 to give

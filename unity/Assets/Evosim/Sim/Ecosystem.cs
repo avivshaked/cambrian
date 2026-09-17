@@ -5,6 +5,10 @@ using System.Text;
 using UnityEngine;
 using Evosim.Core;
 
+// Aliased rather than imported: `using System.Diagnostics` would put a second `Debug` in scope
+// beside UnityEngine's, and every Debug.LogWarning below would stop compiling.
+using Stopwatch = System.Diagnostics.Stopwatch;
+
 // The editor harnesses are a separate assembly, so `internal` alone does not reach them.
 // One member needs it — Ecosystem.CondemnForTest, the throw trace's test hook
 // (logbook/specs/throw-trace-spec.md) — and this is the narrowest way to grant it: the smoke's
@@ -240,6 +244,49 @@ namespace Evosim.Sim
         /// — so a bind is counted exactly once and none is lost with the body that made it.
         /// </remarks>
         public long DriveImpulsesLimited { get; private set; }
+
+        /// <summary>
+        /// The timing split's three step-side buckets: wall milliseconds this run has spent in the
+        /// solver, in the world's metabolic step, and in everything else <see cref="Step"/> does.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Nobody could say where a second of wall time went.</b> A run's footer reported a pace
+        /// and nothing else, so "why did round 39 run slow" had to be answered from footers and
+        /// inference (2026-09-17). These three and the harness's own writer clock are that question
+        /// turned into a measurement.
+        /// </para>
+        /// <para>
+        /// It is read and never acted on: no draw, no branch the world can see, no call reordered
+        /// — two timestamps around a call that still happens where it always did. A run under the
+        /// instrument is the same realisation as a run without it.
+        /// </para>
+        /// </remarks>
+        public long WallPhysicsMs => Milliseconds(_physicsTicks);
+        public long WallWorldMs => Milliseconds(_worldTicks);
+        public long WallHarnessMs => Milliseconds(_harnessTicks);
+
+        private long _physicsTicks;
+        private long _worldTicks;
+        private long _harnessTicks;
+
+        /// <summary>Stopwatch ticks as whole milliseconds.</summary>
+        private static long Milliseconds(long ticks) => (long)(ticks * 1000d / Stopwatch.Frequency);
+
+        /// <summary>
+        /// Books the part of one <see cref="Step"/> that was neither the solver nor the world.
+        /// </summary>
+        /// <remarks>
+        /// Taken as a difference rather than from brackets of its own, because the harness's share
+        /// is everything left over — the sensors, the brains, the drives, the fluid, the wrap, the
+        /// finite checks, the growth and the placer — and bracketing each of them would be a dozen
+        /// timestamps a step for a number that is the subtraction anyway.
+        /// </remarks>
+        private void NoteHarnessWall(long stepStarted, long bucketedAtEntry)
+        {
+            _harnessTicks += Stopwatch.GetTimestamp() - stepStarted -
+                             (_physicsTicks + _worldTicks - bucketedAtEntry);
+        }
 
         /// <summary>
         /// Articulations resized so far because their creature grew, fable-propose-growth.md
@@ -1240,6 +1287,12 @@ namespace Evosim.Sim
         /// </summary>
         public bool Step()
         {
+            // The timing split's harness bucket is this whole step, less what the solver and the
+            // world take out of it below — so what is noted at entry is when it started and how
+            // much had been booked to the other two before it did.
+            long stepStarted = Stopwatch.GetTimestamp();
+            long bucketedAtEntry = _physicsTicks + _worldTicks;
+
             Reconcile();
 
             // The second bracket on CheckFinite, and the reason it is here rather
@@ -1276,7 +1329,10 @@ namespace Evosim.Sim
             Fluid.ElapsedSeconds = Steps * (double)FixedDt;
 
             Fluid.Apply(_instances, FixedDt);
+
+            long physicsStarted = Stopwatch.GetTimestamp();
             Physics.Simulate(FixedDt);
+            _physicsTicks += Stopwatch.GetTimestamp() - physicsStarted;
 
             // D077. Immediately after the solver, so nothing ever reads a position outside the
             // box: the ring is periodic and a body that has crossed a face is on the other side
@@ -1310,9 +1366,15 @@ namespace Evosim.Sim
             // the same state the solver left, with the step counter already advanced to name it.
             if (_digest != null) Digest();
 
-            if (Steps % StepsPerMetabolicStep != 0) return false;
+            if (Steps % StepsPerMetabolicStep != 0)
+            {
+                NoteHarnessWall(stepStarted, bucketedAtEntry);
+                return false;
+            }
 
             Metabolise();
+
+            NoteHarnessWall(stepStarted, bucketedAtEntry);
             return true;
         }
 
@@ -2573,7 +2635,9 @@ namespace Evosim.Sim
             WorkThisStep = work;
             AboveSurface = above;
 
+            long worldStarted = Stopwatch.GetTimestamp();
             World.Step(seconds);
+            _worldTicks += Stopwatch.GetTimestamp() - worldStarted;
 
             // D066. After the world has stepped, because that is where a creature's patch changes
             // — D061's dispersal and D066's advection both move it, and the physics steps that

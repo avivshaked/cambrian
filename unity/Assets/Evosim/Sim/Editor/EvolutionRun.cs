@@ -100,6 +100,11 @@ namespace Evosim.Sim.EditorTools
                                     : 0d,
                                 MaxJointMassRatio = CurrentManifest.LastMaxJointMassRatio,
                                 BodiesOverMassRatio10 = CurrentManifest.LastBodiesOverMassRatio10,
+                                WallPhysicsMs = CurrentManifest.LastWallPhysicsMs,
+                                WallWorldMs = CurrentManifest.LastWallWorldMs,
+                                WallHarnessMs = CurrentManifest.LastWallHarnessMs,
+                                WallWritersMs = CurrentManifest.LastWallWritersMs,
+                                WallTotalMs = CurrentManifest.LastWallTotalMs,
                             });
                     }
                     catch (Exception writeFailure)
@@ -1063,6 +1068,10 @@ namespace Evosim.Sim.EditorTools
 
             var clock = Stopwatch.StartNew();
 
+            // The timing split's denominator, where Row can reach it: the markdown footer divides
+            // by this clock at the end, and every stats row carries its reading at the sample.
+            RunClock = clock;
+
             // Two readings of how the run ended: `ending` is the prose the markdown footer
             // prints, `terminationCode` is D058's own vocabulary (extinct / budget / wall /
             // ceiling-population / ceiling-tissue, the last two rule 9's) for run.json, where a
@@ -1113,6 +1122,15 @@ namespace Evosim.Sim.EditorTools
                         manifest.LastMaxJointMassRatio = eco.MaxJointMassRatio;
                         manifest.LastBodiesOverMassRatio10 = eco.BodiesOverMassRatio10;
                         manifest.LastWallClockMinutes = clock.Elapsed.TotalMinutes;
+
+                        // The timing split, copied out with the rest for the same reason: by the
+                        // time the catch in Run() reads the manifest, the ecosystem and both
+                        // clocks have unwound with RunBody's frame.
+                        manifest.LastWallPhysicsMs = eco.WallPhysicsMs;
+                        manifest.LastWallWorldMs = eco.WallWorldMs;
+                        manifest.LastWallHarnessMs = eco.WallHarnessMs;
+                        manifest.LastWallWritersMs = WritersClock.ElapsedMilliseconds;
+                        manifest.LastWallTotalMs = clock.ElapsedMilliseconds;
                     }
 
                     // D060. Fires once — the first metabolic step whose ElapsedSeconds reaches
@@ -1138,8 +1156,12 @@ namespace Evosim.Sim.EditorTools
                             "extinct at t=" + eco.World.ElapsedSeconds.ToString("0.#") +
                             " s, and the floor could not refill it";
                         terminationCode = "extinct";
+
+                        WritersClock.Start();
                         report.AppendLine(Row(eco, dir));
                         Flush(outPath, report);
+                        WritersClock.Stop();
+
                         break;
                     }
 
@@ -1153,12 +1175,22 @@ namespace Evosim.Sim.EditorTools
 
                     if (metabolicSteps % reportEvery != 0) continue;
 
+                    // The timing split's writers bucket, started around everything this sample
+                    // writes: Row builds the markdown row and writes stats.jsonl, positions.jsonl,
+                    // absorptive.jsonl and the window's lineage rows from the same walk over the
+                    // population, Flush rewrites the report, and Snapshot serialises the genomes.
+                    // Row's census is inside the bracket because it is what the writing is made
+                    // of — the bucket is "what a sample costs", not "what a file handle costs".
+                    WritersClock.Start();
+
                     report.AppendLine(Row(eco, dir));
                     Flush(outPath, report);
 
                     // Every tenth report: often enough that a killed run keeps something recent,
                     // rare enough that a population of thousands is not serialised every sample.
                     if (metabolicSteps % (reportEvery * 10) == 0) Snapshot(dir, eco);
+
+                    WritersClock.Stop();
                 }
 
                 // Reached whenever the loop above finished without the extinction break — either
@@ -1251,6 +1283,23 @@ namespace Evosim.Sim.EditorTools
                 clock.Elapsed.TotalMinutes.ToString("0.#") + " min wall clock (" +
                 (eco.World.ElapsedSeconds / Math.Max(1e-9, clock.Elapsed.TotalSeconds)).ToString("0.#") +
                 "x real time).");
+
+            // The timing split (2026-09-17), on its own line inside the same paragraph so that the
+            // pace line above stays byte-for-byte what every footer on file already says — the
+            // scripts that read a run's pace read that line. `other` is the remainder against the
+            // run's own clock: the world's construction and the founding draw before the loop, the
+            // manifest write each sample, and everything written after the clock stopped. The
+            // milliseconds themselves are in stats.jsonl at every sample and in run.json.
+            long wallOtherMs = Math.Max(0L,
+                clock.ElapsedMilliseconds - eco.WallPhysicsMs - eco.WallWorldMs -
+                eco.WallHarnessMs - WritersClock.ElapsedMilliseconds);
+
+            report.AppendLine(
+                "wall split: physics " + WallShare(eco.WallPhysicsMs, clock.ElapsedMilliseconds) +
+                ", world " + WallShare(eco.WallWorldMs, clock.ElapsedMilliseconds) +
+                ", harness " + WallShare(eco.WallHarnessMs, clock.ElapsedMilliseconds) +
+                ", writers " + WallShare(WritersClock.ElapsedMilliseconds, clock.ElapsedMilliseconds) +
+                ", other " + WallShare(wallOtherMs, clock.ElapsedMilliseconds));
             report.AppendLine();
             report.AppendLine(
                 "**Fastest creature seen at any point: " + bestSpeedEver.ToString("0.####") +
@@ -1305,6 +1354,11 @@ namespace Evosim.Sim.EditorTools
                             eco.Steps > 0 ? eco.ContactPairs / (double)eco.Steps : 0d,
                         MaxJointMassRatio = eco.MaxJointMassRatio,
                         BodiesOverMassRatio10 = eco.BodiesOverMassRatio10,
+                        WallPhysicsMs = eco.WallPhysicsMs,
+                        WallWorldMs = eco.WallWorldMs,
+                        WallHarnessMs = eco.WallHarnessMs,
+                        WallWritersMs = WritersClock.ElapsedMilliseconds,
+                        WallTotalMs = clock.ElapsedMilliseconds,
                     });
                 }
 
@@ -1458,6 +1512,21 @@ namespace Evosim.Sim.EditorTools
             Array.Resize(ref PositionFlags, size);
         }
 
+        /// <summary>
+        /// The timing split's fourth bucket and its denominator (2026-09-17): wall time this run
+        /// has spent writing, and the run's own clock.
+        /// </summary>
+        /// <remarks>
+        /// The other three are accumulated by <see cref="Ecosystem"/>, which cannot see the report
+        /// — the markdown row, <c>stats.jsonl</c>, <c>positions.jsonl</c>, <c>absorptive.jsonl</c>,
+        /// <c>lineage.jsonl</c> and the snapshots are all written from here, so here is where they
+        /// are timed. Static like every other tally in this file, and cleared in
+        /// <see cref="ResetStaticReportState"/> for the same reason: a second <c>Evosim/Run</c> in
+        /// one editor session must not inherit the previous run's milliseconds.
+        /// </remarks>
+        private static readonly Stopwatch WritersClock = new Stopwatch();
+        private static Stopwatch RunClock;
+
         /// <summary>Whether D060's assay has already fired this run — the one-shot guard.</summary>
         /// <remarks>
         /// Static for the same reason every other field here is: a second <c>Evosim/Run</c> from
@@ -1500,6 +1569,8 @@ namespace Evosim.Sim.EditorTools
             AssayFired = false;
             LastSnapshotSeconds = double.NaN;
             AbsorptiveRows.Clear();
+            WritersClock.Reset();
+            RunClock = null;
             CurrentManifest = null;
             CurrentManifestDir = null;
             StartedAtUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
@@ -1608,6 +1679,13 @@ namespace Evosim.Sim.EditorTools
             /// </summary>
             public double LastMaxJointMassRatio;
             public long LastBodiesOverMassRatio10;
+
+            /// <summary>The timing split as of the last metabolic step (2026-09-17), ms.</summary>
+            public long LastWallPhysicsMs;
+            public long LastWallWorldMs;
+            public long LastWallHarnessMs;
+            public long LastWallWritersMs;
+            public long LastWallTotalMs;
         }
 
         /// <summary>How a run stopped. Null while it is still going.</summary>
@@ -1665,6 +1743,22 @@ namespace Evosim.Sim.EditorTools
             /// </remarks>
             public double MaxJointMassRatio;
             public long BodiesOverMassRatio10;
+
+            /// <summary>
+            /// The timing split (2026-09-17), ms: the solver, the world's metabolic step, the rest
+            /// of the harness's per-step work, this file's writers, and the run's own clock over
+            /// all of them. The total less the four is what belongs to no bucket — the world's
+            /// construction, the founding draw, and the writes made after the clock stopped.
+            /// </summary>
+            /// <remarks>
+            /// Written on the error path too, from the manifest's last known values, for
+            /// <see cref="MatterInfluxedTotal"/>'s reason.
+            /// </remarks>
+            public long WallPhysicsMs;
+            public long WallWorldMs;
+            public long WallHarnessMs;
+            public long WallWritersMs;
+            public long WallTotalMs;
         }
 
         /// <summary>
@@ -1895,6 +1989,16 @@ namespace Evosim.Sim.EditorTools
                 // what `divergedTotal` above is read beside.
                 w.Field("maxJointMassRatio", ending.MaxJointMassRatio);
                 w.Field("bodiesOverMassRatio10", ending.BodiesOverMassRatio10);
+
+                // The timing split (2026-09-17) — appended after bodiesOverMassRatio10 per the
+                // same append-only rule. Where the wall clock went, in milliseconds, as the
+                // footer's percentages are made of; the total less the four is everything outside
+                // the loop's buckets. All five read 0 on a recording made before this build.
+                w.Field("wallPhysicsMs", ending.WallPhysicsMs);
+                w.Field("wallWorldMs", ending.WallWorldMs);
+                w.Field("wallHarnessMs", ending.WallHarnessMs);
+                w.Field("wallWritersMs", ending.WallWritersMs);
+                w.Field("wallTotalMs", ending.WallTotalMs);
             }
 
             w.EndObject();
@@ -2811,7 +2915,20 @@ namespace Evosim.Sim.EditorTools
                 // share would be a statement about float ties; the table prints a dash there for
                 // the same reason `vtx` prints one on a grid.
                 .Field("floorStockJoules", floorStockJoules)
-                .Field("floorStockLowQuarterShare", floorLowQuarterShare);
+                .Field("floorStockLowQuarterShare", floorLowQuarterShare)
+                // The timing split (2026-09-17), appended after the bed's pockets per the same
+                // append-only rule. Cumulative wall milliseconds since the run started rather than
+                // windows, so that any two rows give the split for the interval between them and
+                // a reader of the last row still has the run: the solver, the world's metabolic
+                // step, everything else the harness does per step, what this file spends writing,
+                // and the run's own clock over all of it. All five read 0 on a report written
+                // before this build, and `wallTotalMs` less the other four is start-up and
+                // whatever else falls outside a bucket.
+                .Field("wallPhysicsMs", eco.WallPhysicsMs)
+                .Field("wallWorldMs", eco.WallWorldMs)
+                .Field("wallHarnessMs", eco.WallHarnessMs)
+                .Field("wallWritersMs", WritersClock.ElapsedMilliseconds)
+                .Field("wallTotalMs", RunClock != null ? RunClock.ElapsedMilliseconds : 0L);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -3517,6 +3634,18 @@ namespace Evosim.Sim.EditorTools
 
             return string.Join(",", names);
         }
+
+        /// <summary>
+        /// One bucket of the timing split as a whole percentage of the run's own clock.
+        /// </summary>
+        /// <remarks>
+        /// Whole percentages, because the footer's job is to say where a second went and a reader
+        /// who wants the millisecond has it in <c>run.json</c> and in every <c>stats.jsonl</c> row.
+        /// The denominator is floored at one so a run that ends in its first millisecond prints
+        /// zeros rather than dividing by nothing.
+        /// </remarks>
+        private static string WallShare(long ms, long totalMs) =>
+            (100d * ms / Math.Max(1L, totalMs)).ToString("0", CultureInfo.InvariantCulture) + "%";
 
         private static string Header() =>
             "| " + string.Join(" | ", Columns) + " |" + Environment.NewLine +
