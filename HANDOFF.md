@@ -551,6 +551,20 @@ write it down." The agent's first thoughts; a proposal follows round 37b's read.
 
 ## The decisions in front of the owner
 
+- **A tempo dial, later (owner, 2026-09-17 afternoon).** The owner asked whether the world's
+  metabolic rate could rise so a run holds more generations. Worked through in conversation:
+  scale every ecological rate together (upkeep, income, growth, breeding age, senescence,
+  corpse decay) and leave the physics alone, and a body's lifetime budget in joules, its
+  depletion of its own cell per life and the joule cost of a metre swum are all unchanged,
+  so the economics of moving against sitting are tempo-invariant to first order. What
+  halves per life is everything that arrives by physics: sinking, the current's carriage,
+  dispersal. A sitter's supply per life halves and a mover's reach still covers the tank,
+  so on paper the faster world is slightly kinder to movement. The one choice is the
+  muscle's price: idle upkeep scales, the joules per unit of mechanical work do not. The
+  test is a control pair on one seed, tempo 2 at 30,000 s against tempo 1 at 60,000 s
+  (the long arm already queued for the oscillation). The owner's ruling: not now; when the
+  world has something worth speeding up. A proposal file then, not before round 39's read.
+
 - **The theatre in person: done.** The owner tried the interface on 2026-09-13 morning
   ("not perfect yet, amazing progress"; good enough for now, the world comes first). On
   2026-09-13 at 23:47 the owner ruled "proceed with your recommendations" on the agent's
