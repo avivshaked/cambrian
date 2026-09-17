@@ -382,8 +382,12 @@ the background and never handed to a subagent, which cannot wait.
    live pre-registration. D095 records the seed and arm rulings. **The reruns replay their
    censored copies bit for bit so far**: `compare-det.py --run-a/--run-b --allow-partial`
    (new switches, fixtures pass) reads identical on every shared sample to 2,600, 2,200 and
-   2,900 s at 10:40; run it again when each lands, over the full censored prefix, and put
-   the three lines in the round's entry. A running arm's
+   2,900 s at 10:40; `scratch/r39-after-reruns.ps1` (detached, log
+   `scratch/logs/r39-after-reruns.out`) runs it again over the full prefix when the three
+   land, then renders all five seeds one at a time on worker 7 with the round's
+   `Assets/Evosim` copied from worker 3 over the refresh (the main tree's `simHash` moved
+   with the timing split; a plain refresh would make the theatre refuse the recordings).
+   Put the three replay lines in the round's entry. A running arm's
    wall cannot be extended. A rerun on the same build at zero physics workers replays the
    censored prefix bit for bit (D078) and continues it, so a rerun of seeds 3 and 4 is an
    extension and not a new realisation. Every prediction of 0102 reads at 30,000 s by name. The render chain was stopped at 17:30 to give
