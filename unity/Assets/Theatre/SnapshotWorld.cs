@@ -96,6 +96,20 @@ namespace Evosim.Theatre
         /// <summary>Genomes this build could not read, which are counted and not drawn.</summary>
         public int Unreadable { get; private set; }
 
+        /// <summary>
+        /// Whether either picture-only reader was used — §11's <c>OLD-RUN READ</c>.
+        /// </summary>
+        /// <remarks>
+        /// Set when the config or any genome was refused by the strict reader and read by the
+        /// tolerant one. It goes on the label because a frame travels without its log, and the
+        /// reader of a still is owed the fact that this build is not the build that wrote the
+        /// run it is looking at.
+        /// </remarks>
+        public bool OldRunRead { get; private set; }
+
+        /// <summary>How many rows were read in each genome format, for the log.</summary>
+        private readonly SortedDictionary<int, int> _formats = new SortedDictionary<int, int>();
+
         /// <summary>The skin's palette, set by the runner before the first build.</summary>
         public TheatrePalette Palette;
 
@@ -135,9 +149,13 @@ namespace Evosim.Theatre
             refusal = null;
             var world = new SnapshotWorld();
 
+            string oldRun;
+
             try
             {
-                world.Record = RunRecord.Load(runDirectory);
+                // Strict first, tolerant second: §11's ruling, and the order is what keeps a run
+                // this build recorded reading exactly as it did before that ruling.
+                world.Record = RunRecord.LoadForPicture(runDirectory, out oldRun);
             }
             catch (Exception e)
             {
@@ -145,19 +163,37 @@ namespace Evosim.Theatre
                 return null;
             }
 
-            // The floor the replay would build, from a world constructed and never stepped — the
-            // same move Mode A makes for the field its creature smells. Everything the furniture
-            // needs is in the config and the seed, so the sand here is the sand the run had.
+            if (oldRun != null)
+            {
+                world.OldRunRead = true;
+                Debug.LogWarning("[Theatre] old-run read, config: " + oldRun);
+            }
+
+            // The floor, built the way World builds it and from the same two lines of its
+            // constructor: a tank with a relief or a tilt gets a height map drawn from the bed's
+            // own stream of the run's seed, and everything else gets the flat floor. Built here
+            // rather than by constructing a World, because a World is the thing that simulates
+            // and a picture-only config has no business inside one — and because the fields a
+            // World allocates on the way are a hundred thousand cells nothing here would read.
             try
             {
-                var water = new World(world.Record.Config, world.Record.Seed);
-                world.Bed = water.Bed;
+                RunConfig config = world.Record.Config;
+
+                world.Bed =
+                    config.WorldShape == WorldShape.Tank &&
+                    (config.BedReliefMetres > 0f || config.BedTiltMetres > 0f)
+                        ? new BedShape(
+                            TankGeometry.RadiusFor(config.WorldAreaSquareMetres),
+                            config.WorldDepthMetres, config.BedReliefMetres,
+                            config.BedTiltMetres, config.BedScaleMetres,
+                            Rng.SeedFor(world.Record.Seed, World.BedShapeIndex))
+                        : null;
             }
             catch (Exception e)
             {
                 refusal =
-                    "the run's config would not build a world, so the floor under the picture " +
-                    "cannot be drawn: " + e.GetType().Name + ": " + e.Message;
+                    "the run's config does not describe a floor this build can draw: " +
+                    e.GetType().Name + ": " + e.Message;
                 return null;
             }
 
@@ -218,11 +254,29 @@ namespace Evosim.Theatre
                 catch (Exception e)
                 {
                     Unreadable++;
-                    if (_firstUnreadable == null) _firstUnreadable = e.Message;
+                    if (_firstUnreadable == null) _firstUnreadable = "row " + i + ": " + e.Message;
                     continue;
                 }
 
-                if (id >= 0 && !_rowOf.ContainsKey(id)) _rowOf[id] = i;
+                // A row with no id is a row from before format 4, and a body with no id cannot be
+                // told from any other body in positions.jsonl. Counted and named, never guessed
+                // at by position in the file.
+                if (id < 0)
+                {
+                    Unreadable++;
+
+                    if (_firstUnreadable == null)
+                    {
+                        _firstUnreadable =
+                            "row " + i + " carries no organism id, so it cannot be joined to a " +
+                            "place; the row is format " + Format(_rows[i]) + " and a picture " +
+                            "reads " + PictureGenome.OldestFormat + " and up";
+                    }
+
+                    continue;
+                }
+
+                if (!_rowOf.ContainsKey(id)) _rowOf[id] = i;
             }
 
             string line = PositionsRowAt(directory, second);
@@ -326,7 +380,8 @@ namespace Evosim.Theatre
                 " s, every one at its adult size in the developer's own frame" +
                 (GuildDisagreements > 0
                     ? ", " + GuildDisagreements + " whose recorded guild flags and developed body disagree"
-                    : ""));
+                    : "") +
+                "; genome " + Formats());
 
             return true;
         }
@@ -334,17 +389,38 @@ namespace Evosim.Theatre
         private void Build(Pending pending)
         {
             Genome genome;
+            int format = GenomeJson.FormatVersion;
 
             try
             {
                 genome = GenomeJson.Read(_rows[pending.Row]);
             }
-            catch (Exception e)
+            catch (Exception strict)
             {
-                Unreadable++;
-                if (_firstUnreadable == null) _firstUnreadable = e.Message;
-                return;
+                // §11: a picture may read a row this build would refuse to simulate. Tried only
+                // after the strict reader, and it marks the frame.
+                try
+                {
+                    genome = PictureGenome.Read(_rows[pending.Row], out format);
+                    OldRunRead = true;
+                }
+                catch (Exception tolerant)
+                {
+                    Unreadable++;
+
+                    if (_firstUnreadable == null)
+                    {
+                        _firstUnreadable =
+                            "row " + pending.Row + " (creature " + pending.Id + "): " +
+                            tolerant.Message + " [the strict reader said: " + strict.Message + "]";
+                    }
+
+                    return;
+                }
             }
+
+            _formats.TryGetValue(format, out int seen);
+            _formats[format] = seen + 1;
 
             Phenotype phenotype;
 
@@ -356,7 +432,13 @@ namespace Evosim.Theatre
             catch (Exception e)
             {
                 Unreadable++;
-                if (_firstUnreadable == null) _firstUnreadable = e.Message;
+
+                if (_firstUnreadable == null)
+                {
+                    _firstUnreadable =
+                        "row " + pending.Row + " (creature " + pending.Id + "): " + e.Message;
+                }
+
                 return;
             }
 
@@ -630,7 +712,7 @@ namespace Evosim.Theatre
             int unmatched = WithoutAGenome + WithoutAPosition;
 
             return
-                "RECONSTRUCTED FROM SNAPSHOT\n" +
+                "RECONSTRUCTED FROM SNAPSHOT" + (OldRunRead ? " · OLD-RUN READ" : "") + "\n" +
                 string.Format(
                     CultureInfo.InvariantCulture,
                     "{0}  t={1:0.#}s  joined {2}  {3}  {4}  adult size, default orientation{5}",
@@ -755,6 +837,43 @@ namespace Evosim.Theatre
                 : double.NaN;
         }
 
+        /// <summary>Which genome formats were read, and how many rows of each.</summary>
+        /// <remarks>
+        /// Printed on every reconstruction rather than only on an old one, because "format 6,
+        /// read strictly" is the fact a reader of an old frame needs to compare against.
+        /// </remarks>
+        private string Formats()
+        {
+            if (_formats.Count == 0) return "no row was read";
+
+            var parts = new List<string>(_formats.Count);
+
+            foreach (KeyValuePair<int, int> pair in _formats)
+            {
+                parts.Add(
+                    "format " + pair.Key + " on " + pair.Value + " row(s)" +
+                    (pair.Key == GenomeJson.FormatVersion
+                        ? ", read strictly"
+                        : ", read by the picture-only reader"));
+            }
+
+            return string.Join("; ", parts.ToArray());
+        }
+
+        /// <summary>A row's format, or -1 when it does not say. For a refusal's wording only.</summary>
+        private static int Format(string row)
+        {
+            try
+            {
+                JsonNode node = Json.Parse(row);
+                return node.Has("format") ? node["format"].AsInt() : -1;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
         private static string Seconds(double t) =>
             t.ToString("0.###", CultureInfo.InvariantCulture);
 
@@ -780,6 +899,8 @@ namespace Evosim.Theatre
             _rows = new string[0];
             _built = 0;
             _begun = false;
+
+            _formats.Clear();
 
             JoinedCount = 0;
             WithoutAGenome = 0;

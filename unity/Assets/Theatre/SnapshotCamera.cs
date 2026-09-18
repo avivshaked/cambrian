@@ -1720,6 +1720,12 @@ namespace Evosim.Theatre
             Add('*', ".....", "#.#.#", ".###.", "#####", ".###.", "#.#.#", ".....");
             Add('#', ".#.#.", ".#.#.", "#####", ".#.#.", "#####", ".#.#.", ".#.#.");
 
+            // The separator the reconstruction's first line uses between what a frame is and how
+            // it was read (§11's RECONSTRUCTED FROM SNAPSHOT · OLD-RUN READ). Without a glyph of
+            // its own it would print as the hollow box this table gives an unknown character,
+            // which is visible but says nothing.
+            Add('·', ".....", ".....", ".....", "..#..", ".....", ".....", ".....");
+
             return font;
         }
 
