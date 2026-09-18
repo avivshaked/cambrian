@@ -101,6 +101,23 @@ namespace Evosim.Theatre.EditorTools
         /// </remarks>
         private static bool _chrome;
 
+        /// <summary>
+        /// Draw the world from the run's own files instead of replaying it —
+        /// <c>EVOSIM_THEATRE_SNAP_FROM=snapshot</c>, <c>theatre-snap.ps1 -From snapshot</c>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Why a second way to take the same picture.</b> A replay of a 30,000 s seed runs no
+        /// faster than the farm did, so a frame late in a run costs a day of an Editor's life and
+        /// round 41's first early look timed out on the wall with nothing written (2026-09-18).
+        /// The farm already records every living body's genome and every living body's place, on
+        /// the same cadence, so the picture is a join rather than a re-simulation. What it cannot
+        /// recover it says on every frame: no file holds a body's orientation or how far it had
+        /// grown, so every body is drawn upright and at its adult size
+        /// (<c>logbook/specs/snapshot-render-spec.md</c>,
+        /// <see cref="Evosim.Theatre.SnapshotWorld"/>).
+        /// </remarks>
+        private static bool _fromSnapshot;
+
         /// <summary>Where the armed chrome picture will be written, or null.</summary>
         private static string _chromePath;
 
@@ -166,7 +183,11 @@ namespace Evosim.Theatre.EditorTools
             Debug.Log(
                 "[Theatre] snapshot: " + _times.Length + " time(s), " + _views.Length +
                 " view(s), " + _width + "x" + _height + ", into " +
-                (_directory ?? "scratch/snaps/<arm>") + ". Entering Play mode.");
+                (_directory ?? "scratch/snaps/<arm>") +
+                (_fromSnapshot
+                    ? ", drawn from the run's own snapshots and positions"
+                    : ", replayed") +
+                ". Entering Play mode.");
 
             // Invariant on the way out as well as back in: a machine whose decimal separator is a
             // comma would otherwise write a number this cannot read.
@@ -225,8 +246,133 @@ namespace Evosim.Theatre.EditorTools
 
             _chrome = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHROME") == "1";
 
+            _fromSnapshot = string.Equals(
+                Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SNAP_FROM"), "snapshot",
+                StringComparison.OrdinalIgnoreCase);
+
+            return _fromSnapshot ? WhatTheSnapshotsCannotDo() : null;
+        }
+
+        /// <summary>
+        /// Why this request cannot be drawn from the run's files, or null.
+        /// </summary>
+        /// <remarks>
+        /// <b>Every one of these is answered before Play mode.</b> A batch Editor takes a minute
+        /// to reach its first frame, and a refusal that arrived there would cost that minute for
+        /// nothing and would leave the caller reading a log to find out that the second it asked
+        /// for was never written. The rule is the config loader's: refuse, and say what was there
+        /// instead of what was asked for.
+        /// </remarks>
+        private static string WhatTheSnapshotsCannotDo()
+        {
+            foreach (SnapshotCamera.View view in _views)
+            {
+                if (view != SnapshotCamera.View.Close) continue;
+
+                return
+                    "the close view is refused when the picture is drawn from a snapshot. A " +
+                    "portrait of two bodies is exactly where this mode's two faults show: no " +
+                    "file records how a body was lying, so every body is drawn upright in the " +
+                    "developer's own frame, and none records how far it had grown, so every " +
+                    "body is drawn at its adult size. Take a world view this way, and the close " +
+                    "view with -From replay.";
+            }
+
+            if (_chrome)
+            {
+                return
+                    "-Chrome is refused when the picture is drawn from a snapshot: the interface " +
+                    "reads a replay's census, its identity check and its timeline, and a " +
+                    "reconstruction has none of them.";
+            }
+
+            string directory;
+
+            try
+            {
+                directory = SnapshotWorld.Resolve(
+                    Environment.GetEnvironmentVariable("EVOSIM_THEATRE_RUN"));
+            }
+            catch (Exception e)
+            {
+                return e.Message;
+            }
+
+            if (!SnapshotWorld.HasPositions(directory))
+            {
+                return
+                    "this run has no positions.jsonl, so nothing in it says where a body was. A " +
+                    "tiled world writes none, and neither does any run recorded before " +
+                    "2026-09-10.";
+            }
+
+            double[] snapshots = SnapshotWorld.SnapshotSeconds(directory);
+
+            if (snapshots.Length == 0)
+            {
+                return "this run wrote no snapshots, so there are no genomes to draw.";
+            }
+
+            double[] positions = SnapshotWorld.PositionSeconds(directory);
+
+            foreach (double t in _times)
+            {
+                if (!Holds(snapshots, t))
+                {
+                    return
+                        Seconds(t) + " s is not a snapshot second. " + Nearest(snapshots, t) +
+                        " A picture drawn this way comes from snapshots/NNNNNNNNN.jsonl, so the " +
+                        "second has to be one the run wrote.";
+                }
+
+                if (!Holds(positions, t))
+                {
+                    return
+                        "the snapshot at " + Seconds(t) + " s has no row in positions.jsonl, so " +
+                        "nothing says where those bodies were. " + Nearest(positions, t);
+                }
+            }
+
             return null;
         }
+
+        /// <summary>Whether a second is one of these, to a millisecond.</summary>
+        private static bool Holds(double[] seconds, double t)
+        {
+            foreach (double s in seconds)
+            {
+                if (Math.Abs(s - t) <= 1e-3) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Which of these seconds lie either side of one that is not among them.</summary>
+        private static string Nearest(double[] seconds, double t)
+        {
+            double below = double.NaN, above = double.NaN;
+
+            foreach (double s in seconds)
+            {
+                if (s <= t && (double.IsNaN(below) || s > below)) below = s;
+                if (s >= t && (double.IsNaN(above) || s < above)) above = s;
+            }
+
+            if (!double.IsNaN(below) && !double.IsNaN(above))
+            {
+                return
+                    "The ones either side are " + Seconds(below) + " s and " + Seconds(above) +
+                    " s.";
+            }
+
+            if (!double.IsNaN(below)) return "The last one is " + Seconds(below) + " s.";
+            if (!double.IsNaN(above)) return "The first one is " + Seconds(above) + " s.";
+
+            return "There are none.";
+        }
+
+        private static string Seconds(double t) =>
+            t.ToString("0.###", CultureInfo.InvariantCulture);
 
         /// <summary>Ascending simulated seconds, all positive. The order is the caller's promise.</summary>
         private static double[] TimesFrom(string text, out string refusal)
@@ -384,7 +530,8 @@ namespace Evosim.Theatre.EditorTools
                    _height.ToString(CultureInfo.InvariantCulture) + "|" +
                    _wallSecondsAllowed.ToString("R", CultureInfo.InvariantCulture) + "|" +
                    _next.ToString(CultureInfo.InvariantCulture) + "|" +
-                   (_chrome ? "1" : "0");
+                   (_chrome ? "1" : "0") + "|" +
+                   (_fromSnapshot ? "snapshot" : "replay");
         }
 
         /// <summary>
@@ -437,6 +584,7 @@ namespace Evosim.Theatre.EditorTools
                 : 0;
 
             _chrome = fields.Length > 6 && fields[6] == "1";
+            _fromSnapshot = fields.Length > 7 && fields[7] == "snapshot";
 
             if (_times == null || _views == null) { SessionState.EraseString(PendingKey); return; }
             if (_next >= _times.Length) { SessionState.EraseString(PendingKey); return; }
@@ -488,6 +636,12 @@ namespace Evosim.Theatre.EditorTools
                         Finish(1, "no TheatreRunner in the scene: nothing is playing the run");
                         return;
                     }
+                }
+
+                if (_fromSnapshot)
+                {
+                    DriveTheReconstruction();
+                    return;
                 }
 
                 TheatreReplay replay = _runner.Replay;
@@ -546,6 +700,106 @@ namespace Evosim.Theatre.EditorTools
             catch (Exception e)
             {
                 Finish(1, e.GetType().Name + ": " + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        /// <summary>
+        /// One editor tick with nothing to step: ask for the second, wait for the bodies, shoot.
+        /// </summary>
+        /// <remarks>
+        /// The same shape as <see cref="Drive"/>'s own loop, with the wait on a build instead of
+        /// on a clock. The world is built across frames
+        /// (<see cref="Evosim.Theatre.SnapshotWorld.BuildSome"/>) because an Editor that spends
+        /// half a minute inside one <c>Update</c> looks exactly like one that has wedged.
+        /// </remarks>
+        private static void DriveTheReconstruction()
+        {
+            SnapshotWorld world = _runner.Reconstruction;
+
+            if (world == null)
+            {
+                // Start may not have run yet on the first tick; an error means it has, and that
+                // the run was refused.
+                if (!string.IsNullOrEmpty(_runner.Error)) Finish(1, "refused: " + _runner.Error);
+                return;
+            }
+
+            if (!_paceSet)
+            {
+                _paceSet = true;
+                _runner.Paused = true;
+                _runner.ShowOverlay = false;
+
+                // A quarter of a second a frame for the build, which is the budget the replay
+                // gets for its steps and for the same reason: a batch Editor has nothing else to
+                // do with the frame.
+                _runner.FrameBudgetSeconds = 0.25f;
+
+                Debug.Log(
+                    "[Theatre] " + world.Record.Path + "\n" +
+                    "  arm " + world.Record.ArmName + ", seed " + world.Record.Seed +
+                    ", config " + world.Record.ConfigHash + "\n" +
+                    "  drawn from the run's own snapshots and positions.jsonl; " +
+                    "no identity check: nothing was simulated");
+            }
+
+            double target = _times[_next];
+
+            // Asked for once: Begin sets the second it is drawing, so the next tick falls through
+            // to the wait rather than starting the build again.
+            if (Math.Abs(world.Second - target) > 1e-3)
+            {
+                _runner.ShowSnapshotSecond(target);
+                return;
+            }
+
+            if (!world.Ready) return;
+
+            ShootTheReconstruction(world, target);
+
+            _next++;
+            SessionState.SetString(PendingKey, Pack());
+
+            if (_next >= _times.Length) Finish(0, _written.Count + " picture(s) written");
+        }
+
+        /// <summary>Every requested view of the reconstructed world, written out.</summary>
+        /// <remarks>
+        /// <c>-recon-</c> stands in the file name where the replay's view name stands alone, so a
+        /// directory can hold both kinds of picture of one second and nobody has to open a file
+        /// to know which kind they have.
+        /// </remarks>
+        private static void ShootTheReconstruction(SnapshotWorld world, double asked)
+        {
+            string arm = world.Record.ArmName ?? "run";
+
+            if (_directory == null)
+            {
+                _directory = Path.Combine(
+                    Path.Combine(BuildIdentity.RepositoryRoot(), "scratch"), "snaps");
+
+                _directory = Path.Combine(_directory, arm);
+            }
+
+            if (_camera == null) _camera = new SnapshotCamera(_width, _height);
+
+            string stamp = asked.ToString("0.###", CultureInfo.InvariantCulture);
+
+            foreach (SnapshotCamera.View view in _views)
+            {
+                string path = Path.Combine(
+                    _directory,
+                    arm + "-t" + stamp + "-recon-" + SnapshotCamera.NameOf(view) + ".png");
+
+                int bytes = _camera.Capture(world, view, path, out string remark);
+                _written.Add(path);
+
+                Debug.Log(
+                    "[Theatre] wrote " + path + " (" + bytes + " bytes) at t=" + stamp +
+                    " s, reconstructed\n" +
+                    "  " + remark + "\n" +
+                    "  " + world.JoinedCount + " bodies joined, every one at its adult size in " +
+                    "the developer's own frame; no identity check: nothing was simulated");
             }
         }
 

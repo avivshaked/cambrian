@@ -49,6 +49,29 @@
   angle, with no box outline and no markers. It is a portrait of one crowd and never a sample:
   nothing about the population or the spread can be read from it.
 
+.PARAMETER From
+  Where the picture comes from: replay, the default, or snapshot.
+
+  replay re-simulates the run from its first second with the identity check on. It is the
+  faithful picture and the only one that can show motion, and it costs what the farm cost: a
+  frame at 30,000 s is a day of an Editor's life, and round 41's first early look timed out on
+  the wall with nothing written.
+
+  snapshot draws the same box from the run's own files instead. The genomes come from
+  snapshots/NNNNNNNNN.jsonl, the places and guilds from positions.jsonl, joined on the organism
+  id; each genome is developed, set down where the run says it was, and drawn in the skin. No
+  physics runs and nothing is stepped, so a frame costs seconds at any second of any run.
+
+  Two things it cannot recover, and every frame says so on a burnt-in line reading RECONSTRUCTED
+  FROM SNAPSHOT. Orientation: no file records how a body was lying, so every body is drawn
+  upright in the developer's own frame. Size: a body is born small and grows, and only the adult
+  is in the genome, so every body is drawn at its adult size. The close view is refused in this
+  mode for exactly that reason, and so is -Chrome, whose interface reads a replay's census.
+
+  Only a second the run wrote a snapshot at can be drawn, and the request is refused before the
+  Editor enters Play mode when it was not, naming the snapshots either side. Pictures land beside
+  the replay's with -recon- in the name before the view.
+
 .PARAMETER Carve
   How deep the skin cuts each body inward, as a fraction of the part's smallest half-extent.
   Default 0.35, the depth the owner chose from the close views on 2026-09-11, clamped at 0.5 by
@@ -107,6 +130,7 @@ param(
     [int]$Worker = 6,
     [string[]]$Views = @(),
     [string]$Size = '1600x900',
+    [ValidateSet('replay', 'snapshot')][string]$From = 'replay',
     [double]$Carve = 0.35,
     [string]$Out,
     [switch]$Chrome,
@@ -211,7 +235,7 @@ $names = @(
     'EVOSIM_THEATRE_RUN', 'EVOSIM_THEATRE_SNAP_TIMES', 'EVOSIM_THEATRE_SNAP_VIEWS',
     'EVOSIM_THEATRE_SNAP_OUT', 'EVOSIM_THEATRE_SNAP_SIZE', 'EVOSIM_THEATRE_WALL_MINUTES',
     'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_SEEK', 'EVOSIM_REPO_ROOT',
-    'EVOSIM_THEATRE_CARVE', 'EVOSIM_THEATRE_CHROME')
+    'EVOSIM_THEATRE_CARVE', 'EVOSIM_THEATRE_CHROME', 'EVOSIM_THEATRE_SNAP_FROM')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -224,6 +248,10 @@ try {
     $env:EVOSIM_THEATRE_WALL_MINUTES = $WallMinutes
     $env:EVOSIM_REPO_ROOT = $root
     $env:EVOSIM_THEATRE_CARVE = $Carve.ToString([System.Globalization.CultureInfo]::InvariantCulture)
+
+    # Set both ways round rather than removed when it is 'replay', so that a shell which drew one
+    # picture from the snapshots cannot leave the next one reconstructed without saying so.
+    $env:EVOSIM_THEATRE_SNAP_FROM = $From
 
     if ($viewNames.Count -gt 0) { $env:EVOSIM_THEATRE_SNAP_VIEWS = ($viewNames -join ',') }
     else { Remove-Item env:EVOSIM_THEATRE_SNAP_VIEWS -ErrorAction SilentlyContinue }
@@ -244,6 +272,7 @@ try {
     Write-Host "  at     $($timeList -join ', ') s"
     Write-Host "  views  $(if ($viewNames.Count -gt 0) { $viewNames -join ', ' } else { 'side, end, top, iso' })"
     Write-Host "  size   $Size"
+    Write-Host "  from   $From$(if ($From -eq 'snapshot') { ' (drawn from the run''s files; adult size, default orientation)' })"
     Write-Host "  carve  $($env:EVOSIM_THEATRE_CARVE)"
     Write-Host "  out    $snapDirectory"
     Write-Host "  log    $log"

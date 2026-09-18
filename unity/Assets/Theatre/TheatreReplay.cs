@@ -71,7 +71,7 @@ namespace Evosim.Theatre
     /// forgot one of them would differ from the record for a reason no column would name.
     /// </para>
     /// </remarks>
-    public sealed class TheatreReplay : IDisposable
+    public sealed class TheatreReplay : IDisposable, ITheatreFrame
     {
         public RunRecord Record { get; private set; }
         public Ecosystem Eco { get; private set; }
@@ -394,6 +394,54 @@ namespace Evosim.Theatre
             }
 
             return null;
+        }
+
+        // ---------------------------------------------------------------- the camera's world
+
+        /// <summary>
+        /// What <see cref="SnapshotCamera"/> asks of a world it is photographing.
+        /// </summary>
+        /// <remarks>
+        /// Read straight off the living population, which is where the camera read them before
+        /// this interface existed: the creature's own <c>X</c>, <c>HeightY</c> and <c>Z</c>, set
+        /// by the harness from its centre of mass at every metabolic step, so the picture and the
+        /// report cannot disagree about where a body is.
+        /// </remarks>
+        public BedShape Bed => Eco?.World?.Bed;
+
+        public int BodyCount => Eco?.World?.Living?.Count ?? 0;
+
+        public Vector3 PositionOf(int index)
+        {
+            Organism creature = Eco.World.Living[index];
+            return new Vector3(creature.X, creature.HeightY, creature.Z);
+        }
+
+        public Phenotype PhenotypeOf(int index) => Eco.World.Living[index].Phenotype;
+
+        public bool AbsorptiveAt(int index) => Eco.World.Living[index].HasAbsorptiveTissue;
+
+        public bool PhotosyntheticAt(int index) => Eco.World.Living[index].HasPhotosyntheticTissue;
+
+        /// <summary>
+        /// The one line a replay's picture carries: which world, when, how many, which way.
+        /// </summary>
+        /// <remarks>
+        /// The faithfulness of the replay is on the same line rather than left to the log,
+        /// because a picture travels without its log. A run this build did not record is a cousin
+        /// of that run and not that run (D078, logbook/0052), and a still frame of a cousin
+        /// labelled with the arm's name would be the most quietly misleading artefact this
+        /// project could make.
+        /// </remarks>
+        public string LabelFor(string view, string look)
+        {
+            string arm = Record.ArmName ?? "run";
+            string faithful = Faithful && ThreadCaveat == null ? "" : "  NOT A FAITHFUL REPLAY";
+
+            return string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "{0}  t={1:0.#}s  alive {2}  {3}  {5}{4}",
+                arm, Census.T, Census.Alive, view, faithful, look);
         }
 
         /// <summary>One line for a HUD or a log: what the identity check currently says.</summary>
