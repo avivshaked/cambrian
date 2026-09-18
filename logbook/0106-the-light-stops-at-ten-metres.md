@@ -125,3 +125,12 @@ as arms end, the queue's worker list being the three-arm rule; the wall is 1,800
 The first look, at 1,400 to 1,900 s: 713 / 793 / 742 alive, mean depth 4.2 / 1.9 / 4.3 m
 against round 39's 6 to 17 m at the same seconds, shading 2.3 to 2.7%, no eater yet.
 Seed 2's crowd is nearest the film; the reading is L1's at 15,000 s, not the founding's.
+
+*2026-09-18, 16:57.* **Stopped by the owner's ruling** (D098: the economy is rebuilt as one
+substance and every current run stops). Seeds 1, 2 and 3 ended by `stop-arm.ps1` at 16,400,
+12,200 and 14,300 s, `manual-other` with the note in each manifest; seeds 4 and 5 never
+launched. Under V5 the round is read at its last samples, and the read says which of L1 to
+L9 could be read at all. Seed 1's 15,000 s reading was in: the leaves' median about 14 m
+against L1's 10 m bar, with the depth-by-age table (HANDOFF, 2026-09-18) showing the deep
+half of the crowd as newborns dropped at 16 to 25 m by the few parents whose cell could
+afford a child, most of them dead within 500 s.

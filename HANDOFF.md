@@ -6,6 +6,21 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
+**The economy is being rebuilt as one substance (D098, 2026-09-18 evening), and every run is
+stopped.** The owner ruled `fable-propose-economy.md` ("Let's do it. And I'd stop all the
+current runs. I'd do the change and then start new runs"). Round 40's three arms were
+stopped at 16,400, 12,200 and 14,300 s (manifests say `stopped`, `manual-other`, with the
+note); seeds 4 and 5 never launched; the queue is stopped. Round 39's render chain
+(`scratch/r39-renders-2.ps1`, worker 7) runs on for 0105's pictures and is the only Unity
+process; the Core suites run beside it only filtered, `-All` when it is between renders.
+The build's path: `logbook/specs/economy-spec.md` (the rules with the numbers, the ledger's
+arithmetic for ρ, k, K and the remineralisation rate), then Core (`Metabolism`, `World`'s
+income, upkeep, conception, growth and death legs, the fields' units, both identities, the
+ledger, the report's columns, the genome format to 6 for `ReserveMargin`), the tests, a
+5,000 s screen at dt 0.02 on round 40's world, then the base round's pre-registration and
+five seeds. Round 40's read (0106, at the last samples) and 0105's entry are written in
+the gaps.
+
 **The campaign's direction changed at midday on 2026-09-18 (D097).** The owner ruled "Let's
 follow your recommendations" on the agent's diagnosis that the matter cell is a one-child
 cliff that decides every reading, and that nothing in the world eats anything alive. After
@@ -419,7 +434,7 @@ old formats read-only.
 Agent work unless marked. Long steps (a suite, a smoke, a render) are launched by the agent in
 the background and never handed to a subagent, which cannot wait.
 
-0. **D097's sequence, ahead of everything below once round 40 is read.** (a) Round 40's
+0. **D098's build, ahead of everything below; D097's sequence follows it (the mouth on the new base).** (a) Round 40's
    read as pre-registered (0106, L1 to L9), the entry with its pictures, `birth-depth.py`
    moved into `logbook/specs/r40-read/`. (b) `fable-propose-economy.md` (2026-09-18 evening, for the
    owner's ruling; it superseded `fable-propose-matter.md` the same evening after the owner

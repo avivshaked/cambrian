@@ -120,6 +120,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D095](#d095) | Seeds per round and arms at a time: five seeds for population-level predictions, ten for a rare event or a 2-or-3-of-5 reading, a rare event pre-registered as a count; three concurrent arms, renders between rounds | 2026-09-17 |
 | [D096](#d096) | The light's reach halved for round 40: `EVOSIM_LIGHT_REACH` 6 m (the attenuation depth, 12 m in every round before), so a lone leaf breeds only in the top ten metres and the water below is a dark column; the shelf follows in the lit band the new light defines | 2026-09-18 | ruled by the owner in conversation on the morning of 2026-09-18 ("Let's do it" on the direction, "proceed with your recommendations" on the value), from the agent's ledger sweep in `fable-propose-light.md`, absorbed here |
 | [D097](#d097) | The foundation queue stops after round 40's read; the campaign turns to what makes the world interesting: matter off the throne (a child's matter price so a cell is not a one-child cliff), then a mouth that eats living bodies (herbivory, then predation), then the senses and the stroke's price; each as a proposal | 2026-09-18 | ruled by the owner in conversation at midday on 2026-09-18 ("Let's follow your recommendations!") on the agent's diagnosis after round 40's early look |
+| [D098](#d098) | One substance: matter in two states, inorganic in the water and organic in bodies, corpses and detritus, with energy as the organic state's content at ρ joules a unit; photosynthesis makes organic from inorganic at a saturating uptake, living burns organic back to inorganic, eating moves organic, a child is organic matter given by its parent, detritus remineralises, the fixed charge goes, one breeding-margin gene; both audits kept; every current run stopped for the rebuild | 2026-09-18 | ruled by the owner in conversation on the evening of 2026-09-18 ("Let's do it. And I'd stop all the current runs") on `fable-propose-economy.md`, absorbed here with the owner's four alignment questions |
 
 ---
 
@@ -5339,3 +5340,75 @@ a question of a world that cannot answer it while the matter cell is a cliff. Bu
 prey sense before contact feeding: a prize before the game. Opening the matter books
 (influx without burial): the closed books are what let every reading be trusted (D065,
 §0p), and the price of a child is the dial that keeps them closed while moving the grain.
+
+### D098
+**One substance: the matter and energy economy rebuilt** · 2026-09-18
+
+**Status:** ruled by the owner on the evening of 2026-09-18, in conversation ("Let's do it.
+And I'd stop all the current runs. I'd do the change and then start new runs"), on
+`fable-propose-economy.md`, which is absorbed here and deleted. The owner had asked that
+afternoon for the economy to be rethought, "closer to what reality looks like or at least to
+something that works better", after the agent showed that a body's matter was a licence fee
+and that energy and matter ran in loops that never touched. Round 40's three arms were
+stopped at 16,400, 12,200 and 14,300 s (`stop-arm.ps1`, `manual-other`, the note in each
+manifest) and are read at their last samples under 0106's V5. Round 39's render chain runs
+on, for 0105's pictures.
+
+**Context, in plain words.** Since D048 the world has had two currencies that are never
+added: joules for light, upkeep, tissue and the detritus field, and units of matter drawn
+from the parent's cell at conception and at growth, locked in the body and returned at
+death. They meet only at a conception. Round 40's books showed what that makes: 3 of a
+body's 3.16 units of matter are D065's fixed charge, so matter caps the head count and does
+nothing else; a corpse's joules go to the eaters and its matter to whoever breeds in that
+cell, so an eater is a plant for matter and an animal for energy; and the lump drawn at
+conception from a cell holding about one child's worth makes breeding a lottery on cells,
+which decided rounds 39 and 40 (D097). In a real closed aquarium there is one conserved pool,
+matter, in two states, inorganic and organic, and one flow that passes through, energy,
+which arrives as light and leaves as heat; a body is organic matter and its energy is that
+matter's content.
+
+**Ruled.** Matter is the unit. Organic matter carries `JoulesPerUnit` (ρ) of energy;
+inorganic carries none. Tissue, reserve, corpses and detritus are organic; the water's
+dissolved pool is inorganic. **Photosynthesis** makes organic matter from inorganic at
+`min(light capacity, uptake capacity)`, the uptake `k · surface · c / (c + K)` saturating in
+the inorganic density at the leaf, taken from the cell. **Living** burns organic matter to
+inorganic, returned to the body's cell, the energy leaving as heat; D052's excretion becomes
+this leg. **Eating** moves organic matter from what a mouth touches, the detritus field now
+and living tissue with the mouth (D097 item 2), at an assimilation efficiency, the rest
+returned as inorganic. **A child** is organic matter given by its parent, tissue and reserve
+from the parent's own, drawing nothing from the cell; growth builds tissue from the body's
+reserve, drawing nothing from the cell. **Death** makes a corpse that sinks and rides the
+current and decays into the detritus field where it is (D086 unchanged); the detritus field
+sinks and **remineralises** to inorganic at `RemineralisationPerSecond`. **The fixed charge**
+(D065) goes; the newborn mass floor (D087) bounds the head count. **One breeding-margin
+gene**, `ReserveMargin`, beside investment and brood (the owner's rule, 2026-09-18 evening),
+the genome format to 6. **Both audits** stay: inorganic plus organic is a constant to the bit,
+and light captured less heat burned equals the change in organic matter times ρ, so a
+physics exploit still has no path into food. ρ, `k`, `K` and the remineralisation rate are
+set by the smoke on round 40's world, from the constraint that a founding world's standing
+organic joules equal a stated share of the budget; the build's spec
+(`logbook/specs/economy-spec.md`) carries the numbers and the base round's entry the
+predictions.
+
+**The owner's four alignment questions, and the answers this rules.** *How is matter
+replenished if burning makes heat?* Matter is never burnt away: upkeep turns organic matter
+into inorganic matter in the water, and only the energy content leaves as heat; the sun
+replenishes the energy by fixing inorganic matter organic again, and the matter total never
+moves. *One kind of matter?* Yes, for the first order: one pool gives the vertical structure
+and the food web; stoichiometry (nitrogen against phosphorus, tissue types with different
+ratios) is a later refinement and the pool is built so a second substance can be added.
+*Do bodies decompose into the ambient matter of their cell as they sink?* Yes, in two steps:
+a corpse sinks and rides the current and releases organic matter into the detritus field of
+whatever cell it is in, and the detritus field sinks and remineralises to inorganic in
+whatever cell it is in; eaters intercept at the first step, plants take up at the second.
+*Does every creature spend energy to take matter from the water, plants paying with light?*
+Only plants take inorganic matter, and photosynthesis is that uptake: the light's energy is
+what fixes it, and there is no separate charge beyond the leaf's upkeep. Animals cannot live
+on inorganic matter; they take organic matter by contact, paying the mouth part's upkeep and
+whatever movement reaches the food, with no per-bite charge in this build.
+
+**Rejected.** Two currencies with a per-body matter store (`fable-propose-matter.md`, the same
+afternoon): removes the lottery, keeps the licence fee and the two loops. Matter dropped
+and the crowd capped on energy alone: nothing then strips the surface and a lit leaf breeds
+forever, the world before D048. Finishing round 40 before the rebuild: the owner's call, and
+its 15,000 s readings were already in (0106's read).
