@@ -28,7 +28,17 @@ grows, and seed 1's mean 8.3 m at 4,300 s with 1,940 alive (round 39's seed 1 ha
 3,000 s). Seed 2 sits shallowest (mean 3.5 m at 2,700 s). Shading 2.8 to 3.7% at 2,700 to
 4,300 s, round 39's run maxima already. No eater has founded in any seed by 4,300 s. My
 reading: the band is forming where the ledger said and the film is thinning rather than
-filling, which is L1's direction; nothing is read until 15,000 s.
+filling, which is L1's direction; nothing is read until 15,000 s. **The look at 6,000 s
+(faithful, 60 of 61):** 2,460 alive; the row at the waterline is still packed, the crowd
+now fills the top half of the tank to about 22 m in a gradient, and the lower twenty
+metres hold a few dozen bodies with a handful near the deep floor, where round 39's seed 1
+filled all 45 m at 15,000 s. The leaves' median from the positions: seed 1 7 to 8 m at
+2,600 s, 14 m at 7,800 s; seed 2 8.5 m at 5,500 s; seed 3 7.6 m at 6,700 s, its 29 to 62
+eaters 6 m below its leaves. My reading, as inference: the light made the dark column,
+and the band is about twice as thick as the lone leaf's ledger said, sinking with time as
+the crowd grows, so L1's 10 m bar is in doubt while L3's direction is already visible.
+Where the band stops is the 15,000 s reading; the ledger prices one leaf alone and the
+crowd sits where the marginal leaf breaks even, which is deeper than where one leaf would.
 
 **Round 39's entry waits for its frames.** `logbook/0105-the-shelf-was-never-in-the-light.md`
 is drafted and uncommitted with a `PICTURES-15000-30000` marker; the numeric read is
