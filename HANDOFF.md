@@ -6,6 +6,35 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
+**Round 40, the light's reach, is running (logbook/0106, D096; launched 2026-09-18 08:02).**
+Round 39's world with `EVOSIM_LIGHT_REACH` 6 m and nothing else changed; five seeds at
+three arms on workers 2, 3 and 4 (`scratch/r40/queue.ps1`, log `scratch/logs/r40-queue.out`;
+seeds 4 and 5 launch as arms end, since the worker list is the three-arm rule). Seeds 1
+to 3 verified from their manifests: `simHash 302df848…`, `coreHash 96488dec…`,
+`configHash 866b711a`, `physicsJobWorkers 0`, `attenuationDepth 6` in every config,
+`prereg.json` at `8e77099` beside the arm and the run. The header token `light reach 6 m`
+is checked from each arm's log once the first table row is in (the smoke's log carries
+it). Read on L1 to L9 with round 39's numbers as the baselines; frames of a live arm at
+about 3,000 and 6,000 s on a worker the queue is not using (5 or 6), one at a time. The
+wall is 1,800 minutes. Round 39's render chain is still on worker 7 (seed 1's 15,000 and
+30,000 s frames, then seeds 2 to 5), so a fourth Unity process is the render and the
+owner's Editor is the fifth; nothing else runs beside them.
+
+**Round 39's entry waits for its frames.** `logbook/0105-the-shelf-was-never-in-the-light.md`
+is drafted and uncommitted with a `PICTURES-15000-30000` marker; the numeric read is
+committed as `logbook/specs/r39-read/` (`summary.tsv` first). When seed 1's later frames
+land, look at them, replace the marker, copy the chosen frames to `logbook/images/0105-…`,
+add the README row, commit; then restyle 0102 (its pre-registration is read).
+
+**The cloud CPU survey is written (`logbook/specs/cloud-cpu-survey.md`, 2026-09-18).** The
+owner asked for prices and options for running the arms off the machine. The finding:
+the licence is the decision (one seat, one instance; Build Server covers builds only;
+Unity Simulation is gone), nothing a hyperscaler rents is as fast per core as the desktop
+(0.6 to 0.8), and a desktop-Ryzen bare-metal box (OVH RISE-L, $177 a month, read) is both
+the fastest and the cheapest at about $0.30 a seed. Cloud recordings replay in the theatre
+as cousins, so screening goes remote and base rounds stay home. Waiting on the owner:
+the licence question to Unity, and whether to trial a box.
+
 **Round 38, the dilute tank, is read (logbook/0101, 2026-09-15 night).** Five seeds on one
 build ended at 30,000 s; D1 to D4, D6 and D8 hold, D5 fails, D7's count holds and its
 anatomy does not. The world stands at 1,600 in every seed, mixed and thin, and every
@@ -275,8 +304,12 @@ ahead of the idle charge.
    (`logbook/specs/r39-prereg-draft.md`, rewritten for the size and the light, baselines
    from 0101) after round 38's read, and the launch through `launch-queue.ps1 -Refresh
    -ExpectSimHash` from the smoke's manifest.
-5. **Round 40, a light sense** (was 38): one new input, light and its vertical gradient; read
-   on jointed against rigid against buoyant depth, in a world with something to steer toward.
+5. **Round 40, the light's reach: running** (D096, logbook/0106; the light sense that held
+   this slot moves down the queue). Then **the shelf** in the lit band L1 defines: a floor
+   raised into the top ten metres over part of the disc, the retry of 0102's E9 and E10,
+   with births and free matter by side of the edge as the checks on 0105's deepward lean.
+   Then the light sense: one new input, light and its vertical gradient; read on jointed
+   against rigid against buoyant depth, in a world with something to steer toward.
    Proposal first.
 6. **Round 41, the stroke priced alone** (was 39): the work cost back to D082's 0.25 with the
    idle charge still at 0.0001; no build. *First reordered 2026-09-11 morning after round 34's
@@ -376,7 +409,7 @@ the background and never handed to a subagent, which cannot wait.
    (`simHash 6d38c45e…`; the 300 s smoke `tsplit-smoke` read physics 4%, world 85%,
    harness 11% at founding, so the grid's per-cell step is most of an empty world's cost
    and about a tenth of a full seed's). Round 39's reruns are unaffected: their workers
-   carry the round's tree. Refresh every worker before round 40. **The style pass is done and pushed** (0097 to 0101,
+   carry the round's tree. Every worker but 7 was refreshed for round 40 (7 carries round 39's tree for the renders). **The style pass is done and pushed** (0097 to 0101,
    0103, 0104, seven specs, D090 to D094; frozen pre-registration blocks and the entry
    skeleton untouched); 0102's restyle waits for round 39's read, since the entry is the
    live pre-registration. D095 records the seed and arm rulings. **The reruns replay their
@@ -564,17 +597,13 @@ write it down." The agent's first thoughts; a proposal follows round 37b's read.
 
 ## The decisions in front of the owner
 
-- **Round 40 is the light's reach (owner, 2026-09-18 morning: "Let's do it").** The owner
-  looked at round 39's pictures and saw a world of leaves; the eaters exist only as booms.
-  The agent's answer, and the owner's ruling on it: shorten the light's attenuation depth
-  (`light.attenuationDepth`, 12 m in every round since the light model) so photosynthesis
-  pays only near the surface, as one round on its own before the shelf. Expected: the
-  leaves pack into the top ten metres, shading becomes something a body is selected on
-  (rung 2's first candidate), the dark column below becomes the eaters' alone, and more
-  matter is free. Risks: the surface film (0056, 0033), and a shelf read through it. The
-  path: 0105 committed, the ledger sweep of a leaf's break-even depth against the reach,
-  `fable-propose-light.md` with the value and the predictions, the owner's ruling, the
-  prereg entry, five seeds at three arms.
+- **Cloud CPU: the licence question, then a trial or not (`logbook/specs/cloud-cpu-survey.md`).**
+  The agent's recommendation: ask Unity sales whether a Pro or Build Server seat may run
+  the Editor in batch mode on a rented server for a non-build simulation; if yes, one OVH
+  RISE-L on Linux month to month ($177, read), screening remote and base rounds at home,
+  the CPU model in `run.json` first; never a scored seed on spot. The owner's licence
+  tier decides which question to ask, and the agent does not know it. Round 40's ruling
+  (6 m, "proceed with your recommendations") is D096 and is running.
 
 - **A tempo dial, later (owner, 2026-09-17 afternoon).** The owner asked whether the world's
   metabolic rate could rise so a run holds more generations. Worked through in conversation:
