@@ -47,6 +47,27 @@ for out of the parent's store and not out of the cell.
    `MatterStoreCapPerJoule × tissue`, so a body cannot hoard the water.
 4. **A founder starts empty.** As today with `LockedMatter`; a founder's first child waits on
    its uptake like everyone else's.
+5. **The breeding margins are the genome's** (the owner's rule, 2026-09-18 evening: "allow
+   creatures to change their matter and energy level required for breeding by evolution and
+   therefore by natural selection"). The genome's reproduction traits already carry the
+   child's size (`BirthInvestment`) and the brood; they gain `EnergyMargin` and
+   `MatterMargin`, the fraction of the child's price a parent holds back beyond it before
+   it breeds (0 is today's rule: breed the step the price is met). Mutated at the
+   investment dial's rate, drawn for founders over 0 to 1, read in the table as `e margin`
+   and `m margin` and on lineage birth rows, so the read can say whether the world selects
+   a saver or a spender and by how much. They are on top of the store, not instead of it:
+   a margin changes when a parent tries, and the cliff is in where the matter is drawn from.
+6. **The fixed charge becomes a floor.** `MatterPerCreature` stays as the head-count cap D065
+   built it for, but a child's matter is meant to be mostly its tissue, so the proposal
+   moves `MatterPerTissueJoule` up and the fixed charge down at a constant total per body
+   (3.16 units today), with the split set by the smoke and named in the entry. Then matter
+   is the substance a body is made of, and eating a body, when the mouth comes, takes it.
+
+**The two loops, joined.** Today a corpse's joules go to the detritus field and its matter
+to the matter cell, and nothing converts one into the other: an eater is a plant for matter
+and an animal for energy. With the store, an absorptive body's uptake reads the matter its
+detritus meal carries (the corpse's matter deposited with its joules, in proportion), so an
+eater gets both from what it eats. That is the shape the mouth needs.
 
 What this changes in the world's behaviour, in plain words: the equilibrium is still all
 the matter in bodies and births equal to deaths, but the question "who breeds" changes
@@ -89,8 +110,11 @@ A Core change of a day: the store on `Organism`, the uptake pass beside `Grow`, 
 conception and growth draws redirected, three tunables (`MatterUptakePerSecond`,
 `MatterUptakeHalfDensity`, `MatterStoreCapPerJoule`, all refusing every earlier config per
 the tunable rule), the two identity tests extended to the store, the ledger's matter leg,
-and the table's `mat blk` column replaced by `store short`. Every recorded world replays
-under its own build. The change touches the world, so `-All` runs before the merge.
+and the table's `mat blk` column replaced by `store short`. The two margin genes take
+`GenomeJson.FormatVersion` to 6, so every stored format-5 genome and snapshot is refused
+by the build, as the growth build's bump did to format 4; a founder's margins are drawn
+and a snapshot's are re-extracted from a new run. Every recorded world replays under its
+own build. The change touches the world, so `-All` runs before the merge.
 
 ## What is not proposed
 
