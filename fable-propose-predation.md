@@ -1,5 +1,10 @@
 # Proposal: predation on contact — what a bite is, in a world where bodies touch
 
+*Note, 2026-09-18: written under the two-currency economy. D098 replaced it (one matter in two
+states; a bite moves charged units, there is no locked matter and no matter price), so item 5
+and every book-closing argument here are rewritten on the new base before this goes to the
+owner (D097, HANDOFF).*
+
 *Fable, consolidated 2026-09-07 into one operative design. It folds in the seven conditions
 added after the outside review of 2026-09-06 and the points the Astra review of 2026-09-07
 raised, so the owner rules on one text. The 2026-09-06 draft, which this replaces, is in

@@ -144,6 +144,9 @@ arrive as D-entries after the owner's round-8 ruling, and will cite these source
 
 ## 0f. Changelog — D051 (2026-08-29)
 
+*Superseded 2026-09-18 (D098, §0x): the two floor leaks are gone; remineralisation is
+now every cell's marine snow returning spent to the water.*
+
 | Change | Was | Now | Why |
 |---|---|---|---|
 | **§5A.2c mechanism** | Detritus reaching the floor stays there; the ⚠ said whether that matters was "unmeasured and deliberately not guessed at" | `NutrientField.Remineralise`: a first-order leak from the floor layer into the water above it, per field, both rates `[Tunable]` and default 0 | D051. A materially closed ecosystem extracts energy only through balanced cycles [GOY23]; the floor looked like the one pool with no return leg. Measured the same day: `Mix` already exchanges across the floor interface, so the leak is redundant at any mixing > 0 and the floor is a ratchet at mixing 0 only (logbook/0036). Kept, off by default. The experiment's real yield is the mixing-0.2 world, whose deep water crosses break-even |
@@ -160,6 +163,9 @@ results. The tunables table gains `NeutralBodyVolume`. Nothing else in this docu
 changes; the worlds run before D064 are the rule's large-body limit.
 
 ## 0h. Changelog — D065 (2026-09-02)
+
+*Superseded 2026-09-18 (D098, §0x): the fixed charge and the proportional matter price are
+gone with the second currency.*
 
 One term added to D048's conception price, default-off: a child costs
 `MatterPerTissueJoule × tissue + MatterPerCreature`. Motivation in D065 — under D064 the
@@ -298,6 +304,28 @@ grid substepping its advection where the Courant number would pass a half. The r
 as in batch, which is why the theatre's replay parted at 200 s, and a Play-mode identity
 check exists beside the edit-mode one. The table gains `cols`, `cols abs` and `x sd`; the
 header gains `dispersal=` and the current's mode. Built and smoked 2026-09-10 (logbook/0085).
+
+## 0x. Changelog — one matter, two states (2026-09-18, D098)
+
+The second currency is gone. Matter is one substance in two states, charged (ρ =
+`JoulesPerUnit` joules) and spent (none), and energy is a flow through it. Fixation charges
+spent units from the leaf's cell at `min(light capacity, uptake capacity × ρ)`, with the
+uptake saturating in the cell's spent density (`UptakeRatePerSquareMetre`,
+`UptakeHalfSaturation`). Every joule a body spends burns a charged unit, which returns
+spent to the body's cell. Eating moves charged units at the yield, with the rest returned
+charged as faeces and `HandlingCostPerJouleEaten` burnt. A child is charged matter given
+from the parent's reserve and draws no field, and growth draws no field. A corpse carries
+tissue plus reserve. Marine snow remineralises in every cell at `RemineralisationPerSecond`,
+the heat booked out. Founders are an influx in both books. `ReserveCapSeconds` trims a
+hoard into the water charged (off). Gone: `MatterPerTissueJoule`, `MatterPerCreature`,
+`ExcretionPerJoule`, the two floor leaks, `Organism.LockedMatter`, `Corpse.Matter`,
+`CheapestPossibleChildMatter`, the matter gates at conception and growth, `mat blk`,
+`mat short`, `mat orphan`, `excreted`. New: `World.MatterResidual` as a Core property (it
+was arithmetic repeated in four places), `upt lim`, `burnt`, `remin`, `margin s`, and the
+genome's `ReserveMargin` (format 6: every stored genome and snapshot is refused). Every
+`config.json` before this build is refused. The spec is `logbook/specs/economy-spec.md`
+and the map `logbook/specs/economy-inventory.md`; built on branches `economy` and
+`margin`; smoked on round 40's world the same night.
 
 ## 0w. Changelog — the aquarium, the streams, and water that stays uniform (2026-09-11 and 12, D089, D090, the Astra review)
 
@@ -1458,7 +1486,7 @@ It is a sink and not a source, so conservation is unaffected — but it grows wi
 whatever first reaches it inherits a very large bank. Real remineralisation would return it
 slowly to the water; whether that matters here is unmeasured and deliberately not guessed at.~~
 
-**The floor gives back — D051.** `NutrientField.Remineralise` moves `min(1, r·dt)` of the
+~~**The floor gives back — D051.** `NutrientField.Remineralise` moves `min(1, r·dt)` of the
 bottom layer's stock into the layer above it each step, between `Settle` and `Mix`; `r` is
 `NutrientRemineralisationPerSecond` (s⁻¹, a first-order rate constant on a stock, not a
 velocity — there is no layer thickness below the floor for a velocity to mean anything
@@ -1479,7 +1507,9 @@ mixing-free world would need; nothing in the design asks for such a world. What 
 experiment did find is that **at mixing 0.2 the deep water crosses `AbsorptiveCell`'s
 break-even (4 J/m³) by t≈2,300–4,000 in every seed** — the gradient the D/v = 10 m arithmetic
 predicted — which is the first world here whose deep water is worth living in, and is where
-the food-chain question is now being asked.
+the food-chain question is now being asked.~~ *Superseded 2026-09-18 (D098): the floor leaks are gone, and marine snow
+remineralises in every cell at `RemineralisationPerSecond`, returning spent matter to the
+water where the snow is and booking the bacteria's heat as an outflow (§5A.2d).*
 
 **The producers leak, and that is the second level's income ✅ implemented, confirmed (D070).**
 Dead tissue was the pool's only income, and the detritus-flux instrument (`det in` / `det
@@ -1501,80 +1531,78 @@ choice; and in the ocean exudation is one of several inputs to the dissolved poo
 does not close bacterial demand alone [LS11 p.8; CH20 p.1]. What the confirmed world
 showed next is in §5A.2d: the stomachs that failed were matter-blocked, not starved.
 
-### 5A.2d Matter — what the producer consumes ✅ implemented
+### 5A.2d One matter, two states — what the producer consumes and what everyone returns ✅ built 2026-09-18 (D098)
 
-Until D048 the producer consumed nothing. `PhotosyntheticCell.Acquire` returns light and draws
-no pool, so **nothing a creature did made its own position worse.** The only thing a producer
-emitted was shade, which harms creatures below it and never itself. There was no negative
-feedback anywhere on occupying the best spot, and the consequence ran through everything
-measured here: the depth axis was a ramp with its maximum at the boundary rather than a
-landscape with an interior optimum, so every run sorted to the surface and stayed, and depth
-was never worth buying.
+Until D048 the producer consumed nothing: `PhotosyntheticCell.Acquire` returned light and drew
+no pool, so nothing a creature did made its own position worse, and every run sorted to the
+surface and stayed. The real ocean's vertical structure is the feedback that was missing:
+light is at the top, the surface is nutrient-poor because producers live there and strip it,
+corpses sink and remineralise at depth, and the deep stays rich and dark. D048 built that as
+a second currency, matter, drawn at conception and returned at death, and D065 added a fixed
+charge per body. Round 40's books (logbook/0106) showed what ten rounds of that made: the
+charge was a licence fee that capped the head count and did nothing else, a corpse's energy
+went to the eaters and its matter to whoever bred in that cell, and the lump drawn at
+conception from a cell holding about one child's worth made breeding a lottery on cells.
+D098 replaced it, on the owner's rule: *matter is matter; absorbing matter costs energy;
+energy is produced from contained matter, and when used that matter returns to the water.*
 
-The real ocean's vertical structure *is* that feedback. Light is at the top and nutrients are
-at the bottom, and **the surface is nutrient-poor because producers live there and strip it**;
-corpses sink, remineralise at depth, and the deep stays rich and dark. Two opposed gradients,
-one of them made by the organisms.
+**There is one matter, and a unit of it is in one of two states.** A *charged* unit carries
+`JoulesPerUnit` (ρ) of energy; a *spent* unit carries none. The water holds both: spent
+units dissolved (`World.Matter`, in units) and charged units as marine snow
+(`World.Nutrients`, in joules, which is charged units × ρ). A living body is charged units,
+its tissue and its reserve, both kept in joules; a corpse is charged units. Nothing creates
+or destroys a unit; a unit changes state and place, and every change is one of these legs:
 
-**Light is energy; matter is matter.** They are separate currencies and are never added.
-
-| | source | sink | conserved by |
+| Leg | Who | What moves | Energy book |
 |---|---|---|---|
-| energy (J) | sunlight, founder endowment | metabolism, reproductive overhead | §5A.2's audit, a hard equality |
-| **matter** | seeded once at `InitialMatterPerCubicMetre`, plus `MatterInfluxPerSecond` at the surface or the vent when the open budget is on (D074) | burial at the sea floor when the open budget is on (D074); none in the closed world, where it is only ever moved | `World.StandingMatter`, conserved only with influx and burial at zero (corrected 2026-09-07) |
+| **Fixation** | photosynthetic tissue | spent units from the body's cell become charged units in the reserve: `f = min(L, U·ρ)` joules, `L` the light capacity (`irradiance × litArea × Efficiency`) and `U` the uptake capacity (`UptakeRatePerSquareMetre × litArea × c/(c + UptakeHalfSaturation)` units at the cell's spent density `c`); light beyond `f` is wasted and never enters the books | `EnergyIn += f` |
+| **Burning** | every living cell | every joule spent (upkeep, neural, work, handling) is a charged unit's worth burnt: the unit returns spent to the body's cell and the energy leaves as heat; a body burns no more than it holds and dies the step it cannot pay | `EnergyOut += burnt` |
+| **Eating** | absorptive and consumer tissue | charged units move from the water (or, with the mouth, from a body) into the reserve at the yield; what is not kept returns charged to the water as faeces; eating costs `HandlingCostPerJouleEaten` per joule taken, burnt | none for the transfer; the handling is burnt |
+| **Exudation** (D070) | photosynthetic tissue | a fraction of what was fixed leaves charged into the water | none |
+| **A child** | the parent | tissue and reserve given from the parent's reserve; the overhead burnt | `EnergyOut += overhead` |
+| **Growth** | the child | reserve becomes tissue inside the body | none |
+| **Death** | any body | tissue plus reserve become a corpse, which decays charged into the water where it goes (D086) | none |
+| **Remineralisation** | the water | every cell of marine snow loses `1 − e^(−r·dt)` of its stock a step, `r = RemineralisationPerSecond`, which returns spent to the same water; the bacteria's heat | `EnergyOut += moved` |
+| **Founders** | the experimenter | charged units created, booked as influx in both books | `EnergyIn += stake` |
 
-- **Reproduction requires matter as well as energy**, `MatterPerTissueJoule` per joule of the
-  child's tissue, drawn from the parent's own cell of water (its layer, in the cell field). No amount of sunlight builds a daughter
-  cell without nitrogen and phosphorus. Since D087 tissue is created at conception and again
-  at every growth step, and both draw matter at the same rate; growth's draw is locked in the
-  body as conception's is (§0u).
-- **A matter-starved world does not kill its inhabitants, it stops them breeding** — which is
-  what happens to a nutrient-limited bloom, and is why the charge is here rather than in upkeep.
-- **Death returns it** to the cell the body died in, at once, or through a corpse that sinks
-  and decays where it goes (D086). Floor founders are exempt
-  because they never paid; crediting them would mine matter out of nothing.
-- **`World.Matter` is deliberately outside `StandingJoules`.** Matter is not energy, and folding
-  it into §5A.2's audit would let the books balance by counting a different substance — the
-  exact failure that audit exists to catch.
+Three rules follow from the owner's, and are the reason the state is explicit rather than
+"in a body" against "in the water": every living cell burns charged matter, plants
+included, because a plant that could not burn its reserve would die the step it was shaded
+and light would have a path around matter; taking matter in costs energy, for the leaf at
+least ρ per unit paid from light and for the mouth a handling charge paid from the reserve,
+because anyone taking matter from the water at a price under ρ would be making energy from
+nothing; and light is never stored and pays for nothing but fixation. A photosynthetic cell
+therefore cannot get energy from what it takes in, because a spent unit has none, and an
+absorptive cell can. That is the whole of the asymmetry between the guilds.
 
-⚠ **Matter is returned only by death, and that is harsher than any real ocean.** Measured
-across rounds 2–4 of the food-chain goal (logbook/0037–0039): a bloom locks the whole
-surface reservoir into bodies, the surface falls to ~0.01/m³, every conception is refused,
-and the matter comes back only when the bodies die — at depth, after sinking. A real sunlit
-ocean is also nutrient-poor, but most of what its producers take is regenerated in place
-within days by excretion, grazing and leakage; here nothing leaves a living body — unless
-the *excretion contract* is on: D052 in `DECISIONS.md`, built (`ExcretionPerJoule`,
-default 0, so this harsher world remains the default) and first measured in round 6
-(logbook/0041), where it produced the project's first bounded, living, uncensored worlds.
-Author's inference from general marine ecology; not yet a cited claim.
+**Both books stay, and they are one equation in two units.** `AuditResidual = EnergyIn −
+EnergyOut − StandingJoules` reads 0, with `EnergyIn` fixation plus founders and `EnergyOut`
+burning plus remineralisation and nothing else. `World.MatterResidual = Matter.TotalUnits +
+StandingJoules / ρ − MatterInitialTotal − MatterInfluxedTotal + MatterBuriedTotal` reads 0.
+Every leg that books an outflow deposits the same over ρ into the spent field in the same
+step, and every leg that books an inflow takes the same over ρ from it, so a leg that did
+one half opens one book and not the other, which is what keeping both is for.
 
-**Measured.** A 200 W/m² world at `MatterPerTissueJoule` 0.5 from 1.0/m³:
+**What it makes.** The surface strips because the leaves there fix faster than the water
+returns spent units to them, and a stripped cell's leaves are uptake-limited (`c ≪ K`) where
+deep leaves are light-limited; the table's `upt lim` reads the share. A plant in a stripped
+cell lives on its own returns, refixing what it just burnt and losing nothing but the light
+it cannot use, which is regenerated production and a feature. Matter caps biomass and light
+caps its rate. A body is the larder: its reserve, not only its tissue, is charged matter, and
+the mouth (D097) makes it edible while it lives. The numbers, ρ 100 J, k 0.3 units/m²/s, K
+0.05 units/m³, r 5e-4 /s, handling 0.1, are set in `logbook/specs/economy-spec.md` from
+round 40's crowd and the leaf's ledger, and are unmeasured beyond the smoke until the base
+round reads them (§5A.10).
 
-| t | alive | matter at surface | matter deep | conceptions blocked | floor spawns |
-|---|---|---|---|---|---|
-| 100 | 40 | 0.802 | 1.136 | 0 | 48 |
-| 500 | 219 | 0.009 | 1.393 | 4,707 | 0 |
-| 1,200 | 931 | **0.004** | **1.151** | 114,450 | **0** |
-
-A ~300× vertical gradient, built by the creatures out of a uniform start. The population still
-grows, because mixing resupplies the surface from below — so **primary production is now limited
-by vertical nutrient flux**, which is the constraint that governs it in the real ocean. And the
-floor stops firing entirely, which by D021 is the only statement that this world is alive rather
-than being kept alive.
-
-⚠ **The tension it creates has no answer yet.** Creatures sit at −2.6 m in stripped water while
-the matter is at depth, and nothing in §5A.1 can move them there. That is the selective pressure
-D049's buoyancy cell exists to meet, and it is why D049 is sequenced after this rather than
-before: buoyancy in a world whose optimum is at the surface collapses to "everyone floats".
-
-⚠ `MatterPerTissueJoule` and `InitialMatterPerCubicMetre` are unmeasured (§5A.10). The blocked
-count above is very large relative to the population, which says the ratio binds hard; whether
-it binds *too* hard is open. Zero disables the mechanism and reproduces every result recorded
-before D048.
+**A breeding margin is a gene.** Beside brood and investment a genome carries
+`ReserveMargin`, the reserve a parent keeps after a birth as seconds of its standing cost
+(§5A.6); the owner's rule that the level required for breeding is for evolution to set.
 
 ### 5A.3 Feeding, and where herbivores come from
 
-A `Consumer` part gains energy on contact with tissue. Yield depends on **what it touches**:
+A `Consumer` part takes charged matter from tissue it touches (§5A.2d): what it keeps is
+energy in its reserve, and what it does not keep returns to the water charged. Yield depends
+on **what it touches**:
 
 | Target | Yield | Consequence |
 |---|---|---|
@@ -1689,7 +1717,9 @@ marker that makes speciation watchable.
 
 ### 5A.6 Reproduction and death
 
-**Death** at zero energy. Tissue returns to the nutrient pool at the body's own position.
+**Death** at zero energy. Tissue, and any reserve a diverged body still held, return to the
+water's charged field at the body's own position (D098; a starved body's reserve is already
+0).
 Above `CorpseDecayPerSecond` it goes through a corpse first, a particle that sinks, rides the
 current and pays itself into the water as it goes (D086). That is what closes the loop in
 §5A.2.
@@ -1712,10 +1742,12 @@ sexual reproduction once perception exists, and horizontal gene transfer through
 which would give grafting a mechanism at Milestone 5 without needing perception, at the cost
 of breaking the archive's assumption that lineage is a tree.
 
-**Brood size and the birth investment are evolved, not global constants.** A creature
-carries two numbers: *n*, how many offspring per event, and *i*, the fraction of its own
-tissue value it banks and spends on them (D087; until 2026-09-09 the second number was *e*,
-an endowment in joules per child, and a child was born whole). A reproduction event costs
+**Brood size, the birth investment and the breeding margin are evolved, not global
+constants.** A creature carries three numbers: *n*, how many offspring per event; *i*, the
+fraction of its own tissue value it banks and spends on them (D087; until 2026-09-09 the
+second number was *e*, an endowment in joules per child, and a child was born whole); and
+*m*, the margin, the seconds of its own standing cost it keeps in reserve after a birth
+(D098, genome format 6). A reproduction event costs
 
 ```
 i × tissue + n × overhead
@@ -1735,7 +1767,8 @@ explore: the same surplus buys one well-provisioned offspring or eight feeble on
 wins is a property of the environment rather than something written in here.
 
 **The reproduction threshold is derived, not configured.** A creature reproduces once it
-holds `i × tissue + n × overhead` above its own reserve. A creature that evolves a larger
+holds `i × tissue + n × overhead + m × standing watts` in its reserve, and the child's
+tissue and reserve come out of that reserve as charged matter; no field is drawn (D098). A creature that evolves a larger
 brood or a larger investment therefore waits longer for it automatically, and there is no
 separate constant to keep in sync.
 
@@ -1744,8 +1777,8 @@ share is `i × tissue / n`, split into body and first reserve by `NewbornReserve
 birth fraction is the body part over its adult tissue value, capped at one with the surplus
 staying with the parent, and refused below `MinNewbornPartKilograms` rather than clamped. The
 child is developed once at its adult size (`AdultScale`, the third dial) and scaled by the
-cube root of its fraction; each metabolic step it moves reserve into tissue and matter into
-the body until it is whole, keeping `GrowthReserveFloor` as a buffer. Until 2026-09-09 an
+cube root of its fraction; each metabolic step it moves reserve into tissue until it is whole
+(no field is drawn since D098), keeping `GrowthReserveFloor` as a buffer. Until 2026-09-09 an
 offspring was born full-size, so the endowment bought it time rather than body and every
 round through 33 was unusually kind to the many-and-feeble strategy; read them with that in
 mind.
@@ -2078,7 +2111,7 @@ without reaching `RunConfig.Hash()` is two different experiments filed under one
 | Photosynthetic efficiency | `PhotosyntheticCell.Efficiency` | Joules per watt of light per m² of lit area |
 | World aperture | `RunConfig.WorldAreaSquareMetres` | Total watts arriving — the carrying capacity (§5A.2b) |
 | Filter clearance rate | `AbsorptiveCell.ClearanceRate` | Water searched per m³ of tissue — what limits feeding in thin water |
-| Filter assimilation | `AbsorptiveCell.Yield` | Fraction of captured matter kept. 1 by default, and that is a claim, not an omission |
+| Filter assimilation | `AbsorptiveCell.Yield` | Fraction of captured matter kept; the rest returns to the water charged (D098). 1 by default, and that is a claim, not an omission |
 | Bite rate | `ConsumerCell.BiteRate` | Joules swallowed per m³ per second — what limits feeding in rich water |
 | Scavenge rate | `ConsumerCell.ScavengeRate` | Water searched for carrion. Separate from bite rate because they fail differently |
 | Carrion / grazing / predation yield | `ConsumerCell.*Yield` | Fraction kept per target type. Carrion highest — the predator valley's bridge (§5A.3) |
@@ -2100,7 +2133,8 @@ without reaching `RunConfig.Hash()` is two different experiments filed under one
 | Founder lift range | `RandomGenomeOptions.Min/MaxBuoyancyLift` | Which bladders a creature can be born with. Must straddle 1, which is neutral (D050) |
 | Tissue excess density | `FluidConfig.TissueExcessDensity` | The sink every lift is denominated against, so it sets the timescale of all vertical movement. Measured: at 0.02 the organ is nearly inert, at 0.1 it is decisive (logbook/0034) |
 | Neutral body volume | `FluidConfig.NeutralBodyVolume` | The size at or below which a body floats in place (D064). 0 switches the size rule off. Sets where on the size axis the plankton-versus-benthos trade begins |
-| Fixed matter per body | `RunConfig.MatterPerCreature` | The matter a body costs to exist regardless of size (D065) — the divisor's floor in count = matter ÷ matter-per-body, without which selection for smaller bodies raises the count without bound. 0 is the world before D065 |
+| One matter, two states | `RunConfig.JoulesPerUnit`, `UptakeRatePerSquareMetre`, `UptakeHalfSaturation`, `RemineralisationPerSecond`, `HandlingCostPerJouleEaten`, `ReserveCapSeconds` | D098's constants: what a charged unit is worth (100 J, which with the budget sets the biomass the water can hold); how fast a leaf can take spent units per m² of lit face and at what density that halves (0.3 /s, 0.05 /m³: unstripped water light-limited, stripped water uptake-limited); the half-life of marine snow nobody eats (5e-4 /s, 1,400 s); what eating costs per joule eaten (0.1); and the reserve a body may hold in seconds of its standing cost, above which the excess leaves charged (0, off). All unmeasured beyond the smoke |
+| Breeding margin | `RandomGenomeOptions.MinReserveMargin`, `MaxReserveMargin`; `MutationRates.MarginChance` | Founders drawn from 0 to 600 s; one gate of 0.08. The gene itself is §5A.6's |
 
 Two things deliberately **not** tunable, and the distinction matters:
 
@@ -2162,8 +2196,8 @@ it configures* (logbook/0007, logbook/0008, logbook/0013).
   few big creatures or many small ones
 - Nutrient sink rate — how fast detritus falls, which decides whether the deep is a niche or a
   graveyard. ~~⚠ And whether detritus should remineralise at all: it currently does not, so the
-  sea floor accumulates energy nothing can reach (§5A.2c)~~ It does now (D051); the
-  remineralisation rate `NutrientRemineralisationPerSecond` joins this list as unmeasured, and
+  sea floor accumulates energy nothing can reach (§5A.2c)~~ It does now (D051's floor leak, then D098's
+  every-cell `RemineralisationPerSecond`, 5e-4 /s, unmeasured beyond the smoke), and
   the ratio D/v of mixing to sink — the length scale of the deep-water gradient it feeds — is
   the number the two knobs together set
 - ~~Reproduction threshold and offspring endowment~~ — **resolved by §5A.6**: brood size,
@@ -2425,7 +2459,8 @@ that carried it ([D075](DECISIONS.md#d075) item 2, the theatre's join). The id b
 row and not to the genome, which is a recipe shared by every creature that develops it;
 `GenomeJson.FormatVersion` is 4 from that change, and a format-3 snapshot is refused rather
 than read without ids. D087's three reproduction dials took the format to 5 on 2026-09-09, so
-a format-4 snapshot is refused too, and every genome stored before that date must be
+a format-4 snapshot is refused too, and D098's breeding margin took it to 6 on 2026-09-18,
+so a format-5 one is refused the same way; every genome stored before that date must be
 re-extracted from a new snapshot. This stops the theatre's Mode A on every run recorded
 before it.
 

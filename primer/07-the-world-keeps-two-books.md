@@ -1,5 +1,11 @@
 # 07 — The world keeps two books
 
+*Out of date since 2026-09-18 (D098). The world still keeps two books, but the second is no
+longer a second substance: matter is one substance in two states, charged and spent, and
+the matter book counts spent units plus every standing joule over ρ. What this piece says
+about why two books catch what one cannot still holds; what it says about matter being
+"not energy" describes the world before the rebuild (DESIGN §5A.2d).*
+
 Every number this project reports about its creatures rests on one habit: the world counts
 what it has, every half second, and refuses to let the count drift. This piece is about
 that habit. It is the oldest instrument in the campaign and the newest, and the reason a

@@ -21,8 +21,8 @@ plans**, which is what an open-ended ecosystem is being built to produce.
 > **Status: the ecosystem runs, and it holds a food chain.**
 > Genomes develop into bodies, bodies build into articulations driven by their own evolved
 > brains, and energy is a conserved budget audited to 0.0000% across the whole food web. A
-> finite competed-for sun, currents and mixing, senescence, a matter currency, a buoyancy
-> organ, living excretion, marine snow and a vent are all in and measured
+> finite competed-for sun, currents and mixing, senescence, one matter in two states
+> (charged and spent, D098), a buoyancy organ, marine snow and a vent are all in and measured
 > ([`DECISIONS.md`](DECISIONS.md) D023–D090). Thirty-seven rounds, each read by a person against a rule written down before launch,
 > ([logbook/0036](logbook/0036-the-floor-gives-back.md) onward) found the constraint one
 > layer at a time — the floor, the drowning, the matter ratchet, the stomach's gearing — and

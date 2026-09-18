@@ -663,7 +663,11 @@ actually verifying it.
   `audit` at 0.0000% on every row, because the vertex take delivered less than its gate
   promised and conception booked the price. From the build that fixed it (2026-09-07 late)
   the table prints the residual and `mat short`; on a run older than the column, read
-  `matterStanding` in `stats.jsonl` against the seeded stock plus influx less burial.
+  `matterStanding` in `stats.jsonl` against the seeded stock plus influx less burial. From
+  D098 (2026-09-18) `mat resid` is `World.MatterResidual`, the spent units plus every
+  standing joule over ρ against the seeded stock plus influx less burial, and `mat short`
+  is gone; the two books are one equation in two units, and either can open alone when a
+  leg does half of a transfer, which is what keeping both is for.
 - **A grid world refuses three things a vertex launcher would pass, and prints a dash where
   it printed a count.** From the grid build (fable-propose-grid.md, 2026-09-08, logbook/0078)
   `EVOSIM_FIELD grid` puts both fields on cells (`GridField`; `EVOSIM_FIELD_CELL` 1 m,
@@ -896,7 +900,32 @@ actually verifying it.
   fraction of a percent of what the leaves captured, which is part of why the eaters boom
   and starve (0101). The audit closes because the discard is booked as an outflow; the
   books say nothing about whether a rule is sensible. Found 2026-09-18 while sizing D098's
-  loop; D098's build bounds the reserve as organic matter and sends it to the corpse.
+  loop. D098's build burns it as a charged unit returned spent to the water, so at least
+  the plants get it back, sends a diverged body's reserve to the corpse, and adds
+  `ReserveCapSeconds` (off in the base round) as the lever that moves a hoard into the
+  larder while the body lives; a starved body still dies with nothing, because senescence
+  burnt it first.
+- **From D098 (2026-09-18) there is one matter in two states, and six things read
+  differently.** A unit is charged (ρ = `JoulesPerUnit` joules, in bodies, corpses and the
+  marine snow the code still calls `Nutrients`) or spent (none, dissolved, the field the
+  code still calls `Matter`); light charges spent units at the leaf, burning returns them
+  spent, eating moves charged ones, and nothing draws a field at conception or growth
+  (DESIGN §5A.2d, `logbook/specs/economy-spec.md`). First: every `config.json` and every
+  genome (format 6, `ReserveMargin`) written before the build is refused, so the ledger, the
+  theatre's Mode B and the three configs under `inocula/` all need a new-build run to read
+  from. Second: the table's `mat blk`, `mat short`, `mat orphan` and `excreted` are gone
+  and `upt lim` (the share of leaf-steps bound by uptake rather than light), `burnt`,
+  `remin` and `margin s` are there; `analyse-arm.ps1` reads the new names and prints `?`
+  on an old report's, as it always did. Third: `EVOSIM_REMIN` sets
+  `RemineralisationPerSecond`, every cell's marine snow returning spent to the water, not
+  D051's floor leak; `EVOSIM_EXCRETION` and `EVOSIM_MATTER_PER_*` are unbound. Fourth:
+  `mat locked` is the living bodies' charged matter, and it is almost all reserve (round
+  40 held about 190 J of reserve a body against 0.37 J of tissue), so it moves with the
+  hoard and not with the crowd. Fifth: the ledger takes `--spent` (the spent density at the
+  body) and its last column is `units/child`; a leaf in stripped water is uptake-limited
+  in the ledger as in the world. Sixth: the fields' `TotalJoules` is units on the spent
+  field and joules on the charged one, by convention only, as before the build; read the
+  unit off the field, never off the method's name.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
