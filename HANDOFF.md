@@ -564,6 +564,18 @@ write it down." The agent's first thoughts; a proposal follows round 37b's read.
 
 ## The decisions in front of the owner
 
+- **Round 40 is the light's reach (owner, 2026-09-18 morning: "Let's do it").** The owner
+  looked at round 39's pictures and saw a world of leaves; the eaters exist only as booms.
+  The agent's answer, and the owner's ruling on it: shorten the light's attenuation depth
+  (`light.attenuationDepth`, 12 m in every round since the light model) so photosynthesis
+  pays only near the surface, as one round on its own before the shelf. Expected: the
+  leaves pack into the top ten metres, shading becomes something a body is selected on
+  (rung 2's first candidate), the dark column below becomes the eaters' alone, and more
+  matter is free. Risks: the surface film (0056, 0033), and a shelf read through it. The
+  path: 0105 committed, the ledger sweep of a leaf's break-even depth against the reach,
+  `fable-propose-light.md` with the value and the predictions, the owner's ruling, the
+  prereg entry, five seeds at three arms.
+
 - **A tempo dial, later (owner, 2026-09-17 afternoon).** The owner asked whether the world's
   metabolic rate could rise so a run holds more generations. Worked through in conversation:
   scale every ecological rate together (upkeep, income, growth, breeding age, senescence,
