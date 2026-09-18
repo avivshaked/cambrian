@@ -179,9 +179,9 @@ set down at its parent's depth, the parents that can still afford a child once t
 water fills are the deep ones (HANDOFF's cell-affordability reading), and their children
 are dropped where nothing pays and die inside 500 s. So the leaves' median deepening
 through a run is a birth statistic, and I would not read it again without conditioning on
-age. L3 is the one substantive prediction that held where it could be read: with eaters
+age. L3 is the one substantive prediction that held where it could be read. With eaters
 founded, the dark column is theirs, 19 to 21 m below the leaves and more numerous than
-round 39's; seed 2's eaters never founded, one founding failure in three. Shading was not
+round 39's. Seed 2's eaters never founded, one founding failure in three. Shading was not
 selected and went the other way, which under the entry's two-sided reading has no
 assigned meaning because L1 did not hold; my inference is that the crowd spread down the
 tail rather than stacking in the band. And nothing about the matter or the crowd moved
