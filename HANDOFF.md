@@ -27,9 +27,12 @@ to 3 verified from their manifests: `simHash 302df848…`, `coreHash 96488dec…
 is checked from each arm's log once the first table row is in (the smoke's log carries
 it). Read on L1 to L9 with round 39's numbers as the baselines; frames of a live arm at
 about 3,000 and 6,000 s on a worker the queue is not using (5 or 6), one at a time. The
-wall is 1,800 minutes. Round 39's render chain is still on worker 7 (seed 1's 30,000 s
-frames, then seeds 2 to 5), so a fourth Unity process is the render and the owner's
-Editor is the fifth; the early-look chain (`scratch/r40/snap-early.ps1`, worker 5, one side
+wall is 1,800 minutes. Round 39's render chain restarted as `scratch/r39-renders-2.ps1`
+(log `scratch/logs/r39-renders-2.out`, 2026-09-18 15:11: seed 1's 30,000 s frames first, then
+seeds 2 to 5, 900-minute walls; the first chain's 600-minute wall cut seed 1 short of
+30,000 s and its wait hung on an orphaned licensing helper, CLAUDE.md's gotcha; worker 7
+still carries round 39's tree and is not refreshed), so a fourth Unity process is the
+render and the owner's Editor is the fifth; the early-look chain (`scratch/r40/snap-early.ps1`, worker 5, one side
 frame of seed 1 at 3,000 and 6,000 s) is the short visual check on top. **The early look
 at 3,000 s (`scratch/snaps/r40-s1/`, replay faithful, 30 of 31 samples):** 1,255 leaves in
 the top quarter of the tank, a packed row against the waterline thinning to nothing by

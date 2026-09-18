@@ -806,6 +806,17 @@ actually verifying it.
   field, where no round has run the force. In a tank the current is D090's streams, selected by the
   shape; the header's `current` token still names the mode (`transport`), and the shape token
   is what says the streams are running.
+- **A theatre render's wall is set from the replay's pace, and its wait can outlive the
+  Editor.** Round 39 seed 1's full-length render (5,000, 15,000 and 30,000 s at 2,000 bodies
+  beside three arms) reached 15,000 s in five hours and its 600-minute wall about 40 minutes
+  short of 30,000 s (2026-09-18): the theatre quits itself at `EVOSIM_THEATRE_WALL_MINUTES`
+  with no `timed out` line in the log, and the frame is simply missing. A full-length replay
+  of a 30,000 s seed runs no faster than the farm did, so give it half again the seed's own
+  wall (900 minutes at this crowd). And `theatre-snap.ps1`'s `Start-Process -Wait` waits for
+  the Editor's process tree: an orphaned `Unity.Licensing.Client` whose parent had exited
+  held the first render chain for an hour after the Editor was gone. A chain that calls the
+  script in sequence should read the Editor's exit from the log and the pictures, and
+  stop a helper whose parent is dead before the next render.
 - **A theatre snapshot of a live run can time out before its later frames.** The early pictures
   of `r37-s1` at 5,000 and 15,000 s on a machine running five arms reached the first in about
   forty minutes and timed out at ninety before the second (2026-09-12); a live run replays no
