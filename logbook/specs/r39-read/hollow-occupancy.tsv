@@ -1,0 +1,17 @@
+## Recorded, not predicted: the hollows' occupancy. A body is in a hollow when it is within HollowRadiusMetres (0.25 x the largest band's scale) of a hollow's lattice centre, horizontally. The share to beat is the hollows' own share of the disc's columns. Seeds 1 and 5 drew no hollow, so they have none to occupy.
+arm	hollows	hollow radius m	hollows share of disc	t	living	in a hollow	share of living	ratio to the disc share	leaves in a hollow	stomachs in a hollow	near-floor bodies in a hollow
+r39-s1	0	4.410	0.0000	5000	1692	-	-	-	-	-	-
+r39-s1	0	4.410	0.0000	15000	1915	-	-	-	-	-	-
+r39-s1	0	4.410	0.0000	30000	1920	-	-	-	-	-	-
+r39-s2	3	4.410	0.0841	5000	1567	92	0.0587	0.698	92	0	0
+r39-s2	3	4.410	0.0841	15000	2106	146	0.0693	0.824	127	19	0
+r39-s2	3	4.410	0.0841	30000	2276	186	0.0817	0.971	100	86	7
+r39-s3	2	4.410	0.0561	5000	2285	139	0.0608	1.085	136	1	2
+r39-s3	2	4.410	0.0561	15000	2652	156	0.0588	1.049	141	15	3
+r39-s3	2	4.410	0.0561	30000	2523	136	0.0539	0.961	135	0	0
+r39-s4	3	4.410	0.0841	5000	2502	228	0.0911	1.083	228	0	3
+r39-s4	3	4.410	0.0841	15000	2598	230	0.0885	1.052	229	1	0
+r39-s4	3	4.410	0.0841	30000	2549	187	0.0734	0.872	186	1	4
+r39-s5	0	4.410	0.0000	5000	2414	-	-	-	-	-	-
+r39-s5	0	4.410	0.0000	15000	2656	-	-	-	-	-	-
+r39-s5	0	4.410	0.0000	30000	2714	-	-	-	-	-	-

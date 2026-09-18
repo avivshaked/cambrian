@@ -1,0 +1,7 @@
+## Foundings of the absorptive trait per seed, from lineage.jsonl birth rows only (e == "b"). "in the first boom's window" is any founding before the first boom's peak; the peaks are booms.tsv's.
+arm	births	absorptive births	foundings of the trait	first founding t	foundings before 5,000 s	before 15,000 s	after 20,000 s	last founding t
+r39-s1	17263	1812	40	0.5	25	32	5	29981.5
+r39-s2	13863	1841	27	0.5	22	23	1	20767.0
+r39-s3	11080	1577	34	0.5	29	30	3	25672.5
+r39-s4	11558	1225	39	1.0	26	29	9	28872.5
+r39-s5	9983	646	16	1.5	13	14	1	22325.0

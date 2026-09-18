@@ -1,0 +1,18 @@
+## E4  the eaters find the low ground: the absorptive bodies' median height above their own column's floor against the leaves', at 15,000 s (the prediction) and at the other two times as a reading. Heights are y - BedShape.FloorY(x, z).
+arm	t	living	leaves	stomachs	mixo	leaf median above floor m	stomach median above floor m	stomach - leaf m	E4 (stomach below leaf)	leaf median depth m	stomach median depth m	all median above floor m
+r39-s1	5000	1692	1691	1	0	28.307	30.495	2.188	NO	-16.71	-19.06	28.314
+r39-s1	15000	1915	1314	601	0	27.513	18.246	-9.267	yes	-18.66	-27.06	25.158
+r39-s1	30000	1920	1492	428	0	26.232	17.183	-9.049	yes	-18.45	-28.31	24.204
+r39-s2	5000	1567	1559	6	0	32.760	18.286	-14.474	yes	-11.03	-32.86	32.709
+r39-s2	15000	2106	1921	184	0	28.779	25.019	-3.760	yes	-15.94	-19.55	28.254
+r39-s2	30000	2276	1302	973	0	34.525	16.724	-17.801	yes	-9.88	-28.32	25.476
+r39-s3	5000	2285	2271	10	0	38.279	44.766	6.487	NO	-6.00	-7.02	38.377
+r39-s3	15000	2652	2299	353	0	28.950	12.506	-16.445	yes	-16.08	-32.25	27.021
+r39-s3	30000	2523	2522	0	0	26.164	nan	nan	no stomachs	-19.26	nan	26.166
+r39-s4	5000	2502	2497	2	0	34.662	30.756	-3.907	yes	-9.98	-16.12	34.687
+r39-s4	15000	2598	2539	55	0	29.568	8.620	-20.948	yes	-16.54	-32.23	29.235
+r39-s4	30000	2549	2544	4	0	27.626	30.141	2.515	NO	-16.88	-12.52	27.632
+r39-s5	5000	2414	2411	2	0	31.204	29.994	-1.210	yes	-14.25	-20.82	31.207
+r39-s5	15000	2656	2534	118	0	25.455	11.621	-13.834	yes	-20.08	-32.84	24.766
+r39-s5	30000	2714	2710	0	0	24.437	nan	nan	no stomachs	-20.75	nan	24.447
+## E4 at 15,000 s: 5 of 5 (the bar is 4 of 5)

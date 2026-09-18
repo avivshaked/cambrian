@@ -1,0 +1,24 @@
+## The floor-following map's squeeze at each place the map calls a hollow or a ridge. "ring" is the annulus from 0.8 to 1.0 of the hollow radius (4.41 m), the same ring BedShape.CountPlaces judges a place by. water depth = -FloorY. The last column is the most the pullback can quicken or slow the water there, since a sigma map carries the column's thickness and nothing else about the place.
+arm	kind	x	z	floor y m	water depth m	ring mean water depth m	depth / ring depth	speed change if the flux is held (1/ratio - 1)
+r39-s1	ridge	43.75	17.75	-52.867	52.867	53.258	0.9927	+0.74%
+r39-s2	hollow	21.25	7.25	-39.038	39.038	38.615	1.0109	-1.08%
+r39-s2	hollow	27.75	43.75	-52.947	52.947	52.519	1.0082	-0.81%
+r39-s2	hollow	36.25	35.75	-46.289	46.289	45.867	1.0092	-0.91%
+r39-s2	ridge	17.25	40.75	-53.950	53.950	54.339	0.9928	+0.72%
+r39-s3	hollow	22.25	16.25	-40.342	40.342	39.954	1.0097	-0.96%
+r39-s3	hollow	44.25	18.75	-51.360	51.360	50.963	1.0078	-0.77%
+r39-s3	ridge	21.25	25.75	-41.618	41.618	42.080	0.9890	+1.11%
+r39-s4	hollow	20.75	41.75	-49.738	49.738	49.346	1.0079	-0.79%
+r39-s4	hollow	26.75	22.25	-43.954	43.954	43.568	1.0088	-0.88%
+r39-s4	hollow	41.25	13.25	-46.023	46.023	45.620	1.0088	-0.88%
+r39-s4	ridge	23.25	31.75	-45.146	45.146	45.557	0.9910	+0.91%
+r39-s4	ridge	38.25	22.75	-47.389	47.389	47.788	0.9917	+0.84%
+r39-s5	(no hollow and no ridge)	-	-	-	-	-	-	-
+
+## the scale of the thing: the bands' whole range is 1.50 m in every seed, and the water column over the disc is 29.8 to 60.7 m deep, so no column can be squeezed by more than about 5% however the bands fall. The 30 m tilt is much larger but it is a ramp, not a place: it changes the column's thickness monotonically across the disc rather than making a pocket.
+arm	band range m	shallowest floor m	deepest floor m	largest possible squeeze
+r39-s1	1.50	-29.921	-60.663	5.01%
+r39-s2	1.50	-29.789	-59.856	5.04%
+r39-s3	1.50	-30.273	-60.264	4.95%
+r39-s4	1.50	-29.971	-60.069	5.00%
+r39-s5	1.50	-29.963	-60.081	5.01%

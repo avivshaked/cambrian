@@ -1,0 +1,7 @@
+## Recorded and not predicted: where the 11,000 units of matter are at the last sample, from stats.jsonl. matterStanding is the identity and reads 11,000.0 exactly in every seed; matterLocked is what the living bodies hold.
+arm	matterStanding	matterResidual	matterLocked	locked share	corpseMatter	free in the water (standing - locked - corpses)	mat here units/m3	conceptionsBlockedByMatter (whole run)	conceptionsShortOfMatter	growthShortOfMatter	matterCv	matterOrphaned
+r39-s1	11000.0	-1.19766e-05	7705.45	0.700	715.53	2579.02	0.0244	41318605	0	7761	0.066	0.000211566
+r39-s2	11000.0	-1.10108e-05	8203.34	0.746	278.96	2517.70	0.0246	62593602	0	6254	0.012	-0.00089717
+r39-s3	11000.0	-1.34781e-05	8292.95	0.754	166.56	2540.48	0.0248	80842570	0	4683	0.014	-0.00161445
+r39-s4	11000.0	-1.03874e-05	8223.90	0.748	191.13	2584.97	0.0248	61175171	0	3780	0.058	0.000273775
+r39-s5	11000.0	-1.38502e-05	8279.23	0.753	181.49	2539.28	0.0245	52574699	0	3067	0.016	-0.000978129

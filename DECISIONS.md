@@ -118,6 +118,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D093](#d093) | Round 39's tank sized for the slope: 2,200 m² (a 52.9 m diameter, the smallest round area that takes a 30 m tilt under a 30° ramp), 45 m deep, the floor from 30 m on the shallow arc to 60 m on the deep one; the tilt's cap 30°; the shelf folded into the bed's round | 2026-09-15 | ruled by the owner in conversation on the evening of 2026-09-15 ("we need a much bigger tank. Much") and chosen from the agent's three sizings; the matter budget set from the founding smokes |
 | [D094](#d094) | The goal becomes a ladder of milestones: D063 deprecated as the campaign's bar (rung 1, met), the scorer to print a state and not a verdict, rung 2 adaptation by degree (a standing reading until its threshold is measured), rungs 3 and 4 named; every round still read on its own pre-registered predictions | 2026-09-16 | ruled by the owner in conversation on the morning of 2026-09-16 ("once we've proven that the goal is achievable we don't need to hold ourselves to that goal again"), on the agent's reasoning in the open |
 | [D095](#d095) | Seeds per round and arms at a time: five seeds for population-level predictions, ten for a rare event or a 2-or-3-of-5 reading, a rare event pre-registered as a count; three concurrent arms, renders between rounds | 2026-09-17 |
+| [D096](#d096) | The light's reach halved for round 40: `EVOSIM_LIGHT_REACH` 6 m (the attenuation depth, 12 m in every round before), so a lone leaf breeds only in the top ten metres and the water below is a dark column; the shelf follows in the lit band the new light defines | 2026-09-18 | ruled by the owner in conversation on the morning of 2026-09-18 ("Let's do it" on the direction, "proceed with your recommendations" on the value), from the agent's ledger sweep in `fable-propose-light.md`, absorbed here |
 
 ---
 
@@ -5247,3 +5248,52 @@ using. A five-seed round is two batches of about seventeen hours; ten seeds are 
 every seed past its wall. Ten seeds as the default: doubles every round's cost for
 readings whose spread five already resolves.
 
+### D096
+**The light's reach halved: 6 m for round 40** · 2026-09-18
+
+**Status:** ruled by the owner on the morning of 2026-09-18, in conversation. The owner looked
+at round 39's pictures and saw almost nothing but leaves, and asked what would happen if the
+light decayed faster in the water, so that photosynthesis paid only near the surface. The
+agent said it would do it; the owner said "Let's do it", and on the value, "proceed with your
+recommendations". A world rule, and the owner's. The proposal file (`fable-propose-light.md`)
+is absorbed here and deleted.
+
+**Context, in plain words.** Every round since the light model was built has run the light's
+attenuation depth at 12 m: the irradiance falls by a factor of e every 12 m, and the number
+was hard-coded in the launcher. Round 39 (logbook/0105) read the shelf as never in the light.
+The leaves float at 16 to 20 m, where a lone leaf still breeds; the shallow arc of the floor
+at 30 m sees a third of the light they do; and 45 m of the water is lit enough to live in. So
+the world is one leaf crowd from top to bottom, the eaters have no water of their own, and
+the floor cannot be a place until the light makes places.
+
+**The ledger sweep.** One leaf from round 39 (seed 1's snapshot at 30,000 s, the smallest
+kind, one part) priced at every depth, density 1, clearance 5, under `World`'s own breeding
+rule (D069). The number that matters is the deepest water where its expected children per
+lifetime reaches one.
+
+| reach | deepest depth with R0 ≥ 1 | R0 at 2 m | R0 at 6 m | R0 at 10 m |
+|---|---|---|---|---|
+| 12 m (before) | 20 m | 10 | 6 | 4 |
+| 9 m | 15 m | 9 | 5 | 2 |
+| **6 m** | **10 m** | **8** | **3** | **1** |
+| 4 m | 6 m | 6 | 1 | 0 |
+| 3 m | 4 m | 5 | 0 | 0 |
+
+**Ruled.** `EVOSIM_LIGHT_REACH` is a launcher dial (`RunConfig`'s `light.attenuationDepth`,
+the header token `light reach N m`), default 12 so that every recorded launcher still
+describes the world it ran. Round 40 is round 39's world, the shaped bed at D093's size,
+with the reach at **6 m** and nothing else changed: five seeds, three arms at a time
+(D095), pre-registered as logbook/0106. At 6 m a lone leaf breeds only in the top ten
+metres, and its children come three times as fast at 6 m as at 10 m, so the band both
+rises and steepens. The top ten metres of the 2,200 m² disc are 22,000 m³ of the tank's
+99,000. The water below is dark, where detritus sinks and no leaf can live. The
+smoke (`r40smoke`, 600 s at dt 0.02) compiled the dial and founded 161 bodies at a mean
+depth of 3.2 m, which is the founding and not the world. The shelf comes after, in the
+lit band the new light defines, in its own round.
+
+**Rejected.** 4 m and 3 m, at which the band is the top six or four metres: that is the
+surface film, which has been trouble before (logbook/0033, 0056). 9 m, which moves too
+little to read in one round; it is the retry if 6 m piles the leaves into the film
+(0106's two-sided reading). Changing the surface irradiance, the day cycle or the leaf's efficiency: each
+moves the same economics through a different dial and none makes the water dark below.
+Combining the reach with the shelf: two world rules in one round cannot be read apart.

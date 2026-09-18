@@ -1,0 +1,13 @@
+## E7  the rock throws nothing new: no dump whose reason names the bed in 5 of 5; diverged between 0 and 10 per million jointed body-seconds in 4 of 5. A sample is 100 s, so a column's standing count summed over samples times 100 is body-seconds.
+round	arm	samples	interval s	sum jnt inh	jnt-inh body-s	sum jointed	jointed body-s	diverged	dumps on disk	bed dumps	per 1e6 jnt-inh body-s	per 1e6 jointed body-s	in 0 to 10 per 1e6 jointed
+r39	r39-s1	300	100	4621	462100	5299	529900	0	0	0	0.00	0.00	yes
+r39	r39-s2	300	100	5899	589900	7099	709900	0	0	0	0.00	0.00	yes
+r39	r39-s3	300	100	25379	2537900	26959	2695900	0	0	0	0.00	0.00	yes
+r39	r39-s4	300	100	34396	3439600	35341	3534100	0	0	0	0.00	0.00	yes
+r39	r39-s5	300	100	17088	1708800	18914	1891400	0	0	0	0.00	0.00	yes
+r39	all five	-	-	-	8738300	-	9361200	0	-	0	0.00	0.00	5 of 5 in band
+
+## comparison, NOT recomputed (from logbook/specs/r38-read/exposure.tsv and the rounds before it):
+r38 s1-s5	-	-	-	-	-	-	6800000 (0101's reading)	10	-	-	-	0 to 5.5	-
+r37b s1-s5	-	-	-	-	11133400	-	11792900	43	-	-	3.86	3.65	-
+r37 s1-s5	-	-	-	-	9173400	-	9491200	0	-	-	0.00	0.00	-

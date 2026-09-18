@@ -1,0 +1,7 @@
+## The bed rebuilt from each seed's config.json and seed (bed.py, a port of BedShape), checked field by field against run.json. The tilt bearing is not recorded anywhere and is the rebuild's.
+arm	seed	hollows (rebuilt/recorded)	ridges	range m	steepest deg	scale m	tilt bearing deg	up-ramp unit (x,z)	hollow radius m	floor lowest m	floor highest m	live 1m columns	lowest-quarter columns	lowest-quarter share	hollows share of disc
+r39-s1	1	0/0	1/1	1.5000	36.9550	17.6419	115.05	(-0.4234, 0.9059)	4.410	-60.663	-29.921	2211	396	0.1791	0.0000	-0.0013	-2.2169
+r39-s2	2	3/3	1/1	1.5000	37.7596	17.6419	308.50	(0.6226, -0.7826)	4.410	-59.856	-29.789	2211	445	0.2013	0.0841	0.0004	-2.2199
+r39-s3	3	2/2	1/1	1.5000	40.3583	17.6419	215.65	(-0.8126, -0.5828)	4.410	-60.264	-30.273	2211	414	0.1872	0.0561	0.0037	-2.2125
+r39-s4	4	3/3	2/2	1.5000	38.3865	17.6419	225.99	(-0.6948, -0.7192)	4.410	-60.069	-29.971	2211	436	0.1972	0.0841	0.0037	-2.2081
+r39-s5	5	0/0	0/0	1.5000	38.4219	17.6419	221.43	(-0.7497, -0.6617)	4.410	-60.081	-29.963	2211	410	0.1854	0.0000	0.0037	-2.2067

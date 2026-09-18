@@ -1,0 +1,17 @@
+## E4's statistic on round 38 (flat floor at -60 m), at 5,000, 15,000 and 30,000 s. A negative last column is E4 holding.
+arm	t	leaves	stomachs	leaf median above floor m	stomach median above floor m	stomach - leaf m	E4 would hold
+r38-s1	5000	1573	31	38.480	30.490	-7.990	yes
+r38-s1	15000	1015	619	36.570	24.530	-12.040	yes
+r38-s1	30000	1591	6	40.660	38.650	-2.010	yes
+r38-s2	5000	1470	16	39.100	34.070	-5.030	yes
+r38-s2	15000	1423	146	37.780	35.900	-1.880	yes
+r38-s2	30000	1299	303	37.110	14.750	-22.360	yes
+r38-s3	5000	1330	0	44.955	nan	nan	no stomachs
+r38-s3	15000	1346	118	35.330	17.380	-17.950	yes
+r38-s3	30000	1624	15	35.370	26.760	-8.610	yes
+r38-s4	5000	1607	0	40.050	nan	nan	no stomachs
+r38-s4	15000	1087	672	39.220	18.865	-20.355	yes
+r38-s4	30000	1637	2	40.120	26.130	-13.990	yes
+r38-s5	5000	1378	46	46.675	41.275	-5.400	yes
+r38-s5	15000	987	674	40.610	20.930	-19.680	yes
+r38-s5	30000	1621	7	37.510	19.980	-17.530	yes
