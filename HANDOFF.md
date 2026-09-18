@@ -7,37 +7,38 @@ is queued; it is rewritten, never appended to.*
 ## Where things stand
 
 **Round 41, the one-substance economy's base round, is running (logbook/0107, D098 as
-amended; launched 2026-09-18 20:14).** Round 40's world at 3,000 units of matter (from
-11,000) and a 100 J per-child overhead (from 25), five seeds at three arms on workers 2, 3
-and 4 (`scratch/r41/queue.ps1`, detached; log `scratch/logs/r41-queue.out`; seeds 4 and 5
-launch as arms end), dt 0.01 for 30,000 s, wall 1,800 minutes. Seed 1 verified from its
-manifest and config: `simHash 50cf58e4…`, `coreHash 729a0de1…`, `configHash a2aa45a6`,
-`physicsJobWorkers 0`, `matterBudgetUnits 3000`, `perOffspringOverheadJoules 100`,
-`joulesPerUnit 100`, `attenuationDepth 6`, `reserveCapSeconds 0`, tissue 500 J/m³ on every
-cell type, `prereg.json` at `3fa8876` beside the arm and the run. Read on E1 to E8 with the
-3,000-unit screen (`r41o100b3k-s1`, dt 0.02, stopped at 2,500 s) as the baseline; frames of
-a live arm at about 3,000 and 6,000 s on a worker the queue is not using (5 or 6), one at
-a time. The owner's rule from tonight binds the round: a seed that shows the adjustment the
-world needs is stopped as `manual-futility` and the round re-planned, not completed.
+amended; launched 2026-09-18 20:14).** It is round 40's world at 3,000 units of matter,
+from 11,000, and a 100 J per-child overhead, from 25. Five seeds run at three arms on
+workers 2, 3 and 4, dt 0.01 for 30,000 s, wall 1,800 minutes. The queue is
+`scratch/r41/queue.ps1`, detached, logging to `scratch/logs/r41-queue.out`, and seeds 4
+and 5 launch as arms end. Seeds 1 to 3 are verified from their manifests, configs and
+headers: `simHash 50cf58e4…`, `coreHash 729a0de1…`, `configHash a2aa45a6`, physics jobs
+0, the budget 3,000, the overhead 100 J, a unit worth 100 J, the light's reach 6 m, the
+reserve cap off, tissue 500 J/m³ on every cell type, and `prereg.json` at `3fa8876` beside
+the arm and the run. The round is read on E1 to E8 against the 3,000-unit screen
+(`r41o100b3k-s1`, dt 0.02, stopped at 2,500 s). Frames of seed 1 at about 3,000 and
+6,000 s come from worker 5 (`scratch/r41/snap-early.sh`), one at a time. The owner's rule
+from tonight binds the round. A seed that shows the adjustment the world needs is stopped
+as `manual-futility` and the round re-planned rather than completed.
 
-Two mislaunches precede it and are renamed, not deleted: `runs/r41mis-s1..3` (20:10, a
-minute each) ran the launcher's old defaults, 11,000 units and 25 J, because
-`launch-queue.ps1` passes a seed, a worker and the hash and nothing else and the screened
-dials were on the command line and not in the launcher (CLAUDE.md's gotcha); `runs/
-r41mis2-s1..2` (20:13) were the corrected queue relaunched inside the agent's background
-task, killed with it when the agent stopped the task to detach the queue. Both sets read
-`stopped`, `manual-other`.
+Two mislaunches precede it, renamed and not deleted. `runs/r41mis-s1..3` (20:10, a
+minute each) ran the launcher's old defaults, 11,000 units and 25 J. The queue passes a
+seed, a worker and the hash and nothing else, and the screened dials were on the command
+line and not in the launcher (CLAUDE.md's gotcha). `runs/r41mis2-s1..2` (20:13) were the
+corrected queue relaunched inside the agent's background task, and they died with it when
+the agent stopped that task to detach the queue. Both sets read `stopped`, `manual-other`.
 
-How the dials were set (all at dt 0.02, seed 1, every screen stopped as soon as it had
-answered): D098's build makes the count the capacity over what a breeder holds, since a
-leaf's tissue is 0.38 J against a 25 J child, and `r41smoke2-s1` built 6,300 bodies in
+How the dials were set, all at dt 0.02 and seed 1, every screen stopped as soon as it
+had answered. D098's build makes the count the capacity over what a breeder holds, since
+a leaf's tissue is 0.38 J against a 25 J child. `r41smoke2-s1` built 6,300 bodies in
 1,100 s at 11,000 units. A per-body standing cost does not bound it. The tissue value at
 100,000 and 200,000 J/m³ (`r41t1e5-s1`, `r41t2e5-s1`) and at 50,000 with small founders
-(`r41t5e4b2k-s1`, `r41t5e4b4k-s1`) froze the founding. The budget alone at 25 J plateaued
-at 380 for 1,000 units and 750 for 2,000 (`r41b1000-s1`, `r41b2000-s1`; 400 starved at
-the floor) and drifts several-fold as bodies shrink. At 100 J the overhead is the floor
-under a breeder's holding: 400 bodies for 2,000 units, 650 for 3,000, on the same line for
-4,000 (`r41o100b2k-s1`, `r41o100b3k-s1`, `r41o100b4k-s1`). The spec's §4 table, DESIGN
+(`r41t5e4b2k-s1`, `r41t5e4b4k-s1`) froze the founding. The budget alone at 25 J
+plateaued at 380 for 1,000 units and 750 for 2,000 (`r41b1000-s1`, `r41b2000-s1`), 400
+starved at the floor, and it drifts several-fold as bodies shrink. At 100 J the overhead
+is the floor under a breeder's holding. That gave 400 bodies for 2,000 units and 650 for
+3,000, and 4,000 sat on the same line (`r41o100b2k-s1`, `r41o100b3k-s1`,
+`r41o100b4k-s1`). The spec's §4 table, DESIGN
 §5A.2d and CLAUDE.md carry the ruling. `EVOSIM_TISSUE_ENERGY`, `EVOSIM_FOUNDER_EXTENT_MIN/
 MAX` and `EVOSIM_OVERHEAD` are launch knobs from tonight (header tokens `tissue N J/m3`,
 `founders a-b m`, `overhead N J`).
