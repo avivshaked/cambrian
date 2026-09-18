@@ -44,8 +44,8 @@ MAX` and `EVOSIM_OVERHEAD` are launch knobs from tonight (header tokens `tissue 
 `founders a-b m`, `overhead N J`).
 
 The build: D098 as amended is on main from `a5cc504` (branches `economy` and `margin`,
-worktrees `scratch/wt-economy` and `scratch/wt-margin`, both still present and removable
-only with the owner): the spec is `logbook/specs/economy-spec.md` (§11 has the build
+merged; their worktrees and branches were removed on the owner's word at 20:25, and main
+was pushed to origin): the spec is `logbook/specs/economy-spec.md` (§11 has the build
 notes), the map `logbook/specs/economy-inventory.md`, DESIGN §5A.2d and §0x carry the
 rules, CLAUDE.md the gotcha. The default suite is green at 710 and the full suite is green
 after the mixing experiment's conservation check was made to span both states. Genome
