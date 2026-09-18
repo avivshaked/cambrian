@@ -6,46 +6,59 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
-**The one-substance economy is built, merged and smoked, and the base round waits on the
-budget screens (2026-09-18, night).** D098 as amended (one matter in two states, charged and
-spent) is on main from `a5cc504` (branches `economy` and `margin`, worktrees
-`scratch/wt-economy` and `scratch/wt-margin`, both still present): the spec is
-`logbook/specs/economy-spec.md` (§11 has the build notes), the map
-`logbook/specs/economy-inventory.md`, DESIGN §5A.2d and §0x carry the rules, CLAUDE.md the
-gotcha. The default suite is green at 710; the full suite's one failure was
-`GridFieldExperiments.WhereTheFoodSitsWhenTheMixingComesDown`, whose conservation check now
-spans both states (rerun pending). Genome format is 6 and every stored genome, snapshot and
-`config.json` on disk is refused; `inocula/growth-ledger-genome.json` and the three tracked
-configs are regenerated from the base round's smoke when it is recorded. `simHash e4e34095…`
-on the smoke, `coreHash 729a0de1…`; workers 2, 3 and 4 refreshed from main after `823f450`
-(the tissue knob); worker 7 still carries round 39's tree for its render.
+**Round 41, the one-substance economy's base round, is running (logbook/0107, D098 as
+amended; launched 2026-09-18 20:14).** Round 40's world at 3,000 units of matter (from
+11,000) and a 100 J per-child overhead (from 25), five seeds at three arms on workers 2, 3
+and 4 (`scratch/r41/queue.ps1`, detached; log `scratch/logs/r41-queue.out`; seeds 4 and 5
+launch as arms end), dt 0.01 for 30,000 s, wall 1,800 minutes. Seed 1 verified from its
+manifest and config: `simHash 50cf58e4…`, `coreHash 729a0de1…`, `configHash a2aa45a6`,
+`physicsJobWorkers 0`, `matterBudgetUnits 3000`, `perOffspringOverheadJoules 100`,
+`joulesPerUnit 100`, `attenuationDepth 6`, `reserveCapSeconds 0`, tissue 500 J/m³ on every
+cell type, `prereg.json` at `3fa8876` beside the arm and the run. Read on E1 to E8 with the
+3,000-unit screen (`r41o100b3k-s1`, dt 0.02, stopped at 2,500 s) as the baseline; frames of
+a live arm at about 3,000 and 6,000 s on a worker the queue is not using (5 or 6), one at
+a time. The owner's rule from tonight binds the round: a seed that shows the adjustment the
+world needs is stopped as `manual-futility` and the round re-planned, not completed.
 
-What the smokes said (all at dt 0.02, round 40's world, `rounds/launch-r41.ps1`): both books
-close to 0 on every row, `upt lim` climbs as the surface strips, and **the count runs away**:
-`r41smoke-s1` ended on the 30 kJ tissue ceiling at 672 s (the ceiling is now off in the
-launcher: a child costs its parent's reserve and no field, so founder-sized bodies build
-tissue from light alone) and `r41smoke2-s1` reached 6,300 bodies at 1,100 s with the surface
-stripped twenty-fold and the crowd in the film, stopped as futile. The reason, and the owner's
-ruling on it (in conversation, about 21:30): a body holds tissue plus reserve, a leaf's tissue
-is 0.38 J against a 25 J child, so 11,000 units build tens of thousands of bodies; the fixed
-charge was what capped the count and it is gone by design. A per-body basal cost would not
-bound the count (it sets where the water settles); the tissue value at 100,000 and 200,000
-J/m³ froze the founding (`r41t1e5-s1`, `r41t2e5-s1`, zero births by 2,500 s, stopped). **The
-budget sets the crowd**: the owner agreed ("I agree with your recommendations. Let's
-proceed"). Screens running: `r41b400-s1` starved at the floor (17 births by 900 s, stopped),
-`r41b1000-s1` founded (165 alive at 800 s, the floor closed at 400 s, `mat top` 0.006 from
-0.010), `r41b2000-s1` launching on worker 3. The base round takes the budget whose crowd
-settles between 1,500 and 3,000 with breeding alive, and its pre-registration (0107) takes
-its bars from that screen at 5,000 s; five seeds, three arms (workers 2, 3, 4), dt 0.01,
-30,000 s, wall 1,800 minutes. The owner's rule from tonight: a run that has shown the
-adjustment it needs is stopped, not completed.
+Two mislaunches precede it and are renamed, not deleted: `runs/r41mis-s1..3` (20:10, a
+minute each) ran the launcher's old defaults, 11,000 units and 25 J, because
+`launch-queue.ps1` passes a seed, a worker and the hash and nothing else and the screened
+dials were on the command line and not in the launcher (CLAUDE.md's gotcha); `runs/
+r41mis2-s1..2` (20:13) were the corrected queue relaunched inside the agent's background
+task, killed with it when the agent stopped the task to detach the queue. Both sets read
+`stopped`, `manual-other`.
 
-Also tonight: round 40's read is in 0106 (V5, three seeds: L3 held where readable, L1 failed
-on the deep quartile, the deep tail is newborns dropped where nothing pays; `logbook/specs/
-r40-read/`); round 39's render of seed 1 still replays on worker 7 toward its 30,000 s frame
-for 0105 (`scratch/r39-renders-2.ps1`; stop the chain after that frame lands, since its later
-renders would compile the new Core and refuse the recordings); `EVOSIM_TISSUE_ENERGY` is a
-launch knob (header `tissue N J/m3`).
+How the dials were set (all at dt 0.02, seed 1, every screen stopped as soon as it had
+answered): D098's build makes the count the capacity over what a breeder holds, since a
+leaf's tissue is 0.38 J against a 25 J child, and `r41smoke2-s1` built 6,300 bodies in
+1,100 s at 11,000 units. A per-body standing cost does not bound it. The tissue value at
+100,000 and 200,000 J/m³ (`r41t1e5-s1`, `r41t2e5-s1`) and at 50,000 with small founders
+(`r41t5e4b2k-s1`, `r41t5e4b4k-s1`) froze the founding. The budget alone at 25 J plateaued
+at 380 for 1,000 units and 750 for 2,000 (`r41b1000-s1`, `r41b2000-s1`; 400 starved at
+the floor) and drifts several-fold as bodies shrink. At 100 J the overhead is the floor
+under a breeder's holding: 400 bodies for 2,000 units, 650 for 3,000, on the same line for
+4,000 (`r41o100b2k-s1`, `r41o100b3k-s1`, `r41o100b4k-s1`). The spec's §4 table, DESIGN
+§5A.2d and CLAUDE.md carry the ruling. `EVOSIM_TISSUE_ENERGY`, `EVOSIM_FOUNDER_EXTENT_MIN/
+MAX` and `EVOSIM_OVERHEAD` are launch knobs from tonight (header tokens `tissue N J/m3`,
+`founders a-b m`, `overhead N J`).
+
+The build: D098 as amended is on main from `a5cc504` (branches `economy` and `margin`,
+worktrees `scratch/wt-economy` and `scratch/wt-margin`, both still present and removable
+only with the owner): the spec is `logbook/specs/economy-spec.md` (§11 has the build
+notes), the map `logbook/specs/economy-inventory.md`, DESIGN §5A.2d and §0x carry the
+rules, CLAUDE.md the gotcha. The default suite is green at 710 and the full suite is green
+after the mixing experiment's conservation check was made to span both states. Genome
+format is 6 and every stored genome, snapshot and `config.json` on disk is refused;
+`inocula/growth-ledger-config.json` and `growth-ledger-genome.json` are regenerated from
+round 41's seed 1 and the 3,000-unit screen's snapshot, and the two historical configs
+under `inocula/` are kept as history and marked refused. Worker 7 still carries round 39's
+tree for its render.
+
+Also tonight: round 40's read is in 0106 (V5, three seeds: L3 held where readable, L1
+failed on the deep quartile, the deep tail is newborns dropped where nothing pays;
+`logbook/specs/r40-read/`); round 39's render of seed 1 still replays on worker 7 toward
+its 30,000 s frame for 0105 (`scratch/r39-renders-2.ps1`; stop the chain after that frame
+lands, since its later renders would compile the new Core and refuse the recordings).
 
 **The campaign's direction changed at midday on 2026-09-18 (D097).** The owner ruled "Let's
 follow your recommendations" on the agent's diagnosis that the matter cell is a one-child

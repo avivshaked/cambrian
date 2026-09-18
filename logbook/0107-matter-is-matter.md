@@ -153,3 +153,25 @@ eaters hold is a ten-seed question (D095); five seeds count it here.
 ## Launch
 
 *Appended as the seeds launch; each with its header verified and its manifest's hashes.*
+
+*20:14 to 20:16.* Seeds 1, 2 and 3 launched on workers 2, 3 and 4, each refreshed first,
+with the queue's hash check against the screen's `simHash 50cf58e4…` passing and
+`prereg.json` at this entry's commit (`3fa8876`) beside the arm and beside the run. Every
+manifest reads `coreHash 729a0de1…`, `configHash a2aa45a6`, `physicsJobWorkers 0`; every
+config `joulesPerUnit 100`, `matterBudgetUnits 3000`, `perOffspringOverheadJoules 100`,
+`attenuationDepth 6`, `reserveCapSeconds 0` and 500 J/m³ on all seven cell types. Every
+header verified from `runs/r41-s<n>.md`: `dt=0.01`, the economy token as written above,
+`tissue 500 J/m3`, `overhead 100 J`, `founders 0.15-0.4 m`, `matterBudget 3000`, `light
+reach 6 m`, `fluidAccel 1`, `physics jobs 0`, `space tank r=26.46 m (2200 m2), depth 45,
+wall, bed relief 1.5 m tilt 30 m`. The queue is `scratch/r41/queue.ps1`, detached, and
+seeds 4 and 5 launch as arms end.
+
+Two false starts came first, and V1 is why they are on the record. At 20:10 the queue
+launched seeds 1 to 3 on the launcher's old defaults, 11,000 units and a 25 J overhead,
+because the queue passes a seed, a worker and the hash and nothing else, and the screened
+dials were on my command line and not in `rounds/launch-r41.ps1`. I stopped them within a
+minute, wrote the defaults into the launcher (`89d4a05`, after this entry's commit) and
+relaunched. The second start ran inside my own background task and I stopped that task to
+detach the queue, which killed the two seeds it had launched. Both sets are renamed
+`runs/r41mis-s*` and `runs/r41mis2-s*`, `stopped`, `manual-other`, and nothing is read from
+them. The prediction table above was committed before any of the three starts.
