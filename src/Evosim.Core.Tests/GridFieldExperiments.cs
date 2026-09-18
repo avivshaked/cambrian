@@ -385,7 +385,9 @@ namespace Evosim.Core.Tests
                 // (leg 8), so what the exudate put in is the charged joules still standing plus
                 // the spent units times ρ. Until 2026-09-18 the leak stayed inside one field and
                 // the total alone was the check.
-                Assert.Equal((double)steps * perStep, field.Recount() + spent.Recount() * 100d, 3);
+                // Two decimal places, as the sitter-and-mover check above: the sum crosses two
+                // fields' doubles and lands 4e-4 J off 129,600.
+                Assert.Equal((double)steps * perStep, field.Recount() + spent.Recount() * 100d, 2);
                 Assert.Equal(field.Recount(), total, 3);
             }
         }
