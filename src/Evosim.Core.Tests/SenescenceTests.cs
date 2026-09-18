@@ -163,12 +163,19 @@ namespace Evosim.Core.Tests
             // against the immortal world's 6%.
             var lit = new LightModel(300f, 12f);
 
+            // The founders keep nothing back, since D098 (2026-09-18). With the reserve margin
+            // drawn over [0, 600] s the ageing world reached the ceiling too, at t=1311 s, which
+            // is the one thing this test needs it not to do — a world whose founders hoard is a
+            // different world, and not the one the claim above was measured in. Pinned at the
+            // pre-D098 value rather than re-tuning the light a second time: what is being
+            // measured is ageing against no ageing, and both arms must differ in that alone.
             RunConfig Config(float doubling) => new RunConfig
             {
                 MinimumPopulation = 30,
                 MaximumPopulation = 5000,
                 SenescenceDoublingSeconds = doubling,
                 Light = lit,
+                Genome = new RandomGenomeOptions { MinReserveMargin = 0f, MaxReserveMargin = 0f },
             };
 
             (World world, bool exploded, double stoppedAt) Run(float doubling)

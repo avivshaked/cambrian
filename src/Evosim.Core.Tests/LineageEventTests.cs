@@ -112,6 +112,49 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void ABirthRowCarriesTheBreedingMarginAfterTheAdultScale()
+        {
+            // D098 §3. Whether a population grows more cautious is a question about every birth
+            // in a parent chain, and lineage.jsonl is the only file that has one.
+            var config = new RunConfig
+            {
+                MinimumPopulation = 20,
+                MaximumPopulation = 400,
+                Genome = new RandomGenomeOptions
+                {
+                    MinReserveMargin = 120f, MaxReserveMargin = 120f,
+                },
+            };
+            config.Light = new LightModel(4000f, 40f);
+
+            var world = new World(config, seed: 2);
+            world.Step(1f);
+
+            var births = world.DrainLineageEvents();
+            Assert.NotEmpty(births);
+
+            foreach (LineageEvent evt in births)
+            {
+                Assert.Equal(LineageEventKind.Birth, evt.Kind);
+                Assert.Equal(120f, evt.ReserveMargin);
+
+                string json = evt.ToJson();
+
+                // Field order, for the reason the "pho" assertion above gives: a diff of a new
+                // row against an old one should be one inserted field, and this one is last.
+                int adultScale = json.IndexOf("\"as\":", StringComparison.Ordinal);
+                int margin = json.IndexOf("\"rm\":", StringComparison.Ordinal);
+
+                Assert.True(adultScale >= 0 && margin > adultScale, "a birth row carries \"rm\" after \"as\"");
+                Assert.Equal(120d, Json.Parse(json)["rm"].AsDouble(), 3);
+            }
+
+            // A death row carries none of it, and must not pretend to.
+            string death = LineageEvent.Death(1.0, 7, DeathCause.Starved).ToJson();
+            Assert.DoesNotContain("\"rm\":", death);
+        }
+
+        [Fact]
         public void DeathEventsCarryTheStarvedCause()
         {
             // A dark world: nothing can earn, so everything that is not a fresh floor spawn runs

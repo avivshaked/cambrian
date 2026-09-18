@@ -296,24 +296,31 @@ namespace Evosim.Core.Tests
             double sumY = 0d;
             for (int i = 0; i < world.Living.Count; i++) sumY += world.Living[i].HeightY;
 
-            Assert.Equal(74, world.Living.Count);
-            Assert.Equal(65L, world.Births);
-            Assert.Equal(101L, world.Deaths);
-            Assert.Equal(110L, world.FloorSpawns);
+            // Re-recorded twice on 2026-09-18, for D098's economy and again for D098 §3's reserve
+            // margin, and the second move is large in its own right: the founding draw takes one
+            // more number from the genome rng per founder, so every genome after the first is a
+            // different genome and the run is a different realisation of the same seed (the
+            // wingspan CLAUDE.md records for a per-step change in the physics, here in Core),
+            // and founders drawn over [0, 600] s of standing cost mostly wait. The values below
+            // are what this build does, not what it should do; the pin is on sameness.
+            Assert.Equal(41, world.Living.Count);
+            Assert.Equal(11L, world.Births);
+            Assert.Equal(127L, world.Deaths);
+            Assert.Equal(157L, world.FloorSpawns);
 
-            Assert.Equal(-5.346921920776367d, sumY / world.Living.Count);
-            Assert.Equal(4207.845816079858d, world.Nutrients.TotalJoules);
-            Assert.Equal(5964.662104769551d, world.Matter.TotalJoules);
-            Assert.Equal(1.2142205378040671E-05d, world.AuditResidual);
+            Assert.Equal(-15.408401535778511d, sumY / world.Living.Count);
+            Assert.Equal(3780.9458947453095d, world.Nutrients.TotalJoules);
+            Assert.Equal(6000.62490383003d, world.Matter.TotalJoules);
+            Assert.Equal(0.00020378494082251564d, world.AuditResidual);
 
             // The standing total is not the seeded 6,000 any more and cannot be: since D098's
             // leg 9 every founder the floor admits is an influx of charged matter, so the world
             // grows by what the net hands it. The identity is what holds, and it holds at the
             // width of a float sum over four hundred steps.
-            Assert.Equal(6085.670015929974d, world.StandingMatterUnits);
-            Assert.Equal(85.67001603543758d, world.MatterInfluxedTotal);
+            Assert.Equal(6122.100016296946d, world.StandingMatterUnits);
+            Assert.Equal(122.10001821815968d, world.MatterInfluxedTotal);
             Assert.Equal(0d, world.MatterBuriedTotal);
-            Assert.Equal(-1.0546318662818521E-07d, world.MatterResidual);
+            Assert.Equal(-1.9212138795410283E-06d, world.MatterResidual);
         }
     }
 }

@@ -180,11 +180,21 @@ namespace Evosim.Core.Tests
             // 32 W/m² rather than 48 since fable-propose-growth.md (2026-09-08): a reproduction
             // costs a fraction of the parent's body where it cost a whole one plus an endowment,
             // so the transition moved down and the wide world reached the ceiling at 48.
+            // The founders keep nothing back, since D098 (2026-09-18). The reserve margin is
+            // drawn over [0, 600] s by default, and a world this close to the transition breeds
+            // barely at all when most of its founders are waiting on ten minutes of upkeep — both
+            // worlds fell to a few dozen births and the comparison became a reading of the draw.
+            // Pinned rather than re-tuned: the question here is whether aperture reaches the
+            // metabolic path, and a caution gene is noise in front of it.
+            RandomGenomeOptions Eager() =>
+                new RandomGenomeOptions { MinReserveMargin = 0f, MaxReserveMargin = 0f };
+
             var narrow = new RunConfig
             {
                 MinimumPopulation = 30, MaximumPopulation = 50000,
                 FloorSpawnsPerStep = 2, WorldAreaSquareMetres = 25f,
                 Light = new LightModel(32f, 12f),
+                Genome = Eager(),
             };
 
             var wide = new RunConfig
@@ -192,6 +202,7 @@ namespace Evosim.Core.Tests
                 MinimumPopulation = 30, MaximumPopulation = 50000,
                 FloorSpawnsPerStep = 2, WorldAreaSquareMetres = 40000f,
                 Light = new LightModel(32f, 12f),
+                Genome = Eager(),
             };
 
             var a = new World(narrow, 1);

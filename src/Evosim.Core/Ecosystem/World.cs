@@ -573,6 +573,22 @@ namespace Evosim.Core
         public long ConceptionsUnderMassFloor { get; private set; }
 
         /// <summary>
+        /// Conceptions refused because the parent's reserve would not clear the price and its
+        /// genome's <see cref="ReproductionTraits.ReserveMargin"/> together — D098 §3.
+        /// </summary>
+        /// <remarks>
+        /// <b>A count of attempts, not of parents</b>, like
+        /// <see cref="ConceptionsUnderMassFloor"/>: a parent held back this step keeps its reserve
+        /// and asks again next step, so a few dozen bodies standing at their own margin produce
+        /// millions of these over a run, and the number is read against births in the same window
+        /// rather than as a level. What it separates is a world too poor to breed from a
+        /// population that has evolved to wait — the two look identical in the birth rate and
+        /// nowhere else. At margin 0 it counts the plainly insolvent, which is the same refusal
+        /// this line has always made and simply never counted.
+        /// </remarks>
+        public long ConceptionsUnderMargin { get; private set; }
+
+        /// <summary>
         /// Floor draws refused because the founder's body would have been under
         /// <see cref="RunConfig.MinNewbornPartKilograms"/> — rule 3 applied to rule 7.
         /// </summary>
@@ -601,6 +617,17 @@ namespace Evosim.Core
 
         /// <summary>Mean <see cref="ReproductionTraits.BroodSize"/> over the living. NaN when empty.</summary>
         public float MeanBroodSize => MeanOverLiving(c => c.Genome.Reproduction.BroodSize);
+
+        /// <summary>
+        /// Mean <see cref="ReproductionTraits.ReserveMargin"/> over the living, in seconds —
+        /// D098 §3. NaN when empty.
+        /// </summary>
+        /// <remarks>
+        /// The gene's own column. In seconds rather than joules so that it can be read beside a
+        /// lifetime and a drought without a body size in the way: a population whose mean margin
+        /// is 400 s is one that has learnt to carry most of a senescence doubling in hand.
+        /// </remarks>
+        public float MeanReserveMargin => MeanOverLiving(c => c.Genome.Reproduction.ReserveMargin);
 
         /// <summary>Mean <see cref="Organism.BodyFraction"/> over the living. NaN when empty.</summary>
         /// <remarks>
@@ -2130,7 +2157,15 @@ namespace Evosim.Core
                 float before = creature.Energy;
                 float burnable = Math.Max(0f, before + ledger.Income - ledger.Exuded);
                 float burnt = Math.Min(ledger.Expenditure, burnable);
-                creature.Energy = before + ledger.Income - ledger.Exuded - burnt;
+                // Applied as one small delta on the reserve, never as `before + income - burnt`
+                // through two roundings of a 200 J intermediate: the merged build's three grid
+                // identity tests read the audit at 1.1 to 1.7e-6 of the light in with the
+                // long form, which is float32 drift and not a leg, and the short form is the
+                // one rounding the old `Energy += Net` made. A body that could not pay is set
+                // to exactly zero, so the death check below never sees a rounding crumb.
+                creature.Energy = burnt < ledger.Expenditure
+                    ? 0f
+                    : before + (ledger.Income - ledger.Exuded - burnt);
 
                 // D070. What the body released to the water this step, put where the body is.
                 // The reserve update above already carried the deduction, so this is the other
@@ -2905,7 +2940,17 @@ namespace Evosim.Core
 
             float price = tissue + reserve + Config.PerOffspringOverheadJoules;
 
-            if (parent.Energy < price) return Conception.Refused;
+            // D098 §3. The price plus what the genome insists on keeping — the same expression
+            // Organism.ReproductionThreshold applies, so a parent that got here has already
+            // cleared its margin once and this is the exact check rather than a second rule. The
+            // margin is read off the parent's current standing cost, not the one it was born
+            // with, because a body that has grown is a body with more to keep back.
+            if (parent.Energy <
+                price + parent.Genome.Reproduction.ReserveMargin * parent.StandingWatts)
+            {
+                ConceptionsUnderMargin++;
+                return Conception.Refused;
+            }
 
             // D098 retired the second price. A child is charged matter given by its parent and
             // nothing is drawn from any field, so the one gate above is the whole solvency test:
@@ -3483,7 +3528,7 @@ namespace Evosim.Core
             _lineageEvents.Add(LineageEvent.Birth(
                 ElapsedSeconds, creature.Id, parentId, kind, generationDepth, creature.SpeciesId,
                 HasAbsorptive(phenotype), phenotype.TotalDof > 0, photosynthetic, patch,
-                creature.BodyFraction, genome.AdultScale));
+                creature.BodyFraction, genome.AdultScale, genome.Reproduction.ReserveMargin));
 
             return creature;
         }

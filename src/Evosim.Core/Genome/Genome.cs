@@ -34,7 +34,7 @@ namespace Evosim.Core
 
         /// <summary>How surplus energy is turned into offspring — DESIGN.md §5A.6.</summary>
         public ReproductionTraits Reproduction { get; set; } =
-            new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f };
+            new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f, ReserveMargin = 0f };
 
         /// <summary>
         /// How big this body plan grows up to be: one scalar the developer multiplies into every
@@ -121,6 +121,20 @@ namespace Evosim.Core
                     $"Birth investment {Reproduction.BirthInvestment} must be finite and " +
                     "positive. An offspring born with nothing is dead on arrival, and one born " +
                     "with less than nothing pays its parent to make it.");
+            }
+
+            // Zero is a creature that breeds the moment it can pay, which is the world as it
+            // stood before D098 and a strategy rather than a fault. Below zero is not a bolder
+            // strategy: it lowers the gate beneath the price, so a parent would be admitted to a
+            // birth it cannot fund and the shortfall would have to come from somewhere.
+            if (float.IsNaN(Reproduction.ReserveMargin) ||
+                float.IsInfinity(Reproduction.ReserveMargin) ||
+                Reproduction.ReserveMargin < 0f)
+            {
+                issues.Add(
+                    $"Reserve margin {Reproduction.ReserveMargin} must be finite and " +
+                    "non-negative. It is seconds of the parent's own standing cost held back " +
+                    "after a birth, and a negative span of time is not caution.");
             }
 
             // A body plan with no size is not a small creature, it is an arithmetic hole: every

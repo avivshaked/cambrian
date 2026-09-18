@@ -179,6 +179,16 @@ namespace Evosim.Core
                     nameof(reproduction));
             }
 
+            if (float.IsNaN(reproduction.ReserveMargin) ||
+                float.IsInfinity(reproduction.ReserveMargin) ||
+                reproduction.ReserveMargin < 0f)
+            {
+                throw new ArgumentException(
+                    $"Reserve margin {reproduction.ReserveMargin} must be finite and " +
+                    "non-negative — the same rule Genome.Validate enforces.",
+                    nameof(reproduction));
+            }
+
             float irradiance = irradianceWattsPerSquareMetre * (1f - shadeFraction);
             float tissue = Metabolism.TissueJoules(phenotype, config);
 
@@ -243,7 +253,16 @@ namespace Evosim.Core
                     break;
                 }
 
-                if (reproductionGate <= 0f || energy < reproductionGate) continue;
+                // D098 §3's margin, applied where the world applies it: on top of the gate, in
+                // seconds of what this body is spending at this age. Standing watts is upkeep
+                // plus neural over the step — the same two terms World.Metabolise divides by its
+                // own step to refresh Organism.StandingWatts, taken from this loop's own ledger
+                // rather than recomputed, so senescence reaches the margin as it reaches
+                // everything else and the forecast's gate is the world's gate.
+                float standingWatts = (ledger.Upkeep + ledger.Neural) / StepSeconds;
+                float gate = reproductionGate + reproduction.ReserveMargin * standingWatts;
+
+                if (reproductionGate <= 0f || energy < gate) continue;
 
                 for (int n = 0; n < reproduction.BroodSize; n++)
                 {
