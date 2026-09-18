@@ -407,6 +407,14 @@ namespace Evosim.Sim.EditorTools
             // here because §5A.10 says an unmeasured claim must be one a run can vary.
             float clearance = Env("EVOSIM_CLEARANCE", 1.0f);
 
+            // D098's screen (2026-09-18 night). What a cubic metre of tissue is worth and costs,
+            // CellType.TissueEnergyPerCubicMetre on every registered type: 500 J/m3 is every
+            // world on file, and 0 keeps each type's own default. Under one substance a body's
+            // matter is its tissue plus its reserve, so this number is what a body holds and
+            // the count the budget can build; the first smoke ran to the population ceiling at
+            // 500 because a leaf holds 0.38 J of tissue against a 25 J child.
+            float tissueEnergy = Env("EVOSIM_TISSUE_ENERGY", 0f);
+
             // How much denser than water tissue is, kg/m3. 0 is §5.2's neutral buoyancy, in which
             // a creature stays exactly where it was born and doing nothing is optimal. The
             // ceiling is what a joint can push against — 0.017 m/s for a founder body at 20 N.m
@@ -665,6 +673,14 @@ namespace Evosim.Sim.EditorTools
                     new ConsumerCell(),
                     new BuoyancyCell(liftCost)),
             };
+
+            if (tissueEnergy > 0f)
+            {
+                for (int i = 0; i < config.CellTypes.Count; i++)
+                {
+                    config.CellTypes.At(i).TissueEnergyPerCubicMetre = tissueEnergy;
+                }
+            }
 
             config.Genome.MaxLinkPower = maxPower;
             config.Genome.MinLinkPower = Math.Min(minPower, maxPower);
@@ -1011,6 +1027,7 @@ namespace Evosim.Sim.EditorTools
                 // but the configHash is not — a new tunable enters ConfigSchema and therefore
                 // Hash(), as it does for every knob this project has added.
                 " · matter from " + initialMatter + "/m3" +
+                " · tissue " + config.CellTypes.Resolve(CellTypeIds.Photosynthetic).TissueEnergyPerCubicMetre.ToString("0.###", CultureInfo.InvariantCulture) + " J/m3" +
                 " · float " + floatChance + " at " + liftCost + " W/lift" +
                 // D075 item 1, rendered unconditionally for D065's reason: a reader of a header
                 // must never have to work out whether a missing token means "the four channels"

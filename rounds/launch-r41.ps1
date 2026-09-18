@@ -109,10 +109,13 @@ param(
     # second time by ScalarChance, which is the bug the growth build's review found.
     [float]$AdultScaleChance = 0.08,
     [float]$InvestChance = 0.08,
-    # rule 9 of fable-propose-growth.md: the tissue ceiling beside EVOSIM_MAX_POP. Idle in a
-    # closed-matter world -- 6,000 units cannot build 30,000 J of tissue -- and kept as an
-    # instrument for a world with influx.
-    [float]$MaxTissue = 30000,
+    # rule 9 of fable-propose-growth.md: the tissue ceiling beside EVOSIM_MAX_POP. Off (0) from
+    # D098: a child costs its parent's reserve and no field, so founder-sized bodies built 30,000 J
+    # of tissue from 67 kJ of light by 672 s and the first smoke ended as a runaway on an
+    # instrument sized for the world where tissue cost matter. In a closed one-substance world
+    # the budget is the ceiling (11,000 units is 1.1 MJ of charged matter), and EVOSIM_MAX_POP
+    # still ends a count runaway.
+    [float]$MaxTissue = 0,
     # The disc a newborn is set down in, about its parent, m (RunConfig.OffspringDispersalMetres,
     # EVOSIM_OFFSPRING_DISPERSAL). 5 m is round 35's value and is kept here unchanged; in a tank a
     # draw that lands past the glass is refused and the attempt budget takes another, exactly as a
@@ -155,7 +158,11 @@ param(
     [float]$ReserveCap = 0,
     [float]$MarginMin = 0,
     [float]$MarginMax = 600,
-    [float]$MarginChance = 0.08
+    [float]$MarginChance = 0.08,
+    # What a cubic metre of tissue is worth and costs, J/m3, on every cell type
+    # (CellType.TissueEnergyPerCubicMetre, EVOSIM_TISSUE_ENERGY). 500 is every world on file; under
+    # one substance it is what a body holds in matter, and so the count the budget can build.
+    [float]$TissueEnergy = 500
 )
 
 # Outside the hashtable: an `if` is a statement and a hashtable literal wants expressions.
@@ -220,6 +227,7 @@ $s = @{
     EVOSIM_RHO = $Rho; EVOSIM_UPTAKE_K = $UptakeK; EVOSIM_UPTAKE_KS = $UptakeKs
     EVOSIM_HANDLING = $Handling; EVOSIM_RESERVE_CAP = $ReserveCap
     EVOSIM_MARGIN_MIN = $MarginMin; EVOSIM_MARGIN_MAX = $MarginMax; EVOSIM_MARGIN_CHANCE = $MarginChance
+    EVOSIM_TISSUE_ENERGY = $TissueEnergy
 }
 
 if ($DigestEvery -gt 0) { $s.EVOSIM_DIGEST_EVERY = $DigestEvery }
