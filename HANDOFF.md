@@ -37,8 +37,25 @@ filled all 45 m at 15,000 s. The leaves' median from the positions: seed 1 7 to 
 eaters 6 m below its leaves. My reading, as inference: the light made the dark column,
 and the band is about twice as thick as the lone leaf's ledger said, sinking with time as
 the crowd grows, so L1's 10 m bar is in doubt while L3's direction is already visible.
-Where the band stops is the 15,000 s reading; the ledger prices one leaf alone and the
-crowd sits where the marginal leaf breaks even, which is deeper than where one leaf would.
+Where the band stops is the 15,000 s reading. **How the deep leaves live (the owner's
+question, 2026-09-18 midday; `scratch/r40/birth-depth.py`, to move to the round's read):**
+the ledger at reach 6 says a leaf at 14 m still earns +0.006 W at birth and lives 6,000 s
+but never breeds (R0 0 from 12 m down), so surviving deep is cheap and breeding is what
+needs light. Seed 1 to 10,100 s: a child is set down at its parent's own depth (median
+difference 0.0 m; the dispersal disc is horizontal), and the newborns' median moved from
+2.5 m before 4,000 s to 19.6 m at 6,000 to 8,000 s, so most breeding now happens at 15 to
+25 m, deeper than the crowd. By birth depth: born in the top 4 m, 100% alive at 1,500 s,
+62% breed, 3.5 children each; born at 16 to 22 m, 46% alive at 1,500 s, 9% breed, 0.22
+children; born below 22 m, 88% dead within 500 s. The deep births are a sink fed from
+above. The matter reads 0.024 units/m³ at the top against 0.028 deep, 190,000 to 270,000
+conceptions blocked on matter per window against 1,700 births, and a 5 m cell then holds
+3.0 units at the top and 3.5 deep against a child's 3.1. My reading, as inference: the
+crowd is matter-limited and not light-limited; parents conceive where a cell can afford a
+child, which is the deep water by a hair because the crowd strips the top faster than
+the 2 m²/s mixing refills it; the ledger cannot see this (it has no matter draw). The
+test is births by matter cell against the cell's stock, which needs the cell's matter on
+the birth row or a per-layer count of matter-blocked conceptions: an instrument for the
+read, not for this round.
 
 **Round 39's entry waits for its frames.** `logbook/0105-the-shelf-was-never-in-the-light.md`
 is drafted and uncommitted with a `PICTURES-15000-30000` marker; the numeric read is
