@@ -6,32 +6,46 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
-**The economy is being rebuilt as one substance (D098, 2026-09-18 evening), and every run is
-stopped.** The owner ruled `fable-propose-economy.md` ("Let's do it. And I'd stop all the
-current runs. I'd do the change and then start new runs"). Round 40's three arms were
-stopped at 16,400, 12,200 and 14,300 s (manifests say `stopped`, `manual-other`, with the
-note); seeds 4 and 5 never launched; the queue is stopped. Round 39's render chain
-(`scratch/r39-renders-2.ps1`, worker 7) runs on for 0105's pictures and is the only Unity
-process; the Core suites run beside it only filtered, `-All` when it is between renders.
-The owner settled the last open question at 17:20 (one matter in two states, charged and
-spent; D098's amendment) and said "go implement. When you're ready spin up the arms." The
-build is on branch `economy` (worktree `scratch/wt-economy`) so that round 39's render
-chain, which compiles main's Core at every Editor start, is not broken under it; the
-spec is `logbook/specs/economy-spec.md` and the map `logbook/specs/economy-inventory.md`.
-The build's path: the spec (the rules with the numbers, the ledger's
-arithmetic for ρ, k, K and the remineralisation rate), then Core (`Metabolism`, `World`'s
-income, upkeep, conception, growth and death legs, the fields' units, both identities, the
-ledger, the report's columns, the genome format to 6 for `ReserveMargin`), the tests, a
-5,000 s screen at dt 0.02 on round 40's world, then the base round's pre-registration and
-five seeds. Round 40's read (0106, at the last samples) and 0105's entry are written in
-the gaps. **Two findings from sizing the loop (2026-09-18 evening), for the spec:** the
-reserve is unbounded and a senescence death discards it (CLAUDE.md's gotcha; the corpse
-gets the tissue only, and round 40's living held about 190 J of reserve a body against
-0.37 J of tissue), so the new economy bounds the reserve as organic matter with the excess
-exuded, and sends the reserve to the corpse. And the detritus field holds 265 to 314 kJ
-against under 1 kJ of tissue in the living, three hundred times the biomass, because
-nothing returns it to the leaves; under D098 it remineralises, so the budget and ρ are set
-from the crowd the machine can afford (about 2,500 bodies), not from today's numbers.
+**The one-substance economy is built, merged and smoked, and the base round waits on the
+budget screens (2026-09-18, night).** D098 as amended (one matter in two states, charged and
+spent) is on main from `a5cc504` (branches `economy` and `margin`, worktrees
+`scratch/wt-economy` and `scratch/wt-margin`, both still present): the spec is
+`logbook/specs/economy-spec.md` (§11 has the build notes), the map
+`logbook/specs/economy-inventory.md`, DESIGN §5A.2d and §0x carry the rules, CLAUDE.md the
+gotcha. The default suite is green at 710; the full suite's one failure was
+`GridFieldExperiments.WhereTheFoodSitsWhenTheMixingComesDown`, whose conservation check now
+spans both states (rerun pending). Genome format is 6 and every stored genome, snapshot and
+`config.json` on disk is refused; `inocula/growth-ledger-genome.json` and the three tracked
+configs are regenerated from the base round's smoke when it is recorded. `simHash e4e34095…`
+on the smoke, `coreHash 729a0de1…`; workers 2, 3 and 4 refreshed from main after `823f450`
+(the tissue knob); worker 7 still carries round 39's tree for its render.
+
+What the smokes said (all at dt 0.02, round 40's world, `rounds/launch-r41.ps1`): both books
+close to 0 on every row, `upt lim` climbs as the surface strips, and **the count runs away**:
+`r41smoke-s1` ended on the 30 kJ tissue ceiling at 672 s (the ceiling is now off in the
+launcher: a child costs its parent's reserve and no field, so founder-sized bodies build
+tissue from light alone) and `r41smoke2-s1` reached 6,300 bodies at 1,100 s with the surface
+stripped twenty-fold and the crowd in the film, stopped as futile. The reason, and the owner's
+ruling on it (in conversation, about 21:30): a body holds tissue plus reserve, a leaf's tissue
+is 0.38 J against a 25 J child, so 11,000 units build tens of thousands of bodies; the fixed
+charge was what capped the count and it is gone by design. A per-body basal cost would not
+bound the count (it sets where the water settles); the tissue value at 100,000 and 200,000
+J/m³ froze the founding (`r41t1e5-s1`, `r41t2e5-s1`, zero births by 2,500 s, stopped). **The
+budget sets the crowd**: the owner agreed ("I agree with your recommendations. Let's
+proceed"). Screens running: `r41b400-s1` starved at the floor (17 births by 900 s, stopped),
+`r41b1000-s1` founded (165 alive at 800 s, the floor closed at 400 s, `mat top` 0.006 from
+0.010), `r41b2000-s1` launching on worker 3. The base round takes the budget whose crowd
+settles between 1,500 and 3,000 with breeding alive, and its pre-registration (0107) takes
+its bars from that screen at 5,000 s; five seeds, three arms (workers 2, 3, 4), dt 0.01,
+30,000 s, wall 1,800 minutes. The owner's rule from tonight: a run that has shown the
+adjustment it needs is stopped, not completed.
+
+Also tonight: round 40's read is in 0106 (V5, three seeds: L3 held where readable, L1 failed
+on the deep quartile, the deep tail is newborns dropped where nothing pays; `logbook/specs/
+r40-read/`); round 39's render of seed 1 still replays on worker 7 toward its 30,000 s frame
+for 0105 (`scratch/r39-renders-2.ps1`; stop the chain after that frame lands, since its later
+renders would compile the new Core and refuse the recordings); `EVOSIM_TISSUE_ENERGY` is a
+launch knob (header `tissue N J/m3`).
 
 **The campaign's direction changed at midday on 2026-09-18 (D097).** The owner ruled "Let's
 follow your recommendations" on the agent's diagnosis that the matter cell is a one-child
@@ -44,7 +58,7 @@ smoke can run on a free worker before that. The owner's question on how a body i
 without senses is answered in D097: by contact in a crowd whose nearest neighbour is under
 half a metre, and by the chemical sense that already reads the leaves' exudate.
 
-**Round 40, the light's reach, is running (logbook/0106, D096; launched 2026-09-18 08:02).**
+**Round 40, the light's reach, ran from 2026-09-18 08:02 and was stopped at 16:57 (logbook/0106 has its read at the last samples).** What follows is the launch-time paragraph, kept for the pointers.
 Round 39's world with `EVOSIM_LIGHT_REACH` 6 m and nothing else changed; five seeds at
 three arms on workers 2, 3 and 4 (`scratch/r40/queue.ps1`, log `scratch/logs/r40-queue.out`;
 seeds 4 and 5 launch as arms end, since the worker list is the three-arm rule). Seeds 1

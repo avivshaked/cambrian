@@ -381,7 +381,11 @@ namespace Evosim.Core.Tests
                 // Against what was emitted, not against the same sum read twice: the bands are
                 // built from the cells and so is Recount, so comparing them asserts arithmetic
                 // rather than conservation.
-                Assert.Equal((double)steps * perStep, field.Recount(), 3);
+                // D098: with remineralisation on, the charged stock decays into the spent field
+                // (leg 8), so what the exudate put in is the charged joules still standing plus
+                // the spent units times ρ. Until 2026-09-18 the leak stayed inside one field and
+                // the total alone was the check.
+                Assert.Equal((double)steps * perStep, field.Recount() + spent.Recount() * 100d, 3);
                 Assert.Equal(field.Recount(), total, 3);
             }
         }
