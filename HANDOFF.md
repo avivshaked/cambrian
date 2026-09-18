@@ -55,13 +55,16 @@ round 41's seed 1 and the 3,000-unit screen's snapshot, and the two historical c
 under `inocula/` are kept as history and marked refused. Worker 7 still carries round 39's
 tree for its render.
 
-**The snapshot render is being built (owner's ruling, 2026-09-18 about 22:00; spec
-`logbook/specs/snapshot-render-spec.md`).** A still frame joined from a run's snapshot
+**The snapshot render is built and merged (owner's ruling, 2026-09-18 about 22:00; spec
+`logbook/specs/snapshot-render-spec.md`; merged `6a4f8ca` at 23:05, worktree
+`scratch/wt-snapshot` and branch `snapshot-render` still present).** A still frame joined from a run's snapshot
 and its positions row at a snapshot second, no re-simulation: `theatre-snap.ps1 -From
 snapshot`, theatre side only, no hash moved, the frame labelled reconstructed with its
-two caveats (adult size, default orientation). An Opus subagent builds it on branch
-`snapshot-render` in `scratch/wt-snapshot` against worker 6; the caller reviews, commits
-and merges. Both theatre renders were stopped for it at 22:03 on the owner's word: round
+two caveats (adult size, default orientation). An Opus subagent built it on branch
+`snapshot-render` against worker 6 in fifty minutes; the acceptance frames of
+`r41o100b3k-s1` at 2,000 s (655 joined) are in `scratch/snaps/r41o100b3k-s1/`, and the
+replay control of the same second is unchanged. Worker 6 carries the merged theatre and
+the current `Assets/Evosim`. Both theatre renders were stopped for it at 22:03 on the owner's word: round
 39 seed 1's full-length replay on worker 7 (`scratch/r39-renders-2.ps1`, since 15:11,
 about three hours short of its 30,000 s frame) and round 41 seed 1's 3,000 s look on
 worker 5 (its first attempt timed out on the 30-minute default wall). Both frames, and
