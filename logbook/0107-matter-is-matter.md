@@ -150,6 +150,38 @@ says a larger crowd is one dial away, and the round runs at 3,000 so that the co
 has room under the wall. The shelf waits for a world whose count is settled. Whether the
 eaters hold is a ten-seed question (D095); five seeds count it here.
 
+## Round 41 stopped, and round 41b: one dial moved
+
+*2026-09-18, 23:35, before the relaunch.* The three seeds were stopped as futile at 7,000,
+9,600 and 7,300 s (`manual-futility`), under V5, because they had shown the adjustment the
+world needs. What they showed, at 1,000 s intervals (`analyse-arm.ps1 -Timeline`): both
+books closed on every row; the count 650 at the founding peak, 520 after the founders aged
+out at 3,000 s, then 530 to 600, so E1 held at 5,000 s in all three; the leaves
+uptake-bound on 60 to 90% of their steps and the surface at 0.003 to 0.006 units/m³, so
+E3's treadmill is real; the margin falling (seed 2 from 295 to 66 s) and adult scale
+drifting down, E2's mechanism starting; the eaters barely founded (9, 6 and 0 inherited,
+against round 40's hundreds by this second), which I read as a crowd a fifth the size
+supplying a fifth the mutants, a reading and not a result. And the marine snow at 0.47 to
+0.53 of the budget in every seed, plateaued, with the living bodies holding 0.35 to 0.40
+and the dissolved water 0.13. That is E4 failing high, and the entry's reading for it is
+the retry: the remineralisation is too slow for a world without eaters.
+
+Why the number was wrong is in the spec's table. The rate was sized so that the snow
+nobody eats would stand at a fifth of the budget, against an inflow of about 100 W and a
+budget of 11,000 units. The inflow measured about 75 W, so the stock the spec expected is
+the stock the world holds, 140 to 160 kJ; the budget is 3,000 now, and the same stock is
+half of it. Four times the rate puts it back near a fifth.
+
+Round 41b is round 41 with `EVOSIM_REMIN` 0.002 per second (a half-life of 350 s, from
+1,400) and nothing else moved: `rounds/launch-r41b.ps1`, the header token `remin 0.002
+/s`, the config's `remineralisationPerSecond 0.002`, the same build (`simHash 50cf58e4…`,
+`coreHash 729a0de1…`). The predictions E1 to E8 stand as written, E4's band included,
+which is the test of the number. What I expect from it, as inference and not as a bar:
+about 1,000 units returned to the water, the count rising toward 900 without touching the
+budget or the overhead, and the eaters' founding read on a larder still a hundred times
+round 40's. The three stopped seeds are `runs/r41-s1..3`, kept and not read further; their
+frames at 3,000 and 6,000 s are the first pictures the snapshot render took.
+
 ## Launch
 
 *Appended as the seeds launch; each with its header verified and its manifest's hashes.*
@@ -175,3 +207,5 @@ relaunched. The second start ran inside my own background task and I stopped tha
 detach the queue, which killed the two seeds it had launched. Both sets are renamed
 `runs/r41mis-s*` and `runs/r41mis2-s*`, `stopped`, `manual-other`, and nothing is read from
 them. The prediction table above was committed before any of the three starts.
+
+*23:4x.* Round 41b launched: appended below as the seeds start.
