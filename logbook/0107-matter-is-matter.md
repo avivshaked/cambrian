@@ -152,8 +152,8 @@ eaters hold is a ten-seed question (D095); five seeds count it here.
 
 ## Round 41 stopped, and round 41b: one dial moved
 
-*2026-09-18, 23:35, before the relaunch.* The three seeds were stopped as futile at 7,000,
-9,600 and 7,300 s (`manual-futility`), under V5, because they had shown the adjustment the
+*2026-09-18, 23:00, before the relaunch.* The three seeds were stopped as futile at 23:03,
+at 7,000, 9,600 and 7,300 s (`manual-futility`), under V5, because they had shown the adjustment the
 world needs. What they showed, at 1,000 s intervals (`analyse-arm.ps1 -Timeline`): both
 books closed on every row; the count 650 at the founding peak, 520 after the founders aged
 out at 3,000 s, then 530 to 600, so E1 held at 5,000 s in all three; the leaves
@@ -208,4 +208,11 @@ detach the queue, which killed the two seeds it had launched. Both sets are rena
 `runs/r41mis-s*` and `runs/r41mis2-s*`, `stopped`, `manual-other`, and nothing is read from
 them. The prediction table above was committed before any of the three starts.
 
-*23:4x.* Round 41b launched: appended below as the seeds start.
+*23:04 to 23:06.* Round 41b's seeds 1, 2 and 3 launched on workers 2, 3 and 4, each
+refreshed first, the hash check against `simHash 50cf58e4…` passing and `prereg.json` at
+this entry's round 41b commit (`af39b13`) beside the arm and the run. Every manifest reads
+`coreHash 729a0de1…`, `configHash faeca97c`, `physicsJobWorkers 0`; every config
+`remineralisationPerSecond 0.002`, `matterBudgetUnits 3000`, `perOffspringOverheadJoules
+100`, `joulesPerUnit 100`; every header `dt=0.01`, `remin 0.002 /s`, `tissue 500 J/m3`,
+`overhead 100 J`, `matterBudget 3000`. The queue is `scratch/r41/queue-b.ps1`, detached,
+and seeds 4 and 5 launch as arms end.

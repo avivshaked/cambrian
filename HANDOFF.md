@@ -6,10 +6,12 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
-**Round 41 was stopped as futile at 23:30 and round 41b, the same world with the
-remineralisation at 0.002 /s, launched at 23:45 (logbook/0107's second launch section;
+**Round 41 was stopped as futile at 23:03 and round 41b, the same world with the
+remineralisation at 0.002 /s, launched at 23:04 (logbook/0107's second launch section;
 `rounds/launch-r41b.ps1`; queue `scratch/r41/queue-b.ps1`, detached, log
-`scratch/logs/r41b-queue.out`).** What round 41 showed at 7,000 to 9,600 s: both books
+`scratch/logs/r41b-queue.out`). Seeds 1 to 3 verified: `configHash faeca97c`, the same
+`simHash` and `coreHash`, `remineralisationPerSecond 0.002` in every config and `remin
+0.002 /s` in every header, `prereg.json` at `af39b13`.** What round 41 showed at 7,000 to 9,600 s: both books
 closed, the count flat at 530 to 600 (E1 held at 5,000 s in all three), the leaves
 uptake-bound on 60 to 90% of their steps, the margin falling, and the marine snow nobody
 ate plateaued at 0.47 to 0.53 of the 3,000-unit budget in every seed, E4 failing high.
@@ -19,7 +21,7 @@ crowd a fifth of round 40's supplying a fifth the mutants, a reading the relaunc
 under E5. E1 to E8 stand unchanged, E4's band included. `runs/r41-s1..3` are kept and not
 read further. The paragraph below is round 41's launch record, kept for the pointers.
 
-**Round 41, the one-substance economy's base round, ran from 2026-09-18 20:14 to 23:30
+**Round 41, the one-substance economy's base round, ran from 2026-09-18 20:14 to 23:03
 (logbook/0107, D098 as amended).** It is round 40's world at 3,000 units of matter,
 from 11,000, and a 100 J per-child overhead, from 25. Five seeds run at three arms on
 workers 2, 3 and 4, dt 0.01 for 30,000 s, wall 1,800 minutes. The queue is
