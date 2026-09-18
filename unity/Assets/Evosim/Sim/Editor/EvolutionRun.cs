@@ -420,6 +420,12 @@ namespace Evosim.Sim.EditorTools
             // Under one substance a body's tissue is its matter, so a founder drawn thirty times
             // the volume an evolved leaf settles at (round 40's adult scale 0.30) is a founding
             // that cannot afford a child at any tissue value that bounds the count.
+            // What a child costs beyond its body, J, burnt (RunConfig.PerOffspringOverheadJoules;
+            // 25 in every world on file, a guess never measured, DESIGN 5A.6). Under one substance
+            // it is the floor under what a breeder holds in reserve, and so the floor under what a
+            // body holds in matter: the count the budget can build is bounded by it however small
+            // bodies get, which the tissue value cannot do without freezing the founding.
+            float overhead = Env("EVOSIM_OVERHEAD", new RunConfig().PerOffspringOverheadJoules);
             float founderExtentMin = Env("EVOSIM_FOUNDER_EXTENT_MIN", 0f);
             float founderExtentMax = Env("EVOSIM_FOUNDER_EXTENT_MAX", 0f);
 
@@ -690,6 +696,7 @@ namespace Evosim.Sim.EditorTools
                 }
             }
 
+            config.PerOffspringOverheadJoules = overhead;
             if (founderExtentMin > 0f) config.Genome.MinHalfExtent = founderExtentMin;
             if (founderExtentMax > 0f) config.Genome.MaxHalfExtent = founderExtentMax;
 
@@ -1039,6 +1046,7 @@ namespace Evosim.Sim.EditorTools
                 // Hash(), as it does for every knob this project has added.
                 " · matter from " + initialMatter + "/m3" +
                 " · tissue " + config.CellTypes.Resolve(CellTypeIds.Photosynthetic).TissueEnergyPerCubicMetre.ToString("0.###", CultureInfo.InvariantCulture) + " J/m3" +
+                " · overhead " + config.PerOffspringOverheadJoules.ToString("0.###", CultureInfo.InvariantCulture) + " J" +
                 " · founders " + config.Genome.MinHalfExtent.ToString("0.###", CultureInfo.InvariantCulture) + "-" + config.Genome.MaxHalfExtent.ToString("0.###", CultureInfo.InvariantCulture) + " m" +
                 " · float " + floatChance + " at " + liftCost + " W/lift" +
                 // D075 item 1, rendered unconditionally for D065's reason: a reader of a header
