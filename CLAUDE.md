@@ -825,7 +825,11 @@ actually verifying it.
 - **A theatre snapshot of a live run can time out before its later frames.** The early pictures
   of `r37-s1` at 5,000 and 15,000 s on a machine running five arms reached the first in about
   forty minutes and timed out at ninety before the second (2026-09-12); a live run replays no
-  faster than the farm did. Take early frames one at a time, or wait for the queue.
+  faster than the farm did. Take early frames one at a time, or wait for the queue. And
+  the script's default wall of 30 minutes is short for even a first frame at 3,000 s
+  beside three arms and a render: round 41's early look timed out on it with nothing
+  written (2026-09-18). Pass `-WallMinutes` from the farm's own pace, about a minute per
+  20 simulated seconds at 500 bodies on a loaded machine.
 - **A pass that touches `Assets/Evosim` orphans the smoke recorded before it.** The tank's
   second pass moved `simHash` after `r37tank` was recorded, and the theatre refused its
   pictures on the mismatch (2026-09-12). Record the smoke you will photograph on the tree
