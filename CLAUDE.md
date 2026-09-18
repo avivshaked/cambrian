@@ -929,7 +929,19 @@ actually verifying it.
   body) and its last column is `units/child`; a leaf in stripped water is uptake-limited
   in the ledger as in the world. Sixth: the fields' `TotalJoules` is units on the spent
   field and joules on the charged one, by convention only, as before the build; read the
-  unit off the field, never off the method's name.
+  unit off the field, never off the method's name. Seventh, and the one that cost the
+  night: **a closed one-substance world's count is the capacity over the holding.** D065's
+  fixed charge was the head-count cap and it is gone by design, so the first smoke at
+  11,000 units built 6,300 bodies in 1,100 s. A per-body standing cost does not bound the
+  count (it sets where the water settles), a tissue value dear enough to bound it freezes
+  the founding (100,000 J/m³ and above: no births by 2,500 s), and what does bound it is
+  the budget over what a breeder must hold, whose floor is `PerOffspringOverheadJoules`
+  (`EVOSIM_OVERHEAD`, 100 J from round 41). Screen a budget or an overhead on a dt 0.02
+  seed for its plateau before pre-registering on it (logbook/0107). And **a queue launches
+  the launcher's defaults**: `launch-queue.ps1` passes a seed, a worker and the hash and
+  nothing else, so a dial screened on the command line has to be written into the
+  launcher before the queue starts; round 41's first three seeds ran a minute on 11,000
+  units and 25 J because it was not (`runs/r41mis-s*`, stopped and renamed).
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

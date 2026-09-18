@@ -37,7 +37,10 @@ param(
     # EVOSIM_MATTER_BUDGET). 0 is the density rule and every run before this one. 6,000 is what a
     # 100 m2 by 60 m world holds at 1 unit per cubic metre, which is what rounds 33 through 37
     # ran on, so this round changes the water a unit sits in and not how many there are.
-    [float]$MatterBudget = 11000,
+    # Round 41 (logbook/0107): 3,000. Under one substance the count is the capacity over what a
+    # breeder holds, and 11,000 units built 6,300 bodies in 1,100 s; the screens at a 100 J
+    # overhead plateaued at 400 for 2,000 units, 650 for 3,000, on the same line for 4,000.
+    [float]$MatterBudget = 3000,
     # D090's fluid acceleration force, 1 = physical, 0 = every world before round 37b (FluidConfig.
     # FluidAccelerationCoefficient, EVOSIM_FLUID_ACCEL). Header token 'fluidAccel'.
     [float]$FluidAccel = 1,
@@ -170,7 +173,8 @@ param(
     # What a child costs beyond its body, J, burnt (RunConfig.PerOffspringOverheadJoules,
     # EVOSIM_OVERHEAD). 25 is every world on file. Under one substance it is the floor under what a
     # breeder holds, so it bounds the count the budget can build however small bodies get.
-    [float]$Overhead = 25
+    # Round 41 (logbook/0107): 100. At 25 the count drifted several-fold as bodies shrank.
+    [float]$Overhead = 100
 )
 
 # Outside the hashtable: an `if` is a statement and a hashtable literal wants expressions.

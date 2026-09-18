@@ -131,8 +131,15 @@ From round 40 seed 1 at 16,400 s (2,490 bodies) and the leaf of `scratch/r40/lea
 | `RemineralisationPerSecond` (r) | 5e-4 /s | A half-life of 1,400 s for marine snow nobody eats. The larder's inflow is about 100 W (reserves burnt as senescence upkeep are heat, so the inflow is tissue, exudation and faeces), which at this rate stands at about 200 kJ, 2,000 units, a fifth of the budget. |
 | `HandlingCostPerJouleEaten` | 0.1 | Eating is not free and is far cheaper than fixing (ρ per unit): a filter feeder keeps 0.9 of what it clears. |
 | `ReserveCapSeconds` | 0 (off) | The base round measures the one-substance economy alone. |
-| `MatterBudgetUnits` | 11,000 | Unchanged from round 40, so the ceiling is read against a known crowd. |
-| `PerOffspringOverheadJoules` | 25 | Unchanged. It is 66 times the leaf's tissue and the largest burn in the world (12,759 births × 25 J = 319 kJ against 288 kJ of living upkeep in seed 1); read it, do not move it in this build. |
+| `MatterBudgetUnits` | 3,000 (was 11,000 in this table until the screens) | The count's dial. In a closed one-substance world the count is the capacity over what a breeder holds, and at 11,000 units the smoke built 6,300 bodies in 1,100 s. At an overhead of 100 J the screens plateaued at 400 bodies for 2,000 units, 650 for 3,000 and on the same line for 4,000 (`r41o100b2k-s1`, `r41o100b3k-s1`, `r41o100b4k-s1`, dt 0.02, logbook/0107). |
+| `PerOffspringOverheadJoules` | 100 (was 25 until the screens) | The floor under what a breeder holds, and so the count's second dial: however small bodies get, a parent must hold the overhead before it can breed. At 25 J the count was 0.4 bodies a unit at founder sizes and free to drift several-fold as bodies shrank; at 100 J it is about 0.22 a unit at founding with a ceiling near 1.2 a unit at the smallest bodies. Round 40's 12,759 births at 25 J were 319 kJ of burn against 288 kJ of living upkeep, the largest burn in the world; at 100 J it is larger still, and round 41 reads it. |
+
+Two dials were screened and rejected for the count on the night of the build (logbook/0107).
+A per-body standing cost does not bound it, because it sets where the water settles and not
+how many bodies share it. The tissue value (`EVOSIM_TISSUE_ENERGY`) does bound it, but at
+100,000 and 200,000 J/m³ the founders spent their whole stake growing and none bred by
+2,500 s (`r41t1e5-s1`, `r41t2e5-s1`), and at 50,000 J/m³ with founders a third the usual
+size the same (`r41t5e4b2k-s1`, `r41t5e4b4k-s1`); it stays at 500 J/m³.
 
 The 5 m spent cell (125 m³) holds 14 units at the seeded density, 1,400 J; a surface leaf
 draws 1.0e-3 units/s and returns 2.3e-5 units/s as upkeep. A plant in a stripped cell

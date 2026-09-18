@@ -325,7 +325,10 @@ was arithmetic repeated in four places), `upt lim`, `burnt`, `remin`, `margin s`
 genome's `ReserveMargin` (format 6: every stored genome and snapshot is refused). Every
 `config.json` before this build is refused. The spec is `logbook/specs/economy-spec.md`
 and the map `logbook/specs/economy-inventory.md`; built on branches `economy` and
-`margin`; smoked on round 40's world the same night.
+`margin`; smoked on round 40's world the same night. The smoke showed the count unbounded
+(6,300 bodies at 1,100 s from 11,000 units), so the base round runs at 3,000 units and a
+100 J overhead, the two dials that bound it (§5A.2d, logbook/0107); `EVOSIM_TISSUE_ENERGY`,
+`EVOSIM_FOUNDER_EXTENT_MIN/MAX` and `EVOSIM_OVERHEAD` are launch knobs from that night.
 
 ## 0w. Changelog — the aquarium, the streams, and water that stays uniform (2026-09-11 and 12, D089, D090, the Astra review)
 
@@ -1589,7 +1592,13 @@ deep leaves are light-limited; the table's `upt lim` reads the share. A plant in
 cell lives on its own returns, refixing what it just burnt and losing nothing but the light
 it cannot use, which is regenerated production and a feature. Matter caps biomass and light
 caps its rate. A body is the larder: its reserve, not only its tissue, is charged matter, and
-the mouth (D097) makes it edible while it lives. The numbers, ρ 100 J, k 0.3 units/m²/s, K
+the mouth (D097) makes it edible while it lives. **The count is the capacity over the
+holding.** With the fixed charge gone, nothing but what a breeder must hold bounds how many
+bodies a stock builds: a leaf's tissue is 0.38 J against a 25 J child, and the first smoke
+at 11,000 units built 6,300 bodies in 1,100 s (logbook/0107). A per-body standing cost does
+not bound it, and a tissue value dear enough to bound it froze the founding. The two dials
+are the budget and the per-offspring overhead, the floor under a breeder's holding; round 41
+runs at 3,000 units and 100 J, where the screens plateaued at 650 bodies at founder sizes. The numbers, ρ 100 J, k 0.3 units/m²/s, K
 0.05 units/m³, r 5e-4 /s, handling 0.1, are set in `logbook/specs/economy-spec.md` from
 round 40's crowd and the leaf's ledger, and are unmeasured beyond the smoke until the base
 round reads them (§5A.10).
@@ -2127,7 +2136,7 @@ without reaching `RunConfig.Hash()` is two different experiments filed under one
 | Neural discount | `NeuralCell.NeuronsSupportedPerCubicMetre`, `.DiscountedCostFraction` | What a brain buys over a nerve net |
 | **Moving between accounts** | | |
 | Tissue energy, per type | `CellType.TissueEnergyPerCubicMetre` | What a body costs to build and is worth dead — one number, both (§5A.2c) |
-| Per-offspring overhead | `RunConfig.PerOffspringOverheadJoules` | Burned, not transferred — what makes brood size a strategy |
+| Per-offspring overhead | `RunConfig.PerOffspringOverheadJoules` | Burned, not transferred — what makes brood size a strategy; under one substance (D098) also the floor under a breeder's holding, and so with the budget the dial on the count: 100 J from round 41, 25 J in every world before (logbook/0107) |
 | Detritus sink rate | `RunConfig.NutrientSinkMetresPerSecond` | Whether the deep is a niche or a graveyard |
 | Lift upkeep | `BuoyancyCell.WattsPerLiftUnit` | What holding gas costs, per sink-multiple per m³. D050 changed its units and not its value, so it now prices neutral buoyancy at 0.05 W/m³ — about 2% of the cell's own upkeep |
 | Founder lift range | `RandomGenomeOptions.Min/MaxBuoyancyLift` | Which bladders a creature can be born with. Must straddle 1, which is neutral (D050) |
