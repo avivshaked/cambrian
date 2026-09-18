@@ -120,3 +120,32 @@ caveats; `theatre-snap.ps1`'s help block describes `-From`; DESIGN §6.1's theat
 notes the reader. Round 41's frames from 6,000 s on are taken this way, and the entry's
 pictures say `reconstructed` in their captions. Late frames by re-simulation stop being
 the default; the replay is for watching motion and for a picture that has to be faithful.
+
+## 11. Runs recorded before a tunable (owner's ruling, 2026-09-18, 23:20)
+
+The first use refused round 39 seed 1 at 30,000 s: the reader builds the furniture with
+`RunConfigJson`, which refuses a config missing a tunable (`maxReserveMargin`), and its
+genomes are format 5, which `GenomeJson` refuses. The owner ruled a picture may read
+tolerantly. The rule that loading refuses rather than defaults stands for everything that
+simulates; this mode simulates nothing, and what it draws is fixed by fields that every
+recorded run carries.
+
+So the snapshot mode has its own readers, beside the strict ones and never replacing them.
+The config reader takes only what the furniture and the camera need: the world's shape,
+area, depth, the bed's three dials (absent means the flat bed, exactly as the config
+written before them meant it), the patch count, and the cell types' names for the guild
+colours; it ignores every other group and never touches `RunConfigJson`. The genome
+reader takes the id, the root, the adult scale and the nodes' body fields (cell, shape,
+half-extents, joint, edges with their anchors and scales, reflection, recursive limit)
+from format 4, 5 or 6, defaulting nothing that decides the phenotype: a node missing a
+body field is refused with its row named. Reproduction, margin, brains, sensors and every
+field the developer does not read are ignored. A genome whose format is below 4 has no
+id and cannot be joined; refuse it, naming the format.
+
+The label gains `OLD-RUN READ` on its first line when either tolerant path was taken
+(`RECONSTRUCTED FROM SNAPSHOT · OLD-RUN READ`), the log says which fields were missing
+from the config and which genome format was read, and the strict readers are tried first
+so that a run this build recorded is read exactly as before. Acceptance: round 39 seed 1
+at 30,000 s (`runs/r39-s1`, format-5 genomes, a config without the economy group) draws
+side, iso and top with the label, and the join line reports the counts; round 41's frames
+of §9 are unchanged to the byte in their label and count.
