@@ -67,9 +67,24 @@ replay control of the same second is unchanged. Worker 6 carries the merged thea
 the current `Assets/Evosim`. Both theatre renders were stopped for it at 22:03 on the owner's word: round
 39 seed 1's full-length replay on worker 7 (`scratch/r39-renders-2.ps1`, since 15:11,
 about three hours short of its 30,000 s frame) and round 41 seed 1's 3,000 s look on
-worker 5 (its first attempt timed out on the 30-minute default wall). Both frames, and
-round 41's from 6,000 s on, are taken with the new mode once it lands; 0105's entry
-waits on the round 39 frame.
+worker 5 (its first attempt timed out on the 30-minute default wall). **The first pictures with it (22:49 to 22:50, worker 6, a minute each):** round 41 seed 1
+at 3,000 s (539 joined of 539) and 6,000 s (590 of 590), `scratch/snaps/r41-s1/
+r41-s1-t3000-recon-side.png`, `-t6000-recon-side.png`, `-t6000-recon-top.png`. What they
+show: at 3,000 s the whole crowd in the top ten metres over the shallow half, leaves and a
+scatter of jointed bodies, one body below 15 m; at 6,000 s the same band, thinner, with
+more multi-part jointed bodies in it, a dozen bodies strung down the deep half to the
+floor, and from above the crowd heaviest on the rim's south-east arc and thin at the
+centre. My reading, as inference: the count is flat near 550 to 600 because the water is
+stripped (`upt lim` 80 to 87%), the eaters have only just founded, and nothing yet reads
+as an adjustment the world needs. **Round 39 seed 1 at 30,000 s was refused**: the reader
+builds the furniture from `config.json` and every config before D098 is refused on its
+missing tunables (`maxReserveMargin`), and round 39's genomes are format 5, refused the
+same way. So a run recorded before a tunable cannot be drawn this way as built. Queued,
+for the owner to weigh against the refuse-rather-than-default rule: a picture-only read
+of the geometry (shape, area, depth, bed) and of a genome's body fields, tolerant of the
+economy and margin fields it does not need, marked on the label. Until then 0105 is
+written on the 5,000 and 15,000 s frames the faithful replay already took, and says the
+30,000 s frame was not taken.
 
 Also tonight: round 40's read is in 0106 (V5, three seeds: L3 held where readable, L1
 failed on the deep quartile, the deep tail is newborns dropped where nothing pays;
