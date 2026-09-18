@@ -173,11 +173,11 @@ minus its parent's is 0.0 m in every window of every seed: the disc disperses si
 
 **What I read in it.** The leaves rose and did not form a band. Against round 39 the one
 comparable seed is 3.5 m shallower at 15,000 s and the two shorter seeds are shallower
-still, but every seed's deep quartile is 16 to 25 m: a shallow mode with a long deep tail,
-not the 0 to 15 m band the ledger priced. The tail is mortality, not habitat. A child is
-set down at its parent's depth, the parents that can still afford a child once the lit
-water fills are the deep ones (HANDOFF's cell-affordability reading), and their children
-are dropped where nothing pays and die inside 500 s. So the leaves' median deepening
+still. But every seed's deep quartile is 16 to 25 m. That is a shallow mode with a long
+deep tail, and the ledger priced a band from 0 to 15 m. The tail is mortality, not habitat. A child is
+set down at its parent's depth. Once the lit water fills, the parents that can still
+afford a child are the deep ones (HANDOFF's cell-affordability reading), and their
+children are dropped where nothing pays and die inside 500 s. So the leaves' median deepening
 through a run is a birth statistic, and I would not read it again without conditioning on
 age. L3 is the one substantive prediction that held where it could be read. With eaters
 founded, the dark column is theirs, 19 to 21 m below the leaves and more numerous than
@@ -189,10 +189,10 @@ tail rather than stacking in the band. And nothing about the matter or the crowd
 bodies are and not how many there are. The constraint was still the matter, which is what
 this stopped round hands to D098.
 
-Two instrument notes. `pace-survey.py` cannot read a stopped arm (it wants the footer
-`stop-arm.ps1` kills before it is written); `pace.tsv` takes the wall from the manifest
-window and from the last row's `wallTotalMs`, which agree within 1%. And the wall split at
-a full crowd reads physics 22 to 25%, world 11 to 14%, harness 62 to 65%, against the
-founding smoke's 4 / 85 / 11: at a crowd it is the harness, not the grid (CLAUDE.md's
+The pace survey cannot read a stopped arm, because it wants the footer that the stop
+script's kill comes before. `pace.tsv` takes the wall from the manifest window and from
+the last row's cumulative total instead, and the two agree within 1%. The wall split at a
+full crowd reads physics 22 to 25%, world 11 to 14%, harness 62 to 65%, where the founding
+smoke read 4, 85 and 11. At a crowd the wall is the harness's per-body work (CLAUDE.md's
 gotcha corrected). The 16:57 note's "about 14 m" was the all-guild median; the leaves' is
 12.4 m, and the verdict is the same.
