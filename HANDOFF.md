@@ -19,7 +19,13 @@ The rate had been sized for a fifth of 11,000 units; four times the rate puts th
 near a fifth of 3,000. The eaters had barely founded (9, 6 and 0 inherited), read as a
 crowd a fifth of round 40's supplying a fifth the mutants, a reading the relaunch tests
 under E5. E1 to E8 stand unchanged, E4's band included. `runs/r41-s1..3` are kept and not
-read further. The paragraph below is round 41's launch record, kept for the pointers.
+read further. **Fail fast (owner, 23:20):** the round is read as it runs and stopped the
+moment it answers. The snow share is read at 5,000 s (E4's band, 0.10 to 0.40; a seed
+above it again means the rate is still wrong). The eaters are read at 10,000 s, not
+15,000: if no seed has `inherit` at 20 by then, the founding lottery is the block, the
+round stops, and the absorptive-first world (`fable-propose-soup.md`, written 23:30 for
+the owner's ruling: eaters as founders on a fading influx of charged matter, the leaf by
+mutation) is the next round. The paragraph below is round 41's launch record, kept for the pointers.
 
 **Round 41, the one-substance economy's base round, ran from 2026-09-18 20:14 to 23:03
 (logbook/0107, D098 as amended).** It is round 40's world at 3,000 units of matter,
