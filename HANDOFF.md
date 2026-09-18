@@ -55,11 +55,22 @@ round 41's seed 1 and the 3,000-unit screen's snapshot, and the two historical c
 under `inocula/` are kept as history and marked refused. Worker 7 still carries round 39's
 tree for its render.
 
+**The snapshot render is being built (owner's ruling, 2026-09-18 about 22:00; spec
+`logbook/specs/snapshot-render-spec.md`).** A still frame joined from a run's snapshot
+and its positions row at a snapshot second, no re-simulation: `theatre-snap.ps1 -From
+snapshot`, theatre side only, no hash moved, the frame labelled reconstructed with its
+two caveats (adult size, default orientation). An Opus subagent builds it on branch
+`snapshot-render` in `scratch/wt-snapshot` against worker 6; the caller reviews, commits
+and merges. Both theatre renders were stopped for it at 22:03 on the owner's word: round
+39 seed 1's full-length replay on worker 7 (`scratch/r39-renders-2.ps1`, since 15:11,
+about three hours short of its 30,000 s frame) and round 41 seed 1's 3,000 s look on
+worker 5 (its first attempt timed out on the 30-minute default wall). Both frames, and
+round 41's from 6,000 s on, are taken with the new mode once it lands; 0105's entry
+waits on the round 39 frame.
+
 Also tonight: round 40's read is in 0106 (V5, three seeds: L3 held where readable, L1
 failed on the deep quartile, the deep tail is newborns dropped where nothing pays;
-`logbook/specs/r40-read/`); round 39's render of seed 1 still replays on worker 7 toward
-its 30,000 s frame for 0105 (`scratch/r39-renders-2.ps1`; stop the chain after that frame
-lands, since its later renders would compile the new Core and refuse the recordings).
+`logbook/specs/r40-read/`).
 
 **The campaign's direction changed at midday on 2026-09-18 (D097).** The owner ruled "Let's
 follow your recommendations" on the agent's diagnosis that the matter cell is a one-child
