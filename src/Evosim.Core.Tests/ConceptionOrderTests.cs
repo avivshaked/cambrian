@@ -165,128 +165,23 @@ namespace Evosim.Core.Tests
         }
 
         // ---------------------------------------------------------------------------------
-        // 3. The contest.
+        // 3. The contest, retired by D098.
         // ---------------------------------------------------------------------------------
-
-        [Theory]
-        [InlineData(ConceptionOrder.Age)]
-        [InlineData(ConceptionOrder.Shuffled)]
-        public void TwoEqualParentsAndOneChildsWorthOfMatter(ConceptionOrder order)
-        {
-            // logbook/0056's diagnosis, reduced to the smallest world it can be read in. Two
-            // identical leaves at one depth, both permanently solvent, and exactly one child's
-            // worth of matter in their layer at the start of every step. Everything else that
-            // could breed is held out of the way (see Exile), so the only question the world is
-            // being asked is which of the two is walked first.
-            var world = new World(Contest(order), seed: 4);
-
-            world.Inoculate(Leaf(), count: 2, heightY: SurfaceY);
-            Assert.Equal(2, world.Living.Count);
-
-            Organism elder = world.Living[0];
-            Organism younger = world.Living[1];
-
-            for (int step = 0; step < Steps; step++)
-            {
-                Exile(world, elder, younger);
-                RestockOneChildsWorth(world);
-                world.Step(StepSeconds);
-            }
-
-            _output.WriteLine(
-                $"{order}: elder #{elder.Id} {elder.Children} children, " +
-                $"younger #{younger.Id} {younger.Children}, " +
-                $"{elder.Energy:0.#} J and {younger.Energy:0.#} J left, " +
-                $"{world.Births} births in all, {world.ConceptionsBlockedByMatter} refused");
-
-            // Both were solvent throughout — otherwise the test measured scarcity of energy
-            // rather than the order of the walk, and a zero would mean nothing.
-            Assert.True(
-                elder.Energy > 0f && younger.Energy > 0f,
-                "a contestant starved; the contest was for energy, not for matter");
-
-            if (order == ConceptionOrder.Age)
-            {
-                // The queue: the elder is walked first every step, takes the layer's only unit of
-                // matter every step, and the younger — equally solvent, equally deserving by every
-                // rule the design wrote down — never breeds at all.
-                Assert.Equal(Steps, elder.Children);
-                Assert.Equal(0, younger.Children);
-            }
-            else
-            {
-                Assert.True(elder.Children >= 30, $"elder bred {elder.Children} times");
-                Assert.True(younger.Children >= 30, $"younger bred {younger.Children} times");
-
-                // And the matter was not conjured: one child per step, however it was split.
-                Assert.Equal(Steps, elder.Children + younger.Children);
-            }
-        }
-
-        [Theory]
-        [InlineData(ConceptionOrder.Age, true)]
-        [InlineData(ConceptionOrder.Age, false)]
-        [InlineData(ConceptionOrder.Reserve, true)]
-        [InlineData(ConceptionOrder.Reserve, false)]
-        public void OneRichParentAndOnePoorOne(ConceptionOrder order, bool elderIsRicher)
-        {
-            // The same one-unit-of-matter world, with the contestants no longer equal: a plate
-            // that catches roughly three and a half times the light of the leaf beside it, and
-            // earns more each step than a child of its own size costs. Which of the two is older
-            // is varied because that is the whole claim — under Reserve the books decide and the
-            // queue does not, so the answer must not move when the two are inoculated the other
-            // way round.
-            var world = new World(Contest(order), seed: 4);
-
-            world.Inoculate(elderIsRicher ? Plate() : Leaf(), count: 1, heightY: SurfaceY);
-            world.Inoculate(elderIsRicher ? Leaf() : Plate(), count: 1, heightY: SurfaceY);
-            Assert.Equal(2, world.Living.Count);
-
-            Organism elder = world.Living[0];
-            Organism younger = world.Living[1];
-            Organism richer = elderIsRicher ? elder : younger;
-            Organism poorer = elderIsRicher ? younger : elder;
-
-            for (int step = 0; step < Steps; step++)
-            {
-                Exile(world, elder, younger);
-                RestockOneChildsWorth(world);
-                world.Step(StepSeconds);
-            }
-
-            _output.WriteLine(
-                $"{order}, {(elderIsRicher ? "elder" : "younger")} richer: " +
-                $"richer #{richer.Id} {richer.Children} children at {richer.Energy:0.#} J, " +
-                $"poorer #{poorer.Id} {poorer.Children} at {poorer.Energy:0.#} J, " +
-                $"{world.Births} births in all, {world.ConceptionsBlockedByMatter} refused");
-
-            Assert.True(
-                elder.Energy > 0f && younger.Energy > 0f,
-                "a contestant starved; the contest was for energy, not for matter");
-
-            // The plate has to actually be the richer one for the rest to mean anything — a body
-            // that earned no more than its rival would make Reserve's win a coin the test could
-            // not read (CLAUDE.md: prove the change reached the thing it configures).
-            Assert.True(
-                richer.Energy > poorer.Energy,
-                $"the plate held {richer.Energy:0.#} J against the leaf's {poorer.Energy:0.#} J");
-
-            if (order == ConceptionOrder.Age)
-            {
-                // Unchanged by any of it: the queue is walked in birth order and cannot see a
-                // reserve, so the elder takes the matter whether it is the rich one or not.
-                Assert.Equal(Steps, elder.Children);
-                Assert.Equal(0, younger.Children);
-            }
-            else
-            {
-                // D073: the layer's one unit goes to the largest surplus above the gate, every
-                // step, and the poorer body — solvent throughout, and older in half of these
-                // cases — never gets a turn while the richer one still wants it.
-                Assert.Equal(Steps, richer.Children);
-                Assert.Equal(0, poorer.Children);
-            }
-        }
+        //
+        // Two theories lived here: TwoEqualParentsAndOneChildsWorthOfMatter and
+        // OneRichParentAndOnePoorOne. Both put two solvent parents at one depth with exactly one
+        // child's worth of matter in their layer at the start of every step, and read which of
+        // them the walk let take it. That contest was for the conception matter price, and D098
+        // deleted the price: a child is charged matter given by its parent and draws on no field
+        // at all, so there is no longer a shared stock that reproduction can exhaust and nothing
+        // for the walk order to award. Rewriting the contest around a different scarcity would be
+        // a different test with the same name, which is worse than not having it.
+        //
+        // What still guards the knob is everything above and below: the default, the two
+        // replay-determinism pairs, the two different-world pairs, and the hash-and-file
+        // round-trip. What is no longer guarded is the behaviour under a contested resource,
+        // and the honest place for that test is wherever D098's successor scarcity is ruled —
+        // the placer's room is the one shared thing a conception still competes for.
 
         // ---------------------------------------------------------------------------------
         // 4. The knob is a tunable like every other.
@@ -336,184 +231,6 @@ namespace Evosim.Core.Tests
         }
 
         // ---------------------------------------------------------------------------------
-        // The contest's world.
-        // ---------------------------------------------------------------------------------
-
-        /// <summary>Where the two contestants live: layer 0, lit, and the only layer with matter.</summary>
-        private const float SurfaceY = -0.5f;
-
-        /// <summary>
-        /// Where everything else is put. Deep enough to be a different layer of both fields, so an
-        /// offspring draws its matter from a layer <see cref="RestockOneChildsWorth"/> keeps empty.
-        /// </summary>
-        private const float ExileY = -40.5f;
-
-        /// <summary>
-        /// Matter one child costs. With <see cref="RunConfig.MatterPerTissueJoule"/> at zero this
-        /// is the whole price, so it does not depend on how big the child turned out.
-        /// </summary>
-        private const float ChildMatter = 1f;
-
-        private const int Steps = 200;
-
-        /// <summary>
-        /// Long enough that a leaf earns more than a child costs within one step, so both parents
-        /// are above the price on every step and matter is the only thing either can run out of.
-        /// </summary>
-        private const float StepSeconds = 20f;
-
-        private static RunConfig Contest(ConceptionOrder order) => new RunConfig
-        {
-            ConceptionOrder = order,
-
-            // No floor, so the only creatures in this world are the ones the test put there —
-            // AbsorptiveLogTests' and ProducerCountTests' reason, and doubly so here, since a
-            // founder trickle would be a third contestant for the layer's one unit of matter.
-            MinimumPopulation = 0,
-            MaximumPopulation = 100_000,
-
-            Light = new LightModel(400f, 12f),
-
-            // Clones, not mutants. A mutation that fails to develop is a stillbirth that has
-            // already paid for its matter (see World.Conceive), which would spend a step's unit
-            // without incrementing anybody's child count and make the arithmetic below a range
-            // rather than an equality.
-            Mutation = Clones(),
-
-            // One flat price per child and a field that neither sinks, stirs nor decays, so the
-            // matter deposited at the start of a step is exactly what the walk finds when it gets
-            // there — Step settles and mixes before it reproduces.
-            MatterPerTissueJoule = 0f,
-            MatterPerCreature = ChildMatter,
-            InitialMatterPerCubicMetre = 0f,
-            MatterSinkMetresPerSecond = 0f,
-            MatterMixingDiffusivity = 0f,
-            MatterRemineralisationPerSecond = 0f,
-
-            // An old parent that earns less is a second explanation for a child count, and this
-            // test is meant to have one.
-            SenescenceDoublingSeconds = 0f,
-
-            PerOffspringOverheadJoules = 0.01f,
-        };
-
-        /// <summary>Every variation operator off, so an offspring is its parent's genome.</summary>
-        private static MutationRates Clones() => new MutationRates
-        {
-            ScalarChance = 0f,
-            AddNodeChance = 0f,
-            AddEdgeChance = 0f,
-            RemoveEdgeChance = 0f,
-            AddNeuronChance = 0f,
-            RemoveNeuronChance = 0f,
-            RewireInputChance = 0f,
-            NeuronOpChance = 0f,
-            JointTypeChance = 0f,
-            FlagChance = 0f,
-            RecursiveLimitChance = 0f,
-            ShapeChance = 0f,
-            CellTypeChance = 0f,
-            BroodSizeChance = 0f,
-            InvestmentChance = 0f,
-            AdultScaleChance = 0f,
-        };
-
-        /// <summary>One photosynthetic box that breeds one cheap child at a time.</summary>
-        private static Genome Leaf()
-        {
-            var g = new Genome();
-            g.Nodes.Add(new MorphNode
-            {
-                CellTypeId = CellTypeIds.Photosynthetic,
-                ShapeId = ShapeIds.Box,
-                Dimensions = new Float3(0.2f, 0.2f, 0.2f),
-                JointType = JointType.Fixed,
-                JointLimits = Array.Empty<Float2>(),
-                RecursiveLimit = 1,
-                Neurons = Array.Empty<NeuronDef>(),
-            });
-            g.RootIndex = 0;
-            g.Reproduction = new ReproductionTraits
-            {
-                BroodSize = 1,
-
-                // A tenth of its own body per child, which is cheap enough that a solvent leaf
-                // breeds on the step it clears the gate. Not a hundredth: a child at 0.8% of an
-                // adult leaf lands within a rounding of MinNewbornPartKilograms, and this test is
-                // about who breeds first rather than about the mass floor.
-                BirthInvestment = 0.1f,
-            };
-            return g;
-        }
-
-        /// <summary>
-        /// The same leaf spread out: a plate of the same green tissue, wider than it is thick.
-        /// </summary>
-        /// <remarks>
-        /// Income is lit area and lit area is a quarter of the surface (§5A.1), so flattening a
-        /// body buys light faster than it buys the volume it is charged for. This one holds 2.25
-        /// times the leaf's volume — and so costs 2.25 times as much to build a child of — while
-        /// catching 3.5 times the light, which is what makes it richer every step rather than
-        /// merely bigger. A creature selection could plausibly find, rather than a contrivance:
-        /// the shape asymmetry <c>AbsorptiveCell</c>'s remarks describe, used deliberately.
-        /// </remarks>
-        private static Genome Plate()
-        {
-            Genome g = Leaf();
-            g.Nodes[0].Dimensions = new Float3(0.6f, 0.05f, 0.6f);
-            return g;
-        }
-
-        /// <summary>
-        /// Puts every creature but the two contestants out of the contest, and holds the
-        /// contestants at the surface.
-        /// </summary>
-        /// <remarks>
-        /// The children have to go somewhere. Left where they were born they would be solvent
-        /// leaves in the contested layer within a step or two, and by the two hundredth step the
-        /// two founders would be sharing the layer's one unit with two hundred of their own
-        /// offspring — a fair contest, and not the one being measured. Moved to a layer that never
-        /// has matter in it they cannot conceive at all, which is exactly what the test needs and
-        /// nothing more: they are not killed, not excluded from the walk, and not treated
-        /// differently by anything in <see cref="World"/>.
-        /// </remarks>
-        private static void Exile(World world, Organism elder, Organism younger)
-        {
-            foreach (Organism creature in world.Living)
-            {
-                world.Observe(
-                    creature,
-                    creature == elder || creature == younger ? SurfaceY : ExileY,
-                    workJoules: 0f);
-            }
-        }
-
-        /// <summary>
-        /// Empties the matter field and puts one child's price back into the contested layer.
-        /// </summary>
-        /// <remarks>
-        /// Every layer is drained, not just the contested one, because matter is conserved: a
-        /// child locks its price away and its death returns it to whatever layer it died in
-        /// (D052). Without the drain the exiles' deaths would slowly refill the deep and the
-        /// world would stop being the one-unit-per-step contest it was set up as.
-        /// </remarks>
-        private static void RestockOneChildsWorth(World world)
-        {
-            NutrientField matter = (NutrientField)world.Matter;
-
-            for (int layer = 0; layer < matter.LayerCount; layer++)
-            {
-                float y = -((layer + 0.5f) * matter.LayerMetres);
-                matter.Take(y, (float)matter.StockInLayer(layer) + 1f);
-            }
-
-            // A hair over the price rather than exactly it, so that a float rounding down cannot
-            // refuse the first parent as well as the second — and far under twice it, so the
-            // second parent is refused however the rounding goes.
-            matter.Deposit(SurfaceY, ChildMatter * 1.001f);
-        }
-
-        // ---------------------------------------------------------------------------------
         // Comparing two worlds.
         // ---------------------------------------------------------------------------------
 
@@ -540,7 +257,7 @@ namespace Evosim.Core.Tests
             FormattableString.Invariant(
                 $"in {world.EnergyIn:0.######} J, out {world.EnergyOut:0.######} J, ") +
             FormattableString.Invariant(
-                $"matter {world.StandingMatter:0.######}");
+                $"matter {world.StandingMatterUnits:0.######}");
 
         private static void AssertSameWorld(World a, World b)
         {
@@ -548,12 +265,11 @@ namespace Evosim.Core.Tests
             Assert.Equal(a.Deaths, b.Deaths);
             Assert.Equal(a.FloorSpawns, b.FloorSpawns);
             Assert.Equal(a.Stillbirths, b.Stillbirths);
-            Assert.Equal(a.ConceptionsBlockedByMatter, b.ConceptionsBlockedByMatter);
 
             Assert.Equal(a.EnergyIn, b.EnergyIn);
             Assert.Equal(a.EnergyOut, b.EnergyOut);
             Assert.Equal(a.StandingJoules, b.StandingJoules);
-            Assert.Equal(a.StandingMatter, b.StandingMatter);
+            Assert.Equal(a.StandingMatterUnits, b.StandingMatterUnits);
 
             // Last and most specific: the same creatures, in the same places in the list. Two
             // walks that breed the same number of times can still breed different bodies, and this

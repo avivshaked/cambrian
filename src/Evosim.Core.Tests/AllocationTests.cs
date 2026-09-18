@@ -41,6 +41,10 @@ namespace Evosim.Core.Tests
             WorldAreaSquareMetres = 1f, WorldDepthMetres = 1f, LightLayerMetres = 1f,
             NutrientSinkMetresPerSecond = 0f, NutrientMixingDiffusivity = 0f,
             Light = new LightModel(1e-6f, 12f),
+
+            // D098's leg 8 off: these tests read the audit's move across one feeding step, and
+            // remineralisation books an outflow of its own on the same step.
+            RemineralisationPerSecond = 0f,
         };
 
         private static CellTypeRegistry Registry(float clearance) => new CellTypeRegistry(
@@ -102,24 +106,28 @@ namespace Evosim.Core.Tests
             Assert.Equal(6.0, draws.Sum(), 5);
             Assert.Equal(6.0, world.DetritusTakenTotal, 5);
             Assert.Equal(0L, world.PoolShortTakes);
-            Assert.Equal(auditBefore, world.AuditResidual, 5);
+
+            // Four places, not five: since D098 the step's burn is clamped to what the body
+            // holds and the remainder is deposited as spent matter, so the same step carries a
+            // few more float roundings than it did. 2e-5 J on a 6 J meal is arithmetic width.
+            Assert.Equal(auditBefore, world.AuditResidual, 4);
         }
 
         [Fact]
-        public void AStillbirthLocksNoMatterInABodyThatDoesNotExist()
+        public void AStillbirthsJoulesReachTheWaterAndBothBooksClose()
         {
             // A root just above the minimum volume, one scalar mutation, and a child that
-            // develops into nothing. D065's fixed term was charged for it before Admit refused
-            // it, and stayed in MatterInBodies forever with no death to return it, invisible to
-            // StandingMatter because that total adds the same counter.
+            // develops into nothing. The parent paid tissue + reserve + overhead before Admit
+            // refused it; under D098 the first two are charged matter and go into the water at
+            // the parent's point, and only the overhead is burnt. Until D098 the whole lot was
+            // booked as heat and D065's fixed matter term stayed locked in a body that never
+            // existed.
             World world = null;
             for (ulong seed = 1; seed <= 200 && world == null; seed++)
             {
                 var config = OneCell();
                 config.FounderEnergyJoules = 1000f;
                 config.InitialMatterPerCubicMetre = 100f;
-                config.MatterPerCreature = 2f;
-                config.MatterPerTissueJoule = 0f;
 
                 // The newborn mass floor off. Since fable-propose-growth.md rule 3 reached
                 // founders and inoculants (2026-09-08) a body this small is refused at the
@@ -145,12 +153,18 @@ namespace Evosim.Core.Tests
             Assert.NotNull(world);
             _output.WriteLine(
                 $"stillbirths {world.Stillbirths}, births {world.Births}, living {world.Living.Count}, " +
-                $"free {world.Matter.TotalJoules:R}, in bodies {world.MatterInBodies:R}, " +
-                $"held by the living {world.MatterInLivingBodies:R}, standing {world.StandingMatter:R}");
+                $"spent {world.Matter.TotalJoules:R}, charged {world.Nutrients.TotalJoules:R}, " +
+                $"standing {world.StandingMatterUnits:R}, resid {world.MatterResidual:R}");
 
-            Assert.Equal(world.MatterInLivingBodies, world.MatterInBodies, 9);
-            Assert.Equal(world.MatterInitialTotal - world.MatterInLivingBodies, world.Matter.TotalJoules, 9);
-            Assert.Equal(world.MatterInitialTotal, world.StandingMatter, 9);
+            // The refused child's start did not leave the world: it is in the charged field.
+            Assert.True(world.Nutrients.TotalJoules > 0d, "the stillbirth's joules went nowhere");
+
+            Assert.True(
+                Math.Abs(world.MatterResidual) <= 1e-6 * Math.Max(1d, world.MatterInitialTotal),
+                $"matter residual {world.MatterResidual:R}");
+            Assert.True(
+                Math.Abs(world.AuditResidual) <= 1e-6 * Math.Max(1d, world.EnergyIn),
+                $"audit residual {world.AuditResidual:R}");
         }
     }
 }

@@ -101,6 +101,19 @@ namespace Evosim.Core
         /// </remarks>
         public float AdultScale { get; }
 
+        /// <summary>
+        /// Birth only — the genome's <see cref="ReproductionTraits.ReserveMargin"/>, in seconds
+        /// of standing cost. D098 §3.
+        /// </summary>
+        /// <remarks>
+        /// On the row for the same reason the adult scale is: whether a population grows more
+        /// cautious is a question about every birth in a parent chain, and a snapshot only ever
+        /// carries the survivors. It is also the one of the three that predicts who is about to
+        /// die — a lineage walking its margin to zero is a lineage spending its way to the edge,
+        /// and that is visible here a long time before it is visible in the population count.
+        /// </remarks>
+        public float ReserveMargin { get; }
+
         /// <summary>Death only — why the creature left the population.</summary>
         public DeathCause Cause { get; }
 
@@ -108,11 +121,12 @@ namespace Evosim.Core
             LineageEventKind kind, double elapsedSeconds, long id, long parentId,
             BirthKind birthKind, int generationDepth, uint speciesId,
             bool hasAbsorptive, bool hasJoint, bool hasPhotosynthetic, int patch,
-            float birthFraction, float adultScale,
+            float birthFraction, float adultScale, float reserveMargin,
             DeathCause cause)
         {
             BirthFraction = birthFraction;
             AdultScale = adultScale;
+            ReserveMargin = reserveMargin;
             Kind = kind;
             ElapsedSeconds = elapsedSeconds;
             Id = id;
@@ -130,18 +144,19 @@ namespace Evosim.Core
         public static LineageEvent Birth(
             double elapsedSeconds, long id, long parentId, BirthKind birthKind,
             int generationDepth, uint speciesId, bool hasAbsorptive, bool hasJoint,
-            bool hasPhotosynthetic, int patch, float birthFraction, float adultScale) =>
+            bool hasPhotosynthetic, int patch, float birthFraction, float adultScale,
+            float reserveMargin) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
-                birthFraction, adultScale, default);
+                birthFraction, adultScale, reserveMargin, default);
 
         public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
             new LineageEvent(
                 LineageEventKind.Death, elapsedSeconds, id, parentId: -1, birthKind: default,
                 generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
                 hasPhotosynthetic: false, patch: 0, birthFraction: 0f, adultScale: 0f,
-                cause: cause);
+                reserveMargin: 0f, cause: cause);
 
         /// <summary>One-letter code for <see cref="BirthKind"/> — "f" floor, "r" reproduction, "i" inoculation.</summary>
         private static string Code(BirthKind kind)
@@ -198,7 +213,8 @@ namespace Evosim.Core
                     .Field("pho", HasPhotosynthetic ? 1 : 0)
                     .Field("pt", Patch)
                     .Field("bf", BirthFraction)
-                    .Field("as", AdultScale);
+                    .Field("as", AdultScale)
+                    .Field("rm", ReserveMargin);
             }
             else
             {

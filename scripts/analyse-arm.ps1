@@ -29,8 +29,11 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 
 # Columns shown by default. Named, not positional - resolved per report.
-$statusCols   = @('alive', 'births', 'absorpt', 'inherit', 'det deep', 'mat top', 'mat blk', 'refuge J')
-$timelineCols = @('alive', 'births', 'absorpt', 'inherit', 'det deep', 'mat top', 'mat blk', 'floor', 'refuge J')
+# 'mat blk' became 'upt lim' with D098: there is no conception the world refuses for want of
+# matter any more, and what a reader wants from a producer is whether its fixation was bound
+# by the water or by the light.
+$statusCols   = @('alive', 'births', 'absorpt', 'inherit', 'det deep', 'mat top', 'upt lim', 'refuge J')
+$timelineCols = @('alive', 'births', 'absorpt', 'inherit', 'det deep', 'mat top', 'upt lim', 'floor', 'refuge J')
 
 function Get-ColumnMap([string[]]$lines) {
     $headerLine = $lines | Where-Object { $_ -match '^\| *t \(s\)' } | Select-Object -First 1

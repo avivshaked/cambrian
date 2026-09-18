@@ -415,6 +415,10 @@ namespace Evosim.Core.Tests
             // a vertex field in a tank would wrap a quantum at a seam that is glass.
             RunConfig vertices = TankWorld();
             vertices.FieldModel = MatterField.Vertices;
+
+            // D098's leg 8 is refused on a vertex field at any rate above 0, and the default is
+            // above 0 — so a vertex world has to say so.
+            vertices.RemineralisationPerSecond = 0f;
             Assert.Contains(
                 "WorldShape is Tank and FieldModel is Vertices",
                 Assert.Throws<ArgumentException>(() => new World(vertices, seed: 1)).Message);

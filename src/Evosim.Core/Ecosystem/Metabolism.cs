@@ -43,6 +43,28 @@ namespace Evosim.Core
         public float Work { get; }
 
         /// <summary>
+        /// Joules spent clearing water, <see cref="RunConfig.HandlingCostPerJouleEaten"/> ×
+        /// <see cref="PoolDrawn"/> — D098's leg 3.
+        /// </summary>
+        /// <remarks>
+        /// <b>Charged on what the mouth drew, not on what it kept.</b> The cost is the pumping:
+        /// a feeder that clears water full of tissue it cannot assimilate has still done the
+        /// work. It is an expenditure like any other and burns like any other (leg 2), so a
+        /// world at <see cref="RunConfig.HandlingCostPerJouleEaten"/> 0 reads a ledger identical
+        /// to the one it always read.
+        /// </remarks>
+        public float Handling { get; }
+
+        /// <summary>
+        /// What the light offered this body, J, whether or not matter let it take it —
+        /// <see cref="CellIntake.LightCapacity"/> carried up to the ledger.
+        /// </summary>
+        public float LightCapacity { get; }
+
+        /// <summary>Whether fixation was bound by uptake rather than by light this step — D098.</summary>
+        public bool UptakeLimited => LightCapacity > LightIncome;
+
+        /// <summary>
         /// Joules removed from the nutrient pool to produce <see cref="FoodIncome"/>. Never less.
         /// </summary>
         /// <remarks>
@@ -74,30 +96,40 @@ namespace Evosim.Core
         }
 
         public EnergyLedger(CellIntake intake, float upkeep, float neural, float work, float exuded)
+            : this(intake, upkeep, neural, work, exuded, handling: 0f)
+        {
+        }
+
+        public EnergyLedger(
+            CellIntake intake, float upkeep, float neural, float work, float exuded, float handling)
         {
             LightIncome = intake.FromLight;
             FoodIncome = intake.FromPool;
             PoolDrawn = intake.PoolDrawn;
+            LightCapacity = intake.LightCapacity;
             Upkeep = upkeep;
             Neural = neural;
             Work = work;
             Exuded = exuded;
+            Handling = handling;
         }
 
         private EnergyLedger(
-            float lightIncome, float foodIncome, float poolDrawn,
-            float upkeep, float neural, float work, float exuded)
+            float lightIncome, float foodIncome, float poolDrawn, float lightCapacity,
+            float upkeep, float neural, float work, float exuded, float handling)
         {
             LightIncome = lightIncome;
             FoodIncome = foodIncome;
             PoolDrawn = poolDrawn;
+            LightCapacity = lightCapacity;
             Upkeep = upkeep;
             Neural = neural;
             Work = work;
             Exuded = exuded;
+            Handling = handling;
         }
 
-        public float Expenditure => Upkeep + Neural + Work;
+        public float Expenditure => Upkeep + Neural + Work + Handling;
 
         /// <summary>
         /// This ledger with its pool draw replaced by what the field actually gave, the food
@@ -114,7 +146,28 @@ namespace Evosim.Core
             if (!(poolDrawn < PoolDrawn) || PoolDrawn <= 0f) return this;
             float scale = poolDrawn / PoolDrawn;
             return new EnergyLedger(
-                LightIncome, FoodIncome * scale, poolDrawn, Upkeep, Neural, Work, Exuded);
+                LightIncome, FoodIncome * scale, poolDrawn, LightCapacity,
+                Upkeep, Neural, Work, Exuded, Handling * scale);
+        }
+
+        /// <summary>
+        /// This ledger with its fixation replaced by what the spent field actually gave, the
+        /// exudation scaled down in the same ratio — D098's leg 1.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="WithPoolDrawn"/>'s twin, on the other field. Exudation is a fraction of
+        /// what was fixed (D070), so it has to move with it or a producer that fixed nothing
+        /// still releases something and the body funds the difference out of its reserve. The
+        /// capacity is untouched: what the light offered did not change because the water was
+        /// short, and the step was uptake-bound either way.
+        /// </remarks>
+        public EnergyLedger WithLightIncome(float lightIncome)
+        {
+            if (!(lightIncome < LightIncome) || LightIncome <= 0f) return this;
+            float scale = lightIncome / LightIncome;
+            return new EnergyLedger(
+                lightIncome, FoodIncome, PoolDrawn, LightCapacity,
+                Upkeep, Neural, Work, Exuded * scale, Handling);
         }
 
         /// <summary>
@@ -135,9 +188,9 @@ namespace Evosim.Core
         public static EnergyLedger operator +(EnergyLedger a, EnergyLedger b) =>
             new EnergyLedger(
                 a.LightIncome + b.LightIncome, a.FoodIncome + b.FoodIncome,
-                a.PoolDrawn + b.PoolDrawn,
+                a.PoolDrawn + b.PoolDrawn, a.LightCapacity + b.LightCapacity,
                 a.Upkeep + b.Upkeep, a.Neural + b.Neural, a.Work + b.Work,
-                a.Exuded + b.Exuded);
+                a.Exuded + b.Exuded, a.Handling + b.Handling);
 
         public override string ToString() =>
             FormattableString.Invariant($"+{Income:0.###} −{Expenditure:0.###}") +
@@ -180,6 +233,7 @@ namespace Evosim.Core
         /// <param name="light">Irradiance by depth.</param>
         /// <param name="creatureHeightY">World height of the creature, metres. Y is up.</param>
         /// <param name="nutrientDensity">Energy density of nutrients here, J/m³.</param>
+        /// <param name="spentDensity">Spent matter dissolved here, units/m³ — D098.</param>
         /// <param name="workJoules">
         /// Mechanical work done at the joints this step, from the simulator. Zero for a creature
         /// that did not actuate, which is every plant and every founder without a link.
@@ -191,6 +245,7 @@ namespace Evosim.Core
             LightModel light,
             float creatureHeightY,
             float nutrientDensity,
+            float spentDensity,
             float workJoules,
             float seconds)
         {
@@ -198,7 +253,7 @@ namespace Evosim.Core
 
             return StepAt(
                 phenotype, config, light.IrradianceAt(creatureHeightY),
-                nutrientDensity, workJoules, seconds);
+                nutrientDensity, spentDensity, workJoules, seconds);
         }
 
         /// <summary>
@@ -215,6 +270,11 @@ namespace Evosim.Core
         /// <param name="config">Supplies cell types, shapes and the neural cost rates.</param>
         /// <param name="irradiance">Light reaching this creature, W/m².</param>
         /// <param name="nutrientDensity">Energy density of nutrients here, J/m³.</param>
+        /// <param name="spentDensity">
+        /// Spent matter dissolved here, units/m³ — D098's leg 1. What fixation takes up. Zero is
+        /// water a producer can find nothing in, and with
+        /// <see cref="RunConfig.UptakeRatePerSquareMetre"/> at 0 it is read by nothing at all.
+        /// </param>
         /// <param name="workJoules">Mechanical work done at the joints this step.</param>
         /// <param name="seconds">Step length.</param>
         /// <param name="ageSeconds">
@@ -227,6 +287,7 @@ namespace Evosim.Core
             RunConfig config,
             float irradiance,
             float nutrientDensity,
+            float spentDensity,
             float workJoules,
             float seconds,
             float ageSeconds = 0f)
@@ -263,7 +324,11 @@ namespace Evosim.Core
                     dof: part.JointType.DofCount(),
                     lift: part.Lift,
                     satiationWattsPerCubicMetre: config.SatiationWattsPerCubicMetre,
-                    clearanceToeDensity: config.ClearanceToeDensity);
+                    clearanceToeDensity: config.ClearanceToeDensity,
+                    spentDensity: spentDensity,
+                    uptakeRatePerSquareMetre: config.UptakeRatePerSquareMetre,
+                    uptakeHalfSaturation: config.UptakeHalfSaturation,
+                    joulesPerUnit: config.JoulesPerUnit);
 
                 intake += cell.Acquire(context);
                 upkeep += cell.Upkeep(context);
@@ -291,8 +356,11 @@ namespace Evosim.Core
             // Scaling the draw instead would make ageing a discount on the world's groceries.
             if (wear > 1f)
             {
+                // The capacity wears with the income it bounds, so the two stay comparable and
+                // "uptake bound this step" does not become a statement about the body's age.
                 intake = new CellIntake(
-                    intake.FromLight / wear, intake.FromPool / wear, intake.PoolDrawn);
+                    intake.FromLight / wear, intake.FromPool / wear, intake.PoolDrawn,
+                    intake.LightCapacity / wear);
             }
 
             // D070. A fraction of the light this body actually kept goes back into the water as
@@ -309,10 +377,19 @@ namespace Evosim.Core
                 ? config.ExudationFraction * intake.FromLight
                 : 0f;
 
+            // D098's leg 3. Priced on the draw, so it is proportional to the water cleared and
+            // not to the meal kept, and it scales with a short take through
+            // EnergyLedger.WithPoolDrawn exactly as the food income does. Not worn: an old
+            // body pumps as hard as a young one for the same water and keeps less of it, which
+            // is the same asymmetry PoolDrawn already carries (see the wear block above).
+            float handling = config.HandlingCostPerJouleEaten > 0f
+                ? config.HandlingCostPerJouleEaten * intake.PoolDrawn
+                : 0f;
+
             return new EnergyLedger(
                 intake, upkeep * wear, neural * wear,
                 Math.Max(0f, workJoules) * config.WorkCostMultiplier,
-                exuded);
+                exuded, handling);
         }
 
         /// <summary>
@@ -338,7 +415,8 @@ namespace Evosim.Core
 
             EnergyLedger ledger = StepAt(
                 phenotype, config, DarkWorld.IrradianceAt(-1000f),
-                nutrientDensity: 0f, workJoules: 0f, seconds: 1f, ageSeconds: ageSeconds);
+                nutrientDensity: 0f, spentDensity: 0f, workJoules: 0f, seconds: 1f,
+                ageSeconds: ageSeconds);
 
             return ledger.Expenditure;
         }

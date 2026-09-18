@@ -200,10 +200,18 @@ namespace Evosim.Core.Tests
             var rates = new MutationRates
             {
                 BroodSizeChance = 1f, InvestmentChance = 1f, AdultScaleChance = 1f,
+                MarginChance = 1f,
                 ScalarStdDev = 2f, MaxBroodSize = 8,
             };
 
             Genome g = Parent(1);
+            g.Reproduction = new ReproductionTraits
+            {
+                BroodSize = g.Reproduction.BroodSize,
+                BirthInvestment = g.Reproduction.BirthInvestment,
+                ReserveMargin = 300f,
+            };
+
             for (ulong step = 1; step <= 500; step++)
             {
                 g = Mutator.Mutate(g, new Rng(step), rates);
@@ -211,6 +219,13 @@ namespace Evosim.Core.Tests
                 Assert.InRange(g.Reproduction.BroodSize, 1, 8);
                 Assert.True(g.Reproduction.BirthInvestment > 0f);
                 Assert.True(g.AdultScale > 0f);
+
+                // D098 §3. A step of twice the value at every birth walks this hard, and a
+                // lineage that walks it down must arrive at zero rather than through it: a
+                // negative margin puts the breeding gate under the price.
+                Assert.True(
+                    g.Reproduction.ReserveMargin >= 0f,
+                    $"margin went to {g.Reproduction.ReserveMargin} at step {step}");
             }
         }
 
@@ -231,6 +246,7 @@ namespace Evosim.Core.Tests
             {
                 InvestmentChance = 0.08f,
                 AdultScaleChance = 0.08f,
+                MarginChance = 0.08f,
                 ScalarChance = 0.08f,
                 ScalarStdDev = 0.15f,
                 AddNodeChance = 0f,
@@ -252,7 +268,10 @@ namespace Evosim.Core.Tests
             {
                 RootIndex = 0,
                 AdultScale = 1f,
-                Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f },
+                Reproduction = new ReproductionTraits
+                {
+                    BroodSize = 1, BirthInvestment = 0.5f, ReserveMargin = 300f,
+                },
             };
 
             parent.Nodes.Add(new MorphNode
@@ -266,7 +285,7 @@ namespace Evosim.Core.Tests
                 Neurons = Array.Empty<NeuronDef>(),
             });
 
-            int investmentMoved = 0, scaleMoved = 0, dimensionMoved = 0;
+            int investmentMoved = 0, scaleMoved = 0, dimensionMoved = 0, marginMoved = 0;
 
             for (ulong seed = 1; seed <= Trials; seed++)
             {
@@ -277,6 +296,11 @@ namespace Evosim.Core.Tests
                     investmentMoved++;
                 }
 
+                if (child.Reproduction.ReserveMargin != parent.Reproduction.ReserveMargin)
+                {
+                    marginMoved++;
+                }
+
                 if (child.AdultScale != parent.AdultScale) scaleMoved++;
                 if (child.Nodes[0].Dimensions.X != parent.Nodes[0].Dimensions.X) dimensionMoved++;
             }
@@ -284,11 +308,12 @@ namespace Evosim.Core.Tests
             double investment = investmentMoved / (double)Trials;
             double scale = scaleMoved / (double)Trials;
             double dimension = dimensionMoved / (double)Trials;
+            double margin = marginMoved / (double)Trials;
 
             _output.WriteLine(
                 $"per birth, over {Trials} mutations of one genome: investment {investment:0.####}, " +
                 $"adult scale {scale:0.####}, one node dimension {dimension:0.####}, " +
-                $"knobs 0.08 / 0.08 / 0.08");
+                $"margin {margin:0.####}, knobs 0.08 / 0.08 / 0.08 / 0.08");
 
             // Three standard errors of a Bernoulli draw at p = 0.08 over 20,000 trials is
             // 0.0058, so this is sampling error and nothing else. The double gate would have
@@ -297,6 +322,10 @@ namespace Evosim.Core.Tests
 
             Assert.InRange(investment, 0.08 - Tolerance, 0.08 + Tolerance);
             Assert.InRange(scale, 0.08 - Tolerance, 0.08 + Tolerance);
+
+            // D098 §3's dial, on the same footing from the day it was added rather than after a
+            // review found it moving at a thirteenth of what its knob said.
+            Assert.InRange(margin, 0.08 - Tolerance, 0.08 + Tolerance);
 
             // The dial and the dimension are on the same footing now, which is the whole point:
             // a knob at the same number has to mean the same thing in both places.

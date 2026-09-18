@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Evosim.Core;
@@ -264,12 +265,13 @@ namespace Evosim.Core.Tests
             // for unit, from a parent that was never asked.
             var config = new RunConfig
             {
-                Light = new LightModel(400f, 12f),
+                // 120 W/m2 rather than 400, for the reason the sibling test above gives and one
+                // more: D098 took the matter price off a conception, so the same light again
+                // carries more head-count and 400 met the ceiling at t=151 s.
+                Light = new LightModel(120f, 12f),
                 SharedSpace = true,
                 MinimumPopulation = 20,
                 MaximumPopulation = 400,
-                MatterPerTissueJoule = 0.5f,
-                MatterPerCreature = 3f,
                 InitialMatterPerCubicMetre = 1f,
             };
 
@@ -304,11 +306,12 @@ namespace Evosim.Core.Tests
             Assert.Equal(births, world.Births);
             Assert.True(world.CrowdedStillbirths > crowded);
 
-            // D074's matter identity, which a leaked partial Take would break: initial + influx
-            // − buried == free + locked. This is the one that catches a refusal placed after the
-            // Take instead of before it.
-            double expected = world.MatterInitialTotal + world.MatterInfluxedTotal - world.MatterBuriedTotal;
-            Assert.Equal(expected, world.StandingMatter, 4);
+            // D074's matter identity as D098 leaves it, which a leaked partial Take would
+            // break. This is the one that catches a refusal placed after the Take instead of
+            // before it.
+            Assert.True(
+                Math.Abs(world.MatterResidual) <= 1e-6 * Math.Max(1d, world.MatterInitialTotal),
+                $"matter residual {world.MatterResidual:R} of {world.MatterInitialTotal:R} units");
 
             Assert.True(energy >= 0d);
         }

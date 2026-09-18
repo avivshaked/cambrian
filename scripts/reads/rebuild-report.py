@@ -2,7 +2,13 @@
 that was overwritten (r18x-s1, 2026-09-06, by a misnamed launch). Column mapping calibrated
 against r18x-s2, where both files exist: python3 scripts/reads/rebuild-report.py --check r18x-s2.
 The header line is copied from a sibling report with the seed and configHash swapped, and
-the file says at the top that it was rebuilt. Formatting is best effort; join by t (s)."""
+the file says at the top that it was rebuilt. Formatting is best effort; join by t (s).
+
+The key list moved column for column with D098 (2026-09-18): 'conceptionsBlockedByMatter'
+became 'uptakeLimitedShare', already a share and not a running total, and 'excretedWindow'
+became 'remineralisedWindow', which is joules and is printed here in units. A run recorded
+before that build carries the old keys and is not rebuildable by this file; the record's one
+rebuilt report, r18x-s1, is already written."""
 import json, glob, os, sys
 
 def fmt(x, nd):
@@ -10,9 +16,8 @@ def fmt(x, nd):
 def pct(x, nd=1):
     s = f"{x*100:.{nd}f}".rstrip('0').rstrip('.')
     return s + '%'
-def cell(r, prev):
+def cell(r, prev, rho=100.0):
     alive = max(r['alive'], 1)
-    blk = r['conceptionsBlockedByMatter'] - (prev['conceptionsBlockedByMatter'] if prev else 0)
     food = r['foodJoules']; light = r['lightJoules']
     buoy = r['buoyant']
     return [
@@ -28,11 +33,12 @@ def cell(r, prev):
         f"**{buoy}**", f"**{r['buoyantInherited']}**",
         fmt(r['liftHeld']/buoy, 2) if buoy else '—', fmt(r['buoyantDepth'], 1) if buoy else '—',
         fmt(r['matterSurface'], 3), fmt(r['matterDeep'], 3),
-        f"**{blk}**", f"**{r['floorSpawnsWindow']}**",
+        f"**{pct(r['uptakeLimitedShare'])}**", f"**{r['floorSpawnsWindow']}**",
         str(r['generationMin']), str(r['generationMax']),
         f"{abs(r['auditResidual'])/max(r['spendJoules'],1e-9)*100:.4f}%", str(r['species']),
         fmt(r['edibleDetritusHere'], 4), str(r['belowWorld']), str(r['absorptiveBelowWorld']),
-        fmt(r['matterLocked'], 3), fmt(r['refugeJoules'], 1), fmt(r['excretedWindow'], 6),
+        fmt(r['matterLocked'], 3), fmt(r['refugeJoules'], 1),
+        fmt(r['remineralisedWindow'] / rho, 6),
         fmt(r['detritusPatchSd'], 4), fmt(r['patchMaxShare'], 3),
         fmt(r['detritusDepositedWindow'], 3), fmt(r['detritusTakenWindow'], 3), fmt(r['detritusExudedWindow'], 3),
         f"**{r['absorptiveLogged']}**",
@@ -42,9 +48,12 @@ HEADER_FROM = 'runs/r18x-s2.md'
 def table(arm):
     run = sorted(glob.glob(f'runs/{arm}/*'))[-1]
     rows = [json.loads(l) for l in open(os.path.join(run, 'stats.jsonl'), encoding='utf-8') if l.strip()]
+    # rho, because `remin` is printed in units and the file records the leg in joules.
+    conf = json.load(open(os.path.join(run, 'config.json'), encoding='utf-8'))
+    rho = float(conf.get('world', {}).get('joulesPerUnit', 100.0))
     out = []; prev = None
     for r in rows:
-        out.append('| ' + ' | '.join(cell(r, prev)) + ' |'); prev = r
+        out.append('| ' + ' | '.join(cell(r, prev, rho)) + ' |'); prev = r
     return run, out
 
 if sys.argv[1] == '--check':

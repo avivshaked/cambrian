@@ -28,6 +28,7 @@ namespace Evosim.Core.Tests
                 body, config,
                 irradianceWattsPerSquareMetre: 200f,
                 nutrientDensityJoulesPerCubicMetre: 0f,
+                spentDensityUnitsPerCubicMetre: 1f,
                 shadeFraction: 0f,
                 reproduction: genome.Reproduction);
 
@@ -48,6 +49,79 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void AMarginDelaysTheFirstChildAndCostsTheForecastChildren()
+        {
+            // D098 §3, in the calculator that screens a knob before a day of machine time is
+            // spent on it. The margin is not free: a parent that waits until it holds ten
+            // minutes of upkeep on top of the price breeds later, and a lineage under senescence
+            // has a finite window in which to do it.
+            Genome genome = SingleCellGenome(CellTypeIds.Photosynthetic, broodSize: 1, investment: 0.5f);
+            var config = new RunConfig { SenescenceDoublingSeconds = 3000f };
+
+            Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
+
+            LedgerForecastResult Forecast(float margin)
+            {
+                ReproductionTraits traits = genome.Reproduction;
+                traits.ReserveMargin = margin;
+
+                return LedgerForecast.Forecast(
+                    body, config,
+                    irradianceWattsPerSquareMetre: 200f,
+                    nutrientDensityJoulesPerCubicMetre: 0f,
+                    spentDensityUnitsPerCubicMetre: 1f,
+                    shadeFraction: 0f,
+                    reproduction: traits);
+            }
+
+            LedgerForecastResult eager = Forecast(0f);
+            LedgerForecastResult cautious = Forecast(600f);
+
+            _output.WriteLine(
+                $"margin 0: first child at {eager.TimeToFirstChildSeconds?.ToString("0.#") ?? "never"} s, " +
+                $"R0 {eager.ChildrenProduced}; margin 600 s: first child at " +
+                $"{cautious.TimeToFirstChildSeconds?.ToString("0.#") ?? "never"} s, " +
+                $"R0 {cautious.ChildrenProduced}");
+
+            Assert.NotNull(eager.TimeToFirstChildSeconds);
+            Assert.NotNull(cautious.TimeToFirstChildSeconds);
+            Assert.True(
+                cautious.TimeToFirstChildSeconds > eager.TimeToFirstChildSeconds,
+                "the margin did not reach the forecast's breeding condition");
+
+            Assert.True(cautious.ChildrenProduced <= eager.ChildrenProduced);
+
+            // At zero it is the forecast it always was, to the joule: the margin enters as a
+            // product with the standing cost and nothing else moves.
+            LedgerForecastResult unchanged = Forecast(0f);
+            Assert.Equal(eager.ChildrenProduced, unchanged.ChildrenProduced);
+            Assert.Equal(eager.TimeToFirstChildSeconds, unchanged.TimeToFirstChildSeconds);
+
+            // And a margin no lineage could ever hold is childlessness rather than an error.
+            LedgerForecastResult never = Forecast(1e6f);
+            Assert.Equal(0, never.ChildrenProduced);
+            Assert.Null(never.TimeToFirstChildSeconds);
+        }
+
+        [Fact]
+        public void ANegativeMarginIsRefusedByTheForecast()
+        {
+            Genome genome = SingleCellGenome(CellTypeIds.Photosynthetic, broodSize: 1, investment: 0.5f);
+            var config = new RunConfig();
+
+            Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
+
+            ReproductionTraits traits = genome.Reproduction;
+            traits.ReserveMargin = -1f;
+
+            ArgumentException e = Assert.Throws<ArgumentException>(() => LedgerForecast.Forecast(
+                body, config, 200f, 0f, 1f, 0f, traits));
+
+            _output.WriteLine(e.Message);
+            Assert.Contains("Reserve margin", e.Message);
+        }
+
+        [Fact]
         public void AnAbsorptiveBodyAtClearanceOneInThinWaterNeverBreedsAndDies()
         {
             Genome genome = SingleCellGenome(CellTypeIds.Absorptive, broodSize: 1, investment: 0.5f);
@@ -59,6 +133,7 @@ namespace Evosim.Core.Tests
                 body, config,
                 irradianceWattsPerSquareMetre: 0f,
                 nutrientDensityJoulesPerCubicMetre: 1f,
+                spentDensityUnitsPerCubicMetre: 1f,
                 shadeFraction: 0f,
                 reproduction: genome.Reproduction);
 
@@ -81,6 +156,7 @@ namespace Evosim.Core.Tests
                 body, config,
                 irradianceWattsPerSquareMetre: 0f,
                 nutrientDensityJoulesPerCubicMetre: 7f,
+                spentDensityUnitsPerCubicMetre: 1f,
                 shadeFraction: 0f,
                 reproduction: genome.Reproduction);
 
@@ -95,7 +171,9 @@ namespace Evosim.Core.Tests
         {
             // Default AbsorptiveCell: clearance 1, upkeep 4 W/m3, yield 1 — so income is
             // density x clearance x volume and upkeep is 4 x volume; the volume cancels and the
-            // break-even density is upkeep / clearance = 4, independent of body size.
+            // break-even density is upkeep / clearance, independent of body size. Since D098 the
+            // mouth also pays HandlingCostPerJouleEaten of everything it clears, so it keeps
+            // 1 - h of its draw and has to draw that much more: 4 / 0.9.
             Genome genome = SingleCellGenome(CellTypeIds.Absorptive, broodSize: 1, investment: 0.5f);
             var config = new RunConfig();
 
@@ -105,13 +183,16 @@ namespace Evosim.Core.Tests
                 body, config,
                 irradianceWattsPerSquareMetre: 0f,
                 nutrientDensityJoulesPerCubicMetre: 0f,
+                spentDensityUnitsPerCubicMetre: 1f,
                 shadeFraction: 0f,
                 reproduction: genome.Reproduction);
 
             _output.WriteLine($"break-even density: {result.BreakEvenNutrientDensity}");
 
             Assert.True(result.BreakEvenNutrientDensity.HasValue, "an absorptive body must have a break-even density");
-            Fixtures.AssertClose(4f, result.BreakEvenNutrientDensity.Value, tol: 1e-3f);
+            Fixtures.AssertClose(
+                4f / (1f - config.HandlingCostPerJouleEaten),
+                result.BreakEvenNutrientDensity.Value, tol: 1e-3f);
         }
 
         [Fact]
@@ -126,6 +207,7 @@ namespace Evosim.Core.Tests
                 body, config,
                 irradianceWattsPerSquareMetre: 200f,
                 nutrientDensityJoulesPerCubicMetre: 3f,
+                spentDensityUnitsPerCubicMetre: 1f,
                 shadeFraction: 0f,
                 reproduction: genome.Reproduction);
 
@@ -163,6 +245,7 @@ namespace Evosim.Core.Tests
                     body, config,
                     irradianceWattsPerSquareMetre: 200f,
                     nutrientDensityJoulesPerCubicMetre: 0f,
+                    spentDensityUnitsPerCubicMetre: 1f,
                     shadeFraction: 0f,
                     reproduction: genome.Reproduction);
 
@@ -194,7 +277,7 @@ namespace Evosim.Core.Tests
             var config = new RunConfig();
 
             Assert.Throws<ArgumentException>(() => LedgerForecast.Forecast(
-                empty, config, 100f, 1f, 0f,
+                empty, config, 100f, 1f, 1f, 0f,
                 new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f }));
         }
 

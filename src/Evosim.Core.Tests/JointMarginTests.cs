@@ -81,7 +81,8 @@ namespace Evosim.Core.Tests
 
             EnergyLedger led = Metabolism.StepAt(
                 body, config, config.Light.IrradianceAt(-2f),
-                nutrientDensity: 10f, workJoules: workJoules, seconds: 1f);
+                nutrientDensity: 10f,
+                spentDensity: 1f, workJoules: workJoules, seconds: 1f);
 
             return (led.Net, led.Income, led.Expenditure);
         }
@@ -467,7 +468,8 @@ namespace Evosim.Core.Tests
                 float irradiance = config.Light.IrradianceAt(depth);
                 EnergyLedger led = Metabolism.StepAt(
                     body, config, irradiance,
-                    nutrientDensity: 0f, workJoules: 0f, seconds: 1f);
+                    nutrientDensity: 0f,
+                    spentDensity: 1f, workJoules: 0f, seconds: 1f);
 
                 _output.WriteLine($"{depth,8:F0} {irradiance,11:F2} {led.Net,10:F4}");
 
@@ -524,7 +526,8 @@ namespace Evosim.Core.Tests
             {
                 EnergyLedger led = Metabolism.StepAt(
                     body, config, config.Light.IrradianceAt(d),
-                    nutrientDensity: 0f, workJoules: 0f, seconds: 1f);
+                    nutrientDensity: 0f,
+                    spentDensity: 1f, workJoules: 0f, seconds: 1f);
                 if (led.Net > 0f) band = -d; else break;
             }
 

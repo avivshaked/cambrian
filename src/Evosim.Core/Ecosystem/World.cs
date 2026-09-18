@@ -314,21 +314,63 @@ namespace Evosim.Core
         public IMatterField Matter { get; }
 
         /// <summary>
-        /// Total matter in the world, free and locked up — D048. Conserved until D074's budget is
-        /// opened; after that it is <see cref="MatterInitialTotal"/> plus what has flowed in and
-        /// minus what has been buried.
+        /// Every unit of matter the world holds, spent and charged — D098. Units.
         /// </summary>
         /// <remarks>
-        /// The meaning has not changed — this is still everything the world holds — but it is no
-        /// longer a constant, and anything that asserted its constancy was asserting D048 rather
-        /// than reading an invariant. The invariant that survives is the identity in
-        /// <see cref="MatterInfluxedTotal"/>'s remarks, which reduces to the old one at influx and
-        /// burial 0.
+        /// <para>
+        /// <b>One substance in two states, so one sum.</b> <see cref="Matter"/> holds the spent
+        /// units directly; every joule anywhere else — marine snow, a body's tissue, a body's
+        /// reserve, a corpse — is a charged unit, and <see cref="StandingJoules"/> already sums
+        /// all of them. So the world's matter is the spent stock plus the standing joules over
+        /// <see cref="RunConfig.JoulesPerUnit"/>, and there is no third place for a unit to hide.
+        /// </para>
+        /// <para>
+        /// Before D098 this added a body's <c>LockedMatter</c> and a corpse's own matter account
+        /// to the field, because matter and energy were separate substances that happened to
+        /// travel together. They are not, and the accounts that made them look separate are gone.
+        /// </para>
         /// </remarks>
-        public double StandingMatter => Matter.TotalJoules + MatterInBodies + CorpseMatter;
+        public double StandingMatterUnits => Matter.TotalJoules + StandingJoules / Config.JoulesPerUnit;
 
-        /// <summary>Matter locked up in living tissue, awaiting its owner's death.</summary>
-        public double MatterInBodies { get; private set; }
+        /// <summary>The same number under the name the reports have always used.</summary>
+        public double StandingMatter => StandingMatterUnits;
+
+        /// <summary>Charged units held by the living — tissue and reserve together, in units.</summary>
+        /// <remarks>
+        /// <b>What the table prints as <c>mat locked</c>.</b> A body is charged matter and nothing
+        /// else, so what it "locks" is what it is worth: no separate store, no orphan, no
+        /// invariant between two numbers that have to agree. O(n), an instrument for a report row
+        /// rather than for the step.
+        /// </remarks>
+        public double StandingJoulesInBodies
+        {
+            get
+            {
+                double sum = 0.0;
+                for (int i = 0; i < _living.Count; i++) sum += _living[i].Energy + _living[i].TissueJoules;
+                return sum;
+            }
+        }
+
+        /// <summary>
+        /// How far the matter identity is from closing, in units. Should be ~0 — D098.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A Core property for the first time, and that is half the point.</b> Until D098 this
+        /// arithmetic was written out by hand in four places — the harness's report, the theatre's
+        /// census, a round reader and about six tests — and four copies of one identity is how
+        /// they come to disagree about which leg they include.
+        /// </para>
+        /// <para>
+        /// It is <see cref="AuditResidual"/>'s twin read in the other unit: every leg that books
+        /// <c>EnergyOut</c> deposits the same over ρ into the spent field in the same step, and
+        /// every leg that books <c>EnergyIn</c> takes the same out of it. Keeping both catches a
+        /// leg that did one half and not the other, which is the fault neither book can see alone.
+        /// </para>
+        /// </remarks>
+        public double MatterResidual =>
+            StandingMatterUnits - MatterInitialTotal - MatterInfluxedTotal + MatterBuriedTotal;
 
         /// <summary>
         /// Bodies that have died and are still handing their tissue and matter back to the water,
@@ -349,17 +391,6 @@ namespace Evosim.Core
             {
                 double sum = 0.0;
                 for (int i = 0; i < _corpses.Count; i++) sum += _corpses[i].Joules;
-                return sum;
-            }
-        }
-
-        /// <summary>Matter still held by the dead. Part of D074's identity, like the two accounts beside it.</summary>
-        public double CorpseMatter
-        {
-            get
-            {
-                double sum = 0.0;
-                for (int i = 0; i < _corpses.Count; i++) sum += _corpses[i].Matter;
                 return sum;
             }
         }
@@ -398,19 +429,6 @@ namespace Evosim.Core
         /// <see cref="MatterInfluxedTotal"/> for the identity the two close.
         /// </summary>
         public double MatterBuriedTotal { get; private set; }
-
-        /// <summary>
-        /// Everything excretion (D052) has ever moved from bodies into the field, J. Cumulative
-        /// and never decremented — a report reads it as a rate by differencing two samples, the
-        /// same trick <see cref="FloorSpawns"/> already asks of a caller.
-        /// </summary>
-        /// <remarks>
-        /// Internal to the transfer <see cref="StandingMatter"/> already accounts for: this does
-        /// not change what is conserved, only makes the D052 flux itself visible instead of only
-        /// its before-and-after balance — the pre-round-8 experiment contract's excretion flux
-        /// column needed a counter that did not exist yet.
-        /// </remarks>
-        public double ExcretedTotal { get; private set; }
 
         /// <summary>
         /// Every joule a dead body has ever put into <see cref="Nutrients"/> — cumulative and
@@ -463,93 +481,83 @@ namespace Evosim.Core
         public long PoolShortTakes { get; private set; }
 
         /// <summary>
-        /// The matter the living actually hold, summed body by body. Equal to
-        /// <see cref="MatterInBodies"/> whenever nothing has been charged for a body that does
-        /// not exist -- the invariant the Astra review's R2 found broken (2026-09-07). O(n): an
-        /// instrument for tests and diagnostics, not for the step.
-        /// </summary>
-        public double MatterInLivingBodies
-        {
-            get
-            {
-                double sum = 0.0;
-                for (int i = 0; i < _living.Count; i++) sum += _living[i].LockedMatter;
-                return sum;
-            }
-        }
-
-        /// <summary>
-        /// Matter the smallest child physically expressible would cost — D048. A strict lower
-        /// bound, cached because it depends only on config.
+        /// Every spent unit burning has ever put back into <see cref="Matter"/> — D098's leg 2.
+        /// Cumulative; a report differences two samples to read it as a rate.
         /// </summary>
         /// <remarks>
-        /// <c>Conceive</c> pays for a full <c>Mutator.Mutate</c> and <c>Developer.Develop</c>
-        /// before it knows the child's tissue, and therefore before it can price the child in
-        /// matter. In a world where matter binds that is almost all wasted: the first probe ran
-        /// **944 blocked conceptions per birth**, 2.3 million mutate-and-develop pairs built and
-        /// thrown away, and it is why that run reached t=2,100 rather than its 4,000 s budget.
-        ///
-        /// Tissue is <c>Σ volume × TissueEnergyPerCubicMetre</c> and a viable body has at least
-        /// one part, so the cheapest cell type at the smallest legal part volume bounds every
-        /// possible child from below. A layer that cannot afford *that* cannot afford anything,
-        /// which makes this an exact test rather than a heuristic — no conception is refused that
-        /// the full check would have allowed.
+        /// <b>The world's one outflow of energy and inflow of spent matter, counted once.</b>
+        /// Upkeep, neural cost, work, handling and a birth's overhead all arrive here, because
+        /// under one substance they are the same event: a charged unit spent and returned to the
+        /// water empty. It is <c>EnergyOut</c>'s burning share over
+        /// <see cref="RunConfig.JoulesPerUnit"/>, and the table's <c>burnt</c> column.
         /// </remarks>
-        private float CheapestPossibleChildMatter
-        {
-            get
-            {
-                if (_cheapestChildMatter < 0f)
-                {
-                    float cheapestPerCubicMetre = float.MaxValue;
-                    foreach (string id in Config.CellTypes.Ids())
-                    {
-                        float rate = Config.CellTypes.Resolve(id).TissueEnergyPerCubicMetre;
-                        if (rate < cheapestPerCubicMetre) cheapestPerCubicMetre = rate;
-                    }
-
-                    // D065's fixed term is added outside the tissue product, not folded into it:
-                    // it is what a body costs *before* anything is proportional to its size, so
-                    // the smallest possible child still cannot be cheaper than this.
-                    _cheapestChildMatter = Config.MatterPerTissueJoule *
-                        Config.Development.MinPartVolume * cheapestPerCubicMetre +
-                        Config.MatterPerCreature;
-                }
-
-                return _cheapestChildMatter;
-            }
-        }
-
-        private float _cheapestChildMatter = -1f;
-
-        /// <summary>Conceptions refused for want of matter rather than energy — D048.</summary>
-        /// <remarks>
-        /// The only number that says whether matter is binding at all. A world where this stays
-        /// zero has the mechanism switched on and doing nothing, which reads in every other
-        /// column exactly like a world that does not have it.
-        /// </remarks>
-        public long ConceptionsBlockedByMatter { get; private set; }
+        public double BurntTotal { get; private set; }
 
         /// <summary>
-        /// Conceptions refused after the gate passed, because the take came up short — D083's
-        /// second amendment. Zero on a cell field by construction; on a vertex field a
-        /// rounding's worth, and anything more is a fault in the take.
-        /// </summary>
-        public long ConceptionsShortOfMatter { get; private set; }
-
-        /// <summary>
-        /// Growth steps at which matter, rather than energy or the adult body, was what bound —
-        /// fable-propose-growth.md rule 5.
+        /// Every joule D098's leg 8 has ever moved out of <see cref="Nutrients"/> and into
+        /// <see cref="Matter"/> as spent units. Cumulative.
         /// </summary>
         /// <remarks>
-        /// <b>A count of bodies-times-steps, not of creatures.</b> One body held short for a
-        /// thousand steps and a thousand bodies held short once read the same here, so it is read
-        /// against the population the way <c>mat blk</c> and <c>crowded</c> are (CLAUDE.md). What
-        /// it answers is the question growth adds to a matter-limited world: whether bodies are
-        /// small because their lineages chose small, or because the water would not pay for the
-        /// rest of them.
+        /// The bacteria's heat. It leaves the world as <c>EnergyOut</c> and arrives as
+        /// <c>moved / ρ</c> units in the spent field, so it is the one leg that moves matter
+        /// between the two states without a body being involved at all.
         /// </remarks>
-        public long GrowthShortOfMatter { get; private set; }
+        public double RemineralisedTotal { get; private set; }
+
+        /// <summary>
+        /// Every joule a feeder has ever returned to <see cref="Nutrients"/> as faeces — D098's
+        /// leg 3. Cumulative.
+        /// </summary>
+        /// <remarks>
+        /// <b>What <c>EnergyLedger.Wasted</c> used to book as an outflow.</b> A mouth draws
+        /// <c>PoolDrawn</c> and keeps <c>FoodIncome</c>; the rest was destroyed before D098 and is
+        /// now put back where the feeder is, still charged. The transfer loss that shortens a food
+        /// chain is unchanged in size and no longer leaves the world.
+        /// </remarks>
+        public double DetritusReturnedTotal { get; private set; }
+
+        /// <summary>
+        /// Body-steps at which fixation was bound by uptake rather than by light — D098's leg 1.
+        /// Cumulative.
+        /// </summary>
+        /// <remarks>
+        /// <b>Read against <see cref="PhotosyntheticSteps"/> and never alone.</b> It is a count of
+        /// bodies times steps, so one producer held short for a thousand steps and a thousand
+        /// producers held short once read the same — the share is what says whether the water is
+        /// stripped, and the share is what the table prints as <c>upt lim</c>.
+        /// </remarks>
+        public long UptakeLimitedSteps { get; private set; }
+
+        /// <summary>
+        /// Body-steps taken by a body with photosynthetic capacity — the denominator of
+        /// <see cref="UptakeLimitedSteps"/>. Cumulative.
+        /// </summary>
+        public long PhotosyntheticSteps { get; private set; }
+
+        /// <summary>
+        /// Fixation takes that returned less than the ledger asked for, running total — D098's
+        /// leg 1, and <see cref="PoolShortTakes"/>'s twin on the spent field.
+        /// </summary>
+        /// <remarks>
+        /// Zero by construction while the spent field's availability is frozen and every rationed
+        /// draw is capped at its share; a nonzero count means the allocation has a hole, and the
+        /// producer was credited what the water gave rather than what it planned.
+        /// </remarks>
+        public long FixationShortTakes { get; private set; }
+
+        /// <summary>
+        /// Every joule <see cref="RunConfig.ReserveCapSeconds"/> has ever trimmed off a living
+        /// body's reserve and put into <see cref="Nutrients"/>. Cumulative.
+        /// </summary>
+        /// <remarks>
+        /// Counted inside <see cref="DetritusExudedTotal"/> as well as here, because to the
+        /// charged field's own flux identity a trim is a living body releasing charged matter and
+        /// is indistinguishable from an exudation. Its own counter so that the lever can be read
+        /// apart from D070's, which is the reason <see cref="DetritusExudedTotal"/> is separate
+        /// from <see cref="DetritusDepositedTotal"/> in the first place. Zero for the whole life
+        /// of a run at <see cref="RunConfig.ReserveCapSeconds"/> 0, which is the base round.
+        /// </remarks>
+        public double ReserveTrimmedTotal { get; private set; }
 
         /// <summary>
         /// Conceptions refused because a newborn part would have been lighter than
@@ -563,6 +571,22 @@ namespace Evosim.Core
         /// own so that it cannot be mistaken for the world simply being poor.
         /// </remarks>
         public long ConceptionsUnderMassFloor { get; private set; }
+
+        /// <summary>
+        /// Conceptions refused because the parent's reserve would not clear the price and its
+        /// genome's <see cref="ReproductionTraits.ReserveMargin"/> together — D098 §3.
+        /// </summary>
+        /// <remarks>
+        /// <b>A count of attempts, not of parents</b>, like
+        /// <see cref="ConceptionsUnderMassFloor"/>: a parent held back this step keeps its reserve
+        /// and asks again next step, so a few dozen bodies standing at their own margin produce
+        /// millions of these over a run, and the number is read against births in the same window
+        /// rather than as a level. What it separates is a world too poor to breed from a
+        /// population that has evolved to wait — the two look identical in the birth rate and
+        /// nowhere else. At margin 0 it counts the plainly insolvent, which is the same refusal
+        /// this line has always made and simply never counted.
+        /// </remarks>
+        public long ConceptionsUnderMargin { get; private set; }
 
         /// <summary>
         /// Floor draws refused because the founder's body would have been under
@@ -593,6 +617,17 @@ namespace Evosim.Core
 
         /// <summary>Mean <see cref="ReproductionTraits.BroodSize"/> over the living. NaN when empty.</summary>
         public float MeanBroodSize => MeanOverLiving(c => c.Genome.Reproduction.BroodSize);
+
+        /// <summary>
+        /// Mean <see cref="ReproductionTraits.ReserveMargin"/> over the living, in seconds —
+        /// D098 §3. NaN when empty.
+        /// </summary>
+        /// <remarks>
+        /// The gene's own column. In seconds rather than joules so that it can be read beside a
+        /// lifetime and a drought without a body size in the way: a population whose mean margin
+        /// is 400 s is one that has learnt to carry most of a senescence doubling in hand.
+        /// </remarks>
+        public float MeanReserveMargin => MeanOverLiving(c => c.Genome.Reproduction.ReserveMargin);
 
         /// <summary>Mean <see cref="Organism.BodyFraction"/> over the living. NaN when empty.</summary>
         /// <remarks>
@@ -1365,10 +1400,18 @@ namespace Evosim.Core
             Nutrients.Settle(seconds);
             Matter.Settle(seconds);
 
-            // The floor's only outflow besides a creature resident there eating it (D051): first-
-            // order decay back into the layer above, before that layer is stirred.
-            Nutrients.Remineralise(seconds, Config.NutrientRemineralisationPerSecond);
-            Matter.Remineralise(seconds, Config.MatterRemineralisationPerSecond);
+            // D098's leg 8, and it replaces D051's two floor leaks. Charged matter anywhere in
+            // the water decays into spent matter in the same place: the joules leave the world as
+            // the bacteria's heat, and the same over ρ arrives in the spent field. Before the
+            // stirring, as the floor leak was, so what is released this step is mixed this step.
+            double remineralised = Nutrients.Remineralise(
+                Matter, seconds, Config.RemineralisationPerSecond, Config.JoulesPerUnit);
+
+            if (remineralised > 0d)
+            {
+                EnergyOut += remineralised;
+                RemineralisedTotal += remineralised;
+            }
 
             // Stirred after it sinks, in the same step. The two are opposed — one carries detritus
             // down and the other spreads it back through the column — and whether the world has a
@@ -1655,13 +1698,10 @@ namespace Evosim.Core
                 corpse.Position = new Float3(x, y, z);
                 if (drifts) corpse.Patch = PatchOfXZ(x, z);
 
-                // The last instalment: everything that is left, in one go. Both stocks have to be
-                // under the floor value, because one empties before the other. A body that
-                // excreted its whole price away (D052) dies with matter at 0 and tissue at 100 J,
-                // and a corpse dropped on the strength of the empty half would take the full half
-                // with it. A step long enough to ask for the whole remainder is the same case.
-                bool last = fraction >= 1.0 ||
-                    (corpse.Joules < 1e-6 && corpse.Matter < 1e-6);
+                // The last instalment: everything that is left, in one go. One stock since D098,
+                // so one test — a corpse is charged matter and nothing else. A step long enough
+                // to ask for the whole remainder is the same case.
+                bool last = fraction >= 1.0 || corpse.Joules < 1e-6;
 
                 FieldPoint at = corpse.Point;
 
@@ -1676,16 +1716,6 @@ namespace Evosim.Core
                     }
                 }
 
-                if (corpse.Matter > 0d)
-                {
-                    float given = (float)(last ? corpse.Matter : corpse.Matter * fraction);
-                    if (given > 0f)
-                    {
-                        Matter.Deposit(at, given);
-                        corpse.Matter -= given;
-                    }
-                }
-
                 if (last)
                 {
                     // The corpse leaves. A field takes a float and the corpse's own account is a
@@ -1697,7 +1727,6 @@ namespace Evosim.Core
                     // already has; naming it is the point, since an audit read to 1e-6 of the sun's
                     // whole input cannot see it and an unnamed rounding is how a leak hides.
                     corpse.Joules = 0d;
-                    corpse.Matter = 0d;
                     continue;
                 }
 
@@ -1813,11 +1842,11 @@ namespace Evosim.Core
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>Free matter on the floor and nothing else.</b> Not detritus — that is
-        /// <see cref="Nutrients"/>, a different substance with its own floor term in
-        /// <c>Remineralise</c> — and not <see cref="MatterInBodies"/>, because burying the matter
-        /// locked in a living creature would take it out of a body that is still standing on it,
-        /// and the identity would have no way to describe what happened.
+        /// <b>Spent matter on the floor and nothing else.</b> Not the charged field — that is
+        /// <see cref="Nutrients"/>, the same substance in the other state, which reaches this one
+        /// only through <c>Remineralise</c> — and not the charged matter a living body is made
+        /// of, because burying a creature out from under itself would open the matter identity
+        /// with no way to describe what happened.
         /// </para>
         /// <para>
         /// <b>Counted as the field's own before-and-after</b>, not as the draw's own return.
@@ -1942,6 +1971,12 @@ namespace Evosim.Core
             Field.Clear();
             Nutrients.ClearDemand();
 
+            // D098's leg 1. The producers draw on the spent field exactly as the feeders draw on
+            // the charged one, so it needs the same three passes: what everybody would take, what
+            // each cell can actually give, and then the takes. One extra ClearDemand a step is
+            // the whole of the cost.
+            Matter.ClearDemand();
+
             for (int i = 0; i < _living.Count; i++)
             {
                 Organism creature = _living[i];
@@ -1959,10 +1994,11 @@ namespace Evosim.Core
                 Organism creature = _living[i];
 
                 float density = Nutrients.EdibleDensityAt(creature.Point);
+                float spent = Matter.DensityAt(creature.Point);
 
                 EnergyLedger ledger = Metabolism.StepAt(
                     creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch),
-                    density, creature.PendingWorkJoules, seconds, creature.Age);
+                    density, spent, creature.PendingWorkJoules, seconds, creature.Age);
 
                 // The absorptive log's capture, taken where the number is — one field write, on
                 // the pass that already read it, and only for the creatures the file records
@@ -1975,11 +2011,20 @@ namespace Evosim.Core
 
                 _ledgers[i] = ledger;
                 Nutrients.Demand(creature.Point, ledger.PoolDrawn);
+
+                // What fixation would take out of the water, in units: the joules it fixed over
+                // what a charged unit carries. A body that fixed nothing asks for nothing, which
+                // is every feeder and every producer in the dark.
+                if (ledger.LightIncome > 0f)
+                {
+                    Matter.Demand(creature.Point, ledger.LightIncome / Config.JoulesPerUnit);
+                }
             }
 
             // Every share and every rationed price in the pass below is taken from what the
             // cells hold now, not from what earlier meals in the same walk leave behind.
             Nutrients.FreezeAvailability();
+            Matter.FreezeAvailability();
 
             for (int i = _living.Count - 1; i >= 0; i--)
             {
@@ -1992,20 +2037,30 @@ namespace Evosim.Core
                 creature.Age += seconds;
 
                 float share = Nutrients.ShareAt(creature.Point);
+                float spentShare = Matter.ShareAt(creature.Point);
                 EnergyLedger ledger = _ledgers[i];
 
-                // Recomputed only when the larder is short. Scaling the stored ledger instead
-                // would assume intake is linear in density, which it is for a filter feeder and
-                // is not for anything with a bite rate that saturates.
-                if (share < 1f)
+                // Recomputed only when one of the larders is short. Scaling the stored ledger
+                // instead would assume intake is linear in density, which it is for a filter
+                // feeder and is not for anything with a bite rate that saturates — nor for a
+                // leaf, whose uptake saturates at UptakeHalfSaturation.
+                if (share < 1f || spentShare < 1f)
                 {
-                    float rationed =
-                        Nutrients.FrozenEdibleDensityAt(creature.Point) * share;
+                    float rationed = share < 1f
+                        ? Nutrients.FrozenEdibleDensityAt(creature.Point) * share
+                        : Nutrients.FrozenEdibleDensityAt(creature.Point);
+
+                    // D098. The same re-price on the other field, in one call rather than two:
+                    // a mixotroph short of both would otherwise be priced twice and the second
+                    // answer would overwrite the first.
+                    float rationedSpent = spentShare < 1f
+                        ? Matter.FrozenEdibleDensityAt(creature.Point) * spentShare
+                        : Matter.FrozenEdibleDensityAt(creature.Point);
 
                     // The same work, not more: this replaces the ledger rather than adding to it.
                     ledger = Metabolism.StepAt(
                         creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch),
-                        rationed, creature.PendingWorkJoules, seconds, age);
+                        rationed, rationedSpent, creature.PendingWorkJoules, seconds, age);
 
                     // A share is a fraction of the demand, and scaling the density delivers
                     // exactly that only for an intake linear in density. A saturating mouth
@@ -2015,6 +2070,15 @@ namespace Evosim.Core
                     // bound the demand pass promised, and no feeder draws past it.
                     float allowance = share * _ledgers[i].PoolDrawn;
                     if (ledger.PoolDrawn > allowance) ledger = ledger.WithPoolDrawn(allowance);
+
+                    // The same bound on the other field: uptake re-saturates at the rationed
+                    // spent density, so a producer in a stripped cell would otherwise plan to
+                    // fix more than its share of that cell.
+                    float fixationAllowance = spentShare * _ledgers[i].LightIncome;
+                    if (ledger.LightIncome > fixationAllowance)
+                    {
+                        ledger = ledger.WithLightIncome(fixationAllowance);
+                    }
 
                     // What the world actually fed it, replacing the appetite pass's unrationed
                     // reading. Already share-multiplied — AbsorptiveSample.DensityHere says so,
@@ -2038,6 +2102,31 @@ namespace Evosim.Core
                     }
                 }
 
+                // D098's leg 1, the other half of the transfer. Light does not create energy any
+                // more; it charges a spent unit, and the unit has to actually be there. The same
+                // partial-take rule the charged field has had since the Astra review's R1: the
+                // producer is credited what the water gave.
+                if (ledger.LightIncome > 0f)
+                {
+                    float wanted = ledger.LightIncome / Config.JoulesPerUnit;
+                    float tookUnits = Matter.Take(creature.Point, wanted);
+
+                    if (tookUnits < wanted)
+                    {
+                        FixationShortTakes++;
+                        ledger = ledger.WithLightIncome(tookUnits * Config.JoulesPerUnit);
+                    }
+                }
+
+                // Read against the capacity the cells recorded, which is what the light offered
+                // before uptake bound it. Counted per body-step rather than per part, because the
+                // share the table prints is a share of bodies that were held short.
+                if (creature.HasPhotosyntheticTissue || ledger.LightCapacity > 0f)
+                {
+                    PhotosyntheticSteps++;
+                    if (ledger.UptakeLimited) UptakeLimitedSteps++;
+                }
+
                 if (creature.HasAbsorptiveTissue)
                 {
                     creature.LastShare = share;
@@ -2057,46 +2146,79 @@ namespace Evosim.Core
                 // came to starving.
                 creature.StandingWatts = (ledger.Upkeep + ledger.Neural) / seconds;
 
-                creature.Energy += ledger.Net;
                 creature.Lifetime += ledger;
 
+                // D098's leg 2, and it replaces `creature.Energy += ledger.Net`. A body spends
+                // charged units and returns them spent, so what it spends is bounded by what it
+                // holds: there is no such thing as burning a joule the body does not have, and
+                // the reserve that used to go negative for one step before the death check is
+                // now clamped at zero by the arithmetic rather than by the check. A body that
+                // could not pay in full dies this step, which is the same death §5A.6 always had.
+                float before = creature.Energy;
+                float burnable = Math.Max(0f, before + ledger.Income - ledger.Exuded);
+                float burnt = Math.Min(ledger.Expenditure, burnable);
+                // Applied as one small delta on the reserve, never as `before + income - burnt`
+                // through two roundings of a 200 J intermediate: the merged build's three grid
+                // identity tests read the audit at 1.1 to 1.7e-6 of the light in with the
+                // long form, which is float32 drift and not a leg, and the short form is the
+                // one rounding the old `Energy += Net` made. A body that could not pay is set
+                // to exactly zero, so the death check below never sees a rounding crumb.
+                creature.Energy = burnt < ledger.Expenditure
+                    ? 0f
+                    : before + (ledger.Income - ledger.Exuded - burnt);
+
                 // D070. What the body released to the water this step, put where the body is.
-                // Net already carried the deduction, so this is the other half of a transfer that
-                // is complete only once the field holds it — and it happens *before* the death
-                // check below, so a creature that exudes and then starves in the same step gives
-                // the water both: this step's release, and its tissue.
+                // The reserve update above already carried the deduction, so this is the other
+                // half of a transfer that is complete only once the field holds it — and it
+                // happens *before* the death check below, so a creature that exudes and then
+                // starves in the same step gives the water both: this step's release, and its
+                // tissue.
                 if (ledger.Exuded > 0f)
                 {
                     Nutrients.Deposit(creature.Point, ledger.Exuded);
                     DetritusExudedTotal += ledger.Exuded;
                 }
 
-                // Only sunlight is new energy. What was eaten was already in the world — and what
-                // was torn up and not eaten has left it, which is why a food chain shortens.
+                // Only fixation is new energy, and it was taken out of the spent field a few
+                // lines above: a joule in is a charged unit, never a joule from nowhere.
                 EnergyIn += ledger.LightIncome;
-                EnergyOut += ledger.Expenditure + ledger.Wasted;
 
-                // Turnover — D052. A living body gives back a fraction of what it holds, in
-                // proportion to what it spent staying alive this step, at its own depth rather
-                // than only at death. Capped at what is still locked: a body cannot excrete
-                // matter it does not have. A floor founder starts at 0 and holds only what its
-                // own growth has since bought (rule 5), so the cap alone still keeps a body from
-                // excreting matter it never held.
-                if (Config.ExcretionPerJoule > 0f && creature.LockedMatter > 0f)
+                // The burn, in both books at once. The joules leave the world as heat and the
+                // same over ρ arrives in the spent field where the body is — the whole of D052's
+                // excretion leg, at exactly 1 / ρ and with no knob of its own.
+                if (burnt > 0f)
                 {
-                    // D065 (amended): the fixed matter cost is machinery mass and leaves only
-                    // with the body. Excretion drains the tissue share alone; death deposits the
-                    // rest. At MatterPerCreature = 0 this is exactly the old expression.
-                    float excretable = Math.Max(0f, creature.LockedMatter - Config.MatterPerCreature);
-                    float excreted = Math.Min(
-                        excretable, Config.ExcretionPerJoule * ledger.Upkeep);
+                    EnergyOut += burnt;
+                    float returned = burnt / Config.JoulesPerUnit;
+                    Matter.Deposit(creature.Point, returned);
+                    BurntTotal += returned;
+                }
 
-                    if (excreted > 0f)
+                // D098's leg 3. What the mouth tore up and did not keep is charged matter still,
+                // and it goes back into the water where the feeder is rather than leaving the
+                // world. The transfer loss that shortens a food chain is unchanged in size; what
+                // changed is that it is now somebody else's food.
+                if (ledger.Wasted > 0f)
+                {
+                    Nutrients.Deposit(creature.Point, ledger.Wasted);
+                    DetritusReturnedTotal += ledger.Wasted;
+                }
+
+                // D098's leg 10. A hoard above the cap is released to the water as charged
+                // matter, where a hoard burnt as senescence upkeep would have left the world as
+                // heat (logbook/0101). Counted with exudation, because to the charged field's
+                // flux identity it is the same event: a living body putting charged matter in.
+                // Off at ReserveCapSeconds 0, which is every world before this one.
+                if (Config.ReserveCapSeconds > 0f && creature.StandingWatts > 0f)
+                {
+                    float cap = Config.ReserveCapSeconds * creature.StandingWatts;
+                    if (creature.Energy > cap)
                     {
-                        Matter.Deposit(creature.Point, excreted);
-                        creature.LockedMatter -= excreted;
-                        MatterInBodies -= excreted;
-                        ExcretedTotal += excreted;
+                        float excess = creature.Energy - cap;
+                        creature.Energy = cap;
+                        Nutrients.Deposit(creature.Point, excess);
+                        DetritusExudedTotal += excess;
+                        ReserveTrimmedTotal += excess;
                     }
                 }
 
@@ -2119,18 +2241,16 @@ namespace Evosim.Core
         /// <b>Growth is a transfer, and both books close because it is only ever a transfer.</b>
         /// Energy moves out of <see cref="Organism.Energy"/> and into
         /// <see cref="Organism.TissueJoules"/>, and §5A.2's audit sums both, so nothing is created
-        /// or destroyed and <see cref="AuditResidual"/> never learns that growth happened. Matter
-        /// moves out of <see cref="Matter"/> and into <see cref="Organism.LockedMatter"/> with
-        /// <see cref="MatterInBodies"/> credited in the same breath, which is exactly what
-        /// conception already does, so D074's identity closes for the same reason.
+        /// or destroyed and <see cref="AuditResidual"/> never learns that growth happened. Since
+        /// D098 that is the whole of it: a body's reserve and its tissue are the same charged
+        /// matter, so moving one into the other draws on no field at all and
+        /// <see cref="MatterResidual"/> never learns either.
         /// </para>
         /// <para>
-        /// <b>Three bounds, and the smallest wins.</b> What the reserve can spare above
-        /// <see cref="RunConfig.GrowthReserveFloor"/> of the body it already has; what the water
-        /// within reach can pay for at <see cref="RunConfig.MatterPerTissueJoule"/>; and what is
-        /// left of the adult. A body that cannot draw the matter grows as far as the matter it
-        /// could get and no further (rule 5's last sentence), and <see cref="GrowthShortOfMatter"/>
-        /// is the column that says so.
+        /// <b>Two bounds, and the smaller wins.</b> What the reserve can spare above
+        /// <see cref="RunConfig.GrowthReserveFloor"/> of the body it already has, and what is left
+        /// of the adult. The third — what the water within reach would sell — went with D098's
+        /// matter price; a body that cannot grow now is a body that cannot earn.
         /// </para>
         /// <para>
         /// <b>The body is authoritative and the ledger is charged what the body cost.</b> The new
@@ -2149,12 +2269,6 @@ namespace Evosim.Core
         /// gave the world an appetite, not a schedule.
         /// </para>
         /// <para>
-        /// <b>Matter is charged for the target and tissue is booked for the actual</b>, since the
-        /// scaled body is re-measured after the matter has been bought; the two differ by the
-        /// rounding of a cube root, both identities close, and the rates above are honoured to
-        /// that rounding.
-        /// </para>
-        /// <para>
         /// <b>Nothing here draws from an <see cref="Rng"/>.</b> Growth is arithmetic on a body and
         /// a cell, so a world with growth switched off by every creature already being adult steps
         /// through exactly the trajectory it would have without this pass.
@@ -2162,7 +2276,6 @@ namespace Evosim.Core
         /// </remarks>
         private void Grow()
         {
-            float matterRate = Config.MatterPerTissueJoule;
             float reserveFloor = Config.GrowthReserveFloor;
 
             for (int i = 0; i < _living.Count; i++)
@@ -2181,45 +2294,6 @@ namespace Evosim.Core
                 if (target > remaining) target = remaining;
                 if (!(target > 0f)) continue;
 
-                bool matterBound = false;
-                float paidMatter = 0f;
-
-                if (matterRate > 0f)
-                {
-                    // The gate before the take, for the reason conception has one: a partial take
-                    // that is then abandoned leaks matter out of the world, and it leaks fastest
-                    // exactly when matter is scarce enough to matter.
-                    float affordable = (float)(Matter.ReachableStock(creature.Point) / matterRate);
-                    if (affordable < target)
-                    {
-                        target = affordable;
-                        matterBound = true;
-                    }
-
-                    if (target > 0f)
-                    {
-                        float asked = matterRate * target;
-                        paidMatter = Matter.Take(creature.Point, asked);
-
-                        // Grown only as far as it paid. A vertex field's take can come up a
-                        // rounding short of what its gate promised (D083's second amendment), and
-                        // booking the growth regardless would create tissue from nothing exactly
-                        // as booking a conception's price did.
-                        if (paidMatter < asked)
-                        {
-                            matterBound = true;
-                            target = paidMatter / matterRate;
-                        }
-                    }
-                }
-
-                if (matterBound) GrowthShortOfMatter++;
-                if (!(target > 0f))
-                {
-                    if (paidMatter > 0f) Matter.Deposit(creature.Point, paidMatter);
-                    continue;
-                }
-
                 float fraction = (creature.TissueJoules + target) / adultTissue;
                 if (fraction > 1f) fraction = 1f;
 
@@ -2237,23 +2311,12 @@ namespace Evosim.Core
                 // than the reserve holds. It is reachable only when the increment is already down
                 // in the rounding, and growing anyway would take a creature to a negative reserve
                 // — a death by bookkeeping rather than by starvation, which §5A.6 does not have.
-                // The matter goes back where it came from, as a refused conception's does.
-                if (spend > creature.Energy)
-                {
-                    if (paidMatter > 0f) Matter.Deposit(creature.Point, paidMatter);
-                    continue;
-                }
+                if (spend > creature.Energy) continue;
 
                 creature.Energy -= spend;
                 creature.TissueJoules = actual;
                 creature.Phenotype = grown;
                 creature.BodyFraction = actual >= adultTissue ? 1f : actual / adultTissue;
-
-                if (paidMatter > 0f)
-                {
-                    creature.LockedMatter += paidMatter;
-                    MatterInBodies += paidMatter;
-                }
 
                 // The two cached readings of a body that has just changed size. The standing cost
                 // is asked at this creature's own age so that growing does not quietly reset its
@@ -2292,10 +2355,16 @@ namespace Evosim.Core
         /// <b>One copy of the deposit logic, reached by both causes.</b> Starvation walks the
         /// population and finds this at the bottom of the metabolic loop;
         /// <see cref="KillDiverged"/> arrives from outside <see cref="Step"/> with a body the
-        /// physics has already destroyed. A second copy of "deposit the tissue, return the
-        /// matter, count the death" for the second caller is exactly how the two would come to
-        /// disagree about the audit, and the audit is the one thing here that cannot be allowed
-        /// to drift.
+        /// physics has already destroyed. A second copy of "deposit what the body was, count the
+        /// death" for the second caller is exactly how the two would come to disagree about the
+        /// audit, and the audit is the one thing here that cannot be allowed to drift.
+        /// <para>
+        /// <b>D098: a corpse is the tissue and the reserve, and nothing leaves the world here.</b>
+        /// Until D098 a death booked the body's whole reserve as an outflow — heat — so a
+        /// diverged body's savings were discarded and a senescent body's had already been burnt
+        /// as upkeep (logbook/0101). A reserve is charged matter like any other, so it goes into
+        /// the water with the tissue and feeds somebody.
+        /// </para>
         /// </remarks>
         private void Bury(Organism creature, int index, DeathCause cause)
         {
@@ -2306,36 +2375,29 @@ namespace Evosim.Core
             // nothing among these rows — this row is what does.
             if (creature.HasAbsorptiveTissue) BufferAbsorptiveDeath(creature);
 
-            // Death at exactly zero, not below. A creature carrying negative energy would be
-            // a debt the world has no way to settle, and the §5A.2 audit would never close.
-            // A diverged body is generally solvent, so this is where its whole reserve leaves
-            // the world — the same line, carrying a much larger number.
-            EnergyOut += creature.Energy;
+            // What the body is worth, in one account: the tissue it grew and whatever reserve it
+            // still held. A starved body's reserve is 0 by leg 2, so a starvation corpse is the
+            // tissue exactly as it always was; a diverged body is generally solvent, and this is
+            // the line that stopped throwing its savings away.
+            float remains = creature.TissueJoules + Math.Max(0f, creature.Energy);
             creature.Energy = 0f;
 
             // Rule 6 of fable-propose-grid.md: above zero the body leaves a corpse instead, and
-            // the two deposits below happen in instalments from wherever the corpse has drifted
-            // to. Nothing else about the death changes. The reserve still leaves the world on
-            // the line above, the matter still leaves MatterInBodies, and the lineage row is the
-            // same row. Guarded on the knob rather than written as a general path, so at 0 the
-            // deposits below run exactly as they always have and every world on file replays.
-            if (Config.CorpseDecayPerSecond > 0f &&
-                (creature.TissueJoules > 0f || creature.LockedMatter > 0f))
+            // the deposit below happens in instalments from wherever the corpse has drifted to.
+            // Nothing else about the death changes, and the lineage row is the same row. Guarded
+            // on the knob rather than written as a general path, so at 0 the deposit below runs
+            // exactly as it always has and every world on file replays.
+            if (Config.CorpseDecayPerSecond > 0f && remains > 0f)
             {
                 // A body with nothing to give founds nothing: a floor founder that never paid for
                 // itself and developed into no tissue would otherwise leave an empty object for
                 // the pass to carry and drop.
                 _corpses.Add(new Corpse(
-                    creature.Id, creature.Point.Position, creature.Patch,
-                    creature.TissueJoules, creature.LockedMatter));
+                    creature.Id, creature.Point.Position, creature.Patch, remains));
 
-                // The matter is out of the body from this instant and in the corpse, so
-                // StandingMatter's three accounts add to what its two added to before. The
-                // tissue needs no counterpart line: StandingJoules reads a living body's tissue
-                // and a corpse's joules into the same total, and the body's own is zeroed on the
-                // line after.
-                MatterInBodies -= creature.LockedMatter;
-                creature.LockedMatter = 0f;
+                // No counterpart line for either account: StandingJoules reads a living body's
+                // tissue and reserve and a corpse's joules into the same total, and the body's
+                // own are zeroed here.
                 creature.TissueJoules = 0f;
             }
             else
@@ -2345,22 +2407,8 @@ namespace Evosim.Core
                 // generation zero is the world's first food rather than merely a waste of seeds.
                 // HeightY is the last height Observe accepted, and Observe refuses a non-finite one
                 // — so this is the last *finite* depth even when the body's own transform is NaN.
-                Nutrients.Deposit(creature.Point, creature.TissueJoules);
-                if (creature.TissueJoules > 0f) DetritusDepositedTotal += creature.TissueJoules;
-
-                // Whatever matter is still locked returns to the layer the body died in, and
-                // sinks from there — which is why the deep is rich and the surface is not.
-                // LockedMatter (D052) is what remains after a lifetime of excretion and growth:
-                // the price paid at conception, plus everything rule 5's growth bought, less
-                // everything excretion gave back. A floor founder starts at 0 because it never
-                // paid a conception price, and since growth exists it does not stay there — it
-                // owes back exactly the matter its own growth took out of the water, and no more.
-                if (creature.LockedMatter > 0f)
-                {
-                    Matter.Deposit(creature.Point, creature.LockedMatter);
-                    MatterInBodies -= creature.LockedMatter;
-                    creature.LockedMatter = 0f;
-                }
+                Nutrients.Deposit(creature.Point, remains);
+                if (remains > 0f) DetritusDepositedTotal += remains;
 
                 creature.TissueJoules = 0f;
             }
@@ -2387,7 +2435,7 @@ namespace Evosim.Core
         /// last finite state before calling this.
         /// </para>
         /// <para>
-        /// <b>The books still close.</b> The tissue is deposited and the matter returned at
+        /// <b>The books still close.</b> The tissue and the reserve are deposited at
         /// <see cref="Organism.HeightY"/> — the last height <see cref="Observe"/> accepted, since
         /// it refuses a non-finite one — so §5A.2's audit and the matter identity see exactly what
         /// a starvation of the same body would have moved. The physics is what failed; the
@@ -2822,17 +2870,6 @@ namespace Evosim.Core
         /// </summary>
         private Conception Conceive(Organism parent)
         {
-            // Before anything expensive. See CheapestPossibleChildMatter: if the parent's layer
-            // cannot afford the smallest child that could exist, no mutation of this genome can
-            // be afforded either, and building one to find that out is the dominant cost in a
-            // matter-limited world.
-            if ((Config.MatterPerTissueJoule > 0f || Config.MatterPerCreature > 0f) &&
-                Matter.ReachableStock(parent.Point) < CheapestPossibleChildMatter)
-            {
-                ConceptionsBlockedByMatter++;
-                return Conception.Refused;
-            }
-
             ulong seed = Rng.SeedFor(Seed, _nextIndex++);
 
             Genome childGenome = Mutator.Mutate(
@@ -2903,33 +2940,22 @@ namespace Evosim.Core
 
             float price = tissue + reserve + Config.PerOffspringOverheadJoules;
 
-            if (parent.Energy < price) return Conception.Refused;
-
-            // Energy is necessary and, from D048, no longer sufficient. Tissue is matter, and a
-            // parent with sunlight to spare and nothing dissolved in the water around it does not
-            // breed. Drawn from the parent's own layer, so success at a depth depletes that
-            // depth — the negative feedback the world previously had nowhere at all.
-            // D065 adds the fixed term. Two terms, one price: everything downstream — the stock
-            // check, the Take, LockedMatter, and therefore excretion and the death deposit — sees
-            // a single number and carries the fixed part without knowing it is there.
-            float matterPrice = Config.MatterPerTissueJoule * tissue + Config.MatterPerCreature;
-
-            // Checked before taking, not by taking. NutrientField.Take is a partial-take API:
-            // it removes min(asked, stock) and returns that. Calling it and bailing when the
-            // return is short removes the partial amount and then drops it on the floor, which
-            // leaks matter on every blocked conception — 132 units of 24,000 in a 400 s test,
-            // and it leaks fastest exactly when matter is scarce enough to matter.
-            // A stillbirth is charged no matter: the fixed term (D065) is machinery mass with no
-            // body to sit in, and charging it here put it into MatterInBodies with no owner and no
-            // death to return it -- the Astra review's R2 (2026-09-07). The energy rule is
-            // unchanged: the parent pays the child's start and the overhead, and both leave the
-            // world in Admit, exactly as before.
-            if (!stillborn && matterPrice > 0f &&
-                Matter.ReachableStock(parent.Point) < matterPrice)
+            // D098 §3. The price plus what the genome insists on keeping — the same expression
+            // Organism.ReproductionThreshold applies, so a parent that got here has already
+            // cleared its margin once and this is the exact check rather than a second rule. The
+            // margin is read off the parent's current standing cost, not the one it was born
+            // with, because a body that has grown is a body with more to keep back.
+            if (parent.Energy <
+                price + parent.Genome.Reproduction.ReserveMargin * parent.StandingWatts)
             {
-                ConceptionsBlockedByMatter++;
+                ConceptionsUnderMargin++;
                 return Conception.Refused;
             }
+
+            // D098 retired the second price. A child is charged matter given by its parent and
+            // nothing is drawn from any field, so the one gate above is the whole solvency test:
+            // the two matter gates, the take, the refund and Organism.LockedMatter all went with
+            // MatterPerTissueJoule and MatterPerCreature.
 
             // D077. The last gate, and deliberately after every solvency check and before the
             // first thing that is spent: a body with nowhere to go costs the parent nothing, so
@@ -2972,37 +2998,24 @@ namespace Evosim.Core
                 return Conception.Refused;
             }
 
-            if (!stillborn && matterPrice > 0f)
-            {
-                // What the water gave, not what was asked. The cell field's gate made the two
-                // equal by construction; a vertex field's take can fall a rounding short of
-                // what its gate promised, and the first build booked the price regardless,
-                // which created matter from nothing (D083's second amendment, logbook/0074).
-                // A take short by more than a rounding is a refusal: the matter goes back
-                // where it came from, the reservation is dropped, and the count says so.
-                float taken = Matter.Take(parent.Point, matterPrice);
-
-                if (taken < matterPrice * (1f - 1e-4f))
-                {
-                    if (taken > 0f) Matter.Deposit(parent.Point, taken);
-                    if (shared) Placement.Release();
-                    ConceptionsBlockedByMatter++;
-                    ConceptionsShortOfMatter++;
-                    return Conception.Refused;
-                }
-
-                MatterInBodies += taken;
-                matterPrice = taken;
-            }
-
             parent.Energy -= price;
 
             // The child's body and its first reserve are transferred and stay in the world; the
-            // overhead is burned. It is paid per offspring, so it does not by itself tell one
+            // overhead is burnt. It is paid per offspring, so it does not by itself tell one
             // brood of four from four broods of one (corrected 2026-09-07); the gate above does,
             // by asking the parent to hold the whole litter's investment at once. What the
             // overhead does is make an offspring cost more than the energy it carries (§5A.6).
-            EnergyOut += Config.PerOffspringOverheadJoules;
+            //
+            // D098's leg 2, at the parent's own point: the overhead is a charged unit burnt like
+            // any other, so the joules leave the world and the spent unit returns to the water
+            // where the parent is. It is the largest single burn this world makes.
+            if (Config.PerOffspringOverheadJoules > 0f)
+            {
+                EnergyOut += Config.PerOffspringOverheadJoules;
+                float returnedUnits = Config.PerOffspringOverheadJoules / Config.JoulesPerUnit;
+                Matter.Deposit(parent.Point, returnedUnits);
+                BurntTotal += returnedUnits;
+            }
 
             Organism child = Admit(
                 childGenome, newborn, BirthKind.Reproduction, seed, parent.Id,
@@ -3021,12 +3034,6 @@ namespace Evosim.Core
 
             if (child != null)
             {
-                // What the layer was just charged for this body — D052's starting balance. It
-                // is a balance and no longer a constant: excretion draws it down, and since
-                // fable-propose-growth.md rule 5 every growth step adds the matter the new tissue
-                // was bought with, so a body that reaches adulthood owes the water far more at
-                // death than it was charged at conception.
-                child.LockedMatter = matterPrice;
                 _born.Add(child);
 
                 // Realised fecundity, counted where a birth actually happens rather than
@@ -3169,9 +3176,8 @@ namespace Evosim.Core
         /// <para>
         /// <b>Follows <see cref="EnforceFloor"/>'s accounting exactly, because an inoculant is a
         /// second way energy enters the world from nothing — not a third.</b> Each copy is
-        /// admitted with <see cref="RunConfig.FounderEnergyJoules"/>, zero
-        /// <see cref="Organism.LockedMatter"/> at admission, the same as a floor founder, after
-        /// which its own growth buys matter and owes that back at death (rule 5, 2026-09-08);
+        /// admitted with <see cref="RunConfig.FounderEnergyJoules"/>, credited to
+        /// <see cref="MatterInfluxedTotal"/> over rho like a floor founder's (D098's leg 9);
         /// generation depth 0 and no parent, so it founds its own species
         /// under D057 exactly as a floor founder does (<see cref="AssignSpecies"/> branches on
         /// <c>parent == null</c>, not on <see cref="BirthKind"/>).
@@ -3424,12 +3430,26 @@ namespace Evosim.Core
             {
                 Stillbirths++;
 
-                // The energy still has to balance. A floor spawn's and an inoculation's endowment
-                // were never created (see the EnergyIn credit below), so nothing is owed; an
-                // offspring's was already deducted from its parent, so it leaves the world here and
-                // must be recorded as leaving. Its tissue is zero either way — there is no body to
-                // have paid for.
-                if (kind == BirthKind.Reproduction) EnergyOut += energy;
+                // The matter still has to balance, and since D098 it balances by arriving rather
+                // than by leaving. A floor spawn's and an inoculation's start was never created
+                // (see the EnergyIn credit below), so nothing is owed; an offspring's was already
+                // deducted from its parent — the reserve and the tissue both, since the price is
+                // tissue + reserve + overhead — and it is charged matter that has to go
+                // somewhere. It goes into the water at the point the body would have been born
+                // at, which is the parent's. The overhead stays burnt: it was spent, not given.
+                if (kind == BirthKind.Reproduction)
+                {
+                    float orphaned = energy + tissue;
+                    if (orphaned > 0f)
+                    {
+                        FieldPoint at = parent != null
+                            ? new FieldPoint(new Float3(parent.X, heightY, parent.Z), patch)
+                            : FieldPoint.At(heightY, patch);
+
+                        Nutrients.Deposit(at, orphaned);
+                        DetritusDepositedTotal += orphaned;
+                    }
+                }
 
                 return null;
             }
@@ -3483,7 +3503,15 @@ namespace Evosim.Core
             // inoculant's are created out of nothing, so only those two are income the world has
             // to account for. Conflating any of this with reproduction would let a population
             // manufacture energy by breeding.
-            if (kind == BirthKind.Floor || kind == BirthKind.Inoculation) EnergyIn += energy + tissue;
+            if (kind == BirthKind.Floor || kind == BirthKind.Inoculation)
+            {
+                // D098's leg 9. The experimenter's hand is a source in both books, and the books
+                // say so: the joules are created and the same over ρ is credited as an influx of
+                // matter, so the matter identity closes over a founding lottery that takes
+                // nothing out of the water.
+                EnergyIn += energy + tissue;
+                MatterInfluxedTotal += (energy + tissue) / Config.JoulesPerUnit;
+            }
 
             // D057. After the stillbirth check, not before: a genome that never became a creature
             // has no species to found or inherit, and computing one would be wasted work on top
@@ -3500,7 +3528,7 @@ namespace Evosim.Core
             _lineageEvents.Add(LineageEvent.Birth(
                 ElapsedSeconds, creature.Id, parentId, kind, generationDepth, creature.SpeciesId,
                 HasAbsorptive(phenotype), phenotype.TotalDof > 0, photosynthetic, patch,
-                creature.BodyFraction, genome.AdultScale));
+                creature.BodyFraction, genome.AdultScale, genome.Reproduction.ReserveMargin));
 
             return creature;
         }

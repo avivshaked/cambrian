@@ -21,7 +21,7 @@ namespace Evosim.Core.Tests
 
         private static EnergyLedger At(RunConfig config, float age) =>
             Metabolism.StepAt(
-                Body(config), config, irradiance: 200f, nutrientDensity: 40f,
+                Body(config), config, irradiance: 200f, nutrientDensity: 40f, spentDensity: 1f,
                 workJoules: 0f, seconds: 1f, ageSeconds: age);
 
         [Fact]
@@ -94,9 +94,9 @@ namespace Evosim.Core.Tests
             var body = Body(config, CellTypeIds.Absorptive);
 
             EnergyLedger young = Metabolism.StepAt(
-                body, config, 0f, nutrientDensity: 400f, workJoules: 0f, seconds: 1f, ageSeconds: 0f);
+                body, config, 0f, nutrientDensity: 400f, spentDensity: 1f, workJoules: 0f, seconds: 1f, ageSeconds: 0f);
             EnergyLedger old = Metabolism.StepAt(
-                body, config, 0f, nutrientDensity: 400f, workJoules: 0f, seconds: 1f, ageSeconds: 2_000f);
+                body, config, 0f, nutrientDensity: 400f, spentDensity: 1f, workJoules: 0f, seconds: 1f, ageSeconds: 2_000f);
 
             _output.WriteLine($"drawn {young.PoolDrawn:0.####} vs {old.PoolDrawn:0.####} J");
             _output.WriteLine($"kept  {young.FoodIncome:0.####} vs {old.FoodIncome:0.####} J");
@@ -163,12 +163,19 @@ namespace Evosim.Core.Tests
             // against the immortal world's 6%.
             var lit = new LightModel(300f, 12f);
 
+            // The founders keep nothing back, since D098 (2026-09-18). With the reserve margin
+            // drawn over [0, 600] s the ageing world reached the ceiling too, at t=1311 s, which
+            // is the one thing this test needs it not to do — a world whose founders hoard is a
+            // different world, and not the one the claim above was measured in. Pinned at the
+            // pre-D098 value rather than re-tuning the light a second time: what is being
+            // measured is ageing against no ageing, and both arms must differ in that alone.
             RunConfig Config(float doubling) => new RunConfig
             {
                 MinimumPopulation = 30,
                 MaximumPopulation = 5000,
                 SenescenceDoublingSeconds = doubling,
                 Light = lit,
+                Genome = new RandomGenomeOptions { MinReserveMargin = 0f, MaxReserveMargin = 0f },
             };
 
             (World world, bool exploded, double stoppedAt) Run(float doubling)

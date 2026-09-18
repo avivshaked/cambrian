@@ -1,15 +1,16 @@
 namespace Evosim.Core
 {
     /// <summary>
-    /// A dead body still holding its tissue and its matter, drifting in the water until it has
-    /// leaked both into it. <c>fable-propose-grid.md</c> rule 6.
+    /// A dead body still holding its charged matter, drifting in the water until it has leaked
+    /// all of it into it. <c>fable-propose-grid.md</c> rule 6, as D098 leaves it.
     /// </summary>
     /// <remarks>
     /// <para>
     /// <b>Why a corpse is an object and a trickle is not.</b> Everything else that moves energy
     /// from a body into the water is small and continuous: exudation (D070) is a share of a
-    /// producer's income each step, excretion (D052) a share of a body's matter. Both are
-    /// dissolved on arrival because that is what they physically are. A death is the one large
+    /// producer's income each step, and burning (D098's leg 2) returns a spent unit for every
+    /// joule spent. Both are dissolved on arrival because that is what they physically are. A
+    /// death is the one large
     /// parcel this ecology makes, and dissolving it on the step the body dies turns it into a
     /// density that a sitter reads as well as a swimmer does. Kept as a particle it is a place
     /// worth going to, which is the first prize a mover could win that a sitter cannot have.
@@ -20,11 +21,13 @@ namespace Evosim.Core
     /// something it builds.
     /// </para>
     /// <para>
-    /// <b>Its two stocks are standing.</b> The joules are part of §5A.2's audit and the matter is
-    /// part of D074's identity, from the instant the body dies to the instant the last of them is
-    /// deposited. A corpse is a third account beside the water and the bodies, never a hole
-    /// between them: <see cref="World.StandingJoules"/> and <see cref="World.StandingMatter"/>
-    /// both read it.
+    /// <b>One stock, and it is standing in both books.</b> D098 made a body's tissue and its
+    /// reserve the same substance as the water's dissolved matter, so a corpse has one account
+    /// rather than two: its joules are part of §5A.2's audit and the same joules over
+    /// <see cref="RunConfig.JoulesPerUnit"/> are part of the matter identity, from the instant
+    /// the body dies to the instant the last of them is deposited. A corpse is a third account
+    /// beside the water and the bodies, never a hole between them:
+    /// <see cref="World.StandingJoules"/> and <see cref="World.MatterResidual"/> both read it.
     /// </para>
     /// </remarks>
     public sealed class Corpse
@@ -42,22 +45,18 @@ namespace Evosim.Core
         /// </summary>
         public int Patch { get; internal set; }
 
-        /// <summary>Tissue not yet given back to the water, J.</summary>
+        /// <summary>Charged matter not yet given back to the water, J — tissue plus reserve.</summary>
         public double Joules { get; internal set; }
-
-        /// <summary>Matter not yet given back to the water.</summary>
-        public double Matter { get; internal set; }
 
         /// <summary>Simulated seconds since the death that founded it.</summary>
         public double AgeSeconds { get; internal set; }
 
-        internal Corpse(long creatureId, Float3 position, int patch, double joules, double matter)
+        internal Corpse(long creatureId, Float3 position, int patch, double joules)
         {
             CreatureId = creatureId;
             Position = position;
             Patch = patch;
             Joules = joules;
-            Matter = matter;
         }
 
         /// <summary>Where a deposit from this corpse lands: its position and its patch.</summary>
@@ -65,6 +64,6 @@ namespace Evosim.Core
 
         public override string ToString() =>
             System.FormattableString.Invariant(
-                $"corpse of {CreatureId}: {Joules:0.###} J, {Matter:0.###} matter, {AgeSeconds:0} s old");
+                $"corpse of {CreatureId}: {Joules:0.###} J, {AgeSeconds:0} s old");
     }
 }

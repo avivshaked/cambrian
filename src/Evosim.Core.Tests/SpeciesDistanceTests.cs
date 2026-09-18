@@ -18,6 +18,29 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void TwoGenomesDifferingOnlyInTheirBreedingMarginAreApart()
+        {
+            // D098 §3. A dial selection can move that speciation cannot see is a lineage
+            // splitting invisibly: two populations, one breeding the moment it can pay and one
+            // holding ten minutes of upkeep in hand, would be filed as one species and every
+            // diversity column would say nothing had happened.
+            Genome eager = Fixtures.SelfLoopSpine(3);
+            Genome cautious = eager.Clone();
+
+            ReproductionTraits traits = cautious.Reproduction;
+            traits.ReserveMargin = 600f;
+            cautious.Reproduction = traits;
+
+            Assert.True(
+                SpeciesDistance.Between(eager, cautious, 1f, 1f, 1f, 1f) > 0f,
+                "the margin does not reach the distance, so speciation is blind to it");
+
+            // And two that both keep nothing back are still identical: RelativeDiff's answer for
+            // a pair of zeros is zero, not a division by one.
+            Assert.Equal(0f, SpeciesDistance.Between(eager, eager.Clone(), 1f, 1f, 1f, 1f));
+        }
+
+        [Fact]
         public void TheDistanceIsSymmetricBetweenTwoGenomes()
         {
             Genome a = Fixtures.SelfLoopSpine(3);

@@ -52,6 +52,11 @@ namespace Evosim.Core
         /// Energy density of nutrients at the creature's position, J/m³. Held constant: this
         /// method does not deplete or refill it, unlike <see cref="World"/>'s pool.
         /// </param>
+        /// <param name="spentDensityUnitsPerCubicMetre">
+        /// Spent matter dissolved at the creature's position, units/m3 — D098's leg 1. Held
+        /// constant like the density beside it, so a forecast reads a producer that never strips
+        /// its own water; <see cref="World"/> is where the treadmill is.
+        /// </param>
         /// <param name="shadeFraction">
         /// Fraction of <paramref name="irradianceWattsPerSquareMetre"/> blocked before it reaches
         /// this creature, in [0, 1] — a stand-in for a canopy this lone-creature calculation has
@@ -111,6 +116,7 @@ namespace Evosim.Core
             RunConfig config,
             float irradianceWattsPerSquareMetre,
             float nutrientDensityJoulesPerCubicMetre,
+            float spentDensityUnitsPerCubicMetre,
             float shadeFraction,
             ReproductionTraits reproduction)
         {
@@ -141,6 +147,15 @@ namespace Evosim.Core
                     "Must be finite and non-negative.");
             }
 
+            if (float.IsNaN(spentDensityUnitsPerCubicMetre) ||
+                float.IsInfinity(spentDensityUnitsPerCubicMetre) ||
+                spentDensityUnitsPerCubicMetre < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(spentDensityUnitsPerCubicMetre), spentDensityUnitsPerCubicMetre,
+                    "Must be finite and non-negative.");
+            }
+
             if (float.IsNaN(shadeFraction) || shadeFraction < 0f || shadeFraction > 1f)
             {
                 throw new ArgumentOutOfRangeException(
@@ -164,6 +179,16 @@ namespace Evosim.Core
                     nameof(reproduction));
             }
 
+            if (float.IsNaN(reproduction.ReserveMargin) ||
+                float.IsInfinity(reproduction.ReserveMargin) ||
+                reproduction.ReserveMargin < 0f)
+            {
+                throw new ArgumentException(
+                    $"Reserve margin {reproduction.ReserveMargin} must be finite and " +
+                    "non-negative — the same rule Genome.Validate enforces.",
+                    nameof(reproduction));
+            }
+
             float irradiance = irradianceWattsPerSquareMetre * (1f - shadeFraction);
             float tissue = Metabolism.TissueJoules(phenotype, config);
 
@@ -172,9 +197,11 @@ namespace Evosim.Core
             // ledger's Net reads directly in watts.
             float netWattsAtBirth = Metabolism.StepAt(
                 phenotype, config, irradiance, nutrientDensityJoulesPerCubicMetre,
+                spentDensityUnitsPerCubicMetre,
                 workJoules: 0f, seconds: 1f, ageSeconds: 0f).Net;
 
-            float? breakEvenDensity = FindBreakEvenDensity(phenotype, config, irradiance);
+            float? breakEvenDensity = FindBreakEvenDensity(
+                phenotype, config, irradiance, spentDensityUnitsPerCubicMetre);
 
             // fable-propose-growth.md rules 2 and 3, at the one body this calculator has. A parent
             // spends its investment on the litter; each child's share is that over the brood, and
@@ -185,7 +212,13 @@ namespace Evosim.Core
             float newbornReserve = share * config.NewbornReserveFraction;
             float childBody = Math.Min(share - newbornReserve, tissue);
             float childPrice = childBody + newbornReserve + config.PerOffspringOverheadJoules;
-            float matterPricePerChild = config.MatterPerTissueJoule * childBody + config.MatterPerCreature;
+
+            // D098. The price is in one unit and it is the whole price: a child is charged matter
+            // given by its parent, so what it costs in units is what it costs in joules over rho.
+            // Nothing is drawn from a field, so unlike the matter price this replaces, it is not
+            // a figure hung beside a forecast that never enforced it — it is the same number the
+            // lifetime loop below already spends.
+            float unitsPerChild = childPrice / config.JoulesPerUnit;
             float reproductionGate = reproduction.CostJoules(tissue, config.PerOffspringOverheadJoules);
 
             float energy = newbornReserve;
@@ -202,9 +235,14 @@ namespace Evosim.Core
             {
                 EnergyLedger ledger = Metabolism.StepAt(
                     phenotype, config, irradiance, nutrientDensityJoulesPerCubicMetre,
+                    spentDensityUnitsPerCubicMetre,
                     workJoules: 0f, seconds: StepSeconds, ageSeconds: age);
 
-                energy += ledger.Net;
+                // D098's leg 2 at one body: a body burns no more than it holds, and one that
+                // could not pay in full dies that step with nothing left. Handling is already in
+                // the ledger's Expenditure, so eating's cost reaches this loop for free.
+                float burnable = Math.Max(0f, energy + ledger.Income - ledger.Exuded);
+                energy = burnable - Math.Min(ledger.Expenditure, burnable);
                 age += StepSeconds;
                 elapsed += StepSeconds;
 
@@ -215,7 +253,16 @@ namespace Evosim.Core
                     break;
                 }
 
-                if (reproductionGate <= 0f || energy < reproductionGate) continue;
+                // D098 §3's margin, applied where the world applies it: on top of the gate, in
+                // seconds of what this body is spending at this age. Standing watts is upkeep
+                // plus neural over the step — the same two terms World.Metabolise divides by its
+                // own step to refresh Organism.StandingWatts, taken from this loop's own ledger
+                // rather than recomputed, so senescence reaches the margin as it reaches
+                // everything else and the forecast's gate is the world's gate.
+                float standingWatts = (ledger.Upkeep + ledger.Neural) / StepSeconds;
+                float gate = reproductionGate + reproduction.ReserveMargin * standingWatts;
+
+                if (reproductionGate <= 0f || energy < gate) continue;
 
                 for (int n = 0; n < reproduction.BroodSize; n++)
                 {
@@ -229,7 +276,7 @@ namespace Evosim.Core
 
             return new LedgerForecastResult(
                 netWattsAtBirth, breakEvenDensity, elapsed, children, firstChildSeconds,
-                matterPricePerChild, starved);
+                unitsPerChild, starved);
         }
 
         /// <summary>
@@ -258,7 +305,8 @@ namespace Evosim.Core
         /// about.
         /// </para>
         /// </remarks>
-        private static float? FindBreakEvenDensity(Phenotype phenotype, RunConfig config, float irradiance)
+        private static float? FindBreakEvenDensity(
+            Phenotype phenotype, RunConfig config, float irradiance, float spentDensity)
         {
             bool hasAbsorptive = false;
             for (int i = 0; i < phenotype.Parts.Count; i++)
@@ -274,7 +322,7 @@ namespace Evosim.Core
 
             float NetAt(float density) =>
                 Metabolism.StepAt(
-                    phenotype, config, irradiance, density,
+                    phenotype, config, irradiance, density, spentDensity,
                     workJoules: 0f, seconds: 1f, ageSeconds: 0f).Net;
 
             // Light alone already covers upkeep: density does not need to contribute anything,
@@ -328,11 +376,16 @@ namespace Evosim.Core
         public float? TimeToFirstChildSeconds { get; }
 
         /// <summary>
-        /// Matter each child costs — <see cref="RunConfig.MatterPerTissueJoule"/> × tissue plus
-        /// <see cref="RunConfig.MatterPerCreature"/> — reported regardless of whether matter is
-        /// actually scarce anywhere, since this method has no matter field to check it against.
+        /// Matter each child costs, in units — D098. The child's whole price,
+        /// <c>tissue + reserve + overhead</c>, over <see cref="RunConfig.JoulesPerUnit"/>.
         /// </summary>
-        public float MatterPricePerChild { get; }
+        /// <remarks>
+        /// <b>Enforced, where its predecessor was not.</b> <c>MatterPricePerChild</c> was an
+        /// energy-only forecast with a matter figure hung beside it that the lifetime loop never
+        /// checked. There is one price now and the loop spends it, so this is a restatement of
+        /// what was spent rather than a second currency nobody was charged.
+        /// </remarks>
+        public float UnitsPerChild { get; }
 
         /// <summary>
         /// True when the forecast ended because energy reached zero; false when it ended because
@@ -344,7 +397,7 @@ namespace Evosim.Core
 
         public LedgerForecastResult(
             float netWattsAtBirth, float? breakEvenNutrientDensity, float lifetimeSeconds,
-            int childrenProduced, float? timeToFirstChildSeconds, float matterPricePerChild,
+            int childrenProduced, float? timeToFirstChildSeconds, float unitsPerChild,
             bool diedOfStarvation)
         {
             NetWattsAtBirth = netWattsAtBirth;
@@ -352,7 +405,7 @@ namespace Evosim.Core
             LifetimeSeconds = lifetimeSeconds;
             ChildrenProduced = childrenProduced;
             TimeToFirstChildSeconds = timeToFirstChildSeconds;
-            MatterPricePerChild = matterPricePerChild;
+            UnitsPerChild = unitsPerChild;
             DiedOfStarvation = diedOfStarvation;
         }
 

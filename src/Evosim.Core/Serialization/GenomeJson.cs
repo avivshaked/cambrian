@@ -58,7 +58,13 @@ namespace Evosim.Core
         /// a fraction of a body, so the same number in the same place means something else
         /// entirely, and it carries no size at all.
         /// </remarks>
-        public const int FormatVersion = 5;
+        /// <remarks>
+        /// 6 — D098 §3 (2026-09-18). The breeding margin joins the reproduction object. A
+        /// format-5 genome carries no margin at all, and defaulting the missing field to zero
+        /// would hand every stored creature the one strategy the gene exists to let a lineage
+        /// move off — a genome wearing another's identity, which is what §9 refuses.
+        /// </remarks>
+        public const int FormatVersion = 6;
 
         /// <summary>Written for a row that carries no organism id.</summary>
         public const long NoId = -1;
@@ -86,6 +92,7 @@ namespace Evosim.Core
             w.BeginObject("reproduction")
                 .Field("brood", genome.Reproduction.BroodSize)
                 .Field("investment", genome.Reproduction.BirthInvestment)
+                .Field("margin", genome.Reproduction.ReserveMargin)
                 .EndObject();
 
             w.BeginArray("nodes");
@@ -110,9 +117,12 @@ namespace Evosim.Core
                 throw new FormatException(
                     $"Genome is format {format}, this build reads {FormatVersion}. There is no " +
                     "migration path: re-run, or check out the revision that wrote it. " +
-                    "(Format 5 replaced the offspring endowment in joules with a birth " +
+                    "(Format 6 added the breeding margin (`ReserveMargin`, format 6): the " +
+                    "reserve a parent keeps after a birth, in seconds of its own standing cost. " +
+                    "Format 5 had replaced the offspring endowment in joules with a birth " +
                     "investment as a fraction of the parent's body, and added the adult scale, " +
-                    "so an older genome carries neither a size nor a readable investment.)");
+                    "so a genome older than that carries neither a size nor a readable " +
+                    "investment.)");
             }
 
             var genome = new Genome
@@ -123,6 +133,7 @@ namespace Evosim.Core
                 {
                     BroodSize = root["reproduction"]["brood"].AsInt(),
                     BirthInvestment = root["reproduction"]["investment"].AsFloat(),
+                    ReserveMargin = root["reproduction"]["margin"].AsFloat(),
                 },
             };
 

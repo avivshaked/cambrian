@@ -460,7 +460,6 @@ namespace Evosim.Core.Tests
                 HorizontalPatches = 4f,
                 NutrientMixingDiffusivity = 0.2f,
                 InitialMatterPerCubicMetre = 1f,
-                MatterPerTissueJoule = 0.01f,
                 Current = new CurrentField
                 {
                     Speed = 0.2f, CellMetres = 60f, PeriodSeconds = 300f,
@@ -478,14 +477,20 @@ namespace Evosim.Core.Tests
             for (int i = 0; i < 400; i++) world.Step(1f);
 
             double residual = Math.Abs(world.AuditResidual) / Math.Max(1d, world.EnergyIn);
-            double matterNow = world.StandingMatter;
+            double matterNow = world.StandingMatterUnits;
 
-            _output.WriteLine($"energy residual {residual:0.0e+0}, matter {matter:R} -> {matterNow:R}");
+            _output.WriteLine(
+                $"energy residual {residual:0.0e+0}, matter {matter:R} -> {matterNow:R}, " +
+                $"identity {world.MatterResidual:R}");
 
             Assert.True(residual < 1e-6, $"the energy audit drifted to {residual:0.0e+0}");
+
+            // Not a constant any more: since D098's leg 9 a floor founder is an influx of charged
+            // matter, so the standing total climbs whenever the net fires. What advection must
+            // not move is the identity.
             Assert.True(
-                Math.Abs(matterNow - matter) <= 1e-6 * Math.Max(1d, matter),
-                $"matter went from {matter:R} to {matterNow:R} under advection");
+                Math.Abs(world.MatterResidual) <= 1e-6 * Math.Max(1d, world.MatterInitialTotal),
+                $"matter residual {world.MatterResidual:R} under advection");
         }
 
         private static double[] Snapshot(NutrientField field)

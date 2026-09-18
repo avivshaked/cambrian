@@ -241,11 +241,13 @@ namespace Evosim.Core.Tests
         [Fact]
         public void DetritusFluxCountersReconcileWithTheField()
         {
-            // The detritus-flux instrument (fable-propose-detritus-flux): dead tissue is the
-            // field's only income and feeding its only outflow — settling, mixing, advection and
-            // remineralisation all conserve — so the two cumulative counters must bracket the
-            // standing stock exactly, at any moment, in any world. If a future mechanism moves
-            // joules across the field's boundary without touching a counter, this is what fails.
+            // The detritus-flux instrument (fable-propose-detritus-flux), as D098 leaves it.
+            // The charged field has four ways in — dead tissue, exudation, faeces, and the
+            // reserve cap's trim, which is counted with exudation — and two ways out: feeding,
+            // and the bacteria. Settling, mixing and advection all conserve, so the counters must
+            // bracket the standing stock exactly at any moment in any world. If a future
+            // mechanism moves joules across the field's boundary without touching a counter,
+            // this is what fails.
             var config = new RunConfig { MinimumPopulation = 30, MaximumPopulation = 600 };
             config.Light = new LightModel(400f, 12f);
             var world = new World(config, seed: 1);
@@ -254,14 +256,22 @@ namespace Evosim.Core.Tests
             catch (PopulationRunawayException e) { _output.WriteLine($"stopped: {e.Population} living"); }
 
             double deposited = world.DetritusDepositedTotal;
+            double returned = world.DetritusReturnedTotal;
+            double remineralised = world.RemineralisedTotal;
             double taken = world.DetritusTakenTotal;
             double standing = world.Nutrients.TotalJoules;
-            _output.WriteLine($"deposited {deposited:0.###} taken {taken:0.###} standing {standing:0.###}");
+
+            _output.WriteLine(
+                $"deposited {deposited:0.###} faeces {returned:0.###} remineralised " +
+                $"{remineralised:0.###} taken {taken:0.###} standing {standing:0.###}");
+
+            double income = deposited + returned;
 
             Assert.True(deposited > 0, "nothing died in 300 s — the counter was never exercised");
             Assert.True(
-                Math.Abs(deposited - taken - standing) / Math.Max(1.0, deposited) < 1e-4,
-                $"deposited - taken = {deposited - taken:0.###} J but the field holds {standing:0.###} J");
+                Math.Abs(income - taken - remineralised - standing) / Math.Max(1.0, income) < 1e-4,
+                $"deposited + faeces - taken - remineralised = " +
+                $"{income - taken - remineralised:0.###} J but the field holds {standing:0.###} J");
         }
 
         [Fact]
@@ -350,12 +360,11 @@ namespace Evosim.Core.Tests
         [Fact]
         public void DetritusFluxCountersReconcileWithTheFieldWhileProducersExude()
         {
-            // The sibling of DetritusFluxCountersReconcileWithTheField, with D070's second income
-            // switched on: the field now has two ways in — dead tissue and living release — and
-            // one way out, so the identity gains a term and nothing else. If exudation deposited
-            // into the field without touching its counter, or touched the counter without
-            // depositing, this is what fails; the audit alone would not, since both mistakes are
-            // internal to StandingJoules.
+            // The sibling of DetritusFluxCountersReconcileWithTheField, with D070's income
+            // switched on: the identity gains exudation's term and nothing else. If exudation
+            // deposited into the field without touching its counter, or touched the counter
+            // without depositing, this is what fails; the audit alone would not, since both
+            // mistakes are internal to StandingJoules.
             var config = new RunConfig
             {
                 MinimumPopulation = 30,
@@ -370,33 +379,38 @@ namespace Evosim.Core.Tests
 
             double deposited = world.DetritusDepositedTotal;
             double exuded = world.DetritusExudedTotal;
+            double returned = world.DetritusReturnedTotal;
+            double remineralised = world.RemineralisedTotal;
             double taken = world.DetritusTakenTotal;
             double standing = world.Nutrients.TotalJoules;
 
             _output.WriteLine(
-                $"deposited {deposited:0.###} exuded {exuded:0.###} taken {taken:0.###} " +
-                $"standing {standing:0.###}");
+                $"deposited {deposited:0.###} exuded {exuded:0.###} faeces {returned:0.###} " +
+                $"remineralised {remineralised:0.###} taken {taken:0.###} standing {standing:0.###}");
+
+            double income = deposited + exuded + returned;
 
             Assert.True(deposited > 0, "nothing died in 300 s — the deposit counter was never exercised");
             Assert.True(exuded > 0, "nothing was exuded in 300 s — the new counter was never exercised");
 
             Assert.True(
-                Math.Abs(deposited + exuded - taken - standing) / Math.Max(1.0, deposited + exuded) < 1e-4,
-                $"deposited + exuded - taken = {deposited + exuded - taken:0.###} J but the field " +
-                $"holds {standing:0.###} J");
+                Math.Abs(income - taken - remineralised - standing) / Math.Max(1.0, income) < 1e-4,
+                $"deposited + exuded + faeces - taken - remineralised = " +
+                $"{income - taken - remineralised:0.###} J but the field holds {standing:0.###} J");
         }
 
         [Fact]
         public void EnergyIsConservedWithRemineralisationRunning()
         {
-            // D051: Remineralise is a transfer within Nutrients.TotalJoules, which StandingJoules
-            // already sums whole, so the audit needs no new term. Run it aggressively rather than
-            // at a realistic rate — if any leak existed it would show fastest here.
+            // D098's leg 8 books its own outflow: the joules that leave Nutrients as the
+            // bacteria's heat are added to EnergyOut in the same statement that moves them, and
+            // the units arrive in the spent field. Run aggressively rather than at a realistic
+            // rate — if a half-transfer existed it would show fastest here.
             var config = new RunConfig
             {
                 MinimumPopulation = 30,
                 MaximumPopulation = 600,
-                NutrientRemineralisationPerSecond = 0.01f,
+                RemineralisationPerSecond = 0.01f,
             };
             config.Light = new LightModel(400f, 12f);
             var world = new World(config, seed: 1);
@@ -433,6 +447,95 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void AMarginDelaysTheFirstBirthAndIsExactlyWhatTheParentKeeps()
+        {
+            // D098 §3, both halves of it: a parent that keeps a margin breeds later than the same
+            // parent that keeps none, and what it is left holding afterwards is the margin.
+            //
+            // The two arms are one world. Pinning the founder range to a single value still draws
+            // one number per founder, so the genome stream is identical across the arms and the
+            // only difference between them is what that number is — which is the comparison
+            // CLAUDE.md's wingspan rule says a per-step change can never be given.
+            (double firstBirth, long underMargin, float kept, float owed) Arm(float margin)
+            {
+                var config = new RunConfig
+                {
+                    MinimumPopulation = 30,
+                    MaximumPopulation = 5000,
+                    Light = new LightModel(300f, 12f),
+                    Genome = new RandomGenomeOptions
+                    {
+                        MinReserveMargin = margin, MaxReserveMargin = margin,
+                    },
+                };
+
+                var world = new World(config, seed: 5);
+
+                for (int i = 0; i < 1200; i++)
+                {
+                    try { world.Step(1f); }
+                    catch (PopulationRunawayException) { break; }
+
+                    long parentId = -1;
+                    foreach (LineageEvent evt in world.DrainLineageEvents())
+                    {
+                        if (evt.Kind != LineageEventKind.Birth) continue;
+                        if (evt.BirthKind != BirthKind.Reproduction) continue;
+
+                        Assert.Equal(margin, evt.ReserveMargin);
+                        parentId = evt.ParentId;
+                        break;
+                    }
+
+                    if (parentId < 0) continue;
+
+                    // Read in the same step the birth happened in, before the next step's
+                    // metabolism touches the reserve. A parent that has just paid for its whole
+                    // litter holds the gate less the price, and the gate is the price plus the
+                    // margin — so this is the margin, and anything less is the gate leaking.
+                    foreach (Organism parent in world.Living)
+                    {
+                        if (parent.Id != parentId) continue;
+                        return (world.ElapsedSeconds, world.ConceptionsUnderMargin,
+                                parent.Energy, margin * parent.StandingWatts);
+                    }
+
+                    // The parent died in the same step it bred. Rare, and not this test's
+                    // question — keep looking.
+                }
+
+                return (double.PositiveInfinity, world.ConceptionsUnderMargin, 0f, 0f);
+            }
+
+            var eager = Arm(0f);
+            var cautious = Arm(600f);
+
+            _output.WriteLine(
+                $"first birth: {eager.firstBirth:0} s keeping nothing, {cautious.firstBirth:0} s " +
+                $"keeping 600 s — the cautious parent held {cautious.kept:0.##} J against the " +
+                $"{cautious.owed:0.##} J its margin asks for");
+
+            Assert.True(eager.firstBirth < double.PositiveInfinity, "the eager world never bred at all");
+            Assert.True(
+                cautious.firstBirth > eager.firstBirth,
+                $"a 600 s margin did not delay the first birth: {cautious.firstBirth} s against " +
+                $"{eager.firstBirth} s");
+
+            Assert.True(cautious.owed > 0f, "600 s of a real standing cost is not nothing");
+            Assert.True(
+                cautious.kept >= 0.99f * cautious.owed,
+                $"the parent kept {cautious.kept} J where its margin asks for {cautious.owed} J");
+
+            // And the gate refuses nothing the threshold did not already refuse. The two are one
+            // expression (Organism.ReproductionThreshold), so this counter reads 0 while they
+            // agree and is the instrument that says so — a nonzero here means a price has been
+            // changed on one side of the pair and not the other, which is how the fixed matter
+            // term went wrong in D065. It is not a measure of how hard the margin bites.
+            Assert.Equal(0L, eager.underMargin);
+            Assert.Equal(0L, cautious.underMargin);
+        }
+
+        [Fact]
         public void ReproductionCostsExactlyWhatTheGenomeSays()
         {
             // investment * body + n * overhead — §5A.6, §5A.2c and fable-propose-growth.md rule 2.
@@ -453,8 +556,12 @@ namespace Evosim.Core.Tests
             {
                 ReproductionTraits traits = creature.Genome.Reproduction;
 
+                // Plus D098 §3's margin: the price is what the litter costs, the margin is what
+                // the parent will not be left without, and the threshold is the sum. In seconds
+                // of this body's own standing cost, so it is this creature's number twice over.
                 Assert.Equal(
-                    traits.BirthInvestment * creature.TissueJoules + traits.BroodSize * 25f,
+                    traits.BirthInvestment * creature.TissueJoules + traits.BroodSize * 25f +
+                    traits.ReserveMargin * creature.StandingWatts,
                     creature.ReproductionThreshold(25f), 3);
 
                 // A larger brood must cost more, or brood size is a free parameter and every
@@ -646,392 +753,702 @@ namespace Evosim.Core.Tests
             Assert.NotEqual(First(7), First(8));
         }
 
-        // ------------------------------------------------------------ D048: matter
+        // ------------------------------------------------------------ D098: one substance
 
-        private static RunConfig MatterWorld(float perTissueJoule, float initialPerCubicMetre) =>
+        /// <summary>
+        /// A world whose water holds spent matter, with the economy's knobs at the spec's values.
+        /// </summary>
+        /// <remarks>
+        /// Every test below sets only what it is about and reads the rest from here, so a change
+        /// to a default shows up as one failure with a name rather than as twelve.
+        /// </remarks>
+        private static RunConfig Economy(float spentPerCubicMetre = 1f) =>
             new RunConfig
             {
                 Light = new LightModel(200f, 12f),
-                MatterPerTissueJoule = perTissueJoule,
-                InitialMatterPerCubicMetre = initialPerCubicMetre,
+                InitialMatterPerCubicMetre = spentPerCubicMetre,
             };
 
-        [Fact]
-        public void MatterNeverEntersTheEnergyAudit()
+        /// <summary>One body, alone, with no floor and no breeding: a leg measured on its own.</summary>
+        private static World OneLeaf(RunConfig config, out Organism creature, float heightY = -1f)
         {
-            // §5A.2's audit is a hard equality over joules. Matter is a different substance, and
-            // folding it in would let the books balance by counting the wrong thing — the exact
-            // failure the audit exists to catch. The residual must be blind to it.
-            World without = Run(MatterWorld(0f, 1f), null, seconds: 300f);
-            World with = Run(MatterWorld(0.5f, 1f), null, seconds: 300f);
+            config.MinimumPopulation = 0;
+            config.PerOffspringOverheadJoules = 1e9f; // nothing can afford a child
 
-            _output.WriteLine($"matter off: residual {without.AuditResidual:0.######} J");
-            _output.WriteLine($"matter on : residual {with.AuditResidual:0.######} J, " +
-                              $"standing matter {with.StandingMatter:0.##}");
+            var world = new World(config, seed: 3);
+            world.Inoculate(Leaf(), count: 1, heightY: heightY);
 
-            double scale = Math.Max(1d, with.EnergyIn);
-            Assert.True(
-                Math.Abs(with.AuditResidual) / scale < 1e-6,
-                $"matter opened a hole in the energy audit: {with.AuditResidual} J");
+            creature = world.Living[0];
+            return world;
         }
 
-        [Fact]
-        public void MatterIsConservedBecauseNothingCreatesIt()
+        /// <summary>Both identities, each against the scale of its own book.</summary>
+        /// <remarks>
+        /// <b>Relative, because both totals are sums of floats over thousands of steps.</b> A
+        /// world holding 24,000 units and 90 kJ cannot close either book to an absolute 1e-9, and
+        /// a test that asks it to is measuring float width rather than a leg. The matter book is
+        /// read at 1e-6, which is what the campaign's own reports are read at (CLAUDE.md's
+        /// <c>mat resid</c> rule); the energy book is read at 1e-5, because a body's reserve is a
+        /// float that every step adds to and subtracts from and a few hundred steps of it drift
+        /// by about 2e-6 of the light that went in.
+        /// </remarks>
+        private static void AssertBooksClose(World world)
         {
-            // Seeded once and thereafter only moved: reproduction takes it out of a layer, death
-            // puts it back. A drift here is matter being mined out of nothing, which is how a
-            // nutrient limit stops limiting anything.
-            var config = MatterWorld(0.5f, 1f);
-            var world = new World(config, seed: 1);
-
-            double atStart = 0d;
-            for (float t = 0f; t < 400f; t += 1f)
-            {
-                world.Step(1f);
-                if (t == 0f) atStart = world.StandingMatter;
-            }
-
-            double drift = world.StandingMatter - atStart;
-
-            _output.WriteLine(
-                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}), " +
-                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
+            Assert.True(
+                Math.Abs(world.AuditResidual) <= 1e-5 * Math.Max(1d, world.EnergyIn),
+                $"audit residual {world.AuditResidual:R} of {world.EnergyIn:R} J in");
 
             Assert.True(
-                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
-                $"matter drifted by {drift} — something creates or destroys it");
+                Math.Abs(world.MatterResidual) <= 1e-6 * Math.Max(1d, world.StandingMatterUnits),
+                $"matter residual {world.MatterResidual:R} of {world.StandingMatterUnits:R} units");
         }
 
-        [Fact]
-        public void MatterIsConservedWithRemineralisationRunning()
+        /// <summary>A one-part box of one cell type, in the shape <see cref="AbsorptiveBlob"/> uses.</summary>
+        private static Genome OneBox(string cellTypeId)
         {
-            // D051's matter-side knob, mirroring MatterIsConservedBecauseNothingCreatesIt: the
-            // leak is an internal transfer within Matter.TotalJoules, which StandingMatter already
-            // sums whole, so this must drift no more than the knob-off case does.
-            var config = MatterWorld(0.5f, 1f);
-            config.MatterRemineralisationPerSecond = 0.01f;
-            var world = new World(config, seed: 1);
-
-            double atStart = 0d;
-            for (float t = 0f; t < 400f; t += 1f)
+            var g = new Genome
             {
-                world.Step(1f);
-                if (t == 0f) atStart = world.StandingMatter;
-            }
-
-            double drift = world.StandingMatter - atStart;
-
-            _output.WriteLine(
-                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}), " +
-                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
-
-            Assert.True(
-                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
-                $"matter drifted by {drift} with remineralisation running — something creates or destroys it");
-        }
-
-        // ------------------------------------------------------------ D065: fixed matter cost
-
-        [Fact]
-        public void MatterIsConservedWithAFixedPerCreatureCost()
-        {
-            // The same guard as MatterIsConservedBecauseNothingCreatesIt, run over the leg D065
-            // adds. The fixed term is charged at conception and has to come back the same way the
-            // proportional one does — through excretion while alive and the death deposit — so
-            // free matter + MatterInBodies (both summed by StandingMatter) must still equal what
-            // the column was seeded with. A fixed term that were charged and not locked would
-            // leak on every birth, and leak fastest in exactly the crowded world it exists to
-            // bound.
-            var config = MatterWorld(0.5f, 1f);
-            config.MatterPerCreature = 3f;
-            var world = new World(config, seed: 1);
-
-            double atStart = 0d;
-            for (float t = 0f; t < 400f; t += 1f)
-            {
-                world.Step(1f);
-                if (t == 0f) atStart = world.StandingMatter;
-            }
-
-            double drift = world.StandingMatter - atStart;
-
-            _output.WriteLine(
-                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}), " +
-                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
-
-            Assert.True(world.Births > 0, "nothing bred, so the fixed term was never charged");
-
-            Assert.True(
-                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
-                $"matter drifted by {drift} with a fixed per-creature cost — something creates or destroys it");
-        }
-
-        [Fact]
-        public void MatterIsStillConservedWithTheFixedCostAndExcretionTogether()
-        {
-            // The two knobs meet on one field: excretion drains LockedMatter, and from D065 that
-            // balance starts higher than the tissue price. Run together because the cap is
-            // min(locked, rate·upkeep) — if the fixed term reached the Take but not LockedMatter,
-            // this is where the mismatch shows as a drift rather than as a wrong number nobody
-            // reads.
-            var config = MatterWorld(0.5f, 1f);
-            config.MatterPerCreature = 3f;
-            config.ExcretionPerJoule = 0.05f;
-            var world = new World(config, seed: 1);
-
-            double atStart = 0d;
-            for (float t = 0f; t < 400f; t += 1f)
-            {
-                world.Step(1f);
-                if (t == 0f) atStart = world.StandingMatter;
-            }
-
-            double drift = world.StandingMatter - atStart;
-
-            _output.WriteLine(
-                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}), " +
-                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
-
-            Assert.True(
-                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
-                $"matter drifted by {drift} with the fixed cost and excretion together");
-        }
-
-        [Fact]
-        public void ExcretionNeverDrainsTheFixedMatterTerm()
-        {
-            // The amendment recorded in the D065 comment above World's excretion block:
-            // excretable = max(0, LockedMatter - MatterPerCreature). The rate here is well above
-            // MatterIsStillConservedWithTheFixedCostAndExcretionTogether's 0.05 — that test only
-            // checks conservation and never demonstrates the tissue share actually hits the
-            // floor — chosen so it is enough to drain a creature's whole tissue share well inside
-            // the run: if the cap were missing or wrong, LockedMatter would run straight through
-            // the fixed term of 3 rather than stopping at it. Sampled every step rather than just
-            // at the end, because a floor that is breached mid-run and happens to recover before
-            // t=600 would pass a final-value check and still be wrong. Conservation is checked
-            // the same way the sibling test does — a floor that leaks would show there before it
-            // showed here.
-            var config = MatterWorld(0.5f, 1f);
-            config.MatterPerCreature = 3f;
-            config.ExcretionPerJoule = 5f;
-
-            var world = new World(config, seed: 1);
-
-            double atStart = 0d;
-            float minLocked = float.MaxValue;
-
-            for (float t = 0f; t < 600f; t += 1f)
-            {
-                world.Step(1f);
-                if (t == 0f) atStart = world.StandingMatter;
-
-                foreach (Organism creature in world.Living)
-                {
-                    if (creature.ParentId < 0) continue; // founders never paid the fixed term
-
-                    Assert.True(
-                        creature.LockedMatter >= config.MatterPerCreature - 1e-4f,
-                        $"a living creature's LockedMatter fell to {creature.LockedMatter} at " +
-                        $"t={t}, below the fixed term of {config.MatterPerCreature} — excretion " +
-                        "drained machinery mass");
-
-                    if (creature.LockedMatter < minLocked) minLocked = creature.LockedMatter;
-                }
-            }
-
-            double drift = world.StandingMatter - atStart;
-
-            _output.WriteLine(
-                $"min LockedMatter observed: {minLocked:0.####} (fixed term " +
-                $"{config.MatterPerCreature}), matter {atStart:0.##} -> {world.StandingMatter:0.##} " +
-                $"(drift {drift:0.######}), {world.Births} births");
-
-            Assert.True(world.Births > 0, "nothing bred, so the fixed term was never charged");
-
-            Assert.True(
-                minLocked < config.MatterPerCreature + 1e-3f,
-                $"LockedMatter never approached the fixed term (min {minLocked} vs fixed " +
-                $"{config.MatterPerCreature}) — this excretion rate never exercised the floor, " +
-                "so the test above proves nothing");
-
-            Assert.True(
-                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
-                $"matter drifted by {drift} while excretion was capped at the fixed term");
-        }
-
-        [Fact]
-        public void AChildLocksTheProportionalPricePlusTheFixedOne()
-        {
-            // D065's arithmetic, read off the creatures themselves. Excretion is off, so
-            // LockedMatter cannot have moved since conception and every living child must hold
-            // exactly what it was charged. Founders are skipped: they never paid, so they hold 0
-            // and would drag the assertion onto a creature the rule does not describe.
-            var config = MatterWorld(perTissueJoule: 0.5f, initialPerCubicMetre: 5f);
-            config.MatterPerCreature = 3f;
-            Assert.Equal(0f, config.ExcretionPerJoule);
-
-            var world = new World(config, seed: 1);
-            for (float t = 0f; t < 300f; t += 1f) world.Step(1f);
-
-            Assert.True(world.Births > 0, "nothing bred, so LockedMatter was never set on anything");
-
-            int checkedCount = 0;
-            foreach (Organism creature in world.Living)
-            {
-                if (creature.ParentId < 0) continue;
-
-                Fixtures.AssertClose(
-                    config.MatterPerTissueJoule * creature.TissueJoules + config.MatterPerCreature,
-                    creature.LockedMatter,
-                    1e-3f);
-                checkedCount++;
-            }
-
-            Assert.True(checkedCount > 0, "no reproduction-born creature survived to check");
-        }
-
-        [Fact]
-        public void AFixedCostAloneStillCharges()
-        {
-            // The proportional term at 0 and the fixed term alone: the early-out guard used to
-            // read MatterPerTissueJoule only, so a world priced purely per creature would have
-            // skipped straight past the stock check and bred for free. Every child must hold
-            // exactly the fixed amount, and matter must still be conserved.
-            var config = MatterWorld(perTissueJoule: 0f, initialPerCubicMetre: 5f);
-            config.MatterPerCreature = 2f;
-
-            var world = new World(config, seed: 1);
-            double atStart = 0d;
-            for (float t = 0f; t < 300f; t += 1f)
-            {
-                world.Step(1f);
-                if (t == 0f) atStart = world.StandingMatter;
-            }
-
-            Assert.True(world.Births > 0, "nothing bred");
-
-            int checkedCount = 0;
-            foreach (Organism creature in world.Living)
-            {
-                if (creature.ParentId < 0) continue;
-                Fixtures.AssertClose(2f, creature.LockedMatter, 1e-3f);
-                checkedCount++;
-            }
-
-            Assert.True(checkedCount > 0, "no reproduction-born creature survived to check");
-
-            double drift = world.StandingMatter - atStart;
-            Assert.True(
-                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
-                $"matter drifted by {drift} with only a fixed per-creature cost");
-        }
-
-        [Fact]
-        public void TheCheapestPossibleChildIncludesTheFixedCost()
-        {
-            // CheapestPossibleChildMatter is a private lower bound on any child's price, and the
-            // contract in its own remark is that no conception is refused that the full check
-            // would have allowed. Read here through the only public consequence it has: a layer
-            // holding less than the fixed term alone can afford no child at all, so a world with
-            // no matter in it must block every conception rather than let one through the
-            // early-out. Paired with a zero-fixed-cost control, because a world that blocks
-            // everything for some other reason would pass the first half alone.
-            var barren = MatterWorld(perTissueJoule: 0f, initialPerCubicMetre: 0f);
-            barren.MatterPerCreature = 1f;
-            var blocked = new World(barren, seed: 1);
-            for (float t = 0f; t < 200f; t += 1f) blocked.Step(1f);
-
-            var free = MatterWorld(perTissueJoule: 0f, initialPerCubicMetre: 0f);
-            var unblocked = new World(free, seed: 1);
-            for (float t = 0f; t < 200f; t += 1f) unblocked.Step(1f);
-
-            _output.WriteLine(
-                $"fixed 1 in an empty column: {blocked.Births} births, " +
-                $"{blocked.ConceptionsBlockedByMatter} blocked; " +
-                $"fixed 0: {unblocked.Births} births, {unblocked.ConceptionsBlockedByMatter} blocked");
-
-            Assert.Equal(0f, new RunConfig().MatterPerCreature);
-
-            Assert.True(
-                unblocked.ConceptionsBlockedByMatter == 0,
-                "the control world blocked a conception on matter with both knobs at 0");
-
-            Assert.True(unblocked.Births > 0, "the control world never bred, so it proves nothing");
-
-            Assert.True(
-                blocked.ConceptionsBlockedByMatter > 0,
-                "a column with no matter in it allowed conceptions despite a fixed per-creature cost — " +
-                "the cheapest-child bound does not include the fixed term");
-        }
-
-        [Fact]
-        public void NutrientRemineralisationPerSecondReachesTheArithmetic()
-        {
-            // This project's house rule (CLAUDE.md): before concluding a parameter matters, prove
-            // it reached the thing it configures. Two worlds, identical but for the knob, stepped
-            // long enough for detritus to reach the floor — their floor stocks must differ, or the
-            // config value never made it past the RunConfig field it lives in.
-            var off = new RunConfig
-            {
-                Light = new LightModel(400f, 12f), MinimumPopulation = 30, MaximumPopulation = 600,
-            };
-            var on = new RunConfig
-            {
-                Light = new LightModel(400f, 12f), MinimumPopulation = 30, MaximumPopulation = 600,
-                NutrientRemineralisationPerSecond = 0.01f,
+                Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f },
             };
 
-            var worldOff = new World(off, seed: 7);
-            var worldOn = new World(on, seed: 7);
+            g.Nodes.Add(new MorphNode
+            {
+                CellTypeId = cellTypeId,
+                ShapeId = ShapeIds.Box,
+                Dimensions = new Float3(0.2f, 0.2f, 0.2f),
+                JointType = JointType.Fixed,
+                JointLimits = Array.Empty<Float2>(),
+                RecursiveLimit = 1,
+                Neurons = Array.Empty<NeuronDef>(),
+            });
 
-            // Caught rather than avoided by tuning irradiance down: this test only needs the two
-            // worlds to have run identically long enough for detritus to reach the floor, and a
-            // runaway (D021) is a population outcome unrelated to what it is checking.
-            try { for (int i = 0; i < 600; i++) worldOff.Step(1f); }
-            catch (PopulationRunawayException) { }
-            try { for (int i = 0; i < 600; i++) worldOn.Step(1f); }
-            catch (PopulationRunawayException) { }
+            g.RootIndex = 0;
+            return g;
+        }
 
-            double floorOff = worldOff.Nutrients.StockInLayer(worldOff.Nutrients.LayerCount - 1);
-            double floorOn = worldOn.Nutrients.StockInLayer(worldOn.Nutrients.LayerCount - 1);
+        /// <summary>A leaf: one photosynthetic box, which is the only body that runs leg 1.</summary>
+        private static Genome Leaf() => OneBox(CellTypeIds.Photosynthetic);
 
-            _output.WriteLine($"floor stock: rate 0 -> {floorOff:0.###} J, rate 0.01 -> {floorOn:0.###} J");
+        /// <summary>A mouth: one absorptive box, which is the only body that runs leg 3.</summary>
+        private static Genome Mouth() => OneBox(CellTypeIds.Absorptive);
 
-            Assert.NotEqual(floorOff, floorOn);
+        /// <summary>The standard types with an absorptive cell that keeps half of what it clears.</summary>
+        /// <remarks>
+        /// The default yield is 1, at which a mouth wastes nothing and the faeces leg has nothing
+        /// to move — so a test about faeces has to ask for a feeder that loses something.
+        /// </remarks>
+        private static CellTypeRegistry HalfYieldRegistry() =>
+            new CellTypeRegistry(
+                new StructuralCell(),
+                new LinkCell(),
+                new NeuralCell(),
+                new PhotosyntheticCell(),
+                new AbsorptiveCell(1f, 4f, 0.5f),
+                new ConsumerCell());
+
+        // ---- leg 1: fixation
+
+        [Fact]
+        public void FixationTakesExactlyWhatItCreditsOverRho()
+        {
+            // The leg in one step. What the body's ledger says it fixed is what left the spent
+            // field, to the last float over rho — the two halves of one transfer, which is what
+            // makes the matter identity a check on the energy audit rather than a second story.
+            World world = OneLeaf(Economy(), out Organism creature);
+
+            double spentBefore = world.Matter.TotalJoules;
+            double inBefore = world.EnergyIn;
+
+            world.Step(1f);
+
+            double fixedJoules = world.EnergyIn - inBefore;
+            double unitsTaken = spentBefore - world.Matter.TotalJoules;
+            double burnt = world.BurntTotal;
+
+            _output.WriteLine(
+                $"fixed {fixedJoules:0.######} J, spent field {spentBefore:0.######} -> " +
+                $"{world.Matter.TotalJoules:0.######} units, burnt {burnt:0.######} units back");
+
+            Assert.True(fixedJoules > 0d, "nothing was fixed, so the leg was not exercised");
+
+            // The burn of the same step puts spent units back, so the field's move is the
+            // difference of the two legs and the assertion has to name both.
+            double expected = fixedJoules / world.Config.JoulesPerUnit - burnt;
+            Assert.True(
+                Math.Abs(expected - unitsTaken) <= 1e-6 * Math.Max(1d, world.Matter.TotalJoules),
+                $"the spent field moved {unitsTaken:R} where the ledger says {expected:R}");
+
+            AssertBooksClose(world);
         }
 
         [Fact]
-        public void AWorldWithNoMatterCannotBreedHoweverMuchLightItHas()
+        public void LightBindsInRichWaterAndUptakeBindsInStrippedWater()
         {
-            // The whole point of D048 in one assertion. Sunlight is not sufficient: a parent with
-            // energy to spare and nothing dissolved around it does not reproduce. Before this,
-            // light alone bought everything and no creature's success ever cost the world a
-            // finite thing.
-            World rich = Run(MatterWorld(0.5f, 5f), null, seconds: 400f);
-            World barren = Run(MatterWorld(0.5f, 0f), null, seconds: 400f);
+            // min(L, U x rho), read at the two ends. Rich water gives the pre-D098 light leg
+            // exactly; water stripped to a hundredth of the half-saturation gives a hundredth of
+            // the uptake, and the leaf fixes that instead.
+            World rich = OneLeaf(Economy(spentPerCubicMetre: 10f), out Organism fed);
+            World poor = OneLeaf(Economy(spentPerCubicMetre: 5e-4f), out Organism starved);
 
-            _output.WriteLine($"matter 5/m3: {rich.Births} births, {rich.ConceptionsBlockedByMatter} blocked");
-            _output.WriteLine($"matter 0/m3: {barren.Births} births, {barren.ConceptionsBlockedByMatter} blocked");
+            // Measured from here, because a founder's own start is booked as income too (leg 9)
+            // and reading EnergyIn whole would be reading the experimenter's hand.
+            double richBefore = rich.EnergyIn;
+            double poorBefore = poor.EnergyIn;
+
+            rich.Step(1f);
+            poor.Step(1f);
+
+            double richFixed = rich.EnergyIn - richBefore;
+            double poorFixed = poor.EnergyIn - poorBefore;
+
+            _output.WriteLine(
+                $"rich: {richFixed:0.######} J fixed, uptake bound on " +
+                $"{rich.UptakeLimitedSteps} of {rich.PhotosyntheticSteps} steps; " +
+                $"poor: {poorFixed:0.######} J, {poor.UptakeLimitedSteps} of " +
+                $"{poor.PhotosyntheticSteps}");
+
+            Assert.Equal(1L, rich.PhotosyntheticSteps);
+            Assert.Equal(0L, rich.UptakeLimitedSteps);
+
+            Assert.Equal(1L, poor.PhotosyntheticSteps);
+            Assert.Equal(1L, poor.UptakeLimitedSteps);
+            Assert.True(poorFixed < richFixed * 0.1d, "stripped water fed the leaf anyway");
+
+            // And rich water is the plain light leg: the whole of what the cell offered.
+            // Read off the ledger, not off LightModel.IrradianceAt, which is the water's
+            // irradiance and not the body's — LightField shades a body by what is above it,
+            // so recomputing the capacity by hand measures the shading and not the leg.
+            // Lifetime rather than LastLedger: World only records LastLedger for a body with
+            // absorptive tissue, and this one is a leaf. Over one step the two are the same sum.
+            Assert.Equal(fed.Lifetime.LightCapacity, (float)richFixed, 4);
+            Assert.False(fed.Lifetime.UptakeLimited, "rich water bound the leaf anyway");
+            Assert.NotNull(starved);
+        }
+
+        [Fact]
+        public void UptakeOffIsThePreD098LightLegExactly()
+        {
+            // The knob at 0 is "unbounded uptake": the ceiling is never computed, so the cell
+            // fixes its whole light capacity. It still books a unit of spent matter for every
+            // rho joules it fixes, so the leg is off and the substance is not.
+            RunConfig rich = Economy(spentPerCubicMetre: 10f);
+            rich.UptakeRatePerSquareMetre = 0f;
+
+            World world = OneLeaf(rich, out Organism creature);
+            double before = world.EnergyIn;
+            world.Step(1f);
+            double fixedJoules = world.EnergyIn - before;
+
+            // Lifetime rather than LastLedger, which World records for absorptive bodies only.
+            float capacity = creature.Lifetime.LightCapacity;
+            _output.WriteLine($"capacity {capacity:0.######} J, fixed {fixedJoules:0.######} J");
+
+            Assert.True(capacity > 0f, "the leaf was in the dark, so the knob proves nothing");
+            Assert.Equal(capacity, (float)fixedJoules, 4);
+            Assert.False(creature.Lifetime.UptakeLimited);
+            Assert.Equal(0L, world.UptakeLimitedSteps);
+            Assert.Equal(0L, world.FixationShortTakes);
+            AssertBooksClose(world);
+
+            // And the same knob over water with nothing in it fixes nothing, because the leg is
+            // off and the substance is not: the rationing pass over the spent field finds no
+            // share to give and zeroes the income before any take is attempted. That is why
+            // FixationShortTakes stays at 0 here too — the shortfall is priced, not taken.
+            RunConfig empty = Economy(spentPerCubicMetre: 0f);
+            empty.UptakeRatePerSquareMetre = 0f;
+
+            World dry = OneLeaf(empty, out Organism starved);
+            double dryBefore = dry.EnergyIn;
+            dry.Step(1f);
+
+            _output.WriteLine(
+                $"dry: fixed {dry.EnergyIn - dryBefore:0.######} J, " +
+                $"short takes {dry.FixationShortTakes}");
+
+            Assert.Equal(0d, dry.EnergyIn - dryBefore, 9);
+            Assert.True(starved.Lifetime.LightCapacity > 0f, "the dry leaf was in the dark");
+            AssertBooksClose(dry);
+        }
+
+        // ---- leg 2: burning
+
+        [Fact]
+        public void BurningDepositsExactlyWhatItSpendsOverRho()
+        {
+            // Every joule spent is a charged unit burnt, and the spent unit goes into the water
+            // where the body is. D052's excretion was this leg with a knob; it is now the rate
+            // 1 / rho and has none.
+            World world = OneLeaf(Economy(), out Organism creature);
+
+            double outBefore = world.EnergyOut;
+            double burntBefore = world.BurntTotal;
+
+            world.Step(1f);
+
+            double spent = world.EnergyOut - outBefore;
+            double returned = world.BurntTotal - burntBefore;
+
+            _output.WriteLine($"burnt {spent:0.######} J, returned {returned:0.######} units");
+
+            Assert.True(spent > 0d, "nothing was spent, so the leg was not exercised");
+            Assert.Equal(spent / world.Config.JoulesPerUnit, returned, 9);
+        }
+
+        [Fact]
+        public void ABodyCannotBurnWhatItDoesNotHoldAndDiesAtZero()
+        {
+            // The clamp that replaced the negative-reserve-then-check shape. A body in the dark
+            // spends its reserve and stops at exactly 0; it never carries a debt the world has no
+            // way to settle, and it dies on the step it runs out.
+            RunConfig config = Economy();
+            config.Light = new LightModel(1e-9f, 1f);
+
+            World world = OneLeaf(config, out Organism creature);
+
+            int steps = 0;
+            while (world.Living.Count > 0 && steps < 100_000)
+            {
+                world.Step(1f);
+                steps++;
+                foreach (Organism c in world.Living) Assert.True(c.Energy >= 0f, "a body went into debt");
+            }
+
+            _output.WriteLine($"starved after {steps} s; audit {world.AuditResidual:R}");
+
+            Assert.Empty(world.Living);
+            Assert.Equal(1L, world.Deaths);
+            Assert.Equal(0f, creature.Energy);
+            AssertBooksClose(world);
+        }
+
+        // ---- leg 3: eating
+
+        [Fact]
+        public void FaecesReachTheChargedFieldAndNeverTheAuditsOutflow()
+        {
+            // What a mouth tears up and does not keep used to leave the world as heat. It is
+            // charged matter, so it goes back into the water where the feeder is, and the
+            // transfer loss that shortens a food chain is now somebody else's meal.
+            var config = new RunConfig
+            {
+                Light = new LightModel(1e-9f, 1f),
+                MinimumPopulation = 0,
+                PerOffspringOverheadJoules = 1e9f,
+                CellTypes = HalfYieldRegistry(),
+            };
+
+            config.RemineralisationPerSecond = 0f; // so the step's only outflow is the burn
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Mouth(), count: 1, heightY: -1f);
+
+            // The meal is put in the water by hand, which no leg of the economy does, so both
+            // books open by exactly that deposit before the step under test runs. What is
+            // asserted below is that the step did not move them further.
+            world.Nutrients.Deposit(world.Living[0].Point, 5_000f);
+
+            double auditBefore = world.AuditResidual;
+            double matterBefore = world.MatterResidual;
+            double returnedBefore = world.DetritusReturnedTotal;
+            double outBefore = world.EnergyOut;
+            double burntBefore = world.BurntTotal;
+            Organism feeder = world.Living[0];
+
+            world.Step(1f);
+
+            EnergyLedger ledger = feeder.LastLedger;
+            double returned = world.DetritusReturnedTotal - returnedBefore;
+
+            _output.WriteLine(
+                $"drew {ledger.PoolDrawn:0.######} J, kept {ledger.FoodIncome:0.######} J, " +
+                $"returned {returned:0.######} J; out {world.EnergyOut - outBefore:0.######} J");
+
+            Assert.True(ledger.PoolDrawn > 0f, "the mouth drew nothing, so the leg was not exercised");
+            Assert.True(ledger.Wasted > 0f, "the yield was 1, so there was nothing to return");
+            Assert.Equal(ledger.Wasted, returned, 4);
+
+            // The outflow is the burn alone: the faeces are still in the world.
+            Assert.Equal(
+                (world.BurntTotal - burntBefore) * world.Config.JoulesPerUnit,
+                world.EnergyOut - outBefore, 4);
+
+            // Both books are open by the hand-seeded meal and by nothing else, so what is asked
+            // of them is that the step did not move them, not that they close.
+            Assert.Equal(auditBefore, world.AuditResidual, 3);
+            Assert.Equal(matterBefore, world.MatterResidual, 3);
+        }
+
+        [Fact]
+        public void HandlingIsChargedOnTheDrawAndIsBurnt()
+        {
+            // Eating is not free. The cost is on what the mouth cleared, not on what it kept, so
+            // a feeder in water it cannot assimilate still pays — and it is an expenditure like
+            // any other, which means it burns and returns its spent unit.
+            var withCost = new RunConfig
+            {
+                Light = new LightModel(1e-9f, 1f),
+                MinimumPopulation = 0,
+                PerOffspringOverheadJoules = 1e9f,
+                HandlingCostPerJouleEaten = 0.25f,
+            };
+
+            var free = new RunConfig
+            {
+                Light = new LightModel(1e-9f, 1f),
+                MinimumPopulation = 0,
+                PerOffspringOverheadJoules = 1e9f,
+                HandlingCostPerJouleEaten = 0f,
+            };
+
+            EnergyLedger Feed(RunConfig config)
+            {
+                var world = new World(config, seed: 3);
+                world.Inoculate(Mouth(), count: 1, heightY: -1f);
+                world.Nutrients.Deposit(world.Living[0].Point, 5_000f);
+                world.Step(1f);
+                return world.Living[0].LastLedger;
+            }
+
+            EnergyLedger paid = Feed(withCost);
+            EnergyLedger unpaid = Feed(free);
+
+            _output.WriteLine(
+                $"handling {paid.Handling:0.######} J on a draw of {paid.PoolDrawn:0.######} J; " +
+                $"free world's handling {unpaid.Handling:0.######} J");
+
+            Assert.Equal(0f, unpaid.Handling);
+            Assert.Equal(0.25f * paid.PoolDrawn, paid.Handling, 4);
+            Assert.True(paid.Expenditure > unpaid.Expenditure, "handling never reached the expenditure");
+            Assert.Equal(paid.Upkeep + paid.Neural + paid.Work + paid.Handling, paid.Expenditure, 5);
+        }
+
+        // ---- legs 5 and 6: a child, and growth
+
+        [Fact]
+        public void AChildMovesItsPriceFromTheParentAndBurnsTheOverheadAlone()
+        {
+            // The price is tissue + reserve + overhead. The first two are charged matter handed
+            // over and stay in the world; the third is burnt at the parent's point. Nothing is
+            // drawn from any field, which is the whole of what D098 took away from conception.
+            var config = new RunConfig
+            {
+                Light = new LightModel(400f, 12f),
+                MinimumPopulation = 0,
+                InitialMatterPerCubicMetre = 50f,
+            };
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Leaf(), count: 1, heightY: -0.5f);
+
+            double residual = world.MatterResidual;
+            long births = 0;
+
+            for (int step = 0; step < 4_000 && births == 0; step++)
+            {
+                double outBefore = world.EnergyOut;
+                double burntBefore = world.BurntTotal;
+
+                world.Step(1f);
+
+                births = world.Births;
+                if (births == 0) continue;
+
+                // The overhead is burnt once per birth, on top of whatever the metabolic step
+                // burnt; the identity below is what says nothing else left.
+                double spent = world.EnergyOut - outBefore;
+                double returned = world.BurntTotal - burntBefore;
+
+                _output.WriteLine(
+                    $"a birth at t={world.ElapsedSeconds:0} s: {spent:0.###} J out, " +
+                    $"{returned:0.###} units returned, residual {world.MatterResidual:R}");
+
+                Assert.True(
+                    spent >= config.PerOffspringOverheadJoules,
+                    "the overhead was not burnt");
+                Assert.Equal(spent / config.JoulesPerUnit, returned, 6);
+            }
+
+            Assert.True(births > 0, "nothing bred, so the leg was never exercised");
+            Assert.Equal(residual, world.MatterResidual, 4);
+            AssertBooksClose(world);
+        }
+
+        [Fact]
+        public void GrowthDrawsNothingFromAnyField()
+        {
+            // Rule 5's transfer, under one substance: reserve into tissue, and both are summed by
+            // StandingJoules, so neither identity learns that growth happened.
+            var config = new RunConfig
+            {
+                Light = new LightModel(400f, 12f),
+                MinimumPopulation = 0,
+                PerOffspringOverheadJoules = 1e9f,
+                InitialMatterPerCubicMetre = 50f,
+            };
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Leaf(), count: 1, heightY: -0.5f);
+
+            Organism creature = world.Living[0];
+            float tissueBefore = creature.TissueJoules;
+
+            for (int step = 0; step < 300; step++) world.Step(1f);
+
+            _output.WriteLine(
+                $"tissue {tissueBefore:0.####} -> {creature.TissueJoules:0.####} J, fraction " +
+                $"{creature.BodyFraction:0.####}, residual {world.MatterResidual:R}");
+
+            Assert.True(creature.TissueJoules > tissueBefore, "nothing grew");
+            AssertBooksClose(world);
+        }
+
+        // ---- leg 7: death
+
+        [Fact]
+        public void ACorpseCarriesTissueAndReserveTogether()
+        {
+            // A diverged body is generally solvent, and its savings used to be booked out as
+            // heat. Charged matter does not evaporate: the corpse is worth what the body was.
+            var config = new RunConfig
+            {
+                Light = new LightModel(400f, 12f),
+                MinimumPopulation = 0,
+                PerOffspringOverheadJoules = 1e9f,
+                InitialMatterPerCubicMetre = 50f,
+                CorpseDecayPerSecond = 0.01f,
+            };
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Leaf(), count: 1, heightY: -0.5f);
+
+            for (int step = 0; step < 200; step++) world.Step(1f);
+
+            Organism victim = world.Living[0];
+            float reserve = victim.Energy;
+            float tissue = victim.TissueJoules;
+
+            Assert.True(reserve > 0f, "the body had no reserve, so the test measures half a rule");
+
+            double outBefore = world.EnergyOut;
+            world.KillDiverged(victim);
+
+            _output.WriteLine(
+                $"buried {tissue:0.####} J of tissue and {reserve:0.####} J of reserve into a " +
+                $"corpse of {world.CorpseJoules:0.####} J");
+
+            Assert.Single(world.Corpses);
+            Assert.Equal(tissue + reserve, world.CorpseJoules, 4);
+            Assert.Equal(outBefore, world.EnergyOut, 6);
+            AssertBooksClose(world);
+        }
+
+        // ---- leg 8: remineralisation
+
+        [Fact]
+        public void RemineralisationMovesTheFractionAndBooksTheHeat()
+        {
+            // The bacteria: charged matter in the water decays into spent matter in the same
+            // place, the joules leave the world and the units arrive. Measured over a step with
+            // nothing alive in it, so the only thing moving is the leg.
+            var config = new RunConfig
+            {
+                Light = new LightModel(1e-9f, 1f),
+                MinimumPopulation = 0,
+                InitialMatterPerCubicMetre = 0f,
+                RemineralisationPerSecond = 0.01f,
+                NutrientSinkMetresPerSecond = 0f,
+                MatterSinkMetresPerSecond = 0f,
+                NutrientMixingDiffusivity = 0f,
+                MatterMixingDiffusivity = 0f,
+            };
+
+            var world = new World(config, seed: 3);
+            world.Nutrients.Deposit(FieldPoint.At(-10.5f, 0), 10_000f);
+
+            // Seeded by hand, so both books open by that deposit and what matters is that the
+            // leg below moves neither of them further.
+            double auditBefore = world.AuditResidual;
+            double matterBefore = world.MatterResidual;
+
+            double chargedBefore = world.Nutrients.TotalJoules;
+            double outBefore = world.EnergyOut;
+
+            world.Step(1f);
+
+            double moved = chargedBefore - world.Nutrients.TotalJoules;
+            double expected = chargedBefore * (1d - Math.Exp(-(double)config.RemineralisationPerSecond * 1d));
+
+            _output.WriteLine(
+                $"moved {moved:0.######} J of {chargedBefore:0.###}; spent field holds " +
+                $"{world.Matter.TotalJoules:0.######} units");
+
+            Assert.Equal(expected, moved, 4);
+            Assert.Equal(moved, world.RemineralisedTotal, 4);
+            Assert.Equal(moved, world.EnergyOut - outBefore, 4);
+            Assert.Equal(moved / config.JoulesPerUnit, world.Matter.TotalJoules, 6);
+            Assert.Equal(auditBefore, world.AuditResidual, 4);
+            Assert.Equal(matterBefore, world.MatterResidual, 4);
+        }
+
+        // ---- leg 9: founders
+
+        [Fact]
+        public void AFounderIsAnInfluxInBothBooks()
+        {
+            // The experimenter's hand is a source, and the books say so in both units: the joules
+            // are created and the same over rho is credited as matter flowing in, so a founding
+            // lottery takes nothing out of the water and opens neither identity.
+            var config = new RunConfig
+            {
+                Light = new LightModel(1e-9f, 1f),
+                MinimumPopulation = 0,
+                InitialMatterPerCubicMetre = 1f,
+            };
+
+            var world = new World(config, seed: 3);
+
+            double inBefore = world.EnergyIn;
+            double influxBefore = world.MatterInfluxedTotal;
+            double spentBefore = world.Matter.TotalJoules;
+
+            world.Inoculate(Leaf(), count: 1, heightY: -1f);
+
+            double created = world.EnergyIn - inBefore;
+            double credited = world.MatterInfluxedTotal - influxBefore;
+
+            _output.WriteLine(
+                $"created {created:0.######} J, credited {credited:0.######} units of influx");
+
+            Assert.True(created > 0d, "nothing was created, so the leg was not exercised");
+            Assert.Equal(created / config.JoulesPerUnit, credited, 6);
+            Assert.Equal(spentBefore, world.Matter.TotalJoules, 9);
+            AssertBooksClose(world);
+        }
+
+        // ---- leg 10: the reserve cap
+
+        [Fact]
+        public void TheReserveCapTrimsAHoardIntoTheWaterAndIsOffAtZero()
+        {
+            // The lever: above the cap a body's savings go into the larder while it still lives,
+            // instead of being burnt as senescence upkeep and leaving the world as heat.
+            RunConfig Config(float cap) => new RunConfig
+            {
+                Light = new LightModel(400f, 12f),
+                MinimumPopulation = 0,
+                PerOffspringOverheadJoules = 1e9f,
+                InitialMatterPerCubicMetre = 50f,
+                ReserveCapSeconds = cap,
+            };
+
+            World capped = OneLeafWorld(Config(60f));
+            World uncapped = OneLeafWorld(Config(0f));
+
+            for (int step = 0; step < 600; step++)
+            {
+                capped.Step(1f);
+                uncapped.Step(1f);
+            }
+
+            Organism held = capped.Living[0];
+
+            _output.WriteLine(
+                $"capped: reserve {held.Energy:0.####} J against a cap of " +
+                $"{60f * held.StandingWatts:0.####} J, trimmed {capped.ReserveTrimmedTotal:0.####} J; " +
+                $"uncapped: {uncapped.Living[0].Energy:0.####} J, trimmed " +
+                $"{uncapped.ReserveTrimmedTotal:0.####} J");
+
+            Assert.Equal(0d, uncapped.ReserveTrimmedTotal);
+            Assert.True(capped.ReserveTrimmedTotal > 0d, "the cap never fired");
+            Assert.True(held.Energy <= 60f * held.StandingWatts + 1e-3f, "the reserve ran past its cap");
+
+            // The trim is charged matter released by a living body, so it is counted with D070's
+            // exudation and it is in the water rather than gone.
+            Assert.True(capped.DetritusExudedTotal >= capped.ReserveTrimmedTotal);
+            AssertBooksClose(capped);
+        }
+
+        private static World OneLeafWorld(RunConfig config)
+        {
+            var world = new World(config, seed: 3);
+            world.Inoculate(Leaf(), count: 1, heightY: -0.5f);
+            return world;
+        }
+
+        // ---- the two identities, over a world with every leg running
+
+        [Fact]
+        public void AGridTankWithEveryLegRunningClosesBothBooks()
+        {
+            // The whole economy at once, in the campaign's shape: a tank on a grid, fixation
+            // bound by uptake, handling, exudation, remineralisation, corpses, growth, breeding
+            // and deaths. Either identity alone can be closed by a leg that did one half of a
+            // transfer; the pair cannot.
+            var config = new RunConfig
+            {
+                Light = new LightModel(100f, 6f),
+                SharedSpace = true,
+                WorldShape = WorldShape.Tank,
+                FieldModel = MatterField.Grid,
+                WorldAreaSquareMetres = 100f,
+                WorldDepthMetres = 20f,
+                HorizontalPatches = 4f,
+                FieldCellMetres = 1f,
+                FieldMatterCellMetres = 1f,
+                MatterBudgetUnits = 400f,
+                FloorClosesAfterSeconds = 500f,
+
+                RemineralisationPerSecond = 5e-4f,
+                HandlingCostPerJouleEaten = 0.1f,
+                ReserveCapSeconds = 600f,
+                ExudationFraction = 0.15f,
+                CorpseDecayPerSecond = 0.01f,
+                SenescenceDoublingSeconds = 3000f,
+
+                NutrientMixingDiffusivity = 0.2f,
+                HorizontalMixingDiffusivity = 0.2f,
+                MatterMixingDiffusivity = 0.2f,
+                NutrientSinkMetresPerSecond = 0.002f,
+                MatterSinkMetresPerSecond = 0.002f,
+            };
+
+            var world = new World(config, seed: 5);
+
+            for (int step = 0; step < 6_000; step++) world.Step(0.5f);
+
+            _output.WriteLine(
+                $"alive {world.Living.Count}, births {world.Births}, deaths {world.Deaths}, " +
+                $"corpses {world.Corpses.Count}; fixed {world.EnergyIn:0} J, burnt " +
+                $"{world.BurntTotal:0.###} units, remineralised {world.RemineralisedTotal:0.###} J, " +
+                $"faeces {world.DetritusReturnedTotal:0.###} J, trimmed " +
+                $"{world.ReserveTrimmedTotal:0.###} J; uptake bound on {world.UptakeLimitedSteps} " +
+                $"of {world.PhotosyntheticSteps} photosynthetic body-steps; " +
+                $"audit {world.AuditResidual:R} of {world.EnergyIn:0}, matter " +
+                $"{world.MatterResidual:R} of {world.MatterInitialTotal:0}");
+
+            Assert.True(world.Births > 0, "nothing was born, so the economy was not exercised");
+            Assert.True(world.Deaths > 0, "nothing died, so the corpse leg never ran");
+            Assert.True(world.BurntTotal > 0d, "nothing burnt");
+            Assert.True(world.RemineralisedTotal > 0d, "remineralisation never fired");
+            Assert.True(world.PhotosyntheticSteps > 0, "nothing photosynthesised");
 
             Assert.True(
-                barren.Births == 0,
-                $"a world with no matter produced {barren.Births} births");
+                Math.Abs(world.AuditResidual) <= 1e-6 * Math.Max(1d, world.EnergyIn),
+                $"audit residual {world.AuditResidual:R} of {world.EnergyIn:R} J in");
+
             Assert.True(
-                barren.ConceptionsBlockedByMatter > 0,
-                "nothing even tried to breed, so this proves nothing about matter");
-            Assert.True(
-                rich.Births > 0,
-                $"the same world with matter produced no births either — light is the binding " +
-                $"constraint here and this test measures nothing");
+                Math.Abs(world.MatterResidual) <= 1e-6 * Math.Max(1d, world.MatterInitialTotal),
+                $"matter residual {world.MatterResidual:R} of {world.MatterInitialTotal:R} units");
         }
 
         [Fact]
         public void SuccessAtADepthStripsThatDepth()
         {
-            // The feedback the world had nowhere: reproducing somewhere makes that somewhere
-            // worse. Founders are scattered through the lit zone and breed there, so the layers
-            // they occupy must end up poorer in matter than the ones they do not.
-            var config = MatterWorld(0.5f, 1f);
+            // The feedback the world had nowhere, moved from conception to fixation: earning
+            // somewhere makes that somewhere worse. Founders are scattered through the lit zone
+            // and fix there, so the layers they occupy must end up poorer in spent matter than
+            // the ones they do not.
+            RunConfig config = Economy();
             config.MatterMixingDiffusivity = 0f;   // isolate the draw from the stirring
             config.MatterSinkMetresPerSecond = 0f; // and from the falling
 
@@ -1048,17 +1465,16 @@ namespace Evosim.Core.Tests
             }
 
             _output.WriteLine(
-                $"{stripped} layers depleted, {untouched} untouched, " +
-                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
+                $"{stripped} layers depleted, {untouched} untouched, {world.Births} births, " +
+                $"uptake bound on {world.UptakeLimitedSteps} of {world.PhotosyntheticSteps} steps");
 
-            Assert.True(world.Births > 0, "nothing bred, so nothing could have stripped anything");
             Assert.True(
                 stripped > 0,
-                "no layer lost matter — reproduction is not drawing from where the parent is");
+                "no layer lost matter — fixation is not drawing from where the body is");
             Assert.True(
                 untouched > 0,
                 "every layer was depleted equally, which means the draw is not local and the " +
-                "gradient D048 exists to create cannot form");
+                "gradient the economy exists to create cannot form");
         }
 
         private static double[] LayerMatter(World world)
@@ -1066,259 +1482,6 @@ namespace Evosim.Core.Tests
             var layers = new double[world.Matter.LayerCount];
             for (int i = 0; i < layers.Length; i++) layers[i] = world.Matter.StockInLayer(i);
             return layers;
-        }
-
-        // ------------------------------------------------------------ D052: excretion
-
-        [Fact]
-        public void ExcretionPerJouleDefaultZeroLeavesLockedMatterUnchangedFromConception()
-        {
-            // Bit-identical to the world before this knob existed: with the rate at 0, a body's
-            // LockedMatter must never move except at conception (set to the price paid) and at
-            // death (drained to 0) — which is exactly what the field held before D052, computed
-            // fresh from TissueJoules at the moment of death rather than tracked across a
-            // lifetime.
-            var config = MatterWorld(perTissueJoule: 0.5f, initialPerCubicMetre: 5f);
-            Assert.Equal(0f, config.ExcretionPerJoule);
-
-            var world = new World(config, seed: 1);
-            for (float t = 0f; t < 300f; t += 1f) world.Step(1f);
-
-            Assert.True(world.Births > 0, "nothing bred, so LockedMatter was never set on anything");
-
-            int checkedCount = 0;
-            foreach (Organism creature in world.Living)
-            {
-                if (creature.ParentId < 0) continue; // founders never held matter to begin with
-
-                Fixtures.AssertClose(
-                    config.MatterPerTissueJoule * creature.TissueJoules, creature.LockedMatter, 1e-3f);
-                checkedCount++;
-            }
-
-            Assert.True(checkedCount > 0, "no reproduction-born creature survived to check");
-        }
-
-        [Fact]
-        public void ExcretionMovesExactlyWhatItDebitsInAQuietStep()
-        {
-            // Isolated from every other mover of matter — sink, mixing and remineralisation are
-            // all at their bit-identical-default of 0 already (MatterWorld does not set them) —
-            // so whatever the field gains and MatterInBodies loses in one step with no births and
-            // no deaths is excretion and nothing else. Reproduction is let run long enough to
-            // give some living creatures a nonzero LockedMatter, then frozen (an overhead no
-            // parent can ever afford) so a birth-free, death-free step can be found and measured.
-            var config = MatterWorld(perTissueJoule: 0.5f, initialPerCubicMetre: 5f);
-            config.ExcretionPerJoule = 0.02f;
-            config.MinimumPopulation = 20;
-
-            var world = new World(config, seed: 3);
-            for (int i = 0; i < 200; i++) world.Step(1f);
-
-            Assert.True(world.Births > 0, "nothing bred, so nothing has locked matter to excrete");
-
-            // Freeze reproduction from here on — the same RunConfig instance the world already
-            // holds, so this reaches Reproduce() on the very next step with no other channel for
-            // a creature to appear or disappear except death.
-            config.PerOffspringOverheadJoules = 1e9f;
-
-            for (int i = 0; i < 500; i++)
-            {
-                long birthsBefore = world.Births, deathsBefore = world.Deaths;
-
-                var lockedBefore = new Dictionary<long, float>();
-                var upkeepBefore = new Dictionary<long, float>();
-                bool growingBefore = false;
-                foreach (Organism c in world.Living)
-                {
-                    lockedBefore[c.Id] = c.LockedMatter;
-                    upkeepBefore[c.Id] = c.Lifetime.Upkeep;
-                    if (c.BodyFraction < 1f) growingBefore = true;
-                }
-
-                double matterInBodiesBefore = world.MatterInBodies;
-                double totalMatterBefore = world.Matter.TotalJoules;
-
-                world.Step(1f);
-
-                if (world.Births != birthsBefore || world.Deaths != deathsBefore) continue;
-
-                // Quiet now means nobody grew either. Growth draws matter into a body at
-                // MatterPerTissueJoule (fable-propose-growth.md rule 5), which moves
-                // MatterInBodies in the opposite direction to excretion on the same step and
-                // would be netted into the reading. Every body reaches its adult size and stops,
-                // so a quiet step arrives a little later than it used to.
-                bool growing = growingBefore;
-                foreach (Organism c in world.Living)
-                {
-                    if (c.BodyFraction < 1f) { growing = true; break; }
-                }
-                if (growing) continue;
-
-                double expected = 0d;
-                foreach (Organism c in world.Living)
-                {
-                    if (!lockedBefore.TryGetValue(c.Id, out float locked) || locked <= 0f) continue;
-
-                    float upkeepThisStep = c.Lifetime.Upkeep - upkeepBefore[c.Id];
-                    expected += Math.Min(locked, config.ExcretionPerJoule * upkeepThisStep);
-                }
-
-                if (expected <= 0d) continue; // no locked-matter creature paid upkeep this step
-
-                double matterInBodiesFell = matterInBodiesBefore - world.MatterInBodies;
-                double fieldRose = world.Matter.TotalJoules - totalMatterBefore;
-
-                _output.WriteLine(
-                    $"expected {expected:0.######}: MatterInBodies fell {matterInBodiesFell:0.######}, " +
-                    $"field rose {fieldRose:0.######}");
-
-                Assert.True(
-                    Math.Abs(matterInBodiesFell - expected) < 1e-4,
-                    "MatterInBodies did not fall by exactly what excretion moved");
-                Assert.True(
-                    Math.Abs(fieldRose - expected) < 1e-4,
-                    "the field did not gain exactly what excretion moved");
-                return;
-            }
-
-            Assert.Fail("never found a quiet (birth-free, death-free) step with excretion to measure");
-        }
-
-        [Fact]
-        public void ExcretedTotalIncrementsByExactlyWhatExcretionDebitsFromBodies()
-        {
-            // Same isolation and the same freeze-then-measure shape as
-            // ExcretionMovesExactlyWhatItDebitsInAQuietStep, checked against World.ExcretedTotal
-            // instead of the field and MatterInBodies — the pre-round-8 experiment contract's
-            // excretion-flux column reads this counter as a delta between two samples, and that
-            // delta has to equal the debit exactly or the column would misreport the flux it
-            // exists to show.
-            var config = MatterWorld(perTissueJoule: 0.5f, initialPerCubicMetre: 5f);
-            config.ExcretionPerJoule = 0.02f;
-            config.MinimumPopulation = 20;
-
-            var world = new World(config, seed: 3);
-            for (int i = 0; i < 200; i++) world.Step(1f);
-
-            Assert.True(world.Births > 0, "nothing bred, so nothing has locked matter to excrete");
-
-            // Freeze reproduction from here on, exactly as the sibling test does, so a quiet step
-            // with no other channel for LockedMatter to appear or disappear can be found.
-            config.PerOffspringOverheadJoules = 1e9f;
-
-            for (int i = 0; i < 500; i++)
-            {
-                long birthsBefore = world.Births, deathsBefore = world.Deaths;
-
-                var lockedBefore = new Dictionary<long, float>();
-                var upkeepBefore = new Dictionary<long, float>();
-                foreach (Organism c in world.Living)
-                {
-                    lockedBefore[c.Id] = c.LockedMatter;
-                    upkeepBefore[c.Id] = c.Lifetime.Upkeep;
-                }
-
-                double excretedTotalBefore = world.ExcretedTotal;
-
-                world.Step(1f);
-
-                if (world.Births != birthsBefore || world.Deaths != deathsBefore) continue;
-
-                double expected = 0d;
-                foreach (Organism c in world.Living)
-                {
-                    if (!lockedBefore.TryGetValue(c.Id, out float locked) || locked <= 0f) continue;
-
-                    float upkeepThisStep = c.Lifetime.Upkeep - upkeepBefore[c.Id];
-                    expected += Math.Min(locked, config.ExcretionPerJoule * upkeepThisStep);
-                }
-
-                if (expected <= 0d) continue; // no locked-matter creature paid upkeep this step
-
-                double excretedTotalRose = world.ExcretedTotal - excretedTotalBefore;
-
-                _output.WriteLine(
-                    $"expected {expected:0.######}: ExcretedTotal rose {excretedTotalRose:0.######}");
-
-                Assert.True(
-                    Math.Abs(excretedTotalRose - expected) < 1e-4,
-                    "ExcretedTotal did not rise by exactly what excretion debited from bodies");
-                return;
-            }
-
-            Assert.Fail("never found a quiet (birth-free, death-free) step with excretion to measure");
-        }
-
-        [Fact]
-        public void MatterIsConservedWithExcretionRunning()
-        {
-            // D052's own copy of D051's guard: excretion is an internal transfer from
-            // MatterInBodies into Matter.TotalJoules, both of which StandingMatter already sums
-            // whole, so this must drift no more than the knob-off case does.
-            var config = MatterWorld(0.5f, 1f);
-            config.ExcretionPerJoule = 0.05f;
-            var world = new World(config, seed: 1);
-
-            double atStart = 0d;
-            for (float t = 0f; t < 400f; t += 1f)
-            {
-                world.Step(1f);
-                if (t == 0f) atStart = world.StandingMatter;
-            }
-
-            double drift = world.StandingMatter - atStart;
-
-            _output.WriteLine(
-                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}), " +
-                $"{world.Births} births, {world.ConceptionsBlockedByMatter} blocked");
-
-            Assert.True(
-                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
-                $"matter drifted by {drift} with excretion running — something creates or destroys it");
-        }
-
-        [Fact]
-        public void ExcretionCapsAtWhatTheBodyStillHolds()
-        {
-            // A rate absurd enough to demand, in one step, far more than any body could ever
-            // hold — so the min(locked, rate·upkeep) cap is what actually fires rather than the
-            // formula's uncapped term. LockedMatter must land at exactly 0 and never go negative,
-            // and StandingMatter must still be conserved: the cap means "excrete less than the
-            // formula asks for", not "excrete for free".
-            var config = MatterWorld(perTissueJoule: 0.5f, initialPerCubicMetre: 5f);
-            config.ExcretionPerJoule = 1e6f;
-            var world = new World(config, seed: 4);
-
-            double atStart = 0d;
-            bool everHitZero = false;
-
-            for (float t = 0f; t < 300f; t += 1f)
-            {
-                world.Step(1f);
-                if (t == 0f) atStart = world.StandingMatter;
-
-                foreach (Organism creature in world.Living)
-                {
-                    Assert.True(creature.LockedMatter >= 0f, "LockedMatter went negative — the cap failed");
-                    if (creature.ParentId >= 0 && creature.LockedMatter == 0f) everHitZero = true;
-                }
-            }
-
-            Assert.True(world.Births > 0, "nothing bred, so nothing ever had matter to cap");
-            Assert.True(
-                everHitZero,
-                "no reproduction-born creature's LockedMatter was ever driven to exactly 0 — " +
-                "the cap was never exercised, and this test proves nothing about it");
-
-            double drift = world.StandingMatter - atStart;
-            _output.WriteLine(
-                $"matter {atStart:0.##} -> {world.StandingMatter:0.##} (drift {drift:0.######}) " +
-                $"at an excretion rate large enough to hit the cap on every locked body");
-
-            Assert.True(
-                Math.Abs(drift) / Math.Max(1d, atStart) < 1e-6,
-                $"matter drifted by {drift} once the excretion cap started firing");
         }
 
         // ------------------------------------------------------------ D055: seabed refuge

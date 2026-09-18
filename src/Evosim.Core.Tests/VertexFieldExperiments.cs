@@ -126,7 +126,7 @@ namespace Evosim.Core.Tests
             const float depth = 60f, dt = 0.5f, sink = 0.002f;
             const int steps = 6000; // 3,000 s, one lifetime
             float[] mixing = { 0.2f, 0.02f };
-            float[] remin = { 0f, 0.01f };
+            float[] remin = { 0f };  // D098: a vertex field refuses any rate above 0.
 
             _output.WriteLine("D(m2/s)  remin/s  total J   0-10 m  10-20  20-30  30-40  40-50  50-60  on floor  mean depth");
 
@@ -143,7 +143,12 @@ namespace Evosim.Core.Tests
                 {
                     field.Emit(perStep, new Float3(10f, -8.5f, 2.5f), new Float3(10f, 3.5f, 2.5f));
                     field.Settle(dt);
-                    field.Remineralise(dt, r);
+
+                    // D098's leg 8 has no arithmetic on a vertex field and the field refuses it
+                    // above 0 (see VertexField.Remineralise), so this sweep now reads the sink
+                    // and the mixing alone. The remin column is kept at 0 so the table's shape
+                    // and the rows that were measured against it still line up.
+                    field.Remineralise(null, dt, r, 100f);
                     field.Mix(dt, d, d);
                 }
 

@@ -155,14 +155,52 @@ namespace Evosim.Core.Tests
         public void ReproductionTraitsSurviveTheRoundTrip()
         {
             Genome g = GenomeFactory.Random(new Rng(11));
-            g.Reproduction = new ReproductionTraits { BroodSize = 5, BirthInvestment = 0.4375f };
+            g.Reproduction = new ReproductionTraits
+            {
+                BroodSize = 5, BirthInvestment = 0.4375f, ReserveMargin = 312.5f,
+            };
             g.AdultScale = 1.375f;
 
             Genome back = GenomeJson.Read(GenomeJson.Write(g));
 
             Assert.Equal(5, back.Reproduction.BroodSize);
             Fixtures.AssertClose(0.4375f, back.Reproduction.BirthInvestment, 0f);
+            Fixtures.AssertClose(312.5f, back.Reproduction.ReserveMargin, 0f);
             Fixtures.AssertClose(1.375f, back.AdultScale, 0f);
+        }
+
+        [Fact]
+        public void TheBreedingMarginIsWrittenAndAFormatFiveGenomeIsRefusedByName()
+        {
+            // D098 §3's bump, and §9's rule at the file level. A format-5 genome carries no
+            // margin, and the field that would be defaulted is the one the gene exists to let a
+            // lineage move off — every stored creature would come back as the eager strategy
+            // wearing its own name, which is the silent default this project refuses.
+            Genome g = GenomeFactory.Random(new Rng(12));
+            ReproductionTraits traits = g.Reproduction;
+            traits.ReserveMargin = 125f;
+            g.Reproduction = traits;
+
+            string text = GenomeJson.Write(g);
+
+            Assert.Contains("\"margin\":125", text);
+
+            string old = text.Replace($"\"format\":{GenomeJson.FormatVersion}", "\"format\":5");
+            FormatException e = Assert.Throws<FormatException>(() => GenomeJson.Read(old));
+
+            _output.WriteLine(e.Message);
+            Assert.Contains("5", e.Message);
+            Assert.Contains("ReserveMargin", e.Message);
+            Assert.Contains("format 6", e.Message);
+        }
+
+        [Fact]
+        public void AGenomeMissingItsMarginIsRefusedRatherThanDefaulted()
+        {
+            string text = GenomeJson.Write(GenomeFactory.Random(new Rng(13)))
+                .Replace("\"margin\":", "\"keep\":");
+
+            Assert.ThrowsAny<FormatException>(() => GenomeJson.Read(text));
         }
 
         [Fact]
