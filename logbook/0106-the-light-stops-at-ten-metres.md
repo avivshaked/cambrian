@@ -111,3 +111,17 @@ long arm for the oscillation, the tempo dial and the light sense wait behind it.
 ## Launch
 
 *Appended as the seeds launch; each with its header verified and its manifest's hashes.*
+
+*08:02 to 08:03.* Seeds 1, 2 and 3 launched on workers 2, 3 and 4, each refreshed first, with
+the queue's hash check against the smoke's `simHash 302df848…` passing and `prereg.json`
+at this entry's commit (`8e77099`) beside the arm and beside the run. Every header
+verified from `runs/r40-s<n>.md`: `light reach 6 m`, `space tank r=26.46 m (2200 m2),
+depth 45, wall, bed relief 1.5 m tilt 30 m scale 17.64 m`, `matterBudget 11000`,
+`fluidAccel 1`, `dt=0.01`, `physics jobs 0`, **`simHash 302df848…`, `coreHash 96488dec…`,
+`configHash 866b711a`**; every config `attenuationDepth 6`. The floors are round 39's,
+seed for seed (seed 1 no hollow and one ridge, seed 2 three and one, seed 3 two and one),
+since the bed is drawn from the seed and the bed dials did not move. Seeds 4 and 5 launch
+as arms end, the queue's worker list being the three-arm rule; the wall is 1,800 minutes.
+The first look, at 1,400 to 1,900 s: 713 / 793 / 742 alive, mean depth 4.2 / 1.9 / 4.3 m
+against round 39's 6 to 17 m at the same seconds, shading 2.3 to 2.7%, no eater yet.
+Seed 2's crowd is nearest the film; the reading is L1's at 15,000 s, not the founding's.
