@@ -196,6 +196,19 @@ while ($pending.Count -gt 0) {
                     $preregPath = Join-Path $armDir 'prereg.json'
                     [System.IO.File]::WriteAllText($preregPath, ($preregRecord | ConvertTo-Json))
                     Write-Output "$(Stamp) wrote $preregPath"
+                    # And beside the run's own manifest, when run-arm.ps1 printed where it is: a
+                    # rerun of an arm rewrites the arm-level file and the earlier run's record
+                    # with it (round 39's reruns, 2026-09-17, left seeds 3 to 5 pointing at a
+                    # later commit than seeds 1 and 2), so each run directory keeps its own.
+                    $manifestLine = $said | Where-Object { $_ -match '^\s*run\.json\s+(\S.*run\.json)\s*$' } | Select-Object -First 1
+                    if ($null -ne $manifestLine -and $manifestLine -match '^\s*run\.json\s+(\S.*run\.json)\s*$') {
+                        $runDir = Split-Path -Parent $Matches[1]
+                        if (Test-Path -LiteralPath $runDir) {
+                            $runPrereg = Join-Path $runDir 'prereg.json'
+                            [System.IO.File]::WriteAllText($runPrereg, ($preregRecord | ConvertTo-Json))
+                            Write-Output "$(Stamp) wrote $runPrereg"
+                        }
+                    }
                 }
             }
         } catch {
