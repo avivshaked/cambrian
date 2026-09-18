@@ -391,8 +391,16 @@ the background and never handed to a subagent, which cannot wait.
    wall at three arms, 0.5x real time) and every one replayed its censored copy bit for bit:
    seed 3 identical on all 251 shared samples to 25,100 s, seed 4 on all 275 to 27,500 s,
    seed 5 on all 266 to 26,600 s. Round 39 is five seeds of five at the pre-registered
-   second on one build. The chain is rendering seeds 1 to 5 on worker 7; then the theatre
-   watch and the read (0105). Put the three replay lines in the round's entry. A running arm's
+   second on one build. **The numeric read is done** (`logbook/specs/r39-read/`, summary.tsv
+   first): E1, E5, E6, E7, E11 hold, E3 splits, E2, E8, E10 fail, E9 fails with the sign
+   reversed (the shelf at 30 m is darker than the water the leaves float in; the tilt was
+   sized for the geometry and never asked the light model), E4 holds and means nothing (the
+   flat floor of round 38 reads the same). Goal rule 2 of 5, both fresh lines after the
+   bust. **0105 is drafted and uncommitted** (`logbook/0105-the-shelf-was-never-in-the-
+   light.md`) with seed 1's 5,000 s side view; it waits for the 15,000 and 30,000 s frames
+   from the chain (rendering seed 1 on worker 7 since 04:10; `PICTURES-15000-30000` marks
+   the place), then the README row and the commit. The placer lifts a child drawn under
+   the rock onto it, so the deepward lean is not a placement leak; its cause is open. A running arm's
    wall cannot be extended. A rerun on the same build at zero physics workers replays the
    censored prefix bit for bit (D078) and continues it, so a rerun of seeds 3 and 4 is an
    extension and not a new realisation. Every prediction of 0102 reads at 30,000 s by name. The render chain was stopped at 17:30 to give
