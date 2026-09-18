@@ -754,7 +754,10 @@ namespace Evosim.Core.Tests
         {
             Genome genome = GenomeFactory.Random(new Rng(21));
             genome.AdultScale = 0.625f;
-            genome.Reproduction = new ReproductionTraits { BroodSize = 3, BirthInvestment = 0.875f };
+            genome.Reproduction = new ReproductionTraits
+            {
+                BroodSize = 3, BirthInvestment = 0.875f, ReserveMargin = 240f,
+            };
 
             string text = GenomeJson.Write(genome);
             Genome back = GenomeJson.Read(text);
@@ -762,12 +765,18 @@ namespace Evosim.Core.Tests
             Assert.Equal(3, back.Reproduction.BroodSize);
             Fixtures.AssertClose(0.875f, back.Reproduction.BirthInvestment, 0f);
             Fixtures.AssertClose(0.625f, back.AdultScale, 0f);
+
+            // The fourth dial since D098, written beside the three and read back with them.
+            Fixtures.AssertClose(240f, back.Reproduction.ReserveMargin, 0f);
             Assert.Equal(text, GenomeJson.Write(back));
 
             // The bump is not cosmetic: a format-4 genome's endowment is joules where the field
             // that replaced it is a fraction of a body, so the same number in the same place would
-            // mean something else and the file carries no size at all.
-            string old = text.Replace("\"format\":5", "\"format\":4");
+            // mean something else and the file carries no size at all. Still refused two bumps
+            // later, and by the version constant rather than a literal — the margin took the
+            // format to 6 (GenomeJsonTests covers that refusal by name).
+            string old = text.Replace(
+                $"\"format\":{GenomeJson.FormatVersion}", "\"format\":4");
             FormatException e = Assert.Throws<FormatException>(() => GenomeJson.Read(old));
 
             _output.WriteLine(e.Message);

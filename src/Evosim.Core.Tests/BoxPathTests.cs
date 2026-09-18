@@ -282,16 +282,26 @@ namespace Evosim.Core.Tests
             double sumY = 0d;
             for (int i = 0; i < world.Living.Count; i++) sumY += world.Living[i].HeightY;
 
-            Assert.Equal(77, world.Living.Count);
-            Assert.Equal(67L, world.Births);
-            Assert.Equal(97L, world.Deaths);
-            Assert.Equal(107L, world.FloorSpawns);
+            // Re-recorded on 2026-09-18 for D098 §3's reserve margin, and the move is large:
+            // 41 alive against 77, 11 births against 67, 157 floor spawns against 107, and the
+            // mean depth ten metres lower. Two causes, both of them the change and neither of
+            // them a fault. The founding draw takes one more number from the genome rng per
+            // founder, so every genome after the first is a different genome and the run is a
+            // different realisation of the same seed — the same wingspan CLAUDE.md records for a
+            // per-step change in the physics, here in Core. And the margin binds: founders drawn
+            // over [0, 600] s of standing cost mostly wait, the population does not replace
+            // itself, and the floor keeps drawing. The values below are what this build does,
+            // not what it should do; the pin is on sameness, and it is as sharp as it ever was.
+            Assert.Equal(41, world.Living.Count);
+            Assert.Equal(11L, world.Births);
+            Assert.Equal(127L, world.Deaths);
+            Assert.Equal(157L, world.FloorSpawns);
 
-            Assert.Equal(-5.282669079768193d, sumY / world.Living.Count);
+            Assert.Equal(-15.408401535778511d, sumY / world.Living.Count);
             Assert.Equal(6000d, world.StandingMatter);
-            Assert.Equal(4297.9588841974455d, world.Nutrients.TotalJoules);
+            Assert.Equal(3920.073126488158d, world.Nutrients.TotalJoules);
             Assert.Equal(6000d, world.Matter.TotalJoules);
-            Assert.Equal(2.07525026780786E-05d, world.AuditResidual);
+            Assert.Equal(0.00017015726552926935d, world.AuditResidual);
         }
     }
 }

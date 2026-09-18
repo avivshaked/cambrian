@@ -194,6 +194,17 @@ namespace Evosim.Core
         [Tunable("mutation")]
         public float InvestmentChance { get; set; } = 0.08f;
 
+        /// <summary>Chance the reserve margin is perturbed — D098 §3.</summary>
+        /// <remarks>
+        /// The investment's rate, and for the investment's reason: it is one number per genome
+        /// rather than one per node, so it must not walk faster than the strategy it belongs to.
+        /// Stepped by <c>Mutator.Step</c>, which does not roll <c>ScalarChance</c> a second time,
+        /// so this is the realised rate per birth and <c>MutationTests</c> measures it as one —
+        /// the double gate the growth build shipped with is a mistake this dial is not repeating.
+        /// </remarks>
+        [Tunable("mutation")]
+        public float MarginChance { get; set; } = 0.08f;
+
         /// <summary>Chance the genome's adult size is perturbed — fable-propose-growth.md rule 1.</summary>
         /// <remarks>
         /// The investment's rate, deliberately, and not the per-scalar rate a dimension gets.

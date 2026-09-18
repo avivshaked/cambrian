@@ -433,6 +433,95 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void AMarginDelaysTheFirstBirthAndIsExactlyWhatTheParentKeeps()
+        {
+            // D098 §3, both halves of it: a parent that keeps a margin breeds later than the same
+            // parent that keeps none, and what it is left holding afterwards is the margin.
+            //
+            // The two arms are one world. Pinning the founder range to a single value still draws
+            // one number per founder, so the genome stream is identical across the arms and the
+            // only difference between them is what that number is — which is the comparison
+            // CLAUDE.md's wingspan rule says a per-step change can never be given.
+            (double firstBirth, long underMargin, float kept, float owed) Arm(float margin)
+            {
+                var config = new RunConfig
+                {
+                    MinimumPopulation = 30,
+                    MaximumPopulation = 5000,
+                    Light = new LightModel(300f, 12f),
+                    Genome = new RandomGenomeOptions
+                    {
+                        MinReserveMargin = margin, MaxReserveMargin = margin,
+                    },
+                };
+
+                var world = new World(config, seed: 5);
+
+                for (int i = 0; i < 1200; i++)
+                {
+                    try { world.Step(1f); }
+                    catch (PopulationRunawayException) { break; }
+
+                    long parentId = -1;
+                    foreach (LineageEvent evt in world.DrainLineageEvents())
+                    {
+                        if (evt.Kind != LineageEventKind.Birth) continue;
+                        if (evt.BirthKind != BirthKind.Reproduction) continue;
+
+                        Assert.Equal(margin, evt.ReserveMargin);
+                        parentId = evt.ParentId;
+                        break;
+                    }
+
+                    if (parentId < 0) continue;
+
+                    // Read in the same step the birth happened in, before the next step's
+                    // metabolism touches the reserve. A parent that has just paid for its whole
+                    // litter holds the gate less the price, and the gate is the price plus the
+                    // margin — so this is the margin, and anything less is the gate leaking.
+                    foreach (Organism parent in world.Living)
+                    {
+                        if (parent.Id != parentId) continue;
+                        return (world.ElapsedSeconds, world.ConceptionsUnderMargin,
+                                parent.Energy, margin * parent.StandingWatts);
+                    }
+
+                    // The parent died in the same step it bred. Rare, and not this test's
+                    // question — keep looking.
+                }
+
+                return (double.PositiveInfinity, world.ConceptionsUnderMargin, 0f, 0f);
+            }
+
+            var eager = Arm(0f);
+            var cautious = Arm(600f);
+
+            _output.WriteLine(
+                $"first birth: {eager.firstBirth:0} s keeping nothing, {cautious.firstBirth:0} s " +
+                $"keeping 600 s — the cautious parent held {cautious.kept:0.##} J against the " +
+                $"{cautious.owed:0.##} J its margin asks for");
+
+            Assert.True(eager.firstBirth < double.PositiveInfinity, "the eager world never bred at all");
+            Assert.True(
+                cautious.firstBirth > eager.firstBirth,
+                $"a 600 s margin did not delay the first birth: {cautious.firstBirth} s against " +
+                $"{eager.firstBirth} s");
+
+            Assert.True(cautious.owed > 0f, "600 s of a real standing cost is not nothing");
+            Assert.True(
+                cautious.kept >= 0.99f * cautious.owed,
+                $"the parent kept {cautious.kept} J where its margin asks for {cautious.owed} J");
+
+            // And the gate refuses nothing the threshold did not already refuse. The two are one
+            // expression (Organism.ReproductionThreshold), so this counter reads 0 while they
+            // agree and is the instrument that says so — a nonzero here means a price has been
+            // changed on one side of the pair and not the other, which is how the fixed matter
+            // term went wrong in D065. It is not a measure of how hard the margin bites.
+            Assert.Equal(0L, eager.underMargin);
+            Assert.Equal(0L, cautious.underMargin);
+        }
+
+        [Fact]
         public void ReproductionCostsExactlyWhatTheGenomeSays()
         {
             // investment * body + n * overhead — §5A.6, §5A.2c and fable-propose-growth.md rule 2.
@@ -453,8 +542,12 @@ namespace Evosim.Core.Tests
             {
                 ReproductionTraits traits = creature.Genome.Reproduction;
 
+                // Plus D098 §3's margin: the price is what the litter costs, the margin is what
+                // the parent will not be left without, and the threshold is the sum. In seconds
+                // of this body's own standing cost, so it is this creature's number twice over.
                 Assert.Equal(
-                    traits.BirthInvestment * creature.TissueJoules + traits.BroodSize * 25f,
+                    traits.BirthInvestment * creature.TissueJoules + traits.BroodSize * 25f +
+                    traits.ReserveMargin * creature.StandingWatts,
                     creature.ReproductionThreshold(25f), 3);
 
                 // A larger brood must cost more, or brood size is a free parameter and every

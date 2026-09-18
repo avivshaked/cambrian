@@ -102,11 +102,11 @@ namespace Evosim.Core
         // ---------------------------------------------------------------- reproduction
 
         /// <remarks>
-        /// The three dials of fable-propose-growth.md (2026-09-08): the litter, the share of the
-        /// parent's body that buys it, and how big the child grows up to be. Each moves by a
-        /// graded step under its own rate, because the whole point of them is that they are dials
-        /// and not switches — this is the first place in the world where selection can climb a
-        /// slope rather than jump a gap.
+        /// The three dials of fable-propose-growth.md (2026-09-08) — the litter, the share of the
+        /// parent's body that buys it, and how big the child grows up to be — and D098's fourth,
+        /// how much the parent keeps back. Each moves by a graded step under its own rate, because
+        /// the whole point of them is that they are dials and not switches — this is the first
+        /// place in the world where selection can climb a slope rather than jump a gap.
         ///
         /// <b>The adult scale is mutated here rather than in <see cref="MutateNode"/>, and that
         /// is what makes it worth having.</b> It is one number per genome, so it walks at one
@@ -126,6 +126,18 @@ namespace Evosim.Core
             if (rng.Chance(rates.InvestmentChance))
             {
                 r.BirthInvestment = Step(r.BirthInvestment, rng, rates);
+            }
+
+            // D098's fourth dial, stepped exactly as the investment is. No ceiling: a margin
+            // longer than the body's life is not an illegal number, it is a lineage that never
+            // breeds, and selection removes that in one generation without anyone having to
+            // decide what "too cautious" is. The floor is Step's own 1e-4, which at any standing
+            // cost this world produces is well under a millijoule and reads as zero everywhere it
+            // is spent — Genome.Validate admits a true zero, but a lineage that walks down to the
+            // floor has arrived at the same place.
+            if (rng.Chance(rates.MarginChance))
+            {
+                r.ReserveMargin = Step(r.ReserveMargin, rng, rates);
             }
 
             g.Reproduction = r;

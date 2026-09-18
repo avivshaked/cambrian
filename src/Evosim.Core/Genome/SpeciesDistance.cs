@@ -251,13 +251,17 @@ namespace Evosim.Core
 
         private static float ParameterUnits(Genome a, Genome b)
         {
-            // The three whole-creature dials of fable-propose-growth.md, counted once each and
-            // not once per node: they are one number per genome, so weighting them by body size
-            // would make a big creature's reproductive strategy count for less than a small
-            // one's.
+            // The three whole-creature dials of fable-propose-growth.md and D098's fourth,
+            // counted once each and not once per node: they are one number per genome, so
+            // weighting them by body size would make a big creature's reproductive strategy count
+            // for less than a small one's. The margin belongs here for the reason the others do —
+            // a dial selection can move that speciation cannot see is a lineage splitting
+            // invisibly. Two genomes that both keep nothing back are at distance 0 on it, which
+            // is RelativeDiff's own answer for a pair of zeros rather than a special case.
             float units =
                 RelativeDiff(a.Reproduction.BroodSize, b.Reproduction.BroodSize) +
                 RelativeDiff(a.Reproduction.BirthInvestment, b.Reproduction.BirthInvestment) +
+                RelativeDiff(a.Reproduction.ReserveMargin, b.Reproduction.ReserveMargin) +
                 RelativeDiff(a.AdultScale, b.AdultScale);
 
             int minNodes = Math.Min(a.Nodes.Count, b.Nodes.Count);

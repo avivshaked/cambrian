@@ -340,6 +340,15 @@ namespace Evosim.Core
         /// breed later falls out of the ordering rather than being a rule anybody wrote.
         /// </para>
         /// <para>
+        /// <b>Plus the margin the genome keeps back</b> (D098 §3), in seconds of
+        /// <see cref="StandingWatts"/>. The price is what the litter costs; the margin is what
+        /// the parent refuses to be left without, and adding it here rather than only at the
+        /// conception gate is what makes a cautious parent not attempt the birth at all — one
+        /// expression, read by <c>World.Brood</c>, by the conception ranking and by the gate
+        /// itself, so the three cannot drift apart. At margin 0 this is exactly the number it was
+        /// before the gene existed.
+        /// </para>
+        /// <para>
         /// <b>Leaving tissue out of the gate is not a small mistake.</b> With it omitted, every
         /// solvent creature clears a gate it cannot actually pay, mutates and develops a genome,
         /// discovers it is unaffordable and discards it — once per creature per step, for the
@@ -347,7 +356,8 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         public float ReproductionThreshold(float perOffspringOverheadJoules) =>
-            Genome.Reproduction.CostJoules(TissueJoules, perOffspringOverheadJoules);
+            Genome.Reproduction.CostJoules(TissueJoules, perOffspringOverheadJoules) +
+            Genome.Reproduction.ReserveMargin * StandingWatts;
 
         public override string ToString() =>
             FormattableString.Invariant(

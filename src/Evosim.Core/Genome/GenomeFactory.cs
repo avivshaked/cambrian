@@ -265,6 +265,25 @@ namespace Evosim.Core
         public float MaxBirthInvestment { get; set; } = 1f;
 
         /// <summary>
+        /// Reserve-margin range for the initial population, in seconds of the founder's own
+        /// standing cost — D098 §3.
+        /// </summary>
+        /// <remarks>
+        /// <b>0 to 600 s, and the spread is the point.</b> Zero is a founder that breeds the
+        /// instant it can pay, which is every founder the world had before this gene existed;
+        /// 600 s is ten minutes of upkeep held in hand, a fifth of the senescence doubling time
+        /// and long enough to cross a dark patch. Opening the founding lottery across the whole
+        /// span means selection sorts the caution axis from the first generation rather than
+        /// waiting for a mutation to open it — the lesson <see cref="MinBirthInvestment"/>
+        /// records from the growth build, applied on the day the dial was added rather than a
+        /// round later. ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("genome")]
+        public float MinReserveMargin { get; set; } = 0f;
+        [Tunable("genome")]
+        public float MaxReserveMargin { get; set; } = 600f;
+
+        /// <summary>
         /// Adult size a founder is drawn at — fable-propose-growth.md rule 7.
         /// </summary>
         /// <remarks>
@@ -384,6 +403,7 @@ namespace Evosim.Core
                     BroodSize = rng.Range(options.MinBroodSize, options.MaxBroodSize + 1),
                     BirthInvestment =
                         rng.Range(options.MinBirthInvestment, options.MaxBirthInvestment),
+                    ReserveMargin = DrawReserveMargin(rng, options),
                 },
             };
 
@@ -480,6 +500,7 @@ namespace Evosim.Core
                     BroodSize = rng.Range(options.MinBroodSize, options.MaxBroodSize + 1),
                     BirthInvestment =
                         rng.Range(options.MinBirthInvestment, options.MaxBirthInvestment),
+                    ReserveMargin = DrawReserveMargin(rng, options),
                 },
             };
 
@@ -550,6 +571,41 @@ namespace Evosim.Core
             }
 
             return genome;
+        }
+
+        /// <summary>
+        /// A founder's reserve margin, drawn uniformly from
+        /// <see cref="RandomGenomeOptions.MinReserveMargin"/> to
+        /// <see cref="RandomGenomeOptions.MaxReserveMargin"/> — D098 §3.
+        /// </summary>
+        /// <remarks>
+        /// Checked rather than trusted, and here rather than at each of the two construction
+        /// sites, because a bad range does not fail: <see cref="Rng.Range(float, float)"/>
+        /// interpolates, so an inverted pair draws happily from the wrong interval and a negative
+        /// end produces founders <see cref="Genome.Validate"/> refuses — a founding lottery that
+        /// throws away most of its tickets and says nothing about why. §9's refuse-rather-than-
+        /// default rule, applied to a knob instead of a field.
+        /// </remarks>
+        private static float DrawReserveMargin(Rng rng, RandomGenomeOptions options)
+        {
+            if (options.MinReserveMargin < 0f || options.MaxReserveMargin < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(options),
+                    $"Reserve-margin range [{options.MinReserveMargin}, " +
+                    $"{options.MaxReserveMargin}] must be non-negative: it is seconds of a " +
+                    "body's own standing cost.");
+            }
+
+            if (options.MinReserveMargin > options.MaxReserveMargin)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(options),
+                    $"Reserve-margin range [{options.MinReserveMargin}, " +
+                    $"{options.MaxReserveMargin}] is inverted.");
+            }
+
+            return rng.Range(options.MinReserveMargin, options.MaxReserveMargin);
         }
 
         /// <summary>

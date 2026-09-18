@@ -68,6 +68,106 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void TheThresholdIsThePricePlusTheMarginAndAtZeroItIsThePriceExactly()
+        {
+            // D098 §3. The margin is seconds of the body's own standing cost, so the threshold
+            // has to be read off a creature rather than a genome — a recipe has no upkeep.
+            var config = new RunConfig { MinimumPopulation = 20 };
+            config.Light = new LightModel(4000f, 40f);
+
+            var world = new World(config, seed: 3);
+            world.Step(1f);
+
+            Assert.NotEmpty(world.Living);
+
+            Organism creature = world.Living[0];
+            Assert.True(creature.StandingWatts > 0f, "a body that costs nothing to stand still cannot keep a margin");
+
+            ReproductionTraits traits = creature.Genome.Reproduction;
+
+            // At zero, the number this build computes is the number every build before D098
+            // computed: not close to it, equal to it.
+            traits.ReserveMargin = 0f;
+            creature.Genome.Reproduction = traits;
+
+            float bare = creature.ReproductionThreshold(Overhead);
+            Assert.Equal(traits.CostJoules(creature.TissueJoules, Overhead), bare);
+
+            // And the margin is added on top, in joules, at this body's own burn rate.
+            traits.ReserveMargin = 300f;
+            creature.Genome.Reproduction = traits;
+
+            float cautious = creature.ReproductionThreshold(Overhead);
+
+            _output.WriteLine(
+                $"tissue {creature.TissueJoules:0.###} J, standing {creature.StandingWatts:0.####} W: " +
+                $"gate {bare:0.###} J at margin 0, {cautious:0.###} J at margin 300 s");
+
+            Assert.Equal(bare + 300f * creature.StandingWatts, cautious, 4);
+            Assert.True(cautious > bare, "300 s of a real standing cost is not nothing");
+        }
+
+        [Fact]
+        public void ANegativeMarginFailsValidation()
+        {
+            // Below zero is not a bolder strategy — it puts the gate under the price, and admits
+            // a parent to a birth it cannot fund.
+            var g = new Genome { RootIndex = 0 };
+            g.Nodes.Add(Fixtures.Box());
+            g.Reproduction = new ReproductionTraits
+            {
+                BroodSize = 1, BirthInvestment = 0.5f, ReserveMargin = -1f,
+            };
+
+            Assert.Contains(g.Validate(), i => i.Contains("Reserve margin"));
+
+            // Zero is legal: it is the world as it stood before the gene existed.
+            g.Reproduction = new ReproductionTraits
+            {
+                BroodSize = 1, BirthInvestment = 0.5f, ReserveMargin = 0f,
+            };
+
+            Assert.Empty(g.Validate());
+        }
+
+        [Fact]
+        public void FoundersDrawTheirMarginAcrossTheWholeRange()
+        {
+            // The founding lottery samples it, rather than every founder opening at the same
+            // caution and waiting for a mutation to move — MinBirthInvestment's lesson, applied
+            // on the day the dial was added.
+            var options = new RandomGenomeOptions { MinReserveMargin = 0f, MaxReserveMargin = 600f };
+
+            float lowest = float.MaxValue, highest = float.MinValue, total = 0f;
+
+            for (ulong seed = 1; seed <= 200; seed++)
+            {
+                Genome g = GenomeFactory.Random(new Rng(seed), options);
+
+                Assert.Empty(g.Validate());
+                Assert.InRange(g.Reproduction.ReserveMargin, 0f, 600f);
+
+                lowest = System.Math.Min(lowest, g.Reproduction.ReserveMargin);
+                highest = System.Math.Max(highest, g.Reproduction.ReserveMargin);
+                total += g.Reproduction.ReserveMargin;
+            }
+
+            _output.WriteLine($"margin over 200 founders: {lowest:0.#} to {highest:0.#} s, mean {total / 200f:0.#} s");
+
+            Assert.True(lowest < 60f && highest > 540f, "the draw is not reaching the ends of its range");
+        }
+
+        [Fact]
+        public void AnInvertedOrNegativeMarginRangeIsRefusedRatherThanDrawnFrom()
+        {
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => GenomeFactory.Random(
+                new Rng(1), new RandomGenomeOptions { MinReserveMargin = 600f, MaxReserveMargin = 0f }));
+
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => GenomeFactory.Founder(
+                new Rng(1), new RandomGenomeOptions { MinReserveMargin = -1f, MaxReserveMargin = 600f }));
+        }
+
+        [Fact]
         public void ABroodOfNoneFailsValidation()
         {
             var g = new Genome { RootIndex = 0 };
@@ -126,12 +226,16 @@ namespace Evosim.Core.Tests
             // the default on every reproduction and never evolve at all.
             var g = new Genome { RootIndex = 0, AdultScale = 1.75f };
             g.Nodes.Add(Fixtures.Box());
-            g.Reproduction = new ReproductionTraits { BroodSize = 7, BirthInvestment = 0.33f };
+            g.Reproduction = new ReproductionTraits
+            {
+                BroodSize = 7, BirthInvestment = 0.33f, ReserveMargin = 450f,
+            };
 
             Genome clone = g.Clone();
 
             Assert.Equal(7, clone.Reproduction.BroodSize);
             Fixtures.AssertClose(0.33f, clone.Reproduction.BirthInvestment, 1e-6f);
+            Fixtures.AssertClose(450f, clone.Reproduction.ReserveMargin, 1e-6f);
             Fixtures.AssertClose(1.75f, clone.AdultScale, 1e-6f);
         }
     }

@@ -14,6 +14,12 @@ namespace Evosim.Core
     /// property of the world rather than of this file.
     /// </para>
     /// <para>
+    /// <b>A third number since D098:</b> <see cref="ReserveMargin"/>, what the parent keeps
+    /// rather than what it spends. The first two decide the size and the price of a litter; that
+    /// one decides how solvent the parent is when it walks away, and it is the only one of the
+    /// three that can make a lineage breed later than it could afford to.
+    /// </para>
+    /// <para>
     /// That axis is r/K selection, and it is exactly the sort of thing the ecosystem should be
     /// able to discover rather than be told. In a productive, empty world the many-and-feeble
     /// strategy establishes fastest; under predation or scarcity, few-and-rich survives the
@@ -56,6 +62,38 @@ namespace Evosim.Core
         public float BirthInvestment;
 
         /// <summary>
+        /// Reserve a parent keeps back after a birth, in seconds of its own standing cost —
+        /// D098 §3.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A third evolved number, and the one that decides when rather than how much.</b>
+        /// <see cref="BroodSize"/> and <see cref="BirthInvestment"/> between them say what a
+        /// litter costs and how it is divided; neither says anything about what the parent is
+        /// left standing in. A creature that breeds the instant it can afford to walks out of
+        /// every birth with nothing, and the next unlucky step kills it. One that holds a
+        /// fortnight of upkeep in hand breeds later and survives the dark. Which of those wins
+        /// is a property of the world — how variable the income is, how long a drought lasts —
+        /// and is exactly the sort of thing that should be discovered here rather than declared
+        /// in <see cref="RunConfig"/>.
+        /// </para>
+        /// <para>
+        /// <b>In seconds of standing cost, not in joules.</b> The same reasoning as the
+        /// investment's: a number of joules means one thing to a small body and another to a
+        /// large one, so a lineage that grew would have to re-evolve the caution it already had.
+        /// Multiplied by <see cref="Organism.StandingWatts"/> it is a span of time the body can
+        /// survive earning nothing, which is what <see cref="Organism.SecondsOfReserve"/> already
+        /// reports to the creature's own Energy sensor — the gene and the sense are in the same
+        /// unit.
+        /// </para>
+        /// <para>
+        /// Zero is legal and is the default: it is the world as it stood before D098, where the
+        /// gate was the price alone.
+        /// </para>
+        /// </remarks>
+        public float ReserveMargin;
+
+        /// <summary>
         /// Total energy a reproduction event costs the parent, in joules.
         /// </summary>
         /// <param name="parentTissueJoules">
@@ -85,6 +123,7 @@ namespace Evosim.Core
         public ReproductionTraits Clone() => this;
 
         public override string ToString() =>
-            System.FormattableString.Invariant($"brood {BroodSize} at {BirthInvestment:0.###} of tissue");
+            System.FormattableString.Invariant(
+                $"brood {BroodSize} at {BirthInvestment:0.###} of tissue, keeping {ReserveMargin:0.#} s of standing cost");
     }
 }
