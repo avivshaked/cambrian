@@ -421,12 +421,14 @@ the background and never handed to a subagent, which cannot wait.
 
 0. **D097's sequence, ahead of everything below once round 40 is read.** (a) Round 40's
    read as pre-registered (0106, L1 to L9), the entry with its pictures, `birth-depth.py`
-   moved into `logbook/specs/r40-read/`. (b) `fable-propose-matter.md` (written 2026-09-18 afternoon, for
-   the owner's ruling): not the per-child price, which the arithmetic showed cannot remove
-   the cliff (a crowd grows until a cell holds one child's worth whatever the price), but
-   matter as income: a per-body store filled by a capped uptake rate, the child paid from
-   the store, so who breeds is who takes matter up fastest. A Core build of a day, a
-   5,000 s screen at dt 0.02 on a free slot, then a five-seed base round. (c) `fable-propose-mouth.md`: herbivory by
+   moved into `logbook/specs/r40-read/`. (b) `fable-propose-economy.md` (2026-09-18 evening, for the
+   owner's ruling; it superseded `fable-propose-matter.md` the same evening after the owner
+   asked for the economy rethought): one substance, matter in two states, energy as the
+   organic state's content at ρ joules a unit; photosynthesis makes organic from inorganic
+   at a saturating uptake, living burns organic back to inorganic, eating moves organic,
+   a child is organic matter given by its parent, detritus remineralises, the fixed charge
+   goes, one breeding-margin gene (the owner's rule). Both audits kept. A Core build of
+   three to five days, a 5,000 s screen, then a five-seed base round. (c) `fable-propose-mouth.md`: herbivory by
    contact, the rate, the two ledgers, what the harness reports (contacts per part per
    step), the Core tests, the smoke; then predation as its own proposal. (d) A prey sense
    and the stroke's price, on the fed world. The items below stand as written and move
