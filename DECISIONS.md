@@ -5310,26 +5310,25 @@ sequence; each world rule inside it comes as its own proposal and its own ruling
 **Context, in plain words.** Forty rounds in, the world is a leaf crowd with eaters that boom
 and starve, and every mechanism added to it reads flat. The agent's diagnosis, from round
 40's early look (HANDOFF, 2026-09-18): the matter is the only thing that binds, and it binds
-at the wrong grain. Seventy to 75% of the matter sits in bodies, a hundred conceptions are
-blocked on matter for every birth, and a 5 m matter cell holds about one child's worth
-(3.0 to 3.5 units against a child's 3.1), so who breeds is a lottery on which cell can
-afford a child at that moment. Round 39's floor could not matter through that filter, and
+at the wrong grain. Seventy to 75% of the matter sits in bodies, and a hundred conceptions are blocked on
+matter for every birth. A 5 m matter cell holds about one child's worth (3.0 to 3.5 units
+against a child's 3.1), so who breeds is a lottery on which cell can afford a child at
+that moment. Round 39's floor could not matter through that filter, and
 round 40's light moves the crowd's depth through it (the newborns' median depth went from
-2.5 m to 20 m as the top cells drained). And nothing in the world eats anything alive: the
-eaters take dead matter from a near-uniform field, so no body has a reason to be big, fast,
-jointed or anywhere in particular, and movement has never had a prize.
+2.5 m to 20 m as the top cells drained). Nothing in the world eats anything alive. The eaters take dead matter from a
+near-uniform field, so no body has a reason to be big, fast, jointed or anywhere in
+particular, and movement has never had a prize.
 
 **Ruled.** After round 40 is read, the pre-planned foundation rounds (the shelf, the long
-arm, the stroke priced alone, the light sense) leave the head of the queue. In their place,
-in order: **(1) matter off the throne**, one base change so that energy and not matter limits
-the founding crowd, most likely the per-child matter price (`MatterPerCreature`, 3 units
-since D065) brought down so that a cell holds many children's worth and the total stock
-rather than the cell decides; screened by a smoke on one number, conceptions blocked on
-matter per birth, from about 100 toward 1; a proposal with the value. **(2) A mouth that eats
-living bodies**: herbivory first, an absorptive part that takes tissue from a leaf it
-touches at a rate, the leaf's loss and the eater's gain booked in both ledgers; predation
-after it, once it works; a Core build with the harness reporting contacts, through a
-proposal because it is a world rule. Encounter is by contact in a crowd whose nearest
+arm, the stroke priced alone, the light sense) leave the head of the queue. In their place, in order. **(1) Matter off the throne**: one base change so that energy
+and not matter limits the founding crowd. The likely dial is the per-child matter price
+(`MatterPerCreature`, 3 units since D065), brought down so that a cell holds many
+children's worth and the total stock rather than the cell decides. A smoke screens it on
+one number, conceptions blocked on matter per birth, from about 100 toward 1, and a
+proposal carries the value. **(2) A mouth that eats living bodies.** Herbivory first: an absorptive part takes tissue
+from a leaf it touches, at a rate, with the leaf's loss and the eater's gain booked in
+both ledgers. Predation follows once that works. It is a Core build with the harness
+reporting contacts, and it goes through a proposal because it is a world rule. Encounter is by contact in a crowd whose nearest
 neighbour is under half a metre, and by the chemical sense that already reads the field
 leaves exude into; a body sense comes after eating pays. **(3) The senses and the stroke's
 price**, readable once there is something to swim toward. The tank, the bed, the 6 m light
