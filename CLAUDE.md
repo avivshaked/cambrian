@@ -253,7 +253,11 @@ frame says so on a line reading `RECONSTRUCTED FROM SNAPSHOT`. No file holds a b
 so every body is drawn upright in the developer's own frame. None holds how far it had grown, so
 every body is drawn at its adult size. Only a second the run wrote a snapshot at can be drawn. The
 `close` view and `-Chrome` are refused in this mode, and the pictures carry `-recon-` in the name
-before the view.
+before the view. **A picture may read a run recorded before a tunable** (§11 of the spec, the
+owner's ruling of 2026-09-18). Picture-only readers take the water's shape from a config the
+strict reader refuses, and the bodies' plans from a genome of format 4 or 5. Both are tried after
+the strict readers, and the label's first line then ends `· OLD-RUN READ`. The rule that loading
+refuses rather than defaults is untouched for everything that simulates.
 
 Keys: `Space` pause, `[` `]` pace, `L` pace lock (at or under real time, for filming), `K` seek,
 `C` colour, `X` raw shapes (the colliders as the physics has them, no rounding, carve, taper or

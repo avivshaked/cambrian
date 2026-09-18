@@ -123,8 +123,29 @@ namespace Evosim.Theatre
         /// <summary>
         /// Reads a run directory. Throws with the reason when the directory is not one.
         /// </summary>
-        public static RunRecord Load(string runDirectory)
+        public static RunRecord Load(string runDirectory) => Load(runDirectory, false, out _);
+
+        /// <summary>
+        /// The same, except that a config this build's strict reader refuses is read again by the
+        /// picture-only reader — §11 of <c>logbook/specs/snapshot-render-spec.md</c>.
+        /// </summary>
+        /// <param name="oldRun">
+        /// Why the strict reader refused and what the picture reader assumed, or null when the
+        /// strict reader was enough. The caller says so in the log and on the label; nothing that
+        /// simulates may take this path.
+        /// </param>
+        /// <remarks>
+        /// Strict first and tolerant second, which is the whole of the safety here: a run this
+        /// build recorded is read by the same code it always was, and the difference shows up as
+        /// a string rather than as a silently different picture.
+        /// </remarks>
+        public static RunRecord LoadForPicture(string runDirectory, out string oldRun) =>
+            Load(runDirectory, true, out oldRun);
+
+        private static RunRecord Load(string runDirectory, bool forPicture, out string oldRun)
         {
+            oldRun = null;
+
             if (string.IsNullOrEmpty(runDirectory))
             {
                 throw new ArgumentException("No run directory given.", nameof(runDirectory));
@@ -134,8 +155,21 @@ namespace Evosim.Theatre
 
             var record = new RunRecord { Path = dir };
 
-            record.Config = RunDirectory.ReadConfig(dir, out string hashMismatch);
-            record.ConfigHashMismatch = hashMismatch;
+            try
+            {
+                record.Config = RunDirectory.ReadConfig(dir, out string hashMismatch);
+                record.ConfigHashMismatch = hashMismatch;
+            }
+            catch (Exception refusal) when (forPicture)
+            {
+                record.Config = PictureConfig.Read(dir, out string absent);
+
+                oldRun =
+                    "the strict config reader refused it (" + refusal.Message.Split('\n')[0] +
+                    "); the picture-only reader took the shape, the size, the floor, the patches " +
+                    "and the development limits" +
+                    (absent != null ? ". Absent from the file: " + absent : ", all of them present");
+            }
 
             string manifestPath = System.IO.Path.Combine(dir, "run.json");
             if (!File.Exists(manifestPath))
@@ -184,8 +218,10 @@ namespace Evosim.Theatre
             }
 
             // The config carries the step too, since it became a tunable. Both are reported and
-            // the manifest wins, because it is what the solver was configured with.
-            float configured = record.Config.PhysicsStepSeconds;
+            // the manifest wins, because it is what the solver was configured with. Not asked of
+            // a picture-only config, which never read the physics group and would report a
+            // disagreement with a number nobody wrote.
+            float configured = oldRun == null ? record.Config.PhysicsStepSeconds : record.PhysicsDtSeconds;
             if (Math.Abs(configured - record.PhysicsDtSeconds) > 1e-9f)
             {
                 record.StepDisagreement =
