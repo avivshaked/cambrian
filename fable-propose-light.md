@@ -57,6 +57,15 @@ film, with their median above 3 m, the reach is too short and 9 m is the retry. 
 eaters bust as fast as before, the dark column is not what limits them, and the read turns
 to the matter.
 
+## The smoke
+
+A 600 s smoke at dt 0.02 on round 39's world with the reach at 6 m (`r40smoke`, worker 5,
+`simHash 302df848…`) compiled the dial, wrote `light reach 6 m` in its header and
+`attenuationDepth 6` in its config, and ran 161 bodies by 600 s at a mean depth of 3.2 m.
+That is the founding, not the world: round 39's seed 1 sat at 7 m at the same second on the
+12 m reach and settled at 17 to 21 m over the next 5,000 s, so where the 6 m crowd settles
+is the round's first reading and not the smoke's.
+
 ## What it costs
 
 Nothing in code beyond the one launcher line, already made. `simHash` has moved since round
