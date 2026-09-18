@@ -32,8 +32,8 @@ the licence is the decision (one seat, one instance; Build Server covers builds 
 Unity Simulation is gone), nothing a hyperscaler rents is as fast per core as the desktop
 (0.6 to 0.8), and a desktop-Ryzen bare-metal box (OVH RISE-L, $177 a month, read) is both
 the fastest and the cheapest at about $0.30 a seed. Cloud recordings replay in the theatre
-as cousins, so screening goes remote and base rounds stay home. Waiting on the owner:
-the licence question to Unity, and whether to trial a box.
+as cousins, so screening would go remote and base rounds stay home. **The owner ruled it
+off the same morning: the campaign stays on this machine.**
 
 **Round 38, the dilute tank, is read (logbook/0101, 2026-09-15 night).** Five seeds on one
 build ended at 30,000 s; D1 to D4, D6 and D8 hold, D5 fails, D7's count holds and its
@@ -597,13 +597,11 @@ write it down." The agent's first thoughts; a proposal follows round 37b's read.
 
 ## The decisions in front of the owner
 
-- **Cloud CPU: the licence question, then a trial or not (`logbook/specs/cloud-cpu-survey.md`).**
-  The agent's recommendation: ask Unity sales whether a Pro or Build Server seat may run
-  the Editor in batch mode on a rented server for a non-build simulation; if yes, one OVH
-  RISE-L on Linux month to month ($177, read), screening remote and base rounds at home,
-  the CPU model in `run.json` first; never a scored seed on spot. The owner's licence
-  tier decides which question to ask, and the agent does not know it. Round 40's ruling
-  (6 m, "proceed with your recommendations") is D096 and is running.
+- **Cloud CPU: off (owner, 2026-09-18 morning: "cloud CPU right now is off. We'll continue
+  working on my machine").** The survey stands in `logbook/specs/cloud-cpu-survey.md` for
+  the day it is reopened; its finding was that the licence, not the price, is the
+  decision. Nothing is to be built for it: no CPU field in the manifest, no script port.
+  Round 40's ruling (6 m, "proceed with your recommendations") is D096 and is running.
 
 - **A tempo dial, later (owner, 2026-09-17 afternoon).** The owner asked whether the world's
   metabolic rate could rise so a run holds more generations. Worked through in conversation:

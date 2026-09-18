@@ -5,7 +5,10 @@ cloud CPU, to run simulations outside our machine, pros and cons and prices, an 
 overall costs"). Four research agents read provider pages and pricing feeds; the agent
 synthesised. Every price below is marked **read** (from the provider's own page or feed on
 2026-09-18) or **estimated** (arithmetic on read numbers, or a benchmark ratio). Nothing
-was bought, nothing was sent anywhere, and no account was opened.
+was bought, nothing was sent anywhere, and no account was opened. **Ruled off by the
+owner the same morning** ("cloud CPU right now is off. We'll continue working on my
+machine"); the survey stays for the day the question is reopened, and none of its
+recommendations is queued.
 
 ## The workload, read from round 39
 
