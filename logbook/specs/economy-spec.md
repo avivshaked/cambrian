@@ -230,3 +230,42 @@ settling near 2,000 units' worth; `burnt` and `remin` each window against `det i
 crowd against round 40's at the same second; the ledger's leaf at 0, 6 and 12 m under the
 new build against the table in §4. The base round's pre-registration takes its bars from
 that screen.
+
+## 11. Build notes (2026-09-18, evening)
+
+Built on branches `economy` and `margin` by two Opus agents from this spec, merged by the
+agent. What the build settled that the spec above did not say:
+
+- **`ConceptionsUnderMargin` is an invariant, not a bite gauge.** The margin enters
+  `ReproductionThreshold`, which `Brood` and the conception order already ask, so the gate
+  in `Conceive` refuses nothing extra: a probe at margins 0, 60 and 600 s read 0 in every
+  arm. A nonzero means the threshold and the gate have drifted apart, which is how D065's
+  fixed term went wrong. How hard the margin bites is read from the time to first birth
+  (58 s against 10 s at 600 s in the world test; 72 s against 17.5 s in the ledger) and
+  from `margin s` against the reserve's seconds.
+- **The mutator's floor is `Step`'s 1e-4**, so a mutated margin never reads a true 0
+  although `Validate` admits one.
+- **Every founder is an influx** (leg 9), so `MatterInfluxedTotal` is no longer D074's
+  influx alone and the identity, not the standing total, is what the open-budget tests pin.
+- **The energy audit's test tolerance is 1e-5 relative**, the matter identity's 1e-6: a
+  reserve is a float added to and subtracted from every step and drifts about 2e-6 of the
+  light over a few hundred steps.
+- **A short fixation take is unreachable**: the spent field's demand and share pass prices
+  the shortfall before any take, so `FixationShortTakes` reads 0 and is kept as a guard.
+- **`World.MatterResidual` is standing minus initial minus influx plus buried**, the
+  reverse sign of the harness's old inline expression; every reader compares the absolute
+  value.
+- **Remineralisation costs 0.52 ms a metabolic step** on round 40's grid (99,495 charged
+  cells into 819 spent cells), under 1% of the Core step.
+- **The founding draw takes one more number per founder** from the genome rng, so every
+  seed is a new realisation from the second founder on, and `BoxPathTests`' golden is
+  re-recorded (41 alive, 11 births, 127 deaths, 157 floor spawns over 400 steps of seed 3,
+  against 77, 67, 97 and 107): founders drawn over 0 to 600 s of margin mostly wait in
+  that dim test world, so the pin moved a long way. It pins sameness, as before.
+- **`rebuild-report.py` rebuilds post-D098 runs only**; its one earlier product is already
+  written.
+- **A UTF-8 BOM on a `.cs` file is a false build difference**, since `simHash` and
+  `coreHash` digest bytes; the build's edit scripts had added 32 and every one was stripped.
+- **Two ecology tests pin the founder margin at 0** (`LightFieldTests`' wide-against-narrow
+  world and `SenescenceTests`' turnover), because at the default range both worlds barely
+  breed and the comparison becomes a reading of the draw.
