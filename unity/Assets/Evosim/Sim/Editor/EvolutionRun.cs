@@ -129,6 +129,9 @@ namespace Evosim.Sim.EditorTools
             ResetStaticReportState();
 
             float irradiance = Env("EVOSIM_IRRADIANCE", 48f);
+            // The light's reach, the e-folding depth of the irradiance (D096, round 40): 12 m in
+            // every round since the light model, and a hard-coded 12 until 2026-09-18.
+            float lightReach = Env("EVOSIM_LIGHT_REACH", 12f);
             float budgetSeconds = Env("EVOSIM_SECONDS", 4000f);
             float wallMinutes = Env("EVOSIM_WALL_MINUTES", 30f);
             int reportEvery = (int)Env("EVOSIM_REPORT_EVERY", 200f);
@@ -638,7 +641,7 @@ namespace Evosim.Sim.EditorTools
                     NeutralBodyVolume = neutralVolume,
                     SurfaceRestoringFraction = surfaceRestore,
                 },
-                Light = new LightModel(irradiance, 12f)
+                Light = new LightModel(irradiance, lightReach)
                 {
                     DayNightAmplitude = dayAmplitude,
                     DayLengthSeconds = dayLength,
@@ -887,6 +890,7 @@ namespace Evosim.Sim.EditorTools
                 "Unity " + Application.unityVersion + " · dt=" + Ecosystem.FixedDt +
                 " · metabolic step " + (Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt) +
                 " s · seed " + seed + " · idle " + idle + " W/N·m · power " + minPower + "-" + maxPower +
+                " · light reach " + lightReach + " m" +
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
                 // D066. The current is three numbers and two switches now, not one number, and a
                 // header that named only the speed would describe five different worlds
