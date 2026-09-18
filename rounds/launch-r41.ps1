@@ -162,7 +162,11 @@ param(
     # What a cubic metre of tissue is worth and costs, J/m3, on every cell type
     # (CellType.TissueEnergyPerCubicMetre, EVOSIM_TISSUE_ENERGY). 500 is every world on file; under
     # one substance it is what a body holds in matter, and so the count the budget can build.
-    [float]$TissueEnergy = 500
+    [float]$TissueEnergy = 500,
+    # The founders' part half-extents, m (RandomGenomeOptions.MinHalfExtent/MaxHalfExtent,
+    # EVOSIM_FOUNDER_EXTENT_MIN/MAX). 0.15 to 0.40 is every world on file; 0 keeps the default.
+    [float]$FounderExtentMin = 0,
+    [float]$FounderExtentMax = 0
 )
 
 # Outside the hashtable: an `if` is a statement and a hashtable literal wants expressions.
@@ -228,6 +232,7 @@ $s = @{
     EVOSIM_HANDLING = $Handling; EVOSIM_RESERVE_CAP = $ReserveCap
     EVOSIM_MARGIN_MIN = $MarginMin; EVOSIM_MARGIN_MAX = $MarginMax; EVOSIM_MARGIN_CHANCE = $MarginChance
     EVOSIM_TISSUE_ENERGY = $TissueEnergy
+    EVOSIM_FOUNDER_EXTENT_MIN = $FounderExtentMin; EVOSIM_FOUNDER_EXTENT_MAX = $FounderExtentMax
 }
 
 if ($DigestEvery -gt 0) { $s.EVOSIM_DIGEST_EVERY = $DigestEvery }

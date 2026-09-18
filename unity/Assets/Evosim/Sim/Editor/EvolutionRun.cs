@@ -415,6 +415,14 @@ namespace Evosim.Sim.EditorTools
             // 500 because a leaf holds 0.38 J of tissue against a 25 J child.
             float tissueEnergy = Env("EVOSIM_TISSUE_ENERGY", 0f);
 
+            // The founders' part size, half-extents in metres (RandomGenomeOptions.MinHalfExtent,
+            // MaxHalfExtent; 0.15 to 0.40 is every world on file). Bounds generation zero only.
+            // Under one substance a body's tissue is its matter, so a founder drawn thirty times
+            // the volume an evolved leaf settles at (round 40's adult scale 0.30) is a founding
+            // that cannot afford a child at any tissue value that bounds the count.
+            float founderExtentMin = Env("EVOSIM_FOUNDER_EXTENT_MIN", 0f);
+            float founderExtentMax = Env("EVOSIM_FOUNDER_EXTENT_MAX", 0f);
+
             // How much denser than water tissue is, kg/m3. 0 is §5.2's neutral buoyancy, in which
             // a creature stays exactly where it was born and doing nothing is optimal. The
             // ceiling is what a joint can push against — 0.017 m/s for a founder body at 20 N.m
@@ -681,6 +689,9 @@ namespace Evosim.Sim.EditorTools
                     config.CellTypes.At(i).TissueEnergyPerCubicMetre = tissueEnergy;
                 }
             }
+
+            if (founderExtentMin > 0f) config.Genome.MinHalfExtent = founderExtentMin;
+            if (founderExtentMax > 0f) config.Genome.MaxHalfExtent = founderExtentMax;
 
             config.Genome.MaxLinkPower = maxPower;
             config.Genome.MinLinkPower = Math.Min(minPower, maxPower);
@@ -1028,6 +1039,7 @@ namespace Evosim.Sim.EditorTools
                 // Hash(), as it does for every knob this project has added.
                 " · matter from " + initialMatter + "/m3" +
                 " · tissue " + config.CellTypes.Resolve(CellTypeIds.Photosynthetic).TissueEnergyPerCubicMetre.ToString("0.###", CultureInfo.InvariantCulture) + " J/m3" +
+                " · founders " + config.Genome.MinHalfExtent.ToString("0.###", CultureInfo.InvariantCulture) + "-" + config.Genome.MaxHalfExtent.ToString("0.###", CultureInfo.InvariantCulture) + " m" +
                 " · float " + floatChance + " at " + liftCost + " W/lift" +
                 // D075 item 1, rendered unconditionally for D065's reason: a reader of a header
                 // must never have to work out whether a missing token means "the four channels"
