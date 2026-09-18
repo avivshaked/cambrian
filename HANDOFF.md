@@ -16,15 +16,30 @@ to 3 verified from their manifests: `simHash 302df848…`, `coreHash 96488dec…
 is checked from each arm's log once the first table row is in (the smoke's log carries
 it). Read on L1 to L9 with round 39's numbers as the baselines; frames of a live arm at
 about 3,000 and 6,000 s on a worker the queue is not using (5 or 6), one at a time. The
-wall is 1,800 minutes. Round 39's render chain is still on worker 7 (seed 1's 15,000 and
-30,000 s frames, then seeds 2 to 5), so a fourth Unity process is the render and the
-owner's Editor is the fifth; nothing else runs beside them.
+wall is 1,800 minutes. Round 39's render chain is still on worker 7 (seed 1's 30,000 s
+frames, then seeds 2 to 5), so a fourth Unity process is the render and the owner's
+Editor is the fifth; the early-look chain (`scratch/r40/snap-early.ps1`, worker 5, one side
+frame of seed 1 at 3,000 and 6,000 s) is the short visual check on top. **The early look
+at 3,000 s (`scratch/snaps/r40-s1/`, replay faithful, 30 of 31 samples):** 1,255 leaves in
+the top quarter of the tank, a packed row against the waterline thinning to nothing by
+about 15 m, the whole lower thirty metres and the floor empty but for a dozen bodies; the
+leaves' median 3.5 m at 1,000 s and 7 to 8 m by 2,300 to 2,600 s, moving down as the crowd
+grows, and seed 1's mean 8.3 m at 4,300 s with 1,940 alive (round 39's seed 1 had 1,083 at
+3,000 s). Seed 2 sits shallowest (mean 3.5 m at 2,700 s). Shading 2.8 to 3.7% at 2,700 to
+4,300 s, round 39's run maxima already. No eater has founded in any seed by 4,300 s. My
+reading: the band is forming where the ledger said and the film is thinning rather than
+filling, which is L1's direction; nothing is read until 15,000 s.
 
 **Round 39's entry waits for its frames.** `logbook/0105-the-shelf-was-never-in-the-light.md`
 is drafted and uncommitted with a `PICTURES-15000-30000` marker; the numeric read is
-committed as `logbook/specs/r39-read/` (`summary.tsv` first). When seed 1's later frames
-land, look at them, replace the marker, copy the chosen frames to `logbook/images/0105-…`,
-add the README row, commit; then restyle 0102 (its pre-registration is read).
+committed as `logbook/specs/r39-read/` (`summary.tsv` first). Seed 1's 15,000 s frames landed
+2026-09-18 08:59 (`scratch/snaps/r39-s1/`, identity 150 of 300 samples, faithful): the
+leaves fill the whole 45 m from the waterline to the floor, densest in the top half, and
+the eaters (601 of 1,915) sit in the lower half along the whole ramp with a scatter on the
+deep side's floor, which is 0105's E4 and E9 in one picture. When the 30,000 s frames land,
+look at them, replace the marker with both, copy the chosen frames to
+`logbook/images/0105-…`, add the README row, commit; then restyle 0102 (its
+pre-registration is read).
 
 **The cloud CPU survey is written (`logbook/specs/cloud-cpu-survey.md`, 2026-09-18).** The
 owner asked for prices and options for running the arms off the machine. The finding:
