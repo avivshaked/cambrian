@@ -119,6 +119,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D094](#d094) | The goal becomes a ladder of milestones: D063 deprecated as the campaign's bar (rung 1, met), the scorer to print a state and not a verdict, rung 2 adaptation by degree (a standing reading until its threshold is measured), rungs 3 and 4 named; every round still read on its own pre-registered predictions | 2026-09-16 | ruled by the owner in conversation on the morning of 2026-09-16 ("once we've proven that the goal is achievable we don't need to hold ourselves to that goal again"), on the agent's reasoning in the open |
 | [D095](#d095) | Seeds per round and arms at a time: five seeds for population-level predictions, ten for a rare event or a 2-or-3-of-5 reading, a rare event pre-registered as a count; three concurrent arms, renders between rounds | 2026-09-17 |
 | [D096](#d096) | The light's reach halved for round 40: `EVOSIM_LIGHT_REACH` 6 m (the attenuation depth, 12 m in every round before), so a lone leaf breeds only in the top ten metres and the water below is a dark column; the shelf follows in the lit band the new light defines | 2026-09-18 | ruled by the owner in conversation on the morning of 2026-09-18 ("Let's do it" on the direction, "proceed with your recommendations" on the value), from the agent's ledger sweep in `fable-propose-light.md`, absorbed here |
+| [D097](#d097) | The foundation queue stops after round 40's read; the campaign turns to what makes the world interesting: matter off the throne (a child's matter price so a cell is not a one-child cliff), then a mouth that eats living bodies (herbivory, then predation), then the senses and the stroke's price; each as a proposal | 2026-09-18 | ruled by the owner in conversation at midday on 2026-09-18 ("Let's follow your recommendations!") on the agent's diagnosis after round 40's early look |
 
 ---
 
@@ -5297,3 +5298,45 @@ little to read in one round; it is the retry if 6 m piles the leaves into the fi
 (0106's two-sided reading). Changing the surface irradiance, the day cycle or the leaf's efficiency: each
 moves the same economics through a different dial and none makes the water dark below.
 Combining the reach with the shelf: two world rules in one round cannot be read apart.
+
+### D097
+**The foundation queue stops; matter off the throne, then a mouth** · 2026-09-18
+
+**Status:** ruled by the owner at midday on 2026-09-18, in conversation ("I really want us to
+get to the point where we add some interest to the world and we keep being stuck on the pre
+interesting things", then "Let's follow your recommendations!"). A direction and a
+sequence; each world rule inside it comes as its own proposal and its own ruling.
+
+**Context, in plain words.** Forty rounds in, the world is a leaf crowd with eaters that boom
+and starve, and every mechanism added to it reads flat. The agent's diagnosis, from round
+40's early look (HANDOFF, 2026-09-18): the matter is the only thing that binds, and it binds
+at the wrong grain. Seventy to 75% of the matter sits in bodies, a hundred conceptions are
+blocked on matter for every birth, and a 5 m matter cell holds about one child's worth
+(3.0 to 3.5 units against a child's 3.1), so who breeds is a lottery on which cell can
+afford a child at that moment. Round 39's floor could not matter through that filter, and
+round 40's light moves the crowd's depth through it (the newborns' median depth went from
+2.5 m to 20 m as the top cells drained). And nothing in the world eats anything alive: the
+eaters take dead matter from a near-uniform field, so no body has a reason to be big, fast,
+jointed or anywhere in particular, and movement has never had a prize.
+
+**Ruled.** After round 40 is read, the pre-planned foundation rounds (the shelf, the long
+arm, the stroke priced alone, the light sense) leave the head of the queue. In their place,
+in order: **(1) matter off the throne**, one base change so that energy and not matter limits
+the founding crowd, most likely the per-child matter price (`MatterPerCreature`, 3 units
+since D065) brought down so that a cell holds many children's worth and the total stock
+rather than the cell decides; screened by a smoke on one number, conceptions blocked on
+matter per birth, from about 100 toward 1; a proposal with the value. **(2) A mouth that eats
+living bodies**: herbivory first, an absorptive part that takes tissue from a leaf it
+touches at a rate, the leaf's loss and the eater's gain booked in both ledgers; predation
+after it, once it works; a Core build with the harness reporting contacts, through a
+proposal because it is a world rule. Encounter is by contact in a crowd whose nearest
+neighbour is under half a metre, and by the chemical sense that already reads the field
+leaves exude into; a body sense comes after eating pays. **(3) The senses and the stroke's
+price**, readable once there is something to swim toward. The tank, the bed, the 6 m light
+and the replay apparatus stay.
+
+**Rejected.** Continuing the foundation queue as ruled on 2026-09-11: each of its rounds asks
+a question of a world that cannot answer it while the matter cell is a cliff. Building a
+prey sense before contact feeding: a prize before the game. Opening the matter books
+(influx without burial): the closed books are what let every reading be trusted (D065,
+§0p), and the price of a child is the dial that keeps them closed while moving the grain.

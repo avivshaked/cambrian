@@ -6,6 +6,17 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
+**The campaign's direction changed at midday on 2026-09-18 (D097).** The owner ruled "Let's
+follow your recommendations" on the agent's diagnosis that the matter cell is a one-child
+cliff that decides every reading, and that nothing in the world eats anything alive. After
+round 40's read the foundation rounds leave the head of the queue; next are the matter
+proposal (the per-child price, screened by a smoke on blocked conceptions per birth), then
+the mouth proposal (herbivory by contact, then predation), then the senses and the stroke's
+price. Both proposals are written from round 40's numbers once its read is in; the matter
+smoke can run on a free worker before that. The owner's question on how a body is eaten
+without senses is answered in D097: by contact in a crowd whose nearest neighbour is under
+half a metre, and by the chemical sense that already reads the leaves' exudate.
+
 **Round 40, the light's reach, is running (logbook/0106, D096; launched 2026-09-18 08:02).**
 Round 39's world with `EVOSIM_LIGHT_REACH` 6 m and nothing else changed; five seeds at
 three arms on workers 2, 3 and 4 (`scratch/r40/queue.ps1`, log `scratch/logs/r40-queue.out`;
@@ -404,6 +415,18 @@ old formats read-only.
 
 Agent work unless marked. Long steps (a suite, a smoke, a render) are launched by the agent in
 the background and never handed to a subagent, which cannot wait.
+
+0. **D097's sequence, ahead of everything below once round 40 is read.** (a) Round 40's
+   read as pre-registered (0106, L1 to L9), the entry with its pictures, `birth-depth.py`
+   moved into `logbook/specs/r40-read/`. (b) `fable-propose-matter.md`: the per-child
+   matter price (`EVOSIM_MATTER_PER_CREATURE`, 3 since D065) or the budget, with the
+   ledger's arithmetic per cell and a 600 s smoke reading conceptions blocked on matter per
+   birth against round 40's ~100; the risk to name is the crowd growing to the ceiling
+   (`EVOSIM_MAX_POP` 8000) and the pace with it. (c) `fable-propose-mouth.md`: herbivory by
+   contact, the rate, the two ledgers, what the harness reports (contacts per part per
+   step), the Core tests, the smoke; then predation as its own proposal. (d) A prey sense
+   and the stroke's price, on the fed world. The items below stand as written and move
+   down.
 
 1. **Round 38 landed and is read (0101); round 39 is launching (0102, committed
    `716e37a`).** Five seeds through the queue (`scratch/r39-queue.ps1`, log
