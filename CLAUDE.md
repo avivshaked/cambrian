@@ -884,6 +884,18 @@ actually verifying it.
   every row and manifest before this build reads 0. The instrument is two timestamps
   around each call and changes no trajectory, but it lives under `Assets/Evosim`, so it
   moved `simHash` (`6d38c45e…`) and every worker needs a refresh before the next round.
+- **A body's reserve is unbounded, and at a senescence death it leaves the world.**
+  Nothing caps `Organism.Energy`, and `World.Bury` books the reserve as `EnergyOut` and
+  hands the corpse the tissue alone (`Corpse(..., TissueJoules, LockedMatter)`), so a body
+  that dies of age takes everything it saved out of the world as if it had been burnt; a
+  starvation death discards nothing because the reserve is already 0. In round 40's seed 1
+  at 16,000 s the living had captured 764 kJ of light against 287 kJ spent, about 190 J of
+  reserve a body against 0.37 J of tissue, and every one of those bodies dies at 3,000 s
+  with that reserve. So the eaters' larder in rounds 38 to 40 was the tissue only, a
+  fraction of a percent of what the leaves captured, which is part of why the eaters boom
+  and starve (0101). The audit closes because the discard is booked as an outflow; the
+  books say nothing about whether a rule is sensible. Found 2026-09-18 while sizing D098's
+  loop; D098's build bounds the reserve as organic matter and sends it to the corpse.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

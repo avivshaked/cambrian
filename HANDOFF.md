@@ -19,7 +19,14 @@ income, upkeep, conception, growth and death legs, the fields' units, both ident
 ledger, the report's columns, the genome format to 6 for `ReserveMargin`), the tests, a
 5,000 s screen at dt 0.02 on round 40's world, then the base round's pre-registration and
 five seeds. Round 40's read (0106, at the last samples) and 0105's entry are written in
-the gaps.
+the gaps. **Two findings from sizing the loop (2026-09-18 evening), for the spec:** the
+reserve is unbounded and a senescence death discards it (CLAUDE.md's gotcha; the corpse
+gets the tissue only, and round 40's living held about 190 J of reserve a body against
+0.37 J of tissue), so the new economy bounds the reserve as organic matter with the excess
+exuded, and sends the reserve to the corpse. And the detritus field holds 265 to 314 kJ
+against under 1 kJ of tissue in the living, three hundred times the biomass, because
+nothing returns it to the leaves; under D098 it remineralises, so the budget and ρ are set
+from the crowd the machine can afford (about 2,500 bodies), not from today's numbers.
 
 **The campaign's direction changed at midday on 2026-09-18 (D097).** The owner ruled "Let's
 follow your recommendations" on the agent's diagnosis that the matter cell is a one-child
