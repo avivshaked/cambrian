@@ -103,9 +103,11 @@ missing tunables (`maxReserveMargin`), and round 39's genomes are format 5, refu
 same way. So a run recorded before a tunable cannot be drawn this way as built. Queued,
 for the owner to weigh against the refuse-rather-than-default rule: a picture-only read
 of the geometry (shape, area, depth, bed) and of a genome's body fields, tolerant of the
-economy and margin fields it does not need, marked on the label. Until then 0105 is
-written on the 5,000 and 15,000 s frames the faithful replay already took, and says the
-30,000 s frame was not taken.
+economy and margin fields it does not need, marked on the label. The owner ruled it at 23:20 and the subagent built it (spec §11; merged `1aac839`):
+`PictureConfig` and `PictureGenome` read only what a picture needs, tried after the strict
+readers refuse, the label's first line gaining `OLD-RUN READ`. Round 39 seed 1 at 30,000 s
+drew in a minute (1,920 joined, format 5) and 0105 is written on it and the faithful 5,000
+and 15,000 s frames, committed with its pictures and its key row.
 
 Also tonight: round 40's read is in 0106 (V5, three seeds: L3 held where readable, L1
 failed on the deep quartile, the deep tail is newborns dropped where nothing pays;
