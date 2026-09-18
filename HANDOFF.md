@@ -387,7 +387,12 @@ the background and never handed to a subagent, which cannot wait.
    land, then renders all five seeds one at a time on worker 7 with the round's
    `Assets/Evosim` copied from worker 3 over the refresh (the main tree's `simHash` moved
    with the timing split; a plain refresh would make the theatre refuse the recordings).
-   Put the three replay lines in the round's entry. A running arm's
+   **18th, 03:30 to 04:10: all three reruns landed at budget** (30,000 s; 1,043 to 1,087 min
+   wall at three arms, 0.5x real time) and every one replayed its censored copy bit for bit:
+   seed 3 identical on all 251 shared samples to 25,100 s, seed 4 on all 275 to 27,500 s,
+   seed 5 on all 266 to 26,600 s. Round 39 is five seeds of five at the pre-registered
+   second on one build. The chain is rendering seeds 1 to 5 on worker 7; then the theatre
+   watch and the read (0105). Put the three replay lines in the round's entry. A running arm's
    wall cannot be extended. A rerun on the same build at zero physics workers replays the
    censored prefix bit for bit (D078) and continues it, so a rerun of seeds 3 and 4 is an
    extension and not a new realisation. Every prediction of 0102 reads at 30,000 s by name. The render chain was stopped at 17:30 to give
