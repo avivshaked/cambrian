@@ -787,7 +787,8 @@ actually verifying it.
   proposed. **The throw trace as built misses the onset**: its three-frame ring is written
   after the check that fires it, so in 42 of 43 dumps every frame is already non-finite;
   read a dump's trace for the masses and the ratio, not for the first bad step, until the
-  ring keeps the last finite frames. The one-part control (seed 5 on 37b's build with
+  ring keeps the last finite frames (it does from round 40's build: seed 2's one dump held
+  three finite frames, logbook/0106's read). The one-part control (seed 5 on 37b's build with
   `fluidAccel 0`, `r37bc-s5`) is the test of the force.
 - **A run writes at most 50 diverged dumps** (`Ecosystem.MaxDumps`), so `diverged/` equals the
   `diverged` column only below 50: `r36-s2` counted 55 and dumped 50, and its last five
@@ -884,6 +885,9 @@ actually verifying it.
   300 s smoke on round 39's world at founding, fifty bodies: the Core step (the 1 m grid over
   2,200 m² × 45 m, stirred and carried every half second) cost 83 ms per metabolic step
   whatever the crowd, which is about a tenth of a full seed's wall and most of an empty one's.
+  At a full crowd the split turns over: round 40's three seeds at 2,500 bodies read physics
+  22 to 25%, world 11 to 14%, harness 62 to 65% (`logbook/specs/r40-read/pace.tsv`), so a
+  seed's wall at the crowd is the harness's per-body work, not the grid.
   Read the split from two rows' differences for a window, and from the footer for the run;
   every row and manifest before this build reads 0. The instrument is two timestamps
   around each call and changes no trajectory, but it lives under `Assets/Evosim`, so it

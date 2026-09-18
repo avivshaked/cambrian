@@ -1,0 +1,5 @@
+## L8  nothing throws: divergences per million jointed body-seconds. The jointed body-seconds are the `jointed` column integrated over the run at its 100 s sampling.
+arm	diverged at last sample	jointed body-seconds	inherited-jointed body-seconds	per million jointed	in 0-10	dumps on disk
+r40-s1	0	364300	298200	0.00	yes	0
+r40-s2	1	5293700	5113200	0.19	yes	2
+r40-s3	0	2625700	2593200	0.00	yes	0

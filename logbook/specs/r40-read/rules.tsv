@@ -1,0 +1,17 @@
+## 0106's rules before scoring, V1 to V5.
+rule	arm	result	the numbers
+V1	r40-s1	holds	attenuationDepth 6; simHash 302df848; coreHash 96488dec; configHash 866b711a; physicsJobWorkers 0; prereg 8e77099 (logbook/0106-the-light-stops-at-ten-metres.md); missing header tokens: none
+V1	r40-s2	holds	attenuationDepth 6; simHash 302df848; coreHash 96488dec; configHash 866b711a; physicsJobWorkers 0; prereg 8e77099 (logbook/0106-the-light-stops-at-ten-metres.md); missing header tokens: none
+V1	r40-s3	holds	attenuationDepth 6; simHash 302df848; coreHash 96488dec; configHash 866b711a; physicsJobWorkers 0; prereg 8e77099 (logbook/0106-the-light-stops-at-ten-metres.md); missing header tokens: none
+V2	r40-s1	holds	164 rows; audit off 0.0000% on 0; mat resid nonzero on 0; raw |matterResidual| max 2.45e-05; raw |matterOrphaned| max 1.35e-03
+V2	r40-s2	holds	122 rows; audit off 0.0000% on 0; mat resid nonzero on 0; raw |matterResidual| max 3.28e-05; raw |matterOrphaned| max 8.46e-04
+V2	r40-s3	holds	143 rows; audit off 0.0000% on 0; mat resid nonzero on 0; raw |matterResidual| max 1.50e-05; raw |matterOrphaned| max 6.83e-04
+V3	r40-s1	holds	wraps nonzero on 0 of 164 rows (a tank has no seam)
+V3	r40-s2	holds	wraps nonzero on 0 of 122 rows (a tank has no seam)
+V3	r40-s3	holds	wraps nonzero on 0 of 143 rows (a tank has no seam)
+V4	r40-s1	holds	diverged column 0.0 at the last sample; 0 dump(s), 0 with a -trace.json. no dump to check
+V4	r40-s2	holds	diverged column 1.0 at the last sample; 1 dump(s), 1 with a -trace.json. body 1144 at 1516 s, 2 parts, joint mass ratio 1.34, age 0 s, framesHeld 3 of which 3 finite, first non-finite link 0, 4 steps from that step to the dump
+V4	r40-s3	holds	diverged column 0.0 at the last sample; 0 dump(s), 0 with a -trace.json. no dump to check
+V5	r40-s1	censored	status stopped, reason manual-other, stoppedAt 2026-09-18T15:56:59.7145851Z; 16400 of 30000 s simulated (54.7%); wall limit 1800 min; read at the last sample
+V5	r40-s2	censored	status stopped, reason manual-other, stoppedAt 2026-09-18T15:57:00.5489664Z; 12200 of 30000 s simulated (40.7%); wall limit 1800 min; read at the last sample
+V5	r40-s3	censored	status stopped, reason manual-other, stoppedAt 2026-09-18T15:57:01.3543409Z; 14300 of 30000 s simulated (47.7%); wall limit 1800 min; read at the last sample

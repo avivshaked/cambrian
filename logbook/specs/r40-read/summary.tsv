@@ -1,0 +1,56 @@
+## Round 40, three seeds of five, stopped by the owner at 16,400 / 12,200 / 14,300 s (D098). Every prediction of 0106 per seed, with the number, the bar and the verdict. A bar that names a second the seed never reached is NOT READABLE; the last-sample number is carried beside it as a reading and never as a verdict. The round-level "4 of 5" cannot be decided by three seeds at all: the per-seed column is what this file reports.
+prediction	bar	arm	number	verdict	file
+L1	leaf median < 10 m and q3 depth < 15 m at 15,000 s	r40-s1	median 12.37 m, q3 22.99 m, n 2192	FAILS	depth-band.tsv
+L1	leaf median < 10 m and q3 depth < 15 m at last sample 16400 s	r40-s1	median 13.07 m, q3 25.07 m, n 2011	not readable (the bar names 30,000 s and no seed reached it); reading at the last sample: misses the bar	depth-band.tsv
+L1	leaf median < 10 m and q3 depth < 15 m at 15,000 s	r40-s2	-	not readable (stopped at 12200 s)	depth-band.tsv
+L1	leaf median < 10 m and q3 depth < 15 m at last sample 12200 s	r40-s2	median 4.13 m, q3 16.15 m, n 2490	not readable (the bar names 30,000 s and no seed reached it); reading at the last sample: misses the bar	depth-band.tsv
+L1	leaf median < 10 m and q3 depth < 15 m at 15,000 s	r40-s3	-	not readable (stopped at 14300 s)	depth-band.tsv
+L1	leaf median < 10 m and q3 depth < 15 m at last sample 14300 s	r40-s3	median 6.93 m, q3 22.78 m, n 1675	not readable (the bar names 30,000 s and no seed reached it); reading at the last sample: misses the bar	depth-band.tsv
+L2	shade % above 3.5 at 15,000 s	r40-s1	1.6%	FAILS	shade.tsv
+L2	shade % above 3.1 at 30,000 s	r40-s1	last sample 16400 s: 1.6%; run max 3.0%	not readable (no seed reached 30,000 s); reading: below 3.1	shade.tsv
+L2	shade % above 3.5 at 15,000 s	r40-s2	last sample 12200 s: 2.7%	not readable (stopped at 12200 s)	shade.tsv
+L2	shade % above 3.1 at 30,000 s	r40-s2	last sample 12200 s: 2.7%; run max 3.9%	not readable (no seed reached 30,000 s); reading: below 3.1	shade.tsv
+L2	shade % above 3.5 at 15,000 s	r40-s3	last sample 14300 s: 2.6%	not readable (stopped at 14300 s)	shade.tsv
+L2	shade % above 3.1 at 30,000 s	r40-s3	last sample 14300 s: 2.6%; run max 4.1%	not readable (no seed reached 30,000 s); reading: below 3.1	shade.tsv
+L3	absorptive median at least 10 m below the leaves' at 15,000 s	r40-s1	stomach 33.55 - leaf 12.37 = +21.18 m, n 299	HOLDS	depth-band.tsv
+L3	absorptive median at least 10 m below the leaves' at last sample 16400 s	r40-s1	stomach 31.43 - leaf 13.07 = +18.36 m, n 477	reading at the last sample (the bar names 15,000 s): meets the bar	depth-band.tsv
+L3	absorptive median at least 10 m below the leaves' at 15,000 s	r40-s2	stomachs n=0	not readable (stopped at 12200 s)	depth-band.tsv
+L3	absorptive median at least 10 m below the leaves' at last sample 12200 s	r40-s2	stomach 1.39 - leaf 4.13 = -2.74 m, n 10	reading at the last sample (the bar names 15,000 s): misses the bar	depth-band.tsv
+L3	absorptive median at least 10 m below the leaves' at 15,000 s	r40-s3	stomachs n=0	not readable (stopped at 14300 s)	depth-band.tsv
+L3	absorptive median at least 10 m below the leaves' at last sample 14300 s	r40-s3	stomach 26.41 - leaf 6.93 = +19.48 m, n 921	reading at the last sample (the bar names 15,000 s): meets the bar	depth-band.tsv
+L4	the first boom above 550 inherited eaters busts later than 2,600 s after its peak, or not before the budget	r40-s1	inherit run maximum 470 at 16400 s; last sample 16400 s	not readable: no boom above 550 before the stop	booms.tsv
+L4	the first boom above 550 inherited eaters busts later than 2,600 s after its peak, or not before the budget	r40-s2	inherit run maximum 7 at 12200 s; last sample 12200 s	not readable: no boom above 550 before the stop	booms.tsv
+L4	the first boom above 550 inherited eaters busts later than 2,600 s after its peak, or not before the budget	r40-s3	inherit run maximum 913 at 14300 s; last sample 14300 s	not readable: no bust, but only 0 s of run after the peak, under the 2,600 s the bar needs	booms.tsv
+L5	matterLocked / matterStanding below 0.70 at 30,000 s	r40-s1	last sample 16400 s: 0.7214	not readable (no seed reached 30,000 s); reading: at or above 0.70	matter.tsv
+L5	matterLocked / matterStanding below 0.70 at 30,000 s	r40-s2	last sample 12200 s: 0.7115	not readable (no seed reached 30,000 s); reading: at or above 0.70	matter.tsv
+L5	matterLocked / matterStanding below 0.70 at 30,000 s	r40-s3	last sample 14300 s: 0.7467	not readable (no seed reached 30,000 s); reading: at or above 0.70	matter.tsv
+L6	alive at 30,000 s between 1,680 and 3,600	r40-s1	last sample 16400 s: 2490	not readable (no seed reached 30,000 s); reading: in band	timeline-every1000.tsv
+L6	births by 1,000 s at least 40	r40-s1	283	HOLDS	timeline-every1000.tsv
+L6	alive at 30,000 s between 1,680 and 3,600	r40-s2	last sample 12200 s: 2503	not readable (no seed reached 30,000 s); reading: in band	timeline-every1000.tsv
+L6	births by 1,000 s at least 40	r40-s2	301	HOLDS	timeline-every1000.tsv
+L6	alive at 30,000 s between 1,680 and 3,600	r40-s3	last sample 14300 s: 2599	not readable (no seed reached 30,000 s); reading: in band	timeline-every1000.tsv
+L6	births by 1,000 s at least 40	r40-s3	471	HOLDS	timeline-every1000.tsv
+L7	rim quarter p3/alive 0.15 to 0.40 at 5000 s	r40-s1	0.2797	HOLDS	rim.tsv
+L7	rim quarter p3/alive 0.15 to 0.40 at 15000 s	r40-s1	0.2744	HOLDS	rim.tsv
+L7	rim quarter p3/alive 0.15 to 0.40 at 16400 s (last sample)	r40-s1	0.2357	not readable (30,000 s bar); reading: in band	rim.tsv
+L7	cols within 0.85 to 1.05 of 1 - e^(-n/2211) at 5000 s	r40-s1	0.942	HOLDS	rim.tsv
+L7	cols within 0.85 to 1.05 of 1 - e^(-n/2211) at 15000 s	r40-s1	0.965	HOLDS	rim.tsv
+L7	cols within 0.85 to 1.05 of 1 - e^(-n/2211) at 16400 s (last sample)	r40-s1	0.981	not readable (30,000 s bar); reading: in band	rim.tsv
+L7	rim quarter p3/alive 0.15 to 0.40 at 15,000 s	r40-s2	-	not readable (stopped at 12200 s)	rim.tsv
+L7	cols within 0.85 to 1.05 of 1 - e^(-n/2211) at 15,000 s	r40-s2	-	not readable (stopped at 12200 s)	rim.tsv
+L7	rim quarter p3/alive 0.15 to 0.40 at 5000 s	r40-s2	0.3229	HOLDS	rim.tsv
+L7	rim quarter p3/alive 0.15 to 0.40 at 12200 s (last sample)	r40-s2	0.2577	not readable (30,000 s bar); reading: in band	rim.tsv
+L7	cols within 0.85 to 1.05 of 1 - e^(-n/2211) at 5000 s	r40-s2	0.889	HOLDS	rim.tsv
+L7	cols within 0.85 to 1.05 of 1 - e^(-n/2211) at 12200 s (last sample)	r40-s2	0.911	not readable (30,000 s bar); reading: in band	rim.tsv
+L7	rim quarter p3/alive 0.15 to 0.40 at 15,000 s	r40-s3	-	not readable (stopped at 14300 s)	rim.tsv
+L7	cols within 0.85 to 1.05 of 1 - e^(-n/2211) at 15,000 s	r40-s3	-	not readable (stopped at 14300 s)	rim.tsv
+L7	rim quarter p3/alive 0.15 to 0.40 at 5000 s	r40-s3	0.2594	HOLDS	rim.tsv
+L7	rim quarter p3/alive 0.15 to 0.40 at 14300 s (last sample)	r40-s3	0.2513	not readable (30,000 s bar); reading: in band	rim.tsv
+L7	cols within 0.85 to 1.05 of 1 - e^(-n/2211) at 5000 s	r40-s3	0.923	HOLDS	rim.tsv
+L7	cols within 0.85 to 1.05 of 1 - e^(-n/2211) at 14300 s (last sample)	r40-s3	0.962	not readable (30,000 s bar); reading: in band	rim.tsv
+L8	diverged 0 to 10 per million jointed body-seconds	r40-s1	0 over 0.36 million jointed body-seconds = 0.00	HOLDS	exposure.tsv
+L8	diverged 0 to 10 per million jointed body-seconds	r40-s2	1 over 5.29 million jointed body-seconds = 0.19	HOLDS	exposure.tsv
+L8	diverged 0 to 10 per million jointed body-seconds	r40-s3	0 over 2.63 million jointed body-seconds = 0.00	HOLDS	exposure.tsv
+L9	wall s per 1,000 simulated s per 1,000 bodies between 600 and 1,300	r40-s1	957 (sim loop, wallTotalMs); 965 (manifest window)	HOLDS	pace.tsv
+L9	wall s per 1,000 simulated s per 1,000 bodies between 600 and 1,300	r40-s2	1283 (sim loop, wallTotalMs); 1283 (manifest window)	HOLDS	pace.tsv
+L9	wall s per 1,000 simulated s per 1,000 bodies between 600 and 1,300	r40-s3	1075 (sim loop, wallTotalMs); 1082 (manifest window)	HOLDS	pace.tsv

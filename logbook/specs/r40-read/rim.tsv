@@ -1,0 +1,9 @@
+## L7  the disc stays mixed: the rim quarter p3/alive, and `cols` against the uniform expectation 1 - e^(-n/2211) on 2,211 live 1 m columns. The bar names 5,000, 15,000 and 30,000 s.
+arm	t	alive	p0	p1	p2	p3	rim share	in 0.15-0.40	cols	uniform expectation	ratio	in 0.85-1.05
+r40-s1	5000	2249	676	492	452	629	0.2797	yes	1329	1411	0.942	yes
+r40-s1	15000	2493	553	618	638	684	0.2744	yes	1442	1495	0.965	yes
+r40-s1	16400	2490	615	595	693	587	0.2357	yes	1466	1494	0.981	yes
+r40-s2	5000	2360	276	493	829	762	0.3229	yes	1289	1451	0.889	yes
+r40-s2	12200	2503	560	650	648	645	0.2577	yes	1365	1498	0.911	yes
+r40-s3	5000	2209	392	532	712	573	0.2594	yes	1290	1397	0.923	yes
+r40-s3	14300	2599	655	654	637	653	0.2513	yes	1470	1529	0.962	yes

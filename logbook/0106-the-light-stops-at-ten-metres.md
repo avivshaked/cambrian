@@ -134,3 +134,65 @@ L9 could be read at all. Seed 1's 15,000 s reading was in: the leaves' median ab
 against L1's 10 m bar, with the depth-by-age table (HANDOFF, 2026-09-18) showing the deep
 half of the crowd as newborns dropped at 16 to 25 m by the few parents whose cell could
 afford a child, most of them dead within 500 s.
+
+## The read, at the last samples
+
+*2026-09-18, 19:10; `logbook/specs/r40-read/` (`analyse.py`, `pos_analyse.py`, `booms.py`,
+`birth-depth.py` and their tables).* Three seeds of five, stopped at 16,400, 12,200 and
+14,300 s. V1 to V4 hold: every header token and hash as launched, both books closed on every
+row, no wrap, and the round's one divergence (seed 2, body 1144 at 1,516 s) a two-part
+jointed newborn with a joint mass ratio of 1.34, round 37b's signature, dumped with a trace
+whose ring held three finite frames, so 0097's "the trace misses the onset" is fixed in this
+build. The theatre was pointed at seed 1 at 3,000 and 6,000 s (the frames in HANDOFF's early
+look): leaves in the top quarter, packed at the waterline, the lower thirty metres empty at
+3,000 s; the crowd filling the top half to about 22 m at 6,000 s. Under V5 a bar named at
+30,000 s is not readable and a bar named at 15,000 s is readable in seed 1 alone; the
+number at the last sample is carried as a reading. The round cannot decide any "4 of 5".
+
+| | seed 1 (16,400 s) | seed 2 (12,200 s) | seed 3 (14,300 s) |
+|---|---|---|---|
+| L1 leaf median, deep quartile | 12.4 m, 23.0 m at 15,000 s: **fails** both clauses; 13.1, 25.1 at the end | 4.1 m, 16.2 m at the end: the median passes, the quartile misses by a metre | 6.9 m, 22.8 m at the end: the median passes, the quartile misses badly |
+| L2 shade % | 1.6% at 15,000 s: **fails**; run max 3.0% at 2,000 s | 2.7% at the end; max 3.9% at 3,300 s | 2.6% at the end; max 4.1% at 4,900 s |
+| L3 eaters below leaves | 21.2 m below at 15,000 s (n 299): **holds**; 18.4 m at the end | 10 eaters at the end, 2.7 m above the leaves: not readable | 19.5 m below at the end (n 921): meets the bar |
+| L4 the bust | `inherit` 470 at the end and rising, never 550: not readable | max 7, the eaters never founded | 913 at the last sample, still climbing: not readable |
+| L5 locked share | 0.72 at the end | 0.71 | 0.75 |
+| L6 alive; births by 1,000 s | 2,490; 283 **holds** | 2,503; 301 **holds** | 2,599; 471 **holds** |
+| L7 rim share; cols of uniform | 0.28, 0.27 at 5,000 and 15,000 s; 0.94, 0.97: **holds** | 0.32; 0.89 at 5,000 s: **holds** | 0.26; 0.92 at 5,000 s: **holds** |
+| L8 diverged per million jointed body-seconds | 0 of 0.36 M: **holds** | 1 of 5.29 M, 0.19: **holds** | 0 of 2.63 M: **holds** |
+| L9 wall s per 1,000 s per 1,000 bodies | 957: **holds** | 1,283: **holds**, at the top of the band | 1,075: **holds** |
+
+Depth by guild at the last sample: leaves' median 13.1 / 4.1 / 6.9 m against round 39's
+15.9 to 20.1 m at 15,000 s, and the eaters' 31.4 / 1.4 / 26.4 m. The share of the living
+above 3 m fell through every run (0.37 to 0.19, 0.51 to 0.45, 0.53 to 0.26 between 5,000 s
+and the end). Shading peaked in every seed by 5,000 s, inside round 39's own range, and fell
+after. Births by first depth, all three seeds together: born at 0 to 4 m, none dead within
+500 s and 52 to 70% ever breed; born at 16 to 22 m, half dead within 500 s and 8 to 9%
+breed; born below 22 m, 68 to 91% dead within 500 s. Residents older than 3,000 s sit at
+2 to 11 m while the newborns of the last 2,000 s sit at 13 to 28 m, and a newborn's depth
+minus its parent's is 0.0 m in every window of every seed: the disc disperses sideways.
+
+**What I read in it.** The leaves rose and did not form a band. Against round 39 the one
+comparable seed is 3.5 m shallower at 15,000 s and the two shorter seeds are shallower
+still, but every seed's deep quartile is 16 to 25 m: a shallow mode with a long deep tail,
+not the 0 to 15 m band the ledger priced. The tail is mortality, not habitat. A child is
+set down at its parent's depth, the parents that can still afford a child once the lit
+water fills are the deep ones (HANDOFF's cell-affordability reading), and their children
+are dropped where nothing pays and die inside 500 s. So the leaves' median deepening
+through a run is a birth statistic, and I would not read it again without conditioning on
+age. L3 is the one substantive prediction that held where it could be read: with eaters
+founded, the dark column is theirs, 19 to 21 m below the leaves and more numerous than
+round 39's; seed 2's eaters never founded, one founding failure in three. Shading was not
+selected and went the other way, which under the entry's two-sided reading has no
+assigned meaning because L1 did not hold; my inference is that the crowd spread down the
+tail rather than stacking in the band. And nothing about the matter or the crowd moved
+(locked share, alive, rim, cols, pace all inside round 39's), so the reach changed where
+bodies are and not how many there are. The constraint was still the matter, which is what
+this stopped round hands to D098.
+
+Two instrument notes. `pace-survey.py` cannot read a stopped arm (it wants the footer
+`stop-arm.ps1` kills before it is written); `pace.tsv` takes the wall from the manifest
+window and from the last row's `wallTotalMs`, which agree within 1%. And the wall split at
+a full crowd reads physics 22 to 25%, world 11 to 14%, harness 62 to 65%, against the
+founding smoke's 4 / 85 / 11: at a crowd it is the harness, not the grid (CLAUDE.md's
+gotcha corrected). The 16:57 note's "about 14 m" was the all-guild median; the leaves' is
+12.4 m, and the verdict is the same.

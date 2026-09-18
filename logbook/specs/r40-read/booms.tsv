@@ -1,0 +1,11 @@
+## L4 boom by boom. A boom is a local maximum of `inherit` above 550 with no larger sample within 3,000 s; its bust is the first later sample under a sixth of that peak. L4 holds for a boom whose bust comes later than 2,600 s after the peak, or not at all before the budget — but this round has no budget, only a stop, so a boom with no bust and less than 2,600 s of run left after it is NOT READABLE.
+arm	last sample	boom	peak inherit	at	share of the living	peak/6	bust at	s from peak	inherit at the bust	s of run after the peak	L4 verdict
+r40-s1	16400	-	-	-	-	-	-	-	-	-	not readable: `inherit` never reached 550 (run maximum 470 at 16400 s)
+r40-s2	12200	-	-	-	-	-	-	-	-	-	not readable: `inherit` never reached 550 (run maximum 7 at 12200 s)
+r40-s3	14300	1	913	14300	0.351	152.2	-	-	-	0	not readable: no bust, but only 0 s of run after the peak, under the 2,600 s the bar needs
+
+## per seed, on the FIRST boom above 550 (L4's own wording)
+arm	L4 on the first boom
+r40-s1	not readable: no boom above 550 before the stop
+r40-s2	not readable: no boom above 550 before the stop
+r40-s3	not readable: no bust, but only 0 s of run after the peak, under the 2,600 s the bar needs

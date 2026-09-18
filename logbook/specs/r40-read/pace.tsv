@@ -1,0 +1,5 @@
+## L9  the pace: wall seconds per 1,000 simulated seconds per 1,000 living bodies. No seed has a footer — stop-arm.ps1 writes the manifest and kills the process, so the report's "Ended:" line was never written. The wall is therefore taken two ways: the manifest window (startedAt to stoppedAt, which includes the idle minutes after the last sample) and the last stats row's cumulative wallTotalMs, which is the sim loop itself. Round 39's three-arm seeds read 903.9 / 903.3 / 860.1 (r39-read/pace.tsv).
+arm	startedAt	stoppedAt	manifest wall s	wallTotalMs s	simulated s	mean alive	s/1000 sim s (manifest)	per 1000 bodies (manifest)	per 1000 bodies (wallTotal)	in 600-1300	physics %	world %	harness %	writers %	worker
+r40-s1	2026-09-18T07:02:19	2026-09-18T15:56:59	32080	31806	16400	2027	1956.1	964.9	956.7	yes	22%	13%	65%	0.0%	unity-w2
+r40-s2	2026-09-18T07:02:53	2026-09-18T15:57:00	32047	32038	12200	2047	2626.8	1283.0	1282.6	yes	25%	11%	63%	0.0%	unity-w3
+r40-s3	2026-09-18T07:03:20	2026-09-18T15:57:01	32020	31805	14300	2069	2239.2	1082.1	1074.8	yes	24%	14%	62%	0.0%	unity-w4
