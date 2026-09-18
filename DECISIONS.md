@@ -5407,6 +5407,26 @@ what fixes it, and there is no separate charge beyond the leaf's upkeep. Animals
 on inorganic matter; they take organic matter by contact, paying the mouth part's upkeep and
 whatever movement reaches the food, with no per-bite charge in this build.
 
+**Amended the same evening, in discussion.** The owner answered the four questions and
+pressed on one more: "is there one matter type or two? ... I think there should be one.
+Just matter." The agent's answer, which the owner accepted ("Ok sounds good. You can go
+implement"): it is one matter. What the proposal called organic and inorganic is one
+kind of unit in two states, charged (carrying ρ joules) and spent (carrying none). The
+owner's own rule already holds the state ("energy is produced from contained matter, and
+when used that matter returns to the water"). The state has to be explicit rather than
+"in a body" against "in the water". Without it anyone taking matter from the water at a
+price under ρ would make energy from nothing, so only light could pay, and no animal
+could ever feed from the water. With it a charged unit may sit in the water as
+marine snow, which is what keeps the filter feeders, the corpse leak and the sinking snow.
+Three rules came out of the discussion. Every living cell burns charged matter for its
+upkeep and the spent unit returns to the water, plants included: a plant that could not
+burn its reserve would die the step it was shaded, and light would have a path around
+matter. Taking matter in costs energy: for the leaf at least ρ per unit, paid from light,
+and for the mouth a handling charge paid from the reserve. Light is never stored and pays
+for nothing but fixation. The asymmetry the owner named holds in that
+form. A photosynthetic cell cannot get energy from what it takes in, because a spent unit
+has none. An absorptive cell can. `logbook/specs/economy-spec.md` carries the numbers.
+
 **Rejected.** Two currencies with a per-body matter store (`fable-propose-matter.md`, the same
 afternoon): removes the lottery, keeps the licence fee and the two loops. Matter dropped
 and the crowd capped on energy alone: nothing then strips the surface and a lit leaf breeds

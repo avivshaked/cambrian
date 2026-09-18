@@ -13,7 +13,12 @@ stopped at 16,400, 12,200 and 14,300 s (manifests say `stopped`, `manual-other`,
 note); seeds 4 and 5 never launched; the queue is stopped. Round 39's render chain
 (`scratch/r39-renders-2.ps1`, worker 7) runs on for 0105's pictures and is the only Unity
 process; the Core suites run beside it only filtered, `-All` when it is between renders.
-The build's path: `logbook/specs/economy-spec.md` (the rules with the numbers, the ledger's
+The owner settled the last open question at 17:20 (one matter in two states, charged and
+spent; D098's amendment) and said "go implement. When you're ready spin up the arms." The
+build is on branch `economy` (worktree `scratch/wt-economy`) so that round 39's render
+chain, which compiles main's Core at every Editor start, is not broken under it; the
+spec is `logbook/specs/economy-spec.md` and the map `logbook/specs/economy-inventory.md`.
+The build's path: the spec (the rules with the numbers, the ledger's
 arithmetic for ρ, k, K and the remineralisation rate), then Core (`Metabolism`, `World`'s
 income, upkeep, conception, growth and death legs, the fields' units, both identities, the
 ledger, the report's columns, the genome format to 6 for `ReserveMargin`), the tests, a
