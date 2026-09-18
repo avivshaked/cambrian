@@ -245,6 +245,15 @@ nothing checks it at a render the way `simHash` checks the simulation, so a work
 a skin change replays faithfully in the old skin, and refuses a view it has never heard of (four
 renders on 2026-09-10 died in a minute on `'close' is not a view`). Refresh the render worker
 first; `Assets/Evosim` is unchanged by it, so the recording still replays.
+**`-From snapshot` draws the frame instead of replaying it** (2026-09-18,
+`logbook/specs/snapshot-render-spec.md`). The genomes come from `snapshots/NNNNNNNNN.jsonl` and the
+places from `positions.jsonl`, joined on the organism id. A picture of any second of any run then
+costs seconds instead of a re-simulation from the first. Two things it cannot recover, and every
+frame says so on a line reading `RECONSTRUCTED FROM SNAPSHOT`. No file holds a body's orientation,
+so every body is drawn upright in the developer's own frame. None holds how far it had grown, so
+every body is drawn at its adult size. Only a second the run wrote a snapshot at can be drawn. The
+`close` view and `-Chrome` are refused in this mode, and the pictures carry `-recon-` in the name
+before the view.
 
 Keys: `Space` pause, `[` `]` pace, `L` pace lock (at or under real time, for filming), `K` seek,
 `C` colour, `X` raw shapes (the colliders as the physics has them, no rounding, carve, taper or

@@ -35,6 +35,14 @@ namespace Evosim.Theatre
 
             /// <summary>Mode A: one creature, alone, no economy.</summary>
             Solo = 1,
+
+            /// <summary>
+            /// A still drawn from the run's own files, with nothing simulated — the snapshot
+            /// render (<c>logbook/specs/snapshot-render-spec.md</c>, 2026-09-18). Selected by
+            /// <c>EVOSIM_THEATRE_SNAP_FROM=snapshot</c> and driven by
+            /// <c>TheatreSnapshot</c>, which asks for one second at a time.
+            /// </summary>
+            Snapshot = 2,
         }
 
         [Header("What to show")]
@@ -137,6 +145,7 @@ namespace Evosim.Theatre
 
         private TheatreReplay _replay;
         private SoloCreature _solo;
+        private SnapshotWorld _recon;
         private readonly CreatureIdMap _map = new CreatureIdMap();
         private readonly TheatrePalette _palette = new TheatrePalette();
 
@@ -193,6 +202,16 @@ namespace Evosim.Theatre
         /// </remarks>
         public TheatreReplay Replay => _replay;
 
+        /// <summary>
+        /// The reconstruction on screen, or null when this is not Mode Snapshot.
+        /// </summary>
+        /// <remarks>
+        /// Read by <c>TheatreSnapshot</c>, which asks it for a second and waits for
+        /// <see cref="SnapshotWorld.Ready"/> before it photographs anything — the same shape as
+        /// the replay's drive loop, where the wait is for a clock rather than for a build.
+        /// </remarks>
+        public SnapshotWorld Reconstruction => _recon;
+
         /// <summary>Why nothing opened, or null. The same string the interface prints.</summary>
         public string Error => _error;
 
@@ -242,6 +261,15 @@ namespace Evosim.Theatre
             string genome = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_GENOME");
             if (!string.IsNullOrEmpty(genome)) { GenomePath = genome; Mode = ViewMode.Solo; }
 
+            // The snapshot render's own switch. Anything but "snapshot" leaves the theatre
+            // exactly as it was, which is the spec's first requirement.
+            if (string.Equals(
+                    Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SNAP_FROM"), "snapshot",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                Mode = ViewMode.Snapshot;
+            }
+
             string seek = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SEEK");
             if (!string.IsNullOrEmpty(seek) &&
                 float.TryParse(seek, System.Globalization.NumberStyles.Float,
@@ -255,9 +283,18 @@ namespace Evosim.Theatre
                 AllowSourceMismatch = true;
             }
 
-            // Before the run opens, because opening is what fills it in.
-            _ui = TheatreUi.Create();
-            if (_ui != null) _ui.Visible = ShowOverlay;
+            // Before the run opens, because opening is what fills it in. Never in the snapshot
+            // mode: the interface reads a replay's census and a reconstruction has none, which is
+            // also why -Chrome is refused there.
+            if (Mode != ViewMode.Snapshot)
+            {
+                _ui = TheatreUi.Create();
+                if (_ui != null) _ui.Visible = ShowOverlay;
+            }
+            else
+            {
+                ShowOverlay = false;
+            }
 
             OpenWhateverModeSays();
         }
@@ -270,6 +307,7 @@ namespace Evosim.Theatre
             try
             {
                 if (Mode == ViewMode.World) OpenWorld();
+                else if (Mode == ViewMode.Snapshot) OpenSnapshot();
                 else OpenSolo();
             }
             catch (Exception e)
@@ -319,9 +357,26 @@ namespace Evosim.Theatre
                 (_replay.ThreadCaveat != null ? " (" + _replay.ThreadCaveat + ")" : "") + ", " +
                 (_replay.Faithful ? "same source as the recording" : "SOURCE DIFFERS: " + _replay.SourceDifference));
 
+            DressTheWorld(_replay);
+
+            if (SeekToSeconds > 0f) BeginSeek(SeekToSeconds);
+        }
+
+        /// <summary>
+        /// The water, the glass, the seams, the sand and the rest of the skin, from the run's own
+        /// config.
+        /// </summary>
+        /// <remarks>
+        /// One method for both a replayed world and a reconstructed one
+        /// (<see cref="SnapshotWorld"/>), so that a picture of the second is comparable with a
+        /// picture of the first at a glance. It reads a frame rather than a replay for that
+        /// reason and no other: everything here comes from the config and the floor.
+        /// </remarks>
+        private void DressTheWorld(ITheatreFrame frame)
+        {
             if (Water != null)
             {
-                RunConfig water = _replay.Record.Config;
+                RunConfig water = frame.Record.Config;
 
                 // D077. A recording of a shared-space run has a literal box, so the theatre draws
                 // that box and the seams inside it rather than a lattice grid — the patch width
@@ -344,7 +399,7 @@ namespace Evosim.Theatre
                         // height where there is one, so the outline meets the sand rather than
                         // cutting a plane through it. Null on every recording before it, at which
                         // every line is at −depth exactly as it was.
-                        _replay.Eco?.World?.Bed);
+                        frame.Bed);
                 }
                 else if (water.SharedSpace)
                 {
@@ -371,14 +426,58 @@ namespace Evosim.Theatre
             // (SnapshotCamera.BoxOf) rather than a second copy of sqrt(area / K) here. The floor's
             // shape comes off the world the replay actually built (D092), so the sand is draped on
             // the same height map the collider has; null on every recording before it.
-            RunConfig dressed = _replay.Record.Config;
+            RunConfig dressed = frame.Record.Config;
             float glassRadius = dressed.SharedSpace && dressed.WorldShape == WorldShape.Tank
                 ? TankGeometry.RadiusFor(dressed.WorldAreaSquareMetres)
                 : 0f;
 
-            _skin.Dress(SnapshotCamera.BoxOf(_replay, out _), _replay.Eco?.World?.Bed, glassRadius);
+            _skin.Dress(SnapshotCamera.BoxOf(frame, out _), frame.Bed, glassRadius);
+        }
 
-            if (SeekToSeconds > 0f) BeginSeek(SeekToSeconds);
+        /// <summary>
+        /// Mode Snapshot: the run's water and floor, with no bodies in it yet.
+        /// </summary>
+        /// <remarks>
+        /// The bodies come one second at a time from <see cref="ShowSnapshotSecond"/>, because the
+        /// caller photographs several seconds of one run and each is a different crowd. Nothing
+        /// is stepped here and nothing is checked against the record: the log says so, and every
+        /// frame says so in its label.
+        /// </remarks>
+        private void OpenSnapshot()
+        {
+            if (string.IsNullOrWhiteSpace(RunDirectory))
+            {
+                _error =
+                    "No run directory. Set it on the Theatre Runner in the scene, or launch with " +
+                    "EVOSIM_THEATRE_RUN pointing at runs/<arm>.";
+                return;
+            }
+
+            _recon = SnapshotWorld.Open(RunDirectory, out string refusal);
+
+            if (_recon == null)
+            {
+                _error = refusal;
+                Debug.LogWarning("[Theatre] refused: " + refusal);
+                return;
+            }
+
+            _recon.Palette = _palette;
+            _recon.ColourByCellType = ColourByCellType;
+
+            Debug.Log(
+                "[Theatre] " + (_recon.Record.ArmName ?? "run") + " seed " + _recon.Record.Seed +
+                ", config " + _recon.Record.ConfigHash +
+                ", reconstructed from snapshots and positions.jsonl: nothing is simulated, every " +
+                "body is drawn at its adult size in the developer's own frame");
+
+            DressTheWorld(_recon);
+        }
+
+        /// <summary>Draws the world as the run's files have it at one snapshot second.</summary>
+        public void ShowSnapshotSecond(double second)
+        {
+            _recon?.Begin(second);
         }
 
         private void OpenSolo()
@@ -446,6 +545,8 @@ namespace Evosim.Theatre
             _replay = null;
             _solo?.Dispose();
             _solo = null;
+            _recon?.Dispose();
+            _recon = null;
             _map.Clear();
             _palette.Clear();
             _skin.Undress();
@@ -487,6 +588,7 @@ namespace Evosim.Theatre
 
             if (_replay != null) StepWorld();
             else if (_solo != null) StepSolo();
+            else if (_recon != null) _recon.BuildSome(FrameBudgetSeconds);
 
             DrawTheInterface();
         }

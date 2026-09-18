@@ -339,26 +339,34 @@ namespace Evosim.Theatre
         /// <summary>
         /// Frames the world, renders it, stamps the markers and the label, and writes the PNG.
         /// </summary>
-        /// <param name="replay">The world on screen. Read, never stepped.</param>
+        /// <param name="frame">
+        /// The world on screen. Read, never stepped: a replay of it, or a reconstruction of it
+        /// drawn from the run's own files (<see cref="SnapshotWorld"/>).
+        /// </param>
         /// <param name="view">Which way to look.</param>
         /// <param name="path">The file to write. Its directory is created if it is missing.</param>
         /// <param name="remark">What the picture cost and what it could not hold, for the log.</param>
         /// <returns>The bytes written.</returns>
-        public int Capture(TheatreReplay replay, View view, string path, out string remark)
+        public int Capture(ITheatreFrame frame, View view, string path, out string remark)
         {
-            if (replay == null) throw new ArgumentNullException(nameof(replay));
+            if (frame == null) throw new ArgumentNullException(nameof(frame));
 
-            Bounds box = BoxOf(replay, out string boxNote);
+            // Read before the camera is placed, because the label's height is what the vertical
+            // fit leaves clear of: a two line label on a reconstruction would otherwise stamp
+            // itself across the surface of the water.
+            _label = LabelLines(Label(frame, view));
+
+            Bounds box = BoxOf(frame, out string boxNote);
 
             // What the camera is fitted to, which is the whole water for every view but the close
             // one. The sky view is fitted to nothing at all and stands where it stands, but it is
             // handed the box too, because the fog below is spanned across whatever is passed here.
             Bounds framed =
-                view == View.Close ? CloseOn(replay, box, ref boxNote)
-                : view == View.Bed ? FloorSlab(box, replay)
+                view == View.Close ? CloseOn(frame, box, ref boxNote)
+                : view == View.Bed ? FloorSlab(box, frame)
                 : box;
 
-            _bedLook = BedLook(replay);
+            _bedLook = BedLook(frame);
 
             Frame(view, framed);
 
@@ -419,10 +427,10 @@ namespace Evosim.Theatre
             // Neither the close view nor the sky view carries the box. The close view's frame cuts
             // the water's edges at odd angles, and the sky view stands inside the box looking up,
             // where the wireframe would be stamped straight across the window.
-            if (view != View.Close && view != View.Sky && view != View.Bed) DrawBox(box, replay);
+            if (view != View.Close && view != View.Sky && view != View.Bed) DrawBox(box, frame);
 
-            DrawBodies(replay, view, out int marked, out int outside, out int bodies);
-            DrawLabel(Label(replay, view));
+            DrawBodies(frame, view, out int marked, out int outside, out int bodies);
+            DrawLabel(_label);
 
             _readback.SetPixels32(_pixels);
             _readback.Apply(false);
@@ -660,18 +668,18 @@ namespace Evosim.Theatre
         /// negation, floored at 0: a map whose lowest point happened to sit above −depth would
         /// otherwise shrink the box and cut the water off at the bottom.
         /// </remarks>
-        private static float BelowTheMeanFloor(TheatreReplay replay)
+        private static float BelowTheMeanFloor(ITheatreFrame frame)
         {
-            BedShape bed = replay?.Eco?.World?.Bed;
+            BedShape bed = frame?.Bed;
             if (bed == null || !bed.HasRelief) return 0f;
 
             return Mathf.Max(0f, (float)-bed.LowestMetres);
         }
 
-        public static Bounds BoxOf(TheatreReplay replay, out string note)
+        public static Bounds BoxOf(ITheatreFrame frame, out string note)
         {
             note = null;
-            RunConfig config = replay.Record.Config;
+            RunConfig config = frame.Record.Config;
             float depth = Mathf.Max(0.1f, config.WorldDepthMetres);
 
             if (config.SharedSpace && config.WorldShape == WorldShape.Tank)
@@ -682,7 +690,7 @@ namespace Evosim.Theatre
                 // so the box's bottom is the floor's own lowest point. Read off the world the
                 // replay built rather than rebuilt from the config here, so the camera frames the
                 // floor the physics has. Zero on a flat bed, where this is the box it always was.
-                float below = BelowTheMeanFloor(replay);
+                float below = BelowTheMeanFloor(frame);
 
                 return new Bounds(
                     new Vector3(0.5f * side, -0.5f * (depth + below), 0.5f * side),
@@ -733,26 +741,26 @@ namespace Evosim.Theatre
         /// portrait of one crowd and never a census.
         /// </para>
         /// </remarks>
-        private static Bounds CloseOn(TheatreReplay replay, Bounds box, ref string note)
+        private static Bounds CloseOn(ITheatreFrame frame, Bounds box, ref string note)
         {
-            IReadOnlyList<Organism> living = replay.Eco.World.Living;
+            int count = frame.BodyCount;
 
-            Organism anchor = null;
+            int anchor = -1;
             float anchorReach = 0f;
 
-            for (int i = 0; i < living.Count; i++)
+            for (int i = 0; i < count; i++)
             {
-                var at = new Vector3(living[i].X, living[i].HeightY, living[i].Z);
+                Vector3 at = frame.PositionOf(i);
                 if (!IsFinite(at)) continue;
 
-                float r = Radius(living[i].Phenotype);
-                if (anchor != null && r <= anchorReach) continue;
+                float r = Radius(frame.PhenotypeOf(i));
+                if (anchor >= 0 && r <= anchorReach) continue;
 
-                anchor = living[i];
+                anchor = i;
                 anchorReach = r;
             }
 
-            if (anchor == null)
+            if (anchor < 0)
             {
                 note = Join(note, "nothing was alive to frame, so the close view is of the box");
                 return box;
@@ -763,28 +771,27 @@ namespace Evosim.Theatre
             // hundred pixels at 1600 across; the metre floor keeps a frame of that shape when
             // every body in the world is small.
             float around = Mathf.Max(1.2f, 6f * anchorReach);
-            var centre = new Vector3(anchor.X, anchor.HeightY, anchor.Z);
+            Vector3 centre = frame.PositionOf(anchor);
 
-            var chosen = new List<Organism>(CloseBodies) { anchor };
+            var chosen = new List<int>(CloseBodies) { anchor };
             var reach = new List<float>(CloseBodies) { anchorReach };
 
-            for (int i = 0; i < living.Count; i++)
+            for (int i = 0; i < count; i++)
             {
-                Organism creature = living[i];
-                if (creature == anchor) continue;
+                if (i == anchor) continue;
 
-                var at = new Vector3(creature.X, creature.HeightY, creature.Z);
+                Vector3 at = frame.PositionOf(i);
                 if (!IsFinite(at)) continue;
                 if ((at - centre).sqrMagnitude > around * around) continue;
 
-                float r = Radius(creature.Phenotype);
+                float r = Radius(frame.PhenotypeOf(i));
 
                 int slot = chosen.Count;
                 while (slot > 1 && reach[slot - 1] < r) slot--;
 
                 if (slot >= CloseBodies) continue;
 
-                chosen.Insert(slot, creature);
+                chosen.Insert(slot, i);
                 reach.Insert(slot, r);
 
                 if (chosen.Count > CloseBodies)
@@ -798,7 +805,7 @@ namespace Evosim.Theatre
 
             for (int i = 0; i < chosen.Count; i++)
             {
-                var at = new Vector3(chosen[i].X, chosen[i].HeightY, chosen[i].Z);
+                Vector3 at = frame.PositionOf(chosen[i]);
                 var size = 2.4f * reach[i] * Vector3.one;
 
                 if (i == 0) framed = new Bounds(at, size);
@@ -811,7 +818,7 @@ namespace Evosim.Theatre
                 around.ToString("0.##", CultureInfo.InvariantCulture) + " m of the largest, of reach " +
                 Least(reach).ToString("0.###", CultureInfo.InvariantCulture) + " to " +
                 anchorReach.ToString("0.###", CultureInfo.InvariantCulture) + " m, framed over " +
-                Metres(framed.size) + "; " + Ellipsoids(replay));
+                Metres(framed.size) + "; " + Ellipsoids(frame));
 
             return framed;
         }
@@ -846,17 +853,17 @@ namespace Evosim.Theatre
         /// the skin, so it is measured here and printed with the picture instead of being assumed
         /// either way. The ratio is the smallest half-extent over the largest: one is a ball.
         /// </remarks>
-        private static string Ellipsoids(TheatreReplay replay)
+        private static string Ellipsoids(ITheatreFrame frame)
         {
-            IReadOnlyList<Organism> living = replay.Eco.World.Living;
+            int count = frame.BodyCount;
 
             int round = 0;
             double total = 0.0;
             float flattest = 1f;
 
-            for (int i = 0; i < living.Count; i++)
+            for (int i = 0; i < count; i++)
             {
-                Phenotype phenotype = living[i].Phenotype;
+                Phenotype phenotype = frame.PhenotypeOf(i);
                 if (phenotype == null) continue;
 
                 foreach (PhenotypePart part in phenotype.Parts)
@@ -896,9 +903,9 @@ namespace Evosim.Theatre
         /// <summary>The bed view's look: down the tilt from the shallow arc, or the first cut's fixed bearing on a flat bed.</summary>
         private Vector3 _bedLook = new Vector3(-0.7f, -0.21f, 1f).normalized;
 
-        private static Vector3 BedLook(TheatreReplay replay)
+        private static Vector3 BedLook(ITheatreFrame frame)
         {
-            BedShape bed = replay?.Eco?.World?.Bed;
+            BedShape bed = frame?.Bed;
             if (bed == null || !bed.HasRelief || bed.TiltMetres <= 0f)
                 return new Vector3(-0.7f, -0.21f, 1f).normalized;
 
@@ -960,10 +967,10 @@ namespace Evosim.Theatre
         /// the box's lowest fourteen metres caught a strip of it, 2026-09-15); on a flat bed, or
         /// a recording with no bed, the lowest fourteen metres of the box as before.
         /// </summary>
-        private static Bounds FloorSlab(Bounds box, TheatreReplay replay)
+        private static Bounds FloorSlab(Bounds box, ITheatreFrame frame)
         {
             float height = 14f;
-            BedShape bed = replay?.Eco?.World?.Bed;
+            BedShape bed = frame?.Bed;
             if (bed != null && bed.HasRelief)
                 height = (float)(bed.HighestMetres - bed.LowestMetres) + 4f;
 
@@ -1073,7 +1080,9 @@ namespace Evosim.Theatre
             // that says which end is up. So the vertical fit is squeezed into the band left
             // between a label's height at the top and the same at the bottom, which keeps the box
             // centred and its surface line clear of the text.
-            float clear = 1f - 2f * (BarHeight + LabelScale) / (float)_height;
+            float clear =
+                1f - 2f * ((_label != null ? _label.Length : 1) * BarHeight + LabelScale) /
+                (float)_height;
             clear = Mathf.Clamp(clear, 0.25f, 1f);
 
             float standoff;
@@ -1161,7 +1170,7 @@ namespace Evosim.Theatre
         /// so an edge crosses in front of a body it passes; at one pixel wide that costs nothing
         /// and it keeps the box's corner visible where a body sits in it.
         /// </remarks>
-        private void DrawBox(Bounds box, TheatreReplay replay)
+        private void DrawBox(Bounds box, ITheatreFrame frame)
         {
             Vector3 lo = box.min;
             Vector3 hi = box.max;
@@ -1171,7 +1180,7 @@ namespace Evosim.Theatre
             Color vertical = new Color(0.30f, 0.48f, 0.62f, 1f);
             Color seam = new Color(0.95f, 0.85f, 0.45f, 1f);
 
-            RunConfig water = replay.Record.Config;
+            RunConfig water = frame.Record.Config;
 
             // fable-propose-aquarium.md ruling 1. The frame is the bounding square either way
             // (BoxOf), but what is stamped into the pixels is the water: a tank's outline is the
@@ -1194,7 +1203,7 @@ namespace Evosim.Theatre
             Line(new Vector3(lo.x, lo.y, hi.z), new Vector3(lo.x, hi.y, hi.z), vertical);
             Line(new Vector3(hi.x, lo.y, hi.z), new Vector3(hi.x, hi.y, hi.z), vertical);
 
-            RunConfig config = replay.Record.Config;
+            RunConfig config = frame.Record.Config;
             if (!config.SharedSpace) return;
 
             // D077's seams: under a shared volume a patch is a region a body is in and crosses,
@@ -1319,7 +1328,7 @@ namespace Evosim.Theatre
         /// same question into the picture.
         /// </remarks>
         private void DrawBodies(
-            TheatreReplay replay, View view, out int marked, out int outside, out int bodies)
+            ITheatreFrame frame, View view, out int marked, out int outside, out int bodies)
         {
             marked = 0;
             outside = 0;
@@ -1331,15 +1340,14 @@ namespace Evosim.Theatre
             // pixels across and a marker would only hide the light falling on it.
             bool marking = view != View.Close && view != View.Sky;
 
-            IReadOnlyList<Organism> living = replay.Eco.World.Living;
+            int count = frame.BodyCount;
             float tanV = Mathf.Tan(0.5f * _camera.fieldOfView * Mathf.Deg2Rad);
 
-            for (int i = 0; i < living.Count; i++)
+            for (int i = 0; i < count; i++)
             {
-                Organism creature = living[i];
                 bodies++;
 
-                var world = new Vector3(creature.X, creature.HeightY, creature.Z);
+                Vector3 world = frame.PositionOf(i);
 
                 if (float.IsNaN(world.x) || float.IsNaN(world.y) || float.IsNaN(world.z) ||
                     float.IsInfinity(world.x) || float.IsInfinity(world.y) ||
@@ -1363,11 +1371,11 @@ namespace Evosim.Theatre
                     ? _height / (2f * _camera.orthographicSize)
                     : _height / (2f * Mathf.Max(0.01f, screen.z) * tanV);
 
-                if (2f * Radius(creature.Phenotype) * pixelsPerMetre >= MinimumBodyPixels) continue;
+                if (2f * Radius(frame.PhenotypeOf(i)) * pixelsPerMetre >= MinimumBodyPixels) continue;
                 if (!marking) continue;
 
                 marked++;
-                Marker((int)screen.x, (int)screen.y, ColourOf(creature));
+                Marker((int)screen.x, (int)screen.y, ColourOf(frame, i));
             }
         }
 
@@ -1380,9 +1388,9 @@ namespace Evosim.Theatre
         /// question. The same three colours <see cref="TheatrePalette"/> paints parts in, so a
         /// marked body and a rendered one do not disagree.
         /// </remarks>
-        private Color ColourOf(Organism creature) =>
-            creature.HasAbsorptiveTissue ? Absorptive :
-            creature.HasPhotosyntheticTissue ? Photosynthetic : Structural;
+        private Color ColourOf(ITheatreFrame frame, int index) =>
+            frame.AbsorptiveAt(index) ? Absorptive :
+            frame.PhotosyntheticAt(index) ? Photosynthetic : Structural;
 
         /// <summary>The furthest a part reaches from the body's origin. TheatreRunner's rule.</summary>
         private static float Radius(Phenotype phenotype)
@@ -1402,27 +1410,19 @@ namespace Evosim.Theatre
             return worst;
         }
 
-        /// <summary>The one line the picture carries: which world, when, how many, which way.</summary>
+        /// <summary>What the picture says about itself: which world, when, how many, which way.</summary>
         /// <remarks>
-        /// The faithfulness of the replay is on the same line rather than left to the log,
-        /// because a picture travels without its log. A run this build did not record is a cousin
-        /// of that run and not that run (D078, logbook/0052), and a still frame of a cousin
-        /// labelled with the arm's name would be the most quietly misleading artefact this
-        /// project could make.
+        /// Written by the world being photographed, because what has to be said about it depends
+        /// on what it is: a replay says whether it is faithful, and a reconstruction says that it
+        /// is one. Both go into the pixels rather than into the log, because a picture travels
+        /// without its log, and a still of a world that is not the run it is named after would be
+        /// the most quietly misleading artefact this project could make.
         /// </remarks>
-        private static string Label(TheatreReplay replay, View view)
+        private static string Label(ITheatreFrame frame, View view)
         {
-            string arm = replay.Record.ArmName ?? "run";
-            string faithful = replay.Faithful && replay.ThreadCaveat == null
-                ? ""
-                : "  NOT A FAITHFUL REPLAY";
-
             string look = TheatreGrade.Current != null ? TheatreGrade.Current.LabelToken : "look 1";
 
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                "{0}  t={1:0.#}s  alive {2}  {3}  {5}{4}",
-                arm, replay.Census.T, replay.Census.Alive, NameOf(view), faithful, look);
+            return frame.LabelFor(NameOf(view), look);
         }
 
         /// <summary>
@@ -1534,32 +1534,88 @@ namespace Evosim.Theatre
             }
         }
 
-        /// <summary>How tall the label's bar is. Read by the frame, which keeps clear of it.</summary>
+        /// <summary>How tall one line of the label's bar is. Read by the frame, which keeps clear of it.</summary>
         private static int BarHeight => 7 * LabelScale + 4 * LabelScale;
 
-        private void DrawLabel(string text)
+        /// <summary>
+        /// The label this picture carries, one string per drawn line. Set before the camera is
+        /// framed, because the fit leaves the bar's height clear at the top and the bottom.
+        /// </summary>
+        private string[] _label;
+
+        /// <summary>
+        /// A label's own lines, each wrapped to what the frame can hold.
+        /// </summary>
+        /// <remarks>
+        /// <b>Wrapped rather than clipped, which the first reconstruction earned.</b> A picture
+        /// of 299 bodies joined out of 302 carried <c>3 UNMATCHED</c> at the end of its second
+        /// line, and at 1600 px across it read <c>3 UNMAT</c> and then the edge of the frame.
+        /// The caveat is the reason the line exists, so it takes another line instead. Broken at
+        /// a space where there is one and mid-word where there is not, because a label is a fact
+        /// and not a paragraph.
+        /// </remarks>
+        private string[] LabelLines(string text)
         {
-            string upper = text.ToUpperInvariant();
+            var lines = new List<string>(3);
+
+            // What fits between the two pads, in glyphs of six cells with the last one's gap back.
+            int most = Mathf.Max(8, (_width - 4 * LabelScale + LabelScale) / (6 * LabelScale));
+
+            foreach (string given in (text ?? "").ToUpperInvariant().Split('\n'))
+            {
+                string rest = given;
+
+                while (rest.Length > most)
+                {
+                    int cut = rest.LastIndexOf(' ', Mathf.Min(most, rest.Length - 1));
+                    if (cut <= 0) cut = most;
+
+                    lines.Add(rest.Substring(0, cut).TrimEnd());
+                    rest = rest.Substring(cut).TrimStart();
+                }
+
+                lines.Add(rest);
+            }
+
+            return lines.ToArray();
+        }
+
+        /// <summary>
+        /// The label, burnt into the top of the picture.
+        /// </summary>
+        /// <remarks>
+        /// One bar of one line until 2026-09-18, and the arithmetic is unchanged for one: a
+        /// reconstruction says what it is on a line of its own, and a caveat that ran off the
+        /// edge of the frame would be one a reader could miss.
+        /// </remarks>
+        private void DrawLabel(string[] lines)
+        {
+            if (lines == null || lines.Length == 0) return;
 
             int cell = LabelScale;
             int pad = 2 * cell;
-            int textWidth = upper.Length * 6 * cell - cell;
 
-            int barWidth = Mathf.Min(_width, textWidth + 2 * pad);
-            int barHeight = BarHeight;
+            int longest = 0;
+            foreach (string line in lines) longest = Mathf.Max(longest, line.Length);
+
+            int barWidth = Mathf.Min(_width, longest * 6 * cell - cell + 2 * pad);
+            int barHeight = lines.Length * BarHeight;
             int barX = 0;
             int barY = _height - barHeight;
 
             Fill(barX, barY, barWidth, barHeight, new Color32(0, 0, 0, 255));
 
-            int x = barX + pad;
-            int top = _height - pad - 1;
-
-            foreach (char c in upper)
+            for (int row = 0; row < lines.Length; row++)
             {
-                Glyph(c, x, top, cell);
-                x += 6 * cell;
-                if (x > _width) break;
+                int x = barX + pad;
+                int top = _height - pad - 1 - row * BarHeight;
+
+                foreach (char c in lines[row])
+                {
+                    Glyph(c, x, top, cell);
+                    x += 6 * cell;
+                    if (x > _width) break;
+                }
             }
         }
 

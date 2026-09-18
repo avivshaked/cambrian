@@ -2228,8 +2228,14 @@ it configures* (logbook/0007, logbook/0008, logbook/0013).
 | `Evosim.Core` | No | Genome, development, mutation, archive, serialization, RNG |
 | `Evosim.Sim` | Yes | Phenotype builder, environments, sensors, effectors, evaluator, tiling |
 | `Evosim.Farm` | Yes | Headless orchestration, island model, batch entry point |
-| `Evosim.Theatre` | Yes | Replay, camera, lighting, gallery, charts, validation harness |
+| `Evosim.Theatre` | Yes | Replay, the snapshot reader, camera, lighting, gallery, charts, validation harness |
 | `Evosim.Tests` | No | Edit-mode tests against `Evosim.Core` |
+
+The theatre reads as well as replays (2026-09-18, `logbook/specs/snapshot-render-spec.md`). A
+still of a recorded second is joined from the run's own `snapshots/` and `positions.jsonl` on the
+organism id. Nothing is stepped, so a picture of any second of any run costs seconds. It pays for
+that in two things no file records: a body's orientation, and how far it had grown. Every such frame says so on a burnt-in line, and the replay stays the mode for motion and
+for a picture that has to be faithful.
 
 ### 6.2 Physics
 
