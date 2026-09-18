@@ -125,7 +125,7 @@ namespace Evosim.Sim.EditorTools
             // process-lifetime, and -executeMethod exits after one run so it never mattered —
             // but Evosim/Run from the editor menu does not exit, and a second run in the same
             // session would otherwise start with the first run's "ever jointed" ids, floor-spawn
-            // count and excretion baseline already in it.
+            // count and burn-flux baseline already in it.
             ResetStaticReportState();
 
             float irradiance = Env("EVOSIM_IRRADIANCE", 48f);
@@ -228,19 +228,35 @@ namespace Evosim.Sim.EditorTools
             float ventDepth = Env("EVOSIM_VENT_DEPTH", new RunConfig().WorldDepthMetres);
             float ventLeg = Env("EVOSIM_VENT_LEG", new RunConfig().LightLayerMetres);
 
-            // D051. The floor's return leg: a first-order rate constant, s⁻¹, decaying the floor
-            // layer's stock back into the layer above it. One knob for both currencies — the
-            // cycle needs energy and matter both to return, and a run comparing them separately
-            // is not this decision's question. 0 is the world every earlier number was measured
-            // in, where the floor only ever accumulates.
-            float remin = Env("EVOSIM_REMIN", 0f);
+            // D098's leg 8, which is what D051's floor leak became. A first-order rate
+            // constant, s⁻¹, at which charged matter anywhere in the water gives its joules up as
+            // heat and becomes a spent unit — the bacteria. One knob, because there is one
+            // substance now: the old pair set a return rate for each of two separate stocks.
+            float remin = Env("EVOSIM_REMIN", new RunConfig().RemineralisationPerSecond);
 
-            // D052. Matter a living body returns per joule of upkeep it pays, at its own depth —
-            // turnover, rather than the only-at-death return remineralisation gives the floor.
-            // The default is RunConfig's own (0), so a run that does not name this is the world
-            // every earlier number here was measured in, where nothing a living creature took
-            // ever came back until it died.
-            float excretion = Env("EVOSIM_EXCRETION", new RunConfig().ExcretionPerJoule);
+            // D098's four prices. What a charged unit carries; how fast a lit square metre takes
+            // spent units out of the water and the density at which that uptake half-saturates;
+            // and what a mouth burns per joule of water it clears. RunConfig's own defaults, so a
+            // launcher that names none of them runs the ruled economy — and the header says
+            // which economy that was, which is the rule a run is verified by (CLAUDE.md).
+            float rho = Env("EVOSIM_RHO", new RunConfig().JoulesPerUnit);
+            float uptakeRate = Env("EVOSIM_UPTAKE_K", new RunConfig().UptakeRatePerSquareMetre);
+            float uptakeHalf = Env("EVOSIM_UPTAKE_KS", new RunConfig().UptakeHalfSaturation);
+            float handling = Env("EVOSIM_HANDLING", new RunConfig().HandlingCostPerJouleEaten);
+
+            // D098's leg 10. Seconds of its own standing cost a body may hold; what is over the
+            // cap leaves as charged matter at the body's point rather than as heat. 0 is off,
+            // which is the unbounded reserve every run on file was measured with — and the thing
+            // CLAUDE.md's reserve gotcha says makes a leaf's whole savings unreachable.
+            float reserveCap = Env("EVOSIM_RESERVE_CAP", new RunConfig().ReserveCapSeconds);
+
+            // The breeding margin (D098's gene): seconds of standing cost a parent keeps back
+            // for itself before it will breed. The founder draw's two ends and the mutation
+            // chance; the gene itself is Core's, and 0-0 at chance 0 is a world that breeds on
+            // the old rule.
+            float marginMin = Env("EVOSIM_MARGIN_MIN", RandomGenomeOptions.Default.MinReserveMargin);
+            float marginMax = Env("EVOSIM_MARGIN_MAX", RandomGenomeOptions.Default.MaxReserveMargin);
+            float marginChance = Env("EVOSIM_MARGIN_CHANCE", MutationRates.Default.MarginChance);
 
             // D055. Metres of seabed no mouth can reach — the consumer-resource damping fix: the
             // floor's detritus still arrives, piles and leaks back exactly as before, but feeding
@@ -519,19 +535,10 @@ namespace Evosim.Sim.EditorTools
             // which depths get to compete.
             float founderDepth = Env("EVOSIM_FOUNDER_DEPTH", new RunConfig().FounderDepthSpread);
 
-            // D048. Matter a child's tissue costs, per joule of it, and what the column starts
-            // with per cubic metre. 0 is the world as it was before D048 — producers consuming
-            // nothing, no negative feedback on occupying the best depth, every run sorting to the
-            // surface. Read the blocked-conception count: matter that never binds changes nothing
-            // and reads identically to matter that is switched off.
-            float matterPerTissue = Env("EVOSIM_MATTER_PER_TISSUE", 0f);
+            // What the column starts with, per cubic metre of spent matter. D048's and D065's
+            // two prices are gone with D098: a body is charged matter and costs no separate
+            // currency, so there is nothing left to charge per tissue joule or per head.
             float initialMatter = Env("EVOSIM_MATTER_INITIAL", 1f);
-
-            // D065. What a body costs in matter before any of it is proportional to size. 0 is the
-            // pre-D065 world, where a lineage can buy one more individual by making every
-            // individual smaller and head-count has no ceiling; above 0 the population is bounded
-            // by total matter / (fixed + proportional) however small bodies get.
-            float matterPerCreature = Env("EVOSIM_MATTER_PER_CREATURE", 0f);
 
             // D049. Chance a tail-less founder is born with a gas bladder, and what holding lift
             // costs. 0 is a world where buoyancy has to be *found* by mutation rather than given
@@ -672,17 +679,24 @@ namespace Evosim.Sim.EditorTools
             config.Current.VentPatch = (int)ventPatch;
             config.Current.VentDepthMetres = ventDepth;
             config.Current.VentLegMetres = ventLeg;
-            config.MatterPerTissueJoule = matterPerTissue;
-            config.MatterPerCreature = matterPerCreature;
             config.InitialMatterPerCubicMetre = initialMatter;
             config.Genome.FounderFloatChance = floatChance;
             config.FounderDepthSpread = founderDepth;
             config.NutrientMixingDiffusivity = mixing;
             config.NutrientSinkMetresPerSecond = nutrientSink;
             config.MatterSinkMetresPerSecond = matterSink;
-            config.NutrientRemineralisationPerSecond = remin;
-            config.MatterRemineralisationPerSecond = remin;
-            config.ExcretionPerJoule = excretion;
+            config.RemineralisationPerSecond = remin;
+            config.JoulesPerUnit = rho;
+            config.UptakeRatePerSquareMetre = uptakeRate;
+            config.UptakeHalfSaturation = uptakeHalf;
+            config.HandlingCostPerJouleEaten = handling;
+            config.ReserveCapSeconds = reserveCap;
+
+            // Ordered here rather than trusted from the launcher, for the reason the investment
+            // range below is: a minimum above the maximum is a silent empty draw.
+            config.Genome.MinReserveMargin = Math.Min(marginMin, marginMax);
+            config.Genome.MaxReserveMargin = Math.Max(marginMin, marginMax);
+            config.Mutation.MarginChance = marginChance;
             config.FloorRefugeMetres = floorRefuge;
             config.RefugeEdibleFraction = refugeFraction;
             config.SatiationWattsPerCubicMetre = satiation;
@@ -924,8 +938,17 @@ namespace Evosim.Sim.EditorTools
                     : "off") +
                 " · mixing " + mixing + " m2/s" +
                 " · sink " + nutrientSink + " m/s, matter " + matterSink + " m/s" +
-                " · remin " + remin + " /s" +
-                " · excretion " + excretion + " /J" +
+                // D098's economy, one token, rendered unconditionally for D065's reason. Every
+                // price the one-substance world runs on, in the order the spec states them: what
+                // a charged unit carries, the uptake rate and its half-saturation, the bacteria's
+                // rate, a mouth's handling cost, the reserve cap and the founders' margin range.
+                // The `excretion` and `matter .../J + ... each` tokens are gone with the prices
+                // they named.
+                " · economy rho " + rho + " J/unit, uptake " + uptakeRate +
+                " /m2/s at K " + uptakeHalf + " /m3, remin " + remin + " /s, handling " +
+                handling + ", reserveCap " + (reserveCap > 0f ? reserveCap + " s" : "off") +
+                ", margin " + config.Genome.MinReserveMargin + "-" +
+                config.Genome.MaxReserveMargin + " s at " + marginChance +
                 " · refuge " + floorRefuge + " m" +
                 (refugeFraction > 0f ? " at " + refugeFraction + " edible" : "") +
                 (satiation > 0f ? " · satiation " + satiation + " W/m3" : "") +
@@ -987,8 +1010,7 @@ namespace Evosim.Sim.EditorTools
                 // text of a pre-D065 configuration; the world it describes is bit-identical at 0,
                 // but the configHash is not — a new tunable enters ConfigSchema and therefore
                 // Hash(), as it does for every knob this project has added.
-                " · matter " + matterPerTissue + "/J + " + matterPerCreature +
-                " each from " + initialMatter + "/m3" +
+                " · matter from " + initialMatter + "/m3" +
                 " · float " + floatChance + " at " + liftCost + " W/lift" +
                 // D075 item 1, rendered unconditionally for D065's reason: a reader of a header
                 // must never have to work out whether a missing token means "the four channels"
@@ -1419,8 +1441,17 @@ namespace Evosim.Sim.EditorTools
         /// </remarks>
         private static long LastFloorSpawns;
 
-        /// <summary>Matter-blocked conceptions as of the previous row, so a row shows a rate.</summary>
-        private static long LastMatterBlocks;
+        /// <summary>D098's fixation counters as of the previous row, so a row shows a share.</summary>
+        /// <remarks>
+        /// <c>upt lim</c> is a share of a window's photosynthetic body-steps and not of the run's,
+        /// so both halves of the fraction are windowed — the same delta trick
+        /// <see cref="LastFloorSpawns"/> uses, on the pair of counters
+        /// <see cref="World.UptakeLimitedSteps"/> and <see cref="World.PhotosyntheticSteps"/>. A
+        /// cumulative share would flatten out and stop moving once a run was long, which is
+        /// exactly when the reading matters.
+        /// </remarks>
+        private static long LastUptakeLimited;
+        private static long LastPhotosyntheticSteps;
 
         /// <summary>Ids of every creature ever seen holding lift — D049, same trick as EverJointed.</summary>
         private static readonly HashSet<long> EverBuoyant = new HashSet<long>();
@@ -1437,15 +1468,25 @@ namespace Evosim.Sim.EditorTools
         /// </remarks>
         private static readonly HashSet<long> EverPhotosynthetic = new HashSet<long>();
 
-        /// <summary>World.ExcretedTotal as of the previous report row, so a row can show a flux.</summary>
-        /// <remarks>Same delta trick as <see cref="LastFloorSpawns"/> and <see cref="LastMatterBlocks"/>,
-        /// against <see cref="World.ExcretedTotal"/> — a cumulative counter with no cap of its own.</remarks>
-        private static double LastExcretedTotal;
+        /// <summary>D098's two matter fluxes as of the previous report row, so a row shows a rate.</summary>
+        /// <remarks>
+        /// Same delta trick as <see cref="LastFloorSpawns"/>, against
+        /// <see cref="World.BurntTotal"/> (spent units returned by burning) and
+        /// <see cref="World.RemineralisedTotal"/> (joules the bacteria took off the charged
+        /// field). They are what D052's <c>excreted</c> column became: the two ways a unit
+        /// changes state, one per body and one per cell of water.
+        /// </remarks>
+        private static double LastBurntTotal;
+        private static double LastRemineralisedTotal;
 
         /// <summary>The detritus-flux instrument's deltas, against <see cref="World.DetritusDepositedTotal"/>
-        /// and <see cref="World.DetritusTakenTotal"/> — same trick as <see cref="LastExcretedTotal"/>.</summary>
+        /// and <see cref="World.DetritusTakenTotal"/> — same trick as <see cref="LastBurntTotal"/>.</summary>
         private static double LastDetritusDeposited;
         private static double LastDetritusTaken;
+
+        /// <summary>D098's faeces as of the previous row — same trick, against
+        /// <see cref="World.DetritusReturnedTotal"/>.</summary>
+        private static double LastDetritusReturned;
 
         /// <summary>D070's exudation flux, against <see cref="World.DetritusExudedTotal"/> — the
         /// field's second income, windowed the same way its first is.</summary>
@@ -1557,11 +1598,14 @@ namespace Evosim.Sim.EditorTools
             EverBuoyant.Clear();
             EverPhotosynthetic.Clear();
             LastFloorSpawns = 0;
-            LastMatterBlocks = 0;
-            LastExcretedTotal = 0;
+            LastUptakeLimited = 0;
+            LastPhotosyntheticSteps = 0;
+            LastBurntTotal = 0;
+            LastRemineralisedTotal = 0;
             LastDetritusDeposited = 0;
             LastDetritusTaken = 0;
             LastDetritusExuded = 0;
+            LastDetritusReturned = 0;
             LastMatterInfluxed = 0;
             LastMatterBuried = 0;
             LastWraps = 0;
@@ -2267,10 +2311,12 @@ namespace Evosim.Sim.EditorTools
             // switched on for yet (D059 ships default-off).
             int belowWorld = 0, absorptiveBelowWorld = 0;
 
-            // D052's own instrument, summed rather than read once: LockedMatter lives on each
-            // organism, and StandingMatter already folds it into one number with detritus, which
-            // is exactly what this column exists to pull back apart.
-            double matterLocked = 0d;
+            // D098's `mat locked`: charged units standing in living bodies, which is their
+            // tissue and their reserve over rho. StandingMatterUnits folds that into one number
+            // with the water's two fields, and this column is what pulls it back apart. Read off
+            // World's own sum rather than accumulated in the loop below, because a body's charge
+            // is its energy and its tissue and neither is a per-creature matter account any more.
+            double matterLocked = world.StandingJoulesInBodies / world.Config.JoulesPerUnit;
 
             // D057. Distinct species IDs among the living — pure instrumentation, read nowhere
             // but here. Among the living rather than World.Species.Count, which also counts
@@ -2449,8 +2495,6 @@ namespace Evosim.Sim.EditorTools
                 if (creature.GenerationDepth < genMin) genMin = creature.GenerationDepth;
                 if (creature.GenerationDepth > genMax) genMax = creature.GenerationDepth;
 
-                matterLocked += creature.LockedMatter;
-
                 if (creature.HeightY < -world.Config.WorldDepthMetres)
                 {
                     belowWorld++;
@@ -2506,10 +2550,23 @@ namespace Evosim.Sim.EditorTools
             double edibleHere = world.Nutrients.EdibleDensityAt((float)meanDepth, 0);
             double refugeStock = FloorStock(world.Nutrients);
 
-            // D052's flux, not its balance: MatterInBodies and Matter.TotalJoules already show
-            // what excretion moved by comparing before and after, but neither shows the rate it
-            // moved at. Windowed the same way floorSpawns and conceptionsBlockedByMatter are.
-            double excretedWindow = world.ExcretedTotal - LastExcretedTotal;
+            // D098's two state changes, per window rather than as running totals: what burning
+            // returned to the spent field and what the bacteria took off the charged one. The
+            // stocks either side of them already show the balance; only these show the rate.
+            // Windowed the same way floorSpawns is.
+            double burntWindow = world.BurntTotal - LastBurntTotal;
+            double remineralisedWindow = world.RemineralisedTotal - LastRemineralisedTotal;
+
+            // D098's leg 1 as a reading: of the photosynthetic body-steps this window, the share
+            // whose fixation was bound by the spent matter in the water rather than by the light
+            // on the body. That is the whole question the one-substance economy asks of a
+            // producer, and it is the column `mat blk` became. NaN is not writable, so an
+            // em-dash in the table and a 0 in the file where nothing photosynthesised at all;
+            // `photo` beside it is what says which of the two a 0 is.
+            long photoStepsWindow = world.PhotosyntheticSteps - LastPhotosyntheticSteps;
+            long uptakeLimitedWindow = world.UptakeLimitedSteps - LastUptakeLimited;
+            double uptakeLimitedShare =
+                photoStepsWindow > 0 ? uptakeLimitedWindow / (double)photoStepsWindow : 0d;
 
             // The detritus flux by source, per window: what dead bodies put into the field, what
             // living producers released into it (D070), and what feeding took out. Nothing else
@@ -2523,8 +2580,13 @@ namespace Evosim.Sim.EditorTools
             double detritusOutWindow = world.DetritusTakenTotal - LastDetritusTaken;
             double detritusExudedWindow = world.DetritusExudedTotal - LastDetritusExuded;
 
+            // D098's leg 3, the field's fourth income: what a mouth tore up and did not keep.
+            // Kept apart from `det in` for D070's reason — a combined figure would show the
+            // income rise and say nothing about which of the four rose.
+            double detritusReturnedWindow = world.DetritusReturnedTotal - LastDetritusReturned;
+
             // D074's matter flux, per window, in the same shape and for the same reason. `mat top`
-            // and `mat deep` show where the stock is and `mat blk` shows what it refused; neither
+            // and `mat deep` show where the stock is and `upt lim` what it bound; neither
             // says how fast the world is being fed or drained, which is the whole reading an open
             // budget has to be judged on. Both read 0 for the life of a run with the budget closed.
             double matterInfluxWindow = world.MatterInfluxedTotal - LastMatterInfluxed;
@@ -2535,11 +2597,11 @@ namespace Evosim.Sim.EditorTools
             long wrapsWindow = eco.Wraps - LastWraps;
             long crowdedWindow = eco.Crowded - LastCrowded;
 
-            // Matter the ledger says is in bodies, less what the living hold body by body. One
-            // pass over the living at sample cadence, which is cheap where a step is not.
-            double matterOrphaned = world.MatterInBodies - world.MatterInLivingBodies;
-            double matterResidual =
-                world.MatterInitialTotal + world.MatterInfluxedTotal - world.MatterBuriedTotal - world.StandingMatter;
+            // D098's matter identity, from World rather than re-derived here: there is one
+            // substance now, so the harness has no arithmetic of its own to do and no way to
+            // disagree with the world it is reporting on. `mat orphan` is gone with the separate
+            // matter account it was watching.
+            double matterResidual = world.MatterResidual;
             long contactPairsWindow = eco.ContactPairs - LastContactPairs;
             long floorContactPairsWindow = eco.FloorContactPairs - LastFloorContactPairs;
             long contactSteps = eco.Volume != null ? eco.Steps - LastContactSteps : 0L;
@@ -2748,8 +2810,8 @@ namespace Evosim.Sim.EditorTools
                 .Field("matterHere", world.Matter.DensityAt((float)meanDepth, 0))
                 .Field("matterSurface", world.Matter.DensityAt(0f, 0))
                 .Field("matterDeep", world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f, 0))
-                .Field("matterStanding", world.StandingMatter)
-                .Field("conceptionsBlockedByMatter", world.ConceptionsBlockedByMatter)
+                .Field("matterStanding", world.StandingMatterUnits)
+                .Field("uptakeLimitedShare", uptakeLimitedShare)
                 .Field("floorSpawns", world.FloorSpawns)
                 .Field("floorSpawnsWindow", world.FloorSpawns - LastFloorSpawns)
                 .Field("secondsSinceFloorFired", world.SecondsSinceFloorFired)
@@ -2765,9 +2827,11 @@ namespace Evosim.Sim.EditorTools
                 .Field("absorptiveBelowWorld", absorptiveBelowWorld)
                 .Field("matterLocked", matterLocked)
                 .Field("refugeJoules", refugeStock)
-                .Field("excretedTotal", world.ExcretedTotal)
-                .Field("excretedWindow", excretedWindow)
-                // D061 — appended after excretedWindow, per the append-only column discipline.
+                // D098's burn leg, in the two positions D052's excretion held: the units a
+                // window's burning put back into the spent field, and the run's total.
+                .Field("burntTotal", world.BurntTotal)
+                .Field("burntWindow", burntWindow)
+                // D061 — appended after the burn flux, per the append-only column discipline.
                 .Field("detritusPatchSd", detritusPatchSd)
                 .Field("patchMaxShare", patchMaxShare)
                 // The detritus-flux instrument — appended after patchMaxShare, per the append-only
@@ -2839,13 +2903,14 @@ namespace Evosim.Sim.EditorTools
                 .Field("floorContactPairsPerStep",
                     floorSteps > 0 ? floorContactPairsWindow / (double)floorSteps : 0d)
                 // Appended after floorContactPairsPerStep, per the same rule: the stillbirth
-                // total and the matter charged to bodies that do not exist (the Astra review's
-                // R2, 2026-09-07). The second is 0 from the fix onward and is written so that
-                // it can be read, not assumed.
+                // total (the Astra review's R2, 2026-09-07). `matterOrphaned` stood beside it
+                // until D098 and is gone with the separate matter account it watched, so what
+                // held its place is D098's faeces flux — the joules a window's feeding tore up
+                // and did not keep, which now go into the water instead of out of the world.
                 .Field("stillbirths", world.Stillbirths)
-                .Field("matterOrphaned", matterOrphaned)
-                // The movement round's columns (D081, logbook/0072) — appended after
-                // matterOrphaned, per the same rule.
+                .Field("detritusReturnedWindow", detritusReturnedWindow)
+                // The movement round's columns (D081, logbook/0072) — appended after the
+                // stillbirth pair, per the same rule.
                 .Field("sensing", sensing)
                 .Field("depthJointed", foodJointedCount > 0 ? depthJointed / foodJointedCount : 0d)
                 .Field("depthRigid", foodRigidCount > 0 ? depthRigid / foodRigidCount : 0d)
@@ -2857,8 +2922,11 @@ namespace Evosim.Sim.EditorTools
                     (world.Nutrients is VertexField dm ? dm.Merged : 0L) +
                     (world.Matter is VertexField mm ? mm.Merged : 0L))
                 .Field("matterResidual", matterResidual)
-                .Field("conceptionsShortOfMatter", world.ConceptionsShortOfMatter)
-                // Rule 6 of fable-propose-grid.md, appended after conceptionsShortOfMatter, per
+                // D098's leg 8, in the position D065's short-take count held: joules the bacteria
+                // took off the charged field, cumulative and per window.
+                .Field("remineralisedTotal", world.RemineralisedTotal)
+                .Field("remineralisedWindow", remineralisedWindow)
+                // Rule 6 of fable-propose-grid.md, appended after the remineralisation pair, per
                 // the append-only column discipline. The count is what the markdown shows; the two
                 // stocks are what `audit` and `mat resid` beside them are made of, so a reader can
                 // see how much of the world's standing energy and matter is sitting in the dead
@@ -2866,8 +2934,11 @@ namespace Evosim.Sim.EditorTools
                 // for the life of a run with EVOSIM_CORPSE_DECAY unset, which is every run on file.
                 .Field("corpses", world.Corpses.Count)
                 .Field("corpseJoules", world.CorpseJoules)
-                .Field("corpseMatter", world.CorpseMatter)
-                // fable-propose-growth.md rule 9, appended after corpseMatter per the same
+                // D098's faeces, in the position corpseMatter held — a corpse is charged matter
+                // and `corpseJoules` is the whole of what it holds. What a mouth tore up and did
+                // not keep, which used to leave the world as heat and is now somebody's meal.
+                .Field("detritusReturnedTotal", world.DetritusReturnedTotal)
+                // fable-propose-growth.md rule 9, appended after the faeces total per the same
                 // append-only rule. The three dials as the living population holds them, how grown
                 // that population is, and the two refusals growth adds: a body held short of
                 // matter and a conception refused for being too light to put in the solver. All
@@ -2880,7 +2951,10 @@ namespace Evosim.Sim.EditorTools
                 .Field("meanBirthInvestment", alive > 0 ? world.MeanBirthInvestment : 0f)
                 .Field("meanBroodSize", alive > 0 ? world.MeanBroodSize : 0f)
                 .Field("meanBodyFraction", alive > 0 ? world.MeanBodyFraction : 0f)
-                .Field("growthShortOfMatter", world.GrowthShortOfMatter)
+                // D098's breeding margin, in the position growthShortOfMatter held: the mean
+                // margin the living carry, and the conceptions the gate refused.
+                .Field("meanReserveMargin", alive > 0 ? world.MeanReserveMargin : 0f)
+                .Field("conceptionsUnderMargin", world.ConceptionsUnderMargin)
                 .Field("conceptionsUnderMassFloor", world.ConceptionsUnderMassFloor)
                 // Rule 8's jump check, written every row rather than only at the end so that a
                 // reader can see when a body started jumping and not merely that one did. The
@@ -3047,9 +3121,14 @@ namespace Evosim.Sim.EditorTools
                 world.Matter.DensityAt(0f, 0).ToString("0.###", c),
                 world.Matter.DensityAt(-(float)world.Config.WorldDepthMetres * 0.9f, 0)
                     .ToString("0.###", c),
-                // Conceptions refused for want of matter rather than energy. Zero means the
-                // mechanism is on and doing nothing, which looks like off in every other column.
-                "**" + (world.ConceptionsBlockedByMatter - LastMatterBlocks).ToString(c) + "**",
+                // D098's reading of leg 1, in the column D048's refusals held: the share of
+                // this window's photosynthetic body-steps whose fixation was bound by the spent
+                // matter around the body rather than by the light on it. An em-dash where
+                // nothing photosynthesised, not a 0 — `photo` says which, and a 0 here would
+                // read as "the water is rich" when it means "there were no leaves".
+                photoStepsWindow > 0
+                    ? "**" + (100d * uptakeLimitedShare).ToString("0.#", c) + "%**"
+                    : "—",
                 "**" + (world.FloorSpawns - LastFloorSpawns).ToString(c) + "**",
                 genMin.ToString(c),
                 genMax.ToString(c),
@@ -3069,18 +3148,20 @@ namespace Evosim.Sim.EditorTools
                 // the clamp failing to hold.
                 belowWorld.ToString(c),
                 absorptiveBelowWorld.ToString(c),
-                // Matter still owed to the field by living bodies — the other half of
-                // StandingMatter from `mat top`/`mat deep`'s free-field reading.
+                // Charged units standing in living bodies — the other half of
+                // StandingMatterUnits from `mat top`/`mat deep`'s free-field reading.
                 matterLocked.ToString("0.###", c),
                 // The floor layer alone, in joules — `% on floor` already reports this as a share
                 // of TotalJoules; this is the same quantity a refuge-transport reading can be
                 // taken against without first re-deriving it from a percentage.
                 refugeStock.ToString("0.#", c),
-                // D052's flux since the last row, not its running total: how much excretion moved
-                // in this window, the same delta shape as `mat blk` and `floor` above.
-                excretedWindow.ToString("0.######", c),
+                // D098's leg 8 since the last row, not its running total: the units the bacteria
+                // moved from the charged field to the spent one in this window, the same delta
+                // shape as `upt lim` and `floor` above. Units, not joules, so it is comparable
+                // with `burnt` and with `mat top` beside it; the joules are in stats.jsonl.
+                (remineralisedWindow / world.Config.JoulesPerUnit).ToString("0.######", c),
 
-                // D061 — appended after excretedWindow, per the same append-only rule species
+                // D061 — appended after `remin`, per the same append-only rule species
                 // itself was added under. Both read 0 at K=1 (see the computation above).
                 detritusPatchSd.ToString("0.####", c),
                 patchMaxShare.ToString("0.###", c),
@@ -3148,7 +3229,7 @@ namespace Evosim.Sim.EditorTools
                 foodRigidCount > 0 ? (foodRigid / foodRigidCount).ToString("0.####", c) : "—",
 
                 // D077 — appended after `food rig`, per the same append-only rule. `above` is a
-                // count now; `wraps` and `crowded` are per window, the `floor` / `mat blk` shape,
+                // count now; `wraps` and `crowded` are per window, the `floor` / `upt lim` shape,
                 // because both are rates and a running total buries a change. `contacts` is the
                 // mean number of contact pairs per physics step over the window, and an em-dash
                 // in a tiled world: the instrument is off there, and a 0 would read as "nothing
@@ -3159,11 +3240,10 @@ namespace Evosim.Sim.EditorTools
                 contactSteps > 0 ? (contactPairsWindow / (double)contactSteps).ToString("0.###", c) : "—",
                 floorSteps > 0 ? (floorContactPairsWindow / (double)floorSteps).ToString("0.###", c) : "—",
                 world.Stillbirths.ToString(c),
-                matterOrphaned.ToString("0.###", c),
 
-                // The movement round's columns (D081, logbook/0072) — appended after `mat orphan`,
-                // per the same rule. `sense` is the count of living genomes with an input on
-                // Chemical, Energy or Flow; `dep jnt` and `dep rig` are each guild's mean height,
+                // The movement round's columns (D081, logbook/0072) — appended after `stillb`
+                // (D098 took `mat orphan` out from between them), per the same rule. `sense` is
+                // the count of living genomes with an input on Chemical, Energy or Flow; `dep jnt` and `dep rig` are each guild's mean height,
                 // an em-dash where the guild is empty, for `spd jnt`'s reason; `mat here` is the
                 // matter density at the population's mean height, which the statistics file has
                 // carried since D052 and the table never showed (HANDOFF item 8).
@@ -3177,9 +3257,12 @@ namespace Evosim.Sim.EditorTools
                     ? rowDetritus.Count.ToString(c) + "/" + rowMatter.Count.ToString(c)
                     : "—",
 
-                // The matter identity's residual and the short-take count.
+                // The matter identity's residual, and D098's other state change: the units this
+                // window's burning returned to the spent field. Read `burnt` against `remin`
+                // above — together they are every joule that left the world as heat, one leg per
+                // body and one per cell of water.
                 "**" + matterResidual.ToString("0.###", c) + "**",
-                world.ConceptionsShortOfMatter.ToString(c),
+                burntWindow.ToString("0.######", c),
 
                 // The drifting dead, rule 6 of fable-propose-grid.md.
                 world.Corpses.Count.ToString(c),
@@ -3192,6 +3275,12 @@ namespace Evosim.Sim.EditorTools
                 alive > 0 ? world.MeanAdultScale.ToString("0.###", c) : "—",
                 alive > 0 ? world.MeanBirthInvestment.ToString("0.###", c) : "—",
                 alive > 0 ? world.MeanBroodSize.ToString("0.###", c) : "—",
+
+                // D098's breeding margin, appended after `brood` per the same rule: the seconds
+                // of its own standing cost the mean parent keeps back before it will breed. An
+                // em-dash on an empty world, for `adult scale`'s reason.
+                alive > 0 ? world.MeanReserveMargin.ToString("0.#", c) : "—",
+
                 alive > 0 ? world.MeanBodyFraction.ToString("0.###", c) : "—",
 
                 // The horizontal spread instrument (2026-09-10), appended after `body frac` per
@@ -3231,11 +3320,14 @@ namespace Evosim.Sim.EditorTools
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));
 
             LastFloorSpawns = world.FloorSpawns;
-            LastMatterBlocks = world.ConceptionsBlockedByMatter;
-            LastExcretedTotal = world.ExcretedTotal;
+            LastUptakeLimited = world.UptakeLimitedSteps;
+            LastPhotosyntheticSteps = world.PhotosyntheticSteps;
+            LastBurntTotal = world.BurntTotal;
+            LastRemineralisedTotal = world.RemineralisedTotal;
             LastDetritusDeposited = world.DetritusDepositedTotal;
             LastDetritusTaken = world.DetritusTakenTotal;
             LastDetritusExuded = world.DetritusExudedTotal;
+            LastDetritusReturned = world.DetritusReturnedTotal;
             LastMatterInfluxed = world.MatterInfluxedTotal;
             LastMatterBuried = world.MatterBuriedTotal;
             LastWraps = eco.Wraps;
@@ -3290,14 +3382,14 @@ namespace Evosim.Sim.EditorTools
             "**detritus J**", "**J/m3 here**", "**% on floor**", "**det deep**", "depth m", "**depth sd**",
             "**rise m**", "age s", "sun", "**shade %**",
             "**float**", "**flt inh**", "lift", "**flt m**",
-            "mat top", "mat deep", "**mat blk**", "**floor**", "gen min", "gen max", "audit",
+            "mat top", "mat deep", "**upt lim**", "**floor**", "gen min", "gen max", "audit",
             "species",
 
             // Pre-round-8 experiment contract, item 3 — appended after species, per its own
             // comment above.
-            "det here ed", "below world", "abs below", "mat locked", "refuge J", "excreted",
+            "det here ed", "below world", "abs below", "mat locked", "refuge J", "remin",
 
-            // D061 — appended after excreted, per the same append-only rule.
+            // D061 — appended after `remin`, per the same append-only rule.
             "det patch sd", "patch max share",
 
             // The detritus-flux instrument — appended after patch max share, per the same rule.
@@ -3337,14 +3429,14 @@ namespace Evosim.Sim.EditorTools
             // different facts and a number alone cannot say which.
             "floor con",
 
-            // The stillbirth count and the matter held by nobody — appended after `floor con`,
-            // per the same rule (the Astra review's R2, 2026-09-07). `stillb` is the running
-            // total of bodies that developed into no parts; `mat orphan` is MatterInBodies less
-            // what the living actually hold, which is 0 by construction from the fix onward and
-            // is printed so that a nonzero reading would be seen rather than inferred.
-            "stillb", "mat orphan",
+            // The stillbirth count — appended after `floor con`, per the same rule (the Astra
+            // review's R2, 2026-09-07): the running total of bodies that developed into no parts.
+            // `mat orphan` stood beside it until D098 and is gone with the separate matter
+            // account it watched: a body is charged matter now, so there is no per-creature
+            // matter charge that can outlive the body it was charged to.
+            "stillb",
 
-            // The movement round (D081, logbook/0072) — appended after `mat orphan`, per the same
+            // The movement round (D081, logbook/0072) — appended after `stillb`, per the same
             // rule. See the row for what each is.
             "**sense**", "dep jnt", "dep rig", "mat here",
 
@@ -3356,11 +3448,13 @@ namespace Evosim.Sim.EditorTools
             // what flowed in, less what was buried, less what stands in the water and the
             // bodies. Zero to the rounding in a healthy run, like `audit`; the second seed-2
             // screen of the vertex world created 22,000 units by 3,000 s and only the
-            // statistics file could show it (logbook/0074). `mat short` beside it counts
-            // conceptions refused after the gate passed because the take came up short.
-            "**mat resid**", "mat short",
+            // statistics file could show it (logbook/0074). `burnt` beside it is D098's leg 2
+            // per window, the units a body's spending returned to the spent field; it stands
+            // where `mat short` did, which counted a refusal the one-substance economy cannot
+            // have (nothing is gated on matter at conception any more).
+            "**mat resid**", "burnt",
 
-            // Rule 6 of fable-propose-grid.md, appended after `mat short` per the same rule: how
+            // Rule 6 of fable-propose-grid.md, appended after `burnt` per the same rule: how
             // many dead bodies are still drifting and leaking rather than dissolved. Reads 0 for
             // the life of a run with EVOSIM_CORPSE_DECAY unset, which is every run on file, and
             // that 0 is a fact rather than an instrument that is off. The header's `corpse` token
@@ -3378,7 +3472,15 @@ namespace Evosim.Sim.EditorTools
             // perpetual juveniles have the same population and the same birth rate, and only this
             // tells them apart. The two refusals growth adds and the resize jump check are in
             // stats.jsonl rather than here, so that the table did not grow seven columns at once.
-            "adult scale", "invest", "brood", "body frac",
+            "adult scale", "invest", "brood",
+
+            // D098's breeding margin, appended after `brood` per the same rule: the seconds of
+            // standing cost the mean parent banks before it will breed. Read it against `invest`
+            // — one is how much of itself a parent puts into a child and the other is how much
+            // it keeps for itself, and a lineage can move either.
+            "margin s",
+
+            "body frac",
 
             // The horizontal spread instrument (2026-09-10), appended after `body frac` per the
             // append-only rule. Where the population stands on the floor plan, which the report

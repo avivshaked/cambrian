@@ -74,18 +74,22 @@ namespace Evosim.Core.Tests
             Assert.Equal(untouched.Births, named.Births);
             Assert.Equal(untouched.Deaths, named.Deaths);
             Assert.Equal(untouched.FloorSpawns, named.FloorSpawns);
-            Assert.Equal(untouched.ConceptionsBlockedByMatter, named.ConceptionsBlockedByMatter);
             Assert.Equal(untouched.EnergyIn, named.EnergyIn);
             Assert.Equal(untouched.EnergyOut, named.EnergyOut);
             Assert.Equal(untouched.StandingJoules, named.StandingJoules);
-            Assert.Equal(untouched.StandingMatter, named.StandingMatter);
+            Assert.Equal(untouched.StandingMatterUnits, named.StandingMatterUnits);
             Assert.Equal(LivingIds(untouched), LivingIds(named));
 
-            // And the counters stayed shut: a closed budget that quietly moved a unit either way
-            // would still pass every comparison above, because both worlds would move it.
-            Assert.Equal(0d, untouched.MatterInfluxedTotal);
+            // And the knobs stayed shut. MatterInfluxedTotal is no longer a reading of D074's
+            // influx alone: since D098's leg 9 a founder's start is an influx of charged matter
+            // and is credited here too. So what says the two knobs did nothing is that both
+            // worlds credited the same amount, that nothing was buried at all, and that the
+            // identity closes.
+            Assert.Equal(untouched.MatterInfluxedTotal, named.MatterInfluxedTotal);
             Assert.Equal(0d, untouched.MatterBuriedTotal);
-            Assert.Equal(untouched.MatterInitialTotal, untouched.StandingMatter, 6);
+            Assert.True(
+                Math.Abs(untouched.MatterResidual) <= 1e-6 * Math.Max(1d, untouched.MatterInitialTotal),
+                $"matter residual {untouched.MatterResidual:R}");
         }
 
         // ---------------------------------------------------------------------------------
@@ -314,12 +318,10 @@ namespace Evosim.Core.Tests
                 MatterInfluxPerSecond = 1f,
                 MatterBurialPerSecond = 0.05f,
 
-                // A price per child, because the reference config's is 0 and a world in which
-                // conception costs no matter never locks any — which would leave the most
-                // important half of the identity untested. One unit a child is D048's own shape,
-                // flat rather than per joule of tissue, so what is locked does not depend on how
-                // big the child turned out.
-                MatterPerCreature = 1f,
+                // D098 took the conception matter price away, so what puts matter into bodies
+                // now is fixation: a leaf charges spent units and holds them as tissue and
+                // reserve. That is the half of the identity burial must not reach into, and the
+                // default light is enough for it.
             };
 
             var world = new World(config, seed: 9);
@@ -327,7 +329,7 @@ namespace Evosim.Core.Tests
 
             double expected =
                 world.MatterInitialTotal + world.MatterInfluxedTotal - world.MatterBuriedTotal;
-            double actual = world.Matter.TotalJoules + world.MatterInBodies;
+            double actual = world.StandingMatterUnits;
 
             _output.WriteLine(Describe("open budget", world));
             _output.WriteLine(
@@ -336,7 +338,7 @@ namespace Evosim.Core.Tests
                 FormattableString.Invariant(
                     $"- buried {world.MatterBuriedTotal:0.###} = {expected:0.###} against ") +
                 FormattableString.Invariant(
-                    $"{world.Matter.TotalJoules:0.###} free + {world.MatterInBodies:0.###} locked"));
+                    $"{world.Matter.TotalJoules:0.###} spent + {world.StandingJoules / world.Config.JoulesPerUnit:0.###} charged"));
 
             // The world has to have been alive for the assertion to mean anything — an identity
             // that only ever held over an empty column is an identity about arithmetic. Bodies
@@ -344,7 +346,7 @@ namespace Evosim.Core.Tests
             // living creature's locked share is precisely what this cannot be allowed to do.
             Assert.True(world.Births > 0, "nothing was born");
             Assert.True(world.Deaths > 0, "nothing died");
-            Assert.True(world.MatterInBodies > 0d, "no matter was locked in a body");
+            Assert.True(world.StandingJoulesInBodies > 0d, "no matter was held in a body");
             Assert.True(world.MatterInfluxedTotal > 0d, "the influx never fired");
             Assert.True(world.MatterBuriedTotal > 0d, "the burial never fired");
 
@@ -462,10 +464,9 @@ namespace Evosim.Core.Tests
             InitialMatterPerCubicMetre = 0f,
             MatterSinkMetresPerSecond = 0f,
             MatterMixingDiffusivity = 0f,
-            MatterRemineralisationPerSecond = 0f,
             NutrientSinkMetresPerSecond = 0f,
             NutrientMixingDiffusivity = 0f,
-            NutrientRemineralisationPerSecond = 0f,
+            RemineralisationPerSecond = 0f,
             HorizontalMixingDiffusivity = 0f,
 
             MatterInfluxPerSecond = influx,
@@ -482,7 +483,7 @@ namespace Evosim.Core.Tests
             FormattableString.Invariant(
                 $"{label}: alive {world.Living.Count}, births {world.Births}, deaths {world.Deaths}, ") +
             FormattableString.Invariant(
-                $"free {world.Matter.TotalJoules:0.###}, locked {world.MatterInBodies:0.###}, ") +
+                $"spent {world.Matter.TotalJoules:0.###}, charged {world.StandingJoules / world.Config.JoulesPerUnit:0.###}, ") +
             FormattableString.Invariant(
                 $"in {world.MatterInfluxedTotal:0.###}, buried {world.MatterBuriedTotal:0.###}");
 
@@ -520,7 +521,6 @@ namespace Evosim.Core.Tests
                 WorldDepthMetres = 24f,
                 HorizontalPatches = 4f,
                 PatchesAcross = 2f,
-                MatterPerCreature = 1f,
                 MatterInfluxPerSecond = 0.5f,
                 MatterBurialPerSecond = 0.005f,
                 NutrientMixingDiffusivity = 0.2f,
@@ -537,7 +537,7 @@ namespace Evosim.Core.Tests
 
             double expected =
                 world.MatterInitialTotal + world.MatterInfluxedTotal - world.MatterBuriedTotal;
-            double actual = world.Matter.TotalJoules + world.MatterInBodies;
+            double actual = world.StandingMatterUnits;
 
             _output.WriteLine(Describe("two by two", world));
             _output.WriteLine(
@@ -546,7 +546,7 @@ namespace Evosim.Core.Tests
                 FormattableString.Invariant(
                     $"- buried {world.MatterBuriedTotal:0.###} = {expected:0.###} against ") +
                 FormattableString.Invariant(
-                    $"{world.Matter.TotalJoules:0.###} free + {world.MatterInBodies:0.###} locked"));
+                    $"{world.Matter.TotalJoules:0.###} spent + {world.StandingJoules / world.Config.JoulesPerUnit:0.###} charged"));
 
             Assert.True(world.Births > 0, "nothing was born");
             Assert.True(world.MatterInfluxedTotal > 0d, "the influx never fired");

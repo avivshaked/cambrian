@@ -4,10 +4,12 @@
 
 .DESCRIPTION
     Evosim.Ledger (src/Evosim.Ledger) takes one stored genome and a run's config.json and
-    reports what that body's energy ledger does alone: net income at birth, break-even
-    nutrient density, lifetime and reproduction under the same per-step rules World.Step
-    applies, with no population, light field or nutrient pool around it — see
-    LedgerForecast's own remarks in src/Evosim.Core/Ecosystem/LedgerForecast.cs.
+    reports what that body's ledger does alone: net income at birth, the charged density it
+    breaks even at, lifetime and reproduction under the same per-step rules World.Step
+    applies, with no population, light field or water around it — see LedgerForecast's own
+    remarks in src/Evosim.Core/Ecosystem/LedgerForecast.cs. Since D098 it prices fixation
+    against a spent density too, and reports a child's price in units rather than in a
+    second currency.
 
     There is no .NET SDK installed system-wide on the development machine — only runtimes.
     Unity ships a complete .NET 8 SDK inside the Editor install, and this script uses that
@@ -42,9 +44,14 @@ param(
     [Parameter(Mandatory = $true)]
     [string[]] $Depth,
 
-    # Nutrient densities to evaluate, J/m3.
+    # Charged densities to evaluate — the water a mouth feeds on, J/m3.
     [Parameter(Mandatory = $true)]
     [string[]] $Density,
+
+    # Spent density to price fixation against, units/m3 — D098. Omitted, the tool reads the
+    # config's own initialMatterPerCubicMetre and says so, because a held matterBudgetUnits
+    # needs a built world's live volume to become a density and this tool has no world.
+    [string] $Spent,
 
     # Fraction of irradiance blocked before it reaches the body, in [0, 1]. 0 (unshaded) by default.
     [double] $Shade = 0,
@@ -113,6 +120,7 @@ $toolArgs = @(
     '--density', ($Density -join ','),
     '--shade', $Shade
 )
+if ($Spent) { $toolArgs += @('--spent', $Spent) }
 if ($Compare) { $toolArgs += '--compare' }
 
 & $dotnet run --project $project -v minimal -- @toolArgs

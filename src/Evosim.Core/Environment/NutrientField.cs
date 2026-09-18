@@ -581,46 +581,72 @@ namespace Evosim.Core
         }
 
         /// <summary>
-        /// Leaks a fraction of each patch's floor stock into the layer above it — D051. Vertical
-        /// and within-patch, like <see cref="Settle"/>.
+        /// Decays every cell's charged stock into <paramref name="spent"/> — D098's leg 8.
         /// </summary>
+        /// <param name="spent">The spent field the units arrive in. Never this field.</param>
         /// <param name="seconds">Interval to decay over.</param>
         /// <param name="ratePerSecond">
-        /// First-order rate constant, s⁻¹. Zero leaves the field exactly as it was.
+        /// First-order rate constant, s⁻¹. Zero leaves both fields exactly as they were.
         /// </param>
+        /// <param name="joulesPerUnit">What a charged unit carries — the divisor.</param>
+        /// <returns>Joules moved, which is the world's outflow for the step.</returns>
         /// <remarks>
         /// <para>
-        /// <see cref="Settle"/> pays into the floor and never out of it, so in still water a pool
-        /// with an inflow and no outflow ratchets to the bottom over any long-enough run. This is
-        /// a one-way return leg: first-order decay of the floor stock, standing in for benthic
-        /// remineralisation. <b>Measured redundant wherever mixing is on</b> (logbook/0036):
-        /// <see cref="Mix"/> already runs across the floor interface, and at 0.2 m²/s that
-        /// exchange is twenty times this leak at its tested rate. The floor is a ratchet at
-        /// mixing 0 only, and this is the knob for that world alone.
+        /// <b>D051's leg is gone and this wears its name.</b> That one moved a floor cell's stock
+        /// into the cell above it — one substance, within one field — and was measured redundant
+        /// wherever mixing is on (logbook/0036). This is the bacteria: charged matter decaying
+        /// into spent matter wherever it is, the joules leaving the world as heat and the units
+        /// arriving in the spent field at the same depth and patch.
         /// </para>
         /// <para>
         /// <b>Exact, not a capped forward-Euler step.</b> The moved fraction is
         /// <c>1 - exp(-rate * seconds)</c>, the closed-form solution of dN/dt = -rate*N, so the
         /// result is step-size independent: one call over 10 s and ten calls over 1 s each move
-        /// the same fraction of the floor. That formula never exceeds 1 on its own, so unlike
+        /// the same fraction. That formula never exceeds 1 on its own, so unlike
         /// <see cref="Settle"/> and <see cref="Mix"/> there is no cap to apply.
         /// </para>
         /// </remarks>
-        public void Remineralise(double seconds, float ratePerSecond)
+        public double Remineralise(IMatterField spent, double seconds, float ratePerSecond, float joulesPerUnit)
         {
-            if (!(ratePerSecond > 0f) || LayerCount < 2) return;
+            if (spent == null) throw new ArgumentNullException(nameof(spent));
+            if (ReferenceEquals(spent, this))
+            {
+                throw new ArgumentException(
+                    "A field cannot remineralise into itself: the joules would leave the world " +
+                    "and the units would arrive in the same stock they left.", nameof(spent));
+            }
+            if (!(joulesPerUnit > 0f))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(joulesPerUnit), joulesPerUnit,
+                    "A charged unit carries a positive number of joules, or the units returned " +
+                    "to the water are an infinity of them.");
+            }
+            if (!(ratePerSecond > 0f) || !(seconds > 0d)) return 0d;
 
             double fraction = 1.0 - Math.Exp(-ratePerSecond * seconds);
+            double total = 0d;
 
-            for (int patch = 0; patch < PatchCount; patch++)
+            for (int layer = 0; layer < LayerCount; layer++)
             {
-                int floorCell = Cell(LayerCount - 1, patch);
-                int aboveCell = Cell(LayerCount - 2, patch);
+                // The cell's own centre depth, which is where the spent field is told the units
+                // arrived: the same address Deposit(heightY, joules, patch) has used since D061.
+                float depth = -((layer + 0.5f) * LayerMetres);
 
-                double moved = _stock[floorCell] * fraction;
-                _stock[floorCell] -= moved;
-                _stock[aboveCell] += moved;
+                for (int patch = 0; patch < PatchCount; patch++)
+                {
+                    int cell = Cell(layer, patch);
+                    double stock = _stock[cell];
+                    if (!(stock > 0d)) continue;
+
+                    double moved = stock * fraction;
+                    _stock[cell] = stock - moved;
+                    total += moved;
+                    spent.Deposit(depth, (float)(moved / joulesPerUnit), patch);
+                }
             }
+
+            return total;
         }
 
         /// <summary>

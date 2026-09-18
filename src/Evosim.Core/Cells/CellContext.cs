@@ -100,6 +100,42 @@ namespace Evosim.Core
         /// <see cref="SatiationWattsPerCubicMetre"/> — see its remarks.</remarks>
         public float ClearanceToeDensity { get; }
 
+        /// <summary>
+        /// Spent matter dissolved in the water here, units/m³ — D098. What fixation consumes.
+        /// </summary>
+        /// <remarks>
+        /// <b>The producer's own larder, and it is not the same water as
+        /// <see cref="NutrientDensity"/>.</b> That one is charged matter — marine snow, what a
+        /// mouth eats. This is matter with no energy in it, which is what light charges. A
+        /// photosynthetic cell reads this and never that.
+        /// </remarks>
+        public float SpentDensity { get; }
+
+        /// <summary>
+        /// How fast a lit surface takes spent matter up, units/m²/s —
+        /// <see cref="RunConfig.UptakeRatePerSquareMetre"/>. Zero is unbounded uptake.
+        /// </summary>
+        /// <remarks>Packed in by <see cref="Metabolism"/>, the route
+        /// <see cref="SatiationWattsPerCubicMetre"/> already takes.</remarks>
+        public float UptakeRatePerSquareMetre { get; }
+
+        /// <summary>
+        /// Spent density at which uptake runs at half its rate, units/m³ —
+        /// <see cref="RunConfig.UptakeHalfSaturation"/>. Zero is a step rather than a curve.
+        /// </summary>
+        public float UptakeHalfSaturation { get; }
+
+        /// <summary>
+        /// What a charged unit carries, J/unit — <see cref="RunConfig.JoulesPerUnit"/>. Zero is
+        /// read as "this context was built without the economy", and uptake is then unbounded.
+        /// </summary>
+        /// <remarks>
+        /// Defaulted to 0 rather than to the config's 100 so that a unit test building a context
+        /// by hand still measures the light leg alone, which is what every cell test written
+        /// before D098 asks.
+        /// </remarks>
+        public float JoulesPerUnit { get; }
+
         public CellContext(
             float seconds,
             float volume,
@@ -111,8 +147,16 @@ namespace Evosim.Core
             int dof = 0,
             float lift = 0f,
             float satiationWattsPerCubicMetre = 0f,
-            float clearanceToeDensity = 0f)
+            float clearanceToeDensity = 0f,
+            float spentDensity = 0f,
+            float uptakeRatePerSquareMetre = 0f,
+            float uptakeHalfSaturation = 0f,
+            float joulesPerUnit = 0f)
         {
+            SpentDensity = spentDensity;
+            UptakeRatePerSquareMetre = uptakeRatePerSquareMetre;
+            UptakeHalfSaturation = uptakeHalfSaturation;
+            JoulesPerUnit = joulesPerUnit;
             Seconds = seconds;
             Volume = volume;
             Power = power;
@@ -157,11 +201,30 @@ namespace Evosim.Core
         /// </remarks>
         public float PoolDrawn { get; }
 
+        /// <summary>
+        /// The light this cell could have captured had matter not bound it, J — D098.
+        /// </summary>
+        /// <remarks>
+        /// <b>The only way anyone downstream can tell a dark body from a starved one.</b>
+        /// Fixation is <c>min(light, uptake × ρ)</c> and both terms fall to zero in their own
+        /// way, so <see cref="FromLight"/> alone cannot say which bound. Equal to
+        /// <see cref="FromLight"/> whenever light bound, and greater whenever uptake did, which
+        /// is exactly what <c>World.UptakeLimitedSteps</c> counts. Zero on every cell that does
+        /// not photosynthesise.
+        /// </remarks>
+        public float LightCapacity { get; }
+
         public CellIntake(float fromLight, float fromPool, float poolDrawn)
+            : this(fromLight, fromPool, poolDrawn, fromLight)
+        {
+        }
+
+        public CellIntake(float fromLight, float fromPool, float poolDrawn, float lightCapacity)
         {
             FromLight = fromLight;
             FromPool = fromPool;
             PoolDrawn = poolDrawn < fromPool ? fromPool : poolDrawn;
+            LightCapacity = lightCapacity < fromLight ? fromLight : lightCapacity;
         }
 
         public float Total => FromLight + FromPool;
@@ -172,8 +235,15 @@ namespace Evosim.Core
         /// <summary>A cell that took nothing in.</summary>
         public static CellIntake None => default;
 
-        /// <summary>Photosynthesis and nothing else.</summary>
-        public static CellIntake Light(float joules) => new CellIntake(joules, 0f, 0f);
+        /// <summary>Photosynthesis and nothing else, with nothing having bound it but the light.</summary>
+        public static CellIntake Light(float joules) => new CellIntake(joules, 0f, 0f, joules);
+
+        /// <summary>
+        /// Photosynthesis that fixed <paramref name="joules"/> of a possible
+        /// <paramref name="capacity"/> — D098's <c>min(light, uptake × ρ)</c>.
+        /// </summary>
+        public static CellIntake Light(float joules, float capacity) =>
+            new CellIntake(joules, 0f, 0f, capacity);
 
         /// <summary>Feeding with no loss on transfer — filtering, where nothing is torn up.</summary>
         public static CellIntake Food(float joules) => new CellIntake(0f, joules, joules);
@@ -184,7 +254,8 @@ namespace Evosim.Core
 
         public static CellIntake operator +(CellIntake a, CellIntake b) =>
             new CellIntake(
-                a.FromLight + b.FromLight, a.FromPool + b.FromPool, a.PoolDrawn + b.PoolDrawn);
+                a.FromLight + b.FromLight, a.FromPool + b.FromPool, a.PoolDrawn + b.PoolDrawn,
+                a.LightCapacity + b.LightCapacity);
 
         public override string ToString() =>
             System.FormattableString.Invariant(

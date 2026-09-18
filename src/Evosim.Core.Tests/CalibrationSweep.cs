@@ -274,7 +274,7 @@ namespace Evosim.Core.Tests
                 Phenotype p = Developer.Develop(
                     Sheet(h, h, h), config.Development, null, config.Shapes);
 
-                EnergyLedger ledger = Metabolism.Step(p, config, light, 0f, 0f, 0f, 1f);
+                EnergyLedger ledger = Metabolism.Step(p, config, light, 0f, 0f, 1f, 0f, 1f);
                 float ratio = ledger.Income / Math.Max(1e-9f, ledger.Expenditure);
 
                 _output.WriteLine(
@@ -317,7 +317,7 @@ namespace Evosim.Core.Tests
                 Phenotype p = Developer.Develop(
                     Sheet(t, w, w), config.Development, null, config.Shapes);
 
-                EnergyLedger ledger = Metabolism.Step(p, config, light, 0f, 0f, 0f, 1f);
+                EnergyLedger ledger = Metabolism.Step(p, config, light, 0f, 0f, 1f, 0f, 1f);
                 float ratio = ledger.Income / Math.Max(1e-9f, ledger.Expenditure);
 
                 _output.WriteLine(

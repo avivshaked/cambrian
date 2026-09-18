@@ -171,6 +171,10 @@ namespace Evosim.Core.Tests
         [Fact]
         public void EveryOperatorConservesTheTotal()
         {
+            // Remineralise is not among them and never was in this sense: since D098 it is a
+            // transfer into the *other* field, so this field's total is meant to fall. Its own
+            // conservation — what leaves here arrives there, over rho — is CurrentAndMixingTests'.
+
             GridField field = Field(sink: 0.01f);
             field.SeedUniform(1f);
             field.Deposit(P(4.5f, -3.5f, 1.5f), 3f);
@@ -185,7 +189,6 @@ namespace Evosim.Core.Tests
             for (int step = 0; step < 20; step++)
             {
                 field.Settle(1f);
-                field.Remineralise(1d, 0.01f);
                 field.Mix(1f, 0.15f, 0.15f);
                 field.Advect(current, 100d + step, 1f, field.PatchWidthMetres);
                 field.Cull();
@@ -654,8 +657,7 @@ namespace Evosim.Core.Tests
 
             var detritus = (GridField)world.Nutrients;
             var matter = (GridField)world.Matter;
-            double identity =
-                world.MatterInitialTotal + world.MatterInfluxedTotal - world.MatterBuriedTotal - world.StandingMatter;
+            double identity = -world.MatterResidual;
 
             _output.WriteLine(
                 $"alive {world.Living.Count}, births {world.Births}, deaths {world.Deaths}; " +
@@ -664,7 +666,7 @@ namespace Evosim.Core.Tests
                 $"matter identity {identity:R} of {world.MatterInitialTotal:0}");
 
             Assert.True(world.Births > 0, "nothing was born, so the economy was not exercised");
-            Assert.Equal(0L, world.ConceptionsShortOfMatter);
+            Assert.Equal(0L, world.FixationShortTakes);
             Assert.True(Math.Abs(world.AuditResidual) <= 1e-6 * Math.Max(1d, world.EnergyIn), $"audit residual {world.AuditResidual:R}");
             Assert.True(Math.Abs(identity) <= 1e-6 * world.MatterInitialTotal, $"matter identity {identity:R}");
 
@@ -713,17 +715,19 @@ namespace Evosim.Core.Tests
             double inVent = matter.StockInLayer(floor, 1);
             double elsewhere =
                 (matter.StockInLayer(floor, 0) + matter.StockInLayer(floor, 2) + matter.StockInLayer(floor, 3)) / 3d;
-            double identity =
-                world.MatterInitialTotal + world.MatterInfluxedTotal - world.MatterBuriedTotal - world.StandingMatter;
+            // D098's leg 9 credits a founder's start to MatterInfluxedTotal too, so what D074's
+            // vent put in is the knob times the elapsed time and not the counter.
+            double vented = config.MatterInfluxPerSecond * world.ElapsedSeconds;
+            double identity = -world.MatterResidual;
 
             _output.WriteLine(
-                $"influxed {world.MatterInfluxedTotal:0.000} J into patch 1's floor; " +
+                $"influxed {vented:0.000} J into patch 1's floor; " +
                 $"that floor holds {inVent:0.000} J against {elsewhere:0.000} J in an average other patch, " +
                 $"an excess of {inVent - elsewhere:0.000} J; matter identity {identity:R} of {seeded:0}");
 
-            Assert.True(world.MatterInfluxedTotal > 0d, "the influx deposited nothing");
+            Assert.True(vented > 0d, "the influx deposited nothing");
             Assert.True(
-                inVent - elsewhere >= 0.5 * world.MatterInfluxedTotal,
+                inVent - elsewhere >= 0.5 * vented,
                 "the plume did not land in the vent's patch");
             Assert.True(Math.Abs(identity) <= 1e-6 * seeded, $"matter identity {identity:R}");
             Assert.Equal(matter.TotalJoules, matter.Recount(), 6);

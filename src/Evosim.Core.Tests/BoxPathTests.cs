@@ -40,6 +40,16 @@ namespace Evosim.Core.Tests
     /// the rolls have no potential and keep the scheme they always had.
     /// </para>
     /// <para>
+    /// <b>The whole-world run was re-recorded again on 2026-09-18, and that is the second kind
+    /// too.</b> D098 made the economy one substance in two states: a leaf now buys its light
+    /// with spent matter, a burn returns the unit it spent, a mouth's faeces go into the water
+    /// rather than out of the world as heat, a conception no longer pays a matter price, and
+    /// bacteria remineralise the charged field at a rate per second. None of that is a Box-path
+    /// regression and all of it is a different world, so this test's counts, its books and its
+    /// mean depth all moved. The other three are untouched: the water, the grid's own arithmetic
+    /// and the placement stream are not what D098 changed.
+    /// </para>
+    /// <para>
     /// <b>Why these four.</b> They are the four places the tank build reached into and the four
     /// the box path runs through: the periodic transport field's construction and its bound,
     /// which must keep their 28x24x5 lattice and closed-form RMS while the tank's streams get two
@@ -263,7 +273,11 @@ namespace Evosim.Core.Tests
                 FounderDepthSpread = 60f,
                 NutrientSinkMetresPerSecond = 0.002f,
                 MatterSinkMetresPerSecond = 0.002f,
-                ExcretionPerJoule = 0.01f,
+                JoulesPerUnit = 100f,
+                UptakeRatePerSquareMetre = 0.3f,
+                UptakeHalfSaturation = 0.05f,
+                RemineralisationPerSecond = 5e-4f,
+                HandlingCostPerJouleEaten = 0.1f,
                 ExudationFraction = 0.15f,
                 Current = Water(),
             };
@@ -282,16 +296,24 @@ namespace Evosim.Core.Tests
             double sumY = 0d;
             for (int i = 0; i < world.Living.Count; i++) sumY += world.Living[i].HeightY;
 
-            Assert.Equal(77, world.Living.Count);
-            Assert.Equal(67L, world.Births);
-            Assert.Equal(97L, world.Deaths);
-            Assert.Equal(107L, world.FloorSpawns);
+            Assert.Equal(74, world.Living.Count);
+            Assert.Equal(65L, world.Births);
+            Assert.Equal(101L, world.Deaths);
+            Assert.Equal(110L, world.FloorSpawns);
 
-            Assert.Equal(-5.282669079768193d, sumY / world.Living.Count);
-            Assert.Equal(6000d, world.StandingMatter);
-            Assert.Equal(4297.9588841974455d, world.Nutrients.TotalJoules);
-            Assert.Equal(6000d, world.Matter.TotalJoules);
-            Assert.Equal(2.07525026780786E-05d, world.AuditResidual);
+            Assert.Equal(-5.346921920776367d, sumY / world.Living.Count);
+            Assert.Equal(4207.845816079858d, world.Nutrients.TotalJoules);
+            Assert.Equal(5964.662104769551d, world.Matter.TotalJoules);
+            Assert.Equal(1.2142205378040671E-05d, world.AuditResidual);
+
+            // The standing total is not the seeded 6,000 any more and cannot be: since D098's
+            // leg 9 every founder the floor admits is an influx of charged matter, so the world
+            // grows by what the net hands it. The identity is what holds, and it holds at the
+            // width of a float sum over four hundred steps.
+            Assert.Equal(6085.670015929974d, world.StandingMatterUnits);
+            Assert.Equal(85.67001603543758d, world.MatterInfluxedTotal);
+            Assert.Equal(0d, world.MatterBuriedTotal);
+            Assert.Equal(-1.0546318662818521E-07d, world.MatterResidual);
         }
     }
 }

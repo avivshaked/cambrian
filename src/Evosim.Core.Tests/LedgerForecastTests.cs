@@ -28,6 +28,7 @@ namespace Evosim.Core.Tests
                 body, config,
                 irradianceWattsPerSquareMetre: 200f,
                 nutrientDensityJoulesPerCubicMetre: 0f,
+                spentDensityUnitsPerCubicMetre: 1f,
                 shadeFraction: 0f,
                 reproduction: genome.Reproduction);
 
@@ -59,6 +60,7 @@ namespace Evosim.Core.Tests
                 body, config,
                 irradianceWattsPerSquareMetre: 0f,
                 nutrientDensityJoulesPerCubicMetre: 1f,
+                spentDensityUnitsPerCubicMetre: 1f,
                 shadeFraction: 0f,
                 reproduction: genome.Reproduction);
 
@@ -81,6 +83,7 @@ namespace Evosim.Core.Tests
                 body, config,
                 irradianceWattsPerSquareMetre: 0f,
                 nutrientDensityJoulesPerCubicMetre: 7f,
+                spentDensityUnitsPerCubicMetre: 1f,
                 shadeFraction: 0f,
                 reproduction: genome.Reproduction);
 
@@ -95,7 +98,9 @@ namespace Evosim.Core.Tests
         {
             // Default AbsorptiveCell: clearance 1, upkeep 4 W/m3, yield 1 — so income is
             // density x clearance x volume and upkeep is 4 x volume; the volume cancels and the
-            // break-even density is upkeep / clearance = 4, independent of body size.
+            // break-even density is upkeep / clearance, independent of body size. Since D098 the
+            // mouth also pays HandlingCostPerJouleEaten of everything it clears, so it keeps
+            // 1 - h of its draw and has to draw that much more: 4 / 0.9.
             Genome genome = SingleCellGenome(CellTypeIds.Absorptive, broodSize: 1, investment: 0.5f);
             var config = new RunConfig();
 
@@ -105,13 +110,16 @@ namespace Evosim.Core.Tests
                 body, config,
                 irradianceWattsPerSquareMetre: 0f,
                 nutrientDensityJoulesPerCubicMetre: 0f,
+                spentDensityUnitsPerCubicMetre: 1f,
                 shadeFraction: 0f,
                 reproduction: genome.Reproduction);
 
             _output.WriteLine($"break-even density: {result.BreakEvenNutrientDensity}");
 
             Assert.True(result.BreakEvenNutrientDensity.HasValue, "an absorptive body must have a break-even density");
-            Fixtures.AssertClose(4f, result.BreakEvenNutrientDensity.Value, tol: 1e-3f);
+            Fixtures.AssertClose(
+                4f / (1f - config.HandlingCostPerJouleEaten),
+                result.BreakEvenNutrientDensity.Value, tol: 1e-3f);
         }
 
         [Fact]
@@ -126,6 +134,7 @@ namespace Evosim.Core.Tests
                 body, config,
                 irradianceWattsPerSquareMetre: 200f,
                 nutrientDensityJoulesPerCubicMetre: 3f,
+                spentDensityUnitsPerCubicMetre: 1f,
                 shadeFraction: 0f,
                 reproduction: genome.Reproduction);
 
@@ -163,6 +172,7 @@ namespace Evosim.Core.Tests
                     body, config,
                     irradianceWattsPerSquareMetre: 200f,
                     nutrientDensityJoulesPerCubicMetre: 0f,
+                    spentDensityUnitsPerCubicMetre: 1f,
                     shadeFraction: 0f,
                     reproduction: genome.Reproduction);
 
@@ -194,7 +204,7 @@ namespace Evosim.Core.Tests
             var config = new RunConfig();
 
             Assert.Throws<ArgumentException>(() => LedgerForecast.Forecast(
-                empty, config, 100f, 1f, 0f,
+                empty, config, 100f, 1f, 1f, 0f,
                 new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f }));
         }
 

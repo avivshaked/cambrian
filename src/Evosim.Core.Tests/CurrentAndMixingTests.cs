@@ -270,33 +270,46 @@ namespace Evosim.Core.Tests
             }
         }
 
-        [Fact]
-        public void RemineraliseMovesAnExactFirstOrderFractionOfTheFloorUpOneLayer()
-        {
-            // D051: the return leg Settle lacks. The moved amount is the closed-form solution of
-            // dN/dt = -rate*N, taken from nowhere else and arriving nowhere else — not a capped
-            // forward-Euler step, so no min(1, ...) appears here.
-            var field = new NutrientField(400f, 1f, 0f, 60f);
-            field.Deposit(-59.5f, 1000f);
-            field.Deposit(-30.5f, 250f);
+        // ------------------------------------------------------------ D098: remineralisation
 
-            int floor = field.LayerCount - 1;
-            double floorBefore = field.StockInLayer(floor);
-            double aboveBefore = field.StockInLayer(floor - 1);
-            double totalBefore = field.TotalJoules;
+        [Fact]
+        public void RemineraliseMovesTheExactFractionOfEveryCellIntoTheSpentField()
+        {
+            // D098's leg 8, and the shape of it is what changed: D051 moved a floor cell's stock
+            // into the cell above it, within one field and one substance. This moves charged
+            // matter into spent matter wherever it is, so every cell loses the same fraction and
+            // the units arrive in another field entirely. The moved amount is still the
+            // closed-form solution of dN/dt = -rate*N, so no min(1, ...) appears here.
+            var charged = new NutrientField(400f, 1f, 0f, 60f);
+            charged.Deposit(-59.5f, 1000f);
+            charged.Deposit(-30.5f, 250f);
+
+            var spent = new NutrientField(400f, 1f, 0f, 60f);
+
+            double totalBefore = charged.TotalJoules;
+            double floorBefore = charged.StockInLayer(charged.LayerCount - 1);
+            double midBefore = charged.StockInLayer(30);
 
             const float rate = 0.01f;
             const double seconds = 2.0;
-            field.Remineralise(seconds, rate);
+            const float joulesPerUnit = 100f;
+
+            double moved = charged.Remineralise(spent, seconds, rate, joulesPerUnit);
 
             // rate is float-promoted before the multiply, exactly as Remineralise does it — a
             // double literal here would differ from the source by ~1e-10 in the exponent, which
             // is small but not smaller than this test's own tolerance.
-            double expectedMoved = floorBefore * (1.0 - Math.Exp(-(double)rate * seconds));
+            double fraction = 1.0 - Math.Exp(-(double)rate * seconds);
 
-            Assert.Equal(floorBefore - expectedMoved, field.StockInLayer(floor), 6);
-            Assert.Equal(aboveBefore + expectedMoved, field.StockInLayer(floor - 1), 6);
-            Assert.Equal(totalBefore, field.TotalJoules, 6);
+            Assert.Equal(totalBefore * fraction, moved, 6);
+            Assert.Equal(floorBefore * (1.0 - fraction), charged.StockInLayer(charged.LayerCount - 1), 6);
+            Assert.Equal(midBefore * (1.0 - fraction), charged.StockInLayer(30), 6);
+            Assert.Equal(totalBefore - moved, charged.TotalJoules, 6);
+
+            // The other half of the transfer, in the other unit and in the same cells.
+            Assert.Equal(moved / joulesPerUnit, spent.TotalJoules, 6);
+            Assert.Equal(floorBefore * fraction / joulesPerUnit, spent.StockInLayer(spent.LayerCount - 1), 6);
+            Assert.Equal(midBefore * fraction / joulesPerUnit, spent.StockInLayer(30), 6);
         }
 
         [Fact]
@@ -309,76 +322,96 @@ namespace Evosim.Core.Tests
             var oneCall = new NutrientField(400f, 1f, 0f, 60f);
             oneCall.Deposit(-59.5f, 1000f);
             oneCall.Deposit(-30.5f, 250f);
+            var oneSpent = new NutrientField(400f, 1f, 0f, 60f);
 
             var tenCalls = new NutrientField(400f, 1f, 0f, 60f);
             tenCalls.Deposit(-59.5f, 1000f);
             tenCalls.Deposit(-30.5f, 250f);
+            var tenSpent = new NutrientField(400f, 1f, 0f, 60f);
 
-            oneCall.Remineralise(10.0, 0.05f);
-            for (int i = 0; i < 10; i++) tenCalls.Remineralise(1.0, 0.05f);
+            oneCall.Remineralise(oneSpent, 10.0, 0.05f, 100f);
+            for (int i = 0; i < 10; i++) tenCalls.Remineralise(tenSpent, 1.0, 0.05f, 100f);
 
             for (int layer = 0; layer < oneCall.LayerCount; layer++)
             {
                 double expected = oneCall.StockInLayer(layer);
                 double actual = tenCalls.StockInLayer(layer);
-                double tolerance = Math.Max(1e-9, Math.Abs(expected) * 1e-9);
+                // 1e-6 rather than 1e-9: each call deposits a float into the spent field,
+                // so ten calls carry ten roundings the single call does not.
+                double tolerance = Math.Max(1e-6, Math.Abs(expected) * 1e-6);
                 Assert.True(
                     Math.Abs(expected - actual) <= tolerance,
                     $"Layer {layer}: expected {expected}, got {actual}, diff {Math.Abs(expected - actual)}");
             }
+
+            Assert.Equal(oneSpent.TotalJoules, tenSpent.TotalJoules, 5);
         }
 
         [Fact]
-        public void RemineraliseWithZeroRateChangesNothing()
+        public void RemineraliseWithZeroRateChangesNothingAndMovesNothing()
         {
-            var field = new NutrientField(400f, 1f, 0f, 60f);
-            field.Deposit(-59.5f, 1000f);
-            field.Deposit(-30.5f, 250f);
+            var charged = new NutrientField(400f, 1f, 0f, 60f);
+            charged.Deposit(-59.5f, 1000f);
+            charged.Deposit(-30.5f, 250f);
+            var spent = new NutrientField(400f, 1f, 0f, 60f);
 
-            var stocksBefore = new double[field.LayerCount];
-            for (int layer = 0; layer < field.LayerCount; layer++)
-                stocksBefore[layer] = field.StockInLayer(layer);
+            var stocksBefore = new double[charged.LayerCount];
+            for (int layer = 0; layer < charged.LayerCount; layer++)
+                stocksBefore[layer] = charged.StockInLayer(layer);
 
-            field.Remineralise(500.0, 0f);
+            Assert.Equal(0d, charged.Remineralise(spent, 500.0, 0f, 100f));
 
-            for (int layer = 0; layer < field.LayerCount; layer++)
-                Assert.Equal(stocksBefore[layer], field.StockInLayer(layer), 12);
+            for (int layer = 0; layer < charged.LayerCount; layer++)
+                Assert.Equal(stocksBefore[layer], charged.StockInLayer(layer), 12);
+
+            Assert.Equal(0d, spent.TotalJoules);
         }
 
         [Fact]
-        public void RemineraliseAtAVeryLargeRateDtMovesNearlyAllTheFloorAndNeverGoesNegative()
+        public void RemineraliseAtAVeryLargeRateDtMovesNearlyEverythingAndNeverGoesNegative()
         {
             // Unlike Settle and Mix, this is the exact law 1 - exp(-rate*seconds), which
-            // approaches but never reaches 1 — so a huge rate*dt empties the floor almost
+            // approaches but never reaches 1 — so a huge rate*dt empties the field almost
             // entirely rather than exactly, and there is no cap to test.
-            var field = new NutrientField(400f, 1f, 0f, 60f);
-            field.Deposit(-59.5f, 1000f);
+            var charged = new NutrientField(400f, 1f, 0f, 60f);
+            charged.Deposit(-59.5f, 1000f);
+            var spent = new NutrientField(400f, 1f, 0f, 60f);
 
-            int floor = field.LayerCount - 1;
-            double floorBefore = field.StockInLayer(floor);
-            double totalBefore = field.TotalJoules;
+            double before = charged.TotalJoules;
+            double moved = charged.Remineralise(spent, 100.0, 1f, 100f);
 
-            field.Remineralise(100.0, 1f);
-
-            Assert.True(field.StockInLayer(floor) >= 0d);
-            Assert.True(field.StockInLayer(floor) < floorBefore * 0.0001);
-            Assert.Equal(totalBefore, field.TotalJoules, 6);
+            Assert.True(charged.TotalJoules >= 0d);
+            Assert.True(charged.TotalJoules < before * 0.0001);
+            Assert.Equal(before, charged.TotalJoules + moved, 6);
+            Assert.Equal(moved / 100d, spent.TotalJoules, 6);
         }
 
         [Fact]
-        public void RemineraliseOnASingleLayerFieldIsANoOp()
+        public void AFieldRefusesToRemineraliseIntoItself()
         {
-            // LayerCount < 2 means there is no layer above the floor to receive anything —
-            // the same guard Settle and Mix both apply for the same reason.
-            var field = new NutrientField(400f, 100f, 0f, 50f);
-            Assert.Equal(1, field.LayerCount);
+            var field = new NutrientField(400f, 1f, 0f, 60f);
+            field.Deposit(-59.5f, 1000f);
 
-            field.Deposit(-25f, 500f);
-            double before = field.StockInLayer(0);
+            Assert.Throws<ArgumentException>(() => field.Remineralise(field, 1.0, 0.01f, 100f));
+        }
 
-            field.Remineralise(1000.0, 0.5f);
+        [Fact]
+        public void AGridRemineralisesIntoACoarserSpentGridAndTheTotalsMatch()
+        {
+            // A metre of charged water into five-metre spent cells, which is the campaign's pair.
+            // Sixty-odd fine cells share one coarse cell and the aggregation has to be exact:
+            // what the fine cells lost is what the coarse field gained, over rho.
+            var charged = new GridField(100f, 0f, 20f, 0f, 0f, 4, 1f);
+            var spent = new GridField(100f, 0f, 20f, 0f, 0f, 4, 5f);
 
-            Assert.Equal(before, field.StockInLayer(0), 12);
+            charged.SeedUniform(2f);
+            double before = charged.TotalJoules;
+
+            double moved = charged.Remineralise(spent, 0.5, 0.01f, 100f);
+
+            Assert.Equal(before * (1.0 - Math.Exp(-0.01 * 0.5)), moved, 6);
+            Assert.Equal(before - moved, charged.TotalJoules, 6);
+            Assert.Equal(moved / 100d, spent.TotalJoules, 6);
         }
 
         // ------------------------------------------------------------ D055: seabed refuge

@@ -54,6 +54,11 @@ namespace Evosim.Core.Tests
                 MatterMixingDiffusivity = 0f,
                 HorizontalMixingDiffusivity = 0f,
 
+                // And D098's leg 8, which is on by default: it takes a share of every charged
+                // joule in the water on every step, including the one a death has just put
+                // there, and would be netted into every reading below.
+                RemineralisationPerSecond = 0f,
+
                 // D055's refuge over the whole column at arm C's fraction of 0: nothing is edible
                 // anywhere, so DetritusTakenTotal stays at 0 and the field's arithmetic is the
                 // deaths alone.
@@ -100,7 +105,6 @@ namespace Evosim.Core.Tests
 
                 Assert.Empty(world.Corpses);
                 Assert.Equal(0d, world.CorpseJoules);
-                Assert.Equal(0d, world.CorpseMatter);
 
                 if (world.Deaths == deathsBefore) continue;
                 deathSteps++;
@@ -368,7 +372,6 @@ namespace Evosim.Core.Tests
 
             Assert.Empty(world.Corpses);
             Assert.Equal(0d, world.CorpseJoules);
-            Assert.Equal(0d, world.CorpseMatter);
 
             // What the corpse held is what the water gained, and the world's standing total did
             // not move at all: the crumb changed account, it did not leave.
@@ -425,13 +428,12 @@ namespace Evosim.Core.Tests
                 if (world.Corpses.Count > mostCorpses) mostCorpses = world.Corpses.Count;
             }
 
-            double identity =
-                world.MatterInitialTotal + world.MatterInfluxedTotal - world.MatterBuriedTotal - world.StandingMatter;
+            double identity = world.MatterResidual;
 
             _output.WriteLine(
                 $"alive {world.Living.Count}, births {world.Births}, deaths {world.Deaths}; " +
                 $"corpses {world.Corpses.Count} (peak {mostCorpses}) holding " +
-                $"{world.CorpseJoules:0.###} J and {world.CorpseMatter:0.###} matter; " +
+                $"{world.CorpseJoules:0.###} J; " +
                 $"audit residual {world.AuditResidual:R} of {world.EnergyIn:0} J in; " +
                 $"matter identity {identity:R} of {world.MatterInitialTotal:0}");
 

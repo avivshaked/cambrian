@@ -1375,38 +1375,130 @@ namespace Evosim.Core
         }
 
         /// <summary>
-        /// Leaks a fraction of the floor's stock into the layer above it, D051's return leg.
+        /// Decays every live cell's charged stock into <paramref name="spent"/> — D098's leg 8.
         /// </summary>
         /// <remarks>
-        /// Exact rather than a capped Euler step, as <see cref="NutrientField.Remineralise"/> is:
-        /// the moved fraction is <c>1 - exp(-rate·seconds)</c>, so one call over 10 s and ten
-        /// calls over 1 s move the same fraction. Measured redundant wherever mixing is on
-        /// (logbook/0036), and on a grid that is more true than before: mixing here crosses the
-        /// floor interface on every column rather than on every patch.
+        /// <para>
+        /// <b>Every cell, not the floor's.</b> D051's leg moved a field's floor stock into the
+        /// layer above it and this one moves charged matter into spent matter wherever it is, so
+        /// the loop that used to touch one cell per column touches them all. On round 40's tank —
+        /// 2,200 m² over 45 m at a metre, about 99,000 cells, twice a second — that is the
+        /// world's largest per-step loop after the transport passes, which is why the deposit
+        /// below is aggregated per spent cell rather than made one fine cell at a time.
+        /// </para>
+        /// <para>
+        /// <b>The units land where the joules left, at the spent field's own resolution.</b> A
+        /// charged cell is a metre across and a spent cell five, so sixty-odd charged cells share
+        /// one spent cell and the aggregation is exact: the sum of what they lost, deposited once
+        /// at a point inside the spent cell they all sit in.
+        /// </para>
         /// </remarks>
-        public void Remineralise(double seconds, float ratePerSecond)
+        public double Remineralise(IMatterField spent, double seconds, float ratePerSecond, float joulesPerUnit)
         {
-            if (!(ratePerSecond > 0f) || _ny < 2 || !(seconds > 0d)) return;
+            if (spent == null) throw new ArgumentNullException(nameof(spent));
+            if (ReferenceEquals(spent, this))
+            {
+                throw new ArgumentException(
+                    "A field cannot remineralise into itself: the joules would leave the world " +
+                    "and the units would arrive in the same stock they left.", nameof(spent));
+            }
+            if (!(joulesPerUnit > 0f))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(joulesPerUnit), joulesPerUnit,
+                    "A charged unit carries a positive number of joules, or the units returned " +
+                    "to the water are an infinity of them.");
+            }
+            if (!(ratePerSecond > 0f) || !(seconds > 0d)) return 0d;
 
             double fraction = 1.0 - Math.Exp(-ratePerSecond * seconds);
 
-            for (int ix = 0; ix < _nx; ix++)
-            {
-                for (int iz = 0; iz < _nz; iz++)
-                {
-                    // The column's own floor, which with a bed is not the array's last layer
-                    // (D092). A column with no water, or with one cell and nothing above it to
-                    // leak into, is passed over.
-                    int lowest = _lowestLive[ix * _nz + iz];
-                    if (lowest < 1) continue;
+            // The bucket a fine cell's loss is added to: the spent field's own cell when it is a
+            // grid, and one bucket per column of this field otherwise. Either way the deposit is
+            // made once per bucket, with a point the bucket's own field resolves for itself.
+            float spentCell = spent is GridField spentGrid ? spentGrid.CellMetres : CellMetres;
+            EnsureRemineralisationBuckets(spentCell);
 
-                    int floor = Index(ix, lowest, iz);
-                    int above = Index(ix, lowest - 1, iz);
-                    double moved = _stock[floor] * fraction;
-                    _stock[floor] -= moved;
-                    _stock[above] += moved;
+            double total = 0d;
+
+            for (int iy = 0; iy < _ny; iy++)
+            {
+                for (int ix = 0; ix < _nx; ix++)
+                {
+                    for (int iz = 0; iz < _nz; iz++)
+                    {
+                        int cell = Index(ix, iy, iz);
+                        if (_live != null && !_live[cell]) continue;
+
+                        double stock = _stock[cell];
+                        if (!(stock > 0d)) continue;
+
+                        double moved = stock * fraction;
+                        _stock[cell] = stock - moved;
+                        total += moved;
+                        _remineralisedPerBucket[BucketOf(ix, iy, iz, spentCell)] += moved;
+                    }
                 }
             }
+
+            _total -= total;
+
+            for (int i = 0; i < _remineralisedPerBucket.Length; i++)
+            {
+                double moved = _remineralisedPerBucket[i];
+                if (!(moved > 0d)) continue;
+                _remineralisedPerBucket[i] = 0d;
+                spent.Deposit(BucketCentre(i, spentCell), (float)(moved / joulesPerUnit));
+            }
+
+            return total;
+        }
+
+        /// <summary>
+        /// The scratch the remineralisation pass sums into, one slot per spent cell over this
+        /// field's own box. Allocated once and reused, because the pass runs twice a second.
+        /// </summary>
+        private double[] _remineralisedPerBucket;
+        private float _bucketMetres;
+        private int _bx, _by, _bz;
+
+        private void EnsureRemineralisationBuckets(float spentCellMetres)
+        {
+            if (_remineralisedPerBucket != null && _bucketMetres == spentCellMetres) return;
+
+            _bucketMetres = spentCellMetres;
+            _bx = Math.Max(1, (int)Math.Ceiling(_nx * (double)CellMetres / spentCellMetres));
+            _by = Math.Max(1, (int)Math.Ceiling(_ny * (double)CellMetres / spentCellMetres));
+            _bz = Math.Max(1, (int)Math.Ceiling(_nz * (double)CellMetres / spentCellMetres));
+            _remineralisedPerBucket = new double[_bx * _by * _bz];
+        }
+
+        private int BucketOf(int ix, int iy, int iz, float spentCellMetres)
+        {
+            int bx = Math.Min(_bx - 1, (int)((ix + 0.5f) * CellMetres / spentCellMetres));
+            int by = Math.Min(_by - 1, (int)((iy + 0.5f) * CellMetres / spentCellMetres));
+            int bz = Math.Min(_bz - 1, (int)((iz + 0.5f) * CellMetres / spentCellMetres));
+            return (by * _bx + bx) * _bz + bz;
+        }
+
+        private FieldPoint BucketCentre(int bucket, float spentCellMetres)
+        {
+            int by = bucket / (_bx * _bz);
+            int rest = bucket - by * _bx * _bz;
+            int bx = rest / _bz;
+            int bz = rest - bx * _bz;
+
+            float x = (bx + 0.5f) * spentCellMetres;
+            float y = -((by + 0.5f) * spentCellMetres);
+            float z = (bz + 0.5f) * spentCellMetres;
+
+            // A bucket whose centre falls on a dead column — outside the glass, or filled by the
+            // bed — belongs to no patch, and a cell field would refuse the index. The stock is
+            // real and came from live cells inside the bucket, so it is named patch 0 and the
+            // receiving field puts it in the nearest water its own arithmetic finds. On a grid
+            // the patch is not read at all.
+            int patch = PatchOf(x, z);
+            return new FieldPoint(new Float3(x, y, z), patch >= 0 ? patch : 0);
         }
 
         /// <summary>

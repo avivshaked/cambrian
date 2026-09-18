@@ -174,7 +174,35 @@ namespace Evosim.Core
         // ---- what the water does on its own
 
         void Settle(float seconds);
-        void Remineralise(double seconds, float ratePerSecond);
+
+        /// <summary>
+        /// Decays this field's charged stock into <paramref name="spent"/> — D098's leg 8.
+        /// </summary>
+        /// <param name="spent">The spent field the units arrive in. Never this field.</param>
+        /// <param name="seconds">Interval to decay over.</param>
+        /// <param name="ratePerSecond">First-order rate constant, s⁻¹. Zero moves nothing.</param>
+        /// <param name="joulesPerUnit">
+        /// <see cref="RunConfig.JoulesPerUnit"/>: what a charged unit carries, and therefore the
+        /// divisor between the joules leaving here and the units arriving there.
+        /// </param>
+        /// <returns>Joules moved — the world's <c>EnergyOut</c> for the step.</returns>
+        /// <remarks>
+        /// <para>
+        /// <b>It replaces D051's floor leak, and it is a different mechanism wearing the same
+        /// name.</b> That one returned a field's floor stock to the layer above it — one
+        /// substance, moved within one field, and measured redundant wherever mixing is on
+        /// (logbook/0036). This is bacteria: every live cell of the charged field loses
+        /// <c>stock × (1 − e^(−r·dt))</c> joules, the joules leave the world as heat, and the
+        /// same over <paramref name="joulesPerUnit"/> arrives in the spent field at the charged
+        /// cell's own centre. Marine snow nobody eats stops being a permanent hoard.
+        /// </para>
+        /// <para>
+        /// <b>Exact rather than a capped Euler step.</b> The moved fraction is the closed-form
+        /// solution of <c>dN/dt = −rN</c>, so one call over 10 s and ten calls over 1 s move the
+        /// same fraction, and the result is step-size independent.
+        /// </para>
+        /// </remarks>
+        double Remineralise(IMatterField spent, double seconds, float ratePerSecond, float joulesPerUnit);
         void Mix(float seconds, float diffusivity, float horizontalDiffusivity = 0f);
         void Advect(CurrentField current, double seconds, float dt, float patchWidthMetres);
 

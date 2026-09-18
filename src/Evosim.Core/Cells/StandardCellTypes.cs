@@ -18,6 +18,62 @@ namespace Evosim.Core
     }
 
     /// <summary>
+    /// The one arithmetic by which light becomes charged matter — D098, economy-spec.md leg 1.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Two cells fix, and they must fix identically.</b> <see cref="PhotosyntheticCell"/> is
+    /// green tissue and <see cref="LinkCell"/> with a
+    /// <see cref="LinkCell.PhotosyntheticEfficiency"/> is a muscle that has bought the same
+    /// machinery; a second copy of the expression is how the two would come to disagree about
+    /// what a leaf is, which is the failure D043's surcharge already had to repair once.
+    /// </para>
+    /// <para>
+    /// <b>Light is a capacity, not an income.</b> The cell fixes
+    /// <c>min(L, U × ρ)</c>: <c>L</c> the joules the light offers, <c>U</c> the spent units the
+    /// surface can take up in the step, <c>ρ</c> what a unit is worth once charged. Light beyond
+    /// that is never booked — it was never in the world.
+    /// </para>
+    /// </remarks>
+    public static class Fixation
+    {
+        /// <summary>
+        /// What one lit surface fixes this step, and what it could have fixed.
+        /// </summary>
+        /// <param name="context">The water and the light at this part.</param>
+        /// <param name="efficiency">The fraction of incident light this tissue captures.</param>
+        /// <remarks>
+        /// Uptake is unbounded — the pre-D098 leg, light alone — whenever the context carries no
+        /// <see cref="CellContext.JoulesPerUnit"/> or no
+        /// <see cref="CellContext.UptakeRatePerSquareMetre"/>, which is every context a cell test
+        /// builds by hand and every world whose knob is 0.
+        /// </remarks>
+        public static CellIntake Fix(in CellContext context, float efficiency)
+        {
+            float litArea = Math.Max(0f, context.LitArea);
+            float light = Math.Max(0f, context.Irradiance) * litArea * efficiency * context.Seconds;
+
+            float joulesPerUnit = context.JoulesPerUnit;
+            float rate = context.UptakeRatePerSquareMetre;
+            if (!(joulesPerUnit > 0f) || !(rate > 0f)) return CellIntake.Light(light);
+
+            // Michaelis–Menten, with the zero half-saturation read as a step: full rate in any
+            // water that still holds something, nothing at all in water that does not. A ratio
+            // of 0/0 is the one case the expression itself cannot answer.
+            float density = context.SpentDensity;
+            float half = context.UptakeHalfSaturation;
+            float saturation = density > 0f
+                ? (half > 0f ? density / (density + half) : 1f)
+                : 0f;
+
+            float units = rate * litArea * saturation * context.Seconds;
+            float ceiling = units * joulesPerUnit;
+
+            return ceiling < light ? CellIntake.Light(ceiling, light) : CellIntake.Light(light);
+        }
+    }
+
+    /// <summary>
     /// Tissue with no way to feed itself — DESIGN.md §5A.1.
     /// </summary>
     /// <remarks>
@@ -147,9 +203,7 @@ namespace Evosim.Core
         public override bool AllowsJoint => true;
         public override CellIntake Acquire(in CellContext context) =>
             PhotosyntheticEfficiency > 0f
-                ? CellIntake.Light(
-                    Math.Max(0f, context.Irradiance) * Math.Max(0f, context.LitArea) *
-                    PhotosyntheticEfficiency * context.Seconds)
+                ? Fixation.Fix(context, PhotosyntheticEfficiency)
                 : CellIntake.None;
 
         /// <summary>Amber — muscle. The only type that can move, so it should read at a glance.</summary>
@@ -356,10 +410,7 @@ namespace Evosim.Core
         /// <summary>Green, for the obvious reason.</summary>
         public override Float3 InspectionColour => new Float3(0.25f, 0.72f, 0.30f);
 
-        public override CellIntake Acquire(in CellContext context) =>
-            CellIntake.Light(
-                Math.Max(0f, context.Irradiance) * Math.Max(0f, context.LitArea) *
-                Efficiency * context.Seconds);
+        public override CellIntake Acquire(in CellContext context) => Fixation.Fix(context, Efficiency);
 
         public override void WriteParameters(Json.Writer writer) =>
             writer.Field("efficiency", Efficiency);

@@ -117,7 +117,8 @@ namespace Evosim.Core.Tests
             // field still holds this step's solve, since it is rebuilt at the top of the next one.
             float net = Metabolism.StepAt(
                 parent.Phenotype, config, world.Field.IrradianceAt(parent.HeightY, parent.Patch),
-                nutrientDensity: 0f, workJoules: 0f, seconds: 1f, ageSeconds: ageBefore).Net;
+                nutrientDensity: 0f,
+                spentDensity: 1f, workJoules: 0f, seconds: 1f, ageSeconds: ageBefore).Net;
 
             float spent = energyBefore + net - parent.Energy;
             float expected = 0.5f * tissueBefore + 2 * config.PerOffspringOverheadJoules;
@@ -181,7 +182,8 @@ namespace Evosim.Core.Tests
 
             float net = Metabolism.StepAt(
                 parent.Phenotype, config, world.Field.IrradianceAt(parent.HeightY, parent.Patch),
-                nutrientDensity: 0f, workJoules: 0f, seconds: 1f, ageSeconds: ageBefore).Net;
+                nutrientDensity: 0f,
+                spentDensity: 1f, workJoules: 0f, seconds: 1f, ageSeconds: ageBefore).Net;
 
             float spent = energyBefore + net - parent.Energy;
 
@@ -466,12 +468,12 @@ namespace Evosim.Core.Tests
         // ---------------------------------------------------------------- growth
 
         [Fact]
-        public void GrowthMovesReserveIntoTissueAndMatterFromTheCellIntoTheBody()
+        public void GrowthMovesReserveIntoTissueAndDrawsOnNoFieldAtAll()
         {
-            // Rule 5's transfer, both halves, over one step. The reserve falls by what the body
-            // gained, and the water gives up exactly MatterPerTissueJoule of that.
+            // Rule 5's transfer, and since D098 it is the whole of it: reserve and tissue are the
+            // same charged matter, so the body's growth is a move between two accounts the world
+            // already sums and neither field is touched.
             RunConfig config = Stage();
-            config.MatterPerTissueJoule = 0.5f;
             config.InitialMatterPerCubicMetre = 50f;
 
             var world = new World(config, seed: 3);
@@ -482,33 +484,35 @@ namespace Evosim.Core.Tests
 
             float energyBefore = creature.Energy;
             float tissueBefore = creature.TissueJoules;
-            float lockedBefore = creature.LockedMatter;
             float fractionBefore = creature.BodyFraction;
             double fieldBefore = world.Matter.TotalJoules;
+            double residualBefore = world.MatterResidual;
 
             float net = Metabolism.StepAt(
                 creature.Phenotype, config, world.Light.IrradianceAt(-1f),
-                nutrientDensity: 0f, workJoules: 0f, seconds: 1f, ageSeconds: 0f).Net;
+                nutrientDensity: 0f,
+                spentDensity: 1f, workJoules: 0f, seconds: 1f, ageSeconds: 0f).Net;
 
             world.Step(1f);
 
             float grown = creature.TissueJoules - tissueBefore;
-            float paid = creature.LockedMatter - lockedBefore;
 
             _output.WriteLine(
-                $"grew {grown:0.####} J of tissue for {paid:0.####} matter; fraction " +
-                $"{fractionBefore:0.####} -> {creature.BodyFraction:0.####}");
+                $"grew {grown:0.####} J of tissue; fraction " +
+                $"{fractionBefore:0.####} -> {creature.BodyFraction:0.####}; spent field " +
+                $"{fieldBefore:0.####} -> {world.Matter.TotalJoules:0.####}");
 
             Assert.True(grown > 0f, "nothing was built");
             Assert.True(creature.BodyFraction > fractionBefore);
 
             // The reserve paid for it: what came in from the ledger, less what the body took.
-            Fixtures.AssertClose(energyBefore + net - grown, creature.Energy, Math.Abs(grown) * 1e-4f);
+            // The ledger's net is what the body kept before growth took its cut, and burning
+            // cannot take a body below zero, so this is the same arithmetic World runs.
+            Fixtures.AssertClose(energyBefore + net - grown, creature.Energy, Math.Abs(grown) * 1e-3f);
 
-            // And the matter came out of the water rather than out of the air.
-            Fixtures.AssertClose(config.MatterPerTissueJoule * grown, paid, Math.Abs(paid) * 1e-3f);
-            Assert.Equal(paid, fieldBefore - world.Matter.TotalJoules, 4);
-            Assert.Equal(creature.LockedMatter, (float)world.MatterInLivingBodies, 4);
+            // Growth itself draws nothing: the spent field moved only by the step's fixation and
+            // burning, and the identity is where it was.
+            Assert.Equal(residualBefore, world.MatterResidual, 6);
 
             // The body and the ledger agree to the last float, which is the invariant the whole
             // mechanism rests on: the tissue figure is measured from the body, never accumulated.
@@ -552,13 +556,14 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
-        public void ABodyShortOfMatterGrowsOnlyWhatItPaidFor()
+        public void ABodyInStrippedWaterGrowsOnlyWhatItCanEarn()
         {
-            // Rule 5's last sentence. The water holds a sliver of matter, so the body may build
-            // exactly what that sliver buys and not the joule more its reserve could afford.
+            // Rule 5's last sentence, re-asked on D098's legs. There is no matter price on tissue
+            // any more, so what holds a body short is income: in water with almost nothing spent
+            // in it a leaf's uptake binds, it fixes next to nothing, and the reserve above the
+            // growth floor is all it can ever build with.
             RunConfig config = Stage();
-            config.MatterPerTissueJoule = 0.5f;
-            config.InitialMatterPerCubicMetre = 0.002f;
+            config.InitialMatterPerCubicMetre = 1e-5f;
 
             var world = new World(config, seed: 3);
             world.Inoculate(Box(CellTypeIds.Photosynthetic, 0.3f, investment: 0.5f), 1, -1f);
@@ -566,26 +571,26 @@ namespace Evosim.Core.Tests
             Organism creature = world.Living[0];
 
             float tissueBefore = creature.TissueJoules;
-            double fieldBefore = world.Matter.TotalJoules;
-            double standingBefore = world.StandingMatter;
 
-            world.Step(1f);
+            long limitedBefore = world.UptakeLimitedSteps;
+            for (int step = 0; step < 200; step++) world.Step(1f);
 
             float grown = creature.TissueJoules - tissueBefore;
-            double taken = fieldBefore - world.Matter.TotalJoules;
 
             _output.WriteLine(
-                $"the water held {fieldBefore:0.####} within reach; the body grew {grown:0.#####} J " +
-                $"for {taken:0.#####} matter, {world.GrowthShortOfMatter} short step(s)");
+                $"the body grew {grown:0.#####} J in stripped water; uptake bound on " +
+                $"{world.UptakeLimitedSteps - limitedBefore} of {world.PhotosyntheticSteps} " +
+                $"photosynthetic body-steps; fraction {creature.BodyFraction:0.####}");
 
-            Assert.True(world.GrowthShortOfMatter > 0, "matter never bound, so nothing was measured");
-            Assert.True(grown > 0f, "a short take grew nothing at all rather than what it paid for");
-            Fixtures.AssertClose(
-                config.MatterPerTissueJoule * grown, (float)taken, (float)Math.Abs(taken) * 1e-3f);
-
-            // And the identity is untouched: what left the water is in the body.
-            Assert.Equal(standingBefore, world.StandingMatter, 6);
-            Assert.True(creature.BodyFraction < 1f, "a body this starved of matter finished anyway");
+            Assert.True(
+                world.UptakeLimitedSteps > limitedBefore,
+                "uptake never bound, so the test measured nothing");
+            Assert.True(
+                Math.Abs(world.MatterResidual) <= 1e-6 * Math.Max(1d, world.StandingMatterUnits),
+                $"matter residual {world.MatterResidual:R}");
+            Assert.True(
+                Math.Abs(world.AuditResidual) <= 1e-6 * Math.Max(1d, world.EnergyIn),
+                $"audit residual {world.AuditResidual:R}");
         }
 
         // ---------------------------------------------------------------- the scaled body
@@ -647,7 +652,6 @@ namespace Evosim.Core.Tests
             // body on every step it changes, so a body worth one number and a ledger holding
             // another cannot happen — which is how a birth-and-death cycle would create energy.
             RunConfig config = Stage();
-            config.MatterPerTissueJoule = 0.2f;
             config.InitialMatterPerCubicMetre = 20f;
 
             var world = new World(config, seed: 5);
@@ -801,11 +805,10 @@ namespace Evosim.Core.Tests
                 HorizontalPatches = Patches,
                 WorldDepthMetres = Depth,
                 FloorClosesAfterSeconds = 1000f,
-                MatterPerTissueJoule = 0.05f,
                 MatterInfluxPerSecond = 0.05f,
                 MatterBurialPerSecond = 0.001f,
                 CorpseDecayPerSecond = 0.01f,
-                ExcretionPerJoule = 0.0005f,
+                ReserveCapSeconds = 600f,
                 NutrientMixingDiffusivity = 0.2f,
                 HorizontalMixingDiffusivity = 0.2f,
                 MatterMixingDiffusivity = 0.2f,
@@ -834,8 +837,7 @@ namespace Evosim.Core.Tests
                 }
             }
 
-            double identity = world.MatterInitialTotal + world.MatterInfluxedTotal -
-                              world.MatterBuriedTotal - world.StandingMatter;
+            double identity = world.MatterResidual;
 
             _output.WriteLine(
                 $"alive {world.Living.Count}, births {world.Births}, deaths {world.Deaths}, " +
@@ -844,14 +846,14 @@ namespace Evosim.Core.Tests
                 $"mean investment {world.MeanBirthInvestment:0.####}, " +
                 $"mean brood {world.MeanBroodSize:0.###}, " +
                 $"mean body fraction {world.MeanBodyFraction:0.####}; " +
-                $"growth short of matter {world.GrowthShortOfMatter}, " +
+                $"uptake bound {world.UptakeLimitedSteps} of {world.PhotosyntheticSteps}, " +
                 $"under the mass floor {world.ConceptionsUnderMassFloor}; " +
                 $"audit residual {world.AuditResidual:R} of {world.EnergyIn:0} J in; " +
                 $"matter identity {identity:R} of {world.MatterInitialTotal:0}");
 
             Assert.True(world.Births > 0, "nothing was born, so the economy was not exercised");
             Assert.NotEmpty(world.Living);
-            Assert.Equal(0L, world.ConceptionsShortOfMatter);
+            Assert.Equal(0L, world.FixationShortTakes);
 
             // Somebody grew, or the pass under test never ran.
             Assert.True(world.MeanBodyFraction > 0f);

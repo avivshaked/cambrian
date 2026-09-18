@@ -49,7 +49,8 @@ namespace Evosim.Core.Tests
 
             EnergyLedger ledger = Metabolism.StepAt(
                 body, config, config.Light.IrradianceAt(depthY),
-                nutrientDensity, workJoules: 0f, seconds: 1f);
+                nutrientDensity,
+                1f, workJoules: 0f, seconds: 1f);
 
             double volume = 0d;
             foreach (PhenotypePart part in body.Parts) volume += part.Volume;
@@ -165,8 +166,8 @@ namespace Evosim.Core.Tests
 
                 float irradiance = config.Light.IrradianceAt(-2f);
 
-                EnergyLedger p = Metabolism.StepAt(photo, config, irradiance, 0f, 0f, 1f);
-                EnergyLedger a = Metabolism.StepAt(absorb, config, irradiance, 10f, 0f, 1f);
+                EnergyLedger p = Metabolism.StepAt(photo, config, irradiance, 0f, 1f, 0f, 1f);
+                EnergyLedger a = Metabolism.StepAt(absorb, config, irradiance, 10f, 1f, 0f, 1f);
 
                 double volume = 0d, area = 0d;
                 foreach (PhenotypePart part in photo.Parts) { volume += part.Volume; area += part.LitArea; }
@@ -184,14 +185,14 @@ namespace Evosim.Core.Tests
             var cube = new Float3(0.397f, 0.397f, 0.397f);
 
             float platePhoto = Metabolism.StepAt(
-                Shaped(config, CellTypeIds.Photosynthetic, plate), config, lit, 0f, 0f, 1f).Net;
+                Shaped(config, CellTypeIds.Photosynthetic, plate), config, lit, 0f, 1f, 0f, 1f).Net;
             float cubePhoto = Metabolism.StepAt(
-                Shaped(config, CellTypeIds.Photosynthetic, cube), config, lit, 0f, 0f, 1f).Net;
+                Shaped(config, CellTypeIds.Photosynthetic, cube), config, lit, 0f, 1f, 0f, 1f).Net;
 
             float plateAbsorb = Metabolism.StepAt(
-                Shaped(config, CellTypeIds.Absorptive, plate), config, lit, 10f, 0f, 1f).Net;
+                Shaped(config, CellTypeIds.Absorptive, plate), config, lit, 10f, 1f, 0f, 1f).Net;
             float cubeAbsorb = Metabolism.StepAt(
-                Shaped(config, CellTypeIds.Absorptive, cube), config, lit, 10f, 0f, 1f).Net;
+                Shaped(config, CellTypeIds.Absorptive, cube), config, lit, 10f, 1f, 0f, 1f).Net;
 
             // Shape is worth a great deal to light and nothing at all to filtering, which is the
             // asymmetry the whole argument rests on.
@@ -251,11 +252,11 @@ namespace Evosim.Core.Tests
 
             float PhotoAt(float depth) => Metabolism.StepAt(
                 Shaped(config, CellTypeIds.Photosynthetic, plate), config,
-                config.Light.IrradianceAt(depth), density, 0f, 1f).Net;
+                config.Light.IrradianceAt(depth), density, 1f, 0f, 1f).Net;
 
             float AbsorbAt(float depth) => Metabolism.StepAt(
                 Shaped(config, CellTypeIds.Absorptive, plate), config,
-                config.Light.IrradianceAt(depth), density, 0f, 1f).Net;
+                config.Light.IrradianceAt(depth), density, 1f, 0f, 1f).Net;
 
             float litPhoto = PhotoAt(-2f), litAbsorb = AbsorbAt(-2f);
             float deepPhoto = PhotoAt(-45f), deepAbsorb = AbsorbAt(-45f);

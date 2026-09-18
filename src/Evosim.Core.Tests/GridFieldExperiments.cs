@@ -344,13 +344,20 @@ namespace Evosim.Core.Tests
             foreach (float r in remin)
             {
                 var field = new GridField(Area, sink, depth, 0f, 0f, Patches, 1f);
+                var spent = new GridField(Area, 0f, depth, 0f, 0f, Patches, 1f);
                 float perStep = 0.005f * Area * depth * dt; // round 30's exudate, ~43 J/s per 8,640 m³
 
                 for (int step = 0; step < steps; step++)
                 {
                     field.DepositBox(perStep, new Float3(0.5f * Ring, -8.5f, 0.5f * Width), new Float3(0.5f * Ring, 3.5f, 0.5f * Width));
                     field.Settle(dt);
-                    field.Remineralise(dt, r);
+
+                    // D098's leg 8, which is a different mechanism from the floor leak this
+                    // sweep was written against: the charged stock decays into the spent field
+                    // everywhere rather than climbing one layer off the floor. The profile the
+                    // sweep reads is therefore the supply that survives the bacteria, which is
+                    // the question the larder actually poses now.
+                    field.Remineralise(spent, dt, r, 100f);
                     field.Mix(dt, d, d);
                 }
 

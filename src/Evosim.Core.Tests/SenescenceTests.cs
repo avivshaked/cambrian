@@ -21,7 +21,7 @@ namespace Evosim.Core.Tests
 
         private static EnergyLedger At(RunConfig config, float age) =>
             Metabolism.StepAt(
-                Body(config), config, irradiance: 200f, nutrientDensity: 40f,
+                Body(config), config, irradiance: 200f, nutrientDensity: 40f, spentDensity: 1f,
                 workJoules: 0f, seconds: 1f, ageSeconds: age);
 
         [Fact]
@@ -94,9 +94,9 @@ namespace Evosim.Core.Tests
             var body = Body(config, CellTypeIds.Absorptive);
 
             EnergyLedger young = Metabolism.StepAt(
-                body, config, 0f, nutrientDensity: 400f, workJoules: 0f, seconds: 1f, ageSeconds: 0f);
+                body, config, 0f, nutrientDensity: 400f, spentDensity: 1f, workJoules: 0f, seconds: 1f, ageSeconds: 0f);
             EnergyLedger old = Metabolism.StepAt(
-                body, config, 0f, nutrientDensity: 400f, workJoules: 0f, seconds: 1f, ageSeconds: 2_000f);
+                body, config, 0f, nutrientDensity: 400f, spentDensity: 1f, workJoules: 0f, seconds: 1f, ageSeconds: 2_000f);
 
             _output.WriteLine($"drawn {young.PoolDrawn:0.####} vs {old.PoolDrawn:0.####} J");
             _output.WriteLine($"kept  {young.FoodIncome:0.####} vs {old.FoodIncome:0.####} J");

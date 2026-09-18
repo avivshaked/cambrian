@@ -70,8 +70,35 @@ namespace Evosim.Ledger
             // swapping config.CellTypes, not by re-developing anything.
             Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
 
+            // D098's leg 1 needs a spent density, and the honest default is the water this config
+            // seeds. The live volume is a property of a built world — the tank's mask cuts the
+            // corners off the array — and this tool has no world, so a held budget is reported as
+            // what it is and the density rule's own number is used when there is no budget. Which
+            // one was used is printed rather than inferred, because the two can differ by a fifth.
+            float spentDensity;
+            string spentSource;
+
+            if (options.Spent.HasValue)
+            {
+                spentDensity = options.Spent.Value;
+                spentSource = "--spent";
+            }
+            else
+            {
+                spentDensity = config.InitialMatterPerCubicMetre;
+                spentSource = config.MatterBudgetUnits > 0f
+                    ? "initialMatterPerCubicMetre (the config holds a budget of " +
+                      Format(config.MatterBudgetUnits) +
+                      " units, whose density needs a built world's live volume)"
+                    : "initialMatterPerCubicMetre";
+            }
+
+
             var sb = new StringBuilder();
-            AppendBodySummary(sb, "Body", options.GenomePath, body, config);
+            sb.Append("Spent density: ").Append(Format(spentDensity))
+              .Append(" units/m3, from ").Append(spentSource).Append("\n\n");
+
+            AppendBodySummary(sb, "Body", options.GenomePath, body, config, spentDensity);
 
             var variants = new List<(string Label, Genome Genome, Phenotype Body)>
             {
@@ -90,7 +117,9 @@ namespace Evosim.Ledger
                 else
                 {
                     Phenotype swappedBody = Developer.Develop(swapped, config.Development, null, config.Shapes);
-                    AppendBodySummary(sb, "Body (leaf <-> stomach swapped)", options.GenomePath, swappedBody, config);
+                    AppendBodySummary(
+                        sb, "Body (leaf <-> stomach swapped)", options.GenomePath, swappedBody,
+                        config, spentDensity);
                     variants.Add(($"swapped ({swappedCount} node(s))", swapped, swappedBody));
                 }
             }
@@ -117,7 +146,7 @@ namespace Evosim.Ledger
 
                     AppendForecastTable(
                         sb, variantBody, config, variantGenome.Reproduction,
-                        options.Depths, options.Densities, options.Shade);
+                        options.Depths, options.Densities, options.Shade, spentDensity);
                 }
             }
 
@@ -130,10 +159,18 @@ namespace Evosim.Ledger
         // ------------------------------------------------------------------ body summary
 
         private static void AppendBodySummary(
-            StringBuilder sb, string heading, string genomePath, Phenotype body, RunConfig config)
+            StringBuilder sb, string heading, string genomePath, Phenotype body, RunConfig config,
+            float spentDensity)
         {
             float tissue = Metabolism.TissueJoules(body, config);
             float standingWatts = Metabolism.StandingWatts(body, config);
+
+            // D098. What this body fixes at the surface in the water the run seeds, in the unit
+            // the economy is denominated in — the number the spec's table is read against.
+            float surfaceIrradiance = config.Light.IrradianceAt(0f);
+            float fixationWatts = Metabolism.StepAt(
+                body, config, surfaceIrradiance, nutrientDensity: 0f, spentDensity: spentDensity,
+                workJoules: 0f, seconds: 1f, ageSeconds: 0f).LightIncome;
 
             var byType = new Dictionary<string, (int Count, float Volume)>(StringComparer.Ordinal);
             foreach (PhenotypePart part in body.Parts)
@@ -147,7 +184,10 @@ namespace Evosim.Ledger
             sb.Append("- Volume: ").Append(Format(body.TotalVolume)).Append(" m3\n");
             sb.Append("- Lit area: ").Append(Format(body.TotalLitArea)).Append(" m2\n");
             sb.Append("- Tissue: ").Append(Format(tissue)).Append(" J\n");
-            sb.Append("- Standing cost: ").Append(Format(standingWatts)).Append(" W\n");
+            sb.Append("- Standing cost: ").Append(Format(standingWatts)).Append(" W (")
+              .Append(Format(standingWatts / config.JoulesPerUnit)).Append(" units/s)\n");
+            sb.Append("- Fixation at surface: ").Append(Format(fixationWatts)).Append(" W (")
+              .Append(Format(fixationWatts / config.JoulesPerUnit)).Append(" units/s)\n");
             sb.Append("- Truncated: ").Append(body.WasTruncated).Append('\n');
             sb.Append("- Cell types:");
             foreach (var kv in byType.OrderBy(k => k.Key, StringComparer.Ordinal))
@@ -162,10 +202,11 @@ namespace Evosim.Ledger
 
         private static void AppendForecastTable(
             StringBuilder sb, Phenotype body, RunConfig config, ReproductionTraits reproduction,
-            IReadOnlyList<float> depths, IReadOnlyList<float> densities, float shade)
+            IReadOnlyList<float> depths, IReadOnlyList<float> densities, float shade,
+            float spentDensity)
         {
             sb.Append("| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | ")
-              .Append("lifetime (s) | R0 | first child (s) | matter/child |\n");
+              .Append("lifetime (s) | R0 | first child (s) | units/child |\n");
             sb.Append("|---|---|---|---|---|---|---|---|\n");
 
             foreach (float depth in depths)
@@ -176,7 +217,7 @@ namespace Evosim.Ledger
                 foreach (float density in densities)
                 {
                     LedgerForecastResult result = LedgerForecast.Forecast(
-                        body, config, irradiance, density, shade, reproduction);
+                        body, config, irradiance, density, spentDensity, shade, reproduction);
 
                     sb.Append('|').Append(Format(depth))
                       .Append('|').Append(Format(density))
@@ -188,7 +229,7 @@ namespace Evosim.Ledger
                       .Append('|').Append(result.ChildrenProduced)
                       .Append('|').Append(result.TimeToFirstChildSeconds.HasValue
                           ? Format(result.TimeToFirstChildSeconds.Value) : "never")
-                      .Append('|').Append(Format(result.MatterPricePerChild))
+                      .Append('|').Append(Format(result.UnitsPerChild))
                       .Append("|\n");
                 }
             }
@@ -295,6 +336,14 @@ namespace Evosim.Ledger
             public float[] Depths;
             public float[] Densities;
             public float Shade;
+
+            /// <summary>
+            /// Spent matter dissolved in the water, units/m3 — D098's leg 1. Null until
+            /// <see cref="Program"/> fills it from the config, since the default is a reading of
+            /// the world the config describes rather than a constant.
+            /// </summary>
+            public float? Spent;
+
             public bool Compare;
 
             public static Options Parse(string[] args)
@@ -333,6 +382,9 @@ namespace Evosim.Ledger
                     Depths = RequireFloatList(raw, "depth"),
                     Densities = RequireFloatList(raw, "density"),
                     Shade = raw.TryGetValue("shade", out string shadeText) ? ParseFloat("shade", shadeText) : 0f,
+                    Spent = raw.TryGetValue("spent", out string spentText)
+                        ? ParseFloat("spent", spentText)
+                        : (float?)null,
                     Compare = compare,
                 };
 
@@ -364,6 +416,12 @@ namespace Evosim.Ledger
                 if (options.Shade < 0f || options.Shade > 1f)
                 {
                     throw new LedgerCliException($"--shade must be in [0, 1]; got {options.Shade}.");
+                }
+
+                if (options.Spent.HasValue && options.Spent.Value < 0f)
+                {
+                    throw new LedgerCliException(
+                        $"--spent must be non-negative units/m3; got {options.Spent.Value}.");
                 }
 
                 return options;

@@ -839,22 +839,26 @@ namespace Evosim.Core
         }
 
         /// <summary>
-        /// Lifts each vertex resting on the floor back into the layer above it with probability
-        /// <c>1 − exp(−rate·seconds)</c> — D051's return leg, one whole vertex at a time.
+        /// Refuses D098's leg 8 at any rate above zero, and does nothing at zero.
         /// </summary>
-        public void Remineralise(double seconds, float ratePerSecond)
+        /// <remarks>
+        /// <b>A quantum is not a stock, and this leg decays one.</b> A vertex holds a whole
+        /// quantum of joules at a position, so "lose <c>stock × (1 − e^(−r·dt))</c> of every
+        /// cell" has no counterpart here that is not a second mechanism — D051's version lifted
+        /// whole vertices off the floor with a probability, which is not what the one-substance
+        /// economy asks for. Rather than invent a vertex remineralisation nobody has ruled on,
+        /// the field refuses: a world that asks for the rate on this representation is a world
+        /// whose books would not be the books the spec describes, and being told so is better
+        /// than running it.
+        /// </remarks>
+        public double Remineralise(IMatterField spent, double seconds, float ratePerSecond, float joulesPerUnit)
         {
-            if (!(ratePerSecond > 0f) || !(seconds > 0d)) return;
-            float probability = (float)(1.0 - Math.Exp(-ratePerSecond * seconds));
-            float lifted = ClampY(-DepthMetres + LayerMetres);
+            if (!(ratePerSecond > 0f) || !(seconds > 0d)) return 0d;
 
-            for (int i = 0; i < _y.Count; i++)
-            {
-                if (!_alive[i] || !OnFloor(i)) continue;
-                if (_rng.NextFloat() < probability) _y[i] = lifted;
-            }
-
-            _gridBuilt = false;
+            throw new NotSupportedException(
+                "A vertex field cannot remineralise: its stock is quanta at positions rather " +
+                "than a per-cell stock to decay, so D098's leg 8 has no arithmetic here. Run " +
+                "RemineralisationPerSecond at 0 on a vertex world, or run the world on a grid.");
         }
 
         /// <summary>

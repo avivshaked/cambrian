@@ -297,10 +297,13 @@ namespace Evosim.Theatre
                 AuditPercent = world.EnergyIn > 0d ? 100d * world.AuditResidual / world.EnergyIn : 0d,
                 MatterHere = world.Matter.DensityAt((float)meanHeight, 0),
                 Diverged = world.Diverged,
-                MatterStanding = world.StandingMatter,
-                MatterResidual =
-                    world.MatterInitialTotal + world.MatterInfluxedTotal -
-                    world.MatterBuriedTotal - world.StandingMatter,
+                MatterStanding = world.StandingMatterUnits,
+
+                // D098: the identity is World's own, not re-derived here. There is one substance
+                // now, so the theatre has no arithmetic to do and no way to disagree with the
+                // world it is watching. The sign is World's too, and it is the other way round
+                // from the one this line used to compute: standing less what went in.
+                MatterResidual = world.MatterResidual,
             };
         }
 

@@ -192,7 +192,6 @@ namespace Evosim.Core.Tests
             for (int step = 0; step < 20; step++)
             {
                 field.Settle(1f);
-                field.Remineralise(1d, 0.01f);
                 field.Mix(1f, 0.2f, 0.05f);
                 field.Advect(current, 100d + step, 1f, field.PatchWidthMetres);
                 field.Cull();
@@ -380,7 +379,14 @@ namespace Evosim.Core.Tests
         [Fact]
         public void AVertexWorldNeedsSharedSpace()
         {
-            var config = new RunConfig { Light = new LightModel(100f, 12f), FieldModel = MatterField.Vertices };
+            // Remineralisation off: D098's leg 8 has no arithmetic on a vertex field and the
+            // field refuses any rate above 0, which the default is.
+            var config = new RunConfig
+            {
+                Light = new LightModel(100f, 12f),
+                FieldModel = MatterField.Vertices,
+                RemineralisationPerSecond = 0f,
+            };
             Assert.Throws<ArgumentException>(() => new World(config, seed: 1));
         }
 
@@ -396,6 +402,7 @@ namespace Evosim.Core.Tests
                 Light = new LightModel(100f, 12f),
                 SharedSpace = true,
                 FieldModel = MatterField.Vertices,
+                RemineralisationPerSecond = 0f,
                 WorldAreaSquareMetres = Area,
                 HorizontalPatches = Patches,
                 WorldDepthMetres = Depth,
@@ -428,7 +435,7 @@ namespace Evosim.Core.Tests
                 $"matter identity {identity:R} of {world.MatterInitialTotal:0}");
 
             Assert.True(world.Births > 0, "nothing was born, so the economy was not exercised");
-            Assert.Equal(0L, world.ConceptionsShortOfMatter);
+            Assert.Equal(0L, world.FixationShortTakes);
             Assert.True(matter.Count > 0);
             Assert.True(Math.Abs(world.AuditResidual) <= 1e-6 * Math.Max(1d, world.EnergyIn), $"audit residual {world.AuditResidual:R}");
             Assert.True(Math.Abs(identity) <= 1e-6 * world.MatterInitialTotal, $"matter identity {identity:R}");

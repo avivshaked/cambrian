@@ -34,9 +34,9 @@ namespace Evosim.Core.Tests
             Phenotype body = Body(CellTypeIds.Photosynthetic, off);
 
             EnergyLedger baseline = Metabolism.StepAt(
-                body, off, irradiance: 200f, nutrientDensity: 0f, workJoules: 0f, seconds: 1f);
+                body, off, irradiance: 200f, nutrientDensity: 0f, spentDensity: 1f, workJoules: 0f, seconds: 1f);
             EnergyLedger exuding = Metabolism.StepAt(
-                body, on, irradiance: 200f, nutrientDensity: 0f, workJoules: 0f, seconds: 1f);
+                body, on, irradiance: 200f, nutrientDensity: 0f, spentDensity: 1f, workJoules: 0f, seconds: 1f);
 
             _output.WriteLine(
                 $"fraction {fraction}: light {baseline.LightIncome:0.####} J, " +
@@ -66,7 +66,7 @@ namespace Evosim.Core.Tests
             Phenotype body = Body(CellTypeIds.Absorptive, config);
 
             EnergyLedger ledger = Metabolism.StepAt(
-                body, config, irradiance: 0f, nutrientDensity: 500f, workJoules: 0f, seconds: 1f);
+                body, config, irradiance: 0f, nutrientDensity: 500f, spentDensity: 1f, workJoules: 0f, seconds: 1f);
 
             _output.WriteLine(
                 $"absorptive in the dark: food {ledger.FoodIncome:0.####} J, " +
@@ -79,7 +79,7 @@ namespace Evosim.Core.Tests
             // And with light off, Net is what it always was.
             EnergyLedger noKnob = Metabolism.StepAt(
                 Body(CellTypeIds.Absorptive, new RunConfig()), new RunConfig(),
-                irradiance: 0f, nutrientDensity: 500f, workJoules: 0f, seconds: 1f);
+                irradiance: 0f, nutrientDensity: 500f, spentDensity: 1f, workJoules: 0f, seconds: 1f);
 
             Fixtures.AssertClose(noKnob.Net, ledger.Net, 0f);
         }
@@ -95,9 +95,9 @@ namespace Evosim.Core.Tests
             Phenotype body = Body(CellTypeIds.Photosynthetic, config);
 
             EnergyLedger young = Metabolism.StepAt(
-                body, config, 200f, 0f, workJoules: 0f, seconds: 1f, ageSeconds: 0f);
+                body, config, 200f, 0f, 1f, workJoules: 0f, seconds: 1f, ageSeconds: 0f);
             EnergyLedger old = Metabolism.StepAt(
-                body, config, 200f, 0f, workJoules: 0f, seconds: 1f, ageSeconds: 3000f);
+                body, config, 200f, 0f, 1f, workJoules: 0f, seconds: 1f, ageSeconds: 3000f);
 
             _output.WriteLine(
                 $"young: light {young.LightIncome:0.####} exuded {young.Exuded:0.####}; " +
@@ -116,7 +116,7 @@ namespace Evosim.Core.Tests
             var config = new RunConfig { ExudationFraction = 0.1f };
             Phenotype body = Body(CellTypeIds.Photosynthetic, config);
 
-            EnergyLedger one = Metabolism.StepAt(body, config, 200f, 0f, 0f, 1f);
+            EnergyLedger one = Metabolism.StepAt(body, config, 200f, 0f, 1f, 0f, 1f);
             EnergyLedger three = one + one + one;
 
             Fixtures.AssertClose(3f * one.Exuded, three.Exuded, 1e-6f);

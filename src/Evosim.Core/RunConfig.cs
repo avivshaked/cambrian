@@ -378,80 +378,177 @@ namespace Evosim.Core
         [Tunable("world", Unit = "m/s")]
         public float NutrientSinkMetresPerSecond { get; set; } = 0.02f;
 
-        /// <summary>How fast the floor gives detritus back, s⁻¹ — D051.</summary>
+        // ------------------------------------------------------- the one-substance economy
+        //
+        // D098 (2026-09-18), logbook/specs/economy-spec.md. Matter is matter: a unit of it is a
+        // unit wherever it is, and the only thing that varies is whether it carries energy. A
+        // charged unit holds JoulesPerUnit; a spent one holds none. Light charges a spent unit,
+        // burning spends a charged one and returns it to the water. The six knobs below are the
+        // whole of the exchange rate and the rates at which it runs.
+
+        /// <summary>What one unit of matter carries when it is charged, J/unit — D098.</summary>
         /// <remarks>
-        /// <see cref="NutrientSinkMetresPerSecond"/> pays into the floor and never out of it; in
-        /// still water a run long enough ratchets every joule onto the sediment. With
-        /// <see cref="NutrientMixingDiffusivity"/> above zero the floor already exchanges with the
-        /// water above it and this leak is redundant — measured at 0.2 m²/s, logbook/0036.
-        /// A rate constant rather than a velocity: the floor is a stock being decayed, not a
-        /// distance being crossed, and there is no layer thickness below it for a velocity to
-        /// mean anything against. Zero by default, so the world is bit-identical until a run
-        /// asks otherwise.
+        /// <para>
+        /// <b>The exchange rate between the two books, and the one number that makes them one
+        /// equation.</b> Every joule the world burns returns <c>1 / this</c> units of spent matter
+        /// to the water, and every joule fixed takes the same out of it, so
+        /// <see cref="World.MatterResidual"/> and <see cref="World.AuditResidual"/> are the same
+        /// statement read in two units. Before D098 the two were separate substances and a leg
+        /// could move one without the other; now it cannot.
+        /// </para>
+        /// <para>
+        /// ⚠ Chosen rather than measured (economy-spec.md §4): at 100 J/unit round 40's crowd
+        /// stood at about half of its 11,000-unit budget with the water half stripped, which is
+        /// the regime the base round is meant to read.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "J/unit")]
+        public float JoulesPerUnit
+        {
+            get => _joulesPerUnit;
+            set => _joulesPerUnit = value > 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(JoulesPerUnit), value,
+                    "A charged unit carries a finite positive number of joules. At zero the two " +
+                    "books divide by nothing and every burn returns an infinity of matter.");
+        }
+
+        private float _joulesPerUnit = 100f;
+
+        /// <summary>
+        /// How fast a lit surface can take spent matter out of the water, units/m²/s — D098's
+        /// fixation.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What makes a producer consume.</b> Light alone is not a diet: a leaf fixes
+        /// <c>min(light, uptake × ρ)</c>, so in rich water it is light-limited and in water it
+        /// has stripped it is limited by what it can still find. That is the negative feedback on
+        /// sitting in the best-lit spot, in the leg that earns rather than in the leg that breeds.
+        /// </para>
+        /// <para>
+        /// Zero makes uptake unbounded: the cell fixes its whole light capacity and takes the
+        /// matter for it whatever the density, which is the pre-D098 producer with its draw
+        /// booked. ⚠ Unmeasured; 0.3 is the spec's first value, twice the surface leaf's light
+        /// capacity at the seeded density.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "units/m2/s")]
+        public float UptakeRatePerSquareMetre
+        {
+            get => _uptakeRatePerSquareMetre;
+            set => _uptakeRatePerSquareMetre = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(UptakeRatePerSquareMetre), value,
+                    "A rate is finite and not negative; 0 is unbounded uptake.");
+        }
+
+        private float _uptakeRatePerSquareMetre = 0.3f;
+
+        /// <summary>
+        /// The spent density at which uptake runs at half its rate, units/m³ — D098's
+        /// half-saturation.
+        /// </summary>
+        /// <remarks>
+        /// <b>The shape of the treadmill.</b> Uptake is <c>c / (c + this)</c> of the rate, so a
+        /// cell stripped to nothing feeds nobody and a cell at this density feeds a producer half
+        /// as well as full water does. Zero is a step rather than a curve: any positive density
+        /// gives the full rate and an empty cell gives none. ⚠ Unmeasured; 0.05 is half the
+        /// campaign's seeded density.
+        /// </remarks>
+        [Tunable("world", Unit = "units/m3")]
+        public float UptakeHalfSaturation
+        {
+            get => _uptakeHalfSaturation;
+            set => _uptakeHalfSaturation = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(UptakeHalfSaturation), value,
+                    "A half-saturation density is finite and not negative; 0 is a step, not a curve.");
+        }
+
+        private float _uptakeHalfSaturation = 0.05f;
+
+        /// <summary>
+        /// How fast charged matter in the water decays back to spent matter, s⁻¹ — D098's
+        /// remineralisation.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The bacteria, as one rate.</b> Every cell of the charged field loses
+        /// <c>stock × (1 − e^(−r·dt))</c> joules a step; the joules leave the world as heat and
+        /// the same over <see cref="JoulesPerUnit"/> arrives in the spent field where the charged
+        /// cell was. Without it marine snow nobody eats is a permanent hoard, and the matter in
+        /// it never returns to a producer.
+        /// </para>
+        /// <para>
+        /// It replaces D051's two floor leaks, which were 0 in every campaign config and returned
+        /// a field's floor stock to the layer above it rather than moving anything between the
+        /// two states. ⚠ Unmeasured; 5e-4 /s is a half-life of about 1,400 s.
+        /// </para>
         /// </remarks>
         [Tunable("world", Unit = "1/s")]
-        public float NutrientRemineralisationPerSecond { get; set; } = 0f;
+        public float RemineralisationPerSecond
+        {
+            get => _remineralisationPerSecond;
+            set => _remineralisationPerSecond = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(RemineralisationPerSecond), value,
+                    "A rate constant is finite and not negative; 0 is a world whose marine snow " +
+                    "only ever leaves by being eaten.");
+        }
+
+        private float _remineralisationPerSecond = 5e-4f;
+
+        /// <summary>Joules burnt per joule drawn from the charged field, J/J — D098's handling cost.</summary>
+        /// <remarks>
+        /// <b>Eating is not free, and it is far cheaper than fixing.</b> A filter feeder pays this
+        /// fraction of everything it clears, whatever its yield keeps, so clearing water it cannot
+        /// assimilate still costs something. Charged on <c>EnergyLedger.PoolDrawn</c> rather than
+        /// on the food kept, because the cost is the pumping and not the meal. ⚠ Unmeasured; 0.1
+        /// is the spec's first value.
+        /// </remarks>
+        [Tunable("world", Unit = "J/J")]
+        public float HandlingCostPerJouleEaten
+        {
+            get => _handlingCostPerJouleEaten;
+            set => _handlingCostPerJouleEaten = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(HandlingCostPerJouleEaten), value,
+                    "A cost per joule eaten is finite and not negative; 0 is free feeding.");
+        }
+
+        private float _handlingCostPerJouleEaten = 0.1f;
 
         /// <summary>
-        /// Matter a child's tissue costs, per joule of that tissue — D048. Zero disables the
-        /// whole mechanism.
+        /// Seconds of standing cost a body may hoard before the excess is released to the water,
+        /// s — D098's reserve cap. Zero is off, and off is the base round.
         /// </summary>
         /// <remarks>
-        /// <para>
-        /// <b>The point is not the cost, it is who pays it.</b> Until D048 the producer consumed
-        /// nothing: <c>PhotosyntheticCell.Acquire</c> returns light and draws no pool, so nothing a
-        /// creature did made its own position worse, there was no negative feedback anywhere on
-        /// occupying the best spot, and every world sorted to the surface and stayed. The depth
-        /// axis was a ramp with its maximum at the boundary rather than a landscape.
-        /// </para>
-        /// <para>
-        /// Reproduction is the right place to charge it, and not only for convenience. §5A.6 has
-        /// no growth — tissue is created exactly once, when a child is made — and no amount of
-        /// sunlight builds a daughter cell without nitrogen and phosphorus. So a nutrient-starved
-        /// world does not kill its inhabitants; it stops them breeding, which is what actually
-        /// happens to a nutrient-limited bloom.
-        /// </para>
-        /// <para>
-        /// <b>Zero by default</b>, so §5A.2's ledger and every arm measured before D048 are
-        /// unchanged, and a run that turns this on says so in its own header and config hash.
-        /// ⚠ The ratio is unmeasured — pick it against
-        /// <see cref="InitialMatterPerCubicMetre"/> and read the blocked-conception count, which
-        /// is the only number that says whether matter is binding at all.
-        /// </para>
+        /// <b>The lever that moves a hoard into the larder while the body still lives.</b> Nothing
+        /// caps <c>Organism.Energy</c>, and under senescence an old body burns its whole reserve
+        /// as upkeep before it starves — so everything it ever saved leaves the world as heat and
+        /// none of it feeds anyone (logbook/0101). Above zero, a reserve over
+        /// <c>this × Organism.StandingWatts</c> is trimmed to it and the excess deposited into the
+        /// charged field where the body is: charged matter, not heat, counted with exudation.
+        /// ⚠ Unmeasured; 0 by default, so the leg exists and does nothing until a round asks.
         /// </remarks>
-        [Tunable("world")]
-        public float MatterPerTissueJoule { get; set; }
+        [Tunable("world", Unit = "s")]
+        public float ReserveCapSeconds
+        {
+            get => _reserveCapSeconds;
+            set => _reserveCapSeconds = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(ReserveCapSeconds), value,
+                    "A cap in seconds of standing cost is finite and not negative; 0 is off.");
+        }
 
-        /// <summary>
-        /// Matter every child costs on top of <see cref="MatterPerTissueJoule"/> × tissue,
-        /// regardless of how small its body is — D065.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// <b>A body costs a minimum of matter to exist.</b> Real cells carry a machinery mass —
-        /// genome, membrane, ribosomes — that no amount of shrinking removes, so the price of
-        /// being alive is not proportional to size all the way down to zero. With the price purely
-        /// proportional, a lineage can pay for one more individual by making every individual
-        /// smaller, and the population count ratchets upward without bound while the standing
-        /// tissue stays flat: matter limits mass, and nothing limits number.
-        /// </para>
-        /// <para>
-        /// <b>What the fixed term buys is a ceiling on head-count.</b> With it, the number of
-        /// bodies the world can hold is bounded by total matter / (fixed + proportional), which is
-        /// finite however small bodies get — so selection for miniaturisation runs into a wall
-        /// rather than an open ramp, and crowding becomes a cost a lineage can be selected against.
-        /// </para>
-        /// <para>
-        /// Charged at conception from the parent's own layer, locked into the child's
-        /// <see cref="Organism.LockedMatter"/> alongside the proportional part, and returned by the
-        /// same excretion (<see cref="ExcretionPerJoule"/>) and death legs — the fixed term is not
-        /// a separate substance, only a second term in one price.
-        /// </para>
-        /// <para>⚠ Unmeasured (§5A.10). <b>Zero by default</b>, so every world measured before D065
-        /// is bit-identical; a run that turns it on says so in its own header and config hash.</para>
-        /// </remarks>
-        [Tunable("world")]
-        public float MatterPerCreature { get; set; }
+        private float _reserveCapSeconds;
 
         // ---------------------------------------------------------------- growth
         //
@@ -794,17 +891,6 @@ namespace Evosim.Core
         [Tunable("world", Unit = "m2/s")]
         public float MatterMixingDiffusivity { get; set; } = 2f;
 
-        /// <summary>How fast the floor gives matter back, s⁻¹ — D051.</summary>
-        /// <remarks>
-        /// Matter's own copy of <see cref="NutrientRemineralisationPerSecond"/>, separate for the
-        /// same reason <see cref="MatterSinkMetresPerSecond"/> is separate from
-        /// <see cref="NutrientSinkMetresPerSecond"/>: dissolved matter and detrital energy are
-        /// different pools even though this model conflates particulate and dissolved within
-        /// each one. Zero by default, so the world is bit-identical until a run asks otherwise.
-        /// </remarks>
-        [Tunable("world", Unit = "1/s")]
-        public float MatterRemineralisationPerSecond { get; set; } = 0f;
-
         /// <summary>
         /// Free matter added to the world every second — D074's influx. Zero is every run before
         /// it, in which matter is conserved and nothing but death gives any back.
@@ -858,9 +944,9 @@ namespace Evosim.Core
         /// lost, which is what sediment is.
         /// </para>
         /// <para>
-        /// <b>Free matter only, and only from the floor layer.</b> Never detritus (that is
-        /// <see cref="World.Nutrients"/>' pool and a different substance), and never matter locked in a
-        /// living body (<see cref="World.MatterInBodies"/>) — burying a creature's skeleton out
+        /// <b>Spent matter only, and only from the floor layer.</b> Never the charged field (that
+        /// is <see cref="World.Nutrients"/>' pool, the same substance in the other state), and
+        /// never the charged matter a living body is made of — burying a creature's skeleton out
         /// from under it while it is still alive would open the matter identity, and the identity
         /// is the only thing that can catch this mechanism going wrong.
         /// </para>
@@ -892,33 +978,6 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world", Unit = "m2/s")]
         public float NutrientMixingDiffusivity { get; set; }
-
-        /// <summary>
-        /// Matter a living body returns per joule of upkeep it pays — D052.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// <b>Turnover, not death.</b> Until D052 matter left a body only once, at death
-        /// (<see cref="MatterPerTissueJoule"/>'s reverse leg), and a body sinks after it dies — so
-        /// nothing a living creature took at the surface ever came back to the surface, and a
-        /// drought there outlasted a lifetime (logbook/0037–0039). This pays a fraction of it back
-        /// continuously, at the body's own depth, in proportion to <c>EnergyLedger.Upkeep</c> —
-        /// the microbial loop at its simplest.
-        /// </para>
-        /// <para>
-        /// <b>Capped at what the body still holds, and the child's price is unchanged.</b> A body
-        /// cannot excrete matter it does not have, so the amount taken each step is
-        /// <c>min(locked, this × upkeep)</c>; death still returns whatever is left. Reproduction
-        /// still prices a child at <see cref="MatterPerTissueJoule"/> per joule of tissue, paid
-        /// from the parent's layer as before — a parent that has excreted most of its own matter
-        /// has not thereby made its children cheaper.
-        /// </para>
-        /// <para>⚠ Unmeasured — no primary source on new versus regenerated production has been
-        /// added to the review yet (D052). Zero by default, so the world is bit-identical until a
-        /// run asks otherwise; <c>EVOSIM_EXCRETION</c> in the header.</para>
-        /// </remarks>
-        [Tunable("world", Unit = "matter/J")]
-        public float ExcretionPerJoule { get; set; }
 
         /// <summary>
         /// Thickness of the seabed no mouth can reach, metres — D055. Zero is today's floor: every

@@ -33,21 +33,19 @@ namespace Evosim.Core.Tests
 
         public DivergenceTests(ITestOutputHelper output) => _output = output;
 
-        /// <summary>A world with matter priced, so a body born into it locks some.</summary>
+        /// <summary>A world with matter seeded, so there is something for a leaf to fix.</summary>
         /// <remarks>
-        /// Matter has to be on for these to mean anything: with
-        /// <see cref="RunConfig.MatterPerTissueJoule"/> at 0 every creature's
-        /// <see cref="Organism.LockedMatter"/> is 0, and the matter half of the identity would be
-        /// asserted over three zeroes.
+        /// Since D098 a body holds no separate matter store — its tissue and its reserve are
+        /// charged matter and that is all there is — so what this fixture has to guarantee is
+        /// that the water has something in it and that a body has grown something worth burying.
         /// </remarks>
         private static RunConfig MatterWorld() => new RunConfig
         {
             Light = new LightModel(200f, 12f),
-            MatterPerTissueJoule = 0.5f,
             InitialMatterPerCubicMetre = 1f,
         };
 
-        /// <summary>Steps a world until something in it was born to a parent and holds matter.</summary>
+        /// <summary>Steps a world until something in it was born to a parent and has a body.</summary>
         private World Populated(out Organism victim)
         {
             var world = new World(MatterWorld(), seed: 1);
@@ -58,7 +56,7 @@ namespace Evosim.Core.Tests
             for (int i = 0; i < world.Living.Count; i++)
             {
                 Organism creature = world.Living[i];
-                if (creature.LockedMatter > 0f && creature.TissueJoules > 0f)
+                if (creature.TissueJoules > 0f)
                 {
                     victim = creature;
                     break;
@@ -67,8 +65,8 @@ namespace Evosim.Core.Tests
 
             Assert.True(
                 victim != null,
-                $"no living creature holds matter after {world.Births} births — the fixture " +
-                "cannot test the matter half of a death it never set up.");
+                $"no living creature has tissue after {world.Births} births — the fixture " +
+                "cannot test a death it never set up.");
 
             return world;
         }
@@ -84,12 +82,10 @@ namespace Evosim.Core.Tests
             // structural half of this assertion; these numbers are the measured half.
             float energy = victim.Energy;
             float tissue = victim.TissueJoules;
-            float locked = victim.LockedMatter;
 
             double energyOut = world.EnergyOut;
             double detritus = world.Nutrients.TotalJoules;
             double deposited = world.DetritusDepositedTotal;
-            double inBodies = world.MatterInBodies;
             double freeMatter = world.Matter.TotalJoules;
             long deaths = world.Deaths;
             int alive = world.Living.Count;
@@ -97,24 +93,23 @@ namespace Evosim.Core.Tests
             world.KillDiverged(victim);
 
             _output.WriteLine(
-                $"buried #{victim.Id}: {energy:0.###} J reserve, {tissue:0.###} J tissue, " +
-                $"{locked:0.###} matter");
+                $"buried #{victim.Id}: {energy:0.###} J reserve, {tissue:0.###} J tissue");
 
-            Assert.Equal(energyOut + energy, world.EnergyOut, 3);
-            Assert.Equal(detritus + tissue, world.Nutrients.TotalJoules, 3);
-            Assert.Equal(deposited + tissue, world.DetritusDepositedTotal, 3);
-            Assert.Equal(inBodies - locked, world.MatterInBodies, 3);
-            Assert.Equal(freeMatter + locked, world.Matter.TotalJoules, 3);
+            // D098. The reserve is charged matter and no longer leaves the world as heat: the
+            // whole body, tissue and savings together, becomes marine snow where it died.
+            Assert.Equal(energyOut, world.EnergyOut, 3);
+            Assert.Equal(detritus + tissue + energy, world.Nutrients.TotalJoules, 3);
+            Assert.Equal(deposited + tissue + energy, world.DetritusDepositedTotal, 3);
+            Assert.Equal(freeMatter, world.Matter.TotalJoules, 3);
 
             Assert.Equal(deaths + 1, world.Deaths);
             Assert.Equal(alive - 1, world.Living.Count);
             Assert.DoesNotContain(victim, world.Living);
 
-            // The body is emptied, not half-emptied: a corpse still holding tissue or matter
-            // would be counted twice by anything that walks the dead.
+            // The body is emptied, not half-emptied: a corpse still holding tissue would be
+            // counted twice by anything that walks the dead.
             Assert.Equal(0f, victim.Energy);
             Assert.Equal(0f, victim.TissueJoules);
-            Assert.Equal(0f, victim.LockedMatter);
         }
 
         [Fact]
@@ -123,7 +118,7 @@ namespace Evosim.Core.Tests
             World world = Populated(out Organism victim);
 
             double residualBefore = world.AuditResidual;
-            double matterBefore = world.StandingMatter;
+            double matterBefore = world.StandingMatterUnits;
 
             world.KillDiverged(victim);
 
@@ -137,15 +132,15 @@ namespace Evosim.Core.Tests
             _output.WriteLine(
                 $"residual {residualBefore:0.######} -> {world.AuditResidual:0.######} J " +
                 $"({world.AuditResidual / scale:P4}); matter {matterBefore:0.######} -> " +
-                $"{world.StandingMatter:0.######}");
+                $"{world.StandingMatterUnits:0.######}, residual {world.MatterResidual:R}");
 
             Assert.True(
                 Math.Abs(world.AuditResidual) / scale < 1e-6,
                 $"a diverged death opened a hole in §5A.2's audit: {world.AuditResidual} J");
 
             Assert.True(
-                Math.Abs(world.StandingMatter - matterBefore) / Math.Max(1d, matterBefore) < 1e-6,
-                $"matter drifted by {world.StandingMatter - matterBefore} across a diverged death");
+                Math.Abs(world.MatterResidual) / Math.Max(1d, world.MatterInitialTotal) < 1e-6,
+                $"a diverged death opened the matter identity: {world.MatterResidual} units");
         }
 
         [Fact]

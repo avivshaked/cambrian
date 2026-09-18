@@ -178,8 +178,8 @@ namespace Evosim.Core.Tests
             var costly = new RunConfig { WorkCostMultiplier = 4f };
             Phenotype phenotype = Developer.Develop(genome, idle.Development, null, idle.Shapes);
 
-            float cheapWork = Metabolism.StepAt(phenotype, idle, 0f, 0f, 100f, 1f).Work;
-            float dearWork = Metabolism.StepAt(phenotype, costly, 0f, 0f, 100f, 1f).Work;
+            float cheapWork = Metabolism.StepAt(phenotype, idle, 0f, 0f, 1f, 100f, 1f).Work;
+            float dearWork = Metabolism.StepAt(phenotype, costly, 0f, 0f, 1f, 100f, 1f).Work;
 
             Assert.True(dearWork > cheapWork, "the work coefficient never reached the ledger");
             Assert.Equal(cheapWork * 4f, dearWork, 3);
@@ -195,7 +195,7 @@ namespace Evosim.Core.Tests
             Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
 
             float Light(float irradiance) =>
-                Metabolism.StepAt(body, config, irradiance, 0f, 0f, 1f).LightIncome;
+                Metabolism.StepAt(body, config, irradiance, 0f, 1f, 0f, 1f).LightIncome;
 
             Assert.True(Light(100f) > Light(10f), "irradiance never reached photosynthesis");
 
@@ -203,8 +203,8 @@ namespace Evosim.Core.Tests
             Phenotype same = Developer.Develop(genome, efficient.Development, null, efficient.Shapes);
 
             Assert.True(
-                Metabolism.StepAt(same, efficient, 100f, 0f, 0f, 1f).LightIncome >
-                Metabolism.StepAt(body, config, 100f, 0f, 0f, 1f).LightIncome,
+                Metabolism.StepAt(same, efficient, 100f, 0f, 1f, 0f, 1f).LightIncome >
+                Metabolism.StepAt(body, config, 100f, 0f, 1f, 0f, 1f).LightIncome,
                 "photosynthetic efficiency never reached the ledger");
 
             // And feeding, including the loss on transfer that a consumer pays and a filter
