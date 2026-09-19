@@ -55,6 +55,25 @@ snapshots on worker 6 (`scratch/r41/snap-early-d.sh`). The three knots are pictu
 (solo mode, `scratch/r41/knot-shots.ps1`) and kept under `inocula/`, and the owner's idea of
 a video story of the knot is in the queue below.**
 
+**The pace is the harness's, and the owner ruled the profile before the cheapening (11:30,
+"This sounds like a good plan. Let's do it"; `logbook/specs/harness-profile-spec.md`).**
+Round 41d's jointed seeds run at 0.37 to 0.42x at 1,100 bodies with the physics a flat
+quarter of the wall and the harness half, and nothing says what inside the harness. An
+Opus subagent on branch `profile` in `scratch/wt-profile` is splitting the harness's step
+into its phases (sense, brain, drive, fluid, finite, contacts, growth, reconcile,
+metabolise, other) with the same timestamp pairs as the wall split, a footer line and a
+per-body-step cost, compiling and smoking on worker 6. Then the profile arm: round 41d's
+seed 1 for 2,500 s at dt 0.01 on worker 6 beside the round, and a one-part control with the
+joint priced out. The levers, in the order to try them once the split is read, are in the
+spec's §5: the brain and senses ticked slower than the physics and held, the water and the
+drag panels cached between metabolic steps, the per-body work in Burst jobs with a fixed
+reduction order and PhysX on one thread, the finite check every tenth step. Every one is a
+new realisation of every seed and is read on distributions across seeds and the digest
+pair; the grid's quarter is a world rule and a separate ruling. Round 41d's seeds are not
+refreshed until the round ends. First reads at 5,000 s: seed 2 passes every clause it can
+be read on; seed 1 reads 1,172 alive, E1's band failed high by 7% with three quarters of
+the bodies jointed, and E9 and E10 hold in both.
+
 **Round 41b stopped as futile at 02:55 on 2026-09-19 (seeds 1 to 3 at 5,600, 7,900 and
 6,400 s; the queue killed before seeds 4 and 5).** Not for the joints alone. The pace fell
 from 1.0x at 3,000 s to 0.14 to 0.18x by 02:40 with the count flat near 800 to 1,000, and
