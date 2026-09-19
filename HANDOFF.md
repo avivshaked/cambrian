@@ -19,7 +19,15 @@ The rate had been sized for a fifth of 11,000 units; four times the rate puts th
 near a fifth of 3,000. The eaters had barely founded (9, 6 and 0 inherited), read as a
 crowd a fifth of round 40's supplying a fifth the mutants, a reading the relaunch tests
 under E5. E1 to E8 stand unchanged, E4's band included. `runs/r41-s1..3` are kept and not
-read further. **Round 41b stopped as futile at 02:55 on 2026-09-19 (seeds 1 to 3 at 5,600, 7,900 and
+read further. **Round 41c is being prepared (owner's "proceed", 2026-09-19 03:20): round 41b with the
+joint priced (`EVOSIM_IDLE` 0.02, round 33's; `rounds/launch-r41c.ps1`) and the contact
+instrument built first (`logbook/specs/contact-instrument-spec.md`; an Opus subagent on
+branch `contacts` in `scratch/wt-contacts`, compiling and smoking on worker 6). 0107 has
+the round 41c section with E9 (`pairs/body` under 0.05, the jointed share under a third).
+When the build lands: merge, refresh workers 2, 3 and 4, take `simHash` from the smoke's
+manifest, commit the launch note, and start the queue detached (`scratch/r41/queue-c.ps1`).**
+
+**Round 41b stopped as futile at 02:55 on 2026-09-19 (seeds 1 to 3 at 5,600, 7,900 and
 6,400 s; the queue killed before seeds 4 and 5).** Not for the joints alone. The pace fell
 from 1.0x at 3,000 s to 0.14 to 0.18x by 02:40 with the count flat near 800 to 1,000, and
 the wall split says why: physics rose from a quarter to half the wall on **contact

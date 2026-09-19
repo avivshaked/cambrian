@@ -182,6 +182,50 @@ budget or the overhead, and the eaters' founding read on a larder still a hundre
 round 40's. The three stopped seeds are `runs/r41-s1..3`, kept and not read further; their
 frames at 3,000 and 6,000 s are the first pictures the snapshot render took.
 
+## Round 41b stopped, and round 41c: the joint priced
+
+*2026-09-19, 03:40, before the relaunch.* Round 41b's three seeds were stopped as futile
+at 02:55, at 5,600, 7,900 and 6,400 s (`manual-futility`), under V5 and the fail-fast
+rule. The remineralisation number held: the snow read 0.20 to 0.23 of the budget at
+5,000 s in all three, inside E4's band, the count 814 to 876 at that second inside E1's,
+both books closed. The eaters were 11, 0 and 2 inherited at the stop and are not read.
+
+What stopped it was the pace. From 1.0 times real time at 3,000 s the seeds fell to 0.14
+to 0.18 by 02:40 with the count flat near 800 to 1,000, and the wall split put the physics
+at half the wall where round 40 gave it a fifth. The cumulative `contactPairs` field says
+why: 150 to 390 million pairs per 1,000 s in seeds 2 and 1 against round 40's 0.1 to 0.5
+million at 2,490 bodies, doubling every thousand seconds. The night's diagnosis
+(`scratch/r41/nn.py` on the positions rows; HANDOFF) excluded the spacing, since round 40
+at 7,000 s had the same nearest-neighbour distribution, and the placer, since refusals
+read 0 to 8 a window. The pairs track the jointed count across every run on file, from
+round 40's tens of jointed bodies and under a million pairs a window to round 41b seed 3's
+seven hundred and 240 million, and within each one-substance run they grow several-fold
+at a flat jointed count, which I read as contacts that persist once made and as joints
+multiplying per body (seed 1 went from 2.4 to 3.9 degrees of freedom per jointed body).
+So the joint is the cause, through the contact machinery, and the free joint is what the
+economy made: tissue at 0.38 J, growth off the field, the link earning half a leaf's
+light, and an idle charge of a ten-thousandth of a watt. Round 41's screen founded 60%
+jointed and I recorded it and did not predict it. The owner ruled the price restored and
+an instrument built before the relaunch ("proceed", 03:20).
+
+Round 41c is round 41b with `EVOSIM_IDLE` 0.02, round 33's standing charge per
+newton-metre of joint capacity, from 0.0001 in rounds 34 to 41b; nothing else moves
+(`rounds/launch-r41c.ps1`; the header's `idle 0.02 W/N·m`). The build gains the contact
+instrument (`specs/contact-instrument-spec.md`): three cumulative fields beside
+`contactPairs`, and the columns `pairs/body`, `pairs jnt %` and `stuck %`, so that this
+reads in a run's first hour. It lives under `Assets/Evosim`, so `simHash` moves and the
+launch note carries the new one. E1 to E8 stand as written. One prediction is added:
+
+| # | prediction | falsified by |
+|---|---|---|
+| E9 | **the joint priced, the physics affordable**: `pairs/body` under 0.05 at 5,000, 15,000 and 30,000 s in 4 of 5 (round 40 read about 0.004 and round 41b seed 1 about 4.8 at 5,000 s, from the cumulative field over the window's steps and bodies), and the jointed share of the living under a third at the same seconds in 4 of 5 | `pairs/body`; `jointed` over `alive` |
+
+E9's two-sided reading: fails on the pairs with the jointed share low, and the contacts
+are not the joints' after all, read `stuck %` first; fails on the share with the pairs low,
+and the priced joint still spreads but no longer costs, which is a finding and not a
+problem. The pace is read against E8 as before. Round 41b's seeds are `runs/r41b-s1..3`,
+kept and not read further; their frames at 3,000 and 7,000 s are in `scratch/snaps/`.
+
 ## Launch
 
 *Appended as the seeds launch; each with its header verified and its manifest's hashes.*
