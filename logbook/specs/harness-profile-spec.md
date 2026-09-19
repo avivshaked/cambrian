@@ -75,3 +75,116 @@ fixed reduction order, PhysX left on one thread; the finite check every tenth st
 is a per-step change and a new realisation of every seed, read on distributions across
 seeds and on the digest pair for identity. The grid's quarter of the wall is a world rule
 and a separate ruling.
+
+## 6. What was measured
+
+*2026-09-19, 12:15 to 13:00.* Three runs on worker 6 beside round 41d's three arms, all on
+the branch's build (`simHash d146f82a…`, `coreHash 40c9a478…`), all round 41d's seed 1 at
+dt 0.01 under the round's `configHash 630f0206` unless said otherwise. Every split below is
+two rows' difference over the run's last 500 s, where the crowd is; the footer's whole-run
+line is given once for the record.
+
+**The round's world** (`r41dprof-s1`, 2,500 s, 35 minutes, 1.2x real time over the run):
+807 bodies at the end, 41% of them jointed, 1.77 parts a body (270 of one part, 464 of
+two, 65 of three, 8 of four). The footer reads physics 23%, world 19%, harness 58%. Over
+the last 500 s, at 813 to 846 bodies and 0.70x real time, physics 25%, world 11%, harness
+64%, and the harness 10.8 µs a body-step:
+
+| phase | of the harness | µs a body-step |
+|---|---|---|
+| fluid | 56% | 6.1 |
+| trace | 20% | 2.2 |
+| control | 15% | 1.7 |
+| settle | 7% | 0.8 |
+| contacts, reconcile, finite, metabolise, growth, other | under 1% each | under 0.1 |
+
+**The one-part control** (`r41dprofctl-s1`, 1,500 s with the joint priced out, `-Idle 1`,
+`configHash da0a64f1`, 11 minutes, 2.3x real time): 931 bodies at the end, none jointed,
+1.45 parts a body (562 of one, 327 of two, 39 of three, three more). Over its last 500 s,
+at 370 to 931 bodies, the harness is 59% of the wall and 7.0 µs a body-step: fluid 68%
+(4.8 µs), trace 16% (1.1), control 10% (0.7), settle 4% (0.3).
+
+Per link the fluid costs the same in both crowds, 3.3 µs a link-step (6.1 over 1.77 parts,
+4.8 over 1.45): a flat price on every link every physics step, whatever the body is. The
+trace is written for every body of more than one link, so it moves with the multi-link
+share rather than with the joint. The control's 1.7 µs against 0.7 is the brain: a jointed
+body carries neurons a leaf does not, and the sensors read every part. Of the whole wall
+at the round's crowd, then, the water's pass is 36%, the trace 13%, the brain and senses
+10%, the settle 4%; PhysX 25% and the grid 11%.
+
+**The instrument moves no trajectory.** A rerun of the same seed on the same build
+(`r41dprof2-s1`, 1,500 s, launched by mistake against a worker not yet refreshed for the
+sub-split below) replays `r41dprof-s1` sample for sample on alive, births and mean height
+at every one of its fifteen samples, which is §2's promise tested at a crowd.
+
+**Inside the fluid pass** (`r41dprof3-s1`, 1,500 s on the sub-split build, `simHash
+493f2605…`; the same trajectory a third time, sample for sample). The pass is split four
+ways with the same timestamp pairs: `gather`, the reads of every link's rotation, spin,
+position and velocity and the array stores; `water`, the streams' velocity and closed-form
+acceleration sampled per link, timed per link so its clock overhead is inside it; `compute`,
+the panel arithmetic in parallel; `apply`, the force and torque written to every link. The
+rows carry `wallFluidGatherMs`, `wallFluidWaterMs`, `wallFluidComputeMs`, `wallFluidApplyMs`
+and `fluidLinkSteps`, and the footer gains `fluid split: gather 20%, water 46%, compute 12%,
+apply 21%` and `fluid per link-step: 3 µs`. Over the last 500 s, at 360 to 756 bodies and
+1.73 links a body:
+
+| piece of the pass | of the pass | µs a link-step |
+|---|---|---|
+| water | 45% | 1.39 |
+| apply | 23% | 0.72 |
+| gather | 22% | 0.68 |
+| compute | 10% | 0.30 |
+
+So the water is half the pass, the crossings into the engine (a property read or a force
+write per link) are the other half, and the arithmetic the drag was once measured at 88%
+of the step for (DESIGN §5A.9, on a tiled world of a few bodies) is a tenth. Of the whole
+wall at the round's crowd the water's sampling is about 16%, the crossings 16%, the trace
+13%, the brain and senses 10%, the panels 4%, the settle 4%; PhysX 25% and the grid 11%.
+The round's own seeds read the physics at 27 to 28% on the same seconds, so the profile
+arm stands for them.
+
+Two things about running it. Every launch here was from inside the worktree, so the
+launcher used the worktree's `unity-w6` and `runs/`. That worker is a copy of the tree like
+any other, and a launch after an edit without a refresh ran the previous build
+(`r41dprof2-s1`; the launch printed `simHash d146f82a…` and nobody compared it). The three
+runs of one seed on two builds replaying each other is the identity check §2 promised,
+taken for free.
+
+## 7. The reading, and what is put to the owner
+
+The tax is not the brains. Two thirds of the harness is the water touching every link on
+every physics step. Half of that is sampling a field that moves five centimetres in a
+metabolic step, at a point within half a metre of the body's other links. An eighth of the
+wall is an instrument reading the solver a second time. The brain and the
+senses, the first lever the plan named, are a tenth.
+
+The levers, re-ordered by the measurement, with what each is expected to buy of today's
+wall (inference from the splits; the digest pair and the next round's pace are the test):
+
+1. **Read the solver once a step and share it.** The fluid gather, the trace, the sensors
+   and the finite check each read a link's transform or velocity through the engine. One
+   read per property per link into flat arrays, shared, keeps every number and moves no
+   trajectory, so identity is kept by construction. It buys the trace's 13% and a part of
+   the gather, and it is agent work, first.
+2. **Sample the water once a body and hold it for a metabolic step.** The streams sampled
+   at the body's root every 0.5 s in place of every link every 0.01 s: the water's 16%
+   falls fiftyfold. It is a per-step force change and a new realisation of every seed. The
+   fidelity given up is the difference between the water at a link and at its root, and
+   over half a second, in a field whose eddies are metres wide. It needs the owner's ruling.
+3. **No collision inside one body.** Seed 2's rising pairs are, by the probe, a body's own
+   parts; PhysX resolves each such pair every step and never separates them, and games turn
+   intra-body collision off. Buys the share of PhysX's 25% that is self-contact, which the
+   probe puts at most of it in seed 2, and makes a fold cost nothing. It is a world rule,
+   a body may pass through itself, and needs the owner's ruling.
+4. **Fewer drag panels**: 4% at most. Not worth a realisation; dropped.
+5. **The brain and the senses ticked slower**: 10% at most, and the control's 1.7 µs is
+   half the sensors' transform reads that lever 1 shares. Dropped for now as well.
+6. **Burst jobs over transform arrays** for the gather and the apply: the other 16%, days
+   of work, after 1 to 3 are read.
+7. **The grid**: 11%, a world rule and a separate ruling, as §5 said.
+
+The arithmetic: lever 1 alone about 1.2x, and 1 with 2 about 1.6x, so a seed at 0.32x
+beside two other arms runs at about 0.5x. Lever 3 on top buys the physics' share of
+self-contact, unknown until tried. Real time at 1,300 bodies beside three arms needs the jobs as well, or fewer
+arms. The branch stays unmerged until round 41d's fifth seed has launched, since the
+queue's hash check refreshes from main; it carries both instruments and nothing else.
