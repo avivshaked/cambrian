@@ -873,6 +873,17 @@ actually verifying it.
 - **`mat blk` and `crowded` are per-window counts that scale with the population.** Read them
   against `births` in the same window (logbook/0068: refusals at two to three times the births),
   never as an absolute threshold; a raw blocked-conception count says nothing on its own.
+  `contacts` is the same rule applied to `contactPairs`, which is cumulative in `stats.jsonl`
+  and in `run.json`: a window is two rows differenced, never the running total read alone. The
+  contact instrument (2026-09-19, `logbook/specs/contact-instrument-spec.md`) puts three more
+  cumulative fields beside it, `contactPairsJointed`, `contactPairsPersistent` and
+  `contactBodies`, and three columns after `contacts`: `pairs/body`, `pairs jnt %` and
+  `stuck %`. They are the window's pairs per living body per physics step, then two shares of
+  those pairs. One is the share with a jointed body on at least one side. The other is the
+  share the engine reported as a stay rather than as a fresh touch. All three are
+  creature-creature only, as `contacts` is, and the bed and the glass stay in `floor con`. In
+  the one-substance world the pairs tracked the jointed count across every run on file. Round
+  41b was stopped on that explosion (HANDOFF).
 - **The project is in linear colour space from 2026-09-16 (logbook/0104), and a global shader
   colour is not converted.** A material colour, a render setting and a camera's background are
   converted from sRGB by the engine; `Shader.SetGlobalColor` hands the numbers over raw. The
