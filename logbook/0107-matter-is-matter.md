@@ -323,6 +323,20 @@ step and never separates it, which is `stuck %` at 100. The joint was never in i
 41b's knots were articulated because the joint was free, round 41c's are rigid because it
 was priced, and the physics pays the same for either.
 
+![Seed 3's sixteen-part knot, creature 1341, alone in the theatre's solo mode: the photosynthetic root box with the fifteen links folded through and behind it](images/0107-knot-16-r41c-s3-1341.png)
+
+![Seed 3's nine-part knot, creature 937, from the 2,000 s snapshot: eight links folded into a ball on top of the root](images/0107-knot-9-r41c-s3-937.png)
+
+![Round 41b seed 1's sixteen-part knot, creature 1632, articulated at eight degrees of freedom and every part photosynthetic](images/0107-knot-16-jointed-r41b-s1-1632.png)
+
+The three pictures are the theatre's solo mode (Mode A, one genome under its own brain and
+no economy; `scratch/r41/knot-shots.ps1`), taken at the owner's asking the same morning. The
+first two are round 41c's rigid knots: a leaf the size of a hand with a fist of links folded
+through it, and the links reading as one blue lump because every one lies inside the
+others. The third is round 41b's: sixteen photosynthetic parts with eight degrees of freedom
+between them, a green ball a third of a metre across, which is what a free joint let the
+same fold become.
+
 Why a knot spreads is the economy this entry pre-registered. A body earns light on the sum
 of its parts' projected areas and shades what is below it by the same sum, the rule that
 keeps shading self-consistent, and a body's own parts never shade each other. Sixteen
