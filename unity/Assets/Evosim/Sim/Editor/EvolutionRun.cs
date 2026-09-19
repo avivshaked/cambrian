@@ -98,6 +98,11 @@ namespace Evosim.Sim.EditorTools
                                     ? CurrentManifest.LastContactPairsTotal /
                                         (double)CurrentManifest.LastPhysicsSteps
                                     : 0d,
+                                ContactPairsJointed =
+                                    CurrentManifest.LastContactPairsJointedTotal,
+                                ContactPairsPersistent =
+                                    CurrentManifest.LastContactPairsPersistentTotal,
+                                ContactBodies = CurrentManifest.LastContactBodiesTotal,
                                 MaxJointMassRatio = CurrentManifest.LastMaxJointMassRatio,
                                 BodiesOverMassRatio10 = CurrentManifest.LastBodiesOverMassRatio10,
                                 WallPhysicsMs = CurrentManifest.LastWallPhysicsMs,
@@ -1182,6 +1187,9 @@ namespace Evosim.Sim.EditorTools
                         manifest.LastWraps = eco.Wraps;
                         manifest.LastCrowdedTotal = eco.Crowded;
                         manifest.LastContactPairsTotal = eco.ContactPairs;
+                        manifest.LastContactPairsJointedTotal = eco.ContactPairsJointed;
+                        manifest.LastContactPairsPersistentTotal = eco.ContactPairsPersistent;
+                        manifest.LastContactBodiesTotal = eco.ContactBodies;
                         manifest.LastMaxJointMassRatio = eco.MaxJointMassRatio;
                         manifest.LastBodiesOverMassRatio10 = eco.BodiesOverMassRatio10;
                         manifest.LastWallClockMinutes = clock.Elapsed.TotalMinutes;
@@ -1415,6 +1423,9 @@ namespace Evosim.Sim.EditorTools
                         Crowded = eco.Crowded,
                         ContactPairsPerStep =
                             eco.Steps > 0 ? eco.ContactPairs / (double)eco.Steps : 0d,
+                        ContactPairsJointed = eco.ContactPairsJointed,
+                        ContactPairsPersistent = eco.ContactPairsPersistent,
+                        ContactBodies = eco.ContactBodies,
                         MaxJointMassRatio = eco.MaxJointMassRatio,
                         BodiesOverMassRatio10 = eco.BodiesOverMassRatio10,
                         WallPhysicsMs = eco.WallPhysicsMs,
@@ -1551,6 +1562,18 @@ namespace Evosim.Sim.EditorTools
         private static long LastContactSteps;
 
         /// <summary>
+        /// The contact instrument's two shares as of the previous row —
+        /// <c>logbook/specs/contact-instrument-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// Windowed for <c>contacts</c>' reason and read against the same window's pairs: both are
+        /// shares of a total that only goes up, so a run's cumulative ratio would settle early and
+        /// then hide the change the columns exist to show.
+        /// </remarks>
+        private static long LastContactPairsJointed;
+        private static long LastContactPairsPersistent;
+
+        /// <summary>
         /// Scratch for the absorptive log — <c>absorptive.jsonl</c>, one row per living eater per
         /// sample plus a final row per death (<see cref="AbsorptiveSample"/>).
         /// </summary>
@@ -1650,6 +1673,8 @@ namespace Evosim.Sim.EditorTools
             LastContactPairs = 0;
             LastFloorContactPairs = 0;
             LastContactSteps = 0;
+            LastContactPairsJointed = 0;
+            LastContactPairsPersistent = 0;
             Columns = BaseColumns;
             AssayFired = false;
             LastSnapshotSeconds = double.NaN;
@@ -1759,6 +1784,14 @@ namespace Evosim.Sim.EditorTools
             public long LastContactPairsTotal;
 
             /// <summary>
+            /// The contact instrument's three as of the last metabolic step, so the ending a
+            /// crash writes from this cache carries them too rather than three zeros.
+            /// </summary>
+            public long LastContactPairsJointedTotal;
+            public long LastContactPairsPersistentTotal;
+            public long LastContactBodiesTotal;
+
+            /// <summary>
             /// The throw trace's readings as of the last metabolic step —
             /// <c>logbook/specs/throw-trace-spec.md</c> step 1.
             /// </summary>
@@ -1792,6 +1825,14 @@ namespace Evosim.Sim.EditorTools
             public long Wraps;
             public long Crowded;
             public double ContactPairsPerStep;
+
+            /// <summary>
+            /// The contact instrument's three running totals —
+            /// <c>logbook/specs/contact-instrument-spec.md</c>. All 0 in a tiled world.
+            /// </summary>
+            public long ContactPairsJointed;
+            public long ContactPairsPersistent;
+            public long ContactBodies;
 
             /// <summary>Drive torques capped — <see cref="Ecosystem.DriveImpulsesLimited"/>.</summary>
             public long DriveImpulsesLimited;
@@ -2066,6 +2107,14 @@ namespace Evosim.Sim.EditorTools
                 w.Field("wraps", ending.Wraps);
                 w.Field("crowded", ending.Crowded);
                 w.Field("contactPairsPerStep", ending.ContactPairsPerStep);
+
+                // The contact instrument's three totals, beside the mean they are read against —
+                // logbook/specs/contact-instrument-spec.md. Totals rather than means, because the
+                // statistics file carries the same three and a reader who wants a window
+                // differences two of its rows; what the manifest owes is the run's own figure.
+                w.Field("contactPairsJointed", ending.ContactPairsJointed);
+                w.Field("contactPairsPersistent", ending.ContactPairsPersistent);
+                w.Field("contactBodies", ending.ContactBodies);
 
                 // The throw trace — logbook/specs/throw-trace-spec.md step 1, appended after
                 // contactPairsPerStep per the same append-only rule. The largest joint mass ratio
@@ -2643,6 +2692,14 @@ namespace Evosim.Sim.EditorTools
             long floorContactPairsWindow = eco.FloorContactPairs - LastFloorContactPairs;
             long contactSteps = eco.Volume != null ? eco.Steps - LastContactSteps : 0L;
 
+            // The contact instrument's two shares, over the same window and against the same
+            // denominator — logbook/specs/contact-instrument-spec.md. Both are shares of the
+            // window's creature-creature pairs, so a window with no pairs in it has no share
+            // rather than a zero one, and the table prints a dash there.
+            long contactPairsJointedWindow = eco.ContactPairsJointed - LastContactPairsJointed;
+            long contactPairsPersistentWindow =
+                eco.ContactPairsPersistent - LastContactPairsPersistent;
+
             // The bed's own share, counted apart from the crowd's: a floor pair is one body lying
             // on rock and a creature pair is two animals meeting. Reported only where there is a
             // bed to lie on, which is exactly where there is a box.
@@ -2933,6 +2990,17 @@ namespace Evosim.Sim.EditorTools
                 .Field("contactPairs", eco.ContactPairs)
                 .Field("contactPairsPerStep",
                     contactSteps > 0 ? contactPairsWindow / (double)contactSteps : 0d)
+                // The contact instrument (logbook/specs/contact-instrument-spec.md), beside the
+                // pair count they divide into rather than at the end of the row: all three are
+                // running totals of the same report, and a reader takes a window by differencing
+                // two rows the way `contactPairs` itself is read. Jointed is a pair with a
+                // jointed body on at least one side, persistent is a pair the engine reported as
+                // a stay, and `contactBodies` is the distinct bodies touching, summed over
+                // physics steps. All three read 0 in a tiled world, where `sharedSpace` beside
+                // them is what says a 0 is no instrument rather than no contact.
+                .Field("contactPairsJointed", eco.ContactPairsJointed)
+                .Field("contactPairsPersistent", eco.ContactPairsPersistent)
+                .Field("contactBodies", eco.ContactBodies)
                 // The sea bed's pairs, appended after the crowd's — logbook/specs/floor-spec.md rule 3.
                 // Written for every run: 0 with no floor is the same shape as `sharedSpace` beside
                 // it, and the flag is what says which of the two facts a 0 is.
@@ -3275,6 +3343,22 @@ namespace Evosim.Sim.EditorTools
                 wrapsWindow.ToString(c),
                 "**" + crowdedWindow.ToString(c) + "**",
                 contactSteps > 0 ? (contactPairsWindow / (double)contactSteps).ToString("0.###", c) : "—",
+
+                // The contact instrument's three — logbook/specs/contact-instrument-spec.md. The
+                // mean above shared out over the living, and the two shares of the same window's
+                // pairs. A dash rather than a 0 where the window had no pairs or nothing was
+                // alive to have made them: a share of nothing is not a share, and 0% would read
+                // as "no jointed body touched anything".
+                contactSteps > 0 && alive > 0
+                    ? (contactPairsWindow / (double)contactSteps / alive).ToString("0.####", c)
+                    : "—",
+                contactPairsWindow > 0
+                    ? (100d * contactPairsJointedWindow / contactPairsWindow).ToString("0.#", c) + "%"
+                    : "—",
+                contactPairsWindow > 0
+                    ? (100d * contactPairsPersistentWindow / contactPairsWindow).ToString("0.#", c) + "%"
+                    : "—",
+
                 floorSteps > 0 ? (floorContactPairsWindow / (double)floorSteps).ToString("0.###", c) : "—",
                 world.Stillbirths.ToString(c),
 
@@ -3372,6 +3456,8 @@ namespace Evosim.Sim.EditorTools
             LastContactPairs = eco.ContactPairs;
             LastFloorContactPairs = eco.FloorContactPairs;
             LastContactSteps = eco.Steps;
+            LastContactPairsJointed = eco.ContactPairsJointed;
+            LastContactPairsPersistent = eco.ContactPairsPersistent;
 
             if (row.Count != Columns.Length)
             {
@@ -3458,6 +3544,15 @@ namespace Evosim.Sim.EditorTools
             // per-patch populations follow, one column per patch, and are the only part of this
             // table whose width depends on the config.
             "above", "wraps", "crowded", "contacts",
+
+            // The contact instrument — logbook/specs/contact-instrument-spec.md, placed after
+            // `contacts` because all three divide the same window's pairs and a reader has to be
+            // able to take them in together. `pairs/body` is that window mean shared out over the
+            // living, so it is pairs per body per physics step; `pairs jnt %` is how much of the
+            // window's pairs had a jointed body on at least one side; `stuck %` is how much of it
+            // the engine reported as a stay rather than as a fresh touch. A dash on each where
+            // there were no pairs to take a share of, for `contacts`' own reason.
+            "pairs/body", "pairs jnt %", "stuck %",
 
             // The sea bed — logbook/specs/floor-spec.md rule 3, appended after `contacts` per the same
             // rule. `contacts` is creature-creature pairs only; this is pairs against the floor

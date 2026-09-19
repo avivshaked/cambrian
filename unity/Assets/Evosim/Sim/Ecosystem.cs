@@ -832,6 +832,26 @@ namespace Evosim.Sim
         /// extra work is one comparison per contact pair per step — the solver has already done
         /// far more to produce it.
         /// </remarks>
+        /// <remarks>
+        /// <b>The three counters that say whose pairs these are</b> —
+        /// <c>logbook/specs/contact-instrument-spec.md</c>, written after round 41b was stopped on
+        /// a contact-pair explosion the report could not attribute. They read the same report the
+        /// two above do and write nothing back, so a run under this build is the realisation it
+        /// would have been without them. All three are creature-creature only: the bed and the
+        /// glass are split off first, for the reason the split exists at all, so a benthic crowd
+        /// cannot inflate any of them either.
+        /// <para>
+        /// <b>A pair's jointedness is read once per header, not once per pair.</b> A header names
+        /// the two bodies and every pair under it is between those two, so the lookup is per
+        /// touching body pair rather than per contact patch.
+        /// </para>
+        /// <para>
+        /// <b>Persistence is the engine's own answer.</b> <c>ContactPair.isCollisionStay</c> is
+        /// the pair PhysX would have reported through <c>OnCollisionStay</c> — the two were
+        /// already touching at the previous step — so no set of the previous step's pairs is kept
+        /// here. A pair the engine flags as an enter or an exit is not counted as stuck.
+        /// </para>
+        /// </remarks>
         private void OnContactEvent(
             PhysicsScene scene, Unity.Collections.NativeArray<ContactPairHeader>.ReadOnly headers)
         {
@@ -840,44 +860,159 @@ namespace Evosim.Sim
             EntityId[] wallIds = _wallEntityIds;
             long pairs = 0;
             long floorPairs = 0;
+            long jointedPairs = 0;
+            long persistentPairs = 0;
 
             for (int i = 0; i < headers.Length; i++)
             {
                 ContactPairHeader header = headers[i];
                 int count = (int)header.pairCount;
 
+                // Who the two bodies are, before the pairs are walked. A static collider has no
+                // entry, which is how the bed and the glass stay out of the touching count
+                // without a second test.
+                bool knownBody = _contactBodies.TryGetValue(header.bodyEntityId, out ContactBody a);
+                bool knownOther =
+                    _contactBodies.TryGetValue(header.otherBodyEntityId, out ContactBody b);
+                bool jointed = (knownBody && a.Jointed) || (knownOther && b.Jointed);
+
+                int headerPairs = 0;
+                int headerPersistent = 0;
+
                 // No floor in this world: every pair is a creature pair and there is nothing to
                 // ask of any of them. This is also the tiled path, where the event is not even
                 // subscribed.
-                if (!hasFloor) { pairs += count; continue; }
-
-                for (int j = 0; j < count; j++)
+                if (!hasFloor)
                 {
-                    ContactPair pair = header.GetContactPair(j);
+                    headerPairs = count;
 
-                    if (pair.colliderEntityId.Equals(floorId) ||
-                        pair.otherColliderEntityId.Equals(floorId) ||
-                        // The glass counts with the bed: both are a body resting against the
-                        // world, and neither is two animals meeting, which is the distinction the
-                        // split exists to make. The scan is null in every box.
-                        IsWall(wallIds, pair.colliderEntityId) ||
-                        IsWall(wallIds, pair.otherColliderEntityId))
+                    for (int j = 0; j < count; j++)
                     {
-                        floorPairs++;
-                    }
-                    else
-                    {
-                        pairs++;
+                        if (header.GetContactPair(j).isCollisionStay) headerPersistent++;
                     }
                 }
+                else
+                {
+                    for (int j = 0; j < count; j++)
+                    {
+                        ContactPair pair = header.GetContactPair(j);
+
+                        if (pair.colliderEntityId.Equals(floorId) ||
+                            pair.otherColliderEntityId.Equals(floorId) ||
+                            // The glass counts with the bed: both are a body resting against the
+                            // world, and neither is two animals meeting, which is the distinction
+                            // the split exists to make. The scan is null in every box.
+                            IsWall(wallIds, pair.colliderEntityId) ||
+                            IsWall(wallIds, pair.otherColliderEntityId))
+                        {
+                            floorPairs++;
+                        }
+                        else
+                        {
+                            headerPairs++;
+                            if (pair.isCollisionStay) headerPersistent++;
+                        }
+                    }
+                }
+
+                if (headerPairs == 0) continue;
+
+                pairs += headerPairs;
+                persistentPairs += headerPersistent;
+                if (jointed) jointedPairs += headerPairs;
+
+                // The step's touching bodies, as creatures rather than as links: a four-part
+                // animal lying across another is one body touching, not four. Counted here and
+                // summed once the solver has returned — see CloseContactStep.
+                if (knownBody) _touchingThisStep[a.Creature] = 0;
+                if (knownOther) _touchingThisStep[b.Creature] = 0;
             }
 
             if (pairs != 0) System.Threading.Interlocked.Add(ref _contactPairs, pairs);
             if (floorPairs != 0) System.Threading.Interlocked.Add(ref _floorContactPairs, floorPairs);
+            if (jointedPairs != 0)
+                System.Threading.Interlocked.Add(ref _contactPairsJointed, jointedPairs);
+            if (persistentPairs != 0)
+                System.Threading.Interlocked.Add(ref _contactPairsPersistent, persistentPairs);
         }
+
+        /// <summary>
+        /// Adds the step's distinct touching bodies to <see cref="ContactBodies"/> and empties the
+        /// step's set. Called on the main thread, immediately after <c>Physics.Simulate</c>.
+        /// </summary>
+        /// <remarks>
+        /// The contact event can be raised several times in one step and on several threads, so
+        /// the distinct count cannot be taken inside the callback. It is taken here, where the
+        /// solver has returned and every one of the step's reports is in — and where the count is
+        /// the number of bodies that touched anything this step.
+        /// </remarks>
+        private void CloseContactStep()
+        {
+            int touching = _touchingThisStep.Count;
+
+            if (touching == 0) return;
+
+            _contactBodiesTotal += touching;
+            _touchingThisStep.Clear();
+        }
+
+        /// <summary>Takes a dying body's links out of the contact index.</summary>
+        /// <remarks>
+        /// Called with the articulation still alive, because a destroyed object cannot be asked
+        /// its entity id. Nothing to do in a tiled world, where the index was never filled.
+        /// </remarks>
+        private void ForgetContactBody(Body body)
+        {
+            if (_contactBodies.IsEmpty) return;
+
+            ArticulationBody[] links = body.Instance.Bodies;
+
+            for (int b = 0; b < links.Length; b++)
+            {
+                if (links[b] != null) _contactBodies.TryRemove(links[b].GetEntityId(), out _);
+            }
+        }
+
+        /// <summary>One link's creature and whether that creature has a joint.</summary>
+        /// <remarks>
+        /// Jointed is <c>CreatureInstance.TotalDof &gt; 0</c>, which is the same test the report's
+        /// <c>jointed</c> column and the speed split use, so <c>pairs jnt %</c> cannot be a
+        /// percentage of a different population from the one the column beside it counts.
+        /// </remarks>
+        private readonly struct ContactBody
+        {
+            public ContactBody(long creature, bool jointed)
+            {
+                Creature = creature;
+                Jointed = jointed;
+            }
+
+            public readonly long Creature;
+            public readonly bool Jointed;
+        }
+
+        /// <summary>Every living link, by the entity id the contact report names it with.</summary>
+        /// <remarks>
+        /// Concurrent because the callback runs on worker threads while the main thread may not
+        /// yet have finished the step that built or destroyed a body; a plain dictionary read
+        /// under that is a torn read that no test would ever show. Filled in <see cref="Build"/>
+        /// beside <c>providesContacts</c>, which is the one place a body is given to the solver,
+        /// and emptied where a body is destroyed. Empty in a tiled world, where the event is not
+        /// subscribed.
+        /// </remarks>
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<EntityId, ContactBody>
+            _contactBodies =
+                new System.Collections.Concurrent.ConcurrentDictionary<EntityId, ContactBody>();
+
+        /// <summary>The creatures that touched something this physics step. A set.</summary>
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<long, byte>
+            _touchingThisStep = new System.Collections.Concurrent.ConcurrentDictionary<long, byte>();
 
         private long _contactPairs;
         private long _floorContactPairs;
+        private long _contactPairsJointed;
+        private long _contactPairsPersistent;
+        private long _contactBodiesTotal;
 
         /// <summary>The sea bed's collider id, cached for the contact callback.</summary>
         /// <remarks>
@@ -973,6 +1108,38 @@ namespace Evosim.Sim
         /// (CLAUDE.md's lineage-dissection gotcha).
         /// </remarks>
         public long FloorContactPairs => System.Threading.Interlocked.Read(ref _floorContactPairs);
+
+        /// <summary>
+        /// Contact pairs with a jointed body on at least one side, running total. 0 unless shared.
+        /// </summary>
+        /// <remarks>
+        /// Read against <see cref="ContactPairs"/> and not on its own — the share is the reading,
+        /// and the share is what says whether a rising pair count is the jointed bodies or the
+        /// crowd. A world whose jointed count is flat while this share climbs is round 41b's
+        /// question (<c>logbook/specs/contact-instrument-spec.md</c>).
+        /// </remarks>
+        public long ContactPairsJointed =>
+            System.Threading.Interlocked.Read(ref _contactPairsJointed);
+
+        /// <summary>
+        /// Contact pairs that were already touching at the previous physics step, running total.
+        /// </summary>
+        /// <remarks>
+        /// The engine's own <c>isCollisionStay</c>, so a pair is stuck by PhysX's definition
+        /// rather than by a set this class keeps. Against <see cref="ContactPairs"/> it separates
+        /// a crowd brushing past itself from bodies wedged together.
+        /// </remarks>
+        public long ContactPairsPersistent =>
+            System.Threading.Interlocked.Read(ref _contactPairsPersistent);
+
+        /// <summary>
+        /// Distinct living bodies in a creature-creature pair, summed over physics steps.
+        /// </summary>
+        /// <remarks>
+        /// Per step it is the touching count, so over a window it divides by the window's steps
+        /// into the mean number of bodies touching anything at an instant. Creatures, not links.
+        /// </remarks>
+        public long ContactBodies => _contactBodiesTotal;
 
         // -------------------------------------------------------------- where the bodies are, flat
 
@@ -1333,6 +1500,11 @@ namespace Evosim.Sim
             long physicsStarted = Stopwatch.GetTimestamp();
             Physics.Simulate(FixedDt);
             _physicsTicks += Stopwatch.GetTimestamp() - physicsStarted;
+
+            // The contact instrument's one main-thread line: every report for this step has
+            // arrived, so the step's distinct touching bodies can be counted and the set emptied.
+            // It reads what the callback wrote and writes nothing a body will read back.
+            if (_countingContacts) CloseContactStep();
 
             // D077. Immediately after the solver, so nothing ever reads a position outside the
             // box: the ring is periodic and a body that has crossed a face is on the other side
@@ -2799,6 +2971,12 @@ namespace Evosim.Sim
                 DriveImpulsesLimited += body.Driver.DrainImpulsesLimited();
 
                 if (body.Tile >= 0) _freeTiles.Push(body.Tile);
+
+                // Before the articulation is destroyed, while its links can still be asked their
+                // entity ids. A left-behind entry would name a dead creature, and the engine
+                // reuses an entity id, so the next body to take it would be counted as this one.
+                ForgetContactBody(body);
+
                 body.Instance.Destroy();
                 _bodies.Remove(id);
             }
@@ -2930,10 +3108,20 @@ namespace Evosim.Sim
             // would read zero anyway.
             if (Volume != null)
             {
+                // And the link-to-creature index the contact instrument reads, filled here for
+                // the same reason the flag is set here: this is the one place a body is handed to
+                // the solver, so a link the report can name is a link this loop has seen. The
+                // jointedness is the creature's and is fixed for its life, so it is stored once
+                // rather than asked of the phenotype on every pair.
+                bool jointedBody = instance.TotalDof > 0;
+
                 for (int b = 0; b < instance.Bodies.Length; b++)
                 {
                     Collider collider = instance.Bodies[b].GetComponent<Collider>();
                     if (collider != null) collider.providesContacts = true;
+
+                    _contactBodies[instance.Bodies[b].GetEntityId()] =
+                        new ContactBody(creature.Id, jointedBody);
                 }
             }
 
@@ -2965,7 +3153,11 @@ namespace Evosim.Sim
                 _countingContacts = false;
             }
 
-            foreach (KeyValuePair<long, Body> entry in _bodies) entry.Value.Instance.Destroy();
+            foreach (KeyValuePair<long, Body> entry in _bodies)
+            {
+                ForgetContactBody(entry.Value);
+                entry.Value.Instance.Destroy();
+            }
 
             // The bed goes with them. It is a GameObject in a scene that outlives this object —
             // the editor harnesses build several worlds in one process — and a leaked floor would
@@ -2986,6 +3178,8 @@ namespace Evosim.Sim
             _instances.Clear();
             _instanceIds.Clear();
             _order.Clear();
+            _contactBodies.Clear();
+            _touchingThisStep.Clear();
             _freeTiles.Clear();
             _nextTile = 0;
             _reconciledAt = -1;
