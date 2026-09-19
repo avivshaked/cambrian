@@ -81,7 +81,16 @@ with both rules on, pre-registered after 41d's read: the expected hash from a sm
 worker refreshed from main after the merge, the reads in the spec's §5. Round 41d's first
 reads at 5,000 s: seed 2 passes every clause it can be read on; seeds 1 and 3 read 1,172 and
 1,209 alive, E1's band failed high with three quarters of the bodies jointed, and E9 and
-E10 hold in all three. **Seed 2 is the watch item**: `pairs/body` by
+E10 hold in all three. **The owner ruled at 21:40 on 2026-09-19 ("sounds good. proceed"): round 41d runs to 15,000 s
+and stops.** Each seed is stopped as `manual-futility` under 0108's V5 at its 15,000 s sample
+by a detached stopper (`scratch/r41/stop-d-15k.ps1`, log `scratch/logs/r41d-stop15k.out`),
+the queue was killed at 21:46 so seeds 4 and 5 never launch, and the round is read at
+15,000 s as a short round: E9 is already past its 1.0 line in seeds 1 and 2 (1.5 and 1.4
+pairs a body at 12,100 and 12,900 s) and the pace is 0.14 to 0.19x, so the wall would have
+censored the seeds near 20,000 s. The morning's work: the 15,000 s reads and pictures, the
+stop written into 0108, the branch merged, workers refreshed, a smoke on main for round
+41e's hash, round 41e's pre-registration (0109) for the owner's yes, then the queue.
+**Seed 2 was the watch item**: `pairs/body` by
 thousand-second window 0.05, 0.06, 0.09, 0.20, 0.35, 0.47 from 4,000 to 10,000 s, the rise
 slowing (2.3x, 1.8x, 1.3x) and still under E9's 0.5 line, the pace 0.34x to 0.16x over the
 same windows; the probe at 8,000 s reads bodies of three to five parts folding on
