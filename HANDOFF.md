@@ -19,7 +19,24 @@ The rate had been sized for a fifth of 11,000 units; four times the rate puts th
 near a fifth of 3,000. The eaters had barely founded (9, 6 and 0 inherited), read as a
 crowd a fifth of round 40's supplying a fifth the mutants, a reading the relaunch tests
 under E5. E1 to E8 stand unchanged, E4's band included. `runs/r41-s1..3` are kept and not
-read further. **The pace, read at 01:10 on 2026-09-19, and the reason:** seeds 1 and 3 run at 0.22 to
+read further. **Round 41b stopped as futile at 02:55 on 2026-09-19 (seeds 1 to 3 at 5,600, 7,900 and
+6,400 s; the queue killed before seeds 4 and 5).** Not for the joints alone. The pace fell
+from 1.0x at 3,000 s to 0.14 to 0.18x by 02:40 with the count flat near 800 to 1,000, and
+the wall split says why: physics rose from a quarter to half the wall on **contact
+pairs**, cumulative `contactPairs` growing by 150 to 390 million per 1,000 s in seeds 2
+and 1 against round 40's 0.1 to 0.5 million at 2,400 bodies, a thousandfold, and doubling
+every thousand seconds. Seed 2 with 90 jointed bodies showed it as much as seed 1 with
+630, so the joints are a cost on top and not the cause. Every seed passed E4's snow read
+at 5,000 s (0.20 to 0.23 of the budget) before the stop, so the remineralisation number
+stands; the eaters were 11, 0 and 2 inherited at the stop, unread. The arms used 1.15
+cores each (measured over a minute), so the pace was the simulation's own. Candidate
+causes, unread at the stop: bodies at full adult size in the film (body fraction 0.98,
+where round 40's crowd was juveniles at adult scale 0.30), the placer's reservation
+against grown bodies, `crowded` rising 20 to 99 a window; a corpse lingers about 3,700 s
+until its joules fall under 1e-6 (1,600 standing, as in round 40; a cost, not the cause).
+The diagnosis is the morning's first job, with `positions-read.py`'s nearest-neighbour
+column and a reconstructed frame of seed 2 at 7,000 s (`scratch/snaps/r41b-s2/`).
+**The pace, read at 01:10 on 2026-09-19, and the reason:** seeds 1 and 3 run at 0.22 to
 0.26 times real time and falling, seed 2 at 0.42, with physics at a third to a half of
 the wall where round 40 gave it a fifth. Under this economy the joint is nearly free (a
 leaf's tissue is 0.38 J, growth draws no field, the link earns half a leaf's light, the
