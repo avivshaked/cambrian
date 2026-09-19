@@ -1980,7 +1980,14 @@ namespace Evosim.Core
             for (int i = 0; i < _living.Count; i++)
             {
                 Organism creature = _living[i];
-                Field.Contribute(creature.HeightY, creature.Phenotype.TotalLitArea, creature.Patch);
+                // D099's cap, and the same number Metabolism bills on below. A body's shadow is
+                // what it earns on, so the two have to be one quantity: shade it casts but does
+                // not collect would be light destroyed, and light it collects but does not cast
+                // would be light created, and the audit would see either.
+                Field.Contribute(
+                    creature.HeightY,
+                    creature.Phenotype.EffectiveLitArea(Config.LightSilhouetteCap),
+                    creature.Patch);
             }
             Field.Solve();
 

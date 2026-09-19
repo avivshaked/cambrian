@@ -600,6 +600,10 @@ symmetry (1a, 1b, 1d) and segmentation (1c)."* Widening one boolean to three cos
 **`terminalOnly`** gives differentiated extremities — per [K12 §2.1, p.3], it *"can be
 used to represent structures appearing at the end of chains or repeating units."*
 
+It says when an edge fires. It does not say how often its child may be entered.
+`recursiveLimit` binds a terminal edge as it binds an ordinary one (D099, 2026-09-19), and
+§4.2 states the rule.
+
 ### 4.2 Development (genotype → phenotype)
 
 Depth-first traversal from the root, emitting parts in **pre-order** so a part's parent
@@ -610,13 +614,24 @@ forward pass over the part list correct by construction.
 may occur along one root-to-leaf path. Traversal keeps a per-node occurrence count for the
 current path, and:
 
-- a **non-terminal** edge into node *c* is followed while `occurrences[c] < recursiveLimit[c]`;
+- an edge into node *c* is followed while `occurrences[c] < recursiveLimit[c]`;
 - a node's recursion is **spent** when no non-terminal edge from it can still be followed;
 - a **`terminalOnly`** edge is followed only once its source node's recursion is spent.
 
 So a self-loop with `recursiveLimit = 5` yields a five-segment spine, and a `terminalOnly`
 edge attaches one differentiated extremity at the tip of that chain rather than one per
 segment.
+
+**The limit binds a `terminalOnly` edge too** (D099, 2026-09-19). Terminal says *when* an
+edge fires. It never said how often its child may be entered. Until this the occurrence
+count was asked of a non-terminal edge only. A terminal self-edge on a node of limit 1
+therefore unfolded all the way to the depth cap. Round 41c grew a sixteen-part ball from a
+one-part plan and earned sixteen parts' light out of one shadow (logbook/0107). Ask the
+limit of every edge and such a self-edge grows nothing past the node itself, and that is
+what a terminal extremity is for. Nothing else moves: a non-terminal self-edge still lays
+down its segments, and a terminal edge to another node still fires once at the tip. A
+stored genome develops as the rule now says; recorded runs replay under their own builds,
+as always.
 
 > Draft 3 said only *"cycle traversal decrements a per-node counter; at zero, only
 > `terminalOnly` edges are followed."* Read literally that makes a node with
@@ -1369,6 +1384,18 @@ Three properties are load-bearing:
    number a creature earns on is the same number it denies to whatever is beneath it. Nothing can
    collect light it does not also block.
 
+**A body's claim is capped at its own silhouette** (D099, 2026-09-19, `RunConfig.LightSilhouetteCap`,
+`EVOSIM_SILHOUETTE`). Property 3 holds part by part and did not hold body by body. Summing the
+parts counts a square metre once for every part standing in it, so a body folded in on itself
+billed the sun for surface no light could reach. Round 41c is the case: nine and sixteen links
+knotted into a ball earning sixteen links' worth out of one shadow, every pair of them in contact
+(logbook/0107). The cap is the same Cauchy formula applied to the whole body. Its silhouette is a
+quarter of the surface of the convex hull of its parts, and both what it earns and what it shades
+are multiplied by `min(1, silhouette / summed lit area)`. Both sides or neither, so a body denies
+below it what it collects. A body laid out in the open is untouched: a one-part box reads hull
+equal to lit area to six decimals, and the factor is 1. Off by default, because every
+configuration on disk was written before it and would otherwise describe a world it never ran.
+
 **The measured transition.** With attenuation 1/e at 12 m, a 400 m² aperture, and default cell
 upkeep, three seeds each over 20,000 s of world:
 
@@ -2119,6 +2146,7 @@ without reaching `RunConfig.Hash()` is two different experiments filed under one
 | Surface irradiance, attenuation depth | `RunConfig.Light` | How much energy enters the world at all, and how deep it reaches |
 | Photosynthetic efficiency | `PhotosyntheticCell.Efficiency` | Joules per watt of light per m² of lit area |
 | World aperture | `RunConfig.WorldAreaSquareMetres` | Total watts arriving — the carrying capacity (§5A.2b) |
+| Silhouette cap | `RunConfig.LightSilhouetteCap` (`EVOSIM_SILHOUETTE`) | Whether a body earns and shades on its convex hull's projected area rather than on its parts summed (D099, §5A.2b). Off by default, so every recorded config replays |
 | Filter clearance rate | `AbsorptiveCell.ClearanceRate` | Water searched per m³ of tissue — what limits feeding in thin water |
 | Filter assimilation | `AbsorptiveCell.Yield` | Fraction of captured matter kept; the rest returns to the water charged (D098). 1 by default, and that is a claim, not an omission |
 | Bite rate | `ConsumerCell.BiteRate` | Joules swallowed per m³ per second — what limits feeding in rich water |

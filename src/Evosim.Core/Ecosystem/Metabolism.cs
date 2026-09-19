@@ -307,6 +307,13 @@ namespace Evosim.Core
             CellIntake intake = CellIntake.None;
             float upkeep = 0f, neural = 0f;
 
+            // D099's cap, applied part by part rather than to the body's total, because income is
+            // earned per cell and a body's cells are not all of one kind. Every part is shortened
+            // by the same factor, so a mixed body keeps the proportions its plan chose; what it
+            // loses is the square metres it never had. One with the cap off, which is every world
+            // before D099.
+            float litFactor = phenotype.LitAreaFactor(config.LightSilhouetteCap);
+
             foreach (PhenotypePart part in phenotype.Parts)
             {
                 CellType cell = config.CellTypes.Resolve(part.CellTypeId);
@@ -316,7 +323,7 @@ namespace Evosim.Core
                 var context = new CellContext(
                     seconds: seconds,
                     volume: part.Volume,
-                    litArea: part.LitArea,
+                    litArea: part.LitArea * litFactor,
                     irradiance: irradiance,
                     nutrientDensity: nutrientDensity,
                     contact: null,
