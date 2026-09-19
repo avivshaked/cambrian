@@ -974,6 +974,21 @@ actually verifying it.
   nothing else, so a dial screened on the command line has to be written into the
   launcher before the queue starts; round 41's first three seeds ran a minute on 11,000
   units and 25 J because it was not (`runs/r41mis-s*`, stopped and renamed).
+- **A terminal-only self-edge recurses to the depth cap, and a knot of parts is free light.**
+  `Developer.Expand` asks a node's recursive limit only of an edge that is not terminal-only,
+  and a terminal-only edge fires exactly when the limit is spent, so a `link` node with a
+  terminal-only edge to itself and a limit of 1 grows to `MaxDepth` 8 (nine parts with the
+  root) and a second root edge into it fills `MaxParts` 16. With a turn on the edge the chain
+  folds into a ball in which every part overlaps every other; PhysX resolves each pair on
+  every step and never separates them, so `pairs/body` climbs with the knots and `stuck %`
+  reads 100. The knot pays because a body's light income and its shadow are both the sum of
+  its parts' projected areas and a body never shades itself, and because D098 made a part
+  cost the tissue price alone. Round 41b's knots were articulated and round 41c's rigid, so
+  `pairs jnt %` reads high or low for the same cause; read `contactBodies` against
+  `contactPairs` (twenty pairs per touching creature is a body touching itself) and run
+  `scripts/overlap/` on a snapshot, which counts a snapshot's self-overlapping part pairs
+  and reproduced the physics' pairs per body in every seed (logbook/0107's last section,
+  2026-09-19). Round 40 never showed it because its economy priced every part in matter.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

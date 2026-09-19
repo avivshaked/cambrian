@@ -174,3 +174,7 @@ design/canvas/support.js
 # Local secrets (the Leonardo key, scripts/leonardo-generate.py); the commit hook blocks *.env too.
 .env
 .env.*
+
+# The self-overlap probe (scripts/overlap) builds in place, outside src/'s redirection.
+scripts/overlap/bin/
+scripts/overlap/obj/

@@ -276,3 +276,68 @@ carries. Every manifest reads `simHash 99e0bdcc…`, `coreHash 729a0de1…`, `co
 0.002 /s`, `overhead 100 J`, `matterBudget 3000`, `physics jobs 0`. The queue is
 `scratch/r41/queue-c.ps1`, detached, and seeds 4 and 5 launch as arms end. The three
 new columns are in every table from the first row.
+
+## Round 41c stopped: the knot
+
+*2026-09-19, 06:09, and written by 07:00.* The three seeds were stopped as futile at 3,300,
+3,800 and 3,400 s (`manual-futility`, `runs/r41c-s1..3`), the queue killed first so that
+seeds 4 and 5 never launched. E4 held again (the snow at 0.22 to 0.29 of the budget), both
+books closed, and the eaters were 0, 0 and 3 inherited, unread. What failed was E9, in every
+seed, and it failed the way its two-sided reading said to take seriously: the pairs high with
+the jointed share low. At the stop `pairs/body` read 2.1, 0.67 and 2.5 against the 0.05
+predicted, `pairs jnt %` read 0 in all three, and the jointed share was 1%, 0% and 18%. The
+priced joint did what it was priced to do, taking the jointed share of seed 1 from 34% at
+1,000 s to 2% at 3,000 s. The pairs rose through it. Seed 1 went from 0.02 to 0.75 over the
+same seconds, seed 3 from 0.02 to 1.24, and seed 2 from 0.01 to 0.40 with no jointed body
+at all by 3,000 s. The pace fell with them, 1.8x to 0.45x in seed 1 with the physics at 45% of the
+wall, which is round 41b's collapse a thousand seconds earlier. The night's diagnosis was
+wrong, and the instrument built to test it said so within three hours.
+
+What the pairs were took the morning. The positions rows showed no crowding: no body with
+four neighbours inside a metre at any second, the nearest-neighbour spacing wider than round
+40's, and the reconstructed frame of seed 1 at 3,000 s a scattered crowd in the top third of
+the tank. The touching count told the rest. The instrument's third field counts the
+creatures in any contact per step, and it stayed at fifty to seventy while the pairs went
+from twenty-five to fifteen hundred, so a touching creature was making twenty pairs at
+once, which two bodies in the water cannot do. Bodies were touching themselves. A probe
+built in Core that morning (`scripts/overlap/`, an Opus subagent's work) develops every genome
+in a snapshot and counts the pairs of parts, other than parent and child, whose boxes
+intersect. Its count per living body is the physics' count. Seed 3 at 1,000, 2,000 and
+3,000 s reads 0.013, 0.056 and 1.35 self-overlapping pairs a body against the table's 0.022,
+0.082 and 1.24. Seed 1 at 3,000 s reads 0.90 against 0.75, and seed 2 0.06 against 0.09.
+Round 41b seed 1 at 5,000 s, the round the night was stopped on, reads 7.5 against the 7.6
+the table gave.
+
+The pairs belong to bodies of nine and sixteen parts, and those two numbers are the
+developer's. The genome is two nodes: a photosynthetic root and a `link` node carrying a
+terminal-only edge to itself with a recursive limit of 1 and a turn of about a hundred
+degrees. `Developer.Expand` checks a node's recursive limit only on an edge that is not
+terminal-only, and a terminal-only edge fires once the limit is spent. A terminal-only
+self-edge is therefore followed until the depth cap of 8. The root and eight links are
+nine parts, and a second root edge into the same node adds seven more up to the part cap of
+16. The turn folds the chain back through itself, and the developed body is a knot. In
+seed 3's largest, every one of sixteen centres lies within 0.17 m of the root with
+half-extents near 0.1 m, so every part but its own parent's overlaps every other: 103 pairs
+in one body, 105 in a body that fills the cap cleanly. PhysX resolves each such pair on every
+step and never separates it, which is `stuck %` at 100. The joint was never in it: round
+41b's knots were articulated because the joint was free, round 41c's are rigid because it
+was priced, and the physics pays the same for either.
+
+Why a knot spreads is the economy this entry pre-registered. A body earns light on the sum
+of its parts' projected areas and shades what is below it by the same sum, the rule that
+keeps shading self-consistent, and a body's own parts never shade each other. Sixteen
+parts folded into a 0.2 m ball collect sixteen areas of light from one point, a link at half
+a leaf's rate, and under D098 they cost the tissue price alone, 0.38 J a body, with growth
+off the field. Round 40 priced every part in matter at conception and again as it grew, and
+its bodies evolved down to half their founding size; this world made parts free and
+evolution found the fold by 2,000 s in every seed. The count of nine- and sixteen-part
+bodies is the curve of the collapse: 2 of 768 in round 41b seed 1 at 3,000 s and 209 of 814
+at 5,000 s. What round 41 asked, the crowd the matter builds and the water it regenerates, it
+answered twice (E1 and E4 held in six seeds of six); what it could not reach was the eaters,
+because the world's pace went to a knot before any lineage of them founded.
+
+The rule and the fix are the owner's (`fable-propose-silhouette.md`: a body's lit area
+capped at its own silhouette, and the terminal-only edge made to respect the limit it was
+written to respect). E9 was the right prediction wrongly attributed, and it stands as an
+instrument's reading for whatever runs next. The probe stays at `scripts/overlap/`, the
+snapshot frames at `scratch/snaps/r41c-s1/`, and nothing else is read from the round.
