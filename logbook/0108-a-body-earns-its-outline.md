@@ -158,3 +158,14 @@ the question of what a joint is for, movement's prize, stays open (HANDOFF's fro
 ## Launch
 
 *Appended as the seeds launch; each with its header verified and its manifest's hashes.*
+
+*2026-09-19, 09:27 to 09:29.* Seeds 1, 2 and 3 launched on workers 2, 3 and 4, each refreshed
+from the main tree first, the queue's hash check against the smoke's `simHash 8b7653eb…`
+passing and `prereg.json` at this entry's commit (`1b5aa02`) beside the arm and beside the
+run. Every manifest reads `simHash 8b7653eb…`, `coreHash e1762ac5…`, `configHash
+630f0206`, `physicsJobWorkers 0`, `gitCommit 1b5aa02`; every config `lightSilhouetteCap
+true`, `remineralisationPerSecond 0.002`, `matterBudgetUnits 3000`, `joulesPerUnit 100`;
+every header `dt=0.01`, `silhouette on`, `idle 0.0001 W/N·m`, `remin 0.002 /s`, `overhead
+100 J`, `matterBudget 3000`, `physics jobs 0`. The queue is `scratch/r41/queue-d.ps1`,
+detached, and seeds 4 and 5 launch as arms end. The early look draws seed 1 at 3,000 and
+6,000 s from its snapshots on worker 6.
