@@ -183,6 +183,17 @@ namespace Evosim.Ledger
             sb.Append("- Parts: ").Append(body.PartCount).Append('\n');
             sb.Append("- Volume: ").Append(Format(body.TotalVolume)).Append(" m3\n");
             sb.Append("- Lit area: ").Append(Format(body.TotalLitArea)).Append(" m2\n");
+
+            // D099. Three numbers rather than one, because the difference between them is the
+            // whole of what the cap does: the parts added up, the shape they actually block the
+            // light with, and what this config bills. The third is what "Fixation at surface"
+            // above was computed on, since Metabolism.StepAt reads the same flag.
+            sb.Append("- Silhouette: ").Append(Format(body.SilhouetteArea)).Append(" m2")
+              .Append(body.SilhouetteFellBackToBox > 0 ? " (hull degenerate, box used)" : "")
+              .Append('\n');
+            sb.Append("- Lit area (capped): ")
+              .Append(Format(body.EffectiveLitArea(config.LightSilhouetteCap))).Append(" m2 (cap ")
+              .Append(config.LightSilhouetteCap ? "on" : "off").Append(")\n");
             sb.Append("- Tissue: ").Append(Format(tissue)).Append(" J\n");
             sb.Append("- Standing cost: ").Append(Format(standingWatts)).Append(" W (")
               .Append(Format(standingWatts / config.JoulesPerUnit)).Append(" units/s)\n");

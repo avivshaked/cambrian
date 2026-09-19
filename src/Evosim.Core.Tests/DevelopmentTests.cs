@@ -1,6 +1,7 @@
 using System.Linq;
 using Evosim.Core;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Evosim.Core.Tests
 {
@@ -11,6 +12,10 @@ namespace Evosim.Core.Tests
     /// </summary>
     public class DevelopmentTests
     {
+        private readonly ITestOutputHelper _output;
+
+        public DevelopmentTests(ITestOutputHelper output) => _output = output;
+
         [Fact]
         public void ASingleNodeDevelopsToOnePartAtTheOrigin()
         {
@@ -284,6 +289,168 @@ namespace Evosim.Core.Tests
             g.RootIndex = 0;
 
             Assert.Throws<System.ArgumentException>(() => Developer.Develop(g));
+        }
+
+        // ------------------------------------------------------------------ D099, 2026-09-19
+
+        [Fact]
+        public void ATerminalOnlySelfEdgeStopsAtItsOwnRecursiveLimit()
+        {
+            // 2b. Until D099 a terminal edge skipped CanEnter entirely, so a self-edge marked
+            // terminal unfolded to MaxDepth whatever its node's limit said. One node, limit 1,
+            // one terminal self-edge: the node itself and nothing else.
+            var g = new Genome();
+            MorphNode node = Fixtures.Box(recursiveLimit: 1);
+            MorphEdge terminal = Fixtures.FaceToFace(0);
+            terminal.TerminalOnly = true;
+            node.Edges.Add(terminal);
+            g.Nodes.Add(node);
+            g.RootIndex = 0;
+
+            Phenotype p = Developer.Develop(g);
+
+            Assert.Equal(1, p.PartCount);
+            Assert.Equal(0, p.MaxDepthReached);
+        }
+
+        [Fact]
+        public void ATerminalOnlySelfEdgeStillGrowsToItsLimitWhenItHasOne()
+        {
+            // The rule is the limit, not a ban: a terminal self-edge on a node that may be
+            // entered three times still lays three segments down, and stops there rather than
+            // at MaxDepth.
+            var g = new Genome();
+            MorphNode node = Fixtures.Box(recursiveLimit: 3);
+            MorphEdge terminal = Fixtures.FaceToFace(0);
+            terminal.TerminalOnly = true;
+            node.Edges.Add(terminal);
+            g.Nodes.Add(node);
+            g.RootIndex = 0;
+
+            Phenotype p = Developer.Develop(g, new DevelopmentLimits { MaxParts = 32, MaxDepth = 16 });
+
+            Assert.Equal(3, p.PartCount);
+            Assert.Equal(2, p.MaxDepthReached);
+        }
+
+        [Fact]
+        public void ANonTerminalSelfEdgeIsUntouchedByTheNewRule()
+        {
+            // The other half of 2b: nothing changes for an ordinary recursive spine, which was
+            // already asking CanEnter. Stated again here beside its terminal twin, because the
+            // two now differ only in when they fire.
+            Phenotype p = Developer.Develop(Fixtures.SelfLoopSpine(3));
+
+            Assert.Equal(3, p.PartCount);
+            Assert.Equal(2, p.MaxDepthReached);
+        }
+
+        [Theory]
+        [InlineData("knot-16-r41c-s3-1341.json", 3)]
+        [InlineData("knot-9-r41c-s3-937.json", 2)]
+        [InlineData("knot-16-jointed-r41b-s1-1632.json", 3)]
+        public void TheRecordedKnotsCollapseUnderTheNewRule(string file, int expectedParts)
+        {
+            // The three bodies round 41c and 41b were stopped on (logbook/0107), taken from
+            // their own snapshots and kept under inocula/. Each grew a ball of nine or sixteen
+            // links off a terminal-only self-edge on a node with a recursive limit of 1. Under
+            // 2b each is what its limits always said it was: a root and the one or two children
+            // its edges legitimately reach.
+            //
+            // Two, not one, where a node carries two edges to the same child or one edge with a
+            // reflection: both are ordinary edges entering a child that may be entered once.
+            Genome genome = LoadInoculum(file);
+            if (genome == null) return;
+
+            // The runs' own development limits, which are DevelopmentLimits.Default exactly:
+            // maxParts 16, maxDepth 8, minPartVolume 1e-4, maxPartVolume 1e6, minHalfExtent 0.01.
+            Phenotype p = Developer.Develop(genome, DevelopmentLimits.Default);
+
+            _output.WriteLine(
+                $"{file}: {p.PartCount} parts, lit {p.TotalLitArea:0.######} m2, " +
+                $"silhouette {p.SilhouetteArea:0.######} m2, factor {p.LitAreaFactor(true):0.####}");
+
+            Assert.Equal(expectedParts, p.PartCount);
+            Assert.False(p.WasTruncated);
+        }
+
+        [Fact]
+        public void AOnePartBoxIsAllSilhouetteAndTheCapNeverTouchesIt()
+        {
+            // 2a's own safety rail: an honest body, laid out in the open, has a hull equal to
+            // itself, so capping it changes nothing. If this ever fails the cap is a tax rather
+            // than a ceiling.
+            Phenotype p = Developer.Develop(Fixtures.SingleBox());
+
+            Assert.Equal(0, p.SilhouetteFellBackToBox);
+            Fixtures.AssertClose(p.TotalLitArea, p.SilhouetteArea, 1e-6f);
+            Assert.Equal(1f, p.LitAreaFactor(capOn: true));
+            Assert.Equal(1f, p.LitAreaFactor(capOn: false));
+            Assert.Equal(p.TotalLitArea, p.EffectiveLitArea(capOn: true));
+        }
+
+        [Fact]
+        public void ASixteenPartKnotEarnsAFractionOfWhatItsPartsAddUpTo()
+        {
+            // Sixteen boxes exactly on top of each other: sixteen parts' lit area, one part's
+            // shadow, so the factor is exactly one sixteenth. The spec asks for under 0.35 and
+            // the real round 41c knot read 0.275 under the old development rule; this states the
+            // arithmetic where it can be checked by hand.
+            // Explicit limits: the default caps depth at 8, and a knot grown down a self-edge
+            // is a chain, so sixteen segments need sixteen levels to exist at all.
+            Phenotype p = Developer.Develop(
+                Fixtures.CoincidentKnot(16), new DevelopmentLimits { MaxParts = 16, MaxDepth = 16 });
+
+            Assert.Equal(16, p.PartCount);
+            Assert.Equal(0, p.SilhouetteFellBackToBox);
+
+            float onePart = p.Parts[0].LitArea;
+            Fixtures.AssertClose(16f * onePart, p.TotalLitArea, 1e-5f);
+            Fixtures.AssertClose(onePart, p.SilhouetteArea, 1e-5f);
+
+            _output.WriteLine(
+                $"lit {p.TotalLitArea:0.######} m2, silhouette {p.SilhouetteArea:0.######} m2, " +
+                $"factor {p.LitAreaFactor(true):0.######}");
+
+            Assert.True(p.LitAreaFactor(capOn: true) < 0.35f);
+            Fixtures.AssertClose(1f / 16f, p.LitAreaFactor(capOn: true), 1e-5f);
+            Assert.Equal(1f, p.LitAreaFactor(capOn: false));
+        }
+
+        [Fact]
+        public void AScaledBodysSilhouetteScalesWithTheSquareOfItsLength()
+        {
+            // An area, so it goes as the square — and it is carried rather than rebuilt, which
+            // is what keeps growth from paying for a hull on every step.
+            Phenotype adult = Developer.Develop(Fixtures.CoincidentKnot(4));
+            Phenotype young = adult.Scaled(0.5f);
+
+            Fixtures.AssertClose(0.25f * adult.SilhouetteArea, young.SilhouetteArea, 1e-6f);
+
+            // And the factor is scale-free, which is why a growing body is not quietly taxed
+            // more or less than its adult.
+            Fixtures.AssertClose(
+                adult.LitAreaFactor(capOn: true), young.LitAreaFactor(capOn: true), 1e-5f);
+        }
+
+        /// <summary>
+        /// A genome from <c>inocula/</c>, or null when the test is running somewhere the repo is
+        /// not laid out as expected — the same graceful skip AbsorptiveLogTests uses for its
+        /// reader script.
+        /// </summary>
+        private Genome LoadInoculum(string file)
+        {
+            string path = System.IO.Path.GetFullPath(System.IO.Path.Combine(
+                System.IO.Directory.GetCurrentDirectory(), "..", "..", "..", "..", "..",
+                "inocula", file));
+
+            if (!System.IO.File.Exists(path))
+            {
+                _output.WriteLine($"no genome at {path} — skipped");
+                return null;
+            }
+
+            return GenomeJson.Read(System.IO.File.ReadAllText(path));
         }
     }
 }

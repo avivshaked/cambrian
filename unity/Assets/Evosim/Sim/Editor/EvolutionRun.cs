@@ -137,6 +137,9 @@ namespace Evosim.Sim.EditorTools
             // The light's reach, the e-folding depth of the irradiance (D096, round 40): 12 m in
             // every round since the light model, and a hard-coded 12 until 2026-09-18.
             float lightReach = Env("EVOSIM_LIGHT_REACH", 12f);
+            // D099, round 41d: cap a body's claim on the light at its own silhouette. Off is
+            // every world before it, so every recorded launcher still describes the world it ran.
+            bool silhouetteCap = Env("EVOSIM_SILHOUETTE", 0f) > 0.5f;
             float budgetSeconds = Env("EVOSIM_SECONDS", 4000f);
             float wallMinutes = Env("EVOSIM_WALL_MINUTES", 30f);
             int reportEvery = (int)Env("EVOSIM_REPORT_EVERY", 200f);
@@ -751,6 +754,7 @@ namespace Evosim.Sim.EditorTools
             config.HorizontalMixingDiffusivity = horizontalMixing;
             config.DispersalChancePerStep = dispersalChance;
             config.PerPatchShading = patchShading;
+            config.LightSilhouetteCap = silhouetteCap;
             config.WorldAreaSquareMetres = area;
             config.WorldDepthMetres = depth;
             config.SharedSpace = sharedSpace;
@@ -944,6 +948,10 @@ namespace Evosim.Sim.EditorTools
                 " · metabolic step " + (Ecosystem.StepsPerMetabolicStep * Ecosystem.FixedDt) +
                 " s · seed " + seed + " · idle " + idle + " W/N·m · power " + minPower + "-" + maxPower +
                 " · light reach " + lightReach + " m" +
+                // D099. Beside the light it governs: with it on a body earns on its silhouette
+                // and not on the sum of its parts, which is a different world at the same
+                // irradiance, and a header that named only the irradiance would describe both.
+                " · silhouette " + (silhouetteCap ? "on" : "off") +
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
                 // D066. The current is three numbers and two switches now, not one number, and a
                 // header that named only the speed would describe five different worlds

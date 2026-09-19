@@ -65,6 +65,55 @@ namespace Evosim.Core.Tests
             return g;
         }
 
+        /// <summary>
+        /// D099's knot, in its purest form: one node with a self-edge that anchors the child's
+        /// +Y face point onto the parent's, so every segment lands exactly on top of the one
+        /// before it. <paramref name="recursiveLimit"/> parts, one silhouette.
+        /// </summary>
+        /// <remarks>
+        /// Round 41c's real knots are messier — a terminal-only self-edge fanning sixteen links
+        /// through a ball a metre across (logbook/0107) — and they cannot be rebuilt here,
+        /// because D099's own development rule stops them growing past two or three parts. This
+        /// is the same fault stated exactly: n parts' worth of surface billed to the sun out of
+        /// one part's shadow, with a factor of exactly 1/n to assert against.
+        /// </remarks>
+        public static Genome CoincidentKnot(int recursiveLimit, float half = 0.25f, string cellTypeId = null)
+        {
+            var g = new Genome();
+            MorphNode node = Box(half, JointType.Fixed, recursiveLimit);
+            if (cellTypeId != null) node.CellTypeId = cellTypeId;
+
+            node.Edges.Add(new MorphEdge
+            {
+                Child = 0,
+                ParentAnchor = new Float3(0f, 1f, 0f),
+                ChildAnchor = new Float3(0f, 1f, 0f),
+                Orientation = Quat.Identity,
+                Scale = Float3.One,
+            });
+
+            g.Nodes.Add(node);
+            g.RootIndex = 0;
+
+            // Born adult, for the reason AbsorptiveLogTests' fixtures are: a half-grown body has
+            // a different lit area, and these tests read lit area.
+            g.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 2f };
+            return g;
+        }
+
+        /// <summary>One box of <see cref="CoincidentKnot"/>'s, on its own — the knot's silhouette.</summary>
+        public static Genome SingleLeaf(float half = 0.25f, string cellTypeId = null)
+        {
+            var g = new Genome();
+            MorphNode node = Box(half);
+            if (cellTypeId != null) node.CellTypeId = cellTypeId;
+
+            g.Nodes.Add(node);
+            g.RootIndex = 0;
+            g.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 2f };
+            return g;
+        }
+
         public static void AssertClose(float expected, float actual, float tol = Tol) =>
             Assert.True(System.Math.Abs(expected - actual) <= tol,
                 $"expected {expected}, got {actual} (tolerance {tol})");

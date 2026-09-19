@@ -84,6 +84,12 @@ namespace Evosim.Core
                 parentAnchorLocal: Float3.Zero,
                 childAnchorLocal: Float3.Zero);
 
+            // D099: the body's own shadow, once the body is whole. It cannot be accumulated part
+            // by part the way lit area is — a hull is a property of the whole cloud — and it is
+            // read every metabolic step, so it is measured here and carried rather than asked
+            // for again.
+            phenotype.MeasureSilhouette();
+
             return phenotype;
         }
 
@@ -173,7 +179,17 @@ namespace Evosim.Core
             {
                 MorphEdge edge = node.Edges[e];
                 if (edge.TerminalOnly != exhausted) continue;
-                if (!exhausted && !CanEnter(genome, occurrences, edge.Child)) continue;
+
+                // D099, 2026-09-19: the recursive limit binds every edge, terminal or not. A
+                // terminal edge says *when* it fires, once the repeating part of the chain is
+                // spent; it never said the child could be entered more often than its own limit
+                // allows. Until this, a terminal-only self-edge skipped the check and unfolded to
+                // MaxDepth: round 41c grew a sixteen-part ball from a node with a limit of 1 and
+                // earned sixteen parts' light from one point (logbook/0107). With the check asked
+                // of it, such an edge grows nothing past the node itself, which is what a
+                // terminal extremity is for; a non-terminal self-edge with limit n still grows an
+                // n-segment spine, unchanged.
+                if (!CanEnter(genome, occurrences, edge.Child)) continue;
 
                 MorphNode childNode = genome.Nodes[edge.Child];
                 Float3 childScale = accumulatedScale * edge.Scale;

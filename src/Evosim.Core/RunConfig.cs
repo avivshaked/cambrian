@@ -321,6 +321,30 @@ namespace Evosim.Core
         [Tunable("world", Unit = "m")]
         public float LightLayerMetres { get; set; } = 1f;
 
+        /// <summary>
+        /// Whether a body's claim on the light is capped at its own silhouette — D099,
+        /// 2026-09-19. DESIGN.md §5A.2b.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// With it off, a creature earns on and shades with <see cref="Phenotype.TotalLitArea"/>,
+        /// the sum of its parts' quarter-surfaces, and a part standing behind another is lit as
+        /// though it stood beside it. With it on, that sum is multiplied by
+        /// <see cref="Phenotype.LitAreaFactor"/> so that neither can exceed
+        /// <see cref="Phenotype.SilhouetteArea"/>, the projected area of the whole body's convex
+        /// hull. A body laid out in the open is untouched: a one-part box's hull is the box.
+        /// </para>
+        /// <para>
+        /// <b>Off by default, and that is not indecision.</b> Round 41c was stopped on bodies of
+        /// nine and sixteen links folded into a ball, each earning sixteen parts' light from one
+        /// silhouette (logbook/0107), which is what this closes. But every config on disk was
+        /// written before it, and a default of true would make every one of them describe a world
+        /// it did not run. False replays the record to the last decimal.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public bool LightSilhouetteCap { get; set; }
+
         /// <summary>How deep the world is, metres — DESIGN.md §5A.2c.</summary>
         /// <remarks>
         /// <b>The world's first vertical bound, and it exists because detritus has to land
