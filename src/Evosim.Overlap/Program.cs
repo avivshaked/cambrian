@@ -5,6 +5,11 @@ using System.IO;
 using System.Linq;
 using Evosim.Core;
 
+// The geometry this probe was written around lives in Core now, so that the pairs it counts of
+// a snapshot and the pairs the world refuses a birth on are the same arithmetic. Aliased rather
+// than spelled out at every use, which keeps the measurement below the code it always was.
+using Obb = Evosim.Core.BoxOverlap.Obb;
+
 namespace Evosim.Scratch.Overlap
 {
     /// <summary>
@@ -131,10 +136,7 @@ namespace Evosim.Scratch.Overlap
                     if (!Obb.Intersect(boxes[i], boxes[j], out float depth)) continue;
                     row.Pairs++;
 
-                    Float3 ha = boxes[i].E, hb = boxes[j].E;
-                    Float3 smaller = ha.BoxVolume <= hb.BoxVolume ? ha : hb;
-                    float thinnest = Math.Min(Math.Abs(smaller.X), Math.Min(Math.Abs(smaller.Y), Math.Abs(smaller.Z)));
-                    if (depth > 0.10f * thinnest) row.PairsDeep++;
+                    if (depth > BoxOverlap.DepthThreshold(boxes[i], boxes[j], 0.10f)) row.PairsDeep++;
                 }
             }
 
@@ -459,110 +461,6 @@ namespace Evosim.Scratch.Overlap
             Summarise(rows, "9 or 16 parts", r => r.Parts == 9 || r.Parts == 16);
             Summarise(rows, "all", r => true);
             Console.WriteLine();
-        }
-
-        // ---------------------------------------------------------------- geometry
-
-        /// <summary>An oriented box: centre, three unit axes, half-extents.</summary>
-        private readonly struct Obb
-        {
-            public readonly Float3 C;
-            public readonly Float3 U0, U1, U2;
-            public readonly Float3 E;
-
-            private Obb(Float3 c, Float3 u0, Float3 u1, Float3 u2, Float3 e)
-            {
-                C = c; U0 = u0; U1 = u1; U2 = u2; E = e;
-            }
-
-            /// <summary>
-            /// Every shape is taken as a box of the part's half-extents — a sphere and a capsule
-            /// included, which over-states them (both are inscribed in that box).
-            /// </summary>
-            public static Obb From(PhenotypePart p)
-            {
-                Quat q = p.Rotation;
-                return new Obb(
-                    p.Position,
-                    q.Rotate(new Float3(1f, 0f, 0f)),
-                    q.Rotate(new Float3(0f, 1f, 0f)),
-                    q.Rotate(new Float3(0f, 0f, 1f)),
-                    new Float3(Math.Abs(p.HalfExtents.X), Math.Abs(p.HalfExtents.Y), Math.Abs(p.HalfExtents.Z)));
-            }
-
-            private Float3 Axis(int i) => i == 0 ? U0 : (i == 1 ? U1 : U2);
-
-            /// <summary>
-            /// Separating-axis test over the 15 candidate axes. <paramref name="depth"/> is the
-            /// least overlap found, in metres — the minimum-translation penetration.
-            /// </summary>
-            public static bool Intersect(in Obb a, in Obb b, out float depth)
-            {
-                const float Eps = 1e-6f;
-                depth = float.MaxValue;
-
-                var r = new float[3, 3];
-                var absR = new float[3, 3];
-                for (int i = 0; i < 3; i++)
-                {
-                    for (int j = 0; j < 3; j++)
-                    {
-                        r[i, j] = Float3.Dot(a.Axis(i), b.Axis(j));
-                        absR[i, j] = Math.Abs(r[i, j]) + Eps;
-                    }
-                }
-
-                Float3 d = b.C - a.C;
-                var t = new float[3] { Float3.Dot(d, a.U0), Float3.Dot(d, a.U1), Float3.Dot(d, a.U2) };
-                var ea = new float[3] { a.E.X, a.E.Y, a.E.Z };
-                var eb = new float[3] { b.E.X, b.E.Y, b.E.Z };
-
-                // A's three face normals.
-                for (int i = 0; i < 3; i++)
-                {
-                    float ra = ea[i];
-                    float rb = eb[0] * absR[i, 0] + eb[1] * absR[i, 1] + eb[2] * absR[i, 2];
-                    float over = ra + rb - Math.Abs(t[i]);
-                    if (over <= 0f) return false;
-                    if (over < depth) depth = over;
-                }
-
-                // B's three face normals.
-                for (int j = 0; j < 3; j++)
-                {
-                    float ra = ea[0] * absR[0, j] + ea[1] * absR[1, j] + ea[2] * absR[2, j];
-                    float rb = eb[j];
-                    float tj = Math.Abs(t[0] * r[0, j] + t[1] * r[1, j] + t[2] * r[2, j]);
-                    float over = ra + rb - tj;
-                    if (over <= 0f) return false;
-                    if (over < depth) depth = over;
-                }
-
-                // The nine edge-edge cross products. Their ra, rb and distance all carry a factor
-                // of the axis length, so the overlap is divided by it to come back to metres; a
-                // near-parallel pair is skipped, which is what the face axes above already cover.
-                for (int i = 0; i < 3; i++)
-                {
-                    for (int j = 0; j < 3; j++)
-                    {
-                        int i1 = (i + 1) % 3, i2 = (i + 2) % 3;
-                        int j1 = (j + 1) % 3, j2 = (j + 2) % 3;
-
-                        float ra = ea[i1] * absR[i2, j] + ea[i2] * absR[i1, j];
-                        float rb = eb[j1] * absR[i, j2] + eb[j2] * absR[i, j1];
-                        float tt = Math.Abs(t[i2] * r[i1, j] - t[i1] * r[i2, j]);
-                        float over = ra + rb - tt;
-                        if (over <= 0f) return false;
-
-                        float len = (float)Math.Sqrt(Math.Max(0f, 1f - r[i, j] * r[i, j]));
-                        if (len < 1e-4f) continue;
-                        float scaled = over / len;
-                        if (scaled < depth) depth = scaled;
-                    }
-                }
-
-                return true;
-            }
         }
     }
 }

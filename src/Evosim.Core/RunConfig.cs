@@ -41,6 +41,38 @@ namespace Evosim.Core
         [TunableGroup]
         public DevelopmentLimits Development { get; set; } = DevelopmentLimits.Default;
 
+        /// <summary>
+        /// How deeply two of a body's own parts may stand inside each other before the body is
+        /// refused at birth, as a fraction of the smaller part's thinnest half-extent. 0 is off.
+        /// The owner's ruling of 2026-09-19.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A development viability rule, like the rule that a body of no parts is a
+        /// stillbirth.</b> Round 41c grew sixteen links into a knot and round 41d sprawled
+        /// (logbook/0107): parts that are not joined to each other, buried in each other, which
+        /// PhysX resolves on every step and never separates. The owner's ruling is that the
+        /// physics of self-collision stays on and such a body is simply not born — the world
+        /// refuses the plan rather than the consequence, so what is removed is the loophole and
+        /// not the contact.
+        /// </para>
+        /// <para>
+        /// A part and its own parent are never counted: overlap at a joint is deliberate (§4.2)
+        /// and two directly jointed links never collide. See
+        /// <see cref="Phenotype.SelfOverlappingPairs"/> for the count and
+        /// <see cref="BoxOverlap"/> for the geometry, which is the arithmetic
+        /// <c>src/Evosim.Overlap</c> sized the problem with.
+        /// </para>
+        /// <para>
+        /// <b>Off by default, for <see cref="LightSilhouetteCap"/>'s reason.</b> Every config on
+        /// disk was written before this, and a default above 0 would make each of them describe a
+        /// world that refused births it did not refuse. 0 replays the record exactly: the test is
+        /// not asked at all. <c>EVOSIM_SELF_OVERLAP</c> in the header.
+        /// </para>
+        /// </remarks>
+        [Tunable("development")]
+        public float SelfOverlapDepthFraction { get; set; }
+
         /// <summary>The geometries available to parts — §4.1.</summary>
         /// <remarks>
         /// Ordered, and the order is hashed: shape mutation picks by an RNG draw, so a registry

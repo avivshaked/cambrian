@@ -335,6 +335,12 @@ namespace Evosim.Sim
             // never sampled for it — see the gather phase below.
             _accelerating = Config.FluidAccelerationCoefficient > 0f && Current != null;
 
+            // FluidConfig.WaterHoldSeconds, read once per Apply for the same reason as the line
+            // above: whether each creature samples the water once at its root and holds it, or
+            // every link samples it afresh on every step. 0 is every recorded config and is the
+            // per-link path below, left exactly as it was so that those worlds replay.
+            bool holding = Config.WaterHoldSeconds > 0f;
+
             // ---- gather (main thread): everything the solver owns, copied out
             for (int c = 0; c < creatures.Count; c++)
             {
@@ -372,11 +378,50 @@ namespace Evosim.Sim
                     // term a cheaper current would remove.
                     long waterStarted = Stopwatch.GetTimestamp();
 
-                    Float3 water = Current != null
-                        ? Current.Mode == CurrentMode.Transport
-                            ? Current.VelocityAt(where.x, where.y, where.z, ElapsedSeconds)
-                            : Current.VelocityAt(where.y, ElapsedSeconds, creature.Patch, PatchCount)
-                        : Float3.Zero;
+                    // The held path, FluidConfig.WaterHoldSeconds — one sample per body at its
+                    // root, reused by every link until the hold expires. Taken here inside the
+                    // link loop rather than before it because link 0 *is* the root and its
+                    // position has just been read, so the hold costs no extra Transform read and
+                    // sits inside the same `water` bracket, which is the same measurement.
+                    // A body that has never been sampled holds negative infinity, so the test
+                    // fires on its first Apply after it is built; a resize keeps the cache,
+                    // because a body that changed size is still in the same water.
+                    Float3 water;
+                    if (holding)
+                    {
+                        if (i == 0 &&
+                            ElapsedSeconds - creature.WaterSampledAt >= Config.WaterHoldSeconds)
+                        {
+                            creature.HeldWater = Current != null
+                                ? Current.Mode == CurrentMode.Transport
+                                    ? Current.VelocityAt(where.x, where.y, where.z, ElapsedSeconds)
+                                    : Current.VelocityAt(where.y, ElapsedSeconds, creature.Patch, PatchCount)
+                                : Float3.Zero;
+
+                            // Taken in the same breath as the velocity, so that a held body feels
+                            // one parcel of water rather than a speed from one instant and the
+                            // gradient that carries it from another.
+                            if (_accelerating)
+                            {
+                                creature.HeldWaterAcceleration = Current.AccelerationAt(
+                                    where.x, where.y, where.z, ElapsedSeconds);
+                            }
+
+                            // The world's own clock, never a wall clock: a hold keyed on real time
+                            // would make the water a function of machine load (§7).
+                            creature.WaterSampledAt = ElapsedSeconds;
+                        }
+
+                        water = creature.HeldWater;
+                    }
+                    else
+                    {
+                        water = Current != null
+                            ? Current.Mode == CurrentMode.Transport
+                                ? Current.VelocityAt(where.x, where.y, where.z, ElapsedSeconds)
+                                : Current.VelocityAt(where.y, ElapsedSeconds, creature.Patch, PatchCount)
+                            : Float3.Zero;
+                    }
 
                     _waterTicks += Stopwatch.GetTimestamp() - waterStarted;
 
@@ -410,8 +455,13 @@ namespace Evosim.Sim
                         // store below into the water phase on every run in the record.
                         long accelStarted = Stopwatch.GetTimestamp();
 
-                        Float3 acceleration =
-                            Current.AccelerationAt(where.x, where.y, where.z, ElapsedSeconds);
+                        // Held, the sample was taken at the root above and inside the same
+                        // bracket; per link, it is the call this term has always made. Everything
+                        // below stays per link — the volume, the waterline guard on this link's
+                        // own height, and both stores.
+                        Float3 acceleration = holding
+                            ? creature.HeldWaterAcceleration
+                            : Current.AccelerationAt(where.x, where.y, where.z, ElapsedSeconds);
 
                         // Guarded like the lift lookup below rather than indexed straight: a
                         // phenotype with fewer parts than the articulation has bodies is a state

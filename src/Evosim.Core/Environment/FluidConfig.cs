@@ -250,6 +250,38 @@ namespace Evosim.Core
         [Tunable("fluid")]
         public float SurfaceRestoringFraction { get; set; }
 
+        /// <summary>
+        /// How long a creature holds one sample of the water before taking another, seconds. 0 is
+        /// every run on file: the water is sampled afresh at every link on every physics step.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>It is a cost, not a force.</b> The profile of 2026-09-19
+        /// (<c>logbook/specs/harness-profile-spec.md</c> §6) measured the gather loop's water
+        /// samples — <see cref="CurrentField.VelocityAt(float, float, float, double)"/> at every
+        /// link on every step, and <see cref="CurrentField.AccelerationAt(float, float, float, double)"/>
+        /// beside it when <see cref="FluidAccelerationCoefficient"/> is on — at 45% of the fluid
+        /// pass and about 16% of the whole wall clock. Above 0 the water is sampled once per
+        /// creature, at its root link, and every link of that creature uses the held values until
+        /// the hold expires.
+        /// </para>
+        /// <para>
+        /// <b>What it costs in physics is the spread of the body across the field.</b> A body is
+        /// tenths of a metre and the current varies on the scale of the box, so the water at a limb
+        /// and the water at the root differ by little; the hold trades that difference, and the
+        /// staleness within one metabolic step, for the samples. The ruling (owner, 2026-09-19)
+        /// is one sample per body per metabolic step.
+        /// </para>
+        /// <para>
+        /// ⚠ Default 0, so every recorded config replays the world it ran: this changes a per-step
+        /// force, and any value above 0 is a new chaotic realisation of every seed (CLAUDE.md's
+        /// butterfly rule). <c>EVOSIM_WATER_HOLD</c> in the header, which reads
+        /// <c>water held 0.5 s</c> or <c>water per link</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("fluid", Unit = "s")]
+        public float WaterHoldSeconds { get; set; }
+
         public static FluidConfig DragOnly => new FluidConfig();
 
         public FluidConfig Clone() => new FluidConfig
@@ -262,6 +294,7 @@ namespace Evosim.Core
             TissueExcessDensity = TissueExcessDensity,
             NeutralBodyVolume = NeutralBodyVolume,
             SurfaceRestoringFraction = SurfaceRestoringFraction,
+            WaterHoldSeconds = WaterHoldSeconds,
         };
 
         public override string ToString() =>

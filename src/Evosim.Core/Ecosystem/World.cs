@@ -3029,10 +3029,11 @@ namespace Evosim.Core
                 parent.GenerationDepth + 1, reserve, tissue, childHeight, parent,
                 patch: childPatch, adultPhenotype: body, adultTissue: adultTissue);
 
-            // D077. The reservation belongs to a creature now, or to nobody. Admit cannot
-            // actually refuse a body with parts, so the Release below is a belt rather than a
-            // brace — and it is the branch that keeps the invariant true by construction instead
-            // of by reading Admit.
+            // D077. The reservation belongs to a creature now, or to nobody. Admit could not
+            // refuse a body with parts until the self-overlap rule of 2026-09-19, and this
+            // branch was written as a belt rather than a brace for that reason; it is now the
+            // path a refused knot actually takes, which is what keeping the invariant true by
+            // construction rather than by reading Admit is worth.
             if (shared)
             {
                 if (child != null) Placement.Commit(child.Id);
@@ -3304,14 +3305,34 @@ namespace Evosim.Core
             }
         }
 
-        /// <summary>Stillbirths — genomes that developed into no parts at all.</summary>
+        /// <summary>Stillbirths — genomes development refused, for any of its reasons.</summary>
         /// <remarks>
         /// Worth counting rather than discarding silently. A lineage reaches this by drifting off
         /// either end of the size range (§4.5, <see cref="DevelopmentLimits.MaxPartVolume"/>), so
         /// a rising stillbirth rate says mutation is pushing bodies past what development will
         /// build — which looks, in a population count, exactly like ordinary mortality.
+        ///
+        /// Every such body until 2026-09-19 had no parts at all. Since the owner's ruling of that
+        /// day a body grown into itself is refused too, and this is the total of both;
+        /// <see cref="SelfOverlapStillbirths"/> says how many were the second, and reads 0 with
+        /// <see cref="RunConfig.SelfOverlapDepthFraction"/> off, which is every run on file.
         /// </remarks>
         public long Stillbirths { get; private set; }
+
+        /// <summary>
+        /// Stillbirths refused for standing inside themselves — the owner's ruling of 2026-09-19.
+        /// Included in <see cref="Stillbirths"/>, and 0 unless
+        /// <see cref="RunConfig.SelfOverlapDepthFraction"/> is above 0.
+        /// </summary>
+        /// <remarks>
+        /// Counted apart as well as together because the two say different things about what
+        /// mutation is doing. A body of no parts is a lineage shrinking out of existence; a body
+        /// grown into itself is a plan that folds, which is what round 41c's knots and round
+        /// 41d's sprawl were (logbook/0107). A rising share of this one is the rule biting, and
+        /// whether it bites hard enough to be selection rather than hygiene is read from it
+        /// against <see cref="Births"/> in the same window.
+        /// </remarks>
+        public long SelfOverlapStillbirths { get; private set; }
 
         /// <summary>
         /// The body a parentless creature is born with — fable-propose-growth.md rule 7.
@@ -3433,7 +3454,22 @@ namespace Evosim.Core
             int generationDepth, float energy, float tissue, float heightY, Organism parent,
             int patch, Phenotype adultPhenotype, float adultTissue)
         {
-            if (phenotype.PartCount == 0)
+            // The owner's ruling of 2026-09-19: a body that would grow into itself is not born.
+            // Asked here rather than at each of the three call sites so that a founder and an
+            // inoculant are held to it exactly as a child is — Admit is the one door all three
+            // come through — and so that the refusal settles down the same path a body of no
+            // parts already settles down, with both books closing as they always did.
+            //
+            // The test is scale-free (BoxOverlap.DepthThreshold), so asking it of the newborn is
+            // asking it of the adult it will grow into.
+            bool selfOverlapping =
+                phenotype.PartCount > 0 &&
+                Config.SelfOverlapDepthFraction > 0f &&
+                phenotype.SelfOverlappingPairs(Config.SelfOverlapDepthFraction) > 0;
+
+            if (selfOverlapping) SelfOverlapStillbirths++;
+
+            if (phenotype.PartCount == 0 || selfOverlapping)
             {
                 Stillbirths++;
 
