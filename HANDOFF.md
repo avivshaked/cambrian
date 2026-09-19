@@ -36,16 +36,24 @@ self-overlapping part pairs) reproduces the physics' pairs per body in every see
 silhouette, and a terminal-only edge keeps the recursive limit. The ledger and the probe
 sized it first: capped, the sixteen-part knot reads 0.31 m² against the leaf's 0.36 and
 0.19 W net against 0.84 at 5 m, so every knot loses from birth and no one-part body is
-touched. **The build is underway** (`logbook/specs/silhouette-spec.md`; an Opus subagent on
-branch `silhouette` in `scratch/wt-silhouette`): the hull in Core, `LightSilhouetteCap`
-(`EVOSIM_SILHOUETTE`, off by default, on from round 41d), the developer's `CanEnter` on
-every edge, the ledger's capped area, the knots under `inocula/`. Then a 300 s smoke, the
-dt 0.02 screen of seed 1 to 5,000 s (`pairs/body` under 0.05, no body at a part cap, pace
-above 1x), and round 41d: round 41c's world with the cap on and the joint's price back at
-0.0001, pre-registered as 0108 with E1 to E9. Nothing runs; workers 2, 3 and 4 are refreshed
-and idle, their locks cleared. The three knots are pictured in 0107 (solo mode,
-`scratch/r41/knot-shots.ps1`), and the owner's idea of a video story of the knot is in the
-queue below.
+touched. **D099 is built, merged (`7f89abc`) and running as round 41d (launched 09:27 to 09:29 on
+2026-09-19; logbook/0108, pre-registered at `1b5aa02`).** The build: the hull in Core
+(`Geometry/ConvexHull`, a face ceiling with a box fallback that no recorded body takes),
+`LightSilhouetteCap` (`EVOSIM_SILHOUETTE`, header `silhouette on`, off by default),
+`Developer.Expand` asking the limit of every edge, the ledger's capped area, the probe at
+`src/Evosim.Overlap` (`scripts/overlap/run.ps1`), 748 of 749 tests with the one failure a
+timing test that passes alone. The smoke and the dt 0.02 screen of seed 1 to 5,000 s are in
+0108: no body at a part cap, self-overlapping pairs a body 0.07 to 0.11, `pairs/body` 0.09 to
+0.20, the pace 0.9x at 1,050 bodies. Round 41d is round 41c's world with the cap on and the
+joint's price back at 0.0001: seeds 1 to 3 on workers 2, 3 and 4 (`simHash 8b7653eb…`,
+`coreHash e1762ac5…`, `configHash 630f0206`), the queue `scratch/r41/queue-d.ps1` detached,
+seeds 4 and 5 as arms end. Fail-fast reads: E9's fold signature (`pairs/body` doubling in
+two consecutive thousand-second windows past 0.5 stops the seed), E10 on the 5,000 s
+snapshots with the probe, the snow at 5,000 s in E4's band, the eaters by 10,000 s, a seed
+past 4,000 bodies stopped. The early look draws seed 1 at 3,000 and 6,000 s from its
+snapshots on worker 6 (`scratch/r41/snap-early-d.sh`). The three knots are pictured in 0107
+(solo mode, `scratch/r41/knot-shots.ps1`) and kept under `inocula/`, and the owner's idea of
+a video story of the knot is in the queue below.**
 
 **Round 41b stopped as futile at 02:55 on 2026-09-19 (seeds 1 to 3 at 5,600, 7,900 and
 6,400 s; the queue killed before seeds 4 and 5).** Not for the joints alone. The pace fell
