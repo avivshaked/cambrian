@@ -631,7 +631,11 @@ actually verifying it.
   `core.autocrlf=true` hides from `git diff` completely. So two checkouts of the same commit can
   carry different `simHash`es, and a hash cannot be reconstructed from history with
   `git archive` (it applies the checkout conversion; `git show` does not). Compare a recorded
-  `simHash` against a tree on disk, never against a commit.
+  `simHash` against a tree on disk, never against a commit. **A worktree is another checkout**:
+  round 41c's smoke on a worker mirrored from `scratch/wt-contacts` recorded `73902d7b…`, main's
+  checkout of the merged commit hashes `99e0bdcc…`, and the two trees differ by carriage returns
+  alone (2026-09-19, one refused launch). Take a round's expected hash from a smoke or a
+  `run-arm.ps1` printout on a worker refreshed from the tree the queue will refresh from.
 - **Anything under `Assets/Evosim` is simulation source, whatever it does.** The theatre spent one
   commit inside it and made every earlier recording unreplayable, because a HUD label is a `.cs`
   file under that root and `simHash` cannot tell a viewer from a solver. Presentation, tooling and

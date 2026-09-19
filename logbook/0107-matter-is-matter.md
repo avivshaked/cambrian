@@ -260,3 +260,19 @@ this entry's round 41b commit (`af39b13`) beside the arm and the run. Every mani
 100`, `joulesPerUnit 100`; every header `dt=0.01`, `remin 0.002 /s`, `tissue 500 J/m3`,
 `overhead 100 J`, `matterBudget 3000`. The queue is `scratch/r41/queue-b.ps1`, detached,
 and seeds 4 and 5 launch as arms end.
+
+*2026-09-19, 05:21 to 05:22.* Round 41c's seeds 1, 2 and 3 launched on workers 2, 3 and 4,
+each refreshed from the main tree first, `prereg.json` at this entry's round 41c commit
+(`12934c1`) beside the arm and the run. The first start, at 05:17, was refused by the
+hash check: the queue expected the contact smoke's `simHash 73902d7b…`, which was
+recorded on worker 6 from the worktree's checkout, and main's checkout of the merged
+commit hashes `99e0bdcc…`, the difference being carriage returns in ten files and
+nothing else (`diff --strip-trailing-cr` reads the two trees as identical). The queue was
+restarted on the hash `run-arm.ps1` printed for worker 2, which every manifest now
+carries. Every manifest reads `simHash 99e0bdcc…`, `coreHash 729a0de1…`, `configHash
+83fd8964`, `physicsJobWorkers 0`, `gitCommit ffde4db`; every config
+`idleWattsPerNewtonMetre 0.02`, `remineralisationPerSecond 0.002`, `matterBudgetUnits
+3000`, `perOffspringOverheadJoules 100`; every header `dt=0.01`, `idle 0.02 W/N·m`, `remin
+0.002 /s`, `overhead 100 J`, `matterBudget 3000`, `physics jobs 0`. The queue is
+`scratch/r41/queue-c.ps1`, detached, and seeds 4 and 5 launch as arms end. The three
+new columns are in every table from the first row.

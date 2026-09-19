@@ -19,13 +19,20 @@ The rate had been sized for a fifth of 11,000 units; four times the rate puts th
 near a fifth of 3,000. The eaters had barely founded (9, 6 and 0 inherited), read as a
 crowd a fifth of round 40's supplying a fifth the mutants, a reading the relaunch tests
 under E5. E1 to E8 stand unchanged, E4's band included. `runs/r41-s1..3` are kept and not
-read further. **Round 41c is being prepared (owner's "proceed", 2026-09-19 03:20): round 41b with the
-joint priced (`EVOSIM_IDLE` 0.02, round 33's; `rounds/launch-r41c.ps1`) and the contact
-instrument built first (`logbook/specs/contact-instrument-spec.md`; an Opus subagent on
-branch `contacts` in `scratch/wt-contacts`, compiling and smoking on worker 6). 0107 has
-the round 41c section with E9 (`pairs/body` under 0.05, the jointed share under a third).
-When the build lands: merge, refresh workers 2, 3 and 4, take `simHash` from the smoke's
-manifest, commit the launch note, and start the queue detached (`scratch/r41/queue-c.ps1`).**
+read further. **Round 41c is running (launched 05:21 to 05:22 on 2026-09-19; 0107's third launch
+note): round 41b with the joint priced (`EVOSIM_IDLE` 0.02, round 33's;
+`rounds/launch-r41c.ps1`) on the contact instrument's build (merged `ffde4db`;
+`logbook/specs/contact-instrument-spec.md`; the columns `pairs/body`, `pairs jnt %` and
+`stuck %` after `contacts`). Seeds 1 to 3 on workers 2, 3 and 4, verified: `simHash
+99e0bdcc…` (main's checkout; the worktree smoke's `73902d7b…` differs by carriage returns
+only and refused the first start, CLAUDE.md's simHash gotcha), `coreHash 729a0de1…`,
+`configHash 83fd8964`, `prereg.json` at `12934c1`, every header `idle 0.02 W/N·m`. Queue
+`scratch/r41/queue-c.ps1`, detached, log `scratch/logs/r41c-queue.out`; seeds 4 and 5
+launch as arms end. Fail-fast reads: E9's `pairs/body` under 0.05 and the jointed share
+under a third from the first hours; the snow at 5,000 s in E4's band (0.10 to 0.40);
+eaters inherited at or above 20 by 10,000 s (E5); a seed past 4,000 bodies is stopped.
+The early-look chain (`scratch/r41/snap-early-c.sh`, worker 5) draws seed 1 at 3,000 and
+6,000 s from its snapshots.**
 
 **Round 41b stopped as futile at 02:55 on 2026-09-19 (seeds 1 to 3 at 5,600, 7,900 and
 6,400 s; the queue killed before seeds 4 and 5).** Not for the joints alone. The pace fell
