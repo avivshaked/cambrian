@@ -19,7 +19,21 @@ The rate had been sized for a fifth of 11,000 units; four times the rate puts th
 near a fifth of 3,000. The eaters had barely founded (9, 6 and 0 inherited), read as a
 crowd a fifth of round 40's supplying a fifth the mutants, a reading the relaunch tests
 under E5. E1 to E8 stand unchanged, E4's band included. `runs/r41-s1..3` are kept and not
-read further. **Fail fast (owner, 23:20):** the round is read as it runs and stopped the
+read further. **The pace, read at 01:10 on 2026-09-19, and the reason:** seeds 1 and 3 run at 0.22 to
+0.26 times real time and falling, seed 2 at 0.42, with physics at a third to a half of
+the wall where round 40 gave it a fifth. Under this economy the joint is nearly free (a
+leaf's tissue is 0.38 J, growth draws no field, the link earns half a leaf's light, the
+idle charge is 1e-4) and jointed bodies have spread: 627 of 825 in seed 1 and 688 of 864
+in seed 3 with 1,530 and 2,440 degrees of freedom, against round 40's 25 of 2,249 with 55.
+Seed 2, with 129 jointed, is the fast one. So the crowd the machine can afford is set by
+degrees of freedom now, not by bodies, and at this pace 30,000 s is about 38 hours against
+the 1,800-minute wall: the seeds are censored near 22,000 s unless something changes. This
+is a finding of the economy (the old joint price was the matter drawn for tissue at
+conception, and D098 removed it by design) and the joint's price is a world rule, so the
+choice is the owner's: a longer wall and the neutral joint read as it is, or a price on
+the joint (round 33's idle 0.02, or a link that earns nothing) and a relaunch. The seeds
+run on to the 10,000 s eater read meanwhile, since that read does not depend on it.
+**Fail fast (owner, 23:20):** the round is read as it runs and stopped the
 moment it answers. The snow share is read at 5,000 s (E4's band, 0.10 to 0.40; a seed
 above it again means the rate is still wrong). The eaters are read at 10,000 s, not
 15,000: if no seed has `inherit` at 20 by then, the founding lottery is the block, the
