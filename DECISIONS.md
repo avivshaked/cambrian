@@ -5475,3 +5475,89 @@ within a body: removes the physics cost and nothing else, and §11.2 kept it on 
 A bounding sphere or box for the silhouette: the sphere's disc is nearly twice a box's own
 Cauchy area, so it binds on no knot rooted in a box, and the bounding box leaves the knot a
 premium; the hull is exact and the probe already computes it.
+
+### D100
+**The water is sampled once a body and held for a metabolic step** · 2026-09-19
+
+**Status:** ruled by the owner on the afternoon of 2026-09-19 ("ok. we can definitely try
+that") on the profile's reading (`logbook/specs/harness-profile-spec.md` §7); built the same
+afternoon on branch `profile` (`logbook/specs/cheapening-spec.md`); runs from round 41e.
+
+**Decision.** The drag pass samples the current's velocity, and its acceleration where D090's
+force runs, at a body's root once every `FluidConfig.WaterHoldSeconds` of simulated time,
+and every link of the body uses the held values until the next sample. `EVOSIM_WATER_HOLD`
+sets it, the header reads `water held 0.5 s` or `water per link`, and the default is 0,
+which is the recorded behaviour, every link sampled on every physics step, so that every
+recorded world replays. Round 41e runs at 0.5 s, the metabolic step.
+
+**Why.** The profile of round 41d's world at its crowd put the harness at 64% of the wall,
+the drag pass at 57% of the harness, and the water's sampling at 45% of the drag pass: about
+a sixth of every second of wall clock spent asking the streams for a velocity at every link
+of every body a hundred times a second (`harness-profile-spec.md` §6). What the sampling
+resolves is the difference between the water at a link and at its root, half a metre at
+most, and the water's drift over half a second, five centimetres at 0.1 m/s, in a field whose
+eddies are metres wide. A game would never sample it finer, and nothing in the record has
+measured a body feeling the difference. Replay identity is untouched: the sample is taken on
+the simulation's own clock, at a place the solver owns, and a run on this build replays
+itself as every run does.
+
+**Rejected.** Fewer drag panels: the panel arithmetic is a tenth of the drag pass, 4% of the
+wall, and not worth a new realisation. The brain and the senses ticked slower than the
+physics, the lever the plan named first: a tenth of the wall at most. Both stay in the spec
+as measured and not pulled.
+
+**Cost.** Any value above 0 is a per-step change to the force on every link, so every seed
+is a new chaotic realisation and round 41e's seeds are read against round 41d's as
+distributions, never pairwise. The tunable refuses every `config.json` written before it,
+rounds 41 through 41d included; the ledger and the theatre's world mode take a config from
+a round 41e run. `simHash` moves with the build.
+
+### D101
+**A body born inside itself is not born** · 2026-09-19
+
+**Status:** the owner's own rule, given on the afternoon of 2026-09-19 in answer to the
+profile's proposal of self-collision off within a body ("can't we restrict the mutations to
+not evolve parts onto themselves, rather than turn off the physics of it?"); built the same
+afternoon on branch `profile` (`logbook/specs/cheapening-spec.md`); runs from round 41e.
+Amends D099's second rejection: refusal at birth is not the pruning D099 rejected, and the
+cap alone did not close the physics cost.
+
+**Decision.** A body whose developed parts overlap themselves is a stillbirth. The test is
+the probe's (`src/Evosim.Overlap`, lifted into Core as `Geometry/BoxOverlap`): any pair of
+parts that are not parent and child whose boxes interpenetrate deeper than
+`RunConfig.SelfOverlapDepthFraction` of the smaller part's thinnest half-extent. It is asked
+of every body at the one door every birth passes, `World.Admit`, so it binds a child, a
+founder drawn by the population floor and an inoculant alike; the refusal settles exactly as
+a body of no parts does (the child's tissue and reserve back to the water as charged matter,
+the overhead burnt, nothing owed for a founder), it is counted in `Stillbirths` and in its own
+`SelfOverlapStillbirths` (`selfOverlapStillbirths` in `stats.jsonl`, the table's `self stillb`),
+and the parent keeps its reserve and draws again. `EVOSIM_SELF_OVERLAP` sets the fraction,
+the header reads `selfOverlap 0.1` or `selfOverlap off`, and the default is 0, off, so that
+every recorded world replays. Round 41e runs at 0.1, the probe's strict rule. The physics of
+self-collision stays on: a jointed body that swings a link into another mid-stroke is still
+resolved by the solver.
+
+**Why.** D099's cap made the knot lose to a leaf and did not stop bodies folding on
+themselves: round 41d's seed 2 went from 0.03 to 0.47 contact pairs a body per step between
+3,000 and 10,000 s, its pace from 0.34x to 0.16x, and the probe read the pairs as bodies of
+three to five parts overlapping their own non-adjacent parts, with fourteen bodies at eight
+parts or more and a thirteen-part rigid body at the top (HANDOFF, 2026-09-19). PhysX resolves
+every such pair on every step and never separates them, which is the physics' quarter of the
+wall and the fold that stopped rounds 41b and 41c. A genome cannot be forbidden from folding
+by restricting the mutation operator, since an overlap is a property of the grown body and
+not of any one edit; the honest place to refuse it is development, where a body of no parts
+is already a stillbirth. A body that is not born inside itself never costs the solver a pair
+it cannot resolve, and a sprawl that does not overlap is still allowed and under the cap
+earns its hull honestly. The rule is scale-free, so the newborn's test is the adult's.
+
+**Rejected.** Self-collision off within a body: removes the physics cost and lets a body
+pass through itself, which §11.2 kept on deliberately and the owner declined. Pruning the
+overlapping part at development (D099's rejection stands): a different body under the
+parent's genome, silently. A restriction on the mutation operator: overlap is not a property
+of an edit.
+
+**Cost.** A Core change, so `coreHash` moves for every worker at the next launch, which is
+why it waits for round 41d to end before it reaches main. The tunable refuses every earlier
+`config.json`, as D100's does. The floor draws again on a refused founder without selecting
+for viability, as it does for a body of no parts; a world in which founders often fold would
+found more slowly, and the smoke reads how often.

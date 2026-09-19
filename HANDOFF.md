@@ -55,29 +55,42 @@ snapshots on worker 6 (`scratch/r41/snap-early-d.sh`). The three knots are pictu
 (solo mode, `scratch/r41/knot-shots.ps1`) and kept under `inocula/`, and the owner's idea of
 a video story of the knot is in the queue below.**
 
-**The profile is measured and the levers are re-ordered for the owner's ruling
-(`logbook/specs/harness-profile-spec.md` §6 and §7, 2026-09-19 13:10).** Branch `profile`
-in `scratch/wt-profile` (unmerged until round 41d's fifth seed has launched) splits the
-harness's step into phases and the fluid pass into four pieces, with rows, footer lines and
-a per-body-step and per-link-step cost; three runs of round 41d's seed 1 on it replay each
-other sample for sample, so the instrument moves nothing. At the round's crowd the wall is
-PhysX 25%, the grid 11%, the harness 64%; inside the harness the fluid pass is 57% (3.3 µs
-a link-step, the same in a crowd of leaves), the throw trace 20%, the brain and senses 15%,
-the settle 7%; inside the fluid pass the water's sampling is 45%, the engine crossings 45%,
-the panel arithmetic 10%. The order now: read the solver once a step and share it (agent
-work, identity kept, about 1.2x); sample the water once a body and hold it a metabolic step
-(owner's, about 1.6x with the first); self-collision off inside a body (owner's, a world
-rule; the share of PhysX that is self-contact); fewer panels and a slower brain dropped;
-Burst jobs and the grid after. Round 41d's workers are not refreshed until the round ends.
-First reads at 5,000 s: seed 2 passes every clause it can be read on; seeds 1 and 3 read
-1,172 and 1,209 alive, E1's band failed high with three quarters of the bodies jointed,
-and E9 and E10 hold in all three. **Seed 2 is the watch item**: `pairs/body` by
-thousand-second window 0.032, 0.050, 0.058, 0.088, 0.202 from 3,000 to 8,000 s, the last
-a doubling below E9's 0.5 line; the probe at 8,000 s reads bodies of three to five parts
-folding on themselves (self-overlapping pairs 0.27 a body, fourteen bodies at eight parts
-or more, a thirteen-part rigid body at the top with `hull/lit` 0.33), which is at E10's
-edges. The pre-registered rule stands: the seed stops on a doubling in each of two
-consecutive windows past 0.5, read at 9,000 and 10,000 s. Pictures at 6,000 s (seed 1)
+**The owner ruled the cheapening on the afternoon of 2026-09-19 and both rules are built
+(D100, D101; `logbook/specs/cheapening-spec.md`; the profile in
+`logbook/specs/harness-profile-spec.md` §6 and §7).** The water is sampled once a body at
+its root and held for a metabolic step (`FluidConfig.WaterHoldSeconds`, `EVOSIM_WATER_HOLD`,
+header `water held 0.5 s`), and a body born with two non-adjacent parts overlapping deeper
+than a tenth of the smaller part's thinnest half-extent is a counted stillbirth
+(`RunConfig.SelfOverlapDepthFraction`, `EVOSIM_SELF_OVERLAP`, header `selfOverlap 0.1`, the
+table's `self stillb`), the owner's own rule in place of self-collision off. Both default to
+off so every recorded world replays, both refuse every earlier `config.json`, and both are
+Core changes, so the branch (`profile` in `scratch/wt-profile`, at `27b27cd`, carrying the
+profile's two instruments as well, `rounds/launch-r41e.ps1`) stays unmerged until round 41d
+ends: every worker compiles Core from the main tree at launch and seeds 4 and 5 would
+otherwise run another build than 1 to 3. The screen (seed 1, 1,500 s at dt 0.01, worker
+6, beside the round) against the profile's run of the same seconds: the drag pass 44%
+cheaper a link (3.09 to 1.72 µs), the harness 24% cheaper a body (9.1 to 6.9 µs), the seed
+1.27 times faster at the same crowd, 13 self-overlap stillbirths in 732 conceptions, contact
+pairs a body-step halved at 1,500 s. Lever 1 (read the solver once a step and share it; the
+trace's 1.9 µs a body-step) is ruled for after the round. The profile's measurement: at the
+round's crowd the wall is PhysX 25%, the grid 11%, the harness 64%; inside the harness the
+fluid pass 57%, the throw trace 20%, the brain and senses 15%; inside the fluid pass the
+water's sampling 45%, the engine crossings 45%, the panels 10%; three runs of one seed on
+the instrumented builds replay each other sample for sample. **Round 41e** is 41d's world
+with both rules on, pre-registered after 41d's read: the expected hash from a smoke on a
+worker refreshed from main after the merge, the reads in the spec's §5. Round 41d's first
+reads at 5,000 s: seed 2 passes every clause it can be read on; seeds 1 and 3 read 1,172 and
+1,209 alive, E1's band failed high with three quarters of the bodies jointed, and E9 and
+E10 hold in all three. **Seed 2 is the watch item**: `pairs/body` by
+thousand-second window 0.05, 0.06, 0.09, 0.20, 0.35, 0.47 from 4,000 to 10,000 s, the rise
+slowing (2.3x, 1.8x, 1.3x) and still under E9's 0.5 line, the pace 0.34x to 0.16x over the
+same windows; the probe at 8,000 s reads bodies of three to five parts folding on
+themselves (self-overlapping pairs 0.27 a body, fourteen bodies at eight parts or more, a
+thirteen-part rigid body at the top with `hull/lit` 0.33), which is at E10's edges. Seeds
+1 and 3 read 0.26 and 0.17 in their 7,000 to 8,000 s windows, rising 1.4x a window. The
+pre-registered rule stands: a seed stops on a doubling in each of two consecutive windows
+past 0.5. The eaters are thin in seeds 1 and 3 (no inherited eater alive at 8,500 and
+8,300 s) and founded in seed 2 (16 inherited at 10,000 s); E5 is read at the end. Pictures at 6,000 s (seed 1)
 and 8,000 s (seed 2) in `scratch/snaps/r41d-s*`: the crowd in the top four to five metres,
 seed 2's denser and larger-bodied, no crust at the glass.
 
