@@ -63,17 +63,17 @@ beside it for its first sixteen minutes).
 | 5,000 | 1,047 | 49% | 0.20 | 1.3 | 0.108 | 0 | 0.21 | 0.91x |
 
 The fold is closed. The part histogram at 5,000 s is 360 one-part bodies, 386 of two, 159
-of three, 87 of four, 38 of five, 11 of six and 6 of seven, none at the cap and none at
-eight or more, where round 41c's seed 3 had 34 of 766 at nine or sixteen by 3,000 s; the
+of three, 87 of four, 38 of five, 11 of six and 6 of seven. None is at the cap and none at
+eight or more, where round 41c's seed 3 had 34 of 766 at nine or sixteen by 3,000 s. The
 two nine-part bodies of the first two thousand seconds, a two-node genome with mutual
 edges and limits of 2, did not last. `pairs/body` held between 0.09 and 0.12 from 1,000 to
 4,000 s, where round 41c's seed 1 went from 0.02 to 0.75 over the same seconds, and then
 rose to 0.20 in the last thousand, with the probe's self-overlapping pairs a body rising
 with it from 0.067 to 0.108. Those pairs belong to jointed bodies of three to seven parts
-that the cap binds by a quarter to two fifths (`hull/lit` 0.57 to 0.74 on the largest),
-and the pace fell from 1.4x to 0.9x as the count went from 800 to 1,050 with the physics
-at 23 to 27% of the wall, which I read as the crowd's cost and the free joint's (`mean
-dof` 0.97 to 1.48) rather than a fold's; inference, and E9 is what tests it. The books
+that the cap binds by a quarter to two fifths (`hull/lit` 0.57 to 0.74 on the largest).
+The pace fell from 1.4x to 0.9x as the count went from 800 to 1,050, with the physics at
+23 to 27% of the wall. I read that as the crowd's cost and the free joint's (`mean dof`
+0.97 to 1.48) rather than a fold's; inference, and E9 is what tests it. The books
 closed on every row, the snow sat in E4's band from 2,500 s, the water was uptake-bound
 on 61 to 79% of the leaves' steps, the margin fell from 351 to 139 s, the rim quarter
 read 0.26 to 0.45, and ten inherited eaters were alive at 5,000 s. E9's thresholds are set
