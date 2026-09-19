@@ -1398,6 +1398,30 @@ namespace Evosim.Sim.EditorTools
             }
 
             report.AppendLine(harnessSplit.ToString());
+
+            // The fluid phase's own split, immediately under the line it breaks down. Percentages
+            // of the four's sum rather than of the harness, for the reason the harness's are of
+            // the harness: the question is what inside this call is expensive, and the call's own
+            // share is the `fluid` token above. The per-link-step line is the number a cheapening
+            // is judged on, and links are the denominator because the work is per part.
+            long fluidGatherMs = eco.WallFluidGatherMs;
+            long fluidWaterMs = eco.WallFluidWaterMs;
+            long fluidComputeMs = eco.WallFluidComputeMs;
+            long fluidApplyMs = eco.WallFluidApplyMs;
+            long fluidMs = fluidGatherMs + fluidWaterMs + fluidComputeMs + fluidApplyMs;
+
+            report.AppendLine(
+                "fluid split: gather " + WallShare(fluidGatherMs, fluidMs) +
+                ", water " + WallShare(fluidWaterMs, fluidMs) +
+                ", compute " + WallShare(fluidComputeMs, fluidMs) +
+                ", apply " + WallShare(fluidApplyMs, fluidMs));
+
+            report.AppendLine(
+                "fluid per link-step: " +
+                eco.FluidMicrosecondsPerLinkStep.ToString("0.#", CultureInfo.InvariantCulture) +
+                " µs (" + eco.FluidLinkSteps.ToString("N0", CultureInfo.InvariantCulture) +
+                " link-steps).");
+
             report.AppendLine(
                 "harness per body-step: " +
                 eco.HarnessMicrosecondsPerBodyStep.ToString("0.#", CultureInfo.InvariantCulture) +
@@ -1467,6 +1491,11 @@ namespace Evosim.Sim.EditorTools
                         WallTotalMs = clock.ElapsedMilliseconds,
                         WallHarnessPhaseMs = eco.HarnessPhaseMs(),
                         HarnessBodySteps = eco.HarnessBodySteps,
+                        WallFluidGatherMs = eco.WallFluidGatherMs,
+                        WallFluidWaterMs = eco.WallFluidWaterMs,
+                        WallFluidComputeMs = eco.WallFluidComputeMs,
+                        WallFluidApplyMs = eco.WallFluidApplyMs,
+                        FluidLinkSteps = eco.FluidLinkSteps,
                     });
                 }
 
@@ -1931,6 +1960,18 @@ namespace Evosim.Sim.EditorTools
             /// </remarks>
             public long[] WallHarnessPhaseMs;
             public long HarnessBodySteps;
+
+            /// <summary>
+            /// The fluid phase's own four, and the link-steps they are read per. Written beside
+            /// the harness phases and omitted where those are, for the same reason: the error
+            /// path's manifest carries last-sample totals and never carried these, and four zeros
+            /// would read like a run that spent no time in the water.
+            /// </summary>
+            public long WallFluidGatherMs;
+            public long WallFluidWaterMs;
+            public long WallFluidComputeMs;
+            public long WallFluidApplyMs;
+            public long FluidLinkSteps;
         }
 
         /// <summary>
@@ -2194,6 +2235,16 @@ namespace Evosim.Sim.EditorTools
                     }
 
                     w.Field("harnessBodySteps", ending.HarnessBodySteps);
+
+                    // The fluid phase's own split, appended after harnessBodySteps per the same
+                    // append-only rule and under the same guard: the same names the statistics
+                    // rows carry, summing to `wallHarnessFluidMs`, and the link-steps they are
+                    // read per.
+                    w.Field("wallFluidGatherMs", ending.WallFluidGatherMs);
+                    w.Field("wallFluidWaterMs", ending.WallFluidWaterMs);
+                    w.Field("wallFluidComputeMs", ending.WallFluidComputeMs);
+                    w.Field("wallFluidApplyMs", ending.WallFluidApplyMs);
+                    w.Field("fluidLinkSteps", ending.FluidLinkSteps);
                 }
             }
 
@@ -3190,6 +3241,18 @@ namespace Evosim.Sim.EditorTools
                 }
 
                 w.Field("harnessBodySteps", eco.HarnessBodySteps);
+
+                // The fluid phase's own split, appended after harnessBodySteps per the same
+                // append-only rule: `wallHarnessFluidMs` broken into the gather, the water
+                // samples inside it, the drag arithmetic and the force application, cumulative
+                // milliseconds summing to it, and the links they are read per — links rather than
+                // bodies, because this phase's work is per part. All five read 0 on a report
+                // written before this build.
+                w.Field("wallFluidGatherMs", eco.WallFluidGatherMs);
+                w.Field("wallFluidWaterMs", eco.WallFluidWaterMs);
+                w.Field("wallFluidComputeMs", eco.WallFluidComputeMs);
+                w.Field("wallFluidApplyMs", eco.WallFluidApplyMs);
+                w.Field("fluidLinkSteps", eco.FluidLinkSteps);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a

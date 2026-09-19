@@ -385,6 +385,44 @@ namespace Evosim.Sim
         public double HarnessMicrosecondsPerBodyStep =>
             _bodyStepSum > 0L ? _harnessTicks * (1e6 / Stopwatch.Frequency) / _bodyStepSum : 0d;
 
+        // ---- the fluid phase's own split
+        //
+        // `fluid` was 57% of the harness in the first profile, which named the call and not the
+        // work inside it. FluidEnvironment times its four phases and these are them in the same
+        // milliseconds the harness's phases are written in, so one reader of a statistics row
+        // adds no arithmetic of its own: the four sum to `wallHarnessFluidMs`.
+
+        /// <summary>Wall ms in the fluid step's gather loop, less the water sampled inside it.</summary>
+        public long WallFluidGatherMs => Milliseconds(Fluid.GatherTicks);
+
+        /// <summary>Wall ms sampling the current, inside that loop.</summary>
+        public long WallFluidWaterMs => Milliseconds(Fluid.WaterTicks);
+
+        /// <summary>Wall ms computing the drag, parallel or serial.</summary>
+        public long WallFluidComputeMs => Milliseconds(Fluid.ComputeTicks);
+
+        /// <summary>Wall ms applying the forces to the solver.</summary>
+        public long WallFluidApplyMs => Milliseconds(Fluid.ApplyTicks);
+
+        /// <summary>
+        /// Links the fluid step handled, summed over every physics step — the denominator the
+        /// four above are read per, as <see cref="HarnessBodySteps"/> is for the harness.
+        /// </summary>
+        /// <remarks>
+        /// Links and not bodies: the fluid step's work is per part, and a body carries anywhere
+        /// from one part to sixteen, so the two denominators are not the same number and a
+        /// per-body reading of this phase would move with the morphology rather than with the
+        /// cost.
+        /// </remarks>
+        public long FluidLinkSteps => Fluid.LinkSteps;
+
+        /// <summary>The fluid step's microseconds per link per physics step, over the run so far.</summary>
+        public double FluidMicrosecondsPerLinkStep =>
+            Fluid.LinkSteps > 0L
+                ? (Fluid.GatherTicks + Fluid.WaterTicks + Fluid.ComputeTicks + Fluid.ApplyTicks) *
+                  (1e6 / Stopwatch.Frequency) / Fluid.LinkSteps
+                : 0d;
+
         /// <summary>
         /// Books <paramref name="phase"/> and starts the next one from the same reading of the
         /// clock, so two adjacent phases cost one timestamp between them rather than two.
