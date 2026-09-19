@@ -1379,6 +1379,30 @@ namespace Evosim.Sim.EditorTools
                 ", harness " + WallShare(eco.WallHarnessMs, clock.ElapsedMilliseconds) +
                 ", writers " + WallShare(WritersClock.ElapsedMilliseconds, clock.ElapsedMilliseconds) +
                 ", other " + WallShare(wallOtherMs, clock.ElapsedMilliseconds));
+
+            // The harness profile (logbook/specs/harness-profile-spec.md §2), on the two lines
+            // after the split it breaks down. Percentages of the harness rather than of the run,
+            // because the question this instrument was built for is what inside the harness is
+            // expensive; multiply by the harness's own share above for the run. The second line is
+            // the number a cheapening is judged on, and the only one of the two that can be
+            // compared between runs of different size.
+            long[] harnessPhaseMs = eco.HarnessPhaseMs();
+            var harnessSplit = new StringBuilder("harness split: ");
+
+            for (int p = 0; p < harnessPhaseMs.Length; p++)
+            {
+                if (p > 0) harnessSplit.Append(", ");
+
+                harnessSplit.Append(Ecosystem.HarnessPhases[p]).Append(' ')
+                    .Append(WallShare(harnessPhaseMs[p], eco.WallHarnessMs));
+            }
+
+            report.AppendLine(harnessSplit.ToString());
+            report.AppendLine(
+                "harness per body-step: " +
+                eco.HarnessMicrosecondsPerBodyStep.ToString("0.#", CultureInfo.InvariantCulture) +
+                " µs (" + eco.HarnessBodySteps.ToString("N0", CultureInfo.InvariantCulture) +
+                " body-steps).");
             report.AppendLine();
             report.AppendLine(
                 "**Fastest creature seen at any point: " + bestSpeedEver.ToString("0.####") +
@@ -1441,6 +1465,8 @@ namespace Evosim.Sim.EditorTools
                         WallHarnessMs = eco.WallHarnessMs,
                         WallWritersMs = WritersClock.ElapsedMilliseconds,
                         WallTotalMs = clock.ElapsedMilliseconds,
+                        WallHarnessPhaseMs = eco.HarnessPhaseMs(),
+                        HarnessBodySteps = eco.HarnessBodySteps,
                     });
                 }
 
@@ -1893,6 +1919,18 @@ namespace Evosim.Sim.EditorTools
             public long WallHarnessMs;
             public long WallWritersMs;
             public long WallTotalMs;
+
+            /// <summary>
+            /// The harness profile, ms per phase of <see cref="Ecosystem.HarnessPhases"/> with
+            /// `other` last, and the body-steps they are read per.
+            /// </summary>
+            /// <remarks>
+            /// Null on the error path, where the manifest's last-sample values are what there is
+            /// and it never carried the phases: the ending block then omits them rather than
+            /// writing ten zeros that read like a run that spent no time anywhere.
+            /// </remarks>
+            public long[] WallHarnessPhaseMs;
+            public long HarnessBodySteps;
         }
 
         /// <summary>
@@ -2141,6 +2179,22 @@ namespace Evosim.Sim.EditorTools
                 w.Field("wallHarnessMs", ending.WallHarnessMs);
                 w.Field("wallWritersMs", ending.WallWritersMs);
                 w.Field("wallTotalMs", ending.WallTotalMs);
+
+                // The harness profile (logbook/specs/harness-profile-spec.md §2) — appended after
+                // wallTotalMs per the same append-only rule. The same names the statistics rows
+                // carry, so a reader joins the two without a translation table, and the
+                // denominator beside them. Absent on the error path and on a recording made
+                // before this build.
+                if (ending.WallHarnessPhaseMs != null)
+                {
+                    for (int p = 0; p < ending.WallHarnessPhaseMs.Length &&
+                                    p < Ecosystem.HarnessPhaseFields.Length; p++)
+                    {
+                        w.Field(Ecosystem.HarnessPhaseFields[p], ending.WallHarnessPhaseMs[p]);
+                    }
+
+                    w.Field("harnessBodySteps", ending.HarnessBodySteps);
+                }
             }
 
             w.EndObject();
@@ -3120,6 +3174,22 @@ namespace Evosim.Sim.EditorTools
                 .Field("wallHarnessMs", eco.WallHarnessMs)
                 .Field("wallWritersMs", WritersClock.ElapsedMilliseconds)
                 .Field("wallTotalMs", RunClock != null ? RunClock.ElapsedMilliseconds : 0L);
+
+                // The harness profile (logbook/specs/harness-profile-spec.md §2), appended after
+                // the timing split per the same append-only rule: `wallHarnessMs` broken into the
+                // phases of the per-step loop, cumulative milliseconds like the five above and
+                // summing to it exactly, `other` being the subtraction. Beside them the
+                // denominator the split is read per body with — the living bodies summed over
+                // every physics step, so that two rows give the phase costs per body-step over the
+                // window between them. All eleven read 0 on a report written before this build.
+                long[] harnessPhaseMs = eco.HarnessPhaseMs();
+
+                for (int p = 0; p < harnessPhaseMs.Length; p++)
+                {
+                    w.Field(Ecosystem.HarnessPhaseFields[p], harnessPhaseMs[p]);
+                }
+
+                w.Field("harnessBodySteps", eco.HarnessBodySteps);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a

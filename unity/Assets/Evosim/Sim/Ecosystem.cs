@@ -288,6 +288,114 @@ namespace Evosim.Sim
                              (_physicsTicks + _worldTicks - bucketedAtEntry);
         }
 
+        // ---- the harness profile (logbook/specs/harness-profile-spec.md §2)
+
+        /// <summary>
+        /// The harness's step split into the phases the loop runs, in the order it runs them, with
+        /// <c>other</c> last — the remainder that makes them sum to <see cref="WallHarnessMs"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Named after the code, not after the wish.</b> The spec's list asked for `sense`,
+        /// `brain` and `drive` separately; the loop at the top of <see cref="Step"/> samples the
+        /// sensors, steps the brain and writes the drive of one body before it touches the next,
+        /// and splitting the three would mean three passes over the population in place of one —
+        /// a different order of operations, which is a different realisation of the run. The
+        /// instrument is not allowed to change what it measures, so the three share one bracket
+        /// under the name of what the loop is: <c>control</c>. The spec's `wrap` is inside
+        /// <c>settle</c> for the plainer reason that the two are the same contiguous post-solver
+        /// pass and the wrap is skipped outright in a tank.
+        /// </para>
+        /// <para>
+        /// <b>Each phase is one timestamp pair per step and nothing per creature.</b> A per-body
+        /// pair would cost more than the work it measured in the cheap phases and would report the
+        /// clock's own latency as the brain's. <c>finite</c> is the one phase with two brackets,
+        /// because <see cref="CheckFinite"/> genuinely runs twice on a metabolic step, and the
+        /// pair costs the same either way.
+        /// </para>
+        /// </remarks>
+        public static readonly string[] HarnessPhases =
+        {
+            "reconcile", "finite", "control", "fluid", "contacts",
+            "settle", "trace", "metabolise", "growth", "other",
+        };
+
+        /// <summary>
+        /// The statistics field each phase is written under — <c>wallHarnessSettleMs</c> and the
+        /// rest — built once from <see cref="HarnessPhases"/> so the two can never disagree.
+        /// </summary>
+        public static readonly string[] HarnessPhaseFields = BuildHarnessPhaseFields();
+
+        private static string[] BuildHarnessPhaseFields()
+        {
+            string[] fields = new string[HarnessPhases.Length];
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                string name = HarnessPhases[i];
+                fields[i] = "wallHarness" + char.ToUpperInvariant(name[0]) + name.Substring(1) + "Ms";
+            }
+
+            return fields;
+        }
+
+        private const int PhaseReconcile = 0;
+        private const int PhaseFinite = 1;
+        private const int PhaseControl = 2;
+        private const int PhaseFluid = 3;
+        private const int PhaseContacts = 4;
+        private const int PhaseSettle = 5;
+        private const int PhaseTrace = 6;
+        private const int PhaseMetabolise = 7;
+        private const int PhaseGrowth = 8;
+
+        /// <summary>Stopwatch ticks in each named phase; `other` is the subtraction, not a bucket.</summary>
+        private readonly long[] _phaseTicks = new long[HarnessPhases.Length - 1];
+
+        /// <summary>
+        /// Wall milliseconds in each of <see cref="HarnessPhases"/>, `other` last, summing to
+        /// <see cref="WallHarnessMs"/> exactly because the last entry is that subtraction.
+        /// </summary>
+        public long[] HarnessPhaseMs()
+        {
+            long[] ms = new long[HarnessPhases.Length];
+            long named = 0L;
+
+            for (int i = 0; i < _phaseTicks.Length; i++)
+            {
+                ms[i] = Milliseconds(_phaseTicks[i]);
+                named += ms[i];
+            }
+
+            ms[ms.Length - 1] = Math.Max(0L, WallHarnessMs - named);
+            return ms;
+        }
+
+        /// <summary>
+        /// Living bodies summed over every physics step — the denominator the cheapening is judged
+        /// on, since the harness's work is per body per step and a run's wall is mostly how many
+        /// bodies it carried for how long.
+        /// </summary>
+        /// <remarks>One add per physics step, and no allocation: the sum is the instrument.</remarks>
+        public long HarnessBodySteps => _bodyStepSum;
+
+        private long _bodyStepSum;
+
+        /// <summary>The harness's microseconds per body per physics step, over the run so far.</summary>
+        public double HarnessMicrosecondsPerBodyStep =>
+            _bodyStepSum > 0L ? _harnessTicks * (1e6 / Stopwatch.Frequency) / _bodyStepSum : 0d;
+
+        /// <summary>
+        /// Books <paramref name="phase"/> and starts the next one from the same reading of the
+        /// clock, so two adjacent phases cost one timestamp between them rather than two.
+        /// </summary>
+        private long NotePhase(int phase, long startedAt)
+        {
+            long now = Stopwatch.GetTimestamp();
+            _phaseTicks[phase] += now - startedAt;
+            return now;
+        }
+
         /// <summary>
         /// Articulations resized so far because their creature grew, fable-propose-growth.md
         /// rule 8.
@@ -1460,7 +1568,15 @@ namespace Evosim.Sim
             long stepStarted = Stopwatch.GetTimestamp();
             long bucketedAtEntry = _physicsTicks + _worldTicks;
 
+            // The profile's phases, from here down: one timestamp pair each, around the call the
+            // phase is named after, inside the harness bucket that already exists. Nothing is
+            // reordered and nothing branches on a clock, so a run under the profile is the same
+            // realisation as a run without it (logbook/specs/harness-profile-spec.md §2).
+            long phaseStarted = stepStarted;
+
             Reconcile();
+
+            _phaseTicks[PhaseReconcile] += Stopwatch.GetTimestamp() - phaseStarted;
 
             // The second bracket on CheckFinite, and the reason it is here rather
             // than beside the first. The first runs at the top of Metabolise, after the solver;
@@ -1474,10 +1590,19 @@ namespace Evosim.Sim
             // step; it returns at once when nothing died.
             if (_movedOutsideTheSolver)
             {
+                phaseStarted = Stopwatch.GetTimestamp();
+
                 _movedOutsideTheSolver = false;
                 CheckFinite();
+
+                // Booked to `finite` rather than to `reconcile`: this call exists only because the
+                // check kills, and it returns at once when it did not.
                 Reconcile();
+
+                _phaseTicks[PhaseFinite] += Stopwatch.GetTimestamp() - phaseStarted;
             }
+
+            phaseStarted = Stopwatch.GetTimestamp();
 
             for (int i = 0; i < _order.Count; i++)
             {
@@ -1490,6 +1615,14 @@ namespace Evosim.Sim
                 body.Driver.Drive(body.Drive);
             }
 
+            _phaseTicks[PhaseControl] += Stopwatch.GetTimestamp() - phaseStarted;
+
+            // The profile's denominator, taken where the loop that costs it just ran: the bodies
+            // this step carried, added to the sum over steps.
+            _bodyStepSum += _order.Count;
+
+            phaseStarted = Stopwatch.GetTimestamp();
+
             // The water's own clock, advanced from the physics step rather than the metabolic one:
             // a current that only updated twice a second would be a staircase to swim against, and
             // the creature would feel the discretisation rather than the flow.
@@ -1498,13 +1631,19 @@ namespace Evosim.Sim
             Fluid.Apply(_instances, FixedDt);
 
             long physicsStarted = Stopwatch.GetTimestamp();
+            _phaseTicks[PhaseFluid] += physicsStarted - phaseStarted;
+
             Physics.Simulate(FixedDt);
             _physicsTicks += Stopwatch.GetTimestamp() - physicsStarted;
+
+            phaseStarted = Stopwatch.GetTimestamp();
 
             // The contact instrument's one main-thread line: every report for this step has
             // arrived, so the step's distinct touching bodies can be counted and the set emptied.
             // It reads what the callback wrote and writes nothing a body will read back.
             if (_countingContacts) CloseContactStep();
+
+            phaseStarted = NotePhase(PhaseContacts, phaseStarted);
 
             // D077. Immediately after the solver, so nothing ever reads a position outside the
             // box: the ring is periodic and a body that has crossed a face is on the other side
@@ -1519,6 +1658,11 @@ namespace Evosim.Sim
             Fluid.Settle(_instances);
 
             for (int i = 0; i < _order.Count; i++) _order[i].Driver.Settle();
+
+            // `settle` is the whole post-solver pass — the seam wrap, the fluid's work
+            // integration and each driver's — because the three are contiguous and the wrap is
+            // not called at all in a tank.
+            phaseStarted = NotePhase(PhaseSettle, phaseStarted);
 
             Steps++;
 
@@ -1537,6 +1681,10 @@ namespace Evosim.Sim
             // Settle writes to a body — both only read velocities to integrate work — so this is
             // the same state the solver left, with the step counter already advanced to name it.
             if (_digest != null) Digest();
+
+            // The two recorders that run after the solver on every step: the throw trace's ring
+            // and the state digest's null test.
+            NotePhase(PhaseTrace, phaseStarted);
 
             if (Steps % StepsPerMetabolicStep != 0)
             {
@@ -2698,7 +2846,16 @@ namespace Evosim.Sim
             // that instant arrived. What those steps cost is a burst of PhysX "force is not
             // valid" warnings for the one dying body, which is a fair description of what is
             // happening to it.
+            long checkStarted = Stopwatch.GetTimestamp();
+
             CheckFinite();
+
+            // `finite`'s second bracket of the step, and the reason the phase is the one with two:
+            // the check genuinely runs twice on a metabolic step, and a pair costs the same
+            // wherever it is put. What follows is `metabolise`, less the world's own bucket and
+            // less `growth`, both of which are taken out by the subtraction at the foot.
+            long metaboliseStarted = NotePhase(PhaseFinite, checkStarted);
+            long nestedAtEntry = _worldTicks + _phaseTicks[PhaseGrowth];
 
             float seconds = StepsPerMetabolicStep * FixedDt;
 
@@ -2838,8 +2995,14 @@ namespace Evosim.Sim
             if (_sinceGrowthStep + GrowthStepEpsilon >= growthStep)
             {
                 _sinceGrowthStep = 0f;
+
+                long growthStarted = Stopwatch.GetTimestamp();
                 ApplyGrowth();
+                _phaseTicks[PhaseGrowth] += Stopwatch.GetTimestamp() - growthStarted;
             }
+
+            _phaseTicks[PhaseMetabolise] += Stopwatch.GetTimestamp() - metaboliseStarted -
+                                            (_worldTicks + _phaseTicks[PhaseGrowth] - nestedAtEntry);
         }
 
         /// <summary>
