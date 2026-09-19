@@ -986,9 +986,23 @@ actually verifying it.
   cost the tissue price alone. Round 41b's knots were articulated and round 41c's rigid, so
   `pairs jnt %` reads high or low for the same cause; read `contactBodies` against
   `contactPairs` (twenty pairs per touching creature is a body touching itself) and run
-  `scripts/overlap/` on a snapshot, which counts a snapshot's self-overlapping part pairs
-  and reproduced the physics' pairs per body in every seed (logbook/0107's last section,
-  2026-09-19). Round 40 never showed it because its economy priced every part in matter.
+  `scripts/overlap/run.ps1` on a snapshot (the project is `src/Evosim.Overlap`), which counts
+  a snapshot's self-overlapping part pairs and reproduced the physics' pairs per body in
+  every seed (logbook/0107's last section, 2026-09-19). Round 40 never showed it because its
+  economy priced every part in matter. **From D099 (the same day) both rules are closed, and
+  three things read differently.** `RunConfig.LightSilhouetteCap` (`EVOSIM_SILHOUETTE`,
+  header `silhouette on`/`off`, off by default so every recorded config replays, on from
+  round 41d) caps what a body earns on and shades with at its convex hull's surface over
+  four, every part's share scaled by one factor; the field refuses every `config.json`
+  written before it, rounds 41 to 41c included. `Developer.Expand` asks the recursive limit
+  of every edge, so a stored genome with a terminal-only self-edge develops to two or three
+  parts where it developed to nine or sixteen (the three knots under `inocula/`); a genome's
+  body is a property of the build, as a config's world is. And the hull in Core
+  (`Geometry/ConvexHull`) has a face ceiling: a degenerate cloud (random founders stack parts
+  exactly on each other) falls back to the bounding box and `Phenotype.SilhouetteFellBackToBox`
+  counts it, which nothing in a run report surfaces yet; the probe reports it per snapshot
+  and read zero on every recorded body. The absorptive log's `TotalLitArea` column stays the
+  uncapped sum.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
