@@ -1,22 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Throwaway probe for round 41c: develop every genome in a snapshot and count the pairs of
-    developed parts whose oriented boxes intersect, excluding each part's own parent. Tests
-    whether a multi-link body interpenetrates by construction, which would show up in PhysX
-    as persistent contact pairs.
-
-    Lives under scratch/ so src/Directory.Build.props does not redirect its output; bin/ and
-    obj/ land beside this file. Built with Unity's bundled SDK, as scripts/core-test.ps1 and
-    scripts/ledger.ps1 do.
+    The self-overlap probe (logbook/0107's round 41c read; logbook/specs/silhouette-spec.md):
+    develop every genome in a snapshot and count the pairs of developed parts whose oriented
+    boxes intersect, excluding each part's own parent, and print each body's lit area against
+    its convex hull's silhouette (Core's ConvexHull, so the probe and the world cannot
+    disagree). Under src/ so the commit hook tracks the project file and Directory.Build.props
+    sends the build to artifacts/. Run it through scripts/overlap/run.ps1, which names the
+    assembly and the options (top, dump, silhouette, ids). Built with Unity's bundled SDK, as
+    scripts/core-test.ps1 and scripts/ledger.ps1 do.
   -->
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>9.0</LangVersion>
-    <AssemblyName>Overlap</AssemblyName>
-    <RootNamespace>Evosim.Scratch.Overlap</RootNamespace>
+    <AssemblyName>Evosim.Overlap</AssemblyName>
+    <RootNamespace>Evosim.Overlap</RootNamespace>
     <Nullable>disable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
