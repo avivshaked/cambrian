@@ -29,13 +29,26 @@ every thousand seconds. Seed 2 with 90 jointed bodies showed it as much as seed 
 630, so the joints are a cost on top and not the cause. Every seed passed E4's snow read
 at 5,000 s (0.20 to 0.23 of the budget) before the stop, so the remineralisation number
 stands; the eaters were 11, 0 and 2 inherited at the stop, unread. The arms used 1.15
-cores each (measured over a minute), so the pace was the simulation's own. Candidate
-causes, unread at the stop: bodies at full adult size in the film (body fraction 0.98,
-where round 40's crowd was juveniles at adult scale 0.30), the placer's reservation
-against grown bodies, `crowded` rising 20 to 99 a window; a corpse lingers about 3,700 s
-until its joules fall under 1e-6 (1,600 standing, as in round 40; a cost, not the cause).
-The diagnosis is the morning's first job, with `positions-read.py`'s nearest-neighbour
-column and a reconstructed frame of seed 2 at 7,000 s (`scratch/snaps/r41b-s2/`).
+cores each (measured over a minute), so the pace was the simulation's own. What the night's diagnosis excluded and what it found (`scratch/r41/nn.py`, the
+positions rows; `scratch/snaps/r41b-s2/` at 7,000 s): **not the spacing**, since round
+40 at 7,000 s had the same nearest-neighbour distribution (median 1.47 m, a quarter under
+1 m) at 2,490 bodies with 0 to 1 million pairs a window; **not the placer**, since
+`crowdedWindow` reads 0 to 8; not corpses, which are Core objects. **The pairs track the
+jointed count across every run on file**: round 40 with 10 to 94 jointed bodies read 0 to
+1 million a window, round 41 seed 2 with about 100 read 2 to 75 million, round 41 seed 1
+with 400 to 480 read 4 to 209 million, round 41b seed 3 with 230 to 720 read 2 to 239
+million. And within every one-substance run the pairs grow several-fold over thousands of
+seconds at a flat jointed count, which reads as contacts that persist once made (a link
+lodged against a neighbour and never parting) and as joints multiplying per body (seed 1
+went from 2.4 to 3.9 degrees of freedom per jointed body). So the joint is the cause after
+all, through the contact machinery rather than the drive, and the free joint is a
+consequence of D098's economy (tissue at 0.38 J, growth off the field, the link earning
+half a leaf's light, the idle charge 1e-4). Two things follow for the owner's ruling: a
+price on the joint for round 41c (round 33's idle 0.02 is the ready lever; a link that
+earns nothing is the other), and an instrument before it runs, contact pairs per body and
+per jointed body in the report so the next round reads this in its first hour rather than
+its seventh (it lives under `Assets/Evosim`, so it moves the hash and lands before the
+launch). The seeds' books, snow read and frames stand; nothing else is read from them.
 **The pace, read at 01:10 on 2026-09-19, and the reason:** seeds 1 and 3 run at 0.22 to
 0.26 times real time and falling, seed 2 at 0.42, with physics at a third to a half of
 the wall where round 40 gave it a fifth. Under this economy the joint is nearly free (a
