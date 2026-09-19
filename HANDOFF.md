@@ -31,10 +31,21 @@ body never shades itself. Parts were free under D098 (tissue 0.38 J a body, grow
 field), so the fold spread in every seed by 2,000 s; round 40 priced parts in matter and
 never saw one. The Core probe `scripts/overlap/` (develop a snapshot, count
 self-overlapping part pairs) reproduces the physics' pairs per body in every seed, round
-41b's 7.5 against 7.6 included. `fable-propose-silhouette.md` puts the fix in front of the
-owner: cap a body's lit area at its silhouette, and make the terminal-only edge respect the
-limit; with those the joint's price can be lifted again. Nothing runs; workers 2, 3 and 4
-are refreshed and idle, their locks cleared.
+41b's 7.5 against 7.6 included. The owner ruled the fix at 07:05 (D099, absorbing
+`fable-propose-silhouette.md`): a body earns no more light than its convex hull's
+silhouette, and a terminal-only edge keeps the recursive limit. The ledger and the probe
+sized it first: capped, the sixteen-part knot reads 0.31 m² against the leaf's 0.36 and
+0.19 W net against 0.84 at 5 m, so every knot loses from birth and no one-part body is
+touched. **The build is underway** (`logbook/specs/silhouette-spec.md`; an Opus subagent on
+branch `silhouette` in `scratch/wt-silhouette`): the hull in Core, `LightSilhouetteCap`
+(`EVOSIM_SILHOUETTE`, off by default, on from round 41d), the developer's `CanEnter` on
+every edge, the ledger's capped area, the knots under `inocula/`. Then a 300 s smoke, the
+dt 0.02 screen of seed 1 to 5,000 s (`pairs/body` under 0.05, no body at a part cap, pace
+above 1x), and round 41d: round 41c's world with the cap on and the joint's price back at
+0.0001, pre-registered as 0108 with E1 to E9. Nothing runs; workers 2, 3 and 4 are refreshed
+and idle, their locks cleared. The three knots are pictured in 0107 (solo mode,
+`scratch/r41/knot-shots.ps1`), and the owner's idea of a video story of the knot is in the
+queue below.
 
 **Round 41b stopped as futile at 02:55 on 2026-09-19 (seeds 1 to 3 at 5,600, 7,900 and
 6,400 s; the queue killed before seeds 4 and 5).** Not for the joints alone. The pace fell
@@ -833,6 +844,14 @@ write it down." The agent's first thoughts; a proposal follows round 37b's read.
    prize has not appeared, and a matter grid stirred slower strands stock in cells too small
    to afford a child). Paint patches into the field: a source that nothing feeds is a rule the
    world cannot explain.
+5. **A story for video: the knot** (owner, 2026-09-19 07:30: "selection just showed us
+what's wrong with our physics. This might be worth a story in video"). The arc is in 0107's
+last section and its pictures: the pace falling, the joint blamed and acquitted by its own
+instrument in three hours, the touching count that could not be two bodies, the probe's
+count matching the physics', the leaf with a fist folded through it. Material: a faithful
+replay of `r41c-s3` to 3,000 s in the theatre, the solo mode turning the knot
+(`scratch/r41/knot-shots.ps1`), the part histogram from `scripts/overlap/` going from two to
+sixteen. Made after round 41d has run, so the story has its ending.
 
 ## The decisions in front of the owner
 

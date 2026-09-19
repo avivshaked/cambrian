@@ -5432,3 +5432,46 @@ afternoon): removes the lottery, keeps the licence fee and the two loops. Matter
 and the crowd capped on energy alone: nothing then strips the surface and a lit leaf breeds
 forever, the world before D048. Finishing round 40 before the rebuild: the owner's call, and
 its 15,000 s readings were already in (0106's read).
+
+### D099
+**A body earns no more light than its silhouette, and a terminal edge keeps its limit** · 2026-09-19
+
+**Status:** ruled by the owner on the morning of 2026-09-19 ("Yeah sounds good", 07:05) on
+`fable-propose-silhouette.md`, absorbed here and deleted; built to
+`logbook/specs/silhouette-spec.md`; runs from round 41d.
+
+**Decision.** Two rules.
+
+1. A body's light income, and the shadow it casts on what is below it, are at most the
+   silhouette of the whole body: the orientation-averaged projected area of its convex hull,
+   the hull's surface over four by the same Cauchy formula each part already uses. When the
+   sum of the parts' projected areas exceeds it, every part's share is scaled down by the same
+   factor, so the shade rule of §5A.2b stays self-consistent. `RunConfig.LightSilhouetteCap`,
+   `EVOSIM_SILHOUETTE`, off by default so that every recorded world replays; on from round 41d.
+2. `Developer.Expand` asks a node's recursive limit of every edge, terminal-only included. A
+   terminal-only self-edge on a node with a limit of 1 grows nothing beyond the node, which is
+   what a terminal edge was written to do: put an extremity at a chain's tip.
+
+**Why.** Rounds 41b and 41c collapsed on contact pairs, and the pairs were inside bodies
+(logbook/0107, last section). A two-node genome, a photosynthetic root and a `link` node with
+a terminal-only edge to itself, developed into a knot of nine or sixteen parts, because the
+terminal-only edge skipped the limit and recursed to the depth cap, and the edge's turn
+folded the chain into a ball in which every part overlapped every other. PhysX resolved each
+pair on every step. The knot spread because income and shadow were both the sum of the parts'
+areas and a body never shaded itself: sixteen parts folded into a 0.2 m ball collected
+sixteen areas of light, and under D098 a part cost the tissue price alone. The ledger read the
+sixteen-part knot at the leaf's volume and standing cost with three times its light. With the
+hull cap it reads 0.31 m² against the leaf's 0.36 and 0.19 W net against 0.84, and every
+knot in the record loses to a leaf from birth; a one-part box reads hull equal to lit area to
+six decimals, so no honest body is touched (`scripts/overlap/`). The joint, priced in round
+41c on the night's diagnosis, was never the cause, and its price goes back to 0.0001 in
+round 41d so that round 34's question is asked on this economy.
+
+**Rejected.** A per-part standing cost: a dial on how many parts a body may afford rather than a
+rule about what light is, and the exploit stays in kind under any price that does not freeze
+founding. Pruning a self-overlapping part at development: changes the body space Sims
+defined and §11.2 measured, and the cap makes the knot lose without it. Self-collision off
+within a body: removes the physics cost and nothing else, and §11.2 kept it on deliberately.
+A bounding sphere or box for the silhouette: the sphere's disc is nearly twice a box's own
+Cauchy area, so it binds on no knot rooted in a box, and the bounding box leaves the knot a
+premium; the hull is exact and the probe already computes it.
