@@ -22,10 +22,16 @@ about eight hours a seed, and nothing in the record. **Next after the reboot**: 
 stale `Temp/UnityLockfile` on workers 2, 3 and 4 (the stop leaves it), refresh nothing (the
 build is unchanged, `simHash 46335d9f…`), rename the stopped run directories aside
 (`runs/r41e-s*` keep their `stopped` manifests as the record of the interruption), and
-restart the queue detached with the same launcher and hash; then re-arm the watch **without
-a bash loop**: a scheduled check from inside the session, never a background shell loop,
-because a loop outlives the session that armed it and multiplies on every re-arm. The
-gotcha for CLAUDE.md is queued.
+restart the queue detached with the same launcher and hash; then watch with `python scripts/watch-round.py r41e --read scripts/reads/r41d-read.py`,
+one look that exits, fired from the session's cron and never from a shell loop
+(CLAUDE.md's gotcha on background shell loops; `scripts/sweep-orphans.ps1` first, every
+session). **Nothing is relaunched yet** (2026-09-20 afternoon): the owner asked to weigh
+changes before re-arming, and the agent's recommendation on the table is to read 41e as
+stopped, build lever 1 and validate it against the stopped arms' recorded rows, and screen
+a wider, shallower tank on a smaller budget at dt 0.02 for the next round. The reading
+behind it: nine bodies in ten live in the top 11 to 16 m of a 60 m column, the dissolved
+matter stands at 0.003 to 0.007 units/m3 against 0.5 seeded, and the leaves are 80%
+uptake-limited, so the crowd is the budget's and the soup is the footprint's.
 
 **Round 41d is stopped at 15,000 s and read (0108's last section, 2026-09-20 03:55), the
 profile branch is merged to main (`4de789d`), and round 41e is running (launched 04:14 to 04:16 on
