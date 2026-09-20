@@ -6,6 +6,38 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
+**Round 41d is stopped at 15,000 s and read (0108's last section, 2026-09-20 04:15), the
+profile branch is merged to main (`4de789d`), and round 41e is pre-registered and waiting for
+the owner's yes (logbook/0109).** The three seeds were stopped as `manual-futility` under V5
+at their 15,000 s rows (02:51, 03:17, 03:50 on 2026-09-20; the queue killed at 21:46 the
+evening before, seeds 4 and 5 never launched). The read: E1 failed high in two seeds, E3, E4
+and E7 held, E5 failed in all three (the eaters peaked at 30 inherited), E8 failed threefold
+(4,200 wall s per 1,000 s per 1,000 bodies), E9 failed (3.0, 2.5 and 1.3 pairs a body at
+15,000 s, rising 1.3 to 1.6 times a window and never the doubling signature), E10 failed
+(seed 2: 36 bodies at sixteen parts, 13% at eight or more, 2.7 self-overlapping pairs a
+body; seeds 1 and 3 jointed sprawls at 1.4). The cap closed the two-node knot's route and
+selection found the bush by another: one node, three self-edges, limit 3, mirrored to depth
+2, sixteen rigid parts (`inocula/bush-16-r41d-s2-15000.json`), which the ledger reads at 1.7
+times a one-part leaf's light on the same matter with the cap binding it to half, because a
+spread body has more hull than a packed one. The fold's cost is the overlap, which D101
+refuses at birth; the pace's is the harness, which D100 halves at the drag pass. Pictures
+at 15,000 s beside the entry (`logbook/images/0108-bushes-…`, `0108-leaves-…`).
+
+**Round 41e** (`rounds/launch-r41e.ps1`; 0109) is 41d's world with `-WaterHold 0.5` and
+`-SelfOverlap 0.1`, five seeds on workers 2, 3 and 4, 30,000 s, wall 1,800 minutes. The
+smoke on main after the merge (`runs/r41esmoke-main`, worker 2 refreshed from main after the
+stale locks were cleared): header `silhouette on · selfOverlap 0.1 · water held 0.5 s`,
+`simHash 46335d9f…`, `coreHash c4821b33…`, `configHash 3973b0e1`, one self-overlap stillbirth
+among the founders, the drag pass's water at 8%. The queue is `scratch/r41/queue-e.ps1`
+(`-ExpectSimHash 46335d9f -Prereg logbook/0109-…`), to be started detached once the owner
+has said yes and 0109 is committed clean. Workers 2, 3, 4 and 6 carry the merged build. The
+Core suite ran `-All` on the merged tree before the push (result in the commit message).
+Lever 1 of the profile (the solver read once a step and shared between the drag pass, the
+trace and the sensors; identity kept) is ruled for after round 41e. The reads for the
+round: `scripts/reads/r41d-read.py` (0108's clauses; 0109 adds E11 from `self stillb` and
+E12 from the probe's histogram), the probe on the 5,000, 15,000 and 30,000 s snapshots,
+pictures every few thousand seconds on worker 6, the theatre before the entry.
+
 **Round 41 was stopped as futile at 23:03 and round 41b, the same world with the
 remineralisation at 0.002 /s, launched at 23:04 (logbook/0107's second launch section;
 `rounds/launch-r41b.ps1`; queue `scratch/r41/queue-b.ps1`, detached, log
@@ -54,54 +86,6 @@ past 4,000 bodies stopped. The early look draws seed 1 at 3,000 and 6,000 s from
 snapshots on worker 6 (`scratch/r41/snap-early-d.sh`). The three knots are pictured in 0107
 (solo mode, `scratch/r41/knot-shots.ps1`) and kept under `inocula/`, and the owner's idea of
 a video story of the knot is in the queue below.**
-
-**The owner ruled the cheapening on the afternoon of 2026-09-19 and both rules are built
-(D100, D101; `logbook/specs/cheapening-spec.md`; the profile in
-`logbook/specs/harness-profile-spec.md` §6 and §7).** The water is sampled once a body at
-its root and held for a metabolic step (`FluidConfig.WaterHoldSeconds`, `EVOSIM_WATER_HOLD`,
-header `water held 0.5 s`), and a body born with two non-adjacent parts overlapping deeper
-than a tenth of the smaller part's thinnest half-extent is a counted stillbirth
-(`RunConfig.SelfOverlapDepthFraction`, `EVOSIM_SELF_OVERLAP`, header `selfOverlap 0.1`, the
-table's `self stillb`), the owner's own rule in place of self-collision off. Both default to
-off so every recorded world replays, both refuse every earlier `config.json`, and both are
-Core changes, so the branch (`profile` in `scratch/wt-profile`, at `27b27cd`, carrying the
-profile's two instruments as well, `rounds/launch-r41e.ps1`) stays unmerged until round 41d
-ends: every worker compiles Core from the main tree at launch and seeds 4 and 5 would
-otherwise run another build than 1 to 3. The screen (seed 1, 1,500 s at dt 0.01, worker
-6, beside the round) against the profile's run of the same seconds: the drag pass 44%
-cheaper a link (3.09 to 1.72 µs), the harness 24% cheaper a body (9.1 to 6.9 µs), the seed
-1.27 times faster at the same crowd, 13 self-overlap stillbirths in 732 conceptions, contact
-pairs a body-step halved at 1,500 s. Lever 1 (read the solver once a step and share it; the
-trace's 1.9 µs a body-step) is ruled for after the round. The profile's measurement: at the
-round's crowd the wall is PhysX 25%, the grid 11%, the harness 64%; inside the harness the
-fluid pass 57%, the throw trace 20%, the brain and senses 15%; inside the fluid pass the
-water's sampling 45%, the engine crossings 45%, the panels 10%; three runs of one seed on
-the instrumented builds replay each other sample for sample. **Round 41e** is 41d's world
-with both rules on, pre-registered after 41d's read: the expected hash from a smoke on a
-worker refreshed from main after the merge, the reads in the spec's §5. Round 41d's first
-reads at 5,000 s: seed 2 passes every clause it can be read on; seeds 1 and 3 read 1,172 and
-1,209 alive, E1's band failed high with three quarters of the bodies jointed, and E9 and
-E10 hold in all three. **The owner ruled at 21:40 on 2026-09-19 ("sounds good. proceed"): round 41d runs to 15,000 s
-and stops.** Each seed is stopped as `manual-futility` under 0108's V5 at its 15,000 s sample
-by a detached stopper (`scratch/r41/stop-d-15k.ps1`, log `scratch/logs/r41d-stop15k.out`),
-the queue was killed at 21:46 so seeds 4 and 5 never launch, and the round is read at
-15,000 s as a short round: E9 is already past its 1.0 line in seeds 1 and 2 (1.5 and 1.4
-pairs a body at 12,100 and 12,900 s) and the pace is 0.14 to 0.19x, so the wall would have
-censored the seeds near 20,000 s. The morning's work: the 15,000 s reads and pictures, the
-stop written into 0108, the branch merged, workers refreshed, a smoke on main for round
-41e's hash, round 41e's pre-registration (0109) for the owner's yes, then the queue.
-**Seed 2 was the watch item**: `pairs/body` by
-thousand-second window 0.05, 0.06, 0.09, 0.20, 0.35, 0.47 from 4,000 to 10,000 s, the rise
-slowing (2.3x, 1.8x, 1.3x) and still under E9's 0.5 line, the pace 0.34x to 0.16x over the
-same windows; the probe at 8,000 s reads bodies of three to five parts folding on
-themselves (self-overlapping pairs 0.27 a body, fourteen bodies at eight parts or more, a
-thirteen-part rigid body at the top with `hull/lit` 0.33), which is at E10's edges. Seeds
-1 and 3 read 0.26 and 0.17 in their 7,000 to 8,000 s windows, rising 1.4x a window. The
-pre-registered rule stands: a seed stops on a doubling in each of two consecutive windows
-past 0.5. The eaters are thin in seeds 1 and 3 (no inherited eater alive at 8,500 and
-8,300 s) and founded in seed 2 (16 inherited at 10,000 s); E5 is read at the end. Pictures at 6,000 s (seed 1)
-and 8,000 s (seed 2) in `scratch/snaps/r41d-s*`: the crowd in the top four to five metres,
-seed 2's denser and larger-bodied, no crust at the glass.
 
 **Round 41b stopped as futile at 02:55 on 2026-09-19 (seeds 1 to 3 at 5,600, 7,900 and
 6,400 s; the queue killed before seeds 4 and 5).** Not for the joints alone. The pace fell

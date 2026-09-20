@@ -169,3 +169,103 @@ every header `dt=0.01`, `silhouette on`, `idle 0.0001 W/N·m`, `remin 0.002 /s`,
 100 J`, `matterBudget 3000`, `physics jobs 0`. The queue is `scratch/r41/queue-d.ps1`,
 detached, and seeds 4 and 5 launch as arms end. The early look draws seed 1 at 3,000 and
 6,000 s from its snapshots on worker 6.
+
+## Round 41d stopped at 15,000 s: the bush
+
+*2026-09-20, 04:15.* The owner ruled at 21:40 on 2026-09-19 that the three seeds run to their
+15,000 s sample and stop, and that seeds 4 and 5 never launch. The queue was killed at 21:46. Each seed was stopped as
+`manual-futility` under V5 at its 15,000 s row (seed 2 at 02:51, seed 3 at 03:17, seed 1 at
+03:50), and the round is read here at 15,000 s as a short round. The reason V5 names is the one it was written for: by 12,000 s the seeds had
+shown the two adjustments the world needs, and both were ruled and built that afternoon
+(D100, D101; `logbook/specs/cheapening-spec.md`). At the pace they were running, 0.08x by
+midnight, the wall would have censored them near 20,000 s in any case.
+
+### The reads
+
+The three seeds at 15,000 s, `scripts/reads/r41d-read.py 15000` and the probe on the 15,000 s
+snapshots:
+
+| | seed 1 | seed 2 | seed 3 | reads |
+|---|---|---|---|---|
+| E1 alive (350 to 1,100 at 5,000 s) | 1,172 | 895 | 1,209 | failed high in 1 and 3, as at 5,000 s |
+| alive at 15,000 s | 1,428 | 1,451 | 1,517 | |
+| E3 `upt lim`, `mat top` under `mat deep` | 78%, yes | 79%, yes | 87%, yes | holds |
+| E4 snow of budget (0.10 to 0.40) | 0.19 | 0.26 | 0.20 | holds |
+| E5 inherited eaters, most after 5,000 s (50) | 30 | 30 | 3 | fails in all three |
+| E7 throws; rim quarter; columns of uniform | 0; 0.28; 0.96 | 0; 0.25; 0.93 | 0; 0.22; 0.98 | holds |
+| E8 wall s per 1,000 s per 1,000 bodies (700 to 1,800) | 4,238 | 4,249 | 4,193 | fails, threefold |
+| E9 `pairs/body` at 15,000 s (under 1.0) | 3.02 | 2.47 | 1.26 | fails |
+| E10 bodies at 16 parts; at 8 or more; self-pairs a body (0; 1%; 0.3) | 0; 4.8%; 1.4 | 36; 13%; 2.7 | 2; 6.6%; 1.4 | fails |
+| jointed share, `mean dof` | 79%, 2.2 | 8%, 0.45 | 88%, 4.2 | recorded |
+
+E2 and E6 are 30,000 s clauses and are not read. The books closed on every row of every
+seed and nothing threw in 31 million jointed body-seconds; the disc stayed mixed. The fold
+signature never fired: no seed doubled its pairs in two consecutive windows past 0.5. Seed
+1's windows from 6,000 s read 0.13, 0.19, 0.26, 0.43, 0.63, 0.89, 1.30, 1.74, 2.37 and 3.02, a
+steady 1.3 to 1.6 times a window. Seeds 2 and 3 have the same shape, ending at 2.47 and 1.26.
+That is not round 41c's doubling, and it is not affordable either. The pace fell from 0.34x
+at 8,000 s to 0.08x at 14,000 s, with the physics a flat 28 to 31% of the wall and the
+harness 65 to 68%, the split the profile measured on this world (`harness-profile-spec.md`
+§6).
+
+### What the pairs were
+
+The probe on the 15,000 s snapshots. Seed 2's world is 36 bodies of sixteen parts, 35 of
+fifteen, 96 of thirteen and 538 of seven, nearly all rigid, 801 of 1,338 rigid bodies
+overlapping themselves, 3,879 self-overlapping pairs. Its largest is one node with three
+self-edges and a recursive limit of 3, a photosynthetic box that branches into mirrored
+copies of itself to depth 2, capped at sixteen parts (`inocula/bush-16-r41d-s2-15000.json`).
+That is the route the two-sided reading above named, a non-terminal self-edge with a
+mutated limit, and the cap binds it: lit area 1.15 m², silhouette 0.60 m². Seeds 1 and 3 are
+the articulated version, jointed sprawls of five to fourteen parts (696 of 1,130 jointed
+bodies overlapping themselves in seed 1, 600 of 1,332 in seed 3), the largest at thirteen
+parts with 39 overlapping pairs and a silhouette at 0.54 of its lit area.
+
+The ledger says why the bush wins with the cap on. Against round 41c's one-part leaf at the
+same volume and tissue (0.16 m³, 81 J, the same standing cost), under round 41d's config:
+
+| | leaf, one part | bush, sixteen parts |
+|---|---|---|
+| lit area, uncapped | 0.36 m² | 1.15 m² |
+| silhouette | 0.48 m² | 0.60 m² |
+| income at the surface | 3.6 W | 6.0 W |
+
+The cap took two thirds of the bush's light and it still earns 1.7 times the leaf's on the
+same matter, because a body spread over a volume has more hull than a body packed into it.
+That is geometry, and it is what a real bush or a thin leaf is: the cap made a body earn
+its outline, and a spread outline is larger. D099 read the knot losing to a leaf from birth
+because the knot it was sized on was a ball folded inside a leaf's footprint; a body that
+spreads is a different shape, and nothing in the light rule should stop it. What the cap
+does not price is that these bodies' parts sit inside each other, thirty-nine pairs deep
+in the worst, and the solver resolves every pair on every step and never separates them,
+which is the physics' third of the wall and the fall of the pace. That is D101's job: a
+body born inside itself is not born, the physics of self-collision stays on, and an open
+bush is still allowed to earn what its outline says.
+
+### What it looked like
+
+![Round 41d seed 2 at 15,000 s, drawn from its snapshot: the top ten metres of the tank full of jagged green bushes](images/0108-bushes-r41d-s2-15000-side.png)
+
+Seed 2 at 15,000 s, from its snapshot: the top ten metres are jagged green bushes, branched
+and mirrored, a shape the campaign had never grown, with the few eaters gone (the line
+peaked at 30 inherited and died out by 13,000 s). Seed 3 is round leaves and small jointed
+stacks packed into the top five metres, and seed 1 small jointed sprawls through the top
+fifteen; all three even across the disc, no crust at the glass.
+
+![Round 41d seed 3 at 15,000 s, drawn from its snapshot: round leaves and small jointed stacks in the top five metres](images/0108-leaves-r41d-s3-15000-side.png)
+
+### The reading
+
+The cap closed the knot's route and not the geometry. No two-node terminal-edge knot
+appears in any snapshot, the developer's rule holds, and the pairs were flat for the first
+seven thousand seconds. Then selection found the bush by the other route, and the jointed
+sprawl beside it, and the pace fell with the pairs as it had in 41b and 41c, only slower. E5
+failed in every seed: the eaters founded in seeds 1 and 2 and stayed under 50 (seed 1's line
+was alive at 28 when the round stopped), which is round 40's larder question again and is
+not read further here on a round stopped at half its budget. E1 failed high in two seeds as
+at 5,000 s. What the round asked, whether a body that earns its outline stops folding, is
+answered no, and the entry's own two-sided reading had the sentence for it: a knot that pays
+with the cap on is the cap's fault and not the developer's. I would put it differently after
+the ledger: the cap is right and the bush is honest, and the fault was mine in sizing the
+cap on a ball rather than on a bush; inference, and round 41e reads it. Round 41e is this
+world with D100's held water and D101's birth rule, pre-registered in 0109.

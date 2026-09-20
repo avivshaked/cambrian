@@ -1003,6 +1003,36 @@ actually verifying it.
   counts it, which nothing in a run report surfaces yet; the probe reports it per snapshot
   and read zero on every recorded body. The absorptive log's `TotalLitArea` column stays the
   uncapped sum.
+- **From D100 and D101 (2026-09-19) the water is held and a folded body is not born, and
+  both tunables refuse every earlier config.** `FluidConfig.WaterHoldSeconds`
+  (`EVOSIM_WATER_HOLD`, header `water held 0.5 s` or `water per link`, default 0) samples
+  the streams once a body at its root and holds the velocity and acceleration for that
+  long; 0 is the recorded per-link sampling. `RunConfig.SelfOverlapDepthFraction`
+  (`EVOSIM_SELF_OVERLAP`, header `selfOverlap 0.1` or `off`, default 0) makes a body with
+  two non-adjacent parts overlapping deeper than that fraction of the smaller part's
+  thinnest half-extent a stillbirth at `World.Admit`, founders and inoculants included,
+  counted in `stillbirths` and `selfOverlapStillbirths` (the table's `self stillb`, appended
+  at the end); the physics of self-collision stays on. Both are per-step or per-birth
+  changes and a new realisation of every seed; rounds 41 through 41d's configs are refused
+  by the build. The cap did not stop the bush: round 41d grew a one-node three-self-edge
+  bush of sixteen parts that earns 1.7 times a leaf's light on the same matter with the cap
+  binding (logbook/0108's last section, `inocula/bush-16-r41d-s2-15000.json`), because a
+  spread body has more hull than a packed one, which is honest geometry; the fold's cost was
+  the overlap, and D101 refuses that. The profile's instruments came in with them:
+  `wallHarness<Phase>Ms` for ten phases and `wallFluid{Gather,Water,Compute,Apply}Ms` with
+  `harnessBodySteps` and `fluidLinkSteps` on every row, the footer's `harness split`,
+  `fluid split`, `harness per body-step` and `fluid per link-step` lines
+  (`logbook/specs/harness-profile-spec.md`). At round 41d's crowd the wall was PhysX 25%,
+  the grid 11%, the harness 64%, of which the drag pass 57% and the throw trace 20%; the
+  next cheapening is reading the solver once a step and sharing it between the drag pass,
+  the trace and the sensors, which keeps identity.
+- **A stopped arm leaves `Temp/UnityLockfile` on its worker, and `new-worker.ps1` refuses
+  the refresh.** `stop-arm.ps1` kills the process, the lock stays, and the refresh reads it
+  as an open Editor; on 2026-09-20 four workers were "refreshed" this way, none moved, and
+  the smoke that followed recorded the previous build's `simHash` with a header missing the
+  new tokens. With no Unity process running, delete the lock and refresh again, and read
+  the header tokens of the smoke before taking its hash. A worktree's worker is a copy too:
+  an edit in the worktree reaches `<worktree>/unity-wN` only by a refresh from the worktree.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
