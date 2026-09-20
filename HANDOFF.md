@@ -6,6 +6,32 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
+**Round 42 is running (logbook/0110, launched 20:12 to 20:13 on 2026-09-20).** Round 41e's
+world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
+the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
+to 3 on workers 2, 3 and 4, each pinned to two fast cores by `run-arm.ps1 -AffinityMask`
+from `rounds/launch-r42.ps1` (0x003C, 0x03C0, 0x3C00, read back from the live processes).
+Every manifest reads `simHash c0d721b9…`, `coreHash c4821b33…`, `configHash ff557bce`,
+`physicsJobWorkers 0`, commit `83ea184`; every header `dt=0.01`, `matterBudget 1500`,
+`silhouette on`, `selfOverlap 0.1`, `water held 0.5 s`, the 2,200 m² tank at depth 45. The
+queue is `scratch/r41/queue-r42.ps1`, detached, log `scratch/logs/r42-queue.out`; seeds 4
+and 5 launch as arms end. **The watch is a session cron at :17 and :52** running
+`scripts/watch-round.py r42` once a time (state in `scratch/logs/r42-watch.json`); after a
+restart or compaction re-create it with CronCreate and run `scripts/sweep-orphans.ps1`
+first. Never a shell loop. The reads: `python scripts/reads/r41d-read.py --budget 1500
+<second> <arm>`, the overlap probe on the 5,000, 15,000 and 30,000 s snapshots, pictures
+from snapshots on worker 6. What the round is for: F1 (the crowd halves) and F8 (a pinned
+seed near real time, 600 to 1,600 wall s per 1,000 s per 1,000 bodies, 0.9x or better),
+then 41e's unread 30,000 s clauses. **Open for the owner:** the bed. The ruling to raise
+it into the lit band cannot be carried out in this tank: depth 20 m is refused by the
+streams (`CurrentField`, equal RMS on every axis has no solution when the overturning cell
+is wider than deep), and the 30 m screen (`runs/r42scrB30-s1`, floor 15 to 45 m) left nine
+bodies in ten above 12 m with 3.3 bed contacts a step against 2.0. A floor at 5 m needs a
+smaller tank or the streams' rule relaxed. Also open: a proposal for unjointed bodies
+leaving the articulation solver, and whether the three-arm cap moves now that pinning
+takes an arm's cost beside two others from 1.48 to about 1.09 (four arms fit the eight
+fast cores at two each; the cap is the owner's, D095).
+
 **Round 41e was stopped at 12:42 on 2026-09-20 for a reboot, not for the world.** Orphaned
 watch loops of the agent's (`scratch/r41/watch-c.sh`, `watch-d.sh`, `watch-e.sh`,
 `scratch/r40/watch.sh`, dozens of copies left behind by session restarts and compactions) each
