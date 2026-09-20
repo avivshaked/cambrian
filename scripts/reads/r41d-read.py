@@ -56,7 +56,7 @@ def main():
             wall = (r['wallTotalMs'] - five['wallTotalMs']) / 1000
             body_s = sum(x['alive'] * 100 for x in rows if 5000 < x['t'] <= t)
             print(f'  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to {t} s: {wall / (body_s / 1000) * 1000:.0f} (700 to 1,800); pace {(t - 5000) / wall:.2f}x')
-        wins = [(k, window_pairs(by, k)) for k in range(6000, t + 1, 1000) if k in by and k - 1000 in by]
+        wins = [(k, window_pairs(by, k)) for k in range(4000, t + 1, 1000) if k in by and k - 1000 in by]
         print(f'  E9 pairs/body at {t} s window {wins[-1][1]:.2f} (< 1.0 at 15,000 s); by window ' + ' '.join(f'{k // 1000}k:{v:.2f}' for k, v in wins))
         print(f'  E10 probe by hand on snapshots/{t:09d}.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3')
         print(f'  recorded: jointed {r["jointed"]} ({r["jointed"] / alive * 100:.0f}%, inh {r["jointedInherited"]}), mean dof {r["dof"] / max(alive, 1):.2f}, audit {r["auditResidual"]:.1e}, mat resid {r["matterResidual"]:.1e}, wraps {r["wraps"]}')
