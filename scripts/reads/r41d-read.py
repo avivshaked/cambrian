@@ -45,7 +45,8 @@ def main():
         alive = r['alive']
         print(f'== {arm} at {t} s: alive {alive}, status {m.get("status")} {m.get("reason") or ""}')
         print(f'  E1 alive {alive} (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s {five["alive"] if five else "?"}')
-        print(f'  E2 alive over 5,000 s: {alive / five["alive"]:.2f}x (>= 1.3 at 30,000 s); margin s {r.get("meanReserveMargin", float("nan")):.0f} (< 150 at 30,000 s)')
+        if five:
+            print(f'  E2 alive over 5,000 s: {alive / five["alive"]:.2f}x (>= 1.3 at 30,000 s); margin s {r.get("meanReserveMargin", float("nan")):.0f} (< 150 at 30,000 s)')
         print(f'  E3 upt lim {r["uptakeLimitedShare"] * 100:.0f}% (40 to 95%); mat top {r["matterSurface"]:.3f} vs deep {r["matterDeep"]:.3f} (top <= deep)')
         snow = r['detritusJoules'] / RHO / BUDGET_UNITS
         print(f'  E4 snow {snow:.2f} of budget (0.10 to 0.40)')

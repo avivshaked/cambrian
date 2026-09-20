@@ -20,7 +20,19 @@ and 5 launch as arms end. **The watch is a session cron at :17 and :52** running
 restart or compaction re-create it with CronCreate and run `scripts/sweep-orphans.ps1`
 first. Never a shell loop. The reads: `python scripts/reads/r41d-read.py --budget 1500
 <second> <arm>`, the overlap probe on the 5,000, 15,000 and 30,000 s snapshots, pictures
-from snapshots on worker 6. What the round is for: F1 (the crowd halves) and F8 (a pinned
+from snapshots on worker 6. **The 5,000 s reads (21:00):** F1 holds in all three (`alive` 548, 404, 476 against
+250 to 650, half of 41e's 996, 1,003, 1,206). F8 holds so far: 1,283 and 1,158 wall s per
+1,000 s per 1,000 bodies past 5,000 s in seeds 1 and 2 (seed 3's window is 200 s and reads
+1,794), the seeds running at 1.2 to 1.9x real time where 41e ran at 0.3 to 0.7x at this
+second, whole-run 1.9 to 2.5x. F9 holds (0.05, 0.01, 0.06 pairs a body), F11 holds (2.5%,
+1.9%, 4.7% refused; the floor last fired at 500 to 700 s), F10 holds (the probe: no pair
+past the rule's depth, four shallow pairs in seed 3, nothing over seven parts), F3, F4 and
+F7 hold (upt lim 74 to 86%, snow 0.16 to 0.18, nothing thrown, `cols` 0.95 to 1.01). No
+inherited eaters past three yet. The picture of seed 1 at 5,000 s from its snapshot
+(`scratch/snaps/r42-s1/`): a thin scatter thickest at the surface and thinning to about
+20 m, spread evenly over the disc from above, the tilted bed bare below with three or four
+bodies near its shallow end. The read script's E2 line is guarded for marks before
+5,000 s (uncommitted until the next doc commit). What the round is for: F1 (the crowd halves) and F8 (a pinned
 seed near real time, 600 to 1,600 wall s per 1,000 s per 1,000 bodies, 0.9x or better),
 then 41e's unread 30,000 s clauses. **Open for the owner:** the bed. The ruling to raise
 it into the lit band cannot be carried out in this tank: depth 20 m is refused by the
