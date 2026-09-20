@@ -35,7 +35,15 @@ seeds 4 and 5 launch as arms end; the watch is `scratch/r41/watch-e.sh`, the rea
 `scratch/r41/read-e.py`, the early look `scratch/r41/snap-early-e.sh`. Workers 2, 3, 4 and 6 carry the merged build. The
 Core suite ran `-All` on the merged tree before the push: 760 of 760 in 15 minutes.
 Lever 1 of the profile (the solver read once a step and shared between the drag pass, the
-trace and the sensors; identity kept) is ruled for after round 41e. The reads for the
+trace and the sensors; identity kept) is ruled for after round 41e. **Reads so far (2026-09-20 10:35):** at 5,000 s every clause holds in all three seeds
+except E1 high in seed 3 (1,206), with `pairs/body` 0.01 to 0.09, zero to one self-overlapping
+pair a snapshot, refusals 0.3 to 2.8% of births; at 10,000 s seeds 1 and 2 hold E9 (0.03) and
+E10, E8 holds in seed 2 (1,148) and fails in seed 1 (2,071, 69% jointed at 0.40x); at 15,000 s
+seed 2 holds everything readable (1,655 alive, 0.05 pairs a body, one self-overlapping pair,
+E8 1,220 at 0.56x, refusals 1.9%, eaters at 25 inherited and climbing, E5 not yet at 50). Seed
+2 is a world of leaves (967 of 1,655 one-part), seed 1 of two-part jointed bodies, seed 3 the
+heavy jointed one at 0.18 pairs a body, a crowd's contacts (0.9 a touching body) and not a
+fold's. Pictures at 3,000 to 15,000 s in `scratch/snaps/r41e-s*`. The reads for the
 round: `scripts/reads/r41d-read.py` (0108's clauses; 0109 adds E11 from `self stillb` and
 E12 from the probe's histogram), the probe on the 5,000, 15,000 and 30,000 s snapshots,
 pictures every few thousand seconds on worker 6, the theatre before the entry.
