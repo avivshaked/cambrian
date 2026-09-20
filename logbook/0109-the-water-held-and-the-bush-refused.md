@@ -131,3 +131,83 @@ f6416481`, `physicsJobWorkers 0`, `gitCommit 71e8bc3`; every header `dt=0.01`, `
 (`r41escreen-s1`, `cheapening-spec.md` §4), so the screen is a realisation of this world. The
 queue is `scratch/r41/queue-e.ps1`, detached, and seeds 4 and 5 launch as arms end. The
 early look draws seed 1 at 3,000 and 6,000 s from its snapshots on worker 6.
+
+## Stopped at 10,000 to 17,000 s, for the machine and not for the world
+
+*2026-09-20, 14:00. Written by the agent after the owner's reboot.*
+
+The three seeds were stopped at 12:42 with `stop-arm.ps1 -Reason manual-other`. Seed 1 was
+at 13,200 s, seed 2 at 17,700 s and seed 3 at 10,400 s. Seeds 4 and 5 never launched. The
+cause was the agent's, and it had nothing to do with the round. Watch loops left behind by earlier sessions had multiplied over four days. Once their
+session was gone, each opened a terminal window for every process it forked, and the owner
+could not use the desktop (CLAUDE.md's gotcha on background shell loops; HANDOFF). The arms were healthy when they
+were stopped. The shared world replays bit for bit, so a relaunch of a seed reproduces what
+is read here; what the stop cost is wall time. The owner chose to take the stop as the round's end and to weigh changes before the next
+one. So the round is read as it stands: three seeds of five, censored. Nothing below is a
+30,000 s clause.
+
+### The read
+
+| clause | seed 1 | seed 2 | seed 3 | reading |
+|---|---|---|---|---|
+| E1 `alive` at 5,000 s (350 to 1,100) | 996 | 1,003 | 1,206 | two hold, seed 3 high |
+| E2 `alive` over its 5,000 s count, at the last read | 1.34 at 10,000 s | 1.65 at 15,000 s | 1.23 at 10,000 s | on the way; unread at 30,000 s |
+| E2 `margin s` at the same reads | 93 | 93 | 287 | seed 3 holds a wide margin |
+| E3 `upt lim` (40 to 95%) | 85% | 76% | 75% | holds; top under deep in all |
+| E4 snow over the budget (0.10 to 0.40) | 0.19 | 0.22 | 0.17 | holds |
+| E5 inherited eaters, peak after 5,000 s | 110, and 99 at 13,000 s | 28 | 1 | one seed of three founded |
+| E7 diverged per million jointed body-seconds | 0 in 5.7 M | 0 in 2.9 M | 0 in 7.8 M | holds; nothing thrown at all |
+| E7 rim quarter; `cols` over uniform | 0.34; 0.91 | 0.28; 0.86 | 0.37; 0.86 | holds, `cols` at its floor |
+| E8 wall s per 1,000 s per 1,000 bodies (700 to 1,800) | 2,070 to 2,220 | 1,150 to 1,310 | 2,920 | holds in the leafy seed, fails in the two jointed |
+| E9 `pairs/body` at the last window | 0.06 | 0.06 | 0.22 | holds; no doubling anywhere |
+| E10 bodies at 16 parts; share at 8 or more; probe pairs a body | 0; 0; 0.004 | 0; 0; 0.001 | 0; 0; 0.002 | holds at every snapshot probed |
+| E11 refused at birth over births, by window | 1.4% at 5,000 s, 3.7% at 10,000 s | 0.3%, 1.3%, 1.9% at 15,000 s | 2.8%, then 10.0% at 10,000 s | holds in two; seed 3 on the line and rising |
+| E11 the floor's last firing | 500 s | 300 s | 600 s | holds |
+| E12 median parts a body at the last snapshot | 2 | 3 at 17,000 s (1 at 15,000 s) | 3 | holds where it can be read |
+
+E6 cannot be read: no boom above 300 eaters had happened. The probe ran on the 5,000 and 10,000 s snapshots of every seed. It also ran on seed 1's at
+13,000 s and on seed 2's at 15,000 and 17,000 s (`scripts/overlap/run.ps1`'s program,
+called on the files).
+
+### What it means
+
+The fold is gone. Round 41d read 1.3 to 3.0 contact pairs a body at 15,000 s and up to 2.7
+self-overlapping pairs a body in the probe. Here the pairs read 0.06 to 0.22. The probe finds between zero and eleven overlapping pairs
+in a whole world, every one of them shallow or made by a joint after birth. The refusal that bought it cost one birth in fifty in two
+seeds. In seed 3 it climbed to one in ten by 10,000 s. My reading, as inference: seed 3's jointed line of three- and four-part bodies sits close
+to the overlap depth, and its mutants cross it often. That is a lineage pressing against
+the rule. A sieve is for that, and the 30,000 s read would have had to watch it.
+
+The world did not go back to leaves, which was E12's worry. The parts histograms moved
+upward in every seed. Seed 3 went from a median of two parts at 5,000 s to three at
+10,000 s with 161 bodies of four. Seed 2 is the one worth a picture. It is a leafy world of one-part bodies, and in it a
+rigid three-part body went from 307 of 1,655 at 15,000 s to 663 of 1,736 at 17,000 s. The
+median jumped from one part to three in two thousand seconds.
+That is the outline paying and being earned open, in a line with no joints at all.
+
+Nothing was thrown: no divergence in sixteen million jointed body-seconds across the three
+seeds, where round 37b threw 43 in eleven million. I do not know why, and the held water is
+the change I would test first, since it is the one per-step force that differs.
+
+The pace is the round's failure. The held water and the refusal made the leafy seed affordable. They left the jointed seeds
+at 2,100 to 2,900 wall seconds per 1,000 s per 1,000 bodies. A jointed world carries two
+to three links a body, and the harness is priced per link. The last windows before the stop are contaminated by the terminal storm and are
+not read. Lever 1 of the profile, the solver read once a step and shared, was built the
+same afternoon and is being validated against seed 1's recording
+(`logbook/specs/harness-profile-spec.md`).
+
+The eaters founded in one seed of three, and in that one they stood at 99 inherited at
+13,000 s. Whether they hold is the question the stop took away.
+
+### What I saw
+
+The pictures are reconstructions from snapshots (`theatre-snap.ps1 -From snapshot`), bodies
+upright and at adult size, so they show plans and places and not postures. I looked at seed 1 at 3,000, 6,000 and 10,000 s and at seed 3 at 10,000 s. Each is a wide,
+thin scatter across the whole disc in the top quarter of the water, with the bed far below
+and bare. Seed 3's bodies at
+10,000 s are loose jointed stacks of two to four parts with daylight between the parts, and
+I found nothing folded in any frame. The replaying theatre was not opened on this round,
+and the entry says so because the rule asks it to: a censored round read on reconstructions.
+Nine bodies in ten live above 11 to 16 m, and fewer than one in twenty-five below 25 m.
+The bed's shallowest arc is at 30 m. So the slope D093 built lies under water that almost
+nothing visits.
