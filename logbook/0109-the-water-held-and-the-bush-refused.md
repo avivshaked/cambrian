@@ -111,4 +111,14 @@ base and not an ablation, and the profile's screen is the held water's own measu
 
 ## Launch note
 
-LAUNCH-NOTE
+*2026-09-20, 04:14 to 04:16.* Seeds 1, 2 and 3 launched on workers 2, 3 and 4, each refreshed
+from the main tree first, the queue's hash check against the main-tree smoke's `simHash
+46335d9f…` passing (`runs/r41esmoke-main`, worker 2 after the stale locks were cleared:
+header `silhouette on · selfOverlap 0.1 · water held 0.5 s`, one self-overlap stillbirth among
+the founders) and `prereg.json` at this entry's commit (`fe0b790`) beside the arm and beside
+the run. Every manifest reads `simHash 46335d9f…`, `coreHash c4821b33…`, `configHash
+f6416481`, `physicsJobWorkers 0`, `gitCommit 71e8bc3`; every header `dt=0.01`, `idle 0.0001`,
+`silhouette on`, `selfOverlap 0.1`, `water held 0.5 s`. The config hash is the branch screen's
+(`r41escreen-s1`, `cheapening-spec.md` §4), so the screen is a realisation of this world. The
+queue is `scratch/r41/queue-e.ps1`, detached, and seeds 4 and 5 launch as arms end. The
+early look draws seed 1 at 3,000 and 6,000 s from its snapshots on worker 6.

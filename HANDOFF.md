@@ -7,8 +7,8 @@ is queued; it is rewritten, never appended to.*
 ## Where things stand
 
 **Round 41d is stopped at 15,000 s and read (0108's last section, 2026-09-20 03:55), the
-profile branch is merged to main (`4de789d`), and round 41e is pre-registered and waiting for
-the owner's yes (logbook/0109).** The three seeds were stopped as `manual-futility` under V5
+profile branch is merged to main (`4de789d`), and round 41e is running (launched 04:14 to 04:16 on
+2026-09-20 on the owner's yes; logbook/0109, pre-registered at `fe0b790`).** The three seeds were stopped as `manual-futility` under V5
 at their 15,000 s rows (02:51, 03:17, 03:50 on 2026-09-20; the queue killed at 21:46 the
 evening before, seeds 4 and 5 never launched). The read: E1 failed high in two seeds, E3, E4
 and E7 held, E5 failed in all three (the eaters peaked at 30 inherited), E8 failed threefold
@@ -29,8 +29,10 @@ smoke on main after the merge (`runs/r41esmoke-main`, worker 2 refreshed from ma
 stale locks were cleared): header `silhouette on · selfOverlap 0.1 · water held 0.5 s`,
 `simHash 46335d9f…`, `coreHash c4821b33…`, `configHash 3973b0e1`, one self-overlap stillbirth
 among the founders, the drag pass's water at 8%. The queue is `scratch/r41/queue-e.ps1`
-(`-ExpectSimHash 46335d9f -Prereg logbook/0109-…`), to be started detached once the owner
-has said yes and 0109 is committed clean. Workers 2, 3, 4 and 6 carry the merged build. The
+(`-ExpectSimHash 46335d9f -Prereg logbook/0109-…`), detached at 04:14; seeds 1 to 3 verified
+(`simHash 46335d9f…`, `coreHash c4821b33…`, `configHash f6416481`, the headers' two tokens),
+seeds 4 and 5 launch as arms end; the watch is `scratch/r41/watch-e.sh`, the reads
+`scratch/r41/read-e.py`, the early look `scratch/r41/snap-early-e.sh`. Workers 2, 3, 4 and 6 carry the merged build. The
 Core suite ran `-All` on the merged tree before the push: 760 of 760 in 15 minutes.
 Lever 1 of the profile (the solver read once a step and shared between the drag pass, the
 trace and the sensors; identity kept) is ruled for after round 41e. The reads for the
