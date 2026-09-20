@@ -25,17 +25,27 @@ build is unchanged, `simHash 46335d9f…`), rename the stopped run directories a
 restart the queue detached with the same launcher and hash; then watch with `python scripts/watch-round.py r41e --read scripts/reads/r41d-read.py`,
 one look that exits, fired from the session's cron and never from a shell loop
 (CLAUDE.md's gotcha on background shell loops; `scripts/sweep-orphans.ps1` first, every
-session). **Nothing is relaunched yet** (2026-09-20 afternoon): the owner asked to weigh
-changes before re-arming. The agent first recommended a "wider" tank of 400 m² on the false
-memory that round 41e ran in 100 m² by 60 m; every header reads 2,200 m² by 45 m with the
-bed tilted 30 m (D093), so that recommendation is withdrawn and 0109 carries the
-correction. What stands, and the owner agreed to: read 41e as stopped, and build lever 1
-and validate it against the stopped arms' recorded rows. What is open, for the owner: the
-budget (1,500 units halves the crowd and the wall) and the bed. The reading behind the
-second: nine bodies in ten live above 11 to 16 m, fewer than 4% below 25 m, and the bed's
-shallow arc is at 30 m, so the slope D093 built touches almost nobody; the dissolved
-matter stands at 0.003 to 0.007 units/m3 and the leaves are 80% uptake-limited, so the
-crowd is the budget's.
+session). **The owner's rulings of 2026-09-20 afternoon** ("agree with all your recommendations", then
+"proceed with your recommendations", both after the tank correction below): round 41e is
+read as stopped (0109's last section, written); lever 1 is built and validated and merged
+if identity holds; the next world is **1,500 units** in the same 2,200 m² tank with **the
+bed raised into the lit band** (depth 20 m with the 30 m tilt, the floor from 5 m to 35 m),
+screened at dt 0.02 before it is pre-registered; the throw trace is restricted to jointed
+bodies (agent work, identity kept, being built on the `lever1` branch); and the agent
+measures why three arms on 32 cores run at half speed each, by replaying seed 1 alone
+against its two-arm wall time. Unjointed bodies leaving the articulation solver is a
+physics change and is **not ruled**: it gets a proposal after the measurements. The agent
+first recommended a "wider" tank of 400 m² on the false memory that round 41e ran in
+100 m² by 60 m; every header reads 2,200 m² by 45 m with the bed tilted 30 m (D093), and
+0109 carries the correction. The reading behind the raised bed: nine bodies in ten live
+above 11 to 16 m, fewer than 4% below 25 m, and the bed's shallow arc is at 30 m, so the
+slope touches almost nobody; the dissolved matter stands at 0.003 to 0.007 units/m3 and
+the leaves are 80% uptake-limited, so the crowd is the budget's. **Lever 1's validation**
+(`runs/r41ebase-s1` on main's worker 5 beside `scratch/wt-lever1/runs/r41elev-s1`, both
+seed 1 to 5,000 s, read with `scratch/lever1/identity.py`): identical to the recording on
+every non-clock field through 3,900 s, the harness 8% cheaper and the wall 3%, because
+the cost is the crossing into the engine and not the duplicate read. It is not enough, and
+the owner was told so.
 
 **Round 41d is stopped at 15,000 s and read (0108's last section, 2026-09-20 03:55), the
 profile branch is merged to main (`4de789d`), and round 41e is running (launched 04:14 to 04:16 on

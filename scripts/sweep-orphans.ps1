@@ -19,7 +19,9 @@
 param([switch]$Kill)
 
 function Get-Orphans {
-    Get-CimInstance Win32_Process | Where-Object {
+    # Younger than three minutes is the caller's own shell, or a command still running.
+    $cutoff = (Get-Date).AddMinutes(-3)
+    Get-CimInstance Win32_Process | Where-Object { $_.CreationDate -lt $cutoff } | Where-Object {
         ($_.Name -eq 'bash.exe' -and $_.CommandLine -notmatch '--init-file' -and
             $_.CommandLine -match 'scratch/|while true|until ') -or
         ($_.Name -in @('sleep.exe', 'cygwin-console-helper.exe'))
