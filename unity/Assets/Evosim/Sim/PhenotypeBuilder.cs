@@ -144,6 +144,48 @@ namespace Evosim.Sim
         /// </remarks>
         public Float3[] RelativeVelocity { get; internal set; }
 
+        /// <summary>
+        /// The water this creature is holding — velocity at its root link, world axes, m/s.
+        /// Meaningless until <see cref="WaterSampledAt"/> is finite.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>One sample per body rather than one per link</b>, when
+        /// <see cref="FluidConfig.WaterHoldSeconds"/> is above 0. The profile of 2026-09-19 put the
+        /// gather loop's water samples at about 16% of the whole wall clock, and a body is tenths
+        /// of a metre across in a current that varies on the scale of the box, so the samples a
+        /// creature's links were taking differ by little — see the tunable for the trade and for
+        /// why the default keeps the per-link path.
+        /// </para>
+        /// <para>
+        /// <b>On the creature and not in an array indexed by slot</b>, for
+        /// <see cref="RelativeVelocity"/>'s reason: the environment's flat arrays are reordered by
+        /// every birth and death, so a cache held by slot would occasionally serve another animal's
+        /// water. This dies with the body it describes, and a resize keeps it, because a body that
+        /// changed size is still in the same water.
+        /// </para>
+        /// </remarks>
+        public Float3 HeldWater { get; internal set; }
+
+        /// <summary>
+        /// The water's own acceleration at the root link when <see cref="HeldWater"/> was taken,
+        /// world axes, m/s². Only ever written while the fluid acceleration term is on.
+        /// </summary>
+        public Float3 HeldWaterAcceleration { get; internal set; }
+
+        /// <summary>
+        /// Simulated seconds at which <see cref="HeldWater"/> was taken, or negative infinity for a
+        /// body that has never been in a fluid step.
+        /// </summary>
+        /// <remarks>
+        /// The world's own clock (<c>FluidEnvironment.ElapsedSeconds</c>) and never a wall clock,
+        /// so the hold expires at the same instant in every replay of a run — a cache keyed on
+        /// real time would make the water a function of how loaded the machine was (§7).
+        /// Negative infinity rather than 0 because 0 is a legal instant: a creature built at the
+        /// world's first step must sample on its first <c>Apply</c>, not skip it.
+        /// </remarks>
+        public double WaterSampledAt { get; internal set; } = double.NegativeInfinity;
+
         /// <summary>Takes the body out of the water, on the line that kills it.</summary>
         /// <remarks>
         /// <para>

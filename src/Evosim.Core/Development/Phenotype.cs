@@ -177,6 +177,59 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// How many pairs of parts stand inside each other — a part and its own parent excluded,
+        /// and only counting a pair buried deeper than <paramref name="depthFraction"/> of the
+        /// smaller part's thinnest half-extent. The owner's ruling of 2026-09-19.
+        /// </summary>
+        /// <param name="depthFraction">
+        /// <see cref="RunConfig.SelfOverlapDepthFraction"/>. The threshold is relative to the
+        /// smaller box, so the answer is the same for a body at any size — see
+        /// <see cref="BoxOverlap.DepthThreshold"/>.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>Why the parent is excluded.</b> Overlap at a joint is deliberate (DESIGN.md §4.2,
+        /// and <see cref="PhenotypeGeometry.MeasureOverlap"/> has reported it separately since
+        /// the jamming measurements), and PhysX never collides two directly jointed links, so
+        /// such a pair costs nothing and hides nothing. What this counts is the pairs the solver
+        /// does collide and cannot separate: round 41c's knot and round 41d's sprawl, where a
+        /// body grown into itself paid the physics for a contact on every step of its life
+        /// (logbook/0107).
+        /// </para>
+        /// <para>
+        /// <b>A depth and not a touch.</b> Two boxes that share a face intersect by a rounding,
+        /// and refusing a body for that would refuse most plans that fit together at all. The
+        /// fraction is what separates a seam from a part buried in another.
+        /// </para>
+        /// <para>
+        /// Measured on demand rather than cached: a body is at most
+        /// <see cref="DevelopmentLimits.MaxParts"/> parts, so this is at most a hundred and
+        /// twenty separating-axis tests, and the world asks it once per birth.
+        /// </para>
+        /// </remarks>
+        public int SelfOverlappingPairs(float depthFraction)
+        {
+            if (_parts.Count < 2) return 0;
+
+            var boxes = new BoxOverlap.Obb[_parts.Count];
+            for (int i = 0; i < _parts.Count; i++) boxes[i] = BoxOverlap.Obb.From(_parts[i]);
+
+            int count = 0;
+            for (int i = 0; i < _parts.Count; i++)
+            {
+                for (int j = i + 1; j < _parts.Count; j++)
+                {
+                    if (_parts[j].ParentIndex == i || _parts[i].ParentIndex == j) continue;
+
+                    if (!BoxOverlap.Obb.Intersect(boxes[i], boxes[j], out float depth)) continue;
+                    if (depth > BoxOverlap.DepthThreshold(boxes[i], boxes[j], depthFraction)) count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>
         /// A copy of this body at <paramref name="linear"/> times its size on every axis — what a
         /// creature below its adult size actually is, fable-propose-growth.md rule 4 (2026-09-08).
         /// </summary>

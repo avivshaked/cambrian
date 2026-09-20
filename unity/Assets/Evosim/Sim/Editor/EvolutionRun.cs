@@ -140,6 +140,9 @@ namespace Evosim.Sim.EditorTools
             // D099, round 41d: cap a body's claim on the light at its own silhouette. Off is
             // every world before it, so every recorded launcher still describes the world it ran.
             bool silhouetteCap = Env("EVOSIM_SILHOUETTE", 0f) > 0.5f;
+            // The owner's ruling of 2026-09-19, beside D099 because the two answer one finding:
+            // a body grown into itself is not born. 0 is off and is every world before it.
+            float selfOverlap = Env("EVOSIM_SELF_OVERLAP", 0f);
             float budgetSeconds = Env("EVOSIM_SECONDS", 4000f);
             float wallMinutes = Env("EVOSIM_WALL_MINUTES", 30f);
             int reportEvery = (int)Env("EVOSIM_REPORT_EVERY", 200f);
@@ -462,6 +465,16 @@ namespace Evosim.Sim.EditorTools
             // above, so any nonzero value is a new realisation of every seed.
             float fluidAccel = Env("EVOSIM_FLUID_ACCEL", 0f);
 
+            // The harness profile (2026-09-19, logbook/specs/harness-profile-spec.md §6, §7). How
+            // long a creature holds one sample of the water, FluidConfig.WaterHoldSeconds: the
+            // gather loop sampled the current at every link on every physics step, which was 45%
+            // of the fluid pass and about a sixth of the whole wall clock. Above 0 the sample is
+            // taken once per body at its root and held. 0 is per link, which is every world on
+            // file, and what the default keeps so that a recorded config still describes the world
+            // it ran. It moves a per-step force, so any value above 0 is a new realisation of
+            // every seed, exactly as the two terms above are.
+            float waterHold = Env("EVOSIM_WATER_HOLD", 0f);
+
             // D082 (2026-09-07). The price of a bud: what a neuron, one of its inputs and a
             // joule of mechanical work cost. All three are RunConfig tunables since 5A.2 and
             // none had a launch knob, so every recorded world ran at their defaults (0.05 W,
@@ -674,6 +687,7 @@ namespace Evosim.Sim.EditorTools
                 {
                     AddedMassCoefficient = addedMass,
                     FluidAccelerationCoefficient = fluidAccel,
+                    WaterHoldSeconds = waterHold,
                     TissueExcessDensity = excessDensity,
                     NeutralBodyVolume = neutralVolume,
                     SurfaceRestoringFraction = surfaceRestore,
@@ -755,6 +769,7 @@ namespace Evosim.Sim.EditorTools
             config.DispersalChancePerStep = dispersalChance;
             config.PerPatchShading = patchShading;
             config.LightSilhouetteCap = silhouetteCap;
+            config.SelfOverlapDepthFraction = selfOverlap;
             config.WorldAreaSquareMetres = area;
             config.WorldDepthMetres = depth;
             config.SharedSpace = sharedSpace;
@@ -952,6 +967,13 @@ namespace Evosim.Sim.EditorTools
                 // and not on the sum of its parts, which is a different world at the same
                 // irradiance, and a header that named only the irradiance would describe both.
                 " · silhouette " + (silhouetteCap ? "on" : "off") +
+                // The owner's ruling of 2026-09-19, beside the cap for the same reason: with it
+                // above 0 a body grown into itself is never born, which is a different world at
+                // the same everything else. The number and not a word, because how deep counts
+                // as inside is the whole of the rule.
+                " · selfOverlap " + (selfOverlap > 0f
+                    ? selfOverlap.ToString("0.###", CultureInfo.InvariantCulture)
+                    : "off") +
                 " · day ±" + dayAmplitude + " over " + dayLength + " s" +
                 // D066. The current is three numbers and two switches now, not one number, and a
                 // header that named only the speed would describe five different worlds
@@ -1105,6 +1127,13 @@ namespace Evosim.Sim.EditorTools
                 // and "written before the term existed", and every world through round 37 is the
                 // second of those.
                 " · fluidAccel " + fluidAccel +
+                // The harness profile's hold, beside `fluidAccel` because it governs how both of
+                // the water terms above are sampled, and rendered unconditionally for D065's
+                // reason: a header without the token would read the same for "sampled at every
+                // link" and "written before the hold existed", and every world through round 41d
+                // is the second of those. It is a cost knob and not a force, but it decides what
+                // water a limb feels, so it belongs in what the header says the world was.
+                " · " + (waterHold > 0f ? "water held " + waterHold + " s" : "water per link") +
                 // D082, appended after `addedMass` per the same convention and rendered
                 // unconditionally for D065's reason: every world through round 29 ran at the
                 // defaults, and a header without the token would not say so.
@@ -1379,6 +1408,54 @@ namespace Evosim.Sim.EditorTools
                 ", harness " + WallShare(eco.WallHarnessMs, clock.ElapsedMilliseconds) +
                 ", writers " + WallShare(WritersClock.ElapsedMilliseconds, clock.ElapsedMilliseconds) +
                 ", other " + WallShare(wallOtherMs, clock.ElapsedMilliseconds));
+
+            // The harness profile (logbook/specs/harness-profile-spec.md §2), on the two lines
+            // after the split it breaks down. Percentages of the harness rather than of the run,
+            // because the question this instrument was built for is what inside the harness is
+            // expensive; multiply by the harness's own share above for the run. The second line is
+            // the number a cheapening is judged on, and the only one of the two that can be
+            // compared between runs of different size.
+            long[] harnessPhaseMs = eco.HarnessPhaseMs();
+            var harnessSplit = new StringBuilder("harness split: ");
+
+            for (int p = 0; p < harnessPhaseMs.Length; p++)
+            {
+                if (p > 0) harnessSplit.Append(", ");
+
+                harnessSplit.Append(Ecosystem.HarnessPhases[p]).Append(' ')
+                    .Append(WallShare(harnessPhaseMs[p], eco.WallHarnessMs));
+            }
+
+            report.AppendLine(harnessSplit.ToString());
+
+            // The fluid phase's own split, immediately under the line it breaks down. Percentages
+            // of the four's sum rather than of the harness, for the reason the harness's are of
+            // the harness: the question is what inside this call is expensive, and the call's own
+            // share is the `fluid` token above. The per-link-step line is the number a cheapening
+            // is judged on, and links are the denominator because the work is per part.
+            long fluidGatherMs = eco.WallFluidGatherMs;
+            long fluidWaterMs = eco.WallFluidWaterMs;
+            long fluidComputeMs = eco.WallFluidComputeMs;
+            long fluidApplyMs = eco.WallFluidApplyMs;
+            long fluidMs = fluidGatherMs + fluidWaterMs + fluidComputeMs + fluidApplyMs;
+
+            report.AppendLine(
+                "fluid split: gather " + WallShare(fluidGatherMs, fluidMs) +
+                ", water " + WallShare(fluidWaterMs, fluidMs) +
+                ", compute " + WallShare(fluidComputeMs, fluidMs) +
+                ", apply " + WallShare(fluidApplyMs, fluidMs));
+
+            report.AppendLine(
+                "fluid per link-step: " +
+                eco.FluidMicrosecondsPerLinkStep.ToString("0.#", CultureInfo.InvariantCulture) +
+                " µs (" + eco.FluidLinkSteps.ToString("N0", CultureInfo.InvariantCulture) +
+                " link-steps).");
+
+            report.AppendLine(
+                "harness per body-step: " +
+                eco.HarnessMicrosecondsPerBodyStep.ToString("0.#", CultureInfo.InvariantCulture) +
+                " µs (" + eco.HarnessBodySteps.ToString("N0", CultureInfo.InvariantCulture) +
+                " body-steps).");
             report.AppendLine();
             report.AppendLine(
                 "**Fastest creature seen at any point: " + bestSpeedEver.ToString("0.####") +
@@ -1441,6 +1518,13 @@ namespace Evosim.Sim.EditorTools
                         WallHarnessMs = eco.WallHarnessMs,
                         WallWritersMs = WritersClock.ElapsedMilliseconds,
                         WallTotalMs = clock.ElapsedMilliseconds,
+                        WallHarnessPhaseMs = eco.HarnessPhaseMs(),
+                        HarnessBodySteps = eco.HarnessBodySteps,
+                        WallFluidGatherMs = eco.WallFluidGatherMs,
+                        WallFluidWaterMs = eco.WallFluidWaterMs,
+                        WallFluidComputeMs = eco.WallFluidComputeMs,
+                        WallFluidApplyMs = eco.WallFluidApplyMs,
+                        FluidLinkSteps = eco.FluidLinkSteps,
                     });
                 }
 
@@ -1893,6 +1977,30 @@ namespace Evosim.Sim.EditorTools
             public long WallHarnessMs;
             public long WallWritersMs;
             public long WallTotalMs;
+
+            /// <summary>
+            /// The harness profile, ms per phase of <see cref="Ecosystem.HarnessPhases"/> with
+            /// `other` last, and the body-steps they are read per.
+            /// </summary>
+            /// <remarks>
+            /// Null on the error path, where the manifest's last-sample values are what there is
+            /// and it never carried the phases: the ending block then omits them rather than
+            /// writing ten zeros that read like a run that spent no time anywhere.
+            /// </remarks>
+            public long[] WallHarnessPhaseMs;
+            public long HarnessBodySteps;
+
+            /// <summary>
+            /// The fluid phase's own four, and the link-steps they are read per. Written beside
+            /// the harness phases and omitted where those are, for the same reason: the error
+            /// path's manifest carries last-sample totals and never carried these, and four zeros
+            /// would read like a run that spent no time in the water.
+            /// </summary>
+            public long WallFluidGatherMs;
+            public long WallFluidWaterMs;
+            public long WallFluidComputeMs;
+            public long WallFluidApplyMs;
+            public long FluidLinkSteps;
         }
 
         /// <summary>
@@ -2141,6 +2249,32 @@ namespace Evosim.Sim.EditorTools
                 w.Field("wallHarnessMs", ending.WallHarnessMs);
                 w.Field("wallWritersMs", ending.WallWritersMs);
                 w.Field("wallTotalMs", ending.WallTotalMs);
+
+                // The harness profile (logbook/specs/harness-profile-spec.md §2) — appended after
+                // wallTotalMs per the same append-only rule. The same names the statistics rows
+                // carry, so a reader joins the two without a translation table, and the
+                // denominator beside them. Absent on the error path and on a recording made
+                // before this build.
+                if (ending.WallHarnessPhaseMs != null)
+                {
+                    for (int p = 0; p < ending.WallHarnessPhaseMs.Length &&
+                                    p < Ecosystem.HarnessPhaseFields.Length; p++)
+                    {
+                        w.Field(Ecosystem.HarnessPhaseFields[p], ending.WallHarnessPhaseMs[p]);
+                    }
+
+                    w.Field("harnessBodySteps", ending.HarnessBodySteps);
+
+                    // The fluid phase's own split, appended after harnessBodySteps per the same
+                    // append-only rule and under the same guard: the same names the statistics
+                    // rows carry, summing to `wallHarnessFluidMs`, and the link-steps they are
+                    // read per.
+                    w.Field("wallFluidGatherMs", ending.WallFluidGatherMs);
+                    w.Field("wallFluidWaterMs", ending.WallFluidWaterMs);
+                    w.Field("wallFluidComputeMs", ending.WallFluidComputeMs);
+                    w.Field("wallFluidApplyMs", ending.WallFluidApplyMs);
+                    w.Field("fluidLinkSteps", ending.FluidLinkSteps);
+                }
             }
 
             w.EndObject();
@@ -3021,6 +3155,12 @@ namespace Evosim.Sim.EditorTools
                 // held its place is D098's faeces flux — the joules a window's feeding tore up
                 // and did not keep, which now go into the water instead of out of the world.
                 .Field("stillbirths", world.Stillbirths)
+                // The owner's ruling of 2026-09-19, beside the total it is part of: how many of
+                // those stillbirths were bodies grown into themselves. 0 with
+                // EVOSIM_SELF_OVERLAP unset, which is every run on file, and that 0 is a fact
+                // rather than an instrument that is off — the header's `selfOverlap` token says
+                // which of the two it is, as `corpse` does for the corpse count.
+                .Field("selfOverlapStillbirths", world.SelfOverlapStillbirths)
                 .Field("detritusReturnedWindow", detritusReturnedWindow)
                 // The movement round's columns (D081, logbook/0072) — appended after the
                 // stillbirth pair, per the same rule.
@@ -3120,6 +3260,34 @@ namespace Evosim.Sim.EditorTools
                 .Field("wallHarnessMs", eco.WallHarnessMs)
                 .Field("wallWritersMs", WritersClock.ElapsedMilliseconds)
                 .Field("wallTotalMs", RunClock != null ? RunClock.ElapsedMilliseconds : 0L);
+
+                // The harness profile (logbook/specs/harness-profile-spec.md §2), appended after
+                // the timing split per the same append-only rule: `wallHarnessMs` broken into the
+                // phases of the per-step loop, cumulative milliseconds like the five above and
+                // summing to it exactly, `other` being the subtraction. Beside them the
+                // denominator the split is read per body with — the living bodies summed over
+                // every physics step, so that two rows give the phase costs per body-step over the
+                // window between them. All eleven read 0 on a report written before this build.
+                long[] harnessPhaseMs = eco.HarnessPhaseMs();
+
+                for (int p = 0; p < harnessPhaseMs.Length; p++)
+                {
+                    w.Field(Ecosystem.HarnessPhaseFields[p], harnessPhaseMs[p]);
+                }
+
+                w.Field("harnessBodySteps", eco.HarnessBodySteps);
+
+                // The fluid phase's own split, appended after harnessBodySteps per the same
+                // append-only rule: `wallHarnessFluidMs` broken into the gather, the water
+                // samples inside it, the drag arithmetic and the force application, cumulative
+                // milliseconds summing to it, and the links they are read per — links rather than
+                // bodies, because this phase's work is per part. All five read 0 on a report
+                // written before this build.
+                w.Field("wallFluidGatherMs", eco.WallFluidGatherMs);
+                w.Field("wallFluidWaterMs", eco.WallFluidWaterMs);
+                w.Field("wallFluidComputeMs", eco.WallFluidComputeMs);
+                w.Field("wallFluidApplyMs", eco.WallFluidApplyMs);
+                w.Field("fluidLinkSteps", eco.FluidLinkSteps);
 
                 // One entry per patch, as an array rather than K numbered fields: the count is a
                 // config setting and a reader that walks the array cannot mistake p3 in a
@@ -3443,6 +3611,11 @@ namespace Evosim.Sim.EditorTools
                 // quarter is not a place.
                 shapedBed ? (100d * floorLowQuarterShare).ToString("0.#", c) + "%" : "—",
                 shapedBed ? floorStockJoules.ToString("0.#", c) : "—",
+
+                // The owner's ruling of 2026-09-19, appended after `floor J` per the append-only
+                // rule. A count and not a dash where the rule is off: 0 is the true number of
+                // bodies it refused, and the header says whether it was asked.
+                world.SelfOverlapStillbirths.ToString(c),
             };
 
             // The per-patch populations, last, so everything before them keeps its index.
@@ -3655,6 +3828,15 @@ namespace Evosim.Sim.EditorTools
             // with one floor height there is no lowest quarter, and a number would read as a
             // finding. The pockets question is this column against round 38's flat control.
             "floor low %", "floor J",
+
+            // The owner's ruling of 2026-09-19, appended after `floor J` per the append-only
+            // rule rather than beside `stillb`, which it belongs with: a column inserted in the
+            // middle moves every column after it, and a positional misread once reported float
+            // tissue as the food chain (logbook/0044). Running total of the bodies refused for
+            // standing inside themselves, and part of `stillb` beside it. Reads 0 for the life
+            // of a run with the rule off, which is every run on file; the header's
+            // `selfOverlap` token is what says whether a 0 is no refusals or no rule.
+            "self stillb",
         };
 
         /// <summary>

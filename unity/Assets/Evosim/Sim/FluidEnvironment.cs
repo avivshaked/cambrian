@@ -2,6 +2,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using Evosim.Core;
 
+// Aliased rather than imported, as Ecosystem does it: `using System.Diagnostics` would put a
+// second `Debug` in scope beside UnityEngine's, and this file is one Debug.Log away from not
+// compiling for a reason that has nothing to do with it.
+using Stopwatch = System.Diagnostics.Stopwatch;
+
 namespace Evosim.Sim
 {
     /// <summary>
@@ -226,6 +231,57 @@ namespace Evosim.Sim
         /// </remarks>
         public double DissipatedJoules { get; private set; }
 
+        // ---- the fluid profile: where the harness's `fluid` phase goes
+        //
+        // The harness profile (logbook/specs/harness-profile-spec.md) measured this one call at
+        // 57% of the harness, which says the fluid step is the thing to cheapen and nothing about
+        // which part of it to cheapen. These four are that question asked inside Apply: the gather
+        // loop's reads of solver state, the water samples taken inside it, the drag arithmetic and
+        // the force application. They sum to the whole of Apply by construction — gather is taken
+        // as the loop's span less the water booked during it, the way Ecosystem.NoteHarnessWall
+        // takes the harness's own share.
+        //
+        // Read and never acted on: timestamps and a counter, no call moved and no branch on a
+        // clock, so a run under the instrument is the same realisation as a run without it.
+        // Cumulative for the life of the run and never reset, like DragImpulsesLimited, so any
+        // two samples give the split for the window between them.
+
+        /// <summary>Stopwatch ticks in the gather loop, less the water samples inside it.</summary>
+        public long GatherTicks => _gatherTicks;
+
+        /// <summary>
+        /// Stopwatch ticks sampling the current, inside the gather loop.
+        /// </summary>
+        /// <remarks>
+        /// The one phase timed per link rather than per call, because it is a field evaluation —
+        /// a stencil or a closed form, depending on the mode — where the rest of the gather is a
+        /// few Transform reads. That costs two readings of the clock per link, four on the steps
+        /// the acceleration term runs, and their own cost is left in this bucket rather than
+        /// estimated and subtracted: an estimate of the clock's latency would be a number nobody
+        /// measured, and this way the bucket is an upper bound that says so.
+        /// </remarks>
+        public long WaterTicks => _waterTicks;
+
+        /// <summary>Stopwatch ticks in the compute phase — the drag, parallel or serial.</summary>
+        public long ComputeTicks => _computeTicks;
+
+        /// <summary>Stopwatch ticks in the apply phase — the limiter, buoyancy and the solver.</summary>
+        public long ApplyTicks => _applyTicks;
+
+        /// <summary>
+        /// Links handed to <see cref="Apply(IReadOnlyList{CreatureInstance}, float)"/>, summed
+        /// over every call — the denominator the four phases are read per, as the harness's
+        /// body-steps are its own.
+        /// </summary>
+        /// <remarks>One add per call, so it is the population times the steps and costs nothing.</remarks>
+        public long LinkSteps => _linkSteps;
+
+        private long _gatherTicks;
+        private long _waterTicks;
+        private long _computeTicks;
+        private long _applyTicks;
+        private long _linkSteps;
+
         /// <summary>Applies drag to every part. Call once per fixed step, before simulating.</summary>
         /// <param name="stepSeconds">
         /// The step about to be simulated. Only used for <see cref="DissipatedJoules"/>; pass 0
@@ -260,13 +316,30 @@ namespace Evosim.Sim
         /// </remarks>
         public void Apply(IReadOnlyList<CreatureInstance> creatures, float stepSeconds = 0f)
         {
+            // The fluid profile's first bracket. Layout and the read below are gather's, so that
+            // the four phases cover every tick of this method and not only its loops.
+            long phaseStarted = Stopwatch.GetTimestamp();
+            long waterAtEntry = _waterTicks;
+
             int bodies = Layout(creatures);
-            if (bodies == 0) return;
+            if (bodies == 0)
+            {
+                _gatherTicks += Stopwatch.GetTimestamp() - phaseStarted;
+                return;
+            }
+
+            _linkSteps += bodies;
 
             // D090, read once per Apply rather than per part: whether the water's own
             // acceleration acts at all. Off is every recorded config, and off means the field is
             // never sampled for it — see the gather phase below.
             _accelerating = Config.FluidAccelerationCoefficient > 0f && Current != null;
+
+            // FluidConfig.WaterHoldSeconds, read once per Apply for the same reason as the line
+            // above: whether each creature samples the water once at its root and holds it, or
+            // every link samples it afresh on every step. 0 is every recorded config and is the
+            // per-link path below, left exactly as it was so that those worlds replay.
+            bool holding = Config.WaterHoldSeconds > 0f;
 
             // ---- gather (main thread): everything the solver owns, copied out
             for (int c = 0; c < creatures.Count; c++)
@@ -300,11 +373,57 @@ namespace Evosim.Sim
                     // a function of, so every run in the record feels the water it always did.
                     Vector3 where = body.transform.position;
 
-                    Float3 water = Current != null
-                        ? Current.Mode == CurrentMode.Transport
-                            ? Current.VelocityAt(where.x, where.y, where.z, ElapsedSeconds)
-                            : Current.VelocityAt(where.y, ElapsedSeconds, creature.Patch, PatchCount)
-                        : Float3.Zero;
+                    // The profile's `water`, bracketed per link: the sample is the one part of
+                    // the gather that is arithmetic rather than a Transform read, and it is the
+                    // term a cheaper current would remove.
+                    long waterStarted = Stopwatch.GetTimestamp();
+
+                    // The held path, FluidConfig.WaterHoldSeconds — one sample per body at its
+                    // root, reused by every link until the hold expires. Taken here inside the
+                    // link loop rather than before it because link 0 *is* the root and its
+                    // position has just been read, so the hold costs no extra Transform read and
+                    // sits inside the same `water` bracket, which is the same measurement.
+                    // A body that has never been sampled holds negative infinity, so the test
+                    // fires on its first Apply after it is built; a resize keeps the cache,
+                    // because a body that changed size is still in the same water.
+                    Float3 water;
+                    if (holding)
+                    {
+                        if (i == 0 &&
+                            ElapsedSeconds - creature.WaterSampledAt >= Config.WaterHoldSeconds)
+                        {
+                            creature.HeldWater = Current != null
+                                ? Current.Mode == CurrentMode.Transport
+                                    ? Current.VelocityAt(where.x, where.y, where.z, ElapsedSeconds)
+                                    : Current.VelocityAt(where.y, ElapsedSeconds, creature.Patch, PatchCount)
+                                : Float3.Zero;
+
+                            // Taken in the same breath as the velocity, so that a held body feels
+                            // one parcel of water rather than a speed from one instant and the
+                            // gradient that carries it from another.
+                            if (_accelerating)
+                            {
+                                creature.HeldWaterAcceleration = Current.AccelerationAt(
+                                    where.x, where.y, where.z, ElapsedSeconds);
+                            }
+
+                            // The world's own clock, never a wall clock: a hold keyed on real time
+                            // would make the water a function of machine load (§7).
+                            creature.WaterSampledAt = ElapsedSeconds;
+                        }
+
+                        water = creature.HeldWater;
+                    }
+                    else
+                    {
+                        water = Current != null
+                            ? Current.Mode == CurrentMode.Transport
+                                ? Current.VelocityAt(where.x, where.y, where.z, ElapsedSeconds)
+                                : Current.VelocityAt(where.y, ElapsedSeconds, creature.Patch, PatchCount)
+                            : Float3.Zero;
+                    }
+
+                    _waterTicks += Stopwatch.GetTimestamp() - waterStarted;
 
                     _velocity[at + i] = body.linearVelocity.ToFloat3() - water;
 
@@ -331,8 +450,18 @@ namespace Evosim.Sim
                     // differences in any case (AccelerationAt says why).
                     if (_accelerating)
                     {
-                        Float3 acceleration =
-                            Current.AccelerationAt(where.x, where.y, where.z, ElapsedSeconds);
+                        // Booked as `water` too, and bracketed separately because it is skipped
+                        // entirely at coefficient 0: folding the two into one pair would put the
+                        // store below into the water phase on every run in the record.
+                        long accelStarted = Stopwatch.GetTimestamp();
+
+                        // Held, the sample was taken at the root above and inside the same
+                        // bracket; per link, it is the call this term has always made. Everything
+                        // below stays per link — the volume, the waterline guard on this link's
+                        // own height, and both stores.
+                        Float3 acceleration = holding
+                            ? creature.HeldWaterAcceleration
+                            : Current.AccelerationAt(where.x, where.y, where.z, ElapsedSeconds);
 
                         // Guarded like the lift lookup below rather than indexed straight: a
                         // phenotype with fewer parts than the articulation has bodies is a state
@@ -367,6 +496,8 @@ namespace Evosim.Sim
                         // patch of water or by its own size. One Vector3 store per part per step,
                         // and only on the steps this term runs at all.
                         _waterAccel[at + i] = acceleration.ToVector3();
+
+                        _waterTicks += Stopwatch.GetTimestamp() - accelStarted;
                     }
 
                     // The lateral line, taken from the drag pass rather than recomputed —
@@ -382,6 +513,12 @@ namespace Evosim.Sim
             }
 
             // ---- compute (any thread): no Unity types touched past this point
+
+            // Gather is its span less the water booked inside it, as Ecosystem's harness share is
+            // its step less the buckets taken inside that.
+            long computeStarted = Stopwatch.GetTimestamp();
+            _gatherTicks += computeStarted - phaseStarted - (_waterTicks - waterAtEntry);
+
             if (bodies >= ParallelThreshold)
             {
                 System.Threading.Tasks.Parallel.For(0, bodies, Compute);
@@ -392,6 +529,9 @@ namespace Evosim.Sim
             }
 
             // ---- apply (main thread)
+            long applyStarted = Stopwatch.GetTimestamp();
+            _computeTicks += applyStarted - computeStarted;
+
             float excessDensity = Config.TissueExcessDensity;
 
             // D077's restoring boundary, read once per Apply rather than per part.
@@ -602,6 +742,8 @@ namespace Evosim.Sim
             }
 
             _pendingStep = stepSeconds > 0f ? stepSeconds : 0f;
+
+            _applyTicks += Stopwatch.GetTimestamp() - applyStarted;
         }
 
         /// <summary>
