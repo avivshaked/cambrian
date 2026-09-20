@@ -188,3 +188,74 @@ beside two other arms runs at about 0.5x. Lever 3 on top buys the physics' share
 self-contact, unknown until tried. Real time at 1,300 bodies beside three arms needs the jobs as well, or fewer
 arms. The branch stays unmerged until round 41d's fifth seed has launched, since the
 queue's hash check refreshes from main; it carries both instruments and nothing else.
+
+## 8. Lever 1 built and measured: identity kept, three percent bought
+
+*2026-09-20 afternoon. Branch `lever1`, worktree `scratch/wt-lever1`.*
+
+The build reads each living link's position, rotation and two velocities once before the
+step's consumers and once after the solver, into flat arrays on `CreatureInstance`
+(`ReadSolverStateBeforeStep`, `ReadSolverStateAfterStep`). The finite check, the senses,
+the drivers, the drag pass, the settle and the throw trace take their values from there. A
+new harness phase, `read`, times the two fills. No tunable was added and no config moved.
+
+The validation was seed 1 of round 41e three ways: the recording (`runs/r41e-s1`), a replay
+on main's build (`runs/r41ebase-s1`) and a replay on the branch
+(`scratch/wt-lever1/runs/r41elev-s1`), the two replays side by side on an otherwise idle
+machine for 5,000 s. Every field of `stats.jsonl` that is not a wall clock was compared at
+every sample (`scratch/lever1/identity.py`).
+
+| | main's build | the branch |
+|---|---|---|
+| samples compared with the recording, and fields | 50, 6,300 | 50, 6,300 |
+| differences | none | none |
+| wall for 100 to 5,000 s, at 996 bodies by the end | 4,197 s | 4,065 s |
+| harness per body-step | 6.62 µs | 6.07 µs |
+| harness split: fluid, trace, control, settle, read | 43, 25, 22, 9, none | 27, 20, 21, 5, 26 |
+
+Identity is kept, which was the design's promise, and the branch is 3% faster in wall and
+8% in harness. §7 put this lever at about 1.2x. It was wrong, and the split says why. The
+fluid and the trace fell by what the sharing saved, and the `read` phase took a quarter of
+the harness to do it. The cost was never the second reading of a value; it is each
+crossing from managed code into the engine, about a fifth of a microsecond a property a
+link, and four properties a link twice a step are still eight crossings. A one-part body
+is slightly worse off, since it now pays a position read after the solver that only the
+trace and the metabolic check use.
+
+What follows from it. No lever that rearranges the same crossings can buy much, which
+retires the family. What is left is fewer bodies (the budget, the owner's, ruled to 1,500
+units the same afternoon), fewer crossings by construction (a body with no movable joint
+out of the articulation solver, or the per-link work in compiled jobs over batched reads;
+a physics change and a proposal), and the machine (why three arms on 32 logical cores
+run at half speed each, §9). The throw trace was also restricted on the same branch to
+bodies with a movable joint (`TotalDof > 0`); a one-part body already kept no ring, so the
+saving is the welded multi-part bodies' links, large in a leafy world and small in a
+jointed one. A dump of an unjointed body carries `traceOmitted` and no trace file.
+
+## 9. What an arm costs its neighbours
+
+*2026-09-20, 15:30.* A seed replays bit for bit, so one trajectory run under three loads is
+the same work three times and the wall is the only thing that differs. Seed 1 of round 41e
+ran alone on an idle machine (`runs/r41esolo-s1`), beside one other arm
+(`runs/r41ebase-s1`, §8's pair) and beside two (`runs/r41e-s1`, the round itself, whose
+neighbours were seeds 2 and 3 and an early snapshot render). The three agree on every
+non-clock field through 3,000 s, 7,560 comparisons.
+
+| wall for 100 to 3,000 s, to 764 bodies | alone | beside one | beside two |
+|---|---|---|---|
+| total | 1,717 s | 1,885 s | 2,549 s |
+| PhysX | 459 s | 506 s | 665 s |
+| the harness | 807 s | 921 s | 1,388 s |
+| the world's step | 450 s | 457 s | 495 s |
+| against alone | 1 | 1.10 | 1.48 |
+
+Two arms deliver 1.8 times one arm's work and three deliver 2.0, which is the pace
+survey's finding by a cleaner route: the third arm buys a fifth of an arm. The slowdown is
+not even. The world's step, a tight loop over a grid, loses a tenth; PhysX loses 1.45; the
+harness, managed code crossing into the engine for every link, loses 1.72. The machine is
+a 13900K, eight fast cores with two threads each and sixteen slow ones, on the Balanced
+power plan, and each arm keeps a little over one core busy. My reading, as inference: three
+main threads are not short of cores, so what they share is either a fast core's second
+thread, a slow core the scheduler moved a windowless process to, or the cache. The first
+two are the scheduler's and can be tested for nothing by pinning each arm to fast cores of
+its own; the test is running on the next three arms and its result goes here.
