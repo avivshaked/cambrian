@@ -34,15 +34,25 @@ inherited eaters past three yet. The picture of seed 1 at 5,000 s from its snaps
 bodies near its shallow end. The read script's E2 line is guarded for marks before
 5,000 s (uncommitted until the next doc commit). What the round is for: F1 (the crowd halves) and F8 (a pinned
 seed near real time, 600 to 1,600 wall s per 1,000 s per 1,000 bodies, 0.9x or better),
-then 41e's unread 30,000 s clauses. **Open for the owner:** the bed. The ruling to raise
-it into the lit band cannot be carried out in this tank: depth 20 m is refused by the
-streams (`CurrentField`, equal RMS on every axis has no solution when the overturning cell
-is wider than deep), and the 30 m screen (`runs/r42scrB30-s1`, floor 15 to 45 m) left nine
-bodies in ten above 12 m with 3.3 bed contacts a step against 2.0. A floor at 5 m needs a
-smaller tank or the streams' rule relaxed. Also open: a proposal for unjointed bodies
-leaving the articulation solver, and whether the three-arm cap moves now that pinning
-takes an arm's cost beside two others from 1.48 to about 1.09 (four arms fit the eight
-fast cores at two each; the cap is the owner's, D095).
+then 41e's unread 30,000 s clauses. **The owner's four rulings of 2026-09-20, 21:30** (asked with recommendations, all
+taken). **The bed:** relax the streams' rule so that vertical motion may be weaker than
+horizontal in a wide shallow tank, keeping the 2,200 m² tank and giving a floor from about
+5 m to 35 m; a Core change to `CurrentField`, a DECISIONS entry at the build, worlds deep
+enough for today's rule replaying unchanged, screened before a round. Why it was asked:
+depth 20 m is refused today (`runs/r42scrB-s1`), and the 30 m screen (`runs/r42scrB30-s1`,
+floor 15 to 45 m) left nine bodies in ten above 12 m. **The arm cap:** stays at three for
+round 42; when seeds 4 and 5 run, a pinned replay is added as a fourth arm on logical 14-15
+and 0-1 or on its own two fast cores, and the cap moves only if an arm's cost stays under
+about 1.15 of solo. **Unjointed bodies:** a spike first, in the disposable spike project:
+one-part bodies as articulations and as plain rigid bodies, cost per body-step and whether
+drag, buoyancy and contacts agree; then a proposal with numbers. **The look:** close
+pictures beside the whole-tank view in every sample. And the owner's clarification, which
+is the larger point: the problem is not specks, it is that the world is a uniform soup
+where real water would show creatures dispersed and in schools. The agent's reading: this
+world grows drifting plants (no paid movement, no predation on the living, no sense of a
+neighbour), F7 even demands the uniformity, and clumping arrives with animals; a clumping
+measure joins the reads (the footprint's variance-to-mean of bodies per column, or the
+nearest-neighbour ratio from `positions-read.py`) so the change can be seen when it comes.
 
 **Round 41e was stopped at 12:42 on 2026-09-20 for a reboot, not for the world.** Orphaned
 watch loops of the agent's (`scratch/r41/watch-c.sh`, `watch-d.sh`, `watch-e.sh`,
