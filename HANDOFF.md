@@ -48,7 +48,29 @@ stirring at this scale, so kin drift as a cloud. The clumping measure promised t
 owner (bodies per 5 m cell, variance over mean, from `positions.jsonl`) would have seen
 it, and is built: `python scripts/reads/clumping.py <arm> [--cell 5] [--every 1000]`. Seed 2
 reads 3.7 at 5,000 s, 2.7 at 10,000 s and 6.0 to 6.6 from 12,500 s, where a flat scatter
-reads 1, so this world was never mixed flat from above and the crescent is a doubling. What the round is for: F1 (the crowd halves) and F8 (a pinned
+reads 1, so this world was never mixed flat from above and the crescent is a doubling. **Seeds 1 and 3 at 15,000 s (00:30 on 2026-09-21), and the pace is sliding.** `alive`
+906 and 731 (1.65 and 1.54 times their 5,000 s counts), margins 205 and 295 s; F3, F4, F7,
+F10 hold (the probe: eight and seven shallow pairs, none past the rule, nothing over seven
+parts; nothing thrown in 4.8 and 6.2 M jointed body-seconds); F11 3.7 to 6.6% a window;
+eaters 6 and 0. **F8 is failing where the round runs now**: 1,635 and 2,082 over 5,000 to
+15,000 s against a band to 1,600, and the last window ran at 0.56 to 0.61x in all three
+seeds with the machine clean and every arm still pinned. The cause is in the bodies, not
+the machine. Seed 1's cost a body-step went from 3.8 to 6.5 µs of PhysX and 6.4 to 11.3 µs
+of harness between 5,000 and 15,000 s while its links a body went only from 1.89 to 2.25
+and its degrees of freedom from 0.72 to 1.37: selection is adding joints (65% and 83%
+jointed, from 44% and 79%), and the cost a link is itself rising with the crowd (the
+shared read from 0.8 to 1.3 µs a link), which reads as the working set leaving the cache.
+So a seed's wall is superlinear in its crowd and in its jointedness, and the whole-seed
+0.9x clause will probably fail in the jointed seeds at about 0.7x, twelve hours a seed,
+still twice round 41e's pace. **F9 is climbing the way 41d's did, by another route**:
+pairs a body 0.27 and 0.26, up 1.2 to 1.4 times a window since 10,000 s, under the 0.5
+where the doubling rule starts. It is not the fold (the probe finds under ten overlapping
+pairs a world; 1.0 to 1.3 pairs a touching body) but bodies in lasting contact with each
+other, 96% of pairs with a jointed body and all of them stays, in worlds the clumping
+index reads at 3.8 to 4.1. Watch it at every look; at 1.3 times a window it crosses 0.5
+near 18,000 s and 1.0 near 21,000 s. Seed 3 from above at 15,000 s: grey jointed bodies
+everywhere, thickest in two loose clouds inside the inner ring, a few green leaves, one
+small orange (absorptive) cluster near the centre. What the round is for: F1 (the crowd halves) and F8 (a pinned
 seed near real time, 600 to 1,600 wall s per 1,000 s per 1,000 bodies, 0.9x or better),
 then 41e's unread 30,000 s clauses. **The owner's four rulings of 2026-09-20, 21:30** (asked with recommendations, all
 taken). **The bed:** relax the streams' rule so that vertical motion may be weaker than
