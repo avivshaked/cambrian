@@ -26,12 +26,16 @@ restart the queue detached with the same launcher and hash; then watch with `pyt
 one look that exits, fired from the session's cron and never from a shell loop
 (CLAUDE.md's gotcha on background shell loops; `scripts/sweep-orphans.ps1` first, every
 session). **Nothing is relaunched yet** (2026-09-20 afternoon): the owner asked to weigh
-changes before re-arming, and the agent's recommendation on the table is to read 41e as
-stopped, build lever 1 and validate it against the stopped arms' recorded rows, and screen
-a wider, shallower tank on a smaller budget at dt 0.02 for the next round. The reading
-behind it: nine bodies in ten live in the top 11 to 16 m of a 60 m column, the dissolved
-matter stands at 0.003 to 0.007 units/m3 against 0.5 seeded, and the leaves are 80%
-uptake-limited, so the crowd is the budget's and the soup is the footprint's.
+changes before re-arming. The agent first recommended a "wider" tank of 400 m² on the false
+memory that round 41e ran in 100 m² by 60 m; every header reads 2,200 m² by 45 m with the
+bed tilted 30 m (D093), so that recommendation is withdrawn and 0109 carries the
+correction. What stands, and the owner agreed to: read 41e as stopped, and build lever 1
+and validate it against the stopped arms' recorded rows. What is open, for the owner: the
+budget (1,500 units halves the crowd and the wall) and the bed. The reading behind the
+second: nine bodies in ten live above 11 to 16 m, fewer than 4% below 25 m, and the bed's
+shallow arc is at 30 m, so the slope D093 built touches almost nobody; the dissolved
+matter stands at 0.003 to 0.007 units/m3 and the leaves are 80% uptake-limited, so the
+crowd is the budget's.
 
 **Round 41d is stopped at 15,000 s and read (0108's last section, 2026-09-20 03:55), the
 profile branch is merged to main (`4de789d`), and round 41e is running (launched 04:14 to 04:16 on

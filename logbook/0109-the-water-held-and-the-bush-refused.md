@@ -29,10 +29,19 @@ whether the eaters found on this larder, which 41d could not read at half its bu
 Round 41d's, with two switches on: `rounds/launch-r41e.ps1`, which is 41d's launcher with
 `-WaterHold 0.5` (`EVOSIM_WATER_HOLD`, header `water held 0.5 s`) and `-SelfOverlap 0.1`
 (`EVOSIM_SELF_OVERLAP`, header `selfOverlap 0.1`). Everything else is 0108's: the tank of
-100 m² by 60 m, the streams at 0.1 m/s with the fluid acceleration on, the grid, the
+2,200 m² by 45 m with the bed tilted 30 m (corrected 2026-09-20, below), the streams at 0.1 m/s with the fluid acceleration on, the grid, the
 one-substance economy at 3,000 units and 100 J a unit with the overhead at 100 J and the
 remineralisation at 0.002 /s, the silhouette cap on, the joint at 0.0001, dt 0.01, five
 seeds, 30,000 s, a wall of 1,800 minutes, three arms at a time on workers 2, 3 and 4.
+
+*Correction, 2026-09-20 afternoon.* This section said "the tank of 100 m² by 60 m" until
+then. The launcher's defaults and every seed's header say `space tank r=26.46 m (2200 m2),
+depth 45` with the bed's relief at 1.5 m and its tilt at 30 m, which is D093's tank and the
+one rounds 39 to 41d ran in. The mistake was the agent's, written from memory of round 37's
+world and not from the header. No prediction moves: E7's column scale of 2,211 was taken
+from the true world, and every other clause reads a share or a count. The agent then
+carried the same wrong tank into two messages to the owner, and a recommendation built on
+it (a "wider" tank of 400 m²) was withdrawn the same afternoon.
 
 ## The smoke and the screen
 
