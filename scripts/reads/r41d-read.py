@@ -52,7 +52,7 @@ def main():
         print(f'  E7 diverged {div} in {jointed_bs / 1e6:.2f} M jointed body-s = {div / max(jointed_bs, 1) * 1e6:.1f} per M (0 to 10); '
               f'rim quarter {r["alivePerPatch"][3] / alive:.2f} (0.12 to 0.40); cols {r["occupiedColumns"]} vs uniform {r["totalColumns"] * (1 - math.exp(-alive / COLUMNS)):.0f} '
               f'= {r["occupiedColumns"] / (r["totalColumns"] * (1 - math.exp(-alive / COLUMNS))):.2f} (0.85 to 1.05)')
-        if five:
+        if five and t > 5000:
             wall = (r['wallTotalMs'] - five['wallTotalMs']) / 1000
             body_s = sum(x['alive'] * 100 for x in rows if 5000 < x['t'] <= t)
             print(f'  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to {t} s: {wall / (body_s / 1000) * 1000:.0f} (700 to 1,800); pace {(t - 5000) / wall:.2f}x')
