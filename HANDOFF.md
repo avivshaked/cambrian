@@ -6,6 +6,27 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
+**Round 41e was stopped at 12:42 on 2026-09-20 for a reboot, not for the world.** Orphaned
+watch loops of the agent's (`scratch/r41/watch-c.sh`, `watch-d.sh`, `watch-e.sh`,
+`scratch/r40/watch.sh`, dozens of copies left behind by session restarts and compactions) each
+opened a Windows Terminal tab every iteration once their session was gone, several hundred
+processes in twenty minutes, and the owner could not use the machine. The loops were killed,
+the round 41e queue (`scratch/r41/queue-e.ps1`) was killed so it would not launch seeds 4 and 5
+into the reboot, and the three arms were stopped with `stop-arm.ps1 -Reason manual-other`
+(seed 1 at 13,200 s, seed 2 at 17,700 s, seed 3 at 10,400 s; manifests read `stopped`).
+Nothing was wrong with the arms: E9, E10 and E11 held in all three at every read (0109 has
+the launch note, the reads so far are below). Because the shared world replays bit for bit
+at zero job workers on one build, a relaunch of the same seeds on the same workers
+reproduces the same trajectories and continues them, so what the reboot cost is wall time,
+about eight hours a seed, and nothing in the record. **Next after the reboot**: delete the
+stale `Temp/UnityLockfile` on workers 2, 3 and 4 (the stop leaves it), refresh nothing (the
+build is unchanged, `simHash 46335d9f…`), rename the stopped run directories aside
+(`runs/r41e-s*` keep their `stopped` manifests as the record of the interruption), and
+restart the queue detached with the same launcher and hash; then re-arm the watch **without
+a bash loop**: a scheduled check from inside the session, never a background shell loop,
+because a loop outlives the session that armed it and multiplies on every re-arm. The
+gotcha for CLAUDE.md is queued.
+
 **Round 41d is stopped at 15,000 s and read (0108's last section, 2026-09-20 03:55), the
 profile branch is merged to main (`4de789d`), and round 41e is running (launched 04:14 to 04:16 on
 2026-09-20 on the owner's yes; logbook/0109, pre-registered at `fe0b790`).** The three seeds were stopped as `manual-futility` under V5
