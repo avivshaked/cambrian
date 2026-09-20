@@ -46,7 +46,9 @@ body has a column to itself whatever the large pattern. The agent's reading, as 
 a jointed clade spreading from where it arose, its 5 m dispersal slower than the gyre's
 stirring at this scale, so kin drift as a cloud. The clumping measure promised to the
 owner (bodies per 5 m cell, variance over mean, from `positions.jsonl`) would have seen
-it and is the next small build. What the round is for: F1 (the crowd halves) and F8 (a pinned
+it, and is built: `python scripts/reads/clumping.py <arm> [--cell 5] [--every 1000]`. Seed 2
+reads 3.7 at 5,000 s, 2.7 at 10,000 s and 6.0 to 6.6 from 12,500 s, where a flat scatter
+reads 1, so this world was never mixed flat from above and the crescent is a doubling. What the round is for: F1 (the crowd halves) and F8 (a pinned
 seed near real time, 600 to 1,600 wall s per 1,000 s per 1,000 bodies, 0.9x or better),
 then 41e's unread 30,000 s clauses. **The owner's four rulings of 2026-09-20, 21:30** (asked with recommendations, all
 taken). **The bed:** relax the streams' rule so that vertical motion may be weaker than
