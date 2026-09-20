@@ -40,7 +40,22 @@ first recommended a "wider" tank of 400 m² on the false memory that round 41e r
 0109 carries the correction. The reading behind the raised bed: nine bodies in ten live
 above 11 to 16 m, fewer than 4% below 25 m, and the bed's shallow arc is at 30 m, so the
 slope touches almost nobody; the dissolved matter stands at 0.003 to 0.007 units/m3 and
-the leaves are 80% uptake-limited, so the crowd is the budget's. **Lever 1's validation**
+the leaves are 80% uptake-limited, so the crowd is the budget's. **Running at 15:35 on 2026-09-20, three arms, each pinned to fast cores of its own**
+(`scratch/lever1/launch-three.ps1`, `launch-b.ps1`; logical 2-5, 6-9, 10-13 of the 13900K,
+the test of `harness-profile-spec.md` section 9, where one trajectory cost 1.00, 1.10 and
+1.48 of its solo wall alone, beside one arm and beside two): `r41etrace-s1` from
+`scratch/wt-lever1` (lever 1 plus the trace restricted to `TotalDof > 0`, seed 1 to
+3,000 s, read with `scratch/lever1/identity-trace.py`; identical through 1,600 s and at
+1.04 of the solo's wall), and the next world's two dt 0.02 screens to 10,000 s from main,
+`r42scrA-s1` (1,500 units, the bed as is) and `r42scrB30-s1` (1,500 units, depth 30 m
+with the 30 m tilt, the floor from 15 m to 45 m). **The streams refuse a tank too flat
+for its radius**: depth 20 m at r = 26.46 m threw `CurrentField`'s "no amplitude at which
+the axes balance" (`runs/r42scrB-s1`, status error), because D088's equal RMS on every
+axis cannot be met when the overturning cell is wider than it is deep. A floor at 5 m
+needs either a smaller tank or that rule relaxed, which is the owner's. Checks are
+one-shot crons in the session. The `lever1` branch is uncommitted in its worktree until
+the trace replay ends identical; it is not merged while screens run on main's hash.
+**Lever 1's validation**
 (`runs/r41ebase-s1` on main's worker 5 beside `scratch/wt-lever1/runs/r41elev-s1`, both
 seed 1 to 5,000 s, read with `scratch/lever1/identity.py`): identical to the recording on
 every non-clock field through 3,900 s, the harness 8% cheaper and the wall 3%, because
