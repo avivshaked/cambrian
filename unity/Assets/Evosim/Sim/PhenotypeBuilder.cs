@@ -186,6 +186,147 @@ namespace Evosim.Sim
         /// </remarks>
         public double WaterSampledAt { get; internal set; } = double.NegativeInfinity;
 
+        // ---- the solver read once a step (logbook/specs/harness-profile-spec.md §7, lever 1)
+        //
+        // Four phases of the harness's step used to ask the engine for the same link's pose and
+        // motion separately, on every physics step: the divergence check, the sensors, the drag
+        // pass's gather and the throw trace's ring. Every one of those reads is a crossing into
+        // native code, and the profile of 2026-09-19 put the crossings at about a sixth of a run's
+        // whole wall clock — the trace alone at a fifth of the harness and the gather at a fifth of
+        // the drag pass. These arrays are that question asked once: the harness reads each link's
+        // state into them and every phase in the same window reads them instead of the engine.
+        //
+        // It moves no trajectory, and that is a property of the ordering rather than a hope.
+        // Nothing between a read and its uses can change what the engine would have answered — a
+        // force or a torque added to a body does not become velocity until the solver steps — and
+        // every place in the loop that does move a body outside the solver (the seam wrap, a
+        // resize, a newborn's build) is followed by another read before anything consumes one.
+        // A body nobody has read for answers from the engine as it always did: see
+        // HasSolverState.
+
+        /// <summary>Each link's world position as of the last read of the solver.</summary>
+        public Vector3[] LinkPosition { get; internal set; }
+
+        /// <summary>
+        /// Each link's world rotation as of the last <see cref="ReadSolverStateBeforeStep"/>.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ <b>Valid only between that read and <c>Physics.Simulate</c>.</b>
+        /// <see cref="ReadSolverStateAfterStep"/> deliberately leaves it alone, because nothing
+        /// after the solver reads a link's orientation and reading one for nobody would be exactly
+        /// the crossing this cache exists to remove. Anything that comes to want an orientation
+        /// after the step refreshes this rather than trusting it — and on a body whose first read
+        /// was an after-step one it is not a rotation at all, it is four zeroes.
+        /// </remarks>
+        public Quaternion[] LinkRotation { get; internal set; }
+
+        /// <summary>Each link's linear velocity as of the last read of the solver.</summary>
+        public Vector3[] LinkVelocity { get; internal set; }
+
+        /// <summary>Each link's angular velocity as of the last read of the solver.</summary>
+        public Vector3[] LinkSpin { get; internal set; }
+
+        /// <summary>
+        /// Whether the four arrays above hold a reading of this body at all.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>False is the whole of the answer for a creature nobody steps through
+        /// <c>Ecosystem</c>.</b> The surveys, the smokes, the sandbox scene and the theatre's solo
+        /// mode build bodies and drive them with loops of their own, so there is nothing to keep a
+        /// cache honest for them, and every phase falls back to asking the engine — which is what
+        /// those harnesses have always done, unchanged to the bit.
+        /// </para>
+        /// <para>
+        /// Set by the first read and never cleared, because the harness reads every living body on
+        /// every step. A body built part-way through a step therefore spends the rest of that step
+        /// on the engine and joins the cache at the next read, which is the safe direction for the
+        /// flag to be wrong in.
+        /// </para>
+        /// </remarks>
+        public bool HasSolverState { get; internal set; }
+
+        /// <summary>
+        /// Reads every link's pose and motion out of the solver, for the phases that run before
+        /// <c>Physics.Simulate</c> — the divergence check, the sensors, the drives and the drag
+        /// pass's gather.
+        /// </summary>
+        /// <remarks>
+        /// Called once per physics step by <c>Ecosystem</c>, after the births and deaths of the
+        /// previous step have been given and taken bodies and before anything reads one. The
+        /// rotation is read here and only here; see <see cref="LinkRotation"/>.
+        /// </remarks>
+        public void ReadSolverStateBeforeStep()
+        {
+            ArticulationBody[] bodies = Bodies;
+            if (bodies == null || bodies.Length == 0) return;
+
+            if (LinkPosition == null || LinkPosition.Length != bodies.Length)
+            {
+                AllocateSolverState(bodies.Length);
+            }
+
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                ArticulationBody body = bodies[i];
+                Transform t = body.transform;
+
+                LinkPosition[i] = t.position;
+                LinkRotation[i] = t.rotation;
+                LinkVelocity[i] = body.linearVelocity;
+                LinkSpin[i] = body.angularVelocity;
+            }
+
+            HasSolverState = true;
+        }
+
+        /// <summary>
+        /// Reads every link's position and motion out of the solver, for the phases that run after
+        /// <c>Physics.Simulate</c> — the two work integrations, the throw trace and the metabolic
+        /// step's divergence check.
+        /// </summary>
+        /// <remarks>
+        /// <b>After the seam wrap, never before it.</b> D077's boundary teleports a whole
+        /// articulation by its root, which is the one thing in the post-solver window that moves a
+        /// body without the solver, so a reading taken before it would hand the trace and the check
+        /// a place the body is no longer in. The rotation is not refreshed — see
+        /// <see cref="LinkRotation"/>.
+        /// </remarks>
+        public void ReadSolverStateAfterStep()
+        {
+            ArticulationBody[] bodies = Bodies;
+            if (bodies == null || bodies.Length == 0) return;
+
+            if (LinkPosition == null || LinkPosition.Length != bodies.Length)
+            {
+                AllocateSolverState(bodies.Length);
+            }
+
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                ArticulationBody body = bodies[i];
+
+                LinkPosition[i] = body.transform.position;
+                LinkVelocity[i] = body.linearVelocity;
+                LinkSpin[i] = body.angularVelocity;
+            }
+
+            HasSolverState = true;
+        }
+
+        /// <summary>
+        /// Makes room for one reading of this body. Once per creature, at its first read, and
+        /// again only if the link count changed — which <c>PhenotypeBuilder.Resize</c> refuses, so
+        /// in a run it is once.
+        /// </summary>
+        private void AllocateSolverState(int links)
+        {
+            LinkPosition = new Vector3[links];
+            LinkRotation = new Quaternion[links];
+            LinkVelocity = new Vector3[links];
+            LinkSpin = new Vector3[links];
+        }
+
         /// <summary>Takes the body out of the water, on the line that kills it.</summary>
         /// <remarks>
         /// <para>

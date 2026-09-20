@@ -314,9 +314,17 @@ namespace Evosim.Sim
         /// pair costs the same either way.
         /// </para>
         /// </remarks>
+        /// <remarks>
+        /// <c>read</c> is lever 1's own bracket (logbook/specs/harness-profile-spec.md §7): the two
+        /// passes that read every living link's state out of the solver, one before the step and
+        /// one after it, for the four phases that used to read it each for themselves. It is the
+        /// one phase whose own cost is meant to be smaller than the phases it stands in front of,
+        /// so it is booked separately rather than folded into any of them — otherwise the reading
+        /// that says whether the lever paid would be the reading it changed.
+        /// </remarks>
         public static readonly string[] HarnessPhases =
         {
-            "reconcile", "finite", "control", "fluid", "contacts",
+            "reconcile", "finite", "read", "control", "fluid", "contacts",
             "settle", "trace", "metabolise", "growth", "other",
         };
 
@@ -341,13 +349,14 @@ namespace Evosim.Sim
 
         private const int PhaseReconcile = 0;
         private const int PhaseFinite = 1;
-        private const int PhaseControl = 2;
-        private const int PhaseFluid = 3;
-        private const int PhaseContacts = 4;
-        private const int PhaseSettle = 5;
-        private const int PhaseTrace = 6;
-        private const int PhaseMetabolise = 7;
-        private const int PhaseGrowth = 8;
+        private const int PhaseRead = 2;
+        private const int PhaseControl = 3;
+        private const int PhaseFluid = 4;
+        private const int PhaseContacts = 5;
+        private const int PhaseSettle = 6;
+        private const int PhaseTrace = 7;
+        private const int PhaseMetabolise = 8;
+        private const int PhaseGrowth = 9;
 
         /// <summary>Stopwatch ticks in each named phase; `other` is the subtraction, not a bucket.</summary>
         private readonly long[] _phaseTicks = new long[HarnessPhases.Length - 1];
@@ -741,9 +750,13 @@ namespace Evosim.Sim
             /// collection in the solver's own loop.
             /// </para>
             /// <para>
-            /// Null for a rigid body. A creature with no actuated joint has no joint state to
-            /// lose and cannot be the case this instrument was built for, and the majority of
-            /// every population on record is rigid.
+            /// Null for a body with no movable joint — <c>CreatureInstance.TotalDof</c> of 0,
+            /// which is a one-part body and a chain welded by fixed joints alike. A creature with
+            /// no actuated joint has no joint state to lose, every throw this instrument was built
+            /// for was a jointed body, and the majority of every population on record is unjointed,
+            /// so this is where most of the trace's fifth of the harness goes. The build decides it
+            /// once and the step never asks again; see <c>Build</c>, which also says what the rule
+            /// gives up.
             /// </para>
             /// </remarks>
             public float[] Trace;
@@ -1614,7 +1627,17 @@ namespace Evosim.Sim
 
             Reconcile();
 
-            _phaseTicks[PhaseReconcile] += Stopwatch.GetTimestamp() - phaseStarted;
+            phaseStarted = NotePhase(PhaseReconcile, phaseStarted);
+
+            // Lever 1's first pass — logbook/specs/harness-profile-spec.md §7. Every living link's
+            // pose and motion, read out of the solver once, for the four things that are about to
+            // want them: the divergence check immediately below, the sensors and the drives in the
+            // control loop, and the drag pass's gather. Here rather than earlier because Reconcile
+            // has just given the step's newborns their bodies, and here rather than later because
+            // the check below is the first phase to read one.
+            ReadSolverStateBeforeStep();
+
+            phaseStarted = NotePhase(PhaseRead, phaseStarted);
 
             // The second bracket on CheckFinite, and the reason it is here rather
             // than beside the first. The first runs at the top of Metabolise, after the solver;
@@ -1693,13 +1716,32 @@ namespace Evosim.Sim
             // asked and answered "no" once per body per physics step.
             if (Volume != null && Volume.Shape != WorldShape.Tank) WrapAtTheSeams();
 
+            // The wrap is `settle`'s, and it is booked here rather than at the foot of the pass so
+            // that lever 1's second read below gets a bracket of its own without the wrap in it.
+            // `settle` is accumulated twice per step and means exactly what it meant.
+            phaseStarted = NotePhase(PhaseSettle, phaseStarted);
+
+            // Lever 1's second pass — logbook/specs/harness-profile-spec.md §7. The state the
+            // solver has just left, read once, for the four things that want it: the fluid's work
+            // integration and the drivers' immediately below, the throw trace's ring, and the
+            // divergence check at the top of Metabolise.
+            //
+            // After the wrap, never before it. D077's boundary teleports a whole articulation by
+            // its root, and it is the one thing in this window that moves a body without the
+            // solver — a reading taken before it would hand the trace and the check a place the
+            // body is no longer in. It is skipped outright in a tank, where the boundary is glass.
+            ReadSolverStateAfterStep();
+
+            phaseStarted = NotePhase(PhaseRead, phaseStarted);
+
             Fluid.Settle(_instances);
 
             for (int i = 0; i < _order.Count; i++) _order[i].Driver.Settle();
 
             // `settle` is the whole post-solver pass — the seam wrap, the fluid's work
             // integration and each driver's — because the three are contiguous and the wrap is
-            // not called at all in a tank.
+            // not called at all in a tank. Since lever 1 it is two brackets rather than one, with
+            // the read between them; the sum is the same three things it always was.
             phaseStarted = NotePhase(PhaseSettle, phaseStarted);
 
             Steps++;
@@ -1972,6 +2014,52 @@ namespace Evosim.Sim
         private const int MaxDumps = 50;
 
         /// <summary>
+        /// Reads every living link's pose and motion out of the solver, once, for the phases that
+        /// run before <c>Physics.Simulate</c> — logbook/specs/harness-profile-spec.md §7, lever 1.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The whole of the lever is that this is the only crossing.</b> The divergence check,
+        /// the sensors, the drives and the drag pass's gather each asked the engine for the same
+        /// link's position or velocity on every physics step; between them they read a link's
+        /// position three times and each of its velocities twice, and the profile measured the
+        /// crossings at about a sixth of a run's wall clock. They now read
+        /// <see cref="CreatureInstance.LinkPosition"/> and its three neighbours, and this is where
+        /// those are filled.
+        /// </para>
+        /// <para>
+        /// <b>Nothing between here and the solver can change what the engine would have said.</b>
+        /// The control loop adds torques and the drag pass adds forces, and a force is not a
+        /// velocity until <c>Physics.Simulate</c> runs; nothing in the window writes a transform, a
+        /// velocity or an anchor. The three things that do move a body outside the solver — the
+        /// seam wrap, a resize and a newborn's build — all happen before this line or after the
+        /// reading that follows it, which is why this one is here, immediately after
+        /// <see cref="Reconcile"/> and immediately before the first phase that reads.
+        /// </para>
+        /// </remarks>
+        private void ReadSolverStateBeforeStep()
+        {
+            for (int i = 0; i < _order.Count; i++) _order[i].Instance.ReadSolverStateBeforeStep();
+        }
+
+        /// <summary>
+        /// The same reading for the phases that run after <c>Physics.Simulate</c> — the two work
+        /// integrations, the throw trace and the metabolic step's divergence check.
+        /// </summary>
+        /// <remarks>
+        /// Taken after the seam wrap, which is the one thing in that window that moves a body
+        /// without the solver, and before anything consumes it. What comes after the consumers is
+        /// <see cref="Metabolise"/>, whose own mover — <see cref="ApplyGrowth"/> — runs at the very
+        /// end of it, after the check has read; the next reading of this body is then the
+        /// before-step one at the top of the next step, so a resize is never seen through a stale
+        /// cache.
+        /// </remarks>
+        private void ReadSolverStateAfterStep()
+        {
+            for (int i = 0; i < _order.Count; i++) _order[i].Instance.ReadSolverStateAfterStep();
+        }
+
+        /// <summary>
         /// Checks that every living body is still finite and still in the world, and kills the
         /// ones that are not.
         /// </summary>
@@ -2022,10 +2110,14 @@ namespace Evosim.Sim
         /// once is the same test as testing all three.
         /// </para>
         /// <para>
-        /// Read from the solver rather than from the fluid's cached copies: those were gathered
-        /// <i>before</i> the last <c>Physics.Simulate</c>, and the steps just taken are the ones
-        /// that could have blown up. Everything the post-mortem wants beyond this — velocities,
-        /// spins, torques — is read only after this test has already failed.
+        /// Read from the step's own reading of the solver and never from the fluid's gather: the
+        /// gather's copies were taken <i>before</i> the last <c>Physics.Simulate</c>, and the steps
+        /// just taken are the ones that could have blown up. Lever 1's after-step reading is taken
+        /// past the solver and past the seam wrap, immediately before this runs, which is what
+        /// makes it the same positions this method used to ask the Transforms for
+        /// (logbook/specs/harness-profile-spec.md §7). Everything the post-mortem wants beyond this
+        /// — velocities, spins, torques — is read from the engine, only after this test has
+        /// already failed.
         /// </para>
         /// <para>
         /// The last finite root position is kept as it goes past, on the body rather than in an
@@ -2062,7 +2154,14 @@ namespace Evosim.Sim
                 ArticulationBody[] bodies = body.Instance.Bodies;
                 if (bodies == null || bodies.Length == 0) continue;
 
-                Vector3 root = bodies[0].transform.position;
+                // Lever 1. Both call sites of this method are immediately preceded by a reading of
+                // the solver — the before-step one at the top of Step, the after-step one taken
+                // past the seam wrap — so these are the same positions the Transforms would hand
+                // back, and null is a body built part-way through a step that has not been read
+                // for yet, which asks the engine as it always did.
+                Vector3[] cached = body.Instance.HasSolverState ? body.Instance.LinkPosition : null;
+
+                Vector3 root = cached != null ? cached[0] : bodies[0].transform.position;
                 float horizontal = root.x + root.z;
 
                 // How far under the rock this body is, m — 0 unless the bed's guard below is what
@@ -2106,7 +2205,7 @@ namespace Evosim.Sim
 
                 for (int b = 1; intact && b < bodies.Length; b++)
                 {
-                    Vector3 part = bodies[b].transform.position;
+                    Vector3 part = cached != null ? cached[b] : bodies[b].transform.position;
                     float sum = part.x + part.y + part.z;
 
                     if (float.IsNaN(sum) || float.IsInfinity(sum)) intact = false;
@@ -2184,8 +2283,13 @@ namespace Evosim.Sim
         /// </para>
         /// <para>
         /// <b>Jointed bodies only, and no allocation.</b> The ring is sized at build and
-        /// overwritten forever after, and a rigid body has none, so the cost is one null test per
-        /// creature per step plus four native reads per link on the minority that have a joint.
+        /// overwritten forever after, and a body with no movable joint has none — so for the
+        /// majority of every population on record the whole of this instrument is one null test
+        /// per creature per step, and nothing at all per link. On the bodies that do carry a ring
+        /// the cost is one native read per link, the joint's reduced-space velocity, which nothing
+        /// else in the step wants; the position and the two velocities come from the step's own
+        /// reading of the solver (lever 1), where before that they were three more crossings per
+        /// link per step, and this loop was a fifth of the harness.
         /// The array's length cannot disagree with the body's link count —
         /// <c>PhenotypeBuilder.Resize</c> refuses a phenotype whose part count changed, and
         /// nothing else resizes a live articulation — so an index is taken rather than guarded: a
@@ -2210,13 +2314,22 @@ namespace Evosim.Sim
         /// </remarks>
         private void RecordTrace()
         {
+            // Hoisted out of both loops: the environment, the step number and the time that step
+            // stands at cannot change while this runs, and read here they are read once for the
+            // whole population rather than once per link. Nothing about what is stored changes —
+            // these are the same three values every iteration was computing for itself.
+            FluidEnvironment fluid = Fluid;
+            long step = Steps;
+            double stepTime = step * (double)FixedDt;
+
             for (int i = 0; i < _order.Count; i++)
             {
                 Body body = _order[i];
                 float[] trace = body.Trace;
                 if (trace == null) continue;
 
-                ArticulationBody[] bodies = body.Instance.Bodies;
+                CreatureInstance instance = body.Instance;
+                ArticulationBody[] bodies = instance.Bodies;
                 if (bodies == null || bodies.Length == 0) continue;
 
                 int links = bodies.Length;
@@ -2238,14 +2351,40 @@ namespace Evosim.Sim
 
                 int bad = -1;
 
+                // Lever 1. The step's after-step reading of the solver, taken past the wrap and
+                // before either Settle — neither of which writes to a body — so these are the same
+                // three quantities this loop used to ask the engine for, and the profile's `trace`
+                // stops being an eighth of the wall spent reading the solver a second time
+                // (logbook/specs/harness-profile-spec.md §7). Null is a body built part-way through
+                // a step and not yet read for; it asks the engine, as every body did before.
+                bool cached = instance.HasSolverState;
+                Vector3[] cachedPosition = cached ? instance.LinkPosition : null;
+                Vector3[] cachedVelocity = cached ? instance.LinkVelocity : null;
+                Vector3[] cachedSpin = cached ? instance.LinkSpin : null;
+
                 for (int b = 0; b < links; b++)
                 {
-                    ArticulationBody link = bodies[b];
                     int o = b * TraceFloatsPerLink;
 
-                    Vector3 p = link.transform.position;
-                    Vector3 v = link.linearVelocity;
-                    Vector3 w = link.angularVelocity;
+                    Vector3 p, v, w;
+
+                    if (cached)
+                    {
+                        p = cachedPosition[b];
+                        v = cachedVelocity[b];
+                        w = cachedSpin[b];
+                    }
+                    else
+                    {
+                        // The fallback, and the same three questions asked in the same order as
+                        // before lever 1. The link itself is fetched only here and at the joint
+                        // read below, so a cached root costs no array load at all.
+                        ArticulationBody link = bodies[b];
+
+                        p = link.transform.position;
+                        v = link.linearVelocity;
+                        w = link.angularVelocity;
+                    }
 
                     // The injection, written where the solver's own number would be so that what
                     // refuses the frame below is the real test and not a second path around it.
@@ -2265,7 +2404,7 @@ namespace Evosim.Sim
 
                     if (b > 0)
                     {
-                        ArticulationReducedSpace joint = link.jointVelocity;
+                        ArticulationReducedSpace joint = bodies[b].jointVelocity;
 
                         if (joint.dofCount > 0) j0 = joint[0];
                         if (joint.dofCount > 1) j1 = joint[1];
@@ -2283,7 +2422,7 @@ namespace Evosim.Sim
                     // _instances are built together and in the same order. False when the slot was
                     // never filled, in which case the three vectors read zero, which is what the
                     // water contributed.
-                    Fluid.TryStepForces(i, b, out Vector3 drag, out Vector3 accel, out Vector3 water);
+                    fluid.TryStepForces(i, b, out Vector3 drag, out Vector3 accel, out Vector3 water);
 
                     frame[o + 12] = drag.x;
                     frame[o + 13] = drag.y;
@@ -2298,7 +2437,17 @@ namespace Evosim.Sim
                     // Every number that would be stored, one at a time rather than through a sum
                     // of them: two large finite forces of the same sign add to an infinity, and a
                     // summed test would read that as a divergence the solver never had.
-                    if (!TraceLinkIsFinite(frame, o))
+                    //
+                    // Asked of the values themselves rather than of the twenty-one floats just
+                    // written into the scratch frame, which is what it used to read. A float
+                    // stored into a float[] and loaded back is the same float, bit for bit — no
+                    // widening, no rounding — so the nine tests below answer exactly what
+                    // TraceLinkIsFinite answered, and the loop stops reloading a row it has this
+                    // moment written. TraceLinkIsFinite stays: CountFiniteFrames asks the same
+                    // question of the stored ring at dump time, where there is no local to ask.
+                    if (!(FiniteNumber(p) && FiniteNumber(v) && FiniteNumber(w) &&
+                          FiniteNumber(j0) && FiniteNumber(j1) && FiniteNumber(j2) &&
+                          FiniteNumber(drag) && FiniteNumber(accel) && FiniteNumber(water)))
                     {
                         bad = b;
                         break;
@@ -2312,7 +2461,7 @@ namespace Evosim.Sim
                     // which every one of its numbers was finite.
                     if (body.FirstNonFiniteStep < 0)
                     {
-                        body.FirstNonFiniteStep = Steps;
+                        body.FirstNonFiniteStep = step;
                         body.FirstNonFiniteLink = bad;
                     }
 
@@ -2322,8 +2471,8 @@ namespace Evosim.Sim
                 int slot = body.TraceCursor;
                 Array.Copy(frame, 0, trace, slot * floats, floats);
 
-                body.TraceStep[slot] = Steps;
-                body.TraceTime[slot] = Steps * (double)FixedDt;
+                body.TraceStep[slot] = step;
+                body.TraceTime[slot] = stepTime;
 
                 // Cleared as it is recorded, so exactly one frame per resize carries the flag —
                 // the first frame taken after the new anchors and masses were written.
@@ -2352,6 +2501,28 @@ namespace Evosim.Sim
             }
 
             return true;
+        }
+
+        /// <summary>One number, finite or not — the same test <see cref="TraceLinkIsFinite"/>
+        /// makes, asked of a value rather than of a slot in an array.</summary>
+        /// <remarks>
+        /// Same spelling as everywhere else in this file, and for the same reason: one question,
+        /// one pair of names, so a search for either finds all of them.
+        /// </remarks>
+        private static bool FiniteNumber(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        /// <summary>Each of a vector's three numbers, one at a time — never their sum.</summary>
+        /// <remarks>
+        /// Three separate tests because two large finite components of the same sign add to an
+        /// infinity, and a magnitude would read that as a divergence the solver never had. See
+        /// <see cref="RecordTrace"/>, which is the only caller.
+        /// </remarks>
+        private static bool FiniteNumber(Vector3 value)
+        {
+            return FiniteNumber(value.x) && FiniteNumber(value.y) && FiniteNumber(value.z);
         }
 
         /// <summary>
@@ -2523,6 +2694,19 @@ namespace Evosim.Sim
                 w.Field("totalDof", instance.TotalDof);
                 w.Field("jointed", instance.TotalDof > 0);
 
+                // Why there is no <id>-trace.json beside this file, when there is none, and null
+                // when there is one. Appended rather than a format change, like divergenceReason
+                // above: every reader on file keys the dump by name and none of them has to learn
+                // this one. It exists because the absence of a trace was ambiguous — a one-part
+                // body, a run recorded before the instrument existed, and from 2026-09-20 any body
+                // with no movable joint, which is the majority of every population — and a reader
+                // could not tell which. Now the dump says.
+                string traceOmitted = body.Trace != null
+                    ? null
+                    : "no trace: unjointed body (no movable joint, so no ring is kept)";
+
+                w.Field("traceOmitted", traceOmitted);
+
                 // Where the body last was. One position for the creature rather than one per
                 // part, because that is what the check already reads and a per-part copy cost
                 // more than it was worth — and at the magnitudes a divergence reaches, a float
@@ -2614,9 +2798,14 @@ namespace Evosim.Sim
         /// as <c>&lt;id&gt;-trace.json</c>, so the pair sorts together.
         /// </para>
         /// <para>
-        /// <b>Nothing is written for a rigid body</b>, which has no ring: the reader prints a dash
-        /// for a dump with no trace, and that dash means the same thing for a one-part body as it
-        /// does for a dump recorded before this build existed.
+        /// <b>Nothing is written for a body with no movable joint</b>, which has no ring: the
+        /// reader prints a dash for a dump with no trace. The dash alone cannot say why — a
+        /// one-part body, an unjointed chain, or a run recorded before this build existed are all
+        /// the same absence — so the post-mortem beside it carries <c>traceOmitted</c>, which
+        /// names the reason in a sentence. No empty file is written in its place: the readers on
+        /// file count their shares over *the dumps that carry a trace*
+        /// (<c>scripts/reads/diverged-read.py</c>), and a file holding no frames would enter those
+        /// denominators as a traced body.
         /// </para>
         /// <para>
         /// Every number goes through <see cref="Number"/>, which writes a non-finite value as its
@@ -2633,8 +2822,8 @@ namespace Evosim.Sim
             // Written even for a body that holds no frame at all. Since a non-finite frame is
             // refused, "no frames" is now a reading rather than a gap, a body that was never
             // finite for a whole step after it was built, and firstNonFiniteStep below is the
-            // one number that says so. Only a body with no ring, which is every rigid one, has
-            // nothing to write.
+            // one number that says so. Only a body with no ring — one with no movable joint —
+            // has nothing to write, and its post-mortem's traceOmitted says as much.
             if (trace == null) return;
 
             try
@@ -3287,14 +3476,33 @@ namespace Evosim.Sim
 
             // logbook/specs/throw-trace-spec.md steps 1 and 2, after ApplyAddedMass above: the
             // masses the solver will actually carry, and the ring the trace is written into. The
-            // ring is allocated here, once, for any body of more than one link — a fixed joint
-            // can still go non-finite (`r35old-s3`, CLAUDE.md), so the test is the link count
-            // rather than the actuated degrees of freedom — and the array is overwritten in place
-            // on every physics step for the rest of the creature's life.
+            // ring is allocated here, once, and overwritten in place on every physics step for the
+            // rest of the creature's life.
+            //
+            // The test is the actuated degrees of freedom, and until 2026-09-20 it was the link
+            // count. The reversal is a price, paid deliberately. Writing the ring costs a fifth to
+            // a quarter of the harness's whole wall clock (logbook/specs/harness-profile-spec.md),
+            // it is paid on every link of every body on every step, and the majority of every
+            // population on record is unjointed — so most of that fifth buys frames of bodies the
+            // instrument was not built for. Every throw it was built for was jointed: round 37b's
+            // 43 were all two-part jointed bodies (logbook/0097), round 34's were jointed adults,
+            // round 41e threw nothing in 16 million jointed body-seconds. What is given up is the
+            // welded multi-part case: a link of a fixed-jointed chain can go non-finite — which is
+            // why CheckFinite reads every link and not only the root (`r35old-s3`, CLAUDE.md) —
+            // and such a body now dies with a post-mortem and no trace beside it. It is given up
+            // out loud rather than silently: the dump's `traceOmitted` names the reason, which a
+            // missing file alone could not distinguish from a run recorded before the instrument.
             PhenotypeBuilder.MeasureJointMassRatios(instance);
             NoteMassRatio(body);
 
-            if (instance.Bodies.Length > 1)
+            // One test for the two things that ask it, both of them properties of the creature for
+            // its whole life: PhenotypeBuilder.Resize refuses a phenotype whose part count changed
+            // and growth is a uniform scale, so no joint of a living body ever gains or loses a
+            // degree of freedom. This is the same test the report's `jnt` columns and the dump's
+            // `jointed` field are written from.
+            bool jointed = instance.TotalDof > 0;
+
+            if (jointed)
             {
                 body.Trace = new float[TraceFrames * instance.Bodies.Length * TraceFloatsPerLink];
                 body.TraceStep = new long[TraceFrames];
@@ -3312,17 +3520,15 @@ namespace Evosim.Sim
                 // And the link-to-creature index the contact instrument reads, filled here for
                 // the same reason the flag is set here: this is the one place a body is handed to
                 // the solver, so a link the report can name is a link this loop has seen. The
-                // jointedness is the creature's and is fixed for its life, so it is stored once
-                // rather than asked of the phenotype on every pair.
-                bool jointedBody = instance.TotalDof > 0;
-
+                // jointedness is the creature's and is fixed for its life, so it is taken from the
+                // one test above rather than asked of the phenotype on every pair.
                 for (int b = 0; b < instance.Bodies.Length; b++)
                 {
                     Collider collider = instance.Bodies[b].GetComponent<Collider>();
                     if (collider != null) collider.providesContacts = true;
 
                     _contactBodies[instance.Bodies[b].GetEntityId()] =
-                        new ContactBody(creature.Id, jointedBody);
+                        new ContactBody(creature.Id, jointed);
                 }
             }
 

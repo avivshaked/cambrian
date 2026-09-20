@@ -350,12 +350,27 @@ namespace Evosim.Sim
                 EnsurePanels(creature);
                 int at = _offset[c];
 
+                // Lever 1 — logbook/specs/harness-profile-spec.md §7. The gather's four quantities
+                // are the four the harness read out of the solver at the top of this physics step,
+                // and nothing between that reading and here writes a transform or a velocity: the
+                // control loop adds torques, and a torque is not a velocity until the solver runs.
+                // So this loop crosses into the engine not at all, where the profile measured it
+                // reading four properties per link per step and called it a fifth of the pass.
+                // False is a creature stepped by a survey, a smoke or the theatre's solo mode,
+                // where nothing fills the cache and every read below is the one it always was.
+                bool cached = creature.HasSolverState;
+                Vector3[] cachedPosition = cached ? creature.LinkPosition : null;
+                Quaternion[] cachedRotation = cached ? creature.LinkRotation : null;
+                Vector3[] cachedVelocity = cached ? creature.LinkVelocity : null;
+                Vector3[] cachedSpin = cached ? creature.LinkSpin : null;
+
                 for (int i = 0; i < creature.Bodies.Length; i++)
                 {
                     ArticulationBody body = creature.Bodies[i];
 
-                    _rotation[at + i] = body.transform.rotation.ToQuat();
-                    _spin[at + i] = body.angularVelocity.ToFloat3();
+                    _rotation[at + i] =
+                        (cached ? cachedRotation[i] : body.transform.rotation).ToQuat();
+                    _spin[at + i] = (cached ? cachedSpin[i] : body.angularVelocity).ToFloat3();
                     _panelsAt[at + i] = creature.DragPanels[i];
 
                     // Relative to the water, not to the world. Sampled here in the gather phase
@@ -371,7 +386,7 @@ namespace Evosim.Sim
                     // the roll returns a body to the depth it found it at and moves nothing
                     // sideways (logbook/0083). The rolls keep the patch, which is all that field is
                     // a function of, so every run in the record feels the water it always did.
-                    Vector3 where = body.transform.position;
+                    Vector3 where = cached ? cachedPosition[i] : body.transform.position;
 
                     // The profile's `water`, bracketed per link: the sample is the one part of
                     // the gather that is arithmetic rather than a Transform read, and it is the
@@ -425,7 +440,8 @@ namespace Evosim.Sim
 
                     _waterTicks += Stopwatch.GetTimestamp() - waterStarted;
 
-                    _velocity[at + i] = body.linearVelocity.ToFloat3() - water;
+                    _velocity[at + i] =
+                        (cached ? cachedVelocity[i] : body.linearVelocity).ToFloat3() - water;
 
                     // D090's fluid acceleration force, beside the drag and sampled here for the
                     // same reason: it needs the body's position, which is a Transform read.
@@ -563,6 +579,18 @@ namespace Evosim.Sim
                 if (creature?.Bodies == null) continue;
 
                 int at = _offset[c];
+
+                // Lever 1 again, for the two things this loop reads that the gather already had:
+                // the link's height, which decides the waterline clamp, and the velocities the
+                // work integration is given for its midpoint. Both are the step's own reading of
+                // the solver — nothing between the gather and here has simulated, and the forces
+                // added a few lines down do not become velocities until Physics.Simulate runs. The
+                // mass and the inertia tensor are not cached: only this loop reads them, and a
+                // reading taken for one consumer is a crossing moved rather than removed.
+                bool cached = creature.HasSolverState;
+                Vector3[] cachedPosition = cached ? creature.LinkPosition : null;
+                Vector3[] cachedVelocity = cached ? creature.LinkVelocity : null;
+                Vector3[] cachedSpin = cached ? creature.LinkSpin : null;
 
                 // D064: size-dependent buoyancy. The excess density a creature feels is scaled by
                 // its whole-body volume — 0 at or below FluidConfig.NeutralBodyVolume, converging
@@ -712,13 +740,20 @@ namespace Evosim.Sim
                     // The branch below is the original expression to the character, because at
                     // fraction 0 the record has to replay bit for bit; the two are not merged
                     // into one signed formula for exactly that reason.
+                    // The height is taken inside each branch rather than hoisted above them,
+                    // because the second branch only asks for it when the body is buoyant: with a
+                    // cold cache that short-circuit is a Transform read this loop does not make,
+                    // and hoisting would quietly put it back for every part of every body.
                     if (restoringFraction > 0f)
                     {
                         netDensity = Restore(
-                            netDensity, body.transform.position.y, restoringDensity,
+                            netDensity,
+                            cached ? cachedPosition[i].y : body.transform.position.y,
+                            restoringDensity,
                             WorldDepthMetres, floorRestores: !FloorIsSolid);
                     }
-                    else if (netDensity < 0f && body.transform.position.y >= 0f)
+                    else if (netDensity < 0f &&
+                             (cached ? cachedPosition[i].y : body.transform.position.y) >= 0f)
                     {
                         netDensity = 0f;
                     }
@@ -735,8 +770,8 @@ namespace Evosim.Sim
 
                     if (stepSeconds > 0f)
                     {
-                        _preV[at + i] = body.linearVelocity;
-                        _preW[at + i] = body.angularVelocity;
+                        _preV[at + i] = cached ? cachedVelocity[i] : body.linearVelocity;
+                        _preW[at + i] = cached ? cachedSpin[i] : body.angularVelocity;
                     }
                 }
             }
@@ -946,14 +981,24 @@ namespace Evosim.Sim
 
                 int at = _offset[c];
 
+                // Lever 1 — the post-step half. This method is called immediately after the
+                // harness has read the solver past Physics.Simulate and past the seam wrap, and
+                // these are the velocities that reading holds. A harness that steps this class
+                // itself fills no cache and asks the engine, which is every survey and smoke.
+                bool cached = creature.HasSolverState;
+                Vector3[] cachedVelocity = cached ? creature.LinkVelocity : null;
+                Vector3[] cachedSpin = cached ? creature.LinkSpin : null;
+
                 for (int i = 0; i < creature.Bodies.Length; i++)
                 {
                     ArticulationBody body = creature.Bodies[i];
                     int j = at + i;
                     if (j >= _force.Length) break;
 
-                    Vector3 v = (_preV[j] + body.linearVelocity) * 0.5f;
-                    Vector3 w = (_preW[j] + body.angularVelocity) * 0.5f;
+                    Vector3 v =
+                        (_preV[j] + (cached ? cachedVelocity[i] : body.linearVelocity)) * 0.5f;
+                    Vector3 w =
+                        (_preW[j] + (cached ? cachedSpin[i] : body.angularVelocity)) * 0.5f;
 
                     float power = Vector3.Dot(_force[j], v) + Vector3.Dot(_torque[j], w);
                     DissipatedJoules -= power * _pendingStep;   // power is negative: drag opposes
