@@ -3267,7 +3267,10 @@ namespace Evosim.Sim.EditorTools
                 // summing to it exactly, `other` being the subtraction. Beside them the
                 // denominator the split is read per body with — the living bodies summed over
                 // every physics step, so that two rows give the phase costs per body-step over the
-                // window between them. All eleven read 0 on a report written before this build.
+                // window between them. All of them read 0 on a report written before that build,
+                // and `wallHarnessReadMs` reads 0 on one written before lever 1 added the phase
+                // (logbook/specs/harness-profile-spec.md §7) — the field list is the phase list,
+                // so a phase added there appears here without this loop being touched.
                 long[] harnessPhaseMs = eco.HarnessPhaseMs();
 
                 for (int p = 0; p < harnessPhaseMs.Length; p++)

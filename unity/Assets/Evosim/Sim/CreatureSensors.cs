@@ -84,6 +84,20 @@ namespace Evosim.Sim
         private readonly bool _readsFlow;
         private readonly bool _readsAnythingPerPart;
 
+        /// <summary>
+        /// Whether any channel this creature reads needs the part's <see cref="Transform"/> itself
+        /// rather than only its position.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="SensorChannel.OrientationUp"/> wants the part's own up axis and
+        /// <see cref="SensorChannel.Flow"/> wants a world direction expressed in the part's axes;
+        /// both are asked of the Transform. Everything else this loop needs of the pose is the
+        /// position, and lever 1 hands that over without a crossing
+        /// (<c>CreatureInstance.LinkPosition</c>) — so a creature that reads neither channel never
+        /// touches a Transform at all, where before this it touched one per part per physics step.
+        /// </remarks>
+        private readonly bool _needsTransform;
+
         private readonly float[] _depth;
         private readonly float[] _up;
         private readonly float[] _angle;
@@ -153,6 +167,8 @@ namespace Evosim.Sim
             _readsAnythingPerPart =
                 _readsDepth || _readsUp || _readsJoint || _readsChemical || _readsFlow;
 
+            _needsTransform = _readsUp || _readsFlow;
+
             int parts = creature.Bodies.Length;
             _depth = new float[parts];
             _up = new float[parts];
@@ -188,10 +204,22 @@ namespace Evosim.Sim
             IReadOnlyList<PhenotypePart> parts = _creature.Phenotype.Parts;
             Float3[] water = _creature.RelativeVelocity;
 
+            // Lever 1 — logbook/specs/harness-profile-spec.md §7. This method runs at the top of
+            // the harness's step, immediately after the harness has read every living link out of
+            // the solver, and nothing between the two writes a transform; so the position below is
+            // the same number this loop used to take off the Transform itself. False is a body
+            // nobody has read for — a creature driven by one of the surveys, or one built part-way
+            // through a step — and it asks the engine exactly as it always did.
+            bool cached = _creature.HasSolverState;
+            Vector3[] cachedPosition = cached ? _creature.LinkPosition : null;
+
             for (int b = 0; b < bodies.Length; b++)
             {
-                Transform t = bodies[b].transform;
-                Vector3 pos = t.position;
+                // Fetched only where a channel wants the axes rather than the place: see
+                // _needsTransform. When the cache is cold it is fetched anyway, because the
+                // position has to come from somewhere.
+                Transform t = cached && !_needsTransform ? null : bodies[b].transform;
+                Vector3 pos = cached ? cachedPosition[b] : t.position;
 
                 // ⚠ The second line, and it is not the real one. The real one is
                 // Ecosystem.CheckFinite, which reads every link and kills a body the solver has

@@ -274,6 +274,15 @@ namespace Evosim.Sim
             if (_filled < SmoothWindow) _filled++;
             float inv = 1f / _filled;
 
+            // Lever 1 — logbook/specs/harness-profile-spec.md §7. The relative spin recorded at the
+            // foot of this loop is the state the solver is about to be stepped from, which is
+            // exactly what the harness read once at the top of the step; adding a torque does not
+            // move a velocity until Physics.Simulate runs, so the two are the same numbers. False
+            // is a driver in one of the surveys or the sandbox, where nothing reads the solver for
+            // it and the engine is asked as it always was.
+            bool cached = _creature.HasSolverState;
+            Vector3[] spin = cached ? _creature.LinkSpin : null;
+
             for (int b = 1; b < _creature.Bodies.Length; b++)
             {
                 PhenotypePart part = _creature.Phenotype.Parts[b];
@@ -356,7 +365,9 @@ namespace Evosim.Sim
                 // velocity through it, and only half of that is known before the solver runs.
                 // See Settle.
                 _pendingTorque[b] = worldTorque;
-                _pendingRelOmega[b] = body.angularVelocity - parent.angularVelocity;
+                _pendingRelOmega[b] = cached
+                    ? spin[b] - spin[part.ParentIndex]
+                    : body.angularVelocity - parent.angularVelocity;
                 _pending = true;
             }
 
@@ -396,15 +407,23 @@ namespace Evosim.Sim
             if (!_pending) return;
             _pending = false;
 
+            // Lever 1, the other side of it. This runs immediately after the harness's after-step
+            // reading of the solver, taken past Physics.Simulate and past the seam wrap, and the
+            // only thing between the two is the fluid's own work integration, which reads and
+            // writes nothing to a body. Same numbers, one crossing instead of two per driven link.
+            bool cached = _creature.HasSolverState;
+            Vector3[] spin = cached ? _creature.LinkSpin : null;
+
             for (int b = 1; b < _creature.Bodies.Length; b++)
             {
                 Vector3 torque = _pendingTorque[b];
                 if (torque == Vector3.zero) continue;
 
                 PhenotypePart part = _creature.Phenotype.Parts[b];
-                Vector3 after =
-                    _creature.Bodies[b].angularVelocity -
-                    _creature.Bodies[part.ParentIndex].angularVelocity;
+                Vector3 after = cached
+                    ? spin[b] - spin[part.ParentIndex]
+                    : _creature.Bodies[b].angularVelocity -
+                      _creature.Bodies[part.ParentIndex].angularVelocity;
 
                 float power = Vector3.Dot(torque, (_pendingRelOmega[b] + after) * 0.5f);
 
