@@ -6,7 +6,7 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
-**Round 41d is stopped at 15,000 s and read (0108's last section, 2026-09-20 04:15), the
+**Round 41d is stopped at 15,000 s and read (0108's last section, 2026-09-20 03:55), the
 profile branch is merged to main (`4de789d`), and round 41e is pre-registered and waiting for
 the owner's yes (logbook/0109).** The three seeds were stopped as `manual-futility` under V5
 at their 15,000 s rows (02:51, 03:17, 03:50 on 2026-09-20; the queue killed at 21:46 the

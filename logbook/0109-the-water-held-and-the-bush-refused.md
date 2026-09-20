@@ -1,6 +1,6 @@
 # The water held, and the bush refused
 
-*2026-09-20, 04:40. Written by the agent as the pre-registration of round 41e, on the owner's
+*2026-09-20, 04:00. Written by the agent as the pre-registration of round 41e, on the owner's
 three rulings of 2026-09-19 (the water held, D100; a body born inside itself not born, D101;
 run 41d to 15,000 s and stop, 0108's last section). The predictions are committed before the
 queue starts.*

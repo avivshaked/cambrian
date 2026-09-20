@@ -172,7 +172,7 @@ detached, and seeds 4 and 5 launch as arms end. The early look draws seed 1 at 3
 
 ## Round 41d stopped at 15,000 s: the bush
 
-*2026-09-20, 04:15.* The owner ruled at 21:40 on 2026-09-19 that the three seeds run to their
+*2026-09-20, 03:55.* The owner ruled at 21:40 on 2026-09-19 that the three seeds run to their
 15,000 s sample and stop, and that seeds 4 and 5 never launch. The queue was killed at 21:46. Each seed was stopped as
 `manual-futility` under V5 at its 15,000 s row (seed 2 at 02:51, seed 3 at 03:17, seed 1 at
 03:50), and the round is read here at 15,000 s as a short round. The reason V5 names is the one it was written for: by 12,000 s the seeds had
