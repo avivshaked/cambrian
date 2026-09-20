@@ -259,3 +259,23 @@ main threads are not short of cores, so what they share is either a fast core's 
 thread, a slow core the scheduler moved a windowless process to, or the cache. The first
 two are the scheduler's and can be tested for nothing by pinning each arm to fast cores of
 its own; the test is running on the next three arms and its result goes here.
+
+*The pinning test, 16:30 the same day.* The next three arms were each given two fast cores
+of their own (`ProcessorAffinity` on the Editor's process: logical 2 to 5, 6 to 9 and 10 to
+13). One of them was seed 1 again, on the `lever1` branch with the trace restricted
+(`scratch/wt-lever1/runs/r41etrace-s1`), so its wall reads against the solo run's on the
+same trajectory. It agreed with the recording on every non-clock field through 3,000 s,
+3,780 comparisons, pinned or not.
+
+| wall for 100 to 3,000 s | alone, unpinned | beside two, unpinned | beside two, pinned |
+|---|---|---|---|
+| total | 1,717 s | 2,549 s | 1,877 s |
+| against alone | 1 | 1.48 | 1.09 |
+
+It is indicative and not clean. The pinned arm's neighbours were two dt 0.02 screens at
+half the matter, lighter than round 41e's seeds, and the pinned arm ran a build about 3%
+cheaper. Both push the same way. Still, a harness that lost 1.72 beside two arms lost 1.12
+here, and the simplest account is the scheduler's placement, which pinning removes. Round
+42 runs pinned, from `run-arm.ps1`, and its pace against round 41e's at the same crowd is
+the confirmation. The trace restricted to bodies with a movable joint took the trace's
+share of the harness from 27% to 16% in this jointed seed.
