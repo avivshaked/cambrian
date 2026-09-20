@@ -1033,6 +1033,25 @@ actually verifying it.
   new tokens. With no Unity process running, delete the lock and refresh again, and read
   the header tokens of the smoke before taking its hash. A worktree's worker is a copy too:
   an edit in the worktree reaches `<worktree>/unity-wN` only by a refresh from the worktree.
+- **A background shell loop outlives the session that armed it, and every re-arm adds a
+  copy.** A watch written as `while true; do …; sleep 120; done` and started as a background
+  task or a monitor is not stopped when the monitor expires, when the session compacts or
+  when it restarts: the handle dies and the Git Bash tree stays. Four days of thirty-minute
+  re-arms left dozens of copies of the watches of rounds 40 to 41e running at once. While
+  their session lived they were only waste. When it went, each child they forked (a
+  `grep`, a `stat`, a `sleep`, about forty an iteration a copy) asked Windows for a console,
+  Windows 11 hands a new console to Windows Terminal, and on 2026-09-20 several hundred
+  terminal windows in twenty minutes took the owner's desktop down. The owner rebooted and round 41e lost its three arms at 10,000 to
+  17,000 s (HANDOFF). The rules from it. **A watch is one look that exits**
+  (`scripts/watch-round.py <round> --read <read script>`: one Python process, the state in
+  `scratch/logs/<round>-watch.json`, only what is new printed), and **the schedule belongs
+  to the session** (its cron or wake-up, which cannot outlive it), never to a shell loop.
+  Run `scripts/sweep-orphans.ps1` at the start of every session and before arming
+  anything, and `-Kill` what it lists. A one-off wait (`until grep …; do sleep 20; done`)
+  carries a deadline in the loop's own condition, because it orphans the same way. When
+  the owner says the machine is misbehaving, list processes by name and by creation time
+  before anything else: the storm was visible in one query as 300 `bash.exe` under an hour
+  old.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
