@@ -31,7 +31,7 @@ stale locks were cleared): header `silhouette on · selfOverlap 0.1 · water hel
 among the founders, the drag pass's water at 8%. The queue is `scratch/r41/queue-e.ps1`
 (`-ExpectSimHash 46335d9f -Prereg logbook/0109-…`), to be started detached once the owner
 has said yes and 0109 is committed clean. Workers 2, 3, 4 and 6 carry the merged build. The
-Core suite ran `-All` on the merged tree before the push (result in the commit message).
+Core suite ran `-All` on the merged tree before the push: 760 of 760 in 15 minutes.
 Lever 1 of the profile (the solver read once a step and shared between the drag pass, the
 trace and the sensors; identity kept) is ruled for after round 41e. The reads for the
 round: `scripts/reads/r41d-read.py` (0108's clauses; 0109 adds E11 from `self stillb` and
