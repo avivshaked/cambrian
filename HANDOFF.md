@@ -32,7 +32,21 @@ inherited eaters past three yet. The picture of seed 1 at 5,000 s from its snaps
 (`scratch/snaps/r42-s1/`): a thin scatter thickest at the surface and thinning to about
 20 m, spread evenly over the disc from above, the tilted bed bare below with three or four
 bodies near its shallow end. The read script's E2 line is guarded for marks before
-5,000 s (uncommitted until the next doc commit). What the round is for: F1 (the crowd halves) and F8 (a pinned
+5,000 s (uncommitted until the next doc commit). **Seed 2 at 15,000 s (23:30):** `alive` 893, 2.21 times its 5,000 s count, margin
+223 s; F3, F4, F7 hold (upt lim 84%, snow 0.15, nothing thrown in 4.05 M jointed
+body-seconds, `cols` 0.94); F8 holds at 1,412 with the pace 1.03x over 5,000 to 15,000 s;
+F9 0.09 pairs a body, climbing a hundredth a window; F10 holds (three shallow pairs, none
+past the rule, nothing over five parts, histogram 311, 338, 194, 45, 5); F11 6.7%; no
+eaters. The jointed share went from 40% at 5,000 s to 62%. **The picture from above is not
+uniform**: a crescent of bodies from the left round the top to the right between half the
+radius and the rim, the jointed (grey) bodies thick in it, and the centre and the lower
+right nearly empty (`scratch/snaps/r42-s2/r42-s2-t15000-recon-top.png`). `cols` over
+uniform reads 0.94 and cannot see it, since at 900 bodies in 2,211 columns almost every
+body has a column to itself whatever the large pattern. The agent's reading, as inference:
+a jointed clade spreading from where it arose, its 5 m dispersal slower than the gyre's
+stirring at this scale, so kin drift as a cloud. The clumping measure promised to the
+owner (bodies per 5 m cell, variance over mean, from `positions.jsonl`) would have seen
+it and is the next small build. What the round is for: F1 (the crowd halves) and F8 (a pinned
 seed near real time, 600 to 1,600 wall s per 1,000 s per 1,000 bodies, 0.9x or better),
 then 41e's unread 30,000 s clauses. **The owner's four rulings of 2026-09-20, 21:30** (asked with recommendations, all
 taken). **The bed:** relax the streams' rule so that vertical motion may be weaker than
