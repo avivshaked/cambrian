@@ -9,7 +9,7 @@ living bodies over the window from 5,000 s to the named second (three arms ran t
 import json, glob, math, sys
 
 ROOT = 'D:/Projects/experiments/evolution-simulator'
-BUDGET_UNITS = 3000
+BUDGET_UNITS = 3000  # rounds 41 to 41e; round 42 passes --budget 1500
 RHO = 100
 COLUMNS = 2211  # the uniform expectation's scale in E7, from 0107
 
@@ -28,8 +28,12 @@ def window_pairs(by, t):
 
 
 def main():
-    t = int(sys.argv[1])
-    arms = sys.argv[2:] or ['r41d-s1', 'r41d-s2', 'r41d-s3']
+    global BUDGET_UNITS
+    argv = sys.argv[1:]
+    if '--budget' in argv:
+        i = argv.index('--budget'); BUDGET_UNITS = float(argv[i + 1]); del argv[i:i + 2]
+    t = int(argv[0])
+    arms = argv[1:] or ['r41d-s1', 'r41d-s2', 'r41d-s3']
     for arm in arms:
         rows, m = rows_of(arm)
         by = {int(r['t']): r for r in rows}

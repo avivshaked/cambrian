@@ -61,7 +61,13 @@ param(
     [uint64]$Seed = 1,   # not [ulong]: that accelerator is PowerShell 7 only
     [string]$ExpectSimHash,
     [int]$WaitForManifestMinutes = 10,
-    [string[]]$UnityArgs = @()   # extra Unity command-line switches, e.g. '-job-worker-count','1'
+    [string[]]$UnityArgs = @(),  # extra Unity command-line switches, e.g. '-job-worker-count','1'
+    # Pin the Editor's process to these logical processors (a bit mask, 0 = leave it to the
+    # scheduler). On this machine's 13900K logical 0 to 15 are the eight fast cores' threads, and
+    # an arm beside two others cost 1.48 of its solo wall unpinned and 1.09 with two fast cores of
+    # its own (logbook/specs/harness-profile-spec.md section 9). Identity is untouched: the pinned
+    # replay of round 41e's seed 1 matched its recording on every non-clock field.
+    [int]$AffinityMask = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -196,6 +202,10 @@ try {
 
     $launchedAt = (Get-Date).ToUniversalTime()
     $process = Start-Process -FilePath $unity -ArgumentList $a -NoNewWindow -PassThru
+    if ($AffinityMask -ne 0) {
+        try { $process.ProcessorAffinity = [IntPtr]$AffinityMask; Write-Host ("  pinned to mask 0x{0:X4}" -f $AffinityMask) }
+        catch { Write-Host "  could not pin the process: $_" }
+    }
 } finally {
     foreach ($k in $saved.Keys) {
         if ($null -eq $saved[$k]) { Remove-Item "env:$k" -ErrorAction SilentlyContinue }
