@@ -76,7 +76,20 @@ the last windows 0.41, 0.55 and 0.64x. Pairs a body: seed 1 at 0.68 and slowing 
 0.56, 0.62, 0.68; past 0.5, no doubling), seed 2 flat at 0.20, seed 3 falling from 0.36
 to 0.29 as its jointed share fell from 83% to 66%, so the contacts follow the jointed
 count as they have in every round. Refusals 2 to 7% a window with single windows at 9%.
-Eaters fading to 0 to 1 inherited. Nothing thrown in any seed. Clumping 3.4 to 5.0. What the round is for: F1 (the crowd halves) and F8 (a pinned
+Eaters fading to 0 to 1 inherited. Nothing thrown in any seed. Clumping 3.4 to 5.0. **Seed 1 is changing hands (06:00, 23,000 s).** Its jointed count fell from 711 to 499
+in 2,000 s while `alive` held near 920, the refusal share jumped to 42 of 302 births
+(13.9%, past F11's line for the first time in the round) and pairs a body kept climbing to
+0.93. The probe on the 23,000 s snapshot: a rigid clade of three- to five-part bodies has
+gone from 238 to 405, its five-part members carrying four shallow self-overlapping pairs
+each (none past the rule's depth, so legal), lit areas near 0.79 m² against the jointed
+line's 0.27 to 0.59. The jointed share of contact pairs fell from 95% to 64%, so the new
+bodies touch each other too; 1.4 pairs a touching body is still contact between bodies
+and not a fold. The agent's reading, as inference: the open bush is coming back inside
+D101's rule, a wide welded body that out-earns the jointed line, whose mutants press the
+overlap depth (the refusals) and whose width makes neighbours touch. No stop rule fires
+(no doubling; F11 is read at 30,000 s, and 0110 expected one seed to fail it). Read its
+parts histogram, the refusal share and a close picture at the end. Seeds 2 and 3 are
+quiet: pairs 0.17 and 0.04, seed 3 back to 0.9x. What the round is for: F1 (the crowd halves) and F8 (a pinned
 seed near real time, 600 to 1,600 wall s per 1,000 s per 1,000 bodies, 0.9x or better),
 then 41e's unread 30,000 s clauses. **The owner's four rulings of 2026-09-20, 21:30** (asked with recommendations, all
 taken). **The bed:** relax the streams' rule so that vertical motion may be weaker than
