@@ -4,6 +4,12 @@
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>9.0</LangVersion>
     <IsPackable>false</IsPackable>
+
+    <!-- Tiered compilation gives quick-JITted and optimised code different floating-point
+         bits where the arithmetic sits on a rounding knife-edge, so a digest taken from a
+         loop that has been promoted can differ from one taken before it was. Off, so that a
+         thread-identity result is about the threads. Evosim.Farm needs the same. -->
+    <TieredCompilation>false</TieredCompilation>
     <Nullable>disable</Nullable>
   </PropertyGroup>
 

@@ -14,7 +14,7 @@ namespace Evosim.Dynamics
     /// in the report as not ported rather than silently defaulted.
     /// </para>
     /// </remarks>
-    public sealed class SolverConfig
+    public sealed partial class SolverConfig
     {
         // ---- fluid, term for term from FluidConfig
 
@@ -205,7 +205,9 @@ namespace Evosim.Dynamics
                         : TankGeometry.RadiusFor(config.WorldAreaSquareMetres)
                     : 0.0,
 
-                Current = config.Current,
+                // A field that no world has told its box refuses to answer, so without a world
+                // the water is still; the caller that builds its own field sets Current itself.
+                Current = world != null ? config.Current : null,
                 PatchCount = (int)config.HorizontalPatches,
 
                 StepSeconds = stepSeconds,

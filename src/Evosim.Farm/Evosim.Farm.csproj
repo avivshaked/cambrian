@@ -26,6 +26,7 @@
     <RootNamespace>Evosim.Farm</RootNamespace>
     <Nullable>disable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
 
   <ItemGroup>
