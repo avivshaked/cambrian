@@ -197,6 +197,24 @@ world for 3,000 s with both books closed, and digests, stats and lineage byte-eq
 the contact caps' two numbers, the per-body cap's momentum, the placer's vertical
 clearance against a perpendicular bed, D100's hold at 0, the renamed contact columns.
 
+*22:05, the farm runs out of Unity.* G, J and K are `3560172` on `solver-spike`. Round 42
+seed 1's world, from round 42's launcher (`scratch/farm-port/r42.sh`), 3,000 s:
+`configHash ff557bce`, ended at budget, `audit` 0.0000% on every row, matter residual
+-5.9e-05 units, nothing diverged, 351 alive against the Unity record's 401 at 3,000 s and
+identical to it in every column at 200 s, deaths within 2% at every sample. **8.5x real
+time** against Unity's 0.6x on the same world, in 5.9 minutes. Digest, lineage, positions
+and poses byte-equal at 1, 8 and 24 threads with births and deaths, stats equal with the
+wall fields masked. The wall split reads physics 13%, world 87%: Core's grid step, 52 ms
+a metabolic step whatever the crowd, is now the run, and threads buy nothing until it is
+threaded, which is stage 2. Tests: 28 Farm, 66 Dynamics (two slow not rerun), Core
+untouched. Open: `ovl jnt %` reads 96% where PhysX's `pairs jnt %` read 27% and the pair
+rate is a twentieth, unseparated, so no overlap number is read against a contact number;
+nothing run past 3,000 s or 351 bodies; the forty-genome parity owed again after the
+damper fix; the old read scripts print `?` on the renamed columns. Output under
+`scratch/farm-port/runs/`. **Round 42 seed 4 ended at budget, 22:00**: 914 alive, 491
+jointed (54%, down from 87% at 20,000 s, mean dof 3.59), eaters peaked at 21 and are gone,
+nothing thrown in 14.9 M jointed body-seconds, 0.48x. Seed 5 is at 26,100 s.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
