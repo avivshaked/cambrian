@@ -26,7 +26,19 @@ relaxation makes possible, the seep (D067's vent, off), and the anchoring cell (
 as one section, places and the organ that holds to them together. The worktree is
 `scratch/wt-shallow` (`scratch/wt-streams` is an older worktree and is left alone).
 
-**Round 42 is running (logbook/0110, launched 20:12 to 20:13 on 2026-09-20).** Round 41e's
+**Round 42, 2026-09-21 10:00: seed 1 ended at its budget; all three first seeds are in.**
+934 alive, 60 jointed (607 at its peak), eaters never past 6, nothing thrown in 11.6 M
+jointed body-seconds, pace 0.53x over 5,000 to 30,000 s (2,214 wall seconds per 1,000 s
+per 1,000 bodies, outside F8's band). Its last snapshot is 3,487 boxes of 3,517 parts, the
+bodies rigid and of three and four parts (332 and 317 of 934), with no part pair past
+D101's depth, so the 1.28 pairs a body are bodies touching bodies in a crowded top ten
+metres and not folds. Joints were selected out in three seeds of three. The picture from
+above at 30,000 s shows a band along the south-west rim and a knot off centre, clumping
+3.1. Seeds 4 and 5 are at 13,800 and 12,300 s. The streams' relaxation is built and
+committed on `streams-shallow` (`aed78ea`, Core tests green, the Unity side uncompiled)
+and `fable-propose-animal-kit.md` is drafted for the owner.
+
+**Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
 to 3 on workers 2, 3 and 4, each pinned to two fast cores by `run-arm.ps1 -AffinityMask`
