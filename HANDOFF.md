@@ -66,6 +66,14 @@ against PhysX on one genome and on throughput at 1 and 16 threads before anythin
 decided. `r42half-s4` (seed 4 on 750 units to 10,000 s, worker 2) is a pace screen and a
 stopgap, not the direction.
 
+*16:00, the owner's ruling on order.* Pace comes before a more complex world: what is built
+for it now serves every round after. So the queue is the solver spike
+(`logbook/specs/own-solver-spike-spec.md`, branch `solver-spike` in `scratch/wt-solver`,
+building now), then a proposal to adopt it with the spike's numbers, then the port and a
+base round on the new engine, and the animal kit and the floor's places after that. The
+streams' relaxation still merges when round 42 ends, since it lives in Core and carries
+over.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
