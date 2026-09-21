@@ -107,7 +107,18 @@ D101 a wide welded body out-earns a jointed one, and a joint buys nothing, since
 still does not pay; the joint's idle charge is a two-hundredth of its old price, so it was
 not cost that removed it. **The fourth-arm test** (the owner's ruling) goes up when seed 5
 has launched: a pinned replay of round 42's seed 2 to 3,000 s on worker 5, mask 0xC003,
-its wall read against the recording's at three arms. What the round is for: F1 (the crowd halves) and F8 (a pinned
+its wall read against the recording's at three arms. **Seed 2 ended at 30,000 s (06:31, 618 min, 0.8x) and seed 5 launched on worker 3
+(06:32, pinned 0x03C0, verified); the queue is done.** Seed 2's read: F1 holds (1,162), F2's
+growth holds (2.88x) and its margin fails (234 s), F3 holds at its edge (93%), F4 (0.15),
+F7 (nothing thrown in 11.5 M, `cols` 0.99), F9 (0.13), F10 (no overlapping pair at all,
+nothing over four parts), F11 (5 of 347) and F12 (median two parts: 541, 414, 174, 33)
+hold; F8 holds on the band (1,589) and fails the whole seed (0.8x); eaters peaked at 4.
+Its joints peaked at 605 of 1,013 at 20,000 s and fell to 308 of 1,162, the same turn as
+seeds 3 and 1. Seed 4 at 5,000 s: 385 alive, 325 jointed, pairs 0.11, refused 11 of 229,
+probe clean, 2.1x so far. **The fourth-arm test is running** (07:01): `r42four-s2`, seed 2
+again to 3,000 s on worker 5, pinned to logical 0-1 and 14-15 (0xC003), beside seeds 1, 4
+and 5; read its wall over 100 to 3,000 s against `runs/r42-s2`'s and check identity on the
+non-clock fields, then write it into harness-profile-spec section 9. What the round is for: F1 (the crowd halves) and F8 (a pinned
 seed near real time, 600 to 1,600 wall s per 1,000 s per 1,000 bodies, 0.9x or better),
 then 41e's unread 30,000 s clauses. **The owner's four rulings of 2026-09-20, 21:30** (asked with recommendations, all
 taken). **The bed:** relax the streams' rule so that vertical motion may be weaker than
