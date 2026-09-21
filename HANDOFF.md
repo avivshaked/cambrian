@@ -6,6 +6,20 @@ is queued; it is rewritten, never appended to.*
 
 ## Where things stand
 
+**The owner's rulings of 2026-09-21, 09:00.** (1) The streams' relaxation is ruled at the
+agent's recommendation: in the branch where today's rule has no solution, the vertical RMS
+over the horizontal is `0.76 · k_max` (0.75 at 20 m in the 2,200 m² tank, the overturning
+cell at round 42's amplitude so the eddies keep their share); spec
+`logbook/specs/streams-shallow-spec.md`, built on branch `streams-shallow` in
+`scratch/wt-streams`, merged only between rounds because it touches Core. (2) The arm cap
+is four pinned arms (D095 amended; two fast cores an arm, masks 0x003C, 0x03C0, 0x3C00 and
+0xC003; DECISIONS entry owed with the streams' entry). (3) The owner wants to start adding
+shapes, cell types and sensors and asked when. The agent's answer: as the next build after
+round 42's write-up, chosen for what makes movement pay and not for variety, since round
+42 shows selection removing joints in a world with nothing to swim toward; a proposal
+(`fable-propose-animal-kit.md`) with the existing repertoire surveyed against DESIGN.md is
+the vehicle, due with round 42's entry.
+
 **Round 42 is running (logbook/0110, launched 20:12 to 20:13 on 2026-09-20).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
