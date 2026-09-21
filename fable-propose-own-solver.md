@@ -30,7 +30,13 @@ soft push computed from the previous step.
 | Identity | state digests equal to the bit at 1, 4 and 16 threads after 10,000 steps |
 | Pace, one thread | 2.9 µs a body-step at 1,000 bodies, 6.1 at 4,000; PhysX and its harness cost about 20 |
 | Pace, 24 threads | 0.34 µs at 1,000 bodies, 0.50 at 4,000, on a machine running two arms |
-| Parity with PhysX | two still bodies agree exactly; a hinged body settles at 0.605 rad against 0.515; two ball-jointed bodies disagree (0.58 rad against 0), under investigation |
+| Parity with PhysX | forty of round 42's jointed bodies, alone in still water, 60 s: with PhysX's self-collision off, 40 of 40 agree within 0.05 rad on every joint (typical gap 0.01, our limit's overshoot after the implicit-limit fix); with it on, as the farm runs, 12 of 40 |
+
+The parity result is also a finding about the record. In the farm a body's own parts
+collide, and a part touching its sibling or a non-adjacent part stops a driven joint
+within a step, turns the motion onto another axis, or moves an undriven body. Twenty-eight
+of forty evolved jointed bodies were affected. A driven joint in the farm has mostly not
+been free to turn.
 
 Still water, no economy, no growth, a frozen crowd. And the five genomes swum in both
 engines never stroke in either: round 42's jointed bodies hold a pose, so parity on a

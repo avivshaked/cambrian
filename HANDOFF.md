@@ -133,6 +133,22 @@ farm mode (`processId`, `dynamicsHash`, no worker). The joint-limit fix is `455f
 `solver-spike`. Parity is open: over 40 genomes the engines disagree in both directions,
 which points at sensor or dof-order wiring; the spike's agent is on it.
 
+*20:35, parity passes, and the farm's joints are jammed by self-collision.* Forty of round 42
+seed 4's jointed genomes swum alone in still water for 60 s in both engines
+(`scratch/solver-spike/parity-swim.ps1 -N 40`, probes at six steps). With PhysX's
+self-collision ON, as the farm runs it, 12 of 40 agree with our solver within 0.05 rad on
+every joint. With it OFF, 40 of 40 agree, the worst gap 0.046 rad on a seven-part body and
+the typical gap our limit's 0.01 rad. The three classes of disagreement were one cause: a
+part touching its sibling or a non-adjacent part stops a driven twist within one step
+(genome 8: 0.166 rad/s at step 0, -0.031 at step 1 under the same torque), turns it onto
+the other axis, or moves an undriven body by pushing overlapped parts apart. So in the
+farm a driven joint has mostly not been free to turn, on every multi-part jointed body
+whose parts touch, since self-collision went on. Inference, not yet measured in a world:
+this is part of why joints have bought nothing. D101's refusal catches deep overlap only
+(10% of the thinnest half-extent); these are shallower contacts at the joint. The spike's
+ABA is also confirmed on branching bodies, since PhysX without self-collision reproduces
+its per-step velocities to two or three figures. `solver-spike` is at `159d65a`.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
