@@ -28,7 +28,7 @@ namespace Evosim.Dynamics
         /// Drag, the water's acceleration force and buoyancy on every link of one body, summed
         /// into its <c>Fext</c>. The water is sampled by the caller into <c>Water</c>.
         /// </summary>
-        public static void Apply(Creature body, SolverConfig config, Vec3 waterAcceleration)
+        public static void Apply(Creature body, SolverConfig config)
         {
             double k = 0.5 * config.Density * config.DragCoefficient;
             bool limit = config.DragLimiterEngages;
@@ -84,6 +84,12 @@ namespace Evosim.Dynamics
                 Vec3 force = rotation * localForce;
                 Vec3 torque = rotation * localTorque;
 
+                // Package B: the dissipation ledger, taken BEFORE the limiter and before the two
+                // terms below, exactly as FluidEnvironment keeps _force apart from _stepDrag.
+                // What the audit is owed is the drag law's own work; the limiter is a stability
+                // device and buoyancy does not dissipate.
+                body.NoteDrag(i, force, torque);
+
                 if (limit)
                 {
                     double speed = relative.Magnitude;
@@ -115,12 +121,11 @@ namespace Evosim.Dynamics
 
                 double height = body.Position[3 * i + 1];
 
-                // D090's second Morison term. Exactly zero in still water, where the water has
-                // no acceleration to feel, and written out anyway so that a current dropped in
-                // later has the term and the waterline guard already in place.
+                // D090's second Morison term, per link. Package C fills WaterAcceleration in the
+                // serial water pass; it is all zeroes in still water, where the term vanishes.
                 if (accelerating)
                 {
-                    Vec3 accelerationForce = waterAcceleration *
+                    Vec3 accelerationForce = Vec3.Read(body.WaterAcceleration, 3 * i) *
                         (config.FluidAccelerationCoefficient * config.Density * body.Volume[i] *
                          (1.0 + config.AddedMassCoefficient));
 
@@ -159,6 +164,20 @@ namespace Evosim.Dynamics
                 Vec3.Add(body.Fext, 6 * i, torque);
                 Vec3.Add(body.Fext, 6 * i + 3, force);
             }
+        }
+
+        /// <summary>
+        /// The spike's signature, kept so a harness that has no current can still say what the
+        /// water is doing: writes one acceleration into every link and then applies as usual.
+        /// </summary>
+        public static void Apply(Creature body, SolverConfig config, Vec3 waterAcceleration)
+        {
+            for (int i = 0; i < body.Links; i++)
+            {
+                Vec3.Write(body.WaterAcceleration, 3 * i, waterAcceleration);
+            }
+
+            Apply(body, config);
         }
 
         /// <summary>

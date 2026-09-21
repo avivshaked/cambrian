@@ -67,6 +67,10 @@ namespace Evosim.Dynamics
 
             _grid.Build(_creatures);
 
+            // Package C. Serial and before the parallel phase, over the poses the step starts
+            // from — the farm's gather phase, and the one place a CurrentField may be touched.
+            SampleWater();
+
             int count = _creatures.Count;
             if (Threads <= 1)
             {
@@ -99,7 +103,7 @@ namespace Evosim.Dynamics
             Array.Clear(body.Tau, 0, body.Tau.Length);
 
             body.Drive.Drive(body.DriveSignal);
-            Fluid.Apply(body, Config, Vec3.Zero);
+            Fluid.Apply(body, Config);
             Contacts.Apply(body, index, _grid, Config, ref _neighbourScratch[index]);
             JointTorques(body);
 
@@ -108,6 +112,11 @@ namespace Evosim.Dynamics
 
             Kinematics.Poses(body);
             Kinematics.Velocities(body);
+
+            // Package B. Where the farm calls EffectorDriver.Settle and FluidEnvironment.Settle:
+            // immediately past the solve, against the velocities it produced. Per body and
+            // inside the parallel phase, because every accumulator it touches is this body's.
+            body.Settle(dt);
 
             if (!body.IsFinite())
             {
@@ -167,6 +176,10 @@ namespace Evosim.Dynamics
                     {
                         body.LimitImplicit[j] = 0;
                     }
+
+                    // Package B's third accumulator: the damper's and the limit spring's own
+                    // work, which PhysX does inside its solver where nothing can see it.
+                    body.NotePassiveTorque(j, torque, rate);
 
                     body.Tau[j] += torque;
                 }

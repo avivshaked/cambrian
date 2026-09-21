@@ -49,6 +49,40 @@ namespace Evosim.Dynamics
         /// <summary>Radius of the cylindrical glass wall, metres. 0 is no wall.</summary>
         public double TankRadiusMetres;
 
+        // ---- the current, package C
+
+        /// <summary>
+        /// Water that moves, or null for still water — <c>RunConfig.Current</c>, the same
+        /// instance the world holds.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A reference and not a copy</b>, unlike everything else here, because the field is
+        /// not a number: it carries the box, the seed and the bed that <c>World</c>'s constructor
+        /// gave it through <c>SetBox</c>, and a second copy would be a second draw of the water.
+        /// The caller therefore hands over a field that has already been told its box — a field
+        /// that has not been refuses to answer, which is the failure the farm wants.
+        /// </para>
+        /// <para>
+        /// <b>It is sampled on one thread</b>, in <c>DynamicsWorld.SampleWater</c>. The field
+        /// memoises the instants a call touches, so it is not safe to share across the parallel
+        /// phase; <see cref="Water.Sample"/> says so at length.
+        /// </para>
+        /// </remarks>
+        public CurrentField Current;
+
+        /// <summary>
+        /// D061's horizontal patches, K — what <see cref="CurrentMode.Rolls"/> reads in place of
+        /// a horizontal position. 1 is a world with no horizontal structure.
+        /// </summary>
+        public int PatchCount = 1;
+
+        /// <summary>
+        /// D100's hold, seconds — <c>FluidConfig.WaterHoldSeconds</c>. 0 is the per-link
+        /// sampling every run before D100 recorded, and is what a config at 0 replays.
+        /// </summary>
+        public double WaterHoldSeconds;
+
         // ---- drive and limiter, from EffectorDriver
 
         /// <summary>The step the drivers are conditioned at. Gates both stabilisers.</summary>
@@ -129,7 +163,24 @@ namespace Evosim.Dynamics
         /// </summary>
         public float ConstantChemicalAndEnergy = 0.5f;
 
-        public static SolverConfig From(RunConfig config, double stepSeconds)
+        /// <summary>
+        /// Everything the solver reads, taken off a run's config.
+        /// </summary>
+        /// <param name="config">The run's own config, as <c>RunDirectory</c> loaded it.</param>
+        /// <param name="stepSeconds">
+        /// The physics step. Passed rather than read from
+        /// <c>RunConfig.PhysicsStepSeconds</c> so that a survey or a screen can step a recorded
+        /// world at another rate without editing its config — <c>EffectorDriver</c>'s own rule
+        /// about demanding its timestep.
+        /// </param>
+        /// <param name="world">
+        /// The world the current belongs to, or null. With one, the tank's radius comes from
+        /// <c>World.TankRadiusMetres</c>, so the water, the fields and the solver share one
+        /// geometry rather than deriving three; without one, a tank's radius is derived here the
+        /// way <c>World</c> derives it, and <see cref="Current"/> is whatever the config carries
+        /// — which has not been told its box, and will refuse to answer until something does.
+        /// </param>
+        public static SolverConfig From(RunConfig config, double stepSeconds, World world = null)
         {
             FluidConfig fluid = config.Fluid;
 
@@ -143,9 +194,19 @@ namespace Evosim.Dynamics
                 TissueExcessDensity = fluid.TissueExcessDensity,
                 NeutralBodyVolume = fluid.NeutralBodyVolume,
                 SurfaceRestoringFraction = fluid.SurfaceRestoringFraction,
+                WaterHoldSeconds = fluid.WaterHoldSeconds,
 
                 WorldDepthMetres = config.WorldDepthMetres,
                 FloorIsSolid = config.SharedSpace,
+
+                TankRadiusMetres = config.WorldShape == WorldShape.Tank
+                    ? world != null
+                        ? world.TankRadiusMetres
+                        : TankGeometry.RadiusFor(config.WorldAreaSquareMetres)
+                    : 0.0,
+
+                Current = config.Current,
+                PatchCount = (int)config.HorizontalPatches,
 
                 StepSeconds = stepSeconds,
                 DriveLimitAtEveryStep = config.DriveLimitAtEveryStep,
