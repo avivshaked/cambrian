@@ -70,7 +70,13 @@ other, 96% of pairs with a jointed body and all of them stays, in worlds the clu
 index reads at 3.8 to 4.1. Watch it at every look; at 1.3 times a window it crosses 0.5
 near 18,000 s and 1.0 near 21,000 s. Seed 3 from above at 15,000 s: grey jointed bodies
 everywhere, thickest in two loose clouds inside the inner ring, a few green leaves, one
-small orange (absorptive) cluster near the centre. What the round is for: F1 (the crowd halves) and F8 (a pinned
+small orange (absorptive) cluster near the centre. **At 20,000 s (02:00 to 03:30):** `alive` 958, 1,013, 754; the pace over 5,000 to
+20,000 s 0.82x in seed 2 (1,547, inside F8's band) and 0.72x in seed 3 (2,129, above it),
+the last windows 0.41, 0.55 and 0.64x. Pairs a body: seed 1 at 0.68 and slowing (0.46,
+0.56, 0.62, 0.68; past 0.5, no doubling), seed 2 flat at 0.20, seed 3 falling from 0.36
+to 0.29 as its jointed share fell from 83% to 66%, so the contacts follow the jointed
+count as they have in every round. Refusals 2 to 7% a window with single windows at 9%.
+Eaters fading to 0 to 1 inherited. Nothing thrown in any seed. Clumping 3.4 to 5.0. What the round is for: F1 (the crowd halves) and F8 (a pinned
 seed near real time, 600 to 1,600 wall s per 1,000 s per 1,000 bodies, 0.9x or better),
 then 41e's unread 30,000 s clauses. **The owner's four rulings of 2026-09-20, 21:30** (asked with recommendations, all
 taken). **The bed:** relax the streams' rule so that vertical motion may be weaker than
