@@ -38,6 +38,15 @@ above at 30,000 s shows a band along the south-west rim and a knot off centre, c
 committed on `streams-shallow` (`aed78ea`, Core tests green, the Unity side uncompiled)
 and `fable-propose-animal-kit.md` is drafted for the owner.
 
+*11:00.* Seed 4 at 15,000 s: 619 alive, 536 jointed with a mean of 3.24 degrees of freedom
+a body (the most articulated line of the round so far, to be read again at 30,000 s
+against the three seeds that lost theirs), pairs a body 0.63 and rising by a fifth a
+window, 0.79x, nothing thrown; from above it is the evenest world of the round, no band
+and no knot. Seed 5 at 14,000 s: pairs a body 0.96, refusals 10.5% in the last window
+(F11's line, one window). The streams' relaxation compiled and ran a 300 s smoke in a 20 m
+tank from the worktree (`scratch/wt-shallow/runs/shallow20smoke`, header `axes v:h 0.75`,
+`streamsAxisRatio 0.7513`, ended clean); it merges when seeds 4 and 5 end.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
