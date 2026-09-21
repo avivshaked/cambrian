@@ -105,6 +105,20 @@ out of Unity; the grid and economy threaded, after which the animal kit and the 
 places resume on the fast engine; the GPU port checked against the CPU reference at 1,000
 bodies; the scale-up with binary recording and a state stream to the theatre.
 
+*Evening, the port under way.* `fable-propose-own-solver.md` is drafted (four gated stages,
+stage 1 in work packages A to K, seven rulings for the owner). The parity swims ran
+(`scratch/solver-spike/parity-swim.ps1`, `unity/Assets/Theatre/Editor/ParitySwim.cs`): two
+still bodies agree exactly, a hinged body settles at 0.605 rad in ours against 0.515 in
+PhysX, two ball-jointed bodies disagree (0.58 against 0), and none of the five strokes in
+either engine, so a hand-built swimmer is owed. Agents at work, each in a worktree of its
+own branched from `solver-spike`: the spike's agent on the ball-joint discrepancy and the
+joint limits (`scratch/wt-solver`), package H the placer (`scratch/wt-placer`, branch
+`farm-placer`), package I the environment binding, manifest and report
+(`scratch/wt-farm-io`, branch `farm-io`; its acceptance is round 42's `configHash` from
+round 42's launcher). Packages B to F touch `Creature.cs` and wait for the spike's agent
+to finish with it. After a restart these agents are gone: read each worktree's
+`git status` and rebuild the brief from the proposal's table.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
