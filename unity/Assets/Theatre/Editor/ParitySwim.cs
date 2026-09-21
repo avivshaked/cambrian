@@ -326,7 +326,8 @@ namespace Evosim.Theatre.EditorTools
                 int dof = instance.TotalDof;
                 var angles = new float[Mathf.Max(1, dof)];
 
-                if (first) ReportArticulation(instance, adult);
+                ReportArticulation(instance, adult); // every body: the Spherical joints are the ones in question (2026-09-21)
+                ReportFrames(index, instance, adult);
 
                 var text = new StringBuilder();
                 text.Append("t,x,y,z,qw,qx,qy,qz");
@@ -379,6 +380,12 @@ namespace Evosim.Theatre.EditorTools
 
                     Physics.Simulate(dt);
 
+                    // Before Settle, which clears the driver's record of what it applied.
+                    if (IsProbeStep(step))
+                    {
+                        Probe(index, step, instance, adult, brain, senses, driver, drive);
+                    }
+
                     fluid.Settle(instance);
                     driver.Settle();
                 }
@@ -417,6 +424,208 @@ namespace Evosim.Theatre.EditorTools
             finally
             {
                 instance.Destroy();
+            }
+        }
+
+        // ---------------------------------------------------------------- the parity probe
+
+        /// <summary>
+        /// The steps a probe line is written on — the same six the solver spike's bench writes,
+        /// so the two logs can be laid beside each other line for line.
+        /// </summary>
+        private static bool IsProbeStep(int step) =>
+            step == 0 || step == 1 || step == 10 || step == 100 || step == 1000 || step == 5999;
+
+        /// <summary>
+        /// The channels a probe reports, in this order on both sides.
+        /// </summary>
+        private static readonly SensorChannel[] ProbeChannels =
+        {
+            SensorChannel.Depth,
+            SensorChannel.OrientationUp,
+            SensorChannel.JointAngle,
+            SensorChannel.JointAngularVelocity,
+            SensorChannel.Chemical,
+            SensorChannel.Energy,
+            SensorChannel.Flow,
+        };
+
+        /// <summary>
+        /// One line of everything that crosses between perception, the brain, the drive and the
+        /// solver, in the format the spike's bench writes it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Emitted after <c>Physics.Simulate</c> and before <see cref="EffectorDriver.Settle"/>,
+        /// which clears the applied torque.</b> So a line reports the sensors that step read, the
+        /// drive the brain made of them, the torque the driver applied, and the joint state one
+        /// step later. At <c>step=0</c> both engines hold the same body in the same place, so a
+        /// difference in <c>sensors=</c> or <c>drive=</c> there is a port error and nothing else,
+        /// and a difference in <c>q=</c>/<c>qd=</c> under the same <c>torque=</c> is a solver or
+        /// a joint-axis difference.
+        /// </para>
+        /// <para>
+        /// <b>What is not reachable, and so is not logged.</b> <see cref="Brain"/> exposes no
+        /// per-neuron output, so a disagreement in <c>drive=</c> can be localised to the brain
+        /// but not inside it. <see cref="EffectorDriver"/> exposes the world torque per body and
+        /// not the smoothed signal per degree of freedom, so the ten-sample average is visible
+        /// only through the torque it produces. Neither gap matters at <c>step=0</c>, where the
+        /// average is one sample and the drive array is printed whole.
+        /// </para>
+        /// </remarks>
+        private static void Probe(
+            int genome, int step, CreatureInstance instance, Phenotype adult, Brain brain,
+            ISensorField senses, EffectorDriver driver, float[] drive)
+        {
+            ArticulationBody[] bodies = instance.Bodies;
+            int dof = instance.TotalDof;
+            int mask = brain.SensorMask;
+
+            var sensors = new StringBuilder();
+
+            for (int p = 0; p < bodies.Length; p++)
+            {
+                for (int c = 0; c < ProbeChannels.Length; c++)
+                {
+                    SensorChannel channel = ProbeChannels[c];
+                    if (!Brain.MaskReads(mask, channel)) continue;
+
+                    int count = 1;
+                    if (channel == SensorChannel.Flow)
+                    {
+                        count = 3;
+                    }
+                    else if (channel == SensorChannel.JointAngle ||
+                             channel == SensorChannel.JointAngularVelocity)
+                    {
+                        count = adult.Parts[p].JointType.DofCount();
+                    }
+
+                    for (int k = 0; k < count; k++)
+                    {
+                        if (sensors.Length > 0) sensors.Append(',');
+                        sensors.Append(p).Append(':').Append(channel);
+                        if (count > 1) sensors.Append('[').Append(k).Append(']');
+                        sensors.Append('=').Append(Say(senses.Read(p, channel, k)));
+                    }
+                }
+            }
+
+            var driveText = new StringBuilder();
+            for (int d = 0; d < dof && d < drive.Length; d++)
+            {
+                if (d > 0) driveText.Append(',');
+                driveText.Append(Say(drive[d]));
+            }
+
+            // World-space, one triple per link, in link order — the child's torque only, which is
+            // what EffectorDriver records. The reaction on a parent is the negative of its
+            // children's and is not stored.
+            var torqueText = new StringBuilder();
+            for (int p = 0; p < bodies.Length; p++)
+            {
+                Vector3 applied = driver.AppliedTorque(p);
+                if (p > 0) torqueText.Append(',');
+                torqueText.Append(Say(applied.x)).Append(',')
+                          .Append(Say(applied.y)).Append(',')
+                          .Append(Say(applied.z));
+            }
+
+            // In the phenotype's own DOF order, which is how ReadAngles lays the CSV out and how
+            // the spike's Q is indexed. Zero for a degree of freedom PhysX's reduced space does
+            // not carry, which is the same answer ReadAngles gives.
+            var q = new float[dof < 1 ? 1 : dof];
+            var qd = new float[dof < 1 ? 1 : dof];
+
+            for (int p = 0; p < bodies.Length; p++)
+            {
+                int offset = instance.DofOffset[p];
+                if (offset < 0) continue;
+
+                int n = adult.Parts[p].JointType.DofCount();
+                if (n == 0) continue;
+
+                ArticulationReducedSpace position = bodies[p].jointPosition;
+                ArticulationReducedSpace velocity = bodies[p].jointVelocity;
+
+                for (int d = 0; d < n; d++)
+                {
+                    if (d >= position.dofCount) break;
+                    if (offset + d >= dof) break;
+
+                    q[offset + d] = position[d];
+                    qd[offset + d] = d < velocity.dofCount ? velocity[d] : 0f;
+                }
+            }
+
+            var qText = new StringBuilder();
+            var qdText = new StringBuilder();
+
+            for (int d = 0; d < dof; d++)
+            {
+                if (d > 0) { qText.Append(','); qdText.Append(','); }
+                qText.Append(Say(q[d]));
+                qdText.Append(Say(qd[d]));
+            }
+
+            Debug.Log(
+                "[ParitySwim] probe genome=" + genome +
+                " step=" + step +
+                " sensors=[" + sensors + "]" +
+                " drive=[" + driveText + "]" +
+                " torque=[" + torqueText + "]" +
+                " q=[" + qText + "]" +
+                " qd=[" + qdText + "]");
+        }
+
+        /// <summary>
+        /// The joint frames PhysX was handed, once per body — a separate line so that a grep for
+        /// <c>probe genome=</c> returns the per-step lines and nothing else.
+        /// </summary>
+        /// <remarks>
+        /// <c>anchorRotation</c> is the frame <see cref="EffectorDriver"/> resolves a drive axis
+        /// in, and <c>parentAnchorRotation</c> is the one PhysX defines twist and swing against.
+        /// If a drive built on the first lands on an axis the second calls a swing, these two
+        /// lines are where it shows.
+        /// </remarks>
+        private static void ReportFrames(int genome, CreatureInstance instance, Phenotype adult)
+        {
+            ArticulationBody[] bodies = instance.Bodies;
+
+            for (int p = 1; p < bodies.Length; p++)
+            {
+                ArticulationBody body = bodies[p];
+
+                Vector3 twistWorld = body.transform.TransformDirection(
+                    body.anchorRotation * Vector3.right);
+                Vector3 swingYWorld = body.transform.TransformDirection(
+                    body.anchorRotation * Vector3.up);
+                Vector3 swingZWorld = body.transform.TransformDirection(
+                    body.anchorRotation * Vector3.forward);
+
+                Debug.Log(
+                    "[ParitySwim] probe-frames genome=" + genome +
+                    " link=" + p +
+                    " joint=" + adult.Parts[p].JointType +
+                    " dof=" + adult.Parts[p].JointType.DofCount() +
+                    " dofOffset=" + instance.DofOffset[p] +
+                    " jointDofCount=" + body.jointPosition.dofCount +
+                    " locks=" + body.twistLock + "/" + body.swingYLock + "/" + body.swingZLock +
+                    " anchorRotation=(" + Say(body.anchorRotation.w) + "," +
+                    Say(body.anchorRotation.x) + "," + Say(body.anchorRotation.y) + "," +
+                    Say(body.anchorRotation.z) + ")" +
+                    " parentAnchorRotation=(" + Say(body.parentAnchorRotation.w) + "," +
+                    Say(body.parentAnchorRotation.x) + "," + Say(body.parentAnchorRotation.y) + "," +
+                    Say(body.parentAnchorRotation.z) + ")" +
+                    " driveAxis0World=(" + Say(twistWorld.x) + "," + Say(twistWorld.y) + "," +
+                    Say(twistWorld.z) + ")" +
+                    " driveAxis1World=(" + Say(swingYWorld.x) + "," + Say(swingYWorld.y) + "," +
+                    Say(swingYWorld.z) + ")" +
+                    " driveAxis2World=(" + Say(swingZWorld.x) + "," + Say(swingZWorld.y) + "," +
+                    Say(swingZWorld.z) + ")" +
+                    " xDriveLimits=" + Say(body.xDrive.lowerLimit) + ".." + Say(body.xDrive.upperLimit) +
+                    " yDriveLimits=" + Say(body.yDrive.lowerLimit) + ".." + Say(body.yDrive.upperLimit) +
+                    " zDriveLimits=" + Say(body.zDrive.lowerLimit) + ".." + Say(body.zDrive.upperLimit));
             }
         }
 

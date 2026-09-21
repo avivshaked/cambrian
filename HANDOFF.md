@@ -119,6 +119,20 @@ round 42's launcher). Packages B to F touch `Creature.cs` and wait for the spike
 to finish with it. After a restart these agents are gone: read each worktree's
 `git status` and rebuild the brief from the proposal's table.
 
+*20:45, two packages in.* H, the placer, is committed on `farm-placer` (`d843785`): bit-equal
+to a byte-for-byte copy of the Unity original over 30,000 reservations and in its `Rng`
+state, with two mutation checks that fail it; owed, one Editor run that prints Unity's
+`Mathf.Sin/Cos/Round` bits against the port's transcription. I, the binding, manifest and
+report, is committed on `farm-io` (`4d7c9c4`): round 42's launcher gives `ff557bce` and a
+byte-identical `config.json` and settings line under .NET 8. Two things from it for
+CLAUDE.md when the farm merges: .NET 8 prints a float's shortest round-trip form where
+Mono prints up to nine digits (`17.641891` against `17.6418915`), and the config hash is
+fed by the same formatter, so a long-mantissa tunable would hash differently across the
+two engines (nothing on file is affected); and `run-arm.ps1` and `stop-arm.ps1` need a
+farm mode (`processId`, `dynamicsHash`, no worker). The joint-limit fix is `455fc61` on
+`solver-spike`. Parity is open: over 40 genomes the engines disagree in both directions,
+which points at sensor or dof-order wiring; the spike's agent is on it.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
