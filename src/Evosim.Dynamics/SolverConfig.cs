@@ -1,0 +1,146 @@
+using Evosim.Core;
+
+namespace Evosim.Dynamics
+{
+    /// <summary>
+    /// Everything the solver reads about the world, taken from a run's <see cref="RunConfig"/>
+    /// and held in double precision.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A copy rather than a reference, and deliberately a narrow one.</b> The spike has no
+    /// economy, no field and no run directory (the spec's "what it is not"), so only the terms
+    /// that move a body are carried across. Anything the farm reads and this does not is listed
+    /// in the report as not ported rather than silently defaulted.
+    /// </para>
+    /// </remarks>
+    public sealed class SolverConfig
+    {
+        // ---- fluid, term for term from FluidConfig
+
+        public double Density = 1000.0;
+        public double DragCoefficient = 1.5;
+        public int PanelsPerAxis = 2;
+        public double AddedMassCoefficient;
+        public double FluidAccelerationCoefficient;
+        public double TissueExcessDensity;
+        public double NeutralBodyVolume;
+        public double SurfaceRestoringFraction;
+
+        /// <summary>
+        /// Tissue density, kg/m3 — <c>PhenotypeBuilder.DensityKgPerM3</c>. Not a tunable in the
+        /// farm either: the buoyancy term divides by the same constant the mass was assigned
+        /// with, and passing the water's density in its place would rescale every body's weight.
+        /// </summary>
+        public double TissueDensity = 1000.0;
+
+        /// <summary>The minimum mass a link may carry, kg — <c>Mathf.Max(0.001f, ...)</c>.</summary>
+        public double MinimumLinkMass = 0.001;
+
+        public double GravityMetresPerSecondSquared = 9.81;
+
+        // ---- world shape
+
+        public double WorldDepthMetres = 60.0;
+
+        /// <summary>Whether the world has a solid bed, which switches off D077's bottom half.</summary>
+        public bool FloorIsSolid = true;
+
+        /// <summary>Radius of the cylindrical glass wall, metres. 0 is no wall.</summary>
+        public double TankRadiusMetres;
+
+        // ---- drive and limiter, from EffectorDriver
+
+        /// <summary>The step the drivers are conditioned at. Gates both stabilisers.</summary>
+        public double StepSeconds = 0.01;
+
+        /// <summary><c>RunConfig.DriveLimitAtEveryStep</c>.</summary>
+        public bool DriveLimitAtEveryStep;
+
+        public double MaxJointAngularVelocity = 30.0;
+
+        /// <summary>
+        /// <c>ArticulationDrive.damping</c>, 1 N·m·s/rad in <c>PhenotypeBuilder.MakeDrive</c> —
+        /// "small and non-zero so undriven joints settle instead of ringing".
+        /// </summary>
+        public double JointDriveDamping = 1.0;
+
+        // ---- joint limits, which PhysX solves as hard constraints and this does not
+
+        /// <summary>
+        /// Undamped natural frequency of the joint-limit spring, as a fraction of 1/dt.
+        /// </summary>
+        /// <remarks>
+        /// A penalty spring integrated with semi-implicit Euler is stable while
+        /// <c>omega * dt &lt; 2</c>; 0.5 leaves a factor of four of headroom and gives 50 rad/s
+        /// at dt 0.01, which is stiff against the 0.3–2.5 Hz gaits these genomes carry. The
+        /// spring's stiffness per degree of freedom is <c>I * omega^2</c> and its damping
+        /// <c>2 * zeta * I * omega</c>, where <c>I</c> is the child link's inertia about the
+        /// joint axis through the anchor — so a limit feels the same on a heavy link and a light
+        /// one, which a fixed stiffness would not.
+        /// </remarks>
+        public double JointLimitOmegaTimesStep = 0.5;
+
+        public double JointLimitDampingRatio = 1.0;
+
+        // ---- contact, which the farm gives to PhysX and this approximates
+
+        /// <summary>Undamped natural frequency of the soft contact spring, rad/s.</summary>
+        /// <remarks>
+        /// Absolute rather than a fraction of 1/dt, so a screen at dt 0.02 and a confirmation at
+        /// 0.01 feel the same contact. Stiffness is <c>m * omega^2</c> against the creature's own
+        /// mass, for the reason the joint limit scales by inertia.
+        /// </remarks>
+        public double ContactOmega = 20.0;
+
+        public double ContactDampingRatio = 1.0;
+
+        /// <summary>Whether creature-creature pushes act at all.</summary>
+        public bool CreatureContact = true;
+
+        // ---- sensors
+
+        public double FlowFullScaleMetresPerSecond = 0.3;
+        public double JointRateFullScale = 10.0;
+
+        /// <summary>
+        /// What <c>SensorChannel.Chemical</c> and <c>SensorChannel.Energy</c> read. The spike has
+        /// no field and no ledger, so a constant stands in — see the spec's "what it is not".
+        /// </summary>
+        public float ConstantChemicalAndEnergy = 0.5f;
+
+        public static SolverConfig From(RunConfig config, double stepSeconds)
+        {
+            FluidConfig fluid = config.Fluid;
+
+            return new SolverConfig
+            {
+                Density = fluid.Density,
+                DragCoefficient = fluid.DragCoefficient,
+                PanelsPerAxis = fluid.PanelsPerAxis,
+                AddedMassCoefficient = fluid.AddedMassCoefficient,
+                FluidAccelerationCoefficient = fluid.FluidAccelerationCoefficient,
+                TissueExcessDensity = fluid.TissueExcessDensity,
+                NeutralBodyVolume = fluid.NeutralBodyVolume,
+                SurfaceRestoringFraction = fluid.SurfaceRestoringFraction,
+
+                WorldDepthMetres = config.WorldDepthMetres,
+                FloorIsSolid = config.SharedSpace,
+
+                StepSeconds = stepSeconds,
+                DriveLimitAtEveryStep = config.DriveLimitAtEveryStep,
+
+                FlowFullScaleMetresPerSecond = config.FlowFullScaleMetresPerSecond,
+            };
+        }
+
+        /// <summary>
+        /// Whether the two stabilisers engage: the same threshold, to the same bit, as
+        /// <c>FluidEnvironment</c>'s drag limiter and <c>EffectorDriver</c>'s drive cap.
+        /// </summary>
+        public bool LimitersEngage => StepSeconds > 0.0100001 || DriveLimitAtEveryStep;
+
+        /// <summary>The drag limiter's own gate, which has no "at every step" tunable.</summary>
+        public bool DragLimiterEngages => StepSeconds > 0.0100001;
+    }
+}
