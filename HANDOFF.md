@@ -250,6 +250,31 @@ Its new identity test adds about 50 s to Core's default suite. Next in it: hoist
 per-column terms of the streams' potential out of `SampleEdges`, 1.6 to 2x estimated.
 `sweep-orphans.ps1` lists a detached farm run's `sh.exe` as an orphan; it is not one.
 
+*00:20 on 2026-09-22, the merge, parity on a stroke, and the matter drift.* `grid-threads`
+is merged into `solver-spike` (fast-forward, `e4423e2`) and the three suites pass on it
+(Dynamics 66, Farm 28, Core 746). **Parity holds after the damper and limit fixes**: the
+forty genomes rebuilt on the merged solver (`scratch/solver-spike/traj40-merged`) agree
+with the PhysX recordings 40 of 40 within 0.05 rad with self-collision off (worst 0.043,
+worst root gap 0.115 m in 60 s) and 12 of 40 with it on, as before. **Parity on a stroke
+holds to the fifth decimal.** Two hand-built bodies under `scratch/solver-spike/stroker/`
+(`snapshot.jsonl`, format 6; one `OscillateWave` neuron per hinge at 0.5 Hz, no sensors,
+boxes end to end, no joint on its stop) stroke 0.70 rad, and 0.76 and 0.43 rad with a
+quarter-period lag, for 60 s in both engines: every joint within 1e-4 rad and the root
+within 0.1 mm at every sample (`parity-stroker.ps1` runs the PhysX side on worker 6).
+Neither body swims (6 mm sideways in 60 s), so thrust from a good stroke is still not
+compared; stage 1's gate on a stroke is otherwise met. **The matter residual's drift is
+float rounding, not a handoff fault** (inference from a line-by-line read): the farm's
+handoff equals Unity's call for call, the fields are doubles and every body's reserve and
+tissue are floats, and each burn, fixation, birth and death rounds at that boundary
+(`World.cs` near 2164, 2196 and 2116). Round 42 seed 1 in Unity ended at +5.2e-05 (not
+the -9e-05 the note above gives), the farm's at -3.2e-04 of 1,500 units; work was 33 W
+against Unity's 3.8 W with the joints free, but burnt energy only 12% higher, so the
+extra work alone does not explain it. Double accounts in Core would close it and would
+be a new realisation of every seed: a round-gap change, not owed now. `r42farm2-s1` is
+the same full seed on the merged build at 16 threads, detached, for the pace. **From
+PowerShell, `bash` is WSL's** and cannot see `D:/`; a detached launcher names
+`C:\Program Files\Git\bin\bash.exe` (two launches failed silently on it).
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
