@@ -17,4 +17,14 @@
     <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
   </ItemGroup>
 
+  <!--
+    Round 42 seed 1's own config.json, copied from its run directory. ParallelIdentityTests
+    builds that world and asserts its state hash is the same at any thread count; a world
+    written out in C# beside the test would be a world of its own, and the thing being guarded
+    is the campaign's grid and not a plausible one.
+  -->
+  <ItemGroup>
+    <None Include="fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

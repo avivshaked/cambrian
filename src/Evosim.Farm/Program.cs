@@ -130,6 +130,13 @@ namespace Evosim.Farm
             float physicsDt = EnvBinding.ResolvePhysicsStep(settings.PhysicsDt, out int stepsPerMetabolic);
             int threads = settings.ResolveThreads();
 
+            // The same count for Core's own per-cell loops as for the body pass. Core defaults to
+            // one so that the Unity farm, which sets this nowhere, keeps the serial path it has
+            // always had; the console farm is the only thing that raises it, and it is a pace
+            // setting on both sides of the line — the grid's numbers are the same bits at any
+            // count (Evosim.Core.Parallelism).
+            Parallelism.Threads = threads;
+
             string outPath = settings.ResolveOutPath();
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPath)));
 
