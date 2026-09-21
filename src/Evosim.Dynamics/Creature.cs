@@ -359,6 +359,9 @@ namespace Evosim.Dynamics
             Water = new double[3 * Links];
             RelativeVelocity = new double[3 * Links];
 
+            InitLedger();   // package B — Creature.Ledger.cs
+            InitWater();    // package C — Creature.Water.cs
+
             Brain = Brain.For(phenotype);
             DriveSignal = new float[System.Math.Max(1, Brain.TotalDof)];
             Drive = new EffectorDrive(this, config);

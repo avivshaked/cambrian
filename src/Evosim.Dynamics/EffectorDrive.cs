@@ -182,6 +182,11 @@ namespace Evosim.Dynamics
 
                 Vec3.Write(AppliedTorque, 3 * b, world);
 
+                // Package B: the work ledger's first half — this torque and the relative spin it
+                // starts the step with. EffectorDriver.Drive does the same two stores for the
+                // same reason, and says why the integral cannot be closed here.
+                _body.NoteDriveTorque(b, world);
+
                 Vec3.Add(_body.Fext, 6 * b, world);
                 Vec3.Add(_body.Fext, 6 * _body.Parent[b], -world);
             }
