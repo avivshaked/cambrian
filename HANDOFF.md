@@ -89,7 +89,25 @@ D101's rule, a wide welded body that out-earns the jointed line, whose mutants p
 overlap depth (the refusals) and whose width makes neighbours touch. No stop rule fires
 (no doubling; F11 is read at 30,000 s, and 0110 expected one seed to fail it). Read its
 parts histogram, the refusal share and a close picture at the end. Seeds 2 and 3 are
-quiet: pairs 0.17 and 0.04, seed 3 back to 0.9x. What the round is for: F1 (the crowd halves) and F8 (a pinned
+quiet: pairs 0.17 and 0.04, seed 3 back to 0.9x. **Seed 3 ended at 30,000 s (06:15, 603.6 min, 0.8x) and seed 4 launched on worker 4
+(06:17, pinned 0x3C00, header and hashes verified).** Seed 3's read: F1 holds (843), F2's
+growth holds (1.77x) and its margin fails (225 s), F3, F4, F7 hold (78%, 0.20, nothing
+thrown in 11.2 M jointed body-seconds, `cols` 0.98), F5 and F6 unread (no eaters, peak 1),
+F8 fails narrowly on both counts (1,871 against 1,600; 0.74x past 5,000 s, 0.8x whole
+seed; round 41e's seed 3 ran 0.35x), F9 holds (0.04), F10 holds (four shallow pairs, none
+past the rule, nothing over six parts), F11 holds at 30,000 s, F12 holds (median two
+parts: 76, 376, 339, 45 and 7 bodies at one, two, three, four and six parts). **The
+finding is what happened to the joints: 607 of 731 bodies were jointed at 15,000 s and 18
+of 843 at 30,000 s.** A welded line of two- and three-part bodies replaced the jointed one
+inside 12,000 s, and the contacts (0.36 to 0.04 pairs a body), the pace (0.6x to 0.9x) and
+the clumping of the jointed (3.6 to 1.1) all followed it down. Seed 1 is going the same way
+now (jointed 711 to under 500, a rigid three- to five-part clade rising), with its pairs a
+body at 1.15 on the way. The agent's reading, as inference: under the silhouette cap and
+D101 a wide welded body out-earns a jointed one, and a joint buys nothing, since movement
+still does not pay; the joint's idle charge is a two-hundredth of its old price, so it was
+not cost that removed it. **The fourth-arm test** (the owner's ruling) goes up when seed 5
+has launched: a pinned replay of round 42's seed 2 to 3,000 s on worker 5, mask 0xC003,
+its wall read against the recording's at three arms. What the round is for: F1 (the crowd halves) and F8 (a pinned
 seed near real time, 600 to 1,600 wall s per 1,000 s per 1,000 bodies, 0.9x or better),
 then 41e's unread 30,000 s clauses. **The owner's four rulings of 2026-09-20, 21:30** (asked with recommendations, all
 taken). **The bed:** relax the streams' rule so that vertical motion may be weaker than
