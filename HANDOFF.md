@@ -97,6 +97,14 @@ reference; scale and formats) with 100,000 as the stated target. A parity entry
 (`unity/Assets/Theatre/Editor/ParitySwim.cs`) is being written by an agent for tonight's
 swims.
 
+*20:20, the owner's ruling on scale.* Staggered, and realistic: the committed target is the
+scale at which the GPU works for a living, which the agent sets at 10,000 creatures (CPU
+about 1 to 2x there, GPU 20 to 50x, both estimates), with 100,000 a stretch taken only if
+stage 4's measurements show the headroom. Four gated stages: the CPU solver and the farm
+out of Unity; the grid and economy threaded, after which the animal kit and the floor's
+places resume on the fast engine; the GPU port checked against the CPU reference at 1,000
+bodies; the scale-up with binary recording and a state stream to the theatre.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
