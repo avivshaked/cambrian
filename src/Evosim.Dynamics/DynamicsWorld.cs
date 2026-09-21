@@ -25,7 +25,7 @@ namespace Evosim.Dynamics
     /// samples one.
     /// </para>
     /// </remarks>
-    public sealed class DynamicsWorld
+    public sealed partial class DynamicsWorld
     {
         private readonly List<Creature> _creatures = new List<Creature>();
         private readonly ContactGrid _grid = new ContactGrid();

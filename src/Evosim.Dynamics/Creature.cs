@@ -31,7 +31,7 @@ namespace Evosim.Dynamics
     /// <c>Euler(0, 90, 0)</c> and everything else's is identity, exactly as the builder has it.
     /// </para>
     /// </remarks>
-    public sealed class Creature
+    public sealed partial class Creature
     {
         public const int MaxDofPerJoint = 3;
 
