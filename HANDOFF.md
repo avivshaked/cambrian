@@ -118,7 +118,13 @@ seeds 3 and 1. Seed 4 at 5,000 s: 385 alive, 325 jointed, pairs 0.11, refused 11
 probe clean, 2.1x so far. **The fourth-arm test is running** (07:01): `r42four-s2`, seed 2
 again to 3,000 s on worker 5, pinned to logical 0-1 and 14-15 (0xC003), beside seeds 1, 4
 and 5; read its wall over 100 to 3,000 s against `runs/r42-s2`'s and check identity on the
-non-clock fields, then write it into harness-profile-spec section 9. What the round is for: F1 (the crowd halves) and F8 (a pinned
+non-clock fields, then write it into harness-profile-spec section 9. **The fourth arm cost 1.01** (07:30): `r42four-s2` matched its recording on 3,780
+fields and ran 100 to 3,000 s in 918 s against 907 s as one of three
+(harness-profile-spec section 9). A young crowd, and the cost to the neighbours unmeasured;
+the agent recommends the cap go to four pinned arms, which is the owner's ruling to make.
+Seeds 4 and 5 at 5,000 s: 385 and 413 alive, 84% and 80% jointed, F3, F4, F7 holding,
+probes clean (four shallow pairs in seed 5), pace past 5,000 s 1.1 and 1.3x. Seed 1 at
+26,000 s: pairs a body 1.31, refusals 12 to 16% a window for four windows, 0.45x. What the round is for: F1 (the crowd halves) and F8 (a pinned
 seed near real time, 600 to 1,600 wall s per 1,000 s per 1,000 bodies, 0.9x or better),
 then 41e's unread 30,000 s clauses. **The owner's four rulings of 2026-09-20, 21:30** (asked with recommendations, all
 taken). **The bed:** relax the streams' rule so that vertical motion may be weaker than

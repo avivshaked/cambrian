@@ -279,3 +279,24 @@ here, and the simplest account is the scheduler's placement, which pinning remov
 42 runs pinned, from `run-arm.ps1`, and its pace against round 41e's at the same crowd is
 the confirmation. The trace restricted to bodies with a movable joint took the trace's
 share of the harness from 27% to 16% in this jointed seed.
+
+*The fourth arm, 2026-09-21, 07:30.* The owner's ruling was to test four before moving the
+cap of three. Round 42's seed 2 was replayed to 3,000 s as a fourth arm on worker 5
+(`runs/r42four-s2`), pinned to logical 0-1 and 14-15, beside three pinned arms: seed 1 at
+900 bodies and 26,000 s, and seeds 4 and 5 young. It agreed with its recording on every
+non-clock field, 3,780 comparisons, and the recording is the same trajectory beside two
+pinned arms of its own age.
+
+| wall for 100 to 3,000 s | as one of three | as one of four | ratio |
+|---|---|---|---|
+| total | 907 s | 918 s | 1.01 |
+| PhysX | | | 1.05 |
+| the harness | | | 1.04 |
+| the world's step | | | 0.98 |
+
+A fourth pinned arm cost itself one part in a hundred, beside neighbours heavier than the
+recording had. What it cost the other three was not measured, since none of them had a
+recording to read against, and this is a young crowd of 300 bodies whose working set is
+small; §9's slowdown grew with the crowd, so the test that would settle it is a fourth arm
+at a full crowd. On this evidence four pinned arms on the eight fast cores is sound, and
+the cap is the owner's to move.
