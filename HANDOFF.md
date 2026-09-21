@@ -47,6 +47,13 @@ and no knot. Seed 5 at 14,000 s: pairs a body 0.96, refusals 10.5% in the last w
 tank from the worktree (`scratch/wt-shallow/runs/shallow20smoke`, header `axes v:h 0.75`,
 `streamsAxisRatio 0.7513`, ended clean); it merges when seeds 4 and 5 end.
 
+*12:00.* Seed 5 at 15,000 s: 802 alive, 649 jointed (mean 2.27 degrees of freedom), a
+three-part body the mode (506 of 802), a third of the parts capsules and spheres where
+seed 1 ended all boxes; no pair past D101's depth; pairs a body 1.04, refusals 12.6% in the
+window (F11's line, second window); 0.64x; nothing thrown. From above the rim ring is full
+and the centre's south-east half is nearly empty (rim quarter 0.35). Seed 4 at 18,000 s:
+pairs a body 1.07, 19 inherited eaters, the round's most.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
