@@ -231,6 +231,25 @@ the CPU, a measurement and not a round: ten times the area and the matter, 3,000
 5,000 s. (8) The owner's rulings: the own-solver proposal's list, then the animal kit and
 the places. (9) The GPU port against the CPU reference.
 
+*23:30, a full seed on the new farm, and the grid threaded.* `r42farm-s1` (round 42 seed 1's
+world, `solver-spike` at `3560172`, 8 threads, before the grid work) ended at its budget:
+30,000 s in **54.2 minutes, 9.2x**, against about ten hours in Unity. Nothing diverged in
+3,000,000 steps. The energy residual peaked at 0.042 J and the matter residual ended at
+-3.2e-04 units, growing about linearly with time (Unity's seeds ended near -9e-05; small,
+and worth a look at where the farm narrows doubles). 1,120 alive at the end, inside round
+42's 843 to 1,162. Jointed bodies peaked at 597 near 20,000 s and ended at 115, so joints
+fade on the engine where they turn freely too; eaters never passed 2 inherited. Wall
+split physics 42%, world 57% at that crowd. One seed, not a round. **The grid is threaded**
+(`e4423e2` on `grid-threads`, from `3560172`): a state hash over every cell of both grids,
+the light, every body and the books is `1d1ee59f210b8bda` on the code before the change
+(built from `git archive`) and at 1, 4 and 16 threads after it; through the farm, digest,
+lineage, positions and absorptive byte-equal to `r42id-t8`. 1,000 s of round 42's world
+went from 15.9x to **64.8x** at 16 threads (51.7x at 8, 16.4x at 1; loaded machine).
+`Parallelism.Threads` defaults to 1, so Unity and the old tests stay serial, 17% cheaper.
+Its new identity test adds about 50 s to Core's default suite. Next in it: hoist the
+per-column terms of the streams' potential out of `SampleEdges`, 1.6 to 2x estimated.
+`sweep-orphans.ps1` lists a detached farm run's `sh.exe` as an orphan; it is not one.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
