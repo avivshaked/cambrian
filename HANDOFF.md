@@ -74,6 +74,17 @@ base round on the new engine, and the animal kit and the floor's places after th
 streams' relaxation still merges when round 42 ends, since it lives in Core and carries
 over.
 
+*16:10.* The solver spike reported and is committed on `solver-spike` (`199314f`, not
+merged): seven tests pass, two of them independent constraint solves; 1,000 of round 42's
+bodies ran 600 s at dt 0.01 with none lost; digests equal at 1, 4 and 16 threads; 2.9 µs a
+body-step on one thread and 0.34 on 24 against today's 20, on a loaded machine. Still
+water, no economy, no growth. Owed: the parity swims in Unity against
+`scratch/solver-spike/traj/`, then `fable-propose-own-solver.md`. The pace screen
+`r42half-s4` ended at 10,000 s: 750 units gave 127 bodies where 1,500 gave 568 at the same
+second, at 2.66x against 0.79x, so the count is not linear in the budget and a further cut
+buys pace with a population too small to read. Seed 5 at 20,000 s: 890 alive, 735 jointed,
+pairs a body 1.52, refusals 16.8% in the window, 0.51x. Seed 4 at 23,700 s, pairs 1.60.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
