@@ -85,6 +85,18 @@ second, at 2.66x against 0.79x, so the count is not linear in the budget and a f
 buys pace with a population too small to read. Seed 5 at 20,000 s: 890 alive, 735 jointed,
 pairs a body 1.52, refusals 16.8% in the window, 0.51x. Seed 4 at 23,700 s, pairs 1.60.
 
+*20:00, the owner on scale.* The owner asked whether the GPU (an RTX 4090, 24 GB) could hold
+and draw 10,000 creatures, then named 100,000 as the exciting target and asked whether Unity
+still helps there. The agent's answer, all estimates: memory is no constraint (about 1.5 GB
+at 100,000); the farm leaves Unity with the solver and becomes a plain .NET program, the
+theatre stays in Unity and reads a state stream; the GPU port comes after the CPU
+reference so it has something to be checked against; the high-volume run files need a
+binary form at that scale. `fable-propose-own-solver.md` is to carry the four stages (CPU
+reference and the farm out of Unity; grid and economy threaded; GPU port against the
+reference; scale and formats) with 100,000 as the stated target. A parity entry
+(`unity/Assets/Theatre/Editor/ParitySwim.cs`) is being written by an agent for tonight's
+swims.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
