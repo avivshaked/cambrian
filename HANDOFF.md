@@ -149,6 +149,17 @@ this is part of why joints have bought nothing. D101's refusal catches deep over
 ABA is also confirmed on branching bodies, since PhysX without self-collision reproduces
 its per-step velocities to two or three figures. `solver-spike` is at `159d65a`.
 
+*20:50, the second wave.* `solver-spike` is the port's base at `fdbef2d`: the spike with the
+implicit limits, `Creature` and `DynamicsWorld` made partial, `farm-placer` and `farm-io`
+merged (58 tests green: 34 Dynamics, 24 Farm). Three agents, each in a worktree branched
+from it: B and C, the work and dissipation ledgers and the current with D100's hold
+(`scratch/wt-farm-forces`, `farm-forces`); D, growth resize in place
+(`scratch/wt-farm-growth`, `farm-growth`); E and F, the shaped bed, the glass, the overlap
+instrument and event list, the divergence guards, trace, dumps and digest files
+(`scratch/wt-farm-contacts`, `farm-contacts`). Each reports the lines it changed in
+existing files so the merge is by hand. After them: G the loop (the join), J the writers,
+K the timers, A the Unity package, then the farm mode of `run-arm.ps1` and `stop-arm.ps1`.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
