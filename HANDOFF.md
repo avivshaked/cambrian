@@ -215,6 +215,22 @@ damper fix; the old read scripts print `?` on the renamed columns. Output under
 jointed (54%, down from 87% at 20,000 s, mean dof 3.59), eaters peaked at 21 and are gone,
 nothing thrown in 14.9 M jointed body-seconds, 0.48x. Seed 5 is at 26,100 s.
 
+*22:40, the sequence, left to the agent by the owner.* (1) Tonight: `r42farm-s1`, round 42 seed
+1's world for 30,000 s on the new farm (detached, 8 threads, `scratch/farm-port/runs/`,
+log `scratch/logs/r42farm-s1.out`; at 12,300 s it read 637 alive, 450 jointed, nothing
+lost, 10x), read when it ends for the books, the lost and the population against round
+42's five. (2) The forty-genome parity again, after the damper fix, and a hand-built
+stroking swimmer in both engines. (3) The grid threaded (`scratch/wt-grid`, branch
+`grid-threads`, an agent at work; Core's numbers bit-identical at every thread count, a
+hash pinned from the unmodified code). (4) Round 42's write-up when seed 5 ends, with the
+self-collision finding. (5) Merge to main: `solver-spike` and `grid-threads`, then
+`streams-shallow`; CLAUDE.md's gotchas for the farm; `run-arm.ps1` and `stop-arm.ps1`
+farm modes; the read scripts taught the renamed columns. (6) A base round of three seeds
+on the new engine, pre-registered, read against round 42. (7) A 10,000-creature look on
+the CPU, a measurement and not a round: ten times the area and the matter, 3,000 to
+5,000 s. (8) The owner's rulings: the own-solver proposal's list, then the animal kit and
+the places. (9) The GPU port against the CPU reference.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
