@@ -54,6 +54,18 @@ window (F11's line, second window); 0.64x; nothing thrown. From above the rim ri
 and the centre's south-east half is nearly empty (rim quarter 0.35). Seed 4 at 18,000 s:
 pairs a body 1.07, 19 inherited eaters, the round's most.
 
+*15:30, the owner on pace.* The owner's steer: the interesting worlds are the ones with more
+complex bodies, so optimising toward fewer links is the wrong way; simplify the engine,
+use more threads, or the GPU. The agent's reply: the unjointed-bodies spike is withdrawn;
+round 42's seed 1 footer reads physics 37%, harness 54% (read 27, control 22, fluid 32,
+trace 14), all on one thread, PhysX held there by D078; harness jobs inside Unity are
+worth about 1.2 to 1.3x, and the structural answer is a spike of the project's own
+articulated solver in Core (Featherstone per creature, soft contacts from the previous
+step, every creature independent so thread count cannot change a trajectory), measured
+against PhysX on one genome and on throughput at 1 and 16 threads before anything is
+decided. `r42half-s4` (seed 4 on 750 units to 10,000 s, worker 2) is a pace screen and a
+stopgap, not the direction.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
