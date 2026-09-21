@@ -212,8 +212,9 @@ namespace Evosim.Dynamics
 
         public readonly Brain Brain;
         public readonly EffectorDrive Drive;
-        internal readonly float[] DriveSignal;
-        internal readonly CreatureSenses Senses;
+        // Public so the parity probe can read what the brain was handed and what it emitted.
+        public readonly float[] DriveSignal;
+        public readonly CreatureSenses Senses;
 
         // ---------------------------------------------------------------- contact state
 
@@ -474,6 +475,29 @@ namespace Evosim.Dynamics
             RefreshContactSphere();
             CommitContactSphere();
         }
+
+        /// <summary>
+        /// Puts the body down at <paramref name="origin"/> in the attitude development gave it,
+        /// at rest — which is what <c>PhenotypeBuilder.Build</c> does with its <c>start</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Not <c>PlaceAt(origin, QuatD.Identity)</c>, and the difference is not cosmetic.</b>
+        /// The farm parents every part under one creature object placed at <c>start</c> with no
+        /// rotation, and gives the root part <c>localPosition = Parts[0].Position</c> and
+        /// <c>localRotation = Parts[0].Rotation</c>. So the root link lands at
+        /// <c>start + Parts[0].Position</c> wearing <c>Parts[0].Rotation</c>, and every other
+        /// part lands at <c>start + Parts[i].Position</c>. Standing the root upright at
+        /// <c>start</c> instead moves and turns the whole body, which changes what
+        /// <see cref="SensorChannel.OrientationUp"/> and <see cref="SensorChannel.Depth"/> read
+        /// on the very first step — and those feed the brain, so the two engines' creatures
+        /// start emitting different drive signals before a single step has been taken.
+        /// </para>
+        /// </remarks>
+        public void PlaceAsDeveloped(Vec3 origin, Phenotype phenotype) =>
+            PlaceAt(
+                origin + ToVec(phenotype.Parts[0].Position),
+                QuatD.From(phenotype.Parts[0].Rotation));
 
         /// <summary>Puts the body's root link at a place and an attitude, at rest.</summary>
         public void PlaceAt(Vec3 position, QuatD rotation)

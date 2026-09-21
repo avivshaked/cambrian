@@ -146,6 +146,41 @@ namespace Evosim.Dynamics.Bench
                 Parity(config, developed, bodies, stabilitySteps > 0 ? stabilitySteps : 6000, 0.01);
             }
 
+            if (mode == "limits")
+            {
+                // One line per driven degree of freedom, for the parity table's join: which stop
+                // each engine's joint actually reached is the whole of the drive-axis question.
+                for (int i = 0; i < developed.Count; i++)
+                {
+                    Phenotype adult = developed[i];
+                    if (adult.PartCount < 2) continue;
+
+                    bool jointed = false;
+                    for (int p = 1; p < adult.PartCount; p++)
+                    {
+                        if (adult.Parts[p].JointType != JointType.Fixed) { jointed = true; break; }
+                    }
+                    if (!jointed) continue;
+
+                    SolverConfig one = Configure(config, 0.01);
+                    var probeBody = new Creature(0, adult, one, config.Shapes);
+
+                    for (int p = 1; p < probeBody.Links; p++)
+                    {
+                        int at = probeBody.DofStart[p];
+                        for (int d = 0; d < probeBody.DofCount[p]; d++)
+                        {
+                            Console.WriteLine(string.Format(
+                                CultureInfo.InvariantCulture,
+                                "LIMIT genome={0} link={1} joint={2} mirrored={3} dof={4} local={5} lo={6:0.####} hi={7:0.####} power={8:0.####}",
+                                i, p, adult.Parts[p].JointType, adult.Parts[p].Mirrored,
+                                at + d, d, probeBody.LimitLo[at + d], probeBody.LimitHi[at + d],
+                                probeBody.Power[p]));
+                        }
+                    }
+                }
+            }
+
             if (mode == "diagnose")
             {
                 Diagnose(config, developed, stabilitySteps > 0 ? stabilitySteps : 6000, 0.01);
@@ -154,7 +189,7 @@ namespace Evosim.Dynamics.Bench
 
             if (mode == "all" || mode == "traj")
             {
-                Trajectories(config, developed, genomes, trajectoryDirectory, 5, 60.0);
+                Trajectories(config, developed, genomes, trajectoryDirectory, int.Parse(Environment.GetEnvironmentVariable("EVOSIM_TRAJ_COUNT") ?? "5"), 60.0);
             }
 
             return 0;
@@ -372,6 +407,7 @@ namespace Evosim.Dynamics.Bench
             {
                 Console.WriteLine(
                     $"    link {p}: {adult.Parts[p].JointType}, parent {body.Parent[p]}, " +
+                    $"limits {LimitText(body, p)}, " +
                     $"mirrored {adult.Parts[p].Mirrored}, " +
                     $"mass {body.Mass[p]:0.#####} kg, power {body.Power[p]:0.####} N.m, " +
                     $"inertia {body.InertiaLocal[3 * p]:0.###e+00}/" +
@@ -549,6 +585,124 @@ namespace Evosim.Dynamics.Bench
             Console.WriteLine();
         }
 
+        // ---------------------------------------------------------------- the parity probe
+
+        /// <summary>
+        /// The steps a probe line is written on — the same six on both sides of the parity
+        /// comparison, so the two logs can be diffed line for line.
+        /// </summary>
+        private static bool IsProbeStep(int step) =>
+            step == 0 || step == 1 || step == 10 || step == 100 || step == 1000 || step == 5999;
+
+        /// <summary>
+        /// The channels a probe reports, in this order on both sides. Chemical and Energy are
+        /// included although neither engine models them here — both answer the parity constant,
+        /// and a line that left them out could not show that they had.
+        /// </summary>
+        private static readonly SensorChannel[] ProbeChannels =
+        {
+            SensorChannel.Depth,
+            SensorChannel.OrientationUp,
+            SensorChannel.JointAngle,
+            SensorChannel.JointAngularVelocity,
+            SensorChannel.Chemical,
+            SensorChannel.Energy,
+            SensorChannel.Flow,
+        };
+
+        /// <summary>
+        /// One line of everything that crosses between perception, the brain, the drive and the
+        /// solver, in the format <c>ParitySwim</c> writes it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Emitted after the step, reporting that step's inputs and the state it produced.</b>
+        /// So <c>step=0</c> carries the sensors read from the initial state, the drive the brain
+        /// emitted from them, and the pose one step later — which is the comparison that matters,
+        /// because at step 0 the two engines are handed the same body in the same place and any
+        /// difference in <c>sensors=</c> or <c>drive=</c> is a port error and nothing else.
+        /// </para>
+        /// <para>
+        /// Only channels this creature's <c>Brain.SensorMask</c> actually reads are printed. A
+        /// channel no neuron references is never computed by either engine, so printing it would
+        /// be comparing two arrays that both happen to hold whatever they were left holding.
+        /// </para>
+        /// </remarks>
+        private static void Probe(
+            StringBuilder into, int genome, int step, Phenotype adult, Creature body)
+        {
+            var sensors = new StringBuilder();
+            int mask = body.Brain.SensorMask;
+
+            for (int p = 0; p < body.Links; p++)
+            {
+                foreach (SensorChannel channel in ProbeChannels)
+                {
+                    if (!Brain.MaskReads(mask, channel)) continue;
+
+                    int count = channel == SensorChannel.Flow ? 3
+                        : channel == SensorChannel.JointAngle ||
+                          channel == SensorChannel.JointAngularVelocity
+                            ? adult.Parts[p].JointType.DofCount()
+                            : 1;
+
+                    for (int k = 0; k < count; k++)
+                    {
+                        if (sensors.Length > 0) sensors.Append(',');
+                        sensors.Append(p).Append(':').Append(channel);
+                        if (count > 1) sensors.Append('[').Append(k).Append(']');
+                        sensors.Append('=').Append(
+                            body.Senses.Read(p, channel, k)
+                                .ToString("0.######", CultureInfo.InvariantCulture));
+                    }
+                }
+            }
+
+            into.Append("[ParitySwim] probe genome=").Append(genome)
+                .Append(" step=").Append(step)
+                .Append(" sensors=[").Append(sensors).Append(']')
+                .Append(" drive=[").Append(Numbers(body.DriveSignal, body.Dof)).Append(']')
+                .Append(" torque=[").Append(Numbers(body.Drive.AppliedTorque, 3 * body.Links)).Append(']')
+                .Append(" q=[").Append(Numbers(body.Q, body.Dof)).Append(']')
+                .Append(" qd=[").Append(Numbers(body.Qd, body.Dof)).Append(']')
+                .AppendLine();
+        }
+
+        /// <summary>One link's per-dof limits, for the parity table's "which stop did it reach".</summary>
+        private static string LimitText(Creature body, int link)
+        {
+            var text = new StringBuilder();
+            int at = body.DofStart[link];
+            for (int d = 0; d < body.DofCount[link]; d++)
+            {
+                if (d > 0) text.Append('/');
+                text.Append(body.LimitHi[at + d].ToString("0.###", CultureInfo.InvariantCulture));
+            }
+            return text.ToString();
+        }
+
+        private static string Numbers(double[] values, int count)
+        {
+            var text = new StringBuilder();
+            for (int i = 0; i < count && i < values.Length; i++)
+            {
+                if (i > 0) text.Append(',');
+                text.Append(values[i].ToString("0.######", CultureInfo.InvariantCulture));
+            }
+            return text.ToString();
+        }
+
+        private static string Numbers(float[] values, int count)
+        {
+            var text = new StringBuilder();
+            for (int i = 0; i < count && i < values.Length; i++)
+            {
+                if (i > 0) text.Append(',');
+                text.Append(values[i].ToString("0.######", CultureInfo.InvariantCulture));
+            }
+            return text.ToString();
+        }
+
         // ---------------------------------------------------------------- (d) trajectories
 
         /// <summary>
@@ -581,10 +735,15 @@ namespace Evosim.Dynamics.Bench
                 solver.TankRadiusMetres = 0;   // alone, so the glass is not part of the question
 
                 var body = new Creature(0, adult, solver, config.Shapes);
-                body.PlaceAt(new Vec3(0, -10, 0), QuatD.Identity);
+
+                // As PhenotypeBuilder puts it down, not upright at the origin: see
+                // Creature.PlaceAsDeveloped for why the difference reaches the brain.
+                body.PlaceAsDeveloped(new Vec3(0, -10, 0), adult);
 
                 var world = new DynamicsWorld(solver);
                 world.Add(body);
+
+                var probe = new StringBuilder();
 
                 var text = new StringBuilder();
                 text.Append("t,x,y,z,qw,qx,qy,qz");
@@ -597,7 +756,11 @@ namespace Evosim.Dynamics.Bench
                 for (int step = 0; step <= steps; step++)
                 {
                     if (step % every == 0) Sample(text, world.ElapsedSeconds, body);
-                    if (step < steps) world.Step();
+                    if (step < steps)
+                    {
+                        world.Step();
+                        if (IsProbeStep(step)) Probe(probe, i, step, adult, body);
+                    }
                 }
 
                 string name = Path.Combine(
@@ -606,6 +769,20 @@ namespace Evosim.Dynamics.Bench
                         $"r42-s4-20000-genome{i:00}-parts{adult.PartCount}-dof{body.Dof}.csv"));
 
                 File.WriteAllText(name, text.ToString());
+
+                if (probe.Length > 0)
+                {
+                    string probeDirectory = Path.Combine(
+                        Path.GetDirectoryName(directory) ?? directory, "probe");
+                    Directory.CreateDirectory(probeDirectory);
+                    File.WriteAllText(
+                        Path.Combine(
+                            probeDirectory,
+                            FormattableString.Invariant($"bench-genome{i:00}.txt")),
+                        probe.ToString());
+                    Console.Write(probe.ToString());
+                }
+
                 written++;
 
                 Console.WriteLine(

@@ -40,6 +40,13 @@ namespace Evosim.Dynamics
         private int _cursor;
         private int _filled;
 
+        /// <summary>
+        /// The world-space torque the last <see cref="Drive"/> put on each link, 3 per link —
+        /// <c>EffectorDriver.AppliedTorque</c>. Kept rather than cleared, so a probe taken after
+        /// the step can still say what the creature asked of its own joints on it.
+        /// </summary>
+        public readonly double[] AppliedTorque;
+
         /// <summary>A diagnostic multiplier on every link's power. Leave at 1.</summary>
         public float PowerScale { get; set; } = 1f;
 
@@ -67,6 +74,8 @@ namespace Evosim.Dynamics
             _spinBudgetPerStep = config.StepSeconds > 0
                 ? config.MaxJointAngularVelocity / config.StepSeconds
                 : 0;
+
+            AppliedTorque = new double[3 * body.Links];
 
             int dof = body.Dof > 0 ? body.Dof : 1;
             _history = new float[dof * SmoothWindow];
@@ -144,6 +153,8 @@ namespace Evosim.Dynamics
                 // this an internal joint torque rather than free thrust.
                 Mat3 rotation = Mat3.Read(_body.RotationMatrix, 9 * b);
                 Vec3 world = rotation * torque;
+
+                Vec3.Write(AppliedTorque, 3 * b, world);
 
                 Vec3.Add(_body.Fext, 6 * b, world);
                 Vec3.Add(_body.Fext, 6 * _body.Parent[b], -world);
