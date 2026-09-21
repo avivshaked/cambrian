@@ -82,15 +82,41 @@ namespace Evosim.Dynamics
             _runningSum = new float[dof];
             _torquePerUnit = new float[dof];
 
-            for (int i = 1; i < body.Links; i++)
+            Refresh();
+        }
+
+        /// <summary>
+        /// Re-reads the torque one unit of signal buys at each degree of freedom, from the body's
+        /// <see cref="Creature.Power"/> as it now stands.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Called by the constructor and by <see cref="Creature.Resize"/>, and it touches
+        /// nothing else.</b> The smoothing history, the running sums, the cursor and the fill
+        /// count are all preserved across a growth resize: a creature that grew mid-stroke must
+        /// carry on the stroke, not restart the ten-sample average with its muscles cold.
+        /// </para>
+        /// <para>
+        /// <b>The per-step spin budget is not re-read here and does not need to be.</b> The cap a
+        /// drive is held to is <c>SmallestInertia * budget</c>, read from the body on every step,
+        /// so a resize that changes the inertia changes the cap on the next step with nothing to
+        /// refresh. Only the budget itself is a property of the config, and a config does not
+        /// change while a body is alive.
+        /// </para>
+        /// </remarks>
+        public void Refresh()
+        {
+            System.Array.Clear(_torquePerUnit, 0, _torquePerUnit.Length);
+
+            for (int i = 1; i < _body.Links; i++)
             {
-                int n = body.DofCount[i];
-                if (n == 0 || body.DofStart[i] < 0) continue;
+                int n = _body.DofCount[i];
+                if (n == 0 || _body.DofStart[i] < 0) continue;
 
                 // Straight from the genome, with no floor: a link too weak to move its own limb
                 // is a verdict for selection rather than something to paper over here.
-                float perUnit = (float)body.Power[i];
-                for (int d = 0; d < n; d++) _torquePerUnit[body.DofStart[i] + d] = perUnit;
+                float perUnit = (float)_body.Power[i];
+                for (int d = 0; d < n; d++) _torquePerUnit[_body.DofStart[i] + d] = perUnit;
             }
         }
 

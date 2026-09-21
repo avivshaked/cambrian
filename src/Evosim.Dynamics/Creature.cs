@@ -41,7 +41,11 @@ namespace Evosim.Dynamics
         public readonly int Links;
         public readonly int Dof;
 
-        public readonly Phenotype Phenotype;
+        /// <summary>
+        /// The body as it now is — the scaled phenotype, not the adult. Replaced by
+        /// <see cref="Resize"/> at a growth step; see <c>Creature.Growth.cs</c>.
+        /// </summary>
+        public Phenotype Phenotype { get; private set; }
 
         // ---------------------------------------------------------------- topology
 
@@ -71,7 +75,7 @@ namespace Evosim.Dynamics
         public readonly double[] Lift;
 
         /// <summary>Total body volume, m3 — what D064's buoyancy factor is a function of.</summary>
-        public readonly double TotalVolume;
+        public double TotalVolume { get; private set; }
 
         // ---------------------------------------------------------------- joints
 
@@ -131,9 +135,11 @@ namespace Evosim.Dynamics
         /// <summary>Where link <i>i</i>'s panels start. Length <c>Links + 1</c>.</summary>
         public readonly int[] PanelStart;
 
-        public readonly double[] PanelCentre;
-        public readonly double[] PanelNormal;
-        public readonly double[] PanelArea;
+        // Not readonly: a resize rewrites their contents in place, and reallocates them in the
+        // one case a resize can change the count — see Creature.Growth.cs's WritePanels.
+        public double[] PanelCentre;
+        public double[] PanelNormal;
+        public double[] PanelArea;
 
         // ---------------------------------------------------------------- state
 
@@ -242,7 +248,7 @@ namespace Evosim.Dynamics
         private bool _pendingActive = true;
 
         /// <summary>Total mass of the body, kg — the contact spring is scaled by it.</summary>
-        public readonly double TotalMass;
+        public double TotalMass { get; private set; }
 
         /// <summary>Times this creature's drive torque was capped. Summed in id order, never shared.</summary>
         public long DriveImpulsesLimited;
@@ -264,6 +270,12 @@ namespace Evosim.Dynamics
             }
 
             shapes = shapes ?? PartShapeRegistry.Standard;
+
+            // Kept so that a growth resize cannot be handed a different world or a different
+            // shape registry from the one the body was built with — the class of fault that
+            // makes a parameter stop reaching the thing it configures (logbook/0007, 0008).
+            _config = config;
+            _shapes = shapes;
 
             Id = id;
             Phenotype = phenotype;
@@ -309,135 +321,19 @@ namespace Evosim.Dynamics
             LimitDamping = new double[Dof];
             LimitImplicit = new double[Dof];
 
-            // ---- inertial properties and the joint frames
+            // ---- inertial properties, the joint frames, the limit springs and the panels
+            //
+            // Written by the three methods a growth resize uses, and deliberately not by a copy
+            // of them here: a grown body and a body built at that size must be the same body to
+            // the bit, and two transcriptions of one derivation is how that stops being true
+            // without anything reporting it. Creature.Growth.cs holds them.
 
-            double totalVolume = 0, totalMass = 0;
             var panelSets = new DragPanelSet[Links];
-            var scratch = new List<DragPanel>(64);
-            int panels = 0;
-
-            for (int i = 0; i < Links; i++)
-            {
-                PhenotypePart part = phenotype.Parts[i];
-                PartShape shape = shapes.Resolve(part.ShapeId);
-
-                double volume = part.Volume;
-                Volume[i] = volume;
-                Lift[i] = part.Lift;
-                Power[i] = part.Power;
-                totalVolume += volume;
-
-                // The builder's own two lines: the plain mass with its floor, then the effective
-                // mass once the water a part drags along is folded in.
-                double plain = System.Math.Max(config.MinimumLinkMass, volume * config.TissueDensity);
-                double effective = plain + config.AddedMassCoefficient * config.Density * volume;
-                PlainMass[i] = plain;
-                Mass[i] = effective;
-                totalMass += effective;
-
-                // PhysX recomputes a link's tensor from its collider whenever the mass is written,
-                // so an inflated mass inflates the tensor in proportion. The same is done here,
-                // from an analytic tensor rather than from the engine's — see the report.
-                Vec3 diag = InertiaOf(shape, part.HalfExtents, plain) * (effective / plain);
-                Vec3.Write(InertiaLocal, 3 * i, diag);
-                SmallestInertia[i] = System.Math.Min(diag.X, System.Math.Min(diag.Y, diag.Z));
-
-                Vec3.Write(ChildAnchor, 3 * i, ToVec(part.ChildAnchorLocal));
-                Vec3.Write(ParentAnchor, 3 * i, ToVec(part.ParentAnchorLocal));
-
-                QuatD frame = FrameOf(part.JointType);
-                QuatD rest = QuatD.Identity;
-
-                if (!part.IsRoot)
-                {
-                    QuatD parentRotation = QuatD.From(phenotype.Parts[part.ParentIndex].Rotation);
-                    QuatD own = QuatD.From(part.Rotation);
-                    QuatD relative = parentRotation.Conjugate * own;
-                    rest = relative * frame;
-                }
-
-                QuatD.Write(JointFrame, 4 * i, frame);
-                QuatD.Write(RestFrame, 4 * i, rest);
-
-                panelSets[i] = DragPanelSet.For(shape, part.HalfExtents, config.PanelsPerAxis, scratch);
-                panels += panelSets[i].Count;
-            }
-
-            TotalVolume = totalVolume;
-            TotalMass = totalMass;
-
-            // ---- joint limits and their springs
-
-            for (int i = 0; i < Links; i++)
-            {
-                int n = DofCount[i];
-                if (n == 0) continue;
-
-                PhenotypePart part = phenotype.Parts[i];
-                int parent = Parent[i];
-                int at = DofStart[i];
-                QuatD frame = QuatD.Read(JointFrame, 4 * i);
-                QuatD rest = QuatD.Read(RestFrame, 4 * i);
-                Vec3 childAnchor = Vec3.Read(ChildAnchor, 3 * i);
-                Vec3 parentAnchor = Vec3.Read(ParentAnchor, 3 * i);
-
-                double omega = config.JointLimitOmegaTimesStep / config.StepSeconds;
-
-                for (int d = 0; d < n; d++)
-                {
-                    // PhenotypeBuilder.Limit: a missing entry is [-1, 1] radians.
-                    Float2 limit = d < part.JointLimits.Length
-                        ? part.JointLimits[d]
-                        : new Float2(-1f, 1f);
-
-                    LimitLo[at + d] = limit.X;
-                    LimitHi[at + d] = limit.Y;
-
-                    // The two-body reduced inertia about this axis through the anchor, taken at
-                    // the rest configuration. It is a LOWER bound on the inertia the relative
-                    // coordinate actually carries — anything hung off either side raises it —
-                    // and a penalty spring scaled by a lower bound can only be softer than the
-                    // step allows, never stiffer. Scaling by the child's own inertia instead,
-                    // which is the obvious thing and what this did first, makes the spring too
-                    // stiff whenever the parent is light: the damping term's explicit stability
-                    // condition is violated and a driven chain rings itself to infinity within
-                    // two seconds.
-                    double child = AxisInertia(
-                        frame.Rotate(AxisOf(d)), childAnchor,
-                        Vec3.Read(InertiaLocal, 3 * i), Mass[i]);
-
-                    double above = AxisInertia(
-                        rest.Rotate(AxisOf(d)), parentAnchor,
-                        Vec3.Read(InertiaLocal, 3 * parent), Mass[parent]);
-
-                    double reduced = child + above > 0 ? child * above / (child + above) : child;
-
-                    LimitStiffness[at + d] = reduced * omega * omega;
-                    LimitDamping[at + d] = 2.0 * config.JointLimitDampingRatio * reduced * omega;
-                }
-            }
-
-            // ---- panels, flattened
+            int panels = WriteSizedProperties(phenotype, config, shapes, panelSets, PanelScratch);
+            WriteJointLimits(config);
 
             PanelStart = new int[Links + 1];
-            PanelCentre = new double[3 * panels];
-            PanelNormal = new double[3 * panels];
-            PanelArea = new double[panels];
-
-            int cursor = 0;
-            for (int i = 0; i < Links; i++)
-            {
-                PanelStart[i] = cursor;
-                DragPanelSet set = panelSets[i];
-                for (int p = 0; p < set.Count; p++)
-                {
-                    Vec3.Write(PanelCentre, 3 * cursor, ToVec(set.Centres[p]));
-                    Vec3.Write(PanelNormal, 3 * cursor, ToVec(set.Normals[p]));
-                    PanelArea[cursor] = set.Areas[p];
-                    cursor++;
-                }
-            }
-            PanelStart[Links] = cursor;
+            WritePanels(panelSets, panels);
 
             // ---- state and scratch
 
