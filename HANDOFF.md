@@ -179,6 +179,24 @@ young bodies lost in 30 s at a 4 m packing), so the spike's thread-identity clai
 a mostly dead world in that test. The limit's implicit term does work and the ledger
 counts it.
 
+*21:30, the join.* E and F came in (`c0ca73d`): the shaped bed, the glass on Core's axis, a
+bounded contact law (a contact never pulls; a pair adds at most 1 m/s of separating speed
+a step; a body's whole contact set changes its speed by at most 1 m/s a step), the overlap
+instrument and event list, the four divergence guards, the trace ring, dumps and digest
+files. It also found the spike's joint drive damper integrated explicitly, unstable under
+`I < 0.005 kg·m²`, which is every newborn; made implicit like the limits, which moves
+every trajectory the spike recorded, so the forty-genome parity is owed again. With both,
+200 newborn-sized bodies packed in 4 m lose none in 60 s and 1,000 bodies at round 42's
+density lose none in 600 s. `solver-spike` is `3073a41`: D, B, C, E and F merged by hand
+(one conflict, `DynamicsWorld.cs`; still water when no world has told the current its
+box; tiered JIT off in the farm), 66 Dynamics and 24 Farm tests green. One agent now has
+the worktree for G, J and K: the loop, reconcile, metabolise, the real chemical and
+energy senses, the writers with `poses.jsonl`, the timers. Its acceptance is round 42's
+world for 3,000 s with both books closed, and digests, stats and lineage byte-equal at
+1, 8 and 24 threads with a live economy. Rulings the port has collected for the owner:
+the contact caps' two numbers, the per-body cap's momentum, the placer's vertical
+clearance against a perpendicular bed, D100's hold at 0, the renamed contact columns.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
