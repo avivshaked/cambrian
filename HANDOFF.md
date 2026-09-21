@@ -160,6 +160,25 @@ instrument and event list, the divergence guards, trace, dumps and digest files
 existing files so the merge is by hand. After them: G the loop (the join), J the writers,
 K the timers, A the Unity package, then the farm mode of `run-arm.ps1` and `stop-arm.ps1`.
 
+*21:05, packages B, C and D in, and three findings.* D, growth, is `e9600ef` on
+`farm-growth` (a resized body bit-equal to a fresh build; one derivation for both). B and
+C, the ledgers and the current, are `170333c` on `farm-forces` (energy residual 7e-4 of the
+work, first order in dt; a neutral tracer within 5 cm of its parcel over 1,000 s). Both
+list their edits to existing files for the hand merge. Findings. **The .NET JIT's tiers
+give different floating-point bits**, so a one-thread run and a four-thread run parted in
+a world that was losing bodies; with tiered compilation off all agree. The farm, bench
+and tests get `TieredCompilation` false and one code path at every thread count.
+**D100's water hold undoes D090 in the farm too**: a neutral body held at 0.5 s, round
+42's setting, parts from its water parcel by 22 m in 1,000 s, as far as with `fluidAccel`
+off (23 m); per link it is 5 cm, at 0.05 s 0.9 m. The hold was bought for pace; on the new
+engine per-link sampling is cheap, so the hold at 0 is a ruling to put to the owner.
+**The spike's contact is wrong in two ways**, both sent to the contacts agent: the glass
+is centred on the origin where Core's tank axis is at (R, R), and the soft spring throws
+bodies in a crowd (196 of 200 dead by step 50 in the spike's own identity test; 78 of 200
+young bodies lost in 30 s at a 4 m packing), so the spike's thread-identity claim stood on
+a mostly dead world in that test. The limit's implicit term does work and the ledger
+counts it.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
