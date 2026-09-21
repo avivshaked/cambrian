@@ -372,6 +372,18 @@ namespace Evosim.Farm
         /// Everything after the last row: how it ended, the two stabilisers, the space line, the
         /// pace line and the timing split, and the fastest creature.
         /// </summary>
+        /// <remarks>
+        /// <b>The space line says three things differently from the recorded footers, because it
+        /// is reporting three different measurements.</b> The pair count is this engine's overlap
+        /// census and not PhysX's contact census, so it is named for what it counts — the same
+        /// rule that renamed four of the table's columns. The bed is a heightfield the solver
+        /// tests against analytically and not a mesh collider, and the lowest rock is the lowest
+        /// point on the disc rather than the lowest vertex of a mesh that carries on past the rim,
+        /// which is why the same world reads about eight metres shallower here. And the last
+        /// figure counts bodies touching the bed or the glass, not pairs of colliders. No script
+        /// on file parses this line; three parse the pace line below, which is byte-for-byte what
+        /// every footer on file says.
+        /// </remarks>
         /// <param name="ending">The prose — "budget reached", "wall clock reached", a RUNAWAY.</param>
         /// <param name="wallClockMs">The run's own clock, which every share is taken against.</param>
         /// <param name="writersMs">What this file's writers cost — the loop's own stopwatch.</param>
@@ -400,16 +412,17 @@ namespace Evosim.Farm
                 "Shared space: " + (config.SharedSpace ? "on" : "off") +
                 " · wraps " + F(h.Wraps) +
                 " · crowded stillbirths " + F(h.Crowded) +
-                " · contact pairs per physics step " +
+                " · overlap pairs per physics step " +
                 (h.HasSharedVolume && h.PhysicsSteps > 0
                     ? (h.ContactPairs / (double)h.PhysicsSteps).ToString("0.####", Inv)
                     : "—") +
                 " · sea bed " + (h.HasFloor
                     ? h.FloorHasRelief
-                        ? "mesh collider, lowest rock " + h.FloorLowestTopY.ToString("0.##", Inv) + " m"
-                        : "collider at -" + F(config.WorldDepthMetres) + " m"
+                        ? "relief, lowest rock on the disc " +
+                          h.FloorLowestTopY.ToString("0.##", Inv) + " m"
+                        : "plane at -" + F(config.WorldDepthMetres) + " m"
                     : "none") +
-                " · floor pairs per physics step " +
+                " · bed or glass bodies per physics step " +
                 (h.HasFloor && h.PhysicsSteps > 0
                     ? (h.FloorContactPairs / (double)h.PhysicsSteps).ToString("0.####", Inv)
                     : "—"));
@@ -516,8 +529,19 @@ namespace Evosim.Farm
             "diverged",
             "mat in", "mat buried",
             "**spd jnt**", "**spd rig**", "**food jnt**", "**food rig**",
-            "above", "wraps", "crowded", "contacts",
-            "pairs/body", "pairs jnt %", "stuck %",
+            // The four that changed their name because they changed their census
+            // (fable-propose-own-solver.md's change 4, and <see cref="Sampler"/>'s remarks).
+            // `contacts`, `pairs/body`, `pairs jnt %` and `stuck %` counted PhysX's contact
+            // manifolds between colliders; these count overlapping bounding spheres between
+            // creatures, one per pair, and a body cannot overlap itself. The places are the same
+            // four so nothing after them moves, and the names are different so that a reader
+            // comparing a row of this engine's against a row of the other one's is stopped rather
+            // than handed a different measurement under the old name.
+            "above", "wraps", "crowded", "overlaps",
+            "ovl/body", "ovl jnt %", "ovl held %",
+
+            // The bed and the glass, apart from the crowd's, in `floor con`'s own place — bodies
+            // resting against the world rather than manifolds, for the reason above.
             "floor con",
             "stillb",
             "**sense**", "dep jnt", "dep rig", "mat here",

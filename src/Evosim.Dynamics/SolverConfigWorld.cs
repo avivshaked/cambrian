@@ -122,17 +122,35 @@ namespace Evosim.Dynamics
         /// The world's height map — <c>World.Bed</c> — or null for the flat floor every
         /// recorded world before D092 has.
         /// </param>
+        /// <param name="world">
+        /// The world the run is actually in, or null. <b>Package G reconciled the two factories
+        /// through this parameter.</b> They had diverged in exactly one field and it was the one
+        /// that decides whether the water moves: <see cref="From"/> carries
+        /// <see cref="SolverConfig.Current"/> only when it is handed a world, and
+        /// <see cref="FromWorld"/> called it without one — so a farm that built its solver config
+        /// through <c>FromWorld</c>, as the API note said it should, got the tank, the axis and
+        /// the bed right and ran the whole round in still water. With a world the two are now one
+        /// method: <c>FromWorld(config, dt, world.Bed, world)</c> carries everything <c>From</c>
+        /// carries (the current, the patch count, D100's hold) and everything the shape adds (the
+        /// glass, its axis, the bed). Without one the behaviour is unchanged to the bit, which is
+        /// what keeps the bench and the solver tests where they were.
+        /// </param>
         /// <remarks>
         /// The radius comes through <see cref="TankGeometry.RadiusFor"/> rather than from a
         /// square root taken here, so the solver's glass stands exactly where the field's mask,
-        /// the placer's disc and the gyre's normalised radius put theirs.
+        /// the placer's disc and the gyre's normalised radius put theirs — and off
+        /// <c>World.TankRadiusMetres</c> when there is a world, which is the same number by the
+        /// same function and is the one the fields and the placer were built with.
         /// </remarks>
-        public static SolverConfig FromWorld(RunConfig config, double stepSeconds, BedShape bed = null)
+        public static SolverConfig FromWorld(
+            RunConfig config, double stepSeconds, BedShape bed = null, World world = null)
         {
-            SolverConfig solver = From(config, stepSeconds);
+            SolverConfig solver = From(config, stepSeconds, world);
 
             double radius = config.WorldShape == WorldShape.Tank
-                ? TankGeometry.RadiusFor(config.WorldAreaSquareMetres)
+                ? world != null
+                    ? world.TankRadiusMetres
+                    : TankGeometry.RadiusFor(config.WorldAreaSquareMetres)
                 : 0;
 
             solver.TankRadiusMetres = radius;

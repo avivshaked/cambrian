@@ -158,10 +158,32 @@ namespace Evosim.Dynamics
         public double JointRateFullScale = 10.0;
 
         /// <summary>
-        /// What <c>SensorChannel.Chemical</c> and <c>SensorChannel.Energy</c> read. The spike has
-        /// no field and no ledger, so a constant stands in — see the spec's "what it is not".
+        /// What <c>SensorChannel.Chemical</c> and <c>SensorChannel.Energy</c> read <b>when the
+        /// body has been given neither a field nor an account</b> — the spike's standing-in
+        /// constant (the spec's "what it is not").
         /// </summary>
+        /// <remarks>
+        /// A farm loop wires <see cref="CreatureSenses.Nutrients"/> and
+        /// <see cref="CreatureSenses.Reserve"/> and the two channels then read the world, exactly
+        /// as <c>Evosim.Sim.CreatureSensors</c> does. This value is what a bench or a solver test
+        /// with no world still gets, and it is deliberately not zero: zero is what an
+        /// <i>unimplemented</i> channel reads in the farm.
+        /// </remarks>
         public float ConstantChemicalAndEnergy = 0.5f;
+
+        /// <summary>
+        /// The half-scale of the chemical sense, J/m3 —
+        /// <c>RunConfig.ChemicalHalfScaleJoulesPerCubicMetre</c>. Read only once a body has been
+        /// given a field.
+        /// </summary>
+        public double ChemicalHalfScaleJoulesPerCubicMetre = 1.0;
+
+        /// <summary>
+        /// The full scale of the energy sense, seconds of reserve —
+        /// <c>RunConfig.EnergyFullScaleSeconds</c>. Read only once a body has been given an
+        /// account.
+        /// </summary>
+        public double EnergyFullScaleSeconds = 600.0;
 
         /// <summary>
         /// Everything the solver reads, taken off a run's config.
@@ -214,6 +236,9 @@ namespace Evosim.Dynamics
                 DriveLimitAtEveryStep = config.DriveLimitAtEveryStep,
 
                 FlowFullScaleMetresPerSecond = config.FlowFullScaleMetresPerSecond,
+                ChemicalHalfScaleJoulesPerCubicMetre =
+                    config.ChemicalHalfScaleJoulesPerCubicMetre,
+                EnergyFullScaleSeconds = config.EnergyFullScaleSeconds,
             };
         }
 

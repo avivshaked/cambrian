@@ -204,6 +204,15 @@ namespace Evosim.Farm
             Num("EVOSIM_INOCULATE_DEPTH", D.InoculateDepthMetres, (s, v) => s.InoculateDepth = v),
             Text("EVOSIM_OUT", (s, v) => s.OutPath = v),
 
+            // The farm's own, and the second name in this table EvolutionRun does not read: the
+            // directory a report and its run directory are written under. It exists because a
+            // console program can be pointed somewhere the editor entry could not — a port's
+            // acceptance runs must not land in the main tree's `runs/`, which is the record — and
+            // because a relative EVOSIM_OUT resolved against the process's working directory is
+            // the one setting whose meaning depends on how it was launched. With EVOSIM_OUT
+            // absolute this changes nothing; with it relative, or unset, this is the root.
+            Text("EVOSIM_RUNS_ROOT", (s, v) => s.RunsRoot = v),
+
             // Read by BuildManifest rather than by RunBody, and in the table for the reason
             // everything else is: this is the whole of what the environment says to a run.
             Text("EVOSIM_REPO_ROOT", (s, v) => s.RepoRoot = v),
@@ -763,19 +772,45 @@ namespace Evosim.Farm
         public string OutPath;
         public string RepoRoot;
 
+        /// <summary>The directory a report and its run directory land under — <c>EVOSIM_RUNS_ROOT</c>.</summary>
+        public string RunsRoot;
+
         /// <summary>
         /// Where the report goes: <c>EVOSIM_OUT</c>, or <c>../runs/evolution.md</c> from the
         /// working directory, which is what <c>EvolutionRun</c> falls back to.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// The fallback is relative to the process's own directory, and a worker project's
         /// directory is one below the repository — which is why <c>run-arm.ps1</c> always sets the
         /// variable. Kept as it was so a launcher that relies on the fallback lands where it
         /// always did.
+        /// </para>
+        /// <para>
+        /// <b><see cref="RunsRoot"/> is resolved against, never appended to.</b> An absolute
+        /// <c>EVOSIM_OUT</c> wins outright, so every launcher on file lands exactly where it
+        /// always did; a relative one, or none at all, resolves under the root. That is what lets
+        /// an acceptance run be pointed at a scratch directory without a second way of spelling
+        /// the arm's name.
+        /// </para>
         /// </remarks>
         public string ResolveOutPath()
         {
-            if (!string.IsNullOrEmpty(OutPath)) return OutPath;
+            string root = string.IsNullOrEmpty(RunsRoot)
+                ? null
+                : System.IO.Path.GetFullPath(RunsRoot);
+
+            if (!string.IsNullOrEmpty(OutPath))
+            {
+                return root != null && !System.IO.Path.IsPathRooted(OutPath)
+                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(root, OutPath))
+                    : OutPath;
+            }
+
+            if (root != null)
+            {
+                return System.IO.Path.Combine(root, "evolution.md");
+            }
 
             return System.IO.Path.GetFullPath(System.IO.Path.Combine(
                 System.IO.Directory.GetCurrentDirectory(), "..", "runs", "evolution.md"));

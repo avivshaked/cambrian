@@ -143,8 +143,8 @@ namespace Evosim.Farm.Tests
             Assert.Equal(8823, m["births"].AsDouble());
             Assert.Equal(934, m["aliveAtEnd"].AsDouble());
             Assert.Equal(0.6054330720309945, m["timesRealTime"].AsDouble(), 12);
-            Assert.Equal(463.653692, m["contactPairsPerStep"].AsDouble(), 6);
-            Assert.Equal(707006207, m["contactPairsJointed"].AsDouble());
+            Assert.Equal(463.653692, m["overlapPairsPerStep"].AsDouble(), 6);
+            Assert.Equal(707006207, m["overlapPairsJointed"].AsDouble());
             Assert.Equal(54.565940856933594, m["maxJointMassRatio"].AsDouble(), 9);
             Assert.Equal(49551306, m["wallTotalMs"].AsDouble());
 
@@ -180,7 +180,7 @@ namespace Evosim.Farm.Tests
                 "InvalidOperationException: the grid refused a point", json["ending"].AsString());
             Assert.Equal(15345, json["simulatedSeconds"].AsDouble());
             Assert.Equal(1707, json["aliveAtEnd"].AsDouble());
-            Assert.Equal(2.0, json["contactPairsPerStep"].AsDouble(), 6);
+            Assert.Equal(2.0, json["overlapPairsPerStep"].AsDouble(), 6);
 
             // The harness phases are absent rather than ten zeros: the manifest's cache never
             // carried them, and a zero that means "not measured" is worse than no field at all.

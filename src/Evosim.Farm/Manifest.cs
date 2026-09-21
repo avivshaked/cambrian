@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -400,10 +400,10 @@ namespace Evosim.Farm
                 w.Field("sharedSpace", ending.SharedSpace);
                 w.Field("wraps", ending.Wraps);
                 w.Field("crowded", ending.Crowded);
-                w.Field("contactPairsPerStep", ending.ContactPairsPerStep);
-                w.Field("contactPairsJointed", ending.ContactPairsJointed);
-                w.Field("contactPairsPersistent", ending.ContactPairsPersistent);
-                w.Field("contactBodies", ending.ContactBodies);
+                w.Field("overlapPairsPerStep", ending.ContactPairsPerStep);
+                w.Field("overlapPairsJointed", ending.ContactPairsJointed);
+                w.Field("overlapPairsHeld", ending.ContactPairsPersistent);
+                w.Field("overlapBodies", ending.ContactBodies);
                 w.Field("maxJointMassRatio", ending.MaxJointMassRatio);
                 w.Field("bodiesOverMassRatio10", ending.BodiesOverMassRatio10);
                 w.Field("wallPhysicsMs", ending.WallPhysicsMs);

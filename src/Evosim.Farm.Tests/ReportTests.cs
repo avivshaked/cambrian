@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -36,7 +36,19 @@ namespace Evosim.Farm.Tests
         private const string ParseArmPattern =
             @"(?<steps>[\d,]+)\s+physics steps\s*·\s*(?<sim>[\d,]+)\s+simulated seconds\s*·\s*(?<births>[\d,]+)\s+births\s*·\s*(?<wall>[\d.]+)\s+min wall clock\s*\((?<mult>[\d.]+)x real time\)";
 
-        /// <summary>Round 42's footer, to the character.</summary>
+        /// <summary>
+        /// Round 42's footer, to the character — bar the space line, which names a different
+        /// census.
+        /// </summary>
+        /// <remarks>
+        /// The recorded line reads <c>contact pairs per physics step 463.6537 · sea bed mesh
+        /// collider, lowest rock -69.16 m · floor pairs per physics step 4.3598</c>. This engine
+        /// counts overlapping part pairs rather than PhysX contact pairs, tests a heightfield
+        /// analytically rather than colliding against a mesh, and counts bodies on the bed or the
+        /// glass rather than collider pairs — so all three are renamed for what they are, by the
+        /// same rule that renamed four of the table's columns. Every other line, and the pace line
+        /// in particular, is byte-for-byte the recorded one.
+        /// </remarks>
         private const string Round42Footer =
 @"**Ended:** budget reached.
 
@@ -44,7 +56,7 @@ Drag impulses limited: 0 (the coarse-step stabiliser; 0 means every step's drag 
 
 Drive impulses limited: 0 (the joint-torque cap; 0 means every drive torque was applied as computed)
 
-Shared space: on · wraps 0 · crowded stillbirths 189 · contact pairs per physics step 463.6537 · sea bed mesh collider, lowest rock -69.16 m · floor pairs per physics step 4.3598
+Shared space: on · wraps 0 · crowded stillbirths 189 · overlap pairs per physics step 463.6537 · sea bed relief, lowest rock on the disc -69.16 m · bed or glass bodies per physics step 4.3598
 
 3000000 physics steps · 30000 simulated seconds · 8823 births · 825.9 min wall clock (0.6x real time).
 wall split: physics 37%, world 9%, harness 54%, writers 0%, other 0%
@@ -159,10 +171,30 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         }
 
         /// <summary>
-        /// The recorded table's header row, column for column — the map every read is built from.
+        /// The four columns the overlap instrument renamed, and their places.
+        /// </summary>
+        /// <remarks>
+        /// <b>A rename by ruling, not by drift</b> (fable-propose-own-solver.md's change 4, work
+        /// package G). <c>contacts</c>, <c>pairs/body</c>, <c>pairs jnt %</c> and <c>stuck %</c>
+        /// counted PhysX's contact manifolds between colliders; this engine counts overlapping
+        /// bounding spheres between creatures, one per pair, and a body cannot overlap itself. The
+        /// places are the same four so that nothing after them moves and a positional reader keeps
+        /// working; the names are different so that a reader comparing the two engines' rows is
+        /// stopped rather than handed a different measurement under the old name.
+        /// </remarks>
+        private static readonly (string Recorded, string Ported)[] RenamedColumns =
+        {
+            ("contacts", "overlaps"),
+            ("pairs/body", "ovl/body"),
+            ("pairs jnt %", "ovl jnt %"),
+            ("stuck %", "ovl held %"),
+        };
+
+        /// <summary>
+        /// The recorded table's header row, column for column but for the four that were renamed.
         /// </summary>
         [Fact]
-        public void TheTableHeaderIsTheRecordedOne()
+        public void TheTableHeaderIsTheRecordedOneBarTheFourRenamedColumns()
         {
             string recordedReport = RecordedRound42Report();
             if (recordedReport == null)
@@ -187,7 +219,38 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             // The two lines are separated by Environment.NewLine, as the Unity build separates
             // them; the recorded file's own line endings are the platform's too, and
             // File.ReadAllLines has already taken them off.
-            Assert.Equal(recorded, report.TableHeader().Split('\n')[0].TrimEnd('\r'));
+            string ported = report.TableHeader().Split('\n')[0].TrimEnd('\r');
+
+            string[] recordedCells = recorded.Split('|');
+            string[] portedCells = ported.Split('|');
+
+            Assert.Equal(recordedCells.Length, portedCells.Length);
+
+            for (int i = 0; i < recordedCells.Length; i++)
+            {
+                string was = recordedCells[i].Trim();
+                string now = portedCells[i].Trim();
+
+                if (was == now) continue;
+
+                // The only differences allowed are the four the instrument renamed, each in the
+                // place its predecessor stood.
+                bool renamed = false;
+                for (int r = 0; r < RenamedColumns.Length; r++)
+                {
+                    if (was != RenamedColumns[r].Recorded) continue;
+
+                    Assert.Equal(RenamedColumns[r].Ported, now);
+                    renamed = true;
+                    break;
+                }
+
+                Assert.True(
+                    renamed,
+                    "column " + i + " reads '" + now + "' where the record reads '" + was +
+                    "'. Only the four columns of the overlap instrument may differ, and each " +
+                    "only in the place its predecessor stood.");
+            }
         }
 
         // ------------------------------------------------------------------ the footer
@@ -210,6 +273,12 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         }
 
         /// <summary>And the same footer, against the bytes the Unity build actually wrote.</summary>
+        /// <remarks>
+        /// <b>Compared line by line, so that the one ruled departure is named rather than
+        /// glossed.</b> The space line reports three different measurements here and is renamed
+        /// for them (see <see cref="Round42Footer"/>); every other line has to be the recorded
+        /// bytes, which is what a line-by-line comparison says and a whole-string one would not.
+        /// </remarks>
         [Fact]
         public void TheFooterIsByteCompatibleWithTheFileOnDisk()
         {
@@ -228,7 +297,29 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             end = text.IndexOf('\n', end);
             string recorded = text.Substring(start, end - start);
 
-            Assert.Equal(recorded, Round42Footer.Replace("\r\n", "\n"));
+            string[] was = recorded.Split('\n');
+            string[] now = Round42Footer.Replace("\r\n", "\n").Split('\n');
+
+            Assert.Equal(was.Length, now.Length);
+
+            for (int i = 0; i < was.Length; i++)
+            {
+                if (was[i].StartsWith("Shared space:", StringComparison.Ordinal))
+                {
+                    // The one ruled departure, and it may not spread: the line still has to carry
+                    // the same counts in the same places, under names that say what they count.
+                    Assert.StartsWith("Shared space: on · wraps 0 · crowded stillbirths 189 · ", now[i]);
+                    Assert.Contains("463.6537", now[i]);
+                    Assert.Contains("-69.16 m", now[i]);
+                    Assert.Contains("4.3598", now[i]);
+                    Assert.DoesNotContain("contact pairs", now[i]);
+                    Assert.DoesNotContain("mesh collider", now[i]);
+                    Assert.DoesNotContain("floor pairs", now[i]);
+                    continue;
+                }
+
+                Assert.Equal(was[i], now[i]);
+            }
         }
 
         /// <summary>The pace line, as the two scripts read it.</summary>
@@ -291,8 +382,8 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 wallClockMs: 1000, writersMs: 0, bestSpeed: 0, bestSpeedAtSeconds: 0);
 
             string text = report.Text;
-            Assert.Contains("Shared space: off · wraps 0 · crowded stillbirths 0 · contact pairs per physics step —", text);
-            Assert.Contains("· sea bed none · floor pairs per physics step —", text);
+            Assert.Contains("Shared space: off · wraps 0 · crowded stillbirths 0 · overlap pairs per physics step —", text);
+            Assert.Contains("· sea bed none · bed or glass bodies per physics step —", text);
         }
 
         // ------------------------------------------------------------------ helpers
@@ -326,7 +417,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Wraps = 0,
             Crowded = 189,
 
-            // contactPairsPerStep 463.653692 over 3,000,000 steps.
+            // overlapPairsPerStep 463.653692 over 3,000,000 steps.
             ContactPairs = 1390961076,
             HasFloor = true,
             FloorHasRelief = true,
