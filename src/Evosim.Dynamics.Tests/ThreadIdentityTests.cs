@@ -18,23 +18,34 @@ namespace Evosim.Dynamics.Tests
         [Fact]
         public void TheThreadCountDoesNotChangeTheTrajectory()
         {
-            ulong one = Run(1);
+            ulong one = Run(1, out int alive, out int total);
             ulong four = Run(4);
             ulong sixteen = Run(16);
 
             _out.WriteLine($"digest  1 thread  {one:x16}");
             _out.WriteLine($"digest  4 threads {four:x16}");
             _out.WriteLine($"digest 16 threads {sixteen:x16}");
+            _out.WriteLine($"alive at the end  {alive} of {total}");
 
             Assert.Equal(one, four);
             Assert.Equal(one, sixteen);
+
+            // A digest of a dead world agrees with itself at any thread count and says nothing.
+            // Two of these two hundred were non-finite by step 10 and 196 by step 50 under the
+            // uncapped contact spring, and the test passed; it cannot again.
+            Assert.True(
+                alive >= (total * 95) / 100,
+                $"only {alive} of {total} bodies were still finite — a digest of a dead world " +
+                "agrees at every thread count and measures nothing");
         }
 
         /// <summary>
         /// 200 bodies packed tightly enough that the contact grid has work to do, stepped 2,000
         /// times with drag, weight, the bed and creature-creature pushes all on.
         /// </summary>
-        private static ulong Run(int threads)
+        private static ulong Run(int threads) => Run(threads, out _, out _);
+
+        private static ulong Run(int threads, out int alive, out int total)
         {
             var config = new SolverConfig
             {
@@ -83,6 +94,9 @@ namespace Evosim.Dynamics.Tests
             }
 
             for (int step = 0; step < 2000; step++) world.Step();
+
+            total = world.Creatures.Count;
+            alive = total - world.NonFiniteBodies();
 
             return world.Digest();
         }

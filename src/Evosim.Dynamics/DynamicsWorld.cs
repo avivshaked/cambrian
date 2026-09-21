@@ -68,15 +68,17 @@ namespace Evosim.Dynamics
             _grid.Build(_creatures);
 
             int count = _creatures.Count;
-            if (Threads <= 1)
-            {
-                for (int i = 0; i < count; i++) StepOne(i, dt);
-            }
-            else
-            {
-                var options = new ParallelOptions { MaxDegreeOfParallelism = Threads };
-                Parallel.For(0, count, options, i => StepOne(i, dt));
-            }
+
+            // One code path at every thread count, including one. A serial `for` and a
+            // `Parallel.For` delegate are different code to the JIT, and .NET's tiered
+            // compilation gives quick-JITted and optimised loops different floating-point bits
+            // where the arithmetic sits on a rounding knife-edge — so the serial path could part
+            // from the parallel one at one thread and the digest would say the thread count
+            // changed the trajectory when what changed was which compiler tier ran. The test and
+            // bench projects also set `TieredCompilation` false; a farm that reports a digest
+            // must do the same.
+            var options = new ParallelOptions { MaxDegreeOfParallelism = Threads < 1 ? 1 : Threads };
+            Parallel.For(0, count, options, i => StepOne(i, dt));
 
             // Serial, between steps: what every body will read of every other on the next one.
             // Committing inside the parallel phase is what made the digest depend on the thread
@@ -85,6 +87,8 @@ namespace Evosim.Dynamics
 
             ElapsedSeconds += dt;
             Steps++;
+
+            AfterStep();
         }
 
         private void StepOne(int index, double dt)
@@ -108,6 +112,8 @@ namespace Evosim.Dynamics
 
             Kinematics.Poses(body);
             Kinematics.Velocities(body);
+
+            body.RecordTraceFrame(Steps + 1, (Steps + 1) * dt);
 
             if (!body.IsFinite())
             {
@@ -151,6 +157,18 @@ namespace Evosim.Dynamics
                     double rate = body.Qd[j];
                     double torque = -damping * rate;
 
+                    // The drive damper carried implicitly, beside the limit's term and for the
+                    // same reason. A viscous damper integrated explicitly grows rather than
+                    // decays once `c dt / I > 2`, and the farm's 1 N·m·s/rad at dt 0.01 makes
+                    // that bound `I < 0.005 kg·m2` — which every newborn is under: a 0.4 kg
+                    // two-link body scaled to a third of adult size carries about 5e-4 and sits
+                    // twenty times past the bound. Nothing in still water shows it, because a
+                    // body holding a pose has no joint rate to amplify; one touch is enough.
+                    // `-damping * (rate + qdd * dt)` is the same torque written against the
+                    // acceleration the solve is about to produce, so the explicit part above is
+                    // unchanged and `damping * dt` goes on the diagonal.
+                    double resist = damping * dt;
+
                     double past = q < body.LimitLo[j] ? q - body.LimitLo[j]
                         : q > body.LimitHi[j] ? q - body.LimitHi[j]
                         : 0;
@@ -161,13 +179,10 @@ namespace Evosim.Dynamics
                         double c = body.LimitDamping[j];
 
                         torque += -k * past - c * rate;
-                        body.LimitImplicit[j] = (c + k * dt) * dt;
-                    }
-                    else
-                    {
-                        body.LimitImplicit[j] = 0;
+                        resist += (c + k * dt) * dt;
                     }
 
+                    body.LimitImplicit[j] = resist;
                     body.Tau[j] += torque;
                 }
             }

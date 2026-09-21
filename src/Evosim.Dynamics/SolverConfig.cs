@@ -14,7 +14,7 @@ namespace Evosim.Dynamics
     /// in the report as not ported rather than silently defaulted.
     /// </para>
     /// </remarks>
-    public sealed class SolverConfig
+    public sealed partial class SolverConfig
     {
         // ---- fluid, term for term from FluidConfig
 

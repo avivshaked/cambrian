@@ -186,6 +186,9 @@ namespace Evosim.Dynamics
         {
             Vec3 force = Vec3.Zero;
 
+            bool instrument = config.ContactInstrument;
+            if (instrument) body.BeginContactStep();
+
             if (config.CreatureContact)
             {
                 int n = grid.Neighbours(index, ref scratch);
@@ -199,6 +202,8 @@ namespace Evosim.Dynamics
                     double penetration = body.ContactRadius + other.ContactRadius - distance;
                     if (penetration <= 0) continue;
 
+                    if (instrument) body.NoteOverlap(other.Id);
+
                     Vec3 normal = distance > 1e-9
                         ? between * (1.0 / distance)
                         : Vec3.UnitY;
@@ -211,7 +216,9 @@ namespace Evosim.Dynamics
 
                     double approach = Vec3.Dot(body.ContactVelocity - other.ContactVelocity, normal);
 
-                    force += normal * (stiffness * penetration - damping * approach);
+                    force += normal * ContactLaw.PairPush(
+                        stiffness * penetration - damping * approach,
+                        reduced, approach, config);
                 }
             }
 
@@ -219,18 +226,41 @@ namespace Evosim.Dynamics
             double bedStiffness = mass * config.ContactOmega * config.ContactOmega;
             double bedDamping = 2.0 * config.ContactDampingRatio * mass * config.ContactOmega;
 
-            // The bed, flat at -depth.
-            double below = -config.WorldDepthMetres - (body.ContactCentre.Y - body.ContactRadius);
-            if (below > 0)
+            // The bed. Flat at -depth, or the height map's own surface when the world has one:
+            // two branches rather than one general path with a zero in it, so a flat world's
+            // arithmetic is identical and not merely equal — PlacementFloor's own gate, for its
+            // reason.
+            if (config.Bed == null)
             {
-                force += new Vec3(
-                    0, bedStiffness * below - bedDamping * body.ContactVelocity.Y, 0);
+                // The bed, flat at -depth.
+                double below = -config.WorldDepthMetres - (body.ContactCentre.Y - body.ContactRadius);
+                if (below > 0)
+                {
+                    double up = ContactLaw.PairPush(
+                        bedStiffness * below - bedDamping * body.ContactVelocity.Y,
+                        mass, body.ContactVelocity.Y, config);
+
+                    force += new Vec3(0, up, 0);
+
+                    if (instrument) body.TouchedBedOrGlass = true;
+                }
+            }
+            else
+            {
+                Vec3 rock = ContactBed.Push(body, config, bedStiffness, bedDamping);
+
+                if (rock.X != 0 || rock.Y != 0 || rock.Z != 0)
+                {
+                    force += rock;
+                    if (instrument) body.TouchedBedOrGlass = true;
+                }
             }
 
             // The glass, a cylinder about the vertical axis.
             if (config.TankRadiusMetres > 0)
             {
-                double x = body.ContactCentre.X, z = body.ContactCentre.Z;
+                double x = body.ContactCentre.X - config.TankAxisX;
+                double z = body.ContactCentre.Z - config.TankAxisZ;
                 double radial = System.Math.Sqrt(x * x + z * z);
                 double outside = radial + body.ContactRadius - config.TankRadiusMetres;
 
@@ -241,9 +271,15 @@ namespace Evosim.Dynamics
                         : Vec3.UnitX;
 
                     double approach = Vec3.Dot(body.ContactVelocity, inward);
-                    force += inward * (bedStiffness * outside - bedDamping * approach);
+
+                    force += inward * ContactLaw.PairPush(
+                        bedStiffness * outside - bedDamping * approach, mass, approach, config);
+
+                    if (instrument) body.TouchedBedOrGlass = true;
                 }
             }
+
+            force = ContactLaw.BodyPush(force, mass, config);
 
             if (force.X != 0 || force.Y != 0 || force.Z != 0)
             {

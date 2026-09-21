@@ -224,8 +224,11 @@ namespace Evosim.Dynamics.Bench
             if (_limitOmega >= 0) solver.JointLimitOmegaTimesStep = _limitOmega * dt;
             if (_limitZeta >= 0) solver.JointLimitDampingRatio = _limitZeta;
 
+            // Core's own function rather than a square root taken here, so the glass stands
+            // exactly where the field's mask, the placer's disc and the gyre's normalised radius
+            // put theirs — and the axis with it, at (R, R), which is Core's frame.
             solver.TankRadiusMetres = config.WorldShape == WorldShape.Tank && !_noWall
-                ? System.Math.Sqrt(config.WorldAreaSquareMetres / System.Math.PI)
+                ? TankGeometry.RadiusFor(config.WorldAreaSquareMetres)
                 : 0;
 
             solver.CreatureContact = !_noContact;
@@ -254,11 +257,17 @@ namespace Evosim.Dynamics.Bench
                 double radius = ScatterRadius * System.Math.Sqrt(rng.NextFloat());
                 double theta = 2.0 * System.Math.PI * rng.NextFloat();
 
+                // About the tank's own axis, which Core puts at (R, R) and not at the origin —
+                // the water is [0, 2R) on both horizontal axes. Scattering about the origin, as
+                // this did, put every body some 26 m outside a 26 m glass, and the wall spring
+                // answered on the first step.
+                double axis = solver.TankAxisX;
+
                 body.PlaceAt(
                     new Vec3(
-                        radius * System.Math.Cos(theta),
+                        axis + radius * System.Math.Cos(theta),
                         -ScatterDepth * rng.NextFloat(),
-                        radius * System.Math.Sin(theta)),
+                        axis + radius * System.Math.Sin(theta)),
                     QuatD.FromAxisAngle(
                         new Vec3(rng.NextFloat() - 0.5, rng.NextFloat() - 0.5, rng.NextFloat() - 0.5)
                             .Normalized,
