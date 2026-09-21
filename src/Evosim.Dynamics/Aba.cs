@@ -112,6 +112,16 @@ namespace Evosim.Dynamics
                         }
                     }
 
+                    // The limit spring's implicit term, on the diagonal and nowhere else: a
+                    // penalty stop resists the acceleration it is about to see, and saying so
+                    // here is what lets the stiffness be chosen for the overshoot it allows
+                    // rather than for what an explicit step will survive. Zero for every degree
+                    // of freedom inside its stops, so the plain algorithm is what the oracle
+                    // tests check. See Creature.LimitImplicit.
+                    d00 += body.LimitImplicit[at];
+                    if (n > 1) d11 += body.LimitImplicit[at + 1];
+                    if (n > 2) d22 += body.LimitImplicit[at + 2];
+
                     InvertSmallSymmetric(body.Dinv, 9 * i, n, d00, d01, d02, d11, d12, d22);
 
                     // I^a = I^A - U D^-1 U^T

@@ -43,6 +43,22 @@ namespace Evosim.Dynamics
         /// <summary>A diagnostic multiplier on every link's power. Leave at 1.</summary>
         public float PowerScale { get; set; } = 1f;
 
+        /// <summary>
+        /// The ten-sample average currently standing on one degree of freedom, and the torque it
+        /// asks for. Diagnostic only — the parity comparison against PhysX needs to know what the
+        /// brain is actually emitting before it can read a joint angle as anything.
+        /// </summary>
+        public float Smoothed(int dof) =>
+            _filled > 0 && dof >= 0 && dof < _runningSum.Length
+                ? _runningSum[dof] / _filled
+                : 0f;
+
+        /// <summary>The steady torque one degree of freedom is asking for, N·m.</summary>
+        public double Magnitude(int dof) =>
+            dof >= 0 && dof < _torquePerUnit.Length
+                ? Smoothed(dof) * _torquePerUnit[dof] * PowerScale
+                : 0;
+
         public EffectorDrive(Creature body, SolverConfig config)
         {
             _body = body;

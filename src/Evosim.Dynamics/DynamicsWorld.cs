@@ -136,6 +136,7 @@ namespace Evosim.Dynamics
         private void JointTorques(Creature body)
         {
             double damping = Config.JointDriveDamping;
+            double dt = Config.StepSeconds;
 
             for (int i = 1; i < body.Links; i++)
             {
@@ -150,15 +151,21 @@ namespace Evosim.Dynamics
                     double rate = body.Qd[j];
                     double torque = -damping * rate;
 
-                    if (q < body.LimitLo[j])
+                    double past = q < body.LimitLo[j] ? q - body.LimitLo[j]
+                        : q > body.LimitHi[j] ? q - body.LimitHi[j]
+                        : 0;
+
+                    if (past != 0)
                     {
-                        torque += -body.LimitStiffness[j] * (q - body.LimitLo[j]) -
-                                  body.LimitDamping[j] * rate;
+                        double k = body.LimitStiffness[j];
+                        double c = body.LimitDamping[j];
+
+                        torque += -k * past - c * rate;
+                        body.LimitImplicit[j] = (c + k * dt) * dt;
                     }
-                    else if (q > body.LimitHi[j])
+                    else
                     {
-                        torque += -body.LimitStiffness[j] * (q - body.LimitHi[j]) -
-                                  body.LimitDamping[j] * rate;
+                        body.LimitImplicit[j] = 0;
                     }
 
                     body.Tau[j] += torque;

@@ -61,6 +61,10 @@ namespace Evosim.Dynamics.Bench
                     case "--pace-steps": paceSteps = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
                     case "--warmup": warmup = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
                     case "--no-contact": _noContact = true; break;
+                    case "--limit-omega":
+                        _limitOmega = double.Parse(args[++i], CultureInfo.InvariantCulture); break;
+                    case "--limit-zeta":
+                        _limitZeta = double.Parse(args[++i], CultureInfo.InvariantCulture); break;
                     case "--stability-threads": StabilityThreads = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
                     case "--no-wall": _noWall = true; break;
                     case "--threads":
@@ -136,6 +140,12 @@ namespace Evosim.Dynamics.Bench
                 Trace(config, developed, bodies, stabilitySteps > 0 ? stabilitySteps : 100, 0.01);
             }
 
+            if (mode == "parity")
+            {
+                // --bodies names the genome, as in trace; --stability-steps its length.
+                Parity(config, developed, bodies, stabilitySteps > 0 ? stabilitySteps : 6000, 0.01);
+            }
+
             if (mode == "diagnose")
             {
                 Diagnose(config, developed, stabilitySteps > 0 ? stabilitySteps : 6000, 0.01);
@@ -163,9 +173,21 @@ namespace Evosim.Dynamics.Bench
         private static bool _noContact;
         private static bool _noWall;
 
+        /// <summary>
+        /// The joint-limit spring, swept from the command line so the overshoot it allows and the
+        /// energy it takes out of a body resting on its stop can be read against each other.
+        /// Negative means "leave the solver's own default".
+        /// </summary>
+        private static double _limitOmega = -1;
+
+        private static double _limitZeta = -1;
+
         private static SolverConfig Configure(RunConfig config, double dt)
         {
             SolverConfig solver = SolverConfig.From(config, dt);
+
+            if (_limitOmega >= 0) solver.JointLimitOmegaTimesStep = _limitOmega * dt;
+            if (_limitZeta >= 0) solver.JointLimitDampingRatio = _limitZeta;
 
             solver.TankRadiusMetres = config.WorldShape == WorldShape.Tank && !_noWall
                 ? System.Math.Sqrt(config.WorldAreaSquareMetres / System.Math.PI)
@@ -307,6 +329,83 @@ namespace Evosim.Dynamics.Bench
                 }
 
                 if (!body.Alive) break;
+            }
+
+            Console.WriteLine();
+        }
+
+        /// <summary>
+        /// One genome's whole drive-and-limit account, in the terms the PhysX parity comparison
+        /// needs: what the brain settles on emitting, what the genome's limits are, what the
+        /// penalty spring is worth, and where those three put the joint.
+        /// </summary>
+        /// <remarks>
+        /// The last column is the prediction. At rest the drive damping and the limit damper both
+        /// vanish, so a degree of freedom sitting outside its stop is in equilibrium at
+        /// <c>stop + m / k</c> with <c>m</c> the drive torque and <c>k</c> the penalty stiffness.
+        /// A measured angle that matches it is an overshoot; one that does not is a bug.
+        /// </remarks>
+        private static void Parity(
+            RunConfig config, List<Phenotype> developed, int which, int steps, double dt)
+        {
+            SolverConfig solver = Configure(config, dt);
+            solver.CreatureContact = false;
+            solver.TankRadiusMetres = 0;
+
+            Phenotype adult = developed[which];
+            var body = new Creature(which, adult, solver, config.Shapes);
+            body.PlaceAt(new Vec3(0, -10, 0), QuatD.Identity);
+
+            var world = new DynamicsWorld(solver);
+            world.Add(body);
+
+            for (int step = 0; step < steps; step++) world.Step();
+
+            Console.WriteLine(
+                $"--- parity account for genome {which}: {adult.PartCount} parts, {body.Dof} dof, " +
+                $"dt {dt}, after {steps} steps ({steps * dt:0.#} s)");
+            Console.WriteLine(
+                $"    limit spring omega {solver.JointLimitOmegaTimesStep / dt:0.#} rad/s, " +
+                $"zeta {solver.JointLimitDampingRatio}, drive damping {solver.JointDriveDamping}");
+
+            for (int p = 1; p < body.Links; p++)
+            {
+                Console.WriteLine(
+                    $"    link {p}: {adult.Parts[p].JointType}, parent {body.Parent[p]}, " +
+                    $"mirrored {adult.Parts[p].Mirrored}, " +
+                    $"mass {body.Mass[p]:0.#####} kg, power {body.Power[p]:0.####} N.m, " +
+                    $"inertia {body.InertiaLocal[3 * p]:0.###e+00}/" +
+                    $"{body.InertiaLocal[3 * p + 1]:0.###e+00}/{body.InertiaLocal[3 * p + 2]:0.###e+00}");
+            }
+
+            Console.WriteLine(
+                "    dof   link  lo rad   hi rad    k N.m/rad       m N.m      q rad     qd rad/s" +
+                "   stop+m/k   over rad");
+
+            for (int p = 1; p < body.Links; p++)
+            {
+                int n = body.DofCount[p];
+                int at = body.DofStart[p];
+
+                for (int d = 0; d < n; d++)
+                {
+                    int j = at + d;
+                    double q = body.Q[j];
+                    double k = body.LimitStiffness[j];
+                    double m = body.Drive.Magnitude(j);
+                    double stop = q > body.LimitHi[j] ? body.LimitHi[j]
+                        : q < body.LimitLo[j] ? body.LimitLo[j]
+                        : double.NaN;
+                    double predicted = stop + m / k;
+                    double over = double.IsNaN(stop) ? 0 : q - stop;
+
+                    Console.WriteLine(string.Format(
+                        CultureInfo.InvariantCulture,
+                        "    {0,3}   {1,4}  {2,7:0.###}  {3,7:0.###}  {4,11:0.####e+00}  {5,10:0.###e+00}  " +
+                        "{6,9:0.#####}  {7,11:0.#####}  {8,9:0.#####}  {9,9:0.#####}",
+                        j, p, body.LimitLo[j], body.LimitHi[j], k, m, q, body.Qd[j],
+                        double.IsNaN(stop) ? 0 : predicted, over));
+                }
             }
 
             Console.WriteLine();

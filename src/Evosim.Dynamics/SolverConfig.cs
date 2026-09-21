@@ -71,15 +71,35 @@ namespace Evosim.Dynamics
         /// Undamped natural frequency of the joint-limit spring, as a fraction of 1/dt.
         /// </summary>
         /// <remarks>
-        /// A penalty spring integrated with semi-implicit Euler is stable while
-        /// <c>omega * dt &lt; 2</c>; 0.5 leaves a factor of four of headroom and gives 50 rad/s
-        /// at dt 0.01, which is stiff against the 0.3–2.5 Hz gaits these genomes carry. The
-        /// spring's stiffness per degree of freedom is <c>I * omega^2</c> and its damping
-        /// <c>2 * zeta * I * omega</c>, where <c>I</c> is the child link's inertia about the
+        /// <para>
+        /// The spring's stiffness per degree of freedom is <c>I * omega^2</c> and its damping
+        /// <c>2 * zeta * I * omega</c>, where <c>I</c> is the two-body reduced inertia about the
         /// joint axis through the anchor — so a limit feels the same on a heavy link and a light
         /// one, which a fixed stiffness would not.
+        /// </para>
+        /// <para>
+        /// <b>1.5, which is three times what an explicit step carried and not six.</b> A penalty
+        /// spring integrated explicitly is stable only while <c>omega * dt &lt; 2</c>, and the
+        /// first build sat at 0.5 for that reason. What a penalty stop is worth, though, is set
+        /// by how far it lets a joint past the stop under a constant drive — <c>m / k</c> — and
+        /// 0.5 let round 42's genome 1 stand 0.0907 rad past a limit PhysX holds exactly. The
+        /// limit term is now carried implicitly in the inward pass
+        /// (<see cref="Creature.LimitImplicit"/>), which is unconditionally stable in <c>k</c>,
+        /// so this is chosen for the overshoot it allows: 150 rad/s at dt 0.01 is nine times the
+        /// stiffness and leaves that joint 0.0101 rad past its stop.
+        /// </para>
+        /// <para>
+        /// <b>Why not stiffer, when nothing stops it.</b> At 3.0 the overshoot is better again
+        /// (0.0034 rad) and the body is worse: a joint that stiff chatters across its stop
+        /// instead of resting on it, the limit damper bleeds the chatter on every step, and what
+        /// it takes comes out of the body's own motion. Genome 1's attitude after 60 s went from
+        /// 100 degrees of turn at 0.5, to 110 at 1.5, to 10 at 3.0 against PhysX's 136 — and at
+        /// 3.0 it also became sensitive to <see cref="JointLimitDampingRatio"/>, which swung it
+        /// from 10 degrees to 166. A setting whose answer depends that much on a number with no
+        /// physical meaning is the wrong setting, whatever its overshoot reads.
+        /// </para>
         /// </remarks>
-        public double JointLimitOmegaTimesStep = 0.5;
+        public double JointLimitOmegaTimesStep = 1.5;
 
         public double JointLimitDampingRatio = 1.0;
 

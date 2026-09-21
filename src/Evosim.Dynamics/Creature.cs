@@ -92,6 +92,37 @@ namespace Evosim.Dynamics
         public readonly double[] LimitStiffness;
         public readonly double[] LimitDamping;
 
+        /// <summary>
+        /// The limit spring's implicit term for this step, <c>(c + k·dt)·dt</c>, per degree of
+        /// freedom — zero for every degree of freedom inside its stops.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why the spring is not simply stiffer.</b> A penalty limit integrated explicitly is
+        /// stable only while <c>omega·dt &lt; 2</c>, and the overshoot it allows against a
+        /// constant drive is <c>m / k</c> with <c>k = I·omega²</c>. Those two together cap how
+        /// closely a penalty can imitate a hard stop: at <c>omega = 0.5/dt</c> the first build
+        /// overshot round 42's genome 1 by 0.0907 rad, and buying that back by raising
+        /// <c>omega</c> alone runs into the stability bound long before the overshoot is small.
+        /// </para>
+        /// <para>
+        /// <b>What this is instead.</b> The spring's own resistance to the acceleration it is
+        /// about to see, <c>-(c + k·dt)·dt·q̈</c>, added to the joint's articulated inertia
+        /// <c>D</c> in the inward pass — the standard first-order implicit treatment of a
+        /// stiff joint in an articulated-body algorithm. It is unconditionally stable in the
+        /// spring constant, so the stiffness can be chosen for the overshoot it allows rather
+        /// than for what the step will survive.
+        /// </para>
+        /// <para>
+        /// <b>Zero inside the stops, deliberately.</b> A degree of freedom not touching its limit
+        /// is solved by the plain algorithm, to the bit — which is what keeps the two
+        /// constraint-solve oracle tests meaningful: they check an unmodified ABA against an
+        /// independent maximal-coordinate solve, and a term that was always on would be checked
+        /// by neither.
+        /// </para>
+        /// </remarks>
+        public readonly double[] LimitImplicit;
+
         /// <summary>Evolved peak torque per link, N·m — <see cref="PhenotypePart.Power"/>.</summary>
         public readonly double[] Power;
 
@@ -275,6 +306,7 @@ namespace Evosim.Dynamics
             LimitHi = new double[Dof];
             LimitStiffness = new double[Dof];
             LimitDamping = new double[Dof];
+            LimitImplicit = new double[Dof];
 
             // ---- inertial properties and the joint frames
 
