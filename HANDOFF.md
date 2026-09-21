@@ -11,14 +11,20 @@ agent's recommendation: in the branch where today's rule has no solution, the ve
 over the horizontal is `0.76 · k_max` (0.75 at 20 m in the 2,200 m² tank, the overturning
 cell at round 42's amplitude so the eddies keep their share); spec
 `logbook/specs/streams-shallow-spec.md`, built on branch `streams-shallow` in
-`scratch/wt-streams`, merged only between rounds because it touches Core. (2) The arm cap
+`scratch/wt-shallow`, merged only between rounds because it touches Core. (2) The arm cap
 is four pinned arms (D095 amended; two fast cores an arm, masks 0x003C, 0x03C0, 0x3C00 and
 0xC003; DECISIONS entry owed with the streams' entry). (3) The owner wants to start adding
 shapes, cell types and sensors and asked when. The agent's answer: as the next build after
 round 42's write-up, chosen for what makes movement pay and not for variety, since round
 42 shows selection removing joints in a world with nothing to swim toward; a proposal
 (`fable-propose-animal-kit.md`) with the existing repertoire surveyed against DESIGN.md is
-the vehicle, due with round 42's entry.
+the vehicle, due with round 42's entry. (4) Later the same morning the owner added
+**natural structures on the floor, so that ecosystems can evolve around them**. The pieces
+already in this file are the shaped bed (D093, built), the shelf that the streams'
+relaxation makes possible, the seep (D067's vent, off), and the anchoring cell (queue item
+8), which is the organ that lets a body use a structure at all; the proposal carries them
+as one section, places and the organ that holds to them together. The worktree is
+`scratch/wt-shallow` (`scratch/wt-streams` is an older worktree and is left alone).
 
 **Round 42 is running (logbook/0110, launched 20:12 to 20:13 on 2026-09-20).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
