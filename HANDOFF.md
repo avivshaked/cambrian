@@ -463,10 +463,14 @@ subagent and never in a shell loop.
    absorptive protection caps to 0.5 because thirty steps behind a cuticle is
    arithmetically impossible and twice the steps is the least a defence is worth; the
    prices are protection 1 W and the other three 0.1 W per unit per m². The launcher is
-   `rounds/env-r45.ps1`. Left before its launch: re-record the Dynamics crowd fixture on
-   this build (`r45fix-s4`, the ten `RunFixture` tests are red until then), `-All`, the
-   pre-registration entry (the spec's J1 to J7), and round 44's read, since round 45 runs
-   on round 44's world. Every `.ckpt` on disk is orphaned again by `StateVersion` 4.
+   `rounds/env-r45.ps1`. The Dynamics crowd fixture is re-recorded on this build
+   (`runs/r45fix-s4`, round 44's world with the mouth at its defaults, seed 4, 20,000 s at
+   12 threads beside seed 1; Dynamics 79 of 79 on it, `aae6769`), the kill event is in
+   (`6fcf93b`, one lineage row per part a bite takes, so 0114's J3 and J7 are readable),
+   and the pre-registration is drafted (`logbook/0114`) with the hashes filled. Left
+   before its launch: `-All` on the mouth build (running as of 21:45), and round 44's read,
+   since round 45 runs on round 44's world. Every `.ckpt` on disk is orphaned again by
+   `StateVersion` 4.
    Rung B's spec is drafted for the owner (`logbook/specs/scent-spec.md`, four
    questions in it, not built); C and D behind it.
 6. **The GPU port.** The probe ran clean alone on 2026-09-22 at 16:13 after the crash

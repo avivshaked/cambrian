@@ -25,9 +25,11 @@ nothing yet bites.
 Round 44's (0113), read at `<round 44's reading here>`, with the mouth's dials from the
 ledger screen (`logbook/specs/mouth-spec.md`, the screen note, and
 `logbook/specs/r45-read/`): `rounds/env-r45.ps1` through `run-farm.ps1`, seeds 1 to 3,
-30,000 s at dt 0.01, on the mouth build (`8b0d798` and the cap change `e877406`; the
-hashes as the fixture recording `r45fix-s4` reads them, and each seed's manifest is the
-record). `HealthPerCubicMetre` 13, at which a claw at the structural cap takes three
+30,000 s at dt 0.01, on the mouth build (`8b0d798`, the cap change `e877406` and the kill
+event `6fcf93b`; `coreHash a20aba8c…`, `dynamicsHash b4cdb22a…`, `farmHash 36d8e11d…` as
+the fixture recording `r45fix-s4` read them, and each seed's manifest is the record). A
+checkpoint is written every 2,500 s, a recording setting, so that a slow seed's state can
+be profiled, which round 44's seed 1 could not be. `HealthPerCubicMetre` 13, at which a claw at the structural cap takes three
 metabolic steps to kill round 43's median leaf part; healing 1% of the pool a second at
 1 J per unit; intake reaching 0.5 m past a corpse's surface with a fifth of the take to
 snow; prices per unit per m² of the part: protection 1 W, attack, intake and toughness
