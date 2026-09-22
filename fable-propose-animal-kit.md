@@ -85,19 +85,35 @@ reserve, the cap binding, and the share of indeterminate nodes by guild.
 the outside, which the owner rejected: creatures do not partially eat each other. What
 follows replaces it and `fable-propose-predation.md`'s rules 4 and 5.*
 
-A mouth is a consumer part, already in the genome. It does two things, and the yield comes
-from the second.
+A mouth is whatever cell can consume, a claw whatever cell can hurt, and both are
+attributes of a cell rather than cell types (the owner, 2026-09-22 evening: killing organs
+generalise, every cell has attributes, and each has an economy). Four attributes, per
+node in the genome, each priced as upkeep:
 
-**A1. The kill.** A mouth in held contact with a living part across a metabolic step kills
-that part. The part and everything hanging from it leave the body as a corpse placed where
-the part was, carrying the part's tissue and its pro-rata share of the body's one reserve
-(its volume over the body's volume); the killer gets nothing from the kill itself. On the
-root it is the whole body, death `Eaten`. What is left keeps living on its remaining parts
-and income, and dies `Starved` as now if it cannot pay its way or falls under the newborn
-mass floor; an indeterminate module regrows when affordable, a determinate part is gone.
-No cost to the kill in the first round beyond the mouth's upkeep, so indiscriminate
-killing is possible and is read rather than priced; protection is none, a bite kills, and
-comes later as a priced cell property with bite strength beside it (rung D's armour).
+| attribute | what it is | today | priced per |
+|---|---|---|---|
+| attack | damage per second to the part of another body this part is in held contact with | 0 on every cell | unit of attack per area |
+| intake | charged units per second taken from a corpse in reach | the consumer cell's, implicit | unit |
+| protection | damage per second absorbed before health suffers | 0 | unit per area (armour) |
+| toughness | health per unit of volume | a default that leaves today's bodies as they are | unit |
+
+**Health is state, not a gene.** Every part carries a health pool, volume times toughness,
+full at birth and at a module's growth. Damage net of protection drains it; it refills
+from the body's reserve at a healing rate that costs energy, so a survivor pays for being
+bitten and an empty body cannot heal. Founders draw attack and protection at zero, so a
+world starts peaceful and a claw has to be discovered by mutation.
+
+**A1. The kill.** A part whose health reaches zero dies. It and everything hanging from it
+leave the body as a corpse placed where the part was, carrying the part's tissue and its
+pro-rata share of the body's one reserve (its volume over the body's volume); the
+attacker gets nothing from the kill itself. On the root it is the whole body, death
+`Eaten`. What is left keeps living on its remaining parts and income, and dies `Starved`
+as now if it cannot pay its way or falls under the newborn mass floor; an indeterminate
+module regrows when affordable, a determinate part is gone. "A bite kills in a step" is
+the case of a strong attack on an unprotected part; a weak attack on an armoured part
+never kills, so the arms race is open to selection from the first round and whether it
+starts is a reading. The four prices come from a ledger screen (D069) of a claw against a
+leaf before the round, never from the launcher.
 
 **A2. The consumption.** A corpse is an object with a position, carried by the water (D086,
 D088) and decaying into marine snow at the corpse rate, which is how the dead have fed the
@@ -119,10 +135,13 @@ default. `Damage` reads "a part of mine died this step"; `Contact` stays as decl
 scent of corpses belongs to rung B's field.
 
 **What the round asks**, each on its own prediction: whether a scavenger line founds,
-whether a killer line founds, and whether an indeterminate plant survives grazing. dt
-0.01 from the first screen, because a held contact is a property of the step. No genome
-field: the consumer cell and both senses are in the genome already; the tunables (the
-kill on, the consumption rate, the reach) refuse older configs as usual.
+whether a killer line founds, whether an indeterminate plant survives grazing, and whether
+attack or protection appears by mutation and pays. dt 0.01 from the first screen, because
+a held contact is a property of the step. The four attributes and A0's module gene are
+all per-node scalars, so one genome format bump (7) carries both rungs and the stored
+genomes are re-extracted once; in round 44 the attributes sit at their zero defaults and
+change nothing, and round 45 turns on their economy. The tunables (the four prices, the
+healing rate, the reach) refuse older configs as usual.
 
 **What the owner has said** (2026-09-22 evening): a bite alone does not make a hunter,
 behaviour needs rung B's sense, and A is read as what the payoff does without one; the
@@ -201,8 +220,8 @@ places, which is the first step from a soup toward a world with a map. The clump
 
 | Round | Build | New genome field | Refuses old configs | Days, build and screen |
 |---|---|---|---|---|
-| 44 | A0: the module gene, determinate or indeterminate per node | yes (format 7) | yes | 2 |
-| 45 | A: the kill, the corpse, consumption, `Eaten`, `Contact`, `Damage` | no | yes | 2 to 3 |
+| 44 | A0: the module gene, determinate or indeterminate per node; the four attributes carried at zero | yes (format 7, once for both) | yes | 2 |
+| 45 | A: health, the kill, the corpse, intake, `Eaten`, `Contact`, `Damage`, the four prices | no (in format 7) | yes | 3 |
 | 46 | B1 scent (fed by the living and by corpses), B2 eyespot | no | yes | 2 |
 | 47 | C1 shelf on the shallow streams, C4 anchor | no (a cell type id) | yes | 2 to 3 |
 | 48 | C2 rock, C3 seep | no | yes | 2 |
@@ -218,7 +237,9 @@ hour at 16 threads, so a round is an evening.
 2. ~~That predation is due, and that a bite reaches the reserve.~~ Replaced: the cell is
    the unit of death, the mouth kills and consumes as two things (rung A as rewritten).
 3. **Open:** the module gene of rung A0, one per node, bounded by the caps, selection
-   deciding who is a plant; and A0 as its own round before A.
+   deciding who is a plant; A0 as its own round before A; the four cell attributes
+   (attack, intake, protection, toughness) as the set, health as state healed from the
+   reserve, and one format bump carrying A0 and A together.
 4. ~~The scent field as the first sense of others, inside D020, with the neighbour sense
    named and not built.~~ Ruled with 1.
 5. ~~The places: the shelf first with the anchor, rock and the seep after; and the seep as
