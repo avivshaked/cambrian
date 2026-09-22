@@ -1106,8 +1106,26 @@ actually verifying it.
   proposal. **The matter residual grows on the farm** (−3.2e-04 of 1,500 units at
   30,000 s against Unity's ±1e-04), and it is float rounding at the body's account
   against the fields' doubles, not a handoff fault: the farm's `Observe` call equals
-  Unity's line for line. Double accounts in Core would close it and would be a new
-  realisation of every seed. **`sweep-orphans.ps1` lists a detached farm run's `sh.exe`**
+  Unity's line for line. **From `0c19f0d` (2026-09-22 evening) the accounts are doubles
+  and the residual closes**: `Organism.Energy`, `TissueJoules` and `AdultTissueJoules`,
+  the ledger's sums and every booked sum in `World` (the reserve update, `Grow`, `Bury`,
+  `Conceive`'s price, whose 100 J overhead against a 0.4 J body rounded 1e-5 J a birth
+  into neither book) are doubles; the same seed read 1.9e-07 units at 3,000 s where the
+  float build read 1.1e-04 (`dblA`/`dblB`, a factor of about 590), and the old build's
+  two residuals were one fault in two units (−1.097e-02 J over 100 J/unit = 1.097e-04
+  units, exactly). It is a new realisation of every seed: round 43 does not replay on
+  it, `BoxPathTests`' golden and `ParallelIdentityTests`' word are re-pinned, and every
+  checkpoint on disk is refused (`WorldState.StateVersion` 2, `Checkpoint.Version` 2). What
+  stays float, deliberately: the ledger's nine per-step terms (each handed to the field's
+  float door exactly as stored, so widening them would add a rounding), the genome's
+  traits, `PendingWorkJoules` (both sides of its booking read the same float), and the
+  sensor and HUD readings. **A float still enters a booked sum at exactly one place, the
+  field's door**: `IMatterField.Deposit`/`Take` are float over double cells, the same
+  float is booked on both sides of every transfer, and the half-ulp left at the hand-over
+  is the 1e-7 that remains. Widening the field API is the next step if a round needs it.
+  **`ParallelIdentityTests` is `Slow` now and pins this build's own word** rather than
+  the pre-threading build's, so Core's thread-identity gate is `-All` and nothing in the
+  default run. **`sweep-orphans.ps1` lists a detached farm run's `sh.exe`**
   as an orphan; it is one exiting script, not a loop, and is not killed. **From PowerShell,
   `bash` is WSL's** (`C:\WINDOWS\system32ash.exe`) and cannot see `D:/`; a detached
   launcher names `C:\Program Files\Gitinash.exe`.

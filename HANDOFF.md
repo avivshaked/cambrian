@@ -189,9 +189,15 @@ label prints over the clock once the head passes the record's end (seen in the s
 state's picture). And `scratch/checkpoint/runs/ckA` is refused by the build since the
 double-accounts change moved the checkpoint layout to version 2; re-record it (and ckB,
 ckC) on the landed build before the next regress. Untested: the interactive Play-mode path.
-The owner's plan is now at step 4,
-the bite, gated on the animal-kit ruling, and step 5, the GPU, is cleared by the crash
-reading.
+**The accounts are doubles** (`0c19f0d`, the same evening; CLAUDE.md's farm gotcha has the
+detail): the same seed's matter residual read 1.9e-07 units at 3,000 s where the float
+build read 1.1e-04 (`scratch/double-accounts/runs/dblA`, `dblB`), the audit the same in
+joules, both books closed; a new realisation of every seed, so round 44's base is this
+build and round 43 is read as recorded. Left from it: the field's float door (the 1e-7
+that remains), and `ParallelIdentityTests` is `Slow` and pins this build's own word, so
+thread identity in Core is gated by `-All` only. The owner's plan is now at step 4, the
+animal kit on D106 (round 44's build is next), and step 5, the GPU, is cleared by the
+crash reading.
 
 **Machine.** i9-13900K, 24 cores, RTX 4090 with 24 GB. The farm takes `EVOSIM_THREADS`;
 16 is the measured best at this crowd. The Unity cap stays D103's. Run
@@ -415,13 +421,13 @@ subagent and never in a shell loop.
    serial phases (the contact grid, the water sample, the commit) cheapened if they bind,
    and `SampleEdges`' per-column terms hoisted (1.6 to 2x on the grid, estimated).
 5. **The animal kit on D106.** Round 44, the module gene (`logbook/specs/module-gene-spec.md`):
-   the build lands after the double-accounts change, then the ledger screen of the add
-   threshold, the pre-registration committed, three seeds at 16 threads one at a time or
-   three at once, the read and the entry with pictures. Round 45, the mouth
-   (`logbook/specs/mouth-spec.md`): health, the kill, the corpse, intake, the two senses,
-   the cap table and the four prices from the ledger, same shape. Then rung B's spec
-   (scent fed by the living and by corpses, the eyespot) drafted for the owner, and C
-   and D behind it.
+   the build on the double-accounts base (`0c19f0d`; the spec carries an implementation
+   map), then the ledger screen of the add threshold, the pre-registration committed,
+   three seeds at 16 threads one at a time or three at once, the read and the entry with
+   pictures. Round 45, the mouth (`logbook/specs/mouth-spec.md`): health, the kill, the
+   corpse, intake, the two senses, the cap table and the four prices from the ledger, same
+   shape. Rung B's spec is drafted for the owner (`logbook/specs/scent-spec.md`, four
+   questions in it, not built); C and D behind it.
 6. **The GPU port.** The probe ran clean alone on 2026-09-22 at 16:13 after the crash
    reading (`scratch/gpu-spike/probe`): ILGPU on CUDA sees the 4090 (SM_89, 128 SMs),
    runs a kernel with a local array and a double kernel with transcendentals; ComputeSharp
