@@ -236,6 +236,6 @@ hashes and finding a checkpoint from an arm directory or a second.
 
 The theatre cannot yet open a checkpoint. Carrying a recorded second forward live in the Editor is
 the reason the file exists and is a separate piece of work, and it needs the Unity side to load
-Core's and Dynamics' state the way the farm does. `stop-arm.ps1` still has no farm mode, so a farm
-run is stopped by writing a `STOP` file into its run directory; a resume after that reads the last
-checkpoint, which is now the second the run stopped at.
+Core's and Dynamics' state the way the farm does. A farm run is stopped by a `STOP` file in its run
+directory, which `stop-arm.ps1` writes for a manifest reading `engine: "dynamics"`; a resume after
+that reads the last checkpoint, which is now the second the run stopped at.

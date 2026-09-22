@@ -1061,8 +1061,9 @@ actually verifying it.
   Round 42 seed 1's world ran 30,000 s in 24 minutes on it at 16 threads, both books
   closed, against ten hours in Unity. Eight things bite. **The manifest has no `simHash`**:
   `run.json` carries `engine: "dynamics"`, `dynamicsHash`, `farmHash`, `threads` and
-  `processId`, and a run is stopped by writing a `STOP` file into its run directory, not by
-  `stop-arm.ps1` (which is still owed a farm mode). **A farm run can be continued from a
+  `processId`, and a run is stopped by a `STOP` file in its run directory, which
+  `stop-arm.ps1` writes when the manifest says `engine: "dynamics"` (`-RunsRoot` for a run
+  outside `runs/`). **A farm run can be continued from a
   checkpoint, and the continuation is the run** (`3561ec3`, `logbook/specs/checkpoint-spec.md`):
   `EVOSIM_CHECKPOINT_EVERY` writes `checkpoints/NNNNNNNNN.ckpt`, a recording setting that
   moves no hash, and `run-farm.ps1 -ResumeFrom <arm> -At <s>` writes the same rows from that
