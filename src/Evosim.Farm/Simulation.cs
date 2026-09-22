@@ -371,13 +371,30 @@ namespace Evosim.Farm
 
                 if (!Divergence.Diverged(solver, Solver, body.Radius, out string reason))
                 {
-                    // narrow: the root, in Core's frame, for the placer and positions.jsonl.
-                    body.LastRootPosition = new Float3(
-                        (float)solver.Position[0],
-                        (float)solver.Position[1],
-                        (float)solver.Position[2]);
+                    // The centre of mass, by the same bound the root was just held to, because
+                    // it is the centre and not the root that Metabolise hands to World.Observe
+                    // (D083), and Observe throws on a height outside the world rather than
+                    // killing. Round 44 seed 1 ended `status error` at 22,370 s on exactly that:
+                    // a body thrown skyward whose root was still inside the bound at this check
+                    // and whose centre, a few links higher, was 3 cm past it (2026-09-22). A
+                    // body the world cannot observe is a diverged body, and dies as one here.
+                    Float3 centre = CentreOfMass(solver);
 
-                    continue;
+                    if (World.HeightIsInTheWorld(centre.Y, World.Config.WorldDepthMetres))
+                    {
+                        // narrow: the root, in Core's frame, for the placer and positions.jsonl.
+                        body.LastRootPosition = new Float3(
+                            (float)solver.Position[0],
+                            (float)solver.Position[1],
+                            (float)solver.Position[2]);
+
+                        continue;
+                    }
+
+                    reason = float.IsNaN(centre.Y) || float.IsInfinity(centre.Y)
+                        ? "a non-finite centre of mass"
+                        : FormattableString.Invariant(
+                            $"a centre of mass at {centre.Y:g4} m in a world {Solver.WorldDepthMetres:0.#} m deep");
                 }
 
                 _condemned.Add(body);
