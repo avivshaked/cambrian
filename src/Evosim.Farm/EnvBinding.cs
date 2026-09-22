@@ -73,6 +73,15 @@ namespace Evosim.Farm
             Flag("EVOSIM_SILHOUETTE", (s, v) => s.SilhouetteCap = v),
             Num("EVOSIM_SELF_OVERLAP", 0f, (s, v) => s.SelfOverlap = v),
             Num("EVOSIM_MAX_REACH", 0f, (s, v) => s.MaxReach = v),
+
+            // D109: the matter seeded as islands, founders planted in them, and the light's shade
+            // map from the same noise, drifting or not. Every default is the recorded world.
+            Num("EVOSIM_MATTER_ISLANDS", 0f, (s, v) => s.MatterIslands = v),
+            Num("EVOSIM_MATTER_ISLAND_COVER", D.MatterIslandCover, (s, v) => s.MatterIslandCover = v),
+            Num("EVOSIM_MATTER_ISLAND_DEPTH", D.MatterIslandDepthMetres, (s, v) => s.MatterIslandDepth = v),
+            Flag("EVOSIM_FOUNDERS_FOLLOW_MATTER", (s, v) => s.FoundersFollowMatter = v),
+            Num("EVOSIM_LIGHT_SHADE", 0f, (s, v) => s.LightShade = v),
+            Num("EVOSIM_LIGHT_SHADE_DRIFT", 0f, (s, v) => s.LightShadeDrift = v),
             Num("EVOSIM_SECONDS", 4000f, (s, v) => s.BudgetSeconds = v),
             Num("EVOSIM_WALL_MINUTES", 30f, (s, v) => s.WallMinutes = v),
             Int("EVOSIM_REPORT_EVERY", 200f, (s, v) => s.ReportEvery = v),
@@ -153,6 +162,11 @@ namespace Evosim.Farm
             Num("EVOSIM_PATCHES", D.HorizontalPatches, (s, v) => s.Patches = v),
             Num("EVOSIM_PATCHES_ACROSS", D.PatchesAcross, (s, v) => s.PatchesAcross = v),
             Num("EVOSIM_H_MIXING", D.HorizontalMixingDiffusivity, (s, v) => s.HorizontalMixing = v),
+
+            // D109: the matter grid's own stirring, on every axis. It was a hard default of 2 m²/s
+            // that no launcher named, a hundred times the snow's, and at that rate a 40 m island
+            // is gone in about L²/D = 800 s (scratch/r45-build/runs/bigE, the first island smoke).
+            Num("EVOSIM_MATTER_MIXING", D.MatterMixingDiffusivity, (s, v) => s.MatterMixing = v),
             Num("EVOSIM_DISPERSAL", D.DispersalChancePerStep, (s, v) => s.DispersalChance = v),
             Num("EVOSIM_PATCH_SHADING", D.PerPatchShading, (s, v) => s.PatchShading = v),
             Num("EVOSIM_AREA", D.WorldAreaSquareMetres, (s, v) => s.Area = v),
@@ -461,11 +475,19 @@ namespace Evosim.Farm
             config.HorizontalPatches = s.Patches;
             config.PatchesAcross = s.PatchesAcross;
             config.HorizontalMixingDiffusivity = s.HorizontalMixing;
+            config.MatterMixingDiffusivity = s.MatterMixing;
             config.DispersalChancePerStep = s.DispersalChance;
             config.PerPatchShading = s.PatchShading;
             config.LightSilhouetteCap = s.SilhouetteCap;
             config.SelfOverlapDepthFraction = s.SelfOverlap;
             config.Development.MaxBodyReachMetres = s.MaxReach;
+
+            config.MatterIslandWavelengthMetres = s.MatterIslands;
+            config.MatterIslandCover = s.MatterIslandCover;
+            config.MatterIslandDepthMetres = s.MatterIslandDepth;
+            config.FoundersFollowMatter = s.FoundersFollowMatter;
+            config.LightShadeDepth = s.LightShade;
+            config.LightShadeDriftMetresPerHour = s.LightShadeDrift;
             config.WorldAreaSquareMetres = s.Area;
             config.WorldDepthMetres = s.Depth;
             config.SharedSpace = s.SharedSpace;
@@ -736,6 +758,12 @@ namespace Evosim.Farm
         public bool SilhouetteCap;
         public float SelfOverlap;
         public float MaxReach;
+        public float MatterIslands;
+        public float MatterIslandCover;
+        public float MatterIslandDepth;
+        public bool FoundersFollowMatter;
+        public float LightShade;
+        public float LightShadeDrift;
         public float BudgetSeconds;
         public float WallMinutes;
         public int ReportEvery;
@@ -823,6 +851,7 @@ namespace Evosim.Farm
         public float Patches;
         public float PatchesAcross;
         public float HorizontalMixing;
+        public float MatterMixing;
         public float DispersalChance;
         public float PatchShading;
         public float Area;

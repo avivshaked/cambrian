@@ -1240,6 +1240,43 @@ actually verifying it.
   is about six times faster and is a new realisation of every seed. Identity on the card
   holds across launch shapes, so a GPU identity claim is made at two group sizes. Run GPU
   code in the foreground with nothing else on the machine until the owner rules otherwise.
+- **From D109 (2026-09-22 night) the matter starts as islands, the matter grid stirs at a
+  launcher's rate, and every earlier config is refused again.** Six tunables
+  (`MatterIslandWavelengthMetres`, `MatterIslandCover`, `MatterIslandDepthMetres`,
+  `FoundersFollowMatter`, `LightShadeDepth`, `LightShadeDriftMetresPerHour`; header
+  `matter islands 60 m cover 0.1 to 12 m · founders in matter · shade off`, or `matter
+  uniform · founders anywhere`) refuse every `config.json` written before them, rounds 41
+  through 45's void launch included; the fixtures are `pfix3` → `fixtures/r42-config.json`
+  and `runs/r45fixc-s4`, and the Farm tests' round 42 hash is `c862fd2c510b82e9`. Six
+  things bite. **`MatterMixingDiffusivity` was a hard default of 2 m²/s that no launcher
+  named**, a hundred times the snow's; `EVOSIM_MATTER_MIXING` binds it and the header
+  prints `matter-mix`, and a launcher that does not set it still gets 2. **The islands do
+  not spread at the dial's rate**: at 0.02 m²/s explicit they spread at about 0.1 m²/s
+  by the gyre's upwind transport on the 5 m cells (`bigF`, a Gaussian fit of the peak's
+  decay), so a 60 m island is soup near 5,000 s whatever the dial says, and only a finer
+  cell or another scheme would slow it. **At the slow rate a leaf's income is the flux into
+  its cell**, `D × ρ`, not the tank's stock: a crowd strips its 5 m cells faster than the
+  neighbours refill them, `upt lim` reads that pressure, and the same budget that founded
+  round 44 at 2 m²/s starves after founding at 0.02 (`bigH`); read `upt lim` with the
+  stirring in mind, and read any pre-D109 `upt lim` as the stock's. **The founder rule is
+  a new realisation of every seed** when on (a refusal draws the placer's stream again) and
+  bit for bit the recorded world when off. **The shade map saturates at 1 across every
+  island column** and shades the deserts only (the first cut shaded by the raw map, and an
+  island column at 0.72 to 0.8 of the light founded at a third of round 44's pace, `bigH`
+  against `bigI`); it is off in round 45 and every launcher, by the owner's objection that
+  light has no concentration. **The farm dumps the fields beside every snapshot**
+  (`fields/NNNNNNNNN.matter.f32` every cell, `.snow-columns.f32` the column sums,
+  `layout.json` the shapes; little-endian floats in the grid's own index order), a
+  recording setting that moves no hash, and `scripts/field-map.py <arm> --runs-root … --at
+  … --layers 3 --snow` draws the map with the bodies on it and prints the share of bodies
+  standing in above-mean columns and, with `--footprint 100`, in the columns that were
+  islands when seeded, which is 0114's J8 (the first share is a coin toss once the field
+  is soup; the second still reads). The Unity farm binds none of the six,
+  so a world built there is uniform and its header carries no `matter` token. And **a farm
+  smoke holds its exe**: `dotnet build` fails to copy over a running `Evosim.Farm.exe`, so a
+  build for the next screen goes to another output (`-o artifacts/Evosim.Farm/bin/Release-b`
+  and `run-farm.ps1 -Exe`) while a screen runs; the manifest's `farmHash` is of the source
+  and does not care which.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

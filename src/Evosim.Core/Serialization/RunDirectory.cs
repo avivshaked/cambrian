@@ -79,6 +79,18 @@ namespace Evosim.Core
 
         public string SnapshotsPath => System.IO.Path.Combine(Path, "snapshots");
 
+        /// <summary>
+        /// Where the fields are dumped at the snapshot cadence (D109's recording): the matter's
+        /// cells and the snow's column sums as little-endian floats, and a layout beside them.
+        /// </summary>
+        public string FieldsPath => System.IO.Path.Combine(Path, "fields");
+
+        /// <summary>A field dump's path at a simulated time, before its kind and extension.</summary>
+        public string FieldPath(double simulatedSeconds, string kind) =>
+            System.IO.Path.Combine(
+                FieldsPath,
+                string.Format(CultureInfo.InvariantCulture, "{0:000000000}.{1}.f32", (long)simulatedSeconds, kind));
+
         private RunDirectory(string path, RunConfig config)
         {
             Path = path;

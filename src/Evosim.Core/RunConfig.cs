@@ -942,6 +942,163 @@ namespace Evosim.Core
         private float _matterBudgetUnits;
 
         /// <summary>
+        /// The wavelength of the islands the matter is seeded in, metres — D109. 0 seeds the
+        /// water uniformly, which is every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Islands and deserts at t = 0.</b> Above 0 the seeded matter is not spread evenly
+        /// but placed by a gradient-noise map over x and z (<see cref="GradientNoise"/>, three
+        /// octaves, this wavelength for the first), uniform down each column: the cells whose
+        /// column's noise is above a threshold hold matter in proportion to how far above, and
+        /// the rest hold none. The threshold is chosen so that <see cref="MatterIslandCover"/>
+        /// of the live cells are islands, and the amounts are scaled so that the total is exactly
+        /// the budget (<see cref="MatterBudgetUnits"/>, which the islands require: a density rule
+        /// has no total to place). The map is a property of the world's seed.
+        /// </para>
+        /// <para>
+        /// <b>What it is for.</b> The owner's aim (2026-09-22 night) is a tank ten times larger
+        /// at the same matter, with the crowd standing where the matter is and open water
+        /// between: the islands put a founder in round 44's water and a body that leaves them in
+        /// none. What it is not: a landscape that lasts. The spent field is carried and stirred
+        /// like any stock, and the entry that reads the round says how fast the islands went;
+        /// the map that persists is the light's (<see cref="LightShadeDepth"/>).
+        /// </para>
+        /// <para>
+        /// A grid field only (<see cref="MatterField.Grid"/>): the vertex and cell fields refuse
+        /// a wavelength above 0 at construction, since neither has columns to seed by.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "m")]
+        public float MatterIslandWavelengthMetres
+        {
+            get => _matterIslandWavelengthMetres;
+            set => _matterIslandWavelengthMetres = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(MatterIslandWavelengthMetres), value,
+                    "A wavelength is finite and not negative; 0 seeds the water uniformly.");
+        }
+
+        private float _matterIslandWavelengthMetres;
+
+        /// <summary>
+        /// The share of the live cells that are islands when <see cref="MatterIslandWavelengthMetres"/>
+        /// is above 0, in (0, 1]. 0.1 by default: a tenth of the water at ten times the mean
+        /// density, which at round 44's budget in a ten-times tank is round 44's density.
+        /// </summary>
+        [Tunable("world")]
+        public float MatterIslandCover
+        {
+            get => _matterIslandCover;
+            set => _matterIslandCover = value > 0f && value <= 1f
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(MatterIslandCover), value, "A cover is a share in (0, 1].");
+        }
+
+        private float _matterIslandCover = 0.1f;
+
+        /// <summary>
+        /// How deep an island goes, metres from the surface — D109. 0, the default, seeds an
+        /// island column from the surface to the bed; above 0 only the cells whose top lies
+        /// above this depth hold matter, so the islands sit in the lit water and the density
+        /// rises by the column's depth over this.
+        /// </summary>
+        /// <remarks>
+        /// The owner's ask (2026-09-22 night): "a few distinct islands close to the top for
+        /// initial founding plants". A leaf earns nothing below the light's reach, so an island
+        /// seeded down a 45 m column puts most of its matter where no founder can use it; cut at
+        /// twice the light reach it is all in the water a founder can found in, and a founder
+        /// spread that deep (<see cref="FounderDepthSpread"/>) lands in it. The matter sinks at
+        /// its own rate afterwards, as any stock does. Ignored without islands.
+        /// </remarks>
+        [Tunable("world", Unit = "m")]
+        public float MatterIslandDepthMetres
+        {
+            get => _matterIslandDepthMetres;
+            set => _matterIslandDepthMetres = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(MatterIslandDepthMetres), value,
+                    "An island depth is finite and not negative; 0 seeds the whole column.");
+        }
+
+        private float _matterIslandDepthMetres;
+
+        /// <summary>
+        /// Whether a founder, and every body the floor spawns, is placed where the matter is —
+        /// D109. Off by default, which is every recorded world: a founder lands anywhere in the
+        /// water.
+        /// </summary>
+        /// <remarks>
+        /// On, the placer accepts a candidate spot with probability equal to its column's spent
+        /// matter over the fullest column's, drawing again on a refusal, so founders are planted
+        /// in the islands and never in a desert. It reads the matter as it stands at the draw,
+        /// not the map the world was seeded from, because the floor spawns until
+        /// <see cref="FloorClosesAfterSeconds"/> and the islands have drifted on the water by then.
+        /// A new draw of the placer's stream on every refusal, so it is a new realisation of
+        /// every seed when on, and bit for bit the recorded world when off.
+        /// </remarks>
+        [Tunable("world")]
+        public bool FoundersFollowMatter { get; set; }
+
+        /// <summary>
+        /// How dark the darkest column is under the light's shade map, in [0, 1) — D109. 0 is no
+        /// map, which is every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The landscape that lasts.</b> A stock in stirred water becomes soup; a flux does
+        /// not. Above 0 the surface irradiance is multiplied, column by column, by a factor that
+        /// is 1 on every island column and falls linearly with the map below the islands'
+        /// threshold to <c>1 − depth</c> at the darkest desert, the map being the same noise the
+        /// matter was seeded by (<see cref="MatterIslandWavelengthMetres"/> gives its wavelength;
+        /// a shade depth above 0 with a wavelength of 0 is refused), so the matter islands are
+        /// lit in full and the deserts are dim, and the leaves keep the islands where the water would have
+        /// flattened them. The pooled canopy (<see cref="PerPatchShading"/> off) receives the
+        /// map's mean, so the world's incident watts are what the map lets through.
+        /// </para>
+        /// <para>
+        /// The map is read at a body's own x and z at every metabolic step, so a body that
+        /// drifts out of an island loses its light as well as its water.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public float LightShadeDepth
+        {
+            get => _lightShadeDepth;
+            set => _lightShadeDepth = value >= 0f && value < 1f
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(LightShadeDepth), value, "A shade depth is in [0, 1); 0 is no map.");
+        }
+
+        private float _lightShadeDepth;
+
+        /// <summary>
+        /// How fast the light's shade map drifts across the tank, metres per hour of simulated
+        /// time — D109's second half, off (0) in round 45 and every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// The map is sampled at an offset that grows with time along a fixed diagonal, so the
+        /// islands of light and the deserts walk across the water over a run, and a lineage has
+        /// to follow its island or die where it stood. The matter's seeding reads the map at
+        /// t = 0 whatever the drift.
+        /// </remarks>
+        [Tunable("world", Unit = "m/h")]
+        public float LightShadeDriftMetresPerHour
+        {
+            get => _lightShadeDriftMetresPerHour;
+            set => _lightShadeDriftMetresPerHour = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(LightShadeDriftMetresPerHour), value, "A drift is finite and not negative.");
+        }
+
+        private float _lightShadeDriftMetresPerHour;
+
+        /// <summary>
         /// The container the world is: D077's periodic box, or the tank —
         /// <c>fable-propose-aquarium.md</c> ruling 1. <see cref="WorldShape.Box"/> by default, so
         /// every recorded world is the one it always was.

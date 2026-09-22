@@ -98,7 +98,28 @@ namespace Evosim.Core
         public float PatchArea => WorldArea / PatchCount;
 
         /// <summary>Total power the world received this step, W. The cap on all photosynthesis.</summary>
-        public float IncidentWatts => Model.SurfaceIrradiance * WorldArea;
+        public float IncidentWatts => Model.SurfaceIrradiance * WorldArea * MeanColumnFactor;
+
+        /// <summary>
+        /// The light's shade map — D109: a factor in (0, 1] by which the surface irradiance is
+        /// multiplied at a column, read at a body's own x and z. Null is no map, every recorded
+        /// world.
+        /// </summary>
+        /// <remarks>
+        /// The canopy's arithmetic is per layer and per patch and knows nothing of columns, so
+        /// the map enters in two places only: the world's incident watts are scaled by the
+        /// map's mean (<see cref="MeanColumnFactor"/>), which is what the pooled canopy divides
+        /// among the demanders, and a body's own irradiance is scaled by the map at its column
+        /// (<see cref="IrradianceAt(float, int, float, float)"/>). A body in a lit column under
+        /// a full canopy still sees the canopy's factor; a body in a dark column under no canopy
+        /// still sees the dark. What the sum of the bodies' incomes cannot exceed is the mean-
+        /// scaled incident, to the extent the demand's own distribution over columns matches
+        /// the map's, which the audit reads and the entry says.
+        /// </remarks>
+        public Func<float, float, float> ColumnFactor { get; set; }
+
+        /// <summary>The shade map's mean over the water, 1 with no map.</summary>
+        public float MeanColumnFactor { get; set; } = 1f;
 
         public LightField(
             LightModel model, float worldArea, float layerMetres,
@@ -291,7 +312,7 @@ namespace Evosim.Core
 
             float patchArea = PatchArea;
             float throughWater = (float)Math.Exp(-LayerMetres / Model.AttenuationDepth);
-            float incidentPerPatch = Model.SurfaceIrradiance * patchArea;
+            float incidentPerPatch = Model.SurfaceIrradiance * patchArea * MeanColumnFactor;
 
             for (int patch = 0; patch < PatchCount; patch++)
             {
@@ -417,6 +438,18 @@ namespace Evosim.Core
             float factor = layer < _factorByPatch.Count ? _factorByPatch[layer][patch] : _deepFactorByPatch[patch];
 
             return Model.IrradianceAt(heightY) * factor * DayFactor;
+        }
+
+        /// <summary>
+        /// Effective irradiance at a world height, patch and column after shading and the shade
+        /// map, W/m² — D109. With no map (<see cref="ColumnFactor"/> null) it is
+        /// <see cref="IrradianceAt(float, int)"/> exactly.
+        /// </summary>
+        public float IrradianceAt(float heightY, int patch, float x, float z)
+        {
+            float irradiance = IrradianceAt(heightY, patch);
+            Func<float, float, float> map = ColumnFactor;
+            return map == null ? irradiance : irradiance * map(x, z);
         }
 
         /// <summary>What fraction of the unshaded light reaches a depth, in (0, 1].</summary>

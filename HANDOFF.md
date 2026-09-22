@@ -38,6 +38,24 @@ The one seed replayed on the free-joint engine faded the same way (597 to 115 jo
 the jam is not the whole cause: in this world a joint costs and earns nothing. The Unity
 farm is idle; no arm runs.
 
+**Round 45 relaunches on the island world (D108, D109; 2026-09-22 night).** The tank is
+ten times round 44's, the matter ten times and seeded as noise islands in the top 12 m of a
+tenth of the columns with the founders planted in them, the matter grid stirred at the
+snow's 0.02 m²/s where every round from 32 stirred it at a hard default of 2, and the light
+even (the shade map built and off). Five screens ruled it step by step
+(`scratch/r45-build/runs/bigC..bigK`, D109's "Why"): the even dilute tank does not found, the
+islands at the old stirring are gone in 800 s, a peaked profile puts founders in
+half-strength water, the plateau at 1,500 units founds and starves as the islands spread on
+the gyre's own smearing (about 0.1 m²/s on the 5 m cells, soup near 5,000 s whatever the
+dial), lighting the islands changes nothing because a leaf's income at the slow rate is the
+flux into its cell, and at 15,000 units the world founds faster than round 44 with two
+crowds on two islands and the deserts empty (`bigJ`, 1,487 alive at 4,000 s, no crust at the
+glass). The fields are dumped beside every snapshot and `scripts/field-map.py` draws them.
+The launcher is `rounds/env-r45.ps1` with the runaway ceiling at 25,000; 0114 carries J8 to
+J10 for the islands and the screen's maps. The fixtures are re-recorded on the build
+(`pfix3`, `r45fixc-s4`, `ckA/B/C`), the Farm tests' round 42 hash is `c862fd2c510b82e9`, the
+identity word held. The ideas set aside are in `fable-propose-reef.md`.
+
 **Streams in a shallow tank** (D102) and **four pinned arms** (D103) are ruled and on
 main. The Unity build's `simHash` has moved with the header token and every worker needs
 a refresh before any Unity arm.
@@ -510,9 +528,19 @@ subagent and never in a shell loop.
    17.64 m; the grid is not the cost (65 ms a step at 4 threads, `scratch/r45-build/runs/
    bigA`). Diluted tenfold the world does not found (`bigC`: one birth in 1,700 s; the
    ledger's leaf nets 0.015 W at a tenth of the density), and the owner chose the island
-   world over a Ks dial (`bigD`, Ks 0.005, founds like round 44): the matter seeded as
-   noise islands, founders planted in them, and a light map from the same noise so the
-   landscape persists (D109, being built). Two things read with it: the one-sphere
+   world over a Ks dial (`bigD`, Ks 0.005, founds like round 44): **D109, ruled step by
+   step over five screens the same night** — the matter seeded as noise islands (60 m, a
+   tenth of the columns, the top 12 m, a plateau), founders planted in them, the matter grid
+   stirred at the snow's 0.02 m²/s (a hard default of 2 until then; `EVOSIM_MATTER_MIXING`),
+   and the budget at 15,000 units (the plateau at 1,500 founded and starved as its islands
+   spread on the gyre's smearing, `bigH`; the light was not the throttle, `bigI`; at 15,000
+   the world founds faster than round 44, `bigJ`: two crowds on two islands, deserts empty,
+   826 alive at 2,000 s). The light map from the same noise is built, tested and off
+   (the owner: light has no concentration); its honest forms, the shelf reef and
+   turbidity, are in `fable-propose-reef.md` for a later base round. The fields are dumped
+   beside every snapshot and `scripts/field-map.py` draws them; 0114 carries J8 to J10 for
+   the islands. `bigK` (the round's world, no shade) and `bigJ` run to 8,000 s for the
+   pictures; the fixtures are re-recorded (`pfix3`, `r45fixc-s4`). Two things read with it: the one-sphere
    contact still makes a priced giant a bulldozer, so per-part contact is the contact
    change for the next base round; and a 14.6 m leaf is a smaller fraction of a bigger
    tank. Round 45 relaunches on it, three seeds at 5 threads, the read as planned.
@@ -540,7 +568,19 @@ subagent and never in a shell loop.
    the animal-kit rounds. The reduced step is about a quarter of the real one, so the brain
    and the senses are measured as a kernel before the port is sized (next, once the
    Editor checks are off the machine). Then the port proper, with the state stream as the
-   theatre's feed.
+   theatre's feed. **Sequenced by the owner on 2026-09-23 (00:30, "Agreed"):** the port is
+   the block right after round 45's read, with the machine to itself, not interleaved with
+   the round. The rate is a chain of three links and the card shortens one: the solver
+   (1.2 to 2.1 µs a body-step on the CPU; about 6x on the card in single at 10,000 bodies,
+   the spike's reduced step), the world's grid (the 1 m snow grid in the ten-times tank is
+   1.05 million cells at about 0.13 s per simulated second whatever the crowd, which caps
+   that tank near 8x real time on its own), and the per-body CPU pass. The card alone gives
+   10,000 bodies at perhaps 3 to 5x; ~10x needs all three: the solver on the card, the snow
+   grid at 2 m cells for the large tank (a screen, between rounds) or the transport on the
+   card, and the per-body pass parallel. During round 45, the CPU-side pieces that need no
+   clean machine: the full-step kernel design (brain and senses), the serial water pass
+   cheapened without moving a bit, the 2 m cell screen prepared. The trigger to move it
+   earlier: a seed filling to 10,000 and falling under 1x real time.
 7. **Loose ends.** Double accounts in Core for the matter residual (a new realisation of
    every seed, so between rounds and pre-registered). `ParallelIdentityTests` (50 s) kept
    or moved to Slow. The overlap probe's `run.ps1` taking its path argument. Close pictures
@@ -567,6 +607,13 @@ subagent and never in a shell loop.
   pre-register, launch, read and write up rounds 44 and 45, run the brain spike and the
   port's first stage, draft rung B's spec but do not build it unseen; message on a
   round's read, a needed decision, or a break.
+- **The shelf reef and turbidity** (`fable-propose-reef.md`, 2026-09-22 night, captured at
+  the owner's ask): shade that something casts — a shelf at the surface on a rock column,
+  over the deserts or over the islands (two worlds, the owner's choice), a day's build; the
+  crowd darkening its own water through the snow; the shade map as built kept as a screen's
+  dial; finer matter cells to slow the islands' spreading; the varied diffusion rate
+  recorded as rejected. For the base round after 45, with the support cost and per-part
+  contact.
 - **The worktrees**: the owner approved removal; the agent's `git worktree remove` was
   refused by the permission layer as irreversible, so the one-line command is with the
   owner to run.

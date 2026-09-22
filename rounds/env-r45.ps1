@@ -14,23 +14,33 @@
 # income and one leaf-sized corpse repays about 450 s of it). The two senses the mouth answers,
 # Contact and Damage, are in the pool.
 #
-# The tank is ten times round 44's and the matter is not (owner, 2026-09-22 night: "bigger
-# tank … intentionally didn't say more matter. Reduce the creature mist and reduce bodies
-# colliding"). Area 22,000 m2 (r 83.7 m) at the same 45 m with round 44's 1,500 units, so the
-# same crowd in ten times the water, a tenth of the density; the bed's wavelength held at
-# round 44's 17.64 m rather than derived from the radius, so the rock is the same rock over a
-# larger floor. The 1 m grid is 1.05 million cells and steps in about 65 ms at 4 threads
-# (scratch/r45-build/runs/bigA, a 300 s smoke).
+# The tank is ten times round 44's (D108): area 22,000 m2 (r 83.7 m) at the same 45 m, the
+# bed's wavelength held at round 44's 17.64 m rather than derived from the radius, so the rock
+# is the same rock over a larger floor. The 1 m grid is 1.05 million cells and steps in about
+# 65 ms at 4 threads (scratch/r45-build/runs/bigA, a 300 s smoke).
+#
+# The matter is islands and deserts (D109, ruled step by step over five screens the same
+# night, scratch/r45-build/runs/bigC..bigK): 15,000 units, ten times round 44's, so the water
+# is round 44's density once the islands have spread, seeded by a 60 m noise map into the top
+# 12 m of a tenth of the columns, level across each island (0.57 units/m3 at t = 0); the
+# founders and every floor spawn planted in the islands and no deeper than 12 m; the matter
+# grid stirred at 0.02 m2/s, the snow's rate, where rounds 32 to 44 stirred it at a hard
+# default of 2. The light is even (the shade map at 0: "light can't have concentration", the
+# owner). The runaway ceiling is 25,000 so a crowd ten times round 44's is not censored.
 @{
+    EVOSIM_MATTER_ISLANDS = 60; EVOSIM_MATTER_ISLAND_COVER = 0.1; EVOSIM_MATTER_ISLAND_DEPTH = 12
+    EVOSIM_FOUNDERS_FOLLOW_MATTER = 1
+    EVOSIM_LIGHT_SHADE = 0; EVOSIM_LIGHT_SHADE_DRIFT = 0
+    EVOSIM_MATTER_MIXING = 0.02
     EVOSIM_REPORT_EVERY = 20
     EVOSIM_IRRADIANCE = 200; EVOSIM_CURRENT = 0.1; EVOSIM_MIXING = 0.02; EVOSIM_REMIN = 0.002
     EVOSIM_CURRENT_MODE = 'Transport'
-    EVOSIM_AREA = 22000; EVOSIM_DEPTH = 45; EVOSIM_FLOOR_CLOSES = 3000; EVOSIM_MAX_POP = 8000
+    EVOSIM_AREA = 22000; EVOSIM_DEPTH = 45; EVOSIM_FLOOR_CLOSES = 3000; EVOSIM_MAX_POP = 25000
     EVOSIM_MAX_TISSUE = 0
     EVOSIM_SENESCENCE = 3000; EVOSIM_EXCESS_DENSITY = 0.02
     EVOSIM_MATTER_INITIAL = 1; EVOSIM_FOUNDER_FLOAT = 0.5
     EVOSIM_LIFT_COST = 0.05; EVOSIM_CELLTYPE_MUTATION = 0.005; EVOSIM_NEUTRAL_VOLUME = 0.25
-    EVOSIM_FOUNDER_DEPTH = 45; EVOSIM_PATCHES = 4
+    EVOSIM_FOUNDER_DEPTH = 12; EVOSIM_PATCHES = 4
     EVOSIM_CURRENT_PERIOD = 6000; EVOSIM_CURRENT_CELL = 30; EVOSIM_CURRENT_ROLLS = 1
     EVOSIM_CURRENT_BLINK = 3000; EVOSIM_CURRENT_ADVECT = 1
     EVOSIM_SINK = 0.002; EVOSIM_MATTER_SINK = 0.002
@@ -57,7 +67,7 @@
     EVOSIM_ADULT_SCALE_CHANCE = 0.08; EVOSIM_INVEST_CHANCE = 0.08
     EVOSIM_OFFSPRING_DISPERSAL = 5
     EVOSIM_SHAPE = 'tank'
-    EVOSIM_MATTER_BUDGET = 1500
+    EVOSIM_MATTER_BUDGET = 15000
     EVOSIM_DRIVE_LIMIT_ALWAYS = 0
     EVOSIM_BED_RELIEF = 1.5; EVOSIM_BED_TILT = 30; EVOSIM_BED_SCALE = 17.641891
     EVOSIM_LIGHT_REACH = 6

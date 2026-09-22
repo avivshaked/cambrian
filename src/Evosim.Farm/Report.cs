@@ -172,6 +172,16 @@ namespace Evosim.Farm
                 " · silhouette " + (s.SilhouetteCap ? "on" : "off") +
                 " · selfOverlap " + (s.SelfOverlap > 0f ? s.SelfOverlap.ToString("0.###", Inv) : "off") +
                 " · reach " + (s.MaxReach > 0f ? s.MaxReach.ToString("0.##", Inv) + " m" : "off") +
+
+                // D109's three tokens, all reading the recorded world at their defaults.
+                " · matter " + (s.MatterIslands > 0f
+                    ? "islands " + s.MatterIslands.ToString("0.#", Inv) + " m cover " + s.MatterIslandCover.ToString("0.###", Inv) +
+                      (s.MatterIslandDepth > 0f ? " to " + s.MatterIslandDepth.ToString("0.#", Inv) + " m" : " to bed")
+                    : "uniform") +
+                " · founders " + (s.FoundersFollowMatter ? "in matter" : "anywhere") +
+                " · shade " + (s.LightShade > 0f
+                    ? s.LightShade.ToString("0.##", Inv) + " drift " + s.LightShadeDrift.ToString("0.#", Inv) + " m/h"
+                    : "off") +
                 " · day ±" + F(s.DayAmplitude) + " over " + F(s.DayLength) + " s" +
                 " · current " + F(s.CurrentSpeed) + " m/s " +
                 s.CurrentMode.ToString().ToLowerInvariant() +
@@ -220,6 +230,7 @@ namespace Evosim.Farm
                       "disperse " + F(s.DispersalChance) + ", patchShade " + F(s.PatchShading)
                     : "") +
                 (s.PatchesAcross > 1f ? " · across " + F((int)s.PatchesAcross) : "") +
+                " · matter-mix " + F(s.MatterMixing) + " m2/s" +
                 " · area " + F(s.Area) + " m2" +
                 " · space " + SpaceToken(config, space) +
                 " dispersal=" + F(s.OffspringDispersal) + " m" +

@@ -177,6 +177,13 @@ namespace Evosim.Core
         public const ulong BedShapeIndex = ulong.MaxValue - 6UL;
 
         /// <summary>
+        /// The seed slot of D109's noise map, the one the matter islands and the light's shade
+        /// are both drawn from. Built only in a world that asks for it, so every other world's
+        /// streams are untouched.
+        /// </summary>
+        public const ulong IslandMapIndex = ulong.MaxValue - 7UL;
+
+        /// <summary>
         /// The stream behind <see cref="ConceptionOrder.Shuffled"/> — D072. Constructed for every
         /// world and drawn from by none but a shuffled one.
         /// </summary>
@@ -248,6 +255,70 @@ namespace Evosim.Core
         /// of how full a world is.
         /// </remarks>
         public LightField Field { get; }
+
+        /// <summary>
+        /// D109's map: the gradient noise the matter was seeded by and the light is shaded by, or
+        /// null in a world with neither.
+        /// </summary>
+        public GradientNoise IslandMap => _islandMap;
+
+        private readonly GradientNoise _islandMap;
+
+        /// <summary>The map value above which a column was seeded as an island; 0 with no islands.</summary>
+        public float IslandThreshold { get; }
+
+        /// <summary>The shade map's mean over the live columns, 1 with no map. For the header.</summary>
+        public float MeanShade { get; } = 1f;
+
+        /// <summary>
+        /// The shade map at a column, in (0, 1]: 1 on every island column (the map at or above
+        /// <see cref="IslandThreshold"/>) and <c>1 − depth × (threshold − n) / (threshold − min)</c>
+        /// below it, so the darkest desert is <c>1 − depth</c>; sampled at an offset that drifts
+        /// with the clock when <see cref="RunConfig.LightShadeDriftMetresPerHour"/> is above 0.
+        /// 1 with no map.
+        /// </summary>
+        /// <remarks>
+        /// The first cut shaded by the raw map, <c>1 − depth × (1 − n) / 2</c>, and an island
+        /// column near the threshold read 0.72 to 0.8: a fifth less light than round 44's, on a
+        /// leaf whose surplus over its standing cost is a few percent of its income, and the
+        /// founding ran at a third of round 44's pace (scratch/r45-build/runs/bigH). The islands
+        /// are the lit water by design, so the map saturates there and shades the deserts only.
+        /// </remarks>
+        public float ShadeAt(float x, float z)
+        {
+            if (_islandMap == null || !(Config.LightShadeDepth > 0f)) return 1f;
+
+            float drift = (float)(Config.LightShadeDriftMetresPerHour * ElapsedSeconds / 3600d);
+            float offset = drift * 0.70710678f;
+
+            float n = _islandMap.Fbm(x + offset, z + offset);
+            float span = IslandThreshold - _islandMapMin;
+            float below = span > 0f ? (IslandThreshold - n) / span : 0f;
+            if (below < 0f) below = 0f; else if (below > 1f) below = 1f;
+
+            float factor = 1f - Config.LightShadeDepth * below;
+            return factor < 0f ? 0f : factor > 1f ? 1f : factor;
+        }
+
+        /// <summary>The map's lowest value over the live columns at construction: the darkest desert.</summary>
+        private readonly float _islandMapMin;
+
+        /// <summary>
+        /// D109's founder rule handed to the placer once there is one: the column's spent matter
+        /// over the fullest column's. Called before every founding and inoculation.
+        /// </summary>
+        private void EnsureFounderAcceptance()
+        {
+            if (!Config.FoundersFollowMatter || Placement == null) return;
+            if (Placement.FounderAcceptance != null) return;
+            if (!(Matter is GridField grid)) return;
+
+            Placement.FounderAcceptance = (x, z) =>
+            {
+                double max = grid.MaxColumnStock();
+                return max > 0d ? (float)(grid.ColumnStockAt(x, z) / max) : 1f;
+            };
+        }
 
         /// <summary>
         /// Horizontal cells per layer, K ≥ 1 — <see cref="RunConfig.HorizontalPatches"/>, clamped
@@ -1059,11 +1130,41 @@ namespace Evosim.Core
             }
             else if (Matter is GridField matterGrid)
             {
-                // The same total again, one share per cell. The grid's cells tile the box exactly
-                // (GridField refuses a cell size that does not), so this is the cells' own seed
-                // read at a finer scale and not an approximation of it.
-                matterGrid.SeedUniform(seedDensity);
+                if (config.MatterIslandWavelengthMetres > 0f)
+                {
+                    // D109. The budget placed as islands by the seed's own map; a density rule
+                    // has no total to place, so the islands need the budget.
+                    if (!(config.MatterBudgetUnits > 0f))
+                    {
+                        throw new ArgumentException(
+                            "Matter islands (MatterIslandWavelengthMetres > 0) need a matter budget " +
+                            "(MatterBudgetUnits > 0): the density rule has no total to place in them.",
+                            nameof(config));
+                    }
+
+                    _islandMap = new GradientNoise(
+                        Rng.SeedFor(seed, IslandMapIndex), config.MatterIslandWavelengthMetres);
+
+                    IslandThreshold = matterGrid.SeedIslands(
+                        config.MatterBudgetUnits, _islandMap.Fbm, config.MatterIslandCover,
+                        config.MatterIslandDepthMetres);
+                }
+                else
+                {
+                    // The same total again, one share per cell. The grid's cells tile the box exactly
+                    // (GridField refuses a cell size that does not), so this is the cells' own seed
+                    // read at a finer scale and not an approximation of it.
+                    matterGrid.SeedUniform(seedDensity);
+                }
             }
+            else if (config.MatterIslandWavelengthMetres > 0f)
+            {
+                throw new ArgumentException(
+                    "Matter islands (MatterIslandWavelengthMetres > 0) need a grid field " +
+                    "(FieldModel Grid): the vertex and cell fields have no columns to seed by.",
+                    nameof(config));
+            }
+
             else if (seedDensity > 0f)
             {
                 float perCell = seedDensity * Matter.LayerVolume;
@@ -1076,6 +1177,60 @@ namespace Evosim.Core
                         ((NutrientField)Matter).Deposit(depth, perCell, patch);
                     }
                 }
+            }
+
+            if (config.LightShadeDepth > 0f)
+            {
+                // D109's second half: the same map shades the light, column by column, and the
+                // pooled canopy receives the map's mean. Refused without the islands rather than
+                // given a map of its own, so that one seed has one landscape.
+                if (_islandMap == null)
+                {
+                    throw new ArgumentException(
+                        "A light shade map (LightShadeDepth > 0) takes its noise from the matter " +
+                        "islands, so it needs MatterIslandWavelengthMetres > 0.",
+                        nameof(config));
+                }
+
+                var matterGridForMean = (GridField)Matter;
+
+                // The darkest desert first, since the shade at a column is read against it.
+                float min = float.MaxValue;
+                for (int ix = 0; ix < matterGridForMean.CellsX; ix++)
+                {
+                    float cx = (ix + 0.5f) * matterGridForMean.CellMetres;
+                    for (int iz = 0; iz < matterGridForMean.CellsZ; iz++)
+                    {
+                        if (!matterGridForMean.ColumnIsLive(ix, iz)) continue;
+                        float n = _islandMap.Fbm(cx, (iz + 0.5f) * matterGridForMean.CellMetres);
+                        if (n < min) min = n;
+                    }
+                }
+                _islandMapMin = min < float.MaxValue ? min : 0f;
+
+                double sum = 0d;
+                int columns = 0;
+                for (int ix = 0; ix < matterGridForMean.CellsX; ix++)
+                {
+                    float cx = (ix + 0.5f) * matterGridForMean.CellMetres;
+                    for (int iz = 0; iz < matterGridForMean.CellsZ; iz++)
+                    {
+                        float cz = (iz + 0.5f) * matterGridForMean.CellMetres;
+                        if (!matterGridForMean.ColumnIsLive(ix, iz)) continue;
+                        sum += ShadeAt(cx, cz);
+                        columns++;
+                    }
+                }
+
+                MeanShade = columns > 0 ? (float)(sum / columns) : 1f;
+                Field.MeanColumnFactor = MeanShade;
+                Field.ColumnFactor = ShadeAt;
+            }
+            else if (config.LightShadeDriftMetresPerHour > 0f)
+            {
+                throw new ArgumentException(
+                    "A shade drift (LightShadeDriftMetresPerHour > 0) needs a shade map (LightShadeDepth > 0).",
+                    nameof(config));
             }
 
             // D074. The stock the matter identity is measured against, read here because here is
@@ -2012,7 +2167,7 @@ namespace Evosim.Core
                 float spent = Matter.DensityAt(creature.Point);
 
                 EnergyLedger ledger = Metabolism.StepAt(
-                    creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch),
+                    creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
                     density, spent, creature.PendingWorkJoules, seconds, creature.Age);
 
                 // The absorptive log's capture, taken where the number is — one field write, on
@@ -2074,7 +2229,7 @@ namespace Evosim.Core
 
                     // The same work, not more: this replaces the ledger rather than adding to it.
                     ledger = Metabolism.StepAt(
-                        creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch),
+                        creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
                         rationed, rationedSpent, creature.PendingWorkJoules, seconds, age);
 
                     // A share is a fraction of the demand, and scaling the density delivers
@@ -3113,6 +3268,8 @@ namespace Evosim.Core
                 Config.MinimumPopulation - _living.Count,
                 Math.Max(1, Config.FloorSpawnsPerStep));
 
+            EnsureFounderAcceptance();
+
             for (int i = 0; i < wanted; i++)
             {
                 ulong seed = Rng.SeedFor(Seed, _nextIndex++);
@@ -3254,6 +3411,8 @@ namespace Evosim.Core
         {
             if (genome == null) throw new ArgumentNullException(nameof(genome));
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+
+            EnsureFounderAcceptance();
 
             // Rule 3, asked once and before anything is spent. Every copy is the same genome
             // developed the same way, so the answer is the same for all of them; asking inside

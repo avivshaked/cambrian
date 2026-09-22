@@ -1169,6 +1169,226 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// Seeds a total as islands and deserts — D109. The columns whose map value is in the top
+        /// <paramref name="cover"/> of the live columns hold matter, uniform down the column to
+        /// <paramref name="depthMetres"/> (0: to the bed) and level across the island but for a
+        /// short ramp at the shore; the rest hold none; the amounts are scaled so that the live
+        /// cells hold exactly <paramref name="totalJoules"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The threshold is a quantile of the live columns, not a number on the map.</b> Noise
+        /// has no fixed distribution over a finite disc, so "above 0.3" covers a different share
+        /// of every seed's tank; a quantile covers the share asked for on every seed, to within
+        /// a column. The islands' shape is then the map's, and only their number of cells is the
+        /// tunable's.
+        /// </para>
+        /// <para>
+        /// <b>A plateau, not a peak.</b> A column's weight is its excess over the threshold
+        /// divided by a quarter of the range above it, clipped at 1: the outer quarter of an
+        /// island ramps up from its shore and the rest is level. The first profile weighted a
+        /// column by its excess alone, and put the budget on the peaks: the fullest cell held
+        /// twice the cover's density and the median founder's cell half of it, and no founder
+        /// had round 44's water to found in (scratch/r45-build/runs/bigF, the first island
+        /// smoke at the ruled stirring). On a plateau every island column holds the budget over
+        /// the cover's volume, which at cover 0.1 and round 44's budget in a ten-times tank is
+        /// round 44's density.
+        /// </para>
+        /// <para>
+        /// <b>Exactly the total.</b> The weights are summed over the live cells in double and each
+        /// cell takes <c>total × weight / sum</c>, so the field holds the budget to the rounding
+        /// of one division per cell, as <see cref="SeedUniform"/> holds it. Returns the
+        /// threshold, for the header and the tests.
+        /// </para>
+        /// </remarks>
+        public float SeedIslands(double totalJoules, Func<float, float, float> map, float cover, float depthMetres = 0f)
+        {
+            if (map == null) throw new ArgumentNullException(nameof(map));
+            if (!(cover > 0f) || cover > 1f)
+                throw new ArgumentOutOfRangeException(nameof(cover), cover, "A cover is a share in (0, 1].");
+            if (!(depthMetres >= 0f))
+                throw new ArgumentOutOfRangeException(nameof(depthMetres), depthMetres, "An island depth is not negative; 0 is the whole column.");
+            if (!(totalJoules > 0d)) return 0f;
+
+            // The layers an island fills: every one to the bed, or those whose top lies above the
+            // depth asked (at least the first, so a depth under one cell still seeds something).
+            int layers = depthMetres > 0f ? Math.Max(1, (int)Math.Ceiling(depthMetres / CellMetres - 1e-4f)) : _ny;
+            if (layers > _ny) layers = _ny;
+
+            // The map at every live column's centre, once.
+            var value = new float[_layerStride];
+            var liveColumns = new List<int>();
+
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                float cx = (ix + 0.5f) * CellMetres;
+
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    int column = ix * _nz + iz;
+                    if (_live != null && _lowestLive[column] < 0) continue;
+
+                    float cz = (iz + 0.5f) * CellMetres;
+                    value[column] = map(cx, cz);
+                    liveColumns.Add(column);
+                }
+            }
+
+            if (liveColumns.Count == 0) return 0f;
+
+            // The threshold: the value below which (1 − cover) of the live columns fall. Sorted
+            // ascending, so the index is the first island column.
+            var sorted = new float[liveColumns.Count];
+            for (int i = 0; i < sorted.Length; i++) sorted[i] = value[liveColumns[i]];
+            Array.Sort(sorted);
+
+            int first = (int)Math.Floor((1d - cover) * sorted.Length);
+            if (first >= sorted.Length) first = sorted.Length - 1;
+            if (first < 0) first = 0;
+            float threshold = sorted[first];
+
+            // The plateau's ramp: a quarter of the range above the threshold. A column at or
+            // past it weighs 1; a column at the shore weighs its excess over the ramp.
+            float ramp = 0.25f * (sorted[sorted.Length - 1] - threshold);
+            float Weight(int column)
+            {
+                float excess = value[column] - threshold;
+                if (!(excess > 0f)) return 0f;
+                return ramp > 0f && excess < ramp ? excess / ramp : 1f;
+            }
+
+            // Weights over the live cells, summed in double.
+            double sum = 0d;
+            for (int c = 0; c < liveColumns.Count; c++)
+            {
+                int column = liveColumns[c];
+                float excess = Weight(column);
+                if (!(excess > 0f)) continue;
+
+                int ix = column / _nz;
+                int iz = column % _nz;
+                for (int iy = 0; iy < layers; iy++)
+                {
+                    int cell = Index(ix, iy, iz);
+                    if (_live != null && !_live[cell]) continue;
+                    sum += excess;
+                }
+            }
+
+            if (!(sum > 0d))
+            {
+                // A flat map (every column equal): nothing is above the threshold, so the seed
+                // falls back to uniform rather than placing nothing.
+                SeedUniform((float)(totalJoules / LiveVolumeCubicMetres));
+                return threshold;
+            }
+
+            double placed = 0d;
+            for (int c = 0; c < liveColumns.Count; c++)
+            {
+                int column = liveColumns[c];
+                float excess = Weight(column);
+                if (!(excess > 0f)) continue;
+
+                int ix = column / _nz;
+                int iz = column % _nz;
+                double each = totalJoules * excess / sum;
+
+                for (int iy = 0; iy < layers; iy++)
+                {
+                    int cell = Index(ix, iy, iz);
+                    if (_live != null && !_live[cell]) continue;
+                    _stock[cell] += each;
+                    placed += each;
+                }
+            }
+
+            _total += placed;
+            return threshold;
+        }
+
+        /// <summary>Whether a column holds any water: true everywhere in a box, inside the circle in a tank.</summary>
+        public bool ColumnIsLive(int ix, int iz) => _live == null || _lowestLive[ix * _nz + iz] >= 0;
+
+        /// <summary>The column a position stands in, as an index into the <c>_nx × _nz</c> plane.</summary>
+        private int ColumnAt(float x, float z) =>
+            CellAt(new Float3(x, -0.5f * CellMetres, z)) % _layerStride;
+
+        /// <summary>The stock in the column under a position, J, summed over its live cells.</summary>
+        public double ColumnStockAt(float x, float z)
+        {
+            int column = ColumnAt(x, z);
+            int ix = column / _nz;
+            int iz = column % _nz;
+
+            double total = 0d;
+            for (int iy = 0; iy < _ny; iy++)
+            {
+                int cell = Index(ix, iy, iz);
+                if (_live != null && !_live[cell]) continue;
+                total += _stock[cell];
+            }
+
+            return total;
+        }
+
+        /// <summary>The fullest column's stock, J — what <see cref="ColumnStockAt"/> is a share of.</summary>
+        public double MaxColumnStock()
+        {
+            double max = 0d;
+
+            for (int column = 0; column < _layerStride; column++)
+            {
+                if (_live != null && _lowestLive[column] < 0) continue;
+
+                int ix = column / _nz;
+                int iz = column % _nz;
+
+                double total = 0d;
+                for (int iy = 0; iy < _ny; iy++)
+                {
+                    int cell = Index(ix, iy, iz);
+                    if (_live != null && !_live[cell]) continue;
+                    total += _stock[cell];
+                }
+
+                if (total > max) max = total;
+            }
+
+            return max;
+        }
+
+        /// <summary>
+        /// Every cell's stock as floats in index order (<c>(iy × nx + ix) × nz + iz</c>), for a
+        /// recording; a dead cell reads 0.
+        /// </summary>
+        public void CopyStockTo(float[] into)
+        {
+            if (into == null || into.Length < _stock.Length)
+                throw new ArgumentException("The array is shorter than the field.", nameof(into));
+
+            for (int i = 0; i < _stock.Length; i++) into[i] = (float)_stock[i];
+        }
+
+        /// <summary>Every column's stock as floats in column order (<c>ix × nz + iz</c>), for a recording.</summary>
+        public void CopyColumnStockTo(float[] into)
+        {
+            if (into == null || into.Length < _layerStride)
+                throw new ArgumentException("The array is shorter than the plane.", nameof(into));
+
+            Array.Clear(into, 0, _layerStride);
+
+            for (int iy = 0; iy < _ny; iy++)
+            {
+                int layer = iy * _layerStride;
+                for (int column = 0; column < _layerStride; column++)
+                {
+                    into[column] += (float)_stock[layer + column];
+                }
+            }
+        }
+
+        /// <summary>
         /// Spreads an amount equally over the cells whose centres fall inside a box, and returns
         /// what was deposited. The grid's answer to <see cref="VertexField.Emit"/>.
         /// </summary>

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Evosim.Core;
 
@@ -181,6 +182,27 @@ namespace Evosim.Dynamics.Placement
 
         /// <summary>Births refused for want of room, running total — the crowded stillbirths.</summary>
         public long Refusals { get; private set; }
+
+        /// <summary>
+        /// Founder candidates turned down by <see cref="FounderAcceptance"/> — spots drawn in a
+        /// desert (D109). Zero with no rule.
+        /// </summary>
+        public long DesertRefusals { get; private set; }
+
+        /// <summary>
+        /// D109's founder rule, or null: see <see cref="IBodyPlacement.FounderAcceptance"/>. Set
+        /// by the world once it has a field to read it from.
+        /// </summary>
+        /// <remarks>
+        /// <b>One more draw of the stream per candidate, only when set.</b> A candidate at
+        /// probability p is kept when the next float is under p, so a spot in a desert (p = 0)
+        /// is never kept and one in the fullest column (p = 1) always is. Off, no draw is made
+        /// and the recorded world's stream is untouched. The attempt budget is eight times the
+        /// usual with the rule on, because a tenth of the water at the islands' density means
+        /// most candidates are refused and a founder that fails the budget is a stillbirth the
+        /// floor then draws again.
+        /// </remarks>
+        public Func<float, float, float> FounderAcceptance { get; set; }
 
         /// <summary>The spatial hash's cell side, metres: 2× the largest body, floored at 1.</summary>
         public float CellMetres => _cellSize;
@@ -507,7 +529,10 @@ namespace Evosim.Dynamics.Placement
             // D092, as in TryReserveOffspring above and for the same reason.
             bool shaped = ShapedFloor;
 
-            for (int attempt = 0; attempt < AttemptBudget; attempt++)
+            Func<float, float, float> accept = FounderAcceptance;
+            int budget = accept == null ? AttemptBudget : AttemptBudget * 8;
+
+            for (int attempt = 0; attempt < budget; attempt++)
             {
                 // Uniform in the box at the depth the world drew; uniform over the disc in a
                 // tank, which is r = R·sqrt(u) and not R·u. Two draws either way, so the stream
@@ -526,6 +551,14 @@ namespace Evosim.Dynamics.Placement
                 {
                     candidate = new Float3(
                         _rng.Range(0f, LengthMetres), y, _rng.Range(0f, WidthMetres));
+                }
+
+                // D109: planted where the matter is. Asked of the column before the floor and
+                // the crowd are, so a refused spot costs one draw and no reservation.
+                if (accept != null)
+                {
+                    float p = accept(candidate.X, candidate.Z);
+                    if (!(p > 0f) || _rng.NextFloat() >= p) { DesertRefusals++; continue; }
                 }
 
                 // The floor under the point — D092. The disc draw above is untouched.

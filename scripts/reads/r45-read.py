@@ -554,10 +554,12 @@ def j4(seed, ts, by_t):
 # ---------------------------------------------------------------------- J5: the crowd survives
 
 def j5(seed, ts, by_t):
-    """J5: `alive` above 300 at 30,000 s, in 2 of 3 (the massacre reading if not).
+    """J5: `alive` above 1,000 at 30,000 s, in 2 of 3 (the massacre reading if not).
 
-    The bar is a share of the crowd the matter can hold: 1,500 units is about a thousand
-    bodies whatever the tank's size (D108 keeps the matter while the tank grows tenfold).
+    The bar is round 44's crowd: about a thousand bodies on 1,500 units in a tenth of this
+    water. D109's world holds 15,000 units seeded as islands, so the crowd the matter can hold
+    is ten times that if the deserts fill and round 44's if only the islands do; a thousand is
+    the least a living world reads, whichever way the islands go (J8 to J10 read that).
     """
     if not ts:
         return dict(clause="J5", seed=seed, held="absent")
@@ -565,7 +567,7 @@ def j5(seed, ts, by_t):
     row, t_actual, short = sample_at(ts, by_t, 30000)
     alive = sfield(row, NAMES["stats_alive"])
     alive = None if alive is _MISSING else alive
-    held = alive is not None and alive > 300
+    held = alive is not None and alive > 1000
 
     return dict(clause="J5", seed=seed, at=t_actual, short=short, alive=alive, held=held)
 

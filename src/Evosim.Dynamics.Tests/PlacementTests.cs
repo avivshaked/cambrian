@@ -275,6 +275,38 @@ namespace Evosim.Dynamics.Tests
             Assert.Equal(6f, large.CellMetres);
         }
 
+        /// <summary>
+        /// D109's founder rule: with an acceptance set, a founder is planted only where it says,
+        /// and the refusals are counted; with none, nothing is asked.
+        /// </summary>
+        [Fact]
+        public void AFounderIsPlantedWhereTheAcceptanceSays()
+        {
+            var planted = new PortVolume(Patches, 5f, DepthMetres, 9UL)
+            {
+                FounderAcceptance = (x, z) => x < 4f ? 1f : 0f,
+            };
+
+            Phenotype[] bodies = Bodies(12, 9UL);
+
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                float height = -5f - i;
+                Assert.True(planted.TryReserveFounder(bodies[i], ref height, out _));
+                planted.Commit(i);
+
+                Assert.True(planted.TryTakePlacement(i, out Float3 at));
+                Assert.True(at.X < 4f, $"founder {i} planted at x = {at.X:0.##}, outside the accepted strip");
+            }
+
+            Assert.True(planted.DesertRefusals > 0, "a strip a fifth of the box wide refuses most candidates");
+
+            var anywhere = new PortVolume(Patches, 5f, DepthMetres, 9UL);
+            float h = -5f;
+            Assert.True(anywhere.TryReserveFounder(bodies[0], ref h, out _));
+            Assert.Equal(0L, anywhere.DesertRefusals);
+        }
+
         [Fact]
         public void TheBedRaisesAPlacementAndNeverLowersIt()
         {

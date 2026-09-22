@@ -1167,6 +1167,26 @@ three strategies. A single founder node reaches 32 nodes and 16-part bodies with
 births under mutation alone (`FounderTests`), which is the load-bearing check: if founders are
 this small, complexity must be reachable from them or the world never becomes interesting.
 
+**Where the matter starts, and where the founders do (D109, 2026-09-22).** Until round 44 the
+spent matter was spread evenly and a founder landed anywhere in the water. From round 45 the
+budget is seeded as islands: a gradient-noise map over x and z (`GradientNoise`, three octaves,
+`MatterIslandWavelengthMetres` the first's) picks the columns in the top `MatterIslandCover` of
+its values, and those hold the whole budget in the cells above `MatterIslandDepthMetres`, level
+across each island but for a ramp over the outer quarter of its rise; the deserts hold nothing.
+A founder, and every body the floor spawns, is placed with probability equal to its column's
+stock over the fullest column's (`FoundersFollowMatter`), so it founds in an island and never in
+a desert. The islands are the founding structure and not a landscape: the water stirs any stock
+into soup (in round 45's world, by the gyre's own smearing of the 5 m cells, near 5,000 s),
+and what keeps any structure after that is the crowd's own consumption and return, which is the
+round's reading. With the same build the matter grid's stirring became a launcher's setting
+(`MatterMixingDiffusivity`; 2 m²/s as a hard default through round 44, the snow's 0.02 from
+round 45), and at the slow rate a leaf's income is the diffusive flux into its own cell rather
+than the tank's stock, which is what made ten times the matter necessary in ten times the
+water. The same map can shade the light column by column (`LightShadeDepth`, the islands lit in
+full and the deserts dimmed); it is built and off, because light has no concentration and a
+shade nothing casts is a designed landscape (`fable-propose-reef.md` holds the forms shade could
+honestly take).
+
 ### 5A.1 Cell types
 
 Energy acquisition is a property of a **part**, not of a creature. A species is therefore a

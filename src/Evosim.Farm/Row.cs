@@ -1001,6 +1001,82 @@ namespace Evosim.Farm
                         moduleCounts: creature.ModuleCounts, lostPartPaths: creature.LostPartPaths));
                 }
             }
+
+            DumpFields(dir, world);
+        }
+
+        private float[] _fieldScratch = System.Array.Empty<float>();
+        private bool _fieldLayoutWritten;
+
+        /// <summary>
+        /// The fields beside the snapshot — D109's recording, so that the islands can be drawn
+        /// drifting and the soup read from a picture rather than only from a cv.
+        /// </summary>
+        /// <remarks>
+        /// <b>The matter whole, the snow by column.</b> The matter grid is the coarse one (5 m
+        /// cells, about eight thousand of them at 22,000 m²), so every cell is written; the snow's
+        /// 1 m grid is a million cells, four megabytes a dump and hundreds a seed, so its column
+        /// sums are written, which is the map a picture wants. Little-endian floats in the grid's
+        /// own index order, and <c>fields/layout.json</c> once, naming both. A recording
+        /// setting: nothing here reaches a config or a hash, and a grid-less world writes
+        /// nothing.
+        /// </remarks>
+        private void DumpFields(RunDirectory dir, World world)
+        {
+            var matter = world.Matter as GridField;
+            var snow = world.Nutrients as GridField;
+            if (matter == null && snow == null) return;
+
+            System.IO.Directory.CreateDirectory(dir.FieldsPath);
+
+            if (!_fieldLayoutWritten)
+            {
+                var layout = new Json.Writer(indent: true);
+                layout.BeginObject();
+                if (matter != null)
+                {
+                    layout.BeginObject("matter")
+                        .Field("cellsX", matter.CellsX).Field("cellsY", matter.CellsY).Field("cellsZ", matter.CellsZ)
+                        .Field("cellMetres", matter.CellMetres).Field("order", "(iy * cellsX + ix) * cellsZ + iz")
+                        .EndObject();
+                }
+                if (snow != null)
+                {
+                    layout.BeginObject("snowColumns")
+                        .Field("cellsX", snow.CellsX).Field("cellsZ", snow.CellsZ)
+                        .Field("cellMetres", snow.CellMetres).Field("order", "ix * cellsZ + iz")
+                        .EndObject();
+                }
+                layout.EndObject();
+                System.IO.File.WriteAllText(
+                    System.IO.Path.Combine(dir.FieldsPath, "layout.json"), layout.ToString());
+                _fieldLayoutWritten = true;
+            }
+
+            if (matter != null)
+            {
+                int cells = matter.CellCount;
+                if (_fieldScratch.Length < cells) _fieldScratch = new float[cells];
+                matter.CopyStockTo(_fieldScratch);
+                WriteFloats(dir.FieldPath(world.ElapsedSeconds, "matter"), _fieldScratch, cells);
+            }
+
+            if (snow != null)
+            {
+                int columns = snow.CellsX * snow.CellsZ;
+                if (_fieldScratch.Length < columns) _fieldScratch = new float[columns];
+                snow.CopyColumnStockTo(_fieldScratch);
+                WriteFloats(dir.FieldPath(world.ElapsedSeconds, "snow-columns"), _fieldScratch, columns);
+            }
+        }
+
+        private static void WriteFloats(string path, float[] values, int count)
+        {
+            using (var stream = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write))
+            using (var writer = new System.IO.BinaryWriter(stream))
+            {
+                for (int i = 0; i < count; i++) writer.Write(values[i]);
+            }
         }
 
         /// <summary>Closes <c>poses.jsonl</c>.</summary>

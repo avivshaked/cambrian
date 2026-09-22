@@ -127,7 +127,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D105](#d105) | The physics on the card in single precision through ILGPU, designed for 100,000 bodies and first validated at 10,000 to 30,000 with the grid on the CPU, built in parallel with the animal-kit rounds; double on the 4090 is slower than the cores, and a single-precision world is a new realisation read by D104's gate | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 evening ("for the rest I think we can go with your recommendations") |
 | [D106](#d106) | The animal kit's first two rungs: the cell is the unit of death; a module gene per node (determinate or indeterminate) makes plants grow and regrow by a rule; four priced attributes on any cell (attack, intake, protection, toughness), heritable and mutable, capped per cell type, health as state healed from the reserve; a killed part becomes a corpse the killer gains nothing from, and the yield is intake from corpses; round 44 the module gene, round 45 the mouth, one genome format bump for both; then B, C, D in that order | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 evening, three decisions put in full |
 | [D107](#d107) | A body's size is bounded by the economy and not by a rule: the reach bound is rejected as a world rule and stays in the tree as an unset development guard; a support cost, each part paying for the load it puts on the chain to the root, is the next base round's proposal, with per-part contact beside it | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night |
-| [D108](#d108) | The tank is ten times larger from round 45 and the matter is not: 22,000 m² at 45 m with round 44's 1,500 units, the same crowd in ten times the water, the bed's wavelength held at 17.64 m; the farm out of Unity made the old size a habit rather than a constraint | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night, the size and the matter the owner's, the bed the agent's |
+| [D108](#d108) | The tank is ten times larger from round 45 and the matter is not: 22,000 m² at 45 m with round 44's 1,500 units, the same crowd in ten times the water, the bed's wavelength held at 17.64 m; the farm out of Unity made the old size a habit rather than a constraint. The matter superseded by D109 the same night | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night, the size and the matter the owner's, the bed the agent's |
+| [D109](#d109) | Islands and deserts: the matter seeded by a noise map into the top of a tenth of the columns, founders planted in the islands, the matter grid stirred at the snow's 0.02 m²/s (it was a hard default of 2), and 15,000 units so the water is round 44's density once the islands have spread; a light shade map built and off, its physical form (a shelf reef) proposed | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night, step by step after five screens |
 
 ---
 
@@ -5857,3 +5858,96 @@ ledger before the launch, and says what they read. A round's recordings do not g
 tank; its grid does, and a checkpoint carries ten times the water. Round 45's world is not
 round 44's in space, so the mouth is read on its own within-round predictions and its
 comparison with round 44 is qualitative.
+
+**Superseded in part by D109 the same night:** the matter. The screen this entry asked for
+found that the ten-times tank at 1,500 units does not found (one birth in 1,700 s) and,
+seeded as islands, founds and then starves; the budget is 15,000 units from D109, with the
+islands and the slow stirring as the spacing the owner wanted. The size and the bed stand.
+
+### D109
+**Islands and deserts: the matter seeded by a noise map, founders planted in the islands, the matter grid stirred at the snow's rate, and ten times the matter** · 2026-09-22
+
+**Status:** ruled by the owner in conversation on the night of 2026-09-22, in five steps, each
+after a screen: the islands ("I'd like to create a diluted tank but I'd like to do it with the
+idea of islands and deserts of matter using noise pattern. And then plant the founders in the
+matter islands."), the stirring ("Yeah we can definitely reduce diffusion rate", then "Your
+recommendation" on the rate), the density and the depth ("We can increase the density of matter
+in the islands right? Also we need a few distinct islands close to the top for initial founding
+plants."), the matter ("More matter is fine"), and the light ("Light is a uniform decaying field
+isn't it? How could we explain light concentrate?", on which the agent withdrew the shade map).
+The wavelength, the cover, the island depth and the founder depth are the agent's dials, said
+before the launch.
+
+**Decision.** From round 45 the matter is not spread evenly at t = 0. A gradient-noise map over
+x and z (`GradientNoise`, three octaves, the first at `MatterIslandWavelengthMetres`, 60 m in
+the round, seeded from the run's seed in a slot of its own) picks the columns in the top
+`MatterIslandCover` of its values (a tenth), and those columns hold the whole budget, level
+across each island but for a ramp over the outer quarter of its rise, in the cells of the top
+`MatterIslandDepthMetres` (12 m, twice the light's reach) only; the rest hold nothing. The
+placer accepts a founder's spot, and every spot the floor spawns into, with probability equal
+to its column's stock over the fullest column's (`FoundersFollowMatter`), drawing again on a
+refusal, and founders are spread only as deep as the islands (`EVOSIM_FOUNDER_DEPTH` 12). The
+matter grid stirs at `MatterMixingDiffusivity` 0.02 m²/s, the snow's rate, one water stirred at
+one rate; it was a hard default of 2 m²/s that no launcher named, and `EVOSIM_MATTER_MIXING`
+names it now. The budget is 15,000 units, ten times round 44's, so that the water is round
+44's density once the islands have spread; this supersedes D108's "same matter". A light shade
+map from the same noise (`LightShadeDepth`, with a drift) is built, tested and off: a dial at 0
+in every launcher, which is every recorded world's light. Every dump the farm writes carries
+the fields beside the snapshot (`fields/NNNNNNNNN.matter.f32`, every cell; `snow-columns.f32`,
+the column sums; `layout.json`), and `scripts/field-map.py` draws them with the bodies on top.
+
+**Why, screen by screen** (all `scratch/r45-build/runs/big*`, seed 1, the ten-times tank).
+At 1,500 units spread evenly the world does not found: one birth in 1,700 s (`bigC`), because
+a leaf's uptake at a tenth of the density is a thirtieth of its income and its surplus over
+its standing cost was a few percent of that (the ledger: 0.49 W in against 0.48 W standing).
+Seeded as islands at the old stirring the islands were gone in 800 s (`bigE`: L²/D at 2 m²/s
+over 40 m), which is why the rate had to move; at 0.02 m²/s with the first, peaked profile the
+founders stood in cells at half round 44's density (`bigF`), which is why the profile is a
+plateau; on the plateau at 1,500 units the founders founded and the crowd starved as its island
+spread (`bigH`: the fullest cell at round 44's density by 2,000 s and a third of it by
+4,000 s, `upt lim` 1.0 and 24 alive by then). The islands spread not by the explicit rate but by
+the gyre's own smearing on the 5 m cells, about 0.1 m²/s by a Gaussian fit, so the soup comes
+near 5,000 s whatever the dial says; the owner's aim ("soup only after 5k seconds") is what
+the water gives. Lighting the islands in full changed nothing (`bigI`: more light a body than
+round 44 and a seventh of its founding), which located the throttle: at 0.02 m²/s a leaf strips
+its 5 m cell faster than the neighbours refill it, so its income is the diffusive flux into the
+cell, `D × ρ`, and at a tenth of the density that is a tenth of the crowd a cell can hold. Ten
+times the matter restores the flux: at 15,000 units the world founds faster than round 44 (84
+births by 800 s against 63; 826 alive by 2,000 s), two crowds standing on two islands with the
+deserts empty at 1,500 s (`bigJ`), which is the picture the owner asked for. `bigK` is the
+same world with the shade off, the round's world.
+
+**What the islands are for, and what they are not.** They are the founding structure: a
+founder in round 44's water and nothing in the deserts, with the crowd's own consumption and
+return as the only thing that keeps any structure afterwards (round 44's snow field was three
+times as patchy as its dissolved one, so the mechanism is there to read). They are not a
+landscape that lasts: a stock in stirred water becomes soup, and the entry that reads the round
+says how fast. Whether the crowd keeps its islands after the matter has spread is the round's
+own reading, pre-registered in logbook/0114.
+
+**Rejected.** A varied diffusion rate, slow in the deserts and fast in the islands (the owner's
+idea, withdrawn on the agent's pushback: Fick's law flattens a gradient at whatever rate the
+slowest cell allows, so a slow desert holds nothing in and the islands empty into it; and the
+flattener is the gyre's smearing, which no diffusion dial reaches). A half-saturation dial
+(`bigD`, Ks 0.005, founds like round 44): a physiology changed to rescue a density is a
+calibration wearing a world rule's clothes. A fixed light map: light has no concentration, and
+a map of shade with nothing casting it is a landscape we designed, which DESIGN §5A.0b's
+argument against designed founders reaches; the physical form, a shelf at the surface on a rock
+column that shades the water beneath it and that the crowd collides with (the owner's idea, the
+same night), is proposed for the next base round and not built. Finer matter cells to slow the
+smearing: not measured, and the cell is ruled (D086); a screen for a later round.
+
+**Cost.** Six tunables (`MatterIslandWavelengthMetres`, `MatterIslandCover`,
+`MatterIslandDepthMetres`, `FoundersFollowMatter`, `LightShadeDepth`,
+`LightShadeDriftMetresPerHour`) refuse every `config.json` written before them, rounds 41
+through 45's void launch and both fixtures included; the fixtures are re-recorded
+(`pfix3` → `fixtures/r42-config.json`, `runs/r45fixc-s4`) and the Farm tests' round 42 hash is
+`c862fd2c510b82e9`. A founder's placement draws the placer's stream on every refusal, so the
+world is a new realisation of every seed whenever the rule is on. The Unity farm does not bind
+the six, so a world built there is uniform and unshaded and its header has no `matter islands`
+token. The count is no longer bounded by the budget the way D108 read it. If the deserts fill,
+the crowd is ten times round 44's and a seed is two days at the farm's pace; the runaway
+ceiling is raised to 25,000 so it does not censor the reading. And the matter grid at
+0.02 m²/s is a different world from rounds 32 to 44's at 2 m²/s in one respect that reads
+everywhere: a leaf's income is diffusion-limited at its cell, so `upt lim` is read as the
+crowd pressing on its cells' refill rather than on the tank's stock.

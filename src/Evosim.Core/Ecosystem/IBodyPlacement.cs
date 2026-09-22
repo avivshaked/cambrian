@@ -1,3 +1,5 @@
+using System;
+
 namespace Evosim.Core
 {
     /// <summary>
@@ -74,6 +76,18 @@ namespace Evosim.Core
         /// <param name="patch">The patch the reserved position falls in.</param>
         /// <returns>False when the world is too full to admit it.</returns>
         bool TryReserveFounder(Phenotype adult, ref float heightY, out int patch);
+
+        /// <summary>
+        /// D109's founder rule: the probability, in [0, 1], that a founder's candidate spot at
+        /// (x, z) is accepted, or null to accept every spot as before. A placer that does not
+        /// place by x and z ignores it, which is what this default does.
+        /// </summary>
+        /// <remarks>
+        /// A default interface member (C# 8, which netstandard2.1 and Unity 6 both carry) so
+        /// that the tiled placer and every test fake are unchanged: only a placer that draws a
+        /// spot in a shared volume can ask the question, and <c>SharedVolume</c> answers it.
+        /// </remarks>
+        Func<float, float, float> FounderAcceptance { get => null; set { } }
 
         /// <summary>
         /// The patch a living creature's body is actually in — D077's "a patch is a region".
