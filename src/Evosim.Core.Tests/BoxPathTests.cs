@@ -303,24 +303,31 @@ namespace Evosim.Core.Tests
             // wingspan CLAUDE.md records for a per-step change in the physics, here in Core),
             // and founders drawn over [0, 600] s of standing cost mostly wait. The values below
             // are what this build does, not what it should do; the pin is on sameness.
+            //
+            // And a third time on 2026-09-22, for the double accounts. This one moved nothing a
+            // reader would notice — the four counts and the mean depth are the same to the digit,
+            // because nothing here decides differently and the bodies do not move — and moved the
+            // two residuals by orders of magnitude, which is the change itself and not a side
+            // effect of it: the audit from 2.0e-04 J to 1.8e-12, the matter identity from
+            // −1.9e-06 units to 3.2e-08.
             Assert.Equal(41, world.Living.Count);
             Assert.Equal(11L, world.Births);
             Assert.Equal(127L, world.Deaths);
             Assert.Equal(157L, world.FloorSpawns);
 
             Assert.Equal(-15.408401535778511d, sumY / world.Living.Count);
-            Assert.Equal(3780.9458947453095d, world.Nutrients.TotalJoules);
-            Assert.Equal(6000.62490383003d, world.Matter.TotalJoules);
-            Assert.Equal(0.00020378494082251564d, world.AuditResidual);
+            Assert.Equal(3780.9459386203066d, world.Nutrients.TotalJoules);
+            Assert.Equal(6000.624902886111d, world.Matter.TotalJoules);
+            Assert.Equal(1.8189894035458565E-12d, world.AuditResidual);
 
             // The standing total is not the seeded 6,000 any more and cannot be: since D098's
             // leg 9 every founder the floor admits is an influx of charged matter, so the world
-            // grows by what the net hands it. The identity is what holds, and it holds at the
-            // width of a float sum over four hundred steps.
-            Assert.Equal(6122.100016296946d, world.StandingMatterUnits);
-            Assert.Equal(122.10001821815968d, world.MatterInfluxedTotal);
+            // grows by what the net hands it. The identity is what holds, and what is left of it
+            // is the field's own float door — a deposit is a float and a cell is a double.
+            Assert.Equal(6122.100018822618d, world.StandingMatterUnits);
+            Assert.Equal(122.10001879076472d, world.MatterInfluxedTotal);
             Assert.Equal(0d, world.MatterBuriedTotal);
-            Assert.Equal(-1.9212138795410283E-06d, world.MatterResidual);
+            Assert.Equal(3.185331820532156E-08d, world.MatterResidual);
         }
     }
 }

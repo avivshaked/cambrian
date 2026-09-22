@@ -28,8 +28,8 @@ namespace Evosim.Core.Tests
             var manyFeeble = new ReproductionTraits { BroodSize = 4, BirthInvestment = 0.5f };
             var oneRich = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f };
 
-            float many = manyFeeble.CostJoules(Tissue, Overhead);
-            float one = oneRich.CostJoules(Tissue, Overhead);
+            double many = manyFeeble.CostJoules(Tissue, Overhead);
+            double one = oneRich.CostJoules(Tissue, Overhead);
 
             _output.WriteLine($"4 x 0.125 of a {Tissue} J body -> {many} J, 1 x 0.5 -> {one} J " +
                               $"(overhead {Overhead})");
@@ -90,14 +90,14 @@ namespace Evosim.Core.Tests
             traits.ReserveMargin = 0f;
             creature.Genome.Reproduction = traits;
 
-            float bare = creature.ReproductionThreshold(Overhead);
+            double bare = creature.ReproductionThreshold(Overhead);
             Assert.Equal(traits.CostJoules(creature.TissueJoules, Overhead), bare);
 
             // And the margin is added on top, in joules, at this body's own burn rate.
             traits.ReserveMargin = 300f;
             creature.Genome.Reproduction = traits;
 
-            float cautious = creature.ReproductionThreshold(Overhead);
+            double cautious = creature.ReproductionThreshold(Overhead);
 
             _output.WriteLine(
                 $"tissue {creature.TissueJoules:0.###} J, standing {creature.StandingWatts:0.####} W: " +

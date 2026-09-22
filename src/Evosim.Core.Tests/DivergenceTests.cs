@@ -80,8 +80,8 @@ namespace Evosim.Core.Tests
             // starvation path at the bottom of Metabolise moves, and a diverged body must move
             // the same three by the same amounts. Both causes reach World.Bury, which is the
             // structural half of this assertion; these numbers are the measured half.
-            float energy = victim.Energy;
-            float tissue = victim.TissueJoules;
+            double energy = victim.Energy;
+            double tissue = victim.TissueJoules;
 
             double energyOut = world.EnergyOut;
             double detritus = world.Nutrients.TotalJoules;

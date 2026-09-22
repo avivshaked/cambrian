@@ -40,7 +40,13 @@ namespace Evosim.Farm
         public const string DirectoryName = "checkpoints";
 
         /// <summary>The format this build writes and the only one it reads.</summary>
-        public const int Version = 1;
+        /// <remarks>
+        /// 2 since 2026-09-22, with <c>World.StateVersion</c>: a creature's reserve, tissue and
+        /// adult tissue are doubles in the payload now. The world's own version would catch it,
+        /// and this one is bumped beside it so the refusal happens at the file's header rather
+        /// than a few hundred kilobytes in.
+        /// </remarks>
+        public const int Version = 2;
 
         /// <summary>Bytes before the header's own fields.</summary>
         public const int MagicBytes = 12;

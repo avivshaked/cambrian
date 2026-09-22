@@ -267,7 +267,7 @@ namespace Evosim.Core.Tests
             _output.WriteLine("| half-extent m | lit area m² | volume m³ | income W | upkeep W | ratio |");
             _output.WriteLine("|---|---|---|---|---|---|");
 
-            float previousRatio = float.MaxValue;
+            double previousRatio = double.MaxValue;
 
             foreach (float h in new[] { 0.05f, 0.1f, 0.15f, 0.2f, 0.3f, 0.4f, 0.6f, 1.0f })
             {
@@ -275,7 +275,7 @@ namespace Evosim.Core.Tests
                     Sheet(h, h, h), config.Development, null, config.Shapes);
 
                 EnergyLedger ledger = Metabolism.Step(p, config, light, 0f, 0f, 1f, 0f, 1f);
-                float ratio = ledger.Income / Math.Max(1e-9f, ledger.Expenditure);
+                double ratio = ledger.Income / Math.Max(1e-9f, ledger.Expenditure);
 
                 _output.WriteLine(
                     $"| {h:0.##} | {p.Parts[0].LitArea:0.####} | {p.Parts[0].Volume:0.####} | " +
@@ -306,7 +306,7 @@ namespace Evosim.Core.Tests
             _output.WriteLine("|---|---|---|---|");
 
             const float Volume = 0.216f;   // the 0.3 m cube above, reshaped
-            float previousRatio = 0f;
+            double previousRatio = 0d;
             float thinnest = 0f;
 
             foreach (float t in new[] { 0.3f, 0.1f, 0.03f, 0.01f, 0.003f, 0.001f })
@@ -318,7 +318,7 @@ namespace Evosim.Core.Tests
                     Sheet(t, w, w), config.Development, null, config.Shapes);
 
                 EnergyLedger ledger = Metabolism.Step(p, config, light, 0f, 0f, 1f, 0f, 1f);
-                float ratio = ledger.Income / Math.Max(1e-9f, ledger.Expenditure);
+                double ratio = ledger.Income / Math.Max(1e-9f, ledger.Expenditure);
 
                 _output.WriteLine(
                     $"| {t:0.####} | {p.Parts[0].LitArea:0.###} | {p.Parts[0].Volume:0.####} | " +

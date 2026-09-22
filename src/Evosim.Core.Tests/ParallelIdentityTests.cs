@@ -10,19 +10,24 @@ namespace Evosim.Core.Tests
 {
     /// <summary>
     /// Round 42's world, stepped 400 times with a few hundred bodies in it, produces the same
-    /// bits at every <see cref="Parallelism.Threads"/> — and the same bits the single-threaded
-    /// build produced before any of the threading existed.
+    /// bits at every <see cref="Parallelism.Threads"/>, and the same bits it produced the last
+    /// time the world's arithmetic was deliberately changed.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Where the pinned word came from.</b> <c>1d1ee59f210b8bda</c> was taken on 2026-09-21
-    /// from commit <c>3560172</c>'s <c>src/Evosim.Core</c> — the tree as it stood before this
-    /// work — extracted with <c>git archive</c> into a directory of its own and compiled with the
-    /// same <see cref="StateHash"/> walk this file carries, driven by
-    /// <c>src/Evosim.Core.Bench</c>'s <c>--hash</c> mode against the same
-    /// <c>fixtures/r42-config.json</c>, the same seed, the same 300 seeded founders and the same
-    /// 400 metabolic steps. So it is not this build's own answer recorded and then asserted: it
-    /// is the answer of the build this one has to agree with.
+    /// <b>Where the pinned word came from, and what it stopped being.</b> Until 2026-09-22 it was
+    /// <c>1d1ee59f210b8bda</c>, taken on 2026-09-21 from commit <c>3560172</c>'s
+    /// <c>src/Evosim.Core</c> — the tree as it stood before the threading — extracted with
+    /// <c>git archive</c> into a directory of its own and compiled with the same
+    /// <see cref="StateHash"/> walk this file carries. That word was the answer of a build this
+    /// one had to agree with, which is a stronger thing than a recorded self-portrait. Widening a
+    /// body's reserve and tissue to doubles ended that: the pre-threading build cannot produce
+    /// the new word, and the hash walk now reads those two accounts as doubles besides. So
+    /// <c>c9b0cabce249c1dd</c> is this build's own answer, recorded once, at 1, 4 and 16 threads
+    /// alike, against the same <c>fixtures/r42-config.json</c>, the same seed, the same 300
+    /// seeded founders and the same 400 metabolic steps. It pins sameness from here, as
+    /// <c>BoxPathTests</c>' golden does — a change that moves it is either intended or a bug, and
+    /// the test cannot tell which.
     /// </para>
     /// <para>
     /// <b>Why the hash and not a few totals.</b> A total closes over a great deal of drift — two
@@ -38,15 +43,23 @@ namespace Evosim.Core.Tests
     /// farm's wall the world step was taking — and a physics engine in the middle would only add
     /// a second thing that could differ.
     /// </para>
+    /// <para>
+    /// <b>Marked <c>Slow</c> and out of the default run</b> (2026-09-22): three worlds of 173,000
+    /// cells stepped 400 times take 40 to 50 seconds, which was most of the default suite's
+    /// minute. It is <c>-All</c>'s job now, beside the calibration sweeps — and <c>-All</c> is
+    /// what CLAUDE.md already requires before a commit that touches the world, which is the only
+    /// kind of commit that can move either half of what this asserts.
+    /// </para>
     /// </remarks>
+    [Trait("Category", "Slow")]
     public class ParallelIdentityTests
     {
         private readonly ITestOutputHelper _output;
 
         public ParallelIdentityTests(ITestOutputHelper output) => _output = output;
 
-        /// <summary>The word the pre-threading build wrote. See the class remarks.</summary>
-        private const string BeforeTheThreading = "1d1ee59f210b8bda";
+        /// <summary>The word this build writes at any thread count. See the class remarks.</summary>
+        private const string TheWord = "c9b0cabce249c1dd";
 
         private const int Steps = 400;
         private const int Bodies = 300;
@@ -69,9 +82,9 @@ namespace Evosim.Core.Tests
                 _output.WriteLine("threads  1: " + one);
                 _output.WriteLine("threads  4: " + four);
                 _output.WriteLine("threads 16: " + sixteen);
-                _output.WriteLine("before    : " + BeforeTheThreading);
+                _output.WriteLine("pinned    : " + TheWord);
 
-                Assert.Equal(BeforeTheThreading, one);
+                Assert.Equal(TheWord, one);
                 Assert.Equal(one, four);
                 Assert.Equal(one, sixteen);
             }
@@ -228,8 +241,8 @@ namespace Evosim.Core.Tests
                     Organism creature = world.Living[i];
 
                     Long(ref h, creature.Id);
-                    Float(ref h, creature.Energy);
-                    Float(ref h, creature.TissueJoules);
+                    Double(ref h, creature.Energy);
+                    Double(ref h, creature.TissueJoules);
                     Float(ref h, creature.Age);
                     Float(ref h, creature.HeightY);
                     Float(ref h, creature.X);

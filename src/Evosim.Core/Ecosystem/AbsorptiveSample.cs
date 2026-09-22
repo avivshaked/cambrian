@@ -198,16 +198,19 @@ namespace Evosim.Core
                 creature.Phenotype.TotalLitArea,
                 creature.Phenotype.PartCount,
                 creature.HasPhotosyntheticTissue,
-                creature.Energy,
-                creature.TissueJoules,
+
+                // Narrowed here, and only here: a row of absorptive.jsonl is an instrument
+                // reading, not an account, and the file's schema is float throughout.
+                (float)creature.Energy,
+                (float)creature.TissueJoules,
                 creature.Genome.Reproduction.BirthInvestment,
                 creature.LastDensityHere,
                 creature.LastShare,
                 ledger.FoodIncome * perSecond,
                 ledger.LightIncome * perSecond,
-                ledger.Expenditure * perSecond,
+                (float)(ledger.Expenditure * perSecond),
                 ledger.Exuded * perSecond,
-                ledger.Net * perSecond,
+                (float)(ledger.Net * perSecond),
                 creature.Children,
                 creature.LastChildSeconds,
                 dead);

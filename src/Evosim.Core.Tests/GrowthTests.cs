@@ -92,7 +92,8 @@ namespace Evosim.Core.Tests
 
             Organism parent = world.Living[0];
 
-            float energyBefore = 0f, tissueBefore = 0f, ageBefore = 0f;
+            double energyBefore = 0d, tissueBefore = 0d;
+            float ageBefore = 0f;
             long births = 0;
 
             for (int step = 0; step < 4000; step++)
@@ -115,13 +116,13 @@ namespace Evosim.Core.Tests
 
             // What the step earned the parent, priced the way World.Metabolise priced it: the
             // field still holds this step's solve, since it is rebuilt at the top of the next one.
-            float net = Metabolism.StepAt(
+            double net = Metabolism.StepAt(
                 parent.Phenotype, config, world.Field.IrradianceAt(parent.HeightY, parent.Patch),
                 nutrientDensity: 0f,
                 spentDensity: 1f, workJoules: 0f, seconds: 1f, ageSeconds: ageBefore).Net;
 
-            float spent = energyBefore + net - parent.Energy;
-            float expected = 0.5f * tissueBefore + 2 * config.PerOffspringOverheadJoules;
+            double spent = energyBefore + net - parent.Energy;
+            double expected = 0.5 * tissueBefore + 2 * config.PerOffspringOverheadJoules;
 
             _output.WriteLine(
                 $"parent tissue {tissueBefore:0.###} J: spent {spent:0.###} J against " +
@@ -130,7 +131,7 @@ namespace Evosim.Core.Tests
             Fixtures.AssertClose(expected, spent, expected * 1e-3f);
 
             // Each child: a fifth of its adult body, and a reserve of a fifth of its share.
-            float share = 0.5f * tissueBefore / 2f;
+            double share = 0.5 * tissueBefore / 2d;
 
             for (int i = 1; i < world.Living.Count; i++)
             {
@@ -164,7 +165,8 @@ namespace Evosim.Core.Tests
             Organism parent = world.Living[0];
             Assert.Equal(1f, parent.BodyFraction);   // 3 x 0.8 of an adult body, capped at one
 
-            float energyBefore = 0f, tissueBefore = 0f, ageBefore = 0f;
+            double energyBefore = 0d, tissueBefore = 0d;
+            float ageBefore = 0f;
 
             for (int step = 0; step < 4000; step++)
             {
@@ -180,20 +182,20 @@ namespace Evosim.Core.Tests
 
             Organism child = world.Living[1];
 
-            float net = Metabolism.StepAt(
+            double net = Metabolism.StepAt(
                 parent.Phenotype, config, world.Field.IrradianceAt(parent.HeightY, parent.Patch),
                 nutrientDensity: 0f,
                 spentDensity: 1f, workJoules: 0f, seconds: 1f, ageSeconds: ageBefore).Net;
 
-            float spent = energyBefore + net - parent.Energy;
+            double spent = energyBefore + net - parent.Energy;
 
             // The whole share is capped, not only the body it buys: the ceiling is the share
             // that exactly fills the adult body once the reserve has come out of it, so the
             // reserve a finished child arrives with is that body's fraction and not the parent's.
-            float share = 3f * tissueBefore;
+            double share = 3d * tissueBefore;
             float reserveFraction = config.NewbornReserveFraction;
-            float cappedShare = tissueBefore / (1f - reserveFraction);
-            float capped = tissueBefore + cappedShare * reserveFraction +
+            double cappedShare = tissueBefore / (1d - reserveFraction);
+            double capped = tissueBefore + cappedShare * reserveFraction +
                            config.PerOffspringOverheadJoules;
 
             _output.WriteLine(
@@ -482,20 +484,20 @@ namespace Evosim.Core.Tests
             Organism creature = world.Living[0];
             Assert.True(creature.BodyFraction < 1f, "the inoculant was born finished");
 
-            float energyBefore = creature.Energy;
-            float tissueBefore = creature.TissueJoules;
+            double energyBefore = creature.Energy;
+            double tissueBefore = creature.TissueJoules;
             float fractionBefore = creature.BodyFraction;
             double fieldBefore = world.Matter.TotalJoules;
             double residualBefore = world.MatterResidual;
 
-            float net = Metabolism.StepAt(
+            double net = Metabolism.StepAt(
                 creature.Phenotype, config, world.Light.IrradianceAt(-1f),
                 nutrientDensity: 0f,
                 spentDensity: 1f, workJoules: 0f, seconds: 1f, ageSeconds: 0f).Net;
 
             world.Step(1f);
 
-            float grown = creature.TissueJoules - tissueBefore;
+            double grown = creature.TissueJoules - tissueBefore;
 
             _output.WriteLine(
                 $"grew {grown:0.####} J of tissue; fraction " +
@@ -528,7 +530,7 @@ namespace Evosim.Core.Tests
             world.Inoculate(Box(CellTypeIds.Photosynthetic, 0.3f, investment: 0.5f), 1, -1f);
 
             Organism creature = world.Living[0];
-            float adult = creature.AdultTissueJoules;
+            double adult = creature.AdultTissueJoules;
 
             int stepsToAdult = -1;
             for (int step = 0; step < 3000 && stepsToAdult < 0; step++)
@@ -548,7 +550,7 @@ namespace Evosim.Core.Tests
 
             // And it stops: the reserve is banked from here on rather than spent on a body that
             // is already built, which is what makes an adult a breeder.
-            float tissue = creature.TissueJoules;
+            double tissue = creature.TissueJoules;
             for (int step = 0; step < 50; step++) world.Step(1f);
 
             Assert.Equal(tissue, creature.TissueJoules);
@@ -570,12 +572,12 @@ namespace Evosim.Core.Tests
 
             Organism creature = world.Living[0];
 
-            float tissueBefore = creature.TissueJoules;
+            double tissueBefore = creature.TissueJoules;
 
             long limitedBefore = world.UptakeLimitedSteps;
             for (int step = 0; step < 200; step++) world.Step(1f);
 
-            float grown = creature.TissueJoules - tissueBefore;
+            double grown = creature.TissueJoules - tissueBefore;
 
             _output.WriteLine(
                 $"the body grew {grown:0.#####} J in stripped water; uptake bound on " +
@@ -666,7 +668,7 @@ namespace Evosim.Core.Tests
                     Assert.Equal(
                         Metabolism.TissueJoules(creature.Phenotype, config), creature.TissueJoules);
 
-                    float fraction = creature.TissueJoules / creature.AdultTissueJoules;
+                    double fraction = creature.TissueJoules / creature.AdultTissueJoules;
                     Fixtures.AssertClose(fraction, creature.BodyFraction, 1e-6f);
                     Assert.InRange(creature.BodyFraction, 0f, 1f);
                 }

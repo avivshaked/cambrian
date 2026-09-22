@@ -162,7 +162,7 @@ namespace Evosim.Ledger
             StringBuilder sb, string heading, string genomePath, Phenotype body, RunConfig config,
             float spentDensity)
         {
-            float tissue = Metabolism.TissueJoules(body, config);
+            double tissue = Metabolism.TissueJoules(body, config);
             float standingWatts = Metabolism.StandingWatts(body, config);
 
             // D098. What this body fixes at the surface in the water the run seeds, in the unit
@@ -194,7 +194,7 @@ namespace Evosim.Ledger
             sb.Append("- Lit area (capped): ")
               .Append(Format(body.EffectiveLitArea(config.LightSilhouetteCap))).Append(" m2 (cap ")
               .Append(config.LightSilhouetteCap ? "on" : "off").Append(")\n");
-            sb.Append("- Tissue: ").Append(Format(tissue)).Append(" J\n");
+            sb.Append("- Tissue: ").Append(Format((float)tissue)).Append(" J\n");
             sb.Append("- Standing cost: ").Append(Format(standingWatts)).Append(" W (")
               .Append(Format(standingWatts / config.JoulesPerUnit)).Append(" units/s)\n");
             sb.Append("- Fixation at surface: ").Append(Format(fixationWatts)).Append(" W (")

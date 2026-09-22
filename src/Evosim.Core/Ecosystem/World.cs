@@ -202,7 +202,7 @@ namespace Evosim.Core
         /// Indexed by position in <c>_living</c> rather than by rank, because the comparer reads it
         /// by the index it is handed. Kept and reused for <see cref="_conceptionOrder"/>'s reason.
         /// </remarks>
-        private float[] _conceptionSurplus = Array.Empty<float>();
+        private double[] _conceptionSurplus = Array.Empty<double>();
 
         /// <summary>
         /// <see cref="ConceptionOrder.Reserve"/>'s ordering. Held rather than built each step, in
@@ -2161,17 +2161,17 @@ namespace Evosim.Core
                 // the reserve that used to go negative for one step before the death check is
                 // now clamped at zero by the arithmetic rather than by the check. A body that
                 // could not pay in full dies this step, which is the same death §5A.6 always had.
-                float before = creature.Energy;
-                float burnable = Math.Max(0f, before + ledger.Income - ledger.Exuded);
-                float burnt = Math.Min(ledger.Expenditure, burnable);
+                double before = creature.Energy;
+                double burnable = Math.Max(0d, before + ledger.Income - ledger.Exuded);
+                double burnt = Math.Min(ledger.Expenditure, burnable);
                 // Applied as one small delta on the reserve, never as `before + income - burnt`
-                // through two roundings of a 200 J intermediate: the merged build's three grid
-                // identity tests read the audit at 1.1 to 1.7e-6 of the light in with the
-                // long form, which is float32 drift and not a leg, and the short form is the
-                // one rounding the old `Energy += Net` made. A body that could not pay is set
-                // to exactly zero, so the death check below never sees a rounding crumb.
+                // through two roundings of a 200 J intermediate. That shape was written when the
+                // reserve was a float and one rounding was all that could be afforded; in double
+                // it is simply the form that keeps the delta and the books the same expression.
+                // A body that could not pay is set to exactly zero, so the death check below
+                // never sees a rounding crumb.
                 creature.Energy = burnt < ledger.Expenditure
-                    ? 0f
+                    ? 0d
                     : before + (ledger.Income - ledger.Exuded - burnt);
 
                 // D070. What the body released to the water this step, put where the body is.
@@ -2193,10 +2193,17 @@ namespace Evosim.Core
                 // The burn, in both books at once. The joules leave the world as heat and the
                 // same over ρ arrives in the spent field where the body is — the whole of D052's
                 // excretion leg, at exactly 1 / ρ and with no knob of its own.
-                if (burnt > 0f)
+                if (burnt > 0d)
                 {
                     EnergyOut += burnt;
-                    float returned = burnt / Config.JoulesPerUnit;
+
+                    // The one float left in this transfer, and it is the field's API rather than
+                    // an account: a deposit is a float and a cell is a double, so the water gains
+                    // half an ulp less or more than the reserve gave up. That is about 1e-12 units
+                    // a body-step against the 1e-7 the float reserve was losing, and it is the
+                    // same quantisation every deposit in the world already has (StepCorpses says
+                    // so at the corpse's last instalment).
+                    float returned = (float)(burnt / Config.JoulesPerUnit);
                     Matter.Deposit(creature.Point, returned);
                     BurntTotal += returned;
                 }
@@ -2205,10 +2212,13 @@ namespace Evosim.Core
                 // and it goes back into the water where the feeder is rather than leaving the
                 // world. The transfer loss that shortens a food chain is unchanged in size; what
                 // changed is that it is now somebody else's food.
-                if (ledger.Wasted > 0f)
+                if (ledger.Wasted > 0d)
                 {
-                    Nutrients.Deposit(creature.Point, ledger.Wasted);
-                    DetritusReturnedTotal += ledger.Wasted;
+                    // Deposited as the float the field takes and booked as the same float, so the
+                    // water's account and the flux counter cannot disagree by a rounding.
+                    float faeces = (float)ledger.Wasted;
+                    Nutrients.Deposit(creature.Point, faeces);
+                    DetritusReturnedTotal += faeces;
                 }
 
                 // D098's leg 10. A hoard above the cap is released to the water as charged
@@ -2218,18 +2228,25 @@ namespace Evosim.Core
                 // Off at ReserveCapSeconds 0, which is every world before this one.
                 if (Config.ReserveCapSeconds > 0f && creature.StandingWatts > 0f)
                 {
-                    float cap = Config.ReserveCapSeconds * creature.StandingWatts;
+                    double cap = (double)Config.ReserveCapSeconds * creature.StandingWatts;
                     if (creature.Energy > cap)
                     {
-                        float excess = creature.Energy - cap;
-                        creature.Energy = cap;
-                        Nutrients.Deposit(creature.Point, excess);
-                        DetritusExudedTotal += excess;
-                        ReserveTrimmedTotal += excess;
+                        // The trim is the float the water is handed, and the reserve gives up
+                        // exactly that rather than being set to the cap: what leaves one account
+                        // is what arrives in the other, and the reserve ends within an ulp of the
+                        // cap instead of the transfer ending within an ulp of exact.
+                        float excess = (float)(creature.Energy - cap);
+                        if (excess > 0f)
+                        {
+                            creature.Energy -= excess;
+                            Nutrients.Deposit(creature.Point, excess);
+                            DetritusExudedTotal += excess;
+                            ReserveTrimmedTotal += excess;
+                        }
                     }
                 }
 
-                if (creature.Energy > 0f) continue;
+                if (creature.Energy > 0d) continue;
 
                 // §5A.6 kills at exactly zero energy and nothing else — the ecology has one cause
                 // of death, and senescence (D038) raises upkeep until this fires sooner rather
@@ -2290,29 +2307,29 @@ namespace Evosim.Core
                 Organism creature = _living[i];
                 if (creature.BodyFraction >= 1f) continue;
 
-                float adultTissue = creature.AdultTissueJoules;
-                float remaining = adultTissue - creature.TissueJoules;
-                if (!(remaining > 0f)) continue;
+                double adultTissue = creature.AdultTissueJoules;
+                double remaining = adultTissue - creature.TissueJoules;
+                if (!(remaining > 0d)) continue;
 
                 // What the reserve can spare. The floor is a fraction of the body this creature
                 // already has, so a large body keeps a large buffer and a newborn keeps a small
                 // one — the same proportion of the same thing at every size.
-                float target = creature.Energy - reserveFloor * creature.TissueJoules;
+                double target = creature.Energy - (double)reserveFloor * creature.TissueJoules;
                 if (target > remaining) target = remaining;
-                if (!(target > 0f)) continue;
+                if (!(target > 0d)) continue;
 
-                float fraction = (creature.TissueJoules + target) / adultTissue;
-                if (fraction > 1f) fraction = 1f;
+                double fraction = (creature.TissueJoules + target) / adultTissue;
+                if (fraction > 1d) fraction = 1d;
 
                 // The cube root, because the fraction is a volume and the parts are scaled by a
                 // length. Phenotype.Scaled says why the adult is the thing scaled from.
-                Phenotype grown = fraction >= 1f
+                Phenotype grown = fraction >= 1d
                     ? creature.AdultPhenotype
                     : creature.AdultPhenotype.Scaled(
                         (float)Math.Pow(fraction, 1d / 3d), Config.Shapes);
 
-                float actual = fraction >= 1f ? adultTissue : Metabolism.TissueJoules(grown, Config);
-                float spend = actual - creature.TissueJoules;
+                double actual = fraction >= 1d ? adultTissue : Metabolism.TissueJoules(grown, Config);
+                double spend = actual - creature.TissueJoules;
 
                 // The one case this refuses: a body whose re-measured tissue costs a hair more
                 // than the reserve holds. It is reachable only when the increment is already down
@@ -2323,7 +2340,7 @@ namespace Evosim.Core
                 creature.Energy -= spend;
                 creature.TissueJoules = actual;
                 creature.Phenotype = grown;
-                creature.BodyFraction = actual >= adultTissue ? 1f : actual / adultTissue;
+                creature.BodyFraction = actual >= adultTissue ? 1f : (float)(actual / adultTissue);
 
                 // The two cached readings of a body that has just changed size. The standing cost
                 // is asked at this creature's own age so that growing does not quietly reset its
@@ -2386,26 +2403,27 @@ namespace Evosim.Core
             // still held. A starved body's reserve is 0 by leg 2, so a starvation corpse is the
             // tissue exactly as it always was; a diverged body is generally solvent, and this is
             // the line that stopped throwing its savings away.
-            float remains = creature.TissueJoules + Math.Max(0f, creature.Energy);
-            creature.Energy = 0f;
+            double remains = creature.TissueJoules + Math.Max(0d, creature.Energy);
+            creature.Energy = 0d;
 
             // Rule 6 of fable-propose-grid.md: above zero the body leaves a corpse instead, and
             // the deposit below happens in instalments from wherever the corpse has drifted to.
             // Nothing else about the death changes, and the lineage row is the same row. Guarded
             // on the knob rather than written as a general path, so at 0 the deposit below runs
             // exactly as it always has and every world on file replays.
-            if (Config.CorpseDecayPerSecond > 0f && remains > 0f)
+            if (Config.CorpseDecayPerSecond > 0f && remains > 0d)
             {
                 // A body with nothing to give founds nothing: a floor founder that never paid for
                 // itself and developed into no tissue would otherwise leave an empty object for
-                // the pass to carry and drop.
+                // the pass to carry and drop. A corpse's account is a double like the body's, so
+                // this branch is exact — what the body was worth is what the corpse holds.
                 _corpses.Add(new Corpse(
                     creature.Id, creature.Point.Position, creature.Patch, remains));
 
                 // No counterpart line for either account: StandingJoules reads a living body's
                 // tissue and reserve and a corpse's joules into the same total, and the body's
                 // own are zeroed here.
-                creature.TissueJoules = 0f;
+                creature.TissueJoules = 0d;
             }
             else
             {
@@ -2414,10 +2432,15 @@ namespace Evosim.Core
                 // generation zero is the world's first food rather than merely a waste of seeds.
                 // HeightY is the last height Observe accepted, and Observe refuses a non-finite one
                 // — so this is the last *finite* depth even when the body's own transform is NaN.
-                Nutrients.Deposit(creature.Point, remains);
-                if (remains > 0f) DetritusDepositedTotal += remains;
+                // The field takes a float and the body's accounts are doubles, so what is handed
+                // over is quantised once and booked as the same number — half an ulp of a body's
+                // worth per death, against the ulp of a whole reserve the float account was
+                // losing every step.
+                float given = (float)remains;
+                Nutrients.Deposit(creature.Point, given);
+                if (given > 0f) DetritusDepositedTotal += given;
 
-                creature.TissueJoules = 0f;
+                creature.TissueJoules = 0d;
             }
 
             _living.RemoveAt(index);
@@ -2768,8 +2791,8 @@ namespace Evosim.Core
         /// </remarks>
         private void Brood(Organism parent)
         {
-            float gate = parent.ReproductionThreshold(Config.PerOffspringOverheadJoules);
-            if (gate <= 0f || parent.Energy < gate) return;
+            double gate = parent.ReproductionThreshold(Config.PerOffspringOverheadJoules);
+            if (gate <= 0d || parent.Energy < gate) return;
 
             for (int n = 0; n < parent.Genome.Reproduction.BroodSize; n++)
             {
@@ -2833,7 +2856,7 @@ namespace Evosim.Core
         {
             int count = _living.Count;
             if (_conceptionOrder.Length < count) _conceptionOrder = new int[count];
-            if (_conceptionSurplus.Length < count) _conceptionSurplus = new float[count];
+            if (_conceptionSurplus.Length < count) _conceptionSurplus = new double[count];
 
             int solvent = 0;
 
@@ -2841,8 +2864,8 @@ namespace Evosim.Core
             {
                 Organism parent = _living[i];
 
-                float gate = parent.ReproductionThreshold(Config.PerOffspringOverheadJoules);
-                if (gate <= 0f || parent.Energy < gate) continue;
+                double gate = parent.ReproductionThreshold(Config.PerOffspringOverheadJoules);
+                if (gate <= 0d || parent.Energy < gate) continue;
 
                 _conceptionSurplus[i] = parent.Energy - gate;
                 _conceptionOrder[solvent++] = i;
@@ -2897,9 +2920,9 @@ namespace Evosim.Core
             // whole start: the body it is born with plus its first reserve, split by a world
             // constant so that no lineage can set its children's reserve to zero.
             ReproductionTraits traits = parent.Genome.Reproduction;
-            float share = traits.BirthInvestment * parent.TissueJoules / traits.BroodSize;
+            double share = traits.BirthInvestment * parent.TissueJoules / traits.BroodSize;
 
-            float adultTissue = Metabolism.TissueJoules(body, Config);
+            double adultTissue = Metabolism.TissueJoules(body, Config);
 
             // The whole share is capped, not only the body it buys (rule 3, corrected in the
             // review of 2026-09-08). A parent may not buy a creature larger than its genome
@@ -2912,23 +2935,23 @@ namespace Evosim.Core
             // and the mass floor below is what refuses that.
             float reserveFraction = Config.NewbornReserveFraction;
 
-            if (!stillborn && adultTissue > 0f && reserveFraction < 1f)
+            if (!stillborn && adultTissue > 0d && reserveFraction < 1f)
             {
-                float cap = adultTissue / (1f - reserveFraction);
+                double cap = adultTissue / (1d - reserveFraction);
                 if (share > cap) share = cap;
             }
 
-            float reserve = share * reserveFraction;
-            float bodyValue = share - reserve;
+            double reserve = share * reserveFraction;
+            double bodyValue = share - reserve;
 
-            float fraction = adultTissue > 0f ? bodyValue / adultTissue : 1f;
-            if (fraction > 1f) fraction = 1f;
+            double fraction = adultTissue > 0d ? bodyValue / adultTissue : 1d;
+            if (fraction > 1d) fraction = 1d;
 
-            Phenotype newborn = stillborn || fraction >= 1f
+            Phenotype newborn = stillborn || fraction >= 1d
                 ? body
                 : body.Scaled((float)Math.Pow(fraction, 1d / 3d), Config.Shapes);
 
-            float tissue = stillborn || fraction >= 1f
+            double tissue = stillborn || fraction >= 1d
                 ? adultTissue
                 : Metabolism.TissueJoules(newborn, Config);
 
@@ -2945,7 +2968,10 @@ namespace Evosim.Core
                 return Conception.UnderFloor;
             }
 
-            float price = tissue + reserve + Config.PerOffspringOverheadJoules;
+            // In double, so that what the parent gives up is exactly what the child carries plus
+            // what the overhead burns. In float this sum rounded against a price of order the
+            // overhead — 100 J against a 0.4 J body — and the missing joule was in neither book.
+            double price = tissue + reserve + Config.PerOffspringOverheadJoules;
 
             // D098 §3. The price plus what the genome insists on keeping — the same expression
             // Organism.ReproductionThreshold applies, so a parent that got here has already
@@ -2953,7 +2979,7 @@ namespace Evosim.Core
             // margin is read off the parent's current standing cost, not the one it was born
             // with, because a body that has grown is a body with more to keep back.
             if (parent.Energy <
-                price + parent.Genome.Reproduction.ReserveMargin * parent.StandingWatts)
+                price + (double)parent.Genome.Reproduction.ReserveMargin * parent.StandingWatts)
             {
                 ConceptionsUnderMargin++;
                 return Conception.Refused;
@@ -3125,7 +3151,7 @@ namespace Evosim.Core
                 // fifth of its adult body arrives with a fifth of the purse — otherwise the floor
                 // would hand the smallest bodies the largest head starts.
                 bool admissible = NewbornFrom(
-                    genome, adult, out Phenotype body, out float tissue, out float birthFraction);
+                    genome, adult, out Phenotype body, out double tissue, out float birthFraction);
 
                 // Rule 3 applies to a founder's body too, and the floor's answer is simply to
                 // draw again next step. Counted rather than retried here, for the same reason a
@@ -3268,7 +3294,7 @@ namespace Evosim.Core
                 // lineage.
                 // Refused above, once, before the loop: the preflight and this call see the
                 // same genome and the same config, so this cannot come back false here.
-                NewbornFrom(genome, adult, out Phenotype body, out float tissue,
+                NewbornFrom(genome, adult, out Phenotype body, out double tissue,
                     out float birthFraction);
 
                 bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
@@ -3366,9 +3392,9 @@ namespace Evosim.Core
         /// </returns>
         private bool NewbornFrom(
             Genome genome, Phenotype adult,
-            out Phenotype newborn, out float tissue, out float birthFraction)
+            out Phenotype newborn, out double tissue, out float birthFraction)
         {
-            float adultTissue = Metabolism.TissueJoules(adult, Config);
+            double adultTissue = Metabolism.TissueJoules(adult, Config);
             ReproductionTraits traits = genome.Reproduction;
 
             float wanted = traits.BirthInvestment / traits.BroodSize *
@@ -3392,7 +3418,7 @@ namespace Evosim.Core
             {
                 newborn = adult.Scaled((float)Math.Pow(wanted, 1d / 3d), Config.Shapes);
                 tissue = Metabolism.TissueJoules(newborn, Config);
-                birthFraction = adultTissue > 0f ? tissue / adultTissue : 1f;
+                birthFraction = adultTissue > 0d ? (float)(tissue / adultTissue) : 1f;
             }
 
             return !IsUnderTheMassFloor(newborn);
@@ -3451,8 +3477,8 @@ namespace Evosim.Core
         /// </param>
         private Organism Admit(
             Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
-            int generationDepth, float energy, float tissue, float heightY, Organism parent,
-            int patch, Phenotype adultPhenotype, float adultTissue)
+            int generationDepth, double energy, double tissue, float heightY, Organism parent,
+            int patch, Phenotype adultPhenotype, double adultTissue)
         {
             // The owner's ruling of 2026-09-19: a body that would grow into itself is not born.
             // Asked here rather than at each of the three call sites so that a founder and an
@@ -3482,7 +3508,9 @@ namespace Evosim.Core
                 // at, which is the parent's. The overhead stays burnt: it was spent, not given.
                 if (kind == BirthKind.Reproduction)
                 {
-                    float orphaned = energy + tissue;
+                    // Quantised once at the field's door and booked as the same number — Bury's
+                    // rule, for the same reason.
+                    float orphaned = (float)(energy + tissue);
                     if (orphaned > 0f)
                     {
                         FieldPoint at = parent != null
@@ -3510,7 +3538,9 @@ namespace Evosim.Core
 
                 // Derived from the two tissue figures rather than passed alongside them, so the
                 // body fraction is a readout of the energy ledger and cannot disagree with it.
-                BodyFraction = adultTissue > 0f && tissue < adultTissue ? tissue / adultTissue : 1f,
+                BodyFraction = adultTissue > 0d && tissue < adultTissue
+                    ? (float)(tissue / adultTissue)
+                    : 1f,
                 Energy = energy,
                 TissueJoules = tissue,
                 HeightY = heightY,

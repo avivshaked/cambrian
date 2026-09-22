@@ -184,14 +184,14 @@ namespace Evosim.Core.Tests
             var plate = new Float3(1f, 0.0625f, 1f);
             var cube = new Float3(0.397f, 0.397f, 0.397f);
 
-            float platePhoto = Metabolism.StepAt(
+            double platePhoto = Metabolism.StepAt(
                 Shaped(config, CellTypeIds.Photosynthetic, plate), config, lit, 0f, 1f, 0f, 1f).Net;
-            float cubePhoto = Metabolism.StepAt(
+            double cubePhoto = Metabolism.StepAt(
                 Shaped(config, CellTypeIds.Photosynthetic, cube), config, lit, 0f, 1f, 0f, 1f).Net;
 
-            float plateAbsorb = Metabolism.StepAt(
+            double plateAbsorb = Metabolism.StepAt(
                 Shaped(config, CellTypeIds.Absorptive, plate), config, lit, 10f, 1f, 0f, 1f).Net;
-            float cubeAbsorb = Metabolism.StepAt(
+            double cubeAbsorb = Metabolism.StepAt(
                 Shaped(config, CellTypeIds.Absorptive, cube), config, lit, 10f, 1f, 0f, 1f).Net;
 
             // Shape is worth a great deal to light and nothing at all to filtering, which is the
@@ -250,16 +250,16 @@ namespace Evosim.Core.Tests
 
             float density = 10f;   // what 15,000 s of corpses produced (logbook/0025)
 
-            float PhotoAt(float depth) => Metabolism.StepAt(
+            double PhotoAt(float depth) => Metabolism.StepAt(
                 Shaped(config, CellTypeIds.Photosynthetic, plate), config,
                 config.Light.IrradianceAt(depth), density, 1f, 0f, 1f).Net;
 
-            float AbsorbAt(float depth) => Metabolism.StepAt(
+            double AbsorbAt(float depth) => Metabolism.StepAt(
                 Shaped(config, CellTypeIds.Absorptive, plate), config,
                 config.Light.IrradianceAt(depth), density, 1f, 0f, 1f).Net;
 
-            float litPhoto = PhotoAt(-2f), litAbsorb = AbsorbAt(-2f);
-            float deepPhoto = PhotoAt(-45f), deepAbsorb = AbsorbAt(-45f);
+            double litPhoto = PhotoAt(-2f), litAbsorb = AbsorbAt(-2f);
+            double deepPhoto = PhotoAt(-45f), deepAbsorb = AbsorbAt(-45f);
 
             _output.WriteLine($"  −2 m: photo {litPhoto,7:0.###} W   absorptive {litAbsorb,7:0.###} W");
             _output.WriteLine($" −45 m: photo {deepPhoto,7:0.###} W   absorptive {deepAbsorb,7:0.###} W");

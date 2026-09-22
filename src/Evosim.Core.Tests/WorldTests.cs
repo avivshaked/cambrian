@@ -456,7 +456,7 @@ namespace Evosim.Core.Tests
             // one number per founder, so the genome stream is identical across the arms and the
             // only difference between them is what that number is — which is the comparison
             // CLAUDE.md's wingspan rule says a per-step change can never be given.
-            (double firstBirth, long underMargin, float kept, float owed) Arm(float margin)
+            (double firstBirth, long underMargin, double kept, double owed) Arm(float margin)
             {
                 var config = new RunConfig
                 {
@@ -497,14 +497,14 @@ namespace Evosim.Core.Tests
                     {
                         if (parent.Id != parentId) continue;
                         return (world.ElapsedSeconds, world.ConceptionsUnderMargin,
-                                parent.Energy, margin * parent.StandingWatts);
+                                parent.Energy, (double)margin * parent.StandingWatts);
                     }
 
                     // The parent died in the same step it bred. Rare, and not this test's
                     // question — keep looking.
                 }
 
-                return (double.PositiveInfinity, world.ConceptionsUnderMargin, 0f, 0f);
+                return (double.PositiveInfinity, world.ConceptionsUnderMargin, 0d, 0d);
             }
 
             var eager = Arm(0f);
@@ -1190,7 +1190,7 @@ namespace Evosim.Core.Tests
             world.Inoculate(Leaf(), count: 1, heightY: -0.5f);
 
             Organism creature = world.Living[0];
-            float tissueBefore = creature.TissueJoules;
+            double tissueBefore = creature.TissueJoules;
 
             for (int step = 0; step < 300; step++) world.Step(1f);
 
@@ -1224,8 +1224,8 @@ namespace Evosim.Core.Tests
             for (int step = 0; step < 200; step++) world.Step(1f);
 
             Organism victim = world.Living[0];
-            float reserve = victim.Energy;
-            float tissue = victim.TissueJoules;
+            double reserve = victim.Energy;
+            double tissue = victim.TissueJoules;
 
             Assert.True(reserve > 0f, "the body had no reserve, so the test measures half a rule");
 
@@ -1946,7 +1946,7 @@ namespace Evosim.Core.Tests
 
             Genome genome = AbsorptiveBlob();
             Phenotype adult = Developer.Develop(genome, config.Development, null, config.Shapes);
-            float adultTissue = Metabolism.TissueJoules(adult, config);
+            double adultTissue = Metabolism.TissueJoules(adult, config);
 
             // fable-propose-growth.md rule 7: an inoculant is born as a child is, at its own
             // genome's birth fraction, with the founder's purse scaled the same way. So the
@@ -1956,8 +1956,8 @@ namespace Evosim.Core.Tests
             float wanted = genome.Reproduction.BirthInvestment / genome.Reproduction.BroodSize *
                            (1f - config.NewbornReserveFraction);
             Phenotype newborn = adult.Scaled((float)Math.Pow(wanted, 1d / 3d), config.Shapes);
-            float tissue = Metabolism.TissueJoules(newborn, config);
-            float expectedCredit = 5 * (config.FounderEnergyJoules * (tissue / adultTissue) + tissue);
+            double tissue = Metabolism.TissueJoules(newborn, config);
+            double expectedCredit = 5 * (config.FounderEnergyJoules * (tissue / adultTissue) + tissue);
 
             double energyInBefore = world.EnergyIn;
             int livingBefore = world.Living.Count;

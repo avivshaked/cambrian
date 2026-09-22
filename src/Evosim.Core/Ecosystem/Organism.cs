@@ -97,10 +97,20 @@ namespace Evosim.Core
         /// <see cref="Metabolism.TissueJoules"/> over every part of a body that does not change,
         /// and growth reads it on every step of every growing creature.
         /// </remarks>
-        public float AdultTissueJoules { get; internal set; }
+        public double AdultTissueJoules { get; internal set; }
 
         /// <summary>Joules in reserve. Death at zero (§5A.6).</summary>
-        public float Energy { get; internal set; }
+        /// <remarks>
+        /// <b>A double since 2026-09-22, and the reason is the matter identity.</b> A reserve is
+        /// added to and subtracted from on every metabolic step while standing at a hundred times
+        /// the size of the step's own delta, so in float each step left a rounding of about 1e-5 J
+        /// that no book recorded — the bodies held a little less than <c>World.EnergyIn</c> and
+        /// <c>World.EnergyOut</c> said they did. Over a run that is a random walk in
+        /// <c>World.MatterResidual</c>, which read −3.2e-04 of 1,500 units at 30,000 s on the farm
+        /// against Unity's ±1e-04 (CLAUDE.md's two-farms note). Widening the account does not fix
+        /// a leg; it stops the bookkeeping from having a width of its own.
+        /// </remarks>
+        public double Energy { get; internal set; }
 
         /// <summary>Simulated seconds since birth.</summary>
         public float Age { get; internal set; }
@@ -177,8 +187,13 @@ namespace Evosim.Core
         /// <see cref="Metabolism.TissueJoules"/> of <see cref="Phenotype"/> — derived from the
         /// body rather than accumulated beside it, so the two cannot drift.
         /// </para>
+        /// <para>
+        /// A double beside <see cref="Energy"/> and for its reason: it is the other half of what a
+        /// living body stands for in both identities, it is filled by small increments over a
+        /// whole life, and a birth moves it out of a parent's reserve.
+        /// </para>
         /// </remarks>
-        public float TissueJoules { get; internal set; }
+        public double TissueJoules { get; internal set; }
 
         /// <summary>
         /// Which horizontal cell of the world this creature occupies — D061. 0 for every creature
@@ -299,8 +314,13 @@ namespace Evosim.Core
         /// What <see cref="SensorChannel.Energy"/> reports: seconds of life left at the current
         /// burn rate — §4.4.
         /// </summary>
+        /// <remarks>
+        /// Still a float, and narrowed here rather than at the sensor: it is a reading for a brain
+        /// and a HUD, not an account, and <see cref="IReserveSource"/> is the seam a test's
+        /// stand-in implements.
+        /// </remarks>
         public float SecondsOfReserve =>
-            StandingWatts > 1e-9f ? Energy / StandingWatts : float.PositiveInfinity;
+            StandingWatts > 1e-9f ? (float)(Energy / StandingWatts) : float.PositiveInfinity;
 
         /// <summary>Joules this creature must hold before it is worth attempting to reproduce — §5A.6.</summary>
         /// <remarks>
@@ -340,9 +360,9 @@ namespace Evosim.Core
         /// whole run. The test suite went from 18 seconds to not finishing.
         /// </para>
         /// </remarks>
-        public float ReproductionThreshold(float perOffspringOverheadJoules) =>
+        public double ReproductionThreshold(float perOffspringOverheadJoules) =>
             Genome.Reproduction.CostJoules(TissueJoules, perOffspringOverheadJoules) +
-            Genome.Reproduction.ReserveMargin * StandingWatts;
+            (double)Genome.Reproduction.ReserveMargin * StandingWatts;
 
         public override string ToString() =>
             FormattableString.Invariant(

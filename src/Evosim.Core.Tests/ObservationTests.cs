@@ -136,13 +136,13 @@ namespace Evosim.Core.Tests
 
             Assert.NotEqual(cheap.Hash(), dear.Hash());
 
-            float Spend(RunConfig config)
+            double Spend(RunConfig config)
             {
                 var world = new World(config, seed: 7);
                 world.Step(1f);
 
                 Organism creature = world.Living[0];
-                float before = creature.Energy;
+                double before = creature.Energy;
 
                 world.Observe(creature, creature.HeightY, 10f);
                 world.Step(0.001f);   // short, so upkeep is negligible beside the stroke
@@ -150,8 +150,8 @@ namespace Evosim.Core.Tests
                 return before - creature.Energy;
             }
 
-            float cheapSpend = Spend(cheap);
-            float dearSpend = Spend(dear);
+            double cheapSpend = Spend(cheap);
+            double dearSpend = Spend(dear);
 
             _output.WriteLine($"10 J of work costs {cheapSpend:0.###} J at 1x, {dearSpend:0.###} J at 4x");
 

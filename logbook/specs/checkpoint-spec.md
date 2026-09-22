@@ -105,7 +105,7 @@ opens a checkpoint that is still being written.
 | Offset | Bytes | Type | Field |
 |---|---|---|---|
 | 0 | 8 | ascii | magic, `EVOCKPT` and a zero byte |
-| 8 | 2 | uint16 | version, 1 |
+| 8 | 2 | uint16 | version, 2 (1 until 2026-09-22, when a body's reserve, tissue and adult tissue became doubles) |
 | 10 | 2 | uint16 | magic block length, 12 |
 | 12 | 8 | float64 | the simulated second |
 | 20 | 8 | uint64 | the world's seed |

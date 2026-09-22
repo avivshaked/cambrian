@@ -53,8 +53,8 @@ namespace Evosim.Core.Bench
                 Organism creature = world.Living[i];
 
                 Long(ref h, creature.Id);
-                Float(ref h, creature.Energy);
-                Float(ref h, creature.TissueJoules);
+                Double(ref h, creature.Energy);
+                Double(ref h, creature.TissueJoules);
                 Float(ref h, creature.Age);
                 Float(ref h, creature.HeightY);
                 Float(ref h, creature.X);

@@ -31,7 +31,17 @@ namespace Evosim.Core
         public float FoodIncome { get; }
 
         /// <summary>Joules acquired: light, nutrients, tissue.</summary>
-        public float Income => LightIncome + FoodIncome;
+        /// <remarks>
+        /// <b>The nine stored terms are floats and the four sums over them are not</b>
+        /// (2026-09-22). A term is one step's price, computed from a float body and handed to a
+        /// float field exactly as it stands, so widening it would put a rounding at every deposit
+        /// that is not there now. The sums — this, <see cref="Expenditure"/>, <see cref="Net"/>
+        /// and <see cref="Wasted"/> — are a different thing: they cross into
+        /// <c>Organism.Energy</c> and from there into both identities, and adding them in float
+        /// left the reserve short of what the books said by a rounding a step. That is the drift
+        /// behind <c>World.MatterResidual</c> reading −3.2e-04 units at 30,000 s on the farm.
+        /// </remarks>
+        public double Income => (double)LightIncome + FoodIncome;
 
         /// <summary>Joules spent on standing costs — tissue upkeep and idle joint capacity.</summary>
         public float Upkeep { get; }
@@ -134,7 +144,7 @@ namespace Evosim.Core
             Handling = handling;
         }
 
-        public float Expenditure => Upkeep + Neural + Work + Handling;
+        public double Expenditure => (double)Upkeep + Neural + Work + Handling;
 
         /// <summary>
         /// This ledger with its pool draw replaced by what the field actually gave, the food
@@ -185,10 +195,10 @@ namespace Evosim.Core
         /// update and <see cref="LedgerForecast"/>'s whole-life integration both — without either
         /// having to know the mechanism exists.
         /// </remarks>
-        public float Net => Income - Expenditure - Exuded;
+        public double Net => Income - Expenditure - Exuded;
 
         /// <summary>Joules taken from the world and kept by nobody — the loss on transfer.</summary>
-        public float Wasted => PoolDrawn - FoodIncome;
+        public double Wasted => (double)PoolDrawn - FoodIncome;
 
         public static EnergyLedger operator +(EnergyLedger a, EnergyLedger b) =>
             new EnergyLedger(
@@ -430,7 +440,7 @@ namespace Evosim.Core
                 nutrientDensity: 0f, spentDensity: 0f, workJoules: 0f, seconds: 1f,
                 ageSeconds: ageSeconds);
 
-            return ledger.Expenditure;
+            return (float)ledger.Expenditure;
         }
 
         /// <summary>
@@ -440,16 +450,22 @@ namespace Evosim.Core
         /// What a parent pays to build this creature and what the nutrient pool receives when it
         /// dies. Both call this, so the two figures cannot drift apart — and if they did, a
         /// birth-and-death cycle would create or destroy energy.
+        /// <para>
+        /// A double since 2026-09-22, because it is the authority for <c>Organism.TissueJoules</c>
+        /// and for what a birth moves out of a parent's reserve, and both of those are standing
+        /// accounts the two identities sum. The parts are floats and stay floats; the sum over
+        /// them is the number that has to close.
+        /// </para>
         /// </remarks>
-        public static float TissueJoules(Phenotype phenotype, RunConfig config)
+        public static double TissueJoules(Phenotype phenotype, RunConfig config)
         {
             if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
             if (config == null) throw new ArgumentNullException(nameof(config));
 
-            float total = 0f;
+            double total = 0d;
             foreach (PhenotypePart part in phenotype.Parts)
             {
-                total += Math.Max(0f, part.Volume) *
+                total += (double)Math.Max(0f, part.Volume) *
                          config.CellTypes.Resolve(part.CellTypeId).TissueEnergyPerCubicMetre;
             }
 

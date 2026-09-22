@@ -116,7 +116,7 @@ namespace Evosim.Core.Tests
             float densityBefore = world.Nutrients.DensityAt(Depth, 0);
             Assert.True(densityBefore > 0f, "the deposit did not land where the stomach is");
 
-            float energyBefore = stomach.Energy;
+            double energyBefore = stomach.Energy;
 
             world.Step(Dt);
 
@@ -137,7 +137,10 @@ namespace Evosim.Core.Tests
             Assert.Equal(Depth, row.HeightY);
             Assert.Equal(1, row.PartCount);
             Assert.False(row.Mixotroph);
-            Assert.Equal(stomach.TissueJoules, row.TissueJoules);
+            // The narrowed value, because the row is a float schema and the account is a double
+            // (2026-09-22): what this asserts is that the row carries the body's tissue, not that
+            // absorptive.jsonl has the reserve's width.
+            Assert.Equal((float)stomach.TissueJoules, row.TissueJoules);
             Assert.Equal(stomach.Phenotype.TotalVolume, row.AbsorptiveVolume);
             Assert.Equal(stomach.Genome.Reproduction.BirthInvestment, row.BirthInvestment);
             Assert.Equal(0, stomach.Children);
@@ -153,7 +156,7 @@ namespace Evosim.Core.Tests
             // Net, from the only witness that cannot be argued with: World.Metabolise moves the
             // reserve by exactly ledger.Net, so the reserve's change over the step divided by the
             // step is ledger.Net / step by construction.
-            float expectedNetWatts = (stomach.Energy - energyBefore) / Dt;
+            double expectedNetWatts = (stomach.Energy - energyBefore) / Dt;
             Fixtures.AssertClose(expectedNetWatts, row.NetWatts, Math.Abs(expectedNetWatts) * 1e-4f + 1e-6f);
 
             // And the five terms close, which is what makes the row a budget rather than five

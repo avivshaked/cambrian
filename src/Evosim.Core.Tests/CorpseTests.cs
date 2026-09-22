@@ -81,7 +81,7 @@ namespace Evosim.Core.Tests
             Assert.Equal(0f, new RunConfig().CorpseDecayPerSecond);
 
             var world = new World(config, seed: 1);
-            var before = new Dictionary<long, (int Layer, float Tissue)>();
+            var before = new Dictionary<long, (int Layer, double Tissue)>();
             var layerGain = new Dictionary<int, double>();
             int deathSteps = 0;
 
@@ -114,7 +114,7 @@ namespace Evosim.Core.Tests
                 foreach (Organism creature in world.Living) alive.Add(creature.Id);
 
                 double expected = 0d;
-                foreach (KeyValuePair<long, (int Layer, float Tissue)> entry in before)
+                foreach (KeyValuePair<long, (int Layer, double Tissue)> entry in before)
                 {
                     if (alive.Contains(entry.Key)) continue;
                     expected += entry.Value.Tissue;
@@ -123,14 +123,22 @@ namespace Evosim.Core.Tests
                 }
 
                 // Charged on the step of the death, not spread over the steps after it.
-                Assert.Equal(expected, world.DetritusDepositedTotal - depositedBefore, 4);
+                //
+                // A relative tolerance rather than four decimal places since 2026-09-22: a body's
+                // tissue is a double and the field takes a float, so what the water is handed is
+                // the same number quantised once, about 1e-7 of itself. Four decimal places on a
+                // sum of 134 J is a hair inside that, and the two rounded to either side of the
+                // same boundary the first time a body's tissue landed there.
+                Fixtures.AssertClose(
+                    expected, world.DetritusDepositedTotal - depositedBefore, expected * 1e-6);
 
                 // And charged to the dead body's own layer. Nothing else in this world moves a
                 // joule, so every layer's stock is its old stock plus exactly what died in it.
                 for (int layer = 0; layer < stockBefore.Length; layer++)
                 {
                     layerGain.TryGetValue(layer, out double gain);
-                    Assert.Equal(stockBefore[layer] + gain, world.Nutrients.StockInLayer(layer), 4);
+                    double want = stockBefore[layer] + gain;
+                    Fixtures.AssertClose(want, world.Nutrients.StockInLayer(layer), want * 1e-6 + 1e-9);
                 }
             }
 

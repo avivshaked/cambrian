@@ -118,6 +118,15 @@ namespace Evosim.Core.Tests
             Assert.True(System.Math.Abs(expected - actual) <= tol,
                 $"expected {expected}, got {actual} (tolerance {tol})");
 
+        /// <summary>
+        /// The same for the accounts that are doubles — a reserve, a tissue value, a ledger sum
+        /// (2026-09-22). One overload rather than a cast at every call site, so a test that
+        /// compares two of them is not quietly narrowing both before it asks.
+        /// </summary>
+        public static void AssertClose(double expected, double actual, double tol = Tol) =>
+            Assert.True(System.Math.Abs(expected - actual) <= tol,
+                $"expected {expected}, got {actual} (tolerance {tol})");
+
         public static void AssertClose(Float3 expected, Float3 actual, float tol = Tol)
         {
             Assert.True(

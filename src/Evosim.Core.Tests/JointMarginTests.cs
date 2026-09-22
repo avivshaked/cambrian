@@ -74,7 +74,7 @@ namespace Evosim.Core.Tests
             return g;
         }
 
-        private (float net, float income, float costs) Price(
+        private (double net, double income, double costs) Price(
             RunConfig config, Genome genome, float workJoules = 0f)
         {
             Phenotype body = Developer.Develop(genome, config.Development, shapes: config.Shapes);
@@ -103,7 +103,7 @@ namespace Evosim.Core.Tests
                 $"one part + an idle hinge : income {idle.income,7:0.####} - costs {idle.costs,7:0.####} = {idle.net,8:0.####} W");
             _output.WriteLine("");
 
-            float lost = plant.net - idle.net;
+            double lost = plant.net - idle.net;
             _output.WriteLine(
                 $"a hinge costs {lost:0.####} W, which is {100f * lost / Math.Max(1e-9f, plant.net):0.#}% " +
                 "of what the same creature earns without one");
@@ -123,8 +123,8 @@ namespace Evosim.Core.Tests
             var structural = Price(config, TwoPart(CellTypeIds.Structural, 0f, JointType.Fixed));
             var hinge = Price(config, TwoPart(CellTypeIds.Link, 20f, JointType.Hinge));
 
-            float forfeited = plant.net - structural.net;   // income the volume no longer earns
-            float idleCharge = structural.net - hinge.net;  // what capacity costs to own
+            double forfeited = plant.net - structural.net;  // income the volume no longer earns
+            double idleCharge = structural.net - hinge.net; // what capacity costs to own
 
             _output.WriteLine($"surplus with two photosynthetic parts : {plant.net:0.####} W");
             _output.WriteLine($"income forfeited by non-earning tissue: {forfeited:0.####} W");
@@ -326,7 +326,7 @@ namespace Evosim.Core.Tests
             Genome jointless = TwoPart(CellTypeIds.Photosynthetic, 0f, JointType.Fixed);
             Genome jointed = TwoPart(CellTypeIds.Link, 20f, JointType.Hinge);
 
-            var rows = new List<(float photo, float net)>();
+            var rows = new List<(float photo, double net)>();
 
             foreach (float photo in new[] { 0f, 0.25f, 0.5f, 1f })
             {
@@ -341,14 +341,14 @@ namespace Evosim.Core.Tests
                     new AbsorptiveCell(),
                     new ConsumerCell());
 
-                (float net, _, _) = Price(config, jointed);
+                (double net, _, _) = Price(config, jointed);
                 rows.Add((photo, net));
             }
 
-            (float plantNet, _, _) = Price(World(), jointless);
+            (double plantNet, _, _) = Price(World(), jointless);
 
             _output.WriteLine($"two photosynthetic parts, no joint : {plantNet,8:F4} W");
-            foreach ((float photo, float net) in rows)
+            foreach ((float photo, double net) in rows)
             {
                 _output.WriteLine(
                     $"one part + 20 N.m hinge, linkPhoto {photo:F2} : {net,8:F4} W" +
@@ -383,17 +383,17 @@ namespace Evosim.Core.Tests
             // parity decides whether "structurally closed" is a property of the design or of the
             // number the test happened to pick.
             Genome jointless = TwoPart(CellTypeIds.Photosynthetic, 0f, JointType.Fixed);
-            (float plantNet, _, _) = Price(World(), jointless);
+            (double plantNet, _, _) = Price(World(), jointless);
 
             _output.WriteLine($"two photosynthetic parts, no joint : {plantNet,8:F4} W");
             _output.WriteLine("");
             _output.WriteLine("  N.m    linkPhoto 0     linkPhoto 1    share of plant");
 
-            float bestShare = 0f;
+            double bestShare = 0d;
 
             foreach (float power in new[] { 5f, 10f, 20f, 60f, 120f })
             {
-                var nets = new float[2];
+                var nets = new double[2];
                 float[] photos = { 0f, 1f };
 
                 for (int i = 0; i < photos.Length; i++)
@@ -412,7 +412,7 @@ namespace Evosim.Core.Tests
                     (nets[i], _, _) = Price(config, TwoPart(CellTypeIds.Link, power, JointType.Hinge));
                 }
 
-                float share = plantNet > 0f ? nets[1] / plantNet : 0f;
+                double share = plantNet > 0d ? nets[1] / plantNet : 0d;
                 bestShare = Math.Max(bestShare, share);
                 _output.WriteLine(
                     $"{power,5:F0}  {nets[0],10:F4} W  {nets[1],10:F4} W  {100f * share,12:F1}%");

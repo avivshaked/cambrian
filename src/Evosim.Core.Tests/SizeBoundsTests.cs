@@ -68,8 +68,8 @@ namespace Evosim.Core.Tests
             EnergyLedger ledger = Metabolism.Step(
                 p, config, new LightModel(100f, 12f), 0f, 0f, 1f, 0f, 1f);
 
-            Assert.True(float.IsFinite(ledger.Income));
-            Assert.True(float.IsFinite(ledger.Expenditure));
+            Assert.True(double.IsFinite(ledger.Income));
+            Assert.True(double.IsFinite(ledger.Expenditure));
         }
 
         [Fact]

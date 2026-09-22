@@ -116,9 +116,14 @@ namespace Evosim.Core
         /// many ways it is divided, so brood size decides how big each child is rather than how
         /// much the event costs. The overhead is the only per-head term, and is what keeps a brood
         /// of forty from being free.
+        /// <para>
+        /// The parameter and the answer are doubles since 2026-09-22, because the tissue they are
+        /// asked about is one (<see cref="Organism.TissueJoules"/>). The traits themselves stay
+        /// floats: they are genome, and a gene's width is a fact about the genome format.
+        /// </para>
         /// </remarks>
-        public float CostJoules(float parentTissueJoules, float perOffspringOverhead) =>
-            BirthInvestment * parentTissueJoules + BroodSize * perOffspringOverhead;
+        public double CostJoules(double parentTissueJoules, float perOffspringOverhead) =>
+            BirthInvestment * parentTissueJoules + (double)BroodSize * perOffspringOverhead;
 
         public ReproductionTraits Clone() => this;
 

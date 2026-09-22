@@ -41,7 +41,13 @@ namespace Evosim.Core
     public sealed partial class World
     {
         /// <summary>The layout this build writes and the only one it reads.</summary>
-        public const int StateVersion = 1;
+        /// <remarks>
+        /// 2 since 2026-09-22: a body's reserve, tissue and adult tissue are doubles, so this
+        /// reader takes eight bytes each where a version-1 stream wrote four, and every field
+        /// after the first creature would be a plausible number read out of the middle of another
+        /// one. The version is what turns that into a refusal.
+        /// </remarks>
+        public const int StateVersion = 2;
 
         /// <summary>
         /// Writes the whole of the world's own state.
@@ -331,9 +337,9 @@ namespace Evosim.Core
                 BirthSeed = r.ReadUInt64(),
                 SpeciesId = r.ReadUInt32(),
 
-                Energy = r.ReadSingle(),
-                TissueJoules = r.ReadSingle(),
-                AdultTissueJoules = r.ReadSingle(),
+                Energy = r.ReadDouble(),
+                TissueJoules = r.ReadDouble(),
+                AdultTissueJoules = r.ReadDouble(),
                 BodyFraction = r.ReadSingle(),
                 Age = r.ReadSingle(),
                 HeightY = r.ReadSingle(),
