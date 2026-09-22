@@ -9,6 +9,11 @@ restated. The survey behind it is `scratch/animal-kit/survey-2026-09-21.md`, che
 against the code where this text leans on it. Absorbed into DECISIONS.md on ruling, then
 deleted.*
 
+*2026-09-22 evening: the order and rungs A0 and A are ruled and absorbed into D106; their
+sections below stand as the record of the discussion until rung B is put for ruling, when
+this file is cut to B, C and D or deleted. The build specs are
+`logbook/specs/module-gene-spec.md` (round 44) and `logbook/specs/mouth-spec.md` (round 45).*
+
 ## What round 42 says about variety
 
 Round 42's world grows drifting plants. In two seeds of three the jointed line spread and

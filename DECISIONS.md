@@ -125,6 +125,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D103](#d103) | Four pinned arms at a time (D095's three amended): each arm pinned to two fast cores of its own (masks 0x003C, 0x03C0, 0x3C00, 0xC003), a fourth costing 1.01 of a third's wall on a young crowd; the cap stays a rule of the Unity farm, and a farm out of Unity is not an arm | 2026-09-21 | ruled by the owner in conversation on the morning of 2026-09-21 on the agent's measurement (`logbook/specs/harness-profile-spec.md` §9) |
 | [D104](#d104) | The water sampled per link on every step on the new engine: D100's hold retired at 0 from round 43, because a held sample undoes D090 (a neutral body 22 m from its parcel in 1,000 s against 5 cm per link) and the cheapening buys nothing on a solver of our own | 2026-09-22 | ruled by the owner in conversation at 03:15 on 2026-09-22 ("Yes" to the agent's recommendation of hold 0) |
 | [D105](#d105) | The physics on the card in single precision through ILGPU, designed for 100,000 bodies and first validated at 10,000 to 30,000 with the grid on the CPU, built in parallel with the animal-kit rounds; double on the 4090 is slower than the cores, and a single-precision world is a new realisation read by D104's gate | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 evening ("for the rest I think we can go with your recommendations") |
+| [D106](#d106) | The animal kit's first two rungs: the cell is the unit of death; a module gene per node (determinate or indeterminate) makes plants grow and regrow by a rule; four priced attributes on any cell (attack, intake, protection, toughness), heritable and mutable, capped per cell type, health as state healed from the reserve; a killed part becomes a corpse the killer gains nothing from, and the yield is intake from corpses; round 44 the module gene, round 45 the mouth, one genome format bump for both; then B, C, D in that order | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 evening, three decisions put in full |
 
 ---
 
@@ -5699,4 +5700,74 @@ carry across engines. The stability of single precision is a reading of the base
 if it throws bodies that double does not, the precision is re-asked. Until a few clean
 runs accumulate after the crash scare of the same day, GPU code runs in the foreground
 with nothing else on the machine.
+
+### D106
+**The cell is the unit of death; the animal kit's first two rungs** · 2026-09-22
+
+**Status:** ruled by the owner in conversation on the evening of 2026-09-22, in three
+decisions put in full after a discussion that rewrote rung A of `fable-propose-animal-kit.md`
+(the order A, B, C, D had been ruled earlier the same evening). Round 44 is the module
+gene, round 45 the mouth. Builds and pre-registrations follow; nothing has run.
+
+**Decision.**
+1. *A part is what dies.* A part whose health reaches zero leaves the body, with
+   everything hanging from it, as a corpse placed where it was, carrying its tissue and
+   its pro-rata share of the body's one reserve (its volume over the body's). The killer
+   gains nothing from the kill. On the root it is the whole body, death `Eaten`. What is
+   left lives on its remaining parts and dies `Starved` as now if it cannot pay its way
+   or falls under the newborn mass floor. Creatures do not partially eat each other.
+2. *The module gene.* One gene per node, `Determinate | Indeterminate`. Determinate is
+   the recorded rule: the count fixed at development, a lost part gone, growth scaling
+   what exists. Indeterminate: the count bounded rather than fixed, the body adding a
+   module while its reserve stands above a threshold, paid at the tissue price, dropping
+   one after long starvation, regrowing a lost one when affordable. Bounded by `MaxParts`,
+   `MaxDepth`, D099's silhouette cap and D101. A gene and not a world rule, so that
+   selection decides which lineages are plants.
+3. *Four attributes on any cell*, heritable and mutable with the other per-node scalars,
+   each priced as upkeep so nothing beneficial is free, each **capped per cell type** in
+   the cell-type table (a leaf's attack is capped at zero; the table is part of the
+   build's spec and the owner's to amend): attack (damage per second to a part of another
+   body in held contact), intake (charged units per second from a corpse in reach),
+   protection (damage per second absorbed before health suffers), toughness (health per
+   unit of volume). Founders draw attack and protection at zero. Health is state, not a
+   gene: a pool per part of volume times toughness, drained by damage net of protection,
+   refilled from the reserve at a healing rate that costs energy.
+4. *The yield is intake from corpses.* A corpse is an object with a position, carried by
+   the water and decaying into marine snow at the corpse rate as since round 32; a part
+   with intake in reach of one takes charged units at its rate into the body's reserve,
+   the waste share to snow, a corpse finite and shared. Contact and reach are distance
+   tests at the metabolic step; no physics.
+5. *`Contact` and `Damage` wired*, `Damage` reading a part's health loss this step.
+6. *Order and format.* Round 44 the module gene with the four attributes carried at their
+   zero defaults; round 45 the mouth, turning on health, the kill, the corpse, intake and
+   the four prices, found with the ledger (D069) before the round; one genome format bump
+   (7) for both, stored genomes re-extracted once. Then B (scent fed by the living and by
+   corpses, the eyespot), C (shelf and anchor, then rock and seep) and D.
+
+**Why.** Round 42 and 43 grow drifting plants because a body has nothing to swim toward or
+from (0110, 0111). The kit gives bodies things to do, in the order that gives each rung
+something the last one made. The owner's three points decided the shape: a bite alone
+does not make a hunter, so rung A is read as what the payoff does without a sense and
+rung B follows within the week; creatures kill rather than partially eat, and a cell as
+the unit of death gives grazing, predation and scavenging from one organ, with plants
+surviving the loss of a leaf; and attack and defence get an economy from the first round,
+priced so that an arms race is available to selection rather than assumed.
+
+**Rejected.** The earlier rung A, a bite that takes a body's reserve from the outside (the
+reserve being where the matter is): rejected by the owner as partial eating. A single
+"bite kills" switch with no attributes: faster, and no economy of attack and defence. A
+world rule that every body adds modules while rich: it imposes plant-hood on everything.
+Per-part reserves: faithful to "the reserves a part has", and it touches everything that
+books energy; the pro-rata share of one reserve is the small change with the same effect
+for the purpose of being eaten. Reopening D020 for a bearing sense: not now; the scent
+field in rung B is the fair test of D020's route first.
+
+**Cost.** Genome format 7 (five per-node scalars), the stored genomes re-extracted. A
+body's parts become a property of its history, so the checkpoint carries module counts
+and each part's health, and a module added or a part lost rebuilds the articulated body
+the way a growth resize does. The GPU port's flat state gains a health per part and its
+link ceiling is set by the biggest plant. The first mouth round may be a massacre of
+one-part bodies; its pre-registration asks separately whether a scavenger line founds, a
+killer line founds, an indeterminate plant survives grazing, and attack or protection
+appears and pays, so that reading is a result and not a failure.
 

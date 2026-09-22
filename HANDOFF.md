@@ -401,9 +401,14 @@ subagent and never in a shell loop.
    and the matter, 3,000 to 5,000 s, the wall split and the pace read; then the solver's
    serial phases (the contact grid, the water sample, the commit) cheapened if they bind,
    and `SampleEdges`' per-column terms hoisted (1.6 to 2x on the grid, estimated).
-5. **The animal kit and the floor's places** on the owner's rulings from
-   `fable-propose-animal-kit.md`: the bite, `Eaten`, the Contact and Damage senses, then
-   scent and the eyespot, then shelf, rock, seep and the anchoring cell.
+5. **The animal kit on D106.** Round 44, the module gene (`logbook/specs/module-gene-spec.md`):
+   the build lands after the double-accounts change, then the ledger screen of the add
+   threshold, the pre-registration committed, three seeds at 16 threads one at a time or
+   three at once, the read and the entry with pictures. Round 45, the mouth
+   (`logbook/specs/mouth-spec.md`): health, the kill, the corpse, intake, the two senses,
+   the cap table and the four prices from the ledger, same shape. Then rung B's spec
+   (scent fed by the living and by corpses, the eyespot) drafted for the owner, and C
+   and D behind it.
 6. **The GPU port.** The probe ran clean alone on 2026-09-22 at 16:13 after the crash
    reading (`scratch/gpu-spike/probe`): ILGPU on CUDA sees the 4090 (SM_89, 128 SMs),
    runs a kernel with a local array and a double kernel with transcendentals; ComputeSharp
@@ -436,20 +441,17 @@ subagent and never in a shell loop.
   columns; keeping D101 through the base round; a ball joint's angle as the rotation
   vector's component; `simHash` giving way to `dynamicsHash` and `farmHash`; DESIGN §11.1
   superseded. Absorbed into DECISIONS on ruling.
-- **The animal kit** (`fable-propose-animal-kit.md`): the order A, B, C, D is ruled
-  (2026-09-22 evening, "for the rest go with your recommendations"). **Rung A is being
-  redesigned on the owner's two points**, and the spec waits on their answer to eight
-  questions put in conversation: (1) a body keeps one reserve and a dead part takes its
-  pro-rata share, against per-part reserves; (2) the parts below a killed one die with it
-  as a corpse, the eater taking only the bitten part; (3) a bite on the root kills the
-  creature, `Eaten`; (4) what is left must still pay its way or it starves as now; (5)
-  regrowth through the growth machinery, in the same rung; (6) one part per mouth per
-  metabolic step of held contact, no dose knob; (7) no protection in A, a bite kills, and
-  protection later as a priced cell property with bite strength beside it; (8) `Damage`
-  reads "a part of mine died this step". The owner's points: a bite alone does not make
-  a hunter (behaviour needs rung B's sense), and creatures do not partially eat each
-  other; a cell is the unit of death, a plant survives losing a leaf, and attack and
-  defence get an economy once there is something to defend.
+- **The animal kit: ruled, D106** (2026-09-22 evening). The cell is the unit of death;
+  the module gene (round 44, `logbook/specs/module-gene-spec.md`); the four priced,
+  capped-per-type cell attributes, health as state, the kill making a corpse the killer
+  gains nothing from, intake from corpses as the yield (round 45,
+  `logbook/specs/mouth-spec.md`); one genome format bump for both; then B, C, D. Two
+  numbers inside the rounds are the agent's to set and the owner's to amend, and are put
+  in the specs before launch: the per-cell-type cap table and the four prices from the
+  ledger. **The owner's standing answer on autonomy** (the same evening): build,
+  pre-register, launch, read and write up rounds 44 and 45, run the brain spike and the
+  port's first stage, draft rung B's spec but do not build it unseen; message on a
+  round's read, a needed decision, or a break.
 - **The worktrees**: the owner approved removal; the agent's `git worktree remove` was
   refused by the permission layer as irreversible, so the one-line command is with the
   owner to run.
