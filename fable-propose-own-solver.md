@@ -1,10 +1,10 @@
 # Proposal: a solver of our own, the farm out of Unity, and the road to the GPU
 
-*Fable, 2026-09-21, draft. The owner ruled the direction the same day: pace before a more
-complex world, staggered, with 10,000 creatures as the committed target and 100,000 a
-stretch. This text is the plan and the rulings it needs. Built on
-`logbook/specs/own-solver-spike-spec.md`, the spike on branch `solver-spike` (`199314f`),
-the parity swims and a port inventory of the Unity farm (both 2026-09-21). Absorbed into
+*Fable, 2026-09-21, brought current 2026-09-22. The owner ruled the direction on the 21st:
+pace before a more complex world, staggered, with 10,000 creatures as the committed target
+and 100,000 a stretch. Stages 1 and 2 are built and on main (`9eb262a`, `bd608d8`,
+`7fb748c`), round 43 ran on them (logbook/0111), and D104 took the first of the rulings
+below. This text is the plan as it stands and the rulings still open. Absorbed into
 DECISIONS.md on ruling, then deleted.*
 
 ## Why
@@ -30,7 +30,10 @@ soft push computed from the previous step.
 | Identity | state digests equal to the bit at 1, 4 and 16 threads after 10,000 steps |
 | Pace, one thread | 2.9 µs a body-step at 1,000 bodies, 6.1 at 4,000; PhysX and its harness cost about 20 |
 | Pace, 24 threads | 0.34 µs at 1,000 bodies, 0.50 at 4,000, on a machine running two arms |
-| Parity with PhysX | forty of round 42's jointed bodies, alone in still water, 60 s: with PhysX's self-collision off, 40 of 40 agree within 0.05 rad on every joint (typical gap 0.01, our limit's overshoot after the implicit-limit fix); with it on, as the farm runs, 12 of 40 |
+| Parity with PhysX | forty of round 42's jointed bodies, alone in still water, 60 s: with PhysX's self-collision off, 40 of 40 agree within 0.05 rad on every joint (worst 0.043 after the implicit limit and damper); with it on, as the farm runs, 12 of 40. Two hand-built strokers (0.70 and 0.76/0.43 rad at 2 s) agree to 1e-4 rad and 0.1 mm over 60 s |
+| A full seed | round 42 seed 1's world, 30,000 s: 24 minutes at 16 threads, both books closed, nothing lost, lineage byte-equal at 8 and 16 threads |
+| A round | round 43, three seeds at 8 threads each in 80 minutes: round 42's crowd, treadmill, larder and spread; the joints held in two seeds of three where Unity lost them in three of five |
+| 10,000 bodies | 3,536 bodies at 4.7x on the CPU, the solver at 0.32 µs a body-step; about 2.4x at 10,000, extrapolated |
 
 The parity result is also a finding about the record. In the farm a body's own parts
 collide, and a part touching its sibling or a non-adjacent part stops a driven joint
@@ -38,9 +41,8 @@ within a step, turns the motion onto another axis, or moves an undriven body. Tw
 of forty evolved jointed bodies were affected. A driven joint in the farm has mostly not
 been free to turn.
 
-Still water, no economy, no growth, a frozen crowd. And the five genomes swum in both
-engines never stroke in either: round 42's jointed bodies hold a pose, so parity on a
-stroke needs a hand-built swimmer, which is owed.
+The parity rows are still water and no economy; the stroke is hand-built because round
+42's jointed bodies hold a pose. No evolved body has yet stroked in either engine.
 
 ## The four stages
 
@@ -84,10 +86,12 @@ inside the Editor, which will be faithful at any thread count.
 
 ## What changes in the world, for the owner to rule
 
-1. **Joint limits.** PhysX's stops cannot be passed; a spring's can. The parity swims show
-   it (0.605 against 0.515 rad). I propose a hard stop at the velocity level on top of the
-   spring, and that overshoot under 0.02 rad is the acceptance. The spike's agent is
-   measuring this now.
+1. **Joint limits.** PhysX's stops cannot be passed; a spring's can. Built as an implicit
+   spring-damper (its stiffness on the solver's diagonal, `JointLimitOmegaTimesStep` 1.5,
+   critically damped), which overshoots by about 0.01 rad against PhysX's hard stop and
+   is what the 40-of-40 parity was measured on. The ruling is whether 0.01 rad of
+   overshoot is acceptable as the joint's stop; a velocity-level hard stop on top is the
+   alternative and was not needed for parity.
 2. **Contact between bodies** becomes a soft push between bounding spheres: no friction,
    no wedging, no depenetration. Finer contact (a sphere a part) is a later option if the
    bite needs it, and it will.
@@ -101,7 +105,15 @@ inside the Editor, which will be faithful at any thread count.
 6. **The record.** Every run on file stays valid as recorded and none replays on the new
    engine. Mode B for old runs stays on the Unity path while `unity/` still carries
    `Evosim.Sim`. `run.json` keeps `coreHash` and `configHash`, and `simHash` gives way to
-   `dynamicsHash` and `farmHash`.
+   `dynamicsHash` and `farmHash` (built so; the ruling confirms it).
+8. **Ruled: D104**, the water sampled per link (D100's hold retired at 0), 2026-09-22.
+9. **The contact law's two numbers** (`MaxSeparationSpeed` 1 m/s per pair,
+   `MaxContactSpeedChange` 1 m/s per body per step): a soft push between spheres cannot
+   throw a body, and the per-body cap means a body in a crowd is not conserving momentum
+   with its neighbours exactly. Round 43 ran on them (`ovl held %` 93 to 99: most overlaps
+   persist rather than resolve). The ruling is whether that is the contact the world has,
+   or whether a stiffer, momentum-conserving push is wanted before the bite, which will
+   need contact to mean something.
 7. **DESIGN §11.1 and the ArticulationBody decision are superseded**, with a DECISIONS
    entry saying why: the spike it rested on measured capacity, and the campaign measured
    pace.
