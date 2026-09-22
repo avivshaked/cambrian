@@ -1,9 +1,9 @@
 # The part made by a rule
 
-*2026-09-22, evening (draft; the hashes and the screened threshold are filled in before the
-launch commit). Written by the agent as the pre-registration of round 44, the module gene,
-the first rung of the animal kit under D106 (the owner's ruling of the same evening). The
-predictions are committed before the three seeds launch.*
+*2026-09-22, evening. Written by the agent as the pre-registration of round 44, the module
+gene, the first rung of the animal kit under D106 (the owner's ruling of the same evening);
+drafted before the build and completed with the build's hashes and the ledger's screen at
+the launch commit. The predictions are committed before the three seeds launch.*
 
 ## What it asks
 
@@ -26,14 +26,25 @@ and shedding on famine, so that the rule is doing what it says.
 
 Round 43's (0111): `rounds/env-r42.ps1` through `run-farm.ps1` with `EVOSIM_WATER_HOLD=0`,
 seeds 1 to 3, 30,000 s at dt 0.01, on the double-accounts base (`0c19f0d`) and the
-module-gene build (commit and `coreHash`, `dynamicsHash`, `farmHash` to be read from each
-manifest at launch and recorded in HANDOFF). The module tunables are `ModuleAddReserveSeconds`
-(to be set from the ledger screen: a leaf's module must repay its tissue within a lifetime
-at the campaign's light), `ModuleDropReserveSeconds`, `ModuleDropAfterSeconds` and
-`ModuleGeneMutationChance` at the cell-type mutation rate; the values go in the launcher
-`rounds/env-r44.ps1` and the header prints `modules add=.. drop=.. after=.. mut=..`. Every
-founder is determinate, so at t = 0 the world is round 43's on a new base, and the gene
-enters by mutation alone.
+module-gene build (`39dcf3d`; `coreHash da06878f…`, `dynamicsHash 880883c5…`, `farmHash
+8299b231…` as the fixture recording `r44fix-s4` read them, and each seed's manifest is the
+record). The launcher is `rounds/env-r44.ps1`: `ModuleAddReserveSeconds` 300 s,
+`ModuleDropReserveSeconds` 50 s, `ModuleDropAfterSeconds` 100 s, `ModuleGeneMutationChance`
+0.005, the cell-type rate; the header prints `modules add=300 drop=50 after=100 mut=0.005`.
+The add threshold was screened with the ledger (`logbook/specs/r44-read/ledger-screen.txt`,
+on a one-leaf genome with a self-edge from the build's own smoke,
+`ledger-leaf-mgC-539.json`): a leaf's module costs 70 J of tissue and earns 2.5 W net at
+the surface, so it repays in 28 s there, about 80 s at 5 m by the body's own light
+ratio, and about 1,000 s at 12 m, where a leaf's lifetime is 724 s; a module is affordable
+wherever a leaf is. The threshold is therefore a choice about when a body invests rather
+than whether it can: 300 s of upkeep is 114 J for that leaf, about a child's price with
+the overhead, and the middle of the breeding margin's range (0 to 600 s), so a body adds
+a module at about the reserve at which it could breed. The build's smoke at 300 s added
+nothing in 600 s of founding (`mgB`), and at 5 s added eight modules with 2,790 refusals
+for a reserve short of the tissue (`mgC`, 2,000 s); a 30,000 s world's bodies hold
+several hundred seconds of reserve (round 40: about 190 J a body), so the rule is
+expected to fire on a mature line and not on a founder. Every founder is determinate,
+so at t = 0 the world is round 43's on a new base, and the gene enters by mutation alone.
 
 ## Rules
 

@@ -1,0 +1,22 @@
+## Body — logbook/specs/r44-read/ledger-leaf-mgC-603.json
+
+- Parts: 1
+- Volume: 0.127 m3
+- Lit area: 0.4017 m2
+- Silhouette: 0.4017 m2
+- Lit area (capped): 0.4017 m2 (cap on)
+- Tissue: 63.4961 J
+- Standing cost: 0.381 W (0.0038 units/s)
+- Fixation at surface: 4.0168 W (0.0402 units/s)
+- Truncated: False
+- Cell types: photosynthetic x1 (0.127 m3)
+
+## Modules — the add rule's price (D106 item 2)
+
+| node | cell | count | max | parts | tissue +J | net +W | module repay s |
+|---|---|---|---|---|---|---|---|
+|0|photosynthetic|1|1|1 -> 2|70.091|2.516|27.8586|
+|2|photosynthetic|1|3|1 -> 1|0|0|never|
+
+A module at the ceiling adds no parts and reads 0 J and 0 W; `never` is a module whose parts earn no more than they cost to stand.
+

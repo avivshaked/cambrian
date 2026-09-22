@@ -5,10 +5,10 @@
 # mutation alone at the cell-type rate.
 #
 # EVOSIM_MODULE_ADD is the reserve, in seconds of the body's own upkeep, above which an
-# indeterminate node adds a module; it is set from the ledger screen (a leaf's module must repay
-# its tissue within a lifetime at this light) at the launch commit, and the pre-registration
-# (logbook/0113) records the screened value. The provisional 300 below is a placeholder and is
-# not to be launched on.
+# indeterminate node adds a module. 300 s was screened with the ledger at the launch commit
+# (logbook/specs/r44-read/ledger-screen.txt; a leaf's module repays in 28 s at the surface, so
+# the dial is about when a body invests, and 300 s is about a child's price and the middle of the
+# breeding margin's range); the pre-registration (logbook/0113) records the reading.
 @{
     EVOSIM_REPORT_EVERY = 20
     EVOSIM_IRRADIANCE = 200; EVOSIM_CURRENT = 0.1; EVOSIM_MIXING = 0.02; EVOSIM_REMIN = 0.002
