@@ -22,9 +22,11 @@ nothing yet bites.
 
 ## The world
 
-Round 44's (0113), read at `<round 44's reading here>`, with the mouth's dials from the
-ledger screen (`logbook/specs/mouth-spec.md`, the screen note, and
-`logbook/specs/r45-read/`): `rounds/env-r45.ps1` through `run-farm.ps1`, seeds 1 to 3,
+Round 44's (0113). It was read the same night: the gene kept in two seeds of three,
+jointed bodies keeping it as readily as leaves, the books closed to 1e-06 units, and seed
+1's world of module chains gone deep and to the glass and sevenfold dearer a body-step.
+The mouth's dials are from the ledger screen (`logbook/specs/mouth-spec.md`, the screen
+note, and `logbook/specs/r45-read/`). The launch is `rounds/env-r45.ps1` through `run-farm.ps1`, seeds 1 to 3,
 30,000 s at dt 0.01, on the mouth build (`8b0d798`, the cap change `e877406` and the kill
 event `6fcf93b`; `coreHash a20aba8c…`, `dynamicsHash b4cdb22a…`, `farmHash 36d8e11d…` as
 the fixture recording `r45fix-s4` read them, and each seed's manifest is the record). A

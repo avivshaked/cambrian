@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "c8a710b43638adf2",
+  "configHash": "676c16483b32d787",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -147,11 +147,23 @@
     "dayNightAmplitude": 0,
     "surfaceIrradiance": 200
   },
+  "mouth": {
+    "attackWattsPerUnit": 0,
+    "healingJoulesPerHealth": 1,
+    "healingPerSecond": 0,
+    "healthPerCubicMetre": 1,
+    "intakeReachMetres": 0,
+    "intakeWasteFraction": 0,
+    "intakeWattsPerUnit": 0,
+    "protectionWattsPerUnit": 0,
+    "toughnessWattsPerUnit": 0
+  },
   "mutation": {
     "addEdgeChance": 0.06,
     "addNeuronChance": 0.05,
     "addNodeChance": 0.04,
     "adultScaleChance": 0.08,
+    "attributeMutationChance": 0,
     "broodSizeChance": 0.05,
     "cellTypeChance": 0.005,
     "flagChance": 0.03,
@@ -198,6 +210,8 @@
     "energyFullScaleSeconds": 3000,
     "flowFullScaleMetresPerSecond": 0.3,
     "senseChemical": true,
+    "senseContact": false,
+    "senseDamage": false,
     "senseEnergy": true,
     "senseFlow": true
   },
@@ -239,12 +253,20 @@
     {
       "id": "structural",
       "upkeepWattsPerCubicMetre": 1,
-      "tissueEnergyPerCubicMetre": 500
+      "tissueEnergyPerCubicMetre": 500,
+      "attackMax": 1,
+      "intakeMax": 0,
+      "protectionMax": 1,
+      "toughnessMax": 4
     },
     {
       "id": "link",
       "upkeepWattsPerCubicMetre": 2.5,
       "tissueEnergyPerCubicMetre": 500,
+      "attackMax": 0.5,
+      "intakeMax": 0,
+      "protectionMax": 0.5,
+      "toughnessMax": 2,
       "idleWattsPerNewtonMetre": 0.0001,
       "photosyntheticEfficiency": 0.025
     },
@@ -252,6 +274,10 @@
       "id": "neural",
       "upkeepWattsPerCubicMetre": 5,
       "tissueEnergyPerCubicMetre": 500,
+      "attackMax": 0,
+      "intakeMax": 0,
+      "protectionMax": 0,
+      "toughnessMax": 1,
       "neuronsSupportedPerCubicMetre": 400,
       "discountedCostFraction": 0.2
     },
@@ -259,12 +285,20 @@
       "id": "photosynthetic",
       "upkeepWattsPerCubicMetre": 3,
       "tissueEnergyPerCubicMetre": 500,
+      "attackMax": 0,
+      "intakeMax": 0,
+      "protectionMax": 0.5,
+      "toughnessMax": 1,
       "efficiency": 0.05
     },
     {
       "id": "absorptive",
       "upkeepWattsPerCubicMetre": 4,
       "tissueEnergyPerCubicMetre": 500,
+      "attackMax": 0,
+      "intakeMax": 0,
+      "protectionMax": 0.5,
+      "toughnessMax": 1,
       "clearanceRate": 10,
       "yield": 1
     },
@@ -272,6 +306,10 @@
       "id": "consumer",
       "upkeepWattsPerCubicMetre": 6,
       "tissueEnergyPerCubicMetre": 500,
+      "attackMax": 1,
+      "intakeMax": 1,
+      "protectionMax": 0.5,
+      "toughnessMax": 2,
       "biteRate": 20,
       "scavengeRate": 1,
       "carrionYield": 0.8,
@@ -282,6 +320,10 @@
       "id": "buoyancy",
       "upkeepWattsPerCubicMetre": 2.5,
       "tissueEnergyPerCubicMetre": 500,
+      "attackMax": 0,
+      "intakeMax": 0,
+      "protectionMax": 0,
+      "toughnessMax": 1,
       "wattsPerLiftUnit": 0.05
     }
   ]

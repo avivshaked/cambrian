@@ -62,6 +62,16 @@ body-seconds read tenfold), and the watch prompt ran it without `--budget`, so i
 read at half; `logbook/specs/r43-read/clauses.py` reads the interval from the rows and is
 what the entry used.
 
+**Round 44 is read (logbook/0113, two seeds of three at 30,000 s and seed 1 at 22,370 s,
+2026-09-22 night):** the module gene of D106 on round 43's world. The gene is kept in two
+seeds and nearly the third (H1), jointed bodies keep it as readily as leaves (H2, by one
+to four points), the economy is round 43's in the two seeds that ended (H5) and the books
+close to 1e-06 units on the double accounts (H6). The rule is refused hundreds of times
+per add and the counter cannot say which reason (H4); H3's famine never came. Seed 1's
+world of module chains went deep and to the glass, cost the solver 7.6 times more a
+body-step with its overlap pairs and not its links, and ended on `World.Observe`'s
+centre-of-mass guard, now the farm's own (`2771bf0`). Round 45 launches on it.
+
 **The 10,000-creature look on the CPU is measured** (`r42x10-s1`, 03:05 on 2026-09-22):
 round 42's world at ten times the area and the matter (a 22,000 m² tank of radius 84 m,
 15,000 units, `configHash 6470772b`, launched with `run-farm.ps1 -Launcher
@@ -433,27 +443,22 @@ subagent and never in a shell loop.
    serial phases (the contact grid, the water sample, the commit) cheapened if they bind,
    and `SampleEdges`' per-column terms hoisted (1.6 to 2x on the grid, estimated).
 5. **The animal kit on D106.** Round 44, the module gene (`logbook/specs/module-gene-spec.md`):
-   built (`39dcf3d`), screened and pre-registered (`3d2cf12`); **the three seeds are
-   running** (`r44-s1..3`, launched 2026-09-22 19:34 local on `a782472`, `configHash
-   9b4e275e2a552aa6`, 8 threads each, three at once; the header verified `modules add=300
-   drop=50 after=100 mut=0.005 · water per link`). Seeds 2 and 3 ended at 30,000 s
-   about 20:55; **seed 1 slowed to 0.6x real time from about 20,000 s** with physics 99%
-   of its wall (1,220 bodies, 418 standing modules, 662 rebuilds; the solver's cost per
-   body rose with the module chains, my reading, to be measured in the read) and will
-   reach its 300 min wall about 00:34 at roughly 27,000 s, censored and read at its last
-   sample by the pre-registered rule. What the numbers say about the slowdown: its
-   overlap pairs per body-step rose thirteenfold from 14,000 s (0.015 to 0.205, 98% held)
-   against seed 2's 0.009 at the same crowd, before the modules jumped (14 to 432 between
-   18,000 and 21,260 s), and `mean dof` stayed near 0.1; the picture at 21,200 s shows
-   larger curved leaf chains through the top twenty-five metres and no crust. Neither the
-   pair count nor the part count explains a tenfold cost on its own, so the mechanism is
-   open: **a profile of the solver step at seed 1's state is the instrument**, and round
-   44 wrote no checkpoints to profile from, which is why `rounds/env-r45.ps1` now records
-   one every 2,500 s. The design question behind it, whether a chain's contact sphere
-   should be its hull's or its parts', is the owner's, not a change under a round. Then
-   the read
-   (`scripts/reads/r44-read.py`, `--out logbook/specs/r44-read/clauses.tsv`) and the
-   entry with pictures (`theatre-snap.ps1 -From snapshot`). **Round 45's build is in**
+   built (`39dcf3d`), screened and pre-registered (`3d2cf12`), **run and read
+   (logbook/0113's read section, 2026-09-22 night)**: `r44-s1..3` on `a782472`
+   (`configHash 9b4e275e2a552aa6`, 8 threads each, three at once). H1 2 of 3, H2 3 of 3
+   by one to four points on overlapping crowds, H3 unreadable (its famine never came),
+   H4 1 of 3 on a clause that fails a window with no adds (refusals per add 22, 704 and
+   1,255; one counter for two reasons), H5 2 of 3, H6 3 of 3 with the matter residual at
+   1e-06 units. Seed 1 ended `status error` at 22,370 s, censored: creature 7417's centre
+   of mass 3 cm below the bed, the root inside; `2771bf0` makes the farm's check read the
+   centre and count it as `Diverged`. Its world of module chains went deep and to the
+   glass (rim quarter 0.48, `cols` 0.85, `upt lim` 23%) and its solver cost per body-step
+   rose 7.6-fold with `ovl/body` (0.026 to 0.82, 99% held) and not with links per body
+   (2.05 to 2.95), so the contact pass is the suspect, my reading; the profile from a
+   checkpoint decides it, which is why `rounds/env-r45.ps1` records one every 2,500 s.
+   Two instruments the next build wants: a per-reason count of the module rule's refusals,
+   and H3 rewritten on the reserve itself. The design question behind seed 1, whether a
+   chain's contact sphere should be its hull's or its parts', is the owner's. **Round 45's build is in**
    (`8b0d798`, the mouth: the caps in the registry, health as state, the kill by part path
    with `DeathCause.Eaten`, contact from the overlap census once a metabolic step, intake
    from corpses, the four prices, the `Contact` and `Damage` senses; every default is the
@@ -467,9 +472,11 @@ subagent and never in a shell loop.
    (`runs/r45fix-s4`, round 44's world with the mouth at its defaults, seed 4, 20,000 s at
    12 threads beside seed 1; Dynamics 79 of 79 on it, `aae6769`), the kill event is in
    (`6fcf93b`, one lineage row per part a bite takes, so 0114's J3 and J7 are readable),
-   and the pre-registration is drafted (`logbook/0114`) with the hashes filled. Left
-   before its launch: `-All` on the mouth build (running as of 21:45), and round 44's read,
-   since round 45 runs on round 44's world. Every `.ckpt` on disk is orphaned again by
+   and the pre-registration is drafted (`logbook/0114`) with the hashes filled. `-All`
+   is green on the mouth build (828 of 829 on the first pass, the one failure the
+   thread-identity fixture refused for the caps; re-recorded from a 20 s run of the
+   build with the module rule at zero, `configHash 676c16483b32d787`, and the word
+   `c9b0cabce249c1dd` did not move). Every `.ckpt` on disk is orphaned again by
    `StateVersion` 4.
    Rung B's spec is drafted for the owner (`logbook/specs/scent-spec.md`, four
    questions in it, not built); C and D behind it.

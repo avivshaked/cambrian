@@ -1166,6 +1166,18 @@ actually verifying it.
   `LiveUiCheck` needs `EVOSIM_THEATRE_CHECKPOINT` pointed at one the build wrote
   (`scratch/live-ui/runs/ckUi` on 2026-09-22) until ckA is re-recorded. The founding live
   path (no checkpoint named) has no check yet.
+- **`World.Observe` reads a body's centre of mass and throws when it is outside the box,
+  and until `2771bf0` the farm's divergence check read the root alone.** Round 44 seed 1
+  ended `status error` at 22,370 s on creature 7417: the root inside the bound and the
+  centre 3 cm below a 45 m bed, so `CheckFinite` passed it and `Observe` threw
+  (`ArgumentOutOfRangeException … height of 45.03 m in a world 45 m deep`). From that
+  commit the check reads the centre against `World.HeightIsInTheWorld` too, and such a
+  body dies as a counted `Diverged` death with a reason naming the centre. A run that
+  ended this way is censored and read at its last sample; its rows stand. The same seed
+  is the first the farm has slowed: physics cost per body-step rose 7.6-fold with
+  `ovl/body` (0.026 to 0.82, 99% held) and not with links per body, so read `ovl/body`
+  beside `x real time` on any seed that falls under 1x, and profile it from a checkpoint
+  (`EVOSIM_CHECKPOINT_EVERY`, from round 45's launcher).
 - **A blue screen beside a GPU probe was the file-system filter stack, and a minidump is
   readable without a debugger.** The one crash in this machine's log (2026-09-22, bugcheck
   0x3B) faulted in `FLTMGR.SYS` on a `dotnet.exe` thread, entered through the Xbox Gaming
