@@ -2343,6 +2343,30 @@ namespace Evosim.Core
         /// </summary>
         private static readonly double EnvelopeRms = Math.Sqrt(0.59375d);
 
+        /// <summary>
+        /// How much of the attainable vertical-to-horizontal ratio a tank too shallow for D088's
+        /// balance aims at — λ, 0.76.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The owner's ruling of 2026-09-21</b>, on the readings in
+        /// <c>logbook/specs/streams-shallow-spec.md</c> §2. It has to be under 1, because the
+        /// ratio reaches its ceiling only as the overturning's amplitude goes to infinity, and
+        /// what it trades is vertical motion against how much of the water is overturning cell:
+        /// at 0.90 the axes are nearly square and the cell runs at 1.8 times round 42's
+        /// amplitude, drowning the eddies; at 0.60 a quiet column sits under lively horizontal
+        /// water. At 0.76 the cell is at round 42's own amplitude, so a shallow tank's eddies keep
+        /// the share they have in a deep one and the vertical comes out a quarter under the
+        /// horizontal.
+        /// </para>
+        /// <para>
+        /// <b>It reaches nothing that builds today.</b> Where the balance has a root the field
+        /// takes it, and this number is not read — which is what makes the relaxation a new
+        /// branch rather than a change to the water every recorded tank ran in.
+        /// </para>
+        /// </remarks>
+        private const double ShallowAxisFraction = 0.76d;
+
         private bool _streamsBuilt;
 
         // Per stream term, in the order m (outer), j, q (inner) — which is also the order the seed
@@ -2366,6 +2390,7 @@ namespace Evosim.Core
         private float _streamsBound;
         private double _streamsRmsEddies;
         private double _streamsRmsOverturning;
+        private double _streamsAxisRatio = 1d;
 
         // The floor-following map's own scale, 1 on a flat bed and never anything else there:
         // every product it enters is multiplied by exactly 1.0, which is exact, so a world at
@@ -2393,6 +2418,36 @@ namespace Evosim.Core
                 return (
                     (float)(_streamsRmsEddies * scale),
                     (float)(_streamsRmsOverturning * _streamsOverturning * scale));
+            }
+        }
+
+        /// <summary>
+        /// The vertical RMS over the per-axis horizontal RMS this water was built to — 1 where
+        /// D088's balance has a root, and <c>λ·k_max</c> in a tank too shallow for it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Derived, never set</b>: it falls out of the tank's aspect and the mode set, so there
+        /// is no tunable behind it, no config field and no recorded world it refuses. A run's
+        /// header carries it (<c>axes v:h</c>) for the reason every other world rule is in a
+        /// header — a reader of two reports must not have to work out from the depth alone which
+        /// water each had.
+        /// </para>
+        /// <para>
+        /// <b>1 in a box</b>, where the streams are not the field and nothing was balanced: the
+        /// property answers rather than refusing, so a header can print it without asking the
+        /// shape first, and a box's 1 says the same thing a balanced tank's does — no relaxation
+        /// was needed.
+        /// </para>
+        /// </remarks>
+        public double StreamsAxisRatio
+        {
+            get
+            {
+                if (_shape != WorldShape.Tank) return 1d;
+
+                EnsureStreams();
+                return _streamsAxisRatio;
             }
         }
 
@@ -2759,14 +2814,66 @@ namespace Evosim.Core
             double b = -cross / counted;
             double c0 = -0.5 * h0 / counted;
 
+            // The target the three coefficients above encode, kept so that a run can say what
+            // water it had. 1 is the balance D088 asked for and every tank that builds without the
+            // relaxation below; the branch that relaxes it overwrites this. Set before the test
+            // rather than after it so that a field rebuilt for a second geometry (SetBox clears
+            // _streamsBuilt) cannot keep the first one's answer. A store, not arithmetic: the
+            // balanced tank's numbers below are the ones it always had, operation for operation.
+            _streamsAxisRatio = 1d;
+
             if (!(a > 1e-12))
             {
-                _envelopeOverride = 0d;
+                // A wide shallow tank, which the balance has no root for — the overturning's own
+                // radial flow carries qπ/D, so its horizontal mean square grows as (R/D)² and at
+                // D ≈ R/1.308 it overtakes twice the vertical. The most vertical motion the cell
+                // can carry against the horizontal is k_max = sqrt(2V/H1), approached only as the
+                // amplitude goes to infinity, so the rule cannot be met and can only be relaxed:
+                // aim at a fixed fraction of the ceiling and solve the same quadratic for it.
+                // logbook/specs/streams-shallow-spec.md §2; λ is the owner's ruling of 2026-09-21.
+                //
+                // k_max is measured from the pass that has just run and never written down: it
+                // belongs to the mode set and the tank's own aspect, and a literal here would be a
+                // fit that a change to either would silently invalidate.
+                double meanVertical = vertical / counted;
+                double meanHorizontal = h1 / counted;
 
-                throw new InvalidOperationException(
-                    "The overturning carries no more vertical motion than horizontal, so there is " +
-                    "no amplitude at which the axes balance. A tank whose depth is of the order " +
-                    "of its radius would do that; this one is not meant to be.");
+                if (!(meanVertical > 0d) || !(meanHorizontal > 0d))
+                {
+                    _envelopeOverride = 0d;
+
+                    throw new InvalidOperationException(
+                        "The overturning measured no motion of its own over this tank, so there " +
+                        FormattableString.Invariant(
+                            $"is no ratio to relax towards (vertical {meanVertical}, horizontal ") +
+                        FormattableString.Invariant(
+                            $"{meanHorizontal} at unit amplitude, radius {_tankRadiusMetres} m, ") +
+                        FormattableString.Invariant($"depth {_depthMetres} m)."));
+                }
+
+                double ceiling = Math.Sqrt(2d * meanVertical / meanHorizontal);
+                double target = ShallowAxisFraction * ceiling;
+
+                // The same quadratic with the target in it — a_k = V − k²H1/2, b_k = −k²C,
+                // c_k = −k²H0/2 — which at k = 1 is the three lines above, term for term.
+                a = meanVertical - target * target * meanHorizontal / 2d;
+                b = -target * target * (cross / counted);
+                c0 = -target * target * (h0 / counted) / 2d;
+
+                _streamsAxisRatio = target;
+
+                if (!(a > 1e-12))
+                {
+                    _envelopeOverride = 0d;
+
+                    throw new InvalidOperationException(
+                        "The relaxed target leaves no amplitude either, which the algebra does " +
+                        FormattableString.Invariant(
+                            $"not allow below λ = 1 (ratio {target}, ceiling {ceiling}, radius ") +
+                        FormattableString.Invariant(
+                            $"{_tankRadiusMetres} m, depth {_depthMetres} m). Read it as a ") +
+                        "degenerate mode set rather than as a shallow tank.");
+                }
             }
 
             _streamsOverturning = (-b + Math.Sqrt(b * b - 4d * a * c0)) / (2d * a);

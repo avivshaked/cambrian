@@ -9,29 +9,33 @@ namespace Evosim.Core.Tests
 {
     /// <summary>
     /// A probe, not a guard: what the streams' axis balance costs in a tank that is wide and
-    /// shallow, and what a relaxed rule would buy.
+    /// shallow, and what the relaxed rule buys.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>The question.</b> <c>CurrentField.BuildStreams</c> solves one quadratic for the
-    /// overturning's amplitude <c>β</c>, the amplitude at which the vertical RMS equals the
-    /// per-axis horizontal RMS (D088's rule): <c>β²(V − H₁/2) − βC − H₀/2 = 0</c>, with
-    /// <c>a = V − H₁/2</c>, <c>b = −C</c>, <c>c₀ = −H₀/2</c>. The overturning's radial flow
-    /// carries a factor <c>qπ/D</c>, so <c>H₁</c> grows as the tank gets shallower at a fixed
-    /// radius, and at some depth <c>a</c> goes to zero and the constructor refuses the world.
-    /// This class measures where, and with what margin, at round 42's footprint.
+    /// <b>The question, and it has since been ruled on.</b> <c>CurrentField.BuildStreams</c>
+    /// solves one quadratic for the overturning's amplitude <c>β</c>, the amplitude at which the
+    /// vertical RMS equals the per-axis horizontal RMS (D088's rule):
+    /// <c>β²(V − H₁/2) − βC − H₀/2 = 0</c>, with <c>a = V − H₁/2</c>, <c>b = −C</c>,
+    /// <c>c₀ = −H₀/2</c>. The overturning's radial flow carries a factor <c>qπ/D</c>, so
+    /// <c>H₁</c> grows as the tank gets shallower at a fixed radius, and at some depth <c>a</c>
+    /// goes to zero. This class measured where, and with what margin, at round 42's footprint;
+    /// <c>logbook/specs/streams-shallow-spec.md</c> is what it produced, and the owner ruled
+    /// <c>λ</c> = 0.76 on it on 2026-09-21. Since that build a tank flatter than the critical
+    /// depth is no longer refused: it is built at <c>λ·k_max</c>, and these tables now read a
+    /// field that exists rather than one that was declined. <c>StreamsShallowTests</c> is the
+    /// guard; this is still the reading.
     /// </para>
     /// <para>
     /// <b>It reads the production field by reflection and edits nothing.</b> The coefficients are
-    /// not stored anywhere — they are locals inside <c>BuildStreams</c>, and in the failing case
-    /// the method throws before it could store them. But everything they are computed from
-    /// survives the throw: the term arrays are filled at the top of the method and the streams'
-    /// own weight is set by the first measurement pass, both before the refusal. So the probe
-    /// catches the refusal and re-runs the second pass itself, through the same private
-    /// <c>Walk</c> and the same private <c>StreamsUnit</c>, with the same envelope override —
-    /// the same lattice, the same phases, the same accumulation order, and therefore the same
-    /// doubles. <see cref="TheProbeReproducesTheProductionBeta"/> is the check on that claim: on
-    /// every depth that constructs, the <c>β</c> the probe solves for equals the one the field
+    /// not stored anywhere — they are locals inside <c>BuildStreams</c>. But everything they are
+    /// computed from survives the build: the term arrays are filled at the top of the method and
+    /// the streams' own weight is set by the first measurement pass. So the probe re-runs the
+    /// second pass itself, through the same private <c>Walk</c> and the same private
+    /// <c>StreamsUnit</c>, with the same envelope override — the same lattice, the same phases,
+    /// the same accumulation order, and therefore the same doubles, on both branches of the rule.
+    /// <see cref="TheProbeReproducesTheProductionBeta"/> is the check on that claim: at every
+    /// depth, balanced or relaxed, the <c>β</c> the probe solves for equals the one the field
     /// built, exactly.
     /// </para>
     /// <para>
@@ -51,7 +55,7 @@ namespace Evosim.Core.Tests
 
         // Round 42's tank: 2,200 m2 of footprint, which is a radius of 26.458 m, four rings,
         // 0.1 m/s, a 6,000 s period. The depths are the sweep the owner asked for; 45 and 30 are
-        // runs on disk (r42-s1, r42scrB30-s1), 20 is the shelf the constructor refuses.
+        // runs on disk (r42-s1, r42scrB30-s1), 20 is the shelf the balance has no root for.
         private const float Area = 2200f;
         private const int Rings = 4;
         private const float Speed = 0.1f;
@@ -69,6 +73,11 @@ namespace Evosim.Core.Tests
         // BuildStreams's own EnvelopeRms: the mean square of 0.75 + 0.25*sin, in closed form.
         private static readonly double EnvelopeRms = Math.Sqrt(0.59375d);
 
+        // CurrentField's own ShallowAxisFraction — the owner's ruling of 2026-09-21. Repeated
+        // here rather than reached for, because the production constant is private and what this
+        // probe is for is to solve the same arithmetic independently and find the same answer.
+        private const double Lambda = 0.76d;
+
         private static float Radius => TankGeometry.RadiusFor(Area);
 
         // ---------------------------------------------------------------- the tables
@@ -84,7 +93,7 @@ namespace Evosim.Core.Tests
                 Inv($"period {Period} s, seed {Seeds[0]}, flat bed"));
             _output.WriteLine("");
             _output.WriteLine(
-                "  depth  D/R     builds   H1        V         a           b            c0     " +
+                "  depth  D/R     balance  H1        V         a           b            c0     " +
                 "  k_max   beta      vert:horiz   measured x / y / z (m/s)");
 
             foreach (float depth in Depths)
@@ -93,18 +102,13 @@ namespace Evosim.Core.Tests
 
                 string axes = p.Built
                     ? FormattableString.Invariant($"{p.RmsX:0.00000} / {p.RmsY:0.00000} / {p.RmsZ:0.00000}")
-                    : "refused";
+                    : "not built";
 
-                string beta = p.Built
-                    ? FormattableString.Invariant($"{p.Beta:0.0000}")
-                    : "   --   ";
-
-                string ratio = p.Built
-                    ? FormattableString.Invariant($"{p.PredictedRatio:0.000}")
-                    : "   --  ";
+                string beta = FormattableString.Invariant($"{p.Beta:0.0000}");
+                string ratio = FormattableString.Invariant($"{p.PredictedRatio:0.000}");
 
                 _output.WriteLine(
-                    Inv($"  {depth,5:0.}  {depth / Radius,5:0.000}  {(p.Built ? "yes" : "NO "),-7}  ") +
+                    Inv($"  {depth,5:0.}  {depth / Radius,5:0.000}  {(p.A > 1e-12 ? "yes" : "NO "),-7}  ") +
                     Inv($"{p.H1,8:0.00000}  {p.V,8:0.00000}  {p.A,10:0.0000000;-0.0000000}  ") +
                     Inv($"{p.B,11:0.00e+00;-0.00e+00}  {p.C0,6:0.0000;-0.0000}  ") +
                     Inv($"{p.KMax,6:0.000}  {beta,8}  {ratio,8}     {axes}"));
@@ -112,20 +116,25 @@ namespace Evosim.Core.Tests
 
             _output.WriteLine("");
             _output.WriteLine(
-                "  a = V - H1/2, b = -C, c0 = -H0/2 (H0 is 1 by construction, so c0 is -0.5 exactly).");
+                "  a = V - H1/2, b = -C, c0 = -H0/2 (H0 is 1 by construction, so c0 is -0.5 exactly),");
             _output.WriteLine(
-                "  k_max = sqrt(2V/H1) is the supremum of the vertical:per-axis-horizontal RMS ratio");
+                "  which are the balanced rule's coefficients; where 'balance' reads NO the field");
             _output.WriteLine(
-                "  as beta goes to infinity; today's rule needs k_max > 1, which is a > 0.");
+                "  solves the same quadratic at k = lambda*k_max instead and the beta printed is that");
+            _output.WriteLine(
+                "  root. k_max = sqrt(2V/H1) is the supremum of the vertical:per-axis-horizontal RMS");
+            _output.WriteLine(
+                "  ratio as beta goes to infinity; the balance needs k_max > 1, which is a > 0.");
             _output.WriteLine(
                 "  'vert:horiz' is the predicted ratio from the coefficients; 'measured' is an");
             _output.WriteLine(
                 "  independent lattice over the live water through the public VelocityAt.");
 
             // Not an assertion on the water, an assertion that the probe probed: the deep end
-            // builds and the shallow end does not, which is the whole premise.
-            Assert.True(Measure(45f, Seeds[0], null).Built);
-            Assert.False(Measure(20f, Seeds[0], null).Built);
+            // balances, the shallow end does not, and since the ruling both ends are water.
+            Assert.True(Measure(45f, Seeds[0], null).A > 1e-12);
+            Assert.False(Measure(20f, Seeds[0], null).A > 1e-12);
+            Assert.True(Measure(20f, Seeds[0], null).Built);
         }
 
         /// <summary>
@@ -137,10 +146,9 @@ namespace Evosim.Core.Tests
             foreach (float depth in Depths)
             {
                 Probe p = Measure(depth, Seeds[0], bed: null);
-                if (!p.Built) continue;
 
                 _output.WriteLine(
-                    Inv($"depth {depth,3:0.} m: probe beta {p.Beta:R}, field beta {p.FieldBeta:R} — ") +
+                    Inv($"depth {depth,3:0.} m ({(p.A > 1e-12 ? "balanced" : "relaxed")}): probe beta {p.Beta:R}, field beta {p.FieldBeta:R} — ") +
                     Inv($"{(p.Beta == p.FieldBeta ? "identical" : "DIFFERENT")}"));
 
                 Assert.Equal(p.FieldBeta, p.Beta);
@@ -148,17 +156,17 @@ namespace Evosim.Core.Tests
         }
 
         /// <summary>
-        /// The bed does not move the refusal: the balance is solved on the flat field, and the
+        /// The bed does not move the balance: it is solved on the flat field, and the
         /// floor-following map is a pass that runs after it.
         /// </summary>
         [Fact]
-        public void TheBedDoesNotMoveTheRefusal()
+        public void TheBedDoesNotMoveTheBalance()
         {
             _output.WriteLine(
                 Inv($"the same sweep with round 42's bed: relief {Relief} m, tilt {Tilt} m, scale 0"));
             _output.WriteLine("");
             _output.WriteLine(
-                "  depth  bed        streams  a          beta      measured x / y / z (m/s)");
+                "  depth  bed        balance  a          beta      measured x / y / z (m/s)");
 
             foreach (float depth in Depths)
             {
@@ -186,12 +194,12 @@ namespace Evosim.Core.Tests
 
                 string axes = p.Built
                     ? FormattableString.Invariant($"{p.RmsX:0.00000} / {p.RmsY:0.00000} / {p.RmsZ:0.00000}")
-                    : "refused";
+                    : "not built";
 
-                string beta = p.Built ? FormattableString.Invariant($"{p.Beta:0.0000}") : "   --   ";
+                string beta = FormattableString.Invariant($"{p.Beta:0.0000}");
 
                 _output.WriteLine(
-                    Inv($"  {depth,5:0.}  {bedNote,-9}  {(p.Built ? "yes" : "NO "),-7}  ") +
+                    Inv($"  {depth,5:0.}  {bedNote,-9}  {(p.A > 1e-12 ? "yes" : "NO "),-7}  ") +
                     Inv($"{p.A,9:0.000000;-0.000000}  {beta,8}  {axes}"));
             }
 
@@ -203,12 +211,12 @@ namespace Evosim.Core.Tests
         }
 
         /// <summary>
-        /// Three seeds, two depths: whether the refusal is the geometry's or the draw's.
+        /// Three seeds, two depths: whether the branch is the geometry's or the draw's.
         /// </summary>
         [Fact]
-        public void TheSeedDoesNotDecideTheRefusal()
+        public void TheSeedDoesNotDecideTheBranch()
         {
-            _output.WriteLine("  depth  seed   a           b            k_max   builds");
+            _output.WriteLine("  depth  seed   a           b            k_max   balance");
 
             foreach (float depth in new[] { 45f, 25f, 20f })
             {
@@ -218,7 +226,7 @@ namespace Evosim.Core.Tests
 
                     _output.WriteLine(
                         Inv($"  {depth,5:0.}  {seed,4}   {p.A,10:0.0000000;-0.0000000}  ") +
-                        Inv($"{p.B,11:0.00e+00;-0.00e+00}  {p.KMax,6:0.000}  {(p.Built ? "yes" : "NO")}"));
+                        Inv($"{p.B,11:0.00e+00;-0.00e+00}  {p.KMax,6:0.000}  {(p.A > 1e-12 ? "yes" : "NO")}"));
                 }
             }
 
@@ -227,7 +235,7 @@ namespace Evosim.Core.Tests
             _output.WriteLine(
                 "  The seed moves a in the fourth decimal and k_max in the third, and it never");
             _output.WriteLine(
-                "  moves the verdict: depth 20 is refused on every seed. b = -C is the cross term");
+                "  moves the verdict: depth 20 takes the relaxed branch on every seed. b = -C is the cross term");
             _output.WriteLine(
                 "  between the streams and the overturning and is zero analytically — the streams");
             _output.WriteLine(
@@ -237,16 +245,18 @@ namespace Evosim.Core.Tests
         }
 
         /// <summary>
-        /// What each candidate relaxation would give, from the coefficients alone — no production
-        /// change, just the arithmetic the rule would run.
+        /// What each candidate relaxation gives, from the coefficients alone — rule A is the one
+        /// ruled on, and rule B is what was not chosen.
         /// </summary>
         [Fact]
         public void TheCandidateRulesAreTabled()
         {
             _output.WriteLine(
-                "  Rule A: k = min(1, lambda * k_max), lambda = 0.9, then solve the same quadratic");
+                "  Rule A: k = min(1, lambda * k_max), lambda = 0.76, then solve the same quadratic");
             _output.WriteLine(
-                "          with a_k = V - k^2*H1/2, b_k = -k^2*C, c_k = -k^2*H0/2.");
+                "          with a_k = V - k^2*H1/2, b_k = -k^2*C, c_k = -k^2*H0/2. This is the");
+            _output.WriteLine(
+                "          owner's ruling of 2026-09-21 and what CurrentField now runs.");
             _output.WriteLine(
                 "  Rule B: k = min(1, D/R), the shelf's own aspect ratio, same quadratic.");
             _output.WriteLine("");
@@ -258,7 +268,7 @@ namespace Evosim.Core.Tests
             {
                 Probe p = Measure(depth, Seeds[0], bed: null);
 
-                double kA = Math.Min(1d, 0.9d * p.KMax);
+                double kA = Math.Min(1d, Lambda * p.KMax);
                 double kB = Math.Min(1d, depth / Radius);
 
                 (double betaA, double ratioA, double rmsA) = SolveAt(p, kA);
@@ -279,52 +289,48 @@ namespace Evosim.Core.Tests
                 "  construction for any beta, because _streamsScale is measured after beta is chosen.");
             _output.WriteLine("");
             _output.WriteLine(
-                "  At every depth where today's code succeeds, k_max > 1 so both rules return k = 1");
+                "  At every depth where the balance has a root, k_max > 1 so both rules return k = 1");
             _output.WriteLine(
-                "  and the quadratic is today's, coefficient for coefficient.");
+                "  and the quadratic is the balanced one, coefficient for coefficient — which is why");
+            _output.WriteLine(
+                "  the relaxation reaches no tank that was ever recorded.");
         }
 
         /// <summary>
-        /// The relaxed shallow tank, measured rather than predicted: rule A's amplitude and the
-        /// scale it implies, injected into a field this probe built, then read back over the live
-        /// water through the public sampler.
+        /// The relaxed shallow tank as the field now builds it, measured rather than predicted.
         /// </summary>
         /// <remarks>
-        /// <b>The injection is the probe's, never the field's.</b> Nothing in production chooses
-        /// an amplitude this way; the probe writes <c>_streamsOverturning</c>, <c>_streamsScale</c>
-        /// and <c>_streamsBuilt</c> by reflection so that the public sampler will answer for a
-        /// tank the constructor refuses, and every field it writes is one <c>BuildStreams</c>
-        /// would have written had it been allowed to finish. Depth 25 is the control: injecting
-        /// <c>k = 1</c> there must reproduce, to the bit, the field the constructor built by
-        /// itself.
+        /// <b>The field's own numbers, not the probe's.</b> Until the ruling this read an
+        /// amplitude the probe injected by reflection, because the constructor refused a tank this
+        /// flat; it now reads what <c>BuildStreams</c> chose, through the public sampler, on a
+        /// lattice of the probe's own. Depth 25 is the control at the other end: it balances, so
+        /// its target is 1 and nothing about it has changed.
         /// </remarks>
         [Fact]
         public void TheRelaxedShallowTankIsMeasured()
         {
             _output.WriteLine(
-                "  depth  k       beta      predicted y/x   measured x / y / z (m/s)      " +
+                "  depth  target  beta      predicted y/x   measured x / y / z (m/s)      " +
                 "measured y/x   total RMS   bound (m/s)  substeps at 1 m / 0.5 s");
 
             foreach (float depth in new[] { 25f, 20f, 15f })
             {
                 Probe p = Measure(depth, Seeds[0], bed: null);
 
-                double k = Math.Min(1d, 0.9d * p.KMax);
-                (double beta, double ratio, _) = SolveAt(p, k);
-
-                CurrentField field = Inject(depth, Seeds[0], p, beta);
+                CurrentField field = Field(depth, Seeds[0], bed: null);
+                _ = field.StreamsComponentRms;
 
                 (double x, double y, double z) = PerAxisRms(field, depth, bed: null);
 
                 double horizontal = Math.Sqrt(0.5d * (x * x + z * z));
                 double total = Math.Sqrt(x * x + y * y + z * z);
 
-                double bound = Bound(field, beta);
+                double bound = field.MaximumTransportSpeed;
                 double courant = bound * 0.5d / 1d;
                 int substeps = courant <= 0.5d ? 1 : (int)Math.Ceiling(2d * courant);
 
                 _output.WriteLine(
-                    Inv($"  {depth,5:0.}  {k,6:0.0000}  {beta,8:0.0000}  {ratio,13:0.000}   ") +
+                    Inv($"  {depth,5:0.}  {field.StreamsAxisRatio,6:0.0000}  {p.Beta,8:0.0000}  {p.PredictedRatio,13:0.000}   ") +
                     Inv($"{x:0.00000} / {y:0.00000} / {z:0.00000}   {y / horizontal,12:0.000}   ") +
                     Inv($"{total,9:0.00000}   {bound,11:0.0000}  {substeps,4}"));
 
@@ -332,11 +338,14 @@ namespace Evosim.Core.Tests
                 // tank, as BedStreamsTests records; what matters here is that the relaxation does
                 // not move it, so the tolerance is the lattice's and not the water's.
                 Assert.Equal(0.1d, total, 0.01d);
+
+                // And the field aimed where the probe's own arithmetic says it should have.
+                Assert.Equal(p.Ratio, field.StreamsAxisRatio, 1e-12);
             }
 
             _output.WriteLine("");
             _output.WriteLine(
-                "  Depth 25 is the control: k is 1 there, so the injected field is the built one.");
+                "  Depth 25 balances: its target is 1 and its water is the one it always was.");
             _output.WriteLine(
                 "  The measured y/x runs a few per cent under the predicted because this lattice");
             _output.WriteLine(
@@ -346,50 +355,9 @@ namespace Evosim.Core.Tests
             _output.WriteLine("  fitted exactly 1.000.");
             _output.WriteLine("");
             _output.WriteLine(
-                "  'bound' is BuildStreams's fourth pass re-run at the injected amplitude, which is");
+                "  'bound' is the field's own MaximumTransportSpeed, which is what");
             _output.WriteLine(
-                "  what GridField.CourantSubsteps refuses on; its ceiling is 8 substeps.");
-        }
-
-        /// <summary>
-        /// A field with an amplitude and a scale of the probe's choosing — see the remarks on
-        /// <see cref="TheRelaxedShallowTankIsMeasured"/>.
-        /// </summary>
-        private static CurrentField Inject(float depth, ulong seed, Probe p, double beta)
-        {
-            var field = new CurrentField
-            {
-                Mode = CurrentMode.Transport,
-                Speed = Speed,
-                PeriodSeconds = Period,
-                AdvectFields = true,
-            };
-
-            field.SetBox(
-                (float)Math.Sqrt(Area / Rings), Rings, depth,
-                Rng.SeedFor(seed, World.CurrentFieldIndex),
-                patchesAcross: 1, shape: WorldShape.Tank, tankRadiusMetres: Radius, bed: null);
-
-            try
-            {
-                _ = field.StreamsComponentRms;
-            }
-            catch (InvalidOperationException)
-            {
-                // Expected on a shallow tank, and the arrays and the weight survive it.
-            }
-
-            // BuildStreams's own third step, with beta from the relaxed rule instead of the root.
-            double meanSquare = p.H0 + 2d * beta * p.C + beta * beta * (p.H1 + p.V);
-
-            SetPrivate(field, "_streamsOverturning", beta);
-            SetPrivate(field, "_streamsScale", (float)(1d / Math.Sqrt(meanSquare)));
-            SetPrivate(field, "_streamsBound", (float)(50d * Speed));
-            SetPrivate(field, "_streamsRmsEddies", 1d);
-            SetPrivate(field, "_streamsRmsOverturning", Math.Sqrt(p.H1 + p.V));
-            SetPrivate(field, "_streamsBuilt", true);
-
-            return field;
+                "  GridField.CourantSubsteps refuses on; its ceiling is 8 substeps.");
         }
 
         /// <summary>
@@ -426,8 +394,8 @@ namespace Evosim.Core.Tests
             _output.WriteLine(
                 "  The last column is the constant: one number across a 22x range of area and a 2x");
             _output.WriteLine(
-                "  range of depth. The critical depth is therefore D = R / c, below which today's");
-            _output.WriteLine("  constructor refuses the world.");
+                "  range of depth. The critical depth is therefore D = R / c, below which the");
+            _output.WriteLine("  balance has no root and the field is built at lambda * k_max instead.");
         }
 
         // ---------------------------------------------------------------- the machinery
@@ -439,6 +407,10 @@ namespace Evosim.Core.Tests
             public double H0, H1, C, V;
             public double KMax;
             public double Beta, FieldBeta;
+
+            /// <summary>The target the rule aimed at: 1 where the balance has a root, λ·k_max otherwise.</summary>
+            public double Ratio;
+
             public double PredictedRatio;
             public double RmsX, RmsY, RmsZ;
         }
@@ -471,9 +443,9 @@ namespace Evosim.Core.Tests
             return built;
         }
 
-        private Probe Build(float depth, ulong seed, BedShape bed, float area, bool measure)
+        /// <summary>One tank's water, at this class's knob and period.</summary>
+        private static CurrentField Field(float depth, ulong seed, BedShape bed, float area = Area)
         {
-            float radius = TankGeometry.RadiusFor(area);
             var field = new CurrentField
             {
                 Mode = CurrentMode.Transport,
@@ -485,7 +457,16 @@ namespace Evosim.Core.Tests
             field.SetBox(
                 (float)Math.Sqrt(area / Rings), Rings, depth,
                 Rng.SeedFor(seed, World.CurrentFieldIndex),
-                patchesAcross: 1, shape: WorldShape.Tank, tankRadiusMetres: radius, bed: bed);
+                patchesAcross: 1, shape: WorldShape.Tank,
+                tankRadiusMetres: TankGeometry.RadiusFor(area), bed: bed);
+
+            return field;
+        }
+
+        private Probe Build(float depth, ulong seed, BedShape bed, float area, bool measure)
+        {
+            float radius = TankGeometry.RadiusFor(area);
+            CurrentField field = Field(depth, seed, bed, area);
 
             var p = new Probe();
 
@@ -567,15 +548,26 @@ namespace Evosim.Core.Tests
 
             p.KMax = Math.Sqrt(2d * p.V / p.H1);
 
+            // The production rule of 2026-09-21, both branches: the balance where it has a root,
+            // and λ times the ceiling where it has none. The relaxed branch's coefficients are
+            // the balanced ones with k² on three of the four terms, so at k = 1 this is the line
+            // the field has always run.
             if (p.A > 1e-12)
             {
+                p.Ratio = 1d;
                 p.Beta = (-p.B + Math.Sqrt(p.B * p.B - 4d * p.A * p.C0)) / (2d * p.A);
                 p.PredictedRatio = RatioAt(p, p.Beta);
             }
             else
             {
-                p.Beta = double.NaN;
-                p.PredictedRatio = double.NaN;
+                p.Ratio = Lambda * p.KMax;
+
+                double a = p.V - p.Ratio * p.Ratio * p.H1 / 2d;
+                double b = -p.Ratio * p.Ratio * p.C;
+                double c = -p.Ratio * p.Ratio * p.H0 / 2d;
+
+                p.Beta = (-b + Math.Sqrt(b * b - 4d * a * c)) / (2d * a);
+                p.PredictedRatio = RatioAt(p, p.Beta);
             }
         }
 
@@ -659,39 +651,6 @@ namespace Evosim.Core.Tests
 
         /// <summary>Invariant formatting, one interpolated literal at a time.</summary>
         private static string Inv(FormattableString s) => FormattableString.Invariant(s);
-
-        /// <summary>
-        /// <c>BuildStreams</c>'s fourth pass at a given amplitude: the fastest water a lattice
-        /// sees, plus the same 10% margin, which is what the grid's Courant check refuses on.
-        /// </summary>
-        private static double Bound(CurrentField field, double beta)
-        {
-            MethodInfo walkInfo = typeof(CurrentField).GetMethod(
-                "WalkForBound", BindingFlags.NonPublic | BindingFlags.Instance);
-            MethodInfo unitInfo = typeof(CurrentField).GetMethod(
-                "StreamsUnit", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            var walk = (Action<Action<float, float, float, double>>)walkInfo.CreateDelegate(
-                typeof(Action<Action<float, float, float, double>>), field);
-            var unit = (Func<double, double, double, double, double, Float3>)unitInfo.CreateDelegate(
-                typeof(Func<double, double, double, double, double, Float3>), field);
-
-            float scale = (float)Private(field, "_streamsScale");
-
-            SetPrivate(field, "_envelopeOverride", 1d);
-
-            double fastest = 0d;
-
-            walk((x, y, z, t) =>
-            {
-                double speed = (unit(x, y, z, t, beta) * scale).Magnitude;
-                if (speed > fastest) fastest = speed;
-            });
-
-            SetPrivate(field, "_envelopeOverride", 0d);
-
-            return 1.1d * fastest * Speed;
-        }
 
         private static object Private(CurrentField field, string name) =>
             typeof(CurrentField)

@@ -901,6 +901,11 @@ namespace Evosim.Sim.EditorTools
                     manifest.BedSteepestDegrees = bed.SteepestTotalSlopeRadians * 180d / Math.PI;
                 }
 
+                // Set here for the same reason and from the same world: the ratio the streams
+                // were built to (logbook/specs/streams-shallow-spec.md). 1 in a box and in a
+                // tank whose axes balance, which is every run in the record.
+                manifest.StreamsAxisRatio = config.Current.StreamsAxisRatio;
+
                 CurrentManifest = manifest;
                 CurrentManifestDir = dir;
 
@@ -995,6 +1000,17 @@ namespace Evosim.Sim.EditorTools
                 (currentMode == CurrentMode.Transport
                     ? " (cell " + currentCell + " m unread)"
                     : " in " + currentCell + " m cells") +
+                // logbook/specs/streams-shallow-spec.md, the owner's ruling of 2026-09-21. Beside
+                // the current because it says what kind of water the speed is the RMS of: the
+                // vertical-to-horizontal ratio the tank's streams were built to, which is 1 where
+                // D088's balance has a root and λ times the attainable ceiling in a tank too flat
+                // for it. Derived from the depth and the radius, so there is no tunable behind it
+                // and no recorded config is refused; read off the field the world was built with,
+                // for SpaceToken's reason, so the header cannot name water the simulation does
+                // not have. 1.00 on every box and on every tank that balances, which is every run
+                // in the record.
+                " · axes v:h " +
+                config.Current.StreamsAxisRatio.ToString("0.00", CultureInfo.InvariantCulture) +
                 " · rolls " + (currentMode == CurrentMode.Transport
                     ? "unread in transport"
                     : currentRolls
@@ -1851,6 +1867,19 @@ namespace Evosim.Sim.EditorTools
             public double BedSteepestDegrees;
 
             /// <summary>
+            /// The vertical-to-horizontal ratio the water was built to —
+            /// <c>logbook/specs/streams-shallow-spec.md</c>, the owner's ruling of 2026-09-21.
+            /// </summary>
+            /// <remarks>
+            /// Here for the bed block's reason: it is not config at all. A depth and a radius
+            /// produce a ratio, the config carries neither the ratio nor anything that names it,
+            /// and the only way to know which water a run had without rebuilding it is to have
+            /// written it down. 1 on every box and on every tank whose balance has a root, which
+            /// is every recording before this build.
+            /// </remarks>
+            public double StreamsAxisRatio = 1d;
+
+            /// <summary>
             /// What was true as of the last metabolic step, for the error path.
             /// </summary>
             /// <remarks>
@@ -2186,6 +2215,12 @@ namespace Evosim.Sim.EditorTools
             w.Field("bedRidges", m.BedRidges);
             w.Field("bedRangeMetres", m.BedRangeMetres);
             w.Field("bedSteepestDegrees", m.BedSteepestDegrees);
+
+            // The streams' axis target — appended after the bed's seven per the same append-only
+            // rule, and derived from the world the launch produced rather than from the launch.
+            // 1 on every box and on every tank that balances, which is every recording before
+            // this build; the header's `axes v:h` token is the same number.
+            w.Field("streamsAxisRatio", m.StreamsAxisRatio);
 
             w.Field("startedAt", StartedAtUtc);
 
