@@ -6,6 +6,13 @@
 E10's probe clause is read by hand with scripts/overlap/run.ps1 on the snapshot; this prints the
 rest from stats.jsonl and run.json. E8 is the wall seconds per 1,000 simulated seconds per 1,000
 living bodies over the window from 5,000 s to the named second (three arms ran throughout).
+
+**A row is not a hundred seconds.** Two clauses integrate a per-row count over time — E7's
+jointed body-seconds and E8's body-seconds — and the Unity farm sampled every 100 s where the
+console farm (src/Evosim.Farm) samples every 10 s. Taking the interval as a constant read round
+43's jointed body-seconds ten times too high and its wall cost ten times too low (logbook/0111's
+last section). It is therefore measured from consecutive rows' `t` and printed on each arm's
+header line, so that a reader can see which world's cadence a figure was integrated at.
 """
 import json, glob, math, os, sys
 
@@ -53,6 +60,20 @@ def rows_of(arm):
     return rows, manifest
 
 
+def sample_interval(rows):
+    """The seconds one row stands for, from the rows themselves.
+
+    The median of the positive gaps rather than the first of them: a run's last row can be
+    short, and a row written at the ceiling or the stop file is a gap of its own. Every
+    recording on file samples at one cadence throughout, so the median is that cadence.
+    """
+    ts = [float(r['t']) for r in rows]
+    gaps = sorted(b - a for a, b in zip(ts, ts[1:]) if b > a)
+    if not gaps:
+        raise ValueError('fewer than two samples: nothing says what a row stands for')
+    return gaps[len(gaps) // 2]
+
+
 def window_pairs(by, t):
     r, p = by[t], by[t - 1000]
     alive = (r['alive'] + p['alive']) / 2
@@ -78,7 +99,9 @@ def main():
         r = by[t]
         five = by.get(5000)
         alive = r['alive']
-        print(f'== {arm} at {t} s: alive {alive}, status {m.get("status")} {m.get("reason") or ""}')
+        row_s = sample_interval(rows)
+        print(f'== {arm} at {t} s: alive {alive}, status {m.get("status")} {m.get("reason") or ""}'
+              f' (sample interval {row_s:g} s)')
         print(f'  E1 alive {alive} (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s {five["alive"] if five else "?"}')
         if five:
             print(f'  E2 alive over 5,000 s: {alive / five["alive"]:.2f}x (>= 1.3 at 30,000 s); margin s {r.get("meanReserveMargin", float("nan")):.0f} (< 150 at 30,000 s)')
@@ -87,14 +110,14 @@ def main():
         print(f'  E4 snow {snow:.2f} of budget (0.10 to 0.40)')
         inh_after = max((x.get('absorptiveInherited', 0) for x in rows if x['t'] > 5000), default=0)
         print(f'  E5 inherit max after 5,000 s {inh_after} (reaches 50 in 3 of 5); inherit now {r.get("absorptiveInherited")}')
-        jointed_bs = sum(x['jointed'] * 100 for x in rows if x['t'] <= t)  # bodies x 100 s per row
+        jointed_bs = sum(x['jointed'] * row_s for x in rows if x['t'] <= t)  # bodies x the row's own seconds
         div = r.get('diverged', 0)
         print(f'  E7 diverged {div} in {jointed_bs / 1e6:.2f} M jointed body-s = {div / max(jointed_bs, 1) * 1e6:.1f} per M (0 to 10); '
               f'rim quarter {r["alivePerPatch"][3] / alive:.2f} (0.12 to 0.40); cols {r["occupiedColumns"]} vs uniform {r["totalColumns"] * (1 - math.exp(-alive / COLUMNS)):.0f} '
               f'= {r["occupiedColumns"] / (r["totalColumns"] * (1 - math.exp(-alive / COLUMNS))):.2f} (0.85 to 1.05)')
         if five and t > 5000:
             wall = (r['wallTotalMs'] - five['wallTotalMs']) / 1000
-            body_s = sum(x['alive'] * 100 for x in rows if 5000 < x['t'] <= t)
+            body_s = sum(x['alive'] * row_s for x in rows if 5000 < x['t'] <= t)
             print(f'  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to {t} s: {wall / (body_s / 1000) * 1000:.0f} (700 to 1,800); pace {(t - 5000) / wall:.2f}x')
         wins = [(k, window_pairs(by, k)) for k in range(4000, t + 1, 1000) if k in by and k - 1000 in by]
         print(f'  E9 pairs/body at {t} s window {wins[-1][1]:.2f} (< 1.0 at 15,000 s); by window ' + ' '.join(f'{k // 1000}k:{v:.2f}' for k, v in wins))

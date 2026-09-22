@@ -123,6 +123,10 @@ namespace Evosim.Farm.Tests
             Assert.False(m.Has("simHash"));
             Assert.False(source.Has("simHash"));
 
+            // D102's ratio is written from the first call, like the bed's seven: 1 where the
+            // streams needed no relaxation, which is every box and every tank that balances.
+            Assert.Equal(1d, m["streamsAxisRatio"].AsDouble(), 12);
+
             // A run that has not ended says nothing about how it ended.
             Assert.False(m.Has("reason"));
             Assert.False(m.Has("endedAt"));
@@ -155,6 +159,32 @@ namespace Evosim.Farm.Tests
             Assert.Equal(1401, m["wallHarnessOtherMs"].AsDouble());
             Assert.Equal(2309857800, m["harnessBodySteps"].AsDouble());
             Assert.Equal(5960466800, m["fluidLinkSteps"].AsDouble());
+        }
+
+        /// <summary>
+        /// D102's ratio, in the place <c>EvolutionRun</c> writes it: after the bed's seven and
+        /// before the instant the run started.
+        /// </summary>
+        /// <remarks>
+        /// The position is asserted and not only the value, because the append-only rule is what
+        /// lets a reader of two manifests — one from each engine — line them up field by field.
+        /// </remarks>
+        [Fact]
+        public void TheManifestCarriesTheStreamsAxisRatioAfterTheBed()
+        {
+            RunManifest m = Sample();
+            m.StreamsAxisRatio = 0.62;
+
+            string text = Manifest.Render(m, ending: null);
+            Assert.Equal(0.62, Json.Parse(text)["streamsAxisRatio"].AsDouble(), 12);
+
+            int bed = text.IndexOf("\"bedSteepestDegrees\"", StringComparison.Ordinal);
+            int ratio = text.IndexOf("\"streamsAxisRatio\"", StringComparison.Ordinal);
+            int started = text.IndexOf("\"startedAt\"", StringComparison.Ordinal);
+
+            Assert.True(bed > 0, "the bed's last field is missing");
+            Assert.True(bed < ratio, "streamsAxisRatio must follow the bed's seven");
+            Assert.True(ratio < started, "streamsAxisRatio must precede startedAt");
         }
 
         /// <summary>

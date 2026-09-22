@@ -178,6 +178,15 @@ namespace Evosim.Farm
                 (s.CurrentMode == CurrentMode.Transport
                     ? " (cell " + F(s.CurrentCell) + " m unread)"
                     : " in " + F(s.CurrentCell) + " m cells") +
+
+                // D102, in the slot EvolutionRun prints it in: the vertical-to-horizontal ratio
+                // the tank's streams were built to, beside the current because it says what kind
+                // of water the speed is the RMS of. Derived from the depth and the radius, so
+                // there is no tunable behind it and no recorded config is refused, and read off
+                // the field the world was built with for SpaceToken's reason — a header must not
+                // name water the simulation does not have. 1.00 in a box and in every tank whose
+                // axes balance.
+                " · axes v:h " + config.Current.StreamsAxisRatio.ToString("0.00", Inv) +
                 " · rolls " + (s.CurrentMode == CurrentMode.Transport
                     ? "unread in transport"
                     : s.CurrentRolls

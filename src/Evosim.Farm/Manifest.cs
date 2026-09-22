@@ -84,6 +84,13 @@ namespace Evosim.Farm
         public double BedRangeMetres;
         public double BedSteepestDegrees;
 
+        /// <summary>D102's ratio: the water the streams were built to, read off the built world.</summary>
+        /// <remarks>
+        /// 1 in a box and in every tank whose axes balance, which is every recording before the
+        /// build that added it; the header's <c>axes v:h</c> token is the same number.
+        /// </remarks>
+        public double StreamsAxisRatio = 1d;
+
         /// <summary>
         /// What was true as of the last metabolic step, for the error path.
         /// </summary>
@@ -371,6 +378,12 @@ namespace Evosim.Farm
             w.Field("bedRidges", m.BedRidges);
             w.Field("bedRangeMetres", m.BedRangeMetres);
             w.Field("bedSteepestDegrees", m.BedSteepestDegrees);
+
+            // D102 — after the bed's seven, per the same append-only rule and in the place
+            // EvolutionRun writes it. Derived from the world the launch produced rather than from
+            // the launch; 1 on every box and on every tank that balances, and the header's
+            // `axes v:h` token is the same number.
+            w.Field("streamsAxisRatio", m.StreamsAxisRatio);
 
             w.Field("startedAt", m.StartedAtUtc);
 

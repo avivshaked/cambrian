@@ -164,6 +164,12 @@ namespace Evosim.Farm
                 settings, config.Hash(), inoculumHash, physicsDt, stepsPerMetabolic, threads);
 
             Manifest.RecordBed(manifest, world.Bed);
+
+            // D102, set here for RecordBed's reason and from the same world: the ratio the streams
+            // were built to, which the world's constructor derived when it told the field what
+            // tank it is in. 1 in a box and in a tank whose axes balance, which is every run in
+            // the record; the header's `axes v:h` token is the same number.
+            manifest.StreamsAxisRatio = config.Current.StreamsAxisRatio;
             Manifest.Write(dir, manifest, ending: null);
 
             var report = new Report(outPath, config);

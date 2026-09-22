@@ -70,8 +70,8 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         // ------------------------------------------------------------------ the header
 
         /// <summary>
-        /// Round 42's own settings line, rebuilt from its environment — the two ported tokens
-        /// apart.
+        /// Round 42's own settings line, rebuilt from its environment — the two ported tokens and
+        /// D102's apart.
         /// </summary>
         /// <remarks>
         /// The world is constructed for it, because the space token is read off the world the run
@@ -99,7 +99,12 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             string expected = recordedLine
                 .Replace("Unity 6000.5.6f1", "engine=dynamics 9.9.9.9")
-                .Replace("· physics jobs 0", "· threads 24");
+                .Replace("· physics jobs 0", "· threads 24")
+
+                // D102's token, which round 42's report was written before. Inserted in the slot
+                // EvolutionRun prints it in — between the current and the rolls — so that the rest
+                // of the line is still compared character for character against the recording.
+                .Replace(" · rolls ", " · axes v:h 1.00 · rolls ");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -115,6 +120,10 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             Assert.StartsWith("engine=dynamics 9.9.9.9 · dt=0.01 · metabolic step 0.5 s · seed 1 ", line);
             Assert.Contains(" · threads 24 · driveLimit >0.01", line);
+
+            // D102, beside the current and before the rolls, as EvolutionRun prints it: round
+            // 42's tank balances, so its water needed no relaxation.
+            Assert.Contains(" · axes v:h 1.00 · rolls unread in transport", line);
             Assert.Contains(
                 " · space tank r=26.46 m (2200 m2), depth 45, wall, bed relief 1.5 m tilt 30 m " +
                 "scale 17.64 m (hollows 0, ridges 1, range 1.50 m, steepest 37° bands 16°, " +
