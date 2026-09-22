@@ -195,9 +195,21 @@ build read 1.1e-04 (`scratch/double-accounts/runs/dblA`, `dblB`), the audit the 
 joules, both books closed; a new realisation of every seed, so round 44's base is this
 build and round 43 is read as recorded. Left from it: the field's float door (the 1e-7
 that remains), and `ParallelIdentityTests` is `Slow` and pins this build's own word, so
-thread identity in Core is gated by `-All` only. The owner's plan is now at step 4, the
-animal kit on D106 (round 44's build is next), and step 5, the GPU, is cleared by the
-crash reading.
+thread identity in Core is gated by `-All` only. **Round 44's build is in** (`39dcf3d`,
+late evening; `logbook/specs/module-gene-spec.md`'s "As built" section is the report): the
+module gene per node with its ceiling, format 7 carrying the four attributes at their
+defaults, the add and drop rule in `World.ApplyModuleRule`, the farm's rebuild of a
+changed plan by part path, four tunables, five columns, the lineage `ind` flag, WorldState
+3, the ledger's `module repay s` line. A zero-chance, zero-threshold world is the recorded
+world (`mgA` equals `dblB` at every field of 300 samples); Core 785 and 810 with the slow
+experiments, Farm 64. Two fixtures the build orphaned: the thread-identity config
+(re-recorded from `mgA`, `855c5d6`, the word unmoved) and the Dynamics crowd fixture
+`runs/r42-s4`, re-recorded as `runs/r44fix-s4` (round 43's world, seed 4, 20,000 s) and
+repointed in `RunFixture`. **Round 44 is pre-registered** (`logbook/0113`, `3d2cf12`) on
+`rounds/env-r44.ps1` with the add threshold screened by the ledger
+(`logbook/specs/r44-read/`): a leaf's module repays in 28 s at the surface, so 300 s of
+upkeep is a choice about when a body invests, about a child's price. The owner's plan is
+at step 4, the animal kit on D106, and step 5, the GPU, is cleared by the crash reading.
 
 **Machine.** i9-13900K, 24 cores, RTX 4090 with 24 GB. The farm takes `EVOSIM_THREADS`;
 16 is the measured best at this crowd. The Unity cap stays D103's. Run
@@ -421,10 +433,11 @@ subagent and never in a shell loop.
    serial phases (the contact grid, the water sample, the commit) cheapened if they bind,
    and `SampleEdges`' per-column terms hoisted (1.6 to 2x on the grid, estimated).
 5. **The animal kit on D106.** Round 44, the module gene (`logbook/specs/module-gene-spec.md`):
-   the build on the double-accounts base (`0c19f0d`; the spec carries an implementation
-   map), then the ledger screen of the add threshold, the pre-registration committed,
-   three seeds at 16 threads one at a time or three at once, the read and the entry with
-   pictures. Round 45, the mouth (`logbook/specs/mouth-spec.md`): health, the kill, the
+   built (`39dcf3d`), screened and pre-registered (`3d2cf12`); the three seeds launch
+   once the Dynamics fixture recording `r44fix-s4` ends, three at once at 8 threads
+   (`scripts/run-farm.ps1 -Launcher rounds/env-r44.ps1`), then the read
+   (`scripts/reads/r44-read.py`, `--out logbook/specs/r44-read/clauses.tsv`) and the
+   entry with pictures (`theatre-snap.ps1 -From snapshot`). Round 45, the mouth (`logbook/specs/mouth-spec.md`): health, the kill, the
    corpse, intake, the two senses, the cap table and the four prices from the ledger, same
    shape. Rung B's spec is drafted for the owner (`logbook/specs/scent-spec.md`, four
    questions in it, not built); C and D behind it.
