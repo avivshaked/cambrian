@@ -131,6 +131,34 @@ namespace Evosim.Core
         private CurrentField.BedColumn[] _bedColumnY;
         private CurrentField.BedColumn[] _bedColumnZ;
 
+        // D105's hoist: everything the streams' potential derives from a lattice point's (x, z)
+        // and from the height it reads the flat field at, which is neither the clock's nor the
+        // sample's. Built once per current, in the same three edge lattices the bed columns use,
+        // and then read at every depth, every substep and every step. Null on a box, on still
+        // water and until the first conservative step in a tank. See EnsureStreamsTerms for what
+        // a shaped floor costs here: the depth terms are per column and depth rather than per
+        // depth, because the floor-following map reads each column at its own heights.
+        private CurrentField _streamsTermsFor;
+        private CurrentField.StreamsColumn[] _streamsColumnX;
+        private CurrentField.StreamsColumn[] _streamsColumnY;
+        private CurrentField.StreamsColumn[] _streamsColumnZ;
+        private CurrentField.StreamsDepth[] _streamsDepthX;
+        private CurrentField.StreamsDepth[] _streamsDepthY;
+        private CurrentField.StreamsDepth[] _streamsDepthZ;
+
+        // How a lattice's depth terms are indexed: depth * stride + column * step. On a shaped
+        // floor the table is depth-major (stride = the column count, step = 1) because that is
+        // the order the edge loops walk it — one node plane at a time, every column of it. The
+        // column-major layout reads 24 bytes out of every 64-byte line and walks the whole table
+        // once per plane; depth-major streams it once per pass, which on round 43's tank is the
+        // difference between 240 MB of traffic and 4. On a flat floor one row serves every
+        // column (stride = 1, step = 0). The horizontal lattices are read at the ny − 1 interior
+        // node planes and the vertical one at the ny layer midpoints, so they differ.
+        private int _streamsStrideX;
+        private int _streamsStrideY;
+        private int _streamsStrideZ;
+        private int _streamsDepthStep;
+
         private readonly int[] _patchOfColumn;
 
         // Reused by DepositBox so a per-step influx allocates nothing.
@@ -2258,12 +2286,168 @@ namespace Evosim.Core
         public bool PrecomputeBedColumns { get; set; } = true;
 
         /// <summary>
+        /// Whether the streams' per-column and per-depth terms are precomputed for the edge
+        /// lattices rather than derived at every edge — D105. True, and the two paths are the
+        /// same arithmetic in the same order and grouping, so this decides speed and memory and
+        /// nothing else.
+        /// </summary>
+        /// <remarks>
+        /// It exists for the reason <see cref="PrecomputeBedColumns"/> does: so that one grid can
+        /// be measured both ways and the fluxes held against each other bit for bit
+        /// (<c>StreamsHoistTests</c>). A box takes neither path — the transport field's potential
+        /// is a plain term loop with no polar geometry in it.
+        /// </remarks>
+        public bool PrecomputeStreamsTerms { get; set; } = true;
+
+        /// <summary>
+        /// Builds the three edge families' streams terms for this current, or clears them for
+        /// water that has none to give.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it costs, and why the shaped floor costs so much more.</b> A column's terms are
+        /// nineteen doubles and there is one per <c>(x, z)</c> of each lattice — a few megabytes
+        /// at any size the campaign runs. The depth terms are the ones to watch. On a flat floor
+        /// the depth phase is a function of the height alone, so one row of <c>ny</c> of them
+        /// serves the whole tank. On a shaped floor the map reads each column at <c>ŷ = y·D/d</c>
+        /// and <c>d</c> is that column's own water depth, so the table is columns × depths: at
+        /// 22,000 m² and 1 m cells that is about 5 million entries over the three lattices, some
+        /// 120 MB, against the 5 million transcendentals a step it takes out. The grid's own edge
+        /// and face buffers are the same order at that size, so this roughly doubles a big grid's
+        /// memory. <see cref="PrecomputeStreamsTerms"/> is the way out of it.
+        /// </para>
+        /// <para>
+        /// <b>Built on the bed columns</b>, so a shaped floor's terms want those too; the builder
+        /// takes them itself rather than depending on the order <see cref="SampleEdges(CurrentField, double)"/> asks.
+        /// </para>
+        /// </remarks>
+        private void EnsureStreamsTerms(CurrentField current)
+        {
+            if (ReferenceEquals(_streamsTermsFor, current)) return;
+
+            _streamsTermsFor = null;
+            _streamsColumnX = _streamsColumnY = _streamsColumnZ = null;
+            _streamsDepthX = _streamsDepthY = _streamsDepthZ = null;
+            _streamsStrideX = _streamsStrideY = _streamsStrideZ = 1;
+            _streamsDepthStep = 0;
+
+            if (Shape != WorldShape.Tank || !current.HasPotential || !(current.Speed > 0f))
+            {
+                _streamsTermsFor = current;
+                return;
+            }
+
+            EnsureBedColumns(current);
+
+            double h = CellMetres;
+            bool shaped = current.Bed != null;
+
+            // The x edges sit at ((i+½)h, kh), the z edges at (ih, (k+½)h), the y edges at
+            // (ih, kh) — the three lattices EnsureBedColumns walks, in the same order, so a
+            // column and its bed column share an index.
+            _streamsColumnX = new CurrentField.StreamsColumn[_nx * (_nz + 1)];
+            for (int i = 0; i < _nx; i++)
+            {
+                float x = (float)((i + 0.5) * h);
+                for (int k = 0; k <= _nz; k++)
+                {
+                    _streamsColumnX[i * (_nz + 1) + k] = current.ColumnOf(x, (float)(k * h));
+                }
+            }
+
+            _streamsColumnZ = new CurrentField.StreamsColumn[(_nx + 1) * _nz];
+            for (int i = 0; i <= _nx; i++)
+            {
+                float x = (float)(i * h);
+                for (int k = 0; k < _nz; k++)
+                {
+                    _streamsColumnZ[i * _nz + k] = current.ColumnOf(x, (float)((k + 0.5) * h));
+                }
+            }
+
+            _streamsColumnY = new CurrentField.StreamsColumn[(_nx + 1) * (_nz + 1)];
+            for (int i = 0; i <= _nx; i++)
+            {
+                float x = (float)(i * h);
+                for (int k = 0; k <= _nz; k++)
+                {
+                    _streamsColumnY[i * (_nz + 1) + k] = current.ColumnOf(x, (float)(k * h));
+                }
+            }
+
+            // The horizontal lattices are read at the node planes j = 1 … ny−1 and indexed by
+            // j − 1; the vertical one at the layer midpoints j = 0 … ny−1 and indexed by j. Both
+            // are the heights the edge loops pass, taken through the same float.
+            int horizontalDepths = Math.Max(0, _ny - 1);
+            int verticalDepths = _ny;
+
+            if (!shaped)
+            {
+                _streamsDepthX = new CurrentField.StreamsDepth[horizontalDepths];
+                for (int j = 1; j < _ny; j++)
+                {
+                    _streamsDepthX[j - 1] = current.DepthOf(-(float)(j * h));
+                }
+
+                _streamsDepthZ = _streamsDepthX;
+
+                _streamsDepthY = new CurrentField.StreamsDepth[verticalDepths];
+                for (int j = 0; j < _ny; j++)
+                {
+                    _streamsDepthY[j] = current.DepthOf(-(float)((j + 0.5) * h));
+                }
+
+                _streamsTermsFor = current;
+                return;
+            }
+
+            _streamsStrideX = _bedColumnX.Length;
+            _streamsStrideY = _bedColumnY.Length;
+            _streamsStrideZ = _bedColumnZ.Length;
+            _streamsDepthStep = 1;
+
+            _streamsDepthX = BuildShapedDepths(current, _bedColumnX, horizontalDepths, false, h);
+            _streamsDepthZ = BuildShapedDepths(current, _bedColumnZ, horizontalDepths, false, h);
+            _streamsDepthY = BuildShapedDepths(current, _bedColumnY, verticalDepths, true, h);
+
+            _streamsTermsFor = current;
+        }
+
+        /// <summary>
+        /// One lattice's depth terms on a shaped floor — every column at every one of its own
+        /// mapped heights. Split by column, which is how the array is laid out.
+        /// </summary>
+        private static CurrentField.StreamsDepth[] BuildShapedDepths(
+            CurrentField current, CurrentField.BedColumn[] bed, int depths, bool midpoints, double h)
+        {
+            int columns = bed.Length;
+            var terms = new CurrentField.StreamsDepth[columns * depths];
+
+            // Depth-major, which is the order the edge loops read it in.
+            Parallelism.ForRanges(depths, (from, to) =>
+            {
+                for (int d = from; d < to; d++)
+                {
+                    float y = midpoints
+                        ? -(float)((d + 0.5) * h)
+                        : -(float)((d + 1) * h);
+
+                    int at = d * columns;
+
+                    for (int c = 0; c < columns; c++) terms[at + c] = current.DepthOf(bed[c], y);
+                }
+            });
+
+            return terms;
+        }
+
+        /// <summary>
         /// Builds the three edge families' bed columns for this current, or clears them for water
         /// with no shaped floor.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>The three lattices <see cref="SampleEdges"/> visits.</b> The x edges sit at
+        /// <b>The three lattices <see cref="SampleEdges(CurrentField, double)"/> visits.</b> The x edges sit at
         /// <c>((i+½)h, kh)</c> for <c>i &lt; nx</c> and <c>k ≤ nz</c>, the z edges at
         /// <c>(ih, (k+½)h)</c> for <c>i ≤ nx</c> and <c>k &lt; nz</c>, and the y edges at
         /// <c>(ih, kh)</c> for both ≤ n. Three arrays rather than one half-cell lattice because
@@ -2360,6 +2544,72 @@ namespace Evosim.Core
                 bedZ = _bedColumnZ;
             }
 
+            if (PrecomputeStreamsTerms)
+            {
+                EnsureStreamsTerms(current);
+
+                // The streams' hoist reads the bed columns, so it only stands where they do.
+                if (_streamsColumnX != null && (current.Bed == null || bedX != null))
+                {
+                    int step = _streamsDepthStep;
+
+                    SampleEdges(
+                        current, seconds,
+                        new EdgeTerms(
+                            bedX, _streamsColumnX, _streamsDepthX, _streamsStrideX, step),
+                        new EdgeTerms(
+                            bedY, _streamsColumnY, _streamsDepthY, _streamsStrideY, step),
+                        new EdgeTerms(
+                            bedZ, _streamsColumnZ, _streamsDepthZ, _streamsStrideZ, step));
+                    return;
+                }
+            }
+
+            SampleEdges(
+                current, seconds,
+                new EdgeTerms(bedX, null, null, 0, 0),
+                new EdgeTerms(bedY, null, null, 0, 0),
+                new EdgeTerms(bedZ, null, null, 0, 0));
+        }
+
+        /// <summary>
+        /// One edge lattice's precomputed terms: the floor's numbers at each <c>(x, z)</c> (D092),
+        /// the streams' polar terms there and the depth phases (D105). A null
+        /// <see cref="Columns"/> is the unhoisted path.
+        /// </summary>
+        private readonly struct EdgeTerms
+        {
+            public EdgeTerms(
+                CurrentField.BedColumn[] bed, CurrentField.StreamsColumn[] columns,
+                CurrentField.StreamsDepth[] depths, int stride, int step)
+            {
+                Bed = bed;
+                Columns = columns;
+                Depths = depths;
+                Stride = stride;
+                Step = step;
+            }
+
+            public CurrentField.BedColumn[] Bed { get; }
+
+            public CurrentField.StreamsColumn[] Columns { get; }
+
+            public CurrentField.StreamsDepth[] Depths { get; }
+
+            /// <summary>What one depth advances the index by: the column count, or 1 when flat.</summary>
+            public int Stride { get; }
+
+            /// <summary>What one column advances it by: 1, or 0 when one row serves them all.</summary>
+            public int Step { get; }
+
+            /// <summary>Where the terms for one column at one depth sit.</summary>
+            public int IndexOf(int column, int depth) => depth * Stride + column * Step;
+        }
+
+        private void SampleEdges(
+            CurrentField current, double seconds,
+            EdgeTerms termsX, EdgeTerms termsY, EdgeTerms termsZ)
+        {
             // The y = 0 node plane carries no x or z edge: both fields' potentials have
             // sin(q*pi*y/D) on every horizontal component, so the value there is analytically
             // zero, and an empty plane says so without depending on Math.Sin(-Math.PI) being 0.
@@ -2376,12 +2626,15 @@ namespace Evosim.Core
             {
                 Parallelism.ForRanges(_ny - 1, (from, to) =>
                 {
-                    for (int j = from + 1; j <= to; j++) HorizontalEdgePlane(current, seconds, j, bedX, bedZ);
+                    for (int j = from + 1; j <= to; j++)
+                    {
+                        HorizontalEdgePlane(current, seconds, j, termsX, termsZ);
+                    }
                 });
 
                 Parallelism.ForRanges(_ny, (from, to) =>
                 {
-                    for (int j = from; j < to; j++) VerticalEdgePlane(current, seconds, j, bedY);
+                    for (int j = from; j < to; j++) VerticalEdgePlane(current, seconds, j, termsY);
                 });
             }
             finally
@@ -2390,14 +2643,19 @@ namespace Evosim.Core
             }
         }
 
-        /// <summary>The x and z edges of one interior node plane. <see cref="SampleEdges"/>' body.</summary>
+        /// <summary>The x and z edges of one interior node plane. <see cref="SampleEdges(CurrentField, double)"/>' body.</summary>
         private void HorizontalEdgePlane(
-            CurrentField current, double seconds, int j,
-            CurrentField.BedColumn[] bedX, CurrentField.BedColumn[] bedZ)
+            CurrentField current, double seconds, int j, EdgeTerms termsX, EdgeTerms termsZ)
         {
             double h = CellMetres;
             bool tank = Shape == WorldShape.Tank;
             float y = -(float)(j * h);
+
+            // The node planes this loop visits are j = 1 … ny − 1; the depth tables are indexed
+            // from the first of them.
+            int d = j - 1;
+
+            CurrentField.BedColumn[] bedX = termsX.Bed, bedZ = termsZ.Bed;
 
             for (int i = 0; i < _nx; i++)
             {
@@ -2421,11 +2679,30 @@ namespace Evosim.Core
                         continue;
                     }
 
-                    _edgeX[row + k] = bedX == null
-                        ? current.PotentialAt(x, y, (float)(k * h), seconds).X * h
-                        : current.PotentialAt(
-                              x, y, (float)(k * h), seconds,
-                              bedX[i * (_nz + 1) + k]).X * h;
+                    int c = i * (_nz + 1) + k;
+
+                    double value;
+
+                    if (termsX.Columns == null)
+                    {
+                        value = bedX == null
+                            ? current.PotentialAt(x, y, (float)(k * h), seconds).X
+                            : current.PotentialAt(
+                                  x, y, (float)(k * h), seconds, bedX[c]).X;
+                    }
+                    else if (bedX == null)
+                    {
+                        value = current.PotentialAt(
+                            termsX.Columns[c], termsX.Depths[termsX.IndexOf(c, d)], seconds).X;
+                    }
+                    else
+                    {
+                        value = current.PotentialAt(
+                            termsX.Columns[c], bedX[c],
+                            termsX.Depths[termsX.IndexOf(c, d)], y, seconds).X;
+                    }
+
+                    _edgeX[row + k] = value * h;
                 }
             }
 
@@ -2448,12 +2725,31 @@ namespace Evosim.Core
                         continue;
                     }
 
-                    _edgeZ[row + k] = bedZ == null
-                        ? current.PotentialAt(
-                              (float)(i * h), y, (float)((k + 0.5) * h), seconds).Z * h
-                        : current.PotentialAt(
-                              (float)(i * h), y, (float)((k + 0.5) * h), seconds,
-                              bedZ[i * _nz + k]).Z * h;
+                    int c = i * _nz + k;
+
+                    double value;
+
+                    if (termsZ.Columns == null)
+                    {
+                        value = bedZ == null
+                            ? current.PotentialAt(
+                                  (float)(i * h), y, (float)((k + 0.5) * h), seconds).Z
+                            : current.PotentialAt(
+                                  (float)(i * h), y, (float)((k + 0.5) * h), seconds, bedZ[c]).Z;
+                    }
+                    else if (bedZ == null)
+                    {
+                        value = current.PotentialAt(
+                            termsZ.Columns[c], termsZ.Depths[termsZ.IndexOf(c, d)], seconds).Z;
+                    }
+                    else
+                    {
+                        value = current.PotentialAt(
+                            termsZ.Columns[c], bedZ[c],
+                            termsZ.Depths[termsZ.IndexOf(c, d)], y, seconds).Z;
+                    }
+
+                    _edgeZ[row + k] = value * h;
                 }
             }
         }
@@ -2463,11 +2759,13 @@ namespace Evosim.Core
         /// one of them has a midpoint at an interior depth and none is on a boundary plane.
         /// </summary>
         private void VerticalEdgePlane(
-            CurrentField current, double seconds, int j, CurrentField.BedColumn[] bedY)
+            CurrentField current, double seconds, int j, EdgeTerms termsY)
         {
             double h = CellMetres;
             bool tank = Shape == WorldShape.Tank;
             float y = -(float)((j + 0.5) * h);
+
+            CurrentField.BedColumn[] bedY = termsY.Bed;
 
             for (int i = 0; i <= _nx; i++)
             {
@@ -2489,11 +2787,30 @@ namespace Evosim.Core
                         continue;
                     }
 
-                    _edgeY[row + k] = bedY == null
-                        ? current.PotentialAt((float)(i * h), y, (float)(k * h), seconds).Y * h
-                        : current.PotentialAt(
-                              (float)(i * h), y, (float)(k * h), seconds,
-                              bedY[i * (_nz + 1) + k]).Y * h;
+                    int c = i * (_nz + 1) + k;
+
+                    double value;
+
+                    if (termsY.Columns == null)
+                    {
+                        value = bedY == null
+                            ? current.PotentialAt((float)(i * h), y, (float)(k * h), seconds).Y
+                            : current.PotentialAt(
+                                  (float)(i * h), y, (float)(k * h), seconds, bedY[c]).Y;
+                    }
+                    else if (bedY == null)
+                    {
+                        value = current.PotentialAt(
+                            termsY.Columns[c], termsY.Depths[termsY.IndexOf(c, j)], seconds).Y;
+                    }
+                    else
+                    {
+                        value = current.PotentialAt(
+                            termsY.Columns[c], bedY[c],
+                            termsY.Depths[termsY.IndexOf(c, j)], y, seconds).Y;
+                    }
+
+                    _edgeY[row + k] = value * h;
                 }
             }
         }

@@ -158,6 +158,17 @@ namespace Evosim.Core.Bench
                 passes.Add(("  det  .AssembleFaces", legs.AssembleMs));
                 passes.Add(("  det  .LargestOutflow", legs.OutflowMs));
                 passes.Add(("  det  .ApplyFaces", legs.ApplyMs));
+
+                // D105's hoist, on and off, on the one grid: the same arithmetic either way, so
+                // the difference is the whole of what it bought. See
+                // GridField.PrecomputeStreamsTerms.
+                if (detGrid.PrecomputeStreamsTerms)
+                {
+                    detGrid.PrecomputeStreamsTerms = false;
+                    var unhoisted = detGrid.ProfileTransport(current, t, MetabolicStep, steps);
+                    detGrid.PrecomputeStreamsTerms = true;
+                    passes.Add(("  det  .SampleEdges unhoisted", unhoisted.SampleMs));
+                }
             }
 
             double fieldTotal = 0d;

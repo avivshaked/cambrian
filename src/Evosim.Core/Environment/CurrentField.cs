@@ -2221,6 +2221,475 @@ namespace Evosim.Core
                 (float)(a.Z + m.B * a.Y));
         }
 
+        // ------------------------------------------- the lattice hoist: column, depth, instant
+        //
+        // What StreamsPotentialUnit does per point splits three ways, and a caller whose sample
+        // points are a fixed lattice pays for the first two once each instead of once per sample.
+        //
+        //   PER COLUMN, a pure function of (x, z): the offsets from the axis, the radius, the
+        //     normalised radius s and its powers, the wall and node factors, the eight f_j, the
+        //     four (cos mθ, sin mθ) the angle-sum recurrence walks out, and the overturning's
+        //     own wall. One sqrt, two divides and about forty multiplies.
+        //   PER DEPTH, a pure function of the height the flat field is read at: the clamp, the
+        //     face test, and sin φ and cos φ, from which the three vertical profiles follow in
+        //     five multiplies. Two transcendentals. On a SHAPED floor this is per column AND
+        //     depth, not per depth: the map carries the sample to ŷ = y·D/d and d is the water's
+        //     own depth at that column, so every column reads the profiles at its own heights.
+        //     That is the one thing here that does not factor the way a flat bed's does.
+        //   PER INSTANT, already memoised: the term phases, the envelopes and the cells' reversal.
+        //     A pin makes the two products that open each term's amplitude constant for the pass
+        //     as well, which is what _pinnedEddyBase and _pinnedCellBase hold.
+        //
+        // Nothing below reassociates anything. Every product that survives to the sample is in
+        // the order and the grouping StreamsPotentialUnit writes it in — a·b·c·d is ((a·b)·c)·d,
+        // so a prefix may be hoisted and a suffix may not — and the answer is the same double.
+        // StreamsHoistTests holds the two paths against each other bit for bit.
+
+        /// <summary>
+        /// Everything <see cref="StreamsPotentialUnit"/> derives from a sample's <c>(x, z)</c>
+        /// alone — the column of water above one point of the floor, in the tank's own polar
+        /// terms. D105.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>For a caller whose sample points never move</b>, which is the grid's three edge
+        /// lattices: at 1 m cells and 45 m of water each column is read at fifty-nine or sixty
+        /// depths, every substep and every metabolic step, and every one of those reads was
+        /// buying the same square root and the same forty multiplies again.
+        /// </para>
+        /// <para>
+        /// <b>Eight <c>f</c> and four angles written out rather than indexed</b> because the three
+        /// mode counts are compile-time constants and a struct may not carry a fixed buffer
+        /// without <c>unsafe</c>. <see cref="StreamsPotentialFrom"/>'s unrolled walk is tied to
+        /// <c>4 × 2 × 3</c>; <c>StreamsHoistTests</c> is what notices if one of them moves.
+        /// </para>
+        /// </remarks>
+        public readonly struct StreamsColumn
+        {
+            internal StreamsColumn(
+                double dx, double dz, double wall,
+                double cos1, double cos2, double cos3, double cos4,
+                double sin1, double sin2, double sin3, double sin4,
+                double f11, double f12, double f21, double f22,
+                double f31, double f32, double f41, double f42)
+            {
+                Dx = dx;
+                Dz = dz;
+                Wall = wall;
+                Cos1 = cos1; Cos2 = cos2; Cos3 = cos3; Cos4 = cos4;
+                Sin1 = sin1; Sin2 = sin2; Sin3 = sin3; Sin4 = sin4;
+                F11 = f11; F12 = f12; F21 = f21; F22 = f22;
+                F31 = f31; F32 = f32; F41 = f41; F42 = f42;
+                Sampled = true;
+            }
+
+            /// <summary><c>x − R</c>, m: the offset from the tank's axis.</summary>
+            public double Dx { get; }
+
+            /// <summary><c>z − R</c>, m.</summary>
+            public double Dz { get; }
+
+            /// <summary><c>1 − s</c>, the overturning's wall factor.</summary>
+            public double Wall { get; }
+
+            /// <summary><c>cos mθ</c> for <c>m = 1…4</c>.</summary>
+            public double Cos1 { get; }
+
+            /// <inheritdoc cref="Cos1"/>
+            public double Cos2 { get; }
+
+            /// <inheritdoc cref="Cos1"/>
+            public double Cos3 { get; }
+
+            /// <inheritdoc cref="Cos1"/>
+            public double Cos4 { get; }
+
+            /// <summary><c>sin mθ</c> for <c>m = 1…4</c>.</summary>
+            public double Sin1 { get; }
+
+            /// <inheritdoc cref="Sin1"/>
+            public double Sin2 { get; }
+
+            /// <inheritdoc cref="Sin1"/>
+            public double Sin3 { get; }
+
+            /// <inheritdoc cref="Sin1"/>
+            public double Sin4 { get; }
+
+            /// <summary><c>f_j(s)</c> for azimuthal mode <c>m</c> and family <c>j</c>.</summary>
+            public double F11 { get; }
+
+            /// <inheritdoc cref="F11"/>
+            public double F12 { get; }
+
+            /// <inheritdoc cref="F11"/>
+            public double F21 { get; }
+
+            /// <inheritdoc cref="F11"/>
+            public double F22 { get; }
+
+            /// <inheritdoc cref="F11"/>
+            public double F31 { get; }
+
+            /// <inheritdoc cref="F11"/>
+            public double F32 { get; }
+
+            /// <inheritdoc cref="F11"/>
+            public double F41 { get; }
+
+            /// <inheritdoc cref="F11"/>
+            public double F42 { get; }
+
+            /// <summary>
+            /// False on a <c>default</c> value, which must not reach a sample: it would read as
+            /// the tank's axis and hand back a plausible number rather than this column's.
+            /// </summary>
+            public bool Sampled { get; }
+        }
+
+        /// <summary>
+        /// Everything <see cref="StreamsPotentialUnit"/> derives from the height it reads the flat
+        /// field at — the clamp, the face test and the depth phase's sine and cosine. D105.
+        /// </summary>
+        /// <remarks>
+        /// <b>On a shaped floor this belongs to a column as well as to a depth.</b> The map sends
+        /// <c>y</c> to <c>ŷ = y·D/d</c> and <c>d</c> is the water's own depth at that column, so
+        /// <see cref="DepthOf(in BedColumn, double)"/> takes the column and a caller's table is
+        /// two-dimensional. On a flat floor <c>ŷ</c> is <c>y</c> and one row of these serves every
+        /// column in the tank.
+        /// </remarks>
+        public readonly struct StreamsDepth
+        {
+            internal StreamsDepth(bool atFace, double sinPhi, double cosPhi)
+            {
+                AtFace = atFace;
+                SinPhi = sinPhi;
+                CosPhi = cosPhi;
+                Sampled = true;
+            }
+
+            /// <summary>
+            /// The waterline or the bed, where every component of the potential is zero exactly
+            /// rather than nearly — <see cref="StreamsPotentialUnit"/>'s own special case.
+            /// </summary>
+            public bool AtFace { get; }
+
+            /// <summary><c>sin(πŷ/D)</c>.</summary>
+            public double SinPhi { get; }
+
+            /// <summary><c>cos(πŷ/D)</c>.</summary>
+            public double CosPhi { get; }
+
+            /// <summary>False on a <c>default</c> value, which reads as the waterline.</summary>
+            public bool Sampled { get; }
+        }
+
+        /// <summary>
+        /// The <see cref="StreamsColumn"/> at a place — the tank's polar terms there, which no
+        /// depth and no clock can move. D105.
+        /// </summary>
+        /// <remarks>
+        /// Takes floats for <see cref="ColumnAt"/>'s reason: the caller samples on a lattice of
+        /// floats and the widened float is what the direct path reads, so a column precomputed
+        /// from a double would be right and not identical.
+        /// </remarks>
+        public StreamsColumn ColumnOf(float x, float z)
+        {
+            if (_shape != WorldShape.Tank)
+            {
+                throw new InvalidOperationException(
+                    "The streams' column terms belong to a tank; this water is a box's " +
+                    FormattableString.Invariant($"({_shape}). Ask Shape first. D105."));
+            }
+
+            EnsureStreams();
+
+            double radius = _tankRadiusMetres;
+
+            double dx = x - radius;
+            double dz = z - radius;
+            double r = Math.Sqrt(dx * dx + dz * dz);
+            double s = r / radius;
+            if (s > 1d) s = 1d;
+
+            double cosTheta = r > 0d ? dx / r : 1d;
+            double sinTheta = r > 0d ? dz / r : 0d;
+
+            double wall = 1d - s * s;
+            double node = 1d - 2d * s * s;
+
+            // The recurrence and the s powers, walked exactly as the sampler walks them: sPow is
+            // built by m multiplications from 1 rather than by Math.Pow, and (cos mθ, sin mθ)
+            // comes from the previous pair and (cos θ, sin θ).
+            double cosM = cosTheta;
+            double sinM = sinTheta;
+
+            double c1 = 0d, c2 = 0d, c3 = 0d, c4 = 0d;
+            double s1 = 0d, s2 = 0d, s3 = 0d, s4 = 0d;
+            double f11 = 0d, f12 = 0d, f21 = 0d, f22 = 0d;
+            double f31 = 0d, f32 = 0d, f41 = 0d, f42 = 0d;
+
+            for (int m = 1; m <= StreamsAzimuthal; m++)
+            {
+                double sPow = 1d;
+                for (int i = 0; i < m; i++) sPow *= s;
+
+                double fa = sPow * wall;
+                double fb = sPow * wall * node;
+
+                switch (m)
+                {
+                    case 1: c1 = cosM; s1 = sinM; f11 = fa; f12 = fb; break;
+                    case 2: c2 = cosM; s2 = sinM; f21 = fa; f22 = fb; break;
+                    case 3: c3 = cosM; s3 = sinM; f31 = fa; f32 = fb; break;
+                    default: c4 = cosM; s4 = sinM; f41 = fa; f42 = fb; break;
+                }
+
+                double nextCos = cosM * cosTheta - sinM * sinTheta;
+                double nextSin = sinM * cosTheta + cosM * sinTheta;
+                cosM = nextCos;
+                sinM = nextSin;
+            }
+
+            return new StreamsColumn(
+                dx, dz, 1d - s,
+                c1, c2, c3, c4,
+                s1, s2, s3, s4,
+                f11, f12, f21, f22, f31, f32, f41, f42);
+        }
+
+        /// <summary>
+        /// The <see cref="StreamsDepth"/> at a height in the flat field's own coordinates. D105.
+        /// </summary>
+        public StreamsDepth DepthOf(double y)
+        {
+            double depth = _depthMetres;
+
+            if (y > 0d) y = 0d;
+            else if (y < -depth) y = -depth;
+
+            if (y >= 0d || y <= -depth) return new StreamsDepth(true, 0d, 0d);
+
+            double phi = Math.PI * y / depth;
+
+            return new StreamsDepth(false, Math.Sin(phi), Math.Cos(phi));
+        }
+
+        /// <summary>
+        /// The <see cref="StreamsDepth"/> a shaped floor's map sends a world height to at one
+        /// column — <see cref="MapFrom"/>'s <c>ŷ</c>, then <see cref="DepthOf(double)"/>. D105.
+        /// </summary>
+        public StreamsDepth DepthOf(in BedColumn column, double y)
+        {
+            if (!column.Sampled)
+            {
+                throw new InvalidOperationException(
+                    "A default bed column was handed to the depth map: a zero depth divides by " +
+                    "zero rather than refusing. Take the column from ColumnAt. D105.");
+            }
+
+            return DepthOf(MapFrom(column, y).MappedY);
+        }
+
+        /// <summary>
+        /// The flat tank's potential from a precomputed column and depth — the same bits
+        /// <see cref="PotentialAt(float, float, float, double)"/> returns at the point they were
+        /// taken at, m²/s. D105.
+        /// </summary>
+        /// <remarks>
+        /// <b>Wants a pinned clock.</b> The two products that open every term's amplitude are
+        /// constant for a pass at one instant and are hoisted into it, which is the third of the
+        /// three savings; a caller who has not said what clock it is sampling at has not earned
+        /// them. <see cref="PinInstant"/> is what the grid's edge pass already does.
+        /// </remarks>
+        public Float3 PotentialAt(in StreamsColumn column, in StreamsDepth depth, double seconds)
+        {
+            if (!OpenHoistedSample(column, depth, false, false)) return Float3.Zero;
+
+            RequirePinnedAt(seconds);
+
+            return StreamsPotentialFrom(column, depth) * (_speed * _streamsScale);
+        }
+
+        /// <summary>
+        /// The sloped tank's potential from a precomputed column, bed column and depth — the same
+        /// bits <see cref="PotentialAt(float, float, float, double, in BedColumn)"/> returns,
+        /// m²/s. D105.
+        /// </summary>
+        /// <param name="column">The streams' polar terms at this <c>(x, z)</c>.</param>
+        /// <param name="bed">The floor's numbers at the same <c>(x, z)</c>.</param>
+        /// <param name="depth">
+        /// <see cref="DepthOf(in BedColumn, double)"/> at that bed column and this <paramref name="y"/>.
+        /// Nothing here can check that it is: a depth taken at another height is a plausible
+        /// answer and not this one's.
+        /// </param>
+        /// <param name="y">World height, m — what the map's off-diagonals are read at.</param>
+        /// <param name="seconds">The world's clock, s. Must be the pinned one.</param>
+        public Float3 PotentialAt(
+            in StreamsColumn column, in BedColumn bed, in StreamsDepth depth, float y, double seconds)
+        {
+            if (!OpenHoistedSample(column, depth, true, bed.Sampled)) return Float3.Zero;
+
+            RequirePinnedAt(seconds);
+
+            BedMap m = MapFrom(bed, y);
+
+            Float3 a = StreamsPotentialFrom(column, depth);
+
+            return new Float3(
+                (float)(a.X + m.A * a.Y),
+                (float)(m.C * a.Y),
+                (float)(a.Z + m.B * a.Y))
+                * (float)(_speed * _streamsScale * _bedScale);
+        }
+
+        /// <summary>
+        /// The guards both hoisted entries share. False when the answer is
+        /// <see cref="Float3.Zero"/> whatever else is true — still water.
+        /// </summary>
+        private bool OpenHoistedSample(
+            in StreamsColumn column, in StreamsDepth depth, bool wantsBed, bool bedSampled)
+        {
+            if (!HasPotential)
+            {
+                throw new InvalidOperationException(
+                    "This water is not the curl of a potential this class can write down: " +
+                    FormattableString.Invariant($"mode {Mode}, shape {_shape}, ") +
+                    FormattableString.Invariant($"vent {(VentActive(_patchCount) ? "on" : "off")}. ") +
+                    "Ask HasPotential first. logbook/specs/transport-conserves-spec.md.");
+            }
+
+            if (_shape != WorldShape.Tank)
+            {
+                throw new InvalidOperationException(
+                    "The hoisted potential is the streams'; this water is a box's transport " +
+                    FormattableString.Invariant($"field ({_shape}). D105."));
+            }
+
+            if (wantsBed != (_bed != null))
+            {
+                throw new InvalidOperationException(
+                    "A precomputed bed column was handed to water that has no shaped floor, or a " +
+                    FormattableString.Invariant($"shaped floor was sampled without one (bed {(_bed == null ? "absent" : "present")}, ") +
+                    FormattableString.Invariant($"column {(wantsBed ? "given" : "not given")}). D105."));
+            }
+
+            if (!column.Sampled || !depth.Sampled || (wantsBed && !bedSampled))
+            {
+                throw new InvalidOperationException(
+                    "A default column or depth reached a sample: it would read as the tank's " +
+                    "axis at the waterline rather than refusing. Take them from ColumnOf, " +
+                    "DepthOf and ColumnAt. D105.");
+            }
+
+            return _speed > 0f;
+        }
+
+        /// <summary>
+        /// Checks the clock is the pinned one — the hoisted entries' half of
+        /// <see cref="EnsureInstant"/>.
+        /// </summary>
+        private void RequirePinnedAt(double seconds)
+        {
+            // The clock a pass is pinned at is the clock nearly every sample in it asks for, and
+            // s -> 2*pi*s/P is one to one, so the seconds themselves answer the question and the
+            // divide is only paid by a caller that is about to be refused anyway.
+            if (_instantPinned && seconds == _pinnedSeconds) return;
+
+            EnsureStreams();
+
+            double t = 2.0 * Math.PI * seconds / _periodSeconds;
+
+            if (!_instantPinned)
+            {
+                throw new InvalidOperationException(
+                    "The hoisted potential wants a pinned clock: the per-instant amplitudes are " +
+                    "folded once per pass and a caller that has not pinned has not said which " +
+                    "instant that is. Call PinInstant, and unpin in a finally. D105.");
+            }
+
+            // The pinned path's own refusal, in the same words the sampler uses.
+            EnsureInstant(t);
+        }
+
+        /// <summary>
+        /// <see cref="StreamsPotentialUnit"/>'s body with the column, the depth and the instant
+        /// already in hand — the same multiplications in the same order and grouping.
+        /// </summary>
+        private Float3 StreamsPotentialFrom(in StreamsColumn column, in StreamsDepth depth)
+        {
+            if (depth.AtFace) return Float3.Zero;
+
+            double sinPhi = depth.SinPhi;
+            double cosPhi = depth.CosPhi;
+
+            double sin1 = sinPhi;
+            double sin2 = 2d * sinPhi * cosPhi;
+            double sin3 = sinPhi * (4d * cosPhi * cosPhi - 1d);
+
+            // 1. The eddies, into A_y — m outer, family next, the three vertical modes inside,
+            // which is the order k counts in and therefore the order the sum is taken in.
+            double ay = 0d;
+
+            ay = Eddies(ay, column.Cos1, column.Sin1, column.F11, 0, sin1, sin2, sin3);
+            ay = Eddies(ay, column.Cos1, column.Sin1, column.F12, 3, sin1, sin2, sin3);
+            ay = Eddies(ay, column.Cos2, column.Sin2, column.F21, 6, sin1, sin2, sin3);
+            ay = Eddies(ay, column.Cos2, column.Sin2, column.F22, 9, sin1, sin2, sin3);
+            ay = Eddies(ay, column.Cos3, column.Sin3, column.F31, 12, sin1, sin2, sin3);
+            ay = Eddies(ay, column.Cos3, column.Sin3, column.F32, 15, sin1, sin2, sin3);
+            ay = Eddies(ay, column.Cos4, column.Sin4, column.F41, 18, sin1, sin2, sin3);
+            ay = Eddies(ay, column.Cos4, column.Sin4, column.F42, 21, sin1, sin2, sin3);
+
+            // 2. The overturning, into the horizontal pair.
+            double w = 0d;
+
+            if (_streamsOverturning != 0d)
+            {
+                double wall = column.Wall;
+                double[] cells = _pinnedCellBase;
+
+                for (int c = 0; c < StreamsCells; c++)
+                {
+                    double amplitude = cells[c];
+                    double sinKy = c == 0 ? sin1 : c == 1 ? sin2 : sin3;
+
+                    w += amplitude * wall * wall * sinKy;
+                }
+            }
+
+            return new Float3(
+                (float)(w * column.Dz), (float)ay, (float)(-w * column.Dx));
+        }
+
+        /// <summary>
+        /// One <c>(m, j)</c> block of the eddy sum: the three vertical modes, in <c>k</c> order.
+        /// </summary>
+        private double Eddies(
+            double ay, double cosM, double sinM, double f, int k0,
+            double sin1, double sin2, double sin3)
+        {
+            double[] baseAmplitude = _pinnedEddyBase;
+            double[] instantCos = _instantCos;
+            double[] instantSin = _instantSin;
+
+            for (int q = 0; q < StreamsVertical; q++)
+            {
+                int k = k0 + q;
+
+                double profile = q == 0 ? sin1 : q == 1 ? sin2 : sin3;
+
+                // baseAmplitude[k] is (_streamsEddyWeight * _streamAmplitude[k]) * EnvelopeOf(k),
+                // which is the prefix of the sampler's four-factor product.
+                double amplitude = baseAmplitude[k] * profile;
+
+                double cosChi = cosM * instantCos[k] - sinM * instantSin[k];
+
+                ay -= amplitude * f * cosChi;
+            }
+
+            return ay;
+        }
+
         /// <summary>
         /// <see cref="StreamsSlopedUnit"/>'s field, its clock derivative and its 3×3 Jacobian, from
         /// the flat field's own three at the mapped point and the bed's Hessian.
@@ -3121,6 +3590,18 @@ namespace Evosim.Core
         private bool _instantPinned;
         private double _pinnedInstant;
 
+        // The clock the pin was taken at, in seconds rather than in scaled phase — the hoisted
+        // entries' fast path, and NaN when nothing is pinned so that it matches no sample.
+        private double _pinnedSeconds = double.NaN;
+
+        // The prefix of each term's amplitude, folded once per pin for the hoisted entries
+        // (D105): _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(k) for the eddies, and
+        // overturning * _cellAmplitude[c] * CellEnvelopeOf(c) * _instantCell[c] for the cells,
+        // each grouped left to right exactly as StreamsPotentialUnit writes it. Valid only
+        // between a pin and its unpin, which is why the hoisted entries insist on one.
+        private double[] _pinnedEddyBase;
+        private double[] _pinnedCellBase;
+
         /// <summary>
         /// Fixes the clock every later sample will be taken at, so that sampling is a pure read.
         /// </summary>
@@ -3162,14 +3643,47 @@ namespace Evosim.Core
 
             // The tank's potential is the only sampler that reads the instant tables; the box's
             // transport field is a plain term loop with no memo, so there is nothing to select.
-            if (_shape == WorldShape.Tank) EnsureInstant(t);
+            if (_shape == WorldShape.Tank)
+            {
+                EnsureInstant(t);
+                FoldAmplitudes();
+            }
 
             _pinnedInstant = t;
+            _pinnedSeconds = seconds;
             _instantPinned = true;
         }
 
+        /// <summary>
+        /// Folds the clock-only prefix of every term's amplitude for the pass the pin opens.
+        /// D105; <see cref="_pinnedEddyBase"/> for what the two products are.
+        /// </summary>
+        private void FoldAmplitudes()
+        {
+            if (_pinnedEddyBase == null)
+            {
+                _pinnedEddyBase = new double[StreamsTerms];
+                _pinnedCellBase = new double[StreamsCells];
+            }
+
+            for (int k = 0; k < StreamsTerms; k++)
+            {
+                _pinnedEddyBase[k] = _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(k);
+            }
+
+            for (int c = 0; c < StreamsCells; c++)
+            {
+                _pinnedCellBase[c] =
+                    _streamsOverturning * _cellAmplitude[c] * CellEnvelopeOf(c) * _instantCell[c];
+            }
+        }
+
         /// <summary>Releases <see cref="PinInstant"/>. Safe to call when nothing is pinned.</summary>
-        public void UnpinInstant() => _instantPinned = false;
+        public void UnpinInstant()
+        {
+            _instantPinned = false;
+            _pinnedSeconds = double.NaN;
+        }
 
         private void EnsureInstant(double t)
         {
