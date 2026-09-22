@@ -111,8 +111,9 @@ namespace Evosim.Theatre.EditorTools
         /// round 41's first early look timed out on the wall with nothing written (2026-09-18).
         /// The farm already records every living body's genome and every living body's place, on
         /// the same cadence, so the picture is a join rather than a re-simulation. What it cannot
-        /// recover it says on every frame: no file holds a body's orientation or how far it had
-        /// grown, so every body is drawn upright and at its adult size
+        /// recover it says on every frame: no file holds how far a body had grown, so every body
+        /// is drawn at its adult size, and a body whose attitude the farm did not record in
+        /// <c>poses.jsonl</c> is drawn upright besides
         /// (<c>logbook/specs/snapshot-render-spec.md</c>,
         /// <see cref="Evosim.Theatre.SnapshotWorld"/>).
         /// </remarks>
@@ -271,11 +272,11 @@ namespace Evosim.Theatre.EditorTools
 
                 return
                     "the close view is refused when the picture is drawn from a snapshot. A " +
-                    "portrait of two bodies is exactly where this mode's two faults show: no " +
-                    "file records how a body was lying, so every body is drawn upright in the " +
-                    "developer's own frame, and none records how far it had grown, so every " +
-                    "body is drawn at its adult size. Take a world view this way, and the close " +
-                    "view with -From replay.";
+                    "portrait of two bodies is exactly where this mode's faults show: no file " +
+                    "records how far a body had grown, so every body is drawn at its adult " +
+                    "size, and a run that recorded no poses.jsonl draws every body upright in " +
+                    "the developer's own frame besides. Take a world view this way, and the " +
+                    "close view with -From replay.";
             }
 
             if (_chrome)
@@ -798,8 +799,11 @@ namespace Evosim.Theatre.EditorTools
                     "[Theatre] wrote " + path + " (" + bytes + " bytes) at t=" + stamp +
                     " s, reconstructed\n" +
                     "  " + remark + "\n" +
-                    "  " + world.JoinedCount + " bodies joined, every one at its adult size in " +
-                    "the developer's own frame; no identity check: nothing was simulated");
+                    "  " + world.JoinedCount + " bodies joined, every one at its adult size, " +
+                    (world.PosedCount == 0
+                        ? "every one in the developer's own frame"
+                        : world.PosedCount + " in the pose poses.jsonl recorded") +
+                    "; no identity check: nothing was simulated");
             }
         }
 

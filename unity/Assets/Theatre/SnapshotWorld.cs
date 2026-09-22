@@ -25,13 +25,23 @@ namespace Evosim.Theatre
     /// So the picture is a join and a development, and the box is drawn in a few seconds.
     /// </para>
     /// <para>
-    /// <b>Two things it gets wrong, and neither is invented silently.</b> <i>Orientation</i>: no
-    /// file records how a body was lying, so every body is drawn in the developer's own frame,
+    /// <b>Two things it got wrong, and neither was invented silently.</b> <i>Orientation</i>: no
+    /// file recorded how a body was lying, so every body was drawn in the developer's own frame,
     /// root upright and unrotated. <i>Size</i>: a body is born at a fraction of its adult body and
     /// grows (D087), and only the adult is in the genome, so every body is drawn at its adult
     /// size. Both are on the burnt-in label of every frame, in the log, and in the tool's help,
     /// and the close view is refused in this mode because a portrait of two bodies is exactly
     /// where they show.
+    /// </para>
+    /// <para>
+    /// <b>The first of the two is closed for a run that recorded poses.</b> The farm writes
+    /// <c>poses.jsonl</c> beside <c>positions.jsonl</c> at the same cadence — each body's root
+    /// place, its root attitude and its joint coordinates — so where a row exists the body is
+    /// drawn lying as it lay, joints and all (<see cref="RecordedPoses"/>). A body without one
+    /// keeps the developer's frame, and the label says <i>recorded pose</i> only when every drawn
+    /// body had a row, <i>pose for n of m</i> when some did, and <i>default orientation</i> when
+    /// the run wrote no poses at that second at all. Size is unchanged: nothing records how far a
+    /// body had grown, so <i>adult size</i> stays on every frame.
     /// </para>
     /// <para>
     /// <b>A third thing, smaller, and said here rather than on the label.</b> Nothing records a
@@ -97,6 +107,27 @@ namespace Evosim.Theatre
         public int Unreadable { get; private set; }
 
         /// <summary>
+        /// Bodies drawn in the attitude <c>poses.jsonl</c> recorded for them, rather than upright
+        /// in the developer's own frame.
+        /// </summary>
+        public int PosedCount { get; private set; }
+
+        /// <summary>
+        /// Bodies whose recorded pose this build could not lay on the developed body — counted,
+        /// drawn upright, and named once in the log.
+        /// </summary>
+        public int PoseRefusals { get; private set; }
+
+        /// <summary>Whether a pose row was found at the drawn second at all.</summary>
+        /// <remarks>
+        /// The label turns on this rather than on <see cref="PosedCount"/>: a run with no
+        /// <c>poses.jsonl</c>, or one whose poses do not reach this second, says
+        /// <i>default orientation</i> exactly as it did before the file existed, and a run that
+        /// has poses says how many of the drawn bodies wear one.
+        /// </remarks>
+        public bool PosesRecorded { get; private set; }
+
+        /// <summary>
         /// Whether either picture-only reader was used — §11's <c>OLD-RUN READ</c>.
         /// </summary>
         /// <remarks>
@@ -128,6 +159,8 @@ namespace Evosim.Theatre
         private SimulationMode _previousMode;
         private bool _modeSet;
         private string _firstUnreadable;
+        private Dictionary<long, RecordedPose> _poses;
+        private string _firstPoseRefusal;
 
         private SnapshotWorld() { }
 
@@ -328,11 +361,22 @@ namespace Evosim.Theatre
             JoinedCount = _queue.Count;
             _built = 0;
 
+            // The third file of the join, and the only optional one: a run recorded before
+            // 2026-09-21 has none, and a body is then drawn in the developer's frame as every
+            // reconstruction was before poses existed.
+            _poses = RecordedPoses.At(directory, second);
+            PosesRecorded = _poses != null;
+
             Debug.Log(
                 "[Theatre] snapshot from snapshots/" + _snapshotName + ": " +
                 _rows.Length + " genomes, " + bodies.Count + " positions, " +
                 JoinedCount + " joined, " + WithoutAGenome + " without a genome, " +
-                WithoutAPosition + " without a position");
+                WithoutAPosition + " without a position; " +
+                (PosesRecorded
+                    ? _poses.Count + " poses at this second"
+                    : RecordedPoses.Has(directory)
+                        ? "poses.jsonl carries no row at this second, so every body is drawn upright"
+                        : "no poses.jsonl, so every body is drawn upright"));
 
             if (Unreadable > 0)
             {
@@ -377,11 +421,24 @@ namespace Evosim.Theatre
 
             Debug.Log(
                 "[Theatre] reconstructed " + _bodies.Count + " bodies at t=" + Seconds(Second) +
-                " s, every one at its adult size in the developer's own frame" +
+                " s, every one at its adult size; " +
+                (PosedCount == 0
+                    ? "every one in the developer's own frame"
+                    : PosedCount == _bodies.Count
+                        ? "every one in its recorded pose"
+                        : PosedCount + " in their recorded pose and " +
+                          (_bodies.Count - PosedCount) + " in the developer's own frame") +
                 (GuildDisagreements > 0
                     ? ", " + GuildDisagreements + " whose recorded guild flags and developed body disagree"
                     : "") +
                 "; genome " + Formats());
+
+            if (PoseRefusals > 0)
+            {
+                Debug.LogWarning(
+                    "[Theatre] " + PoseRefusals + " recorded pose(s) this build could not lay on " +
+                    "the developed body, counted and drawn upright: " + _firstPoseRefusal);
+            }
 
             return true;
         }
@@ -475,7 +532,14 @@ namespace Evosim.Theatre
                 }
             }
 
-            GameObject root = Assemble(phenotype, pending.Id, pending.At);
+            RecordedPose pose = null;
+
+            if (_poses != null && _poses.TryGetValue(pending.Id, out RecordedPose recorded))
+            {
+                pose = recorded;
+            }
+
+            GameObject root = Assemble(phenotype, pending.Id, pending.At, pose);
 
             _bodies.Add(new Body
             {
@@ -516,14 +580,50 @@ namespace Evosim.Theatre
         /// cannot disagree about how large a part is.
         /// </para>
         /// </remarks>
-        private GameObject Assemble(Phenotype phenotype, long id, Vector3 at)
+        private GameObject Assemble(Phenotype phenotype, long id, Vector3 at, RecordedPose pose)
         {
+            int count = phenotype.PartCount;
+
+            // The pose, resolved before anything is placed: a row that does not fit this body
+            // leaves the developer's own frame in the arrays and is counted, so a refusal never
+            // half-poses a creature.
+            var positions = new Vector3[count];
+            var rotations = new Quaternion[count];
+            bool posed = false;
+
+            if (pose != null)
+            {
+                if (RecordedPoses.Apply(phenotype, pose, positions, rotations, out string refusal))
+                {
+                    posed = true;
+                    PosedCount++;
+                }
+                else
+                {
+                    PoseRefusals++;
+
+                    if (_firstPoseRefusal == null)
+                    {
+                        _firstPoseRefusal = "creature " + id + ": " + refusal;
+                    }
+                }
+            }
+
+            if (!posed)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    positions[i] = phenotype.Parts[i].Position.ToVector3();
+                    rotations[i] = phenotype.Parts[i].Rotation.ToQuaternion();
+                }
+            }
+
             var root = new GameObject("Creature") { layer = PhenotypeBuilder.CreatureLayer };
             root.transform.SetParent(_holder.transform, false);
 
-            var transforms = new Transform[phenotype.PartCount];
+            var transforms = new Transform[count];
 
-            for (int i = 0; i < phenotype.PartCount; i++)
+            for (int i = 0; i < count; i++)
             {
                 PhenotypePart part = phenotype.Parts[i];
 
@@ -538,17 +638,16 @@ namespace Evosim.Theatre
 
                 if (part.IsRoot)
                 {
-                    go.transform.localPosition = part.Position.ToVector3();
-                    go.transform.localRotation = part.Rotation.ToQuaternion();
+                    go.transform.localPosition = positions[i];
+                    go.transform.localRotation = rotations[i];
                 }
                 else
                 {
-                    PhenotypePart parent = phenotype.Parts[part.ParentIndex];
-                    Quaternion inverse = Quaternion.Inverse(parent.Rotation.ToQuaternion());
+                    Quaternion inverse = Quaternion.Inverse(rotations[part.ParentIndex]);
 
                     go.transform.localPosition =
-                        inverse * (part.Position - parent.Position).ToVector3();
-                    go.transform.localRotation = inverse * part.Rotation.ToQuaternion();
+                        inverse * (positions[i] - positions[part.ParentIndex]);
+                    go.transform.localRotation = inverse * rotations[i];
                 }
 
                 transforms[i] = go.transform;
@@ -556,9 +655,11 @@ namespace Evosim.Theatre
                 AddVisuals(go.transform, part, Record.Config.Shapes.Resolve(part.ShapeId));
             }
 
-            // The recorded position is where the body's centre was, so the body is hung from its
-            // own centre rather than from its root part.
-            root.transform.position = at - CentreOf(phenotype);
+            // A posed body's arrays are in its own frame with the root link at the origin, and
+            // the row's place is that link's: it goes there, exactly. Without a pose the body
+            // keeps the rule reconstruction has always used, hung by its volume-weighted centre
+            // at the position the row carries.
+            root.transform.position = posed ? pose.Root : at - CentreOf(phenotype);
 
             return root;
         }
@@ -715,9 +816,27 @@ namespace Evosim.Theatre
                 "RECONSTRUCTED FROM SNAPSHOT" + (OldRunRead ? " · OLD-RUN READ" : "") + "\n" +
                 string.Format(
                     CultureInfo.InvariantCulture,
-                    "{0}  t={1:0.#}s  joined {2}  {3}  {4}  adult size, default orientation{5}",
-                    Record.ArmName ?? "run", Second, JoinedCount, view, look,
+                    "{0}  t={1:0.#}s  joined {2}  {3}  {4}  adult size, {5}{6}",
+                    Record.ArmName ?? "run", Second, JoinedCount, view, look, Attitude(),
                     unmatched > 0 ? "  " + unmatched + " unmatched" : "");
+        }
+
+        /// <summary>
+        /// The half of the label that says how the bodies are held.
+        /// </summary>
+        /// <remarks>
+        /// Three wordings and not two, because "recorded pose" on a frame where a tenth of the
+        /// crowd is standing in the developer's frame would be the quiet kind of wrong this
+        /// label exists to prevent. A run that recorded no poses reads exactly as it did before
+        /// the file existed, to the character.
+        /// </remarks>
+        private string Attitude()
+        {
+            if (!PosesRecorded || _bodies.Count == 0) return "default orientation";
+
+            return PosedCount == _bodies.Count
+                ? "recorded pose"
+                : "pose for " + PosedCount + " of " + _bodies.Count;
         }
 
         // ---------------------------------------------------------------- the files
@@ -908,6 +1027,12 @@ namespace Evosim.Theatre
             GuildDisagreements = 0;
             Unreadable = 0;
             _firstUnreadable = null;
+
+            _poses = null;
+            PosesRecorded = false;
+            PosedCount = 0;
+            PoseRefusals = 0;
+            _firstPoseRefusal = null;
         }
 
         public void Dispose()

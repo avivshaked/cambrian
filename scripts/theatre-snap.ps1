@@ -62,11 +62,14 @@
   id; each genome is developed, set down where the run says it was, and drawn in the skin. No
   physics runs and nothing is stepped, so a frame costs seconds at any second of any run.
 
-  Two things it cannot recover, and every frame says so on a burnt-in line reading RECONSTRUCTED
-  FROM SNAPSHOT. Orientation: no file records how a body was lying, so every body is drawn
-  upright in the developer's own frame. Size: a body is born small and grows, and only the adult
-  is in the genome, so every body is drawn at its adult size. The close view is refused in this
-  mode for exactly that reason, and so is -Chrome, whose interface reads a replay's census.
+  Size it cannot recover, and every frame says so on a burnt-in line reading RECONSTRUCTED FROM
+  SNAPSHOT: a body is born small and grows, and only the adult is in the genome, so every body
+  is drawn at its adult size. Attitude it recovers where the run recorded it. A farm that wrote
+  poses.jsonl beside positions.jsonl gives each body's root attitude and joint coordinates, and
+  the frame then reads RECORDED POSE, or POSE FOR n OF m where some bodies had no row; a run
+  without the file reads DEFAULT ORIENTATION and draws every body upright in the developer's own
+  frame, as every reconstruction did before the file existed. The close view is refused in this
+  mode for that reason, and so is -Chrome, whose interface reads a replay's census.
 
   Only a second the run wrote a snapshot at can be drawn, and the request is refused before the
   Editor enters Play mode when it was not, naming the snapshots either side. Pictures land beside
@@ -272,7 +275,7 @@ try {
     Write-Host "  at     $($timeList -join ', ') s"
     Write-Host "  views  $(if ($viewNames.Count -gt 0) { $viewNames -join ', ' } else { 'side, end, top, iso' })"
     Write-Host "  size   $Size"
-    Write-Host "  from   $From$(if ($From -eq 'snapshot') { ' (drawn from the run''s files; adult size, default orientation)' })"
+    Write-Host "  from   $From$(if ($From -eq 'snapshot') { ' (drawn from the run''s files; adult size, recorded pose where poses.jsonl has one)' })"
     Write-Host "  carve  $($env:EVOSIM_THEATRE_CARVE)"
     Write-Host "  out    $snapDirectory"
     Write-Host "  log    $log"

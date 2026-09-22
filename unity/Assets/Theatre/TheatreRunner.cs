@@ -469,7 +469,8 @@ namespace Evosim.Theatre
                 "[Theatre] " + (_recon.Record.ArmName ?? "run") + " seed " + _recon.Record.Seed +
                 ", config " + _recon.Record.ConfigHash +
                 ", reconstructed from snapshots and positions.jsonl: nothing is simulated, every " +
-                "body is drawn at its adult size in the developer's own frame");
+                "body is drawn at its adult size, in the pose poses.jsonl recorded for it where " +
+                "the run wrote one and in the developer's own frame where it did not");
 
             DressTheWorld(_recon);
         }
