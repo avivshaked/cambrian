@@ -510,6 +510,56 @@ namespace Evosim.Core
             StateIo.ReadFloats(r, _memory, "brain memory");
         }
 
+        /// <summary>
+        /// Copies another brain's recurrent state into this one, part by part — D106 item 2's
+        /// rebuild (rule 7).
+        /// </summary>
+        /// <param name="source">The brain of the body this one replaces.</param>
+        /// <param name="sourcePartOfPart">
+        /// For each of this brain's parts, the index of the same part in
+        /// <paramref name="source"/>, or -1 where there is none. An added module's parts have
+        /// none and start empty, which is what a part that did not exist a moment ago should be.
+        /// </param>
+        /// <remarks>
+        /// <b>Not a restore.</b> <see cref="ReadState"/> puts back a brain of the same shape; this
+        /// one is a different shape, because the body gained or lost a subtree, and the buffers
+        /// are indexed by a cursor that walks the parts — so a plain copy would give part <i>i</i>
+        /// the outputs of whatever part happened to sit at that offset in the old body. The map
+        /// is the developer's own (<see cref="Developer"/>'s part paths), and a group whose
+        /// neuron count does not match is skipped rather than truncated: the neurons come from
+        /// the node, so a mismatch means the two parts are not the same part after all.
+        /// <para>
+        /// The clock is carried whole, because it is the body's and not any part's: the two
+        /// oscillators read it, and a body that lost a leaf should not restart its stroke.
+        /// </para>
+        /// </remarks>
+        public void CarryStateFrom(Brain source, int[] sourcePartOfPart)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (sourcePartOfPart == null) throw new ArgumentNullException(nameof(sourcePartOfPart));
+
+            ElapsedSeconds = source.ElapsedSeconds;
+
+            int parts = _neurons.Length;
+            if (sourcePartOfPart.Length < parts) return;
+
+            for (int part = 0; part < parts; part++)
+            {
+                int from = sourcePartOfPart[part];
+                if (from < 0 || from >= source._neurons.Length) continue;
+
+                int count = _neurons[part].Length;
+                if (count == 0 || source._neurons[from].Length != count) continue;
+
+                int to = _offset[part];
+                int at = source._offset[from];
+
+                Array.Copy(source._previous, at, _previous, to, count);
+                Array.Copy(source._current, at, _current, to, count);
+                Array.Copy(source._memory, at, _memory, to, count);
+            }
+        }
+
         private static float Saw(float turns)
         {
             float phase = turns - (float)Math.Floor(turns);

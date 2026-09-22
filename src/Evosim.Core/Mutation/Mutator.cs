@@ -164,6 +164,8 @@ namespace Evosim.Core
                 node.RecursiveLimit = Math.Max(0, node.RecursiveLimit + (rng.Chance(0.5f) ? 1 : -1));
             }
 
+            MutateModuleGene(node, rng, rates);
+
             if (rng.Chance(rates.ShapeChance)) node.ShapeId = PickOther(
                 PartShapeRegistry.Standard, node.ShapeId, rng);
 
@@ -207,6 +209,64 @@ namespace Evosim.Core
 
             MutateNeuronSet(node.Neurons, node, g, rng, rates, sensorPool, out NeuronDef[] neurons);
             node.Neurons = neurons;
+        }
+
+        /// <summary>
+        /// D106 item 2's gene: the flip, and the ceiling it needs to be worth anything.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Nothing is drawn at all while the rate is zero</b>, which is the default and is the
+        /// whole of what lets this build replay the record: a genome mutated under a zero rate
+        /// takes exactly the numbers out of the stream that it took before the gene existed. The
+        /// test against zero is therefore load-bearing and not a shortcut — see
+        /// <see cref="MutationRates.ModuleGeneMutationChance"/>.
+        /// </para>
+        /// <para>
+        /// <b>The ceiling's step is a whole module, and that is a departure worth naming.</b>
+        /// <see cref="PerturbPositive"/> is a relative step — the right shape for a length, a
+        /// torque or a rate — and on a count of 1 a 15% step rounds back to 1 every time it
+        /// fires: three standard deviations to move the gene once. So the step is taken and then
+        /// rounded <i>away</i> from the value it started at, which makes the smallest move one
+        /// module in whichever direction the draw went. A gene that cannot move is a gene
+        /// selection never sees (<see cref="MutationRates.CellTypeChance"/>'s remarks make the
+        /// same argument about a rate that is too small).
+        /// </para>
+        /// <para>
+        /// The floor is the node's own <see cref="MorphNode.RecursiveLimit"/>, because that is
+        /// the body the genome describes and the rule may only add to it; the ceiling is
+        /// <see cref="DevelopmentLimits.MaxParts"/> as a backstop, since what actually stops a
+        /// body from growing is development's own limit and <c>World.ApplyModuleRule</c>
+        /// refusing an addition that would meet it.
+        /// </para>
+        /// </remarks>
+        private static void MutateModuleGene(MorphNode node, Rng rng, MutationRates rates)
+        {
+            if (!(rates.ModuleGeneMutationChance > 0f)) return;
+
+            if (rng.Chance(rates.ModuleGeneMutationChance))
+            {
+                node.Growth = node.Growth == ModuleGrowth.Indeterminate
+                    ? ModuleGrowth.Determinate
+                    : ModuleGrowth.Indeterminate;
+            }
+
+            // Only where it means something. A determinate node's ceiling is read by nothing,
+            // and letting it drift would fill the record with a number that says nothing about
+            // the body — and would cost a draw on every node of every birth.
+            if (node.Growth != ModuleGrowth.Indeterminate) return;
+
+            int from = node.MaxModules > node.RecursiveLimit ? node.MaxModules : node.RecursiveLimit;
+            float stepped = PerturbPositive(from, rng, rates);
+
+            int moved = stepped > from
+                ? (int)Math.Ceiling(stepped)
+                : stepped < from ? (int)Math.Floor(stepped) : from;
+
+            if (moved < node.RecursiveLimit) moved = node.RecursiveLimit;
+            if (moved > DevelopmentLimits.Default.MaxParts) moved = DevelopmentLimits.Default.MaxParts;
+
+            node.MaxModules = moved;
         }
 
         /// <summary>Picks a registered shape other than the current one.</summary>

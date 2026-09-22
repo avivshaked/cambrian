@@ -115,6 +115,76 @@ namespace Evosim.Core
         /// <summary>Simulated seconds since birth.</summary>
         public float Age { get; internal set; }
 
+        /// <summary>
+        /// How many times each <see cref="ModuleGrowth.Indeterminate"/> node of this creature's
+        /// genome currently occurs along one path — D106 item 2. Null is the genome's own
+        /// minimum at every node.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Null for every body in the record, and for every body born today.</b> A creature is
+        /// born with the plan its genome describes (rule 2), so the array is allocated only when
+        /// <c>World.ApplyModuleRule</c> first moves a count — which it can only do on a genome
+        /// that carries an indeterminate node at all. A world of determinate lineages therefore
+        /// allocates nothing and reads one null test per body per growth step.
+        /// </para>
+        /// <para>
+        /// <b>This is the one piece of a body that is a property of its history rather than of
+        /// its genome</b> (D106's cost). It is in the checkpoint for that reason: restoring a
+        /// creature from its genome alone would put back a plant that had grown eight leaves as
+        /// one that had grown none.
+        /// </para>
+        /// </remarks>
+        public int[] ModuleCounts { get; internal set; }
+
+        /// <summary>
+        /// Continuous seconds this body's reserve has stood below
+        /// <see cref="RunConfig.ModuleDropReserveSeconds"/> of its upkeep — rule 3's clock.
+        /// Reset to 0 by any step above the line, and by a drop.
+        /// </summary>
+        public float ModuleStarvedSeconds { get; internal set; }
+
+        /// <summary>
+        /// How many indeterminate nodes this creature's genome carries — the lineage row's
+        /// <c>ind</c>, and the test the growth step skips a determinate body on.
+        /// </summary>
+        /// <remarks>
+        /// Cached at birth and at a restore, like <see cref="HasAbsorptiveTissue"/> and for the
+        /// same reason: it is a property of the genome, which does not change while a creature
+        /// lives, and the alternative is a walk over every node of every genome on every growth
+        /// step purely to decide whether a body is eligible for a rule almost none of them are.
+        /// </remarks>
+        public int IndeterminateNodes { get; internal set; }
+
+        /// <summary>
+        /// Bumped every time this body's <i>plan</i> changes — a module added or dropped. D106
+        /// item 2, rule 7.
+        /// </summary>
+        /// <remarks>
+        /// <b>The farm's signal that a resize will not do.</b> <c>Creature.Resize</c> refuses a
+        /// changed part count by design ("growth changes a body's size and never its plan"), so
+        /// the harness has to know to rebuild instead — and a part-count comparison would miss a
+        /// plan that changed shape without changing count, which a re-development can produce.
+        /// A counter rather than a flag, because the harness clears nothing: it holds the
+        /// revision it last built and rebuilds when the two differ, exactly as
+        /// <c>Creature.AppliedBodyFraction</c> works for a resize.
+        /// </remarks>
+        public int PlanRevision { get; internal set; }
+
+        /// <summary>
+        /// For each part of the body as it now is, the index of the same part in the body as it
+        /// stood before the last plan change — or -1 for a part that has just appeared. D106
+        /// item 2, rule 7.
+        /// </summary>
+        /// <remarks>
+        /// <b>Transient, and deliberately not in the checkpoint.</b> It is written by
+        /// <c>World.ApplyModuleRule</c> and read by the harness in the same growth step, which
+        /// rebuilds the articulation and carries the joint state and the brain across on it. A
+        /// restored world has no half-finished plan change to describe, so there is nothing for
+        /// a checkpoint to carry; null is what a body that has not just changed plan holds.
+        /// </remarks>
+        public int[] PartMapFromPreviousPlan { get; internal set; }
+
         /// <summary>World height, metres. Y is up, so the surface is 0.</summary>
         /// <remarks>
         /// Written by <see cref="World.Observe"/> from the simulator, or inherited from the parent

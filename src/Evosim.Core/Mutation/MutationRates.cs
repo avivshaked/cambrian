@@ -174,6 +174,36 @@ namespace Evosim.Core
         [Tunable("mutation")]
         public float CellTypeChance { get; set; } = 0.001f;
 
+        /// <summary>
+        /// Chance a node flips between <see cref="ModuleGrowth.Determinate"/> and
+        /// <see cref="ModuleGrowth.Indeterminate"/> — D106 item 2,
+        /// <c>logbook/specs/module-gene-spec.md</c> rule 6. Per node, like
+        /// <see cref="CellTypeChance"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Zero by default, and zero means no draw at all.</b> <c>Mutator.MutateNode</c> tests
+        /// this against zero before it rolls anything, so a world that leaves it alone takes
+        /// exactly the numbers out of its stream that every recorded run took and replays the
+        /// record. Every other rate here is a number the recorded worlds already drew against;
+        /// this one is new, and a default above zero would make round 43's seeds unrepeatable on
+        /// this build for no reason anybody asked for.
+        /// </para>
+        /// <para>
+        /// <b>It gates <see cref="MorphNode.MaxModules"/> too.</b> The ceiling moves only on a
+        /// node that is already indeterminate and only while this is above zero, so the gene and
+        /// the room it has to work in arrive together rather than the second drifting for the
+        /// whole of a world in which the first never appears.
+        /// </para>
+        /// <para>
+        /// ⚠ Unmeasured (§5A.10). Round 44's launcher sets it at the cell-type rate, which is the
+        /// neighbour D106 names: a flip changes what a lineage is in the same way a cell-type
+        /// change does, and for the same reason it must not be noise.
+        /// </para>
+        /// </remarks>
+        [Tunable("mutation")]
+        public float ModuleGeneMutationChance { get; set; }
+
         /// <summary>Chance brood size changes by one — §5A.6.</summary>
         [Tunable("mutation")]
         public float BroodSizeChance { get; set; } = 0.05f;

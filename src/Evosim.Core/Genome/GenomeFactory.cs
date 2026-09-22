@@ -451,7 +451,38 @@ namespace Evosim.Core
                     RandomEdge(rng, options, bodyCount + rng.Range(linkCount), rng.Range(6)));
             }
 
+            DrawTheModuleGene(genome);
+
             return genome;
+        }
+
+        /// <summary>
+        /// D106 item 2's gene on a founder: determinate at every node, with the ceiling at the
+        /// node's own recursive limit. <b>It takes no draw.</b>
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A founder is the record's body and must stay it to the bit: every per-creature seed
+        /// derives from a counter that a stray draw would shift, so a world whose founding
+        /// lottery took one extra number from the stream would hand every creature after it a
+        /// different genome (§7, and <c>World.ConceptionOrderIndex</c>'s remarks). The gene
+        /// therefore arrives as a constant, and enters the world by mutation alone — which is
+        /// also what round 44 is asking about (logbook/0113).
+        /// </para>
+        /// <para>
+        /// One pass at the end rather than a line in each of the three node factories, because
+        /// what has to be true is a property of the finished genome and the three factories set
+        /// <see cref="MorphNode.RecursiveLimit"/> at three different points.
+        /// </para>
+        /// </remarks>
+        private static void DrawTheModuleGene(Genome genome)
+        {
+            for (int n = 0; n < genome.Nodes.Count; n++)
+            {
+                MorphNode node = genome.Nodes[n];
+                node.Growth = ModuleGrowth.Determinate;
+                node.MaxModules = node.RecursiveLimit;
+            }
         }
 
         /// <summary>
@@ -569,6 +600,8 @@ namespace Evosim.Core
                     Scale = new Float3(1f, 1f, 1f),
                 });
             }
+
+            DrawTheModuleGene(genome);
 
             return genome;
         }

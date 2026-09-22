@@ -35,7 +35,7 @@ namespace Evosim.Dynamics.Tests
 
         private void OnTheBed(double seconds)
         {
-            Assert.True(RunFixture.Present, "round 42 seed 4 is not on this machine");
+            Assert.True(RunFixture.Present, RunFixture.Why);
 
             SolverConfig solver = RunFixture.Solver();
             BedShape bed = solver.Bed;
@@ -108,7 +108,7 @@ namespace Evosim.Dynamics.Tests
         [Fact]
         public void TheInstrumentAndTheEventListDoNotDependOnTheThreadCount()
         {
-            Assert.True(RunFixture.Present, "round 42 seed 4 is not on this machine");
+            Assert.True(RunFixture.Present, RunFixture.Why);
 
             (string counters, List<string> events, ulong digest) one = Instrument(1);
             (string counters, List<string> events, ulong digest) many = Instrument(24);
@@ -169,7 +169,7 @@ namespace Evosim.Dynamics.Tests
         [Fact]
         public void TheInstrumentMovesNothing()
         {
-            Assert.True(RunFixture.Present, "round 42 seed 4 is not on this machine");
+            Assert.True(RunFixture.Present, RunFixture.Why);
 
             Assert.Equal(Stepped(instrument: false), Stepped(instrument: true));
         }
@@ -190,7 +190,7 @@ namespace Evosim.Dynamics.Tests
         [Fact]
         public void AReliefLessBedIsTheFlatPath()
         {
-            Assert.True(RunFixture.Present, "round 42 seed 4 is not on this machine");
+            Assert.True(RunFixture.Present, RunFixture.Why);
 
             RunConfig flat = RunConfigJson.Read(
                 RunConfigJson.Write(RunFixture.Config), out _);
@@ -210,7 +210,7 @@ namespace Evosim.Dynamics.Tests
         [Fact]
         public void TheGlassStandsWhereTheFarmPutsIt()
         {
-            Assert.True(RunFixture.Present, "round 42 seed 4 is not on this machine");
+            Assert.True(RunFixture.Present, RunFixture.Why);
 
             SolverConfig solver = RunFixture.Solver();
 

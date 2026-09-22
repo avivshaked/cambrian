@@ -116,6 +116,14 @@ namespace Evosim.Farm
         public long DriveImpulsesLimited { get; private set; }
         public long DragImpulsesLimited { get; private set; }
         public long Resizes { get; private set; }
+
+        /// <summary>
+        /// Bodies rebuilt because their plan changed — D106 item 2, rule 7. <see cref="Resizes"/>'
+        /// neighbour, counted apart because the two are different work: a resize writes new
+        /// numbers into the arrays a body already has, and this throws the body away and builds
+        /// another. 0 for every run whose genomes are all determinate.
+        /// </summary>
+        public long ModuleRebuilds { get; private set; }
         public double MaxResizeJumpMetres { get; private set; }
         public double MaxResizeStepMetres { get; private set; }
         public double MaxJointMassRatio { get; private set; }

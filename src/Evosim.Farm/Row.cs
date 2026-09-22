@@ -70,6 +70,12 @@ namespace Evosim.Farm
         private long _lastBedOrGlassBodies;
         private long _lastContactSteps;
 
+        // D106 item 2's three windows. Baselines like the rest: the table prints what happened
+        // since the last sample and stats.jsonl carries the running total beside it.
+        private long _lastModuleAdds;
+        private long _lastModuleDrops;
+        private long _lastModuleAddsRefused;
+
         private readonly List<AbsorptiveSample> _absorptiveRows = new List<AbsorptiveSample>();
 
         private long[] _positionIds = Array.Empty<long>();
@@ -125,6 +131,10 @@ namespace Evosim.Farm
             w.Write(_lastBedOrGlassBodies);
             w.Write(_lastContactSteps);
             w.Write(_lastSnapshotSeconds);
+
+            w.Write(_lastModuleAdds);
+            w.Write(_lastModuleDrops);
+            w.Write(_lastModuleAddsRefused);
         }
 
         /// <summary>Puts the sampler back.</summary>
@@ -156,6 +166,10 @@ namespace Evosim.Farm
             _lastBedOrGlassBodies = r.ReadInt64();
             _lastContactSteps = r.ReadInt64();
             _lastSnapshotSeconds = r.ReadDouble();
+
+            _lastModuleAdds = r.ReadInt64();
+            _lastModuleDrops = r.ReadInt64();
+            _lastModuleAddsRefused = r.ReadInt64();
         }
 
         /// <summary>
@@ -365,6 +379,12 @@ namespace Evosim.Farm
 
             long wrapsWindow = sim.Wraps - _lastWraps;
             long crowdedWindow = sim.Crowded - _lastCrowded;
+
+            long moduleAddsWindow = world.ModuleAdds - _lastModuleAdds;
+            long moduleDropsWindow = world.ModuleDrops - _lastModuleDrops;
+            long moduleRefusedWindow = world.ModuleAddsRefused - _lastModuleAddsRefused;
+            long modulesStanding = world.ModulesStanding;
+            double indeterminateShare = world.IndeterminateShare;
 
             double matterResidual = world.MatterResidual;
 
@@ -642,7 +662,18 @@ namespace Evosim.Farm
                 .Field("wallWorldMs", sim.WallWorldMs)
                 .Field("wallHarnessMs", sim.WallHarnessMs)
                 .Field("wallWritersMs", sim.WallWritersMs)
-                .Field("wallTotalMs", sim.WallTotalMs);
+                .Field("wallTotalMs", sim.WallTotalMs)
+
+                // D106 item 2, rule 8. `modulesStanding` and `indeterminateShare` are states and
+                // the other three are running totals a reader differences into a window, which is
+                // what scripts/reads/r44-read.py does with them. `moduleRebuilds` is the
+                // harness's own count of bodies rebuilt on a new plan, beside `resizes`.
+                .Field("modulesStanding", modulesStanding)
+                .Field("moduleAdds", world.ModuleAdds)
+                .Field("moduleDrops", world.ModuleDrops)
+                .Field("moduleAddsRefused", world.ModuleAddsRefused)
+                .Field("indeterminateShare", indeterminateShare)
+                .Field("moduleRebuilds", sim.ModuleRebuilds);
 
                 long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
@@ -813,6 +844,13 @@ namespace Evosim.Farm
                 shapedBed ? (100d * floorLowQuarterShare).ToString("0.#", c) + "%" : "—",
                 shapedBed ? floorStockJoules.ToString("0.#", c) : "—",
                 world.SelfOverlapStillbirths.ToString(c),
+
+                // D106 item 2, rule 8, in BaseColumns' order.
+                modulesStanding.ToString(c),
+                moduleAddsWindow.ToString(c),
+                moduleDropsWindow.ToString(c),
+                moduleRefusedWindow.ToString(c),
+                (100d * indeterminateShare).ToString("0.#", c) + "%",
             };
 
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));
@@ -835,6 +873,9 @@ namespace Evosim.Farm
             _lastOverlapPairsHeld = sim.Dynamics.OverlapPairsHeld;
             _lastBedOrGlassBodies = sim.Dynamics.BedOrGlassBodies;
             _lastContactSteps = sim.Steps;
+            _lastModuleAdds = world.ModuleAdds;
+            _lastModuleDrops = world.ModuleDrops;
+            _lastModuleAddsRefused = world.ModuleAddsRefused;
 
             if (row.Count != columns.Count)
             {

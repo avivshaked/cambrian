@@ -87,6 +87,75 @@ namespace Evosim.Core
         /// </summary>
         public int RecursiveLimit { get; set; } = 1;
 
+        /// <summary>
+        /// Whether this node's count is fixed at development or is a bounded rule on the body's
+        /// reserve — D106 item 2, <c>logbook/specs/module-gene-spec.md</c> rule 2.
+        /// </summary>
+        /// <remarks>
+        /// <b>Determinate on every founder and on every body in the record.</b> An indeterminate
+        /// node still develops to <see cref="RecursiveLimit"/> at birth — a body is born with the
+        /// plan it would have had — and only then does <c>World.ApplyModuleRule</c> move the
+        /// count, between <see cref="RecursiveLimit"/> and <see cref="MaxModules"/>.
+        /// </remarks>
+        public ModuleGrowth Growth { get; set; } = ModuleGrowth.Determinate;
+
+        /// <summary>
+        /// The ceiling on an indeterminate node's count — rule 2. Drawn at
+        /// <see cref="RecursiveLimit"/> and mutable upward.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Read as <c>max(RecursiveLimit, MaxModules)</c> and never below the minimum.</b>
+        /// <see cref="RecursiveLimit"/> mutates too, so the two can cross; a ceiling under the
+        /// floor would otherwise be a node that development builds and the rule immediately wants
+        /// to unbuild. The rule takes the larger and says so where it reads it.
+        /// </para>
+        /// <para>
+        /// Meaningless on a <see cref="ModuleGrowth.Determinate"/> node, where the count is
+        /// <see cref="RecursiveLimit"/> and nothing consults this. Carried on every node anyway,
+        /// because a gene that exists only sometimes is a genome whose fields depend on another
+        /// field's value, and <see cref="GenomeJson"/> writes every field unconditionally.
+        /// </para>
+        /// </remarks>
+        public int MaxModules { get; set; } = 1;
+
+        /// <summary>
+        /// Damage this node's parts do per second to a part of another body in held contact —
+        /// D106 item 3. <b>Carried at zero and read by nothing until round 45.</b>
+        /// </summary>
+        /// <remarks>
+        /// The four attributes are in the genome from round 44's build (format 7) and turned on
+        /// by round 45's, which is D106 item 6's one format bump for both rounds: the alternative
+        /// is re-extracting every stored genome twice in a fortnight. The mutator does not touch
+        /// them here, so a round 44 world carries four constants.
+        /// </remarks>
+        public float Attack { get; set; }
+
+        /// <summary>
+        /// Charged units this node's parts take per second from a corpse in reach — D106 item 4.
+        /// Carried at zero; see <see cref="Attack"/>.
+        /// </summary>
+        public float Intake { get; set; }
+
+        /// <summary>
+        /// Damage per second absorbed before health suffers — D106 item 3. Carried at zero; see
+        /// <see cref="Attack"/>.
+        /// </summary>
+        public float Protection { get; set; }
+
+        /// <summary>
+        /// Health per unit of volume — D106 item 3. Carried at <b>1</b> rather than at 0, unlike
+        /// the other three.
+        /// </summary>
+        /// <remarks>
+        /// A part's health pool is its volume times this, so a default of 0 would give every
+        /// stored genome a body that dies to the first scratch on the day round 45 turns health
+        /// on — a genome wearing another's identity, which is what §9's refuse-rather-than-default
+        /// rule exists to stop, arriving through the default rather than through the file. 1 is
+        /// the neutral multiplier and the number D106's pricing is written against.
+        /// </remarks>
+        public float Toughness { get; set; } = 1f;
+
         /// <summary>The node's local brain. Duplicated with the node — DESIGN.md §4.3.</summary>
         public NeuronDef[] Neurons { get; set; } = Array.Empty<NeuronDef>();
 
@@ -105,6 +174,12 @@ namespace Evosim.Core
                 Power = Power,
                 Lift = Lift,
                 RecursiveLimit = RecursiveLimit,
+                Growth = Growth,
+                MaxModules = MaxModules,
+                Attack = Attack,
+                Intake = Intake,
+                Protection = Protection,
+                Toughness = Toughness,
                 Neurons = new NeuronDef[Neurons.Length],
             };
 

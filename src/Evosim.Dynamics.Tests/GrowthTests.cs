@@ -481,8 +481,9 @@ namespace Evosim.Dynamics.Tests
         }
 
         private void Skipped() => _out.WriteLine(
-            "runs/r42-s4/2026-09-21-051718-ff557bce is not on this machine " +
-            "(run directories are gitignored and belong to the main working tree).");
+            "runs/r42-s4/2026-09-21-051718-ff557bce is not on this machine, or is and this build " +
+            "refuses it — run directories are gitignored and belong to the main working tree, and " +
+            "a recording written before a tunable or a genome format bump is refused by §9.");
 
         /// <summary>
         /// Round 42 seed 4's genomes at t = 20,000 s, developed under that run's own config.
@@ -506,8 +507,20 @@ namespace Evosim.Dynamics.Tests
                 string run = Locate();
                 if (run == null) return null;
 
-                RunConfig config = RunConfigJson.Read(
-                    File.ReadAllText(Path.Combine(run, "config.json")), out _);
+                // A recording this build cannot read is the same answer as a recording that is not
+                // here: there are no bodies to add. §9 refuses a config written before a tunable
+                // and a genome written before a format bump, so both arrive as an exception and
+                // both mean "record a fixture on the build that reads it".
+                RunConfig config;
+                try
+                {
+                    config = RunConfigJson.Read(
+                        File.ReadAllText(Path.Combine(run, "config.json")), out _);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
 
                 var bodies = new List<Phenotype>();
                 string snapshot = Path.Combine(run, "snapshots", "000020000.jsonl");

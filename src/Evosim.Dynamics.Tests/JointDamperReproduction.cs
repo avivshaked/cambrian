@@ -44,7 +44,7 @@ namespace Evosim.Dynamics.Tests
         [Fact]
         public void TheBodyTheExplicitJointDamperLostSurvivesAMinuteOfBeingTouched()
         {
-            Assert.True(RunFixture.Present, "round 42 seed 4 is not on this machine");
+            Assert.True(RunFixture.Present, RunFixture.Why);
 
             SolverConfig solver = RunFixture.Solver();
 

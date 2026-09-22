@@ -104,7 +104,14 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // D102's token, which round 42's report was written before. Inserted in the slot
                 // EvolutionRun prints it in — between the current and the rolls — so that the rest
                 // of the line is still compared character for character against the recording.
-                .Replace(" · rolls ", " · axes v:h 1.00 · rolls ");
+                .Replace(" · rolls ", " · axes v:h 1.00 · rolls ")
+
+                // D106's, the same way: appended at the end of the line, before the hash, which is
+                // where both engines print it. And the hash itself, which four new tunables move
+                // whatever their defaults (§9) — round 42 ran under ff557bce2685293a and this
+                // build files the same world under 11602ab76c1e2a19.
+                .Replace(" · configHash ", " · modules add=0 drop=0 after=0 mut=0 · configHash ")
+                .Replace("`ff557bce2685293a`", "`11602ab76c1e2a19`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -130,7 +137,12 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 "bound clear) dispersal=5 m", line);
             Assert.Contains(" · senses jointangle,jointrate,up,depth,chemical,energy,flow", line);
             Assert.Contains(" · field grid h=1 mh=1.8 merge=0.25 cap=100000 q=0.125 cell=1 mcell=5", line);
-            Assert.EndsWith(" · configHash `ff557bce2685293a`", line);
+
+            // D106's four, last before the hash and all at their defaults: a reader verifying an
+            // arm has to be able to see from the header alone that the module gene is off.
+            Assert.Contains(" · modules add=0 drop=0 after=0 mut=0 · configHash", line);
+
+            Assert.EndsWith(" · configHash `11602ab76c1e2a19`", line);
 
             // parse-arm.ps1 splits on ' · ' and asks for a token by prefix; nothing may arrive
             // with an empty name or a separator inside a value.
@@ -157,7 +169,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             Assert.Equal(Report.BaseColumns.Length + 4, report.Columns.Count);
             Assert.Equal("t (s)", report.Columns[0]);
-            Assert.Equal("self stillb", report.Columns[Report.BaseColumns.Length - 1]);
+            Assert.Equal("indet %", report.Columns[Report.BaseColumns.Length - 1]);
             Assert.Equal("p0", report.Columns[Report.BaseColumns.Length]);
             Assert.Equal("p3", report.Columns[Report.BaseColumns.Length + 3]);
 
@@ -200,7 +212,22 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         };
 
         /// <summary>
-        /// The recorded table's header row, column for column but for the four that were renamed.
+        /// D106's five, appended at the end of the base set and in this order.
+        /// </summary>
+        /// <remarks>
+        /// <b>Appended, never inserted.</b> Every reader of a run report that is not
+        /// <c>analyse-arm.ps1</c> finds its columns by counting, and logbook/0044's misread — float
+        /// tissue reported as the food chain — is what a shifted column costs. So a new instrument
+        /// goes on the end, where a reader that has never heard of it stops before reaching it.
+        /// </remarks>
+        private static readonly string[] AppendedColumns =
+        {
+            "modules", "mod add", "mod drop", "mod refused", "indet %",
+        };
+
+        /// <summary>
+        /// The recorded table's header row, column for column but for the four that were renamed
+        /// and the five D106 appended.
         /// </summary>
         [Fact]
         public void TheTableHeaderIsTheRecordedOneBarTheFourRenamedColumns()
@@ -231,7 +258,27 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             string ported = report.TableHeader().Split('\n')[0].TrimEnd('\r');
 
             string[] recordedCells = recorded.Split('|');
-            string[] portedCells = ported.Split('|');
+            string[] all = ported.Split('|');
+
+            // D106's five, at the end of the base set — which is not the end of the row, because
+            // the per-patch columns come after it. So they are found in their own slots, taken
+            // out, and the rest of the row is compared against the record cell for cell, which is
+            // what says nothing else moved.
+            int at = Report.BaseColumns.Length - AppendedColumns.Length + 1;
+
+            for (int k = 0; k < AppendedColumns.Length; k++)
+            {
+                Assert.Equal(AppendedColumns[k], all[at + k].Trim());
+            }
+
+            var kept = new List<string>(all.Length - AppendedColumns.Length);
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (i >= at && i < at + AppendedColumns.Length) continue;
+                kept.Add(all[i]);
+            }
+
+            string[] portedCells = kept.ToArray();
 
             Assert.Equal(recordedCells.Length, portedCells.Length);
 

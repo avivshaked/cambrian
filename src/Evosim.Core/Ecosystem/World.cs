@@ -3572,6 +3572,11 @@ namespace Evosim.Core
             creature.HasAbsorptiveTissue = HasAbsorptive(phenotype);
             creature.HasPhotosyntheticTissue = photosynthetic;
 
+            // D106 item 2. A property of the genome, so it is read once here beside the other
+            // cached facts about a body — and it is 0 for every founder and for every body in
+            // the record, because the gene enters by mutation alone.
+            creature.IndeterminateNodes = IndeterminateNodesOf(genome);
+
             // Endowment and body are transferred from the parent, and a founder's or an
             // inoculant's are created out of nothing, so only those two are income the world has
             // to account for. Conflating any of this with reproduction would let a population
@@ -3601,7 +3606,8 @@ namespace Evosim.Core
             _lineageEvents.Add(LineageEvent.Birth(
                 ElapsedSeconds, creature.Id, parentId, kind, generationDepth, creature.SpeciesId,
                 HasAbsorptive(phenotype), phenotype.TotalDof > 0, photosynthetic, patch,
-                creature.BodyFraction, genome.AdultScale, genome.Reproduction.ReserveMargin));
+                creature.BodyFraction, genome.AdultScale, genome.Reproduction.ReserveMargin,
+                creature.IndeterminateNodes));
 
             return creature;
         }

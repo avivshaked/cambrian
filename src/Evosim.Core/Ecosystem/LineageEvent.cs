@@ -114,6 +114,19 @@ namespace Evosim.Core
         /// </remarks>
         public float ReserveMargin { get; }
 
+        /// <summary>
+        /// Birth only — how many nodes of the genome are
+        /// <see cref="ModuleGrowth.Indeterminate"/>. D106 item 2, rule 8's <c>ind</c>.
+        /// </summary>
+        /// <remarks>
+        /// <b>The one place the gene can be read per birth.</b> A snapshot carries the genome and
+        /// therefore the gene, but a snapshot is the survivors at an instant; round 44 asks
+        /// whether an indeterminate line founds and is kept, which is a question about every
+        /// birth in a parent chain (logbook/0113's H1 and H2). 0 for every body in the record and
+        /// for every founder, which is the point: a nonzero row is a mutation that happened.
+        /// </remarks>
+        public int IndeterminateNodes { get; }
+
         /// <summary>Death only — why the creature left the population.</summary>
         public DeathCause Cause { get; }
 
@@ -121,9 +134,10 @@ namespace Evosim.Core
             LineageEventKind kind, double elapsedSeconds, long id, long parentId,
             BirthKind birthKind, int generationDepth, uint speciesId,
             bool hasAbsorptive, bool hasJoint, bool hasPhotosynthetic, int patch,
-            float birthFraction, float adultScale, float reserveMargin,
+            float birthFraction, float adultScale, float reserveMargin, int indeterminateNodes,
             DeathCause cause)
         {
+            IndeterminateNodes = indeterminateNodes;
             BirthFraction = birthFraction;
             AdultScale = adultScale;
             ReserveMargin = reserveMargin;
@@ -145,18 +159,18 @@ namespace Evosim.Core
             double elapsedSeconds, long id, long parentId, BirthKind birthKind,
             int generationDepth, uint speciesId, bool hasAbsorptive, bool hasJoint,
             bool hasPhotosynthetic, int patch, float birthFraction, float adultScale,
-            float reserveMargin) =>
+            float reserveMargin, int indeterminateNodes) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
-                birthFraction, adultScale, reserveMargin, default);
+                birthFraction, adultScale, reserveMargin, indeterminateNodes, default);
 
         public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
             new LineageEvent(
                 LineageEventKind.Death, elapsedSeconds, id, parentId: -1, birthKind: default,
                 generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
                 hasPhotosynthetic: false, patch: 0, birthFraction: 0f, adultScale: 0f,
-                reserveMargin: 0f, cause: cause);
+                reserveMargin: 0f, indeterminateNodes: 0, cause: cause);
 
         /// <summary>One-letter code for <see cref="BirthKind"/> — "f" floor, "r" reproduction, "i" inoculation.</summary>
         private static string Code(BirthKind kind)
@@ -214,7 +228,8 @@ namespace Evosim.Core
                     .Field("pt", Patch)
                     .Field("bf", BirthFraction)
                     .Field("as", AdultScale)
-                    .Field("rm", ReserveMargin);
+                    .Field("rm", ReserveMargin)
+                    .Field("ind", IndeterminateNodes);
             }
             else
             {

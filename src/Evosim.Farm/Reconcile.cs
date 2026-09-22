@@ -159,6 +159,12 @@ namespace Evosim.Farm
             // life and the resize count would be the population.
             solver.AppliedBodyFraction = creature.BodyFraction;
 
+            // D106 item 2, rule 7, and the same argument one field along: a newborn is built at
+            // whatever plan revision its organism already carries — which is 0 for every birth,
+            // since a body cannot have changed plan before it had one — so the growth step's
+            // comparison is false until the module rule moves it.
+            solver.AppliedPlanRevision = creature.PlanRevision;
+
             // §4.4's two world channels, wired here because this is the one place a body and its
             // organism are both in hand. Reads of World state from inside the parallel region,
             // and both of the reads are of state nothing writes during a physics step — the field
@@ -207,6 +213,110 @@ namespace Evosim.Farm
             _bodies.Add(creature.Id, body);
             Dynamics.AddInIdOrder(solver);
             _order.Add(body);
+        }
+
+        /// <summary>
+        /// Builds a living body again on the plan Core has just given it, keeping where it is and
+        /// what it was doing — D106 item 2, rule 7.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A new <see cref="Creature"/> and not a resize.</b> Every array on a body is indexed
+        /// by link and sized at construction, and a module is a link that has just appeared or
+        /// just gone; <c>Creature.Resize</c> says so itself, in as many words, by refusing a
+        /// phenotype of a different part count. So this builds one as <see cref="Build"/> builds a
+        /// newborn's and then hands it the old body's state through
+        /// <c>Creature.AdoptStateFrom</c>, which is where the argument about what is carried
+        /// lives.
+        /// </para>
+        /// <para>
+        /// <b>The old body's tallies are drained before it goes</b>, exactly as a departing body's
+        /// are in <see cref="Reconcile"/>: the limiter binds and the water's take belong to the
+        /// run rather than to the object holding them. The mechanical work needs no draining —
+        /// this runs inside the same metabolic step that drained it, after
+        /// <c>World.Observe</c> and before the next physics step, so there is none standing.
+        /// </para>
+        /// </remarks>
+        private void RebuildOnTheNewPlan(Body body, Organism creature)
+        {
+            Creature previous = body.Solver;
+
+            DriveImpulsesLimited += previous.DrainDriveImpulsesLimited();
+            DragImpulsesLimited += previous.DrainDragImpulsesLimited();
+            DissipatedJoules += previous.DrainDissipated();
+
+            Dynamics.Remove(creature.Id);
+
+            var solver = new Creature((int)creature.Id, creature.Phenotype, Solver, Config.Shapes);
+
+            // The developer's own match between the two plans. Core writes it whenever it moves
+            // a count; a body that arrives without one is rebuilt with every joint at rest and
+            // says so, rather than being handed a map that names the wrong parts.
+            int[] map = creature.PartMapFromPreviousPlan;
+
+            if (map == null || map.Length < solver.Links)
+            {
+                Console.Error.WriteLine(
+                    FormattableString.Invariant(
+                        $"warning: creature {creature.Id} changed plan with no part map, so its ") +
+                    "joints and its brain start empty — the body is still where it was.");
+
+                map = new int[solver.Links];
+                for (int i = 0; i < map.Length; i++) map[i] = -1;
+            }
+
+            // Read and not cleared: the organism's fields are Core's to write, and a map left
+            // behind is never read again — the next growth step compares the plan revision,
+            // which this line's caller has just brought level, and Core overwrites the map on
+            // the next plan change.
+            solver.AdoptStateFrom(previous, map);
+
+            solver.Patch = creature.Patch;
+            solver.AppliedBodyFraction = creature.BodyFraction;
+            solver.AppliedPlanRevision = creature.PlanRevision;
+
+            solver.Senses.Nutrients = World.Nutrients;
+            solver.Senses.Reserve = creature;
+
+            if (solver.Jointed) solver.EnableTrace();
+
+            if (solver.Brain.TotalDof != solver.Dof)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"Creature {creature.Id}: the brain produces {solver.Brain.TotalDof} ") +
+                    FormattableString.Invariant(
+                        $"drive values and the rebuilt body has {solver.Dof} degrees of ") +
+                    "freedom. The two DOF orderings have diverged across a module change and " +
+                    "every joint would be driven by the wrong neuron.");
+            }
+
+            body.Solver = solver;
+
+            // narrow: the root, in Core's frame. Taken here rather than left at the old body's,
+            // because the next thing to read it is the placer and the position row.
+            body.LastRootPosition = new Float3(
+                (float)solver.Position[0], (float)solver.Position[1], (float)solver.Position[2]);
+
+            // The same three the resize path refreshes: the masses have all been rewritten, the
+            // jump check wants the next frame, and the placer's picture of how much room this
+            // body needs has changed with its plan.
+            NoteMassRatio(body);
+            body.ResizedLastStep = true;
+
+            if (Volume != null)
+            {
+                body.Radius = SharedVolume.BoundingRadius(creature.Phenotype);
+            }
+
+            Dynamics.AddInIdOrder(solver);
+
+            // `_order` holds the Body and not the solver, so it needs nothing; what has changed
+            // outside the solver is a body's whole state, which is the debt the next divergence
+            // check is owed.
+            _movedOutsideTheSolver = true;
+
+            ModuleRebuilds++;
         }
 
         /// <summary>Centre of mass of a body, narrowed into Core's frame.</summary>

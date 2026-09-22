@@ -566,6 +566,19 @@ namespace Evosim.Sim.EditorTools
             float adultScaleChance = Env("EVOSIM_ADULT_SCALE_CHANCE", MutationRates.Default.AdultScaleChance);
             float investChance = Env("EVOSIM_INVEST_CHANCE", MutationRates.Default.InvestmentChance);
 
+            // D106 item 2's four, bound here as well as in the farm's EnvBinding so that the two
+            // engines hash the same config from the same launcher. All four are off by default,
+            // and at the defaults this harness runs the world it always ran: the rule never
+            // fires and the mutator takes no extra draw. What this harness does *not* do is call
+            // World.ApplyModuleRule — the round runs on src/Evosim.Farm (CLAUDE.md's two-farms
+            // note), and a body whose plan changed would have to be rebuilt rather than resized,
+            // which PhenotypeBuilder.Resize refuses. A module world launched here would move no
+            // count, so the tunables reach the config and the hash and nothing else.
+            float moduleAdd = Env("EVOSIM_MODULE_ADD", new RunConfig().ModuleAddReserveSeconds);
+            float moduleDrop = Env("EVOSIM_MODULE_DROP", new RunConfig().ModuleDropReserveSeconds);
+            float moduleDropAfter = Env("EVOSIM_MODULE_DROP_AFTER", new RunConfig().ModuleDropAfterSeconds);
+            float moduleMutation = Env("EVOSIM_MODULE_MUT", MutationRates.Default.ModuleGeneMutationChance);
+
             // D064. Body volume at which tissue is neutrally buoyant, m3 — the excess density
             // above is scaled by max(0, 1 - (V0/V)^(2/3)), so a founder-sized body barely sinks
             // and a large one feels the full constant. 0 is off and reproduces every pre-D064 run
@@ -826,6 +839,11 @@ namespace Evosim.Sim.EditorTools
             config.Genome.MaxBirthInvestment = Math.Max(investMin, investMax);
             config.Mutation.AdultScaleChance = adultScaleChance;
             config.Mutation.InvestmentChance = investChance;
+
+            config.ModuleAddReserveSeconds = moduleAdd;
+            config.ModuleDropReserveSeconds = moduleDrop;
+            config.ModuleDropAfterSeconds = moduleDropAfter;
+            config.Mutation.ModuleGeneMutationChance = moduleMutation;
 
             config.InoculateAtSeconds = inoculateAt;
             config.InoculateCount = inoculateCount;
@@ -1181,6 +1199,10 @@ namespace Evosim.Sim.EditorTools
                 " minkg=" + minNewbornKg + " step=" + growthStep +
                 " invest=" + config.Genome.MinBirthInvestment + "-" + config.Genome.MaxBirthInvestment +
                 " scale/invest chance=" + adultScaleChance + "/" + investChance +
+
+                // D106 item 2, at the end, as the farm's Report.HeaderLine appends it.
+                " · modules add=" + moduleAdd + " drop=" + moduleDrop +
+                " after=" + moduleDropAfter + " mut=" + moduleMutation +
                 " · configHash `" + config.Hash() + "`");
             report.AppendLine();
             report.AppendLine(Header());

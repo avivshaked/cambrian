@@ -204,6 +204,13 @@ namespace Evosim.Farm
             Num("EVOSIM_INVEST_MAX", RandomGenomeOptions.Default.MaxBirthInvestment, (s, v) => s.InvestMax = v),
             Num("EVOSIM_ADULT_SCALE_CHANCE", MutationRates.Default.AdultScaleChance, (s, v) => s.AdultScaleChance = v),
             Num("EVOSIM_INVEST_CHANCE", MutationRates.Default.InvestmentChance, (s, v) => s.InvestChance = v),
+
+            // D106 item 2's four, all off by default so that a launcher which does not name them
+            // runs the world it always ran.
+            Num("EVOSIM_MODULE_ADD", D.ModuleAddReserveSeconds, (s, v) => s.ModuleAdd = v),
+            Num("EVOSIM_MODULE_DROP", D.ModuleDropReserveSeconds, (s, v) => s.ModuleDrop = v),
+            Num("EVOSIM_MODULE_DROP_AFTER", D.ModuleDropAfterSeconds, (s, v) => s.ModuleDropAfter = v),
+            Num("EVOSIM_MODULE_MUT", MutationRates.Default.ModuleGeneMutationChance, (s, v) => s.ModuleMutation = v),
             Num("EVOSIM_NEUTRAL_VOLUME", 0f, (s, v) => s.NeutralVolume = v),
             Num("EVOSIM_FOUNDER_DEPTH", D.FounderDepthSpread, (s, v) => s.FounderDepth = v),
             Num("EVOSIM_MATTER_INITIAL", 1f, (s, v) => s.InitialMatter = v),
@@ -481,6 +488,11 @@ namespace Evosim.Farm
             config.Genome.MaxBirthInvestment = Math.Max(s.InvestMin, s.InvestMax);
             config.Mutation.AdultScaleChance = s.AdultScaleChance;
             config.Mutation.InvestmentChance = s.InvestChance;
+
+            config.ModuleAddReserveSeconds = s.ModuleAdd;
+            config.ModuleDropReserveSeconds = s.ModuleDrop;
+            config.ModuleDropAfterSeconds = s.ModuleDropAfter;
+            config.Mutation.ModuleGeneMutationChance = s.ModuleMutation;
 
             config.InoculateAtSeconds = s.InoculateAt;
             config.InoculateCount = s.InoculateCount;
@@ -822,6 +834,10 @@ namespace Evosim.Farm
         public float InvestMax;
         public float AdultScaleChance;
         public float InvestChance;
+        public float ModuleAdd;
+        public float ModuleDrop;
+        public float ModuleDropAfter;
+        public float ModuleMutation;
         public float NeutralVolume;
         public float FounderDepth;
         public float InitialMatter;

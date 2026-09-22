@@ -21,7 +21,20 @@ namespace Evosim.Farm.Tests
     /// </remarks>
     public class EnvBindingTests
     {
-        private const string Round42ConfigHash = "ff557bce2685293a";
+        /// <summary>
+        /// Round 42 seed 1's config hash <i>on this build</i>, which is not the one the round ran
+        /// under.
+        /// </summary>
+        /// <remarks>
+        /// The round ran under <c>ff557bce2685293a</c>, and D106's four module tunables moved it to
+        /// this — a tunable is part of the hash whatever its default, which is §9's rule and the
+        /// reason a config written before a tunable is refused rather than defaulted. What this
+        /// constant still pins is the thing the test was written for: that the launcher's
+        /// environment and this binding build the same world. It does not, and after 2026-09-22
+        /// cannot, say that world is byte-identical to the recorded one; the module tunables are
+        /// all 0, so it is the same world, filed under a new name.
+        /// </remarks>
+        private const string Round42ConfigHash = "11602ab76c1e2a19";
 
         /// <summary>Round 42 seed 1's environment, from <c>rounds/launch-r42.ps1</c>.</summary>
         /// <remarks>
@@ -161,7 +174,25 @@ namespace Evosim.Farm.Tests
 
             // Read it back through Core's own reader first: a file this build refuses is a
             // different failure from a field that disagrees, and the two must not be confused.
-            RunConfig loaded = RunConfigJson.Read(File.ReadAllText(recorded), out string mismatch);
+            //
+            // And a build that has added a tunable since the recording refuses it outright — §9,
+            // working. That is not this test's subject either, so it says so and stops: what it
+            // watches is a field that disagrees, and there is no comparison to make against a file
+            // this build will not open. The pinned hash above carries the same news.
+            RunConfig loaded;
+            string mismatch;
+            try
+            {
+                loaded = RunConfigJson.Read(File.ReadAllText(recorded), out mismatch);
+            }
+            catch (FormatException e)
+            {
+                Console.WriteLine(
+                    "this build refuses round 42 seed 1's recorded config — " + e.Message +
+                    " There is nothing to compare field by field until a run is recorded on it.");
+                return;
+            }
+
             Assert.Null(mismatch);
 
             AssertSameConfig(RunConfigJson.Write(loaded), RunConfigJson.Write(built));

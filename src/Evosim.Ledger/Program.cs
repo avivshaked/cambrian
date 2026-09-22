@@ -100,6 +100,8 @@ namespace Evosim.Ledger
 
             AppendBodySummary(sb, "Body", options.GenomePath, body, config, spentDensity);
 
+            AppendModuleTable(sb, genome, body, config, spentDensity);
+
             var variants = new List<(string Label, Genome Genome, Phenotype Body)>
             {
                 ("as stored", genome, body),
@@ -208,6 +210,108 @@ namespace Evosim.Ledger
             }
             sb.Append("\n\n");
         }
+
+        // ------------------------------------------------------------------ the module gene
+
+        /// <summary>
+        /// What one more module of each indeterminate node costs, and how long it takes to repay
+        /// itself — D106 item 2, and the screen
+        /// <c>logbook/specs/module-gene-spec.md</c>'s tunables section asks for before a round.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The whole question in one column.</b> A module is bought at the tissue price out of
+        /// the reserve and earns whatever the extra parts earn, so <c>module repay s</c> is the
+        /// tissue it costs over the net watts it adds, at this config's surface light and the
+        /// spent density the run seeds. A module that cannot repay itself within a lifetime is a
+        /// rule no plant will ever use, and <c>ModuleAddReserveSeconds</c> chosen without this is
+        /// a day of machine time spent finding it out.
+        /// </para>
+        /// <para>
+        /// <b>Nothing new is computed.</b> The candidate body is the same development at one
+        /// higher count, and the two readings are <c>Metabolism.TissueJoules</c> and the ledger's
+        /// own step at the surface — the two numbers the body summary above already prints. The
+        /// silhouette cap is in both, because <c>Metabolism.StepAt</c> reads the config's flag,
+        /// which is the whole reason a spread body earns more than a packed one.
+        /// </para>
+        /// <para>
+        /// A determinate genome prints one line saying so rather than an empty table: an empty
+        /// table reads like a measurement that came back zero.
+        /// </para>
+        /// </remarks>
+        private static void AppendModuleTable(
+            StringBuilder sb, Genome genome, Phenotype body, RunConfig config, float spentDensity)
+        {
+            sb.Append("## Modules — the add rule's price (D106 item 2)\n\n");
+
+            var indeterminate = new List<int>();
+            for (int n = 0; n < genome.Nodes.Count; n++)
+            {
+                if (genome.Nodes[n].Growth == ModuleGrowth.Indeterminate) indeterminate.Add(n);
+            }
+
+            if (indeterminate.Count == 0)
+            {
+                sb.Append("Every node is determinate, so the module rule has nothing to add here ")
+                  .Append("and `module repay s` is not a number this genome has.\n\n");
+                return;
+            }
+
+            float surfaceIrradiance = config.Light.IrradianceAt(0f);
+            double tissue = Metabolism.TissueJoules(body, config);
+            double net = NetWattsAtSurface(body, config, surfaceIrradiance, spentDensity);
+
+            var counts = new int[genome.Nodes.Count];
+            for (int n = 0; n < counts.Length; n++) counts[n] = genome.Nodes[n].RecursiveLimit;
+
+            sb.Append("| node | cell | count | max | parts | tissue +J | net +W | module repay s |\n");
+            sb.Append("|---|---|---|---|---|---|---|---|\n");
+
+            foreach (int n in indeterminate)
+            {
+                MorphNode node = genome.Nodes[n];
+                int ceiling = node.MaxModules > node.RecursiveLimit
+                    ? node.MaxModules
+                    : node.RecursiveLimit;
+
+                var next = (int[])counts.Clone();
+                next[n]++;
+
+                Phenotype grown = Developer.Develop(
+                    genome, config.Development, null, config.Shapes, next);
+
+                double tissueAdded = Metabolism.TissueJoules(grown, config) - tissue;
+                double netAdded =
+                    NetWattsAtSurface(grown, config, surfaceIrradiance, spentDensity) - net;
+
+                string repay = netAdded > 0d && tissueAdded > 0d
+                    ? Format((float)(tissueAdded / netAdded))
+                    : "never";
+
+                sb.Append('|').Append(n)
+                  .Append('|').Append(node.CellTypeId)
+                  .Append('|').Append(node.RecursiveLimit)
+                  .Append('|').Append(ceiling)
+                  .Append('|').Append(body.PartCount).Append(" -> ").Append(grown.PartCount)
+                  .Append('|').Append(Format((float)tissueAdded))
+                  .Append('|').Append(Format((float)netAdded))
+                  .Append('|').Append(repay)
+                  .Append("|\n");
+            }
+
+            sb.Append("\nA module at the ceiling adds no parts and reads 0 J and 0 W; ")
+              .Append("`never` is a module whose parts earn no more than they cost to stand.\n\n");
+        }
+
+        /// <summary>
+        /// A body's net watts at the surface in the water this config seeds, unfed — the ledger's
+        /// own step, at age zero.
+        /// </summary>
+        private static double NetWattsAtSurface(
+            Phenotype body, RunConfig config, float surfaceIrradiance, float spentDensity) =>
+            Metabolism.StepAt(
+                body, config, surfaceIrradiance, nutrientDensity: 0f, spentDensity: spentDensity,
+                workJoules: 0f, seconds: 1f, ageSeconds: 0f).Net;
 
         // ------------------------------------------------------------------ forecast table
 

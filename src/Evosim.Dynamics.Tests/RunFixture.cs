@@ -55,10 +55,52 @@ namespace Evosim.Dynamics.Tests
             get { Load(); return _bodies; }
         }
 
-        /// <summary>Whether the run is on this machine. Every test here needs it.</summary>
-        public static bool Present =>
-            File.Exists(Path.Combine(RunDirectory, "config.json")) &&
-            File.Exists(Path.Combine(RunDirectory, "snapshots", Snapshot));
+        /// <summary>
+        /// Whether this build can use the recording. Every test here needs it.
+        /// </summary>
+        /// <remarks>
+        /// <b>On disk is not the same as readable.</b> A build that adds a tunable makes every
+        /// earlier <c>config.json</c> unreadable and a build that bumps the genome format makes
+        /// every earlier snapshot unreadable — §9's refuse-rather-than-default rule, working. So
+        /// this asks the two questions separately and <see cref="Why"/> says which one failed,
+        /// because "the run is not on this machine" and "this build cannot read the run that is"
+        /// need opposite responses: fetch the recording, or record a new fixture.
+        /// </remarks>
+        public static bool Present => Why == null;
+
+        /// <summary>Why the recording cannot serve as a fixture, or null when it can.</summary>
+        public static string Why
+        {
+            get
+            {
+                if (!File.Exists(Path.Combine(RunDirectory, "config.json")) ||
+                    !File.Exists(Path.Combine(RunDirectory, "snapshots", Snapshot)))
+                {
+                    return "round 42 seed 4 is not on this machine (run directories are " +
+                           "gitignored and belong to the main working tree)";
+                }
+
+                try
+                {
+                    Load();
+                }
+                catch (Exception e)
+                {
+                    return "this build cannot read round 42 seed 4's config: " + e.Message +
+                           " — the recording predates a tunable, and a fixture has to be " +
+                           "recorded on the build that reads it";
+                }
+
+                if (_bodies.Count == 0)
+                {
+                    return "this build refused every genome in round 42 seed 4's snapshot — the " +
+                           "recording predates a genome format bump, and a fixture has to be " +
+                           "recorded on the build that reads it";
+                }
+
+                return null;
+            }
+        }
 
         private static void Load()
         {

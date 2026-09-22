@@ -64,7 +64,18 @@ namespace Evosim.Core
         /// would hand every stored creature the one strategy the gene exists to let a lineage
         /// move off — a genome wearing another's identity, which is what §9 refuses.
         /// </remarks>
-        public const int FormatVersion = 6;
+        /// <remarks>
+        /// 7 — D106 items 2 and 6 (2026-09-22), the module gene and the four cell attributes.
+        /// <c>growth</c> and <c>maxModules</c> make a node's count a bounded rule rather than a
+        /// number, and <c>attack</c>, <c>intake</c>, <c>protection</c> and <c>toughness</c> are
+        /// carried at their defaults for round 45's mouth so that the stored genomes are
+        /// re-extracted once rather than twice. A format-6 genome carries none of the six, and
+        /// defaulting them is exactly what §9 refuses: <c>growth</c> defaulted would make every
+        /// stored creature determinate — which happens to be true of the record and would stop
+        /// being true the first time a round 44 genome was read back — and <c>toughness</c>
+        /// defaulted to zero would hand round 45 a world of bodies that die to a scratch.
+        /// </remarks>
+        public const int FormatVersion = 7;
 
         /// <summary>Written for a row that carries no organism id.</summary>
         public const long NoId = -1;
@@ -117,7 +128,10 @@ namespace Evosim.Core
                 throw new FormatException(
                     $"Genome is format {format}, this build reads {FormatVersion}. There is no " +
                     "migration path: re-run, or check out the revision that wrote it. " +
-                    "(Format 6 added the breeding margin (`ReserveMargin`, format 6): the " +
+                    "(Format 7 added the module gene (`Growth`, `MaxModules`) and the four cell " +
+                    "attributes (`Attack`, `Intake`, `Protection`, `Toughness`) of D106, so a " +
+                    "format-6 genome says nothing about whether a node's count is fixed or is a " +
+                    "rule. Format 6 added the breeding margin (`ReserveMargin`): the " +
                     "reserve a parent keeps after a birth, in seconds of its own standing cost. " +
                     "Format 5 had replaced the offspring endowment in joules with a birth " +
                     "investment as a fraction of the parent's body, and added the adult scale, " +
@@ -174,6 +188,16 @@ namespace Evosim.Core
             w.Field("lift", node.Lift);
             w.Field("recursiveLimit", node.RecursiveLimit);
 
+            // D106's six, format 7. The module gene first, because it is the one this build
+            // reads; the four attributes are round 45's and are written so the genomes are
+            // re-extracted once.
+            w.Field("growth", node.Growth.ToString());
+            w.Field("maxModules", node.MaxModules);
+            w.Field("attack", node.Attack);
+            w.Field("intake", node.Intake);
+            w.Field("protection", node.Protection);
+            w.Field("toughness", node.Toughness);
+
             WriteFloat3(w, "dimensions", node.Dimensions);
 
             w.BeginArray("jointLimits");
@@ -204,6 +228,12 @@ namespace Evosim.Core
                 Power = n["power"].AsFloat(),
                 Lift = n["lift"].AsFloat(),
                 RecursiveLimit = n["recursiveLimit"].AsInt(),
+                Growth = ParseEnum<ModuleGrowth>(n["growth"].AsString()),
+                MaxModules = n["maxModules"].AsInt(),
+                Attack = n["attack"].AsFloat(),
+                Intake = n["intake"].AsFloat(),
+                Protection = n["protection"].AsFloat(),
+                Toughness = n["toughness"].AsFloat(),
                 Dimensions = ReadFloat3(n["dimensions"]),
             };
 

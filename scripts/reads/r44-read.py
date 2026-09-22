@@ -84,6 +84,11 @@ ASSUMED_NAMES = {
     "col_indet_pct": "indet %",
     # lineage.jsonl birth-row field — the count of indeterminate nodes (rule 8).
     "lineage_ind": "ind",
+    # And the one name this script guessed would not exist: the build wrote it after all, as the
+    # instantaneous share of the living with any indeterminate node. Nothing here reads it yet —
+    # the positions/lineage join below is what the clauses run on, and swapping them is a change
+    # to a reading and not to a name. It is recorded so the swap has something to point at.
+    "stats_indeterminate_share": "indeterminateShare",
 }
 
 # A sentinel distinct from every legitimate stats.jsonl value (including 0 and None-shaped

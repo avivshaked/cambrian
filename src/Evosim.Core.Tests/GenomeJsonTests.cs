@@ -191,7 +191,12 @@ namespace Evosim.Core.Tests
             _output.WriteLine(e.Message);
             Assert.Contains("5", e.Message);
             Assert.Contains("ReserveMargin", e.Message);
-            Assert.Contains("format 6", e.Message);
+
+            // The name of the bump that introduced the field, which is now one of three the
+            // message walks back through rather than the newest. Capitalised as the sentence
+            // that carries it is — the assertion tracks the wording it is checking, which is the
+            // point of checking a message by name at all.
+            Assert.Contains("Format 6", e.Message);
         }
 
         [Fact]
@@ -199,6 +204,74 @@ namespace Evosim.Core.Tests
         {
             string text = GenomeJson.Write(GenomeFactory.Random(new Rng(13)))
                 .Replace("\"margin\":", "\"keep\":");
+
+            Assert.ThrowsAny<FormatException>(() => GenomeJson.Read(text));
+        }
+
+        // ------------------------------------------------- the module gene (D106 item 2, format 7)
+
+        [Fact]
+        public void TheModuleGeneIsWrittenAndAFormatSixGenomeIsRefusedByName()
+        {
+            // D106's bump, and §9's rule at the file level. A format-6 genome says nothing about
+            // whether a node's count is fixed or is a rule, and the field that would be defaulted
+            // is the one the round exists to watch: every stored creature would come back
+            // determinate wearing its own name, which is the silent default this project refuses.
+            Genome g = GenomeFactory.Random(new Rng(14));
+            g.Nodes[0].Growth = ModuleGrowth.Indeterminate;
+            g.Nodes[0].MaxModules = 5;
+
+            string text = GenomeJson.Write(g);
+
+            Assert.Contains("\"growth\":\"Indeterminate\"", text);
+            Assert.Contains("\"maxModules\":5", text);
+            Assert.Contains($"\"format\":{GenomeJson.FormatVersion}", text);
+            Assert.Equal(7, GenomeJson.FormatVersion);
+
+            Genome back = GenomeJson.Read(text);
+            Assert.Equal(ModuleGrowth.Indeterminate, back.Nodes[0].Growth);
+            Assert.Equal(5, back.Nodes[0].MaxModules);
+
+            string old = text.Replace($"\"format\":{GenomeJson.FormatVersion}", "\"format\":6");
+            FormatException e = Assert.Throws<FormatException>(() => GenomeJson.Read(old));
+
+            _output.WriteLine(e.Message);
+            Assert.Contains("format 6", e.Message);
+            Assert.Contains("Growth", e.Message);
+            Assert.Contains("MaxModules", e.Message);
+        }
+
+        [Fact]
+        public void AFounderIsDeterminateAtEveryNodeWithItsCeilingAtItsOwnLimit()
+        {
+            // Rule 6, at the one place it can be checked cheaply: the founding lottery. The gene
+            // enters round 44's world by mutation alone, so a founder that drew anything else
+            // would make the round's own question unaskable.
+            for (ulong seed = 1; seed <= 40; seed++)
+            {
+                Genome g = GenomeFactory.Random(new Rng(seed));
+
+                foreach (MorphNode node in g.Nodes)
+                {
+                    Assert.Equal(ModuleGrowth.Determinate, node.Growth);
+                    Assert.Equal(node.RecursiveLimit, node.MaxModules);
+                    Assert.Equal(0f, node.Attack);
+                    Assert.Equal(0f, node.Intake);
+                    Assert.Equal(0f, node.Protection);
+                    Assert.Equal(1f, node.Toughness);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("\"growth\":", "\"grew\":")]
+        [InlineData("\"maxModules\":", "\"maxMods\":")]
+        [InlineData("\"toughness\":", "\"tough\":")]
+        public void AGenomeMissingOneOfTheNewFieldsIsRefusedRatherThanDefaulted(
+            string field, string renamed)
+        {
+            string text = GenomeJson.Write(GenomeFactory.Random(new Rng(15)))
+                .Replace(field, renamed);
 
             Assert.ThrowsAny<FormatException>(() => GenomeJson.Read(text));
         }

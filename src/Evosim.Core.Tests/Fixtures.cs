@@ -114,6 +114,29 @@ namespace Evosim.Core.Tests
             return g;
         }
 
+        /// <summary>
+        /// D106's spine: <see cref="SelfLoopSpine"/> with one photosynthetic node whose count is a
+        /// rule rather than a number, born adult and unjointed. One part at birth, and room for
+        /// <paramref name="maxModules"/> − 1 more if the body can pay for them.
+        /// </summary>
+        public static Genome IndeterminateLeaf(int maxModules, float half = 0.2f)
+        {
+            Genome genome = SelfLoopSpine(recursiveLimit: 1);
+
+            MorphNode node = genome.Nodes[0];
+            node.CellTypeId = CellTypeIds.Photosynthetic;
+            node.JointType = JointType.Fixed;
+            node.JointLimits = System.Array.Empty<Float2>();
+            node.Power = 0f;
+            node.Dimensions = new Float3(half, half, half);
+            node.Growth = ModuleGrowth.Indeterminate;
+            node.MaxModules = maxModules;
+
+            genome.AdultScale = 1f;
+            genome.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 2f };
+            return genome;
+        }
+
         public static void AssertClose(float expected, float actual, float tol = Tol) =>
             Assert.True(System.Math.Abs(expected - actual) <= tol,
                 $"expected {expected}, got {actual} (tolerance {tol})");

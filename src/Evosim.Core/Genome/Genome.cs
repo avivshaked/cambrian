@@ -166,6 +166,15 @@ namespace Evosim.Core
                     issues.Add($"Node {n}: RecursiveLimit {node.RecursiveLimit} is negative.");
                 }
 
+                // D106 item 2. Negative only, not "below the recursive limit": the two genes
+                // mutate apart and Developer.CountFor takes the larger of them, so a ceiling
+                // that has fallen under the floor is a body the genome still describes rather
+                // than an invalid genome.
+                if (node.MaxModules < 0)
+                {
+                    issues.Add($"Node {n}: MaxModules {node.MaxModules} is negative.");
+                }
+
                 int dof = node.JointType.DofCount();
                 if (node.JointLimits.Length != dof)
                 {

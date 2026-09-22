@@ -50,6 +50,150 @@ namespace Evosim.Core.Tests
             Assert.Equal(expectedParts, p.PartCount);
         }
 
+        // ---------------------------------------------------------------- the module gene (D106)
+
+        [Fact]
+        public void ADeterminateGenomeDevelopsIdenticallyWithAndWithoutTheCounts()
+        {
+            // Rule 2's acceptance, and the reason the regress against the recorded world can be
+            // expected to hold at all: a determinate node ignores the array, so every genome in
+            // the record develops part for part into the body it always did whether the counts
+            // are supplied or not. Asked of forty random founders rather than of one fixture,
+            // because what has to be true is a property of the developer and not of a spine.
+            for (ulong seed = 1; seed <= 40; seed++)
+            {
+                Genome g = GenomeFactory.Random(new Rng(seed));
+
+                var counts = new int[g.Nodes.Count];
+                for (int n = 0; n < counts.Length; n++) counts[n] = g.Nodes[n].RecursiveLimit + 3;
+
+                Phenotype without = Developer.Develop(g);
+                Phenotype with = Developer.Develop(g, null, null, null, counts);
+
+                Assert.Equal(without.PartCount, with.PartCount);
+
+                for (int i = 0; i < without.PartCount; i++)
+                {
+                    PhenotypePart a = without.Parts[i];
+                    PhenotypePart b = with.Parts[i];
+
+                    Assert.Equal(a.SourceNode, b.SourceNode);
+                    Assert.Equal(a.ParentIndex, b.ParentIndex);
+                    Assert.Equal(a.Depth, b.Depth);
+                    Assert.Equal(a.CellTypeId, b.CellTypeId);
+                    Assert.Equal(a.JointType, b.JointType);
+                    Fixtures.AssertClose(a.HalfExtents, b.HalfExtents, 0f);
+                    Fixtures.AssertClose(a.Position, b.Position, 0f);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(2, 2)]
+        [InlineData(4, 4)]
+        [InlineData(7, 7)]
+        public void ACountAboveTheRecursiveLimitAddsModulesToAnIndeterminateNode(
+            int count, int expectedParts)
+        {
+            // Rule 2's other half. The same spine, with the node made indeterminate and the
+            // body's own count standing in for the limit: one more segment per module, up to
+            // MaxParts, which is what a module *is* — the node's own expansion, placed where the
+            // genome already says to place it.
+            Genome g = Fixtures.SelfLoopSpine(recursiveLimit: 1);
+            g.Nodes[0].Growth = ModuleGrowth.Indeterminate;
+            g.Nodes[0].MaxModules = 16;
+
+            Phenotype born = Developer.Develop(g);
+            Assert.Equal(1, born.PartCount);
+
+            Phenotype grown = Developer.Develop(g, null, null, null, new[] { count });
+
+            _output.WriteLine($"count {count}: {born.PartCount} -> {grown.PartCount} parts");
+            Assert.Equal(expectedParts, grown.PartCount);
+        }
+
+        [Fact]
+        public void ACountBelowTheGenomesOwnLimitIsReadAsTheLimit()
+        {
+            // Developer.CountFor's second rule. RecursiveLimit and MaxModules both mutate, so a
+            // stored count can find itself under a limit that has moved up; taking the larger
+            // means development always builds at least the body the genome describes.
+            Genome g = Fixtures.SelfLoopSpine(recursiveLimit: 4);
+            g.Nodes[0].Growth = ModuleGrowth.Indeterminate;
+
+            Phenotype p = Developer.Develop(g, null, null, null, new[] { 1 });
+            Assert.Equal(4, p.PartCount);
+        }
+
+        [Fact]
+        public void ThePartPathsIdentifyTheSamePartAcrossACountChange()
+        {
+            // Developer.MatchParts, on the genome shape that breaks the obvious reading. The root
+            // has an indeterminate child A and a second child B, so a module of A is inserted in
+            // the middle of the depth-first order and B's index moves — which is exactly what an
+            // index-based map would get wrong, and why the map is on paths.
+            var g = new Genome { RootIndex = 0 };
+
+            MorphNode root = Fixtures.Box();
+            MorphNode a = Fixtures.Box(half: 0.3f, recursiveLimit: 2);
+            MorphNode b = Fixtures.Box(half: 0.2f);
+
+            a.Growth = ModuleGrowth.Indeterminate;
+            a.MaxModules = 6;
+
+            root.Edges.Add(Fixtures.FaceToFace(1));
+            root.Edges.Add(Fixtures.FaceToFace(2));
+            a.Edges.Add(Fixtures.FaceToFace(1));
+
+            g.Nodes.Add(root);
+            g.Nodes.Add(a);
+            g.Nodes.Add(b);
+
+            var before = new System.Collections.Generic.List<int[]>();
+            var after = new System.Collections.Generic.List<int[]>();
+
+            Phenotype was = Developer.Develop(g, null, null, null, new[] { 1, 2, 1 }, before);
+            Phenotype now = Developer.Develop(g, null, null, null, new[] { 1, 3, 1 }, after);
+
+            _output.WriteLine($"{was.PartCount} parts -> {now.PartCount} parts");
+            Assert.Equal(was.PartCount + 1, now.PartCount);
+
+            int[] map = Developer.MatchParts(before, after);
+
+            // The added module is the only part with no ancestor in the old body, and everything
+            // else maps to the part with its own source node — which for B is an index that has
+            // moved.
+            int added = 0;
+            for (int i = 0; i < map.Length; i++)
+            {
+                if (map[i] < 0) { added++; continue; }
+
+                Assert.Equal(was.Parts[map[i]].SourceNode, now.Parts[i].SourceNode);
+                Assert.Equal(was.Parts[map[i]].Depth, now.Parts[i].Depth);
+            }
+
+            Assert.Equal(1, added);
+
+            // The part that proves it: B is at a different index in the two bodies and is still
+            // matched, which an index-for-index map could not do.
+            int bBefore = IndexOfSourceNode(was, 2);
+            int bAfter = IndexOfSourceNode(now, 2);
+
+            _output.WriteLine($"B moved from index {bBefore} to index {bAfter}");
+            Assert.NotEqual(bBefore, bAfter);
+            Assert.Equal(bBefore, map[bAfter]);
+        }
+
+        private static int IndexOfSourceNode(Phenotype p, int node)
+        {
+            for (int i = 0; i < p.PartCount; i++)
+            {
+                if (p.Parts[i].SourceNode == node) return i;
+            }
+
+            return -1;
+        }
+
         [Fact]
         public void SegmentsAreLaidOutFaceToFaceAlongTheAxis()
         {

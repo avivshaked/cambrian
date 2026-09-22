@@ -163,10 +163,14 @@ namespace Evosim.Farm
             float growthStep = Config.GrowthStepSeconds;
             if (_sinceGrowthStep + GrowthStepEpsilon >= growthStep)
             {
+                // What actually elapsed, not what was asked for: D106's drop clock counts
+                // continuous seconds under a line, and a clock fed the nominal cadence would
+                // drift from the world's own second the moment the two differed.
+                float sinceLastGrowthStep = _sinceGrowthStep;
                 _sinceGrowthStep = 0f;
 
                 long growthStarted = Now();
-                ApplyGrowth();
+                ApplyGrowth(sinceLastGrowthStep);
                 _phaseTicks[PhaseGrowth] += Now() - growthStarted;
             }
 
@@ -194,14 +198,32 @@ namespace Evosim.Farm
         /// breaking.
         /// </para>
         /// </remarks>
-        private void ApplyGrowth()
+        private void ApplyGrowth(float sinceLastGrowthStep)
         {
+            // D106 item 2's rule, run before the resizes and in the same step, because a body
+            // that has just gained or lost a module has a new plan as well as a new size: the
+            // loop below would otherwise resize it to a phenotype of a different part count,
+            // which Creature.Resize refuses by design. It is one comparison per growth step at
+            // the module tunables' defaults, which is every world in the record.
+            World.ApplyModuleRule(sinceLastGrowthStep);
+
             IReadOnlyList<Organism> living = World.Living;
 
             for (int i = 0; i < living.Count; i++)
             {
                 Organism creature = living[i];
                 if (!_bodies.TryGetValue(creature.Id, out Body body)) continue;
+
+                // Rule 7. A changed plan is rebuilt rather than resized, and the revision rather
+                // than the part count is what says so: a re-development can move a body's shape
+                // without moving its count, and a resize of that body would write one part's size
+                // onto another.
+                if (creature.PlanRevision != body.Solver.AppliedPlanRevision)
+                {
+                    RebuildOnTheNewPlan(body, creature);
+                    continue;
+                }
+
                 if (creature.BodyFraction == body.Solver.AppliedBodyFraction) continue;
 
                 Creature solver = body.Solver;

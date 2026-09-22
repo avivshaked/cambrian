@@ -265,6 +265,13 @@ namespace Evosim.Farm
                 " minkg=" + F(s.MinNewbornKg) + " step=" + F(s.GrowthStep) +
                 " invest=" + F(config.Genome.MinBirthInvestment) + "-" + F(config.Genome.MaxBirthInvestment) +
                 " scale/invest chance=" + F(s.AdultScaleChance) + "/" + F(s.InvestChance) +
+
+                // D106 item 2, at the end, which is where a new knob goes: nothing already
+                // written ever moves. Every token is rendered whatever the values are, so a
+                // reader is never left working out whether a missing one means "off" or "written
+                // before the gene existed".
+                " · modules add=" + F(s.ModuleAdd) + " drop=" + F(s.ModuleDrop) +
+                " after=" + F(s.ModuleDropAfter) + " mut=" + F(s.ModuleMutation) +
                 " · configHash `" + config.Hash() + "`";
         }
 
@@ -564,6 +571,12 @@ namespace Evosim.Farm
             "det cv", "mat cv",
             "floor low %", "floor J",
             "self stillb",
+
+            // D106 item 2, rule 8, appended at the end in the order the spec states them:
+            // the standing count, the window's three events, and the share of the living
+            // carrying the gene at all. `modules` is a state and the three between are windows
+            // — scripts/reads/r44-read.py reads them from stats.jsonl that way.
+            "modules", "mod add", "mod drop", "mod refused", "indet %",
         };
     }
 

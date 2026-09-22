@@ -26,7 +26,7 @@ namespace Evosim.Dynamics.Tests
         [Fact]
         public void APackedCrowdOfNewbornsLosesNobody()
         {
-            Assert.True(RunFixture.Present, "round 42 seed 4 is not on this machine");
+            Assert.True(RunFixture.Present, RunFixture.Why);
 
             SolverConfig solver = RunFixture.Solver();
             DynamicsWorld world = RunFixture.Pack(solver, 200, side: 4.0, fraction: 0.3f, threads: 8);
@@ -42,7 +42,7 @@ namespace Evosim.Dynamics.Tests
         [Trait("Category", "Slow")]
         public void RoundFortyTwosOwnDensityLosesNobodyInTenMinutes()
         {
-            Assert.True(RunFixture.Present, "round 42 seed 4 is not on this machine");
+            Assert.True(RunFixture.Present, RunFixture.Why);
 
             SolverConfig solver = RunFixture.Solver();
 

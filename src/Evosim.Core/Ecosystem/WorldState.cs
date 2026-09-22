@@ -47,7 +47,14 @@ namespace Evosim.Core
         /// after the first creature would be a plausible number read out of the middle of another
         /// one. The version is what turns that into a refusal.
         /// </remarks>
-        public const int StateVersion = 2;
+        /// <remarks>
+        /// 3 with the module gene (D106 item 2, 2026-09-22): a creature carries its per-node
+        /// module counts, rule 3's starvation clock and its plan revision, and three cumulative
+        /// counters join the world's. A body's parts are a property of its history now, so a
+        /// version-2 stream restores a plant that had grown eight leaves as one that had grown
+        /// none — a plausible creature that nobody simulated, which is what a version refuses.
+        /// </remarks>
+        public const int StateVersion = 3;
 
         /// <summary>
         /// Writes the whole of the world's own state.
@@ -96,6 +103,11 @@ namespace Evosim.Core
             w.Write(CrowdedStillbirths);
             w.Write(SecondsSinceFloorFired);
             w.Write(_absorptiveDeathsDropped);
+
+            // D106 item 2's three, beside the counters they are read against.
+            w.Write(ModuleAdds);
+            w.Write(ModuleDrops);
+            w.Write(ModuleAddsRefused);
 
             // Where the sun stands. See LightField.RestoreDayFactor.
             w.Write(Field.DayFactor);
@@ -219,6 +231,10 @@ namespace Evosim.Core
             SecondsSinceFloorFired = r.ReadDouble();
             _absorptiveDeathsDropped = r.ReadInt32();
 
+            ModuleAdds = r.ReadInt64();
+            ModuleDrops = r.ReadInt64();
+            ModuleAddsRefused = r.ReadInt64();
+
             Field.RestoreDayFactor(r.ReadSingle());
 
             ReadRng(r, _conceptionRng);
@@ -324,6 +340,20 @@ namespace Evosim.Core
                     "would restore a creature nobody simulated.");
             }
 
+            // D106 item 2, and it goes before the genome because the genome is where the reader
+            // develops the body: the counts are half of what decides how many parts that body
+            // has, so they have to be in hand by then. A length of 0 is a creature that has never
+            // moved a count, which is every body in the record and every determinate lineage.
+            int[] counts = creature.ModuleCounts;
+            w.Write(counts == null ? 0 : counts.Length);
+            if (counts != null)
+            {
+                for (int i = 0; i < counts.Length; i++) w.Write(counts[i]);
+            }
+
+            w.Write(creature.ModuleStarvedSeconds);
+            w.Write(creature.PlanRevision);
+
             w.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
         }
 
@@ -365,16 +395,28 @@ namespace Evosim.Core
             bool isAdult = r.ReadBoolean();
             float scale = r.ReadSingle();
 
+            int countLength = r.ReadInt32();
+            int[] counts = countLength > 0 ? new int[countLength] : null;
+            for (int i = 0; i < countLength; i++) counts[i] = r.ReadInt32();
+
+            creature.ModuleCounts = counts;
+            creature.ModuleStarvedSeconds = r.ReadSingle();
+            creature.PlanRevision = r.ReadInt32();
+
             Genome genome = GenomeJson.Read(r.ReadString());
             creature.Genome = genome;
 
             // Developed once, at the genome's own adult scale, exactly as birth develops it —
-            // Developer is a pure function of the genome, the limits and the shapes, so this is
-            // the same object the run built.
-            Phenotype adult = Developer.Develop(genome, Config.Development, null, Config.Shapes);
+            // Developer is a pure function of the genome, the limits, the shapes and (since D106)
+            // the body's own module counts, so this is the same object the run built.
+            Phenotype adult = Developer.Develop(
+                genome, Config.Development, null, Config.Shapes, counts);
 
             creature.AdultPhenotype = adult;
             creature.Phenotype = isAdult ? adult : adult.Scaled(scale, Config.Shapes);
+
+            // Cached at birth and therefore cached again here — see Organism.IndeterminateNodes.
+            creature.IndeterminateNodes = IndeterminateNodesOf(genome);
 
             return creature;
         }
@@ -415,6 +457,7 @@ namespace Evosim.Core
             w.Write(e.BirthFraction);
             w.Write(e.AdultScale);
             w.Write(e.ReserveMargin);
+            w.Write(e.IndeterminateNodes);
             w.Write((int)e.Cause);
         }
 
@@ -434,13 +477,14 @@ namespace Evosim.Core
             float birthFraction = r.ReadSingle();
             float adultScale = r.ReadSingle();
             float reserveMargin = r.ReadSingle();
+            int indeterminateNodes = r.ReadInt32();
             var cause = (DeathCause)r.ReadInt32();
 
             return kind == LineageEventKind.Birth
                 ? LineageEvent.Birth(
                     seconds, id, parentId, birthKind, generationDepth, speciesId,
                     absorptive, joint, photosynthetic, patch, birthFraction, adultScale,
-                    reserveMargin)
+                    reserveMargin, indeterminateNodes)
                 : LineageEvent.Death(seconds, id, cause);
         }
 

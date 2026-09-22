@@ -695,6 +695,54 @@ namespace Evosim.Core
         public float GrowthStepSeconds { get; set; } = 10f;
 
         /// <summary>
+        /// A body adds a module of an indeterminate node while its reserve stands above this many
+        /// seconds of its own upkeep — D106 item 2, <c>logbook/specs/module-gene-spec.md</c>
+        /// rule 2. <b>0 is off: the rule never fires.</b>
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// In seconds of <see cref="Organism.StandingWatts"/> rather than in joules, for
+        /// <see cref="ReproductionTraits.ReserveMargin"/>'s reason: a threshold in joules would
+        /// mean something different for a leaf and for a spine, and the question the rule asks —
+        /// can this body afford another part — is a question about how long it could live on what
+        /// it holds.
+        /// </para>
+        /// <para>
+        /// <b>Off by default, so that a config which does not name it is the recorded world.</b>
+        /// Every genome in the record is determinate anyway, so the rule would find nothing to
+        /// do; the default is 0 regardless, because a knob whose default changes what an
+        /// unnamed world does is how a round ends up filed under settings it did not have.
+        /// ⚠ Unmeasured (§5A.10) — round 44's value is screened with the ledger's
+        /// <c>module repay s</c> before the round: a module must repay its tissue within a
+        /// lifetime at the campaign's light, or no plant will ever add one.
+        /// </para>
+        /// </remarks>
+        [Tunable("growth", Unit = "s")]
+        public float ModuleAddReserveSeconds { get; set; }
+
+        /// <summary>
+        /// A body is starving, for the module rule's purposes, while its reserve stands below
+        /// this many seconds of its upkeep — rule 3. <b>0 is off: nothing is ever dropped.</b>
+        /// </summary>
+        /// <remarks>
+        /// Read with <see cref="ModuleDropAfterSeconds"/>, which is the other half of the
+        /// condition: a body has to be under the line <i>and</i> have been under it for long
+        /// enough. Two numbers rather than one because a body dips under any line it is near on
+        /// the step before it feeds, and a rule that shed a leaf on every dip would make a plant
+        /// flicker rather than shrink.
+        /// </remarks>
+        [Tunable("growth", Unit = "s")]
+        public float ModuleDropReserveSeconds { get; set; }
+
+        /// <summary>
+        /// Continuous seconds below <see cref="ModuleDropReserveSeconds"/> before a module is
+        /// dropped — rule 3. Counted in <see cref="Organism.ModuleStarvedSeconds"/>, and reset
+        /// by any growth step at or above the line.
+        /// </summary>
+        [Tunable("growth", Unit = "s")]
+        public float ModuleDropAfterSeconds { get; set; }
+
+        /// <summary>
         /// What a body part weighs per cubic metre, kg/m³ — the density the harness builds
         /// articulation bodies at.
         /// </summary>

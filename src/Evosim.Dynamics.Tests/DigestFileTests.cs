@@ -41,7 +41,7 @@ namespace Evosim.Dynamics.Tests
         [Fact]
         public void TheDigestFileIsTheSameAtOneEightAndTwentyFourThreads()
         {
-            Assert.True(RunFixture.Present, "round 42 seed 4 is not on this machine");
+            Assert.True(RunFixture.Present, RunFixture.Why);
 
             string one = Run(1);
             string eight = Run(8);

@@ -150,3 +150,59 @@ evening and the four Core files under the double-accounts change will have moved
   Core's `GrowthTests` and Dynamics' `GrowthTests` (`AResizedBodyIsTheBodyBuiltAtThatSize`),
   `RunConfigTests`/`RunConfigJsonTests` by reflection, `CheckpointTests.PayloadComesBackExactly`;
   fixtures in `Fixtures.cs` (`SelfLoopSpine`, `SingleLeaf`) and `TestBodies.cs`.
+
+## As built (2026-09-22 night)
+
+The map above held everywhere it named a file. Eight things came out differently, and each is
+here because a reader of the code would otherwise go looking for what the map promised.
+
+- **A part's identity across a count change is its path, not its index.** The map assumed a
+  module lands at the end and leaves the other parts where they were. It does not: development is
+  a depth-first walk, so a module inserted in one branch pushes every part after it one place
+  down, and a count change can flip `IsRecursionExhausted` and start or stop a terminal-only edge
+  firing somewhere else entirely. So `Developer.Develop` takes an optional `List<int[]> partPaths`
+  and fills it with each part's (edge index, mirror ordinal) path, and `Developer.MatchParts` maps
+  one plan's parts onto another's by comparing them. A forked arm growing its second segment gives
+  `0, 1, -1, 2`: the branch that was part 2 is part 3, and an index map would have handed it the
+  new module's rest state and handed the module the branch's stroke, on a body that still looked
+  right. That case is pinned by `ModuleRebuildTests`.
+- **The mutation chance lives on `MutationRates`**, as `ModuleGeneMutationChance` with
+  `[Tunable("mutation")]`, beside `CellTypeChance` and threaded the way that one is;
+  `EVOSIM_MODULE_MUT` sets `config.Mutation.ModuleGeneMutationChance`. The other three are
+  `[Tunable("growth")]` on `RunConfig` as the map says. All four are in the hash, which is what
+  refuses an earlier config.
+- **`MaxModules` steps away from where it started.** `PerturbPositive` is a relative Gaussian, and
+  a 15% step on an integer 1 rounds back to 1 forever, so the ceiling would never have moved off
+  the node's own limit. The perturbation is rounded away from the starting value instead, and
+  clamped to `[RecursiveLimit, MaxParts]`.
+- **The corpse path is `World.ShedRemains`**, not a `DropModule`, and it mirrors `Bury`'s two
+  branches rather than only its constructor: above `CorpseDecayPerSecond` 0 the shed module is a
+  `Corpse` that decays, and at 0 it is deposited at once, which is what a death does at 0.
+- **The dispatch is `World.ApplyModuleRule(seconds)`**, called at the top of
+  `Metabolise.ApplyGrowth` with the interval since the last growth step. A body whose plan changed
+  is flagged by `Organism.PlanRevision` against `Creature.AppliedPlanRevision`, which is
+  `AppliedBodyFraction`'s twin; `Reconcile.RebuildOnTheNewPlan` builds the new body and
+  `Creature.AdoptStateFrom` moves the state into it. `Reconcile.Build` sets the revision too, so a
+  body built after its organism changed plan is already current and is not rebuilt. A run can
+  therefore read one more add than rebuild.
+- **The five columns are appended at the end of the base set, which is not the end of the row**:
+  the per-patch columns come after them, so a reader counting from the right still has to know the
+  patch count. `stats.jsonl` gains a sixth field the spec did not name, `moduleRebuilds`, because
+  the farm's rebuild is a separate event from Core's add and the two parting is the fault worth
+  seeing.
+- **Two fixtures stopped working, for the reason §9 exists.** This build refuses round 42's
+  recording: its `config.json` predates four tunables and its genomes are format 6. So the ten
+  Dynamics tests that read it fail on the fixture and say so, and round 42's config hash moved
+  from `ff557bce2685293a` to `11602ab76c1e2a19` for the same reason. The world did not change; the
+  name it is filed under did. A fixture recorded on this build is what they need.
+- **The stored genomes under `inocula/` were carried forward rather than re-extracted.** Rounds
+  41b and 41c are over and their snapshots cannot be re-run, so the five files were rewritten in
+  place from format 6 to 7 by adding `growth: "Determinate"`, `maxModules` at the node's own
+  `recursiveLimit` and the four attributes at their defaults. That is the transform this build's
+  development already applies to a genome that has never had the gene, and `DevelopmentTests`'
+  recorded part counts are the check that it preserved the body.
+
+The regress: round 42's world at `EVOSIM_WATER_HOLD=0`, 3,000 s, 16 threads, with the module
+tunables at their defaults, against the double-accounts run that recorded it — 126 shared fields
+at each of 300 samples, identical, `alive`, `births`, `deaths`, `auditResidual`, `matterResidual`
+and `meanHeight` among them. A zero-chance, zero-threshold world is the recorded world.

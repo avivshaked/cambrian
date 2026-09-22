@@ -36,11 +36,28 @@ namespace Evosim.Core
         /// <see cref="PartShapeRegistry.Standard"/>. A run using custom shapes must pass its own,
         /// or its genomes will fail to resolve rather than silently developing as boxes.
         /// </param>
+        /// <param name="moduleCounts">
+        /// How many times each <see cref="ModuleGrowth.Indeterminate"/> node may occur along one
+        /// path — D106 item 2, <c>Organism.ModuleCounts</c>. Null is the genome's own
+        /// <see cref="MorphNode.RecursiveLimit"/> for every node, which is what every birth
+        /// develops at and what every determinate genome develops at for ever.
+        /// </param>
+        /// <param name="partPaths">
+        /// Filled, when it is not null, with one entry per part in the order the parts are added:
+        /// the sequence of steps from the root that reached it, each step an edge index and a
+        /// mirror ordinal. <b>It is the only thing that identifies the same part across two
+        /// developments of one genome at different counts</b> — part indices do not survive,
+        /// because an extra copy of a node is inserted in depth-first order and everything after
+        /// it shifts. <c>World.ApplyModuleRule</c> uses it to carry a body's joint state and its
+        /// brain across a rebuild. Null on every other call, and nothing is allocated for it.
+        /// </param>
         public static Phenotype Develop(
             Genome genome,
             DevelopmentLimits limits = null,
             Mat4? rootTransform = null,
-            PartShapeRegistry shapes = null)
+            PartShapeRegistry shapes = null,
+            int[] moduleCounts = null,
+            List<int[]> partPaths = null)
         {
             if (genome == null) throw new ArgumentNullException(nameof(genome));
             shapes = shapes ?? PartShapeRegistry.Standard;
@@ -74,6 +91,9 @@ namespace Evosim.Core
                 shapes,
                 phenotype,
                 occurrences,
+                moduleCounts,
+                partPaths,
+                partPaths == null ? null : new List<int>(limits.MaxDepth + 1),
                 genome.RootIndex,
                 rootTransform ?? Mat4.Identity,
                 adultScale,
@@ -99,6 +119,9 @@ namespace Evosim.Core
             PartShapeRegistry shapes,
             Phenotype phenotype,
             int[] occurrences,
+            int[] moduleCounts,
+            List<int[]> partPaths,
+            List<int> path,
             int nodeIndex,
             Mat4 transform,
             Float3 accumulatedScale,
@@ -164,6 +187,9 @@ namespace Evosim.Core
                 Neurons = node.Neurons,
             });
 
+            // Beside the part and in the same order, so partPaths[i] is the path of Parts[i].
+            partPaths?.Add(path.ToArray());
+
             if (depth >= limits.MaxDepth)
             {
                 if (node.Edges.Count > 0) phenotype.PrunedForDepth++;
@@ -173,7 +199,7 @@ namespace Evosim.Core
             // Recursion is spent when no non-terminal edge can still be followed. Only then
             // do terminal edges fire, which is what puts a differentiated extremity at the
             // tip of a repeating chain rather than on every segment.
-            bool exhausted = IsRecursionExhausted(genome, occurrences, node);
+            bool exhausted = IsRecursionExhausted(genome, occurrences, moduleCounts, node);
 
             for (int e = 0; e < node.Edges.Count; e++)
             {
@@ -189,7 +215,7 @@ namespace Evosim.Core
                 // of it, such an edge grows nothing past the node itself, which is what a
                 // terminal extremity is for; a non-terminal self-edge with limit n still grows an
                 // n-segment spine, unchanged.
-                if (!CanEnter(genome, occurrences, edge.Child)) continue;
+                if (!CanEnter(genome, occurrences, moduleCounts, edge.Child)) continue;
 
                 MorphNode childNode = genome.Nodes[edge.Child];
                 Float3 childScale = accumulatedScale * edge.Scale;
@@ -203,8 +229,12 @@ namespace Evosim.Core
                 Float3 anchorOnChild = shapes.Resolve(childNode.ShapeId)
                     .SurfacePoint(edge.ChildAnchor, childHalfExtents);
 
+                int mirrorOrdinal = -1;
+
                 foreach (Bool3 mirror in edge.Reflect.MirrorCombinations())
                 {
+                    mirrorOrdinal++;
+
                     // Place the child so its own anchor lands on the parent's anchor, then
                     // mirror the whole placement about the parent's local planes.
                     Mat4 local =
@@ -218,12 +248,24 @@ namespace Evosim.Core
                         : (Float2[])childNode.JointLimits.Clone();
 
                     occurrences[edge.Child]++;
+
+                    // One step of the path: which edge was followed, and which of that edge's
+                    // mirror copies this is. Both are properties of the genome and of nothing
+                    // else, so the same step names the same child in a development at any count.
+                    // A mirror ordinal is under 8 by construction (Bool3.MirrorCombinations), an
+                    // edge index is not bounded, so the step is a pair and not a packed integer.
+                    path?.Add(e);
+                    path?.Add(mirrorOrdinal);
+
                     Expand(
                         genome,
                         limits,
                         shapes,
                         phenotype,
                         occurrences,
+                        moduleCounts,
+                        partPaths,
+                        path,
                         edge.Child,
                         transform * local,
                         childScale,
@@ -233,6 +275,8 @@ namespace Evosim.Core
                         childLimits,
                         anchorOnParent,
                         anchorOnChild);
+
+                    if (path != null) path.RemoveRange(path.Count - 2, 2);
                     occurrences[edge.Child]--;
 
                     if (phenotype.PartCount >= limits.MaxParts) return;
@@ -260,19 +304,111 @@ namespace Evosim.Core
 
         /// <summary>
         /// A node may be entered again while it occurs fewer times on the current path than
-        /// its <see cref="MorphNode.RecursiveLimit"/>. A self-loop with a limit of 5 therefore
-        /// yields a five-segment spine, as DESIGN.md §4.1 describes.
+        /// <see cref="CountFor"/> allows. A self-loop with a limit of 5 therefore yields a
+        /// five-segment spine, as DESIGN.md §4.1 describes.
         /// </summary>
-        private static bool CanEnter(Genome genome, int[] occurrences, int childIndex) =>
-            occurrences[childIndex] < genome.Nodes[childIndex].RecursiveLimit;
+        private static bool CanEnter(
+            Genome genome, int[] occurrences, int[] moduleCounts, int childIndex) =>
+            occurrences[childIndex] < CountFor(genome, moduleCounts, childIndex);
 
-        private static bool IsRecursionExhausted(Genome genome, int[] occurrences, MorphNode node)
+        /// <summary>
+        /// How many times a node may occur along one path: its
+        /// <see cref="MorphNode.RecursiveLimit"/>, or the body's own count where the node is
+        /// <see cref="ModuleGrowth.Indeterminate"/> and a count is supplied — D106 item 2.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A determinate node ignores the array entirely</b>, which is what makes "develops
+        /// identically with and without the counts" true by construction rather than by test —
+        /// though the test exists anyway (<c>DevelopmentTests</c>), because a construction is
+        /// only true until somebody edits it.
+        /// </para>
+        /// <para>
+        /// And the count is never below the genome's own minimum. <see cref="MorphNode.MaxModules"/>
+        /// and <see cref="MorphNode.RecursiveLimit"/> both mutate, so a stored count can find
+        /// itself under a limit that has moved up; taking the larger means development builds
+        /// the body the genome describes and the rule can only add to it.
+        /// </para>
+        /// </remarks>
+        public static int CountFor(Genome genome, int[] moduleCounts, int nodeIndex)
+        {
+            MorphNode node = genome.Nodes[nodeIndex];
+            if (node.Growth != ModuleGrowth.Indeterminate) return node.RecursiveLimit;
+            if (moduleCounts == null || nodeIndex >= moduleCounts.Length) return node.RecursiveLimit;
+
+            int count = moduleCounts[nodeIndex];
+            return count < node.RecursiveLimit ? node.RecursiveLimit : count;
+        }
+
+        /// <summary>
+        /// For each part of the second development, the index of the same part in the first, or
+        /// -1 where there is none — D106 item 2's rebuild (rule 7).
+        /// </summary>
+        /// <param name="from">Part paths of the body as it was — <c>Develop</c>'s <c>partPaths</c>.</param>
+        /// <param name="to">Part paths of the body as it now is.</param>
+        /// <remarks>
+        /// <para>
+        /// <b>Part indices are not the map, and the obvious reading of "all the others keep their
+        /// order" is wrong.</b> A module is an extra occurrence of a node, inserted where
+        /// depth-first order puts it, so everything after it shifts: a genome whose root has an
+        /// indeterminate child <c>A</c> and a second child <c>B</c> develops <c>R A A B</c> at two
+        /// modules and <c>R A A A B</c> at three, and <c>B</c> moves from index 3 to index 4. What
+        /// survives is the <i>path</i> — which edge was followed and which mirror copy this is,
+        /// at every step from the root — because that is a property of the genome and a count
+        /// changes only how many times a step may be taken.
+        /// </para>
+        /// <para>
+        /// <b>And a count can change the body in more than one place.</b> A node reachable down
+        /// two branches gains an occurrence in both, and a node whose recursion stops being spent
+        /// stops firing its terminal-only edges — so a re-development is not in general one
+        /// contiguous insertion, and a prefix-and-suffix match would be wrong on exactly the
+        /// genomes that are hardest to reason about. Matching on paths is right on all of them.
+        /// </para>
+        /// <para>
+        /// A linear scan per part rather than a dictionary: a body is at most
+        /// <see cref="DevelopmentLimits.MaxParts"/> parts and a path at most
+        /// <see cref="DevelopmentLimits.MaxDepth"/> steps, so this is a few hundred integer
+        /// comparisons on an event that happens at most once per body per growth step.
+        /// </para>
+        /// </remarks>
+        public static int[] MatchParts(IReadOnlyList<int[]> from, IReadOnlyList<int[]> to)
+        {
+            if (from == null) throw new ArgumentNullException(nameof(from));
+            if (to == null) throw new ArgumentNullException(nameof(to));
+
+            var map = new int[to.Count];
+
+            for (int i = 0; i < to.Count; i++)
+            {
+                map[i] = -1;
+                int[] path = to[i];
+
+                for (int j = 0; j < from.Count; j++)
+                {
+                    if (!SamePath(from[j], path)) continue;
+                    map[i] = j;
+                    break;
+                }
+            }
+
+            return map;
+        }
+
+        private static bool SamePath(int[] a, int[] b)
+        {
+            if (a.Length != b.Length) return false;
+            for (int i = 0; i < a.Length; i++) if (a[i] != b[i]) return false;
+            return true;
+        }
+
+        private static bool IsRecursionExhausted(
+            Genome genome, int[] occurrences, int[] moduleCounts, MorphNode node)
         {
             for (int e = 0; e < node.Edges.Count; e++)
             {
                 MorphEdge edge = node.Edges[e];
                 if (edge.TerminalOnly) continue;
-                if (CanEnter(genome, occurrences, edge.Child)) return false;
+                if (CanEnter(genome, occurrences, moduleCounts, edge.Child)) return false;
             }
             return true;
         }

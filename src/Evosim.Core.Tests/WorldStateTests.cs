@@ -131,12 +131,77 @@ namespace Evosim.Core.Tests
                 readings.Add(creature.BodyFraction);
                 readings.Add(creature.TissueJoules);
                 readings.Add(creature.GenerationDepth);
+                readings.Add(creature.Phenotype.PartCount);
+                readings.Add(creature.ModuleStarvedSeconds);
+
+                // D106's counts, which are the one part of a body's plan that is not in its
+                // genome: restore them wrongly and the creature comes back a different shape.
+                if (creature.ModuleCounts != null)
+                {
+                    foreach (int count in creature.ModuleCounts) readings.Add(count);
+                }
             }
 
             return readings;
         }
 
         // ------------------------------------------------------------------ the round trip
+
+        /// <summary>
+        /// The same round trip asked of a world whose bodies have moved off their genomes' plans —
+        /// D106's module counts and drop clock, which <see cref="Readings"/> above reads for every
+        /// creature but which <see cref="Stepped"/>'s determinate leaf never moves.
+        /// </summary>
+        [Fact]
+        public void AWorldOfIndeterminateBodiesRestoresTheirCountsAndTheirClocks()
+        {
+            RunConfig Modules() => new RunConfig
+            {
+                MinimumPopulation = 0,
+                MaximumPopulation = 2_000,
+                WorldAreaSquareMetres = 100f,
+                WorldDepthMetres = 20f,
+                Light = new LightModel(400f, 12f),
+                InitialMatterPerCubicMetre = 50f,
+                PerOffspringOverheadJoules = 1e9f,
+                ModuleAddReserveSeconds = 20f,
+                ModuleDropReserveSeconds = 0f,
+                ModuleDropAfterSeconds = 60f,
+            };
+
+            RunConfig config = Modules();
+            var world = new World(config, seed: 11);
+            world.Inoculate(Fixtures.IndeterminateLeaf(maxModules: 4), count: 3, heightY: -5f);
+
+            for (int round = 0; round < 40; round++)
+            {
+                for (int t = 0; t < 30; t++) world.Step(1f);
+                world.ApplyModuleRule(30f);
+            }
+
+            // A world worth round-tripping: the bodies are not the shape their genomes describe,
+            // and one of them is part way through a drop clock that has not run out.
+            Assert.Equal(9L, world.ModuleAdds);
+            Assert.True(world.ModulesStanding > 0L, "no body ever added a module");
+
+            config.ModuleAddReserveSeconds = 0f;
+            config.ModuleDropReserveSeconds = 1e9f;
+            world.ApplyModuleRule(30f);
+            Assert.Equal(0L, world.ModuleDrops);
+            Assert.True(world.Living[0].ModuleStarvedSeconds > 0f, "the drop clock never started");
+
+            byte[] first = StateOf(world);
+            World restored = Restored(Modules(), 11, first);
+
+            Assert.Equal(Readings(world), Readings(restored));
+            Assert.Equal(first, StateOf(restored));
+
+            // And the counters themselves, which are the world's and not a body's.
+            Assert.Equal(world.ModuleAdds, restored.ModuleAdds);
+            Assert.Equal(world.ModuleDrops, restored.ModuleDrops);
+            Assert.Equal(world.ModuleAddsRefused, restored.ModuleAddsRefused);
+            Assert.Equal(world.ModulesStanding, restored.ModulesStanding);
+        }
 
         [Fact]
         public void ARestoredWorldWritesTheSameStateAgain()
