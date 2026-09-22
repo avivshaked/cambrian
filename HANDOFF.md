@@ -436,8 +436,12 @@ subagent and never in a shell loop.
    built (`39dcf3d`), screened and pre-registered (`3d2cf12`); **the three seeds are
    running** (`r44-s1..3`, launched 2026-09-22 19:34 local on `a782472`, `configHash
    9b4e275e2a552aa6`, 8 threads each, three at once; the header verified `modules add=300
-   drop=50 after=100 mut=0.005 · water per link`; at 0111's pace they end about 21:00),
-   then the read
+   drop=50 after=100 mut=0.005 · water per link`). Seeds 2 and 3 ended at 30,000 s
+   about 20:55; **seed 1 slowed to 0.6x real time from about 20,000 s** with physics 99%
+   of its wall (1,220 bodies, 418 standing modules, 662 rebuilds; the solver's cost per
+   body rose with the module chains, my reading, to be measured in the read) and will
+   reach its 300 min wall about 00:34 at roughly 27,000 s, censored and read at its last
+   sample by the pre-registered rule. Then the read
    (`scripts/reads/r44-read.py`, `--out logbook/specs/r44-read/clauses.tsv`) and the
    entry with pictures (`theatre-snap.ps1 -From snapshot`). **Round 45's build is in**
    (`8b0d798`, the mouth: the caps in the registry, health as state, the kill by part path
