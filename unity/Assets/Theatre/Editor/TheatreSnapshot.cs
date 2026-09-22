@@ -119,6 +119,49 @@ namespace Evosim.Theatre.EditorTools
         /// </remarks>
         private static bool _fromSnapshot;
 
+        /// <summary>
+        /// Carry a farm checkpoint on live and photograph that instead —
+        /// <c>EVOSIM_THEATRE_CHECKPOINT</c>, <c>theatre-snap.ps1 -FromCheckpoint</c>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Why a third way to take the same picture.</b> The picker
+        /// (<see cref="Evosim.Theatre.LiveCheckpoint"/>) restores a recorded second out of a
+        /// <c>.ckpt</c> file and carries it on in the Editor, and until this switch existed the
+        /// only reading of what it drew was <see cref="LiveCheckpointCheck"/>'s counters: the
+        /// check runs in edit mode with no graphics device, so it can say that forty bodies came
+        /// back and nothing at all about what they look like. An agent has no eyes, so it takes
+        /// pictures — and a world that is stepped rather than reconstructed is the one place the
+        /// live path's own faults would show. What comes out is never the run: a restore is a
+        /// cousin whatever the four digests say, and the label carries
+        /// <c>continued from checkpoint at &lt;s&gt; s (cousin)</c> on every frame, which is the
+        /// whole of the provenance a still can carry.
+        /// </remarks>
+        private static bool _fromCheckpoint;
+
+        /// <summary>The checkpoint named: a <c>.ckpt</c>, a run directory or an arm directory.</summary>
+        /// <remarks>
+        /// Kept for the log alone. What opens the world is the runner, from the same environment
+        /// variable, exactly as it opens one under a person's hands.
+        /// </remarks>
+        private static string _checkpoint;
+
+        /// <summary>How far the restored world is stepped live before the pictures are taken, s.</summary>
+        /// <remarks>
+        /// Zero is the restore itself, which is the picture that says whether the checkpoint came
+        /// back whole. Anything above it is the picture that says whether the world it came back
+        /// into runs: a body that was restored into the wrong place moves out of it, and a bed or
+        /// a current that was not restored shows in where the crowd has gone.
+        /// </remarks>
+        private static double _carrySeconds;
+
+        /// <summary>The second the shot is taken at: the restore's own, plus the carry.</summary>
+        /// <remarks>
+        /// Read off the restored world rather than from <c>-At</c>, because the two need not
+        /// agree: a checkpoint is resolved to the one at or before the second that was asked for,
+        /// so a request for 450 s of a run that wrote one at 400 s is carried from 400.
+        /// </remarks>
+        private static double _carryTo;
+
         /// <summary>Where the armed chrome picture will be written, or null.</summary>
         private static string _chromePath;
 
@@ -144,9 +187,16 @@ namespace Evosim.Theatre.EditorTools
         /// </summary>
         public static void Run()
         {
-            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_RUN")))
+            // A checkpoint carries its own run directory with it (LiveCheckpoint.SourceRun), so a
+            // continuation names no run at all and EVOSIM_THEATRE_RUN has nothing left to say —
+            // the same rule the runner opens under.
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_RUN")) &&
+                string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT")))
             {
-                Debug.LogError("[Theatre] EVOSIM_THEATRE_RUN is not set: nothing to photograph.");
+                Debug.LogError(
+                    "[Theatre] neither EVOSIM_THEATRE_RUN nor EVOSIM_THEATRE_CHECKPOINT is set: " +
+                    "nothing to photograph.");
+
                 if (Application.isBatchMode) EditorApplication.Exit(1);
                 return;
             }
@@ -187,7 +237,10 @@ namespace Evosim.Theatre.EditorTools
                 (_directory ?? "scratch/snaps/<arm>") +
                 (_fromSnapshot
                     ? ", drawn from the run's own snapshots and positions"
-                    : ", replayed") +
+                    : _fromCheckpoint
+                        ? ", continued from the checkpoint at " + Seconds(_times[0]) +
+                          " s and carried " + Seconds(_carrySeconds) + " s live"
+                        : ", replayed") +
                 ". Entering Play mode.");
 
             // Invariant on the way out as well as back in: a machine whose decimal separator is a
@@ -251,7 +304,80 @@ namespace Evosim.Theatre.EditorTools
                 Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SNAP_FROM"), "snapshot",
                 StringComparison.OrdinalIgnoreCase);
 
+            _checkpoint = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT");
+            _fromCheckpoint = !string.IsNullOrWhiteSpace(_checkpoint);
+
+            if (_fromSnapshot && _fromCheckpoint)
+            {
+                return
+                    "a picture is drawn from the run's files or stepped out of a checkpoint, " +
+                    "never both: one reconstructs a second the run recorded and the other carries " +
+                    "a cousin of the world on from one. Drop -From snapshot or drop the " +
+                    "checkpoint.";
+            }
+
+            if (_fromCheckpoint) return WhatTheContinuationCannotDo();
+
             return _fromSnapshot ? WhatTheSnapshotsCannotDo() : null;
+        }
+
+        /// <summary>
+        /// Why this request cannot be carried on from a checkpoint, or null.
+        /// </summary>
+        /// <remarks>
+        /// Answered before Play mode, as the reconstruction's refusals are and for the same
+        /// reason: a batch Editor takes a minute to reach its first frame. What is <i>not</i>
+        /// answered here is whether the checkpoint exists and can be read back — that is
+        /// <see cref="Evosim.Theatre.LiveCheckpoint.Find"/>'s and the runner's, and a second copy
+        /// of it taken here would be a second opinion about what a checkpoint is.
+        /// </remarks>
+        private static string WhatTheContinuationCannotDo()
+        {
+            if (_times.Length != 1)
+            {
+                return
+                    "a continuation is opened at one checkpoint, so one second is all it can be " +
+                    "asked for; " + _times.Length + " were. The second is the checkpoint's, and " +
+                    "how far past it the pictures are taken is the carry.";
+            }
+
+            _carrySeconds = DoubleFrom("EVOSIM_THEATRE_SNAP_CARRY", 0d, out string wrong);
+
+            if (wrong != null) return "EVOSIM_THEATRE_SNAP_CARRY: " + wrong;
+
+            if (_chrome)
+            {
+                return
+                    "-Chrome is refused on a continuation: the interface is typed on a PhysX " +
+                    "replay the whole way through, so the live mode takes the panel down as it " +
+                    "opens and there would be nothing over the world to photograph.";
+            }
+
+            return null;
+        }
+
+        /// <summary>A non-negative number of seconds from the environment, or the fallback.</summary>
+        private static double DoubleFrom(string name, double fallback, out string refusal)
+        {
+            refusal = null;
+
+            string text = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrWhiteSpace(text)) return fallback;
+
+            if (!double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture,
+                    out double value))
+            {
+                refusal = "'" + text.Trim() + "' is not a number of seconds.";
+                return fallback;
+            }
+
+            if (value < 0d)
+            {
+                refusal = "a carry cannot be negative; " + text.Trim() + " is.";
+                return fallback;
+            }
+
+            return value;
         }
 
         /// <summary>
@@ -554,7 +680,8 @@ namespace Evosim.Theatre.EditorTools
                    _wallSecondsAllowed.ToString("R", CultureInfo.InvariantCulture) + "|" +
                    _next.ToString(CultureInfo.InvariantCulture) + "|" +
                    (_chrome ? "1" : "0") + "|" +
-                   (_fromSnapshot ? "snapshot" : "replay");
+                   (_fromSnapshot ? "snapshot" : _fromCheckpoint ? "checkpoint" : "replay") + "|" +
+                   _carrySeconds.ToString("R", CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -608,6 +735,18 @@ namespace Evosim.Theatre.EditorTools
 
             _chrome = fields.Length > 6 && fields[6] == "1";
             _fromSnapshot = fields.Length > 7 && fields[7] == "snapshot";
+            _fromCheckpoint = fields.Length > 7 && fields[7] == "checkpoint";
+
+            _carrySeconds =
+                fields.Length > 8 &&
+                double.TryParse(fields[8], NumberStyles.Float, CultureInfo.InvariantCulture,
+                    out double carry)
+                    ? carry
+                    : 0d;
+
+            // The path is not carried across: the runner opens the world from the environment,
+            // which this process still has, and nothing on this side of the reload reads it.
+            _checkpoint = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT");
 
             if (_times == null || _views == null) { SessionState.EraseString(PendingKey); return; }
             if (_next >= _times.Length) { SessionState.EraseString(PendingKey); return; }
@@ -627,6 +766,11 @@ namespace Evosim.Theatre.EditorTools
             _paceSet = false;
             _pastTheRecordSaid = false;
             _runner = null;
+
+            // Set from the restored world on the first tick that sees one, never from -At: a
+            // recompile in the middle of a continuation would otherwise carry from wherever the
+            // world had got to rather than from where the checkpoint put it.
+            _carryTo = double.NaN;
 
             if (_driving) return;
 
@@ -664,6 +808,12 @@ namespace Evosim.Theatre.EditorTools
                 if (_fromSnapshot)
                 {
                     DriveTheReconstruction();
+                    return;
+                }
+
+                if (_fromCheckpoint)
+                {
+                    DriveTheContinuation();
                     return;
                 }
 
@@ -826,6 +976,147 @@ namespace Evosim.Theatre.EditorTools
                         ? "every one in the developer's own frame"
                         : world.PosedCount + " in the pose poses.jsonl recorded") +
                     "; no identity check: nothing was simulated");
+            }
+        }
+
+        // ------------------------------------------------------------------ the continuation
+
+        /// <summary>
+        /// One editor tick with a restored world in front of it: carry it the asked-for seconds,
+        /// then photograph it.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Drive"/>'s own loop with one target instead of a list, and it is the
+        /// runner's loop that steps the world here too — <c>TheatreRunner.StepLive</c> runs the
+        /// farm's harness from its <c>Update</c> and syncs the bodies once a frame, exactly as it
+        /// does under a person's hands. What this class does is read the clock, slow the pace as
+        /// the target comes up, and pause.
+        /// </remarks>
+        private static void DriveTheContinuation()
+        {
+            TheatreDynamicsReplay live = _runner.Live;
+
+            if (live == null)
+            {
+                // Start may not have run yet on the first tick; an error means it has, and that
+                // the checkpoint was refused.
+                if (!string.IsNullOrEmpty(_runner.Error)) Finish(1, "refused: " + _runner.Error);
+
+                // A run the Editor's farm recorded opens as a PhysX replay and never as a live
+                // world, so a checkpoint that resolved to one of those is a wrong request rather
+                // than a wait.
+                if (_runner.Replay != null)
+                {
+                    Finish(1,
+                        "the theatre opened a PhysX replay rather than a continued world: a " +
+                        "checkpoint belongs to a run the console farm recorded");
+                }
+
+                return;
+            }
+
+            if (!_paceSet)
+            {
+                SetTheLivePace(live);
+
+                // One frame before anything is photographed: the bodies are posed from the
+                // runner's own Update, and a picture taken on the tick the world opened would be
+                // of a scene whose transforms had not been written yet.
+                return;
+            }
+
+            double now = live.ElapsedSeconds;
+
+            if (now + 1e-9 < _carryTo)
+            {
+                bool near = _carryTo - now <= ApproachSeconds;
+
+                _runner.Rate = near ? 5f : 10000f;
+                _runner.FrameBudgetSeconds = near ? 0.02f : 0.25f;
+                return;
+            }
+
+            _runner.Paused = true;
+
+            ShootTheContinuation(live);
+            Finish(0, _written.Count + " picture(s) written");
+        }
+
+        /// <summary>Unpauses the restored world, sets the target, and says where it was picked up.</summary>
+        private static void SetTheLivePace(TheatreDynamicsReplay live)
+        {
+            _paceSet = true;
+
+            _runner.Paused = _carrySeconds <= 0d;
+            _runner.Rate = 10000f;
+            _runner.FrameBudgetSeconds = 0.25f;
+
+            // Never on a continuation: the interface reads a PhysX replay and the live mode has
+            // already taken it down, so this only keeps the two in step.
+            _runner.ShowOverlay = false;
+
+            // From the world rather than from -At. A checkpoint is resolved to the one at or
+            // before the second asked for, so the two need not agree and the picture's own second
+            // is the one that is true.
+            _carryTo = live.ElapsedSeconds + _carrySeconds;
+
+            LiveCheckpoint checkpoint = live.ContinuedFrom;
+
+            Debug.Log(
+                "[Theatre] " + live.Record.Path + "\n" +
+                "  arm " + live.Record.ArmName + ", seed " + live.Record.Seed +
+                ", dt " + live.Sim.PhysicsDt + " s, threads " + live.Threads +
+                ", config " + live.Record.ConfigHash + "\n" +
+                "  " + (checkpoint != null
+                    ? checkpoint.Line()
+                    : "no checkpoint: this world was founded at t=0") + "\n" +
+                "  carrying to t=" + Seconds(_carryTo) + " s, " + Seconds(_carrySeconds) +
+                " s live past the restore");
+        }
+
+        /// <summary>Every requested view of the carried world, written out.</summary>
+        /// <remarks>
+        /// <c>-ckpt-</c> stands in the file name where the replay's view name stands alone, as
+        /// <c>-recon-</c> does for a reconstruction, so a directory can hold all three kinds of
+        /// picture of one world and nobody has to open a file to know which kind they have.
+        /// </remarks>
+        private static void ShootTheContinuation(TheatreDynamicsReplay live)
+        {
+            string arm = live.Record.ArmName ?? "run";
+
+            if (_directory == null)
+            {
+                _directory = Path.Combine(
+                    Path.Combine(BuildIdentity.RepositoryRoot(), "scratch"), "snaps");
+
+                _directory = Path.Combine(_directory, arm);
+            }
+
+            if (_camera == null) _camera = new SnapshotCamera(_width, _height);
+
+            string stamp = live.ElapsedSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+            LiveWorldView view = _runner.LiveView;
+
+            foreach (SnapshotCamera.View which in _views)
+            {
+                string path = Path.Combine(
+                    _directory,
+                    arm + "-t" + stamp + "-ckpt-" + SnapshotCamera.NameOf(which) + ".png");
+
+                int bytes = _camera.Capture(live, which, path, out string remark);
+                _written.Add(path);
+
+                Debug.Log(
+                    "[Theatre] wrote " + path + " (" + bytes + " bytes) at t=" + stamp +
+                    " s, carried " + Seconds(_carrySeconds) + " s from the checkpoint\n" +
+                    "  " + remark + "\n" +
+                    "  " + (live.ContinuedFrom != null
+                        ? live.ContinuedFrom.Label()
+                        : "no checkpoint: founded at t=0") +
+                    (view != null
+                        ? "; the view drew " + view.BodyCount + " bodies and " + view.PartCount +
+                          " parts"
+                        : "; no live view in the scene"));
             }
         }
 

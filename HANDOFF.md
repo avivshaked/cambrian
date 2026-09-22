@@ -170,9 +170,14 @@ draws the bodies at their restored pose and body fraction, and carries on live w
 label `continued from checkpoint at <s> s (cousin)`, naming any of the four hashes that
 differ; nothing is refused on a mismatch. `LiveCheckpointCheck` carried ckA from 400 to
 600 s in 8.1 s of wall with 20 of 20 samples agreeing on alive, births and deaths and the
-doubles parting at the first stepped sample (the runtime, per the Mono gotcha). Untested:
-the interactive Play-mode path with the skin, and a picture of a continued world
-(`theatre-snap.ps1` has no checkpoint switch yet); the UI strip is still down in live mode,
+doubles parting at the first stepped sample (the runtime, per the Mono gotcha).
+`theatre-snap.ps1 ckA -FromCheckpoint scratch/checkpoint/runs/ckA -At 400 -Carry 100 -Views
+side,top,close` photographs a continued world with the skin: `-At` is the checkpoint second,
+the picture is taken at restore plus carry and named `<arm>-t<second>-ckpt-<view>.png`, and
+`-Chrome` and `-From snapshot` are refused with it. The pictures (`scratch/snaps/ckA/`) show
+42 bodies in the top quarter of the water over the tilted bed, the disc filled without a
+crust, and a posed two-part body in the portrait, every frame labelled with the cousin
+clause. Untested: the interactive Play-mode path; the UI strip is still down in live mode,
 so the frame label is the only provenance on screen. The owner's plan is now at step 4,
 the bite, gated on the animal-kit ruling, and step 5, the GPU, is cleared by the crash
 reading.

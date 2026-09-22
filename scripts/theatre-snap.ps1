@@ -81,6 +81,33 @@
   when the second is not one of them, naming the seconds either side. Pictures land beside the
   replay's with -recon- in the name before the view.
 
+.PARAMETER FromCheckpoint
+  Photograph a live world continued from a farm checkpoint instead of a recorded run: a run
+  directory holding a checkpoints/ directory, the arm directory above it, or one .ckpt file.
+
+  The theatre's live mode restores the whole world out of that file and carries it on in the
+  Editor on Evosim.Dynamics (logbook/specs/checkpoint-spec.md), which is the picker commit
+  dab9b78 put in. This is that world photographed, with the skin on: -At names the checkpoint's
+  second, -Carry how far past it to step before the shutter, and the frames land beside the
+  others with -ckpt- in the name before the view.
+
+  What comes out is never the run. A restore is a cousin whatever the four source digests say —
+  the Editor's Mono and the farm's RyuJIT do not agree on a double sum (CLAUDE.md, 2026-09-22) —
+  so every frame's label reads "continued from checkpoint at <s> s (cousin)" beside the second
+  the picture was actually taken at. A run directory is not needed and not read: the checkpoint
+  carries its own. -From snapshot and -Chrome are both refused with it, the first because a
+  reconstruction and a continuation are different pictures and the second because the live mode
+  takes the interface down as it opens.
+
+.PARAMETER Carry
+  How many simulated seconds to step the restored world before the pictures are taken. Default 0,
+  which is the restore itself: the frame that says whether the checkpoint came back whole. Anything
+  above it is the frame that says whether the world it came back into runs — a body restored into
+  the wrong place moves out of it. Only with -FromCheckpoint.
+
+  It costs what the farm cost, so a long carry is a long wait: read the pace off the run's own
+  footer before asking for thousands of seconds.
+
 .PARAMETER Carve
   How deep the skin cuts each body inward, as a fraction of the part's smallest half-extent.
   Default 0.35, the depth the owner chose from the close views on 2026-09-11, clamped at 0.5 by
@@ -131,6 +158,10 @@
 
 .EXAMPLE
   ./scripts/theatre-snap.ps1 r35-s1 -At 5000 -Views close -Carve 0.35 -Worker 7
+
+.EXAMPLE
+  ./scripts/theatre-snap.ps1 ckA -FromCheckpoint scratch/checkpoint/runs/ckA -At 400 -Carry 100 `
+      -Views side,top,close -Worker 6
 #>
 [CmdletBinding()]
 param(
@@ -140,6 +171,8 @@ param(
     [string[]]$Views = @(),
     [string]$Size = '1600x900',
     [ValidateSet('replay', 'snapshot')][string]$From = 'replay',
+    [string]$FromCheckpoint,
+    [double]$Carry = 0,
     [double]$Carve = 0.35,
     [string]$Out,
     [switch]$Chrome,
@@ -202,6 +235,37 @@ if ($Size -notmatch '^\d+[xX]\d+$') { throw "-Size: '$Size' is not a size. Write
 # asked for is the number that was used.
 if ($Carve -lt 0 -or $Carve -gt 0.5) { throw "-Carve: $Carve is outside 0 to 0.5." }
 
+# A continuation is a third kind of picture and not a flavour of the other two: it is stepped
+# rather than replayed or reconstructed, it opens no run directory of its own, and what it shows is
+# a cousin by construction. Every refusal it needs is made here rather than in the Editor, because
+# a batch Editor takes a minute to reach its first frame.
+$continued = -not [string]::IsNullOrWhiteSpace($FromCheckpoint)
+
+if ($continued) {
+    if ($From -eq 'snapshot') {
+        throw "-From snapshot and -FromCheckpoint are different pictures: one reconstructs a second the run recorded and the other carries a cousin of the world on from one. Ask for one of them."
+    }
+
+    if ($Chrome) {
+        throw "-Chrome is refused on a continuation: the theatre's live mode takes the interface down as it opens, since the panel reads a PhysX replay's census, so there would be nothing over the world to photograph."
+    }
+
+    if ($timeList.Count -ne 1) {
+        throw "-At: a continuation is opened at one checkpoint, so one second is all it can be asked for; $($timeList.Count) were. How far past it the pictures are taken is -Carry."
+    }
+
+    $checkpoint = if ([System.IO.Path]::IsPathRooted($FromCheckpoint)) { $FromCheckpoint }
+                  else { Join-Path $root $FromCheckpoint }
+
+    if (-not (Test-Path $checkpoint)) {
+        throw "-FromCheckpoint: nothing at $checkpoint. Name a run directory holding a checkpoints/ directory, the arm directory above it, or one .ckpt file."
+    }
+} elseif ($PSBoundParameters.ContainsKey('Carry')) {
+    throw "-Carry is how far a restored world is stepped before the shutter, so it needs -FromCheckpoint."
+}
+
+if ($Carry -lt 0) { throw "-Carry: a carry cannot be negative; $Carry is." }
+
 if ($Worker -eq 1) {
     throw "Worker 1 is unity/, which the owner keeps open in the Editor. Use a worker from 2 up."
 }
@@ -223,8 +287,14 @@ if (Test-Path (Join-Path $proj 'Temp/UnityLockfile')) {
     throw "unity-w$Worker has a Unity process open (Temp/UnityLockfile exists). Let its arm end, or stop it with stop-arm.ps1."
 }
 
-$runDirectory = Join-Path $root "runs\$Arm"
-if (-not (Test-Path $runDirectory)) { throw "No run directory at $runDirectory" }
+# A checkpoint carries its own run directory with it, so a continuation names none and the arm is
+# only what the pictures are filed under.
+if ($continued) {
+    $runDirectory = $null
+} else {
+    $runDirectory = Join-Path $root "runs\$Arm"
+    if (-not (Test-Path $runDirectory)) { throw "No run directory at $runDirectory" }
+}
 
 if ($Out) {
     $snapDirectory = if ([System.IO.Path]::IsPathRooted($Out)) { $Out } else { Join-Path $root $Out }
@@ -244,13 +314,16 @@ $names = @(
     'EVOSIM_THEATRE_RUN', 'EVOSIM_THEATRE_SNAP_TIMES', 'EVOSIM_THEATRE_SNAP_VIEWS',
     'EVOSIM_THEATRE_SNAP_OUT', 'EVOSIM_THEATRE_SNAP_SIZE', 'EVOSIM_THEATRE_WALL_MINUTES',
     'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_SEEK', 'EVOSIM_REPO_ROOT',
-    'EVOSIM_THEATRE_CARVE', 'EVOSIM_THEATRE_CHROME', 'EVOSIM_THEATRE_SNAP_FROM')
+    'EVOSIM_THEATRE_CARVE', 'EVOSIM_THEATRE_CHROME', 'EVOSIM_THEATRE_SNAP_FROM',
+    'EVOSIM_THEATRE_CHECKPOINT', 'EVOSIM_THEATRE_SNAP_CARRY')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
 
 try {
-    $env:EVOSIM_THEATRE_RUN = $runDirectory
+    if ($continued) { Remove-Item env:EVOSIM_THEATRE_RUN -ErrorAction SilentlyContinue }
+    else { $env:EVOSIM_THEATRE_RUN = $runDirectory }
+
     $env:EVOSIM_THEATRE_SNAP_TIMES = ($timeList -join ',')
     $env:EVOSIM_THEATRE_SNAP_OUT = $snapDirectory
     $env:EVOSIM_THEATRE_SNAP_SIZE = $Size
@@ -273,15 +346,34 @@ try {
     if ($Chrome) { $env:EVOSIM_THEATRE_CHROME = '1' }
     else { Remove-Item env:EVOSIM_THEATRE_CHROME -ErrorAction SilentlyContinue }
 
-    # The theatre seeks with the camera off, which would skip the world past the first picture.
-    Remove-Item env:EVOSIM_THEATRE_SEEK -ErrorAction SilentlyContinue
+    # Set both ways round rather than removed, so that a shell which carried one world on from a
+    # checkpoint cannot leave the next picture continued from it without saying so.
+    if ($continued) {
+        $env:EVOSIM_THEATRE_CHECKPOINT = $checkpoint
+
+        # One variable, two meanings, and the runner decides which by whether a checkpoint was
+        # named: with one, this is the second to continue from rather than a second to seek to.
+        $env:EVOSIM_THEATRE_SEEK = $timeList[0]
+        $env:EVOSIM_THEATRE_SNAP_CARRY = $Carry.ToString([System.Globalization.CultureInfo]::InvariantCulture)
+    } else {
+        Remove-Item env:EVOSIM_THEATRE_CHECKPOINT -ErrorAction SilentlyContinue
+        Remove-Item env:EVOSIM_THEATRE_SNAP_CARRY -ErrorAction SilentlyContinue
+
+        # The theatre seeks with the camera off, which would skip the world past the first picture.
+        Remove-Item env:EVOSIM_THEATRE_SEEK -ErrorAction SilentlyContinue
+    }
 
     Write-Host "$Arm -> worker $Worker ($proj)"
-    Write-Host "  run    $runDirectory"
-    Write-Host "  at     $($timeList -join ', ') s"
+    if ($continued) {
+        Write-Host "  ckpt   $checkpoint"
+        Write-Host "  at     $($timeList[0]) s, carried $Carry s live (a cousin, and every label says so)"
+    } else {
+        Write-Host "  run    $runDirectory"
+        Write-Host "  at     $($timeList -join ', ') s"
+    }
     Write-Host "  views  $(if ($viewNames.Count -gt 0) { $viewNames -join ', ' } else { 'side, end, top, iso' })"
     Write-Host "  size   $Size"
-    Write-Host "  from   $From$(if ($From -eq 'snapshot') { ' (drawn from the run''s files; adult size, recorded pose where poses.jsonl has one)' })"
+    Write-Host "  from   $(if ($continued) { 'checkpoint (the world restored and stepped live on Evosim.Dynamics; a cousin, never the run)' } else { "$From$(if ($From -eq 'snapshot') { ' (drawn from the run''s files; adult size, recorded pose where poses.jsonl has one)' })" })"
     Write-Host "  carve  $($env:EVOSIM_THEATRE_CARVE)"
     Write-Host "  out    $snapDirectory"
     Write-Host "  log    $log"
