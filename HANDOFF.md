@@ -48,6 +48,23 @@ contact columns, keeping D101, a ball joint's angle, hashes and DESIGN §11.1 su
 item 1 is stale, the implicit limit is in) and `fable-propose-animal-kit.md` (order,
 bite-takes-reserve, scent, the floor's places, anything wanted sooner).
 
+**The 10,000-creature look on the CPU is measured** (`r42x10-s1`, 03:05 on 2026-09-22):
+round 42's world at ten times the area and the matter (a 22,000 m² tank of radius 84 m,
+15,000 units, `configHash 6470772b`, launched with `run-farm.ps1 -Launcher
+rounds/env-r42.ps1`), 5,000 s at 16 threads in 12.2 minutes, 6.8x over the run and
+**4.7x at 3,536 bodies** in its last 500 s, nothing lost, the energy audit closed, the
+matter residual −2.7e-04 of 15,000 units. The crowd was still climbing (1,697 jointed).
+The split at that crowd is physics 53%, world 45%: the solver at 0.32 µs a body-step, the
+spike's number, and the 990,000-cell grid a fixed 0.095 wall seconds a simulated second.
+Extrapolated, not measured: 10,000 bodies at about 2.4x, a 30,000 s seed in three and a
+half hours, where the proposal estimated 1 to 2x. Per body the farm is thirty to fifty
+times cheaper than round 42's Unity arms (60 wall seconds per thousand bodies per
+thousand simulated seconds against 1,600 to 3,500). The grid is the next ceiling at this
+size; `SampleEdges`' per-column terms and the serial sums are where to look. Two small
+things: the farm's header does not print D102's `axes v:h`, which only `EvolutionRun`
+carries, and this tank (depth over radius 0.54) is the first world built by the
+relaxation; and a run directory's name is in UTC while these notes are local.
+
 **Machine.** i9-13900K, 24 cores, RTX 4090 with 24 GB. The farm takes `EVOSIM_THREADS`;
 16 is the measured best at this crowd. The Unity cap stays D103's. Run
 `scripts/sweep-orphans.ps1` at every session start; it lists a detached farm run's
