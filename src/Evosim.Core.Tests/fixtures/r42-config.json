@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "ff557bce2685293a",
+  "configHash": "c8a710b43638adf2",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -64,7 +64,7 @@
     "panelsPerAxis": 2,
     "surfaceRestoringFraction": 1,
     "tissueExcessDensity": 0.02,
-    "waterHoldSeconds": 0.5
+    "waterHoldSeconds": 0
   },
   "genome": {
     "bodyCellTypes": [
@@ -136,6 +136,9 @@
     "growthReserveFloor": 0.1,
     "growthStepSeconds": 10,
     "minNewbornPartKilograms": 0.5,
+    "moduleAddReserveSeconds": 0,
+    "moduleDropAfterSeconds": 0,
+    "moduleDropReserveSeconds": 0,
     "newbornReserveFraction": 0.2
   },
   "light": {
@@ -157,6 +160,7 @@
     "marginChance": 0.08,
     "maxBroodSize": 64,
     "maxNodes": 64,
+    "moduleGeneMutationChance": 0,
     "neuronOpChance": 0.03,
     "newNodeHalfExtent": 0.03,
     "nodeExtinctionHalfExtent": 0.02,
