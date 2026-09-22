@@ -103,6 +103,20 @@ driver is the likely cause and not proven; the minidump `C:/Windows/Minidump/092
 needs admin to read. The GPU spike is stopped pending the owner's look at the dump; no
 GPU code runs on this machine until then.
 
+**The Editor cannot replay the farm's record, and the check that says so is in** (`ade13dd`):
+`Evosim.Farm` is a Unity local package too, `TheatreDynamicsReplay` runs the farm's own
+`Simulation` loop inside the Editor (no PhysX), and `Evosim.Theatre.EditorTools.
+DynamicsReplayCheck.Run` compares it with the recording. Counts agree at every sample;
+`auditResidual` parts at the first sample (6.39e-5 recorded, 3.42e-5 replayed) and
+`meanHeight` from 20 s, growing to 2e-3 by 300 s. Not the thread count (the farm is
+byte-identical at 1 and 8 threads) and not tiering: Mono's floating point and RyuJIT's
+differ in a double sum in Core's economy, so a run made by one runtime is a cousin under
+the other, as a build change is. The rule that follows: the theatre watches a farm run
+from its record (`positions.jsonl`, `poses.jsonl` at the sample cadence), never by
+re-simulation, and a smooth picture needs the state stream stage 4 already plans
+(poses at a finer cadence, binary). `TheatreRunner` refuses a dynamics run with a message
+naming the check; the PhysX Mode B path is untouched.
+
 **Machine.** i9-13900K, 24 cores, RTX 4090 with 24 GB. The farm takes `EVOSIM_THREADS`;
 16 is the measured best at this crowd. The Unity cap stays D103's. Run
 `scripts/sweep-orphans.ps1` at every session start; it lists a detached farm run's

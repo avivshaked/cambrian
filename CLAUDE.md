@@ -1092,6 +1092,13 @@ actually verifying it.
   as an orphan; it is one exiting script, not a loop, and is not killed. **From PowerShell,
   `bash` is WSL's** (`C:\WINDOWS\system32ash.exe`) and cannot see `D:/`; a detached
   launcher names `C:\Program Files\Gitinash.exe`.
+- **Mono and RyuJIT do not agree on a double sum, so the Editor cannot replay a farm run**
+  (2026-09-22, `ade13dd`). `Evosim.Farm` and `Evosim.Dynamics` are Unity local packages and
+  `DynamicsReplayCheck` runs the farm's own loop in the Editor: the counts agree at every
+  sample and `auditResidual` parts at the first one, before any body has moved. Not threads,
+  not tiering: the runtime. A farm run is watched from its record (`positions.jsonl`,
+  `poses.jsonl`), never re-simulated in Unity, and a farm-side identity claim is made on the
+  farm (`digest.jsonl` at 1 and N threads), never across the two runtimes.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
