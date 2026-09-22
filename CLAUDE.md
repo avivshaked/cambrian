@@ -1108,8 +1108,16 @@ actually verifying it.
   `DynamicsReplayCheck` runs the farm's own loop in the Editor: the counts agree at every
   sample and `auditResidual` parts at the first one, before any body has moved. Not threads,
   not tiering: the runtime. A farm run is watched from its record (`positions.jsonl`,
-  `poses.jsonl`), never re-simulated in Unity, and a farm-side identity claim is made on the
-  farm (`digest.jsonl` at 1 and N threads), never across the two runtimes.
+  `poses.jsonl`), and a farm-side identity claim is made on the farm (`digest.jsonl` at 1
+  and N threads), never across the two runtimes. **Live play in the Editor is a cousin by
+  construction, and says so** (`a80b1c9`, `dab9b78`): the Runner's live mode steps a farm
+  world on `Evosim.Dynamics` inside the Editor from a founding or from a checkpoint
+  (`CheckpointPath`/`CheckpointSeconds`, `EVOSIM_THEATRE_CHECKPOINT`; `EVOSIM_THEATRE_SEEK`
+  is the checkpoint second when one is named and the seek target otherwise), labelled
+  `continued from checkpoint at <s> s (cousin)` with any differing hash named, refusing
+  nothing. `LiveCheckpointCheck` showed the counts agreeing for 200 s after a restore while
+  `audit` and `meanHeight` parted at the first stepped sample. The UI strip is down in live
+  mode, so the frame label is the whole of the provenance on screen.
 - **A blue screen beside a GPU probe was the file-system filter stack, and a minidump is
   readable without a debugger.** The one crash in this machine's log (2026-09-22, bugcheck
   0x3B) faulted in `FLTMGR.SYS` on a `dotnet.exe` thread, entered through the Xbox Gaming

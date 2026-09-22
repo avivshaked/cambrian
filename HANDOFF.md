@@ -144,8 +144,8 @@ direction of 2026-09-22 afternoon**: the theatre's primary use is live play in U
 recorded second, a cousin being fine, for films (a safari at 5,000, 15,000, 30,000 s) and
 the interface's stats. So the sequence is the live view on the new engine (in, `a80b1c9`),
 then farm **checkpoints** proven complete by restore-and-continue identity (in, `3561ec3`,
-`logbook/specs/checkpoint-spec.md`), then the Runner's checkpoint picker (building); the
-stream stays at coarse cadence as the round record.
+`logbook/specs/checkpoint-spec.md`), then the Runner's checkpoint picker (in, `dab9b78`);
+the stream stays at coarse cadence as the round record.
 
 **Checkpoints are in** (`3561ec3`): `EVOSIM_CHECKPOINT_EVERY` (`run-farm.ps1 -CheckpointEvery`,
 a recording setting that reaches no config and moves no hash) writes the whole world state,
@@ -162,7 +162,20 @@ A hash mismatch refuses the resume unless `EVOSIM_ALLOW_SOURCE_MISMATCH`, which 
 manifest. The build moved `coreHash`, `dynamicsHash` and `farmHash`, so round 43's manifests
 no longer match the tree and a resume of a round 43 run would be a marked cousin; a run is
 still stopped with a `STOP` file, and after a stop the last checkpoint is the second it
-stopped at. The theatre cannot open a checkpoint yet: that is the picker, building.
+stopped at. **The picker is in** (`dab9b78`): the Theatre Runner's live mode takes
+`CheckpointPath` and `CheckpointSeconds` (`EVOSIM_THEATRE_CHECKPOINT`, and
+`EVOSIM_THEATRE_SEEK` reads as the checkpoint second when a checkpoint is named), restores
+through the farm's own `Checkpoint.Resolve`, `World.ReadState` and `Simulation.ReadState`,
+draws the bodies at their restored pose and body fraction, and carries on live with the
+label `continued from checkpoint at <s> s (cousin)`, naming any of the four hashes that
+differ; nothing is refused on a mismatch. `LiveCheckpointCheck` carried ckA from 400 to
+600 s in 8.1 s of wall with 20 of 20 samples agreeing on alive, births and deaths and the
+doubles parting at the first stepped sample (the runtime, per the Mono gotcha). Untested:
+the interactive Play-mode path with the skin, and a picture of a continued world
+(`theatre-snap.ps1` has no checkpoint switch yet); the UI strip is still down in live mode,
+so the frame label is the only provenance on screen. The owner's plan is now at step 4,
+the bite, gated on the animal-kit ruling, and step 5, the GPU, is cleared by the crash
+reading.
 
 **Machine.** i9-13900K, 24 cores, RTX 4090 with 24 GB. The farm takes `EVOSIM_THREADS`;
 16 is the measured best at this crowd. The Unity cap stays D103's. Run
