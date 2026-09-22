@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Evosim.Core
@@ -388,7 +388,8 @@ namespace Evosim.Core
     public static class GenomeFactory
     {
         public static Genome Random(
-            Rng rng, RandomGenomeOptions options = null, SensorChannel[] sensorPool = null)
+            Rng rng, RandomGenomeOptions options = null, SensorChannel[] sensorPool = null,
+            CellTypeRegistry cellTypes = null)
         {
             if (rng == null) throw new ArgumentNullException(nameof(rng));
             options = options ?? RandomGenomeOptions.Default;
@@ -451,7 +452,7 @@ namespace Evosim.Core
                     RandomEdge(rng, options, bodyCount + rng.Range(linkCount), rng.Range(6)));
             }
 
-            DrawTheModuleGene(genome);
+            DrawTheModuleGene(genome, cellTypes);
 
             return genome;
         }
@@ -475,13 +476,36 @@ namespace Evosim.Core
         /// <see cref="MorphNode.RecursiveLimit"/> at three different points.
         /// </para>
         /// </remarks>
-        private static void DrawTheModuleGene(Genome genome)
+        private static void DrawTheModuleGene(Genome genome, CellTypeRegistry cellTypes = null)
         {
+            cellTypes = cellTypes ?? CellTypeRegistry.Standard;
+
             for (int n = 0; n < genome.Nodes.Count; n++)
             {
                 MorphNode node = genome.Nodes[n];
                 node.Growth = ModuleGrowth.Determinate;
                 node.MaxModules = node.RecursiveLimit;
+
+                // D106 item 3 on a founder, and it takes no draw either — the same argument, for
+                // the same reason, one gene along. Attack and protection at zero is the owner's
+                // ruling in as many words: a world starts with nothing armed and nothing armoured,
+                // so an arms race is something selection builds rather than something the founding
+                // lottery hands out. Toughness at the neutral 1.
+                node.Attack = 0f;
+                node.Protection = 0f;
+                node.Toughness = 1f;
+
+                // The one exception, and it is the spec's (rule 1): a consumer node is drawn at
+                // its type's own intake cap. A mouth that had to wait for a mutation before it
+                // could eat anything would make the consumer cell a type with no function on the
+                // day the corpse became food, and the type already carries a recorded scavenging
+                // rate that says what a mouth is for. Every other type's cap is zero, so this line
+                // is what the table says and not a special case for one id.
+                CellType type = cellTypes.Contains(node.CellTypeId)
+                    ? cellTypes.Resolve(node.CellTypeId)
+                    : null;
+
+                node.Intake = type != null ? type.IntakeMax : 0f;
             }
         }
 
@@ -517,7 +541,8 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         public static Genome Founder(
-            Rng rng, RandomGenomeOptions options = null, SensorChannel[] sensorPool = null)
+            Rng rng, RandomGenomeOptions options = null, SensorChannel[] sensorPool = null,
+            CellTypeRegistry cellTypes = null)
         {
             if (rng == null) throw new ArgumentNullException(nameof(rng));
             options = options ?? RandomGenomeOptions.Default;
@@ -601,7 +626,7 @@ namespace Evosim.Core
                 });
             }
 
-            DrawTheModuleGene(genome);
+            DrawTheModuleGene(genome, cellTypes);
 
             return genome;
         }
@@ -880,7 +905,8 @@ namespace Evosim.Core
             int maxAttempts = 32,
             int maxBuriedPairs = 0,
             float maxUnjointedOverlap = 0.005f,
-            SensorChannel[] sensorPool = null)
+            SensorChannel[] sensorPool = null,
+            CellTypeRegistry cellTypes = null)
         {
             Genome last = null;
             Genome bestSoFar = null;
@@ -888,7 +914,7 @@ namespace Evosim.Core
 
             for (int attempt = 0; attempt < maxAttempts; attempt++)
             {
-                last = Random(rng, options, sensorPool);
+                last = Random(rng, options, sensorPool, cellTypes);
                 Phenotype developed = Developer.Develop(last, limits);
 
                 if (developed.PartCount < minParts || developed.TotalDof == 0) continue;

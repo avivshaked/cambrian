@@ -133,9 +133,21 @@ namespace Evosim.Farm
             WorkThisStep = work;
             AboveSurface = above;
 
+            // D106 item 5. The step's overlapping pairs, each resolved to the nearest pair of
+            // parts, handed to Core immediately before the step that reads them — the list names
+            // parts by their index in a body's phenotype, and Core's own mouth pass can change a
+            // body's plan, so a list that outlived one step would name the wrong parts.
+            HandOverContacts();
+
             long worldStarted = Now();
             World.Step(seconds);
             _worldTicks += Now() - worldStarted;
+
+            // And the other direction, once the world has settled what was hurt: what each body
+            // felt goes onto its own senses, for the physics steps that follow to read. After
+            // World.Step because the mouth's damage pass is inside it, and before the growth step
+            // below, whose rebuild would otherwise hand a new body the old one's arrays.
+            HandBackWhatWasFelt();
 
             // D066. After the world has stepped, because that is where a creature's patch changes
             // — D061's dispersal and D066's advection both move it, and the physics steps that
@@ -176,6 +188,66 @@ namespace Evosim.Farm
 
             _phaseTicks[PhaseMetabolise] += Now() - metaboliseStarted -
                                             (_worldTicks + _phaseTicks[PhaseGrowth] - nestedAtEntry);
+        }
+
+        /// <summary>
+        /// Turns the solver's overlapping pairs into the contact list Core's mouth reads — D106
+        /// item 5.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>One list, reused</b>, because this runs twice a simulated second for the life of a
+        /// run and the list is empty again by the time anything else could look at it: Core holds
+        /// it for exactly one <c>World.Step</c> and drops it.
+        /// </para>
+        /// <para>
+        /// <b>The solver's ids are the organisms' ids</b> (<c>Reconcile.Build</c> makes them so),
+        /// and a body's links are its phenotype's parts in the same order, so the translation is
+        /// the identity in both directions and there is no map to keep in step.
+        /// </para>
+        /// </remarks>
+        private void HandOverContacts()
+        {
+            _contacts.Clear();
+
+            System.Collections.Generic.IReadOnlyList<OverlapPair> overlaps = Dynamics.Overlaps;
+
+            for (int i = 0; i < overlaps.Count; i++)
+            {
+                OverlapPair pair = overlaps[i];
+                if (!Dynamics.NearestParts(pair, out int partA, out int partB)) continue;
+
+                _contacts.Add(new CreatureContact(pair.A, partA, pair.B, partB));
+            }
+
+            World.SetContacts(_contacts);
+        }
+
+        /// <summary>
+        /// Puts each body's contact and damage record onto its own senses — D106 item 5's two
+        /// channels.
+        /// </summary>
+        /// <remarks>
+        /// <b>Skipped entirely unless the run has opened one of the two channels.</b> The arrays
+        /// are Core's and are handed over by reference, so this is a pointer per body per
+        /// metabolic step and nothing else — but a run that nothing can draw them in is a run in
+        /// which no neuron will ever ask, and the whole of what the walk would buy is a field
+        /// assignment nobody reads.
+        /// </remarks>
+        private void HandBackWhatWasFelt()
+        {
+            if (!Config.SenseContact && !Config.SenseDamage) return;
+
+            IReadOnlyList<Organism> living = World.Living;
+
+            for (int i = 0; i < living.Count; i++)
+            {
+                Organism creature = living[i];
+                if (!_bodies.TryGetValue(creature.Id, out Body body)) continue;
+
+                body.Solver.Senses.Contact = creature.PartContact;
+                body.Solver.Senses.Damage = creature.PartDamage;
+            }
         }
 
         /// <summary>

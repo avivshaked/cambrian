@@ -62,6 +62,40 @@ namespace Evosim.Core
         /// </summary>
         public float Lift { get; internal set; }
 
+        /// <summary>
+        /// Damage this part does per second per square metre of its own area to a part of another
+        /// body in contact — <see cref="MorphNode.Attack"/>, D106 item 3.
+        /// </summary>
+        /// <remarks>
+        /// <b>Carried onto the part the way <see cref="Power"/> and <see cref="Lift"/> are, and
+        /// for their reason.</b> Everything that prices or applies an attribute walks a developed
+        /// body rather than a genome — the metabolic step, the mouth's damage pass, the ledger —
+        /// and asking the genome would mean carrying a node index and a genome reference into
+        /// every one of them. The four are not scaled by <see cref="Phenotype.Scaled"/>: they are
+        /// rates per square metre and per cubic metre, so they already mean the same thing at any
+        /// size, exactly as <see cref="Power"/> and <see cref="Lift"/> do.
+        /// </remarks>
+        public float Attack { get; internal set; }
+
+        /// <summary>
+        /// Charged units this part takes per second per square metre from a corpse in reach —
+        /// <see cref="MorphNode.Intake"/>. See <see cref="Attack"/>.
+        /// </summary>
+        public float Intake { get; internal set; }
+
+        /// <summary>
+        /// Damage per second per square metre this part absorbs before its health suffers —
+        /// <see cref="MorphNode.Protection"/>. See <see cref="Attack"/>.
+        /// </summary>
+        public float Protection { get; internal set; }
+
+        /// <summary>
+        /// Health per cubic metre, relative to the neutral 1 — <see cref="MorphNode.Toughness"/>.
+        /// A part's health pool is its volume times this times
+        /// <see cref="RunConfig.HealthPerCubicMetre"/>. See <see cref="Attack"/>.
+        /// </summary>
+        public float Toughness { get; internal set; } = 1f;
+
         /// <summary>Min/max per DOF, in radians.</summary>
         public Float2[] JointLimits { get; internal set; } = Array.Empty<Float2>();
 

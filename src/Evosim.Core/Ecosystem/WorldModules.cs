@@ -220,8 +220,7 @@ namespace Evosim.Core
             var next = (int[])counts.Clone();
             next[chosen]++;
 
-            Phenotype adult = Developer.Develop(
-                creature.Genome, Config.Development, null, Config.Shapes, next);
+            Phenotype adult = DevelopPlan(creature, next, out List<int[]> afterPaths);
 
             Phenotype was = creature.AdultPhenotype;
 
@@ -259,7 +258,7 @@ namespace Evosim.Core
 
             creature.Energy -= spend;
 
-            Rebuild(creature, counts, next, adult, adultTissue, body, tissue);
+            Rebuild(creature, counts, next, afterPaths, adult, adultTissue, body, tissue);
 
             ModuleAdds++;
             return true;
@@ -305,8 +304,7 @@ namespace Evosim.Core
             var next = (int[])counts.Clone();
             next[chosen]--;
 
-            Phenotype adult = Developer.Develop(
-                creature.Genome, Config.Development, null, Config.Shapes, next);
+            Phenotype adult = DevelopPlan(creature, next, out List<int[]> afterPaths);
 
             Phenotype was = creature.AdultPhenotype;
             Phenotype wasBody = creature.Phenotype;
@@ -349,7 +347,7 @@ namespace Evosim.Core
             creature.Energy -= fromReserve;
             creature.ModuleStarvedSeconds = 0f;
 
-            Rebuild(creature, counts, next, adult, adultTissue, body, tissue);
+            Rebuild(creature, counts, next, afterPaths, adult, adultTissue, body, tissue);
 
             ShedRemains(creature, given);
 
@@ -386,34 +384,61 @@ namespace Evosim.Core
         // ------------------------------------------------------------------ the shared half
 
         /// <summary>
-        /// Puts a creature on a new body plan: the two phenotypes, the two tissue figures, and
-        /// every cached reading a changed plan invalidates.
+        /// A module rule's plan change: the count that moved, the map from the old plan, and then
+        /// <see cref="AdoptPlan"/> for everything a changed plan invalidates.
+        /// </summary>
+        private void Rebuild(
+            Organism creature, int[] was, int[] now, List<int[]> after,
+            Phenotype adult, double adultTissue, Phenotype body, double tissue)
+        {
+            // The map the harness rebuilds on (rule 7). The old plan is developed again with its
+            // part paths, which is the only thing that identifies the same part across a count
+            // change — Developer.MatchParts says why an index does not. The new plan's paths come
+            // in from the caller, which already had to develop it to price the module. One extra
+            // development, on an event that happens at most once per body per growth step and
+            // almost never in a world of determinate lineages.
+            _ = DevelopPlan(creature, was, out List<int[]> before);
+
+            creature.ModuleCounts = now;
+
+            AdoptPlan(
+                creature, adult, adultTissue, body, tissue, Developer.MatchParts(before, after));
+        }
+
+        /// <summary>
+        /// Puts a creature on a new body plan: the two phenotypes, the two tissue figures, the map
+        /// the harness rebuilds on, and every cached reading a changed plan invalidates.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// <b>The cell-type flags are refreshed, and that is the line that matters.</b>
         /// <see cref="Organism.HasAbsorptiveTissue"/> and its neighbours are cached at birth on
         /// the grounds that growth changes a body's size and never what it is made of — which was
         /// true until this rule existed. A module is a whole subtree of the genome and may be
         /// made of anything, so a body that has just grown one can be a mixotroph where it was a
         /// leaf, and an instrument reading a stale flag would file it under what it used to be.
+        /// D106 item 1 adds the mirror case: a body that has just <i>lost</i> its only mouth to a
+        /// bite is not a feeder any more.
+        /// </para>
+        /// <para>
+        /// <b>Shared by the module rule and by the kill</b>, which is the point of it being its
+        /// own method: a part added and a part bitten off are the same event to everything
+        /// downstream, and two copies of this would be two chances for one of them to forget the
+        /// health array or the standing cost.
+        /// </para>
         /// </remarks>
-        private void Rebuild(
-            Organism creature, int[] was, int[] now,
-            Phenotype adult, double adultTissue, Phenotype body, double tissue)
+        private void AdoptPlan(
+            Organism creature, Phenotype adult, double adultTissue, Phenotype body, double tissue,
+            int[] map)
         {
-            // The map the harness rebuilds on (rule 7). Both developments are re-run with their
-            // part paths, which is the only thing that identifies the same part across a count
-            // change — Developer.MatchParts says why an index does not. Two extra developments,
-            // on an event that happens at most once per body per growth step and almost never in
-            // a world of determinate lineages.
-            var before = new List<int[]>(adult.PartCount);
-            var after = new List<int[]>(adult.PartCount);
+            // D106 item 3. The wounds the survivors were carrying, carried onto their new indices;
+            // a part that has just appeared (map -1) is whole, which is rule 3's "full at a module
+            // add". Null in, null out, so a world that has never been bitten allocates nothing.
+            creature.PartHealth = Remap(creature.PartHealth, map);
+            creature.PartDamage = null;
+            creature.PartContact = null;
 
-            Developer.Develop(creature.Genome, Config.Development, null, Config.Shapes, was, before);
-            Developer.Develop(creature.Genome, Config.Development, null, Config.Shapes, now, after);
-
-            creature.PartMapFromPreviousPlan = Developer.MatchParts(before, after);
-            creature.ModuleCounts = now;
+            creature.PartMapFromPreviousPlan = map;
 
             creature.AdultPhenotype = adult;
             creature.AdultTissueJoules = adultTissue;
@@ -439,7 +464,116 @@ namespace Evosim.Core
             }
 
             creature.HasPhotosyntheticTissue = photosynthetic;
+            ReadAttributeFlags(creature, body);
             creature.PlanRevision++;
+        }
+
+        /// <summary>
+        /// A per-part array carried onto a new plan: <c>map[i]</c> is where part <c>i</c> of the
+        /// new body stood in the old one, or -1 for a part that has just appeared.
+        /// </summary>
+        /// <remarks>
+        /// Null in is null out — a body with no wounds recorded stays a body with no wounds
+        /// recorded — and a part that has just appeared reads 1, which is full. That is the one
+        /// place rule 3's "full at a module add" is written down.
+        /// </remarks>
+        private static float[] Remap(float[] was, int[] map)
+        {
+            if (was == null || map == null) return null;
+
+            var now = new float[map.Length];
+            for (int i = 0; i < map.Length; i++)
+            {
+                int from = map[i];
+                now[i] = from >= 0 && from < was.Length ? was[from] : 1f;
+            }
+
+            return now;
+        }
+
+        /// <summary>
+        /// The three D106 attribute flags, read off a developed body — <see cref="Organism.HasAttack"/>.
+        /// </summary>
+        internal static void ReadAttributeFlags(Organism creature, Phenotype body)
+        {
+            bool attack = false, intake = false, protection = false;
+            IReadOnlyList<PhenotypePart> parts = body.Parts;
+
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (parts[i].Attack > 0f) attack = true;
+                if (parts[i].Intake > 0f) intake = true;
+                if (parts[i].Protection > 0f) protection = true;
+            }
+
+            creature.HasAttack = attack;
+            creature.HasIntake = intake;
+            creature.HasProtection = protection;
+        }
+
+        /// <summary>
+        /// Develops a creature's genome at a set of module counts and takes off whatever it has
+        /// already lost — D106 items 1 and 2 in one call, with the surviving parts' paths.
+        /// </summary>
+        /// <param name="creature">The body whose genome, shapes and losses are being expressed.</param>
+        /// <param name="counts">The module counts to develop at.</param>
+        /// <param name="paths">
+        /// Filled with the developer's path to each surviving part, in part order — what
+        /// <see cref="Developer.MatchParts"/> matches two plans on.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>Every rebuild in the world goes through here, and that is what keeps a lost part
+        /// lost.</b> A module added, a module dropped and a checkpoint restored all express the
+        /// genome again from nothing; without this, each of them would hand a bitten creature its
+        /// severed limb back, for free, as a side effect of a rule about something else.
+        /// </para>
+        /// <para>
+        /// <b>At no losses it is <see cref="Developer.Develop"/> and nothing more</b> — the same
+        /// call with the same arguments, returning the same object — so a world in which nothing
+        /// has ever been bitten, which is every world in the record, is untouched by it.
+        /// </para>
+        /// </remarks>
+        private Phenotype DevelopPlan(Organism creature, int[] counts, out List<int[]> paths)
+        {
+            paths = new List<int[]>(Config.Development.MaxParts);
+
+            Phenotype whole = Developer.Develop(
+                creature.Genome, Config.Development, null, Config.Shapes, counts, paths);
+
+            List<int[]> lost = creature.LostPartPaths;
+            if (lost == null || lost.Count == 0) return whole;
+
+            var drop = new bool[whole.PartCount];
+            bool any = false;
+
+            for (int i = 0; i < whole.PartCount; i++)
+            {
+                for (int l = 0; l < lost.Count; l++)
+                {
+                    if (!SamePath(paths[i], lost[l])) continue;
+                    drop[i] = true;
+                    any = true;
+                    break;
+                }
+            }
+
+            if (!any) return whole;
+
+            Phenotype cut = whole.WithoutSubtrees(drop, out int[] kept);
+
+            var survived = new List<int[]>(kept.Length);
+            for (int i = 0; i < kept.Length; i++) survived.Add(paths[kept[i]]);
+            paths = survived;
+
+            return cut;
+        }
+
+        private static bool SamePath(int[] a, int[] b)
+        {
+            if (a == null || b == null || a.Length != b.Length) return false;
+            for (int i = 0; i < a.Length; i++) if (a[i] != b[i]) return false;
+            return true;
         }
 
         /// <summary>

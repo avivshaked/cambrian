@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Evosim.Core
 {
@@ -184,6 +185,96 @@ namespace Evosim.Core
         /// a checkpoint to carry; null is what a body that has not just changed plan holds.
         /// </remarks>
         public int[] PartMapFromPreviousPlan { get; internal set; }
+
+        /// <summary>
+        /// What share of its own health pool each part still holds, 0 to 1 — D106 item 3's rule 3.
+        /// <b>Null is every part full</b>, which is every body in the record and every body born.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A fraction and not a number of health, and that is the whole design.</b> A part's
+        /// pool is its volume times its toughness times <see cref="RunConfig.HealthPerCubicMetre"/>
+        /// (<see cref="Metabolism.HealthPool"/>), and a body's parts change size on every growth
+        /// step — so a stored absolute would have to be rescaled at every resize or would come to
+        /// mean something else as the body grew. Held as a fraction, "full at birth, at a module
+        /// add and at a growth resize, scaling with volume" (rule 3) is not a rule anything has to
+        /// apply: it is what a fraction already does.
+        /// </para>
+        /// <para>
+        /// <b>Allocated on the first scratch and never before.</b> A world in which nothing has an
+        /// attack allocates nothing and costs one null test per body per metabolic step, which is
+        /// what lets the mouth's pass be called unconditionally — <c>World.ApplyModuleRule</c>'s
+        /// rule, one item of D106 along.
+        /// </para>
+        /// <para>
+        /// Indexed by <see cref="Phenotype"/>'s part index, so it is remapped by every plan change
+        /// (<c>World.AdoptPlan</c>) and carried by the checkpoint, which is D106's stated cost:
+        /// a body's damage is a property of its history and nothing else can restore it.
+        /// </para>
+        /// </remarks>
+        public float[] PartHealth { get; internal set; }
+
+        /// <summary>
+        /// What share of its pool each part lost on the last metabolic step — what
+        /// <see cref="SensorChannel.Damage"/> reports, D106 item 5. Null is a body nothing
+        /// touched.
+        /// </summary>
+        /// <remarks>
+        /// <b>The step's loss and not the standing wound</b>, which is what §4.4 asks for in as
+        /// many words: a creature that could read only its own health would have no way to tell
+        /// being eaten from having been eaten. Written by the mouth's damage pass and read by the
+        /// harness's sensors on the physics steps that follow, so it is one metabolic step stale
+        /// at the brain — the same staleness <c>Flow</c> already has.
+        /// </remarks>
+        public float[] PartDamage { get; internal set; }
+
+        /// <summary>
+        /// Whether each part was in contact with another body's on the last metabolic step — what
+        /// <see cref="SensorChannel.Contact"/> reports. Null is a body touching nothing.
+        /// </summary>
+        public bool[] PartContact { get; internal set; }
+
+        /// <summary>
+        /// The developer's path to every part this body has lost to a kill — D106 item 1. Null is
+        /// a whole body, which is every body in the record.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why a path and not a part index.</b> A body is rebuilt from its genome and its module
+        /// counts wherever it has to be rebuilt — a module added or dropped, a checkpoint restored
+        /// — and a lost part is not expressible in either: nothing in a genome says "this
+        /// occurrence of this node is gone". The path is what <see cref="Developer.MatchParts"/>
+        /// already identifies a part by across two developments, and it is the only thing that
+        /// survives a count change (that method's remarks say why an index does not).
+        /// </para>
+        /// <para>
+        /// <b>Lost stays lost</b>, D106's own wording for a determinate part. An indeterminate node
+        /// regrows by <i>count</i> instead — the module rule adds a fresh occurrence at a fresh
+        /// path, paid for in full at the tissue price — which is rule 4 of the module gene's spec
+        /// working exactly as written.
+        /// </para>
+        /// </remarks>
+        public List<int[]> LostPartPaths { get; internal set; }
+
+        /// <summary>
+        /// Whether any part of the developed body carries <see cref="MorphNode.Attack"/> above
+        /// zero — cached with <see cref="HasAbsorptiveTissue"/> and refreshed on a plan change.
+        /// </summary>
+        /// <remarks>
+        /// <b>Three flags rather than a walk.</b> The mouth's damage pass asks "is anything in this
+        /// world armed" before it builds an index of the living, and the report asks each of the
+        /// three shares at every sample; both would otherwise be a walk over every part of every
+        /// body. Unlike the cell-type flags these <i>can</i> change within a life, because a plan
+        /// change adds and removes parts — so they are refreshed wherever the plan is
+        /// (<c>World.AdoptPlan</c>) rather than fixed from birth.
+        /// </remarks>
+        public bool HasAttack { get; internal set; }
+
+        /// <summary>Whether any part carries <see cref="MorphNode.Intake"/> above zero.</summary>
+        public bool HasIntake { get; internal set; }
+
+        /// <summary>Whether any part carries <see cref="MorphNode.Protection"/> above zero.</summary>
+        public bool HasProtection { get; internal set; }
 
         /// <summary>World height, metres. Y is up, so the surface is 0.</summary>
         /// <remarks>
@@ -461,6 +552,21 @@ namespace Evosim.Core
         /// books have to close whatever the solver did.
         /// </remarks>
         Diverged = 1,
+
+        /// <summary>
+        /// Something bit the root off — D106 item 1. The whole body is the corpse, and there is
+        /// nothing left to live on its remaining parts.
+        /// </summary>
+        /// <remarks>
+        /// <b>The ecology's second cause, and the first one that is another creature.</b>
+        /// <see cref="Starved"/> was the only cause for the whole of the record precisely because
+        /// nothing could kill anything; D106 makes a part the unit of death, and the root's death
+        /// is the body's. A body that loses a limb and then cannot pay its way still dies
+        /// <see cref="Starved"/>, and so does one left under the newborn mass floor — so this
+        /// names the killing blow and not the consequence of one, which is what makes the two
+        /// separable in a dissection.
+        /// </remarks>
+        Eaten = 2,
     }
 
     /// <summary>How a creature entered the population. Never conflated — DESIGN.md §5A.6, D021.</summary>

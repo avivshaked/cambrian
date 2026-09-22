@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -272,6 +272,16 @@ namespace Evosim.Farm
                 // before the gene existed".
                 " · modules add=" + F(s.ModuleAdd) + " drop=" + F(s.ModuleDrop) +
                 " after=" + F(s.ModuleDropAfter) + " mut=" + F(s.ModuleMutation) +
+
+                // D106 items 1, 3 and 4, after the module gene and before the hash, which is
+                // where the end of the header is. Every token is rendered whatever the values
+                // are, for the module token's reason: a reader must never have to work out
+                // whether a missing one means "off" or "written before the mouth existed".
+                " · mouth hp=" + F(s.Health) + " heal=" + F(s.Healing) + "/s@" + F(s.HealingCost) +
+                "J reach=" + F(s.IntakeReach) + " waste=" + F(s.IntakeWaste) +
+                " prices atk=" + F(s.PriceAttack) + " ink=" + F(s.PriceIntake) +
+                " prt=" + F(s.PriceProtection) + " tgh=" + F(s.PriceToughness) +
+                " mut=" + F(s.AttributeMutation) +
                 " · configHash `" + config.Hash() + "`";
         }
 
@@ -363,6 +373,11 @@ namespace Evosim.Farm
                     case SensorChannel.Chemical: names[i] = "chemical"; break;
                     case SensorChannel.Energy: names[i] = "energy"; break;
                     case SensorChannel.Flow: names[i] = "flow"; break;
+
+                    // D106 item 5's two, named here rather than left to the default case so the
+                    // token reads in the same lower-case shorthand as the rest of it.
+                    case SensorChannel.Contact: names[i] = "contact"; break;
+                    case SensorChannel.Damage: names[i] = "damage"; break;
                     default: names[i] = pool[i].ToString().ToLowerInvariant(); break;
                 }
             }
@@ -577,6 +592,14 @@ namespace Evosim.Farm
             // carrying the gene at all. `modules` is a state and the three between are windows
             // — scripts/reads/r44-read.py reads them from stats.jsonl that way.
             "modules", "mod add", "mod drop", "mod refused", "indet %",
+
+            // D106 items 1, 3 and 4, rule 8, appended after them and in the spec's own order:
+            // three shares of the living carrying an attribute, then the window's kills, the
+            // window's bodies eaten and the window's corpses emptied, then the window's repair
+            // bill. The three shares are states and the four after them are windows —
+            // stats.jsonl carries the cumulative totals a reader differences.
+            "attack %", "intake %", "prot %",
+            "killed", "eaten", "corpse eat", "heal J",
         };
     }
 

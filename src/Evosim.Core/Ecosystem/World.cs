@@ -1365,6 +1365,14 @@ namespace Evosim.Core
 
             Metabolise(seconds);
 
+            // D106 items 1, 3, 4 and 5 (WorldMouth.cs). After Metabolise, so a repair is paid out
+            // of the reserve this step actually left the body and a body that could not pay its
+            // upkeep is already dead; before Grow, so a body that has just lost a limb invests in
+            // the body it now has. At the defaults — nothing armed, nothing with a mouth, no
+            // healing and no wound anywhere — it is two walks of the living and no arithmetic,
+            // which is what lets it be called unconditionally.
+            ApplyMouth(seconds);
+
             // fable-propose-growth.md rule 5. After feeding and upkeep, so a body invests what
             // this step actually left it; before Reproduce, so growth has first claim on the
             // reserve and a creature below its adult size almost never clears the breeding gate.
@@ -3110,7 +3118,10 @@ namespace Evosim.Core
                 ulong seed = Rng.SeedFor(Seed, _nextIndex++);
                 var rng = new Rng(seed);
 
-                Genome genome = GenomeFactory.Founder(rng, Config.Genome, Config.SensorPool());
+                // The registry is handed over for D106 item 3's one founder rule: a consumer node
+                // is drawn at this run's own intake cap, not at the built-in table's.
+                Genome genome = GenomeFactory.Founder(
+                    rng, Config.Genome, Config.SensorPool(), Config.CellTypes);
 
                 // Placed through the lit zone rather than at the surface. Starting everything at
                 // depth zero would hand generation zero the best light in the world and make the
@@ -3577,6 +3588,13 @@ namespace Evosim.Core
             // the record, because the gene enters by mutation alone.
             creature.IndeterminateNodes = IndeterminateNodesOf(genome);
 
+            // D106 item 3's three flags, read off the body for the reason the cell-type flags are:
+            // the mouth's damage pass asks "is anything in this world armed" before it builds an
+            // index of the living, and the report asks the three shares at every sample. Unlike
+            // the cell-type flags they are refreshed on a plan change (AdoptPlan), because a body
+            // can lose its only claw to a bite.
+            ReadAttributeFlags(creature, phenotype);
+
             // Endowment and body are transferred from the parent, and a founder's or an
             // inoculant's are created out of nothing, so only those two are income the world has
             // to account for. Conflating any of this with reproduction would let a population
@@ -3607,7 +3625,10 @@ namespace Evosim.Core
                 ElapsedSeconds, creature.Id, parentId, kind, generationDepth, creature.SpeciesId,
                 HasAbsorptive(phenotype), phenotype.TotalDof > 0, photosynthetic, patch,
                 creature.BodyFraction, genome.AdultScale, genome.Reproduction.ReserveMargin,
-                creature.IndeterminateNodes));
+                creature.IndeterminateNodes,
+                CarriesAttribute(genome, n => n.Attack),
+                CarriesAttribute(genome, n => n.Intake),
+                CarriesAttribute(genome, n => n.Protection)));
 
             return creature;
         }

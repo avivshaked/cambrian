@@ -742,6 +742,136 @@ namespace Evosim.Core
         [Tunable("growth", Unit = "s")]
         public float ModuleDropAfterSeconds { get; set; }
 
+        // ------------------------------------------------------------------ D106 item 3: the mouth
+        //
+        // logbook/specs/mouth-spec.md. Nine knobs and one rule between them: a part has health, it
+        // can be taken off it, it can be healed at a price, a corpse can be eaten, and none of the
+        // four attributes is free. Every one of them is off or neutral by default — health is
+        // present and nothing damages it — so a launcher that names none of them runs the world it
+        // always ran, and the arithmetic of a part's upkeep is unchanged to the bit.
+
+        /// <summary>
+        /// A part's health pool per cubic metre of tissue, before its own
+        /// <see cref="MorphNode.Toughness"/> multiplies it — rule 3.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The unit health is denominated in</b>, and therefore what an attack's "damage per
+        /// second per square metre" and a healing price's "joules per health" both mean. 1 is the
+        /// neutral choice and makes a part's pool its volume in cubic metres: a 0.03 m³ leaf holds
+        /// 0.03, so an unprotected one dies in a tenth of a second to a claw of 0.3 health per
+        /// second. The ledger screen before the round is what picks the working value, against the
+        /// predicted-steps clauses of the spec's acceptance.
+        /// </para>
+        /// <para>
+        /// <b>Health is a fraction on the creature, not a number</b> (<see cref="Organism.PartHealth"/>),
+        /// so this knob moves what a hit costs and never what a body is carrying: raising it makes
+        /// every body tougher without a single stored value changing meaning. ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        [Tunable("mouth", Unit = "health/m3")]
+        public float HealthPerCubicMetre { get; set; } = 1f;
+
+        /// <summary>
+        /// The share of its own pool a part heals per second, paid from the reserve at
+        /// <see cref="HealingJoulesPerHealth"/> — rule 3. <b>0 is off: nothing ever heals.</b>
+        /// </summary>
+        /// <remarks>
+        /// A share of the pool rather than an absolute rate, which is what makes it independent of
+        /// <see cref="HealthPerCubicMetre"/> and of a part's size: at 0.01 every part refills in a
+        /// hundred seconds whatever it is, and what differs between a big part and a small one is
+        /// what that costs. ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("mouth", Unit = "/s")]
+        public float HealingPerSecond { get; set; }
+
+        /// <summary>
+        /// Joules the reserve pays for one point of health — rule 3.
+        /// </summary>
+        /// <remarks>
+        /// <b>Burnt, not moved.</b> Repair is metabolism: the joules leave the world as heat and
+        /// the same over <see cref="JoulesPerUnit"/> arrives in the spent field where the body is,
+        /// which is D098's leg 2 and the same transfer every other expenditure makes. Healing on
+        /// an empty reserve is refused rather than taken on credit (rule 3), so a starving body
+        /// stays wounded. ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("mouth", Unit = "J/health")]
+        public float HealingJoulesPerHealth { get; set; } = 1f;
+
+        /// <summary>
+        /// How far past a corpse's own surface a part with <see cref="MorphNode.Intake"/> may
+        /// reach — rule 6. <b>0 is off: nothing is ever eaten from a corpse.</b>
+        /// </summary>
+        /// <remarks>
+        /// <b>Measured from the body's centre and the corpse's, and the reach is what closes the
+        /// gap.</b> Core has no per-part world position — the parts' positions are in the
+        /// creature's own frame and only the harness knows where that frame is — so a body-centre
+        /// test is the whole of what this assembly can ask, which is also why the chemical sense
+        /// is answered in the harness. D106 item 4 settles it: contact and reach are distance
+        /// tests at the metabolic step and no physics. The reach therefore has to cover a body's
+        /// own half-length as well as the space between them. ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("mouth", Unit = "m")]
+        public float IntakeReachMetres { get; set; }
+
+        /// <summary>
+        /// The share of what a mouth takes from a corpse that never reaches the reserve and is
+        /// deposited as marine snow where the corpse is — rule 6.
+        /// </summary>
+        /// <remarks>
+        /// <b>The transfer loss, in the one shape D098 leaves for it.</b> It is not burnt: what a
+        /// mouth tears up and does not keep is charged matter still, and it goes back into the
+        /// water as somebody else's food, exactly as <c>EnergyLedger.Wasted</c> does for the
+        /// absorptive guild's meal. At 0 a corpse is taken whole into the reserve, which is a
+        /// world in which eating is lossless. ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("mouth")]
+        public float IntakeWasteFraction { get; set; }
+
+        /// <summary>
+        /// Upkeep per unit of <see cref="MorphNode.Attack"/> per square metre of the part's area,
+        /// watts — rule 7. <b>0 is free, which is the default and is every world in the record.</b>
+        /// </summary>
+        /// <remarks>
+        /// <b>Nothing beneficial is free</b> (§5A.1's rule about free levers, and D106's own
+        /// wording). Priced on the same area the attack is delivered over, so a claw that does
+        /// twice the damage costs twice as much to keep, and a bigger claw costs more than a
+        /// smaller one at the same rate. Found with the ledger before the round: a claw at the
+        /// structural cap must cost less over a lifetime than one leaf-sized corpse repays, or
+        /// nothing will ever arm itself. ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("mouth", Unit = "W/unit/m2")]
+        public float AttackWattsPerUnit { get; set; }
+
+        /// <summary>
+        /// Upkeep per unit of <see cref="MorphNode.Intake"/> per square metre, watts — rule 7.
+        /// See <see cref="AttackWattsPerUnit"/>.
+        /// </summary>
+        [Tunable("mouth", Unit = "W/unit/m2")]
+        public float IntakeWattsPerUnit { get; set; }
+
+        /// <summary>
+        /// Upkeep per unit of <see cref="MorphNode.Protection"/> per square metre, watts — rule 7.
+        /// See <see cref="AttackWattsPerUnit"/>; the ledger screen asks that a cuticle at a leaf's
+        /// cap cost more than a tenth of the leaf's income, so leaves do not armour for free.
+        /// </summary>
+        [Tunable("mouth", Unit = "W/unit/m2")]
+        public float ProtectionWattsPerUnit { get; set; }
+
+        /// <summary>
+        /// Upkeep per unit of <see cref="MorphNode.Toughness"/> <i>above the neutral 1</i>, per
+        /// cubic metre, watts — rule 7.
+        /// </summary>
+        /// <remarks>
+        /// Above 1 and per cubic metre, where the other three are per square metre, because
+        /// toughness is health per unit of volume and the other three are rates over a surface.
+        /// A part at the neutral toughness therefore pays nothing whatever this is set to, which
+        /// is what keeps the default world's upkeep identical to the bit.
+        /// ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("mouth", Unit = "W/unit/m3")]
+        public float ToughnessWattsPerUnit { get; set; }
+
         /// <summary>
         /// What a body part weighs per cubic metre, kg/m³ — the density the harness builds
         /// articulation bodies at.
@@ -1950,9 +2080,40 @@ namespace Evosim.Core
             set { _senseFlow = value; _sensorPool = null; }
         }
 
+        /// <summary>
+        /// Whether a genome in this run may draw <see cref="SensorChannel.Contact"/> — whether
+        /// this part is touching another body, D106 item 5. See <see cref="SenseChemical"/> for
+        /// what the gate is.
+        /// </summary>
+        /// <remarks>
+        /// <b>Appended after <see cref="SenseFlow"/> in <see cref="SensorPool"/>, and that is the
+        /// replay requirement.</b> <see cref="Rng.Pick{T}"/> takes one draw and indexes the array
+        /// with it, so a channel inserted anywhere but the end would make the same draw return a
+        /// different channel and every run in the record would stop replaying.
+        /// </remarks>
+        [Tunable("sense")]
+        public bool SenseContact
+        {
+            get => _senseContact;
+            set { _senseContact = value; _sensorPool = null; }
+        }
+
+        /// <summary>
+        /// Whether a genome in this run may draw <see cref="SensorChannel.Damage"/> — the share of
+        /// this part's health pool it lost this step, D106 item 5. See <see cref="SenseContact"/>.
+        /// </summary>
+        [Tunable("sense")]
+        public bool SenseDamage
+        {
+            get => _senseDamage;
+            set { _senseDamage = value; _sensorPool = null; }
+        }
+
         private bool _senseChemical;
         private bool _senseEnergy;
         private bool _senseFlow;
+        private bool _senseContact;
+        private bool _senseDamage;
         private SensorChannel[] _sensorPool;
 
         /// <summary>
@@ -2018,13 +2179,14 @@ namespace Evosim.Core
         {
             if (_sensorPool != null) return _sensorPool;
 
-            if (!_senseChemical && !_senseEnergy && !_senseFlow)
+            if (!_senseChemical && !_senseEnergy && !_senseFlow && !_senseContact && !_senseDamage)
             {
                 _sensorPool = SensorChannels.DefaultPool;
                 return _sensorPool;
             }
 
-            int extra = (_senseChemical ? 1 : 0) + (_senseEnergy ? 1 : 0) + (_senseFlow ? 1 : 0);
+            int extra = (_senseChemical ? 1 : 0) + (_senseEnergy ? 1 : 0) + (_senseFlow ? 1 : 0) +
+                        (_senseContact ? 1 : 0) + (_senseDamage ? 1 : 0);
             var pool = new SensorChannel[SensorChannels.DefaultPool.Length + extra];
 
             Array.Copy(SensorChannels.DefaultPool, pool, SensorChannels.DefaultPool.Length);
@@ -2032,7 +2194,12 @@ namespace Evosim.Core
             int at = SensorChannels.DefaultPool.Length;
             if (_senseChemical) pool[at++] = SensorChannel.Chemical;
             if (_senseEnergy) pool[at++] = SensorChannel.Energy;
-            if (_senseFlow) pool[at] = SensorChannel.Flow;
+            if (_senseFlow) pool[at++] = SensorChannel.Flow;
+
+            // D106 item 5's two, appended after Flow — the enum-append order the remark above
+            // states, so a run with them off consumes the stream it always consumed.
+            if (_senseContact) pool[at++] = SensorChannel.Contact;
+            if (_senseDamage) pool[at] = SensorChannel.Damage;
 
             _sensorPool = pool;
             return _sensorPool;

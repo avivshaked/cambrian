@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using Evosim.Core;
@@ -373,6 +373,11 @@ namespace Evosim.Core.Tests
                 // validates. Development must ignore it and build a fixed root anyway.
                 MorphNode root = genome.Nodes[genome.RootIndex];
                 root.CellTypeId = CellTypeIds.Link;
+
+                // D106 item 3: a link's intake cap is zero, and the node may have been a consumer
+                // a line ago. Retyping by hand has to bring the attributes under the new ceilings
+                // — "legally" in the comment above now includes them.
+                root.Intake = 0f;
                 root.JointType = JointType.Spherical;
                 root.JointLimits = new[]
                 {

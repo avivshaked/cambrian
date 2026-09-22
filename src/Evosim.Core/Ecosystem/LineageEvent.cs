@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Evosim.Core
 {
@@ -127,6 +127,34 @@ namespace Evosim.Core
         /// </remarks>
         public int IndeterminateNodes { get; }
 
+        /// <summary>
+        /// Birth only — whether any node of the genome carries <see cref="MorphNode.Attack"/>
+        /// above zero. D106 item 3, rule 8's <c>atk</c>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Of the genome and not of the developed body</b>, unlike <see cref="HasAbsorptive"/>
+        /// and its two neighbours, and the difference is deliberate. Round 45 asks when attack
+        /// <i>appears in a lineage</i> and whether protection follows it (logbook's J4), which is a
+        /// question about what is being inherited; a node whose part development pruned would read
+        /// 0 on a body test and would hide exactly the generations in which the gene was being
+        /// carried without being expressed. A flag and not a count, because one armed node is what
+        /// makes a lineage armed.
+        /// </remarks>
+        public bool HasAttack { get; }
+
+        /// <summary>
+        /// Birth only — whether any node carries <see cref="MorphNode.Intake"/> above zero.
+        /// See <see cref="HasAttack"/>. Nonzero on every consumer node from the founding lottery,
+        /// which is the spec's rule 1.
+        /// </summary>
+        public bool HasIntake { get; }
+
+        /// <summary>
+        /// Birth only — whether any node carries <see cref="MorphNode.Protection"/> above zero.
+        /// See <see cref="HasAttack"/>.
+        /// </summary>
+        public bool HasProtection { get; }
+
         /// <summary>Death only — why the creature left the population.</summary>
         public DeathCause Cause { get; }
 
@@ -135,9 +163,13 @@ namespace Evosim.Core
             BirthKind birthKind, int generationDepth, uint speciesId,
             bool hasAbsorptive, bool hasJoint, bool hasPhotosynthetic, int patch,
             float birthFraction, float adultScale, float reserveMargin, int indeterminateNodes,
+            bool hasAttack, bool hasIntake, bool hasProtection,
             DeathCause cause)
         {
             IndeterminateNodes = indeterminateNodes;
+            HasAttack = hasAttack;
+            HasIntake = hasIntake;
+            HasProtection = hasProtection;
             BirthFraction = birthFraction;
             AdultScale = adultScale;
             ReserveMargin = reserveMargin;
@@ -159,18 +191,21 @@ namespace Evosim.Core
             double elapsedSeconds, long id, long parentId, BirthKind birthKind,
             int generationDepth, uint speciesId, bool hasAbsorptive, bool hasJoint,
             bool hasPhotosynthetic, int patch, float birthFraction, float adultScale,
-            float reserveMargin, int indeterminateNodes) =>
+            float reserveMargin, int indeterminateNodes,
+            bool hasAttack, bool hasIntake, bool hasProtection) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
-                birthFraction, adultScale, reserveMargin, indeterminateNodes, default);
+                birthFraction, adultScale, reserveMargin, indeterminateNodes,
+                hasAttack, hasIntake, hasProtection, default);
 
         public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
             new LineageEvent(
                 LineageEventKind.Death, elapsedSeconds, id, parentId: -1, birthKind: default,
                 generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
                 hasPhotosynthetic: false, patch: 0, birthFraction: 0f, adultScale: 0f,
-                reserveMargin: 0f, indeterminateNodes: 0, cause: cause);
+                reserveMargin: 0f, indeterminateNodes: 0,
+                hasAttack: false, hasIntake: false, hasProtection: false, cause: cause);
 
         /// <summary>One-letter code for <see cref="BirthKind"/> — "f" floor, "r" reproduction, "i" inoculation.</summary>
         private static string Code(BirthKind kind)
@@ -196,6 +231,7 @@ namespace Evosim.Core
             {
                 case DeathCause.Starved: return "starved";
                 case DeathCause.Diverged: return "diverged";
+                case DeathCause.Eaten: return "eaten";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(cause), cause, "New DeathCause, new lineage.jsonl code — add one " +
@@ -229,7 +265,14 @@ namespace Evosim.Core
                     .Field("bf", BirthFraction)
                     .Field("as", AdultScale)
                     .Field("rm", ReserveMargin)
-                    .Field("ind", IndeterminateNodes);
+                    .Field("ind", IndeterminateNodes)
+
+                    // D106 item 3, rule 8's three. Appended at the end for the reason every field
+                    // here is: a reader written against an older row keeps working, and a row
+                    // without them is a birth recorded before the mouth existed.
+                    .Field("atk", HasAttack ? 1 : 0)
+                    .Field("ink", HasIntake ? 1 : 0)
+                    .Field("prt", HasProtection ? 1 : 0);
             }
             else
             {

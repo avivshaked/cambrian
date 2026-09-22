@@ -182,6 +182,14 @@ namespace Evosim.Core
                 // cell type, so this branch is unreachable through the public path. Kept because
                 // it costs nothing and states the invariant where the field is assigned.
                 Lift = node.CellTypeId == CellTypeIds.Buoyancy ? node.Lift : 0f,
+
+                // D106 item 3's four, carried onto the part unconditionally: unlike lift they are
+                // legal on every cell type, and what bounds them is the type's own cap, which
+                // Genome.Validate has already refused a genome for exceeding.
+                Attack = node.Attack,
+                Intake = node.Intake,
+                Protection = node.Protection,
+                Toughness = node.Toughness,
                 ParentAnchorLocal = parentAnchorLocal,
                 ChildAnchorLocal = childAnchorLocal,
                 Neurons = node.Neurons,

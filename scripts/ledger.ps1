@@ -61,6 +61,15 @@ param(
     # side by side.
     [switch] $Compare,
 
+    # D106 item 3's four attributes, overridden on the genome before it is developed. Either a
+    # bare value, which reaches every node — "-Attack 0.5" — or "<cellType>=<value>", which
+    # reaches every node of that type — "-Protection photosynthetic=0.25". A value over the cell
+    # type's own cap is refused rather than clamped, because the world would refuse the genome.
+    [string] $Attack,
+    [string] $Intake,
+    [string] $Protection,
+    [string] $Toughness,
+
     # Use a specific dotnet.exe instead of the one bundled with Unity.
     [string] $DotnetPath
 )
@@ -122,6 +131,10 @@ $toolArgs = @(
 )
 if ($Spent) { $toolArgs += @('--spent', $Spent) }
 if ($Compare) { $toolArgs += '--compare' }
+if ($Attack) { $toolArgs += @('--attack', $Attack) }
+if ($Intake) { $toolArgs += @('--intake', $Intake) }
+if ($Protection) { $toolArgs += @('--protection', $Protection) }
+if ($Toughness) { $toolArgs += @('--toughness', $Toughness) }
 
 & $dotnet run --project $project -v minimal -- @toolArgs
 exit $LASTEXITCODE

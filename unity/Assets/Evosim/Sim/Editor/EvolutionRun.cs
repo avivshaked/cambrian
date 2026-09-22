@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -579,6 +579,26 @@ namespace Evosim.Sim.EditorTools
             float moduleDropAfter = Env("EVOSIM_MODULE_DROP_AFTER", new RunConfig().ModuleDropAfterSeconds);
             float moduleMutation = Env("EVOSIM_MODULE_MUT", MutationRates.Default.ModuleGeneMutationChance);
 
+            // D106 items 1, 3 and 4's ten, here for the module gene's reason and with the same
+            // caveat: they reach the config and the hash so that both engines hash the same
+            // config from the same launcher, and the round runs on src/Evosim.Farm. What this
+            // harness does *not* do is hand Core a contact list — the overlap census that names
+            // which parts are touching is the new solver's (CLAUDE.md's two-farms note) — so a
+            // world launched here has health, prices and a mouth, and nothing ever bites.
+            // All ten are off or neutral by default, and at the defaults this harness runs the
+            // world it always ran down to the bit.
+            float health = Env("EVOSIM_HEALTH", new RunConfig().HealthPerCubicMetre);
+            float healing = Env("EVOSIM_HEAL", new RunConfig().HealingPerSecond);
+            float healingCost = Env("EVOSIM_HEAL_COST", new RunConfig().HealingJoulesPerHealth);
+            float intakeReach = Env("EVOSIM_INTAKE_REACH", new RunConfig().IntakeReachMetres);
+            float intakeWaste = Env("EVOSIM_INTAKE_WASTE", new RunConfig().IntakeWasteFraction);
+            float priceAttack = Env("EVOSIM_PRICE_ATTACK", new RunConfig().AttackWattsPerUnit);
+            float priceIntake = Env("EVOSIM_PRICE_INTAKE", new RunConfig().IntakeWattsPerUnit);
+            float priceProtection = Env("EVOSIM_PRICE_PROTECTION", new RunConfig().ProtectionWattsPerUnit);
+            float priceToughness = Env("EVOSIM_PRICE_TOUGHNESS", new RunConfig().ToughnessWattsPerUnit);
+            float attributeMutation = Env(
+                "EVOSIM_ATTRIBUTE_MUT", MutationRates.Default.AttributeMutationChance);
+
             // D064. Body volume at which tissue is neutrally buoyant, m3 — the excess density
             // above is scaled by max(0, 1 - (V0/V)^(2/3)), so a founder-sized body barely sinks
             // and a large one feels the full constant. 0 is off and reproduces every pre-D064 run
@@ -620,6 +640,14 @@ namespace Evosim.Sim.EditorTools
             bool senseChemical = Env("EVOSIM_SENSE_CHEMICAL", 0f) > 0.5f;
             bool senseEnergy = Env("EVOSIM_SENSE_ENERGY", 0f) > 0.5f;
             bool senseFlow = Env("EVOSIM_SENSE_FLOW", 0f) > 0.5f;
+
+            // D106 item 5's two, after Flow because RunConfig.SensorPool appends them there and
+            // the pool's order is what decides which channel a given draw yields. CreatureSensors
+            // in this harness does not answer either of them, so a genome in a Unity-launched
+            // world that drew one would read zero — the knobs are here so that both engines hash
+            // the same config, not because this harness can serve the channel.
+            bool senseContact = Env("EVOSIM_SENSE_CONTACT", 0f) > 0.5f;
+            bool senseDamage = Env("EVOSIM_SENSE_DAMAGE", 0f) > 0.5f;
 
             // The three squash scales those channels are normalised against. All three are
             // unmeasured (§5A.10) and all three are therefore knobs — see RunConfig for what
@@ -804,6 +832,8 @@ namespace Evosim.Sim.EditorTools
             config.SenseChemical = senseChemical;
             config.SenseEnergy = senseEnergy;
             config.SenseFlow = senseFlow;
+            config.SenseContact = senseContact;
+            config.SenseDamage = senseDamage;
             config.ChemicalHalfScaleJoulesPerCubicMetre = chemicalHalfScale;
             config.EnergyFullScaleSeconds = energyFullScale;
             config.FlowFullScaleMetresPerSecond = flowFullScale;
@@ -844,6 +874,17 @@ namespace Evosim.Sim.EditorTools
             config.ModuleDropReserveSeconds = moduleDrop;
             config.ModuleDropAfterSeconds = moduleDropAfter;
             config.Mutation.ModuleGeneMutationChance = moduleMutation;
+
+            config.HealthPerCubicMetre = health;
+            config.HealingPerSecond = healing;
+            config.HealingJoulesPerHealth = healingCost;
+            config.IntakeReachMetres = intakeReach;
+            config.IntakeWasteFraction = intakeWaste;
+            config.AttackWattsPerUnit = priceAttack;
+            config.IntakeWattsPerUnit = priceIntake;
+            config.ProtectionWattsPerUnit = priceProtection;
+            config.ToughnessWattsPerUnit = priceToughness;
+            config.Mutation.AttributeMutationChance = attributeMutation;
 
             config.InoculateAtSeconds = inoculateAt;
             config.InoculateCount = inoculateCount;

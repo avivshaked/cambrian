@@ -137,6 +137,44 @@ namespace Evosim.Core.Tests
             return genome;
         }
 
+        /// <summary>
+        /// D106's victim: a spine of <paramref name="segments"/> photosynthetic boxes, fixed-
+        /// jointed and born adult — the smallest body on which a part can be bitten off and leave
+        /// a body behind.
+        /// </summary>
+        public static Genome MouthSpine(int segments, float half = 0.2f)
+        {
+            Genome genome = SelfLoopSpine(recursiveLimit: segments);
+
+            MorphNode node = genome.Nodes[0];
+            node.CellTypeId = CellTypeIds.Photosynthetic;
+            node.JointType = JointType.Fixed;
+            node.JointLimits = System.Array.Empty<Float2>();
+            node.Power = 0f;
+            node.Dimensions = new Float3(half, half, half);
+
+            genome.AdultScale = 1f;
+            genome.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 2f };
+            return genome;
+        }
+
+        /// <summary>D106's attacker: one box carrying its attributes at whatever is asked of it.</summary>
+        public static Genome ArmedBox(
+            float attack = 0f, float protection = 0f, float intake = 0f, float toughness = 1f,
+            float half = 0.25f, string cellTypeId = CellTypeIds.Structural)
+        {
+            Genome genome = SingleLeaf(half, cellTypeId);
+
+            MorphNode node = genome.Nodes[0];
+            node.Attack = attack;
+            node.Protection = protection;
+            node.Intake = intake;
+            node.Toughness = toughness;
+
+            genome.AdultScale = 1f;
+            return genome;
+        }
+
         public static void AssertClose(float expected, float actual, float tol = Tol) =>
             Assert.True(System.Math.Abs(expected - actual) <= tol,
                 $"expected {expected}, got {actual} (tolerance {tol})");

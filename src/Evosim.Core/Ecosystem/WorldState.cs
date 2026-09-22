@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -54,7 +54,14 @@ namespace Evosim.Core
         /// version-2 stream restores a plant that had grown eight leaves as one that had grown
         /// none — a plausible creature that nobody simulated, which is what a version refuses.
         /// </remarks>
-        public const int StateVersion = 3;
+        /// <remarks>
+        /// 4 with the mouth (D106 items 1 and 3, 2026-09-22): a creature carries the share of its
+        /// health pool each part still holds and the developer's path to every part it has lost to
+        /// a bite, and six cumulative counters join the world's. Both are properties of a body's
+        /// history that nothing else can restore — a version-3 stream would put a half-eaten
+        /// animal back whole, which is the same fault the module counts' bump was made for.
+        /// </remarks>
+        public const int StateVersion = 4;
 
         /// <summary>
         /// Writes the whole of the world's own state.
@@ -108,6 +115,17 @@ namespace Evosim.Core
             w.Write(ModuleAdds);
             w.Write(ModuleDrops);
             w.Write(ModuleAddsRefused);
+
+            // D106 items 1, 3 and 4's six, beside the module gene's three and for their reason:
+            // a run continued from a checkpoint writes the same cumulative columns the unbroken
+            // run would have, so a counter that restarted at zero would put a step in every
+            // window a reader differences.
+            w.Write(PartsKilled);
+            w.Write(BodiesEaten);
+            w.Write(CorpsesFromKills);
+            w.Write(UnitsEaten);
+            w.Write(CorpsesEaten);
+            w.Write(HealingJoules);
 
             // Where the sun stands. See LightField.RestoreDayFactor.
             w.Write(Field.DayFactor);
@@ -235,6 +253,13 @@ namespace Evosim.Core
             ModuleDrops = r.ReadInt64();
             ModuleAddsRefused = r.ReadInt64();
 
+            PartsKilled = r.ReadInt64();
+            BodiesEaten = r.ReadInt64();
+            CorpsesFromKills = r.ReadInt64();
+            UnitsEaten = r.ReadDouble();
+            CorpsesEaten = r.ReadInt64();
+            HealingJoules = r.ReadDouble();
+
             Field.RestoreDayFactor(r.ReadSingle());
 
             ReadRng(r, _conceptionRng);
@@ -354,6 +379,35 @@ namespace Evosim.Core
             w.Write(creature.ModuleStarvedSeconds);
             w.Write(creature.PlanRevision);
 
+            // D106 item 1, and it goes here for the counts' reason: the paths are the other half
+            // of what decides which parts the reader's development ends up with, so they have to
+            // be in hand before the genome is read. A length of 0 is a body that has never been
+            // bitten, which is every body in the record.
+            List<int[]> lost = creature.LostPartPaths;
+            w.Write(lost == null ? 0 : lost.Count);
+
+            if (lost != null)
+            {
+                for (int i = 0; i < lost.Count; i++)
+                {
+                    int[] path = lost[i];
+                    w.Write(path.Length);
+                    for (int step = 0; step < path.Length; step++) w.Write(path[step]);
+                }
+            }
+
+            // D106 item 3. A share per part, in the body's own part order, and a length of 0 is a
+            // body with every part whole. Written after the paths, because what the reader has to
+            // do with it — check it against the part count of the body it has just developed and
+            // pruned — needs that body to exist.
+            float[] health = creature.PartHealth;
+            w.Write(health == null ? 0 : health.Length);
+
+            if (health != null)
+            {
+                for (int i = 0; i < health.Length; i++) w.Write(health[i]);
+            }
+
             w.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
         }
 
@@ -403,20 +457,52 @@ namespace Evosim.Core
             creature.ModuleStarvedSeconds = r.ReadSingle();
             creature.PlanRevision = r.ReadInt32();
 
+            int lostCount = r.ReadInt32();
+            List<int[]> lost = lostCount > 0 ? new List<int[]>(lostCount) : null;
+
+            for (int i = 0; i < lostCount; i++)
+            {
+                var path = new int[r.ReadInt32()];
+                for (int step = 0; step < path.Length; step++) path[step] = r.ReadInt32();
+                lost.Add(path);
+            }
+
+            creature.LostPartPaths = lost;
+
+            int healthCount = r.ReadInt32();
+            float[] health = healthCount > 0 ? new float[healthCount] : null;
+            for (int i = 0; i < healthCount; i++) health[i] = r.ReadSingle();
+
+            creature.PartHealth = health;
+
             Genome genome = GenomeJson.Read(r.ReadString());
             creature.Genome = genome;
 
             // Developed once, at the genome's own adult scale, exactly as birth develops it —
             // Developer is a pure function of the genome, the limits, the shapes and (since D106)
-            // the body's own module counts, so this is the same object the run built.
-            Phenotype adult = Developer.Develop(
-                genome, Config.Development, null, Config.Shapes, counts);
+            // the body's own module counts — and then cut by whatever it has lost, which is the
+            // one thing no development can express. DevelopPlan is the same call the module rule
+            // and the kill both make, so a restored body is the body the run was stepping.
+            Phenotype adult = DevelopPlan(creature, counts, out _);
 
             creature.AdultPhenotype = adult;
             creature.Phenotype = isAdult ? adult : adult.Scaled(scale, Config.Shapes);
 
+            if (health != null && health.Length != creature.Phenotype.PartCount)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"Creature {creature.Id}: the checkpoint holds {health.Length} part ") +
+                    FormattableString.Invariant(
+                        $"healths and its body develops to {creature.Phenotype.PartCount} parts. ") +
+                    "A body's health array is indexed by its part index, so the two disagreeing " +
+                    "means the development this build performs is not the one that was saved — " +
+                    "a restored creature would be wounded in the wrong places.");
+            }
+
             // Cached at birth and therefore cached again here — see Organism.IndeterminateNodes.
             creature.IndeterminateNodes = IndeterminateNodesOf(genome);
+            ReadAttributeFlags(creature, creature.Phenotype);
 
             return creature;
         }
@@ -458,6 +544,9 @@ namespace Evosim.Core
             w.Write(e.AdultScale);
             w.Write(e.ReserveMargin);
             w.Write(e.IndeterminateNodes);
+            w.Write(e.HasAttack);
+            w.Write(e.HasIntake);
+            w.Write(e.HasProtection);
             w.Write((int)e.Cause);
         }
 
@@ -478,13 +567,16 @@ namespace Evosim.Core
             float adultScale = r.ReadSingle();
             float reserveMargin = r.ReadSingle();
             int indeterminateNodes = r.ReadInt32();
+            bool attack = r.ReadBoolean();
+            bool intake = r.ReadBoolean();
+            bool protection = r.ReadBoolean();
             var cause = (DeathCause)r.ReadInt32();
 
             return kind == LineageEventKind.Birth
                 ? LineageEvent.Birth(
                     seconds, id, parentId, birthKind, generationDepth, speciesId,
                     absorptive, joint, photosynthetic, patch, birthFraction, adultScale,
-                    reserveMargin, indeterminateNodes)
+                    reserveMargin, indeterminateNodes, attack, intake, protection)
                 : LineageEvent.Death(seconds, id, cause);
         }
 

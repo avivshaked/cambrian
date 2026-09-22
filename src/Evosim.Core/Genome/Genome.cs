@@ -247,6 +247,25 @@ namespace Evosim.Core
                         "sink bound, past which the solver rather than the economy decides what happens.");
                 }
 
+                // D106 item 3's four, against the cell type's own caps
+                // (logbook/specs/mouth-spec.md rule 2). Refused and not clamped, for §9's reason:
+                // a genome clamped on load is a different creature wearing the stored one's
+                // identity — a leaf whose attack was quietly taken away would be measured, scored
+                // and filed as the armed leaf it was written as. The floors are 0 for the three
+                // that a body may simply not have and 1 for toughness, which is the neutral
+                // multiplier on a health pool and the number D106's pricing is written against.
+                if (registry.Contains(node.CellTypeId))
+                {
+                    CellType type = registry.Resolve(node.CellTypeId);
+
+                    CheckAttribute(issues, n, "Attack", node.Attack, 0f, type.AttackMax, node.CellTypeId);
+                    CheckAttribute(issues, n, "Intake", node.Intake, 0f, type.IntakeMax, node.CellTypeId);
+                    CheckAttribute(
+                        issues, n, "Protection", node.Protection, 0f, type.ProtectionMax, node.CellTypeId);
+                    CheckAttribute(
+                        issues, n, "Toughness", node.Toughness, 1f, type.ToughnessMax, node.CellTypeId);
+                }
+
                 for (int i = 0; i < node.JointLimits.Length; i++)
                 {
                     if (!node.JointLimits[i].IsOrderedRange)
@@ -280,6 +299,43 @@ namespace Evosim.Core
             ValidateNeurons(GlobalBrain, null, -1, issues);
 
             return issues;
+        }
+
+        /// <summary>
+        /// One of D106's four attributes against its floor and its cell type's cap.
+        /// </summary>
+        /// <remarks>
+        /// A cap below the floor is a legal table entry and means the attribute cannot move: a
+        /// leaf's toughness cap is 1, which is also its floor, so a leaf is neutral tissue and
+        /// nothing else. The test is written so that such a type admits exactly the floor and
+        /// nothing else, rather than refusing every genome of that type.
+        /// </remarks>
+        private static void CheckAttribute(
+            List<string> issues, int node, string name, float value, float floor, float max,
+            string cellTypeId)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value))
+            {
+                issues.Add($"Node {node}: {name} {value} must be finite.");
+                return;
+            }
+
+            if (value < floor)
+            {
+                issues.Add(
+                    $"Node {node}: {name} {value} is below the floor of {floor}. " +
+                    "An attribute below its floor is a body the economy has no price for.");
+                return;
+            }
+
+            if (value > max && value > floor)
+            {
+                issues.Add(
+                    $"Node {node}: {name} {value} exceeds the cap of {max} for a " +
+                    $"'{cellTypeId}' cell (D106 item 3). A genome above a cap is refused rather " +
+                    "than clamped — a clamped genome is a different creature wearing this one's " +
+                    "identity.");
+            }
         }
 
         private void ValidateNeurons(NeuronDef[] neurons, MorphNode owner, int nodeIndex, List<string> issues)

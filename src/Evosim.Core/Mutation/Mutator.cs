@@ -171,6 +171,11 @@ namespace Evosim.Core
 
             if (rng.Chance(rates.CellTypeChance)) ChangeCellType(node, rng, cellTypes, genome);
 
+            // After a possible cell-type change, for the same reason the joint is: an attribute's
+            // ceiling is a property of what the part is now made of, and a claw stepped under the
+            // old type's cap and then re-typed would be a genome Validate refuses.
+            MutateAttributes(node, rng, rates, cellTypes);
+
             // After a possible cell-type change, because whether a joint is even legal here
             // depends on what the part is now made of.
             if (rng.Chance(rates.JointTypeChance)) ChangeJointType(node, rng, cellTypes, genome);
@@ -312,12 +317,88 @@ namespace Evosim.Core
                 ? rng.Range(genome.MinBuoyancyLift, genome.MaxBuoyancyLift)
                 : 0f;
 
-            if (!cellTypes.Resolve(node.CellTypeId).AllowsJoint && node.JointType.DofCount() > 0)
+            CellType became = cellTypes.Resolve(node.CellTypeId);
+
+            if (!became.AllowsJoint && node.JointType.DofCount() > 0)
             {
                 node.JointType = JointType.Fixed;
                 node.JointLimits = Array.Empty<Float2>();
                 node.Power = 0f;
             }
+
+            // D106 item 3. A node that has just changed type is under a different set of caps, and
+            // a claw that became a leaf is a genome Genome.Validate refuses — so the four are
+            // brought under the new ceilings here, beside the joint and the lift and for their
+            // reason: an operator repairs what it disturbs rather than leaving the assertion at
+            // the end of Mutate to catch it.
+            //
+            // <b>Down only, and no draw.</b> Unlike lift, an attribute is not given to a node that
+            // has just acquired the type for it: the type change already bought the *capacity* to
+            // evolve one, and handing over the cap as well would make a single cell-type mutation
+            // the whole of becoming a predator. What climbs out of zero is MutateAttributes below,
+            // whose step is absolute rather than relative for exactly the reason stated here about
+            // lift. A consumer's intake is the founder rule's one exception and stays the founder
+            // rule's: GenomeFactory draws it, mutation does not hand it out.
+            node.Attack = Clamp(node.Attack, 0f, became.AttackMax);
+            node.Intake = Clamp(node.Intake, 0f, became.IntakeMax);
+            node.Protection = Clamp(node.Protection, 0f, became.ProtectionMax);
+            node.Toughness = Clamp(node.Toughness, 1f, became.ToughnessMax);
+        }
+
+        /// <summary>
+        /// D106 item 3's four, each a step within its cell type's own cap —
+        /// <c>logbook/specs/mouth-spec.md</c> rule 1.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Nothing is drawn while the rate is zero</b>, which is the default and is what lets
+        /// this build replay the record to the bit — <see cref="MutateModuleGene"/>'s rule, one
+        /// gene along, and <see cref="MutationRates.AttributeMutationChance"/> states it.
+        /// </para>
+        /// <para>
+        /// <b>The step is a fraction of the cap and not of the value, which is a departure from
+        /// <see cref="PerturbPositive"/> worth naming.</b> Three of the four start at zero on every
+        /// founder, by the owner's ruling, and a relative step from zero reaches
+        /// <see cref="PerturbPositive"/>'s floor of 1e-4 and then walks in log space for sixty
+        /// successful mutations before it is worth anything. An attribute is a <i>bounded</i> dial
+        /// — it has a cap, which a length and a torque do not — so the natural step is a fraction
+        /// of the range it lives in. That is the same argument <see cref="MutateModuleGene"/>
+        /// makes about a count of 1: a gene that cannot move is a gene selection never sees.
+        /// </para>
+        /// <para>
+        /// <b>A cap at the floor takes no draw at all.</b> A leaf cannot bite, so nothing is rolled
+        /// for its attack — which also means the stream a genome consumes depends on what its
+        /// cells are, exactly as <see cref="MorphNode.Lift"/>'s perturbation already does. That is
+        /// deterministic in the genome and therefore replayable.
+        /// </para>
+        /// </remarks>
+        private static void MutateAttributes(
+            MorphNode node, Rng rng, MutationRates rates, CellTypeRegistry cellTypes)
+        {
+            if (!(rates.AttributeMutationChance > 0f)) return;
+
+            CellType type = cellTypes.Resolve(node.CellTypeId);
+
+            node.Attack = MoveAttribute(node.Attack, 0f, type.AttackMax, rng, rates);
+            node.Intake = MoveAttribute(node.Intake, 0f, type.IntakeMax, rng, rates);
+            node.Protection = MoveAttribute(node.Protection, 0f, type.ProtectionMax, rng, rates);
+            node.Toughness = MoveAttribute(node.Toughness, 1f, type.ToughnessMax, rng, rates);
+        }
+
+        /// <summary>One attribute's step: a Gaussian of the cap's own scale, clamped to it.</summary>
+        private static float MoveAttribute(
+            float value, float floor, float max, Rng rng, MutationRates rates)
+        {
+            if (!(max > floor)) return floor;
+            if (!rng.Chance(rates.AttributeMutationChance)) return value;
+
+            return Clamp(value + rng.Gaussian(0f, rates.ScalarStdDev * (max - floor)), floor, max);
+        }
+
+        private static float Clamp(float value, float floor, float max)
+        {
+            float ceiling = max > floor ? max : floor;
+            return value < floor ? floor : value > ceiling ? ceiling : value;
         }
 
         private static void ChangeJointType(

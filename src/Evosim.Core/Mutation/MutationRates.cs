@@ -204,6 +204,35 @@ namespace Evosim.Core
         [Tunable("mutation")]
         public float ModuleGeneMutationChance { get; set; }
 
+        /// <summary>
+        /// Chance each of D106 item 3's four attributes takes a step on a node — attack, intake,
+        /// protection and toughness, <c>logbook/specs/mouth-spec.md</c> rule 1. Per attribute per
+        /// node, like <see cref="CellTypeChance"/> and
+        /// <see cref="ModuleGeneMutationChance"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Zero by default, and zero means no draw at all.</b> <c>Mutator.MutateAttributes</c>
+        /// tests this against zero before it rolls anything, so a world that leaves it alone takes
+        /// exactly the numbers out of its stream that every recorded run took — the same rule, and
+        /// the same reason, as the module gene's chance above.
+        /// </para>
+        /// <para>
+        /// <b>An attribute whose cap equals its floor takes no draw either.</b> A leaf cannot bite
+        /// and a neural cell cannot be armoured, so three of the four are rolled for on some node
+        /// types and not on others; what a genome consumes from the stream therefore depends on
+        /// what its cells are, which is deterministic in the genome and already true of
+        /// <see cref="MorphNode.Lift"/>.
+        /// </para>
+        /// <para>
+        /// ⚠ Unmeasured (§5A.10). Round 45's launcher sets it above the cell-type rate, because an
+        /// attribute is a dial and not a switch: a lineage has to be able to climb toward a cap
+        /// within a run, where a cell-type flip is a change of what a lineage is.
+        /// </para>
+        /// </remarks>
+        [Tunable("mutation")]
+        public float AttributeMutationChance { get; set; }
+
         /// <summary>Chance brood size changes by one — §5A.6.</summary>
         [Tunable("mutation")]
         public float BroodSizeChance { get; set; } = 0.05f;

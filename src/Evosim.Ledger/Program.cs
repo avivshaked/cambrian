@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -68,6 +68,21 @@ namespace Evosim.Ledger
             // against CellTypeRegistry.Standard and never resolves a type until Metabolism does),
             // so one phenotype per genome variant is enough — clearance is swept afterwards by
             // swapping config.CellTypes, not by re-developing anything.
+            // D106 item 3's four overrides, applied to the genome before it is developed: the
+            // attributes ride on the node and the developer carries them onto the part, so a
+            // screen of "what would this leaf cost with a cuticle" is a screen of a different
+            // genome and not of a different reading of the same one. Refused rather than clamped
+            // when the value is over the cell type's cap, which is Genome.Validate's rule and the
+            // rule a run would hold the same genome to.
+            int overridden = ApplyAttributeOverrides(genome, config.CellTypes, options);
+
+            if (overridden > 0)
+            {
+                Console.Error.WriteLine(
+                    $"note: {overridden} node(s) had an attribute overridden from the command line; " +
+                    "the body below is not the stored genome's.");
+            }
+
             Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
 
             // D098's leg 1 needs a spent density, and the honest default is the water this config
@@ -101,6 +116,8 @@ namespace Evosim.Ledger
             AppendBodySummary(sb, "Body", options.GenomePath, body, config, spentDensity);
 
             AppendModuleTable(sb, genome, body, config, spentDensity);
+
+            AppendMouthTable(sb, body, config, spentDensity);
 
             var variants = new List<(string Label, Genome Genome, Phenotype Body)>
             {
@@ -201,6 +218,25 @@ namespace Evosim.Ledger
               .Append(Format(standingWatts / config.JoulesPerUnit)).Append(" units/s)\n");
             sb.Append("- Fixation at surface: ").Append(Format(fixationWatts)).Append(" W (")
               .Append(Format(fixationWatts / config.JoulesPerUnit)).Append(" units/s)\n");
+
+            // D106 item 3's rule 7, beside the income it has to be read against. Printed only
+            // when it is something: at the recorded world's prices — all four at zero — the term
+            // is not computed at all, and a line reading "0 W" on every screen ever taken would
+            // train a reader to skip the one that does not.
+            float attributeWatts = 0f;
+            foreach (PhenotypePart part in body.Parts)
+            {
+                attributeWatts += Metabolism.AttributeWatts(part, config);
+            }
+
+            if (attributeWatts > 0f)
+            {
+                sb.Append("- Attribute upkeep: ").Append(Format(attributeWatts)).Append(" W, ")
+                  .Append(Format(100f * attributeWatts / Math.Max(1e-9f, standingWatts)))
+                  .Append("% of the standing cost and ")
+                  .Append(Format(100f * attributeWatts / Math.Max(1e-9f, fixationWatts)))
+                  .Append("% of fixation at the surface\n");
+            }
             sb.Append("- Truncated: ").Append(body.WasTruncated).Append('\n');
             sb.Append("- Cell types:");
             foreach (var kv in byType.OrderBy(k => k.Key, StringComparer.Ordinal))
@@ -312,6 +348,200 @@ namespace Evosim.Ledger
             Metabolism.StepAt(
                 body, config, surfaceIrradiance, nutrientDensity: 0f, spentDensity: spentDensity,
                 workJoules: 0f, seconds: 1f, ageSeconds: 0f).Net;
+
+        // ------------------------------------------------------------------ the mouth
+
+        /// <summary>
+        /// The four readings <c>logbook/specs/mouth-spec.md</c>'s screen asks of a genome before
+        /// round 45 — D106 items 1, 3 and 4.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Every number is taken against one reference part of this body: its largest.</b> An
+        /// attack is a rate over a part's own area and a health pool is a part's own volume, so
+        /// none of the four questions has an answer until a part is named — and the largest is the
+        /// one a lineage would build a claw or a shell on, and the one a bite is most likely to
+        /// find. The part's area and volume are printed beside the readings so that a reader can
+        /// redo any of them.
+        /// </para>
+        /// <para>
+        /// <b>The step is the metabolic one and not the physics one.</b> Damage is applied once
+        /// per metabolic step (D106 item 4: no physics), so "steps to kill" counts half-seconds
+        /// and not hundredths, whatever <c>EVOSIM_DT</c> says.
+        /// </para>
+        /// <para>
+        /// <b>The caps come from this config's registry</b> and not from the built-in table, so a
+        /// launcher that amended the table is screened on the table it will run.
+        /// </para>
+        /// </remarks>
+        private static void AppendMouthTable(
+            StringBuilder sb, Phenotype body, RunConfig config, float spentDensity)
+        {
+            sb.Append("## Mouth — the four attributes' prices (D106 item 3)\n\n");
+
+            if (body.PartCount == 0)
+            {
+                sb.Append("This genome develops to no parts, so there is no area to price an ")
+                  .Append("attribute over.\n\n");
+                return;
+            }
+
+            PhenotypePart reference = body.Parts[0];
+            foreach (PhenotypePart part in body.Parts)
+            {
+                if (part.Volume > reference.Volume) reference = part;
+            }
+
+            float area = Math.Max(0f, reference.SurfaceArea);
+            float volume = Math.Max(0f, reference.Volume);
+
+            float attackMax = CapOf(config, CellTypeIds.Structural, c => c.AttackMax);
+            float cuticleMax = CapOf(config, CellTypeIds.Photosynthetic, c => c.ProtectionMax);
+            float mouthMax = CapOf(config, CellTypeIds.Consumer, c => c.IntakeMax);
+
+            float surfaceIrradiance = config.Light.IrradianceAt(0f);
+            float fixationWatts = Metabolism.StepAt(
+                body, config, surfaceIrradiance, nutrientDensity: 0f, spentDensity: spentDensity,
+                workJoules: 0f, seconds: 1f, ageSeconds: 0f).LightIncome;
+
+            // The lifetime the world already uses for one: senescence's doubling scale, which is
+            // how long a body lasts before upkeep alone finishes it (D038). A world without
+            // senescence has no lifetime of its own, and the ledger's own cap stands in.
+            float lifetime = config.SenescenceDoublingSeconds > 0f
+                ? config.SenescenceDoublingSeconds
+                : LedgerForecast.MaxLifetimeSeconds;
+
+            double tissue = Metabolism.TissueJoules(body, config);
+
+            float clawWatts = config.AttackWattsPerUnit * attackMax * area;
+            float cuticleWatts = config.ProtectionWattsPerUnit * cuticleMax * area;
+            float mouthWatts = config.IntakeWattsPerUnit * mouthMax * area;
+            float toughWatts = config.ToughnessWattsPerUnit *
+                               Math.Max(0f, CapOf(config, CellTypeIds.Structural, c => c.ToughnessMax) - 1f) *
+                               volume;
+
+            const float MetabolicStepSeconds = 0.5f;
+
+            float pool = volume * config.HealthPerCubicMetre;
+            float blow = attackMax * area;
+            float bare = blow * MetabolicStepSeconds;
+            float armoured = Math.Max(0f, blow - cuticleMax * area) * MetabolicStepSeconds;
+
+            double kept = tissue * (1d - config.IntakeWasteFraction);
+            double emptySeconds = mouthMax * area > 0f
+                ? (tissue / config.JoulesPerUnit) / (mouthMax * area)
+                : double.PositiveInfinity;
+
+            sb.Append("Reference part: the body's largest — ").Append(Format(area))
+              .Append(" m2, ").Append(Format(volume)).Append(" m3, health pool ")
+              .Append(Format(pool)).Append(" at toughness 1.\n\n");
+
+            sb.Append("| reading | value |\n|---|---|\n");
+
+            sb.Append("| claw at the structural cap (").Append(Format(attackMax)).Append(") |")
+              .Append(Format(clawWatts)).Append(" W, ").Append(Format(clawWatts * lifetime))
+              .Append(" J over a ").Append(Format(lifetime)).Append(" s lifetime |\n");
+
+            sb.Append("| this body as a corpse |").Append(Format((float)tissue))
+              .Append(" J, ").Append(Format((float)kept)).Append(" J kept at waste ")
+              .Append(Format(config.IntakeWasteFraction)).Append(" |\n");
+
+            sb.Append("| claw repaid by one such corpse |")
+              .Append(clawWatts > 0f ? Format((float)(kept / clawWatts)) + " s of claw" : "free")
+              .Append(" |\n");
+
+            sb.Append("| cuticle at the leaf cap (").Append(Format(cuticleMax)).Append(") |")
+              .Append(Format(cuticleWatts)).Append(" W, ")
+              .Append(Format(fixationWatts > 0f ? 100f * cuticleWatts / fixationWatts : 0f))
+              .Append("% of this body's fixation at the surface |\n");
+
+            sb.Append("| mouth at the consumer cap (").Append(Format(mouthMax)).Append(") |")
+              .Append(Format(mouthWatts)).Append(" W |\n");
+
+            sb.Append("| shell at the structural toughness cap |").Append(Format(toughWatts))
+              .Append(" W |\n");
+
+            sb.Append("| steps to kill this part, unprotected |")
+              .Append(bare > 0f ? Format((float)Math.Ceiling(pool / bare)) : "never")
+              .Append(" metabolic steps (").Append(Format(MetabolicStepSeconds)).Append(" s each) |\n");
+
+            sb.Append("| steps to kill it behind a capped cuticle |")
+              .Append(armoured > 0f ? Format((float)Math.Ceiling(pool / armoured)) : "never")
+              .Append(" |\n");
+
+            sb.Append("| a capped mouth emptying a corpse of this body |")
+              .Append(double.IsInfinity(emptySeconds) ? "never" : Format((float)emptySeconds) + " s")
+              .Append(", against ")
+              .Append(config.CorpseDecayPerSecond > 0f
+                  ? Format(1f / config.CorpseDecayPerSecond) + " s of decay"
+                  : "no corpse at all (decay 0)")
+              .Append(" |\n\n");
+        }
+
+        /// <summary>One cell type's cap, from this config's registry — 0 where it is not registered.</summary>
+        private static float CapOf(RunConfig config, string cellTypeId, Func<CellType, float> of) =>
+            config.CellTypes.Contains(cellTypeId) ? of(config.CellTypes.Resolve(cellTypeId)) : 0f;
+
+        /// <summary>
+        /// Applies <c>--attack</c>, <c>--intake</c>, <c>--protection</c> and <c>--toughness</c> to
+        /// a genome's nodes. Returns how many nodes were changed.
+        /// </summary>
+        /// <remarks>
+        /// <b>A bare value reaches every node; <c>type=value</c> reaches every node of that cell
+        /// type.</b> The second is what the screen actually wants — "what does a cuticle on the
+        /// leaves cost" — and the first is what a one-cell body wants, which is most of the
+        /// genomes a screen is run on. Over a cap it throws rather than clamping, because a
+        /// clamped screen would report a price for an organ the world would refuse.
+        /// </remarks>
+        private static int ApplyAttributeOverrides(
+            Genome genome, CellTypeRegistry cellTypes, Options options)
+        {
+            var touched = new HashSet<int>();
+
+            Apply(options.Attack, "attack", (n, v) => n.Attack = v, c => c.AttackMax);
+            Apply(options.Intake, "intake", (n, v) => n.Intake = v, c => c.IntakeMax);
+            Apply(options.Protection, "protection", (n, v) => n.Protection = v, c => c.ProtectionMax);
+            Apply(options.Toughness, "toughness", (n, v) => n.Toughness = v, c => c.ToughnessMax);
+
+            return touched.Count;
+
+            void Apply(
+                AttributeOverride? given, string name, Action<MorphNode, float> set,
+                Func<CellType, float> cap)
+            {
+                if (!given.HasValue) return;
+
+                AttributeOverride over = given.Value;
+
+                if (over.CellTypeId != null && !cellTypes.Contains(over.CellTypeId))
+                {
+                    throw new LedgerCliException(
+                        $"--{name} names cell type '{over.CellTypeId}', which this config does " +
+                        "not register: " + string.Join(", ", cellTypes.Ids()) + ".");
+                }
+
+                for (int n = 0; n < genome.Nodes.Count; n++)
+                {
+                    MorphNode node = genome.Nodes[n];
+                    if (over.CellTypeId != null && node.CellTypeId != over.CellTypeId) continue;
+                    if (!cellTypes.Contains(node.CellTypeId)) continue;
+
+                    float ceiling = cap(cellTypes.Resolve(node.CellTypeId));
+
+                    if (over.Value > ceiling)
+                    {
+                        throw new LedgerCliException(
+                            $"--{name} {Format(over.Value)} is over the cap of {Format(ceiling)} " +
+                            $"for a '{node.CellTypeId}' cell (node {n}). A genome above a cap is " +
+                            "refused by the world, so a screen above one would price an organ " +
+                            "nothing could carry.");
+                    }
+
+                    set(node, over.Value);
+                    touched.Add(n);
+                }
+            }
+        }
 
         // ------------------------------------------------------------------ forecast table
 
@@ -461,6 +691,21 @@ namespace Evosim.Ledger
 
             public bool Compare;
 
+            /// <summary>
+            /// D106 item 3's four, as <c>--attack 0.5</c> or <c>--attack structural=0.5</c>. Null
+            /// is "leave the genome's own value alone", which is not the same as zero.
+            /// </summary>
+            public AttributeOverride? Attack;
+
+            /// <summary>See <see cref="Attack"/>.</summary>
+            public AttributeOverride? Intake;
+
+            /// <summary>See <see cref="Attack"/>.</summary>
+            public AttributeOverride? Protection;
+
+            /// <summary>See <see cref="Attack"/>.</summary>
+            public AttributeOverride? Toughness;
+
             public static Options Parse(string[] args)
             {
                 var raw = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -501,6 +746,10 @@ namespace Evosim.Ledger
                         ? ParseFloat("spent", spentText)
                         : (float?)null,
                     Compare = compare,
+                    Attack = ParseOverride(raw, "attack"),
+                    Intake = ParseOverride(raw, "intake"),
+                    Protection = ParseOverride(raw, "protection"),
+                    Toughness = ParseOverride(raw, "toughness"),
                 };
 
                 foreach (float depth in options.Depths)
@@ -563,6 +812,48 @@ namespace Evosim.Ledger
                 return values;
             }
 
+            /// <summary>
+            /// <c>--attack 0.5</c> or <c>--attack structural=0.5</c>, or nothing at all.
+            /// </summary>
+            /// <remarks>
+            /// A negative value is refused here rather than at the cap test, because the floors
+            /// are 0 for three of the four and 1 for toughness and neither is a number a screen
+            /// has any reason to go under: what would be asked is a body the world refuses.
+            /// </remarks>
+            private static AttributeOverride? ParseOverride(
+                Dictionary<string, string> raw, string key)
+            {
+                if (!raw.TryGetValue(key, out string text) || string.IsNullOrWhiteSpace(text))
+                {
+                    return null;
+                }
+
+                string cellTypeId = null;
+                int split = text.IndexOf('=');
+
+                if (split >= 0)
+                {
+                    cellTypeId = text.Substring(0, split).Trim();
+                    text = text.Substring(split + 1);
+
+                    if (cellTypeId.Length == 0)
+                    {
+                        throw new LedgerCliException(
+                            $"--{key} '{raw[key]}' names an empty cell type. Write " +
+                            $"--{key} <value> for every node, or --{key} <cellType>=<value>.");
+                    }
+                }
+
+                float value = ParseFloat(key, text);
+
+                if (value < 0f)
+                {
+                    throw new LedgerCliException($"--{key} must be non-negative; got {value}.");
+                }
+
+                return new AttributeOverride(cellTypeId, value);
+            }
+
             private static float ParseFloat(string key, string text)
             {
                 if (!float.TryParse(
@@ -572,6 +863,24 @@ namespace Evosim.Ledger
                 }
                 return value;
             }
+        }
+
+        /// <summary>One of D106's four attributes, set from the command line.</summary>
+        /// <remarks>
+        /// <see cref="CellTypeId"/> null is "every node", which is what a one-cell body wants;
+        /// a named type is what the screen wants, since "a cuticle on the leaves" is a statement
+        /// about the leaves and not about the whole animal.
+        /// </remarks>
+        private readonly struct AttributeOverride
+        {
+            public AttributeOverride(string cellTypeId, float value)
+            {
+                CellTypeId = cellTypeId;
+                Value = value;
+            }
+
+            public readonly string CellTypeId;
+            public readonly float Value;
         }
 
         private sealed class LedgerCliException : Exception

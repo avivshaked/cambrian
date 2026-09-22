@@ -329,6 +329,14 @@ namespace Evosim.Core
             // before D099.
             float litFactor = phenotype.LitAreaFactor(config.LightSilhouetteCap);
 
+            // D106 item 3's rule 7, read once before the walk rather than four times inside it.
+            // With every price at zero — the default, and every world in the record — no term is
+            // computed and no float is added to the upkeep, so a body's bill is the number it has
+            // always been down to the last bit.
+            bool priced =
+                config.AttackWattsPerUnit > 0f || config.IntakeWattsPerUnit > 0f ||
+                config.ProtectionWattsPerUnit > 0f || config.ToughnessWattsPerUnit > 0f;
+
             foreach (PhenotypePart part in phenotype.Parts)
             {
                 CellType cell = config.CellTypes.Resolve(part.CellTypeId);
@@ -354,6 +362,14 @@ namespace Evosim.Core
 
                 intake += cell.Acquire(context);
                 upkeep += cell.Upkeep(context);
+
+                // D106 item 3's four prices, charged where the cell's own upkeep is and worn with
+                // it by the senescence factor below — a claw is tissue a body maintains, and an
+                // old body maintains it worse. Attack, intake and protection are rates over the
+                // part's area, so they are billed per square metre of it; toughness is health per
+                // cubic metre and is billed per cubic metre, and only above the neutral 1, so a
+                // part that has not been made tough pays nothing.
+                if (priced) upkeep += AttributeWatts(part, config) * seconds;
 
                 // Neurons are billed where they live, and neural tissue discounts them (§5A.1).
                 // Counting them creature-wide instead would price a brain identically to the same
@@ -412,6 +428,52 @@ namespace Evosim.Core
                 intake, upkeep * wear, neural * wear,
                 Math.Max(0f, workJoules) * config.WorkCostMultiplier,
                 exuded, handling);
+        }
+
+        /// <summary>
+        /// What one part's four attributes cost to keep, in watts — D106 item 3's rule 7.
+        /// </summary>
+        /// <remarks>
+        /// <b>Public because the ledger prints it beside the body's income</b>
+        /// (<c>src/Evosim.Ledger</c>, and the <c>## Mouth</c> section of the screen the spec asks
+        /// for before the round). One expression, read by the metabolic step and by the screen, so
+        /// the number a launcher is chosen on and the number a body is charged cannot drift apart.
+        /// </remarks>
+        public static float AttributeWatts(PhenotypePart part, RunConfig config)
+        {
+            if (part == null) throw new ArgumentNullException(nameof(part));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            float area = Math.Max(0f, part.SurfaceArea);
+            float above = part.Toughness - 1f;
+
+            return
+                config.AttackWattsPerUnit * part.Attack * area +
+                config.IntakeWattsPerUnit * part.Intake * area +
+                config.ProtectionWattsPerUnit * part.Protection * area +
+                (above > 0f
+                    ? config.ToughnessWattsPerUnit * above * Math.Max(0f, part.Volume)
+                    : 0f);
+        }
+
+        /// <summary>
+        /// A part's health pool, in health — its volume times its toughness times
+        /// <see cref="RunConfig.HealthPerCubicMetre"/>, D106 item 3's rule 3.
+        /// </summary>
+        /// <remarks>
+        /// Derived rather than stored, for <see cref="TissueJoules"/>'s reason: a growing body's
+        /// parts change size on every step, and a pool held beside the body would have to be
+        /// rewritten every time or would quietly come to describe a body that no longer exists.
+        /// <see cref="Organism.PartHealth"/> holds the <i>fraction</i> of this a part has, which is
+        /// what makes a resize free.
+        /// </remarks>
+        public static float HealthPool(PhenotypePart part, RunConfig config)
+        {
+            if (part == null) throw new ArgumentNullException(nameof(part));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            float pool = Math.Max(0f, part.Volume) * part.Toughness * config.HealthPerCubicMetre;
+            return pool > 0f ? pool : 0f;
         }
 
         /// <summary>

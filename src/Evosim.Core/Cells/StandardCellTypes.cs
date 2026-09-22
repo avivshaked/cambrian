@@ -88,8 +88,18 @@ namespace Evosim.Core
     /// </remarks>
     public sealed class StructuralCell : CellType
     {
+        /// <remarks>
+        /// The four caps are <c>logbook/specs/mouth-spec.md</c>'s table, rule 2: a claw and armour
+        /// at 1 and the toughest tissue in the body at 4, because structural is the type a lineage
+        /// builds a weapon or a shell out of, and no intake because inert tissue has no mouth.
+        /// </remarks>
         public StructuralCell(float upkeepWattsPerCubicMetre = 1f)
-            : base(upkeepWattsPerCubicMetre) { }
+            : base(upkeepWattsPerCubicMetre)
+        {
+            AttackMax = 1f;
+            ProtectionMax = 1f;
+            ToughnessMax = 4f;
+        }
 
         public override string Id => CellTypeIds.Structural;
         public override CellIntake Acquire(in CellContext context) => CellIntake.None;
@@ -197,6 +207,13 @@ namespace Evosim.Core
             }
             IdleWattsPerNewtonMetre = idleWattsPerNewtonMetre;
             PhotosyntheticEfficiency = photosyntheticEfficiency;
+
+            // The mouth's table (rule 2): half a structural part's claw and half its armour,
+            // because a link is the thing that swings and a tail-strike is what it can be, and
+            // twice the neutral toughness because a limb is what takes the blows.
+            AttackMax = 0.5f;
+            ProtectionMax = 0.5f;
+            ToughnessMax = 2f;
         }
 
         public override string Id => CellTypeIds.Link;
@@ -403,6 +420,11 @@ namespace Evosim.Core
                 throw new ArgumentOutOfRangeException(nameof(efficiency), efficiency, "Must be in (0, 1].");
             }
             Efficiency = efficiency;
+
+            // A cuticle and nothing else (rule 2). A leaf cannot bite, cannot eat a corpse and
+            // cannot be made tough; what it may evolve is a quarter of a claw's worth of skin, and
+            // the ledger screen asks whether that costs it more than a tenth of its own income.
+            ProtectionMax = 0.25f;
         }
 
         public override string Id => CellTypeIds.Photosynthetic;
@@ -501,6 +523,11 @@ namespace Evosim.Core
 
             ClearanceRate = clearanceRate;
             Yield = yield;
+
+            // A skin, as a leaf's is (rule 2). Absorptive tissue feeds on what the water carries
+            // and has no reason to be able to take a corpse apart — that is the consumer's organ,
+            // and giving both the same mouth would make the two types one.
+            ProtectionMax = 0.25f;
         }
 
         public override string Id => CellTypeIds.Absorptive;
@@ -648,6 +675,16 @@ namespace Evosim.Core
             CarrionYield = carrionYield;
             GrazingYield = grazingYield;
             PredationYield = predationYield;
+
+            // The only type with a mouth (rule 2), and the one D106's founders are drawn at their
+            // cap on: a consumer node's intake starts where the type's recorded scavenging rate
+            // already put it, so a world of consumers can scavenge from the first second and what
+            // evolves is how much of the body is mouth. Attack at a structural part's cap because
+            // a bite is what a mouth is for, armour at a link's, toughness at a link's.
+            AttackMax = 1f;
+            IntakeMax = 1f;
+            ProtectionMax = 0.5f;
+            ToughnessMax = 2f;
         }
 
         /// <summary>

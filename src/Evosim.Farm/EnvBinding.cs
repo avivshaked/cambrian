@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Evosim.Core;
@@ -211,6 +211,21 @@ namespace Evosim.Farm
             Num("EVOSIM_MODULE_DROP", D.ModuleDropReserveSeconds, (s, v) => s.ModuleDrop = v),
             Num("EVOSIM_MODULE_DROP_AFTER", D.ModuleDropAfterSeconds, (s, v) => s.ModuleDropAfter = v),
             Num("EVOSIM_MODULE_MUT", MutationRates.Default.ModuleGeneMutationChance, (s, v) => s.ModuleMutation = v),
+
+            // D106 items 1, 3 and 4's ten. Every one of them is off or neutral by default, so a
+            // launcher that names none of them runs the world it always ran: health is present
+            // and nothing damages it, nothing heals, nothing reaches a corpse and no attribute
+            // costs anything.
+            Num("EVOSIM_HEALTH", D.HealthPerCubicMetre, (s, v) => s.Health = v),
+            Num("EVOSIM_HEAL", D.HealingPerSecond, (s, v) => s.Healing = v),
+            Num("EVOSIM_HEAL_COST", D.HealingJoulesPerHealth, (s, v) => s.HealingCost = v),
+            Num("EVOSIM_INTAKE_REACH", D.IntakeReachMetres, (s, v) => s.IntakeReach = v),
+            Num("EVOSIM_INTAKE_WASTE", D.IntakeWasteFraction, (s, v) => s.IntakeWaste = v),
+            Num("EVOSIM_PRICE_ATTACK", D.AttackWattsPerUnit, (s, v) => s.PriceAttack = v),
+            Num("EVOSIM_PRICE_INTAKE", D.IntakeWattsPerUnit, (s, v) => s.PriceIntake = v),
+            Num("EVOSIM_PRICE_PROTECTION", D.ProtectionWattsPerUnit, (s, v) => s.PriceProtection = v),
+            Num("EVOSIM_PRICE_TOUGHNESS", D.ToughnessWattsPerUnit, (s, v) => s.PriceToughness = v),
+            Num("EVOSIM_ATTRIBUTE_MUT", MutationRates.Default.AttributeMutationChance, (s, v) => s.AttributeMutation = v),
             Num("EVOSIM_NEUTRAL_VOLUME", 0f, (s, v) => s.NeutralVolume = v),
             Num("EVOSIM_FOUNDER_DEPTH", D.FounderDepthSpread, (s, v) => s.FounderDepth = v),
             Num("EVOSIM_MATTER_INITIAL", 1f, (s, v) => s.InitialMatter = v),
@@ -219,6 +234,11 @@ namespace Evosim.Farm
             Flag("EVOSIM_SENSE_CHEMICAL", (s, v) => s.SenseChemical = v),
             Flag("EVOSIM_SENSE_ENERGY", (s, v) => s.SenseEnergy = v),
             Flag("EVOSIM_SENSE_FLOW", (s, v) => s.SenseFlow = v),
+
+            // D106 item 5's two, after Flow for the reason RunConfig.SensorPool appends them
+            // there: the pool's order is what decides which channel a draw yields.
+            Flag("EVOSIM_SENSE_CONTACT", (s, v) => s.SenseContact = v),
+            Flag("EVOSIM_SENSE_DAMAGE", (s, v) => s.SenseDamage = v),
             Num("EVOSIM_CHEMICAL_HALF_SCALE", D.ChemicalHalfScaleJoulesPerCubicMetre, (s, v) => s.ChemicalHalfScale = v),
             Num("EVOSIM_ENERGY_FULL_SCALE", D.EnergyFullScaleSeconds, (s, v) => s.EnergyFullScale = v),
             Num("EVOSIM_FLOW_FULL_SCALE", D.FlowFullScaleMetresPerSecond, (s, v) => s.FlowFullScale = v),
@@ -457,6 +477,8 @@ namespace Evosim.Farm
             config.SenseChemical = s.SenseChemical;
             config.SenseEnergy = s.SenseEnergy;
             config.SenseFlow = s.SenseFlow;
+            config.SenseContact = s.SenseContact;
+            config.SenseDamage = s.SenseDamage;
             config.ChemicalHalfScaleJoulesPerCubicMetre = s.ChemicalHalfScale;
             config.EnergyFullScaleSeconds = s.EnergyFullScale;
             config.FlowFullScaleMetresPerSecond = s.FlowFullScale;
@@ -493,6 +515,17 @@ namespace Evosim.Farm
             config.ModuleDropReserveSeconds = s.ModuleDrop;
             config.ModuleDropAfterSeconds = s.ModuleDropAfter;
             config.Mutation.ModuleGeneMutationChance = s.ModuleMutation;
+
+            config.HealthPerCubicMetre = s.Health;
+            config.HealingPerSecond = s.Healing;
+            config.HealingJoulesPerHealth = s.HealingCost;
+            config.IntakeReachMetres = s.IntakeReach;
+            config.IntakeWasteFraction = s.IntakeWaste;
+            config.AttackWattsPerUnit = s.PriceAttack;
+            config.IntakeWattsPerUnit = s.PriceIntake;
+            config.ProtectionWattsPerUnit = s.PriceProtection;
+            config.ToughnessWattsPerUnit = s.PriceToughness;
+            config.Mutation.AttributeMutationChance = s.AttributeMutation;
 
             config.InoculateAtSeconds = s.InoculateAt;
             config.InoculateCount = s.InoculateCount;
@@ -838,6 +871,16 @@ namespace Evosim.Farm
         public float ModuleDrop;
         public float ModuleDropAfter;
         public float ModuleMutation;
+        public float Health;
+        public float Healing;
+        public float HealingCost;
+        public float IntakeReach;
+        public float IntakeWaste;
+        public float PriceAttack;
+        public float PriceIntake;
+        public float PriceProtection;
+        public float PriceToughness;
+        public float AttributeMutation;
         public float NeutralVolume;
         public float FounderDepth;
         public float InitialMatter;
@@ -846,6 +889,8 @@ namespace Evosim.Farm
         public bool SenseChemical;
         public bool SenseEnergy;
         public bool SenseFlow;
+        public bool SenseContact;
+        public bool SenseDamage;
         public float ChemicalHalfScale;
         public float EnergyFullScale;
         public float FlowFullScale;

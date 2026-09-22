@@ -117,6 +117,54 @@ namespace Evosim.Core
         private float _tissueEnergyPerCubicMetre = 500f;
 
         /// <summary>
+        /// The most <see cref="MorphNode.Attack"/> a node of this type may carry — D106 item 3,
+        /// <c>logbook/specs/mouth-spec.md</c> rule 2. Health per second per square metre.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The cap is what makes an organ an organ.</b> D106's ruling is that any cell may hurt,
+        /// eat, resist or endure — and that what a cell may do is capped per type, so a leaf cannot
+        /// grow a claw for free and a claw is something a lineage has to build a structural part
+        /// for. A genome above a cap is refused by <see cref="Genome.Validate"/> rather than
+        /// clamped, for §9's reason: a clamped genome is a different creature wearing the stored
+        /// one's identity.
+        /// </para>
+        /// <para>
+        /// <b>Settable rather than constructor-injected</b>, exactly as
+        /// <see cref="TissueEnergyPerCubicMetre"/> is and for its reason: every type has all four,
+        /// so <see cref="CellTypeJson"/> applies them after construction and a type registered from
+        /// outside this assembly picks them up without its constructor knowing they exist. Each
+        /// built-in type sets the spec's table in its own constructor, which is the default a
+        /// launcher writes out. ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        public float AttackMax { get; set; }
+
+        /// <summary>
+        /// The most <see cref="MorphNode.Intake"/> a node of this type may carry — charged units
+        /// per second per square metre taken from a corpse in reach. See <see cref="AttackMax"/>.
+        /// </summary>
+        public float IntakeMax { get; set; }
+
+        /// <summary>
+        /// The most <see cref="MorphNode.Protection"/> a node of this type may carry — damage per
+        /// second per square metre absorbed before health suffers. See <see cref="AttackMax"/>.
+        /// </summary>
+        public float ProtectionMax { get; set; }
+
+        /// <summary>
+        /// The most <see cref="MorphNode.Toughness"/> a node of this type may carry — health per
+        /// cubic metre, relative to the neutral 1. See <see cref="AttackMax"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>1 and not 0 is the floor of this one</b>, which is why its default here is 1 rather
+        /// than 0: toughness multiplies a part's health pool, so 0 is a body that dies to the first
+        /// scratch and there is nothing a lineage could want it for. A type whose cap is 1 is a
+        /// type that cannot armour itself at all, which is what the spec's table says of a leaf.
+        /// </remarks>
+        public float ToughnessMax { get; set; } = 1f;
+
+        /// <summary>
         /// Whether a part of this type may have a movable joint to its parent — §5A.1.
         /// </summary>
         /// <remarks>
@@ -255,7 +303,9 @@ namespace Evosim.Core
         public string FullHashContribution() =>
             string.Format(
                 CultureInfo.InvariantCulture,
-                "{0},tissue={1:R}", HashContribution(), TissueEnergyPerCubicMetre);
+                "{0},tissue={1:R},atkMax={2:R},inkMax={3:R},prtMax={4:R},tghMax={5:R}",
+                HashContribution(), TissueEnergyPerCubicMetre,
+                AttackMax, IntakeMax, ProtectionMax, ToughnessMax);
 
         public override string ToString() => Id;
     }

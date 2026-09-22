@@ -205,6 +205,78 @@ namespace Evosim.Dynamics
         }
 
         /// <summary>
+        /// For one overlapping pair, the nearest pair of parts — D106 item 5, and the whole of
+        /// what the mouth needs that this instrument did not already hold.
+        /// </summary>
+        /// <param name="pair">A pair from <see cref="Overlaps"/>, this step's.</param>
+        /// <param name="partA">The part of <see cref="OverlapPair.A"/> nearest the other body.</param>
+        /// <param name="partB">The part of <see cref="OverlapPair.B"/> nearest the first.</param>
+        /// <returns>False when either body has left the world since the list was taken.</returns>
+        /// <remarks>
+        /// <para>
+        /// <b>Asked, not kept, and that is a decision about cost.</b> The overlap census runs on
+        /// every physics step — a hundred a second at the campaign's dt — and the bite is settled
+        /// once per metabolic step, fifty of them apart. Computing the nearest pair inside
+        /// <see cref="CloseContactStep"/> would do the work fifty times for every time it is read,
+        /// on a loop the whole engine's pace rests on, so the farm asks this of the list it finds
+        /// at the step it feeds Core. The census itself is unchanged, which is also why no
+        /// recorded number moves.
+        /// </para>
+        /// <para>
+        /// <b>Every part against every part, which is at most sixteen by sixteen.</b>
+        /// <see cref="Evosim.Core.DevelopmentLimits.MaxParts"/> bounds a body, and the two bodies
+        /// are already known to be within a bounding sphere of each other, so there is nothing to
+        /// be gained from a second broadphase here and a great deal to be lost in having two of
+        /// them that could disagree about who is touching whom.
+        /// </para>
+        /// <para>
+        /// <b>Link origins and not surfaces.</b> A part's <see cref="Creature.Position"/> is where
+        /// the solver put its body frame; using that rather than the nearest points on two boxes
+        /// keeps this to one subtraction per pair and is what D106 item 4 asks for in as many
+        /// words — a distance test at the metabolic step, and no physics.
+        /// </para>
+        /// </remarks>
+        public bool NearestParts(in OverlapPair pair, out int partA, out int partB)
+        {
+            partA = -1;
+            partB = -1;
+
+            Creature a = ById(pair.A);
+            Creature b = ById(pair.B);
+
+            if (a == null || b == null || !a.Alive || !b.Alive) return false;
+            if (a.Links == 0 || b.Links == 0) return false;
+
+            double best = double.PositiveInfinity;
+
+            for (int i = 0; i < a.Links; i++)
+            {
+                double ax = a.Position[3 * i];
+                double ay = a.Position[3 * i + 1];
+                double az = a.Position[3 * i + 2];
+
+                for (int j = 0; j < b.Links; j++)
+                {
+                    double dx = ax - b.Position[3 * j];
+                    double dy = ay - b.Position[3 * j + 1];
+                    double dz = az - b.Position[3 * j + 2];
+
+                    double gap = dx * dx + dy * dy + dz * dz;
+                    if (!(gap < best)) continue;
+
+                    best = gap;
+                    partA = i;
+                    partB = j;
+                }
+            }
+
+            // A body whose links are all non-finite never wins the comparison above. It is about
+            // to be killed as a divergence at the next metabolic step; what this returns is that
+            // there is no pair to name, rather than the pair at index zero by default.
+            return partA >= 0 && partB >= 0;
+        }
+
+        /// <summary>
         /// The step's five counters and its event list, taken serially once every body has
         /// been stepped and every sphere committed.
         /// </summary>

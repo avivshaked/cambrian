@@ -355,6 +355,16 @@ namespace Evosim.Core
                     // the world we want is a question for a round, not for a copy constructor.
                     Power = part.Power,
                     Lift = part.Lift,
+
+                    // D106 item 3's four, on the same argument one field along: attack, intake and
+                    // protection are rates per square metre and toughness is health per cubic
+                    // metre, so all four already mean the same thing at any size. What a growing
+                    // body gains is the area and the volume they are multiplied by, which is the
+                    // half-extents above.
+                    Attack = part.Attack,
+                    Intake = part.Intake,
+                    Protection = part.Protection,
+                    Toughness = part.Toughness,
                     ParentAnchorLocal = part.ParentAnchorLocal * linear,
                     ChildAnchorLocal = part.ChildAnchorLocal * linear,
                     Neurons = part.Neurons,
@@ -362,6 +372,112 @@ namespace Evosim.Core
             }
 
             return scaled;
+        }
+
+        /// <summary>
+        /// A copy of this body with the parts <paramref name="drop"/> marks, and everything
+        /// hanging from them, gone — D106 item 1's kill and <c>logbook/specs/mouth-spec.md</c>
+        /// rule 4.
+        /// </summary>
+        /// <param name="drop">
+        /// One entry per part; true removes that part and its whole subtree. A dropped root gives
+        /// a body of no parts, which is a death and not a body (<c>World.KillPart</c> handles it
+        /// before it gets here).
+        /// </param>
+        /// <param name="map">
+        /// Filled with, for each part of the copy, its index in this body. The inverse of what
+        /// <see cref="Developer.MatchParts"/> produces, and the same thing the harness's rebuild
+        /// consumes.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>A surgery and not a development.</b> Development expresses a genome at a set of
+        /// counts; a part that was bitten off is not expressible that way — nothing in the genome
+        /// says "this occurrence of this node is gone" — so the body is cut instead. What makes
+        /// the cut safe is that a part's geometry is absolute in the creature's own frame, so
+        /// removing one moves nothing: the survivors keep their positions, their rotations and
+        /// their anchors exactly, and only the indices close up.
+        /// </para>
+        /// <para>
+        /// <b>Pre-order is what makes one forward pass enough.</b>
+        /// <see cref="PhenotypePart.ParentIndex"/> is always below <see cref="PhenotypePart.Index"/>
+        /// (<see cref="PhenotypePart"/>'s remarks), so a part's parent has already been decided by
+        /// the time the part is reached and a subtree falls by inheritance rather than by search.
+        /// </para>
+        /// <para>
+        /// <b>The silhouette is re-measured and the lit area is not.</b> The lit area is a sum over
+        /// parts and <see cref="Add"/> accumulates it, so it comes out right by construction; the
+        /// hull is a property of the whole cloud and a body with a limb missing casts a smaller
+        /// shadow, which it must, because it also earns on it (<see cref="EffectiveLitArea"/>).
+        /// </para>
+        /// </remarks>
+        public Phenotype WithoutSubtrees(bool[] drop, out int[] map)
+        {
+            if (drop == null) throw new System.ArgumentNullException(nameof(drop));
+
+            var keep = new bool[_parts.Count];
+            int kept = 0;
+
+            for (int i = 0; i < _parts.Count; i++)
+            {
+                int parent = _parts[i].ParentIndex;
+                keep[i] = (parent < 0 || keep[parent]) && !(i < drop.Length && drop[i]);
+                if (keep[i]) kept++;
+            }
+
+            var cut = new Phenotype
+            {
+                Limits = Limits.Clone(),
+                PrunedForVolume = PrunedForVolume,
+                PrunedForDepth = PrunedForDepth,
+                PrunedForParts = PrunedForParts,
+                ScaledBy = ScaledBy,
+            };
+
+            map = new int[kept];
+
+            var moved = new int[_parts.Count];
+            for (int i = 0; i < moved.Length; i++) moved[i] = -1;
+
+            for (int i = 0; i < _parts.Count; i++)
+            {
+                if (!keep[i]) continue;
+
+                PhenotypePart part = _parts[i];
+                int at = cut.PartCount;
+
+                moved[i] = at;
+                map[at] = i;
+
+                cut.Add(new PhenotypePart
+                {
+                    ParentIndex = part.ParentIndex < 0 ? -1 : moved[part.ParentIndex],
+                    SourceNode = part.SourceNode,
+                    Depth = part.Depth,
+                    HalfExtents = part.HalfExtents,
+                    Position = part.Position,
+                    Rotation = part.Rotation,
+                    Mirrored = part.Mirrored,
+                    CellTypeId = part.CellTypeId,
+                    ShapeId = part.ShapeId,
+                    Volume = part.Volume,
+                    SurfaceArea = part.SurfaceArea,
+                    JointType = part.JointType,
+                    JointLimits = part.JointLimits,
+                    Power = part.Power,
+                    Lift = part.Lift,
+                    Attack = part.Attack,
+                    Intake = part.Intake,
+                    Protection = part.Protection,
+                    Toughness = part.Toughness,
+                    ParentAnchorLocal = part.ParentAnchorLocal,
+                    ChildAnchorLocal = part.ChildAnchorLocal,
+                    Neurons = part.Neurons,
+                });
+            }
+
+            cut.MeasureSilhouette();
+            return cut;
         }
 
         internal PhenotypePart Add(PhenotypePart part)

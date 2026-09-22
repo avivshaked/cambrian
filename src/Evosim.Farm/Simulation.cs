@@ -79,6 +79,16 @@ namespace Evosim.Farm
         private readonly Dictionary<long, Body> _bodies = new Dictionary<long, Body>();
         private readonly List<Body> _order = new List<Body>();
         private readonly HashSet<long> _departed = new HashSet<long>();
+
+        /// <summary>
+        /// The metabolic step's contact list, reused — D106 item 5, <c>HandOverContacts</c>.
+        /// </summary>
+        /// <remarks>
+        /// Held on the simulation rather than allocated per step, because it is refilled twice a
+        /// simulated second for the whole of a run and Core drops its reference at the end of the
+        /// step that reads it.
+        /// </remarks>
+        private readonly List<CreatureContact> _contacts = new List<CreatureContact>();
         private readonly List<Body> _condemned = new List<Body>();
 
         private long _reconciledAt = -1;

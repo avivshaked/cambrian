@@ -71,6 +71,15 @@ namespace Evosim.Core
             writer.Field("id", type.Id);
             writer.Field("upkeepWattsPerCubicMetre", type.UpkeepWattsPerCubicMetre);
             writer.Field("tissueEnergyPerCubicMetre", type.TissueEnergyPerCubicMetre);
+
+            // D106 item 3's cap table (logbook/specs/mouth-spec.md rule 2). Written here rather
+            // than by each type for the reason the upkeep is: every type has all four, and
+            // duplicating that is how one of them ends up omitted.
+            writer.Field("attackMax", type.AttackMax);
+            writer.Field("intakeMax", type.IntakeMax);
+            writer.Field("protectionMax", type.ProtectionMax);
+            writer.Field("toughnessMax", type.ToughnessMax);
+
             type.WriteParameters(writer);
             writer.EndObject();
         }
@@ -93,6 +102,15 @@ namespace Evosim.Core
             // delegate. A type registered from outside this assembly then picks them up without
             // its constructor knowing they exist, which is what Register promises.
             type.TissueEnergyPerCubicMetre = node["tissueEnergyPerCubicMetre"].AsFloat();
+
+            // Refused rather than defaulted, as everything here is (§9). A cell-type table written
+            // before D106 has no caps at all, and a run loaded with the built-in table standing in
+            // for the recorded one would be a different world wearing the recording's name — which
+            // is exactly what makes every config written before this build unreadable by it.
+            type.AttackMax = node["attackMax"].AsFloat();
+            type.IntakeMax = node["intakeMax"].AsFloat();
+            type.ProtectionMax = node["protectionMax"].AsFloat();
+            type.ToughnessMax = node["toughnessMax"].AsFloat();
 
             return type;
         }

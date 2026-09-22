@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Evosim.Core;
@@ -624,6 +624,12 @@ namespace Evosim.Core.Tests
                 node.JointType = JointType.Fixed;
                 node.JointLimits = Array.Empty<Float2>();
                 node.Power = 0f;
+
+                // D106 item 3. A consumer node drawn by the founding lottery carries its type's
+                // intake cap, and a link's cap is zero — so a helper that retypes a node by hand
+                // has to bring the attributes under the new ceilings, which is what
+                // Mutator.ChangeCellType does for the world.
+                node.Intake = 0f;
             }
 
             return g;

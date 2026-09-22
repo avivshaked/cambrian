@@ -140,6 +140,16 @@ namespace Evosim.Core.Tests
                 {
                     foreach (int count in creature.ModuleCounts) readings.Add(count);
                 }
+
+                // D106's other two, for the same reason. A lost part is a plan change no count can
+                // express — restore it wrongly and the body comes back whole — and a part's health
+                // is state that decides whether it is about to come off at all.
+                readings.Add(creature.LostPartPaths == null ? 0 : creature.LostPartPaths.Count);
+
+                if (creature.PartHealth != null)
+                {
+                    foreach (float health in creature.PartHealth) readings.Add(health);
+                }
             }
 
             return readings;
@@ -201,6 +211,88 @@ namespace Evosim.Core.Tests
             Assert.Equal(world.ModuleDrops, restored.ModuleDrops);
             Assert.Equal(world.ModuleAddsRefused, restored.ModuleAddsRefused);
             Assert.Equal(world.ModulesStanding, restored.ModulesStanding);
+        }
+
+        /// <summary>
+        /// The same round trip asked of a world the mouth has been through — D106 items 3 and 4.
+        /// A wounded body's health, a maimed body's lost part, and the six counters.
+        /// </summary>
+        /// <remarks>
+        /// <b>A maimed body is the case the byte comparison alone cannot catch.</b> Health is a
+        /// fraction per part and would round-trip perfectly even if the plan came back whole,
+        /// because a body of two parts and a body of one both carry an array the reader believes.
+        /// What pins it is the part count in <see cref="Readings"/>: restoring the paths wrongly
+        /// re-grows the limb, and the restored body is a different animal.
+        /// </remarks>
+        [Fact]
+        public void AWoundedWorldRestoresItsHealthItsLostPartsAndItsCounters()
+        {
+            RunConfig Bitten() => new RunConfig
+            {
+                MinimumPopulation = 0,
+                MaximumPopulation = 2_000,
+                WorldAreaSquareMetres = 100f,
+                WorldDepthMetres = 20f,
+                Light = new LightModel(400f, 12f),
+                InitialMatterPerCubicMetre = 50f,
+                PerOffspringOverheadJoules = 1e9f,
+                HealthPerCubicMetre = 100f,
+                CorpseDecayPerSecond = 0.0001f,
+            };
+
+            RunConfig config = Bitten();
+            var world = new World(config, seed: 11);
+
+            world.Inoculate(Fixtures.MouthSpine(2), count: 1, heightY: -5f);
+            world.Inoculate(Fixtures.MouthSpine(1), count: 1, heightY: -5f);
+            world.Inoculate(Fixtures.ArmedBox(attack: 1f), count: 1, heightY: -5f);
+
+            Organism maimed = world.Living[0];
+            Organism wounded = world.Living[1];
+            Organism claw = world.Living[2];
+
+            // One body loses a limb, which is a plan change; the other is left part way down its
+            // health, which is state on a body whose plan never moved.
+            for (int step = 0; step < 100 && maimed.Phenotype.PartCount > 1; step++)
+            {
+                world.SetContacts(new List<CreatureContact>
+                {
+                    new CreatureContact(claw.Id, 0, maimed.Id, 1),
+                });
+
+                world.ApplyMouth(1f);
+            }
+
+            world.SetContacts(new List<CreatureContact>
+            {
+                new CreatureContact(claw.Id, 0, wounded.Id, 0),
+            });
+
+            world.ApplyMouth(0.5f);
+
+            // A world worth round-tripping: one body short of a limb, one short of its health, a
+            // corpse in the water and the counters standing at something other than zero.
+            Assert.Equal(1, maimed.Phenotype.PartCount);
+            Assert.Equal(1, maimed.LostPartPaths.Count);
+            Assert.True(wounded.PartHealth[0] > 0f && wounded.PartHealth[0] < 1f);
+            Assert.Equal(1L, world.PartsKilled);
+            Assert.Single(world.Corpses);
+
+            byte[] first = StateOf(world);
+            World restored = Restored(Bitten(), 11, first);
+
+            Assert.Equal(Readings(world), Readings(restored));
+            Assert.Equal(first, StateOf(restored));
+
+            Assert.Equal(1, restored.Living[0].Phenotype.PartCount);
+            Assert.Equal(wounded.PartHealth[0], restored.Living[1].PartHealth[0]);
+
+            Assert.Equal(world.PartsKilled, restored.PartsKilled);
+            Assert.Equal(world.BodiesEaten, restored.BodiesEaten);
+            Assert.Equal(world.CorpsesFromKills, restored.CorpsesFromKills);
+            Assert.Equal(world.UnitsEaten, restored.UnitsEaten);
+            Assert.Equal(world.CorpsesEaten, restored.CorpsesEaten);
+            Assert.Equal(world.HealingJoules, restored.HealingJoules);
         }
 
         [Fact]

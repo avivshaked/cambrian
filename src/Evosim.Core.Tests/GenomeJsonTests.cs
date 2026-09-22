@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Evosim.Core;
 using Xunit;
 using Xunit.Abstractions;
@@ -255,10 +255,16 @@ namespace Evosim.Core.Tests
                 {
                     Assert.Equal(ModuleGrowth.Determinate, node.Growth);
                     Assert.Equal(node.RecursiveLimit, node.MaxModules);
+                    // D106 item 3's founder rule (mouth-spec rule 1), which round 45's build
+                    // turned on: attack and protection at zero on every node — the owner's
+                    // ruling that a world starts with nothing armed — toughness at the neutral 1,
+                    // and intake at the node's own cell type's cap, which is zero everywhere but
+                    // a consumer. No draw is taken for any of them.
                     Assert.Equal(0f, node.Attack);
-                    Assert.Equal(0f, node.Intake);
                     Assert.Equal(0f, node.Protection);
                     Assert.Equal(1f, node.Toughness);
+                    Assert.Equal(
+                        CellTypeRegistry.Standard.Resolve(node.CellTypeId).IntakeMax, node.Intake);
                 }
             }
         }

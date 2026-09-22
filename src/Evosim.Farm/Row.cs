@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Evosim.Core;
@@ -76,6 +76,12 @@ namespace Evosim.Farm
         private long _lastModuleDrops;
         private long _lastModuleAddsRefused;
 
+        // D106 items 1, 3 and 4's four windows, on the same rule.
+        private long _lastPartsKilled;
+        private long _lastBodiesEaten;
+        private long _lastCorpsesEaten;
+        private double _lastHealingJoules;
+
         private readonly List<AbsorptiveSample> _absorptiveRows = new List<AbsorptiveSample>();
 
         private long[] _positionIds = Array.Empty<long>();
@@ -135,6 +141,11 @@ namespace Evosim.Farm
             w.Write(_lastModuleAdds);
             w.Write(_lastModuleDrops);
             w.Write(_lastModuleAddsRefused);
+
+            w.Write(_lastPartsKilled);
+            w.Write(_lastBodiesEaten);
+            w.Write(_lastCorpsesEaten);
+            w.Write(_lastHealingJoules);
         }
 
         /// <summary>Puts the sampler back.</summary>
@@ -170,6 +181,11 @@ namespace Evosim.Farm
             _lastModuleAdds = r.ReadInt64();
             _lastModuleDrops = r.ReadInt64();
             _lastModuleAddsRefused = r.ReadInt64();
+
+            _lastPartsKilled = r.ReadInt64();
+            _lastBodiesEaten = r.ReadInt64();
+            _lastCorpsesEaten = r.ReadInt64();
+            _lastHealingJoules = r.ReadDouble();
         }
 
         /// <summary>
@@ -385,6 +401,17 @@ namespace Evosim.Farm
             long moduleRefusedWindow = world.ModuleAddsRefused - _lastModuleAddsRefused;
             long modulesStanding = world.ModulesStanding;
             double indeterminateShare = world.IndeterminateShare;
+
+            // D106 items 1, 3 and 4's windows and shares. The three shares are read off the
+            // cached per-body flags, so each is a walk over the living and not over their parts.
+            long partsKilledWindow = world.PartsKilled - _lastPartsKilled;
+            long bodiesEatenWindow = world.BodiesEaten - _lastBodiesEaten;
+            long corpsesEatenWindow = world.CorpsesEaten - _lastCorpsesEaten;
+            double healingWindow = world.HealingJoules - _lastHealingJoules;
+
+            double attackShare = world.AttackShare;
+            double intakeShare = world.IntakeShare;
+            double protectionShare = world.ProtectionShare;
 
             double matterResidual = world.MatterResidual;
 
@@ -673,7 +700,22 @@ namespace Evosim.Farm
                 .Field("moduleDrops", world.ModuleDrops)
                 .Field("moduleAddsRefused", world.ModuleAddsRefused)
                 .Field("indeterminateShare", indeterminateShare)
-                .Field("moduleRebuilds", sim.ModuleRebuilds);
+                .Field("moduleRebuilds", sim.ModuleRebuilds)
+
+                // D106 items 1, 3 and 4, rule 8. The six counters are running totals a reader
+                // differences into a window, as the module gene's three are; the three shares are
+                // states. `corpsesFromKills` is beside `bodiesEaten` because the two part in a
+                // world at CorpseDecayPerSecond 0, where a kill deposits at once and founds no
+                // corpse at all.
+                .Field("partsKilled", world.PartsKilled)
+                .Field("bodiesEaten", world.BodiesEaten)
+                .Field("corpsesFromKills", world.CorpsesFromKills)
+                .Field("unitsEaten", world.UnitsEaten)
+                .Field("corpsesEaten", world.CorpsesEaten)
+                .Field("healingJoules", world.HealingJoules)
+                .Field("attackShare", attackShare)
+                .Field("intakeShare", intakeShare)
+                .Field("protectionShare", protectionShare);
 
                 long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
@@ -851,6 +893,15 @@ namespace Evosim.Farm
                 moduleDropsWindow.ToString(c),
                 moduleRefusedWindow.ToString(c),
                 (100d * indeterminateShare).ToString("0.#", c) + "%",
+
+                // D106 items 1, 3 and 4, rule 8, in BaseColumns' order.
+                (100d * attackShare).ToString("0.#", c) + "%",
+                (100d * intakeShare).ToString("0.#", c) + "%",
+                (100d * protectionShare).ToString("0.#", c) + "%",
+                partsKilledWindow.ToString(c),
+                bodiesEatenWindow.ToString(c),
+                corpsesEatenWindow.ToString(c),
+                healingWindow.ToString("0.###", c),
             };
 
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));
@@ -876,6 +927,10 @@ namespace Evosim.Farm
             _lastModuleAdds = world.ModuleAdds;
             _lastModuleDrops = world.ModuleDrops;
             _lastModuleAddsRefused = world.ModuleAddsRefused;
+            _lastPartsKilled = world.PartsKilled;
+            _lastBodiesEaten = world.BodiesEaten;
+            _lastCorpsesEaten = world.CorpsesEaten;
+            _lastHealingJoules = world.HealingJoules;
 
             if (row.Count != columns.Count)
             {

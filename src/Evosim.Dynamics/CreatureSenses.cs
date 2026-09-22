@@ -92,6 +92,35 @@ namespace Evosim.Dynamics
         /// </summary>
         public IReserveSource Reserve { get; set; }
 
+        /// <summary>
+        /// Whether each part was touching another body at the last metabolic step — what
+        /// <see cref="SensorChannel.Contact"/> reports, D106 item 5. Null reads 0 everywhere.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Handed over rather than sampled, and that is the only way round it could work.</b>
+        /// Who is touching whom is settled by the overlap census on the main thread between steps
+        /// and applied by Core's mouth pass at the metabolic step; this array is
+        /// <c>Organism.PartContact</c>, set on the body by the farm on the step that computed it.
+        /// A creature sampling its own contacts inside the parallel region would be asking about
+        /// other bodies while they are being stepped, which is the one thing the solver's
+        /// thread-count identity rests on not happening.
+        /// </para>
+        /// <para>
+        /// <b>One metabolic step stale at the brain</b>, which is the staleness
+        /// <see cref="SensorChannel.Flow"/> already has and is the honest latency of a nerve. See
+        /// the class remarks.
+        /// </para>
+        /// </remarks>
+        public bool[] Contact { get; set; }
+
+        /// <summary>
+        /// The share of its own health pool each part lost at the last metabolic step — what
+        /// <see cref="SensorChannel.Damage"/> reports. Null reads 0 everywhere. See
+        /// <see cref="Contact"/>.
+        /// </summary>
+        public float[] Damage { get; set; }
+
         public CreatureSenses(Creature body, SolverConfig config)
         {
             _body = body;
@@ -250,6 +279,26 @@ namespace Evosim.Dynamics
 
                 case SensorChannel.Flow:
                     return index >= 0 && index < 3 ? _flow[partIndex * 3 + index] : 0f;
+
+                // D106 item 5's two. Zero where the world has handed over nothing — a body that
+                // touched nothing and lost nothing — which is the same zero an unimplemented
+                // channel reads, and is the right answer rather than a stand-in: not being
+                // touched is a real state and the commonest one there is. NeuronInput.Index is
+                // ignored on both, as it is on Energy and for a weaker version of its reason:
+                // there is one flag and one share per part and no axis to choose between.
+                case SensorChannel.Contact:
+                    return Contact != null && partIndex < Contact.Length && Contact[partIndex]
+                        ? 1f
+                        : 0f;
+
+                // Already a share of the part's own pool, so it needs no scale of its own: 0 is
+                // untouched, 1 is a part taken from full to nothing in one step, and it is clamped
+                // rather than left to run past 1 on an overkill blow, because a brain reading a
+                // channel outside its stated range would be reading a different channel.
+                case SensorChannel.Damage:
+                    return Damage != null && partIndex < Damage.Length
+                        ? Clamp(Damage[partIndex])
+                        : 0f;
 
                 default: return 0f;
             }

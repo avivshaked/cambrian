@@ -117,3 +117,70 @@ protection appears in a lineage after attack does, never before, in 3 of 3. J5: 
 stays above 300 at 30,000 s in 2 of 3 (the massacre reading if not). J6: both books closed,
 `diverged` 0. J7: a body's reserve is where the yield comes from: `unitsEaten` per corpse
 tracks the corpse's reserve share and not its tissue.
+
+## As built (2026-09-22 night)
+
+The map above held everywhere it named a file. Nine things came out differently, and each is
+here because a reader of the code would otherwise go looking for what the map promised.
+
+- **A dead part's identity is its developer path, and a body remembers what it lost.** A kill is
+  not expressible as a module count: the module gene changes how many copies of a node a body
+  grows, and a bite takes one named part and everything hanging from it. So `Organism.LostPartPaths`
+  holds the (edge index, mirror ordinal) path of every part ever bitten off, and one private
+  routine, `World.DevelopPlan`, develops a body's plan and then prunes those paths out of it.
+  Every rebuild in the world goes through it — a module added, a module dropped, a checkpoint
+  restored, a limb lost — so a lost part stays lost while an indeterminate node still regrows *by
+  count* at a fresh path, which is the module gene's rule 4 unharmed. With nothing lost,
+  `DevelopPlan` is `Developer.Develop` and nothing else. The pruning itself is
+  `Phenotype.WithoutSubtrees`, which returns the surviving parts and the map back to the old ones.
+- **Health is stored as a fraction of the pool, not as the pool.** `Organism.PartHealth` is one
+  float per part in [0, 1] and `Metabolism.HealthPool` derives the pool from the part's volume,
+  its toughness and `HealthPerCubicMetre` whenever it is needed. That is what makes "full at
+  birth, full at a module add, and scaled with volume at a growth resize" true without any of
+  those three events having to do anything: a body that doubles in size doubles its pool and
+  keeps the share of it that it had. The array is `null` until something wounds the body, so a
+  world of plants allocates nothing at all.
+- **An attribute steps in absolute units, not relative ones.** The brief asked for a
+  `PerturbPositive`-style step, which is a relative Gaussian; on an attribute that starts at zero
+  a relative step is zero forever, which is the same trap `MaxModules` fell into. So
+  `Mutator.MoveAttribute` adds a Gaussian scaled to the attribute's own range — the cap less the
+  floor — and clamps into it. At a cap equal to the floor it returns the floor without drawing at
+  all, so a node on a cell type that cannot carry the attribute costs the stream nothing.
+- **The contact list is asked of the census, not built by it.** `Evosim.Dynamics` already reports
+  which creatures overlap; what the mouth needed was which *parts*. `DynamicsWorld.NearestParts`
+  answers that for one pair by comparing link origins, at most sixteen by sixteen, and the farm
+  asks it once per metabolic step rather than once per physics step — fifty times less often, on
+  a loop the engine's whole pace rests on. The census itself is untouched, which is why no
+  recorded number moves. Core receives the answers as `CreatureContact` rows through
+  `World.SetContacts`, held by reference and cleared when they are read, so a list that is not
+  renewed cannot bite twice.
+- **The mouth runs as one pass between metabolism and growth**, `World.ApplyMouth`, in the order
+  damage, intake, healing, kills. Healing after intake so a scavenger has this step's meal before
+  it pays for repairs; the kills last because rule 3 puts them at the end of the step, which gives
+  a part taken to zero one chance to heal out of it and makes `HealingPerSecond` a defence rather
+  than a decoration.
+- **A kill's corpse stands where the body stands, not where the part stood.** Core holds one
+  position per body and none per part, so `ShedRemains` — the module gene's own corpse path, and
+  `Bury`'s two branches — deposits at the body's point. At the campaign's body sizes that is
+  under a metre from the truth and inside the field's own kernel.
+- **`PartsKilled` and `BodiesEaten` do not overlap.** A root, or the only part of a one-part body,
+  is the body and not a part of it, so its loss is counted as a body eaten and not as a part
+  killed. Counting a one-part body in both would make the first column unreadable: what it
+  measures is grazing a body survives.
+- **The two new senses are appended and the pool order is untouched.** `SensorChannel.Contact` and
+  `SensorChannel.Damage` go on the end of `RunConfig.SensorPool()`, after `Flow`, so a run with
+  both dials off draws the same channel for the same neuron as every run in the record.
+  `SensorChannels.Implemented` is deliberately unchanged: it is what the Unity smoke asserts every
+  listed channel varies on, and Unity's sensor code does not answer these two.
+- **Two fixtures stopped working, for the reason §9 exists** — the same bite the module gene took,
+  one round later. This build refuses `runs/r44fix-s4`, round 44's own re-recording, because its
+  `config.json` predates the mouth's tunables and its cell types predate the four caps; the ten
+  `Evosim.Dynamics.Tests` that read it fail on the fixture and say so. Round 42's config hash moved
+  from `11602ab76c1e2a19` to `fa6cdceda4ab17b6` for the same reason. The world did not change; the
+  name it is filed under did.
+
+The regress: round 44's world at every mouth default, 1,000 s, 4 threads, against a run of the
+same launcher recorded on the tree before any of this was written — 132 shared fields at each of
+100 samples, identical, `alive`, `births`, `deaths`, `auditResidual` and `matterResidual` among
+them, with the nine new fields present on one side only. A world where nothing is armed, nothing
+has a mouth, nothing heals and no attribute is charged for is the recorded world.
