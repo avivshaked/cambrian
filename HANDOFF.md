@@ -129,6 +129,19 @@ of 30) and small; the world step is done as a target until the GPU. `scratch/gri
 bench.ps1` alternates builds and repeats, because a first single run misread a contended
 core as a regression.
 
+**The state stream is in** (`f300ad4`, `logbook/specs/state-stream-spec.md`): `EVOSIM_POSE_EVERY`
+(a recording setting, default 0) writes `poses.bin` beside the JSONL, 49 bytes a body at
+three dof with the body fraction the JSONL never had, an index and a scan reader that
+survives a torn last frame; `scripts/poses-read.py` reads it from the spec alone;
+`theatre-snap.ps1 -From snapshot -At <t>` draws any recorded second from it with genomes
+from the nearest snapshot before. 1,000 bodies at 1 s for 30,000 s is 1.5 GB. **The owner's
+direction of 2026-09-22 afternoon**: the theatre's primary use is live play in Unity from a
+recorded second, a cousin being fine, for films (a safari at 5,000, 15,000, 30,000 s) and
+the interface's stats. So the sequence is the live view on the new engine (building), then
+farm **checkpoints** every 1,000 s proven complete by restore-and-continue identity
+(building, `logbook/specs/checkpoint-spec.md`), then the Runner's checkpoint picker; the
+stream stays at coarse cadence as the round record.
+
 **Machine.** i9-13900K, 24 cores, RTX 4090 with 24 GB. The farm takes `EVOSIM_THREADS`;
 16 is the measured best at this crowd. The Unity cap stays D103's. Run
 `scripts/sweep-orphans.ps1` at every session start; it lists a detached farm run's
