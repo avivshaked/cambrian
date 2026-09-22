@@ -522,6 +522,159 @@ namespace Evosim.Core.Tests
             AssertBooksClose(world, "after a repair nobody could pay for");
         }
 
+        // -------------------------------------------------------------- rule 4's row, the kill
+
+        /// <summary>The kill rows in a drained queue, in the order they were queued.</summary>
+        private static List<LineageEvent> KillsIn(IReadOnlyList<LineageEvent> events)
+        {
+            var kills = new List<LineageEvent>();
+            for (int i = 0; i < events.Count; i++)
+            {
+                if (events[i].Kind == LineageEventKind.Kill) kills.Add(events[i]);
+            }
+            return kills;
+        }
+
+        [Fact]
+        public void ALimbLostWritesOneKillRowNamingTheVictimTheAttackerAndWhatWentWithIt()
+        {
+            // The instrument round 45's J3 asks for and nothing in the record had: a body that
+            // loses a part and lives writes no death row, so before this row a grazed body was
+            // indistinguishable from an untouched one in every file a run produces.
+            RunConfig config = Stage();
+            config.CorpseDecayPerSecond = 0.001f;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Spine(2), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+
+            Organism leaf = world.Living[0];
+            Organism claw = world.Living[1];
+
+            // The two inoculation births, taken off the queue so what is left is the bite's.
+            world.DrainLineageEvents();
+
+            Assert.True(BiteUntilAPartComesOff(world, claw, leaf, part: 1, seconds: 1f, limit: 100) > 0);
+
+            IReadOnlyList<LineageEvent> events = world.DrainLineageEvents();
+            List<LineageEvent> kills = KillsIn(events);
+
+            LineageEvent kill = Assert.Single(kills);
+            Assert.DoesNotContain(events, e => e.Kind == LineageEventKind.Death);
+            Assert.Contains(world.Living, c => c.Id == leaf.Id);
+
+            Corpse corpse = Assert.Single(world.Corpses);
+
+            _output.WriteLine(kill.ToJson());
+
+            Assert.Equal(leaf.Id, kill.Id);
+            Assert.Equal(claw.Id, kill.AttackerId);
+            Assert.False(kill.RootLost);
+            Assert.Equal(1, kill.PartsLost);
+            Assert.Equal(leaf.IndeterminateNodes, kill.IndeterminateNodes);
+            Assert.Equal(world.ElapsedSeconds, kill.ElapsedSeconds);
+
+            // tj and rj are the two halves of exactly what the corpse holds — the kill's one
+            // quantisation, which is what makes the row readable as an energy statement and not
+            // only as an event.
+            Fixtures.AssertClose(
+                kill.TissueJoulesLost + kill.ReserveJoulesLost, corpse.Joules,
+                Math.Max(1e-9, 1e-6 * corpse.Joules));
+            Assert.True(kill.TissueJoulesLost > 0d, "the limb carried no tissue");
+
+            // One row, one line, and the fields a reader is promised.
+            string json = kill.ToJson();
+            Assert.DoesNotContain('\n', json);
+            Assert.DoesNotContain('\r', json);
+
+            JsonNode row = Json.Parse(json);
+            Assert.Equal("k", row["e"].AsString());
+            Assert.Equal(leaf.Id, (long)row["id"].AsDouble());
+            Assert.Equal(claw.Id, (long)row["by"].AsDouble());
+            Assert.Equal(0, row["root"].AsInt());
+            Assert.Equal(1, row["parts"].AsInt());
+            Fixtures.AssertClose(
+                kill.TissueJoulesLost, row["tj"].AsDouble(), Math.Max(1e-9, 1e-6 * corpse.Joules));
+            Fixtures.AssertClose(
+                kill.ReserveJoulesLost, row["rj"].AsDouble(), Math.Max(1e-9, 1e-6 * corpse.Joules));
+            Assert.Equal(leaf.IndeterminateNodes, row["ind"].AsInt());
+
+            // A birth's fields are a birth's: nothing on this row pretends to be one.
+            Assert.DoesNotContain("\"abs\"", json);
+            Assert.DoesNotContain("\"bf\"", json);
+            Assert.DoesNotContain("\"c\"", json);
+        }
+
+        [Fact]
+        public void ARootKillWritesAKillRowAndTheEatenDeathRowAfterIt()
+        {
+            // Both rows, in that order: the kill is the event and the death is what it was. A
+            // reader watching a grazed body for a thousand seconds needs the first to find the
+            // victim and the second to know it did not survive.
+            RunConfig config = Stage();
+            config.CorpseDecayPerSecond = 0.001f;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Spine(1), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+
+            Organism leaf = world.Living[0];
+            Organism claw = world.Living[1];
+
+            double whole = leaf.Energy + leaf.TissueJoules;
+            world.DrainLineageEvents();
+
+            Assert.True(BiteUntilAPartComesOff(world, claw, leaf, part: 0, seconds: 1f, limit: 100) > 0);
+
+            IReadOnlyList<LineageEvent> events = world.DrainLineageEvents();
+
+            int killAt = -1;
+            int deathAt = -1;
+            for (int i = 0; i < events.Count; i++)
+            {
+                if (events[i].Kind == LineageEventKind.Kill && killAt < 0) killAt = i;
+                if (events[i].Kind == LineageEventKind.Death && deathAt < 0) deathAt = i;
+            }
+
+            Assert.True(killAt >= 0, "the root's loss wrote no kill row");
+            Assert.True(deathAt > killAt, "the death row did not follow the kill row");
+
+            LineageEvent kill = events[killAt];
+            LineageEvent death = events[deathAt];
+
+            _output.WriteLine($"{kill.ToJson()}\n{death.ToJson()}");
+
+            Assert.True(kill.RootLost);
+            Assert.Equal(leaf.Id, kill.Id);
+            Assert.Equal(claw.Id, kill.AttackerId);
+            Assert.Equal(1, kill.PartsLost);
+            Fixtures.AssertClose(
+                kill.TissueJoulesLost + kill.ReserveJoulesLost, whole,
+                Math.Max(1e-9, 1e-6 * whole));
+
+            Assert.Equal(leaf.Id, death.Id);
+            Assert.Equal(DeathCause.Eaten, death.Cause);
+            Assert.Equal(1, Json.Parse(kill.ToJson())["root"].AsInt());
+            Assert.Equal("eaten", Json.Parse(death.ToJson())["c"].AsString());
+        }
+
+        [Fact]
+        public void AWorldWhereNothingIsBittenWritesNoKillRows()
+        {
+            // The other half of the recording argument: the row exists only where a part came
+            // off, so a world of plants — every world in the record — writes a lineage file of
+            // exactly the births and deaths it always wrote.
+            RunConfig config = Stage();
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Spine(2), 1, -1f);
+
+            for (int second = 0; second < 60; second++) world.Step(1f);
+
+            Assert.Empty(KillsIn(world.DrainLineageEvents()));
+            Assert.Equal(0L, world.PartsKilled);
+        }
+
         // ------------------------------------------------------------------- rule 6, the intake
 
         [Fact]

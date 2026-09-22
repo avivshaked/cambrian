@@ -217,6 +217,11 @@ namespace Evosim.Theatre
                 return;
             }
 
+            // A kill row ("e":"k", D106 item 1) is a part coming off a living body, not an
+            // organism entering or leaving the population: nothing here indexes it, and counting
+            // it as malformed would put the strip's own damage reading on every round 45 run.
+            if (kind == "k") return;
+
             if (kind != "d")
             {
                 Malformed++;

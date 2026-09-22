@@ -115,7 +115,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`fa6cdceda4ab17b6`");
+                .Replace("`ff557bce2685293a`", "`4cbb170c61668098`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -147,7 +147,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             // nothing bites, eats, heals or is charged for an attribute.
             Assert.Contains(" · modules add=0 drop=0 after=0 mut=0" + MouthToken + " · configHash", line);
 
-            Assert.EndsWith(" · configHash `fa6cdceda4ab17b6`", line);
+            Assert.EndsWith(" · configHash `4cbb170c61668098`", line);
 
             // parse-arm.ps1 splits on ' · ' and asks for a token by prefix; nothing may arrive
             // with an empty name or a separator inside a value.

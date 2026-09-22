@@ -224,7 +224,14 @@ namespace Evosim.Core.Tests
                 double t = row["t"].AsDouble();
                 if (t > lastLineageTime) lastLineageTime = t;
 
-                if (row["e"].AsString() == "b") bornAt[id] = t;
+                string kind = row["e"].AsString();
+
+                // A kill row ("e":"k", D106 item 1) is a part coming off a body, not the body
+                // entering or leaving the population — and most of them leave the body alive, so
+                // reading one as a death would bury a living creature here.
+                if (kind == "k") continue;
+
+                if (kind == "b") bornAt[id] = t;
                 else diedAt[id] = t;
             }
 

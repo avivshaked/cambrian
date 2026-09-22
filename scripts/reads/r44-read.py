@@ -122,15 +122,26 @@ def run_dir(runs_root, arm):
 
 def load_jsonl(path):
     """A list of parsed rows, or None when the file does not exist — a run directory this old
-    or this partial simply lacks it, which is not a crash."""
+    or this partial simply lacks it, which is not a crash.
+
+    A live arm's JSONL can be mid-write on the one line the writer is appending when this
+    script opens it (the file is append-only and every completed row is valid — CLAUDE.md's
+    "A killed run leaves every completed row valid"), so a parse failure on the LAST line is
+    read as an in-progress write and dropped rather than crashing the read; a parse failure on
+    any earlier line is real corruption and still raises. The same rule r45-read.py's loader
+    carries, and for the same reason: these clauses are read off arms that are still running."""
     if not os.path.exists(path):
         return None
-    rows = []
     with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                rows.append(json.loads(line))
+        lines = [ln.strip() for ln in f if ln.strip()]
+    rows = []
+    for i, line in enumerate(lines):
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            if i == len(lines) - 1:
+                break
+            raise
     return rows
 
 

@@ -41,12 +41,14 @@ clauses print 'absent' rather than a verdict on a real run:
     prose asks for ("intake above the founder's consumer value... on a non-consumer node"). J1
     below says exactly what it reads instead, and reports the population-level `intake %` share
     alongside as the honest picture of how close to universal that flag already is at t=0.
-  - No per-creature kill event is written anywhere. `Organism.LostPartPaths` (mouth-spec.md, "As
-    built", item 1) records which developer path was bitten off, but it is in-memory/checkpoint
-    state, never a row in lineage.jsonl or positions.jsonl; only the aggregate `partsKilled`
-    counter reaches stats.jsonl. J3, which needs "the bodies that lose a non-root part, read
-    1,000 s later", has no instrument to read from any file this script opens, and prints
-    'absent' rather than guess a proxy — the task's own fallback for exactly this case.
+  - lineage.jsonl carries a third kind of row from 2026-09-22: `{"e":"k",...}`, one per part a
+    bite takes off a living body (`LineageEvent.Kill`, written by `World.KillPart`). It names the
+    victim (`id`), the attacker (`by`, -1 when the pass cannot say), whether the loss took the
+    body (`root`), how many parts went with it (`parts`), the tissue and the reserve share that
+    left (`tj`, `rj`) and the victim's indeterminate-node count (`ind`). J3 and J7 below are read
+    off these rows and off nothing else; a run recorded before them carries none, and both
+    clauses print 'absent' rather than proxy one. Note that `e` is the event and `k` is a BIRTH
+    row's own kind ("f"/"r"/"i") — a kill row has no `k` field at all.
 
 Run from anywhere:
 
@@ -112,9 +114,9 @@ NAMES = {
     "stats_bodies_eaten": "bodiesEaten",              # cumulative -> the "eaten" column
     "stats_corpses_from_kills": "corpsesFromKills",   # cumulative; stays 0 for the run's whole
                                                        # life when CorpseDecayPerSecond is 0
-                                                       # (World.CorpseJoules's own remark) — J7
-                                                       # checks this before reading it as "no
-                                                       # kills happened"
+                                                       # (World.CorpseJoules's own remark). Not
+                                                       # read by any clause since J7 moved onto
+                                                       # the kill rows; kept as the report's name
     "stats_units_eaten": "unitsEaten",                # cumulative, in CHARGED UNITS, not joules
     "stats_corpses_eaten": "corpsesEaten",            # cumulative -> the "corpse eat" column
     "stats_healing_joules": "healingJoules",          # cumulative -> the "heal J" column
@@ -144,7 +146,22 @@ NAMES = {
     "lineage_id": "id",
     "lineage_parent": "p",
     "lineage_event": "e",
+
+    # lineage.jsonl's kill rows (LineageEvent.Kill's ToJson branch), one per part a bite takes
+    # off a living body. `e` reads "k"; a death row's is "d" and a birth row's "b".
+    "lineage_kill": "k",            # the value of `e` on a kill row
+    "lineage_kill_by": "by",        # the attacker's organism id, or -1
+    "lineage_kill_root": "root",    # 1 when the loss took the body (a death row follows)
+    "lineage_kill_parts": "parts",  # parts lost, the bitten one and everything under it
+    "lineage_kill_tj": "tj",        # tissue joules that left the body
+    "lineage_kill_rj": "rj",        # reserve joules that left with it
+    "lineage_kill_ind": "ind",      # the victim's indeterminate-node count, as a birth row's
+    "lineage_death": "d",           # the value of `e` on a death row
+    "lineage_time": "t",
 }
+
+# J3's window: "alive 1,000 s later".
+J3_WINDOW_SECONDS = 1000.0
 
 # A sentinel distinct from every legitimate stats.jsonl value (including 0 and None-shaped
 # JSON), so "the field is not on this row" is never confused with "the field read zero".
@@ -390,28 +407,112 @@ def j2(seed, ts, by_t, lineage_rows):
 
 # ---------------------------------------------------------------------- J3: grazing survival
 
-def j3(seed):
-    """J3: among bodies that lose a non-root part, whether an indeterminate node (round 44's
-    gene) predicts surviving 1,000 s later — unreadable from any file this script opens.
+def kill_rows(lineage_rows):
+    """Every `{"e":"k"}` row in the file, in the order it was written."""
+    if not lineage_rows:
+        return []
+    return [r for r in lineage_rows
+            if r.get(NAMES["lineage_event"]) == NAMES["lineage_kill"]]
 
-    A kill's identity — which body, which part, at what time — lives only as
-    `Organism.LostPartPaths` (mouth-spec.md's "As built" item 1), which is never written to
-    lineage.jsonl, positions.jsonl or stats.jsonl: only the aggregate `partsKilled` counter
-    reaches a report, with no id attached. lineage.jsonl's death rows carry a cause
-    ('starved'/'diverged'/'eaten') but 'eaten' is reserved for a ROOT death (BodiesEaten, not
-    PartsKilled — WorldMouth.cs's KillPart: "the difference is the point" — a body that loses a
-    non-root part and survives never gets a death row at all, which is exactly the case this
-    clause needs to find). The instrument J3 needs — a per-creature "lost a non-root part at
-    time t; alive at t+1000?" record, joined to whether its genome carries an indeterminate node
-    — does not exist in any recorded output, so this prints 'absent' rather than proxy one."""
-    return dict(
-        clause="J3", seed=seed, held="absent",
-        note="no per-body kill event is recorded anywhere (Organism.LostPartPaths is in-memory/"
-             "checkpoint state only); lineage.jsonl and stats.jsonl carry only the aggregate "
-             "partsKilled counter, with no id, so a body cannot be tied to the loss of a "
-             "specific non-root part or watched for 1,000 s afterward. The missing instrument "
-             "is a per-creature kill-event log (id, time, part path, was-root) beside "
-             "lineage.jsonl's birth/death rows.")
+
+def first_death_times(lineage_rows):
+    """id -> the earliest death time recorded for it. A body dies once, but a file read while
+    it is being written is read defensively."""
+    deaths = {}
+    for row in lineage_rows or []:
+        if row.get(NAMES["lineage_event"]) != NAMES["lineage_death"]:
+            continue
+        i = row.get(NAMES["lineage_id"])
+        t = row.get(NAMES["lineage_time"])
+        if i is None or t is None:
+            continue
+        if i not in deaths or t < deaths[i]:
+            deaths[i] = t
+    return deaths
+
+
+def j3(seed, lineage_rows):
+    """J3: among bodies that lose a NON-ROOT part, the share still alive 1,000 s later, split by
+    whether the victim carried an indeterminate node — the clause holds when the indeterminate
+    share is the higher of the two.
+
+    Read off lineage.jsonl's kill rows (`{"e":"k"}`, LineageEvent.Kill) and its death rows and
+    nothing else. A grazed body that survives writes no death row at all, which is why the kill
+    row had to exist before this clause could be read: `partsKilled` is an aggregate with no id
+    on it, and 'eaten' is reserved for a root death.
+
+    The rules this applies, each of them a choice a reader should see:
+
+      - One observation per kill EVENT, not per body: a body grazed twice is watched twice, from
+        each loss. The distinct-victim count is printed beside it.
+      - Alive at t + 1,000 means no death row for that id at or before then. A victim killed
+        again at the root inside the window has an 'eaten' death row, so it counts as dead — the
+        task's rule, and it falls out of the death-row reading without a special case.
+      - A kill whose window has not closed by the last row in the file is left out entirely,
+        because "did it die in the next 1,000 s" cannot be answered for it. The count left out
+        is printed.
+      - `ind` is the victim's indeterminate-node count at the kill, carried on the kill row
+        exactly as a birth row carries it."""
+    kills = kill_rows(lineage_rows)
+    if not kills:
+        return dict(clause="J3", seed=seed, held="absent",
+                     note="lineage.jsonl carries no kill rows ('e':'k') -- either a run "
+                          "recorded before the kill event existed (2026-09-22) or a world in "
+                          "which no part was ever bitten off")
+
+    horizon = max(r.get(NAMES["lineage_time"], 0.0) for r in lineage_rows)
+    deaths = first_death_times(lineage_rows)
+
+    counts = {True: [0, 0], False: [0, 0]}   # indeterminate -> [watched, alive at t+1000]
+    victims = {True: set(), False: set()}
+    censored = 0
+    root_kills = 0
+
+    for row in kills:
+        if row.get(NAMES["lineage_kill_root"]):
+            root_kills += 1
+            continue
+
+        t = row.get(NAMES["lineage_time"])
+        vid = row.get(NAMES["lineage_id"])
+        if t is None or vid is None:
+            continue
+
+        if t + J3_WINDOW_SECONDS > horizon:
+            censored += 1
+            continue
+
+        indeterminate = bool(row.get(NAMES["lineage_kill_ind"], 0))
+        counts[indeterminate][0] += 1
+        victims[indeterminate].add(vid)
+
+        died = deaths.get(vid)
+        if died is None or died > t + J3_WINDOW_SECONDS:
+            counts[indeterminate][1] += 1
+
+    watched_ind, alive_ind = counts[True]
+    watched_det, alive_det = counts[False]
+
+    share_ind = (alive_ind / watched_ind) if watched_ind else None
+    share_det = (alive_det / watched_det) if watched_det else None
+
+    out = dict(clause="J3", seed=seed,
+               non_root_kills_watched=watched_ind + watched_det,
+               non_root_kills_censored=censored, root_kills=root_kills,
+               indeterminate_watched=watched_ind, indeterminate_victims=len(victims[True]),
+               indeterminate_alive_after_1000s=alive_ind, indeterminate_share=share_ind,
+               determinate_watched=watched_det, determinate_victims=len(victims[False]),
+               determinate_alive_after_1000s=alive_det, determinate_share=share_det)
+
+    if share_ind is None or share_det is None:
+        out["held"] = "absent"
+        out["note"] = ("one side of the comparison has no closed window: %d indeterminate and "
+                       "%d determinate non-root kills watched (%d censored by the file's own "
+                       "horizon)" % (watched_ind, watched_det, censored))
+        return out
+
+    out["held"] = share_ind > share_det
+    return out
 
 
 # ---------------------------------------------------------------------- J4: defence follows offence
@@ -501,101 +602,56 @@ def j6(seed, ts, by_t, manifest):
 
 # ---------------------------------------------------------------------- J7: the yield is the reserve
 
-def j7(seed, ts, by_t, config):
-    """J7: mean `unitsEaten` per `corpsesEaten` at the end exceeds ten times the mean tissue of
-    a killed part.
+def j7(seed, lineage_rows):
+    """J7: the yield is the reserve — the mean of `rj` / `tj` over the kill rows, holding at 10
+    or more.
 
-    `unitsEaten` is in charged units (D098), so it is converted to joules via config.json's
-    `world.joulesPerUnit` before comparing against `corpseJoules`, which is joules directly
-    (World.CorpseJoules). No stats field gives a killed part's tissue on its own (mouth-spec.md
-    says as much: "not recorded per part"), so this reads the task's named fallback —
-    `corpseJoules` (a STANDING total over every corpse that currently exists, of any origin)
-    divided by `corpsesFromKills` (a CUMULATIVE count of every corpse a kill has ever founded) —
-    at the run's last sample. That mixes a snapshot with a running total and mixes kill-corpses
-    with ordinary-death corpses (both go through the same `Bury` once `CorpseDecayPerSecond` is
-    above 0), so it is an order-of-magnitude estimate, not a per-part reading, and is reported
-    as one. `corpsesFromKills` (and therefore this whole estimate) stays 0 for a run's entire
-    life when `CorpseDecayPerSecond` is 0 — "every run on file" per `World.CorpseJoules`'s own
-    remark — which is read here as the missing instrument, not as "nothing was killed"."""
-    units_f = NAMES["stats_units_eaten"]
-    corp_eat_f = NAMES["stats_corpses_eaten"]
-    corp_kill_f = NAMES["stats_corpses_from_kills"]
-    corp_j_f = NAMES["stats_corpse_joules"]
+    Every kill row carries what the loss moved, split in two: `tj`, the tissue that left the
+    body with the part, and `rj`, the share of the one reserve that went with it. Their sum is
+    exactly what the corpse (or the water) was given, so the ratio is the clause's own question
+    asked per kill rather than estimated from two aggregates that do not line up — which is what
+    this clause had to do before the kill row existed (a standing corpse total against a
+    cumulative corpse count, mixing kill-corpses with ordinary-death ones).
 
-    if not ts:
-        return dict(clause="J7", seed=seed, held="absent")
-
-    last = by_t[ts[-1]]
-    units_eaten = sfield(last, units_f)
-    corpses_eaten = sfield(last, corp_eat_f)
-
-    if units_eaten is _MISSING or corpses_eaten is _MISSING:
+    A kill row with `tj` at or below zero has no ratio and is left out of the mean; the count
+    left out is printed, because a world in which most kills carry no tissue is a reading of its
+    own and not a rounding detail."""
+    kills = kill_rows(lineage_rows)
+    if not kills:
         return dict(clause="J7", seed=seed, held="absent",
-                     note="unitsEaten/corpsesEaten are not on this report (a pre-mouth run)")
+                     note="lineage.jsonl carries no kill rows ('e':'k') -- either a run "
+                          "recorded before the kill event existed (2026-09-22) or a world in "
+                          "which no part was ever bitten off")
 
-    if not corpses_eaten or corpses_eaten <= 0:
-        return dict(clause="J7", seed=seed, held="absent", units_eaten=units_eaten,
-                     corpses_eaten=corpses_eaten,
-                     note="corpsesEaten reads 0 at the run's last sample -- no corpse has been "
-                          "emptied by a mouth yet, so unitsEaten/corpsesEaten has no mean")
+    ratios = []
+    tj_total = 0.0
+    rj_total = 0.0
+    no_tissue = 0
 
-    corpses_from_kills = sfield(last, corp_kill_f)
-    if corpses_from_kills is _MISSING:
-        return dict(clause="J7", seed=seed, held="absent",
-                     units_eaten=units_eaten, corpses_eaten=corpses_eaten,
-                     note="corpsesFromKills is not on this report (a pre-mouth run)")
+    for row in kills:
+        tj = row.get(NAMES["lineage_kill_tj"])
+        rj = row.get(NAMES["lineage_kill_rj"])
+        if tj is None or rj is None:
+            continue
+        tj_total += tj
+        rj_total += rj
+        if tj > 0:
+            ratios.append(rj / tj)
+        else:
+            no_tissue += 1
 
-    if not corpses_from_kills or corpses_from_kills <= 0:
-        return dict(clause="J7", seed=seed, held="absent",
-                     units_eaten=units_eaten, corpses_eaten=corpses_eaten,
-                     corpses_from_kills=corpses_from_kills,
-                     note="corpsesFromKills reads 0 at the run's last sample -- either no kill "
-                          "has yet founded a standing corpse, or CorpseDecayPerSecond is 0 in "
-                          "this config, which suppresses corpse creation (and this counter) "
-                          "entirely per World.CorpseJoules's own remark; check config.json's "
-                          "feeding group before reading this as 'nothing has been killed'")
+    if not ratios:
+        return dict(clause="J7", seed=seed, held="absent", kill_rows=len(kills),
+                     kills_without_tissue=no_tissue,
+                     note="no kill row carries tissue above zero, so rj/tj has no mean")
 
-    corpse_joules = sfield(last, corp_j_f)
-    if corpse_joules is _MISSING:
-        return dict(clause="J7", seed=seed, held="absent",
-                     units_eaten=units_eaten, corpses_eaten=corpses_eaten,
-                     corpses_from_kills=corpses_from_kills,
-                     note="corpseJoules is not on this report")
+    mean_ratio = sum(ratios) / len(ratios)
 
-    joules_per_unit = None
-    if config is not None:
-        try:
-            joules_per_unit = config["world"][NAMES["config_joules_per_unit"]]
-        except (KeyError, TypeError):
-            joules_per_unit = None
+    return dict(clause="J7", seed=seed, kill_rows=len(kills), kills_with_tissue=len(ratios),
+                kills_without_tissue=no_tissue, mean_reserve_over_tissue=mean_ratio,
+                total_tissue_joules=tj_total, total_reserve_joules=rj_total,
+                held=mean_ratio >= J7_FACTOR)
 
-    if joules_per_unit is None:
-        return dict(clause="J7", seed=seed, held="absent",
-                     units_eaten=units_eaten, corpses_eaten=corpses_eaten,
-                     note="config.json has no world.joulesPerUnit to convert unitsEaten "
-                          "(charged units) into joules for comparison against corpseJoules")
-
-    mean_take_units = units_eaten / corpses_eaten
-    mean_take_joules = mean_take_units * joules_per_unit
-    mean_tissue_joules_est = corpse_joules / corpses_from_kills
-
-    if mean_tissue_joules_est <= 0:
-        return dict(clause="J7", seed=seed, held="absent",
-                     units_eaten=units_eaten, corpses_eaten=corpses_eaten,
-                     mean_take_units=mean_take_units, mean_take_joules=mean_take_joules,
-                     corpses_from_kills=corpses_from_kills,
-                     corpse_joules_standing=corpse_joules,
-                     note="the estimated mean tissue of a killed part reads 0 or less (every "
-                          "kill-corpse standing at the last sample has already decayed or been "
-                          "eaten away) -- the ratio is degenerate")
-
-    ratio = mean_take_joules / mean_tissue_joules_est
-    held = ratio > J7_FACTOR
-
-    return dict(clause="J7", seed=seed, units_eaten=units_eaten, corpses_eaten=corpses_eaten,
-                mean_take_units=mean_take_units, mean_take_joules=mean_take_joules,
-                corpses_from_kills=corpses_from_kills, corpse_joules_standing=corpse_joules,
-                mean_tissue_joules_est=mean_tissue_joules_est, ratio=ratio, held=held)
 
 
 # ---------------------------------------------------------------------- driving it over the arms
@@ -611,16 +667,15 @@ def read_arm(runs_root, arm):
 
     lineage = load_jsonl(os.path.join(d, "lineage.jsonl"))
     manifest = load_json(os.path.join(d, "run.json"))
-    config = load_json(os.path.join(d, "config.json"))
 
     return [
         j1(arm, ts, by_t, lineage),
         j2(arm, ts, by_t, lineage),
-        j3(arm),
+        j3(arm, lineage),
         j4(arm, ts, by_t),
         j5(arm, ts, by_t),
         j6(arm, ts, by_t, manifest),
-        j7(arm, ts, by_t, config),
+        j7(arm, lineage),
     ]
 
 
@@ -654,11 +709,11 @@ def write_tsv(path, rows):
 CLAUSE_THRESHOLD_TEXT = {
     "J1": "2 of 3",
     "J2": "1 of 3 or more",
-    "J3": "2 of 3 (unreadable -- see note)",
+    "J3": "2 of 3",
     "J4": "3 of 3",
     "J5": "2 of 3",
     "J6": "3 of 3",
-    "J7": "reads at the end, no outer count in the entry",
+    "J7": "the mean over every kill row, no outer count in the entry",
 }
 
 

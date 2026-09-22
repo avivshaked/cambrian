@@ -7,6 +7,15 @@ namespace Evosim.Core
     {
         Birth = 0,
         Death = 1,
+
+        /// <summary>
+        /// One part taken off a living body by a bite — D106 item 1, written by
+        /// <c>World.KillPart</c>. A kill of a root is a kill row <i>and</i> the
+        /// <see cref="DeathCause.Eaten"/> death row it has always been, so a reader sees the event
+        /// and the death; a kill of any other part leaves a living body and no death row at all,
+        /// which is the case round 45's J3 needs and the one nothing recorded before this.
+        /// </summary>
+        Kill = 2,
     }
 
     /// <summary>
@@ -158,14 +167,56 @@ namespace Evosim.Core
         /// <summary>Death only — why the creature left the population.</summary>
         public DeathCause Cause { get; }
 
+        /// <summary>
+        /// Kill only — the body whose part did the damage that finished this one, or -1 when
+        /// nothing in this step's contact list can be named for it.
+        /// </summary>
+        /// <remarks>
+        /// <b>The last hand on the part, not the owner of the wound.</b> Health is a pool a crowd
+        /// can drain from several sides over many steps and the row carries one id, so this is the
+        /// attacker whose blow took the part to zero in the step it came off — which is what a
+        /// reader can honestly ask of a record that keeps no per-blow ledger. It is -1 for the
+        /// second and any later part a body loses in one step, because taking the first one
+        /// rebuilds the body and the part indices the attribution was keyed on are gone with it.
+        /// </remarks>
+        public long AttackerId { get; }
+
+        /// <summary>Kill only — whether the loss took the body, and not merely a limb.</summary>
+        /// <remarks>
+        /// True for a root, for the only part of a one-part body, and for the case where the
+        /// developer pruned everything that was left: all three end in <see cref="Bury"/> with
+        /// <see cref="DeathCause.Eaten"/> and a death row follows this one. False is the case
+        /// nothing else in the record can show — a body that lost a limb and walked away.
+        /// </remarks>
+        public bool RootLost { get; }
+
+        /// <summary>Kill only — parts the body lost, the bitten one and everything under it.</summary>
+        public int PartsLost { get; }
+
+        /// <summary>Kill only — the tissue that left the body with the part, in joules.</summary>
+        public double TissueJoulesLost { get; }
+
+        /// <summary>
+        /// Kill only — the share of the one reserve that left with the part, in joules. With
+        /// <see cref="TissueJoulesLost"/> it is exactly what the corpse (or the water) was given.
+        /// </summary>
+        public double ReserveJoulesLost { get; }
+
         private LineageEvent(
             LineageEventKind kind, double elapsedSeconds, long id, long parentId,
             BirthKind birthKind, int generationDepth, uint speciesId,
             bool hasAbsorptive, bool hasJoint, bool hasPhotosynthetic, int patch,
             float birthFraction, float adultScale, float reserveMargin, int indeterminateNodes,
             bool hasAttack, bool hasIntake, bool hasProtection,
-            DeathCause cause)
+            DeathCause cause,
+            long attackerId, bool rootLost, int partsLost,
+            double tissueJoulesLost, double reserveJoulesLost)
         {
+            AttackerId = attackerId;
+            RootLost = rootLost;
+            PartsLost = partsLost;
+            TissueJoulesLost = tissueJoulesLost;
+            ReserveJoulesLost = reserveJoulesLost;
             IndeterminateNodes = indeterminateNodes;
             HasAttack = hasAttack;
             HasIntake = hasIntake;
@@ -197,7 +248,9 @@ namespace Evosim.Core
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
                 birthFraction, adultScale, reserveMargin, indeterminateNodes,
-                hasAttack, hasIntake, hasProtection, default);
+                hasAttack, hasIntake, hasProtection, default,
+                attackerId: -1, rootLost: false, partsLost: 0,
+                tissueJoulesLost: 0d, reserveJoulesLost: 0d);
 
         public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
             new LineageEvent(
@@ -205,7 +258,27 @@ namespace Evosim.Core
                 generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
                 hasPhotosynthetic: false, patch: 0, birthFraction: 0f, adultScale: 0f,
                 reserveMargin: 0f, indeterminateNodes: 0,
-                hasAttack: false, hasIntake: false, hasProtection: false, cause: cause);
+                hasAttack: false, hasIntake: false, hasProtection: false, cause: cause,
+                attackerId: -1, rootLost: false, partsLost: 0,
+                tissueJoulesLost: 0d, reserveJoulesLost: 0d);
+
+        /// <summary>
+        /// One part off one body — D106 item 1. <paramref name="indeterminateNodes"/> is the
+        /// victim's own <c>Organism.IndeterminateNodes</c>, carried here for the same reason the
+        /// birth row carries it: whether the gene that regrows a part is what survives losing one
+        /// is a question about the body that was bitten, and a snapshot only holds survivors.
+        /// </summary>
+        public static LineageEvent Kill(
+            double elapsedSeconds, long victimId, long attackerId, bool rootLost, int partsLost,
+            double tissueJoulesLost, double reserveJoulesLost, int indeterminateNodes) =>
+            new LineageEvent(
+                LineageEventKind.Kill, elapsedSeconds, victimId, parentId: -1, birthKind: default,
+                generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
+                hasPhotosynthetic: false, patch: 0, birthFraction: 0f, adultScale: 0f,
+                reserveMargin: 0f, indeterminateNodes: indeterminateNodes,
+                hasAttack: false, hasIntake: false, hasProtection: false, cause: default,
+                attackerId: attackerId, rootLost: rootLost, partsLost: partsLost,
+                tissueJoulesLost: tissueJoulesLost, reserveJoulesLost: reserveJoulesLost);
 
         /// <summary>One-letter code for <see cref="BirthKind"/> — "f" floor, "r" reproduction, "i" inoculation.</summary>
         private static string Code(BirthKind kind)
@@ -273,6 +346,24 @@ namespace Evosim.Core
                     .Field("atk", HasAttack ? 1 : 0)
                     .Field("ink", HasIntake ? 1 : 0)
                     .Field("prt", HasProtection ? 1 : 0);
+            }
+            else if (Kind == LineageEventKind.Kill)
+            {
+                // "e" is the event and "k" is a birth's own kind ("f", "r", "i"), so the kill's
+                // code goes where "b" and "d" go rather than into "k", which already means
+                // something else on the only rows that carry it. Every reader in the repository
+                // gates on "e" first — the two PowerShell scorers on a regex that matches [bd]
+                // and every Python read on row["e"] — so a kill row is skipped by all of them and
+                // counted by none.
+                w.Field("e", "k")
+                    .Field("t", ElapsedSeconds)
+                    .Field("id", Id)
+                    .Field("by", AttackerId)
+                    .Field("root", RootLost ? 1 : 0)
+                    .Field("parts", PartsLost)
+                    .Field("tj", TissueJoulesLost)
+                    .Field("rj", ReserveJoulesLost)
+                    .Field("ind", IndeterminateNodes);
             }
             else
             {

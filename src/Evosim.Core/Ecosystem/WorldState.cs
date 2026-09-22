@@ -548,6 +548,18 @@ namespace Evosim.Core
             w.Write(e.HasIntake);
             w.Write(e.HasProtection);
             w.Write((int)e.Cause);
+
+            // The kill's own five, appended and written only on a kill row — which is what lets
+            // this stay version 4. A birth and a death are byte for byte what the mouth build
+            // wrote, so every checkpoint on disk still restores; a version-4 stream can only carry
+            // a kill row if the build that wrote it had kill rows, and that build reads them here.
+            if (e.Kind != LineageEventKind.Kill) return;
+
+            w.Write(e.AttackerId);
+            w.Write(e.RootLost);
+            w.Write(e.PartsLost);
+            w.Write(e.TissueJoulesLost);
+            w.Write(e.ReserveJoulesLost);
         }
 
         private static LineageEvent ReadLineage(BinaryReader r)
@@ -571,6 +583,19 @@ namespace Evosim.Core
             bool intake = r.ReadBoolean();
             bool protection = r.ReadBoolean();
             var cause = (DeathCause)r.ReadInt32();
+
+            if (kind == LineageEventKind.Kill)
+            {
+                long attackerId = r.ReadInt64();
+                bool rootLost = r.ReadBoolean();
+                int partsLost = r.ReadInt32();
+                double tissueLost = r.ReadDouble();
+                double reserveLost = r.ReadDouble();
+
+                return LineageEvent.Kill(
+                    seconds, id, attackerId, rootLost, partsLost, tissueLost, reserveLost,
+                    indeterminateNodes);
+            }
 
             return kind == LineageEventKind.Birth
                 ? LineageEvent.Birth(

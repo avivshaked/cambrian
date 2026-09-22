@@ -45,6 +45,29 @@ namespace Evosim.Core
         private IReadOnlyList<CreatureContact> _contacts;
         private readonly Dictionary<long, Organism> _byId = new Dictionary<long, Organism>();
 
+        /// <summary>
+        /// Who last hurt which part, within one <see cref="ApplyMouth"/> pass — the kill row's
+        /// <c>by</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>One pass's worth and no more.</b> The contact list is this step's, the wound it
+        /// causes is this step's, and a part taken to zero is collected at the end of the same
+        /// pass, so nothing here has to survive a step — which is why it is a scratch map and not
+        /// state on the body: nothing to checkpoint, nothing to restore, nothing a resumed run
+        /// could disagree with. It is cleared at the top of every pass so that a kill can never be
+        /// attributed to a step that is over.
+        /// </para>
+        /// <para>
+        /// <b>Keyed on the part index, which a rebuild invalidates.</b> Taking a part off remaps
+        /// the health array and the phenotype together, so the body's entry is dropped the moment
+        /// that happens and a second loss in the same step is recorded with no attacker rather
+        /// than with the wrong one. Read and written only here; no order of iteration is ever
+        /// taken from it, so it decides nothing about the trajectory.
+        /// </para>
+        /// </remarks>
+        private readonly Dictionary<long, long[]> _lastAttacker = new Dictionary<long, long[]>();
+
         /// <summary>Parts ever taken off a living body by a bite — rule 4's counter. Cumulative.</summary>
         public long PartsKilled { get; private set; }
 
@@ -127,6 +150,8 @@ namespace Evosim.Core
         /// <param name="seconds">The metabolic step this pass covers.</param>
         public int ApplyMouth(float seconds)
         {
+            _lastAttacker.Clear();
+
             ApplyDamage(seconds);
             ApplyIntake(seconds);
             ApplyHealing(seconds);
@@ -187,8 +212,8 @@ namespace Evosim.Core
                 NoteContact(a, touch.PartA);
                 NoteContact(b, touch.PartB);
 
-                Wound(b, touch.PartB, hittingB, DamageOf(hittingA, hittingB, seconds));
-                Wound(a, touch.PartA, hittingA, DamageOf(hittingB, hittingA, seconds));
+                Wound(b, touch.PartB, hittingB, DamageOf(hittingA, hittingB, seconds), a.Id);
+                Wound(a, touch.PartA, hittingA, DamageOf(hittingB, hittingA, seconds), b.Id);
             }
         }
 
@@ -212,9 +237,12 @@ namespace Evosim.Core
             return net > 0f ? net * seconds : 0f;
         }
 
-        private void Wound(Organism creature, int partIndex, PhenotypePart part, float damage)
+        private void Wound(
+            Organism creature, int partIndex, PhenotypePart part, float damage, long attackerId)
         {
             if (!(damage > 0f)) return;
+
+            NoteAttacker(creature, partIndex, attackerId);
 
             float pool = Metabolism.HealthPool(part, Config);
 
@@ -243,6 +271,29 @@ namespace Evosim.Core
             health[partIndex] = now > 0f ? now : 0f;
 
             lost[partIndex] += was - health[partIndex];
+        }
+
+        /// <summary>Remembers whose blow this was, for as long as this pass lasts.</summary>
+        private void NoteAttacker(Organism creature, int partIndex, long attackerId)
+        {
+            if (!_lastAttacker.TryGetValue(creature.Id, out long[] by) ||
+                by.Length != creature.Phenotype.PartCount)
+            {
+                by = new long[creature.Phenotype.PartCount];
+                for (int i = 0; i < by.Length; i++) by[i] = -1L;
+                _lastAttacker[creature.Id] = by;
+            }
+
+            if (partIndex >= 0 && partIndex < by.Length) by[partIndex] = attackerId;
+        }
+
+        /// <summary>Who took this part to zero, or -1 when this pass cannot say.</summary>
+        private long AttackerOf(Organism creature, int partIndex)
+        {
+            if (!_lastAttacker.TryGetValue(creature.Id, out long[] by)) return -1L;
+            if (partIndex < 0 || partIndex >= by.Length) return -1L;
+
+            return by[partIndex];
         }
 
         private void NoteContact(Organism creature, int partIndex)
@@ -539,6 +590,26 @@ namespace Evosim.Core
             return killed;
         }
 
+        /// <summary>
+        /// Queues one <c>kill</c> row — the instrument round 45's J3 and J7 read, and the only
+        /// record anywhere of a body that lost a limb and lived.
+        /// </summary>
+        /// <remarks>
+        /// <b>A recording and nothing else.</b> It appends to the same queue the births and the
+        /// deaths use, reads no field it does not already have in hand, draws nothing from
+        /// <see cref="Rng"/> and changes no account, so a world stepped with the queue drained and
+        /// one where it is never drained run the same trajectory — <see cref="LineageEvent"/>'s own
+        /// argument, unchanged by there being a third kind of row in it.
+        /// </remarks>
+        private void NoteKill(
+            Organism creature, long attackerId, bool rootLost, int partsLost,
+            double tissueJoules, double reserveJoules)
+        {
+            _lineageEvents.Add(LineageEvent.Kill(
+                ElapsedSeconds, creature.Id, attackerId, rootLost, partsLost,
+                tissueJoules, reserveJoules, creature.IndeterminateNodes));
+        }
+
         private static int FirstDeadPart(Organism creature)
         {
             float[] health = creature.PartHealth;
@@ -582,11 +653,21 @@ namespace Evosim.Core
         /// </remarks>
         private bool KillPart(Organism creature, int index, int partIndex)
         {
+            long by = AttackerOf(creature, partIndex);
+
             if (partIndex == 0 || creature.Phenotype.PartCount <= 1)
             {
                 BodiesEaten++;
 
                 if (Config.CorpseDecayPerSecond > 0f) CorpsesFromKills++;
+
+                // Before Bury, which zeroes both accounts and queues the death row: what the body
+                // was worth is what the kill moved, and the two rows then read in the order the
+                // events happened — the kill, and then the death it was.
+                NoteKill(
+                    creature, by, rootLost: true, partsLost: creature.Phenotype.PartCount,
+                    tissueJoules: creature.TissueJoules,
+                    reserveJoules: Math.Max(0d, creature.Energy));
 
                 Bury(creature, index, DeathCause.Eaten);
                 return true;
@@ -627,6 +708,14 @@ namespace Evosim.Core
                 BodiesEaten++;
                 if (Config.CorpseDecayPerSecond > 0f) CorpsesFromKills++;
 
+                // The bite did not take the root and the body died of it anyway, so the row says
+                // root: what it means is that the loss took the body, which is what a reader
+                // watching a grazed body for the next thousand seconds has to know.
+                NoteKill(
+                    creature, by, rootLost: true, partsLost: creature.Phenotype.PartCount,
+                    tissueJoules: creature.TissueJoules,
+                    reserveJoules: Math.Max(0d, creature.Energy));
+
                 Bury(creature, index, DeathCause.Eaten);
                 return true;
             }
@@ -663,8 +752,21 @@ namespace Evosim.Core
             creature.Energy -= fromReserve;
             if (creature.Energy < 0d) creature.Energy = 0d;
 
+            int partsLost = wasBody.PartCount - body.PartCount;
+
             AdoptPlan(
                 creature, adult, adultTissue, body, tissue, Developer.MatchParts(before, after));
+
+            // The body it was is gone and every part index with it, so an attribution keyed on
+            // one is worthless from here: the entry goes, and a second part lost in this same
+            // pass is recorded with no attacker rather than with a stale one.
+            _lastAttacker.Remove(creature.Id);
+
+            // tj and rj as the corpse will hold them: `given` is the one quantisation, so the two
+            // sum to exactly what ShedRemains is about to move. The row goes before the transfer
+            // for no reason but reading order — nothing below queues an event of its own except
+            // the mass-floor burial, which is a death and belongs after this.
+            NoteKill(creature, by, rootLost: false, partsLost, released, fromReserve);
 
             if (given > 0f && Config.CorpseDecayPerSecond > 0f) CorpsesFromKills++;
             ShedRemains(creature, given);

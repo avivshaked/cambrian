@@ -192,6 +192,15 @@ here because a reader of the code would otherwise go looking for what the map pr
   from `11602ab76c1e2a19` to `fa6cdceda4ab17b6` for the same reason. The world did not change; the
   name it is filed under did.
 
+- **A kill writes a row, and it is the third kind of row `lineage.jsonl` holds.** Added the day
+  after the build, for round 45's J3 and J7:
+  `{"e":"k","t":…,"id":…,"by":…,"root":…,"parts":…,"tj":…,"rj":…,"ind":…}`. The fields are the
+  victim, the attacker or -1 where the pass cannot name one, whether the loss took the body, how
+  many parts went, the tissue and the reserve share that went with them, and the victim's
+  indeterminate-node count. The kill's code goes in `e` because `k` is already a birth row's own
+  kind. It records what no other output could: a body that lost a limb and lived writes no death
+  row, and `partsKilled` is an aggregate with no id on it.
+
 The regress: round 44's world at every mouth default, 1,000 s, 4 threads, against a run of the
 same launcher recorded on the tree before any of this was written — 132 shared fields at each of
 100 samples, identical, `alive`, `births`, `deaths`, `auditResidual` and `matterResidual` among
