@@ -117,6 +117,18 @@ re-simulation, and a smooth picture needs the state stream stage 4 already plans
 (poses at a finer cadence, binary). `TheatreRunner` refuses a dynamics run with a message
 naming the check; the PhysX Mode B path is untouched.
 
+**The grid's edge walk is cheapened** (`e7a5dae`): per-edge liveness masks built once
+with the geometry, index strength-reduction in every per-cell pass, the remineralisation's
+bucket lookup tabulated; bit-identical (every hash equal at 1 and 16 threads, the pinned
+`1d1ee59f…` inside the default suite), the world step 14 to 18% cheaper on both campaign
+grids (171k cells: 19.5 to 16.1 ms at one thread, 4.4 to 3.7 at sixteen; 1.72M cells: 194
+to 159 and 35.0 to 30.2). `SampleEdges` is at its floor: 59 ns an edge, most of it the
+24-term eddy reduction's dependency chain, which cannot be reordered. The next grid gains
+are structural (a compacted live-cell list for the serial remineralisation leg, 1.8 ms
+of 30) and small; the world step is done as a target until the GPU. `scratch/grid-walk/
+bench.ps1` alternates builds and repeats, because a first single run misread a contended
+core as a regression.
+
 **Machine.** i9-13900K, 24 cores, RTX 4090 with 24 GB. The farm takes `EVOSIM_THREADS`;
 16 is the measured best at this crowd. The Unity cap stays D103's. Run
 `scripts/sweep-orphans.ps1` at every session start; it lists a detached farm run's
@@ -327,7 +339,10 @@ subagent and never in a shell loop.
    `scripts/reads/r41d-read.py` taught the renamed contact columns; `sweep-orphans.ps1`
    excluding a farm run's launcher; the launcher named by full path to Git's `bash.exe`.
 2. **The theatre on the farm's record.** Done: `poses.jsonl` drawn by `-From snapshot`
-   (grown size still not recorded). Package A done. Next:
+   (grown size still not recorded); package A; the Editor replay, which reads a cousin, so
+   **the state stream moves up here** (reordered 2026-09-22 by the agent on that finding):
+   a binary pose stream at a finer cadence than the sample, with the body fraction, that the
+   theatre plays back without simulating. Then:
    and a replay that steps it in the Editor, faithful at any thread count. One Editor run to
    verify `Mathf.Sin/Cos/Round` bits against `UnityFloatMath`.
 3. **Done: the base round on the new engine** (round 43, logbook/0111). Left from it: `r41d-read.py`
