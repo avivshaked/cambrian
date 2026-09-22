@@ -1099,6 +1099,15 @@ actually verifying it.
   not tiering: the runtime. A farm run is watched from its record (`positions.jsonl`,
   `poses.jsonl`), never re-simulated in Unity, and a farm-side identity claim is made on the
   farm (`digest.jsonl` at 1 and N threads), never across the two runtimes.
+- **A blue screen beside a GPU probe was the file-system filter stack, and a minidump is
+  readable without a debugger.** The one crash in this machine's log (2026-09-22, bugcheck
+  0x3B) faulted in `FLTMGR.SYS` on a `dotnet.exe` thread, entered through the Xbox Gaming
+  Services filter with Avast below it and the display driver on no frame, while a Gaming
+  Services update had been stuck for half an hour (`logbook/specs/crash-2026-09-22.md`). The
+  GPU spike lost a day to a suspicion the stack did not support. `C:/Windows/Minidump` and
+  the WER queue need an elevated shell, so the owner copies them into `scratch/crash/`, and
+  `scripts/read-minidump.py <dump>` prints the bugcheck, the process, the faulting driver and
+  the stack's frames by driver. Read the dump before pausing anything on a crash's account.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

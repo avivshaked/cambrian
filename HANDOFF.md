@@ -95,13 +95,18 @@ lookups, not the potential. The farm exe under `artifacts/` is rebuilt on it; it
 (`com.evosim.dynamics`, `noEngineReferences`), the theatre's asmdefs reference it, and
 `Evosim.Theatre.EditorTools.DynamicsPackageCheck.Run` steps a body on it inside the Editor
 (`ok, digest 2f9b97e450e96b68`); Unity's compiler refused nothing. The Dynamics replay in the
-Editor is the next theatre step. **The machine blue-screened at 13:03 on 2026-09-22**
-(bugcheck 0x3B, a kernel access violation, the first in this machine's log) while the GPU
-route spike's probe (`scratch/gpu-spike/probe`, ILGPU on CUDA and ComputeSharp on DX12) had
-just run against the NVIDIA driver 591.86 and the package A check ran headless beside it. The
-driver is the likely cause and not proven; the minidump `C:/Windows/Minidump/092226-10390-01.dmp`
-needs admin to read. The GPU spike is stopped pending the owner's look at the dump; no
-GPU code runs on this machine until then.
+Editor is the next theatre step. **The machine blue-screened at 13:03 on 2026-09-22, and
+the dump clears the GPU** (`logbook/specs/crash-2026-09-22.md`): bugcheck 0x3B, an access
+violation inside `FLTMGR.SYS`, the file-system filter manager, on a `dotnet.exe` thread,
+entered through the Xbox Gaming Services filter `gameflt.sys` with Avast's `aswVmm.sys` at
+the bottom of the stack and the display driver on no frame. A Gaming Services update had been
+stuck for half an hour and Avast's drivers were replaced at the reboot; the likeliest cause is
+the first (inference), and neither is the project's to fix. The GPU route spike
+(`scratch/gpu-spike/probe`, ILGPU on CUDA and ComputeSharp on DX12) had run twenty-five
+seconds before and was the `dotnet.exe` on the thread, so its first run after resuming is
+taken alone, with nothing else on the machine. The owner copied the minidump and the WER
+queue into `scratch/crash/` from an elevated shell; `scripts/read-minidump.py` reads a dump
+without a debugger.
 
 **The Editor cannot replay the farm's record, and the check that says so is in** (`ade13dd`):
 `Evosim.Farm` is a Unity local package too, `TheatreDynamicsReplay` runs the farm's own
