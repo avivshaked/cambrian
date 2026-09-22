@@ -1173,6 +1173,16 @@ actually verifying it.
   on a worker the queue is not using, one frame at a time on a loaded machine) and look at
   them, and say in the status what was seen. Round 37's crust at the glass was in the table
   for hours before anyone read it as a crust.
+- **Say when a ruling blocks the work, and keep working on the rest** (owner, 2026-09-22
+  evening: "If you're waiting on me, I want an explicit message saying you are blocked by a
+  decision you need from me. I want you working all the time."). A status that lists open
+  rulings among other news reads as information; the owner cannot tell the campaign has
+  stopped on them. When the next step needs a ruling, lead with a line of the form "I am
+  blocked on <decision> from you", name the proposal file and the exact question, and say
+  what is being worked on meanwhile. Never end a turn idle while anything not gated
+  remains: loose ends, instruments, measurements, the round-gap changes that are a new
+  realisation of every seed and land best while no arm runs, pre-registration drafts and
+  ledger screens for the round that waits.
 - **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
   amendments, scope and round design forks, pushes of anything that is not code/prose, and
   anything irreversible or outward-facing. Instruments, diagnostics, replays of scored
