@@ -46,7 +46,7 @@ that the stored genomes are re-extracted once.
    counts in `moduleAddsRefused`.
 6. **Founders and mutation.** Founders draw `Growth` determinate at every node, so a world
    starts as the record is. The mutator flips the gene at the cell-type mutation rate
-   (`EVOSIM_CELLTYPE_MUT`'s neighbour, its own tunable `ModuleGeneMutationChance`) and
+   (`EVOSIM_CELLTYPE_MUTATION`'s neighbour, its own tunable `ModuleGeneMutationChance`) and
    moves `MaxModules` as a scalar. The four round-45 attributes are in the genome at zero
    and the mutator does not touch them until round 45's build turns their mutation on.
 7. **The body rebuilds.** A module added or dropped rebuilds the articulated body on the
@@ -104,9 +104,49 @@ silhouette cap binds on indeterminate bodies more often than on determinate ones
 crowd, the treadmill, the larder and the spread stay within round 43's readings (G1, G4,
 G7), so the gene changed bodies and not the economy. H6: `diverged` 0.
 
-## Implementation notes (the builder's)
+## Implementation map (read-only reconnaissance, 2026-09-22 evening)
 
-To be completed by the build: the genome field and `GenomeJson` format 7 with the four
-attributes at zero; `Developer` taking a per-node count from the body rather than the
-recursive limit; the rebuild path in `Evosim.Dynamics`; the checkpoint's per-node counts;
-the report columns; the tests named above.
+Where each rule lands, from a pass over the tree before the build; line numbers are of that
+evening and the four Core files under the double-accounts change will have moved.
+
+- **The gene.** `MorphNode` (`src/Evosim.Core/Genome/MorphNode.cs`) carries `RecursiveLimit`
+  (default 1), which is the genome minimum of rule 2; `Growth` and `MaxModules` join it,
+  written and read in `GenomeJson.WriteNode`/`ReadNode` (`Serialization/GenomeJson.cs`, one
+  `w.Field` and one `n["…"]` line each), with `FormatVersion` 6 → 7 and a `<remarks>` block
+  above the constant. The four attributes of round 45 are four more fields at zero. The
+  bump test to copy is `GenomeJsonTests.TheBreedingMarginIsWrittenAndAFormatFiveGenomeIsRefusedByName`.
+- **The count.** `Developer.Expand`'s `CanEnter` (`Development/Developer.cs`) compares
+  `occurrences[child]` with the node's `RecursiveLimit`; an indeterminate node compares
+  with the body's current count instead, so `Develop` takes a per-node count array (null
+  = the genome's minimum, which keeps every determinate genome's development unchanged).
+  `MaxParts` and `MaxDepth` are already enforced there and need nothing.
+- **The bound.** D101's `Phenotype.SelfOverlappingPairs` runs once, at `World.Admit`; the
+  add rule needs its own call on the candidate phenotype before the module is paid for.
+- **The mutator.** `Mutator.cs` rolls `rates.CellTypeChance` per node (`MutationRates`,
+  bound as `EVOSIM_CELLTYPE_MUTATION`, not `_MUT`); the gene flip gets its own chance
+  beside it, and `MaxModules` moves by `PerturbPositive` as `Power` does.
+- **The rebuild.** `Creature.Resize` (`src/Evosim.Dynamics/Creature.Growth.cs`) refuses a
+  changed part count by design ("growth changes a body's size and never its plan"), so a
+  module add or drop is a new `Creature` built as `Reconcile.Build` builds one
+  (`src/Evosim.Farm/Reconcile.cs`: `new Creature(id, phenotype, Solver, shapes)`,
+  `PlaceAsDeveloped`, patch, `AppliedBodyFraction`, senses), placed at the old root pose
+  and velocity with every surviving part's `Q`/`Qd` and the brain's state copied across by
+  part identity; the growth step in `Metabolise.ApplyGrowth` is where it is dispatched.
+- **The corpse.** `World.Bury` makes `new Corpse(id, position, patch, joules)`
+  (`Ecosystem/Corpse.cs`); a dropped module is the same constructor with the part's tissue
+  and its reserve share, from a new `World.DropModule` beside `Bury`.
+- **The columns.** `Report.BaseColumns` (`src/Evosim.Farm/Report.cs`) appended at the end,
+  the `.Field` chain and the row array in `Row.cs` at the matching position, the header
+  token appended in `Report.HeaderLine` after `selfOverlap`; the lineage flag `ind` is one
+  more property on `LineageEvent` and one `.Field` in `ToJson`.
+- **The checkpoint.** `WorldState.StateVersion` (2 → 3) and `WriteOrganism`, after
+  `ScaledBy` and before the genome; `Checkpoint.Version` in the farm stays unless the
+  header changes.
+- **The tunables.** The `SelfOverlapDepthFraction` pattern: `[Tunable("growth")]` on
+  `RunConfig`, a `Num(...)` row in `EnvBinding.Table` with its `EnvSettings` field and
+  assignment, and the same `Env(...)` read in `unity/Assets/Evosim/Sim/Editor/EvolutionRun.cs`
+  so both farms hash the same config.
+- **The tests.** `DevelopmentTests` (`RecursiveLimitControlsSegmentCount` is the shape),
+  Core's `GrowthTests` and Dynamics' `GrowthTests` (`AResizedBodyIsTheBodyBuiltAtThatSize`),
+  `RunConfigTests`/`RunConfigJsonTests` by reflection, `CheckpointTests.PayloadComesBackExactly`;
+  fixtures in `Fixtures.cs` (`SelfLoopSpine`, `SingleLeaf`) and `TestBodies.cs`.
