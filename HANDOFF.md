@@ -71,13 +71,25 @@ matter residual −2.7e-04 of 15,000 units. The crowd was still climbing (1,697 
 The split at that crowd is physics 53%, world 45%: the solver at 0.32 µs a body-step, the
 spike's number, and the 990,000-cell grid a fixed 0.095 wall seconds a simulated second.
 Extrapolated, not measured: 10,000 bodies at about 2.4x, a 30,000 s seed in three and a
-half hours, where the proposal estimated 1 to 2x. Per body the farm is thirty to fifty
-times cheaper than round 42's Unity arms (60 wall seconds per thousand bodies per
-thousand simulated seconds against 1,600 to 3,500). The grid is the next ceiling at this
+half hours, where the proposal estimated 1 to 2x. Per body the farm is seven to fifteen
+times cheaper than round 42's Unity arms (237 wall seconds per thousand bodies per
+thousand simulated seconds in round 43, read with the 10 s sample interval, against
+1,600 to 3,500; the 60 first written here was the read script's tenfold error). The grid is the next ceiling at this
 size; `SampleEdges`' per-column terms and the serial sums are where to look. Two small
 things: the farm's header does not print D102's `axes v:h`, which only `EvolutionRun`
 carries, and this tank (depth over radius 0.54) is the first world built by the
 relaxation; and a run directory's name is in UTC while these notes are local.
+
+**Three builds landed on 2026-09-22 after round 43** (`08fd8f7` to `7fb748c`): the read
+script reads the sample interval from the rows and the farm's header carries `axes v:h`;
+the theatre's `-From snapshot` draws every body in its recorded pose from `poses.jsonl`
+(`RecordedPose.cs`, the chain walked as the solver's kinematics; label `recorded pose`);
+and the grid's edge walk takes the streams' per-column and per-depth terms from a cache,
+bit-identical (the pinned hash `1d1ee59f…` unchanged), the world step 1.35x and
+`SampleEdges` 1.5x, with a 400 MB working set on the 22,000 m² world (`PrecomputeStreamsTerms
+= false` restores the old path). The next grid gain is the edge walk's cell-liveness
+lookups, not the potential. The farm exe under `artifacts/` is rebuilt on it; its
+`coreHash` and `farmHash` move.
 
 **Machine.** i9-13900K, 24 cores, RTX 4090 with 24 GB. The farm takes `EVOSIM_THREADS`;
 16 is the measured best at this crowd. The Unity cap stays D103's. Run
@@ -288,8 +300,8 @@ subagent and never in a shell loop.
    `dynamicsHash`, the `STOP` file); `watch-round.py`, `analyse-arm.ps1` and
    `scripts/reads/r41d-read.py` taught the renamed contact columns; `sweep-orphans.ps1`
    excluding a farm run's launcher; the launcher named by full path to Git's `bash.exe`.
-2. **The theatre on the farm's record.** `poses.jsonl` drawn by `-From snapshot` (a body as
-   it was posed, at its grown size), then Dynamics as a Unity local package (package A)
+2. **The theatre on the farm's record.** Done: `poses.jsonl` drawn by `-From snapshot`
+   (grown size still not recorded). Next: Dynamics as a Unity local package (package A)
    and a replay that steps it in the Editor, faithful at any thread count. One Editor run to
    verify `Mathf.Sin/Cos/Round` bits against `UnityFloatMath`.
 3. **Done: the base round on the new engine** (round 43, logbook/0111). Left from it: `r41d-read.py`
