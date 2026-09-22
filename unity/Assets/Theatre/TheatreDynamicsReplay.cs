@@ -73,6 +73,11 @@ namespace Evosim.Theatre
         /// <summary>The per-sample comparison against the recording.</summary>
         public ReplayIdentity Identity { get; private set; }
 
+        /// <summary>
+        /// The checkpoint this world was carried on from, or null when it was founded from t=0.
+        /// </summary>
+        public LiveCheckpoint ContinuedFrom { get; private set; }
+
         /// <summary>Simulated seconds elapsed in the replay.</summary>
         public double ElapsedSeconds => Sim?.World.ElapsedSeconds ?? 0d;
 
@@ -195,6 +200,69 @@ namespace Evosim.Theatre
             replay.Identity = new ReplayIdentity(replay.Record.Samples);
 
             replay.Refresh();
+            return replay;
+        }
+
+        /// <summary>
+        /// Opens a farm-recorded run at one of its checkpoints and carries it on from there.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The run comes from the checkpoint and not the other way round.</b> What a viewer
+        /// names is a second and a place to find it; the world is then built from the
+        /// <c>config.json</c> beside that checkpoint's own <c>checkpoints/</c> directory, which is
+        /// the rule a resumed farm run follows and for the same reason — an environment or a
+        /// directory differing by one knob would otherwise build a world the checkpoint cannot be
+        /// put into, and say so only after everything else had been set up.
+        /// </para>
+        /// <para>
+        /// <b>A source mismatch is a caveat here and never a refusal.</b> <see cref="Open"/> is
+        /// called with the mismatch allowed, as the live mode always calls it, and the four
+        /// digests the checkpoint carries are read on top of that and reported. The restored world
+        /// is a cousin in every case — see <see cref="LiveCheckpoint"/> — so
+        /// <see cref="Faithful"/> is false from here on whatever the hashes say, and the label and
+        /// the console both carry the word.
+        /// </para>
+        /// </remarks>
+        public static TheatreDynamicsReplay Continue(
+            string what, double atSeconds, out string refusal)
+        {
+            LiveCheckpoint checkpoint = LiveCheckpoint.Find(what, atSeconds, out refusal);
+            if (checkpoint == null) return null;
+
+            TheatreDynamicsReplay replay = Open(checkpoint.SourceRun, true, out refusal);
+            if (replay == null) return null;
+
+            try
+            {
+                checkpoint.RestoreInto(replay);
+            }
+            catch (Exception e)
+            {
+                refusal =
+                    "The checkpoint at " +
+                    checkpoint.Seconds.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) +
+                    " s could not be read back into this world: " + e.Message;
+
+                replay.Dispose();
+                return null;
+            }
+
+            replay.ContinuedFrom = checkpoint;
+
+            // Whatever the digests said. The trajectory from the first step on is this runtime's,
+            // and a viewer who is told "faithful" will believe it.
+            replay.Faithful = false;
+
+            replay.SourceDifference = replay.SourceDifference == null
+                ? checkpoint.Label()
+                : checkpoint.Label() + "; " + replay.SourceDifference;
+
+            // The census, at the second the checkpoint stands at rather than at t=0: everything
+            // that reads this replay — the label, the console, the identity check — asks it for
+            // where the world is, and the restore has just moved it.
+            replay.Refresh();
+
             return replay;
         }
 
@@ -358,15 +426,23 @@ namespace Evosim.Theatre
         public bool PhotosyntheticAt(int index) => Sim.World.Living[index].HasPhotosyntheticTissue;
 
         /// <summary>The one line a replay's picture carries — and which engine drew it.</summary>
+        /// <remarks>
+        /// A continuation says where it was picked up from and that it is a cousin, which is
+        /// strictly more than <c>NOT A FAITHFUL REPLAY</c> says and replaces it: a viewer looking
+        /// at the frame a week later needs the second as much as the warning.
+        /// </remarks>
         public string LabelFor(string view, string look)
         {
             string arm = Record.ArmName ?? "run";
-            string faithful = Faithful ? "" : "  NOT A FAITHFUL REPLAY";
+
+            string provenance =
+                ContinuedFrom != null ? "  " + ContinuedFrom.Label() :
+                Faithful ? "" : "  NOT A FAITHFUL REPLAY";
 
             return string.Format(
                 System.Globalization.CultureInfo.InvariantCulture,
                 "{0}  t={1:0.#}s  alive {2}  {3}  {5}  dynamics{4}",
-                arm, Census.T, Census.Alive, view, faithful, look);
+                arm, Census.T, Census.Alive, view, provenance, look);
         }
 
         public void Dispose()

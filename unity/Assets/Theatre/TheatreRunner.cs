@@ -62,6 +62,17 @@ namespace Evosim.Theatre
                  "then render. 0 does nothing. EVOSIM_THEATRE_SEEK overrides.")]
         public float SeekToSeconds;
 
+        [Header("Mode B — continuing from a farm checkpoint")]
+        [Tooltip("A run directory holding a checkpoints/ directory, the arm directory above it, " +
+                 "or one .ckpt file. Set, the world is restored from that checkpoint and carried " +
+                 "on live instead of being founded at t=0. EVOSIM_THEATRE_CHECKPOINT overrides.")]
+        public string CheckpointPath = "";
+
+        [Tooltip("The simulated second to continue from: the checkpoint at it, or the last one " +
+                 "before it. 0 takes the last checkpoint the run holds. EVOSIM_THEATRE_SEEK sets " +
+                 "this when a checkpoint is named.")]
+        public float CheckpointSeconds;
+
         [Header("Mode A — one creature")]
         [Tooltip("A snapshots/*.jsonl file, or any file holding one genome. " +
                  "EVOSIM_THEATRE_GENOME overrides.")]
@@ -286,12 +297,22 @@ namespace Evosim.Theatre
                 Mode = ViewMode.Snapshot;
             }
 
+            // A checkpoint to carry on from. Named, it decides which world opens — the run
+            // directory beside it is the world's, so EVOSIM_THEATRE_RUN has nothing left to say.
+            string checkpoint = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT");
+            if (!string.IsNullOrEmpty(checkpoint)) CheckpointPath = checkpoint;
+
             string seek = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SEEK");
             if (!string.IsNullOrEmpty(seek) &&
                 float.TryParse(seek, System.Globalization.NumberStyles.Float,
                     System.Globalization.CultureInfo.InvariantCulture, out float seekTo))
             {
-                SeekToSeconds = seekTo;
+                // One variable, two meanings, decided by whether a checkpoint was named: seeking
+                // to a second and starting from one are the same wish, and a script that asks for
+                // t=400 of a run that holds a checkpoint there should not have to know which of
+                // the two the theatre will do about it.
+                if (!string.IsNullOrWhiteSpace(CheckpointPath)) CheckpointSeconds = seekTo;
+                else SeekToSeconds = seekTo;
             }
 
             if (Environment.GetEnvironmentVariable("EVOSIM_THEATRE_OVERRIDE") == "1")
@@ -355,6 +376,14 @@ namespace Evosim.Theatre
 
         private void OpenWorld()
         {
+            // A checkpoint carries its own run directory with it, so it is asked first and
+            // RunDirectory is not required at all when one is named.
+            if (!string.IsNullOrWhiteSpace(CheckpointPath))
+            {
+                OpenLive();
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(RunDirectory))
             {
                 _error =
@@ -424,7 +453,19 @@ namespace Evosim.Theatre
         /// </remarks>
         private void OpenLive()
         {
-            _live = TheatreDynamicsReplay.Open(RunDirectory, true, out string refusal);
+            // Continued from a recorded second, or founded from the run's config and seed: the
+            // difference is where the world starts, and nothing after this line cares which.
+            string refusal;
+
+            if (!string.IsNullOrWhiteSpace(CheckpointPath))
+            {
+                _live = TheatreDynamicsReplay.Continue(
+                    CheckpointPath, CheckpointSeconds, out refusal);
+            }
+            else
+            {
+                _live = TheatreDynamicsReplay.Open(RunDirectory, true, out refusal);
+            }
 
             if (_live == null)
             {
@@ -456,9 +497,18 @@ namespace Evosim.Theatre
                       " — this is a cousin of the recorded world, not it") +
                 ". The census is on this console; the interface reads a PhysX replay and is down.");
 
+            // Where this world was picked up from, said in full where there is room for it: the
+            // label on a frame carries the clause and the digests do not fit on one.
+            if (_live.ContinuedFrom != null)
+            {
+                Debug.Log("[Theatre] LIVE · dynamics — " + _live.ContinuedFrom.Line());
+            }
+
             DressTheWorld(_live);
 
-            if (SeekToSeconds > 0f) BeginSeek(SeekToSeconds);
+            // A world restored at 400 s is already past a seek to 400 s, and BeginSeek would
+            // rather be told that than asked to run backwards.
+            if (SeekToSeconds > _live.ElapsedSeconds) BeginSeek(SeekToSeconds);
         }
 
         /// <summary>
