@@ -1,10 +1,11 @@
 # The mouth
 
-*2026-09-22, night (draft; the hashes, round 44's reading and the launch commit are filled
-in before the seeds launch). Written by the agent as the pre-registration of round 45, the
-second rung of the animal kit under D106: a cell is the unit of death, a mouth kills and a
-mouth consumes, and every attribute that helps is priced and capped by cell type. The
-predictions are committed before the three seeds launch.*
+*2026-09-22, night; launched 2026-09-23 at 00:28 local from `35395be` (the launch section
+below). Written by the agent as the pre-registration of round 45, the second rung of the
+animal kit under D106: a cell is the unit of death, a mouth kills and a mouth consumes, and
+every attribute that helps is priced and capped by cell type. The predictions were
+committed before the three seeds launched; the island predictions (J8 to J10) were added
+with the world's change (D109) the same night, before the launch.*
 
 ## What it asks
 
@@ -75,6 +76,25 @@ sensor pool. The leaf's and absorptive cells' protection caps are 0.5, where a c
 cuticle doubles the steps a claw needs. Every founder is at zero attack and protection,
 with intake at the consumer cell's cap on consumer nodes, so at t = 0 nothing bites and
 nothing is armoured, and the organs enter by mutation alone.
+
+## The launch
+
+`r45-s1`, `r45-s2` and `r45-s3` launched together at 00:28 local on 2026-09-23
+(`runs/r45-s{1,2,3}/2026-09-22-232754-e51997d5`, the directory named by the UTC clock),
+seeds 1 to 3, 30,000 s at dt 0.01, five threads each, a 1,500-minute wall set for the slow
+case (a seed whose deserts fill), a checkpoint every 2,500 s. Every manifest reads commit
+`35395be` with the tree clean, `configHash e51997d5e9237a2e`, `dynamicsHash 82457fda…`,
+`farmHash 45343389…`, `coreHash 7ba22bc6…`, and every header carries `matter islands 60 m
+cover 0.1 to 12 m · founders in matter · shade off`, `matter-mix 0.02 m2/s`, `area 22000
+m2`, `founderDepth 12 m`, `ceiling 25000` and `matterBudget 15000`, read after the launch
+and not from the command. The build's fixtures were re-recorded before the commit and the
+new crowd fixture replays the old one (`r45fixc-s4` ≡ `r45fixb-s4`, 143 fields at 2,000
+samples, the lineage byte-equal), so the island build with the islands off is the recorded
+world. One thing to know about the directories: a first launch two minutes earlier went
+out from a `Release` exe built before the shade map's second cut, inert at shade 0 but not
+the committed tree; the three were stopped within a minute and their run directories are
+kept beside the real ones with `-stale-exe` appended, and the farm was rebuilt from the
+commit before the launch above. Every reader takes the newest directory.
 
 ## Rules
 
