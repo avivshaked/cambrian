@@ -113,6 +113,10 @@ namespace Evosim.Theatre
                  "the Editor less responsive while it runs.")]
         public float SeekBudgetSeconds = 0.25f;
 
+        [Tooltip("Live mode only: simulated seconds between census lines on the console, which " +
+                 "is where the live cut's census is.")]
+        public float LiveLogSeconds = 50f;
+
         [Header("View")]
         [Tooltip("Paint each part by what it is made of, and each body by how much reserve it " +
                  "holds. An instrument, not the creature's appearance (§5A.5).")]
@@ -144,6 +148,8 @@ namespace Evosim.Theatre
         // ---------------------------------------------------------------- state
 
         private TheatreReplay _replay;
+        private TheatreDynamicsReplay _live;
+        private LiveWorldView _liveView;
         private SoloCreature _solo;
         private SnapshotWorld _recon;
         private readonly CreatureIdMap _map = new CreatureIdMap();
@@ -175,6 +181,7 @@ namespace Evosim.Theatre
         private double _pacedAt;
         private double _measuredPace;
         private long _repaintCursor;
+        private double _saidAt = double.NegativeInfinity;
 
         /// <summary>
         /// The interface — the strip, the census, the warnings, the popover, the inspector and the
@@ -201,6 +208,15 @@ namespace Evosim.Theatre
         /// one step per frame and tens of them.
         /// </remarks>
         public TheatreReplay Replay => _replay;
+
+        /// <summary>
+        /// The world being stepped live on <c>Evosim.Dynamics</c>, or null when this is not the
+        /// live mode. Read by the headless check, which drives this component's own loop.
+        /// </summary>
+        public TheatreDynamicsReplay Live => _live;
+
+        /// <summary>The bodies the live world is drawing, or null. The check counts them.</summary>
+        public LiveWorldView LiveView => _liveView;
 
         /// <summary>
         /// The reconstruction on screen, or null when this is not Mode Snapshot.
@@ -326,6 +342,12 @@ namespace Evosim.Theatre
 
             if (_error != null) { _ui.ShowError(_error); return; }
             if (_replay != null) { _ui.OpenWorld(_replay, _map, _replay.Record.Path); return; }
+
+            // Live mode takes the panel down as it opens, so there is nothing here to tell; this
+            // line only exists so that a world which did open is never reported as one that did
+            // not.
+            if (_live != null) return;
+
             if (_solo != null) { _ui.OpenSolo(_solo); return; }
 
             _ui.ShowError("nothing opened, and nothing said why");
@@ -352,14 +374,7 @@ namespace Evosim.Theatre
 
             if (string.Equals(engine, TheatreDynamicsReplay.EngineName, StringComparison.Ordinal))
             {
-                _error =
-                    "This run was stepped by Evosim.Dynamics, not by PhysX. The theatre can " +
-                    "replay it and check it against its own stats.jsonl — that is " +
-                    "Evosim.Theatre.EditorTools.DynamicsReplayCheck.Run, headless, with " +
-                    "EVOSIM_THEATRE_RUN pointing here — but it cannot yet draw it: the skin " +
-                    "dresses the GameObjects Ecosystem builds and this engine builds none.";
-
-                Debug.LogWarning("[Theatre] refused: " + _error);
+                OpenLive();
                 return;
             }
 
@@ -380,6 +395,68 @@ namespace Evosim.Theatre
                 (_replay.Faithful ? "same source as the recording" : "SOURCE DIFFERS: " + _replay.SourceDifference));
 
             DressTheWorld(_replay);
+
+            if (SeekToSeconds > 0f) BeginSeek(SeekToSeconds);
+        }
+
+        /// <summary>
+        /// The live mode: the world the console farm's own harness is stepping, right now, on
+        /// <c>Evosim.Dynamics</c>, drawn as it steps.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>It is live and not a replay, and the difference is the whole of the labelling.</b>
+        /// Mode B on PhysX re-runs a recording and asks at every sample whether what is on screen
+        /// is the run; here the world is stepped from the run's own config and seed, and the
+        /// identity check is not asked to decide anything — the console line says whether this
+        /// build is the build that recorded it, and that is the reader's whole claim. So a source
+        /// mismatch is allowed rather than refused: a world that is honestly a cousin is still a
+        /// world worth watching, and one that cannot be opened at all shows nothing.
+        /// </para>
+        /// <para>
+        /// <b>The interface goes down rather than up.</b> <see cref="TheatreUi"/> is typed on
+        /// <see cref="TheatreReplay"/> the whole way through — the provenance word, the timeline,
+        /// the identity's coverage and the physics-jobs badge are all questions about a PhysX
+        /// recording — and a panel showing a blank census over a world that is running is worse
+        /// than no panel. So the live cut puts the census on the console and the chrome away, and
+        /// the interface is the next piece of work rather than a thing quietly half-wired.
+        /// </para>
+        /// </remarks>
+        private void OpenLive()
+        {
+            _live = TheatreDynamicsReplay.Open(RunDirectory, true, out string refusal);
+
+            if (_live == null)
+            {
+                _error = refusal;
+                Debug.LogWarning("[Theatre] refused: " + refusal);
+                return;
+            }
+
+            // The panel cannot read this world, so it is taken down rather than left showing a
+            // census of nothing. H no longer has anything to toggle, which the log says.
+            _ui?.Dispose();
+            _ui = null;
+            ShowOverlay = false;
+
+            _liveView = new LiveWorldView(_live.Sim)
+            {
+                Palette = _palette,
+                ColourByCellType = ColourByCellType,
+                RepaintsPerFrame = RepaintsPerFrame,
+            };
+
+            Debug.Log(
+                $"[Theatre] LIVE · dynamics — {_live.Record.ArmName} seed {_live.Record.Seed}, " +
+                $"dt {_live.Sim.PhysicsDt} s, threads {_live.Threads}, " +
+                $"config {_live.Record.ConfigHash}, " +
+                (_live.Faithful
+                    ? "same source as the recording, so this is that run's own trajectory"
+                    : "SOURCE DIFFERS: " + _live.SourceDifference +
+                      " — this is a cousin of the recorded world, not it") +
+                ". The census is on this console; the interface reads a PhysX replay and is down.");
+
+            DressTheWorld(_live);
 
             if (SeekToSeconds > 0f) BeginSeek(SeekToSeconds);
         }
@@ -566,6 +643,10 @@ namespace Evosim.Theatre
         {
             _replay?.Dispose();
             _replay = null;
+            _liveView?.Dispose();
+            _liveView = null;
+            _live?.Dispose();
+            _live = null;
             _solo?.Dispose();
             _solo = null;
             _recon?.Dispose();
@@ -610,6 +691,7 @@ namespace Evosim.Theatre
             ReadKeys();
 
             if (_replay != null) StepWorld();
+            else if (_live != null) StepLive();
             else if (_solo != null) StepSolo();
             else if (_recon != null) _recon.BuildSome(FrameBudgetSeconds);
 
@@ -712,6 +794,90 @@ namespace Evosim.Theatre
             Repaint();
         }
 
+        /// <summary>
+        /// <see cref="StepWorld"/>'s loop on the other engine, with the scene brought up to the
+        /// world once at the end rather than once per step.
+        /// </summary>
+        /// <remarks>
+        /// <b>The pace controls are the same controls.</b> <c>Space</c>, <c>[</c>, <c>]</c> and
+        /// the filming lock all act on <c>Paused</c> and <see cref="EffectiveRate"/>, which
+        /// <see cref="ReadKeys"/> sets without caring which engine is running, so nothing here had
+        /// to be duplicated to keep them working. The frame budget is the same promise too: an
+        /// Editor that spends a whole frame inside the solver is an Editor that looks wedged.
+        /// </remarks>
+        private void StepLive()
+        {
+            double before = _live.ElapsedSeconds;
+            double wallBefore = _clock.Elapsed.TotalSeconds;
+            float dt = Mathf.Max(1e-4f, _live.Sim.PhysicsDt);
+
+            if (_seeking)
+            {
+                if (FlyCamera != null) FlyCamera.GetComponent<Camera>().enabled = false;
+
+                double deadline = wallBefore + Mathf.Max(0.02f, SeekBudgetSeconds);
+
+                while (_live.ElapsedSeconds < _seekTarget &&
+                       _clock.Elapsed.TotalSeconds < deadline)
+                {
+                    _live.Step();
+                }
+
+                if (_live.ElapsedSeconds >= _seekTarget) EndSeek();
+            }
+            else if (!Paused)
+            {
+                _pending += Time.unscaledDeltaTime * Mathf.Max(0f, EffectiveRate);
+
+                double deadline = wallBefore + Mathf.Max(0.005f, FrameBudgetSeconds);
+
+                while (_pending >= dt && _clock.Elapsed.TotalSeconds < deadline)
+                {
+                    if (_live.Step()) SayTheCensus();
+                    _pending -= dt;
+                }
+
+                if (_pending > 4d * dt) _pending = 0d;
+            }
+
+            MeasurePace(before, wallBefore);
+
+            // Once a frame, and never per physics step: the solver takes tens of steps between
+            // two frames and a viewer sees the last of them.
+            _liveView.ColourByCellType = ColourByCellType;
+            _liveView.Sync();
+        }
+
+        /// <summary>
+        /// The census on the console, on a cadence — the live cut's stand-in for the panel.
+        /// </summary>
+        /// <remarks>
+        /// Not every metabolic step: the economy runs twice a simulated second and a world played
+        /// at a hundred times real time would put two hundred lines a second into the Editor's
+        /// log, which is a way of writing nothing down. The cadence is in simulated seconds, so
+        /// the record of a session reads the same whatever pace it was watched at.
+        /// </remarks>
+        private void SayTheCensus()
+        {
+            double t = _live.ElapsedSeconds;
+            double every = Mathf.Max(0.5f, LiveLogSeconds);
+
+            if (t < _saidAt + every) return;
+            _saidAt = t - (t % every);
+
+            WorldCensus census = _live.Census;
+
+            Debug.Log(string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "[Theatre] LIVE · dynamics  t={0,8:0.#} s  alive {1,5}  births {2,6}  " +
+                "deaths {3,6}  bodies drawn {4,5}  parts {5,6}  audit {6:0.###e+0} J  " +
+                "{7:0.##}x real time",
+                census.T, census.Alive, census.Births, census.Deaths,
+                _liveView != null ? _liveView.BodyCount : 0,
+                _liveView != null ? _liveView.PartCount : 0,
+                census.AuditResidual, _measuredPace));
+        }
+
         private void StepSolo()
         {
             double before = _solo.ElapsedSeconds;
@@ -751,7 +917,7 @@ namespace Evosim.Theatre
         /// <summary>Simulated seconds per wall-clock second, over a window rather than a frame.</summary>
         private void MeasurePace(double simBefore, double wallBefore)
         {
-            double sim = (_replay?.ElapsedSeconds ?? _solo?.ElapsedSeconds ?? 0d);
+            double sim = _replay?.ElapsedSeconds ?? _live?.ElapsedSeconds ?? _solo?.ElapsedSeconds ?? 0d;
             double wall = _clock.Elapsed.TotalSeconds;
 
             _pacedFrom += sim - simBefore;
@@ -807,11 +973,12 @@ namespace Evosim.Theatre
         /// </remarks>
         public void BeginSeek(double target)
         {
-            if (_replay == null) return;
+            double now = _replay?.ElapsedSeconds ?? _live?.ElapsedSeconds ?? double.NaN;
+            if (double.IsNaN(now)) return;
 
-            _seekFrom = _replay.ElapsedSeconds;
+            _seekFrom = now;
             _seekTarget = target;
-            _seeking = target > _replay.ElapsedSeconds;
+            _seeking = target > now;
 
             if (!_seeking) EndSeek();
         }
