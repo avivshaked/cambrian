@@ -44,36 +44,91 @@ any sense that reports a bearing to another body, on the ground that direction s
 from the body comparing scalar readings across its parts. I propose inside D020 and mark
 the one place where the owner might want to reopen it.
 
-## Rung A: something to eat that is alive, and a way to know it happened
+## Rung A0: the part made by a rule, not by a plan
 
-**A1. The bite**, as `fable-propose-predation.md` rules 1 to 3, 6 and 7: a mouth is a
-consumer part, a bite is a contact held across a metabolic step, bites are priced after the
-feeding allocation from a frozen ordered list, each target's loss capped before mouths
-divide it, `BiteJoulesPerSecond` (`EVOSIM_BITE`) default 0 so every recording replays.
+*Added 2026-09-22 evening from the owner's two points in conversation: creatures do not
+partially eat each other, a cell is the unit of death, and plants grow leaves by a
+programme where animals do not regrow a limb.*
 
-**A2. What the bitten loses, on D098's base.** A bite takes charged units. It takes them
-from the reserve first and from tissue when the reserve is empty. The reserve is where
-nearly all of a body's charged matter is (round 40 held about 190 J of reserve a body
-against 0.37 J of tissue), so a bite that took tissue alone would move almost nothing. This
-reverses the predation proposal's rule 4, which kept the bite out of the reserve; under
-D098 there is no locked matter to move and the hoard is the larder. Tissue loss shrinks the
-body through the growth machinery as that rule says. A body under the newborn mass floor,
-or with no reserve and no tissue to give, dies `Eaten`. The eater keeps the yield as
-reserve, and the waste share becomes marine snow in the cell where the bite happened, so
-both books close by the arithmetic burning and eating already use. There is no
-captured-matter reserve, because D098 has one substance.
+Development expands the genome's recursive graph once into a fixed adult plan, and growth
+(D087) scales that plan from the birth fraction to adult size. Every body is determinate:
+it has the parts its plan says, and nothing is ever added or, until rung A, lost.
+
+**One gene per node, `Growth: Determinate | Indeterminate`.** Determinate is today's rule:
+the count is fixed at development, a lost part is gone, growth only scales what exists.
+Indeterminate: the node's count is bounded rather than fixed, and the body adds another
+module of it while its reserve stands above a threshold (paid at the tissue price like all
+growth) and drops one after a long enough starvation. A lost module is a count below the
+rule, so it regrows when affordable. Both are bounded as now by `MaxParts` 16 and
+`MaxDepth` 8, by D099's silhouette cap (a body earns its hull's surface over four, so the
+sixteenth leaf pays least) and by D101 (an overlapping fold is a stillbirth); those three
+are what stop indeterminate from meaning "sixteen leaves and win", and round 41d's bush is
+the case they were built for.
+
+A gene and not a world rule, so that selection decides which lineages are plants. My
+expectation, marked as inference: the photosynthetic lines go indeterminate (a leaf pays
+for itself) and the jointed lines stay determinate (a muscle pays only when it moves the
+body), which would be the first time this world evolves the plant–animal difference
+rather than reading it off the cell-type table.
+
+**What it costs.** Genome format 7; every stored genome refused and re-extracted, the
+usual rule. A body's parts become a property of its history, so the checkpoint carries
+each body's module counts, and adding a module rebuilds the articulated body the way a
+growth resize does. The GPU port's link ceiling is paid by every thread, so a plant world
+at sixteen parts sets it at sixteen for everyone; bounded and to be measured, and no
+change to D105. Its own round, before the bite, with predictions on body size tracking
+reserve, the cap binding, and the share of indeterminate nodes by guild.
+
+## Rung A: the mouth kills, and the mouth consumes
+
+*Rewritten 2026-09-22 evening. The earlier text had the bite take a body's reserve from
+the outside, which the owner rejected: creatures do not partially eat each other. What
+follows replaces it and `fable-propose-predation.md`'s rules 4 and 5.*
+
+A mouth is a consumer part, already in the genome. It does two things, and the yield comes
+from the second.
+
+**A1. The kill.** A mouth in held contact with a living part across a metabolic step kills
+that part. The part and everything hanging from it leave the body as a corpse placed where
+the part was, carrying the part's tissue and its pro-rata share of the body's one reserve
+(its volume over the body's volume); the killer gets nothing from the kill itself. On the
+root it is the whole body, death `Eaten`. What is left keeps living on its remaining parts
+and income, and dies `Starved` as now if it cannot pay its way or falls under the newborn
+mass floor; an indeterminate module regrows when affordable, a determinate part is gone.
+No cost to the kill in the first round beyond the mouth's upkeep, so indiscriminate
+killing is possible and is read rather than priced; protection is none, a bite kills, and
+comes later as a priced cell property with bite strength beside it (rung D's armour).
+
+**A2. The consumption.** A corpse is an object with a position, carried by the water (D086,
+D088) and decaying into marine snow at the corpse rate, which is how the dead have fed the
+absorptive guild since round 32. A mouth within reach of a corpse takes charged units from
+it at a rate set by the mouth's size, into its own reserve, with the waste share to snow
+the way absorption already loses a share; a corpse is finite, mouths in reach share it,
+and what nobody eats decays as before. Reach is a distance test each metabolic step; a
+corpse is passive and needs no physics. The corpse decay rate sets the scavenging window
+(a few minutes at 0.005/s) and the round says which it ran.
+
+**What that gives.** A body that kills a root and eats the corpse is a predator. A body
+that kills a leaf of an indeterminate plant and eats it while the plant regrows is a
+grazer. A body that only finds corpses is a scavenger, and it can found without ever
+killing, which is the niche this world has never had and the one likeliest to appear
+first. A killer that kills more than it can eat feeds the scavengers and the snow.
 
 **A3. `Contact` and `Damage` wired**, behind `SenseContact` and `SenseDamage`, off by
-default. `Damage` reads the share of a part's holding the last step took.
+default. `Damage` reads "a part of mine died this step"; `Contact` stays as declared. A
+scent of corpses belongs to rung B's field.
 
-**What it should do.** Give the eaters a larder that is the living crop and not the
-corpses, which D098 sized at a fraction of a percent of what the leaves capture; and give
-the leaves a reason to be somewhere else. The round: dose found with the ledger first
-(D069), dt 0.01 from the first screen because a held contact is a property of the step,
-senses and dose never changed together.
+**What the round asks**, each on its own prediction: whether a scavenger line founds,
+whether a killer line founds, and whether an indeterminate plant survives grazing. dt
+0.01 from the first screen, because a held contact is a property of the step. No genome
+field: the consumer cell and both senses are in the genome already; the tunables (the
+kill on, the consumption rate, the reach) refuse older configs as usual.
 
-**What the owner rules here**: that predation is now due (ruled too early on 2026-09-11,
-before the tank, the streams and D098), and A2's reversal, that a bite reaches the reserve.
+**What the owner has said** (2026-09-22 evening): a bite alone does not make a hunter,
+behaviour needs rung B's sense, and A is read as what the payoff does without one; the
+cell is the unit of death; mouths kill and consume as two things; the eight mechanics
+above were put in conversation and "most" liked, with the module gene and the round order
+the two open answers.
 
 ## Rung B: a sense of others, inside D020
 
@@ -146,22 +201,26 @@ places, which is the first step from a soup toward a world with a map. The clump
 
 | Round | Build | New genome field | Refuses old configs | Days, build and screen |
 |---|---|---|---|---|
-| 43 | A: bite, `Eaten`, `Contact`, `Damage` | no | yes (three tunables) | 2 |
-| 44 | B1 scent, B2 eyespot | no | yes | 2 |
-| 45 | C1 shelf on the shallow streams, C4 anchor | no (a cell type id) | yes | 2 to 3 |
-| 46 | C2 rock, C3 seep | no | yes | 2 |
+| 44 | A0: the module gene, determinate or indeterminate per node | yes (format 7) | yes | 2 |
+| 45 | A: the kill, the corpse, consumption, `Eaten`, `Contact`, `Damage` | no | yes | 2 to 3 |
+| 46 | B1 scent (fed by the living and by corpses), B2 eyespot | no | yes | 2 |
+| 47 | C1 shelf on the shallow streams, C4 anchor | no (a cell type id) | yes | 2 to 3 |
+| 48 | C2 rock, C3 seep | no | yes | 2 |
 | later | D, each behind its own proposal | the fin no, armour no | yes | |
 
-Every row is a registry or a tunable change and none bumps the genome format, so the
-inocula on disk stay readable throughout. Each round keeps the three-seed, pinned-arm
-shape of round 42 at its budget, since a full seed there takes ten hours.
+Only A0 bumps the genome format; every other row is a registry or a tunable change. Each
+round is three seeds on the farm out of Unity at round 43's shape, a seed in about half an
+hour at 16 threads, so a round is an evening.
 
 ## What the owner rules
 
-1. The order A, B, C, D, or another.
-2. That predation is due, and that a bite reaches the reserve (A2).
-3. The scent field as the first sense of others, inside D020, with the neighbour sense
-   named and not built.
-4. The places: the shelf first with the anchor, rock and the seep after; and the seep as a
-   return of buried matter and not a source.
-5. Anything in D the owner wants sooner.
+1. ~~The order A, B, C, D, or another.~~ Ruled 2026-09-22 evening: A, B, C, D.
+2. ~~That predation is due, and that a bite reaches the reserve.~~ Replaced: the cell is
+   the unit of death, the mouth kills and consumes as two things (rung A as rewritten).
+3. **Open:** the module gene of rung A0, one per node, bounded by the caps, selection
+   deciding who is a plant; and A0 as its own round before A.
+4. ~~The scent field as the first sense of others, inside D020, with the neighbour sense
+   named and not built.~~ Ruled with 1.
+5. ~~The places: the shelf first with the anchor, rock and the seep after; and the seep as
+   a return of buried matter and not a source.~~ Ruled with 1.
+6. Anything in D the owner wants sooner.
