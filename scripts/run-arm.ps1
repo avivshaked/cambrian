@@ -13,6 +13,11 @@
   Never point two processes at the same worker: two Unity processes sharing one Library/
   corrupt it, and the symptom arrives later as "Corrupted Library Detected".
 
+  This is the Unity farm. For the farm out of Unity (src/Evosim.Farm, engine "dynamics") use
+  scripts/run-farm.ps1 — a separate script rather than a mode of this one because there is no
+  worker to refuse, no Library to corrupt, no simHash over Assets/Evosim and no Editor in the
+  process cap, and what little is shared is the shape of the thing rather than any of the code.
+
   Since the run manifest (the Sol/GPT review of 2026-09-03, finding 6) the run also writes
   runs/<Name>/<run>/run.json before its first step, carrying the git commit and a hash of the
   worker's own source. This script waits for that file and prints both, so what a worker was

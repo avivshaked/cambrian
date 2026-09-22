@@ -12,13 +12,30 @@
   An orphan here is a bash.exe whose command line names a script under scratch/ or an
   until/while loop, and the sleep and console helpers that belong to such loops.
 
+  One thing that matches that shape and is not an orphan: the farm out of Unity is launched by a
+  shell script under scratch/farm-port/ or scripts/ that starts Evosim.Farm.exe and waits for it,
+  and it lives for the length of a run. It is one script that exits, not a loop that re-forks, so
+  it costs nothing and killing it would kill an arm. The exclusion is deliberately narrow — the
+  command line must name Evosim.Farm.exe, or a .sh under one of those two directories, and must
+  carry no loop of its own — and excluded processes are printed rather than hidden.
+
 .EXAMPLE
   ./scripts/sweep-orphans.ps1          # list
   ./scripts/sweep-orphans.ps1 -Kill    # stop them, three passes
 #>
 param([switch]$Kill)
 
-function Get-Orphans {
+function Test-FarmLauncher($p) {
+    $c = $p.CommandLine
+    if (-not $c) { return $false }
+    # A loop in the command line is a loop whoever wrote it, and it forks per iteration. That is
+    # the thing this script exists for, so it is never excused by where the script sits.
+    if ($c -match 'while true|while :|until |for \(\(') { return $false }
+    return ($c -match 'Evosim\.Farm\.exe') -or
+           ($c -match '(scratch[\\/]farm-port|scripts)[\\/][^\s"'']*\.sh')
+}
+
+function Get-Candidates {
     # Younger than three minutes is the caller's own shell, or a command still running.
     $cutoff = (Get-Date).AddMinutes(-3)
     Get-CimInstance Win32_Process | Where-Object { $_.CreationDate -lt $cutoff } | Where-Object {
@@ -26,6 +43,16 @@ function Get-Orphans {
             $_.CommandLine -match 'scratch/|while true|until ') -or
         ($_.Name -in @('sleep.exe', 'cygwin-console-helper.exe'))
     }
+}
+
+function Get-Orphans {
+    Get-Candidates | Where-Object { -not (Test-FarmLauncher $_) }
+}
+
+@(Get-Candidates | Where-Object { Test-FarmLauncher $_ }) | ForEach-Object {
+    $c = $_.CommandLine
+    '  {0,6} {1:HH:mm dd/MM}  {2}   <- farm launcher, not an orphan' -f `
+        $_.ProcessId, $_.CreationDate, $c.Substring([Math]::Max(0, $c.Length - 90))
 }
 
 $found = @(Get-Orphans)

@@ -12,6 +12,7 @@
 #   ./scripts/analyse-arm.ps1 r9-s1 -Timeline -Columns 'depth m','shade %','sun'
 #   ./scripts/analyse-arm.ps1 r9-s1 -Header             # print the settings line
 #   ./scripts/analyse-arm.ps1 r9-s1 -ListColumns        # print the name -> index map
+#   ./scripts/analyse-arm.ps1 r42farm2-s1 -RunsRoot scratch/farm-port/runs
 
 param(
     [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments = $true)]
@@ -22,11 +23,29 @@ param(
     [double]$To = [double]::MaxValue,
     [string[]]$Columns = @(),
     [switch]$Header,
-    [switch]$ListColumns
+    [switch]$ListColumns,
+    # Where the reports are. Default runs/ under the repository, which is where both farms write.
+    [string]$RunsRoot = 'runs'
 )
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
+$runsRootPath = $RunsRoot
+if (-not [System.IO.Path]::IsPathRooted($runsRootPath)) { $runsRootPath = Join-Path $repo $RunsRoot }
+
+# The contact instrument's four columns under two names. The farm out of Unity counts overlapping
+# bounding spheres between creatures where PhysX counted contact manifolds between colliders, so
+# the columns are named for what they count -- but a script, a round read or a habit that asks for
+# the old name should get the number rather than a '?'. Asked either way, answered either way, and
+# the report says once which name it actually read. The numbers are a different census and do not
+# compare across the change; this resolves a name, not a measurement.
+$columnAliases = @{
+    'contacts'   = 'overlaps';   'overlaps'  = 'contacts'
+    'pairs/body' = 'ovl/body';   'ovl/body'  = 'pairs/body'
+    'pairs jnt %' = 'ovl jnt %'; 'ovl jnt %' = 'pairs jnt %'
+    'stuck %'    = 'ovl held %'; 'ovl held %' = 'stuck %'
+}
+$script:aliasNotes = @{}
 
 # Columns shown by default. Named, not positional - resolved per report.
 # 'mat blk' became 'upt lim' with D098: there is no conception the world refuses for want of
@@ -49,14 +68,22 @@ function Get-ColumnMap([string[]]$lines) {
 }
 
 function Get-Cell([string[]]$fields, [hashtable]$map, [string]$name) {
-    if (-not $map.ContainsKey($name)) { return '?' }
-    $idx = $map[$name]
+    $key = $name
+    if (-not $map.ContainsKey($key)) {
+        if ($columnAliases.ContainsKey($name) -and $map.ContainsKey($columnAliases[$name])) {
+            $key = $columnAliases[$name]
+            $script:aliasNotes[$name] = $key
+        }
+        else { return '?' }
+    }
+    $idx = $map[$key]
     if ($idx -ge $fields.Count) { return '?' }
     return ($fields[$idx].Trim() -replace '\*', '')
 }
 
 foreach ($name in $Names) {
-    $path = Join-Path $repo "runs/$name.md"
+    $script:aliasNotes = @{}
+    $path = Join-Path $runsRootPath "$name.md"
     if (-not (Test-Path $path)) { Write-Output "== $name : no report at $path"; continue }
     $lines = Get-Content $path
     $map = Get-ColumnMap $lines
@@ -110,5 +137,13 @@ foreach ($name in $Names) {
         $t = Get-Cell $fields $map 't (s)'
         $pairs = $want | ForEach-Object { "$_=$(Get-Cell $fields $map $_)" }
         Write-Output "== $name : t=$t $($pairs -join ' ') | $ending"
+    }
+
+    # Said once, and after the numbers: a reader who asked for 'contacts' and got 'overlaps' is
+    # reading a different census, and a silent substitution is how a name change becomes invisible.
+    if ($script:aliasNotes.Count -gt 0) {
+        $said = ($script:aliasNotes.GetEnumerator() | Sort-Object Key |
+            ForEach-Object { "$($_.Key) read as $($_.Value)" }) -join '; '
+        Write-Output "   (this report names them differently: $said -- a different census, not the same number)"
     }
 }

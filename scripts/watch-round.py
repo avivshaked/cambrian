@@ -1,9 +1,11 @@
 """One look at a round, then exit. Never a loop.
 
     python scripts/watch-round.py r41e [--read scripts/reads/r41d-read.py] [--marks 3000,5000,10000,15000,30000]
+    python scripts/watch-round.py r43 --runs-root scratch/farm-port/runs
 
 Prints only what is new since the last look: queue lines, error signatures and the footer in each
-arm's Unity log, a manifest that has left `running`, a living count past the stop rule's warning,
+arm's log — Unity's `scratch/logs/evosim-<arm>.log`, or the farm's own `<arm>.out` and `<arm>.err`,
+whichever the round wrote — a manifest that has left `running`, a living count past the stop rule's warning,
 a stall suspicion (the report's byte size flat for thirty minutes on a running arm; a suspicion,
 confirm with CPU before acting, CLAUDE.md's wedge gotcha), and the round's read the first time a
 seed's report passes each mark. State lives in scratch/logs/<round>-watch.json.
@@ -42,7 +44,12 @@ def main():
     ap.add_argument('--read', default=None, help='a read script taking <second> <arm>')
     ap.add_argument('--marks', default='3000,5000,10000,15000,30000')
     ap.add_argument('--seeds', default='1,2,3,4,5')
+    # Both farms write under runs/, so the default is unchanged; the console farm's acceptance
+    # runs land wherever EVOSIM_RUNS_ROOT pointed, and a watch that cannot find them says nothing
+    # rather than saying nothing is wrong.
+    ap.add_argument('--runs-root', default='runs')
     a = ap.parse_args()
+    runs_root = a.runs_root if os.path.isabs(a.runs_root) else f'{ROOT}/{a.runs_root}'
     marks = [int(m) for m in a.marks.split(',')]
     os.makedirs(f'{ROOT}/scratch/logs', exist_ok=True)
     state_path = f'{ROOT}/scratch/logs/{a.round}-watch.json'
@@ -65,13 +72,18 @@ def main():
 
     for s in a.seeds.split(','):
         arm = f'{a.round}-s{s}'
-        log = f'{ROOT}/scratch/logs/evosim-{arm}.log'
-        if os.path.exists(log):
-            hits = [l.strip() for l in open(log, encoding='utf-8', errors='replace') if LOG.search(l)]
-            if hits:
-                emit(f'{arm} log: {hits[-1][:300]}')
-        runs = sorted(glob.glob(f'{ROOT}/runs/{arm}/2026*'))
-        report = f'{ROOT}/runs/{arm}.md'
+        # Unity's log, then the console farm's two streams (run-farm.ps1 writes both). Whichever
+        # of the three exist are read; a round is one farm or the other and the absent ones cost
+        # a stat apiece.
+        for log in (f'{ROOT}/scratch/logs/evosim-{arm}.log',
+                    f'{ROOT}/scratch/logs/{arm}.out',
+                    f'{ROOT}/scratch/logs/{arm}.err'):
+            if os.path.exists(log):
+                hits = [l.strip() for l in open(log, encoding='utf-8', errors='replace') if LOG.search(l)]
+                if hits:
+                    emit(f'{arm} {os.path.basename(log)}: {hits[-1][:300]}')
+        runs = sorted(glob.glob(f'{runs_root}/{arm}/2026*'))
+        report = f'{runs_root}/{arm}.md'
         if not runs or not os.path.exists(report):
             continue
         try:

@@ -1,21 +1,53 @@
 """Round 41d's read (logbook/0108) at a named second, per seed, one line per prediction clause.
 
     python scripts/reads/r41d-read.py 15000 [r41d-s1 r41d-s2 r41d-s3]
+    python scripts/reads/r41d-read.py 30000 r42farm2-s1 --runs-root scratch/farm-port/runs
 
 E10's probe clause is read by hand with scripts/overlap/run.ps1 on the snapshot; this prints the
 rest from stats.jsonl and run.json. E8 is the wall seconds per 1,000 simulated seconds per 1,000
 living bodies over the window from 5,000 s to the named second (three arms ran throughout).
 """
-import json, glob, math, sys
+import json, glob, math, os, sys
 
 ROOT = 'D:/Projects/experiments/evolution-simulator'
+RUNS = ROOT + '/runs'
 BUDGET_UNITS = 3000  # rounds 41 to 41e; round 42 passes --budget 1500
 RHO = 100
 COLUMNS = 2211  # the uniform expectation's scale in E7, from 0107
 
+# The contact instrument under two names. The farm out of Unity counts overlapping bounding
+# spheres between creatures where PhysX counted contact manifolds between colliders, so its
+# statistics fields are overlapPairs* and bedOrGlassBodies*. Asked by either name, answered from
+# whichever the file carries, and said once: the two are a different census and E9's threshold
+# was set on PhysX's.
+ALIASES = {
+    'contactPairs': 'overlapPairs',
+    'contactPairsPerStep': 'overlapPairsPerStep',
+    'contactPairsJointed': 'overlapPairsJointed',
+    'contactPairsPersistent': 'overlapPairsHeld',
+    'contactBodies': 'overlapBodies',
+    'floorContactPairs': 'bedOrGlassBodies',
+    'floorContactPairsPerStep': 'bedOrGlassBodiesPerStep',
+}
+ALIASES.update({v: k for k, v in ALIASES.items()})
+SAID = {}
+
+
+def field(row, name, default=None):
+    """The field, or the one it was renamed to, or the default."""
+    if name in row:
+        return row[name]
+    other = ALIASES.get(name)
+    if other is not None and other in row:
+        SAID[name] = other
+        return row[other]
+    if default is None:
+        raise KeyError(name)
+    return default
+
 
 def rows_of(arm):
-    run = sorted(glob.glob(f'{ROOT}/runs/{arm}/2026*'))[-1]
+    run = sorted(glob.glob(f'{RUNS}/{arm}/2026*'))[-1]
     rows = [json.loads(l) for l in open(run + '/stats.jsonl', encoding='utf-8') if l.strip()]
     manifest = json.load(open(run + '/run.json', encoding='utf-8'))
     return rows, manifest
@@ -24,14 +56,17 @@ def rows_of(arm):
 def window_pairs(by, t):
     r, p = by[t], by[t - 1000]
     alive = (r['alive'] + p['alive']) / 2
-    return (r['contactPairs'] - p['contactPairs']) / ((t - (t - 1000)) / 0.01) / alive
+    return (field(r, 'contactPairs') - field(p, 'contactPairs')) / ((t - (t - 1000)) / 0.01) / alive
 
 
 def main():
-    global BUDGET_UNITS
+    global BUDGET_UNITS, RUNS
     argv = sys.argv[1:]
     if '--budget' in argv:
         i = argv.index('--budget'); BUDGET_UNITS = float(argv[i + 1]); del argv[i:i + 2]
+    if '--runs-root' in argv:
+        i = argv.index('--runs-root'); r = argv[i + 1]; del argv[i:i + 2]
+        RUNS = r if os.path.isabs(r) else f'{ROOT}/{r}'
     t = int(argv[0])
     arms = argv[1:] or ['r41d-s1', 'r41d-s2', 'r41d-s3']
     for arm in arms:
@@ -65,6 +100,11 @@ def main():
         print(f'  E9 pairs/body at {t} s window {wins[-1][1]:.2f} (< 1.0 at 15,000 s); by window ' + ' '.join(f'{k // 1000}k:{v:.2f}' for k, v in wins))
         print(f'  E10 probe by hand on snapshots/{t:09d}.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3')
         print(f'  recorded: jointed {r["jointed"]} ({r["jointed"] / alive * 100:.0f}%, inh {r["jointedInherited"]}), mean dof {r["dof"] / max(alive, 1):.2f}, audit {r["auditResidual"]:.1e}, mat resid {r["matterResidual"]:.1e}, wraps {r["wraps"]}')
+        if SAID:
+            print('  (this run names them differently: ' +
+                  '; '.join(f'{k} read as {v}' for k, v in sorted(SAID.items())) +
+                  ' -- a different census, not the same number)')
+            SAID.clear()
 
 
 if __name__ == '__main__':

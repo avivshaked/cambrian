@@ -15,6 +15,14 @@
   This is the sanctioned way to stop an arm. Stop-Process by hand does the killing and none of
   the recording.
 
+  Two farms since 2026-09-22, and the second one is not stopped by killing anything. A run whose
+  run.json says engine "dynamics" is src/Evosim.Farm's, a .NET console with no Unity process to
+  find: it reads a file named STOP in its own run directory between report rows and ends itself
+  in an orderly way, writing status "stopped", that file's first line as the reason, and its
+  last row and snapshot first. So the farm branch writes STOP and leaves the manifest alone —
+  merging "stopped" in here would race the program's own rewrite and could lose the ending
+  block, which is the half nothing can reconstruct. The Unity branch is unchanged.
+
   A stall is a suspicion, not a verdict (CLAUDE.md): before stopping an arm for silence,
   confirm it with the discriminator — the report's byte size and the process's cumulative CPU,
   sampled 90 s apart. Zero byte growth AND high CPU delta is wedged; a new row, or a quiet CPU,
@@ -30,29 +38,45 @@
 
 .PARAMETER Worker
   Optional. Locate the Unity process by worker number instead of by the workerPath the run
-  recorded — the fallback for a run that died before writing a manifest at all.
+  recorded — the fallback for a run that died before writing a manifest at all. Unity only.
+
+.PARAMETER RunsRoot
+  Where the arms live. Default runs/ under the repository, which is where both farms write;
+  a relative path resolves against the repository, not against the shell's directory. It is
+  here because the console farm's acceptance runs land elsewhere (EVOSIM_RUNS_ROOT) and an
+  arm that cannot be found cannot be stopped.
 
 .PARAMETER WhatIf
-  Report what would be stopped and change nothing.
+  Report what would be stopped and change nothing. On a farm arm that means the STOP file is
+  named and not written.
 
 .EXAMPLE
   ./scripts/stop-arm.ps1 r17-s3 -Reason manual-futility
 
 .EXAMPLE
   ./scripts/stop-arm.ps1 r17-s3 -Reason manual-stall -WhatIf
+
+.EXAMPLE
+  ./scripts/stop-arm.ps1 r42farm2-s1 -RunsRoot scratch/farm-port/runs -Reason manual-futility
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory, Position = 0)][string]$Name,
     [ValidateSet('manual-futility', 'manual-stall', 'manual-other')]
     [string]$Reason = 'manual-other',
-    [int]$Worker = 0
+    [int]$Worker = 0,
+    [string]$RunsRoot = 'runs'
 )
 
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
-$armDir = Join-Path $root "runs\$Name"
+
+$runsRootPath = $RunsRoot
+if (-not [System.IO.Path]::IsPathRooted($runsRootPath)) {
+    $runsRootPath = Join-Path $root $RunsRoot
+}
+$armDir = Join-Path $runsRootPath $Name
 
 # The newest run directory for this arm. Directories are named
 # <yyyy-MM-dd-HHmmss>-<configHash8> (RunDirectory.Create), so name order is time order and the
@@ -71,6 +95,41 @@ if ($manifestPath -and (Test-Path $manifestPath)) {
 }
 else {
     Write-Warning "No run.json under $armDir — the run never got far enough to write one. Nothing will be recorded; pass -Worker N to stop the process anyway."
+}
+
+# The farm out of Unity. Told apart by what the run itself recorded, never by the arm's name or
+# by which directory it sits in: the engine is a fact of the run and the other two are habits.
+if ($manifest -and $manifest.engine -eq 'dynamics') {
+    $stopPath = Join-Path $runDir.FullName 'STOP'
+
+    Write-Host "$Name"
+    Write-Host "  run     $($runDir.FullName)"
+    Write-Host "  engine  dynamics (src/Evosim.Farm), threads $($manifest.threads), pid $($manifest.processId)"
+    Write-Host "  stop    $stopPath"
+    Write-Host "  reason  $Reason"
+
+    if ($manifest.status -ne 'running') {
+        Write-Warning "run.json already says status '$($manifest.status)' — the run finished on its own. Nothing to stop."
+        return
+    }
+
+    if (Test-Path -LiteralPath $stopPath) {
+        Write-Warning "A STOP file is already there; the run ends at its next report row. Rewriting it with this reason."
+    }
+
+    if ($PSCmdlet.ShouldProcess($stopPath, "write STOP / $Reason")) {
+        # The reason on the first line, which is all the program reads (Program.StopReason), and
+        # a note under it for whoever finds the file afterwards. No BOM: the program reads lines,
+        # and a BOM would ride on the first one and become part of the reason.
+        $text = "$Reason`nWritten by scripts/stop-arm.ps1 at " +
+            [DateTime]::UtcNow.ToString('o', [Globalization.CultureInfo]::InvariantCulture) + "`n"
+        [System.IO.File]::WriteAllText($stopPath, $text, (New-Object System.Text.UTF8Encoding($false)))
+
+        Write-Host "  STOP written — the run ends at its next report row and rewrites run.json itself."
+        Write-Host "  Watch for it: (Get-Content '$(Join-Path $runDir.FullName 'run.json')' -Raw | ConvertFrom-Json).status"
+    }
+
+    return
 }
 
 # Which worker to kill. The manifest's own answer first: it is what the run itself believed it
