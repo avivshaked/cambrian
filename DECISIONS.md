@@ -123,6 +123,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D098](#d098) | One substance: matter in two states, inorganic in the water and organic in bodies, corpses and detritus, with energy as the organic state's content at ρ joules a unit; photosynthesis makes organic from inorganic at a saturating uptake, living burns organic back to inorganic, eating moves organic, a child is organic matter given by its parent, detritus remineralises, the fixed charge goes, one breeding-margin gene; both audits kept; every current run stopped for the rebuild | 2026-09-18 | ruled by the owner in conversation on the evening of 2026-09-18 ("Let's do it. And I'd stop all the current runs") on `fable-propose-economy.md`, absorbed here with the owner's four alignment questions |
 | [D102](#d102) | The streams in a tank flatter than the overturning cell can balance: where D088's equal-axes rule has no solution the vertical RMS over the horizontal is `0.76 · k_max` (0.75 at 20 m in the 2,200 m² tank, the cell at round 42's amplitude), in that branch only, so every tank that built before builds the same; the header carries `axes v:h` | 2026-09-21 | ruled by the owner in conversation on the morning of 2026-09-21 at the agent's recommendation, from `logbook/specs/streams-shallow-spec.md` |
 | [D103](#d103) | Four pinned arms at a time (D095's three amended): each arm pinned to two fast cores of its own (masks 0x003C, 0x03C0, 0x3C00, 0xC003), a fourth costing 1.01 of a third's wall on a young crowd; the cap stays a rule of the Unity farm, and a farm out of Unity is not an arm | 2026-09-21 | ruled by the owner in conversation on the morning of 2026-09-21 on the agent's measurement (`logbook/specs/harness-profile-spec.md` §9) |
+| [D104](#d104) | The water sampled per link on every step on the new engine: D100's hold retired at 0 from round 43, because a held sample undoes D090 (a neutral body 22 m from its parcel in 1,000 s against 5 cm per link) and the cheapening buys nothing on a solver of our own | 2026-09-22 | ruled by the owner in conversation at 03:15 on 2026-09-22 ("Yes" to the agent's recommendation of hold 0) |
 
 ---
 
@@ -5631,4 +5632,31 @@ the entry says so).
 
 **Cost.** None to any world: pinning moves no trajectory. The rule lives in CLAUDE.md as
 well.
+
+### D104
+**The water sampled per link, D100's hold retired** · 2026-09-22
+
+**Status:** ruled by the owner in conversation at 03:15 on 2026-09-22 ("Yes" to the
+agent's recommendation), from the own-solver proposal's list; the first of its rulings.
+Runs from round 43 (logbook/0111). D100 stands as the record of what rounds 41 to 42 ran.
+
+**Decision.** On `Evosim.Farm` the streams are sampled at every link on every step, the
+recorded behaviour of every round before D100, and `WaterHoldSeconds` is 0. The tunable
+stays, so that every recorded config replays under its own value.
+
+**Why.** D100 was a cheapening for the Unity harness: one sample per body held for half a
+second, where a full seed spent most of its wall in the drag pass. On the new engine
+per-link sampling costs a few percent. And the hold is not a small change to the water:
+a neutral body under a 0.5 s hold drifts 22 m from its parcel of water in 1,000 s, and
+5 cm under per-link sampling (`Evosim.Dynamics.Tests`, package C's acceptance), because
+the held velocity and acceleration are the parcel's where the body was and not where it
+is. That undoes D090, whose whole purpose was that a lagging body follows the water rather
+than the drag alone. A world rule chosen for being cheap, re-asked when the cost went
+(CLAUDE.md's rule from D077's wrap).
+
+**Rejected.** Keeping the hold for comparability with round 42: round 43 is a replacement
+round under D091 and reads round 42's world for the mechanism, not for identity, and
+identity is already gone with the engine.
+
+**Cost.** A new realisation of every seed, as the engine already is. No Unity change.
 
