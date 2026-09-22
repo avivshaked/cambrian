@@ -415,10 +415,12 @@ subagent and never in a shell loop.
    cut, exact against the library on the CPU device, bit-identical across launch shapes;
    double is slower than sixteen cores at 10,000 bodies, single is about six times faster
    at 1.4 mm of deviation in ten seconds, and the card is not busy until about 30,000
-   bodies. `fable-propose-gpu.md` puts the precision, the 100,000 target and the brain spike
-   to the owner; nothing is built until it is ruled. The reduced step is about a quarter
-   of the real one, so the brain and the senses are measured as a kernel before the port
-   is sized. Then the port proper, with the state stream as the theatre's feed.
+   bodies. **Ruled the same evening, D105**: single precision, designed for 100,000 and
+   first validated at 10,000 to 30,000 with the grid on the CPU, built in parallel with
+   the animal-kit rounds. The reduced step is about a quarter of the real one, so the brain
+   and the senses are measured as a kernel before the port is sized (next, once the
+   Editor checks are off the machine). Then the port proper, with the state stream as the
+   theatre's feed.
 7. **Loose ends.** Double accounts in Core for the matter residual (a new realisation of
    every seed, so between rounds and pre-registered). `ParallelIdentityTests` (50 s) kept
    or moved to Slow. The overlap probe's `run.ps1` taking its path argument. Close pictures
@@ -434,15 +436,23 @@ subagent and never in a shell loop.
   columns; keeping D101 through the base round; a ball joint's angle as the rotation
   vector's component; `simHash` giving way to `dynamicsHash` and `farmHash`; DESIGN §11.1
   superseded. Absorbed into DECISIONS on ruling.
-- **The animal kit** (`fable-propose-animal-kit.md`): the order of the rungs, predation due
-  and the bite taking from the reserve first, a scent field inside D020, the floor's places
-  and the anchoring cell, and anything the owner wants sooner.
-- **The worktrees under `scratch/wt-*`**: 24 of them, every branch merged into main,
-  6.0 GB; removing them and the branches is a deletion and waits for the owner's word.
-- **Four untracked files at the root and under `logbook/specs/`** (`gpt-astra-*.md`,
-  `astra-2026-09-12-review-evidence.md`): the Astra reviews the record cites, never
-  committed; the owner says whether they are tracked.
-
+- **The animal kit** (`fable-propose-animal-kit.md`): the order A, B, C, D is ruled
+  (2026-09-22 evening, "for the rest go with your recommendations"). **Rung A is being
+  redesigned on the owner's two points**, and the spec waits on their answer to eight
+  questions put in conversation: (1) a body keeps one reserve and a dead part takes its
+  pro-rata share, against per-part reserves; (2) the parts below a killed one die with it
+  as a corpse, the eater taking only the bitten part; (3) a bite on the root kills the
+  creature, `Eaten`; (4) what is left must still pay its way or it starves as now; (5)
+  regrowth through the growth machinery, in the same rung; (6) one part per mouth per
+  metabolic step of held contact, no dose knob; (7) no protection in A, a bite kills, and
+  protection later as a priced cell property with bite strength beside it; (8) `Damage`
+  reads "a part of mine died this step". The owner's points: a bite alone does not make
+  a hunter (behaviour needs rung B's sense), and creatures do not partially eat each
+  other; a cell is the unit of death, a plant survives losing a leaf, and attack and
+  defence get an economy once there is something to defend.
+- **The worktrees**: the owner approved removal; the agent's `git worktree remove` was
+  refused by the permission layer as irreversible, so the one-line command is with the
+  owner to run.
 - **Cloud CPU: off (owner, 2026-09-18 morning: "cloud CPU right now is off. We'll continue
   working on my machine").** The survey stands in `logbook/specs/cloud-cpu-survey.md` for
   the day it is reopened; its finding was that the licence, not the price, is the
