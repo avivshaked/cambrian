@@ -27,9 +27,11 @@ jointed bodies keeping it as readily as leaves, the books closed to 1e-06 units,
 1's world of module chains gone deep and to the glass and sevenfold dearer a body-step.
 The mouth's dials are from the ledger screen (`logbook/specs/mouth-spec.md`, the screen
 note, and `logbook/specs/r45-read/`). The launch is `rounds/env-r45.ps1` through `run-farm.ps1`, seeds 1 to 3,
-30,000 s at dt 0.01, on the mouth build (`8b0d798`, the cap change `e877406` and the kill
-event `6fcf93b`; `coreHash a20aba8c…`, `dynamicsHash b4cdb22a…`, `farmHash 36d8e11d…` as
-the fixture recording `r45fix-s4` read them, and each seed's manifest is the record). A
+30,000 s at dt 0.01, on the mouth build (`8b0d798`, the cap change `e877406`, the kill
+event `6fcf93b` and the centre-of-mass guard `2771bf0`; launched from `4300278` at 20:58
+local with `configHash 4e84dc9f1ac8ecf1`, `coreHash a20aba8c…`, `dynamicsHash b4cdb22a…`
+and `farmHash e31fdeae…`, and each seed's manifest is the record; the fixture recording
+`r45fix-s4` predates the last two commits and reads `farmHash 36d8e11d…`). A
 checkpoint is written every 2,500 s, a recording setting, so that a slow seed's state can
 be profiled, which round 44's seed 1 could not be. `HealthPerCubicMetre` 13, at which a claw at the structural cap takes three
 metabolic steps to kill round 43's median leaf part; healing 1% of the pool a second at

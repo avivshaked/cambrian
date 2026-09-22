@@ -477,7 +477,15 @@ subagent and never in a shell loop.
    thread-identity fixture refused for the caps; re-recorded from a 20 s run of the
    build with the module rule at zero, `configHash 676c16483b32d787`, and the word
    `c9b0cabce249c1dd` did not move). Every `.ckpt` on disk is orphaned again by
-   `StateVersion` 4.
+   `StateVersion` 4. **Round 45's three seeds are running** (`r45-s1..3`, launched
+   2026-09-22 20:58 local from `4300278`, `configHash 4e84dc9f1ac8ecf1`, `farmHash
+   e31fdeae…`, 8 threads each, three at once, 600 min wall; the header verified `mouth
+   hp=13 heal=0.01/s@1J reach=0.5 waste=0.2 prices atk=0.1 ink=0.1 prt=1 tgh=0.1
+   mut=0.005 · modules add=300 drop=50 after=100 mut=0.005 · water per link`, a
+   checkpoint every 2,500 s). Expected to end about 22:20 at round 44's pace, later if a
+   seed slows as 44's seed 1 did; then `scripts/reads/r45-read.py --arms r45-s1 r45-s2
+   r45-s3 --out logbook/specs/r45-read/clauses.tsv`, pictures from the last snapshots,
+   and 0114's read section.
    Rung B's spec is drafted for the owner (`logbook/specs/scent-spec.md`, four
    questions in it, not built); C and D behind it.
 6. **The GPU port.** The probe ran clean alone on 2026-09-22 at 16:13 after the crash
