@@ -630,7 +630,18 @@ actually verifying it.
   optional id was added — so an inoculum can be brought forward by re-extracting it from a new
   snapshot, which is the one route that cannot quietly mislabel a creature. The growth build
   took it to 5 on 2026-09-09 (D087), so a format-4 genome is refused the same way; the growth
-  gotcha below has the details.
+  gotcha below has the details. **Three test fixtures are recordings and every bump orphans
+  them** (found on round 44's build, 2026-09-22): `src/Evosim.Core.Tests/fixtures/r42-config.json`
+  (the thread-identity word, `Slow`), `src/Evosim.Dynamics.Tests/RunFixture.cs`'s run directory
+  (a snapshot crowd under `runs/`, ten contact, crowd and digest tests) and the joint-damper
+  reproduction, which named two body ids of that crowd. Re-record each on the build that reads
+  it: a config from a run of the build, a fresh `runs/<arm>` of round 43's world with the new
+  tunables at zero (`r44fix-s4`), and a pair found in the scatter rather than named by id;
+  the fixture's `Why` says which of "not on this machine" and "this build cannot read it"
+  applies, and they need opposite responses. And `scripts/ledger.ps1` prompts for
+  `-Clearance`, `-Depth` and `-Density` when they are missing: under a non-interactive shell
+  the prompt never returns and the process sits with no child and no output (one lost
+  quarter-hour that evening); pass all three.
 - **`simHash` is a property of a checkout, not of a commit.** It hashes the bytes of every `.cs`
   under `Assets/Evosim` on disk, and this working tree is mixed: `EffectorDriver.cs`,
   `EmbodiedRun.cs` and `ThroughputSurvey.cs` are CRLF while everything beside them is LF, which
