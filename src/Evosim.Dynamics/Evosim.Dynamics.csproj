@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The spike's own articulated-body solver (logbook/specs/own-solver-spike-spec.md).
+    netstandard2.1 and C# 9, like Evosim.Core, so anything that builds here builds in the
+    Editor; no UnityEngine and no dependency but Core. Directory.Build.props sends the output
+    to artifacts/, for the reason it gives.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>Evosim.Dynamics</AssemblyName>
+    <RootNamespace>Evosim.Dynamics</RootNamespace>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
+  </ItemGroup>
+
+</Project>

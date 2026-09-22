@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The spike's bench: it reads a run's config and one snapshot of genomes, develops them with
+    Core's own Developer, and measures stability, pace by thread count and thread identity.
+    It writes nothing into the run it reads. Built with Unity's bundled SDK, as
+    scripts/core-test.ps1 and scripts/overlap/run.ps1 do.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>Evosim.Dynamics.Bench</AssemblyName>
+    <RootNamespace>Evosim.Dynamics.Bench</RootNamespace>
+    <Nullable>disable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredCompilation>false</TieredCompilation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
+    <ProjectReference Include="..\Evosim.Dynamics\Evosim.Dynamics.csproj" />
+  </ItemGroup>
+
+</Project>

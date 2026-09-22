@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The world step's profiler. A console program, net8.0 like Evosim.Ledger and Evosim.Farm,
+    because it never ships inside the Unity package: it builds one recorded world out of its own
+    config.json, gives it a crowd, and times the passes World.Step makes twice a simulated second.
+
+    It measures Core and nothing else — no Dynamics, no physics. Bodies sit where Core puts them,
+    which is what makes the field passes the only thing the clock is reading.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>Evosim.Core.Bench</AssemblyName>
+    <RootNamespace>Evosim.Core.Bench</RootNamespace>
+    <Nullable>disable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TieredCompilation>false</TieredCompilation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
+  </ItemGroup>
+
+</Project>

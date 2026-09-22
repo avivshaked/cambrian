@@ -4,6 +4,12 @@
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>9.0</LangVersion>
     <IsPackable>false</IsPackable>
+
+    <!-- Tiered compilation gives quick-JITted and optimised code different floating-point
+         bits where the arithmetic sits on a rounding knife-edge, so a digest taken from a
+         loop that has been promoted can differ from one taken before it was. Off, so that a
+         thread-identity result is about the threads. Evosim.Farm needs the same. -->
+    <TieredCompilation>false</TieredCompilation>
     <Nullable>disable</Nullable>
   </PropertyGroup>
 
@@ -15,16 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
-  </ItemGroup>
-
-  <!--
-    Round 42 seed 1's own config.json, copied from its run directory. ParallelIdentityTests
-    builds that world and asserts its state hash is the same at any thread count; a world
-    written out in C# beside the test would be a world of its own, and the thing being guarded
-    is the campaign's grid and not a plausible one.
-  -->
-  <ItemGroup>
-    <None Include="fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="..\Evosim.Dynamics\Evosim.Dynamics.csproj" />
   </ItemGroup>
 
 </Project>

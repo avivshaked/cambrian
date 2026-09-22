@@ -2999,8 +2999,83 @@ namespace Evosim.Core
         // field and not a measurement's convenience.
         private double _envelopeOverride;
 
+        // ---------------------------------------------------------------- the pinned instant
+        //
+        // The memo above is a mutable lookup: a hit reassigns eight array fields, so two threads
+        // sampling one field at two clocks would see each other's slot. A pin says "every sample
+        // until further notice is at this clock", fills and selects the slot once, and then makes
+        // EnsureInstant a comparison that writes nothing at all — which is what lets a caller
+        // whose sample points are a fixed lattice at one instant (GridField.SampleEdges) split
+        // that lattice across threads without the field being touched by any of them.
+        //
+        // It is not a lock and does not pretend to be. A pinned field refuses a sample at another
+        // clock rather than quietly answering from the wrong slot, so a caller that pins and then
+        // asks for something else is told so on the spot.
+        private bool _instantPinned;
+        private double _pinnedInstant;
+
+        /// <summary>
+        /// Fixes the clock every later sample will be taken at, so that sampling is a pure read.
+        /// </summary>
+        /// <param name="seconds">The world's clock, s — the same argument the samplers take.</param>
+        /// <remarks>
+        /// <para>
+        /// <b>What it buys, and the only thing it buys.</b> Between a pin and
+        /// <see cref="UnpinInstant"/> this object is never written to, so any number of threads may
+        /// sample it at once. It changes no answer: the slot it selects is the slot an unpinned
+        /// call at the same clock would have selected, filled by the same arithmetic, so every
+        /// sample returns the same bits either way.
+        /// </para>
+        /// <para>
+        /// <b>Idempotent at the same clock and a refusal at another.</b> Pinning twice at one
+        /// clock is a no-op; pinning at a second clock while pinned, or sampling at one, throws.
+        /// Nesting is therefore not allowed and not needed — a caller pins round the region it
+        /// owns and unpins in a <c>finally</c>.
+        /// </para>
+        /// </remarks>
+        public void PinInstant(double seconds)
+        {
+            if (!HasPotential || _speed <= 0f) return;
+
+            // The two lazy builds, taken here rather than on some worker's first sample.
+            if (_shape == WorldShape.Tank) EnsureStreams();
+            else EnsureTransport();
+
+            double t = 2.0 * Math.PI * seconds / _periodSeconds;
+
+            if (_instantPinned)
+            {
+                if (_pinnedInstant == t) return;
+
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"This current is already pinned at phase {_pinnedInstant:R} and was ") +
+                    FormattableString.Invariant($"asked to pin at {t:R}. Unpin first."));
+            }
+
+            // The tank's potential is the only sampler that reads the instant tables; the box's
+            // transport field is a plain term loop with no memo, so there is nothing to select.
+            if (_shape == WorldShape.Tank) EnsureInstant(t);
+
+            _pinnedInstant = t;
+            _instantPinned = true;
+        }
+
+        /// <summary>Releases <see cref="PinInstant"/>. Safe to call when nothing is pinned.</summary>
+        public void UnpinInstant() => _instantPinned = false;
+
         private void EnsureInstant(double t)
         {
+            if (_instantPinned)
+            {
+                if (_pinnedInstant == t) return;
+
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"This current is pinned at phase {_pinnedInstant:R} and was sampled at ") +
+                    FormattableString.Invariant($"{t:R}. A pinned field answers at one clock."));
+            }
+
             for (int slot = 0; slot < InstantSlots; slot++)
             {
                 // NaN never equals t, so an unfilled slot is simply a miss.

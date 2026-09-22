@@ -1,0 +1,823 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using Evosim.Core;
+
+namespace Evosim.Farm
+{
+    /// <summary>
+    /// The environment a run is launched with, and the <see cref="RunConfig"/> it builds —
+    /// <c>EvolutionRun.RunBody</c>'s first three hundred lines, out of Unity.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The acceptance is arithmetic, not judgement</b> (work package I): the same launcher
+    /// must give the same <c>configHash</c>. So every knob below is transcribed from
+    /// <c>unity/Assets/Evosim/Sim/Editor/EvolutionRun.cs</c> with its own default, in the order
+    /// that file reads them, and <see cref="BuildConfig"/> assembles the config in the order that
+    /// file assembles it — including the two places it sorts a min/max pair rather than trusting
+    /// the launcher. A default that drifted by one line here would produce a world nobody asked
+    /// for, filed under a hash that says it is round 42's.
+    /// </para>
+    /// <para>
+    /// <b>Why a table.</b> One line per variable — name, default, destination — so a reviewer can
+    /// read it beside <c>EvolutionRun</c>'s <c>float x = Env("EVOSIM_X", d);</c> and see the two
+    /// agree without tracing control flow. <see cref="Table"/> is the whole binding: nothing
+    /// outside it reads the environment.
+    /// </para>
+    /// <para>
+    /// <b>An unknown <c>EVOSIM_*</c> variable is ignored</b>, exactly as <c>EvolutionRun</c>
+    /// ignores it: that file asks the environment for the names it knows and never enumerates it,
+    /// so a typo has always been silent. This keeps the behaviour and adds a reading of it —
+    /// <see cref="UnknownNames"/> lists what was set and not bound, which
+    /// <see cref="Program"/> prints. Printing changes nothing about the run; it is the
+    /// identical-numbers gotcha (CLAUDE.md) given a voice it never had.
+    /// </para>
+    /// </remarks>
+    public static class EnvBinding
+    {
+        /// <summary>How a setting is looked up. The process environment, or a test's dictionary.</summary>
+        public delegate string Lookup(string name);
+
+        /// <summary>The process environment.</summary>
+        public static readonly Lookup Process = Environment.GetEnvironmentVariable;
+
+        /// <summary>A lookup over a dictionary — what a test binds against.</summary>
+        public static Lookup Of(IReadOnlyDictionary<string, string> values) =>
+            name => values != null && values.TryGetValue(name, out string v) ? v : null;
+
+        /// <summary>
+        /// The defaults <c>EvolutionRun</c> spells as <c>new RunConfig().X</c>.
+        /// </summary>
+        /// <remarks>
+        /// One instance rather than one per knob: <c>RunConfig</c>'s constructor is pure and every
+        /// <c>new RunConfig()</c> in <c>EvolutionRun</c> is read for one default and discarded, so
+        /// the values are identical and the expressions below stay readable.
+        /// </remarks>
+        private static readonly RunConfig D = new RunConfig();
+
+        /// <summary>The metabolic step — <c>Ecosystem.MetabolicStepSeconds</c>, and not a tunable.</summary>
+        public const float MetabolicStepSeconds = 0.5f;
+
+        /// <summary>The physics step before <c>EVOSIM_DT</c> — <c>Ecosystem.FixedDt</c>'s initial value.</summary>
+        public const float DefaultPhysicsStepSeconds = 0.01f;
+
+        // ------------------------------------------------------------------ the table
+        //
+        // In EvolutionRun's own order. Name, default, destination.
+
+        private static readonly Knob[] Table =
+        {
+            Num("EVOSIM_IRRADIANCE", 48f, (s, v) => s.Irradiance = v),
+            Num("EVOSIM_LIGHT_REACH", 12f, (s, v) => s.LightReach = v),
+            Flag("EVOSIM_SILHOUETTE", (s, v) => s.SilhouetteCap = v),
+            Num("EVOSIM_SELF_OVERLAP", 0f, (s, v) => s.SelfOverlap = v),
+            Num("EVOSIM_SECONDS", 4000f, (s, v) => s.BudgetSeconds = v),
+            Num("EVOSIM_WALL_MINUTES", 30f, (s, v) => s.WallMinutes = v),
+            Int("EVOSIM_REPORT_EVERY", 200f, (s, v) => s.ReportEvery = v),
+            Custom("EVOSIM_SEED", (s, env) => s.Seed = ULong(env, "EVOSIM_SEED", 1UL)),
+            Long("EVOSIM_DIGEST_EVERY", 0f, (s, v) => s.DigestEvery = v),
+            Custom("EVOSIM_DIGEST_DUMP_STEPS", (s, env) => s.DigestDumpSteps = Steps(env, "EVOSIM_DIGEST_DUMP_STEPS")),
+
+            // Unity's job-worker count (D078). Bound so that a launcher carrying it is still read
+            // rather than silently half-applied, and applied to nothing: this engine has no job
+            // system, and the spike's identity check makes the thread count a pace setting rather
+            // than a realisation. Program says so when it is set; EVOSIM_THREADS is the knob.
+            Int("EVOSIM_PHYSICS_JOBS", 0f, (s, v) => s.RequestedJobWorkers = v),
+
+            // The farm's own, and the only name in this table that EvolutionRun does not read:
+            // how many threads step the bodies. 0 is one per processor. It decides nothing about
+            // the ecology — the spike's digests are equal at 1, 4 and 16 threads — so like
+            // EVOSIM_PHYSICS_JOBS it must not reach config.json or its hash, and it is recorded in
+            // run.json instead.
+            Int("EVOSIM_THREADS", 0f, (s, v) => s.Threads = v),
+
+            Num("EVOSIM_IDLE", 0.02f, (s, v) => s.Idle = v),
+            Num("EVOSIM_MAXPOWER", RandomGenomeOptions.Default.MaxLinkPower, (s, v) => s.MaxPower = v),
+            Num("EVOSIM_MINPOWER", RandomGenomeOptions.Default.MinLinkPower, (s, v) => s.MinPower = v),
+            Num("EVOSIM_LINK_PHOTO", 0f, (s, v) => s.LinkPhoto = v),
+            Num("EVOSIM_DAY_AMPLITUDE", 0f, (s, v) => s.DayAmplitude = v),
+            Num("EVOSIM_DAY_LENGTH", 200f, (s, v) => s.DayLength = v),
+            Num("EVOSIM_CURRENT", 0f, (s, v) => s.CurrentSpeed = v),
+            Num("EVOSIM_MIXING", 0f, (s, v) => s.Mixing = v),
+            Num("EVOSIM_SINK", D.NutrientSinkMetresPerSecond, (s, v) => s.NutrientSink = v),
+            Num("EVOSIM_MATTER_SINK", D.MatterSinkMetresPerSecond, (s, v) => s.MatterSink = v),
+            Num("EVOSIM_CURRENT_PERIOD", D.Current.PeriodSeconds, (s, v) => s.CurrentPeriod = v),
+            Num("EVOSIM_CURRENT_CELL", D.Current.CellMetres, (s, v) => s.CurrentCell = v),
+            Flag("EVOSIM_CURRENT_ROLLS", (s, v) => s.CurrentRolls = v),
+            Num("EVOSIM_CURRENT_BLINK", 0f, (s, v) => s.CurrentBlink = v),
+            Flag("EVOSIM_CURRENT_ADVECT", (s, v) => s.CurrentAdvect = v),
+            Custom("EVOSIM_CURRENT_MODE", (s, env) => s.CurrentMode = CurrentModeOf(env, "EVOSIM_CURRENT_MODE")),
+            Num("EVOSIM_VENT", 0f, (s, v) => s.Vent = v),
+            Num("EVOSIM_VENT_PATCH", 0f, (s, v) => s.VentPatch = v),
+            Num("EVOSIM_VENT_DEPTH", D.WorldDepthMetres, (s, v) => s.VentDepth = v),
+            Num("EVOSIM_VENT_LEG", D.LightLayerMetres, (s, v) => s.VentLeg = v),
+            Num("EVOSIM_REMIN", D.RemineralisationPerSecond, (s, v) => s.Remin = v),
+            Num("EVOSIM_RHO", D.JoulesPerUnit, (s, v) => s.Rho = v),
+            Num("EVOSIM_UPTAKE_K", D.UptakeRatePerSquareMetre, (s, v) => s.UptakeRate = v),
+            Num("EVOSIM_UPTAKE_KS", D.UptakeHalfSaturation, (s, v) => s.UptakeHalf = v),
+            Num("EVOSIM_HANDLING", D.HandlingCostPerJouleEaten, (s, v) => s.Handling = v),
+            Num("EVOSIM_RESERVE_CAP", D.ReserveCapSeconds, (s, v) => s.ReserveCap = v),
+            Num("EVOSIM_MARGIN_MIN", RandomGenomeOptions.Default.MinReserveMargin, (s, v) => s.MarginMin = v),
+            Num("EVOSIM_MARGIN_MAX", RandomGenomeOptions.Default.MaxReserveMargin, (s, v) => s.MarginMax = v),
+            Num("EVOSIM_MARGIN_CHANCE", MutationRates.Default.MarginChance, (s, v) => s.MarginChance = v),
+            Num("EVOSIM_FLOOR_REFUGE", D.FloorRefugeMetres, (s, v) => s.FloorRefuge = v),
+            Num("EVOSIM_REFUGE_FRACTION", D.RefugeEdibleFraction, (s, v) => s.RefugeFraction = v),
+            Num("EVOSIM_SATIATION", D.SatiationWattsPerCubicMetre, (s, v) => s.Satiation = v),
+            Num("EVOSIM_CLEARANCE_TOE", D.ClearanceToeDensity, (s, v) => s.ClearanceToe = v),
+            Num("EVOSIM_EXUDATION", D.ExudationFraction, (s, v) => s.Exudation = v),
+            Custom("EVOSIM_CONCEPTION_ORDER", (s, env) => s.ConceptionOrder = ConceptionOrderOf(env, "EVOSIM_CONCEPTION_ORDER")),
+            Num("EVOSIM_MATTER_INFLUX", D.MatterInfluxPerSecond, (s, v) => s.MatterInflux = v),
+            Custom("EVOSIM_MATTER_INFLUX_AT", (s, env) => s.MatterInfluxAt = MatterInfluxOf(env, "EVOSIM_MATTER_INFLUX_AT")),
+            Num("EVOSIM_MATTER_BURIAL", D.MatterBurialPerSecond, (s, v) => s.MatterBurial = v),
+            Num("EVOSIM_DT", DefaultPhysicsStepSeconds, (s, v) => s.PhysicsDt = v),
+            Num("EVOSIM_SPECIES_THETA", D.SpeciesDriftThreshold, (s, v) => s.SpeciesTheta = v),
+            Num("EVOSIM_PATCHES", D.HorizontalPatches, (s, v) => s.Patches = v),
+            Num("EVOSIM_PATCHES_ACROSS", D.PatchesAcross, (s, v) => s.PatchesAcross = v),
+            Num("EVOSIM_H_MIXING", D.HorizontalMixingDiffusivity, (s, v) => s.HorizontalMixing = v),
+            Num("EVOSIM_DISPERSAL", D.DispersalChancePerStep, (s, v) => s.DispersalChance = v),
+            Num("EVOSIM_PATCH_SHADING", D.PerPatchShading, (s, v) => s.PatchShading = v),
+            Num("EVOSIM_AREA", D.WorldAreaSquareMetres, (s, v) => s.Area = v),
+            Num("EVOSIM_DEPTH", D.WorldDepthMetres, (s, v) => s.Depth = v),
+            Flag("EVOSIM_SHARED_SPACE", (s, v) => s.SharedSpace = v),
+            Num("EVOSIM_OFFSPRING_DISPERSAL", D.OffspringDispersalMetres, (s, v) => s.OffspringDispersal = v),
+            Num("EVOSIM_SURFACE_RESTORE", D.Fluid.SurfaceRestoringFraction, (s, v) => s.SurfaceRestore = v),
+            Num("EVOSIM_FLOOR_CLOSES", 0f, (s, v) => s.FloorCloses = v),
+            Int("EVOSIM_MAX_POP", D.MaximumPopulation, (s, v) => s.MaxPopulation = v),
+
+            // double from a float read, as EvolutionRun's own cast is: the ceiling is a double on
+            // RunConfig and is read here through Env(float), so a launcher naming 1e9 gets the
+            // float's answer on both sides of the port.
+            Num("EVOSIM_MAX_TISSUE", (float)D.MaximumTissueJoules, (s, v) => s.MaxTissue = v),
+
+            Num("EVOSIM_SENESCENCE", 0f, (s, v) => s.Senescence = v),
+            Num("EVOSIM_CELLTYPE_MUTATION", MutationRates.Default.CellTypeChance, (s, v) => s.CellTypeMutation = v),
+            Num("EVOSIM_CLEARANCE", 1.0f, (s, v) => s.Clearance = v),
+            Num("EVOSIM_TISSUE_ENERGY", 0f, (s, v) => s.TissueEnergy = v),
+            Num("EVOSIM_OVERHEAD", D.PerOffspringOverheadJoules, (s, v) => s.Overhead = v),
+            Num("EVOSIM_FOUNDER_EXTENT_MIN", 0f, (s, v) => s.FounderExtentMin = v),
+            Num("EVOSIM_FOUNDER_EXTENT_MAX", 0f, (s, v) => s.FounderExtentMax = v),
+            Num("EVOSIM_EXCESS_DENSITY", 0f, (s, v) => s.ExcessDensity = v),
+            Num("EVOSIM_ADDED_MASS", 0f, (s, v) => s.AddedMass = v),
+            Num("EVOSIM_FLUID_ACCEL", 0f, (s, v) => s.FluidAccel = v),
+            Num("EVOSIM_WATER_HOLD", 0f, (s, v) => s.WaterHold = v),
+            Num("EVOSIM_NEURON_COST", D.NeuralCostPerNeuronWatts, (s, v) => s.NeuronCost = v),
+            Num("EVOSIM_CONNECTION_COST", D.NeuralCostPerConnectionWatts, (s, v) => s.ConnectionCost = v),
+            Num("EVOSIM_WORK_COST", D.WorkCostMultiplier, (s, v) => s.WorkCost = v),
+            Custom("EVOSIM_FIELD", (s, env) => s.FieldModel = FieldModelOf(env, "EVOSIM_FIELD")),
+            Num("EVOSIM_FIELD_KERNEL", D.FieldKernelMetres, (s, v) => s.FieldKernel = v),
+            Num("EVOSIM_FIELD_MATTER_KERNEL", D.FieldMatterKernelMetres, (s, v) => s.FieldMatterKernel = v),
+            Num("EVOSIM_FIELD_MERGE", D.FieldMergeMetres, (s, v) => s.FieldMerge = v),
+            Int("EVOSIM_FIELD_CAP", D.FieldVertexCap, (s, v) => s.FieldCap = v),
+            Num("EVOSIM_FIELD_QUANTUM", D.FieldVertexJoules, (s, v) => s.FieldQuantum = v),
+            Num("EVOSIM_FIELD_CELL", D.FieldCellMetres, (s, v) => s.FieldCell = v),
+            Num("EVOSIM_FIELD_MATTER_CELL", D.FieldMatterCellMetres, (s, v) => s.FieldMatterCell = v),
+            Num("EVOSIM_CORPSE_DECAY", D.CorpseDecayPerSecond, (s, v) => s.CorpseDecay = v),
+            Custom("EVOSIM_SHAPE", (s, env) => s.WorldShape = WorldShapeOf(env, "EVOSIM_SHAPE")),
+            Num("EVOSIM_MATTER_BUDGET", D.MatterBudgetUnits, (s, v) => s.MatterBudget = v),
+            Flag("EVOSIM_DRIVE_LIMIT_ALWAYS", (s, v) => s.DriveLimitAlways = v),
+            Num("EVOSIM_BED_RELIEF", D.BedReliefMetres, (s, v) => s.BedRelief = v),
+            Num("EVOSIM_BED_TILT", D.BedTiltMetres, (s, v) => s.BedTilt = v),
+            Num("EVOSIM_BED_SCALE", D.BedScaleMetres, (s, v) => s.BedScale = v),
+            Num("EVOSIM_NEWBORN_RESERVE", D.NewbornReserveFraction, (s, v) => s.NewbornReserve = v),
+            Num("EVOSIM_GROWTH_FLOOR", D.GrowthReserveFloor, (s, v) => s.GrowthFloor = v),
+            Num("EVOSIM_MIN_NEWBORN_KG", D.MinNewbornPartKilograms, (s, v) => s.MinNewbornKg = v),
+            Num("EVOSIM_GROWTH_STEP", D.GrowthStepSeconds, (s, v) => s.GrowthStep = v),
+            Num("EVOSIM_INVEST_MIN", RandomGenomeOptions.Default.MinBirthInvestment, (s, v) => s.InvestMin = v),
+            Num("EVOSIM_INVEST_MAX", RandomGenomeOptions.Default.MaxBirthInvestment, (s, v) => s.InvestMax = v),
+            Num("EVOSIM_ADULT_SCALE_CHANCE", MutationRates.Default.AdultScaleChance, (s, v) => s.AdultScaleChance = v),
+            Num("EVOSIM_INVEST_CHANCE", MutationRates.Default.InvestmentChance, (s, v) => s.InvestChance = v),
+            Num("EVOSIM_NEUTRAL_VOLUME", 0f, (s, v) => s.NeutralVolume = v),
+            Num("EVOSIM_FOUNDER_DEPTH", D.FounderDepthSpread, (s, v) => s.FounderDepth = v),
+            Num("EVOSIM_MATTER_INITIAL", 1f, (s, v) => s.InitialMatter = v),
+            Num("EVOSIM_FOUNDER_FLOAT", 0f, (s, v) => s.FloatChance = v),
+            Num("EVOSIM_LIFT_COST", 0.05f, (s, v) => s.LiftCost = v),
+            Flag("EVOSIM_SENSE_CHEMICAL", (s, v) => s.SenseChemical = v),
+            Flag("EVOSIM_SENSE_ENERGY", (s, v) => s.SenseEnergy = v),
+            Flag("EVOSIM_SENSE_FLOW", (s, v) => s.SenseFlow = v),
+            Num("EVOSIM_CHEMICAL_HALF_SCALE", D.ChemicalHalfScaleJoulesPerCubicMetre, (s, v) => s.ChemicalHalfScale = v),
+            Num("EVOSIM_ENERGY_FULL_SCALE", D.EnergyFullScaleSeconds, (s, v) => s.EnergyFullScale = v),
+            Num("EVOSIM_FLOW_FULL_SCALE", D.FlowFullScaleMetresPerSecond, (s, v) => s.FlowFullScale = v),
+            Text("EVOSIM_INOCULATE", (s, v) => s.InoculatePath = v),
+            Num("EVOSIM_INOCULATE_AT", D.InoculateAtSeconds, (s, v) => s.InoculateAt = v),
+            Int("EVOSIM_INOCULATE_COUNT", D.InoculateCount, (s, v) => s.InoculateCount = v),
+            Num("EVOSIM_INOCULATE_DEPTH", D.InoculateDepthMetres, (s, v) => s.InoculateDepth = v),
+            Text("EVOSIM_OUT", (s, v) => s.OutPath = v),
+
+            // The farm's own, and the second name in this table EvolutionRun does not read: the
+            // directory a report and its run directory are written under. It exists because a
+            // console program can be pointed somewhere the editor entry could not — a port's
+            // acceptance runs must not land in the main tree's `runs/`, which is the record — and
+            // because a relative EVOSIM_OUT resolved against the process's working directory is
+            // the one setting whose meaning depends on how it was launched. With EVOSIM_OUT
+            // absolute this changes nothing; with it relative, or unset, this is the root.
+            Text("EVOSIM_RUNS_ROOT", (s, v) => s.RunsRoot = v),
+
+            // Read by BuildManifest rather than by RunBody, and in the table for the reason
+            // everything else is: this is the whole of what the environment says to a run.
+            Text("EVOSIM_REPO_ROOT", (s, v) => s.RepoRoot = v),
+        };
+
+        /// <summary>Every variable this binding reads, in the order the table states them.</summary>
+        public static IReadOnlyList<string> Names
+        {
+            get
+            {
+                var names = new string[Table.Length];
+                for (int i = 0; i < Table.Length; i++) names[i] = Table[i].Name;
+                return names;
+            }
+        }
+
+        /// <summary>Reads every knob in the table. Nothing else here reads the environment.</summary>
+        public static EnvSettings Read(Lookup env)
+        {
+            if (env == null) throw new ArgumentNullException(nameof(env));
+
+            var s = new EnvSettings();
+            for (int i = 0; i < Table.Length; i++) Table[i].Apply(s, env);
+            return s;
+        }
+
+        /// <summary>Reads the process environment.</summary>
+        public static EnvSettings ReadProcess() => Read(Process);
+
+        /// <summary>
+        /// The <c>EVOSIM_*</c> names that are set and are not in the table — ignored, and said
+        /// aloud rather than only ignored.
+        /// </summary>
+        public static IReadOnlyList<string> UnknownNames(IEnumerable<string> namesSet)
+        {
+            var known = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < Table.Length; i++) known.Add(Table[i].Name);
+
+            var unknown = new List<string>();
+            if (namesSet == null) return unknown;
+
+            foreach (string name in namesSet)
+            {
+                if (name != null && name.StartsWith("EVOSIM_", StringComparison.Ordinal) &&
+                    !known.Contains(name))
+                {
+                    unknown.Add(name);
+                }
+            }
+
+            unknown.Sort(StringComparer.Ordinal);
+            return unknown;
+        }
+
+        /// <summary>The <c>EVOSIM_*</c> names set in this process and not bound.</summary>
+        public static IReadOnlyList<string> UnknownNamesInProcess()
+        {
+            var names = new List<string>();
+            foreach (System.Collections.DictionaryEntry e in Environment.GetEnvironmentVariables())
+            {
+                names.Add(e.Key as string);
+            }
+
+            return UnknownNames(names);
+        }
+
+        // ------------------------------------------------------------------ the config
+
+        /// <summary>
+        /// The physics step, rounded the way <c>Ecosystem.ConfigurePhysicsStep</c> rounds it.
+        /// </summary>
+        /// <remarks>
+        /// Transcribed rather than reimplemented: <c>config.PhysicsStepSeconds</c> is read back
+        /// from the configured static in <c>EvolutionRun</c>, so the hash records the step the run
+        /// integrates at and not the one the launcher asked for. The metabolic step is fixed at
+        /// <see cref="MetabolicStepSeconds"/> and is not a tunable in either engine.
+        /// </remarks>
+        public static float ResolvePhysicsStep(float dt, out int stepsPerMetabolicStep)
+        {
+            if (!(dt > 0f) || dt > MetabolicStepSeconds)
+            {
+                throw new ArgumentOutOfRangeException(nameof(dt), dt, "Must be in (0, 0.5].");
+            }
+
+            float steps = MetabolicStepSeconds / dt;
+            int rounded = (int)Math.Round(steps);
+            if (rounded < 1 || Math.Abs(steps - rounded) > 1e-4f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(dt), dt,
+                    "Must divide the 0.5 s metabolic step exactly: 0.01, 0.02, 0.025, 0.05, 0.1, 0.125, 0.25 or 0.5.");
+            }
+
+            stepsPerMetabolicStep = rounded;
+            return dt;
+        }
+
+        /// <summary>
+        /// The <see cref="RunConfig"/> the settings build — <c>EvolutionRun.RunBody</c>'s
+        /// assembly, in its order.
+        /// </summary>
+        public static RunConfig BuildConfig(EnvSettings s)
+        {
+            if (s == null) throw new ArgumentNullException(nameof(s));
+
+            float physicsDt = ResolvePhysicsStep(s.PhysicsDt, out _);
+
+            var config = new RunConfig
+            {
+                Fluid = new FluidConfig
+                {
+                    AddedMassCoefficient = s.AddedMass,
+                    FluidAccelerationCoefficient = s.FluidAccel,
+                    WaterHoldSeconds = s.WaterHold,
+                    TissueExcessDensity = s.ExcessDensity,
+                    NeutralBodyVolume = s.NeutralVolume,
+                    SurfaceRestoringFraction = s.SurfaceRestore,
+                },
+                Light = new LightModel(s.Irradiance, s.LightReach)
+                {
+                    DayNightAmplitude = s.DayAmplitude,
+                    DayLengthSeconds = s.DayLength,
+                },
+                CellTypes = new CellTypeRegistry(
+                    new StructuralCell(),
+                    new LinkCell(
+                        s.Idle,
+                        photosyntheticEfficiency:
+                            s.LinkPhoto * PhotosyntheticCell.DefaultEfficiency),
+                    new NeuralCell(),
+                    new PhotosyntheticCell(),
+                    new AbsorptiveCell(s.Clearance),
+                    new ConsumerCell(),
+                    new BuoyancyCell(s.LiftCost)),
+            };
+
+            if (s.TissueEnergy > 0f)
+            {
+                for (int i = 0; i < config.CellTypes.Count; i++)
+                {
+                    config.CellTypes.At(i).TissueEnergyPerCubicMetre = s.TissueEnergy;
+                }
+            }
+
+            config.PerOffspringOverheadJoules = s.Overhead;
+            if (s.FounderExtentMin > 0f) config.Genome.MinHalfExtent = s.FounderExtentMin;
+            if (s.FounderExtentMax > 0f) config.Genome.MaxHalfExtent = s.FounderExtentMax;
+
+            config.Genome.MaxLinkPower = s.MaxPower;
+            config.Genome.MinLinkPower = Math.Min(s.MinPower, s.MaxPower);
+            config.Current.Mode = s.CurrentMode;
+            config.Current.Speed = s.CurrentSpeed;
+            config.Current.PeriodSeconds = s.CurrentPeriod;
+            config.Current.CellMetres = s.CurrentCell;
+            config.Current.Rolls = s.CurrentRolls;
+            config.Current.RollBlinkSeconds = s.CurrentBlink;
+            config.Current.AdvectFields = s.CurrentAdvect;
+            config.Current.VentSpeed = s.Vent;
+            config.Current.VentPatch = (int)s.VentPatch;
+            config.Current.VentDepthMetres = s.VentDepth;
+            config.Current.VentLegMetres = s.VentLeg;
+            config.InitialMatterPerCubicMetre = s.InitialMatter;
+            config.Genome.FounderFloatChance = s.FloatChance;
+            config.FounderDepthSpread = s.FounderDepth;
+            config.NutrientMixingDiffusivity = s.Mixing;
+            config.NutrientSinkMetresPerSecond = s.NutrientSink;
+            config.MatterSinkMetresPerSecond = s.MatterSink;
+            config.RemineralisationPerSecond = s.Remin;
+            config.JoulesPerUnit = s.Rho;
+            config.UptakeRatePerSquareMetre = s.UptakeRate;
+            config.UptakeHalfSaturation = s.UptakeHalf;
+            config.HandlingCostPerJouleEaten = s.Handling;
+            config.ReserveCapSeconds = s.ReserveCap;
+
+            // Ordered here rather than trusted from the launcher, as EvolutionRun orders it: a
+            // minimum above the maximum is a silent empty draw.
+            config.Genome.MinReserveMargin = Math.Min(s.MarginMin, s.MarginMax);
+            config.Genome.MaxReserveMargin = Math.Max(s.MarginMin, s.MarginMax);
+            config.Mutation.MarginChance = s.MarginChance;
+            config.FloorRefugeMetres = s.FloorRefuge;
+            config.RefugeEdibleFraction = s.RefugeFraction;
+            config.SatiationWattsPerCubicMetre = s.Satiation;
+            config.ClearanceToeDensity = s.ClearanceToe;
+            config.ExudationFraction = s.Exudation;
+            config.ConceptionOrder = s.ConceptionOrder;
+            config.MatterInfluxPerSecond = s.MatterInflux;
+            config.MatterInfluxAt = s.MatterInfluxAt;
+            config.MatterBurialPerSecond = s.MatterBurial;
+            config.SpeciesDriftThreshold = s.SpeciesTheta;
+            config.HorizontalPatches = s.Patches;
+            config.PatchesAcross = s.PatchesAcross;
+            config.HorizontalMixingDiffusivity = s.HorizontalMixing;
+            config.DispersalChancePerStep = s.DispersalChance;
+            config.PerPatchShading = s.PatchShading;
+            config.LightSilhouetteCap = s.SilhouetteCap;
+            config.SelfOverlapDepthFraction = s.SelfOverlap;
+            config.WorldAreaSquareMetres = s.Area;
+            config.WorldDepthMetres = s.Depth;
+            config.SharedSpace = s.SharedSpace;
+            config.OffspringDispersalMetres = s.OffspringDispersal;
+            config.PhysicsStepSeconds = physicsDt;
+            config.FloorClosesAfterSeconds = s.FloorCloses;
+            config.MaximumPopulation = s.MaxPopulation;
+            config.MaximumTissueJoules = s.MaxTissue;
+            config.SenescenceDoublingSeconds = s.Senescence;
+            config.Mutation.CellTypeChance = s.CellTypeMutation;
+            config.SenseChemical = s.SenseChemical;
+            config.SenseEnergy = s.SenseEnergy;
+            config.SenseFlow = s.SenseFlow;
+            config.ChemicalHalfScaleJoulesPerCubicMetre = s.ChemicalHalfScale;
+            config.EnergyFullScaleSeconds = s.EnergyFullScale;
+            config.FlowFullScaleMetresPerSecond = s.FlowFullScale;
+            config.NeuralCostPerNeuronWatts = s.NeuronCost;
+            config.NeuralCostPerConnectionWatts = s.ConnectionCost;
+            config.WorkCostMultiplier = s.WorkCost;
+            config.FieldModel = s.FieldModel;
+            config.FieldKernelMetres = s.FieldKernel;
+            config.FieldMatterKernelMetres = s.FieldMatterKernel;
+            config.FieldMergeMetres = s.FieldMerge;
+            config.FieldVertexCap = s.FieldCap;
+            config.FieldVertexJoules = s.FieldQuantum;
+            config.FieldCellMetres = s.FieldCell;
+            config.FieldMatterCellMetres = s.FieldMatterCell;
+            config.CorpseDecayPerSecond = s.CorpseDecay;
+            config.WorldShape = s.WorldShape;
+            config.MatterBudgetUnits = s.MatterBudget;
+            config.DriveLimitAtEveryStep = s.DriveLimitAlways;
+
+            config.BedReliefMetres = s.BedRelief;
+            config.BedTiltMetres = s.BedTilt;
+            config.BedScaleMetres = s.BedScale;
+
+            config.NewbornReserveFraction = s.NewbornReserve;
+            config.GrowthReserveFloor = s.GrowthFloor;
+            config.MinNewbornPartKilograms = s.MinNewbornKg;
+            config.GrowthStepSeconds = s.GrowthStep;
+            config.Genome.MinBirthInvestment = Math.Min(s.InvestMin, s.InvestMax);
+            config.Genome.MaxBirthInvestment = Math.Max(s.InvestMin, s.InvestMax);
+            config.Mutation.AdultScaleChance = s.AdultScaleChance;
+            config.Mutation.InvestmentChance = s.InvestChance;
+
+            config.InoculateAtSeconds = s.InoculateAt;
+            config.InoculateCount = s.InoculateCount;
+            config.InoculateDepthMetres = s.InoculateDepth;
+
+            return config;
+        }
+
+        // ------------------------------------------------------------------ the readers
+        //
+        // EvolutionRun's Env, EnvULong, EnvSteps and the four word readers, transcribed. A value
+        // that will not parse stops the launch in every one of them: a setting that fails to parse
+        // must not become its default without anyone knowing (the Astra review, 2026-09-07).
+
+        private static float Num(Lookup env, string name, float fallback)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return fallback;
+
+            if (float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float v))
+            {
+                return v;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is not a number. Unset it or give it a number; " +
+                "a setting that fails to parse must not become its default without anyone knowing.");
+        }
+
+        private static ulong ULong(Lookup env, string name, ulong fallback)
+        {
+            string raw = env(name);
+
+            return !string.IsNullOrEmpty(raw) &&
+                   ulong.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong v)
+                ? v
+                : fallback;
+        }
+
+        private static List<long> Steps(Lookup env, string name)
+        {
+            var steps = new List<long>();
+            string raw = env(name);
+            if (string.IsNullOrWhiteSpace(raw)) return steps;
+
+            foreach (string piece in raw.Split(','))
+            {
+                string trimmed = piece.Trim();
+                if (trimmed.Length == 0) continue;
+
+                if (!long.TryParse(
+                        trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out long step))
+                {
+                    throw new ArgumentException(
+                        name + " contains '" + trimmed + "', which is not a physics step number. " +
+                        "Expected a comma-separated list of integers, e.g. 140000,140100.");
+                }
+
+                steps.Add(step);
+            }
+
+            return steps;
+        }
+
+        private static MatterField FieldModelOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return MatterField.Cells;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "cells": return MatterField.Cells;
+                case "vertices": return MatterField.Vertices;
+                case "grid": return MatterField.Grid;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is none of 'cells', 'vertices' or 'grid'.");
+        }
+
+        private static CurrentMode CurrentModeOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return CurrentMode.Rolls;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "rolls": return CurrentMode.Rolls;
+                case "transport": return CurrentMode.Transport;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is neither 'rolls' nor 'transport'.");
+        }
+
+        private static WorldShape WorldShapeOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return WorldShape.Box;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "box": return WorldShape.Box;
+                case "tank": return WorldShape.Tank;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is neither 'box' nor 'tank'.");
+        }
+
+        private static ConceptionOrder ConceptionOrderOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrWhiteSpace(raw)) return ConceptionOrder.Age;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "age": return ConceptionOrder.Age;
+                case "shuffled": return ConceptionOrder.Shuffled;
+                case "reserve": return ConceptionOrder.Reserve;
+
+                default:
+                    throw new ArgumentException(
+                        name + " is '" + raw + "', which is not a conception order. " +
+                        "Known: age, shuffled, reserve.");
+            }
+        }
+
+        private static MatterInflux MatterInfluxOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrWhiteSpace(raw)) return MatterInflux.Surface;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "surface": return MatterInflux.Surface;
+                case "vent": return MatterInflux.Vent;
+
+                default:
+                    throw new ArgumentException(
+                        name + " is '" + raw + "', which is not a matter influx route. " +
+                        "Known: surface, vent.");
+            }
+        }
+
+        // ------------------------------------------------------------------ the table's cells
+
+        /// <summary>One row of <see cref="Table"/>: a name and what reading it does.</summary>
+        private sealed class Knob
+        {
+            public readonly string Name;
+            private readonly Action<EnvSettings, Lookup> _apply;
+
+            public Knob(string name, Action<EnvSettings, Lookup> apply)
+            {
+                Name = name;
+                _apply = apply;
+            }
+
+            public void Apply(EnvSettings s, Lookup env) => _apply(s, env);
+        }
+
+        private static Knob Num(string name, float fallback, Action<EnvSettings, float> set) =>
+            new Knob(name, (s, env) => set(s, Num(env, name, fallback)));
+
+        private static Knob Int(string name, float fallback, Action<EnvSettings, int> set) =>
+            new Knob(name, (s, env) => set(s, (int)Num(env, name, fallback)));
+
+        private static Knob Long(string name, float fallback, Action<EnvSettings, long> set) =>
+            new Knob(name, (s, env) => set(s, (long)Num(env, name, fallback)));
+
+        /// <summary>A switch: <c>Env(name, 0f) &gt; 0.5f</c>, which is how EvolutionRun spells one.</summary>
+        private static Knob Flag(string name, Action<EnvSettings, bool> set) =>
+            new Knob(name, (s, env) => set(s, Num(env, name, 0f) > 0.5f));
+
+        private static Knob Text(string name, Action<EnvSettings, string> set) =>
+            new Knob(name, (s, env) => set(s, env(name)));
+
+        private static Knob Custom(string name, Action<EnvSettings, Lookup> apply) =>
+            new Knob(name, apply);
+    }
+
+    /// <summary>
+    /// What the environment said, before any of it becomes a <see cref="RunConfig"/>.
+    /// </summary>
+    /// <remarks>
+    /// One field per variable, named as <c>EvolutionRun</c>'s local is, because half of these are
+    /// not config at all: the budget, the wall, the report cadence, the digest, the thread count
+    /// and the inoculum's path are run settings that must never reach <c>config.json</c> or its
+    /// hash. Keeping them in one object beside the tunables is what lets the manifest and the
+    /// header name them without <see cref="RunConfig"/> growing a field that is not a setting.
+    /// </remarks>
+    public sealed class EnvSettings
+    {
+        public float Irradiance;
+        public float LightReach;
+        public bool SilhouetteCap;
+        public float SelfOverlap;
+        public float BudgetSeconds;
+        public float WallMinutes;
+        public int ReportEvery;
+        public ulong Seed;
+        public long DigestEvery;
+        public List<long> DigestDumpSteps = new List<long>();
+
+        /// <summary>Unity's job workers (D078): read, recorded by neither, applied to nothing here.</summary>
+        public int RequestedJobWorkers;
+
+        /// <summary>The farm's thread count. 0 is one per processor; it is not in the hash.</summary>
+        public int Threads;
+
+        public float Idle;
+        public float MaxPower;
+        public float MinPower;
+        public float LinkPhoto;
+        public float DayAmplitude;
+        public float DayLength;
+        public float CurrentSpeed;
+        public float Mixing;
+        public float NutrientSink;
+        public float MatterSink;
+        public float CurrentPeriod;
+        public float CurrentCell;
+        public bool CurrentRolls;
+        public float CurrentBlink;
+        public bool CurrentAdvect;
+        public CurrentMode CurrentMode;
+        public float Vent;
+        public float VentPatch;
+        public float VentDepth;
+        public float VentLeg;
+        public float Remin;
+        public float Rho;
+        public float UptakeRate;
+        public float UptakeHalf;
+        public float Handling;
+        public float ReserveCap;
+        public float MarginMin;
+        public float MarginMax;
+        public float MarginChance;
+        public float FloorRefuge;
+        public float RefugeFraction;
+        public float Satiation;
+        public float ClearanceToe;
+        public float Exudation;
+        public ConceptionOrder ConceptionOrder;
+        public float MatterInflux;
+        public MatterInflux MatterInfluxAt;
+        public float MatterBurial;
+        public float PhysicsDt;
+        public float SpeciesTheta;
+        public float Patches;
+        public float PatchesAcross;
+        public float HorizontalMixing;
+        public float DispersalChance;
+        public float PatchShading;
+        public float Area;
+        public float Depth;
+        public bool SharedSpace;
+        public float OffspringDispersal;
+        public float SurfaceRestore;
+        public float FloorCloses;
+        public int MaxPopulation;
+        public double MaxTissue;
+        public float Senescence;
+        public float CellTypeMutation;
+        public float Clearance;
+        public float TissueEnergy;
+        public float Overhead;
+        public float FounderExtentMin;
+        public float FounderExtentMax;
+        public float ExcessDensity;
+        public float AddedMass;
+        public float FluidAccel;
+        public float WaterHold;
+        public float NeuronCost;
+        public float ConnectionCost;
+        public float WorkCost;
+        public MatterField FieldModel;
+        public float FieldKernel;
+        public float FieldMatterKernel;
+        public float FieldMerge;
+        public int FieldCap;
+        public float FieldQuantum;
+        public float FieldCell;
+        public float FieldMatterCell;
+        public float CorpseDecay;
+        public WorldShape WorldShape;
+        public float MatterBudget;
+        public bool DriveLimitAlways;
+        public float BedRelief;
+        public float BedTilt;
+        public float BedScale;
+        public float NewbornReserve;
+        public float GrowthFloor;
+        public float MinNewbornKg;
+        public float GrowthStep;
+        public float InvestMin;
+        public float InvestMax;
+        public float AdultScaleChance;
+        public float InvestChance;
+        public float NeutralVolume;
+        public float FounderDepth;
+        public float InitialMatter;
+        public float FloatChance;
+        public float LiftCost;
+        public bool SenseChemical;
+        public bool SenseEnergy;
+        public bool SenseFlow;
+        public float ChemicalHalfScale;
+        public float EnergyFullScale;
+        public float FlowFullScale;
+        public string InoculatePath;
+        public float InoculateAt;
+        public int InoculateCount;
+        public float InoculateDepth;
+        public string OutPath;
+        public string RepoRoot;
+
+        /// <summary>The directory a report and its run directory land under — <c>EVOSIM_RUNS_ROOT</c>.</summary>
+        public string RunsRoot;
+
+        /// <summary>
+        /// Where the report goes: <c>EVOSIM_OUT</c>, or <c>../runs/evolution.md</c> from the
+        /// working directory, which is what <c>EvolutionRun</c> falls back to.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The fallback is relative to the process's own directory, and a worker project's
+        /// directory is one below the repository — which is why <c>run-arm.ps1</c> always sets the
+        /// variable. Kept as it was so a launcher that relies on the fallback lands where it
+        /// always did.
+        /// </para>
+        /// <para>
+        /// <b><see cref="RunsRoot"/> is resolved against, never appended to.</b> An absolute
+        /// <c>EVOSIM_OUT</c> wins outright, so every launcher on file lands exactly where it
+        /// always did; a relative one, or none at all, resolves under the root. That is what lets
+        /// an acceptance run be pointed at a scratch directory without a second way of spelling
+        /// the arm's name.
+        /// </para>
+        /// </remarks>
+        public string ResolveOutPath()
+        {
+            string root = string.IsNullOrEmpty(RunsRoot)
+                ? null
+                : System.IO.Path.GetFullPath(RunsRoot);
+
+            if (!string.IsNullOrEmpty(OutPath))
+            {
+                return root != null && !System.IO.Path.IsPathRooted(OutPath)
+                    ? System.IO.Path.GetFullPath(System.IO.Path.Combine(root, OutPath))
+                    : OutPath;
+            }
+
+            if (root != null)
+            {
+                return System.IO.Path.Combine(root, "evolution.md");
+            }
+
+            return System.IO.Path.GetFullPath(System.IO.Path.Combine(
+                System.IO.Directory.GetCurrentDirectory(), "..", "runs", "evolution.md"));
+        }
+
+        /// <summary>The thread count this run will use: <c>EVOSIM_THREADS</c>, or one per processor.</summary>
+        public int ResolveThreads() =>
+            Threads > 0 ? Threads : Environment.ProcessorCount;
+    }
+}
