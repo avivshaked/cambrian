@@ -275,6 +275,16 @@ the same full seed on the merged build at 16 threads, detached, for the pace. **
 PowerShell, `bash` is WSL's** and cannot see `D:/`; a detached launcher names
 `C:\Program Files\Git\bin\bash.exe` (two launches failed silently on it).
 
+*00:55, the full seed on the merged build.* `r42farm2-s1` (16 threads, the threaded grid,
+beside seed 5's arm and a parity render for part of it) ended at 30,000 s in **24.4
+minutes, 20.5x**, against 54.2 minutes before the grid work; `lineage.jsonl` and
+`positions.jsonl` are byte-equal to `r42farm-s1`'s, so the same world. Wall split physics
+73%, world 26%, harness 2%: the solver is the ceiling now, at 1,000 to 1,200 bodies of
+two to four links. The next pace comes from the solver's own step (the 24-thread pace was
+0.34 µs a body-step at 1,000 in the spike; a full seed at 20x spends about 0.5 µs a
+body-step, so the parallel phase is already near it and the serial phases around it,
+contact grid, water sample, commit, are the remaining hour) and from the GPU.
+
 **Round 42 was launched 20:12 to 20:13 on 2026-09-20 (logbook/0110).** Round 41e's
 world on 1,500 units, on main after the `lever1` merge (`bfc0993`; the solver read shared,
 the trace for jointed bodies only, identity kept on seed 1 to 5,000 and 3,000 s), seeds 1
