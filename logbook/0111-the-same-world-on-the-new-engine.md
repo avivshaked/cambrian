@@ -74,3 +74,66 @@ Thrust: no body in round 42 stroked, and nothing here makes a stroke pay. The be
 Whether the theatre can draw the farm's record: `-From snapshot` reads the files the farm
 writes unchanged, and the pictures at 5,000, 15,000 and 30,000 s are the test, taken after
 the seeds end.
+
+## Read at 30,000 s, three seeds of three
+
+*2026-09-22, morning. Every seed ended at its budget in 74 to 86 minutes. The clause
+readings are `logbook/specs/r43-read/clauses.tsv`, with the script beside it; the pictures
+are the first the theatre has drawn from the farm's own files.*
+
+| # | held in | reading |
+|---|---|---|
+| G1 | 3 of 3 | 401 to 447 alive at 5,000 s, 838 to 1,334 at 30,000 s (round 42: 385 to 548, 843 to 1,162) |
+| G2 | 3 of 3 | the energy residual under 0.027 J at every sample, the matter residual 0.9 to 1.9e-04 units, nothing lost |
+| G3 | 0 of 3 | 5.8, 6.6 and 6.7x at 8 threads each, three at once; physics 88 to 89% of the wall |
+| G4 | 3 of 3 | `upt lim` 78 to 86%; the snow 0.15 to 0.22 of the budget |
+| G5 | 3 of 3 | the most inherited eaters after 5,000 s was 3 |
+| G6 | 1 of 3 | jointed peaked at 675, 183 and 730 and ended at 476, 1 and 687: **the joints held in seeds 1 and 3** (0.71 and 0.94 of the peak), and seed 2's never reached 400 |
+| G7 | 3 of 3 | rim quarter 0.20 to 0.31; `cols` 0.98 to 1.00 of the uniform count |
+| G8 | 1 of 3, and 3 of 3 | `self stillb` over the window's births 1.1 to 4.4% to 5,000 s, 2.4 to 7.7% to 15,000 s, then 11.9%, 4.8% and 10.9% to 30,000 s; the floor last fired at 400 to 580 s |
+| G9 | 2 of 3 | the median body has 3 parts in every seed, none at 16; 0.9%, 0% and 1.3% at eight or more |
+| G10 | recorded | `ovl/body` at 5,000, 15,000 and 30,000 s: seed 1 0.0001, 0.0020, 0.0238; seed 2 0.0001, 0.0015, 0.0458; seed 3 0.0119, 0.0019, 0.0055; `ovl held %` 93 to 99% throughout |
+
+**What it looked like.** Seed 2 from the side at 30,000 s
+(`logbook/images/r43-s2-t30000-recon-side.png`) is a shower of flat one-part leaves through
+the top twenty-five metres of the column; seed 3 (`r43-s3-t30000-recon-side.png`) is
+smaller jointed bodies spread deeper, with a few at the bed, which no body of round 42
+reached. Both fill more of the column than round 42's top twelve metres. Seed 1 from
+above (`r43-s1-t30000-recon-top.png`) is the disc filled edge to centre. Every picture is
+drawn from a snapshot at adult size in the developer's frame.
+
+**The engine changed the physics and not the ecology.** G1, G4, G5 and G7 hold as round
+42 held them: the crowd, the treadmill, the larder, the spread and the eaters' zero are
+the same world. G2 says the books close on the new farm over a round and not only over a
+seed.
+
+**The jam was a cause.** G6's second reading is the one the entry named: the joints held
+in two seeds of three, where round 42 lost them in three of five and the one seed replayed
+on this engine before the round lost them too. On this world a joint still earns nothing
+that a leaf does not, so what selection is keeping is not a stroke; my reading, marked as
+inference, is that a joint that turns freely costs its body less than one jammed against
+its sibling, since a jammed drive pays its work into a contact and a free one into the
+water, and at equal income the free body keeps its margin. Seed 2 is the other outcome
+on the same engine: its jointed line never passed 183 and was gone by the end, so the
+fade is not the physics' alone either. Every reading about joints from rounds 34 to 42
+now carries the caveat that the physics was against them, and the count of rounds in
+which muscle was "selected out" is not evidence about the economy.
+
+**The pace, and what it says about threads.** G3 failed in every seed, and not because a
+seed is slow: three seeds at 8 threads each gave 19x in total, the same total as one seed
+at 16 threads gave alone (20.5x), and physics is 88% of the wall. Twenty-four threads on
+twenty-four cores of which eight are fast is one machine's worth of solver, however it is
+divided. A round of three runs in eighty minutes either way; the rule for the next is one
+seed at a time at 16 threads when its wall matters and three at once when the round's
+does, and the machine is the ceiling until the GPU.
+
+**The sieve is at the line.** G8 read 11.9 and 10.9% in the two seeds that kept their
+joints and 4.8% in the one that lost them: the refusal grows with the muscle, as in round
+42, and on this engine it is the one contact cost a jointed line still pays. Whether it is
+a wall is now the question for a round that gives a joint something to do.
+
+**What the round did not settle.** Thrust, still: nothing strokes. The read script's
+sampling assumption: the farm writes a stats row every 10 s where Unity wrote one every
+100 s, so `r41d-read.py`'s jointed body-seconds and its snow at the default budget read
+ten and two times off on a farm run until the script reads the interval from the rows,
+and this entry's numbers are from `clauses.py`, which does.

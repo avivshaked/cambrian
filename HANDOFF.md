@@ -48,6 +48,20 @@ contact columns, keeping D101, a ball joint's angle, hashes and DESIGN §11.1 su
 item 1 is stale, the implicit limit is in) and `fable-propose-animal-kit.md` (order,
 bite-takes-reserve, scent, the floor's places, anything wanted sooner).
 
+**Round 43 is read (logbook/0111, three of three at 30,000 s, 2026-09-22 morning):** round
+42's world on the new engine with the water per link (D104). The crowd, the treadmill, the
+larder, the spread and the eaters' zero are round 42's (G1, G4, G5, G7), the books close
+and nothing is lost (G2), and **the joints held in two seeds of three** (476 and 687 of
+peaks 675 and 730) where round 42 lost them in three of five: the jam was a cause, and
+every reading about joints from rounds 34 to 42 carries that caveat. Three seeds at 8
+threads each ran 5.8 to 6.7x, 19x in total, the same as one seed alone at 16, so the
+machine is the ceiling however it is divided (G3). The theatre draws the farm's record
+(`-From snapshot`, three pictures beside the entry). Two read-script faults found on the
+way: `r41d-read.py` assumes a 100 s row where the farm writes one every 10 s (its jointed
+body-seconds read tenfold), and the watch prompt ran it without `--budget`, so its snow
+read at half; `logbook/specs/r43-read/clauses.py` reads the interval from the rows and is
+what the entry used.
+
 **The 10,000-creature look on the CPU is measured** (`r42x10-s1`, 03:05 on 2026-09-22):
 round 42's world at ten times the area and the matter (a 22,000 m² tank of radius 84 m,
 15,000 units, `configHash 6470772b`, launched with `run-farm.ps1 -Launcher
@@ -278,9 +292,8 @@ subagent and never in a shell loop.
    it was posed, at its grown size), then Dynamics as a Unity local package (package A)
    and a replay that steps it in the Editor, faithful at any thread count. One Editor run to
    verify `Mathf.Sin/Cos/Round` bits against `UnityFloatMath`.
-3. **A base round on the new engine**: three seeds of round 42's world, pre-registered,
-   read against round 42's distributions; the D100 hold at the owner's ruling (0 proposed).
-   Its entry is the first written from farm output, so every read script is exercised.
+3. **Done: the base round on the new engine** (round 43, logbook/0111). Left from it: `r41d-read.py`
+   reading the sample interval from the rows; the farm's header printing D102's `axes v:h`.
 4. **The 10,000-creature look on the CPU**: a measurement, not a round. Ten times the area
    and the matter, 3,000 to 5,000 s, the wall split and the pace read; then the solver's
    serial phases (the contact grid, the water sample, the commit) cheapened if they bind,
