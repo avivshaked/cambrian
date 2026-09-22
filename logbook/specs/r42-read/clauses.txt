@@ -1,0 +1,160 @@
+== r42-s1 at 5000 s: alive 548, status ended budget
+  E1 alive 548 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 548
+  E2 alive over 5,000 s: 1.00x (>= 1.3 at 30,000 s); margin s 184 (< 150 at 30,000 s)
+  E3 upt lim 74% (40 to 95%); mat top 0.004 vs deep 0.006 (top <= deep)
+  E4 snow 0.17 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 6 (reaches 50 in 3 of 5); inherit now 1
+  E7 diverged 0 in 0.79 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.26 (0.12 to 0.40); cols 472 vs uniform 485 = 0.97 (0.85 to 1.05)
+  E9 pairs/body at 5000 s window 0.05 (< 1.0 at 15,000 s); by window 4k:0.03 5k:0.05
+  E10 probe by hand on snapshots/000005000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 241 (44%, inh 239), mean dof 0.70, audit -5.1e-04, mat resid 5.3e-06, wraps 0
+== r42-s1 at 15000 s: alive 906, status ended budget
+  E1 alive 906 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 548
+  E2 alive over 5,000 s: 1.65x (>= 1.3 at 30,000 s); margin s 205 (< 150 at 30,000 s)
+  E3 upt lim 80% (40 to 95%); mat top 0.004 vs deep 0.005 (top <= deep)
+  E4 snow 0.16 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 6 (reaches 50 in 3 of 5); inherit now 6
+  E7 diverged 0 in 4.77 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.26 (0.12 to 0.40); cols 720 vs uniform 743 = 0.97 (0.85 to 1.05)
+  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to 15000 s: 1635 (700 to 1,800); pace 0.80x
+  E9 pairs/body at 15000 s window 0.27 (< 1.0 at 15,000 s); by window 4k:0.03 5k:0.05 6k:0.05 7k:0.04 8k:0.04 9k:0.06 10k:0.08 11k:0.10 12k:0.14 13k:0.18 14k:0.22 15k:0.27
+  E10 probe by hand on snapshots/000015000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 586 (65%, inh 581), mean dof 1.37, audit -4.3e-03, mat resid 4.3e-05, wraps 0
+== r42-s1 at 30000 s: alive 934, status ended budget
+  E1 alive 934 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 548
+  E2 alive over 5,000 s: 1.70x (>= 1.3 at 30,000 s); margin s 225 (< 150 at 30,000 s)
+  E3 upt lim 86% (40 to 95%); mat top 0.001 vs deep 0.003 (top <= deep)
+  E4 snow 0.20 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 6 (reaches 50 in 3 of 5); inherit now 0
+  E7 diverged 0 in 11.58 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.26 (0.12 to 0.40); cols 734 vs uniform 762 = 0.96 (0.85 to 1.05)
+  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to 30000 s: 2214 (700 to 1,800); pace 0.53x
+  E9 pairs/body at 30000 s window 1.28 (< 1.0 at 15,000 s); by window 4k:0.03 5k:0.05 6k:0.05 7k:0.04 8k:0.04 9k:0.06 10k:0.08 11k:0.10 12k:0.14 13k:0.18 14k:0.22 15k:0.27 16k:0.35 17k:0.46 18k:0.56 19k:0.62 20k:0.68 21k:0.73 22k:0.81 23k:0.93 24k:1.15 25k:1.24 26k:1.31 27k:1.34 28k:1.38 29k:1.37 30k:1.28
+  E10 probe by hand on snapshots/000030000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 60 (6%, inh 47), mean dof 0.45, audit -5.1e-03, mat resid 5.2e-05, wraps 0
+== r42-s2 at 5000 s: alive 404, status ended budget
+  E1 alive 404 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 404
+  E2 alive over 5,000 s: 1.00x (>= 1.3 at 30,000 s); margin s 157 (< 150 at 30,000 s)
+  E3 upt lim 86% (40 to 95%); mat top 0.005 vs deep 0.007 (top <= deep)
+  E4 snow 0.18 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 4 (reaches 50 in 3 of 5); inherit now 0
+  E7 diverged 0 in 0.57 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.37 (0.12 to 0.40); cols 350 vs uniform 369 = 0.95 (0.85 to 1.05)
+  E9 pairs/body at 5000 s window 0.01 (< 1.0 at 15,000 s); by window 4k:0.01 5k:0.01
+  E10 probe by hand on snapshots/000005000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 162 (40%, inh 158), mean dof 0.97, audit 7.5e-03, mat resid -7.6e-05, wraps 0
+== r42-s2 at 15000 s: alive 893, status ended budget
+  E1 alive 893 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 404
+  E2 alive over 5,000 s: 2.21x (>= 1.3 at 30,000 s); margin s 223 (< 150 at 30,000 s)
+  E3 upt lim 84% (40 to 95%); mat top 0.004 vs deep 0.005 (top <= deep)
+  E4 snow 0.15 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 4 (reaches 50 in 3 of 5); inherit now 0
+  E7 diverged 0 in 4.05 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.30 (0.12 to 0.40); cols 689 vs uniform 735 = 0.94 (0.85 to 1.05)
+  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to 15000 s: 1412 (700 to 1,800); pace 1.03x
+  E9 pairs/body at 15000 s window 0.09 (< 1.0 at 15,000 s); by window 4k:0.01 5k:0.01 6k:0.02 7k:0.02 8k:0.03 9k:0.03 10k:0.03 11k:0.04 12k:0.06 13k:0.07 14k:0.08 15k:0.09
+  E10 probe by hand on snapshots/000015000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 553 (62%, inh 546), mean dof 1.73, audit 3.3e-03, mat resid -3.3e-05, wraps 0
+== r42-s2 at 30000 s: alive 1162, status ended budget
+  E1 alive 1162 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 404
+  E2 alive over 5,000 s: 2.88x (>= 1.3 at 30,000 s); margin s 234 (< 150 at 30,000 s)
+  E3 upt lim 93% (40 to 95%); mat top 0.002 vs deep 0.004 (top <= deep)
+  E4 snow 0.15 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 4 (reaches 50 in 3 of 5); inherit now 0
+  E7 diverged 0 in 11.54 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.25 (0.12 to 0.40); cols 896 vs uniform 904 = 0.99 (0.85 to 1.05)
+  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to 30000 s: 1589 (700 to 1,800); pace 0.71x
+  E9 pairs/body at 30000 s window 0.13 (< 1.0 at 15,000 s); by window 4k:0.01 5k:0.01 6k:0.02 7k:0.02 8k:0.03 9k:0.03 10k:0.03 11k:0.04 12k:0.06 13k:0.07 14k:0.08 15k:0.09 16k:0.10 17k:0.12 18k:0.14 19k:0.16 20k:0.18 21k:0.20 22k:0.21 23k:0.20 24k:0.20 25k:0.19 26k:0.19 27k:0.19 28k:0.17 29k:0.15 30k:0.13
+  E10 probe by hand on snapshots/000030000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 308 (27%, inh 297), mean dof 0.65, audit -3.2e-03, mat resid 3.1e-05, wraps 0
+== r42-s3 at 5000 s: alive 476, status ended budget
+  E1 alive 476 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 476
+  E2 alive over 5,000 s: 1.00x (>= 1.3 at 30,000 s); margin s 291 (< 150 at 30,000 s)
+  E3 upt lim 86% (40 to 95%); mat top 0.005 vs deep 0.006 (top <= deep)
+  E4 snow 0.16 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 1 (reaches 50 in 3 of 5); inherit now 0
+  E7 diverged 0 in 1.13 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.26 (0.12 to 0.40); cols 431 vs uniform 428 = 1.01 (0.85 to 1.05)
+  E9 pairs/body at 5000 s window 0.06 (< 1.0 at 15,000 s); by window 4k:0.06 5k:0.06
+  E10 probe by hand on snapshots/000005000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 375 (79%, inh 371), mean dof 2.09, audit 7.7e-03, mat resid -7.7e-05, wraps 0
+== r42-s3 at 15000 s: alive 731, status ended budget
+  E1 alive 731 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 476
+  E2 alive over 5,000 s: 1.54x (>= 1.3 at 30,000 s); margin s 295 (< 150 at 30,000 s)
+  E3 upt lim 89% (40 to 95%); mat top 0.004 vs deep 0.005 (top <= deep)
+  E4 snow 0.16 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 1 (reaches 50 in 3 of 5); inherit now 0
+  E7 diverged 0 in 6.15 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.22 (0.12 to 0.40); cols 614 vs uniform 622 = 0.99 (0.85 to 1.05)
+  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to 15000 s: 2082 (700 to 1,800); pace 0.80x
+  E9 pairs/body at 15000 s window 0.26 (< 1.0 at 15,000 s); by window 4k:0.06 5k:0.06 6k:0.07 7k:0.08 8k:0.08 9k:0.09 10k:0.10 11k:0.11 12k:0.15 13k:0.19 14k:0.23 15k:0.26
+  E10 probe by hand on snapshots/000015000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 607 (83%, inh 605), mean dof 2.85, audit 2.9e-02, mat resid -2.9e-04, wraps 0
+== r42-s3 at 30000 s: alive 843, status ended budget
+  E1 alive 843 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 476
+  E2 alive over 5,000 s: 1.77x (>= 1.3 at 30,000 s); margin s 225 (< 150 at 30,000 s)
+  E3 upt lim 78% (40 to 95%); mat top 0.003 vs deep 0.005 (top <= deep)
+  E4 snow 0.20 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 1 (reaches 50 in 3 of 5); inherit now 0
+  E7 diverged 0 in 11.17 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.29 (0.12 to 0.40); cols 687 vs uniform 701 = 0.98 (0.85 to 1.05)
+  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to 30000 s: 1871 (700 to 1,800); pace 0.74x
+  E9 pairs/body at 30000 s window 0.04 (< 1.0 at 15,000 s); by window 4k:0.06 5k:0.06 6k:0.07 7k:0.08 8k:0.08 9k:0.09 10k:0.10 11k:0.11 12k:0.15 13k:0.19 14k:0.23 15k:0.26 16k:0.31 17k:0.34 18k:0.36 19k:0.34 20k:0.30 21k:0.29 22k:0.28 23k:0.25 24k:0.20 25k:0.14 26k:0.08 27k:0.05 28k:0.04 29k:0.04 30k:0.04
+  E10 probe by hand on snapshots/000030000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 18 (2%, inh 14), mean dof 0.09, audit 2.3e-02, mat resid -2.3e-04, wraps 0
+== r42-s4 at 5000 s: alive 385, status ended budget
+  E1 alive 385 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 385
+  E2 alive over 5,000 s: 1.00x (>= 1.3 at 30,000 s); margin s 129 (< 150 at 30,000 s)
+  E3 upt lim 79% (40 to 95%); mat top 0.005 vs deep 0.006 (top <= deep)
+  E4 snow 0.20 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 21 (reaches 50 in 3 of 5); inherit now 0
+  E7 diverged 0 in 1.05 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.28 (0.12 to 0.40); cols 347 vs uniform 353 = 0.98 (0.85 to 1.05)
+  E9 pairs/body at 5000 s window 0.11 (< 1.0 at 15,000 s); by window 4k:0.06 5k:0.11
+  E10 probe by hand on snapshots/000005000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 325 (84%, inh 325), mean dof 1.99, audit 5.5e-03, mat resid -5.5e-05, wraps 0
+== r42-s4 at 15000 s: alive 619, status ended budget
+  E1 alive 619 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 385
+  E2 alive over 5,000 s: 1.61x (>= 1.3 at 30,000 s); margin s 43 (< 150 at 30,000 s)
+  E3 upt lim 87% (40 to 95%); mat top 0.004 vs deep 0.005 (top <= deep)
+  E4 snow 0.25 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 21 (reaches 50 in 3 of 5); inherit now 0
+  E7 diverged 0 in 5.80 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.28 (0.12 to 0.40); cols 542 vs uniform 540 = 1.00 (0.85 to 1.05)
+  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to 15000 s: 2323 (700 to 1,800); pace 0.79x
+  E9 pairs/body at 15000 s window 0.63 (< 1.0 at 15,000 s); by window 4k:0.06 5k:0.11 6k:0.14 7k:0.18 8k:0.20 9k:0.23 10k:0.26 11k:0.28 12k:0.32 13k:0.41 14k:0.53 15k:0.63
+  E10 probe by hand on snapshots/000015000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 536 (87%, inh 535), mean dof 3.24, audit 7.8e-03, mat resid -7.8e-05, wraps 0
+== r42-s4 at 30000 s: alive 914, status ended budget
+  E1 alive 914 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 385
+  E2 alive over 5,000 s: 2.37x (>= 1.3 at 30,000 s); margin s 38 (< 150 at 30,000 s)
+  E3 upt lim 86% (40 to 95%); mat top 0.001 vs deep 0.003 (top <= deep)
+  E4 snow 0.29 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 21 (reaches 50 in 3 of 5); inherit now 0
+  E7 diverged 0 in 14.85 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.30 (0.12 to 0.40); cols 736 vs uniform 749 = 0.98 (0.85 to 1.05)
+  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to 30000 s: 3048 (700 to 1,800); pace 0.48x
+  E9 pairs/body at 30000 s window 1.76 (< 1.0 at 15,000 s); by window 4k:0.06 5k:0.11 6k:0.14 7k:0.18 8k:0.20 9k:0.23 10k:0.26 11k:0.28 12k:0.32 13k:0.41 14k:0.53 15k:0.63 16k:0.78 17k:0.85 18k:1.07 19k:1.17 20k:1.23 21k:1.33 22k:1.47 23k:1.60 24k:1.56 25k:1.53 26k:1.50 27k:1.64 28k:1.76 29k:1.74 30k:1.76
+  E10 probe by hand on snapshots/000030000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 491 (54%, inh 486), mean dof 3.59, audit 8.8e-03, mat resid -8.8e-05, wraps 0
+== r42-s5 at 5000 s: alive 413, status ended budget
+  E1 alive 413 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 413
+  E2 alive over 5,000 s: 1.00x (>= 1.3 at 30,000 s); margin s 33 (< 150 at 30,000 s)
+  E3 upt lim 80% (40 to 95%); mat top 0.005 vs deep 0.006 (top <= deep)
+  E4 snow 0.21 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 16 (reaches 50 in 3 of 5); inherit now 0
+  E7 diverged 0 in 1.09 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.27 (0.12 to 0.40); cols 370 vs uniform 377 = 0.98 (0.85 to 1.05)
+  E9 pairs/body at 5000 s window 0.23 (< 1.0 at 15,000 s); by window 4k:0.16 5k:0.23
+  E10 probe by hand on snapshots/000005000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 330 (80%, inh 329), mean dof 1.28, audit 9.4e-03, mat resid -9.5e-05, wraps 0
+== r42-s5 at 15000 s: alive 802, status ended budget
+  E1 alive 802 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 413
+  E2 alive over 5,000 s: 1.94x (>= 1.3 at 30,000 s); margin s 28 (< 150 at 30,000 s)
+  E3 upt lim 87% (40 to 95%); mat top 0.004 vs deep 0.005 (top <= deep)
+  E4 snow 0.24 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 16 (reaches 50 in 3 of 5); inherit now 4
+  E7 diverged 0 in 5.96 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.35 (0.12 to 0.40); cols 657 vs uniform 673 = 0.98 (0.85 to 1.05)
+  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to 15000 s: 2574 (700 to 1,800); pace 0.64x
+  E9 pairs/body at 15000 s window 1.04 (< 1.0 at 15,000 s); by window 4k:0.16 5k:0.23 6k:0.34 7k:0.44 8k:0.55 9k:0.62 10k:0.74 11k:0.78 12k:0.80 13k:0.88 14k:0.96 15k:1.04
+  E10 probe by hand on snapshots/000015000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 649 (81%, inh 647), mean dof 2.27, audit 1.2e-02, mat resid -1.2e-04, wraps 0
+== r42-s5 at 30000 s: alive 1076, status ended budget
+  E1 alive 1076 (band 350 to 1,100 at 5,000 s; 600 to 3,600 at 30,000 s); at 5,000 s 413
+  E2 alive over 5,000 s: 2.61x (>= 1.3 at 30,000 s); margin s 30 (< 150 at 30,000 s)
+  E3 upt lim 84% (40 to 95%); mat top 0.003 vs deep 0.004 (top <= deep)
+  E4 snow 0.23 of budget (0.10 to 0.40)
+  E5 inherit max after 5,000 s 16 (reaches 50 in 3 of 5); inherit now 2
+  E7 diverged 0 in 17.27 M jointed body-s = 0.0 per M (0 to 10); rim quarter 0.34 (0.12 to 0.40); cols 776 vs uniform 852 = 0.91 (0.85 to 1.05)
+  E8 wall s per 1,000 sim s per 1,000 bodies, 5,000 to 30000 s: 3471 (700 to 1,800); pace 0.36x
+  E9 pairs/body at 30000 s window 1.88 (< 1.0 at 15,000 s); by window 4k:0.16 5k:0.23 6k:0.34 7k:0.44 8k:0.55 9k:0.62 10k:0.74 11k:0.78 12k:0.80 13k:0.88 14k:0.96 15k:1.04 16k:1.20 17k:1.28 18k:1.36 19k:1.48 20k:1.52 21k:1.59 22k:1.66 23k:1.78 24k:1.89 25k:1.95 26k:1.88 27k:1.91 28k:1.86 29k:1.88 30k:1.88
+  E10 probe by hand on snapshots/000030000.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3
+  recorded: jointed 820 (76%, inh 814), mean dof 3.33, audit 1.5e-02, mat resid -1.5e-04, wraps 0

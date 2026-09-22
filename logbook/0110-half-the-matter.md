@@ -106,3 +106,73 @@ they can be read on, F10 on the 5,000 s snapshots, and F8 at 5,000 s.
 Whether the bed matters; the screens say almost nothing touches it and the ruling waits on
 the owner. Whether the pinning is clean: the round is not an A/B, since every arm is
 pinned, and its evidence is the pace against 41e's at the same crowd.
+
+## Read at 30,000 s, five seeds of five
+
+*2026-09-22, 02:10. Every seed ended at its budget: seed 5 last, at 02:00. The clause
+readings are `logbook/specs/r42-read/clauses.txt` (`scripts/reads/r41d-read.py --budget
+1500` at 5,000, 15,000 and 30,000 s) and `probe-and-sieve.tsv` beside it (the overlap probe
+on the fifteen snapshots, the sieve share and the eaters, with the script that read them).*
+
+| # | held in | reading |
+|---|---|---|
+| F1 | 5 of 5 | 385 to 548 alive at 5,000 s, 843 to 1,162 at 30,000 s |
+| F2 | 5 of 5, and 2 of 5 | every seed at least 1.7 times its 5,000 s count; `margin s` under 150 in seeds 4 and 5 only (30 and 38 s; the others 225 to 234) |
+| F3 | 5 of 5 | `upt lim` 74 to 93%; `mat top` under `mat deep` at every mark |
+| F4 | 5 of 5 | snow 0.15 to 0.29 of the budget |
+| F5 | 0 of 5 | the most inherited eaters after 5,000 s was 21 (seed 4, at 18,400 s); at 30,000 s two seeds hold 2 and 0 and the rest 0 |
+| F6 | vacuous | no boom passed 150 |
+| F7 | 5 of 5 | nothing thrown in 66 million jointed body-seconds; rim quarter 0.25 to 0.34; `cols` 0.91 to 0.99 of the uniform count |
+| F8 | 1 of 5, and 0 of 5 | wall seconds per 1,000 simulated per 1,000 bodies 1,589 to 3,471 (seed 2 inside the band); the seeds ran at 0.36 to 0.74x |
+| F9 | 2 of 5 | `pairs/body` under 0.5 at 5,000 s in every seed, under 1.0 at 15,000 s in four, and at 30,000 s 1.28, 0.13, 0.04, 1.76 and 1.88; no seed doubled |
+| F10 | 4 of 5 | no body at 16 parts and none at 8 or more through 15,000 s in every seed; at 30,000 s seed 5 holds one body of 16 and 2.1% at 8 or more, seed 1 1.7% at 8 or more; self-overlapping pairs a body 0.04 at worst |
+| F11 | 4 of 5, and 5 of 5 | `self stillb` over the window's births 1.4 to 2.4% to 5,000 s, 3.9 to 8.2% to 15,000 s, 4.3 to 9.6% to 30,000 s in four seeds and 16.8% in seed 5; the floor last fired at 500 to 700 s |
+| F12 | 5 of 5 | the median body at 30,000 s has 4, 2, 2, 3 and 4 parts |
+
+**What it looked like.** Seed 1 from above at 30,000 s
+(`logbook/images/r42-s1-t30000-recon-top.png`): the disc filled edge to centre with no
+crust and no ring, D090 holding at half the matter. Seeds 4 and 5 from the side at 15,000 s
+(`r42-s4-t15000-recon-side.png`, `r42-s5-t15000-recon-side.png`): every body in the top
+twelve metres, a handful drifting below, and a bed nothing touches, as the screens said.
+The close view of seed 1 at 3,000 s (`r42-s1-t3000-close.png`) is a loose crowd of green
+one-part leaves with a few grey link bodies among them, none folded. Every picture is
+drawn from a snapshot, at adult size and in the developer's frame.
+
+**The two levers, read.** F1 held and F8 failed, which the entry's second reading planned
+for: half the matter gave the crowd it predicted, and a pinned seed at that crowd ran at
+0.36 to 0.74x where round 41e's unpinned ones ran at 0.35 to 0.59x. The wall split says
+why the pinning could not carry it: PhysX and the harness around it are on one thread by
+construction (D078), and the cost per body tripled as bodies gained links and began to
+touch, seeds 4 and 5 at 3,000 to 3,500 wall seconds per thousand-body-thousand-seconds
+against seed 2's 1,600 with a quarter of the joints. The seed with the most muscle is
+the slowest, and that is the direction the campaign has to go. The owner read it that
+way the same day and ruled the engine before the world (HANDOFF, 2026-09-21): a solver of
+our own, the farm out of Unity, the GPU after. Round 42 seed 1's world replayed on it in
+54 minutes before the grid was threaded and 24 minutes after, both books closed, and
+that is where the next base round runs.
+
+**The eaters, again at zero.** F5's zero is the third round running (40, 41e, 42), and
+the entry's reading stands: the larder scales with the crowd, and at 1,500 units the
+inherited line never reaches 25. Round 40's reading of the reserve (CLAUDE.md, the
+unbounded reserve) is the standing cause, and the lever is the reserve cap or the budget
+back, both the owner's.
+
+**Joints were selected out in three seeds, and the physics was not free.** The jointed
+count peaked at 602 to 827 in every seed between 10,000 and 20,000 s and ended at 47, 297,
+14, 486 and 814: three seeds lost their muscle, two kept it. The spike's parity swims
+(HANDOFF, 2026-09-21) found that in this build a body's own parts collide and a driven
+joint is mostly not free to turn. A joint in round 42 therefore cost its upkeep and its
+contact pairs and moved almost nothing. The one seed replayed on the free-joint engine
+faded the same way (597 to 115, `r42farm-s1`), so the collision was not the whole cause. F9's fail
+is the same fact from the other side: `pairs/body` climbed with the jointed count in
+every seed and read 1.3 to 1.9 where the muscle survived.
+
+**The sieve.** F11 read as predicted: one seed over the line, and it is the one with the
+most joints, 16.8% of the last window's births refused in seed 5 against 4 to 10% in the
+rest. The refusal grows with the muscle, as a sieve on folded bodies would in a world that is
+evolving links. Whether it is a wall for a jointed line is still 0109's question, and the
+next engine's contact does not fold a body at all.
+
+**What the round did not settle.** Whether the bed matters (nothing reached it), whether
+the pinning is clean (no A/B), and thrust: no body in any seed strokes, so `mean m/s`
+still reads the water.
