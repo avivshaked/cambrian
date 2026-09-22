@@ -152,6 +152,95 @@ namespace Evosim.Theatre
         public Transform RootOf(long id) =>
             _bodies.TryGetValue(id, out LiveBody body) ? body.Root : null;
 
+        /// <summary>
+        /// The creature a ray strikes first, or false when it strikes none — a click, answered.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>It is arithmetic and not a raycast, because there is nothing here to raycast
+        /// against.</b> A live body is transforms and renderers with no collider (see the class
+        /// remarks), and giving each part one would put a static collider per link into a scene
+        /// whose physics is not this world's, moved by hand every frame. So the ray is taken into
+        /// each part's own frame by that transform's inverse and tested against the half-extents
+        /// the phenotype carries, which is the slab test and nothing more.
+        /// </para>
+        /// <para>
+        /// <b>A round part is picked as its box.</b> A sphere and a capsule are drawn inside the
+        /// same half-extents, so a click at the very corner of one lands on it. That is an error
+        /// of a few centimetres on a part a few centimetres across, and the alternative is three
+        /// intersection routines kept in step with <see cref="Plan"/> forever.
+        /// </para>
+        /// <para>
+        /// The part transforms carry no scale — <see cref="Build"/> puts every dimension on the
+        /// visuals hanging off them — so the inverse-transformed direction keeps its length and
+        /// the distance that comes back is metres along the ray.
+        /// </para>
+        /// </remarks>
+        public bool Pick(Ray ray, out long id)
+        {
+            id = -1L;
+            float nearest = float.PositiveInfinity;
+
+            foreach (KeyValuePair<long, LiveBody> entry in _bodies)
+            {
+                LiveBody live = entry.Value;
+                Phenotype phenotype = live.Body?.Phenotype;
+                if (phenotype == null) continue;
+
+                int parts = System.Math.Min(live.Parts.Length, phenotype.PartCount);
+
+                for (int i = 0; i < parts; i++)
+                {
+                    Transform part = live.Parts[i];
+                    if (part == null) continue;
+
+                    if (!Strikes(part, phenotype.Parts[i].HalfExtents, ray, out float at)) continue;
+                    if (at >= nearest) continue;
+
+                    nearest = at;
+                    id = entry.Key;
+                }
+            }
+
+            return id >= 0L;
+        }
+
+        /// <summary>The slab test, in the part's own frame.</summary>
+        private static bool Strikes(Transform part, Float3 half, Ray ray, out float at)
+        {
+            at = 0f;
+
+            Vector3 origin = part.InverseTransformPoint(ray.origin);
+            Vector3 direction = part.InverseTransformDirection(ray.direction);
+
+            float near = 0f;
+            float far = float.PositiveInfinity;
+
+            if (!Slab(origin.x, direction.x, Mathf.Abs(half.X), ref near, ref far)) return false;
+            if (!Slab(origin.y, direction.y, Mathf.Abs(half.Y), ref near, ref far)) return false;
+            if (!Slab(origin.z, direction.z, Mathf.Abs(half.Z), ref near, ref far)) return false;
+
+            at = near;
+            return true;
+        }
+
+        /// <summary>One axis of it: the interval the ray is inside this pair of planes.</summary>
+        private static bool Slab(float origin, float direction, float half, ref float near, ref float far)
+        {
+            // Parallel to the slab: inside it for the whole ray, or outside it for the whole ray.
+            if (Mathf.Abs(direction) < 1e-9f) return Mathf.Abs(origin) <= half;
+
+            float one = (-half - origin) / direction;
+            float other = (half - origin) / direction;
+
+            if (one > other) { float swap = one; one = other; other = swap; }
+
+            near = Mathf.Max(near, one);
+            far = Mathf.Min(far, other);
+
+            return near <= far;
+        }
+
         /// <summary>Every part transform on screen, for a check that wants to scan them.</summary>
         public void CollectParts(List<Transform> into)
         {

@@ -363,12 +363,7 @@ namespace Evosim.Theatre
 
             if (_error != null) { _ui.ShowError(_error); return; }
             if (_replay != null) { _ui.OpenWorld(_replay, _map, _replay.Record.Path); return; }
-
-            // Live mode takes the panel down as it opens, so there is nothing here to tell; this
-            // line only exists so that a world which did open is never reported as one that did
-            // not.
-            if (_live != null) return;
-
+            if (_live != null) { _ui.OpenLive(_live, _live.Record.Path); return; }
             if (_solo != null) { _ui.OpenSolo(_solo); return; }
 
             _ui.ShowError("nothing opened, and nothing said why");
@@ -443,12 +438,14 @@ namespace Evosim.Theatre
         /// world worth watching, and one that cannot be opened at all shows nothing.
         /// </para>
         /// <para>
-        /// <b>The interface goes down rather than up.</b> <see cref="TheatreUi"/> is typed on
-        /// <see cref="TheatreReplay"/> the whole way through — the provenance word, the timeline,
-        /// the identity's coverage and the physics-jobs badge are all questions about a PhysX
-        /// recording — and a panel showing a blank census over a world that is running is worse
-        /// than no panel. So the live cut puts the census on the console and the chrome away, and
-        /// the interface is the next piece of work rather than a thing quietly half-wired.
+        /// <b>The interface is up, and it reads this world.</b> The live cut of 2026-09-22 took
+        /// the panel down as it opened, because every reading on it was typed on
+        /// <see cref="TheatreReplay"/>; the census went to the console instead. The owner's use
+        /// for live play is to film it and to read the numbers on screen, so
+        /// <see cref="TheatreUi.OpenLive"/> now takes the world and asks it the same questions —
+        /// and the two or three a live world has no answer to say so where they sit rather than
+        /// showing a stale cell. The console census stays beside it: a session's log is worth
+        /// having whether or not anyone was watching.
         /// </para>
         /// </remarks>
         private void OpenLive()
@@ -474,12 +471,6 @@ namespace Evosim.Theatre
                 return;
             }
 
-            // The panel cannot read this world, so it is taken down rather than left showing a
-            // census of nothing. H no longer has anything to toggle, which the log says.
-            _ui?.Dispose();
-            _ui = null;
-            ShowOverlay = false;
-
             _liveView = new LiveWorldView(_live.Sim)
             {
                 Palette = _palette,
@@ -495,7 +486,7 @@ namespace Evosim.Theatre
                     ? "same source as the recording, so this is that run's own trajectory"
                     : "SOURCE DIFFERS: " + _live.SourceDifference +
                       " — this is a cousin of the recorded world, not it") +
-                ". The census is on this console; the interface reads a PhysX replay and is down.");
+                ". The census is on this console and on the panel, which reads this world.");
 
             // Where this world was picked up from, said in full where there is room for it: the
             // label on a frame carries the clause and the digests do not fit on one.
@@ -786,18 +777,39 @@ namespace Evosim.Theatre
         /// The selected creature's root speed, m/s, or 0.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Read here rather than in the interface because the scene is the runner's: the map, the
         /// transform and the articulation are all things the interface deliberately never touches.
+        /// </para>
+        /// <para>
+        /// The live world has no articulation to ask, so the number comes off the solver itself —
+        /// <c>Creature.Velocity</c> is the world velocity of each link's origin in metres a
+        /// second, and the root link's is the one the other engine's <c>linearVelocity</c> is.
+        /// </para>
         /// </remarks>
         private float SelectedSpeed()
         {
-            if (_replay == null || _selectedId < 0) return 0f;
+            if (_selectedId < 0) return 0f;
+
+            if (_live != null)
+            {
+                if (!_live.Sim.TryPose(_selectedId, out Evosim.Dynamics.Creature body) ||
+                    body == null || body.Velocity.Length < 3)
+                {
+                    return 0f;
+                }
+
+                double vx = body.Velocity[0], vy = body.Velocity[1], vz = body.Velocity[2];
+                return (float)Math.Sqrt(vx * vx + vy * vy + vz * vz);
+            }
+
+            if (_replay == null) return 0f;
 
             Transform root = _map.RootOf(_selectedId);
             if (root == null || root.childCount == 0) return 0f;
 
-            var body = root.GetChild(0).GetComponent<ArticulationBody>();
-            return body != null ? body.linearVelocity.magnitude : 0f;
+            var body2 = root.GetChild(0).GetComponent<ArticulationBody>();
+            return body2 != null ? body2.linearVelocity.magnitude : 0f;
         }
 
         private void StepWorld()
@@ -1049,6 +1061,17 @@ namespace Evosim.Theatre
         /// </remarks>
         public bool SelectById(long id)
         {
+            // The live world hands out its own ids and there is no map to be unreliable: the view
+            // built every body from the solver the harness handed it, so an id on screen is that
+            // world's own. What it is not is the recording's, which the interface says and this
+            // method has never been the place for.
+            if (_live != null)
+            {
+                _selectedId = id;
+                FollowSelection();
+                return true;
+            }
+
             if (_replay == null || !_map.Reliable) return false;
 
             _selectedId = id;
@@ -1119,26 +1142,61 @@ namespace Evosim.Theatre
 
         private void Select()
         {
-            if (_replay == null || FlyCamera == null) return;
+            if (FlyCamera == null) return;
 
             var camera = FlyCamera.GetComponent<Camera>();
             if (camera == null) return;
 
-            if (!Physics.Raycast(camera.ScreenPointToRay(Input.mousePosition), out RaycastHit hit, 5000f))
+            SelectAt(camera.ScreenPointToRay(Input.mousePosition));
+        }
+
+        /// <summary>
+        /// Selects whatever a ray strikes — the click, without the mouse.
+        /// </summary>
+        /// <remarks>
+        /// Public for the same reason <see cref="BeginSeek"/> is: the interface check drives the
+        /// path a person's hands take rather than synthesising an event, and a selection made any
+        /// other way would not be the one the viewer makes. The two engines answer the ray
+        /// differently — PhysX has colliders and the live world has none, so the second is
+        /// arithmetic (<see cref="LiveWorldView.Pick"/>).
+        /// </remarks>
+        public bool SelectAt(Ray ray)
+        {
+            if (_live != null)
             {
-                return;
+                if (_liveView == null || !_liveView.Pick(ray, out long picked)) return false;
+
+                _selectedId = picked;
+                FollowSelection();
+                return true;
             }
 
+            if (_replay == null) return false;
+            if (!Physics.Raycast(ray, out RaycastHit hit, 5000f)) return false;
+
             long id = _map.IdOf(hit.transform);
-            if (id < 0) return;
+            if (id < 0) return false;
 
             _selectedId = id;
             FollowSelection();
+            return true;
         }
 
         private void FollowSelection()
         {
             if (_selectedId < 0 || FlyCamera == null) return;
+
+            if (_live != null)
+            {
+                Transform body = _liveView?.RootOf(_selectedId);
+                if (body == null) return;
+
+                Organism found = CreatureIdMap.Find(_live.Sim.World, _selectedId);
+                FlyCamera.Follow(body, found != null ? Radius(found.Phenotype) : 1f);
+                return;
+            }
+
+            if (_replay == null) return;
 
             Transform root = _map.RootOf(_selectedId);
             if (root == null) return;

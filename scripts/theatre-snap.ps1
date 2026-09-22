@@ -95,9 +95,11 @@
   the Editor's Mono and the farm's RyuJIT do not agree on a double sum (CLAUDE.md, 2026-09-22) —
   so every frame's label reads "continued from checkpoint at <s> s (cousin)" beside the second
   the picture was actually taken at. A run directory is not needed and not read: the checkpoint
-  carries its own. -From snapshot and -Chrome are both refused with it, the first because a
-  reconstruction and a continuation are different pictures and the second because the live mode
-  takes the interface down as it opens.
+  carries its own. -From snapshot is refused with it, because a reconstruction and a continuation
+  are different pictures. -Chrome was refused with it too until 2026-09-22, when the live mode
+  still took the interface down as it opened; the panel reads a live world now, so a chrome frame
+  of a continuation is allowed and its strip says COUSIN and names the second it was picked up
+  from. It lands as <arm>-t<second>-ckpt-chrome.png.
 
 .PARAMETER Carry
   How many simulated seconds to step the restored world before the pictures are taken. Default 0,
@@ -142,6 +144,9 @@
   Off by default, and deliberately: every picture in logbook/images/ carries the burnt-in label
   and no chrome, and a frame that suddenly grew a census panel would not be comparable with any
   of them. This switch is how the interface itself is photographed for review.
+
+  It works with -FromCheckpoint from 2026-09-22, and the file is then <arm>-t<second>-ckpt-chrome.png.
+  It is still refused with -From snapshot, which simulates nothing and so has no census to draw.
 
 .PARAMETER AllowSourceMismatch
   Photograph a run this build did not record. What comes out is a plausible world rather than
@@ -244,10 +249,6 @@ $continued = -not [string]::IsNullOrWhiteSpace($FromCheckpoint)
 if ($continued) {
     if ($From -eq 'snapshot') {
         throw "-From snapshot and -FromCheckpoint are different pictures: one reconstructs a second the run recorded and the other carries a cousin of the world on from one. Ask for one of them."
-    }
-
-    if ($Chrome) {
-        throw "-Chrome is refused on a continuation: the theatre's live mode takes the interface down as it opens, since the panel reads a PhysX replay's census, so there would be nothing over the world to photograph."
     }
 
     if ($timeList.Count -ne 1) {

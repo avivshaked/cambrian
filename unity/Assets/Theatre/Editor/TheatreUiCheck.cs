@@ -49,6 +49,11 @@ namespace Evosim.Theatre.EditorTools
     ///
     /// # the solo census: the same entry with a genome instead of a run
     /// $env:EVOSIM_THEATRE_GENOME = "$PWD/inocula/some-genome.json"
+    ///
+    /// # the live states: a checkpoint instead of a run, or LiveUiCheck.Run, which is this
+    /// # entry with the fixture's defaults filled in
+    /// $env:EVOSIM_THEATRE_CHECKPOINT = "$PWD/scratch/checkpoint/runs/ckA"
+    /// $env:EVOSIM_THEATRE_SEEK = '400'
     /// </code>
     /// </remarks>
     public static class TheatreUiCheck
@@ -70,6 +75,25 @@ namespace Evosim.Theatre.EditorTools
         private static bool _paceSet;
         private static double _seekTarget;
 
+        /// <summary>
+        /// Simulated seconds the live world is carried past its checkpoint before it is read.
+        /// </summary>
+        /// <remarks>
+        /// The restore itself is the wrong moment to read the panel at: nothing has been stepped,
+        /// so every field is the checkpoint's own and a census that was never refreshed would
+        /// pass. A hundred seconds is two hundred metabolic steps and a few hundred samples of
+        /// the record gone by, which is enough for the drift reading to have something to say
+        /// and short enough to run beside three arms.
+        /// </remarks>
+        private const double LiveCarrySeconds = 100d;
+
+        /// <summary>Seconds between the live walk's three readings of the same fields.</summary>
+        private const double LiveStrideSeconds = 20d;
+
+        private static double _liveCarryTo;
+        private static double _liveReadAt;
+        private static long _livePicked = -1L;
+
         private static long _selected = -1L;
         private static double _deadBorn = double.NaN;
         private static double _deadDied = double.NaN;
@@ -86,8 +110,8 @@ namespace Evosim.Theatre.EditorTools
         /// <summary>One density reading per width, not one per photographed state.</summary>
         private static readonly HashSet<int> _densityRead = new HashSet<int>();
 
-        /// <summary>The same, for the axis labels.</summary>
-        private static readonly HashSet<int> _garbleRead = new HashSet<int>();
+        /// <summary>The same, for the labels of a panel at a width: <c>&lt;panel&gt;@&lt;width&gt;</c>.</summary>
+        private static readonly HashSet<string> _garbleRead = new HashSet<string>();
 
         /// <summary>A picture that has been asked for and not yet taken.</summary>
         private struct Wanted
@@ -125,12 +149,14 @@ namespace Evosim.Theatre.EditorTools
         {
             bool world = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_RUN"));
             bool solo = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_GENOME"));
+            bool live = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT"));
 
-            if (!world && !solo)
+            if (!world && !solo && !live)
             {
                 Debug.LogError(
-                    "[Theatre] neither EVOSIM_THEATRE_RUN nor EVOSIM_THEATRE_GENOME is set: " +
-                    "there is nothing to check the interface against.");
+                    "[Theatre] none of EVOSIM_THEATRE_RUN, EVOSIM_THEATRE_GENOME and " +
+                    "EVOSIM_THEATRE_CHECKPOINT is set: there is nothing to check the interface " +
+                    "against.");
 
                 if (Application.isBatchMode) EditorApplication.Exit(1);
                 return;
@@ -229,6 +255,9 @@ namespace Evosim.Theatre.EditorTools
             _densityRead.Clear();
             _garbleRead.Clear();
             _armedTicks = 0;
+            _liveCarryTo = 0d;
+            _liveReadAt = double.NegativeInfinity;
+            _livePicked = -1L;
             TheatreUiCapture.Disarm();
 
             if (_driving) return;
@@ -271,8 +300,10 @@ namespace Evosim.Theatre.EditorTools
                     }
 
                     // Start may not have run yet on the first tick. Once it has, an interface that
-                    // is still null is the fault this check exists to catch.
-                    if (_runner.Replay != null || _phase > 0)
+                    // is still null is the fault this check exists to catch — and in live mode it
+                    // is the fault it was written for: until 2026-09-22 the live cut disposed the
+                    // panel as it opened.
+                    if (_runner.Replay != null || _runner.Live != null || _phase > 0)
                     {
                         Finish(1, "the interface did not load: TheatreUi.Create returned nothing");
                     }
@@ -286,11 +317,24 @@ namespace Evosim.Theatre.EditorTools
                 // tunables, §9's refuse-rather-than-default rule turned it away, and the cousin
                 // check reported "solo mode checked, 6 of 6" (2026-09-13). Mode A is what
                 // EVOSIM_THEATRE_GENOME asks for and nothing else.
-                if (_runner.Replay == null && WorldWasAsked())
+                if (_runner.Replay == null && _runner.Live == null && WorldWasAsked())
                 {
                     Finish(1,
                         "EVOSIM_THEATRE_RUN was set and no world opened, so there is no interface " +
                         "to check: " + (_runner.Error ?? "the runner gave no reason"));
+
+                    return;
+                }
+
+                // The same hole on the live path, and it opened the same way: a checkpoint this
+                // build refuses (ckA is layout version 1 and the build read version 2,
+                // 2026-09-22) left both worlds null, and Step() read that as Mode A and walked
+                // the solo assertions against a world that never opened.
+                if (_runner.Live == null && LiveWasAsked())
+                {
+                    Finish(1,
+                        "EVOSIM_THEATRE_CHECKPOINT was set and no live world opened, so there is " +
+                        "no interface to check: " + (_runner.Error ?? "the runner gave no reason"));
 
                     return;
                 }
@@ -321,14 +365,29 @@ namespace Evosim.Theatre.EditorTools
             _runner.FrameBudgetSeconds = 0.1f;
 
             TheatreReplay replay = _runner.Replay;
+            TheatreDynamicsReplay live = _runner.Live;
 
-            Debug.Log(
-                "[Theatre] interface check: " +
-                (replay != null
+            // Where the live walk waits for the world to reach before it reads anything: the
+            // restore's own second plus the carry, so a fixture restored at 400 s and carried
+            // 100 s is asserted at 500 s and at the samples on the way.
+            if (live != null) _liveCarryTo = live.ElapsedSeconds + LiveCarrySeconds;
+
+            string what =
+                replay != null
                     ? "arm " + replay.Record.ArmName + ", " + replay.Record.Samples.Count +
                       " recorded samples, last at t=" +
                       replay.RecordedThroughSeconds.ToString("0.#", CultureInfo.InvariantCulture)
-                    : "solo mode") +
+                    : live != null
+                        ? "LIVE on Evosim.Dynamics, arm " + live.Record.ArmName + ", " +
+                          (live.ContinuedFrom != null
+                              ? live.ContinuedFrom.Line()
+                              : "founded at t=0") +
+                          ", carrying to t=" +
+                          _liveCarryTo.ToString("0.#", CultureInfo.InvariantCulture)
+                        : "solo mode";
+
+            Debug.Log(
+                "[Theatre] interface check: " + what +
                 ", window " + Screen.width + "x" + Screen.height);
         }
 
@@ -338,6 +397,8 @@ namespace Evosim.Theatre.EditorTools
             TheatreRunner runner = _runner;
             TheatreUi ui = runner.Ui;
             VisualElement root = ui.Root;
+
+            if (runner.Live != null) { LiveStep(runner, root); return; }
 
             if (runner.Replay == null)
             {
@@ -568,7 +629,7 @@ namespace Evosim.Theatre.EditorTools
         }
 
         /// <summary>
-        /// No two pieces of text in the bar share a spot.
+        /// No two pieces of text in a panel share a spot.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -595,16 +656,23 @@ namespace Evosim.Theatre.EditorTools
         /// roughly zero pixels wide, and no placement can separate labels on an axis with no
         /// length. At both widths photographed there is room.
         /// </para>
+        /// <para>
+        /// <b>The strip is asked the same question from 2026-09-22.</b> Its identity line is one
+        /// row of text beside the badge, the pace, the clock and the key hints, and it is built
+        /// from whatever the provenance state has to say; the live mode's first cut put the seed,
+        /// the step, the config hash and two seventeen-digit audit figures on it and printed the
+        /// lot over everything to its right at 1920. One rule, asked of both panels.
+        /// </para>
         /// </remarks>
-        private static void NoGarble(VisualElement root, int width)
+        private static void NoGarble(VisualElement root, string name, int width)
         {
-            if (!_garbleRead.Add(width)) return;
+            if (!_garbleRead.Add(name + "@" + width)) return;
 
-            VisualElement bar = root.Q<VisualElement>("bar");
+            VisualElement bar = root.Q<VisualElement>(name);
 
             if (bar == null)
             {
-                Skip("bar at " + width + ": no bar on screen");
+                Skip(name + " at " + width + ": no " + name + " on screen");
                 return;
             }
 
@@ -627,7 +695,7 @@ namespace Evosim.Theatre.EditorTools
 
             if (boxes.Count < 2)
             {
-                Skip("bar at " + width + ": " + boxes.Count + " label(s) laid out");
+                Skip(name + " at " + width + ": " + boxes.Count + " label(s) laid out");
                 return;
             }
 
@@ -640,7 +708,7 @@ namespace Evosim.Theatre.EditorTools
 
             if (span < needed)
             {
-                Skip("bar at " + width + ": the bar is " +
+                Skip(name + " at " + width + ": it is " +
                      span.ToString("0", CultureInfo.InvariantCulture) + " px and its " +
                      boxes.Count + " labels need " +
                      needed.ToString("0", CultureInfo.InvariantCulture) +
@@ -661,7 +729,7 @@ namespace Evosim.Theatre.EditorTools
 
                     clashes++;
 
-                    Fail("bar at " + width + ": " + boxes[i].Key + " and " + boxes[j].Key +
+                    Fail(name + " at " + width + ": " + boxes[i].Key + " and " + boxes[j].Key +
                          " do not overlap",
                          "x " + a.xMin.ToString("0", CultureInfo.InvariantCulture) + ".." +
                          a.xMax.ToString("0", CultureInfo.InvariantCulture) + " against " +
@@ -672,8 +740,8 @@ namespace Evosim.Theatre.EditorTools
 
             if (clashes == 0)
             {
-                Pass("bar at " + width + ": none of the " + boxes.Count +
-                     " labels in the bar overlap");
+                Pass(name + " at " + width + ": none of the " + boxes.Count +
+                     " labels in it overlap");
             }
         }
 
@@ -1072,6 +1140,402 @@ namespace Evosim.Theatre.EditorTools
                 all.Contains("Chemical") || all.Contains("Depth") || all.Contains("Flow"), "");
         }
 
+        // ------------------------------------------------------------------ the live world
+
+        /// <summary>
+        /// The walk for a world the farm's harness is stepping in the Editor, rather than a
+        /// recording replayed.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A separate walk, because half of the replay's phases have no question here.</b>
+        /// There is no thread caveat to read, no physics-jobs badge, no faithful state to reach
+        /// and no dead panel to open — a live world's ids are its own, so the cousin rule withholds
+        /// the ancestry and the dead panel exactly as it does under an override, and the state to
+        /// assert is that they are withheld. What is here instead is the live census read against
+        /// the live <c>World</c> at three separate samples, and the pick: a click has to find a
+        /// body that has no collider under it.
+        /// </para>
+        /// <para>
+        /// <b>It is read after a carry and not at the restore.</b> At the instant of the restore
+        /// nothing has been stepped, so every field on the panel is the checkpoint's own and a
+        /// census that was never refreshed would pass. <see cref="LiveCarrySeconds"/> is what
+        /// makes the reading mean something.
+        /// </para>
+        /// </remarks>
+        private static void LiveStep(TheatreRunner runner, VisualElement root)
+        {
+            TheatreDynamicsReplay live = runner.Live;
+
+            switch (_phase)
+            {
+                case 0:
+                    if (!Carried(live)) return;
+                    break;
+
+                case 1: LiveIdentity(root, live); break;
+                case 2: LiveCensus(root, live); break;
+                case 3: LiveTimeline(root, live); break;
+                case 4: Shot("live-playing"); break;
+
+                // Twice more, twenty simulated seconds apart: the fields that move have to keep
+                // agreeing with the world, not agree with it once.
+                case 5:
+                    if (!Strode(live)) return;
+                    break;
+
+                case 6: LiveIdentity(root, live); LiveCensus(root, live); break;
+
+                case 7:
+                    if (!Strode(live)) return;
+                    break;
+
+                case 8: LiveIdentity(root, live); LiveCensus(root, live); break;
+
+                case 9:
+                    runner.TogglePause();
+                    break;
+
+                case 10: Paused(root); Shot("live-paused"); break;
+
+                case 11:
+                    runner.TogglePause();
+                    runner.ToggleProvenance();
+                    break;
+
+                case 12: LivePopover(root, live); Shot("live-provenance"); break;
+
+                case 13:
+                    runner.ToggleProvenance();
+                    break;
+
+                // Pick, then read. A phase for each, because the interface draws the selection on
+                // its next tick and reading it in the same one would read the frame before it.
+                case 14: LivePick(runner, live); break;
+                case 15: LiveSelection(root, live); Shot("live-selected"); break;
+                case 16: runner.SelectById(long.MaxValue); break;
+                case 17: LiveUnavailable(root, runner); Shot("live-unavailable"); break;
+
+                default:
+                    Finish(_failed == 0 ? 0 : 1,
+                        "live mode checked " + TheatreUiFormat.Dot + " " + _passed + " passed, " +
+                        _failed + " failed, " + _skipped + " skipped");
+                    return;
+            }
+
+            Next();
+        }
+
+        /// <summary>Whether the world has reached the second the walk reads it at.</summary>
+        private static bool Carried(TheatreDynamicsReplay live)
+        {
+            if (live.ElapsedSeconds + 1e-9 < _liveCarryTo) return false;
+
+            _liveReadAt = live.ElapsedSeconds;
+            return true;
+        }
+
+        /// <summary>Whether another stride of simulated seconds has gone by since the last reading.</summary>
+        private static bool Strode(TheatreDynamicsReplay live)
+        {
+            if (live.ElapsedSeconds < _liveReadAt + LiveStrideSeconds) return false;
+
+            _liveReadAt = live.ElapsedSeconds;
+            return true;
+        }
+
+        /// <summary>The strip, which is where the two engines part.</summary>
+        private static void LiveIdentity(VisualElement root, TheatreDynamicsReplay live)
+        {
+            RunRecord record = live.Record;
+
+            Is("live strip: arm", Text(root, "ident-arm"), record.ArmName ?? "run");
+
+            // Never anything else. A world stepped by the Editor's Mono out of a recording the
+            // farm's .NET made is a cousin of it in every arrangement there is (CLAUDE.md,
+            // 2026-09-22), and a strip that said otherwise would be believed.
+            Is("live strip: the state is COUSIN", Text(root, "status-word"), "COUSIN");
+
+            string meta = Text(root, "ident-meta");
+
+            True("live strip: it says it is live and not a replay",
+                meta.Contains("live on Evosim.Dynamics") && meta.Contains("not a replay"), meta);
+
+            if (live.ContinuedFrom != null)
+            {
+                True("live strip: it names the second it was continued from",
+                    meta.Contains("continued from a checkpoint at " +
+                        TheatreUiFormat.Seconds(live.ContinuedFrom.Seconds) + " s"),
+                    meta);
+            }
+            else
+            {
+                True("live strip: it says the world was founded", meta.Contains("founded"), meta);
+            }
+
+            // The cousin idiom: the seed, the step and the config hash belong to the three states
+            // that have room for them, and under P. On this one they ran the line under the badge,
+            // the pace and the clock at 1920 — which is what the strip's own NoGarble now catches.
+            True("live strip: the seed is not on the line, it is under P",
+                !meta.Contains("seed " + TheatreUiFormat.Identifier((long)record.Seed)), meta);
+
+            // The one reading that must never be worded as coverage: what it measures is how far
+            // two runtimes have come apart, which is a reading and not a verdict.
+            True("live strip: the drift reading is a drift and not a match",
+                meta.Contains("drift:") && !meta.Contains("samples match"), meta);
+
+            True("live strip: a badge says what is stepping it",
+                root.Q<VisualElement>("ident-badges").childCount > 0, "no badges");
+
+            string clock = Text(root, "clock-value");
+            True("live strip: the clock says t", clock.StartsWith("t "), clock);
+            Near("live strip: the clock is the world's",
+                Number(clock.Substring(2)), live.Census.T, 0.5d);
+
+            True("live strip: the pace is not empty", Text(root, "pace").Length > 0, "");
+        }
+
+        /// <summary>Every census field against the live world's own census.</summary>
+        private static void LiveCensus(VisualElement root, TheatreDynamicsReplay live)
+        {
+            WorldCensus census = live.Census;
+
+            // The census is the world's, taken by TheatreDynamicsReplay.Refresh term for term as
+            // the replay takes it — so this reads the live World and not a copy of the panel.
+            Grouped("live census: alive", Text(root, "value-alive"), census.Alive);
+            Grouped("live census: jointed", Text(root, "value-jointed"), census.Jointed);
+            Grouped("live census: absorptive", Text(root, "value-absorptive"), census.Absorptive);
+            Grouped("live census: photosynthetic",
+                Text(root, "value-photosynthetic"), census.Photosynthetic);
+            Grouped("live census: births", Text(root, "value-births"), census.Births);
+            Grouped("live census: deaths", Text(root, "value-deaths"), census.Deaths);
+
+            Is("live census: alive is the living count",
+                Text(root, "value-alive").Replace(TheatreUiFormat.ThinSpace, ""),
+                live.Sim.World.Living.Count.ToString(CultureInfo.InvariantCulture));
+
+            Near("live census: the audit", Number(Text(root, "value-audit")), census.AuditPercent, 1e-4);
+
+            Near("live census: the matter residual",
+                Number(Text(root, "value-matter-residual")), census.MatterResidual, 0.002d);
+
+            Near("live census: matter here",
+                Number(Text(root, "value-matter-here")), census.MatterHere, 0.01d);
+
+            string depth = Text(root, "value-mean-depth");
+
+            if (census.MeanHeight < 0d)
+            {
+                True("live census: depth carries a true minus (U+2212)",
+                    depth.StartsWith(TheatreUiFormat.Minus), depth);
+            }
+
+            Near("live census: mean depth", Number(depth), census.MeanHeight, 0.1d);
+
+            Is("live census: the diverged row is present only when something diverged",
+                Shown(root, "row-diverged").ToString(), (census.Diverged > 0).ToString());
+
+            True("live census: the cadence line names a sample",
+                Text(root, "census-cadence").StartsWith("sample "), Text(root, "census-cadence"));
+        }
+
+        private static void LiveTimeline(VisualElement root, TheatreDynamicsReplay live)
+        {
+            True("live bar: the elapsed bar has a width",
+                root.Q<VisualElement>("timeline-elapsed").resolvedStyle.width >= 0f, "");
+
+            True("live bar: the record's end is marked",
+                root.Q<VisualElement>("mark-record-end") != null, "no record-end mark");
+
+            True("live bar: the axis ends with a second",
+                Text(root, "tick-end").EndsWith(" s"),
+                Shown(root, "tick-end") ? Text(root, "tick-end") : "folded into the record's label");
+
+            True("live bar: transport says something",
+                Text(root, "transport-word").Length > 0, "");
+
+            Skip("live bar: the axis labels are read under the captures, where the panel is 1920 " +
+                 "and 3840 wide; this window's bar has no axis to lay them out on");
+        }
+
+        private static void LivePopover(VisualElement root, TheatreDynamicsReplay live)
+        {
+            True("live P: the popover is up", Shown(root, "popover"), "hidden");
+            True("live P: the warnings are down", !Shown(root, "warnings"), "shown");
+
+            Is("live P: the popover's word is the strip's",
+                Text(root, "popover-word"), Text(root, "status-word"));
+
+            VisualElement rows = root.Q<VisualElement>("popover-rows");
+            True("live P: the popover lists its evidence", rows.childCount >= 10,
+                rows.childCount + " rows");
+
+            var words = new StringBuilder();
+            rows.Query<Label>().ForEach(label => words.Append(label.text).Append('\n'));
+            string all = words.ToString();
+
+            True("live P: the engine is named", all.Contains("Evosim.Dynamics"), "");
+
+            // The two readings a live world has no equivalent of. They stay on the sheet and say
+            // so, rather than showing a stale number or leaving a hole where a reader who knows
+            // the popover would wonder which rows went missing.
+            True("live P: physics jobs says it is not in live mode",
+                all.Contains("physics jobs") && all.Contains("not in live mode"), "");
+
+            True("live P: sim hash says the same", all.Contains("sim hash"), "");
+
+            True("live P: the three digests that do decide this world are listed",
+                all.Contains("core hash") && all.Contains("dynamics hash") &&
+                all.Contains("farm hash"), "");
+
+            True("live P: the id map is unverifiable",
+                all.Contains("a cousin's ids are not the recording's"), "");
+
+            // What the strip has no room for has to be somewhere, and this is the somewhere.
+            True("live P: the seed and the config hash are here",
+                all.Contains("seed") && all.Contains("config hash"), "");
+
+            if (live.ContinuedFrom != null)
+            {
+                True("live P: it says where the world was continued from",
+                    all.Contains("continued from"), "");
+            }
+
+            True("live P: the prose says the trajectory is this Editor's own",
+                Text(root, "popover-prose").Contains("Mono"), Text(root, "popover-prose"));
+        }
+
+        /// <summary>
+        /// A click on a drawn part, through the runner's own selection path.
+        /// </summary>
+        /// <remarks>
+        /// The ray is aimed at a body from two metres away rather than a mouse position being
+        /// synthesised, and it goes through <see cref="TheatreRunner.SelectAt"/>, which is the
+        /// call a click makes. A nearer body between the two is a legitimate hit and not a fault,
+        /// so the identity of what came back is skipped rather than failed in that case; what is
+        /// asserted is that a ray into a world with no colliders in it finds a creature at all.
+        /// </remarks>
+        private static void LivePick(TheatreRunner runner, TheatreDynamicsReplay live)
+        {
+            _selected = -1L;
+            _livePicked = -1L;
+
+            LiveWorldView view = runner.LiveView;
+            IReadOnlyList<Organism> living = live.Sim.World.Living;
+
+            if (view == null || living.Count == 0) return;
+
+            Transform body = null;
+            long wanted = -1L;
+
+            for (int i = 0; i < living.Count && body == null; i++)
+            {
+                body = view.RootOf(living[i].Id);
+                if (body != null) wanted = living[i].Id;
+            }
+
+            if (body == null) return;
+
+            _livePicked = wanted;
+
+            var ray = new Ray(body.position + new Vector3(0f, 2f, 0f), Vector3.down);
+
+            if (!runner.SelectAt(ray))
+            {
+                Fail("live pick: a ray aimed at a drawn body selects a creature", "nothing was hit");
+                return;
+            }
+
+            Pass("live pick: a ray aimed at a drawn body selects a creature");
+            _selected = runner.SelectedId;
+        }
+
+        private static void LiveSelection(VisualElement root, TheatreDynamicsReplay live)
+        {
+            if (_selected < 0)
+            {
+                Skip("live selection: nothing was drawn to click on");
+                return;
+            }
+
+            if (_selected != _livePicked)
+            {
+                Skip("live selection: the ray found creature " +
+                     TheatreUiFormat.Identifier(_selected) + " rather than " +
+                     TheatreUiFormat.Identifier(_livePicked) + ", which is another body in front " +
+                     "of it and not a fault");
+            }
+
+            Organism creature = CreatureIdMap.Find(live.Sim.World, _selected);
+
+            if (creature == null)
+            {
+                Skip("live selection: the creature died between the click and the reading");
+                return;
+            }
+
+            True("live selection: the living panel is up", Shown(root, "inspector-live"), "hidden");
+
+            Is("live selection: the id", Text(root, "inspector-id"),
+                "creature " + TheatreUiFormat.Identifier(creature.Id));
+
+            Is("live selection: the generation", Text(root, "value-generation"),
+                TheatreUiFormat.Identifier(creature.GenerationDepth));
+
+            Is("live selection: the parent", Text(root, "value-parent"),
+                creature.ParentId >= 0
+                    ? TheatreUiFormat.Identifier(creature.ParentId)
+                    : "founder");
+
+            int parts = creature.Phenotype != null ? creature.Phenotype.PartCount : 0;
+            int dof = 0;
+
+            if (creature.Phenotype != null)
+            {
+                for (int i = 0; i < creature.Phenotype.Parts.Count; i++)
+                {
+                    dof += creature.Phenotype.Parts[i].JointType.DofCount();
+                }
+            }
+
+            Is("live selection: parts and dof", Text(root, "value-parts-dof"),
+                TheatreUiFormat.Identifier(parts) + " " + TheatreUiFormat.Dot + " " +
+                TheatreUiFormat.Identifier(dof));
+
+            True("live selection: the guild chips are drawn",
+                root.Q<VisualElement>("guilds").childCount == 3,
+                root.Q<VisualElement>("guilds").childCount + " chips");
+
+            True("live selection: the reserve and the speed are read from this world",
+                Text(root, "value-reserve").Length > 0 && Text(root, "value-speed").Length > 0,
+                "a live reading is blank");
+
+            // The cousin rule, withheld in the cousin rule's own words: an id here names a body
+            // in this world and nothing in lineage.jsonl.
+            True("live selection: the ids do not name the recording",
+                !_runner.Ui.IdsNameTheRecording, "the interface thinks they do");
+
+            Is("live selection: no ancestry chain",
+                Text(root, "ancestry-chain"), TheatreUiFormat.EmDash);
+
+            True("live selection: it says why in the cousin's words",
+                Text(root, "ancestry-note").Contains("cousin"), Text(root, "ancestry-note"));
+        }
+
+        private static void LiveUnavailable(VisualElement root, TheatreRunner runner)
+        {
+            True("live unavailable: the inspector says so",
+                Shown(root, "inspector-unavailable"), "hidden");
+
+            True("live unavailable: the dead panel is withheld",
+                !Shown(root, "inspector-dead"), "shown");
+
+            string prose = Text(root, "inspector-unavailable-prose");
+
+            True("live unavailable: it says why, in the cousin's words",
+                prose.Length > 40 && prose.Contains("cousin"), prose);
+        }
+
         // ------------------------------------------------------------------ the pictures
 
         /// <summary>
@@ -1098,9 +1562,10 @@ namespace Evosim.Theatre.EditorTools
         {
             try
             {
-                string arm = _runner.Replay != null
-                    ? _runner.Replay.Record.ArmName ?? "run"
-                    : "solo";
+                string arm =
+                    _runner.Replay != null ? _runner.Replay.Record.ArmName ?? "run" :
+                    _runner.Live != null ? _runner.Live.Record.ArmName ?? "run" :
+                    "solo";
 
                 string directory = Path.Combine(
                     Path.Combine(Path.Combine(BuildIdentity.RepositoryRoot(), "scratch"), "snaps"),
@@ -1151,7 +1616,8 @@ namespace Evosim.Theatre.EditorTools
                 // The panel is laid out at the texture's width right now, which is the one moment
                 // the density step and the axis can be read at a width no Game View here has.
                 Density(taken.Width);
-                NoGarble(_runner.Ui.Root, taken.Width);
+                NoGarble(_runner.Ui.Root, "bar", taken.Width);
+                NoGarble(_runner.Ui.Root, "strip", taken.Width);
 
                 int bytes = TheatreUiCapture.Shoot(taken.Path, out string wrote);
 
@@ -1351,6 +1817,10 @@ namespace Evosim.Theatre.EditorTools
         /// </summary>
         private static bool WorldWasAsked() =>
             !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_RUN"));
+
+        /// <summary>Whether a live world was asked for, which is what a checkpoint asks for.</summary>
+        private static bool LiveWasAsked() =>
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT"));
 
         // ------------------------------------------------------------------ saying so
 

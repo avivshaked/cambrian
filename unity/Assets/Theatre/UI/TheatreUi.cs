@@ -134,6 +134,7 @@ namespace Evosim.Theatre
         // ---------------------------------------------------------------- what is on screen
 
         private TheatreReplay _replay;
+        private TheatreDynamicsReplay _live;
         private CreatureIdMap _map;
         private SoloCreature _solo;
         private LineageIndex _lineage;
@@ -145,6 +146,8 @@ namespace Evosim.Theatre
         private bool _popoverBuilt;
         private string _liveCoreHash;
         private string _liveSimHash;
+        private string _liveDynamicsHash;
+        private string _liveFarmHash;
 
         private double _drawnCensusT = double.NaN;
         private double _lastMatchedT = double.NaN;
@@ -525,6 +528,56 @@ namespace Evosim.Theatre
             Sample(true);
         }
 
+        /// <summary>
+        /// The live mode: the world the farm's own harness is stepping now, on
+        /// <c>Evosim.Dynamics</c>, founded from the run's config and seed or carried on from one
+        /// of its checkpoints.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The same screen, and one word of it is never in doubt.</b> The census, the alarm,
+        /// the timeline, the inspector and the popover all read the live world through the
+        /// accessors below and say of it exactly what they say of a replay. The strip is where the
+        /// two part: a live world is a cousin of its recording in every arrangement there is — the
+        /// Editor's Mono and the farm's .NET do not agree on a double sum, which
+        /// <c>DynamicsReplayCheck</c> caught them parting over before any body had moved
+        /// (CLAUDE.md, 2026-09-22) — so <see cref="Decide"/> never reaches
+        /// <see cref="Provenance.Faithful"/> here, and the line under the arm name carries the
+        /// second the world was picked up from.
+        /// </para>
+        /// <para>
+        /// <b>This mode used to open by taking the panel down.</b> Every reading on it was typed
+        /// on <see cref="TheatreReplay"/>, so the live cut disposed the interface and put its
+        /// census on the console instead. The owner's use for live play is to film it and to read
+        /// the numbers on screen (2026-09-22), so the panel stays up, and the four readings a live
+        /// world has no equivalent of say so where they sit rather than showing a stale cell.
+        /// </para>
+        /// </remarks>
+        public void OpenLive(TheatreDynamicsReplay live, string runDirectory)
+        {
+            if (_root == null || live == null) return;
+
+            Close();
+
+            _live = live;
+            _runDirectory = runDirectory;
+
+            Show(_error, false);
+            Show(_strip, true);
+            Show(_bar, true);
+            Show(_census, true);
+            Show(_inspector, true);
+            Show(_censusWorld, true);
+            Show(_censusSolo, false);
+            Show(_soloKeySine, false);
+            Show(_soloKeyStarve, false);
+
+            _identArm.text = live.Record.ArmName ?? "run";
+
+            BuildTheTimeline();
+            Sample(true);
+        }
+
         /// <summary>Mode A: one creature, alone, under its own brain — the same strip, a
         /// different census (design/SPEC.md §8).</summary>
         public void OpenSolo(SoloCreature solo)
@@ -565,6 +618,7 @@ namespace Evosim.Theatre
         private void Close()
         {
             _replay = null;
+            _live = null;
             _map = null;
             _solo = null;
             _lineage = null;
@@ -599,6 +653,52 @@ namespace Evosim.Theatre
             Show(_seekMeta, false);
         }
 
+        // ------------------------------------------------------ whichever world is open
+
+        /// <summary>Whether a world of either engine is on screen.</summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Two engines step worlds now, and the interface draws one screen.</b> The PhysX
+        /// replay re-runs a recording and asks at every sample whether what is on screen is the
+        /// run; the live mode steps the farm's harness in the Editor and cannot be that run at
+        /// all. Everything below the strip asks the same questions of both, so it asks them
+        /// through the accessors here rather than through a field, and the handful of places where
+        /// the two genuinely differ name <c>_live</c> by hand.
+        /// </para>
+        /// <para>
+        /// Each accessor reads the replay first and the live world otherwise, so a caller that is
+        /// not behind <see cref="IsOpen"/> or behind a tick with a world on screen throws rather
+        /// than quietly reading a zero. That is the rule the rest of this file follows.
+        /// </para>
+        /// </remarks>
+        private bool IsOpen => _replay != null || _live != null;
+
+        /// <summary>The census taken at the last metabolic step.</summary>
+        private WorldCensus Reading => _replay != null ? _replay.Census : _live.Census;
+
+        /// <summary>The recording either way: its manifest, its config and its samples.</summary>
+        private RunRecord Recording => _replay != null ? _replay.Record : _live.Record;
+
+        /// <summary>Simulated seconds the world on screen stands at.</summary>
+        private double Elapsed => _replay != null ? _replay.ElapsedSeconds : _live.ElapsedSeconds;
+
+        /// <summary>The last second the recording holds a sample for.</summary>
+        private double RecordedThrough =>
+            _replay != null ? _replay.RecordedThroughSeconds : _live.RecordedThroughSeconds;
+
+        /// <summary>The living population, which is where the inspector looks an id up.</summary>
+        private Evosim.Core.World Population =>
+            _replay != null ? _replay.Eco.World : _live.Sim.World;
+
+        /// <summary>Samples the record agreed with — the coverage, and the drift's numerator.</summary>
+        private int Matched => _replay != null ? _replay.SamplesMatched : _live.Identity.Matched;
+
+        /// <summary>Samples the record had something to say about, agreed or not.</summary>
+        private int Seen =>
+            _replay != null
+                ? _replay.SamplesMatched + _replay.SamplesSkipped
+                : _live.Identity.Compared + _live.Identity.Skipped;
+
         // ---------------------------------------------------------------- the loop
 
         /// <summary>
@@ -617,13 +717,13 @@ namespace Evosim.Theatre
         {
             if (_root == null) return;
 
-            if (_replay != null) { TickWorld(state); return; }
+            if (IsOpen) { TickWorld(state); return; }
             if (_solo != null) TickSolo(state);
         }
 
         private void TickWorld(TheatreUiState state)
         {
-            WorldCensus census = _replay.Census;
+            WorldCensus census = Reading;
 
             // ---- per frame: four fields and one width -----------------------------
             _clockValue.text = "t " + TheatreUiFormat.Clock(census.T);
@@ -683,7 +783,7 @@ namespace Evosim.Theatre
         /// <summary>Everything that waits for the world's clock to move.</summary>
         private void Sample(bool firstTime)
         {
-            WorldCensus census = _replay.Census;
+            WorldCensus census = Reading;
 
             _valueAlive.text = TheatreUiFormat.Quantity(census.Alive);
             _valueJointed.text = TheatreUiFormat.Quantity(census.Jointed);
@@ -704,9 +804,9 @@ namespace Evosim.Theatre
 
             _censusCadence.text = Cadence();
 
-            if (_replay.SamplesMatched != _lastMatched)
+            if (Matched != _lastMatched)
             {
-                _lastMatched = _replay.SamplesMatched;
+                _lastMatched = Matched;
                 _lastMatchedT = census.T;
             }
 
@@ -750,6 +850,11 @@ namespace Evosim.Theatre
 
         private Provenance Decide()
         {
+            // A live world is a cousin whatever its four source digests say, and there is no
+            // arrangement in which it is not: see OpenLive. Nothing below this line could make it
+            // faithful, and a viewer told it was would believe it.
+            if (_live != null) return Provenance.Cousin;
+
             if (!_replay.Faithful) return Provenance.Cousin;
             if (_replay.FirstMismatch != null) return Provenance.Diverged;
 
@@ -787,8 +892,11 @@ namespace Evosim.Theatre
         /// </summary>
         private string Meta(Provenance state)
         {
-            RunRecord record = _replay.Record;
             string dot = " " + TheatreUiFormat.Dot + " ";
+
+            if (_live != null) return LiveMeta(dot);
+
+            RunRecord record = _replay.Record;
 
             string identity = Coverage();
 
@@ -833,6 +941,29 @@ namespace Evosim.Theatre
         }
 
         /// <summary>
+        /// The live world's line: what is stepping it, where it was picked up, and how far it has
+        /// drifted from the recording it came out of.
+        /// </summary>
+        /// <remarks>
+        /// <b>It is the cousin state's sentence and not the faithful one's.</b> The seed, the
+        /// step and the config hash are on the three states that have room for them and not on
+        /// this one, for the reason the design leaves them off a cousin: the strip is one row of
+        /// fixed width and what a viewer of a live world needs from it is that it is live, which
+        /// run it came out of, from when, and how far it has come since. The rest is under
+        /// <c>P</c>. The first cut carried all three, and at 1920 the line ran under the badge,
+        /// the pace and the clock and printed over all of them (2026-09-22).
+        /// </remarks>
+        private string LiveMeta(string dot)
+        {
+            string where = _live.ContinuedFrom != null
+                ? "continued from a checkpoint at " +
+                  TheatreUiFormat.Seconds(_live.ContinuedFrom.Seconds) + " s"
+                : "founded from the run's config and seed";
+
+            return "live on Evosim.Dynamics, not a replay" + dot + where + dot + Coverage();
+        }
+
+        /// <summary>
         /// The identity check's own sentence, with the second it holds through.
         /// </summary>
         /// <remarks>
@@ -842,6 +973,8 @@ namespace Evosim.Theatre
         /// </remarks>
         private string Coverage()
         {
+            if (_live != null) return Drift();
+
             string line = _replay.IdentityLine();
             const string prefix = "identity: ";
 
@@ -858,10 +991,75 @@ namespace Evosim.Theatre
             return line;
         }
 
+        /// <summary>
+        /// A live world's reading of the same check, worded so that it cannot be read as coverage.
+        /// </summary>
+        /// <remarks>
+        /// The identity check runs here too — <see cref="TheatreDynamicsReplay"/> offers it every
+        /// census, against the recording the world came out of — but what it measures is not
+        /// whether this is the run, which it cannot be. What it measures is how far a world
+        /// stepped by the Editor's Mono has come from the same world stepped by the farm's .NET,
+        /// which is a reading and never a verdict (CLAUDE.md, 2026-09-22). So the sentence says
+        /// <i>still agree</i> and <i>parted</i>, and the word <i>match</i> is not in it.
+        /// </remarks>
+        /// <remarks>
+        /// <b>The second it parted at, and never the column.</b>
+        /// <c>ReplayIdentity.FirstMismatch</c> carries the column and both doubles written with
+        /// "R", which is what a log wants and three times what a strip or a 460 px popover row
+        /// has: the first cut of this line put the two seventeen-digit audit figures on both and
+        /// they ran over everything to their right (2026-09-22). The instant is the reading; the
+        /// numbers behind it are the check's to print.
+        /// </remarks>
+        private string Drift()
+        {
+            ReplayIdentity identity = _live.Identity;
+
+            if (identity.Recorded == 0) return "drift: the record holds no samples to measure against";
+            if (identity.Compared == 0) return "drift: no recorded sample reached yet";
+
+            string of = " of " + TheatreUiFormat.Identifier(identity.Compared);
+
+            if (identity.FirstMismatch != null)
+            {
+                int colon = identity.FirstMismatch.IndexOf(':');
+
+                string when = colon > 0
+                    ? identity.FirstMismatch.Substring(0, colon)
+                    : identity.FirstMismatch;
+
+                return "drift: parted at " + when + ", " +
+                       TheatreUiFormat.Identifier(identity.Matched) + of + " agreed";
+            }
+
+            string through = double.IsNaN(_lastMatchedT)
+                ? ""
+                : " to t = " + TheatreUiFormat.Seconds(_lastMatchedT) + " s";
+
+            return "drift: " + TheatreUiFormat.Identifier(identity.Matched) + of +
+                   " agree" + through;
+        }
+
         /// <summary>The zero to two badges that trail a cousin's strip.</summary>
         private void Badges()
         {
             _identBadges.Clear();
+
+            // The live world's two, and neither of the replay's questions below can be asked of
+            // it: no PhysX ran, and a farm manifest records no Unity version to differ from.
+            if (_live != null)
+            {
+                Badge("LIVE " + TheatreUiFormat.Dot + " Evosim.Dynamics", true);
+
+                LiveCheckpoint checkpoint = _live.ContinuedFrom;
+
+                if (checkpoint != null && checkpoint.DifferingFields.Count > 0)
+                {
+                    Badge(string.Join(", ", checkpoint.DifferingFields) + " " +
+                          TheatreUiFormat.NotEqual + " this build", true);
+                }
+
+                return;
+            }
 
             RunRecord record = _replay.Record;
 
@@ -1060,7 +1258,7 @@ namespace Evosim.Theatre
         /// </remarks>
         private void Warnings()
         {
-            RunRecord record = _replay.Record;
+            RunRecord record = Recording;
             var titles = new List<string>();
             var details = new List<string>();
 
@@ -1087,7 +1285,7 @@ namespace Evosim.Theatre
                 titles.Add("Running past the record");
                 details.Add(
                     "last recorded sample t=" +
-                    TheatreUiFormat.Seconds(_replay.RecordedThroughSeconds) + " " +
+                    TheatreUiFormat.Seconds(RecordedThrough) + " " +
                     TheatreUiFormat.Dot + " " + BeyondSamples() + " samples beyond " +
                     TheatreUiFormat.Dot + " nothing left to check against");
             }
@@ -1135,7 +1333,7 @@ namespace Evosim.Theatre
             double interval = SampleInterval();
             if (interval <= 0d) return "some";
 
-            double beyond = (_replay.ElapsedSeconds - _replay.RecordedThroughSeconds) / interval;
+            double beyond = (Elapsed - RecordedThrough) / interval;
             return TheatreUiFormat.Quantity(Math.Max(0d, beyond));
         }
 
@@ -1144,7 +1342,7 @@ namespace Evosim.Theatre
         /// <summary>P: the evidence behind the strip's one word, and the recorded value beside it.</summary>
         public void ToggleProvenance()
         {
-            if (_root == null || _replay == null) return;
+            if (_root == null || !IsOpen) return;
 
             ProvenanceOpen = !ProvenanceOpen;
 
@@ -1161,24 +1359,119 @@ namespace Evosim.Theatre
 
         private void Popover()
         {
-            if (_popoverBuilt || _replay == null) return;
+            if (_popoverBuilt || !IsOpen) return;
 
             _popoverBuilt = true;
 
-            RunRecord record = _replay.Record;
-
             Marker(_popoverMarker, _state);
             _popoverWord.text = Word(_state);
-            _popoverNote.text = Note(_state);
+
+            _popoverNote.text = _live != null
+                ? "live " + TheatreUiFormat.Dot + " not a replay"
+                : Note(_state);
+
             PopoverStatus(_state != Provenance.Faithful);
-            _popoverProse.text = Prose(_state);
+            _popoverProse.text = _live != null ? LiveProse : Prose(_state);
+
+            _popoverRows.Clear();
+
+            if (_live != null) { LiveRows(); return; }
+
+            ReplayRows();
+        }
+
+        /// <summary>
+        /// The live world's evidence: which engine, which source trees, and the two rows the PhysX
+        /// replay asks that this world has no answer to.
+        /// </summary>
+        /// <remarks>
+        /// <b>A row with no equivalent stays and says so.</b> No PhysX steps this world and
+        /// nothing under <c>Assets/Evosim</c> runs in it, so <c>physics jobs</c> and
+        /// <c>sim hash</c> have no reading rather than a stale one; dropping them would leave a
+        /// viewer who knows the popover wondering which two were missing and why. What takes
+        /// their place is the three digests that <i>do</i> decide this world's trajectory, which
+        /// is the same set <see cref="TheatreDynamicsReplay.DifferenceFromRecording"/> compares.
+        /// </remarks>
+        private void LiveRows()
+        {
+            RunRecord record = _live.Record;
+
+            // Hashed once, on the first P of a session: HashSourceTree walks every .cs under a
+            // tree, which is not something to do on a frame.
+            if (_liveCoreHash == null) _liveCoreHash = BuildIdentity.CoreHash();
+            if (_liveDynamicsHash == null) _liveDynamicsHash = HashOf("Evosim.Dynamics");
+            if (_liveFarmHash == null) _liveFarmHash = HashOf("Evosim.Farm");
+
+            ProvRow("engine", "Evosim.Dynamics, live",
+                record.Engine == null ? "unrecorded" : "recorded " + record.Engine, false);
+
+            // The one difference that cannot be closed, and the reason every live world is a
+            // cousin however well the digests agree.
+            ProvRow("runtime", "the Editor's Mono", "the farm's .NET", true);
+
+            ProvRow("threads", TheatreUiFormat.Identifier(_live.Threads),
+                record.Threads.HasValue
+                    ? "recorded " + TheatreUiFormat.Identifier(record.Threads.Value)
+                    : "unrecorded",
+                record.Threads.HasValue && record.Threads.Value != _live.Threads);
+
+            ProvRow("physics jobs", "not in live mode", "PhysX steps nothing here", false);
+
+            Digest("core hash", _liveCoreHash, record.CoreHash);
+            Digest("dynamics hash", _liveDynamicsHash, record.DynamicsHash);
+            Digest("farm hash", _liveFarmHash, record.FarmHash);
+
+            ProvRow("sim hash", "not in live mode", "no Assets/Evosim here", false);
+
+            ProvRow("config hash", TheatreUiFormat.Hash(record.ConfigHash),
+                record.ConfigHashMismatch == null ? "match" : "does not match its settings",
+                record.ConfigHashMismatch != null);
+
+            ProvRow("seed", TheatreUiFormat.Identifier((long)record.Seed), "as recorded", false);
+
+            ProvRow("continued from",
+                _live.ContinuedFrom != null
+                    ? TheatreUiFormat.Seconds(_live.ContinuedFrom.Seconds) + " s"
+                    : "t = 0",
+                _live.ContinuedFrom != null
+                    ? "a checkpoint of this run"
+                    : "founded from the config and the seed",
+                false);
+
+            // A cousin's map is sound and still cannot name the recording's creatures, which is
+            // the same sentence the replay's cousin row carries and for the same reason.
+            ProvRow("id map", "unverifiable", "a cousin's ids are not the recording's", true);
+
+            ProvRow("samples", Coverage(),
+                TheatreUiFormat.Quantity(record.Samples.Count) + " recorded",
+                _live.Identity.FirstMismatch != null);
+        }
+
+        /// <summary>One source tree against what the recording says it was built from.</summary>
+        private void Digest(string label, string here, string recorded)
+        {
+            bool differs = !Same(here, recorded);
+
+            ProvRow(label, TheatreUiFormat.Hash(here),
+                recorded == null
+                    ? "unrecorded"
+                    : differs ? "recorded " + TheatreUiFormat.Hash(recorded) : "match",
+                differs);
+        }
+
+        /// <summary>A source tree's digest, taken the way the live replay takes it for a run.</summary>
+        private static string HashOf(string project) =>
+            BuildIdentity.HashSourceTree(
+                Path.Combine(Path.Combine(BuildIdentity.RepositoryRoot(), "src"), project));
+
+        private void ReplayRows()
+        {
+            RunRecord record = _replay.Record;
 
             // Hashed once, on the first P of a session: HashSourceTree walks every .cs under two
             // trees, which is not something to do on a frame.
             if (_liveCoreHash == null) _liveCoreHash = BuildIdentity.CoreHash();
             if (_liveSimHash == null) _liveSimHash = BuildIdentity.SimHash();
-
-            _popoverRows.Clear();
 
             string recordedJobs = record.PhysicsJobWorkers.HasValue
                 ? TheatreUiFormat.Identifier(record.PhysicsJobWorkers.Value)
@@ -1283,6 +1576,22 @@ namespace Evosim.Theatre
             }
         }
 
+        /// <summary>
+        /// The live mode's paragraph, where <see cref="Prose"/>'s cousin one would go.
+        /// </summary>
+        /// <remarks>
+        /// The cousin's paragraph says "grown from the same config and seed, but it is not the
+        /// run", which is true here and leaves out the part a viewer of a live world needs: that
+        /// this one is being stepped in front of them, now, and that no build of anything could
+        /// make it the run.
+        /// </remarks>
+        private const string LiveProse =
+            "Nothing here is written back. This world is being stepped now, in the Editor, by the " +
+            "farm's own harness on Evosim.Dynamics — it is not a replay of the recording and " +
+            "cannot become one: the Editor's Mono and the farm's .NET do not agree on a double " +
+            "sum, so the trajectory from the first step is this Editor's own. Watch it and film " +
+            "it; do not quote its numbers as that run's.";
+
         private static string Prose(Provenance state)
         {
             switch (state)
@@ -1350,7 +1659,7 @@ namespace Evosim.Theatre
                 return;
             }
 
-            Organism creature = CreatureIdMap.Find(_replay.Eco.World, selectedId);
+            Organism creature = CreatureIdMap.Find(Population, selectedId);
 
             if (creature != null)
             {
@@ -1393,6 +1702,12 @@ namespace Evosim.Theatre
         /// recording's lineage.jsonl while the body on screen had a different history
         /// (2026-09-13). Everything the live world says about that body is true; everything
         /// lineage.jsonl says about its number is not.
+        /// </para>
+        /// <para>
+        /// The live mode is the second way in, and it is the same way: a world stepped in the
+        /// Editor out of a recording's config, seed or checkpoint hands out its own ids, which
+        /// the recording's rows know nothing about. So this reads false there too, and the
+        /// ancestry and the dead panel are withheld in the words the cousin rule already uses.
         /// </para>
         /// </remarks>
         public bool IdsNameTheRecording =>
@@ -1586,8 +1901,8 @@ namespace Evosim.Theatre
 
         private void BuildTheTimeline()
         {
-            double recorded = _replay.RecordedThroughSeconds;
-            double requested = _replay.Record.RequestedSeconds ?? 0d;
+            double recorded = RecordedThrough;
+            double requested = Recording.RequestedSeconds ?? 0d;
 
             _axisEndSeconds = Math.Max(1d, Math.Max(requested, recorded));
             _recordEndSeconds = recorded;
@@ -1643,14 +1958,14 @@ namespace Evosim.Theatre
         /// </remarks>
         private void EndLabels()
         {
-            if (_replay == null || _tickEnd == null || _tickRecordEnd == null) return;
+            if (!IsOpen || _tickEnd == null || _tickRecordEnd == null) return;
             if (_decidingEnds) return;
 
             _decidingEnds = true;
 
             try
             {
-                double recorded = _replay.RecordedThroughSeconds;
+                double recorded = RecordedThrough;
 
                 // Half a second: the axis and the record end together as far as a label reading
                 // whole seconds is concerned, so there is one figure and not two.
@@ -1701,7 +2016,7 @@ namespace Evosim.Theatre
         /// </summary>
         private void Relay()
         {
-            if (_timelineTrack == null || _replay == null) return;
+            if (_timelineTrack == null || !IsOpen) return;
 
             for (int i = 0; i < _timelineTrack.childCount; i++)
             {
@@ -1712,7 +2027,7 @@ namespace Evosim.Theatre
             if (!double.IsNaN(_peakSeconds)) Anchor(_tickPeak, _peakSeconds);
             if (!double.IsNaN(_recordEndSeconds)) Anchor(_tickRecordEnd, _recordEndSeconds);
 
-            double beyond = Math.Max(0d, _axisEndSeconds - _replay.RecordedThroughSeconds);
+            double beyond = Math.Max(0d, _axisEndSeconds - RecordedThrough);
             _timelineBeyond.style.width = Length.Percent((float)(100d * beyond / _axisEndSeconds));
 
             EndLabels();
@@ -1792,13 +2107,13 @@ namespace Evosim.Theatre
         /// </summary>
         private void Marks()
         {
-            if (_timelineTrack == null || _replay == null) return;
+            if (_timelineTrack == null || !IsOpen) return;
             if (_timelineTrack.Q<VisualElement>("mark-record-end") != null) return;
 
-            double recorded = _replay.RecordedThroughSeconds;
+            double recorded = RecordedThrough;
 
             // The peak is free: RunSample already carries alive, and the samples are all loaded.
-            IReadOnlyList<RunSample> samples = _replay.Record.Samples;
+            IReadOnlyList<RunSample> samples = Recording.Samples;
             int peak = 0;
             double peakAt = 0d;
 
@@ -1931,7 +2246,7 @@ namespace Evosim.Theatre
         /// <summary>The one width of the per-frame contract.</summary>
         private void Progress(double t)
         {
-            double recorded = _replay.RecordedThroughSeconds;
+            double recorded = RecordedThrough;
 
             if (t > _axisEndSeconds)
             {
@@ -1971,7 +2286,7 @@ namespace Evosim.Theatre
                 "SEEKING " + TheatreUiFormat.RightArrow + " t " +
                 TheatreUiFormat.Clock(state.SeekTarget) + " s";
 
-            double left = state.SeekTarget - _replay.ElapsedSeconds;
+            double left = state.SeekTarget - Elapsed;
             double eta = state.MeasuredPace > 0.001d ? left / state.MeasuredPace : double.NaN;
 
             _seekMeta.text =
@@ -1981,7 +2296,7 @@ namespace Evosim.Theatre
                 (double.IsNaN(eta) ? "measuring" : TheatreUiFormat.Remaining(eta));
 
             double span = Math.Max(1e-6d, state.SeekTarget - state.SeekFrom);
-            double done = Mathf.Clamp01((float)((_replay.ElapsedSeconds - state.SeekFrom) / span));
+            double done = Mathf.Clamp01((float)((Elapsed - state.SeekFrom) / span));
             _seekProgress.style.width = Length.Percent((float)(100d * done));
 
             _transportWord.text = "SEEKING";
@@ -2140,18 +2455,17 @@ namespace Evosim.Theatre
 
         // ---------------------------------------------------------------- odds and ends
 
-        private bool PastTheRecord() =>
-            _replay != null && _replay.ElapsedSeconds > _replay.RecordedThroughSeconds + 1e-6;
+        private bool PastTheRecord() => IsOpen && Elapsed > RecordedThrough + 1e-6;
 
         private double SampleInterval()
         {
-            IReadOnlyList<RunSample> samples = _replay.Record.Samples;
+            IReadOnlyList<RunSample> samples = Recording.Samples;
             return samples.Count >= 2 ? samples[1].T - samples[0].T : 0d;
         }
 
         private string Cadence()
         {
-            int compared = _replay.SamplesMatched + _replay.SamplesSkipped;
+            int compared = Seen;
             double interval = SampleInterval();
 
             return "sample " + TheatreUiFormat.Identifier(compared) +

@@ -134,7 +134,9 @@ namespace Evosim.Theatre.EditorTools
         /// live path's own faults would show. What comes out is never the run: a restore is a
         /// cousin whatever the four digests say, and the label carries
         /// <c>continued from checkpoint at &lt;s&gt; s (cousin)</c> on every frame, which is the
-        /// whole of the provenance a still can carry.
+        /// whole of the provenance a still can carry. From 2026-09-22 <c>-Chrome</c> is allowed
+        /// with it, because the interface reads a live world now: the fifth frame then says the
+        /// same thing in the strip's own words.
         /// </remarks>
         private static bool _fromCheckpoint;
 
@@ -345,14 +347,12 @@ namespace Evosim.Theatre.EditorTools
 
             if (wrong != null) return "EVOSIM_THEATRE_SNAP_CARRY: " + wrong;
 
-            if (_chrome)
-            {
-                return
-                    "-Chrome is refused on a continuation: the interface is typed on a PhysX " +
-                    "replay the whole way through, so the live mode takes the panel down as it " +
-                    "opens and there would be nothing over the world to photograph.";
-            }
-
+            // -Chrome was refused here until 2026-09-22, when the interface was still typed on a
+            // PhysX replay and the live mode took the panel down as it opened, so there would
+            // have been nothing over the world to photograph. It reads a live world now
+            // (TheatreUi.OpenLive), and a chrome frame of a continuation is the picture that
+            // carries its own provenance: the strip says COUSIN and names the second it was
+            // picked up from.
             return null;
         }
 
@@ -1038,7 +1038,25 @@ namespace Evosim.Theatre.EditorTools
 
             _runner.Paused = true;
 
-            ShootTheContinuation(live);
+            // The same three ticks a replay's chrome frame takes, and for the same reason: the
+            // panel is resized to the texture when it is armed, the density classes come off the
+            // geometry event that resize raises, and the layout they ask for lands a frame after
+            // that. The world is paused across all of them, so every layer is the same instant.
+            if (TheatreUiCapture.Armed)
+            {
+                if (++_chromeTicks < 2) return;
+                _chromeTicks = 0;
+
+                LandTheChromeShot();
+            }
+            else
+            {
+                ShootTheContinuation(live);
+
+                // Armed by ShootTheContinuation when -Chrome was asked for. Come back for it.
+                if (TheatreUiCapture.Armed) return;
+            }
+
             Finish(0, _written.Count + " picture(s) written");
         }
 
@@ -1051,9 +1069,9 @@ namespace Evosim.Theatre.EditorTools
             _runner.Rate = 10000f;
             _runner.FrameBudgetSeconds = 0.25f;
 
-            // Never on a continuation: the interface reads a PhysX replay and the live mode has
-            // already taken it down, so this only keeps the two in step.
-            _runner.ShowOverlay = false;
+            // The same rule as a replay's: chromeless by default so the record's frames stay
+            // comparable with every earlier picture, and up when -Chrome asked for one.
+            _runner.ShowOverlay = _chrome;
 
             // From the world rather than from -At. A checkpoint is resolved to the one at or
             // before the second asked for, so the two need not agree and the picture's own second
@@ -1118,6 +1136,8 @@ namespace Evosim.Theatre.EditorTools
                           " parts"
                         : "; no live view in the scene"));
             }
+
+            if (_chrome) ArmTheChromeShot(arm, stamp + "-ckpt");
         }
 
         /// <summary>Unpauses the runner and lets it step as hard as a frame allows.</summary>
