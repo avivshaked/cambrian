@@ -44,6 +44,18 @@ namespace Evosim.Dynamics
 
         public IReadOnlyList<Creature> Creatures => _creatures;
 
+        /// <summary>
+        /// The bench's probe: a contact-grid cell size in place of the rule, metres; 0 is the
+        /// rule. No farm sets it.
+        /// </summary>
+        public double ContactCellOverrideMetres { get; set; }
+
+        /// <summary>The contact grid's cell after the last step, metres.</summary>
+        public double ContactCellMetres => _grid.CellSize;
+
+        /// <summary>The largest active bounding radius the last step saw, metres.</summary>
+        public double LargestContactRadius => _grid.LargestRadius;
+
         public DynamicsWorld(SolverConfig config)
         {
             Config = config ?? throw new ArgumentNullException(nameof(config));
@@ -65,7 +77,7 @@ namespace Evosim.Dynamics
         {
             double dt = Config.StepSeconds;
 
-            _grid.Build(_creatures);
+            _grid.Build(_creatures, ContactCellOverrideMetres);
 
             // Package C. Serial and before the parallel phase, over the poses the step starts
             // from — the farm's gather phase, and the one place a CurrentField may be touched.

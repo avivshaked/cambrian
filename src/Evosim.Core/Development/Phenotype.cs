@@ -304,6 +304,18 @@ namespace Evosim.Core
                     "is a body with no extent, no volume and no anchors.");
             }
 
+            // A scale of exactly 1 is this body. Every caller takes the cube root of a volume
+            // fraction, and a fraction within a float's rounding of 1 (a body one growth step
+            // from adult, a newborn whose investment rounds to whole) gives a linear scale that
+            // rounds to exactly 1f — and a copy at 1f has every number the adult has and none of
+            // its identity: World.Grow's ReferenceEquals reads it as not adult, and the
+            // checkpoint writer, whose contract is "the adult or one Scaled copy of it", refused
+            // it (round 45's first launch, 2026-09-22, three seeds at their first checkpoint
+            // with a bitten or grown body in the crowd). Returning the body itself changes no
+            // number downstream: the tissue of a copy at 1f and of the adult are the same
+            // arithmetic on the same extents.
+            if (linear == 1f) return this;
+
             shapes = shapes ?? PartShapeRegistry.Standard;
 
             var scaled = new Phenotype

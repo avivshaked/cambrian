@@ -46,7 +46,12 @@ namespace Evosim.Farm
         /// and this one is bumped beside it so the refusal happens at the file's header rather
         /// than a few hundred kilobytes in.
         /// </remarks>
-        public const int Version = 2;
+        /// <remarks>
+        /// 3 with the refusal split (2026-09-22 night, <c>World.StateVersion</c> 5): the row's
+        /// baselines carry two more counters, so a version-2 payload would put the first mouth
+        /// baseline where the split's second is read. Round 45's checkpoints are version 2.
+        /// </remarks>
+        public const int Version = 3;
 
         /// <summary>Bytes before the header's own fields.</summary>
         public const int MagicBytes = 12;

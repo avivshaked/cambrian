@@ -477,15 +477,25 @@ subagent and never in a shell loop.
    thread-identity fixture refused for the caps; re-recorded from a 20 s run of the
    build with the module rule at zero, `configHash 676c16483b32d787`, and the word
    `c9b0cabce249c1dd` did not move). Every `.ckpt` on disk is orphaned again by
-   `StateVersion` 4. **Round 45's three seeds are running** (`r45-s1..3`, launched
-   2026-09-22 20:58 local from `4300278`, `configHash 4e84dc9f1ac8ecf1`, `farmHash
-   e31fdeae…`, 8 threads each, three at once, 600 min wall; the header verified `mouth
-   hp=13 heal=0.01/s@1J reach=0.5 waste=0.2 prices atk=0.1 ink=0.1 prt=1 tgh=0.1
-   mut=0.005 · modules add=300 drop=50 after=100 mut=0.005 · water per link`, a
-   checkpoint every 2,500 s). Expected to end about 22:20 at round 44's pace, later if a
-   seed slows as 44's seed 1 did; then `scripts/reads/r45-read.py --arms r45-s1 r45-s2
-   r45-s3 --out logbook/specs/r45-read/clauses.tsv`, pictures from the last snapshots,
-   and 0114's read section.
+   `StateVersion` 4. **Round 45's first launch is void** (`runs/r45void-s1..3`, launched
+   20:58 from `4300278`, `configHash 4e84dc9f1ac8ecf1`): seed 3 ended `error` at its first
+   checkpoint (2,500 s) when the writer refused a body that was a copy of its adult at
+   scale exactly 1, and seeds 1 and 2 were stopped at 5,270 and 6,950 s before their next
+   (seed 2's manifest reads `running`: the same exception fired inside the stop's own
+   checkpoint). The owner then ruled (22:05): **no relaunch until the slowdown is solved.**
+   It is solved and regressed the same night (CLAUDE.md's gotcha): the contact grid's
+   cell followed the largest body, seed 1 grew a self-copying leaf 14.6 m long, and the
+   grid now enters a sphere in every cell it covers, exact and bit-identical (1.9 µs a
+   body-step on the ceiling crowd against 9.9). Landed with it: `Phenotype.Scaled(1f)` is
+   the body (the writer's fault), the module rule's refusals split by reason (`ref shape`,
+   `ref reserve`; `StateVersion` 5, `Checkpoint.Version` 3), and every snapshot row
+   carries the body's plan (`moduleCounts`, `lostPaths`) so the theatre and the bench draw
+   the body the run stepped. **The relaunch waits on one ruling**
+   (`fable-propose-body-reach.md`): a bound on a body's reach, recommended at 3 m as a
+   development guard rail, because nothing prices a part's size and a thin leaf grows
+   geometrically once the module gene lets it copy past its recursive limit. Then
+   `rounds/env-r45.ps1` (amended for the ruling), 0114's world section re-committed, three
+   seeds at 8 threads, the read as planned.
    Rung B's spec is drafted for the owner (`logbook/specs/scent-spec.md`, four
    questions in it, not built); C and D behind it.
 6. **The GPU port.** The probe ran clean alone on 2026-09-22 at 16:13 after the crash

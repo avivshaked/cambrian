@@ -202,6 +202,15 @@ here because a reader of the code would otherwise go looking for what the map pr
   development already applies to a genome that has never had the gene, and `DevelopmentTests`'
   recorded part counts are the check that it preserved the body.
 
+- **The refusal counter is split by reason, after round 44's read** (2026-09-22 night,
+  logbook/0113): `moduleAddsRefused` stays and is the sum of `moduleAddsRefusedForShape` (rule
+  5's test: no larger, cut by a limit, or folded under D101) and `moduleAddsRefusedForReserve`
+  (rule 2's last clause), both in `stats.jsonl`, with `ref shape` and `ref reserve` per window
+  appended after the mouth's seven columns. Round 44 read 22 to 1,255 refusals per add and could
+  not say which sieve bound. A count only; `WorldState.StateVersion` is 5 and
+  `Checkpoint.Version` 3 for the two fields, which is what orphans round 45's checkpoints from
+  this build.
+
 The regress: round 42's world at `EVOSIM_WATER_HOLD=0`, 3,000 s, 16 threads, with the module
 tunables at their defaults, against the double-accounts run that recorded it — 126 shared fields
 at each of 300 samples, identical, `alive`, `births`, `deaths`, `auditResidual`, `matterResidual`

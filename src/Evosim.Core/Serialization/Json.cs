@@ -119,6 +119,16 @@ namespace Evosim.Core
                 return this;
             }
 
+            /// <summary>An array as an item of the enclosing array — a row's list of paths.</summary>
+            public Writer BeginArray()
+            {
+                Separate();
+                _sb.Append('[');
+                _depth++;
+                _firstInScope.Push(true);
+                return this;
+            }
+
             public Writer EndArray()
             {
                 _depth--;

@@ -75,6 +75,8 @@ namespace Evosim.Farm
         private long _lastModuleAdds;
         private long _lastModuleDrops;
         private long _lastModuleAddsRefused;
+        private long _lastModuleAddsRefusedForShape;
+        private long _lastModuleAddsRefusedForReserve;
 
         // D106 items 1, 3 and 4's four windows, on the same rule.
         private long _lastPartsKilled;
@@ -141,6 +143,8 @@ namespace Evosim.Farm
             w.Write(_lastModuleAdds);
             w.Write(_lastModuleDrops);
             w.Write(_lastModuleAddsRefused);
+            w.Write(_lastModuleAddsRefusedForShape);
+            w.Write(_lastModuleAddsRefusedForReserve);
 
             w.Write(_lastPartsKilled);
             w.Write(_lastBodiesEaten);
@@ -181,6 +185,8 @@ namespace Evosim.Farm
             _lastModuleAdds = r.ReadInt64();
             _lastModuleDrops = r.ReadInt64();
             _lastModuleAddsRefused = r.ReadInt64();
+            _lastModuleAddsRefusedForShape = r.ReadInt64();
+            _lastModuleAddsRefusedForReserve = r.ReadInt64();
 
             _lastPartsKilled = r.ReadInt64();
             _lastBodiesEaten = r.ReadInt64();
@@ -399,6 +405,8 @@ namespace Evosim.Farm
             long moduleAddsWindow = world.ModuleAdds - _lastModuleAdds;
             long moduleDropsWindow = world.ModuleDrops - _lastModuleDrops;
             long moduleRefusedWindow = world.ModuleAddsRefused - _lastModuleAddsRefused;
+            long moduleRefusedShapeWindow = world.ModuleAddsRefusedForShape - _lastModuleAddsRefusedForShape;
+            long moduleRefusedReserveWindow = world.ModuleAddsRefusedForReserve - _lastModuleAddsRefusedForReserve;
             long modulesStanding = world.ModulesStanding;
             double indeterminateShare = world.IndeterminateShare;
 
@@ -699,6 +707,8 @@ namespace Evosim.Farm
                 .Field("moduleAdds", world.ModuleAdds)
                 .Field("moduleDrops", world.ModuleDrops)
                 .Field("moduleAddsRefused", world.ModuleAddsRefused)
+                .Field("moduleAddsRefusedForShape", world.ModuleAddsRefusedForShape)
+                .Field("moduleAddsRefusedForReserve", world.ModuleAddsRefusedForReserve)
                 .Field("indeterminateShare", indeterminateShare)
                 .Field("moduleRebuilds", sim.ModuleRebuilds)
 
@@ -902,6 +912,10 @@ namespace Evosim.Farm
                 bodiesEatenWindow.ToString(c),
                 corpsesEatenWindow.ToString(c),
                 healingWindow.ToString("0.###", c),
+
+                // The refusal split, appended after the mouth's seven (logbook/0113's read).
+                moduleRefusedShapeWindow.ToString(c),
+                moduleRefusedReserveWindow.ToString(c),
             };
 
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));
@@ -927,6 +941,8 @@ namespace Evosim.Farm
             _lastModuleAdds = world.ModuleAdds;
             _lastModuleDrops = world.ModuleDrops;
             _lastModuleAddsRefused = world.ModuleAddsRefused;
+            _lastModuleAddsRefusedForShape = world.ModuleAddsRefusedForShape;
+            _lastModuleAddsRefusedForReserve = world.ModuleAddsRefusedForReserve;
             _lastPartsKilled = world.PartsKilled;
             _lastBodiesEaten = world.BodiesEaten;
             _lastCorpsesEaten = world.CorpsesEaten;
@@ -966,7 +982,14 @@ namespace Evosim.Farm
             {
                 foreach (Organism creature in world.Living)
                 {
-                    writer.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
+                    // With the body's own plan beside the genome (2026-09-22 night): the module
+                    // counts and the parts a bite took, so a picture drawn from the row is the
+                    // body the run was stepping and not the genome's minimum. Round 44 seed 1's
+                    // fourteen-metre leaf was invisible in every picture for want of them
+                    // (logbook/0113's read).
+                    writer.Write(GenomeJson.Write(
+                        creature.Genome, indent: false, id: creature.Id,
+                        moduleCounts: creature.ModuleCounts, lostPartPaths: creature.LostPartPaths));
                 }
             }
         }

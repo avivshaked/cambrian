@@ -561,6 +561,29 @@ namespace Evosim.Core.Tests
             Assert.Equal(1f, p.LitAreaFactor(capOn: false));
         }
 
+        /// <summary>
+        /// A scale of exactly 1 is the body itself, not a copy that reads as one: every caller
+        /// takes the cube root of a volume fraction, and a fraction within a float's rounding of
+        /// 1 gives a linear scale of exactly 1f. A copy at 1f has the adult's every number and none
+        /// of its identity — World.Grow's ReferenceEquals reads it as not adult and the checkpoint
+        /// writer refused it (round 45's first launch, 2026-09-22). Pinned here so the identity
+        /// stays load-bearing.
+        /// </summary>
+        [Fact]
+        public void ScaledByExactlyOneIsTheSameBody()
+        {
+            Phenotype adult = Developer.Develop(Fixtures.SingleLeaf());
+
+            Assert.Same(adult, adult.Scaled(1f));
+            Assert.NotSame(adult, adult.Scaled(0.99999f));
+
+            // The fraction a body one growth step from adult reaches: its cube root rounds to 1f
+            // in single precision, and the body must be the adult and not a copy.
+            float linear = (float)System.Math.Pow(1d - 1e-9d, 1d / 3d);
+            Assert.Equal(1f, linear);
+            Assert.Same(adult, adult.Scaled(linear));
+        }
+
         [Fact]
         public void AScaledBodysSilhouetteScalesWithTheSquareOfItsLength()
         {

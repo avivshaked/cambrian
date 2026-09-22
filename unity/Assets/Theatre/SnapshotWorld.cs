@@ -610,6 +610,14 @@ namespace Evosim.Theatre
             return true;
         }
 
+        /// <summary>Two developer paths name the same part — <c>World.DevelopPlan</c>'s test.</summary>
+        private static bool SamePath(int[] a, int[] b)
+        {
+            if (a == null || b == null || a.Length != b.Length) return false;
+            for (int i = 0; i < a.Length; i++) if (a[i] != b[i]) return false;
+            return true;
+        }
+
         private void Build(Pending pending)
         {
             Genome genome;
@@ -650,8 +658,42 @@ namespace Evosim.Theatre
 
             try
             {
-                phenotype = Developer.Develop(
-                    genome, Record.Config.Development, null, Record.Config.Shapes);
+                // The body's own plan, when the row carries it (the farm writes the module counts
+                // and the bitten-off part paths beside the genome from 2026-09-22 night): a row
+                // without them is developed at the genome's minimum, which is every earlier
+                // recording and what hid round 44 seed 1's fourteen-metre leaf from the pictures.
+                int[] counts = GenomeJson.ReadModuleCounts(_rows[pending.Row]);
+                List<int[]> lost = GenomeJson.ReadLostPartPaths(_rows[pending.Row]);
+
+                if (counts == null && lost == null)
+                {
+                    phenotype = Developer.Develop(
+                        genome, Record.Config.Development, null, Record.Config.Shapes);
+                }
+                else
+                {
+                    var paths = new List<int[]>();
+                    phenotype = Developer.Develop(
+                        genome, Record.Config.Development, null, Record.Config.Shapes, counts, paths);
+
+                    if (lost != null && lost.Count > 0)
+                    {
+                        var drop = new bool[phenotype.PartCount];
+                        bool any = false;
+                        for (int i = 0; i < phenotype.PartCount; i++)
+                        {
+                            foreach (int[] path in lost)
+                            {
+                                if (!SamePath(paths[i], path)) continue;
+                                drop[i] = true;
+                                any = true;
+                                break;
+                            }
+                        }
+
+                        if (any) phenotype = phenotype.WithoutSubtrees(drop, out _);
+                    }
+                }
             }
             catch (Exception e)
             {

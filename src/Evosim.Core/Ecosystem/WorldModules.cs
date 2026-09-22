@@ -49,9 +49,27 @@ namespace Evosim.Core
         /// reserve and asks again at the next one, so a handful of plants standing against
         /// D101's test produce a large number over a run. It is read against
         /// <see cref="ModuleAdds"/> in the same window and never as a level — which is exactly
-        /// what round 44's H4 asks of it (logbook/0113).
+        /// what round 44's H4 asks of it (logbook/0113). It is the sum of the two below.
         /// </remarks>
         public long ModuleAddsRefused { get; private set; }
+
+        /// <summary>
+        /// The refusals of rule 5's shape test: the candidate body was no larger, was cut by the
+        /// part or depth limit, or stood inside itself under D101. Cumulative.
+        /// </summary>
+        /// <remarks>
+        /// Round 44 counted 22 to 1,255 refusals per add with one counter for two reasons and
+        /// could not say which sieve bound (logbook/0113's read); this and
+        /// <see cref="ModuleAddsRefusedForReserve"/> are that split. A count only: the rule's
+        /// choice and the trajectory are untouched.
+        /// </remarks>
+        public long ModuleAddsRefusedForShape { get; private set; }
+
+        /// <summary>
+        /// The refusals of rule 2's last clause: the body passed the shape test and could not
+        /// pay the module's tissue from its reserve. Cumulative.
+        /// </summary>
+        public long ModuleAddsRefusedForReserve { get; private set; }
 
         /// <summary>
         /// Living indeterminate modules beyond the genome minimum, summed — rule 8's
@@ -236,6 +254,7 @@ namespace Evosim.Core
                  adult.SelfOverlappingPairs(Config.SelfOverlapDepthFraction) > 0))
             {
                 ModuleAddsRefused++;
+                ModuleAddsRefusedForShape++;
                 return false;
             }
 
@@ -253,6 +272,7 @@ namespace Evosim.Core
             if (spend > creature.Energy)
             {
                 ModuleAddsRefused++;
+                ModuleAddsRefusedForReserve++;
                 return false;
             }
 

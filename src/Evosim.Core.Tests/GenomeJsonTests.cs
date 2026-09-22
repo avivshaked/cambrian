@@ -70,6 +70,39 @@ namespace Evosim.Core.Tests
             }
         }
 
+        /// <summary>
+        /// A snapshot row can carry the body's own plan beside the genome — the module counts and
+        /// the parts a bite took — and the genome reader is untouched by it. Written from 2026-09-22
+        /// night so that a picture drawn from a row is the body the run was stepping (round 44
+        /// seed 1's fourteen-metre leaf was invisible in every picture for want of it).
+        /// </summary>
+        [Fact]
+        public void ARowCanCarryTheBodysPlanBesideTheGenome()
+        {
+            Genome genome = GenomeFactory.Random(new Rng(7));
+            var counts = new int[genome.Nodes.Count];
+            for (int i = 0; i < counts.Length; i++) counts[i] = genome.Nodes[i].RecursiveLimit + i;
+            var lost = new System.Collections.Generic.List<int[]> { new[] { 0, 0 }, new[] { 1, 0, 2, 1 } };
+
+            string row = GenomeJson.Write(genome, id: 42, moduleCounts: counts, lostPartPaths: lost);
+
+            Assert.DoesNotContain("\n", row);
+            Assert.Equal(42L, GenomeJson.ReadId(row));
+            Assert.Equal(counts, GenomeJson.ReadModuleCounts(row));
+            Assert.Equal(lost, GenomeJson.ReadLostPartPaths(row));
+            Assert.Equal(GenomeJson.Write(genome), GenomeJson.Write(GenomeJson.Read(row)));
+
+            // A row without the plan reads as none, which is every earlier recording.
+            string bare = GenomeJson.Write(genome, id: 42);
+            Assert.Null(GenomeJson.ReadModuleCounts(bare));
+            Assert.Null(GenomeJson.ReadLostPartPaths(bare));
+
+            // Empty is omitted, not written as an empty array: a body that never moved a count and
+            // never lost a part carries nothing.
+            Assert.Equal(bare, GenomeJson.Write(genome, id: 42, moduleCounts: new int[0],
+                                                lostPartPaths: new System.Collections.Generic.List<int[]>()));
+        }
+
         [Fact]
         public void ACompactGenomeIsExactlyOneLine()
         {

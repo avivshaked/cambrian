@@ -600,6 +600,11 @@ namespace Evosim.Farm
             // stats.jsonl carries the cumulative totals a reader differences.
             "attack %", "intake %", "prot %",
             "killed", "eaten", "corpse eat", "heal J",
+
+            // The module rule's refusals by reason, per window, appended after round 44's read
+            // (logbook/0113): the shape test (no larger, cut by a limit, or folded under D101)
+            // and the reserve short of the tissue. They sum to `mod refused`.
+            "ref shape", "ref reserve",
         };
     }
 

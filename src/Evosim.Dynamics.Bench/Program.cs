@@ -46,6 +46,12 @@ namespace Evosim.Dynamics.Bench
             int paceSteps = 2000;
             int warmup = 200;
             int[] threadCounts = { 1, 2, 4, 8, 16, 24 };
+            int recordAt = -1;           // --at: the recorded second the record mode rebuilds
+            double cellOverride = 0;     // --cell: a contact-grid cell in place of the rule
+            int recordSteps = 300;
+            string configOverride = null;   // --config: a config.json this build reads, for a run whose own it refuses
+            bool modulesAtMax = false;      // --modules max: develop every indeterminate node at its ceiling
+            long dumpId = -1;               // --dump <id>: print one rebuilt body part by part
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -53,6 +59,15 @@ namespace Evosim.Dynamics.Bench
                 {
                     case "--run": run = args[++i]; break;
                     case "--snapshot": snapshot = args[++i]; break;
+                    case "--at":
+                        recordAt = int.Parse(args[++i], CultureInfo.InvariantCulture);
+                        snapshot = recordAt.ToString("000000000", CultureInfo.InvariantCulture) + ".jsonl";
+                        break;
+                    case "--config": configOverride = args[++i]; break;
+                    case "--modules": modulesAtMax = args[++i] == "max"; break;
+                    case "--dump": dumpId = long.Parse(args[++i], CultureInfo.InvariantCulture); break;
+                    case "--cell": cellOverride = double.Parse(args[++i], CultureInfo.InvariantCulture); break;
+                    case "--record-steps": recordSteps = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
                     case "--bodies": bodies = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
                     case "--genomes": genomeLimit = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
                     case "--mode": mode = args[++i]; break;
@@ -81,7 +96,10 @@ namespace Evosim.Dynamics.Bench
                 }
             }
 
-            string configPath = Path.Combine(run, "config.json");
+            // A run recorded before a tunable has a config this build refuses (CLAUDE.md's rule);
+            // the record mode can still rebuild its crowd from a config of the same world written
+            // by this build, which is what --config names. The hash line below says which was read.
+            string configPath = configOverride ?? Path.Combine(run, "config.json");
             string snapshotPath = Path.Combine(run, "snapshots", snapshot);
 
             RunConfig config = RunConfigJson.Read(File.ReadAllText(configPath), out string mismatch);
@@ -117,6 +135,18 @@ namespace Evosim.Dynamics.Bench
             Console.WriteLine($"  developed {developed.Count}, refused {undeveloped}");
             Console.WriteLine(Describe(developed));
             Console.WriteLine();
+
+            if (mode == "record")
+            {
+                if (recordAt < 0)
+                {
+                    Console.Error.WriteLine("--mode record needs --at <recorded second>");
+                    return 2;
+                }
+
+                Record(config, run, recordAt, threadCounts, warmup, recordSteps, cellOverride, modulesAtMax, dumpId);
+                return 0;
+            }
 
             if (mode == "all" || mode == "stability")
             {
@@ -527,6 +557,287 @@ namespace Evosim.Dynamics.Bench
                               $"({steps * dt:0.#} s), {developed.Count} genomes");
             Console.WriteLine($"    lost {lost} of {developed.Count}");
             foreach (string line in lines) Console.WriteLine(line);
+            Console.WriteLine();
+        }
+
+        // ---------------------------------------------------------------- (e) a recorded crowd
+
+        /// <summary>
+        /// The crowd a run recorded at one second, rebuilt where it stood: every living body's
+        /// genome from the snapshot at that second, its root pose and joint angles from
+        /// <c>poses.jsonl</c>, developed by Core and placed by the solver. Then what the contact
+        /// grid makes of it and what a step costs, with the contact on, off, and on a forced cell.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>An approximation of the recorded crowd, and the entry says where.</b> A snapshot
+        /// holds genomes and not module counts, so an indeterminate body is developed at its
+        /// genome minimum, which is smaller than the chain the run was stepping; and no row holds
+        /// how far a body had grown, so every body is at adult size. The first understates a
+        /// module chain's reach, the second overstates a newborn's. Where the recorded joint
+        /// count disagrees with the developed body's the angles are left at rest and the
+        /// mismatch is counted.
+        /// </para>
+        /// <para>
+        /// Built for round 44 seed 1's slowdown (logbook/0113): the solver's cost per body-step
+        /// rose 7.6-fold with the overlap census and not with the link count, and no checkpoint
+        /// existed to profile from.
+        /// </para>
+        /// </remarks>
+        private static void Record(
+            RunConfig config, string run, int at, int[] threadCounts, int warmup, int steps,
+            double cellOverride, bool modulesAtMax, long dumpId)
+        {
+            string snapshotPath = Path.Combine(
+                run, "snapshots", at.ToString("000000000", CultureInfo.InvariantCulture) + ".jsonl");
+
+            var genomes = new Dictionary<long, Genome>();
+            var recordedCounts = new Dictionary<long, int[]>();
+            var recordedLost = new Dictionary<long, List<int[]>>();
+            int refused = 0, withPlan = 0;
+            foreach (string line in File.ReadLines(snapshotPath))
+            {
+                if (line.Length == 0) continue;
+                try
+                {
+                    long id = GenomeJson.ReadId(line);
+                    genomes[id] = GenomeJson.Read(line);
+
+                    // The body's own plan, on a row the farm wrote with it (2026-09-22 night).
+                    int[] counts = GenomeJson.ReadModuleCounts(line);
+                    List<int[]> lost = GenomeJson.ReadLostPartPaths(line);
+                    if (counts != null) recordedCounts[id] = counts;
+                    if (lost != null) recordedLost[id] = lost;
+                    if (counts != null || lost != null) withPlan++;
+                }
+                catch (Exception) { refused++; }
+            }
+
+            string marker = "\"t\":" + at.ToString(CultureInfo.InvariantCulture) + ",";
+            JsonNode frame = null;
+            foreach (string line in File.ReadLines(Path.Combine(run, "poses.jsonl")))
+            {
+                int head = line.Length < 24 ? line.Length : 24;
+                if (line.IndexOf(marker, 0, head, StringComparison.Ordinal) < 0) continue;
+                frame = Json.Parse(line);
+                break;
+            }
+
+            if (frame == null)
+            {
+                Console.Error.WriteLine("no poses.jsonl row at t=" + at);
+                return;
+            }
+
+            JsonNode bodies = frame["bodies"];
+
+            Console.WriteLine($"--- record: {run} at {at} s" + (modulesAtMax ? " (indeterminate nodes at their ceiling)" : withPlan > 0 ? " (module counts as recorded)" : " (module counts at the genome minimum)"));
+            Console.WriteLine($"    genomes {genomes.Count} (refused {refused}, {withPlan} with a recorded plan), recorded bodies {bodies.Count}");
+
+            // Developed once and shared by every world built below, as the farm shares an adult.
+            var plans = new List<(long id, Phenotype adult, Vec3 p, QuatD r, double[] q)>();
+            int missing = 0, undeveloped = 0, dofMismatch = 0;
+
+            for (int i = 0; i < bodies.Count; i++)
+            {
+                JsonNode body = bodies[i];
+                long id = (long)body["id"].AsDouble();
+
+                if (!genomes.TryGetValue(id, out Genome genome)) { missing++; continue; }
+
+                // The snapshot holds no module counts. At the genome minimum the body is what a
+                // determinate lineage grows; at the ceiling it is the largest chain the rule could
+                // have built, an upper bound on the reach the run's contact grid saw.
+                int[] counts = null;
+                recordedCounts.TryGetValue(id, out counts);
+                if (modulesAtMax)
+                {
+                    counts = new int[genome.Nodes.Count];
+                    for (int n = 0; n < counts.Length; n++)
+                    {
+                        MorphNode node = genome.Nodes[n];
+                        counts[n] = node.Growth == ModuleGrowth.Indeterminate
+                            ? System.Math.Max(node.MaxModules, node.RecursiveLimit)
+                            : node.RecursiveLimit;
+                    }
+                }
+
+                Phenotype adult;
+                try
+                {
+                    var paths = new List<int[]>();
+                    adult = Developer.Develop(genome, config.Development, null, config.Shapes, counts, paths);
+
+                    if (recordedLost.TryGetValue(id, out List<int[]> lost) && lost.Count > 0)
+                    {
+                        var drop = new bool[adult.PartCount];
+                        bool any = false;
+                        for (int k = 0; k < adult.PartCount; k++)
+                        {
+                            foreach (int[] path in lost)
+                            {
+                                if (paths[k].Length != path.Length) continue;
+                                bool same = true;
+                                for (int step = 0; step < path.Length && same; step++) same = paths[k][step] == path[step];
+                                if (!same) continue;
+                                drop[k] = true;
+                                any = true;
+                                break;
+                            }
+                        }
+                        if (any) adult = adult.WithoutSubtrees(drop, out _);
+                    }
+                }
+                catch (Exception) { undeveloped++; continue; }
+
+                JsonNode p = body["p"], r = body["r"], q = body["q"];
+                var angles = new double[q.Count];
+                for (int d = 0; d < angles.Length; d++) angles[d] = q[d].AsDouble();
+
+                plans.Add((
+                    id, adult,
+                    new Vec3(p[0].AsDouble(), p[1].AsDouble(), p[2].AsDouble()),
+                    new QuatD(r[0].AsDouble(), r[1].AsDouble(), r[2].AsDouble(), r[3].AsDouble()),
+                    angles));
+            }
+
+            Console.WriteLine($"    rebuilt {plans.Count}: no genome {missing}, undeveloped {undeveloped}");
+
+            if (dumpId >= 0)
+            {
+                foreach ((long id, Phenotype adult, Vec3 p, QuatD r, double[] q) in plans)
+                {
+                    if (id != dumpId) continue;
+                    Genome g = genomes[id];
+                    Console.WriteLine($"    body {id}: adultScale {g.AdultScale:0.###}, {g.Nodes.Count} nodes, {adult.PartCount} parts, root at ({p.X:0.##}, {p.Y:0.##}, {p.Z:0.##})");
+                    for (int n = 0; n < g.Nodes.Count; n++)
+                    {
+                        MorphNode node = g.Nodes[n];
+                        Console.WriteLine($"      node {n}: {node.CellTypeId} {node.ShapeId} growth {node.Growth} limit {node.RecursiveLimit} maxModules {node.MaxModules} dims ({node.Dimensions.X:0.###}, {node.Dimensions.Y:0.###}, {node.Dimensions.Z:0.###}) edges {node.Edges.Count}");
+                    }
+                    for (int i = 0; i < adult.PartCount; i++)
+                    {
+                        PhenotypePart part = adult.Parts[i];
+                        Quat rot = part.Rotation;
+                        Console.WriteLine($"      part {i,2}: node {part.SourceNode} parent {part.ParentIndex} depth {part.Depth} {part.JointType} at ({part.Position.X:0.###}, {part.Position.Y:0.###}, {part.Position.Z:0.###}) half-extents ({part.HalfExtents.X:0.###}, {part.HalfExtents.Y:0.###}, {part.HalfExtents.Z:0.###}) rot ({rot.X:0.####}, {rot.Y:0.####}, {rot.Z:0.####}, {rot.W:0.####}){(part.Mirrored ? " mirrored" : "")}");
+                    }
+                }
+            }
+
+            DynamicsWorld Build(int threads, bool contact, bool instrument, double cell)
+            {
+                SolverConfig solver = Configure(config, 0.01);
+                solver.CreatureContact = contact;
+                solver.ContactInstrument = instrument;
+                solver.ContactEvents = instrument;
+
+                var world = new DynamicsWorld(solver) { Threads = threads, ContactCellOverrideMetres = cell };
+                dofMismatch = 0;
+
+                foreach ((long id, Phenotype adult, Vec3 p, QuatD r, double[] q) in plans)
+                {
+                    var creature = new Creature((int)id, adult, solver, config.Shapes);
+                    creature.PlaceAt(p, r);
+
+                    if (q.Length == creature.Dof)
+                    {
+                        Array.Copy(q, creature.Q, q.Length);
+                        Kinematics.Refresh(creature);
+                        creature.RefreshContactSphere();
+                        creature.CommitContactSphere();
+                    }
+                    else dofMismatch++;
+
+                    world.AddInIdOrder(creature);
+                }
+
+                return world;
+            }
+
+            // The crowd as the grid sees it, on the rule's cell and on the forced one.
+            DynamicsWorld probe = Build(1, true, true, cellOverride);
+            Console.WriteLine($"    joint angles applied to {plans.Count - dofMismatch}, at rest for {dofMismatch} (dof mismatch)");
+
+            var radii = new List<double>();
+            int links = 0, dof = 0, largestLinks = 0;
+            long largestId = -1;
+            double largest = 0;
+            foreach (Creature c in probe.Creatures)
+            {
+                radii.Add(c.ContactRadius);
+                links += c.Links;
+                dof += c.Dof;
+                if (c.ContactRadius > largest) { largest = c.ContactRadius; largestId = c.Id; largestLinks = c.Links; }
+            }
+            radii.Sort();
+            double At(double f) => radii.Count == 0 ? 0 : radii[(int)System.Math.Min(radii.Count - 1, f * radii.Count)];
+
+            Console.WriteLine($"    links per body {(double)links / plans.Count:0.##}, dof per body {(double)dof / plans.Count:0.###}");
+            Console.WriteLine($"    bounding radius: p50 {At(0.5):0.###} m, p90 {At(0.9):0.###}, p99 {At(0.99):0.###}, " +
+                              $"max {largest:0.###} (id {largestId}, {largestLinks} links)");
+
+            var grid = new ContactGrid();
+            grid.Build(probe.Creatures, cellOverride);
+            int[] scratch = new int[64];
+            long neighbours = 0, mostNeighbours = 0;
+            for (int i = 0; i < probe.Creatures.Count; i++)
+            {
+                int n = grid.Neighbours(i, ref scratch);
+                neighbours += n;
+                if (n > mostNeighbours) mostNeighbours = n;
+            }
+
+            Console.WriteLine($"    grid cell {grid.CellSize:0.###} m ({(cellOverride > 0 ? "forced" : "2 x mean radius")}, {grid.Entries} entries): " +
+                              $"neighbours per body mean {(double)neighbours / probe.Creatures.Count:0.#}, max {mostNeighbours}");
+
+            probe.Step();
+            Console.WriteLine($"    first step: overlapping pairs {probe.OverlapPairsThisStep}, " +
+                              $"bodies touching {probe.OverlapBodiesThisStep}, at bed or glass {probe.BedOrGlassBodiesThisStep}");
+            Console.WriteLine();
+
+            Console.WriteLine($"    {warmup} warm-up then {steps} timed steps, dt 0.01");
+            Console.WriteLine("    variant                    threads   us/body-step   steps/s   x real time   pairs/step");
+
+            void Time(string name, bool contact, bool instrument, double cell)
+            {
+                foreach (int threads in threadCounts)
+                {
+                    DynamicsWorld world = Build(threads, contact, instrument, cell);
+                    int bodyCount = world.Creatures.Count;
+
+                    for (int step = 0; step < warmup; step++) world.Step();
+
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+
+                    long pairsBefore = world.OverlapPairs;
+                    var watch = Stopwatch.StartNew();
+                    for (int step = 0; step < steps; step++) world.Step();
+                    watch.Stop();
+
+                    double micros = watch.Elapsed.TotalMilliseconds * 1000.0;
+                    double stepsPerSecond = steps / watch.Elapsed.TotalSeconds;
+
+                    Console.WriteLine(
+                        $"    {name,-26} {threads,7}   {micros / ((double)steps * bodyCount),12:0.###}   " +
+                        $"{stepsPerSecond,7:0}   {stepsPerSecond * 0.01,11:0.##}   " +
+                        $"{(world.OverlapPairs - pairsBefore) / (double)steps,10:0.#}");
+                }
+            }
+
+            Time("contact on, instrument on", true, true, cellOverride);
+            Time("contact on, instrument off", true, false, cellOverride);
+            Time("contact off", false, false, cellOverride);
+
+            if (cellOverride <= 0)
+            {
+                foreach (double cell in new[] { 2.0, 4.0, 8.0, 12.0 })
+                {
+                    Time($"cell forced {cell:0} m", true, true, cell);
+                }
+            }
+
             Console.WriteLine();
         }
 

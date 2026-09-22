@@ -88,13 +88,48 @@ namespace Evosim.Core
         /// not <see cref="NoId"/>, and omitted otherwise: a genome on its own (a founder pool
         /// entry, an inoculum, a test fixture) belongs to no organism and must not pretend to.
         /// </param>
-        public static string Write(Genome genome, bool indent = false, long id = NoId)
+        /// <param name="moduleCounts">
+        /// The organism's per-node module counts (<see cref="Evosim.Core.Organism.ModuleCounts"/>),
+        /// written as <c>moduleCounts</c> when given: the half of a body's plan the genome does
+        /// not carry, so that a body drawn from the row is the body the run was stepping and not
+        /// the genome's minimum. Omitted for a genome on its own, and for a body that has never
+        /// moved a count. Not read by <see cref="Read"/>, which returns the genome; a reader that
+        /// wants the plan asks <see cref="ReadModuleCounts"/>.
+        /// </param>
+        /// <param name="lostPartPaths">
+        /// The developer's paths to the parts a bite has taken off this body
+        /// (<see cref="Evosim.Core.Organism.LostPartPaths"/>), written as <c>lostPaths</c> when
+        /// given, for the same reason; <see cref="ReadLostPartPaths"/> reads them back.
+        /// </param>
+        public static string Write(
+            Genome genome, bool indent = false, long id = NoId,
+            int[] moduleCounts = null, IReadOnlyList<int[]> lostPartPaths = null)
         {
             if (genome == null) throw new ArgumentNullException(nameof(genome));
 
             var w = new Json.Writer(indent);
             w.BeginObject();
             if (id != NoId) w.Field("id", id);
+
+            if (moduleCounts != null && moduleCounts.Length > 0)
+            {
+                w.BeginArray("moduleCounts");
+                foreach (int count in moduleCounts) w.Value(count);
+                w.EndArray();
+            }
+
+            if (lostPartPaths != null && lostPartPaths.Count > 0)
+            {
+                w.BeginArray("lostPaths");
+                foreach (int[] path in lostPartPaths)
+                {
+                    w.BeginArray();
+                    foreach (int step in path) w.Value(step);
+                    w.EndArray();
+                }
+                w.EndArray();
+            }
+
             w.Field("format", FormatVersion);
             w.Field("root", genome.RootIndex);
 
@@ -174,6 +209,39 @@ namespace Evosim.Core
         {
             JsonNode root = Json.Parse(text);
             return root.Has("id") ? (long)root["id"].AsDouble() : NoId;
+        }
+
+        /// <summary>
+        /// The row's <c>moduleCounts</c>, or null on a row without them — every recording before
+        /// 2026-09-22 night, and any body that never moved a count.
+        /// </summary>
+        public static int[] ReadModuleCounts(string text)
+        {
+            JsonNode root = Json.Parse(text);
+            if (!root.Has("moduleCounts")) return null;
+
+            JsonNode array = root["moduleCounts"];
+            var counts = new int[array.Count];
+            for (int i = 0; i < counts.Length; i++) counts[i] = array[i].AsInt();
+            return counts;
+        }
+
+        /// <summary>The row's <c>lostPaths</c>, or null on a row without them.</summary>
+        public static List<int[]> ReadLostPartPaths(string text)
+        {
+            JsonNode root = Json.Parse(text);
+            if (!root.Has("lostPaths")) return null;
+
+            JsonNode array = root["lostPaths"];
+            var paths = new List<int[]>(array.Count);
+            for (int i = 0; i < array.Count; i++)
+            {
+                JsonNode one = array[i];
+                var path = new int[one.Count];
+                for (int step = 0; step < path.Length; step++) path[step] = one[step].AsInt();
+                paths.Add(path);
+            }
+            return paths;
         }
 
         // ---------------------------------------------------------------- nodes

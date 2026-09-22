@@ -15,14 +15,30 @@ namespace Evosim.Dynamics
     /// parallel phase, so a body's trajectory cannot depend on which thread reached it first.
     /// </para>
     /// <para>
-    /// <b>The cell is two of the largest radius</b>, so two spheres that touch at all are in
-    /// cells no more than one apart on every axis and the twenty-seven-cell neighbourhood is
-    /// exact rather than approximate.
+    /// <b>Every sphere is entered in every cell it covers, and a query walks the cells its own
+    /// sphere covers.</b> Two spheres that touch share a point, and the cell that point is in is
+    /// in both sphere's ranges, so the query is exact at any cell size. Until 2026-09-22 the grid
+    /// entered each sphere in one cell and made the cell two of the <i>largest</i> radius so
+    /// that the twenty-seven-cell neighbourhood was exact; round 44 seed 1 then grew module
+    /// chains with bounding radii of up to twenty metres in a tank fifty-three metres across,
+    /// the cell became the tank, every body was a neighbour of every other, and the solver's
+    /// cost per body-step rose seven- to thirtyfold with the neighbour lists and their sort
+    /// (logbook/0113's read; the bench's record mode is the measurement). The cell is now two of
+    /// the <i>mean</i> radius: a body of ordinary size covers one to eight cells, and a giant
+    /// covers as many as its size warrants and pays for its own reach rather than charging it to
+    /// the crowd.
+    /// </para>
+    /// <para>
+    /// <b>The pairs are the same pairs, in the same order.</b> A query's candidates are sorted
+    /// ascending and deduplicated, the caller's overlap test is unchanged, and the sum it takes
+    /// is over the same overlapping bodies in the same index order, so the force is the same
+    /// bits as the one-cell grid produced: every recording replays and the digest is unmoved at
+    /// every thread count.
     /// </para>
     /// <para>
     /// <b>Buckets are a compressed row, not a dictionary of lists.</b> Two counting passes and a
-    /// prefix sum fill two flat arrays that are reused from step to step, so the grid allocates
-    /// only when the population grows.
+    /// prefix sum fill flat arrays that are reused from step to step, so the grid allocates only
+    /// when the population, or the number of cells its spheres cover, grows.
     /// </para>
     /// </remarks>
     public sealed class ContactGrid
@@ -30,7 +46,8 @@ namespace Evosim.Dynamics
         private int[] _bucketStart = new int[1];
         private int[] _cursor = new int[1];
         private int[] _items = Array.Empty<int>();
-        private int[] _cell = Array.Empty<int>();     // 3 per creature
+        private int[] _lo = Array.Empty<int>();      // 3 per creature: the lowest cell its sphere covers
+        private int[] _hi = Array.Empty<int>();      // 3 per creature: the highest; hi < lo is not entered
         private int _mask;
         private double _cellSize = 1.0;
         private int _count;
@@ -39,22 +56,92 @@ namespace Evosim.Dynamics
 
         public double CellSize => _cellSize;
 
-        public void Build(IReadOnlyList<Creature> creatures)
+        /// <summary>The largest active bounding radius the last build saw, metres.</summary>
+        public double LargestRadius { get; private set; }
+
+        /// <summary>The mean active bounding radius the last build saw, metres; the cell is twice it.</summary>
+        public double MeanRadius { get; private set; }
+
+        /// <summary>Cell entries the last build made, summed over every sphere.</summary>
+        public int Entries { get; private set; }
+
+        /// <param name="cellOverride">
+        /// A cell size to use in place of the rule, metres; 0 is the rule. The bench's probe of
+        /// what the cell costs (logbook/0113's read of round 44 seed 1); no farm sets it.
+        /// </param>
+        public void Build(IReadOnlyList<Creature> creatures, double cellOverride = 0.0)
         {
             _creatures = creatures;
             _count = creatures.Count;
 
             if (_count == 0) return;
 
-            double largest = 0;
+            double largest = 0, sum = 0;
+            int active = 0;
             for (int i = 0; i < _count; i++)
             {
                 Creature body = creatures[i];
                 if (!body.ContactActive) continue;
                 if (body.ContactRadius > largest) largest = body.ContactRadius;
+                sum += body.ContactRadius;
+                active++;
             }
 
-            _cellSize = largest > 1e-6 ? 2.0 * largest : 1.0;
+            LargestRadius = largest;
+            MeanRadius = active > 0 ? sum / active : 0;
+
+            // Two of the mean radius, never under a quarter of a metre: the campaign's bodies
+            // are half a metre to two metres across the radius, so an ordinary body covers one
+            // to eight cells and a query reads a few dozen candidates.
+            double rule = MeanRadius > 0.125 ? 2.0 * MeanRadius : 0.25;
+            _cellSize = cellOverride > 0 ? cellOverride : rule;
+
+            if (_lo.Length < 3 * _count)
+            {
+                _lo = new int[3 * _count];
+                _hi = new int[3 * _count];
+            }
+
+            long entries = 0;
+            for (int i = 0; i < _count; i++)
+            {
+                Creature body = creatures[i];
+
+                if (!body.ContactActive)
+                {
+                    // Not entered and never a candidate: lo above hi on every axis.
+                    _lo[3 * i] = 1; _hi[3 * i] = 0;
+                    _lo[3 * i + 1] = 1; _hi[3 * i + 1] = 0;
+                    _lo[3 * i + 2] = 1; _hi[3 * i + 2] = 0;
+                    continue;
+                }
+
+                double r = body.ContactRadius;
+                Vec3 c = body.ContactCentre;
+
+                int lx = Floor((c.X - r) / _cellSize), hx = Floor((c.X + r) / _cellSize);
+                int ly = Floor((c.Y - r) / _cellSize), hy = Floor((c.Y + r) / _cellSize);
+                int lz = Floor((c.Z - r) / _cellSize), hz = Floor((c.Z + r) / _cellSize);
+
+                _lo[3 * i] = lx; _hi[3 * i] = hx;
+                _lo[3 * i + 1] = ly; _hi[3 * i + 1] = hy;
+                _lo[3 * i + 2] = lz; _hi[3 * i + 2] = hz;
+
+                entries += (long)(hx - lx + 1) * (hy - ly + 1) * (hz - lz + 1);
+            }
+
+            if (entries > int.MaxValue / 2)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"The contact grid would hold {entries} cell entries for {_count} bodies ") +
+                    FormattableString.Invariant($"at a cell of {_cellSize:0.###} m: a body's sphere is ") +
+                    "so far out of scale with the crowd's that the grid cannot hold it. A radius " +
+                    "that size is a diverged body, which the divergence check should have taken " +
+                    "out before this step.");
+            }
+
+            Entries = (int)entries;
 
             int buckets = 1;
             while (buckets < _count * 2) buckets <<= 1;
@@ -65,23 +152,18 @@ namespace Evosim.Dynamics
                 _bucketStart = new int[buckets + 1];
                 _cursor = new int[buckets + 1];
             }
-            if (_items.Length < _count) _items = new int[_count];
-            if (_cell.Length < 3 * _count) _cell = new int[3 * _count];
+            if (_items.Length < Entries) _items = new int[System.Math.Max(Entries, 2 * _items.Length)];
 
             Array.Clear(_bucketStart, 0, buckets + 1);
 
             for (int i = 0; i < _count; i++)
             {
-                Creature body = creatures[i];
-                int cx = Floor(body.ContactCentre.X / _cellSize);
-                int cy = Floor(body.ContactCentre.Y / _cellSize);
-                int cz = Floor(body.ContactCentre.Z / _cellSize);
-
-                _cell[3 * i] = cx;
-                _cell[3 * i + 1] = cy;
-                _cell[3 * i + 2] = cz;
-
-                _bucketStart[Hash(cx, cy, cz) & _mask]++;
+                for (int x = _lo[3 * i]; x <= _hi[3 * i]; x++)
+                for (int y = _lo[3 * i + 1]; y <= _hi[3 * i + 1]; y++)
+                for (int z = _lo[3 * i + 2]; z <= _hi[3 * i + 2]; z++)
+                {
+                    _bucketStart[Hash(x, y, z) & _mask]++;
+                }
             }
 
             int running = 0;
@@ -96,37 +178,47 @@ namespace Evosim.Dynamics
 
             for (int i = 0; i < _count; i++)
             {
-                int h = Hash(_cell[3 * i], _cell[3 * i + 1], _cell[3 * i + 2]) & _mask;
-                _items[_cursor[h]++] = i;
+                for (int x = _lo[3 * i]; x <= _hi[3 * i]; x++)
+                for (int y = _lo[3 * i + 1]; y <= _hi[3 * i + 1]; y++)
+                for (int z = _lo[3 * i + 2]; z <= _hi[3 * i + 2]; z++)
+                {
+                    _items[_cursor[Hash(x, y, z) & _mask]++] = i;
+                }
             }
         }
 
         /// <summary>
-        /// Fills <paramref name="into"/> with the indices of every creature whose cell is within
-        /// one of <paramref name="self"/>'s, itself excluded, sorted ascending.
+        /// Fills <paramref name="into"/> with the indices of every creature whose sphere covers
+        /// a cell that <paramref name="self"/>'s sphere covers, itself excluded, sorted ascending
+        /// and each once. Every body whose sphere touches <paramref name="self"/>'s is among them.
         /// </summary>
         public int Neighbours(int self, ref int[] into)
         {
             if (_count == 0) return 0;
 
-            int cx = _cell[3 * self], cy = _cell[3 * self + 1], cz = _cell[3 * self + 2];
+            int lx = _lo[3 * self], hx = _hi[3 * self];
+            int ly = _lo[3 * self + 1], hy = _hi[3 * self + 1];
+            int lz = _lo[3 * self + 2], hz = _hi[3 * self + 2];
             int found = 0;
 
-            for (int dx = -1; dx <= 1; dx++)
-            for (int dy = -1; dy <= 1; dy++)
-            for (int dz = -1; dz <= 1; dz++)
+            for (int x = lx; x <= hx; x++)
+            for (int y = ly; y <= hy; y++)
+            for (int z = lz; z <= hz; z++)
             {
-                int ax = cx + dx, ay = cy + dy, az = cz + dz;
-                int h = Hash(ax, ay, az) & _mask;
+                int h = Hash(x, y, z) & _mask;
 
                 for (int k = _bucketStart[h]; k < _bucketStart[h + 1]; k++)
                 {
                     int other = _items[k];
                     if (other == self) continue;
-                    if (_cell[3 * other] != ax || _cell[3 * other + 1] != ay ||
-                        _cell[3 * other + 2] != az)
+
+                    // A hash collision puts another cell's entries in this bucket; an entry is
+                    // this cell's only if the cell is inside that body's range.
+                    if (x < _lo[3 * other] || x > _hi[3 * other] ||
+                        y < _lo[3 * other + 1] || y > _hi[3 * other + 1] ||
+                        z < _lo[3 * other + 2] || z > _hi[3 * other + 2])
                     {
-                        continue;   // a hash collision, not a neighbour
+                        continue;
                     }
 
                     if (found == into.Length) Array.Resize(ref into, into.Length * 2);
@@ -134,17 +226,21 @@ namespace Evosim.Dynamics
                 }
             }
 
-            // Ascending, so the sum below is taken in id order however the buckets were laid
-            // out. Insertion sort: the neighbourhood of one body is tens of entries at most.
+            if (found < 2) return found;
+
+            // Ascending, so the caller's sum is taken in index order however the buckets were
+            // laid out; and once each, since a body covering several of self's cells was found
+            // in each of them.
+            Array.Sort(into, 0, found);
+
+            int unique = 1;
             for (int i = 1; i < found; i++)
             {
-                int value = into[i];
-                int j = i - 1;
-                while (j >= 0 && into[j] > value) { into[j + 1] = into[j]; j--; }
-                into[j + 1] = value;
+                if (into[i] == into[unique - 1]) continue;
+                into[unique++] = into[i];
             }
 
-            return found;
+            return unique;
         }
 
         public Creature At(int index) => _creatures[index];

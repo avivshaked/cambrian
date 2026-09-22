@@ -210,6 +210,10 @@ namespace Evosim.Core.Tests
             Assert.Equal(world.ModuleAdds, restored.ModuleAdds);
             Assert.Equal(world.ModuleDrops, restored.ModuleDrops);
             Assert.Equal(world.ModuleAddsRefused, restored.ModuleAddsRefused);
+            Assert.Equal(world.ModuleAddsRefusedForShape, restored.ModuleAddsRefusedForShape);
+            Assert.Equal(world.ModuleAddsRefusedForReserve, restored.ModuleAddsRefusedForReserve);
+            Assert.Equal(world.ModuleAddsRefusedForShape + world.ModuleAddsRefusedForReserve,
+                         world.ModuleAddsRefused);
             Assert.Equal(world.ModulesStanding, restored.ModulesStanding);
         }
 

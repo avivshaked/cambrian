@@ -61,7 +61,14 @@ namespace Evosim.Core
         /// history that nothing else can restore — a version-3 stream would put a half-eaten
         /// animal back whole, which is the same fault the module counts' bump was made for.
         /// </remarks>
-        public const int StateVersion = 4;
+        /// <remarks>
+        /// 5 with the refusal split (2026-09-22 night, after round 44's read): the module rule's
+        /// refusals are counted by reason, and the two cumulative counters join the world's so
+        /// that a continued run's windows are the unbroken run's. Round 45's checkpoints are
+        /// version 4 and are refused by this build; the farm program that wrote them
+        /// (`4300278`) reads them.
+        /// </remarks>
+        public const int StateVersion = 5;
 
         /// <summary>
         /// Writes the whole of the world's own state.
@@ -115,6 +122,8 @@ namespace Evosim.Core
             w.Write(ModuleAdds);
             w.Write(ModuleDrops);
             w.Write(ModuleAddsRefused);
+            w.Write(ModuleAddsRefusedForShape);
+            w.Write(ModuleAddsRefusedForReserve);
 
             // D106 items 1, 3 and 4's six, beside the module gene's three and for their reason:
             // a run continued from a checkpoint writes the same cumulative columns the unbroken
@@ -252,6 +261,8 @@ namespace Evosim.Core
             ModuleAdds = r.ReadInt64();
             ModuleDrops = r.ReadInt64();
             ModuleAddsRefused = r.ReadInt64();
+            ModuleAddsRefusedForShape = r.ReadInt64();
+            ModuleAddsRefusedForReserve = r.ReadInt64();
 
             PartsKilled = r.ReadInt64();
             BodiesEaten = r.ReadInt64();

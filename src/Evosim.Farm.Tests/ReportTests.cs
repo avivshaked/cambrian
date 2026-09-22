@@ -174,7 +174,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             Assert.Equal(Report.BaseColumns.Length + 4, report.Columns.Count);
             Assert.Equal("t (s)", report.Columns[0]);
-            Assert.Equal("heal J", report.Columns[Report.BaseColumns.Length - 1]);
+            Assert.Equal("ref reserve", report.Columns[Report.BaseColumns.Length - 1]);
             Assert.Equal("p0", report.Columns[Report.BaseColumns.Length]);
             Assert.Equal("p3", report.Columns[Report.BaseColumns.Length + 3]);
 
@@ -218,7 +218,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
         /// <summary>
         /// D106's twelve, appended at the end of the base set and in this order — the module
-        /// gene's five and then the mouth's seven.
+        /// gene's five and then the mouth's seven — and the refusal split's two after them.
         /// </summary>
         /// <remarks>
         /// <b>Appended, never inserted.</b> Every reader of a run report that is not
@@ -230,6 +230,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         {
             "modules", "mod add", "mod drop", "mod refused", "indet %",
             "attack %", "intake %", "prot %", "killed", "eaten", "corpse eat", "heal J",
+            "ref shape", "ref reserve",
         };
 
         /// <summary>

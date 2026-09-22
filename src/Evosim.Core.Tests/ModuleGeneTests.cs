@@ -370,6 +370,8 @@ namespace Evosim.Core.Tests
                 $"reserve {energy:0.####} -> {body.Energy:0.####} J");
 
             Assert.Equal(1L, world.ModuleAddsRefused);
+            Assert.Equal(1L, world.ModuleAddsRefusedForShape);
+            Assert.Equal(0L, world.ModuleAddsRefusedForReserve);
             Assert.Equal(0L, world.ModuleAdds);
             Assert.Equal(2, body.Phenotype.PartCount);
 
@@ -406,6 +408,8 @@ namespace Evosim.Core.Tests
             Assert.Equal(3, leaf.Phenotype.PartCount);
             Assert.Equal(2L, world.ModuleAdds);
             Assert.True(world.ModuleAddsRefused > 0L, "the part limit never refused anything");
+            Assert.Equal(world.ModuleAddsRefused, world.ModuleAddsRefusedForShape);
+            Assert.Equal(0L, world.ModuleAddsRefusedForReserve);
         }
 
         // ------------------------------------------------------- rule 6, the gene and its cost

@@ -1177,7 +1177,33 @@ actually verifying it.
   is the first the farm has slowed: physics cost per body-step rose 7.6-fold with
   `ovl/body` (0.026 to 0.82, 99% held) and not with links per body, so read `ovl/body`
   beside `x real time` on any seed that falls under 1x, and profile it from a checkpoint
-  (`EVOSIM_CHECKPOINT_EVERY`, from round 45's launcher).
+  (`EVOSIM_CHECKPOINT_EVERY`, from round 45's launcher). **The slowdown was the contact
+  grid's cell, and it is fixed** (2026-09-22 night, the bench's `--mode record`): the grid
+  entered each body's bounding sphere in one cell and sized the cell at two of the
+  *largest* radius, and seed 1's module chains, one a fan of seven leaves each 1.75 times
+  the last with the seventh 14.6 m long (`scratch/logs/giant-7597.txt`, drawn by
+  `scripts/plot-body.py`), took the largest radius to 21 m, the cell to 43 m in a 53 m
+  tank and every body's candidate list to the whole crowd: 9.9 µs a body-step against 0.33
+  on the same crowd at the genome minimum. The grid now enters a sphere in every cell it
+  covers at a cell of two mean radii, exact at any cell (two touching spheres share a
+  cell), sorted and deduplicated so the sum is the same sum in the same order: 1.9 µs on
+  the ceiling crowd, every digest unmoved, and a 3,000 s regress of `r45fix-s4` identical
+  in 141 fields at 300 samples with the lineage byte-equal. **A part's size is unbounded
+  above** (`MaxPartVolume` is a million cubic metres and thin sheets never reach it), so a
+  self-copying leaf whose edge scale mutates above 1 grows geometrically once the module
+  gene lets it copy past its recursive limit; the bound is a world rule in front of the
+  owner (`fable-propose-body-reach.md`). **The checkpoint writer refused a body that was a
+  copy of its adult at scale exactly 1** (round 45's first launch, three seeds within
+  7,000 s): a volume fraction within a float's rounding of 1 has a cube root of exactly
+  1f, and `Grow`, `AtTheSameFraction` and the newborn's scaling all built a copy that read
+  as "neither the adult nor scaled". `Phenotype.Scaled(1f)` now returns the body itself,
+  which changes no number (the regress above covers it). The three runs are
+  `runs/r45void-s1..3`; seed 2's manifest reads `running` because the exception fired
+  inside the stop's own checkpoint. **A snapshot row carries the body's plan from this
+  build** (`moduleCounts`, `lostPaths`, read by `GenomeJson.ReadModuleCounts` and
+  `ReadLostPartPaths`): the theatre's `-From snapshot` and the bench's record mode draw the
+  body the run stepped, and every earlier recording is drawn at the genome minimum, which
+  is why no picture of round 44 showed the fan.
 - **A blue screen beside a GPU probe was the file-system filter stack, and a minidump is
   readable without a debugger.** The one crash in this machine's log (2026-09-22, bugcheck
   0x3B) faulted in `FLTMGR.SYS` on a `dotnet.exe` thread, entered through the Xbox Gaming
