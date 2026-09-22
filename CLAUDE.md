@@ -1178,8 +1178,12 @@ actually verifying it.
   decision you need from me. I want you working all the time."). A status that lists open
   rulings among other news reads as information; the owner cannot tell the campaign has
   stopped on them. When the next step needs a ruling, lead with a line of the form "I am
-  blocked on <decision> from you", name the proposal file and the exact question, and say
-  what is being worked on meanwhile. Never end a turn idle while anything not gated
+  blocked on <decision> from you", and then put the decision in full, never in shorthand
+  (the owner, ten minutes later: "Give me the full topic with recommendations and
+  implications"): the topic in plain words for someone who has not read the proposal, the
+  recommendation and why, what each option implies for the record, the rounds, the machine
+  and the risk, and the exact question to answer. A pointer to a proposal file is not a
+  request for a ruling. Then say what is being worked on meanwhile. Never end a turn idle while anything not gated
   remains: loose ends, instruments, measurements, the round-gap changes that are a new
   realisation of every seed and land best while no arm runs, pre-registration drafts and
   ledger screens for the round that waits.
