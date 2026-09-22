@@ -387,17 +387,14 @@ old formats read-only.
 Agent work unless marked. Long steps run in the background under the session, never in a
 subagent and never in a shell loop.
 
-1. **The farm's tooling.** `run-arm.ps1` and `stop-arm.ps1` farm modes (`processId`,
-   `dynamicsHash`, the `STOP` file); `watch-round.py`, `analyse-arm.ps1` and
-   `scripts/reads/r41d-read.py` taught the renamed contact columns; `sweep-orphans.ps1`
-   excluding a farm run's launcher; the launcher named by full path to Git's `bash.exe`.
-2. **The theatre on the farm's record.** Done: `poses.jsonl` drawn by `-From snapshot`
-   (grown size still not recorded); package A; the Editor replay, which reads a cousin, so
-   **the state stream moves up here** (reordered 2026-09-22 by the agent on that finding):
-   a binary pose stream at a finer cadence than the sample, with the body fraction, that the
-   theatre plays back without simulating. Then:
-   and a replay that steps it in the Editor, faithful at any thread count. One Editor run to
-   verify `Mathf.Sin/Cos/Round` bits against `UnityFloatMath`.
+1. **Done: the farm's tooling.** `run-farm.ps1` and `stop-arm.ps1`'s farm mode, the
+   contact aliases in every read (`scripts/reads/contact_aliases.py`), `sweep-orphans.ps1`
+   and the launcher's full path to Git's `bash.exe`.
+2. **Done: the theatre on the farm's record and the owner's live play.** `-From snapshot`
+   draws `poses.jsonl` and the state stream; package A; the Editor replay reads a cousin
+   and says so; the live world on the new engine, checkpoints, the Runner's picker and
+   `theatre-snap.ps1 -FromCheckpoint`. Left: the UI strip and click-select in live mode,
+   and one Editor run to verify `Mathf.Sin/Cos/Round` bits against `UnityFloatMath`.
 3. **Done: the base round on the new engine** (round 43, logbook/0111). Left from it: `r41d-read.py`
    reading the sample interval from the rows; the farm's header printing D102's `axes v:h`.
 4. **The 10,000-creature look on the CPU**: a measurement, not a round. Ten times the area
@@ -407,9 +404,18 @@ subagent and never in a shell loop.
 5. **The animal kit and the floor's places** on the owner's rulings from
    `fable-propose-animal-kit.md`: the bite, `Eaten`, the Contact and Damage senses, then
    scent and the eyespot, then shelf, rock, seep and the anchoring cell.
-6. **The GPU port**, single precision, checked against the CPU reference at 1,000 bodies
-   (ILGPU or ComputeSharp spiked against Unity compute shaders); then scale, with binary
-   forms of the high-volume files and the theatre drawing from a state stream.
+6. **The GPU port.** The probe ran clean alone on 2026-09-22 at 16:13 after the crash
+   reading (`scratch/gpu-spike/probe`): ILGPU on CUDA sees the 4090 (SM_89, 128 SMs),
+   runs a kernel with a local array and a double kernel with transcendentals; ComputeSharp
+   on DX12 dispatches, reports doubles supported, and refuses a local array in a shader
+   (`CMPS0025`/`CMPS0032`), so a Featherstone step with its per-link spatial scratch is
+   ILGPU's to write. The fork the spike measures: the 4090 runs doubles at about a
+   sixty-fourth of its single rate, so a double port keeps the CPU's arithmetic and may
+   not pay, and a single port is a new realisation with its own stability question. The
+   spike (building): the per-creature step as an ILGPU kernel, one thread a creature, in
+   both precisions, against `Evosim.Dynamics` on round 42's bodies for deviation,
+   run-to-run identity on the GPU, and wall per body-step at 1,000 and 10,000 bodies.
+   Then the port proper, with the state stream as the theatre's feed.
 7. **Loose ends.** Double accounts in Core for the matter residual (a new realisation of
    every seed, so between rounds and pre-registered). `ParallelIdentityTests` (50 s) kept
    or moved to Slow. The overlap probe's `run.ps1` taking its path argument. Close pictures
@@ -428,10 +434,11 @@ subagent and never in a shell loop.
 - **The animal kit** (`fable-propose-animal-kit.md`): the order of the rungs, predation due
   and the bite taking from the reserve first, a scent field inside D020, the floor's places
   and the anchoring cell, and anything the owner wants sooner.
-- **Whether the base round on the new engine may run before both are ruled**: the agent's
-  reading is yes with D100's hold at 0 and everything else as built, because the round is
-  a reading of the engine against round 42 and not a world change; the owner may prefer
-  to rule first.
+- **The worktrees under `scratch/wt-*`**: 24 of them, every branch merged into main,
+  6.0 GB; removing them and the branches is a deletion and waits for the owner's word.
+- **Four untracked files at the root and under `logbook/specs/`** (`gpt-astra-*.md`,
+  `astra-2026-09-12-review-evidence.md`): the Astra reviews the record cites, never
+  committed; the owner says whether they are tracked.
 
 - **Cloud CPU: off (owner, 2026-09-18 morning: "cloud CPU right now is off. We'll continue
   working on my machine").** The survey stands in `logbook/specs/cloud-cpu-survey.md` for
