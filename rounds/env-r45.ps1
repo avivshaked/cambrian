@@ -66,4 +66,8 @@
     EVOSIM_PRICE_ATTACK = 0.1; EVOSIM_PRICE_INTAKE = 0.1; EVOSIM_PRICE_PROTECTION = 1; EVOSIM_PRICE_TOUGHNESS = 0.1
     EVOSIM_ATTRIBUTE_MUT = 0.005
     EVOSIM_SENSE_CONTACT = 1; EVOSIM_SENSE_DAMAGE = 1
+    # A recording setting, no hash moves: round 44's seed 1 slowed tenfold at 20,000 s with the
+    # solver taking 99% of the wall and no checkpoint to profile it from; a checkpoint every
+    # 2,500 s makes a slow seed's state a fixture for the profiler.
+    EVOSIM_CHECKPOINT_EVERY = 2500
 }

@@ -441,7 +441,17 @@ subagent and never in a shell loop.
    of its wall (1,220 bodies, 418 standing modules, 662 rebuilds; the solver's cost per
    body rose with the module chains, my reading, to be measured in the read) and will
    reach its 300 min wall about 00:34 at roughly 27,000 s, censored and read at its last
-   sample by the pre-registered rule. Then the read
+   sample by the pre-registered rule. What the numbers say about the slowdown: its
+   overlap pairs per body-step rose thirteenfold from 14,000 s (0.015 to 0.205, 98% held)
+   against seed 2's 0.009 at the same crowd, before the modules jumped (14 to 432 between
+   18,000 and 21,260 s), and `mean dof` stayed near 0.1; the picture at 21,200 s shows
+   larger curved leaf chains through the top twenty-five metres and no crust. Neither the
+   pair count nor the part count explains a tenfold cost on its own, so the mechanism is
+   open: **a profile of the solver step at seed 1's state is the instrument**, and round
+   44 wrote no checkpoints to profile from, which is why `rounds/env-r45.ps1` now records
+   one every 2,500 s. The design question behind it, whether a chain's contact sphere
+   should be its hull's or its parts', is the owner's, not a change under a round. Then
+   the read
    (`scripts/reads/r44-read.py`, `--out logbook/specs/r44-read/clauses.tsv`) and the
    entry with pictures (`theatre-snap.ps1 -From snapshot`). **Round 45's build is in**
    (`8b0d798`, the mouth: the caps in the registry, health as state, the kill by part path
