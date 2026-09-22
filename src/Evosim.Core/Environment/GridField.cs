@@ -1383,21 +1383,29 @@ namespace Evosim.Core
             // cell another layer writes: the flux out of a cell is a function of that cell alone.
             Parallelism.ForRanges(_ny, (from, to) =>
             {
+                double[] stock = _stock, fluxY = _fluxY;
+                int[] lowest = _lowestLive;
+
                 for (int iy = from; iy < to; iy++)
                 {
+                    bool hasBelow = iy < _ny - 1;
+
                     for (int ix = 0; ix < _nx; ix++)
                     {
+                        int row = (iy * _nx + ix) * _nz;
+                        int lowRow = ix * _nz;
+
                         for (int iz = 0; iz < _nz; iz++)
                         {
-                            int cell = Index(ix, iy, iz);
+                            int cell = row + iz;
 
                             // Nothing sinks into rock. On a flat bed the test is free — a column
                             // is water all the way down to the last layer, so every cell above the
                             // last passes it and the arithmetic is the one this line always ran —
                             // and with a bed it is what keeps spec item 9's rule: what reaches the
                             // lowest live cell of a column stays there, whichever layer that is.
-                            _fluxY[cell] = iy < _ny - 1 && iy < _lowestLive[ix * _nz + iz]
-                                ? _stock[cell] * fraction
+                            fluxY[cell] = hasBelow && iy < lowest[lowRow + iz]
+                                ? stock[cell] * fraction
                                 : 0d;
                         }
                     }
@@ -1463,38 +1471,56 @@ namespace Evosim.Core
 
             Parallelism.ForRanges(_ny, (from, to) =>
             {
+                bool[] live = _live;
+                double[] stockOf = _stock;
+
                 for (int iy = from; iy < to; iy++)
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
+                        // A layer's cells run contiguously in iz — Index is (iy*nx+ix)*nz+iz — so
+                        // the row's first cell is the whole of the index arithmetic.
+                        int row = (iy * _nx + ix) * _nz;
+
                         for (int iz = 0; iz < _nz; iz++)
                         {
-                            int cell = Index(ix, iy, iz);
+                            int cell = row + iz;
 
-                            if (_live != null && !_live[cell]) { lostPerCell[cell] = 0d; continue; }
+                            if (live != null && !live[cell]) { lostPerCell[cell] = 0d; continue; }
 
-                            double stock = _stock[cell];
+                            double stock = stockOf[cell];
                             if (!(stock > 0d)) { lostPerCell[cell] = 0d; continue; }
 
                             double lost = stock * fraction;
-                            _stock[cell] = stock - lost;
+                            stockOf[cell] = stock - lost;
                             lostPerCell[cell] = lost;
                         }
                     }
                 }
             });
 
+            // The serial sum, in the order it has always been made in — which is also the order the
+            // cells lie in, so the walk is one index and the bucket's three are read from tables
+            // built with the buckets. Every value is the integer BucketOf gave.
+            double[] perBucket = _remineralisedPerBucket;
+            int[] bucketOfX = _bucketOfX, bucketOfY = _bucketOfY, bucketOfZ = _bucketOfZ;
+
             for (int iy = 0; iy < _ny; iy++)
             {
+                int by = bucketOfY[iy] * _bx;
+
                 for (int ix = 0; ix < _nx; ix++)
                 {
+                    int row = (iy * _nx + ix) * _nz;
+                    int bucketRow = (by + bucketOfX[ix]) * _bz;
+
                     for (int iz = 0; iz < _nz; iz++)
                     {
-                        double lost = lostPerCell[Index(ix, iy, iz)];
+                        double lost = lostPerCell[row + iz];
                         if (lost == 0d) continue;
 
                         total += lost;
-                        _remineralisedPerBucket[BucketOf(ix, iy, iz, spentCell)] += lost;
+                        perBucket[bucketRow + bucketOfZ[iz]] += lost;
                     }
                 }
             }
@@ -1527,6 +1553,9 @@ namespace Evosim.Core
         private float _bucketMetres;
         private int _bx, _by, _bz;
 
+        /// <summary><see cref="BucketOf"/>'s three axes, tabulated — see EnsureRemineralisationBuckets.</summary>
+        private int[] _bucketOfX, _bucketOfY, _bucketOfZ;
+
         private void EnsureRemineralisationBuckets(float spentCellMetres)
         {
             if (_remineralisedPerBucket != null && _bucketMetres == spentCellMetres) return;
@@ -1536,15 +1565,37 @@ namespace Evosim.Core
             _by = Math.Max(1, (int)Math.Ceiling(_ny * (double)CellMetres / spentCellMetres));
             _bz = Math.Max(1, (int)Math.Ceiling(_nz * (double)CellMetres / spentCellMetres));
             _remineralisedPerBucket = new double[_bx * _by * _bz];
+
+            // The three axes of BucketOf, which are independent of one another and of everything
+            // the step does, tabulated once. The sum's walk then costs three loads where it cost
+            // three float divides a cell.
+            _bucketOfX = new int[_nx];
+            _bucketOfY = new int[_ny];
+            _bucketOfZ = new int[_nz];
+
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                _bucketOfX[ix] = Math.Min(_bx - 1, (int)((ix + 0.5f) * CellMetres / spentCellMetres));
+            }
+
+            for (int iy = 0; iy < _ny; iy++)
+            {
+                _bucketOfY[iy] = Math.Min(_by - 1, (int)((iy + 0.5f) * CellMetres / spentCellMetres));
+            }
+
+            for (int iz = 0; iz < _nz; iz++)
+            {
+                _bucketOfZ[iz] = Math.Min(_bz - 1, (int)((iz + 0.5f) * CellMetres / spentCellMetres));
+            }
         }
 
-        private int BucketOf(int ix, int iy, int iz, float spentCellMetres)
-        {
-            int bx = Math.Min(_bx - 1, (int)((ix + 0.5f) * CellMetres / spentCellMetres));
-            int by = Math.Min(_by - 1, (int)((iy + 0.5f) * CellMetres / spentCellMetres));
-            int bz = Math.Min(_bz - 1, (int)((iz + 0.5f) * CellMetres / spentCellMetres));
-            return (by * _bx + bx) * _bz + bz;
-        }
+        /// <summary>
+        /// The bucket a fine cell falls in: <c>(by·bx + bx)·bz + bz</c> off the three tables
+        /// <see cref="EnsureRemineralisationBuckets"/> built. The sum's own walk opens this out,
+        /// because two of the three are constants of its outer loops.
+        /// </summary>
+        private int BucketOf(int ix, int iy, int iz) =>
+            (_bucketOfY[iy] * _bx + _bucketOfX[ix]) * _bz + _bucketOfZ[iz];
 
         private FieldPoint BucketCentre(int bucket, float spentCellMetres)
         {
@@ -1638,40 +1689,73 @@ namespace Evosim.Core
             // clearing passes used to say. Every read is of the stock as the step found it, and
             // the applies below are the only thing that moves any of it, so the layers are
             // independent and the fluxes do not depend on which order they were computed in.
+            bool wideX = _nx >= 2, wideZ = _nz >= 2;
+
             Parallelism.ForRanges(_ny, (from, to) =>
             {
+                bool[] live = _live;
+                double[] stock = _stock;
+                double[] fluxX = _fluxX, fluxY = _fluxY, fluxZ = _fluxZ;
+                int[] lowest = _lowestLive;
+                bool wraps = Shape != WorldShape.Tank;
+
                 for (int iy = from; iy < to; iy++)
                 {
+                    bool hasBelow = iy < _ny - 1;
+
                     for (int ix = 0; ix < _nx; ix++)
                     {
+                        // The row, the row below and the row east of it — the same three bases
+                        // AssembleFaces takes, and for the same reason.
+                        int row = (iy * _nx + ix) * _nz;
+                        int below = row + _nx * _nz;
+                        int lowRow = ix * _nz;
+
+                        int nextX = ix + 1;
+                        if (nextX == _nx) nextX = wraps ? 0 : -1;
+                        int eastRow = !wideX || nextX < 0 ? -1 : (iy * _nx + nextX) * _nz;
+
                         for (int iz = 0; iz < _nz; iz++)
                         {
-                            int cell = Index(ix, iy, iz);
+                            int cell = row + iz;
 
-                            if (_live != null && !_live[cell])
+                            if (live != null && !live[cell])
                             {
-                                _fluxX[cell] = 0d;
-                                _fluxY[cell] = 0d;
-                                _fluxZ[cell] = 0d;
+                                fluxX[cell] = 0d;
+                                fluxY[cell] = 0d;
+                                fluxZ[cell] = 0d;
                                 continue;
                             }
 
-                            int east = _nx >= 2 ? EastOf(ix, iy, iz) : -1;
-                            _fluxX[cell] = east >= 0
-                                ? (_stock[cell] - _stock[east]) * fraction
+                            int east = eastRow < 0 ? -1 : eastRow + iz;
+                            if (east >= 0 && live != null && !live[east]) east = -1;
+
+                            fluxX[cell] = east >= 0
+                                ? (stock[cell] - stock[east]) * fraction
                                 : 0d;
 
-                            int front = _nz >= 2 ? FrontOf(ix, iy, iz) : -1;
-                            _fluxZ[cell] = front >= 0
-                                ? (_stock[cell] - _stock[front]) * fraction
+                            int front = -1;
+                            if (wideZ)
+                            {
+                                int nextZ = iz + 1;
+                                if (nextZ == _nz) nextZ = wraps ? 0 : -1;
+                                if (nextZ >= 0)
+                                {
+                                    front = row + nextZ;
+                                    if (live != null && !live[front]) front = -1;
+                                }
+                            }
+
+                            fluxZ[cell] = front >= 0
+                                ? (stock[cell] - stock[front]) * fraction
                                 : 0d;
 
                             // The floor is a face no stock crosses, and with a bed the floor is
                             // the column's own (D092). On a flat bed the second test is the
                             // first one's restatement, since a live column is water to the last
                             // layer.
-                            _fluxY[cell] = iy < _ny - 1 && iy < _lowestLive[ix * _nz + iz]
-                                ? (_stock[cell] - _stock[Index(ix, iy + 1, iz)]) * fraction
+                            fluxY[cell] = hasBelow && iy < lowest[lowRow + iz]
+                                ? (stock[cell] - stock[below + iz]) * fraction
                                 : 0d;
                         }
                     }
@@ -2243,6 +2327,95 @@ namespace Evosim.Core
             _faceX = new double[_stock.Length];
             _faceY = new double[_stock.Length];
             _faceZ = new double[_stock.Length];
+
+            EnsureEdgeOpenness();
+        }
+
+        // Which edges of each lattice have water on all four sides — D106. One bool per entry of
+        // the three edge arrays, in the same indexing, so an edge loop reads its own index.
+        private bool[] _edgeOpenX;
+        private bool[] _edgeOpenY;
+        private bool[] _edgeOpenZ;
+
+        /// <summary>
+        /// Builds the three edge families' openness masks, once, beside the buffers they parallel.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Geometry, not state.</b> An edge is open when all four cells it belongs to are water,
+        /// and which cells are water is <see cref="_live"/>, which the constructor fills and
+        /// nothing afterwards writes. So the answer is a property of the box and the mask cannot go
+        /// stale; it is built with the buffers and never again. What it replaces is four
+        /// <see cref="CellIsWater"/> calls at every edge of every pass — two index multiplications,
+        /// a wrap and a load each — with one sequential byte.
+        /// </para>
+        /// <para>
+        /// <b>Every entry the edge loops test, and false everywhere else.</b> The planes those
+        /// loops skip (the surface and the floor for the horizontal families) and the far planes a
+        /// box copies rather than samples are never read through this, so a false there costs
+        /// nothing and asserts nothing. The predicate itself is
+        /// <see cref="HorizontalEdgePlane"/>'s and <see cref="VerticalEdgePlane"/>'s, term for
+        /// term and in the same order, which is what makes the mask a hoist rather than a second
+        /// opinion.
+        /// </para>
+        /// <para>
+        /// <b>What it costs</b> is a byte per edge — about a ninth of what the edge itself takes,
+        /// and 5 MB on the largest grid the campaign has run.
+        /// </para>
+        /// </remarks>
+        private void EnsureEdgeOpenness()
+        {
+            if (_edgeOpenX != null) return;
+
+            var openX = new bool[_edgeX.Length];
+            var openY = new bool[_edgeY.Length];
+            var openZ = new bool[_edgeZ.Length];
+
+            for (int j = 1; j < _ny; j++)
+            {
+                for (int i = 0; i < _nx; i++)
+                {
+                    int row = (j * _nx + i) * (_nz + 1);
+
+                    for (int k = 0; k <= _nz; k++)
+                    {
+                        openX[row + k] =
+                            CellIsWater(i, j - 1, k - 1) && CellIsWater(i, j - 1, k) &&
+                            CellIsWater(i, j, k - 1) && CellIsWater(i, j, k);
+                    }
+                }
+
+                for (int i = 0; i <= _nx; i++)
+                {
+                    int row = (j * (_nx + 1) + i) * _nz;
+
+                    for (int k = 0; k < _nz; k++)
+                    {
+                        openZ[row + k] =
+                            CellIsWater(i - 1, j - 1, k) && CellIsWater(i - 1, j, k) &&
+                            CellIsWater(i, j - 1, k) && CellIsWater(i, j, k);
+                    }
+                }
+            }
+
+            for (int j = 0; j < _ny; j++)
+            {
+                for (int i = 0; i <= _nx; i++)
+                {
+                    int row = (j * (_nx + 1) + i) * (_nz + 1);
+
+                    for (int k = 0; k <= _nz; k++)
+                    {
+                        openY[row + k] =
+                            CellIsWater(i - 1, j, k - 1) && CellIsWater(i - 1, j, k) &&
+                            CellIsWater(i, j, k - 1) && CellIsWater(i, j, k);
+                    }
+                }
+            }
+
+            _edgeOpenX = openX;
+            _edgeOpenY = openY;
+            _edgeOpenZ = openZ;
         }
 
         /// <summary>
@@ -2602,8 +2775,9 @@ namespace Evosim.Core
             /// <summary>What one column advances it by: 1, or 0 when one row serves them all.</summary>
             public int Step { get; }
 
-            /// <summary>Where the terms for one column at one depth sit.</summary>
-            public int IndexOf(int column, int depth) => depth * Stride + column * Step;
+            // Where the terms for one column at one depth sit is depth * Stride + column * Step.
+            // The edge loops open that out themselves — the depth is a constant of the plane, so
+            // its half of the product is lifted out of both loops and only the column's is paid.
         }
 
         private void SampleEdges(
@@ -2657,29 +2831,38 @@ namespace Evosim.Core
 
             CurrentField.BedColumn[] bedX = termsX.Bed, bedZ = termsZ.Bed;
 
+            // The lattice's own arrays and the terms' index arithmetic, lifted out of the inner
+            // loops: every one of them is a constant of the plane, and a constant read once is the
+            // same bits as a constant read at every edge.
+            double[] edgeX = _edgeX, edgeZ = _edgeZ;
+            bool[] openX = _edgeOpenX, openZ = _edgeOpenZ;
+            int depthBaseX = d * termsX.Stride, stepX = termsX.Step;
+            int depthBaseZ = d * termsZ.Stride, stepZ = termsZ.Step;
+
             for (int i = 0; i < _nx; i++)
             {
                 float x = (float)((i + 0.5) * h);
                 int row = (j * _nx + i) * (_nz + 1);
+                int columnBase = i * (_nz + 1);
 
                 for (int k = 0; k <= _nz; k++)
                 {
                     if (!tank && k == _nz)
                     {
-                        _edgeX[row + k] = _edgeX[EdgeXIndex(i, j, 0)];
+                        edgeX[row + k] = edgeX[row];
                         continue;
                     }
 
                     // The four cells this edge belongs to. One dead one and the edge is zero,
-                    // which is what makes every face onto the glass carry nothing.
-                    if (!CellIsWater(i, j - 1, k - 1) || !CellIsWater(i, j - 1, k) ||
-                        !CellIsWater(i, j, k - 1) || !CellIsWater(i, j, k))
+                    // which is what makes every face onto the glass carry nothing. The four tests
+                    // are EnsureEdgeOpenness' one byte, since the mask is the geometry.
+                    if (!openX[row + k])
                     {
-                        _edgeX[row + k] = 0d;
+                        edgeX[row + k] = 0d;
                         continue;
                     }
 
-                    int c = i * (_nz + 1) + k;
+                    int c = columnBase + k;
 
                     double value;
 
@@ -2693,39 +2876,41 @@ namespace Evosim.Core
                     else if (bedX == null)
                     {
                         value = current.PotentialAt(
-                            termsX.Columns[c], termsX.Depths[termsX.IndexOf(c, d)], seconds).X;
+                            termsX.Columns[c], termsX.Depths[depthBaseX + c * stepX], seconds).X;
                     }
                     else
                     {
                         value = current.PotentialAt(
                             termsX.Columns[c], bedX[c],
-                            termsX.Depths[termsX.IndexOf(c, d)], y, seconds).X;
+                            termsX.Depths[depthBaseX + c * stepX], y, seconds).X;
                     }
 
-                    _edgeX[row + k] = value * h;
+                    edgeX[row + k] = value * h;
                 }
             }
+
+            int zWrapRow = (j * (_nx + 1)) * _nz;
 
             for (int i = 0; i <= _nx; i++)
             {
                 int row = (j * (_nx + 1) + i) * _nz;
+                int columnBase = i * _nz;
 
                 for (int k = 0; k < _nz; k++)
                 {
                     if (!tank && i == _nx)
                     {
-                        _edgeZ[row + k] = _edgeZ[EdgeZIndex(0, j, k)];
+                        edgeZ[row + k] = edgeZ[zWrapRow + k];
                         continue;
                     }
 
-                    if (!CellIsWater(i - 1, j - 1, k) || !CellIsWater(i - 1, j, k) ||
-                        !CellIsWater(i, j - 1, k) || !CellIsWater(i, j, k))
+                    if (!openZ[row + k])
                     {
-                        _edgeZ[row + k] = 0d;
+                        edgeZ[row + k] = 0d;
                         continue;
                     }
 
-                    int c = i * _nz + k;
+                    int c = columnBase + k;
 
                     double value;
 
@@ -2740,16 +2925,16 @@ namespace Evosim.Core
                     else if (bedZ == null)
                     {
                         value = current.PotentialAt(
-                            termsZ.Columns[c], termsZ.Depths[termsZ.IndexOf(c, d)], seconds).Z;
+                            termsZ.Columns[c], termsZ.Depths[depthBaseZ + c * stepZ], seconds).Z;
                     }
                     else
                     {
                         value = current.PotentialAt(
                             termsZ.Columns[c], bedZ[c],
-                            termsZ.Depths[termsZ.IndexOf(c, d)], y, seconds).Z;
+                            termsZ.Depths[depthBaseZ + c * stepZ], y, seconds).Z;
                     }
 
-                    _edgeZ[row + k] = value * h;
+                    edgeZ[row + k] = value * h;
                 }
             }
         }
@@ -2767,27 +2952,32 @@ namespace Evosim.Core
 
             CurrentField.BedColumn[] bedY = termsY.Bed;
 
+            // The plane's constants, lifted for HorizontalEdgePlane's reason.
+            double[] edgeY = _edgeY;
+            bool[] openY = _edgeOpenY;
+            int depthBaseY = j * termsY.Stride, stepY = termsY.Step;
+
             for (int i = 0; i <= _nx; i++)
             {
                 int row = (j * (_nx + 1) + i) * (_nz + 1);
+                int columnBase = i * (_nz + 1);
 
                 for (int k = 0; k <= _nz; k++)
                 {
                     if (!tank && (i == _nx || k == _nz))
                     {
-                        _edgeY[row + k] =
-                            _edgeY[EdgeYIndex(i == _nx ? 0 : i, j, k == _nz ? 0 : k)];
+                        edgeY[row + k] =
+                            edgeY[EdgeYIndex(i == _nx ? 0 : i, j, k == _nz ? 0 : k)];
                         continue;
                     }
 
-                    if (!CellIsWater(i - 1, j, k - 1) || !CellIsWater(i - 1, j, k) ||
-                        !CellIsWater(i, j, k - 1) || !CellIsWater(i, j, k))
+                    if (!openY[row + k])
                     {
-                        _edgeY[row + k] = 0d;
+                        edgeY[row + k] = 0d;
                         continue;
                     }
 
-                    int c = i * (_nz + 1) + k;
+                    int c = columnBase + k;
 
                     double value;
 
@@ -2801,16 +2991,16 @@ namespace Evosim.Core
                     else if (bedY == null)
                     {
                         value = current.PotentialAt(
-                            termsY.Columns[c], termsY.Depths[termsY.IndexOf(c, j)], seconds).Y;
+                            termsY.Columns[c], termsY.Depths[depthBaseY + c * stepY], seconds).Y;
                     }
                     else
                     {
                         value = current.PotentialAt(
                             termsY.Columns[c], bedY[c],
-                            termsY.Depths[termsY.IndexOf(c, j)], y, seconds).Y;
+                            termsY.Depths[depthBaseY + c * stepY], y, seconds).Y;
                     }
 
-                    _edgeY[row + k] = value * h;
+                    edgeY[row + k] = value * h;
                 }
             }
         }
@@ -2839,36 +3029,90 @@ namespace Evosim.Core
             // A layer at a time, each writing only its own cells and reading only edges — which
             // nothing here writes. The three clearing passes are folded into the walk: a closed
             // face is written zero where it used to be left zero.
+            // Every index below is j-major and then i-major, so a whole row's worth of each is one
+            // addition off a base the (ix, iy) loop computes. Twelve index products a cell become
+            // eight per row; the doubles they pick out are the ones they always picked out.
+            bool wideX = _nx >= 2, wideY = _ny >= 2, wideZ = _nz >= 2;
+
             Parallelism.ForRanges(_ny, (from, to) =>
             {
+                bool[] live = _live;
+                double[] edgeX = _edgeX, edgeY = _edgeY, edgeZ = _edgeZ;
+                double[] faceX = _faceX, faceY = _faceY, faceZ = _faceZ;
+                int[] lowest = _lowestLive;
+
                 for (int iy = from; iy < to; iy++)
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
+                        int row = (iy * _nx + ix) * _nz;
+                        int lowRow = ix * _nz;
+
+                        // EdgeXIndex(ix, ·, 0) on this plane and the one below it.
+                        int exHere = (iy * _nx + ix) * (_nz + 1);
+                        int exBelow = ((iy + 1) * _nx + ix) * (_nz + 1);
+
+                        // EdgeYIndex(ix, iy, 0) and EdgeYIndex(ix + 1, iy, 0).
+                        int eyWest = (iy * (_nx + 1) + ix) * (_nz + 1);
+                        int eyEast = eyWest + (_nz + 1);
+
+                        // EdgeZIndex(·, iy + 1, 0) on the plane below, west and east.
+                        int ezBelowWest = ((iy + 1) * (_nx + 1) + ix) * _nz;
+                        int ezBelowEast = ezBelowWest + _nz;
+
+                        // EdgeZIndex(ix + 1, iy, 0).
+                        int ezEast = (iy * (_nx + 1) + ix) * _nz + _nz;
+
+                        // EastOf's wrap and mask, with the row it lands on lifted out of iz.
+                        int eastRow = -1;
+                        if (wideX)
+                        {
+                            int next = ix + 1;
+                            if (next == _nx) next = Shape == WorldShape.Tank ? -1 : 0;
+                            if (next >= 0) eastRow = (iy * _nx + next) * _nz;
+                        }
+
+                        bool wraps = Shape != WorldShape.Tank;
+
                         for (int iz = 0; iz < _nz; iz++)
                         {
-                            int cell = Index(ix, iy, iz);
+                            int cell = row + iz;
 
-                            if (_live != null && !_live[cell])
+                            if (live != null && !live[cell])
                             {
-                                _faceX[cell] = 0d;
-                                _faceY[cell] = 0d;
-                                _faceZ[cell] = 0d;
+                                faceX[cell] = 0d;
+                                faceY[cell] = 0d;
+                                faceZ[cell] = 0d;
                                 continue;
                             }
 
-                            _faceX[cell] = _nx >= 2 && EastOf(ix, iy, iz) >= 0
-                                ? _edgeY[EdgeYIndex(ix + 1, iy, iz)] +
-                                  _edgeZ[EdgeZIndex(ix + 1, iy, iz)] -
-                                  _edgeY[EdgeYIndex(ix + 1, iy, iz + 1)] -
-                                  _edgeZ[EdgeZIndex(ix + 1, iy + 1, iz)]
+                            int east = eastRow < 0 ? -1 : eastRow + iz;
+                            if (east >= 0 && live != null && !live[east]) east = -1;
+
+                            faceX[cell] = east >= 0
+                                ? edgeY[eyEast + iz] +
+                                  edgeZ[ezEast + iz] -
+                                  edgeY[eyEast + iz + 1] -
+                                  edgeZ[ezBelowEast + iz]
                                 : 0d;
 
-                            _faceZ[cell] = _nz >= 2 && FrontOf(ix, iy, iz) >= 0
-                                ? _edgeX[EdgeXIndex(ix, iy + 1, iz + 1)] +
-                                  _edgeY[EdgeYIndex(ix + 1, iy, iz + 1)] -
-                                  _edgeX[EdgeXIndex(ix, iy, iz + 1)] -
-                                  _edgeY[EdgeYIndex(ix, iy, iz + 1)]
+                            int front = -1;
+                            if (wideZ)
+                            {
+                                int next = iz + 1;
+                                if (next == _nz) next = wraps ? 0 : -1;
+                                if (next >= 0)
+                                {
+                                    front = row + next;
+                                    if (live != null && !live[front]) front = -1;
+                                }
+                            }
+
+                            faceZ[cell] = front >= 0
+                                ? edgeX[exBelow + iz + 1] +
+                                  edgeY[eyEast + iz + 1] -
+                                  edgeX[exHere + iz + 1] -
+                                  edgeY[eyWest + iz + 1]
                                 : 0d;
 
                             // A live cell's lower face is open whenever the cell below it is
@@ -2878,11 +3122,11 @@ namespace Evosim.Core
                             // touch the dead cell and were left at zero by SampleEdges, so the
                             // circulation would come out zero anyway, which is what keeps the
                             // telescoping exact either way.
-                            _faceY[cell] = _ny >= 2 && iy < _lowestLive[ix * _nz + iz]
-                                ? _edgeZ[EdgeZIndex(ix + 1, iy + 1, iz)] +
-                                  _edgeX[EdgeXIndex(ix, iy + 1, iz)] -
-                                  _edgeZ[EdgeZIndex(ix, iy + 1, iz)] -
-                                  _edgeX[EdgeXIndex(ix, iy + 1, iz + 1)]
+                            faceY[cell] = wideY && iy < lowest[lowRow + iz]
+                                ? edgeZ[ezBelowEast + iz] +
+                                  edgeX[exBelow + iz] -
+                                  edgeZ[ezBelowWest + iz] -
+                                  edgeX[exBelow + iz + 1]
                                 : 0d;
                         }
                     }
@@ -2918,25 +3162,35 @@ namespace Evosim.Core
             Parallelism.ForRanges(_ny, (from, to) =>
             {
                 double largest = 0d;
+                bool[] live = _live;
+                double[] faceX = _faceX, faceY = _faceY, faceZ = _faceZ;
+                bool tank = Shape == WorldShape.Tank;
 
                 for (int iy = from; iy < to; iy++)
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
+                        int row = (iy * _nx + ix) * _nz;
+                        int above = row - _nx * _nz;
+
+                        int west = ix == 0 ? (tank ? -1 : _nx - 1) : ix - 1;
+                        int westRow = west < 0 ? -1 : (iy * _nx + west) * _nz;
+
+                        int backOfFirst = tank ? -1 : _nz - 1;
+
                         for (int iz = 0; iz < _nz; iz++)
                         {
-                            int cell = Index(ix, iy, iz);
-                            if (_live != null && !_live[cell]) continue;
+                            int cell = row + iz;
+                            if (live != null && !live[cell]) continue;
 
-                            double sum = Math.Abs(_faceX[cell]) + Math.Abs(_faceZ[cell]) + Math.Abs(_faceY[cell]);
+                            double sum = Math.Abs(faceX[cell]) + Math.Abs(faceZ[cell]) + Math.Abs(faceY[cell]);
 
-                            int west = ix == 0 ? (Shape == WorldShape.Tank ? -1 : _nx - 1) : ix - 1;
-                            if (west >= 0) sum += Math.Abs(_faceX[Index(west, iy, iz)]);
+                            if (westRow >= 0) sum += Math.Abs(faceX[westRow + iz]);
 
-                            int back = iz == 0 ? (Shape == WorldShape.Tank ? -1 : _nz - 1) : iz - 1;
-                            if (back >= 0) sum += Math.Abs(_faceZ[Index(ix, iy, back)]);
+                            int back = iz == 0 ? backOfFirst : iz - 1;
+                            if (back >= 0) sum += Math.Abs(faceZ[row + back]);
 
-                            if (iy > 0) sum += Math.Abs(_faceY[Index(ix, iy - 1, iz)]);
+                            if (iy > 0) sum += Math.Abs(faceY[above + iz]);
 
                             double outflow = sum * scale;
                             if (outflow > largest) largest = outflow;
@@ -2978,53 +3232,76 @@ namespace Evosim.Core
             // which one goes first decides the last bit of the sum.
             Parallelism.ForRanges(_ny, (from, to) =>
             {
+                bool[] live = _live;
+                double[] stock = _stock;
+                double[] faceX = _faceX, faceY = _faceY, faceZ = _faceZ;
+                double[] fluxX = _fluxX, fluxY = _fluxY, fluxZ = _fluxZ;
+                bool wraps = Shape != WorldShape.Tank;
+
                 for (int iy = from; iy < to; iy++)
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
+                        // The row's own cells, the row below it, and the row east of it — every
+                        // index this loop takes, off three bases instead of nine products.
+                        int row = (iy * _nx + ix) * _nz;
+                        int below = row + _nx * _nz;
+
+                        int nextX = ix + 1;
+                        if (nextX == _nx) nextX = wraps ? 0 : -1;
+                        int eastRow = nextX < 0 ? -1 : (iy * _nx + nextX) * _nz;
+
                         for (int iz = 0; iz < _nz; iz++)
                         {
-                            int cell = Index(ix, iy, iz);
+                            int cell = row + iz;
 
-                            if (_live != null && !_live[cell])
+                            if (live != null && !live[cell])
                             {
-                                _fluxX[cell] = 0d;
-                                _fluxY[cell] = 0d;
-                                _fluxZ[cell] = 0d;
+                                fluxX[cell] = 0d;
+                                fluxY[cell] = 0d;
+                                fluxZ[cell] = 0d;
                                 continue;
                             }
 
-                            double q = _faceX[cell];
+                            double q = faceX[cell];
                             if (q != 0d)
                             {
                                 // q > 0 takes from this cell, q < 0 from the one east of it, and
                                 // writing it as one product keeps the two branches the same
-                                // arithmetic.
-                                int east = EastOf(ix, iy, iz);
-                                _fluxX[cell] = (q > 0d ? _stock[cell] : _stock[east]) * q * scale;
+                                // arithmetic. A wall's index is kept at −1 rather than folded
+                                // away — and so is a dead neighbour's — so a face that carried a
+                                // flux across one still throws here, as it did when this line
+                                // called EastOf. What is gone is the two index products, not the
+                                // test they guarded.
+                                int east = eastRow < 0 ? -1 : eastRow + iz;
+                                if (east >= 0 && live != null && !live[east]) east = -1;
+                                fluxX[cell] = (q > 0d ? stock[cell] : stock[east]) * q * scale;
                             }
                             else
                             {
-                                _fluxX[cell] = 0d;
+                                fluxX[cell] = 0d;
                             }
 
-                            q = _faceZ[cell];
+                            q = faceZ[cell];
                             if (q != 0d)
                             {
-                                int front = FrontOf(ix, iy, iz);
-                                _fluxZ[cell] = (q > 0d ? _stock[cell] : _stock[front]) * q * scale;
+                                int nextZ = iz + 1;
+                                if (nextZ == _nz) nextZ = wraps ? 0 : -1;
+                                int front = nextZ < 0 ? -1 : row + nextZ;
+                                if (front >= 0 && live != null && !live[front]) front = -1;
+                                fluxZ[cell] = (q > 0d ? stock[cell] : stock[front]) * q * scale;
                             }
                             else
                             {
-                                _fluxZ[cell] = 0d;
+                                fluxZ[cell] = 0d;
                             }
 
                             // Positive is downward, which is what ApplyDown means by a flux:
                             // sinking water carries what is above it down, rising water what is
                             // below it up.
-                            q = _faceY[cell];
-                            _fluxY[cell] = q != 0d
-                                ? (q > 0d ? _stock[cell] : _stock[Index(ix, iy + 1, iz)]) * q * scale
+                            q = faceY[cell];
+                            fluxY[cell] = q != 0d
+                                ? (q > 0d ? stock[cell] : stock[below + iz]) * q * scale
                                 : 0d;
                         }
                     }
@@ -3241,18 +3518,23 @@ namespace Evosim.Core
         {
             Parallelism.ForRanges(_ny, (from, to) =>
             {
+                double[] stock = _stock;
+
                 for (int iy = from; iy < to; iy++)
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
                         int nextX = ix + 1 == _nx ? 0 : ix + 1;
+                        int row = (iy * _nx + ix) * _nz;
+                        int eastRow = (iy * _nx + nextX) * _nz;
+
                         for (int iz = 0; iz < _nz; iz++)
                         {
-                            int cell = Index(ix, iy, iz);
+                            int cell = row + iz;
                             double f = flux[cell];
                             if (f == 0d) continue;
-                            _stock[cell] -= f;
-                            _stock[Index(nextX, iy, iz)] += f;
+                            stock[cell] -= f;
+                            stock[eastRow + iz] += f;
                         }
                     }
                 }
@@ -3263,17 +3545,21 @@ namespace Evosim.Core
         {
             Parallelism.ForRanges(_ny, (from, to) =>
             {
+                double[] stock = _stock;
+
                 for (int iy = from; iy < to; iy++)
                 {
                     for (int ix = 0; ix < _nx; ix++)
                     {
+                        int row = (iy * _nx + ix) * _nz;
+
                         for (int iz = 0; iz < _nz; iz++)
                         {
-                            int cell = Index(ix, iy, iz);
+                            int cell = row + iz;
                             double f = flux[cell];
                             if (f == 0d) continue;
-                            _stock[cell] -= f;
-                            _stock[Index(ix, iy, iz + 1 == _nz ? 0 : iz + 1)] += f;
+                            stock[cell] -= f;
+                            stock[row + (iz + 1 == _nz ? 0 : iz + 1)] += f;
                         }
                     }
                 }
@@ -3284,17 +3570,22 @@ namespace Evosim.Core
         {
             Parallelism.ForRanges(_nx, (fromX, toX) =>
             {
+                double[] stock = _stock;
+                int layer = _nx * _nz;
+
                 for (int ix = fromX; ix < toX; ix++)
                 {
                     for (int iy = 0; iy < _ny - 1; iy++)
                     {
+                        int row = (iy * _nx + ix) * _nz;
+
                         for (int iz = 0; iz < _nz; iz++)
                         {
-                            int cell = Index(ix, iy, iz);
+                            int cell = row + iz;
                             double f = flux[cell];
                             if (f == 0d) continue;
-                            _stock[cell] -= f;
-                            _stock[Index(ix, iy + 1, iz)] += f;
+                            stock[cell] -= f;
+                            stock[cell + layer] += f;
                         }
                     }
                 }
