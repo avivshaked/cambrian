@@ -142,10 +142,27 @@ survives a torn last frame; `scripts/poses-read.py` reads it from the spec alone
 from the nearest snapshot before. 1,000 bodies at 1 s for 30,000 s is 1.5 GB. **The owner's
 direction of 2026-09-22 afternoon**: the theatre's primary use is live play in Unity from a
 recorded second, a cousin being fine, for films (a safari at 5,000, 15,000, 30,000 s) and
-the interface's stats. So the sequence is the live view on the new engine (building), then
-farm **checkpoints** every 1,000 s proven complete by restore-and-continue identity
-(building, `logbook/specs/checkpoint-spec.md`), then the Runner's checkpoint picker; the
+the interface's stats. So the sequence is the live view on the new engine (in, `a80b1c9`),
+then farm **checkpoints** proven complete by restore-and-continue identity (in, `3561ec3`,
+`logbook/specs/checkpoint-spec.md`), then the Runner's checkpoint picker (building); the
 stream stays at coarse cadence as the round record.
+
+**Checkpoints are in** (`3561ec3`): `EVOSIM_CHECKPOINT_EVERY` (`run-farm.ps1 -CheckpointEvery`,
+a recording setting that reaches no config and moves no hash) writes the whole world state,
+Core's `World`, every `Creature` of the solver with its brain's recurrent state, the placer,
+the harness's bookkeeping and the sampler's baselines, to `checkpoints/NNNNNNNNN.ckpt`, about
+1.5 MB at 40 bodies and 4.2 kB a body after. `run-farm.ps1 -ResumeFrom <arm|run|.ckpt> -At <s>`
+continues it in a new run directory whose `run.json` carries `resumedFrom`; the config comes
+from the resumed run and the four recording cadences from the checkpoint's header. The
+acceptance (`scratch/checkpoint/runs/ckA,ckB,ckC`): a restore at 400 s of a 600 s seed writes
+the same lineage, positions, poses, absorptive and stats rows as the unbroken run, a run
+with checkpointing off is byte-identical to one with it on, and a fresh 300 s seed 1 of round
+43's world on the build reproduces round 43 seed 1's rows (`scratch/checkpoint/regress.py`).
+A hash mismatch refuses the resume unless `EVOSIM_ALLOW_SOURCE_MISMATCH`, which marks the
+manifest. The build moved `coreHash`, `dynamicsHash` and `farmHash`, so round 43's manifests
+no longer match the tree and a resume of a round 43 run would be a marked cousin; a run is
+still stopped with a `STOP` file, and after a stop the last checkpoint is the second it
+stopped at. The theatre cannot open a checkpoint yet: that is the picker, building.
 
 **Machine.** i9-13900K, 24 cores, RTX 4090 with 24 GB. The farm takes `EVOSIM_THREADS`;
 16 is the measured best at this crowd. The Unity cap stays D103's. Run

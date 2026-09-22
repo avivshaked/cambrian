@@ -1062,7 +1062,17 @@ actually verifying it.
   closed, against ten hours in Unity. Eight things bite. **The manifest has no `simHash`**:
   `run.json` carries `engine: "dynamics"`, `dynamicsHash`, `farmHash`, `threads` and
   `processId`, and a run is stopped by writing a `STOP` file into its run directory, not by
-  `stop-arm.ps1` (which is still owed a farm mode). **The JIT decides the bits**: .NET's
+  `stop-arm.ps1` (which is still owed a farm mode). **A farm run can be continued from a
+  checkpoint, and the continuation is the run** (`3561ec3`, `logbook/specs/checkpoint-spec.md`):
+  `EVOSIM_CHECKPOINT_EVERY` writes `checkpoints/NNNNNNNNN.ckpt`, a recording setting that
+  moves no hash, and `run-farm.ps1 -ResumeFrom <arm> -At <s>` writes the same rows from that
+  second as the unbroken run would have. Three things about it bite. The config comes from the
+  resumed run and the recording cadences from the checkpoint's header, so a launcher's
+  environment is ignored except for a cadence it sets by name. A resume across any of the
+  four hashes is refused unless `EVOSIM_ALLOW_SOURCE_MISMATCH`, and is then a cousin the
+  manifest marks. And the last checkpoint after a `STOP` is the second the run stopped at,
+  because the file is written after the report row and before the stop is acted on. **The
+  JIT decides the bits**: .NET's
   tiered compilation gives quick-JITted and optimised loops different floating-point
   results on a rounding edge, so every project that reports a digest sets
   `<TieredCompilation>false</TieredCompilation>` and `DynamicsWorld.Step` takes one
