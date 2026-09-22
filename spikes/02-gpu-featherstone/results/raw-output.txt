@@ -1,0 +1,43 @@
+=== Featherstone on the GPU: a measurement spike
+  host        MAINPC, 32 logical processors, .NET 8.0.24
+  commit      5da9ee3e9071dad1005e658ecf53c4aeaae3a955
+  run         D:\Projects\experiments\evolution-simulator\runs\r43-s1\2026-09-22-053156-08613877
+  snapshot    D:\Projects\experiments\evolution-simulator\runs\r43-s1\2026-09-22-053156-08613877\snapshots\000030000.jsonl
+  config      hash 0861387741b94259  (matches the record)
+  genomes     read 1104, refused 0, developed 1104, undeveloped 0
+  solver      dt 0.01, limiters engage False, drag limiter False, restoring 1, excess 0.019999999552965164, neutral 0.25
+  parts       1->85 2->261 3->419 4->88 5->132 6->64 7->45 8->4 9->6
+  jointed     483 of 1104; over MaxLinks=9: 0
+  device      NVIDIA GeForce RTX 4090, SMs 128, SM_89, max threads/group 1024
+
+--- transcription: the same kernel on ILGPU's CPU device, N=256, 1000 steps
+  library vs kernel-on-CPU (double)
+    q   max 0.000E+000 rad     rms 0.000E+000 rad   over 408 dof
+    qd  max 0.000E+000 rad/s   rms 0.000E+000 rad/s
+    pos max 0.000E+000 m       rms 0.000E+000 m     (|pos| rms 1.598E+001 m, 2529 components)
+    worst body -1 at 0.000E+000 m; non-finite comparisons 0
+    cpu-device wall 0.09 s, kernel compile 331 ms
+
+=== N = 10000, 1000 steps at dt 0.01
+  links max 9, panels max 264, device state 174 MB double / 87 MB single 
+  kernel compile: double 124 ms, single 51 ms
+  reference   0.94 s at 16 threads; non-finite bodies 0
+  library vs GPU double
+    q   max 2.026E-015 rad     rms 8.360E-017 rad   over 15573 dof
+    qd  max 2.888E-014 rad/s   rms 7.269E-016 rad/s
+    pos max 3.553E-014 m       rms 6.507E-016 m     (|pos| rms 1.571E+001 m, 99441 components)
+    worst body 5542 at 3.553E-014 m; non-finite comparisons 0
+  library vs GPU single
+    q   max 9.306E-006 rad     rms 6.954E-007 rad   over 15573 dof
+    qd  max 8.396E-005 rad/s   rms 2.448E-006 rad/s
+    pos max 1.410E-003 m       rms 6.221E-005 m     (|pos| rms 1.571E+001 m, 99441 components)
+    worst body 1449 at 1.410E-003 m; non-finite comparisons 0
+  identity    double bit-identical (ae4314c846190f86 / ae4314c846190f86); single bit-identical (2a870ee0083d6b20 / 2a870ee0083d6b20)
+
+  pace, microseconds per body-step (median of 1)
+    kernel only, one launch of 1000  double    0.1240   single    0.0214
+    + positions down once per 1000     double    0.1243   single    0.0215
+    + drive up / positions down per 50  double    0.1274   single    0.0226
+    + drive up / positions down per 1   double    0.2712   single    0.0705
+    CPU reference, 16 threads             0.0898
+

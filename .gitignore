@@ -135,6 +135,9 @@ src/**/obj/
 # manifest.json was the first); check `git status` after adding any new project type.
 !src/**/*.csproj
 !src/**/*.sln
+# The GPU spike is a plain .NET project under spikes/ with its build output in out/.
+!spikes/**/*.csproj
+spikes/**/out/
 
 # =============================================================
 # Simulation output

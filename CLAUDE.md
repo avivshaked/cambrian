@@ -1129,6 +1129,17 @@ actually verifying it.
   the WER queue need an elevated shell, so the owner copies them into `scratch/crash/`, and
   `scripts/read-minidump.py <dump>` prints the bugcheck, the process, the faulting driver and
   the stack's frames by driver. Read the dump before pausing anything on a crash's account.
+- **The card runs the solver through ILGPU and nothing else, and its group size is set by
+  hand** (logbook/0112, `spikes/02-gpu-featherstone/`). ComputeSharp refuses a local array
+  in a shader and the step needs about 1,600 words of scratch a thread, so it is out. ILGPU
+  compiles the whole step, but its PTX backend has no `Sin`, `Cos` or `Atan2` without
+  `ILGPU.Algorithms` and `EnableAlgorithms()`, and its automatic group size is up to 2.9
+  times slower than 32 because each thread holds 12.7 kB of local memory in double; the
+  link ceiling is a compile-time constant that costs every thread whether used or not.
+  Double on the 4090 is slower than sixteen of this machine's cores at 10,000 bodies; single
+  is about six times faster and is a new realisation of every seed. Identity on the card
+  holds across launch shapes, so a GPU identity claim is made at two group sizes. Run GPU
+  code in the foreground with nothing else on the machine until the owner rules otherwise.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

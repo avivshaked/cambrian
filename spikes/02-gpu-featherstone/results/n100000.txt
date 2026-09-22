@@ -1,0 +1,44 @@
+=== Featherstone on the GPU: a measurement spike
+  host        MAINPC, 32 logical processors, .NET 8.0.24
+  commit      5da9ee3e9071dad1005e658ecf53c4aeaae3a955
+  run         D:\Projects\experiments\evolution-simulator\runs\r43-s1\2026-09-22-053156-08613877
+  snapshot    D:\Projects\experiments\evolution-simulator\runs\r43-s1\2026-09-22-053156-08613877\snapshots\000030000.jsonl
+  config      hash 0861387741b94259  (matches the record)
+  genomes     read 1104, refused 0, developed 1104, undeveloped 0
+  solver      dt 0.01, limiters engage False, drag limiter False, restoring 1, excess 0.019999999552965164, neutral 0.25
+  parts       1->85 2->261 3->419 4->88 5->132 6->64 7->45 8->4 9->6
+  jointed     483 of 1104; over MaxLinks=9: 0
+  device      NVIDIA GeForce RTX 4090, SMs 128, SM_89, max threads/group 1024
+
+--- transcription: the same kernel on ILGPU's CPU device, N=64, 200 steps
+  library vs kernel-on-CPU (double)
+    q   max 0.000E+000 rad     rms 0.000E+000 rad   over 75 dof
+    qd  max 0.000E+000 rad/s   rms 0.000E+000 rad/s
+    pos max 0.000E+000 m       rms 0.000E+000 m     (|pos| rms 1.590E+001 m, 594 components)
+    worst body -1 at 0.000E+000 m; non-finite comparisons 0
+    cpu-device wall 0.04 s, kernel compile 314 ms
+
+=== N = 100000, 200 steps at dt 0.01
+  links max 9, panels max 264, device state 1743 MB double / 871 MB single 
+  kernel compile: double 123 ms, single 60 ms
+  reference   1.84 s at 16 threads; non-finite bodies 0
+  library vs GPU double
+    q   max 1.554E-015 rad     rms 4.312E-017 rad   over 156015 dof
+    qd  max 5.486E-014 rad/s   rms 8.917E-016 rad/s
+    pos max 1.421E-014 m       rms 2.491E-016 m     (|pos| rms 1.574E+001 m, 994854 components)
+    worst body 52673 at 1.421E-014 m; non-finite comparisons 0
+  library vs GPU single
+    q   max 2.186E-006 rad     rms 6.892E-008 rad   over 156015 dof
+    qd  max 3.124E-005 rad/s   rms 7.701E-007 rad/s
+    pos max 3.299E-004 m       rms 1.224E-005 m     (|pos| rms 1.574E+001 m, 994854 components)
+    worst body 24695 at 3.299E-004 m; non-finite comparisons 0
+  identity    double bit-identical (76c5a9089fda5f94 / 76c5a9089fda5f94); single bit-identical (14558410fd05550a / 14558410fd05550a)
+
+  pace, microseconds per body-step (median of 3)
+    kernel only, one launch of 200  double    0.0859   single    0.0186
+    + positions down once per 200     double    0.0863   single    0.0187
+    + drive up / positions down per 50  double    0.0878   single    0.0192
+    + drive up / positions down per 1   double    0.1904   single    0.0501
+    CPU reference, 16 threads             0.0927
+
+  raw output written to D:\Projects\experiments\evolution-simulator\scratch\gpu-spike\featherstone\raw-output.txt

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    GPU measurement spike: does one creature's Featherstone step run on the GPU through ILGPU,
+    at what cost and at what deviation, in double and in single.
+
+    Output is kept out of src/ (Directory.Build.props's reason) by naming a BaseOutputPath here.
+    TieredCompilation off, like the farm's projects: .NET's quick JIT and its optimised loops
+    give different floating-point bits on a rounding edge, and this harness's whole job is to
+    report bits.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <TieredCompilation>false</TieredCompilation>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)out\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)out\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The first probe is its own project beside this one; keep its Main out of this build. -->
+    <Compile Remove="probe\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ILGPU" Version="1.5.3" />
+    <PackageReference Include="ILGPU.Algorithms" Version="1.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Evosim.Core\Evosim.Core.csproj" />
+    <ProjectReference Include="..\..\src\Evosim.Dynamics\Evosim.Dynamics.csproj" />
+  </ItemGroup>
+
+</Project>

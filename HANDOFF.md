@@ -410,12 +410,15 @@ subagent and never in a shell loop.
    on DX12 dispatches, reports doubles supported, and refuses a local array in a shader
    (`CMPS0025`/`CMPS0032`), so a Featherstone step with its per-link spatial scratch is
    ILGPU's to write. The fork the spike measures: the 4090 runs doubles at about a
-   sixty-fourth of its single rate, so a double port keeps the CPU's arithmetic and may
-   not pay, and a single port is a new realisation with its own stability question. The
-   spike (building): the per-creature step as an ILGPU kernel, one thread a creature, in
-   both precisions, against `Evosim.Dynamics` on round 42's bodies for deviation,
-   run-to-run identity on the GPU, and wall per body-step at 1,000 and 10,000 bodies.
-   Then the port proper, with the state stream as the theatre's feed.
+   sixty-fourth of its single rate. **The spike ran the same evening** (logbook/0112,
+   `spikes/02-gpu-featherstone/`): the per-creature step as an ILGPU kernel with nothing
+   cut, exact against the library on the CPU device, bit-identical across launch shapes;
+   double is slower than sixteen cores at 10,000 bodies, single is about six times faster
+   at 1.4 mm of deviation in ten seconds, and the card is not busy until about 30,000
+   bodies. `fable-propose-gpu.md` puts the precision, the 100,000 target and the brain spike
+   to the owner; nothing is built until it is ruled. The reduced step is about a quarter
+   of the real one, so the brain and the senses are measured as a kernel before the port
+   is sized. Then the port proper, with the state stream as the theatre's feed.
 7. **Loose ends.** Double accounts in Core for the matter residual (a new realisation of
    every seed, so between rounds and pre-registered). `ParallelIdentityTests` (50 s) kept
    or moved to Slow. The overlap probe's `run.ps1` taking its path argument. Close pictures

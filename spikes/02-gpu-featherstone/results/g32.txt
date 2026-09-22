@@ -1,0 +1,68 @@
+=== Featherstone on the GPU: a measurement spike
+  host        MAINPC, 32 logical processors, .NET 8.0.24
+  commit      5da9ee3e9071dad1005e658ecf53c4aeaae3a955
+  run         D:\Projects\experiments\evolution-simulator\runs\r43-s1\2026-09-22-053156-08613877
+  snapshot    D:\Projects\experiments\evolution-simulator\runs\r43-s1\2026-09-22-053156-08613877\snapshots\000030000.jsonl
+  config      hash 0861387741b94259  (matches the record)
+  genomes     read 1104, refused 0, developed 1104, undeveloped 0
+  solver      dt 0.01, limiters engage False, drag limiter False, restoring 1, excess 0.019999999552965164, neutral 0.25
+  parts       1->85 2->261 3->419 4->88 5->132 6->64 7->45 8->4 9->6
+  jointed     483 of 1104; over MaxLinks=9: 0
+  device      NVIDIA GeForce RTX 4090, SMs 128, SM_89, max threads/group 1024
+
+--- transcription: the same kernel on ILGPU's CPU device, N=8, 1000 steps
+  library vs kernel-on-CPU (double)
+    q   max 0.000E+000 rad     rms 0.000E+000 rad   over 15 dof
+    qd  max 0.000E+000 rad/s   rms 0.000E+000 rad/s
+    pos max 0.000E+000 m       rms 0.000E+000 m     (|pos| rms 1.651E+001 m, 81 components)
+    worst body -1 at 0.000E+000 m; non-finite comparisons 0
+    cpu-device wall 0.04 s, kernel compile 311 ms
+
+=== N = 1000, 1000 steps at dt 0.01
+  links max 9, panels max 264, device state 17 MB double / 8 MB single 
+  kernel compile: double 117 ms, single 60 ms
+  reference   0.11 s at 16 threads; non-finite bodies 0
+  library vs GPU double
+    q   max 1.884E-015 rad     rms 9.645E-017 rad   over 1560 dof
+    qd  max 1.390E-014 rad/s   rms 6.191E-016 rad/s
+    pos max 1.776E-014 m       rms 6.230E-016 m     (|pos| rms 1.569E+001 m, 9924 components)
+    worst body 22 at 1.776E-014 m; non-finite comparisons 0
+  library vs GPU single
+    q   max 9.306E-006 rad     rms 7.062E-007 rad   over 1560 dof
+    qd  max 1.219E-005 rad/s   rms 6.520E-007 rad/s
+    pos max 1.309E-003 m       rms 6.210E-005 m     (|pos| rms 1.569E+001 m, 9924 components)
+    worst body 879 at 1.309E-003 m; non-finite comparisons 0
+  identity    double bit-identical (f4400996fab602b9 / f4400996fab602b9); single bit-identical (87ba0827c80b0f8f / 87ba0827c80b0f8f)
+
+  pace, microseconds per body-step (median of 3)
+    kernel only, one launch of 1000  double    1.0195   single    0.1270
+    + positions down once per 1000     double    1.0203   single    0.1280
+    + drive up / positions down per 50  double    1.0435   single    0.1305
+    + drive up / positions down per 1   double    1.9167   single    0.2280
+    CPU reference, 16 threads             0.0968
+    CPU reference, 1 thread               1.0189
+
+=== N = 10000, 1000 steps at dt 0.01
+  links max 9, panels max 264, device state 174 MB double / 87 MB single 
+  kernel compile: double 499 ms, single 321 ms
+  reference   0.91 s at 16 threads; non-finite bodies 0
+  library vs GPU double
+    q   max 2.026E-015 rad     rms 8.360E-017 rad   over 15573 dof
+    qd  max 2.888E-014 rad/s   rms 7.269E-016 rad/s
+    pos max 3.553E-014 m       rms 6.507E-016 m     (|pos| rms 1.571E+001 m, 99441 components)
+    worst body 5542 at 3.553E-014 m; non-finite comparisons 0
+  library vs GPU single
+    q   max 9.306E-006 rad     rms 6.954E-007 rad   over 15573 dof
+    qd  max 8.396E-005 rad/s   rms 2.448E-006 rad/s
+    pos max 1.410E-003 m       rms 6.221E-005 m     (|pos| rms 1.571E+001 m, 99441 components)
+    worst body 1449 at 1.410E-003 m; non-finite comparisons 0
+  identity    double bit-identical (ae4314c846190f86 / ae4314c846190f86); single bit-identical (2a870ee0083d6b20 / 2a870ee0083d6b20)
+
+  pace, microseconds per body-step (median of 3)
+    kernel only, one launch of 1000  double    0.1244   single    0.0213
+    + positions down once per 1000     double    0.1246   single    0.0214
+    + drive up / positions down per 50  double    0.1277   single    0.0225
+    + drive up / positions down per 1   double    0.2748   single    0.0692
+    CPU reference, 16 threads             0.0892
+
+  raw output written to D:\Projects\experiments\evolution-simulator\scratch\gpu-spike\featherstone\raw-output.txt
