@@ -124,6 +124,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D102](#d102) | The streams in a tank flatter than the overturning cell can balance: where D088's equal-axes rule has no solution the vertical RMS over the horizontal is `0.76 · k_max` (0.75 at 20 m in the 2,200 m² tank, the cell at round 42's amplitude), in that branch only, so every tank that built before builds the same; the header carries `axes v:h` | 2026-09-21 | ruled by the owner in conversation on the morning of 2026-09-21 at the agent's recommendation, from `logbook/specs/streams-shallow-spec.md` |
 | [D103](#d103) | Four pinned arms at a time (D095's three amended): each arm pinned to two fast cores of its own (masks 0x003C, 0x03C0, 0x3C00, 0xC003), a fourth costing 1.01 of a third's wall on a young crowd; the cap stays a rule of the Unity farm, and a farm out of Unity is not an arm | 2026-09-21 | ruled by the owner in conversation on the morning of 2026-09-21 on the agent's measurement (`logbook/specs/harness-profile-spec.md` §9) |
 | [D104](#d104) | The water sampled per link on every step on the new engine: D100's hold retired at 0 from round 43, because a held sample undoes D090 (a neutral body 22 m from its parcel in 1,000 s against 5 cm per link) and the cheapening buys nothing on a solver of our own | 2026-09-22 | ruled by the owner in conversation at 03:15 on 2026-09-22 ("Yes" to the agent's recommendation of hold 0) |
+| [D105](#d105) | The physics on the card in single precision through ILGPU, designed for 100,000 bodies and first validated at 10,000 to 30,000 with the grid on the CPU, built in parallel with the animal-kit rounds; double on the 4090 is slower than the cores, and a single-precision world is a new realisation read by D104's gate | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 evening ("for the rest I think we can go with your recommendations") |
 
 ---
 
@@ -5659,4 +5660,43 @@ round under D091 and reads round 42's world for the mechanism, not for identity,
 identity is already gone with the engine.
 
 **Cost.** A new realisation of every seed, as the engine already is. No Unity change.
+
+### D105
+**The physics on the card, in single precision** · 2026-09-22
+
+**Status:** ruled by the owner in conversation on the evening of 2026-09-22 ("for the rest
+I think we can go with your recommendations", on the decision put in full), from
+`fable-propose-gpu.md` after the GPU spike (logbook/0112). The port is not built; the brain
+and the senses are measured as a kernel first.
+
+**Decision.** The per-creature physics step moves to the GPU through ILGPU in single
+precision. The port is designed for 100,000 bodies (a flat struct-of-arrays state, a fixed
+link ceiling per kernel build, the group size set by hand, positions read back once a
+metabolic step) and first validated at 10,000 to 30,000 bodies with the world step still on
+the CPU; the grid's own port is a later step. The GPU engine is a new engine and a new
+realisation: `run.json` names it, no recorded run replays on it, and its base round is read
+by D104's gate, distributions across seeds and every mechanism prediction, never a digest.
+Identity claims are made on the card against itself at two launch shapes. The port is
+built in parallel with the animal-kit rounds, which run on the CPU farm at their crowds.
+
+**Why.** The spike put the whole step on the RTX 4090 with nothing cut, exact against the
+library on the CPU device and bit-identical across launch shapes. In double the card is
+slower than sixteen of this machine's cores at 10,000 bodies and level at 100,000, because
+a consumer card runs doubles at about a sixty-fourth of its single rate. In single it is
+about six times the CPU at 10,000 and the same at 100,000, with a deviation after ten
+simulated seconds of 1.4 mm at worst and 62 µm rms in position and 1e-5 rad in joint
+angle, on bodies tens of centimetres across whose contact is a soft push between bounding
+spheres: below anything the ecology reads (the agent's inference). The card is not busy
+until about 30,000 bodies, so the design target is the crowd that fills it.
+
+**Rejected.** Double on the card: it keeps the CPU's arithmetic and buys nothing. A port
+aimed at 10,000 alone: the same work for a tenth of the reach. Moving the grid in the first
+port: it is 26% of the wall at round 43's crowd and scales with cells, so it binds only at
+the larger world, and it is a separate kernel with its own identity story.
+
+**Cost.** One to two weeks of agent work, in the gaps of the rounds. The record does not
+carry across engines. The stability of single precision is a reading of the base round:
+if it throws bodies that double does not, the precision is re-asked. Until a few clean
+runs accumulate after the crash scare of the same day, GPU code runs in the foreground
+with nothing else on the machine.
 
