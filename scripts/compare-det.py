@@ -23,6 +23,13 @@ import json
 import os
 import sys
 
+# The contact/overlap instrument's two names -- CLAUDE.md's two-farms gotcha: the farm
+# out of Unity renamed it, and a script asked for the Unity name against a farm run (or
+# the reverse) should get the number under whichever name the file actually carries.
+# contact_aliases.py is shared with the scripts under scripts/reads/.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'reads'))
+from contact_aliases import field as alias_field, SAID, note
+
 
 def fail(code, message):
     print(message, file=sys.stderr)
@@ -123,8 +130,12 @@ def main():
     if first is not None:
         return 1
 
+    contacts_at_end = alias_field(A[shared[-1]], 'contactPairsPerStep', None)
     print(f'{args.a} vs {args.b}: identical on all {same} shared samples '
-          f'(to t={shared[-1]}); contacts/step at end {A[shared[-1]].get("contactPairsPerStep")}')
+          f'(to t={shared[-1]}); contacts/step at end {contacts_at_end}')
+    if SAID:
+        print('  (' + note(subject='this run') + ')')
+        SAID.clear()
     return 0
 
 

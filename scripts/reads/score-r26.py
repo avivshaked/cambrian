@@ -1,6 +1,11 @@
 """Round 26 (logbook/0067) scoring from stats.jsonl: M2-M8. M1 is scripts/clade-score.ps1.
-Usage: python3 scripts/reads/score-r26.py r26-s1 ... r26-s5"""
+Usage: python3 scripts/reads/score-r26.py r26-s1 ... r26-s5
+
+M8's contact reading is the contact/overlap instrument -- renamed on the farm out of
+Unity (CLAUDE.md's two-farms gotcha); contact_aliases.py resolves either name."""
 import json, glob, sys
+
+from contact_aliases import field, SAID, note
 
 for arm in sys.argv[1:]:
     files = glob.glob(f'runs/{arm}/*/stats.jsonl')
@@ -41,10 +46,13 @@ for arm in sys.argv[1:]:
     tail = [r for r in rows if r['t'] >= 15000]
     cw_mean = sum(r.get('crowdedWindow', 0) for r in tail) / max(len(tail), 1)
     print(f"  M7 crowd: crowded/window below births/window at every sample from 15000: {ok}; mean crowded/window {cw_mean:.0f}; total crowded {last.get('crowded')} vs births {last['births']}")
-    ct = [r.get('contactPairsPerStep', 0) for r in late]
+    ct = [field(r, 'contactPairsPerStep', 0) for r in late]
     if ct:
         print(f"  M8 contact: contacts/step t>10000 min {min(ct):.0f} mean {sum(ct)/len(ct):.0f} max {max(ct):.0f} (100-5000)")
     pk = sorted(k for k in last if k.startswith('alivePerPatch'))
     if pk and late:
         v = last[pk[0]] if len(pk) == 1 else [last[k] for k in pk]
         print(f"  patches at end: {v}")
+    if SAID:
+        print('  (' + note(subject='this run') + ')')
+        SAID.clear()

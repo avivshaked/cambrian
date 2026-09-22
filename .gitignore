@@ -160,6 +160,10 @@ artifacts/
 # no permission prompt blocks autonomous work; gitignored so none of it lands in history.
 scratch/
 
+# Python's bytecode cache, written beside any script that imports a sibling module
+# (scripts/reads/ has one since the contact aliases, 2026-09-22).
+__pycache__/
+
 # Parallel run workers — clones of unity/ created by scripts/new-worker.ps1 so that two
 # batchmode processes never share one Library/. Everything in them is either a copy of
 # unity/ or regenerated, so tracking them would duplicate every script in the repository.

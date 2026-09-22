@@ -1,6 +1,11 @@
 """Round 25 (logbook/0065) scoring from stats.jsonl: M1-M5, M7, M8. M6 is clade-score.ps1.
-Usage: python3 scripts/reads/score-r25.py r25-s2 r25-s4 r25h-s2 r25h-s4 r25q-s2"""
+Usage: python3 scripts/reads/score-r25.py r25-s2 r25-s4 r25h-s2 r25h-s4 r25q-s2
+
+M7's contacts reading is the contact/overlap instrument -- renamed on the farm out of
+Unity (CLAUDE.md's two-farms gotcha); contact_aliases.py resolves either name."""
 import json, glob, sys
+
+from contact_aliases import field, SAID, note
 
 for arm in sys.argv[1:]:
     files = glob.glob(f'runs/{arm}/*/stats.jsonl')
@@ -35,8 +40,11 @@ for arm in sys.argv[1:]:
         means = {k: sum(r[k] for r in late)/len(late) for k in pk}
         print(f"  M5 patches (mean alive t>10000): { {k: round(v) for k, v in means.items()} }")
     cr = last.get('crowded', last.get('crowdedStillbirths', None))
-    ct = [r.get('contacts', r.get('contactPairsPerStep', 0)) for r in late] if late else []
+    ct = [field(r, 'contactPairsPerStep', 0) for r in late] if late else []
     print(f"  M7 crowded {cr} ({(cr / max(last['births'],1) * 100) if isinstance(cr,(int,float)) else '?'}% of births); contacts mean t>10000 {sum(ct)/len(ct) if ct else '-'}")
     print(f"  M8 alive max {max(r['alive'] for r in rows)}; matterHere mean t>10000 {sum(r['matterHere'] for r in late)/len(late) if late else float('nan'):.3f}")
     if arm == sys.argv[1]:
         print('  keys:', sorted(k for k in keys if any(x in k.lower() for x in ('above','below','wrap','crowd','contact','patch'))))
+    if SAID:
+        print('  (' + note(subject='this run') + ')')
+        SAID.clear()

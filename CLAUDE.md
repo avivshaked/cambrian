@@ -1084,8 +1084,10 @@ actually verifying it.
   through a launcher both have written. **The contact instrument is renamed**: the farm's
   contact is a soft push between spheres, so its columns are `overlaps`, `ovl/body`,
   `ovl jnt %` and `ovl held %` and its stats fields `overlapPairs*` and `bedOrGlassBodies*`;
-  the numbers do not compare with `pairs/body` across the change, and the read scripts
-  still read the old names. **No recorded run replays on it**, and none of the farm's
+  the numbers do not compare with `pairs/body` across the change; `analyse-arm.ps1` and
+  the Python reads (`scripts/reads/contact_aliases.py`, one table for the columns and one
+  for the fields) resolve either name and print a note saying which engine's census was
+  read. **No recorded run replays on it**, and none of the farm's
   replays in the Unity theatre; a `poses.jsonl` beside `positions.jsonl` is the first
   bridge. **In the Unity farm a body's own parts collide and a driven joint is mostly not
   free to turn** (the parity swims, HANDOFF 2026-09-21): forty of round 42's jointed bodies

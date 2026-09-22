@@ -16,41 +16,18 @@ header line, so that a reader can see which world's cadence a figure was integra
 """
 import json, glob, math, os, sys
 
+from contact_aliases import field, SAID, note
+
 ROOT = 'D:/Projects/experiments/evolution-simulator'
 RUNS = ROOT + '/runs'
 BUDGET_UNITS = 3000  # rounds 41 to 41e; round 42 passes --budget 1500
 RHO = 100
 COLUMNS = 2211  # the uniform expectation's scale in E7, from 0107
 
-# The contact instrument under two names. The farm out of Unity counts overlapping bounding
-# spheres between creatures where PhysX counted contact manifolds between colliders, so its
-# statistics fields are overlapPairs* and bedOrGlassBodies*. Asked by either name, answered from
-# whichever the file carries, and said once: the two are a different census and E9's threshold
-# was set on PhysX's.
-ALIASES = {
-    'contactPairs': 'overlapPairs',
-    'contactPairsPerStep': 'overlapPairsPerStep',
-    'contactPairsJointed': 'overlapPairsJointed',
-    'contactPairsPersistent': 'overlapPairsHeld',
-    'contactBodies': 'overlapBodies',
-    'floorContactPairs': 'bedOrGlassBodies',
-    'floorContactPairsPerStep': 'bedOrGlassBodiesPerStep',
-}
-ALIASES.update({v: k for k, v in ALIASES.items()})
-SAID = {}
-
-
-def field(row, name, default=None):
-    """The field, or the one it was renamed to, or the default."""
-    if name in row:
-        return row[name]
-    other = ALIASES.get(name)
-    if other is not None and other in row:
-        SAID[name] = other
-        return row[other]
-    if default is None:
-        raise KeyError(name)
-    return default
+# The contact instrument's two names -- contact_aliases.py, shared with score-r25.py,
+# score-r26.py, score-r28.py and compare-det.py. Asked by either name, answered from
+# whichever the file carries, and said once: the two are a different census and E9's
+# threshold was set on PhysX's.
 
 
 def rows_of(arm):
@@ -124,9 +101,7 @@ def main():
         print(f'  E10 probe by hand on snapshots/{t:09d}.jsonl: no body at 16 parts, < 1% at >= 8, self-pairs/body < 0.3')
         print(f'  recorded: jointed {r["jointed"]} ({r["jointed"] / alive * 100:.0f}%, inh {r["jointedInherited"]}), mean dof {r["dof"] / max(alive, 1):.2f}, audit {r["auditResidual"]:.1e}, mat resid {r["matterResidual"]:.1e}, wraps {r["wraps"]}')
         if SAID:
-            print('  (this run names them differently: ' +
-                  '; '.join(f'{k} read as {v}' for k, v in sorted(SAID.items())) +
-                  ' -- a different census, not the same number)')
+            print('  (' + note(subject='this run') + ')')
             SAID.clear()
 
 
