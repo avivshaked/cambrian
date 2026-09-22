@@ -114,6 +114,51 @@ namespace Evosim.Theatre
         public string CoreHash { get; private set; }
         public string SimHash { get; private set; }
 
+        /// <summary>
+        /// Which engine stepped the run: <c>"physx"</c> for every run the Unity farm recorded,
+        /// <c>"dynamics"</c> for one the console farm did — <c>run.json</c>'s <c>engine</c>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Absent means PhysX, and that is a reading of history rather than a default.</b>
+        /// <c>EvolutionRun</c> never wrote the field because until 2026-09-22 there was only one
+        /// engine, so every manifest without it was written by the Editor stepping PhysX. A run
+        /// recorded by the console farm carries the word, and the two are not replayable by the
+        /// same code: one needs a scene and an <c>ArticulationBody</c> per link, the other needs
+        /// neither. Nothing here guesses — the word decides which replay is opened, and a word
+        /// this build does not know is refused rather than assumed to be one of the two.
+        /// </remarks>
+        public string Engine { get; private set; }
+
+        /// <summary>SHA-256 over <c>src/Evosim.Dynamics</c>, or null on a PhysX run.</summary>
+        public string DynamicsHash { get; private set; }
+
+        /// <summary>SHA-256 over <c>src/Evosim.Farm</c>, or null on a PhysX run.</summary>
+        public string FarmHash { get; private set; }
+
+        /// <summary>
+        /// How many threads stepped the bodies, or null when the manifest does not say.
+        /// </summary>
+        /// <remarks>
+        /// Pace and not a realisation — <c>DynamicsWorld.Step</c> takes one <c>Parallel.For</c>
+        /// path at every count, including one, so the digests are equal at 1, 4 and 16. It is read
+        /// and used anyway, because a replay that runs at the recording's own count is one fewer
+        /// difference to argue about when a sample does part.
+        /// </remarks>
+        public int? Threads { get; private set; }
+
+        /// <summary>
+        /// The economy's step, from <c>run.json</c>'s <c>metabolicStepSeconds</c>, or 0.
+        /// </summary>
+        /// <remarks>
+        /// Read but not obeyed: it is a constant in both engines (<c>Ecosystem</c>'s and
+        /// <c>EnvBinding.MetabolicStepSeconds</c>, 0.5 s), and the replay derives its own steps per
+        /// metabolic step from the physics step through the farm's own
+        /// <c>EnvBinding.ResolvePhysicsStep</c>. What it is for is to catch a recording made by a
+        /// build whose economy ran at another cadence, which would make every sample time
+        /// meaningless without a single column saying so.
+        /// </remarks>
+        public double MetabolicStepSeconds { get; private set; }
+
         /// <summary>Every sample the run wrote, in order. Empty when it wrote none.</summary>
         public IReadOnlyList<RunSample> Samples { get; private set; }
 
@@ -189,6 +234,14 @@ namespace Evosim.Theatre
             record.UnityVersion = manifest.OptionalString("unityVersion", null);
             record.Status = manifest.OptionalString("status", "unknown");
 
+            // See the property's remarks: absent is PhysX because there was nothing else to be.
+            record.Engine = manifest.OptionalString("engine", "physx");
+
+            if (manifest.Has("threads")) record.Threads = manifest["threads"].AsInt();
+
+            record.MetabolicStepSeconds =
+                manifest.Has("metabolicStepSeconds") ? manifest["metabolicStepSeconds"].AsDouble() : 0d;
+
             // Optional on purpose: every run recorded before D078 has no such field, and refusing
             // them would make the theatre useless on the whole record to date. Absent stays absent
             // — the replay decides what to do about it and the overlay says which case it is.
@@ -215,6 +268,13 @@ namespace Evosim.Theatre
                                   JsonNode.NodeKind.Bool && source["gitDirty"].AsBool();
                 record.CoreHash = source.OptionalString("coreHash", null);
                 record.SimHash = source.OptionalString("simHash", null);
+
+                // The dynamics engine's two halves. A PhysX manifest has neither, and a dynamics
+                // manifest has no simHash — there is no Assets/Evosim in a run the Editor never
+                // touched — which is why the identity check has to be told which engine it is
+                // asking about rather than comparing whatever hashes it happens to find.
+                record.DynamicsHash = source.OptionalString("dynamicsHash", null);
+                record.FarmHash = source.OptionalString("farmHash", null);
             }
 
             // The config carries the step too, since it became a tunable. Both are reported and
@@ -233,6 +293,32 @@ namespace Evosim.Theatre
             record.SamplesNote = note;
 
             return record;
+        }
+
+        /// <summary>
+        /// The engine word alone, read without validating anything else in the run.
+        /// </summary>
+        /// <remarks>
+        /// For the one caller that has to choose a replay before it has one: a full
+        /// <see cref="Load"/> refuses a config this build cannot read, and which engine a run was
+        /// stepped by is exactly the question a viewer needs answered before it can say why. Any
+        /// failure at all returns <c>"physx"</c>, because the caller's next move is to open the
+        /// PhysX replay, which will refuse the run properly and with the real reason.
+        /// </remarks>
+        public static string PeekEngine(string runDirectory)
+        {
+            try
+            {
+                string dir = ResolveRunDirectory(runDirectory);
+                string path = System.IO.Path.Combine(dir, "run.json");
+                if (!File.Exists(path)) return "physx";
+
+                return Json.Parse(File.ReadAllText(path)).OptionalString("engine", "physx");
+            }
+            catch
+            {
+                return "physx";
+            }
         }
 
         /// <summary>

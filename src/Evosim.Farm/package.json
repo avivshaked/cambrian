@@ -1,0 +1,10 @@
+{
+  "name": "com.evosim.farm",
+  "version": "0.1.0",
+  "displayName": "Evosim Farm",
+  "description": "The farm out of Unity: Core's World and Evosim.Dynamics stepped together (Simulation and its partials), the environment binding, the manifest, the rows and the report. Consumed by the Unity project as a local package beside Core and Dynamics so that the theatre can replay a dynamics-engine recording by running the farm's own loop inside the Editor rather than a second copy of it. Nothing here touches UnityEngine; Program.Main is compiled as ordinary code and never entered in the Editor.",
+  "unity": "6000.0",
+  "author": {
+    "name": "Aviv Shaked"
+  }
+}

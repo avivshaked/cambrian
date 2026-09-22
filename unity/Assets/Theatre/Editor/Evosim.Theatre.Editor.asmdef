@@ -4,6 +4,7 @@
     "references": [
         "Evosim.Core",
         "Evosim.Dynamics",
+        "Evosim.Farm",
         "Evosim.Sim",
         "Evosim.Theatre",
         "Unity.RenderPipelines.Universal.Runtime",

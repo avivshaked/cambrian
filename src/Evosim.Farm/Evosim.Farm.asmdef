@@ -1,0 +1,17 @@
+{
+    "name": "Evosim.Farm",
+    "rootNamespace": "Evosim.Farm",
+    "references": [
+        "Evosim.Core",
+        "Evosim.Dynamics"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

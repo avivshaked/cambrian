@@ -341,6 +341,28 @@ namespace Evosim.Theatre
                 return;
             }
 
+            // Which engine stepped the recording, before anything tries to rebuild it. Two farms
+            // record runs now (CLAUDE.md, 2026-09-22) and they are not replayable by the same
+            // code: the Editor's needs a scene and an ArticulationBody per link, the console
+            // farm's needs neither and steps Evosim.Dynamics instead. Every manifest written
+            // before the second farm existed has no `engine` field and is read as PhysX, so this
+            // branch cannot fire on a run in the record and the path below is the one it has
+            // always been.
+            string engine = RunRecord.PeekEngine(RunDirectory);
+
+            if (string.Equals(engine, TheatreDynamicsReplay.EngineName, StringComparison.Ordinal))
+            {
+                _error =
+                    "This run was stepped by Evosim.Dynamics, not by PhysX. The theatre can " +
+                    "replay it and check it against its own stats.jsonl — that is " +
+                    "Evosim.Theatre.EditorTools.DynamicsReplayCheck.Run, headless, with " +
+                    "EVOSIM_THEATRE_RUN pointing here — but it cannot yet draw it: the skin " +
+                    "dresses the GameObjects Ecosystem builds and this engine builds none.";
+
+                Debug.LogWarning("[Theatre] refused: " + _error);
+                return;
+            }
+
             _replay = TheatreReplay.Open(RunDirectory, AllowSourceMismatch, out string refusal);
 
             if (_replay == null)
