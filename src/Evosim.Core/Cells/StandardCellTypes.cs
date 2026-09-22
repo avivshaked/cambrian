@@ -422,9 +422,12 @@ namespace Evosim.Core
             Efficiency = efficiency;
 
             // A cuticle and nothing else (rule 2). A leaf cannot bite, cannot eat a corpse and
-            // cannot be made tough; what it may evolve is a quarter of a claw's worth of skin, and
-            // the ledger screen asks whether that costs it more than a tenth of its own income.
-            ProtectionMax = 0.25f;
+            // cannot be made tough; what it may evolve is half a claw's worth of skin, and the
+            // ledger screen asks whether that costs it more than a tenth of its own income. Half
+            // rather than the spec's quarter (2026-09-22 night): the steps a cuticle buys are
+            // blow / (blow − armour), so a quarter against a capped claw buys a third more and
+            // half buys twice, which is the least a defence has to be worth to be one.
+            ProtectionMax = 0.5f;
         }
 
         public override string Id => CellTypeIds.Photosynthetic;
@@ -526,8 +529,9 @@ namespace Evosim.Core
 
             // A skin, as a leaf's is (rule 2). Absorptive tissue feeds on what the water carries
             // and has no reason to be able to take a corpse apart — that is the consumer's organ,
-            // and giving both the same mouth would make the two types one.
-            ProtectionMax = 0.25f;
+            // and giving both the same mouth would make the two types one. Half, as the leaf's
+            // is, for the leaf's reason.
+            ProtectionMax = 0.5f;
         }
 
         public override string Id => CellTypeIds.Absorptive;

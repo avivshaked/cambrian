@@ -439,9 +439,21 @@ subagent and never in a shell loop.
    drop=50 after=100 mut=0.005 · water per link`; at 0111's pace they end about 21:00),
    then the read
    (`scripts/reads/r44-read.py`, `--out logbook/specs/r44-read/clauses.tsv`) and the
-   entry with pictures (`theatre-snap.ps1 -From snapshot`). Round 45, the mouth (`logbook/specs/mouth-spec.md`): health, the kill, the
-   corpse, intake, the two senses, the cap table and the four prices from the ledger, same
-   shape. Rung B's spec is drafted for the owner (`logbook/specs/scent-spec.md`, four
+   entry with pictures (`theatre-snap.ps1 -From snapshot`). **Round 45's build is in**
+   (`8b0d798`, the mouth: the caps in the registry, health as state, the kill by part path
+   with `DeathCause.Eaten`, contact from the overlap census once a metabolic step, intake
+   from corpses, the four prices, the `Contact` and `Damage` senses; every default is the
+   recorded world, `mtA` equals `mt0`; Core 801, Farm 64; `mouth-spec.md`'s "As built"
+   section is the report). The ledger screen moved two dials (the note above the spec's
+   screen section): `EVOSIM_HEALTH` 13 for a three-step kill, and the leaf's and
+   absorptive protection caps to 0.5 because thirty steps behind a cuticle is
+   arithmetically impossible and twice the steps is the least a defence is worth; the
+   prices are protection 1 W and the other three 0.1 W per unit per m². The launcher is
+   `rounds/env-r45.ps1`. Left before its launch: re-record the Dynamics crowd fixture on
+   this build (`r45fix-s4`, the ten `RunFixture` tests are red until then), `-All`, the
+   pre-registration entry (the spec's J1 to J7), and round 44's read, since round 45 runs
+   on round 44's world. Every `.ckpt` on disk is orphaned again by `StateVersion` 4.
+   Rung B's spec is drafted for the owner (`logbook/specs/scent-spec.md`, four
    questions in it, not built); C and D behind it.
 6. **The GPU port.** The probe ran clean alone on 2026-09-22 at 16:13 after the crash
    reading (`scratch/gpu-spike/probe`): ILGPU on CUDA sees the 4090 (SM_89, 128 SMs),

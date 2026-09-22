@@ -29,8 +29,8 @@ organ gives a predator, a grazer and a scavenger.
    | structural | 1 (a claw) | 0 | 1 (armour) | 4 |
    | link | 0.5 (a tail) | 0 | 0.5 | 2 |
    | neural | 0 | 0 | 0 | 1 |
-   | photosynthetic (a leaf) | 0 | 0 | 0.25 (a cuticle) | 1 |
-   | absorptive | 0 | 0 | 0.25 | 1 |
+   | photosynthetic (a leaf) | 0 | 0 | 0.5 (a cuticle; 0.25 until the screen) | 1 |
+   | absorptive | 0 | 0 | 0.5 (0.25 until the screen) | 1 |
    | consumer (a mouth) | 1 | 1 | 0.5 | 2 |
    | buoyancy | 0 | 0 | 0 | 1 |
 
@@ -89,6 +89,19 @@ free. The default toughness lets an unprotected leaf die to a capped claw within
 metabolic steps, and a capped cuticle holds it for thirty. Intake at the mouth's cap
 empties a leaf-sized corpse in under the corpse's decay time. The prices that satisfy all
 four go into the launcher and the pre-registration.
+
+*The screen, run on the build (2026-09-22 night, `scratch/r45-build/ledger-*.txt`, the
+"As built" section below), moved two of the four. At `HealthPerCubicMetre` 1 a capped claw
+kills any part in one step, 4.5 times over, so the round runs at 13, where round 43's
+median leaf takes three steps. And thirty steps behind a cuticle cannot be had at any
+price: the protected-to-unprotected ratio is `blow / (blow − armour)`, at most 1.33 with
+protection 0.25 against attack 1, so the agent's own target was wrong and is replaced by
+"twice the steps", which needs the leaf's protection cap at 0.5; the cap table's leaf
+and absorptive rows read 0.5 from the launch. The prices are per attribute:
+protection 1 W per unit per m² (a capped cuticle then costs about 12% of a leaf's
+surface income, the "not free" clause), attack, intake and toughness 0.1 (a capped claw
+costs about 5% of a leaf's income and one leaf-sized corpse repays about 450 s of it).
+These are the agent's values under the owner's autonomy answer, put here for amendment.*
 
 ## The acceptance
 
