@@ -121,6 +121,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D096](#d096) | The light's reach halved for round 40: `EVOSIM_LIGHT_REACH` 6 m (the attenuation depth, 12 m in every round before), so a lone leaf breeds only in the top ten metres and the water below is a dark column; the shelf follows in the lit band the new light defines | 2026-09-18 | ruled by the owner in conversation on the morning of 2026-09-18 ("Let's do it" on the direction, "proceed with your recommendations" on the value), from the agent's ledger sweep in `fable-propose-light.md`, absorbed here |
 | [D097](#d097) | The foundation queue stops after round 40's read; the campaign turns to what makes the world interesting: matter off the throne (a child's matter price so a cell is not a one-child cliff), then a mouth that eats living bodies (herbivory, then predation), then the senses and the stroke's price; each as a proposal | 2026-09-18 | ruled by the owner in conversation at midday on 2026-09-18 ("Let's follow your recommendations!") on the agent's diagnosis after round 40's early look |
 | [D098](#d098) | One substance: matter in two states, inorganic in the water and organic in bodies, corpses and detritus, with energy as the organic state's content at ρ joules a unit; photosynthesis makes organic from inorganic at a saturating uptake, living burns organic back to inorganic, eating moves organic, a child is organic matter given by its parent, detritus remineralises, the fixed charge goes, one breeding-margin gene; both audits kept; every current run stopped for the rebuild | 2026-09-18 | ruled by the owner in conversation on the evening of 2026-09-18 ("Let's do it. And I'd stop all the current runs") on `fable-propose-economy.md`, absorbed here with the owner's four alignment questions |
+| [D102](#d102) | The streams in a tank flatter than the overturning cell can balance: where D088's equal-axes rule has no solution the vertical RMS over the horizontal is `0.76 · k_max` (0.75 at 20 m in the 2,200 m² tank, the cell at round 42's amplitude), in that branch only, so every tank that built before builds the same; the header carries `axes v:h` | 2026-09-21 | ruled by the owner in conversation on the morning of 2026-09-21 at the agent's recommendation, from `logbook/specs/streams-shallow-spec.md` |
+| [D103](#d103) | Four pinned arms at a time (D095's three amended): each arm pinned to two fast cores of its own (masks 0x003C, 0x03C0, 0x3C00, 0xC003), a fourth costing 1.01 of a third's wall on a young crowd; the cap stays a rule of the Unity farm, and a farm out of Unity is not an arm | 2026-09-21 | ruled by the owner in conversation on the morning of 2026-09-21 on the agent's measurement (`logbook/specs/harness-profile-spec.md` §9) |
 
 ---
 
@@ -5561,3 +5563,72 @@ why it waits for round 41d to end before it reaches main. The tunable refuses ev
 `config.json`, as D100's does. The floor draws again on a refused founder without selecting
 for viability, as it does for a body of no parts; a world in which founders often fold would
 found more slowly, and the smoke reads how often.
+
+### D102
+**The streams in a tank flatter than the cell can balance** · 2026-09-21
+
+**Status:** ruled by the owner in conversation on the morning of 2026-09-21, at the agent's
+recommendation of the middle value from `logbook/specs/streams-shallow-spec.md` §2; built on
+branch `streams-shallow` and merged to main on 2026-09-22 between rounds 42 and the next,
+because it touches Core (`CurrentField`) and the run header. No recorded world is changed:
+the rule acts only in the branch of `BuildStreams` that threw before it.
+
+**Decision.** D088's streams solve the overturning cell's amplitude so that the vertical RMS
+equals the horizontal on every axis, and that quadratic has no root once the tank is wider
+than the cell can turn in (`a = V − H1/2` crosses zero between 30 and 20 m of depth at the
+2,200 m² radius, spec §1). That is what kept the bed out of the lit band (logbook/0110's
+world section). Where the equal-axes condition has no solution the target
+ratio becomes `k = λ · k_max`, with `k_max = sqrt(2V/H1)` measured from the pass already
+running and `λ = 0.76`: at 20 m the vertical RMS is 0.75 of the horizontal and the cell's
+amplitude is round 42's, so the eddies keep the share of the water they have today. The
+scale is fitted after the amplitude, so the total RMS stays the knob. `CurrentField.
+StreamsAxisRatio` reads the ratio the field settled on (1.00 for every tank that built
+before), the header prints `axes v:h`, and `run.json` carries `streamsAxisRatio`.
+
+**Why.** The owner ruled the bed raised into the lit band so that structures on the floor
+can matter, and the streams refused every tank flat enough for it. Relaxing the target in
+the branch that throws is the smallest change that keeps every recorded tank replaying by
+construction, and the algebra is the same quadratic with `k` folded into its coefficients,
+so the solver is untouched. The three values in the spec's table trade how much of the
+water is overturning cell against the vertical's strength; 0.76 holds the cell at the
+amplitude every scored tank has run at, which keeps the next shallow round readable
+against round 42.
+
+**Rejected.** A smaller tank at 45 m (loses the slope D093 sized the tank for). Any λ near
+1 (the cell nearly twice round 42's amplitude and the eddies a smaller share, a different
+water). Writing `k_max` as a literal (it is a property of the tank).
+
+**Cost.** A Core change, so `coreHash` moves; the manifest field and the header token move
+`simHash`; every worker refreshed before the next round. The smoke on a 20 m tank
+(`scratch/wt-shallow/runs/shallow20smoke`, header `axes v:h 0.75`) is the one run on it.
+
+### D103
+**Four pinned arms at a time** · 2026-09-21
+
+**Status:** ruled by the owner in conversation on the morning of 2026-09-21, on the
+measurement of the same morning (`logbook/specs/harness-profile-spec.md` §9). Amends
+D095's cap of three; D095's rule on seeds stands.
+
+**Decision.** Up to four arms run at once on the Unity farm, each pinned by
+`run-arm.ps1 -AffinityMask` to two fast cores of its own: masks 0x003C, 0x03C0 and 0x3C00
+for workers 2, 3 and 4, and 0xC003 for the fourth. The owner's open Editor and a render
+still count toward the five Unity processes. A farm run out of Unity (`Evosim.Farm`, from
+2026-09-22) is not an arm under this rule: it takes the threads it is given and shares
+the machine with whatever else runs, and its cost to a pinned arm is unmeasured.
+
+**Why.** D095 capped the farm at three because five unpinned arms delivered 1.7 times real
+time in total and three 1.5, the fourth and fifth buying little. Pinning changed the
+arithmetic: an arm beside two others cost 1.48 of its solo wall unpinned and 1.09 pinned
+on one trajectory, and a fourth pinned arm (`r42four-s2`, a replay of round 42's seed 2 to
+3,000 s on worker 5) matched its recording on every non-clock field and ran 100 to 3,000 s
+in 918 s against 907 s as one of three, 1.01. So a fourth pinned arm costs nothing it can
+be seen to cost on a young crowd, and round 42's seeds 4 and 5 ran on it.
+
+**Rejected.** Five pinned arms (the fifth would share cores with the Editor and the
+renders, and 0xC003 already takes the two cores the system runs on). Reading the fourth
+arm's cost from one young trajectory as the cost at a full crowd (it is not measured, and
+the entry says so).
+
+**Cost.** None to any world: pinning moves no trajectory. The rule lives in CLAUDE.md as
+well.
+
