@@ -284,10 +284,16 @@ font assets are dynamic**: a few KB each, rasterised at runtime from the three P
 beside them, so a player build would have to carry the TTFs. The end-to-end is
 `Evosim.Theatre.EditorTools.TheatreUiCheck.Run` (`-batchmode`, no `-quit`, no `-nographics`;
 `EVOSIM_THEATRE_RUN` for a world, `EVOSIM_THEATRE_GENOME` for solo, `EVOSIM_THEATRE_OVERRIDE=1`
-against `runs/r37bsmoke3` for the cousin states, which is the one recorded run this build
-opens under another `simHash`; `runs/r37-s1` cannot serve, its config predates two tunables),
+against `runs/r42smoke` for the cousin states, which is the one recorded run this build
+opens under another `simHash`; `runs/r37bsmoke3` served until 2026-09-22 and is now refused
+on a missing `bed` field, and `runs/r37-s1` cannot serve, its config predates two tunables),
 asserting every field against the replay and writing every state at 1920 and 3840 into
-`scratch/snaps/ui/`; a fixture is a 300 s smoke recorded on the worker that runs it.
+`scratch/snaps/ui/`; a fixture is a 300 s smoke recorded on the worker that runs it. The
+live-mode end-to-end is `Evosim.Theatre.EditorTools.LiveUiCheck.Run` (`91aea20`, 2026-09-22;
+same launch shape, `EVOSIM_THEATRE_RUN` a farm run and `EVOSIM_THEATRE_CHECKPOINT` its
+checkpoint), 129 assertions over the same panels answered from the live world, and it
+finishes with the refusal when the live world does not open rather than falling through to
+a solo verdict, which the replay path once did too (2026-09-13's note in `Drive()`).
 
 Both modes also run headless, which is how they are tested:
 
@@ -1118,8 +1124,19 @@ actually verifying it.
   is the checkpoint second when one is named and the seek target otherwise), labelled
   `continued from checkpoint at <s> s (cousin)` with any differing hash named, refusing
   nothing. `LiveCheckpointCheck` showed the counts agreeing for 200 s after a restore while
-  `audit` and `meanHeight` parted at the first stepped sample. The UI strip is down in live
-  mode, so the frame label is the whole of the provenance on screen.
+  `audit` and `meanHeight` parted at the first stepped sample. From `91aea20` the interface
+  is up in live mode and answers every panel from the live world through one path for both
+  engines: the provenance word is always `COUSIN`, the coverage segment is a drift line
+  (`drift: parted at t=410, 0 of 20 agreed`, Mono against the farm's .NET, a reading and
+  never a verdict), the popover's `physics jobs` and `sim hash` rows say `not in live mode`
+  and the three digests that decide the trajectory stand in their place, the ancestry and
+  the dead panel are withheld as on any cousin, and a click selects by a ray against each
+  part's own box because a live body has no collider. **A checkpoint version bump orphans
+  every checkpoint on disk**: the double-accounts build took the layout from 1 to 2 while
+  `scratch/checkpoint/runs/ckA` was the fixture, so the fixture is refused and
+  `LiveUiCheck` needs `EVOSIM_THEATRE_CHECKPOINT` pointed at one the build wrote
+  (`scratch/live-ui/runs/ckUi` on 2026-09-22) until ckA is re-recorded. The founding live
+  path (no checkpoint named) has no check yet.
 - **A blue screen beside a GPU probe was the file-system filter stack, and a minidump is
   readable without a debugger.** The one crash in this machine's log (2026-09-22, bugcheck
   0x3B) faulted in `FLTMGR.SYS` on a `dotnet.exe` thread, entered through the Xbox Gaming

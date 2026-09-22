@@ -174,11 +174,22 @@ doubles parting at the first stepped sample (the runtime, per the Mono gotcha).
 `theatre-snap.ps1 ckA -FromCheckpoint scratch/checkpoint/runs/ckA -At 400 -Carry 100 -Views
 side,top,close` photographs a continued world with the skin: `-At` is the checkpoint second,
 the picture is taken at restore plus carry and named `<arm>-t<second>-ckpt-<view>.png`, and
-`-Chrome` and `-From snapshot` are refused with it. The pictures (`scratch/snaps/ckA/`) show
+`-From snapshot` is refused with it. The pictures (`scratch/snaps/ckA/`) show
 42 bodies in the top quarter of the water over the tilted bed, the disc filled without a
 crust, and a posed two-part body in the portrait, every frame labelled with the cousin
-clause. Untested: the interactive Play-mode path; the UI strip is still down in live mode,
-so the frame label is the only provenance on screen. The owner's plan is now at step 4,
+clause. **The interface is up in live mode** (`91aea20`, the evening): every panel answers
+from the live world through one path for both engines, the provenance word is always
+`COUSIN` with a drift line in place of coverage, ancestry and the dead panel are withheld
+as on any cousin, a click selects by ray against each part's box, and `-Chrome` is lifted
+for a continuation. `LiveUiCheck.Run` passes 129 of 129 on `unity-w6`, the PhysX check 84 of
+84 on `runs/r42smoke` (`r37bsmoke3` is refused now) and the solo check 28 of 28; ten live
+states are pictured in `scratch/snaps/ui/ckUi/`. Two things left from it: the founding
+live path (no checkpoint named) has no check, and the timeline's `peak · record ends`
+label prints over the clock once the head passes the record's end (seen in the selected
+state's picture). And `scratch/checkpoint/runs/ckA` is refused by the build since the
+double-accounts change moved the checkpoint layout to version 2; re-record it (and ckB,
+ckC) on the landed build before the next regress. Untested: the interactive Play-mode path.
+The owner's plan is now at step 4,
 the bite, gated on the animal-kit ruling, and step 5, the GPU, is cleared by the crash
 reading.
 
@@ -393,8 +404,10 @@ subagent and never in a shell loop.
 2. **Done: the theatre on the farm's record and the owner's live play.** `-From snapshot`
    draws `poses.jsonl` and the state stream; package A; the Editor replay reads a cousin
    and says so; the live world on the new engine, checkpoints, the Runner's picker and
-   `theatre-snap.ps1 -FromCheckpoint`. Left: the UI strip and click-select in live mode,
-   and one Editor run to verify `Mathf.Sin/Cos/Round` bits against `UnityFloatMath`.
+   `theatre-snap.ps1 -FromCheckpoint`; the interface and click-select in live mode
+   (`91aea20`). Left: the founding live path's check, the timeline label past the record's
+   end, re-recording ckA/ckB/ckC on the landed checkpoint layout, and one Editor run to
+   verify `Mathf.Sin/Cos/Round` bits against `UnityFloatMath`.
 3. **Done: the base round on the new engine** (round 43, logbook/0111). Left from it: `r41d-read.py`
    reading the sample interval from the rows; the farm's header printing D102's `axes v:h`.
 4. **The 10,000-creature look on the CPU**: a measurement, not a round. Ten times the area
