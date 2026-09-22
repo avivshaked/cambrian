@@ -49,19 +49,38 @@ namespace Evosim.Dynamics.Tests
             SolverConfig solver = RunFixture.Solver();
 
             // The pair, taken out of the crowded scatter that put them together and stepped
-            // alone, so what this measures is two bodies touching and nothing else.
+            // alone, so what this measures is two bodies touching and nothing else. Bodies 710
+            // and 427 were round 42 seed 4's pair; that recording is unreadable since format 7
+            // (2026-09-22), so the pair is now found in the fixture's own scatter: the deepest
+            // overlap in which the lighter body is jointed, which is the shape the damper lost.
             DynamicsWorld crowd = RunFixture.Scatter(solver, 1000, threads: 1, crowd: true);
-            Creature light = crowd.ById(710), heavy = crowd.ById(427);
+            Creature light = null, heavy = null;
+            double penetration = 0;
 
-            double penetration = light.ContactRadius + heavy.ContactRadius -
-                                 (light.ContactCentre - heavy.ContactCentre).Magnitude;
+            for (int i = 0; i < crowd.Creatures.Count; i++)
+            {
+                for (int j = i + 1; j < crowd.Creatures.Count; j++)
+                {
+                    Creature a = crowd.Creatures[i], b = crowd.Creatures[j];
+                    Creature lighter = a.TotalMass <= b.TotalMass ? a : b;
+                    if (lighter.Links < 2 || lighter.Dof < 1) continue;
+
+                    double overlap = a.ContactRadius + b.ContactRadius -
+                                     (a.ContactCentre - b.ContactCentre).Magnitude;
+                    if (overlap <= penetration) continue;
+
+                    penetration = overlap;
+                    light = lighter;
+                    heavy = lighter == a ? b : a;
+                }
+            }
+
+            Assert.True(light != null, "no jointed body overlaps another in the scatter, so this tests nothing");
 
             _out.WriteLine(
-                $"710: {light.TotalMass:0.##} kg, r {light.ContactRadius:0.##}; " +
-                $"427: {heavy.TotalMass:0.##} kg, r {heavy.ContactRadius:0.##}; " +
+                $"{light.Id}: {light.TotalMass:0.##} kg, {light.Links} links, {light.Dof} dof, r {light.ContactRadius:0.##}; " +
+                $"{heavy.Id}: {heavy.TotalMass:0.##} kg, r {heavy.ContactRadius:0.##}; " +
                 $"overlap {penetration:0.###} m");
-
-            Assert.True(penetration > 0, "the two are not overlapping, so this tests nothing");
 
             var world = new DynamicsWorld(solver);
             world.AddInIdOrder(heavy);

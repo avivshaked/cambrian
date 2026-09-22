@@ -29,7 +29,7 @@ namespace Evosim.Dynamics.Bench
     internal static class Program
     {
         private const string DefaultRun =
-            @"D:\Projects\experiments\evolution-simulator\runs\r42-s4\2026-09-21-051718-ff557bce";
+            @"D:\Projects\experiments\evolution-simulator\runs\r44fix-s4\2026-09-22-174956-c8a710b4";
 
         private const string DefaultSnapshot = "000020000.jsonl";
 

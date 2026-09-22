@@ -7,7 +7,11 @@ using Evosim.Dynamics.Placement;
 namespace Evosim.Dynamics.Tests
 {
     /// <summary>
-    /// Round 42 seed 4's world and its bodies, read once for the whole test run.
+    /// A recorded crowd on this build, read once for the whole test run: round 43's world
+    /// (round 42's launcher with the water sampled per link) re-recorded as <c>r44fix-s4</c> on
+    /// round 44's build, seed 4, 20,000 s, with the module tunables at zero so that it is the
+    /// recorded world. It replaced round 42 seed 4 on 2026-09-22 when the module gene's
+    /// tunables and format 7 made that recording unreadable.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -32,7 +36,10 @@ namespace Evosim.Dynamics.Tests
     internal static class RunFixture
     {
         public const string RunDirectory =
-            @"D:\Projects\experiments\evolution-simulator\runs\r42-s4\2026-09-21-051718-ff557bce";
+            @"D:\Projects\experiments\evolution-simulator\runs\r44fix-s4\2026-09-22-174956-c8a710b4";
+
+        /// <summary>The recording's name, for the messages that say why it cannot serve.</summary>
+        private const string Recording = "r44fix-s4 (round 43's world on round 44's build, seed 4)";
 
         public const string Snapshot = "000020000.jsonl";
 
@@ -76,7 +83,7 @@ namespace Evosim.Dynamics.Tests
                 if (!File.Exists(Path.Combine(RunDirectory, "config.json")) ||
                     !File.Exists(Path.Combine(RunDirectory, "snapshots", Snapshot)))
                 {
-                    return "round 42 seed 4 is not on this machine (run directories are " +
+                    return Recording + " is not on this machine (run directories are " +
                            "gitignored and belong to the main working tree)";
                 }
 
@@ -86,14 +93,14 @@ namespace Evosim.Dynamics.Tests
                 }
                 catch (Exception e)
                 {
-                    return "this build cannot read round 42 seed 4's config: " + e.Message +
+                    return "this build cannot read the config of " + Recording + ": " + e.Message +
                            " — the recording predates a tunable, and a fixture has to be " +
                            "recorded on the build that reads it";
                 }
 
                 if (_bodies.Count == 0)
                 {
-                    return "this build refused every genome in round 42 seed 4's snapshot — the " +
+                    return "this build refused every genome in the snapshot of " + Recording + " — the " +
                            "recording predates a genome format bump, and a fixture has to be " +
                            "recorded on the build that reads it";
                 }
