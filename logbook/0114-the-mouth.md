@@ -79,22 +79,26 @@ nothing is armoured, and the organs enter by mutation alone.
 
 ## The launch
 
-`r45-s1`, `r45-s2` and `r45-s3` launched together at 00:28 local on 2026-09-23
-(`runs/r45-s{1,2,3}/2026-09-22-232754-e51997d5`, the directory named by the UTC clock),
-seeds 1 to 3, 30,000 s at dt 0.01, five threads each, a 1,500-minute wall set for the slow
-case (a seed whose deserts fill), a checkpoint every 2,500 s. Every manifest reads commit
-`35395be` with the tree clean, `configHash e51997d5e9237a2e`, `dynamicsHash 82457fda…`,
-`farmHash 45343389…`, `coreHash 7ba22bc6…`, and every header carries `matter islands 60 m
-cover 0.1 to 12 m · founders in matter · shade off`, `matter-mix 0.02 m2/s`, `area 22000
-m2`, `founderDepth 12 m`, `ceiling 25000` and `matterBudget 15000`, read after the launch
-and not from the command. The build's fixtures were re-recorded before the commit and the
-new crowd fixture replays the old one (`r45fixc-s4` ≡ `r45fixb-s4`, 143 fields at 2,000
-samples, the lineage byte-equal), so the island build with the islands off is the recorded
-world. One thing to know about the directories: a first launch two minutes earlier went
-out from a `Release` exe built before the shade map's second cut, inert at shade 0 but not
-the committed tree; the three were stopped within a minute and their run directories are
-kept beside the real ones with `-stale-exe` appended, and the farm was rebuilt from the
-commit before the launch above. Every reader takes the newest directory.
+The three seeds launched together at 00:28 local on 2026-09-23: seeds 1 to 3, 30,000 s at
+dt 0.01, five threads each, a checkpoint every 2,500 s, and a 1,500-minute wall set for the
+slow case, a seed whose deserts fill. The run directories are
+`runs/r45-s{1,2,3}/2026-09-22-232754-e51997d5`, named by the UTC clock. Every manifest
+reads commit `35395be` with the tree clean and `configHash e51997d5e9237a2e`; the other
+three hashes are `82457fda…` (dynamics), `45343389…` (farm) and `7ba22bc6…` (core). Every
+header was read after the launch and not from the command, and carries the island tokens
+(`matter islands 60 m cover 0.1 to 12 m · founders in matter · shade off`), the stirring
+(`matter-mix 0.02 m2/s`), the tank (`area 22000 m2`), the founder depth (12 m), the
+ceiling (25,000) and the budget (15,000).
+
+The fixtures were re-recorded before the commit, and the new crowd fixture replays the
+old one in 143 fields at 2,000 samples with the lineage byte-equal (`r45fixc-s4` against
+`r45fixb-s4`): the island build with the islands off is the recorded world.
+
+One thing to know about the directories. A first launch two minutes earlier went out from
+an exe built before the shade map's second cut, which is inert at shade 0 but is not the
+committed tree. The three were stopped within a minute, their directories are kept beside
+the real ones with `-stale-exe` appended, and the farm was rebuilt from the commit before
+the launch above. Every reader takes the newest directory.
 
 ## Rules
 
