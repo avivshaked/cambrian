@@ -1,0 +1,10 @@
+{
+  "name": "com.evosim.dynamics",
+  "version": "0.1.0",
+  "displayName": "Evosim Dynamics",
+  "description": "The project's own articulated-body solver. No UnityEngine dependency (DESIGN.md §6.1) and nothing but Evosim.Core, so it builds and tests outside the Editor. Consumed by the Unity project as a local package, beside Core, so there is exactly one copy of the source and the theatre can step it inside the Editor. Core is named by the asmdef's reference rather than by a package dependency, so the two are resolved by one manifest and not by two.",
+  "unity": "6000.0",
+  "author": {
+    "name": "Aviv Shaked"
+  }
+}

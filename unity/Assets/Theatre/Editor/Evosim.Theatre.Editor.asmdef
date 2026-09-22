@@ -3,6 +3,7 @@
     "rootNamespace": "Evosim.Theatre.EditorTools",
     "references": [
         "Evosim.Core",
+        "Evosim.Dynamics",
         "Evosim.Sim",
         "Evosim.Theatre",
         "Unity.RenderPipelines.Universal.Runtime",

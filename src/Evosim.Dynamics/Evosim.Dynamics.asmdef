@@ -1,0 +1,16 @@
+{
+    "name": "Evosim.Dynamics",
+    "rootNamespace": "Evosim.Dynamics",
+    "references": [
+        "Evosim.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}
