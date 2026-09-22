@@ -191,5 +191,54 @@ namespace Evosim.Dynamics
                 Vec3.Add(_body.Fext, 6 * _body.Parent[b], -world);
             }
         }
+
+        // ------------------------------------------------------------------ the whole state
+        //
+        // The ten-sample average is a stroke in progress. A creature restored with an empty
+        // history would spend the next ten steps ramping its muscles from nothing, which is
+        // exactly the reset a growth resize takes care not to do (Refresh's remarks) and exactly
+        // the difference a resumed run must not have. The torque per unit of signal is re-read
+        // from the body's Power by the constructor, so it is derived and not written.
+
+        /// <summary>Writes the smoothing window and where it stands.</summary>
+        internal void WriteState(System.IO.BinaryWriter w)
+        {
+            Evosim.Core.StateIo.Tag(w, "DRIV");
+            Evosim.Core.StateIo.WriteFloats(w, _history);
+            Evosim.Core.StateIo.WriteFloats(w, _runningSum);
+            Evosim.Core.StateIo.WriteFloats(w, AppliedTorqueAsFloats());
+            w.Write(_cursor);
+            w.Write(_filled);
+            w.Write(PowerScale);
+        }
+
+        /// <summary>Puts the smoothing window back.</summary>
+        internal void ReadState(System.IO.BinaryReader r)
+        {
+            Evosim.Core.StateIo.Tag(r, "DRIV");
+            Evosim.Core.StateIo.ReadFloats(r, _history, "drive history");
+            Evosim.Core.StateIo.ReadFloats(r, _runningSum, "drive running sums");
+
+            var applied = Evosim.Core.StateIo.ReadFloats(r);
+            for (int i = 0; i < AppliedTorque.Length && i < applied.Length; i++)
+            {
+                AppliedTorque[i] = applied[i];
+            }
+
+            _cursor = r.ReadInt32();
+            _filled = r.ReadInt32();
+            PowerScale = r.ReadSingle();
+        }
+
+        /// <summary>
+        /// The last applied torque, narrowed. It is a probe's readout and nothing steps on it, so
+        /// it is carried at single precision rather than costing three doubles a link.
+        /// </summary>
+        private float[] AppliedTorqueAsFloats()
+        {
+            var values = new float[AppliedTorque.Length];
+            for (int i = 0; i < values.Length; i++) values[i] = (float)AppliedTorque[i];
+            return values;
+        }
     }
 }

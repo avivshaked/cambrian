@@ -267,6 +267,40 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>
+        /// Writes the whole of what this field is: one number per (layer, patch) cell.
+        /// </summary>
+        /// <remarks>
+        /// The demand, availability and sinking buffers are a metabolic step's own scratch — they
+        /// are refilled from the stock before anything reads them — and the geometry is the
+        /// constructor's, so the stock is all of it. The cell count is written with it and
+        /// checked on the way back in, because a config with a different patch count is a
+        /// different world rather than a different moment in this one.
+        /// </remarks>
+        internal void WriteState(System.IO.BinaryWriter w)
+        {
+            StateIo.Tag(w, "CELL");
+            StateIo.WriteDoubleList(w, _stock);
+        }
+
+        /// <summary>Puts the cells back. See <see cref="WriteState"/> for what is not here.</summary>
+        internal void ReadState(System.IO.BinaryReader r)
+        {
+            StateIo.Tag(r, "CELL");
+
+            int expected = _stock.Count;
+            StateIo.ReadDoubleList(r, _stock);
+
+            if (_stock.Count != expected)
+            {
+                throw new System.IO.InvalidDataException(
+                    "The checkpoint holds " + _stock.Count + " cells and this world has " +
+                    expected + ".");
+            }
+
+            _frozen = false;
+        }
+
         /// <summary>The layer a world height falls in, clamped to the world. Patch-independent.</summary>
         /// <remarks>
         /// Clamped rather than extended, because unlike light the pool has to be conserved: a

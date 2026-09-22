@@ -99,6 +99,16 @@ namespace Evosim.Farm
             // recorded run reads as it did (logbook/specs/state-stream-spec.md).
             Num("EVOSIM_POSE_EVERY", 0f, (s, v) => s.PoseEvery = v),
 
+            // The fourth, fifth, sixth and seventh names EvolutionRun does not read, and a
+            // recording setting of the same kind as the one above: how often the whole world is
+            // written down, where to start from instead of founding one, which second of it, and
+            // whether a build mismatch is a warning rather than a refusal. None of them reaches
+            // RunConfig or its hash (logbook/specs/checkpoint-spec.md).
+            Num("EVOSIM_CHECKPOINT_EVERY", 0f, (s, v) => s.CheckpointEvery = v),
+            Text("EVOSIM_RESUME", (s, v) => s.ResumeFrom = v),
+            Num("EVOSIM_RESUME_AT", 0f, (s, v) => s.ResumeAt = v),
+            Flag("EVOSIM_ALLOW_SOURCE_MISMATCH", (s, v) => s.AllowSourceMismatch = v),
+
             Num("EVOSIM_IDLE", 0.02f, (s, v) => s.Idle = v),
             Num("EVOSIM_MAXPOWER", RandomGenomeOptions.Default.MaxLinkPower, (s, v) => s.MaxPower = v),
             Num("EVOSIM_MINPOWER", RandomGenomeOptions.Default.MinLinkPower, (s, v) => s.MinPower = v),
@@ -242,7 +252,18 @@ namespace Evosim.Farm
             if (env == null) throw new ArgumentNullException(nameof(env));
 
             var s = new EnvSettings();
-            for (int i = 0; i < Table.Length; i++) Table[i].Apply(s, env);
+
+            for (int i = 0; i < Table.Length; i++)
+            {
+                // Which names the launcher actually said, beside what they bound to. A default and
+                // a value that happens to equal it are the same number and not the same fact, and
+                // a resume has to tell them apart: it inherits the recording cadences of the run
+                // it continues except where this launcher named one (logbook/specs/checkpoint-spec.md).
+                if (env(Table[i].Name) != null) s.Provided.Add(Table[i].Name);
+
+                Table[i].Apply(s, env);
+            }
+
             return s;
         }
 
@@ -654,6 +675,15 @@ namespace Evosim.Farm
     /// </remarks>
     public sealed class EnvSettings
     {
+        /// <summary>
+        /// The <c>EVOSIM_*</c> names this launcher actually set, whatever they bound to.
+        /// </summary>
+        /// <remarks>
+        /// Only a resume reads it, and only for the recording cadences: everything else is either
+        /// in the config and hashed, or is a pace setting nobody inherits.
+        /// </remarks>
+        public readonly HashSet<string> Provided = new HashSet<string>(StringComparer.Ordinal);
+
         public float Irradiance;
         public float LightReach;
         public bool SilhouetteCap;
@@ -675,6 +705,32 @@ namespace Evosim.Farm
         /// How often the state stream takes a frame, simulated seconds. 0 writes no stream.
         /// </summary>
         public float PoseEvery;
+
+        /// <summary>
+        /// How often the whole world is written to <c>checkpoints/</c>, simulated seconds. 0
+        /// writes none.
+        /// </summary>
+        public float CheckpointEvery;
+
+        /// <summary>
+        /// Where to start from: a <c>.ckpt</c> file, a run directory, or an arm directory. Null
+        /// founds a world in the ordinary way.
+        /// </summary>
+        public string ResumeFrom;
+
+        /// <summary>Which second to start from. 0 takes the last checkpoint there is.</summary>
+        public float ResumeAt;
+
+        /// <summary>
+        /// Whether to carry on from a checkpoint this build did not write.
+        /// </summary>
+        /// <remarks>
+        /// Off by default and recorded in the manifest when it is on, because what comes out of a
+        /// checkpoint read by another build is a cousin of the recording rather than its
+        /// continuation — the theatre's own word for the same thing, and the same rule its
+        /// <c>Allow Source Mismatch</c> follows.
+        /// </remarks>
+        public bool AllowSourceMismatch;
 
         public float Idle;
         public float MaxPower;
@@ -844,6 +900,18 @@ namespace Evosim.Farm
         /// </remarks>
         public float ResolvePoseEvery() =>
             PoseEvery > 0f ? Math.Max(PoseEvery, MetabolicStep) : 0f;
+
+        /// <summary>
+        /// The cadence checkpoints will actually be written at: 0 when they are off, and never
+        /// below the metabolic step.
+        /// </summary>
+        /// <remarks>
+        /// Raised rather than refused for <see cref="ResolvePoseEvery"/>'s reason — nothing about
+        /// the world changes between metabolic steps — and the number recorded in the manifest is
+        /// this one, so a reader is never told a cadence the directory does not have.
+        /// </remarks>
+        public float ResolveCheckpointEvery() =>
+            CheckpointEvery > 0f ? Math.Max(CheckpointEvery, MetabolicStep) : 0f;
 
         private const float MetabolicStep = EnvBinding.MetabolicStepSeconds;
     }

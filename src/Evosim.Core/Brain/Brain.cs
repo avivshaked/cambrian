@@ -476,6 +476,40 @@ namespace Evosim.Core
             return _previous[_offset[group] + at];
         }
 
+        // ------------------------------------------------------------------ the whole state
+        //
+        // A brain is a genome plus three things the genome does not carry: what every neuron
+        // emitted on the last completed step, what the four remembering operators are holding,
+        // and how long the brain has been running — which is what the two oscillators read. A
+        // creature restored without them restarts its stroke from rest with its integrators
+        // empty, which is a different animal from the one that was saved.
+
+        /// <summary>Writes the recurrent state — the buffers, the memories and the clock.</summary>
+        /// <remarks>
+        /// Both buffers, not only <see cref="_previous"/>. The step writes every index of
+        /// <see cref="_current"/> before the swap, so the second is in principle recoverable; it
+        /// is a few bytes a neuron and recovering a buffer by argument is how a restore becomes
+        /// a thing that is true until someone changes the loop.
+        /// </remarks>
+        public void WriteState(System.IO.BinaryWriter w)
+        {
+            StateIo.Tag(w, "BRAN");
+            w.Write(ElapsedSeconds);
+            StateIo.WriteFloats(w, _previous);
+            StateIo.WriteFloats(w, _current);
+            StateIo.WriteFloats(w, _memory);
+        }
+
+        /// <summary>Puts the recurrent state back. The topology is the genome's and is untouched.</summary>
+        public void ReadState(System.IO.BinaryReader r)
+        {
+            StateIo.Tag(r, "BRAN");
+            ElapsedSeconds = r.ReadDouble();
+            StateIo.ReadFloats(r, _previous, "brain outputs");
+            StateIo.ReadFloats(r, _current, "brain outputs");
+            StateIo.ReadFloats(r, _memory, "brain memory");
+        }
+
         private static float Saw(float turns)
         {
             float phase = turns - (float)Math.Floor(turns);

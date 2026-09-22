@@ -159,6 +159,70 @@ namespace Evosim.Core
         /// <summary>Influx received and not yet emitted — less than one quantum, J.</summary>
         public double Bank => _bank;
 
+        /// <summary>
+        /// Writes the whole of what this field is: the vertices, the bank, the counters and the
+        /// draw the next emission will take.
+        /// </summary>
+        /// <remarks>
+        /// The spatial hash is not here. It is a function of the positions and is rebuilt on the
+        /// next query, so it is dropped and the built flag put back to false; the demand and
+        /// availability lists are a metabolic step's own scratch. What cannot be rebuilt is the
+        /// generator, because where a quantum lands and which floor vertex is buried are draws
+        /// off it and a restored field that redrew from the seed would put every deposit after
+        /// the checkpoint somewhere else.
+        /// </remarks>
+        internal void WriteState(System.IO.BinaryWriter w)
+        {
+            StateIo.Tag(w, "VRTX");
+
+            StateIo.WriteFloatList(w, _x);
+            StateIo.WriteFloatList(w, _y);
+            StateIo.WriteFloatList(w, _z);
+            StateIo.WriteDoubleList(w, _m);
+            StateIo.WriteBoolList(w, _alive);
+
+            w.Write(_bank);
+            w.Write(Count);
+            w.Write(Merged);
+            w.Write(Emptied);
+            w.Write(OverCapSteps);
+
+            w.Write(_rng.State);
+            w.Write(_rng.Increment);
+            w.Write(_rng.HasSpareGaussian);
+            w.Write(_rng.SpareGaussian);
+        }
+
+        /// <summary>Puts the vertices back. See <see cref="WriteState"/> for what is not here.</summary>
+        internal void ReadState(System.IO.BinaryReader r)
+        {
+            StateIo.Tag(r, "VRTX");
+
+            StateIo.ReadFloatList(r, _x);
+            StateIo.ReadFloatList(r, _y);
+            StateIo.ReadFloatList(r, _z);
+            StateIo.ReadDoubleList(r, _m);
+            StateIo.ReadBoolList(r, _alive);
+
+            _bank = r.ReadDouble();
+            Count = r.ReadInt32();
+            Merged = r.ReadInt64();
+            Emptied = r.ReadInt64();
+            OverCapSteps = r.ReadInt64();
+
+            ulong state = r.ReadUInt64();
+            ulong increment = r.ReadUInt64();
+            bool hasSpare = r.ReadBoolean();
+            float spare = r.ReadSingle();
+            _rng.RestoreState(state, increment, hasSpare, spare);
+
+            _demand.Clear();
+            _available.Clear();
+            _next.Clear();
+            _frozen = false;
+            _gridBuilt = false;
+        }
+
         private readonly double _sigma;
 
         public VertexField(

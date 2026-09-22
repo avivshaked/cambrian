@@ -86,6 +86,103 @@ namespace Evosim.Farm
         /// <summary>The table's columns, base set plus one per patch — <see cref="Report"/>'s.</summary>
         public static IReadOnlyList<string> Columns(RunConfig config) => new Report("x", config).Columns;
 
+        // ------------------------------------------------------------------ the whole state
+        //
+        // Four sets and nineteen baselines, and every one of them is the difference between a
+        // lineage and a standing crop or between a window and a running total. A resumed run
+        // whose sampler started empty would report its first window as the whole run and would
+        // count every living creature as the first of its kind, which is the same class of
+        // mistake CLAUDE.md's floor rule warns about: a column that reads plausibly and means
+        // something else. The position buffers and the absorptive row list are a sample's own
+        // scratch, and poses.jsonl is a writer rather than a state.
+
+        /// <summary>Writes the ever-seen sets, the window baselines and the snapshot mark.</summary>
+        public void WriteState(System.IO.BinaryWriter w)
+        {
+            StateIo.Tag(w, "SMPL");
+
+            WriteIds(w, _everAbsorptive);
+            WriteIds(w, _everJointed);
+            WriteIds(w, _everPhotosynthetic);
+            WriteIds(w, _everBuoyant);
+
+            w.Write(_lastFloorSpawns);
+            w.Write(_lastUptakeLimited);
+            w.Write(_lastPhotosyntheticSteps);
+            w.Write(_lastBurntTotal);
+            w.Write(_lastRemineralisedTotal);
+            w.Write(_lastDetritusDeposited);
+            w.Write(_lastDetritusTaken);
+            w.Write(_lastDetritusExuded);
+            w.Write(_lastDetritusReturned);
+            w.Write(_lastMatterInfluxed);
+            w.Write(_lastMatterBuried);
+            w.Write(_lastWraps);
+            w.Write(_lastCrowded);
+            w.Write(_lastOverlapPairs);
+            w.Write(_lastOverlapPairsJointed);
+            w.Write(_lastOverlapPairsHeld);
+            w.Write(_lastBedOrGlassBodies);
+            w.Write(_lastContactSteps);
+            w.Write(_lastSnapshotSeconds);
+        }
+
+        /// <summary>Puts the sampler back.</summary>
+        public void ReadState(System.IO.BinaryReader r)
+        {
+            StateIo.Tag(r, "SMPL");
+
+            ReadIds(r, _everAbsorptive);
+            ReadIds(r, _everJointed);
+            ReadIds(r, _everPhotosynthetic);
+            ReadIds(r, _everBuoyant);
+
+            _lastFloorSpawns = r.ReadInt64();
+            _lastUptakeLimited = r.ReadInt64();
+            _lastPhotosyntheticSteps = r.ReadInt64();
+            _lastBurntTotal = r.ReadDouble();
+            _lastRemineralisedTotal = r.ReadDouble();
+            _lastDetritusDeposited = r.ReadDouble();
+            _lastDetritusTaken = r.ReadDouble();
+            _lastDetritusExuded = r.ReadDouble();
+            _lastDetritusReturned = r.ReadDouble();
+            _lastMatterInfluxed = r.ReadDouble();
+            _lastMatterBuried = r.ReadDouble();
+            _lastWraps = r.ReadInt64();
+            _lastCrowded = r.ReadInt64();
+            _lastOverlapPairs = r.ReadInt64();
+            _lastOverlapPairsJointed = r.ReadInt64();
+            _lastOverlapPairsHeld = r.ReadInt64();
+            _lastBedOrGlassBodies = r.ReadInt64();
+            _lastContactSteps = r.ReadInt64();
+            _lastSnapshotSeconds = r.ReadDouble();
+        }
+
+        /// <summary>
+        /// A set of ids, ascending.
+        /// </summary>
+        /// <remarks>
+        /// Sorted on the way out so that two checkpoints of the same world are the same bytes,
+        /// which is what lets a test compare files rather than parse them. A hash set's own
+        /// enumeration order is not a promise.
+        /// </remarks>
+        private static void WriteIds(System.IO.BinaryWriter w, HashSet<long> ids)
+        {
+            var sorted = new long[ids.Count];
+            ids.CopyTo(sorted);
+            Array.Sort(sorted);
+
+            w.Write(sorted.Length);
+            for (int i = 0; i < sorted.Length; i++) w.Write(sorted[i]);
+        }
+
+        private static void ReadIds(System.IO.BinaryReader r, HashSet<long> into)
+        {
+            int count = r.ReadInt32();
+            into.Clear();
+            for (int i = 0; i < count; i++) into.Add(r.ReadInt64());
+        }
+
         /// <summary>
         /// Writes the sample and returns the markdown row.
         /// </summary>

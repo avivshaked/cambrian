@@ -97,6 +97,42 @@ namespace Evosim.Farm
         /// <summary>Frames the state stream had written when the loop last looked.</summary>
         public int LastPoseFrames;
 
+        /// <summary>Seconds between checkpoints. 0 is a run that wrote none.</summary>
+        public double CheckpointEverySeconds;
+
+        /// <summary>Checkpoints written when the loop last looked.</summary>
+        public int LastCheckpoints;
+
+        /// <summary>
+        /// Where this run started from, when it did not start from a founding lottery — the arm,
+        /// the run directory, the second and the digest of the checkpoint it read.
+        /// </summary>
+        /// <remarks>
+        /// <b>Null on every ordinary run, and the whole of what a reader needs on a resumed
+        /// one.</b> A resumed run's files begin partway through a world, and nothing else in the
+        /// directory says so: its first report row is at 400 s and its <c>lineage.jsonl</c> has no
+        /// founders in it. The digest is of the checkpoint file itself, so a resume can be traced
+        /// to the exact bytes it continued from even after the source run directory is gone.
+        /// </remarks>
+        public string ResumedFromArm;
+
+        public string ResumedFromRun;
+        public double ResumedFromSeconds;
+        public string ResumedFromCheckpointHash;
+
+        /// <summary>
+        /// Whether the checkpoint was read by a build that did not write it, under
+        /// <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c>.
+        /// </summary>
+        /// <remarks>
+        /// Recorded because what such a run produces is a cousin of the recording rather than its
+        /// continuation, and a reader who does not know that would read it as one.
+        /// </remarks>
+        public bool ResumedWithSourceMismatch;
+
+        /// <summary>Which of the four hashes differed, for the manifest to say so in words.</summary>
+        public string ResumeSourceNote;
+
         /// <summary>
         /// What was true as of the last metabolic step, for the error path.
         /// </summary>
@@ -192,6 +228,9 @@ namespace Evosim.Farm
 
         /// <summary>Complete frames in <c>poses.bin</c>. 0 when the run recorded no stream.</summary>
         public int PoseFrames;
+
+        /// <summary>Checkpoints this run wrote. 0 when the cadence was left at 0.</summary>
+        public int Checkpoints;
 
         /// <summary>The statistics field a phase is written under — <c>wallHarnessSettleMs</c>.</summary>
         /// <remarks>
@@ -399,6 +438,23 @@ namespace Evosim.Farm
             // (logbook/specs/state-stream-spec.md).
             w.Field("poseEverySeconds", m.PoseEverySeconds);
 
+            // The same kind of fact and in the same place: a recording setting, and where this
+            // run's world came from if it did not come from a founding lottery
+            // (logbook/specs/checkpoint-spec.md).
+            w.Field("checkpointEverySeconds", m.CheckpointEverySeconds);
+
+            if (m.ResumedFromArm != null || m.ResumedFromRun != null)
+            {
+                w.BeginObject("resumedFrom");
+                w.Field("arm", m.ResumedFromArm);
+                w.Field("run", m.ResumedFromRun);
+                w.Field("seconds", m.ResumedFromSeconds);
+                w.Field("checkpointHash", m.ResumedFromCheckpointHash);
+                w.Field("sourceMismatch", m.ResumedWithSourceMismatch);
+                w.Field("note", m.ResumeSourceNote);
+                w.EndObject();
+            }
+
             w.Field("startedAt", m.StartedAtUtc);
 
             if (ending == null)
@@ -460,6 +516,11 @@ namespace Evosim.Farm
                 // 0 on a run that recorded no stream, which is every run before this build and
                 // every run whose launcher left EVOSIM_POSE_EVERY alone.
                 w.Field("poseFrames", ending.PoseFrames);
+
+                // Appended after the stream's count, under the same rule: a field is added at
+                // the end so a positional reader of an older document is not handed a different
+                // number under a name it knows.
+                w.Field("checkpoints", ending.Checkpoints);
             }
 
             w.EndObject();
@@ -509,6 +570,7 @@ namespace Evosim.Farm
                 WallWritersMs = m.LastWallWritersMs,
                 WallTotalMs = m.LastWallTotalMs,
                 PoseFrames = m.LastPoseFrames,
+                Checkpoints = m.LastCheckpoints,
             };
 
         /// <summary>

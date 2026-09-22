@@ -126,8 +126,47 @@ namespace Evosim.Farm
                 inoculumHashShort = null;
             }
 
-            RunConfig config = EnvBinding.BuildConfig(settings);
-            float physicsDt = EnvBinding.ResolvePhysicsStep(settings.PhysicsDt, out int stepsPerMetabolic);
+            // D-day for a resumed run: what world it is comes from the source run's own
+            // config.json rather than from this launcher's environment. The checkpoint carries a
+            // configHash and the two are checked against each other below, but reading the file
+            // the original wrote is what makes them equal in the first place — an environment
+            // that differs by one knob would otherwise build a world the checkpoint cannot be
+            // put into, and say so only after the directory had been made.
+            string resumePath = Checkpoint.Resolve(settings.ResumeFrom, settings.ResumeAt);
+            CheckpointHeader resume = null;
+            string resumeSourceRun = null;
+            RunConfig config;
+
+            if (resumePath != null)
+            {
+                resume = CheckpointReader.ReadHeader(resumePath);
+                resumeSourceRun = Path.GetDirectoryName(Path.GetDirectoryName(resumePath));
+
+                config = RunDirectory.ReadConfig(resumeSourceRun, out string configEdited);
+
+                if (configEdited != null)
+                {
+                    Console.Error.WriteLine(
+                        "warning: " + Path.Combine(resumeSourceRun, "config.json") + " " +
+                        configEdited);
+                }
+
+                // The world's seed is the world's, not the launcher's: every per-creature seed
+                // derives from it and World.ReadState refuses a checkpoint from another one.
+                settings.Seed = resume.Seed;
+
+                InheritRecording(settings, resume);
+            }
+            else
+            {
+                config = EnvBinding.BuildConfig(settings);
+            }
+
+            float physicsDt = resume != null
+                ? resume.PhysicsStepSeconds
+                : settings.PhysicsDt;
+
+            physicsDt = EnvBinding.ResolvePhysicsStep(physicsDt, out int stepsPerMetabolic);
             int threads = settings.ResolveThreads();
 
             // The same count for Core's own per-cell loops as for the body pass. Core defaults to
@@ -175,6 +214,12 @@ namespace Evosim.Farm
             // reach config.json or its hash, and a reader of run.json is owed the cadence the
             // stream beside it was written at.
             manifest.PoseEverySeconds = settings.ResolvePoseEvery();
+            manifest.CheckpointEverySeconds = settings.ResolveCheckpointEvery();
+
+            if (resume != null)
+            {
+                RecordResume(manifest, settings, resume, resumePath, resumeSourceRun, config);
+            }
 
             Manifest.Write(dir, manifest, ending: null);
 
@@ -191,8 +236,73 @@ namespace Evosim.Farm
                 "   dt " + physicsDt.ToString(CultureInfo.InvariantCulture) +
                 " s, metabolic step " + (stepsPerMetabolic * physicsDt).ToString(CultureInfo.InvariantCulture) + " s");
 
+            if (resume != null)
+            {
+                Console.WriteLine(
+                    "resumed from:  " + resumePath + " at " +
+                    resume.Seconds.ToString("0.#", CultureInfo.InvariantCulture) + " s" +
+                    (manifest.ResumedWithSourceMismatch ? "  (SOURCE MISMATCH)" : ""));
+            }
+
+            if (manifest.CheckpointEverySeconds > 0d)
+            {
+                Console.WriteLine(
+                    "checkpoints:   " + Checkpoint.DirectoryIn(dir.Path) + " every " +
+                    manifest.CheckpointEverySeconds.ToString(CultureInfo.InvariantCulture) + " s");
+            }
+
             return Loop(settings, config, world, dir, report, manifest, outPath,
-                physicsDt, stepsPerMetabolic, threads);
+                physicsDt, stepsPerMetabolic, threads, resumePath);
+        }
+
+        /// <summary>
+        /// Fills in the manifest's <c>resumedFrom</c> block, and refuses a checkpoint this build
+        /// did not write unless the launcher said to take it anyway.
+        /// </summary>
+        /// <remarks>
+        /// <b>All four hashes, and the refusal is the default.</b> The config is the world, Core
+        /// is the economy and the development, Dynamics is the solver, the farm is the loop
+        /// around them: a checkpoint read under a different one of those carries on into a
+        /// trajectory the recording never had, which is the same fault
+        /// <c>Allow Source Mismatch</c> guards in the theatre and <c>-ExpectSimHash</c> guards at
+        /// a launch. <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> turns it into a warning and marks the
+        /// manifest, so the resulting run is readable as a cousin rather than as a continuation.
+        /// </remarks>
+        private static void RecordResume(
+            RunManifest manifest, EnvSettings settings, CheckpointHeader resume, string resumePath,
+            string sourceRun, RunConfig config)
+        {
+            // The directory's name, not its path: a run is named for the instant it started and
+            // its settings hash, and that name joins to the arm's own directory wherever the tree
+            // has since been moved to.
+            manifest.ResumedFromArm = resume.SourceArm;
+            manifest.ResumedFromRun = Path.GetFileName(sourceRun);
+            manifest.ResumedFromSeconds = resume.Seconds;
+            manifest.ResumedFromCheckpointHash = Manifest.HashBytes(File.ReadAllBytes(resumePath));
+
+            IReadOnlyList<string> differences = resume.Differences(
+                config.Hash(), manifest.CoreHash, manifest.DynamicsHash, manifest.FarmHash);
+
+            if (differences.Count == 0) return;
+
+            string note = string.Join("; ", differences);
+
+            if (!settings.AllowSourceMismatch)
+            {
+                throw new InvalidOperationException(
+                    "This checkpoint was not written by this build, so carrying on from it " +
+                    "would produce a trajectory the recording never had — " + note + ". Set " +
+                    "EVOSIM_ALLOW_SOURCE_MISMATCH=1 to take it anyway; the run is then marked in " +
+                    "run.json as a cousin of the recording rather than its continuation.");
+            }
+
+            manifest.ResumedWithSourceMismatch = true;
+            manifest.ResumeSourceNote = note;
+
+            Console.Error.WriteLine(
+                "warning: resuming across a source mismatch — " + note + ". What this run " +
+                "produces is a cousin of the recording and not its continuation, and run.json " +
+                "says so.");
         }
 
         /// <summary>
@@ -221,7 +331,7 @@ namespace Evosim.Farm
         private static int Loop(
             EnvSettings settings, RunConfig config, World world, RunDirectory dir, Report report,
             RunManifest manifest, string outPath, float physicsDt, int stepsPerMetabolic,
-            int threads)
+            int threads, string resumePath)
         {
             var sim = new Simulation(
                 world, settings.Seed, physicsDt, stepsPerMetabolic, threads, dir.Path);
@@ -272,6 +382,42 @@ namespace Evosim.Farm
             int metabolicSteps = 0;
             double bestSpeedEver = 0d;
             double bestSpeedAt = 0d;
+
+            // The world, the harness, the sampler and this loop's own four numbers, all out of
+            // one file. Before the first row is written and before the first step is taken, so
+            // that everything below runs against the restored world and not against a founded
+            // one (logbook/specs/checkpoint-spec.md).
+            if (resumePath != null)
+            {
+                using (CheckpointReader reader = CheckpointReader.Open(resumePath))
+                {
+                    System.IO.BinaryReader r = reader.Reader;
+
+                    Evosim.Core.StateIo.Tag(r, "PAYL");
+                    world.ReadState(r);
+                    sim.ReadState(r);
+                    sampler.ReadState(r);
+
+                    Evosim.Core.StateIo.Tag(r, "LOOP");
+                    metabolicSteps = r.ReadInt32();
+                    bestSpeedEver = r.ReadDouble();
+                    bestSpeedAt = r.ReadDouble();
+                    assayFired = r.ReadBoolean();
+
+                    Evosim.Core.StateIo.Tag(r, "PEND");
+                }
+            }
+
+            float checkpointEvery = settings.ResolveCheckpointEvery();
+            int checkpoints = 0;
+            double lastCheckpointSeconds = double.NegativeInfinity;
+
+            // The next second a checkpoint is due at, taken from the clock rather than counted
+            // from the start, so a resumed run's checkpoints land on the same seconds the
+            // original's did.
+            double nextCheckpointAt = checkpointEvery > 0f
+                ? (Math.Floor(world.ElapsedSeconds / checkpointEvery) + 1d) * checkpointEvery
+                : double.MaxValue;
 
             int reportEvery = Math.Max(1, settings.ReportEvery);
             double budgetSeconds = settings.BudgetSeconds;
@@ -365,20 +511,52 @@ namespace Evosim.Farm
                         bestSpeedAt = world.ElapsedSeconds;
                     }
 
-                    if (metabolicSteps % reportEvery != 0) continue;
+                    bool stopped = false;
 
-                    sim.WritersClock.Start();
+                    if (metabolicSteps % reportEvery == 0)
+                    {
+                        sim.WritersClock.Start();
 
-                    report.AppendRow(sampler.Write(sim, dir, report.Columns));
-                    report.Flush();
+                        report.AppendRow(sampler.Write(sim, dir, report.Columns));
+                        report.Flush();
 
-                    // Every tenth report: often enough that a killed run keeps something recent,
-                    // rare enough that a population of thousands is not serialised every sample.
-                    if (metabolicSteps % (reportEvery * 10) == 0) sampler.Snapshot(dir, world);
+                        // Every tenth report: often enough that a killed run keeps something
+                        // recent, rare enough that a population of thousands is not serialised
+                        // every sample.
+                        if (metabolicSteps % (reportEvery * 10) == 0) sampler.Snapshot(dir, world);
 
-                    sim.WritersClock.Stop();
+                        sim.WritersClock.Stop();
 
-                    if (File.Exists(stopPath))
+                        stopped = File.Exists(stopPath);
+                    }
+
+                    // After the row, never before it. A checkpoint carries the sampler's window
+                    // baselines, so one taken before the row that closes a window would hand the
+                    // resumed run the same window to write again — the same duplicate row a
+                    // restore exists to avoid. It is also after the stop check has been read and
+                    // before the loop acts on it, so a stopped arm's last checkpoint is the
+                    // instant it stopped at.
+                    if (world.ElapsedSeconds + 1e-9 >= nextCheckpointAt)
+                    {
+                        sim.WritersClock.Start();
+
+                        lastCheckpointSeconds = world.ElapsedSeconds;
+                        checkpoints++;
+
+                        WriteCheckpoint(
+                            sim, sampler, dir, manifest, config, settings, physicsDt,
+                            stepsPerMetabolic,
+                            metabolicSteps, bestSpeedEver, bestSpeedAt, assayFired);
+
+                        sim.WritersClock.Stop();
+
+                        manifest.LastCheckpoints = checkpoints;
+
+                        nextCheckpointAt =
+                            (Math.Floor(world.ElapsedSeconds / checkpointEvery) + 1d) * checkpointEvery;
+                    }
+
+                    if (stopped)
                     {
                         string reason = StopReason(stopPath);
 
@@ -467,6 +645,22 @@ namespace Evosim.Farm
             IReadOnlyList<LineageEvent> lineageTail = world.DrainLineageEvents();
             for (int i = 0; i < lineageTail.Count; i++) dir.Lineage.Write(lineageTail[i].ToJson());
 
+            // One last checkpoint at the second the run actually stopped at, unless the cadence
+            // already wrote one there. A run stopped or walled between two cadence seconds is
+            // exactly the case a resume is for, and without this it would resume from the last
+            // round number and re-simulate everything after it.
+            if (checkpointEvery > 0f && world.Living.Count > 0 &&
+                world.ElapsedSeconds > lastCheckpointSeconds + 1e-9)
+            {
+                checkpoints++;
+
+                WriteCheckpoint(
+                    sim, sampler, dir, manifest, config, settings, physicsDt, stepsPerMetabolic,
+                    metabolicSteps, bestSpeedEver, bestSpeedAt, assayFired);
+            }
+
+            manifest.LastCheckpoints = checkpoints;
+
             sampler.Snapshot(dir, world);
             sampler.Close();
 
@@ -523,6 +717,7 @@ namespace Evosim.Farm
                 WallFluidApplyMs = 0L,
                 FluidLinkSteps = sim.FluidLinkSteps,
                 PoseFrames = poseFrames,
+                Checkpoints = checkpoints,
             });
 
             report.GenomesLine(dir.Path);
@@ -538,6 +733,121 @@ namespace Evosim.Farm
         }
 
         /// <summary>The stop file's first line, or a word that says it had none.</summary>
+        /// <summary>
+        /// A resumed run keeps the cadences the run it continues was recording at, except where
+        /// this launcher named one itself.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The world comes out of the source run's <c>config.json</c> and is therefore the same
+        /// world whatever the launcher said. The cadences are not in the config — they are
+        /// recording settings and move no hash — so without this they would fall back to their
+        /// defaults, and a continuation would write its rows on other seconds than the run it
+        /// continues. The acceptance is a row-for-row comparison of the two, and a cadence that
+        /// did not carry fails it for a reason that has nothing to do with the world.
+        /// </para>
+        /// <para>
+        /// A launcher that names one wins, because <see cref="EnvSettings.Provided"/> records
+        /// which names were actually set rather than which values differ from a default. Resuming
+        /// at a finer cadence to watch something closely is a real thing to want.
+        /// </para>
+        /// </remarks>
+        private static void InheritRecording(EnvSettings settings, CheckpointHeader resume)
+        {
+            if (!settings.Provided.Contains("EVOSIM_REPORT_EVERY") && resume.ReportEvery > 0)
+            {
+                settings.ReportEvery = resume.ReportEvery;
+            }
+
+            if (!settings.Provided.Contains("EVOSIM_POSE_EVERY") && resume.PoseEverySeconds > 0d)
+            {
+                settings.PoseEvery = (float)resume.PoseEverySeconds;
+            }
+
+            if (!settings.Provided.Contains("EVOSIM_DIGEST_EVERY") && resume.DigestEverySteps > 0L)
+            {
+                settings.DigestEvery = resume.DigestEverySteps;
+            }
+
+            if (!settings.Provided.Contains("EVOSIM_CHECKPOINT_EVERY") &&
+                resume.CheckpointEverySeconds > 0d)
+            {
+                settings.CheckpointEvery = (float)resume.CheckpointEverySeconds;
+            }
+        }
+
+        /// <summary>
+        /// Writes one checkpoint: the world, the harness, the sampler and the loop's own four
+        /// numbers, at the second the caller is standing on.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Two things happen before a byte is written. The harness is settled, because a
+        /// checkpoint taken mid-reconciliation would carry a world that holds creatures the solver
+        /// has no body for; <c>Reconcile</c> is idempotent, so settling a settled harness costs a
+        /// walk of the roster and changes nothing.
+        /// </para>
+        /// <para>
+        /// And the queued lineage rows are drained. They are otherwise drained at a sample and
+        /// nowhere else, so a checkpoint between samples would carry births in its state that the
+        /// original run had already written to <c>lineage.jsonl</c> and the resumed run would
+        /// write again. Draining here puts them in the file on the same side of the line the
+        /// checkpoint draws, and the resumed run's first rows are the ones that come after it.
+        /// </para>
+        /// </remarks>
+        private static void WriteCheckpoint(
+            Simulation sim, Sampler sampler, RunDirectory dir, RunManifest manifest,
+            RunConfig config, EnvSettings settings, float physicsDt, int stepsPerMetabolic,
+            int metabolicSteps, double bestSpeedEver, double bestSpeedAt, bool assayFired)
+        {
+            World world = sim.World;
+
+            sim.SettleBeforeCheckpoint();
+
+            IReadOnlyList<LineageEvent> queued = world.DrainLineageEvents();
+            for (int i = 0; i < queued.Count; i++) dir.Lineage.Write(queued[i].ToJson());
+
+            var header = new CheckpointHeader
+            {
+                Version = Checkpoint.Version,
+                Seconds = world.ElapsedSeconds,
+                Seed = manifest.Seed,
+                PhysicsSteps = sim.Steps,
+                PhysicsStepSeconds = physicsDt,
+                StepsPerMetabolicStep = stepsPerMetabolic,
+                ConfigHash = config.Hash(),
+                CoreHash = manifest.CoreHash,
+                DynamicsHash = manifest.DynamicsHash,
+                FarmHash = manifest.FarmHash,
+                EngineVersion = manifest.EngineVersion,
+                SourceArm = manifest.ArmName,
+                SourceRun = Path.GetFileName(dir.Path),
+                ReportEvery = Math.Max(1, settings.ReportEvery),
+                PoseEverySeconds = settings.ResolvePoseEvery(),
+                DigestEverySteps = settings.DigestEvery,
+                CheckpointEverySeconds = settings.ResolveCheckpointEvery(),
+            };
+
+            CheckpointWriter.Write(
+                Checkpoint.PathFor(dir.Path, world.ElapsedSeconds),
+                header,
+                w =>
+                {
+                    StateIo.Tag(w, "PAYL");
+                    world.WriteState(w);
+                    sim.WriteState(w);
+                    sampler.WriteState(w);
+
+                    StateIo.Tag(w, "LOOP");
+                    w.Write(metabolicSteps);
+                    w.Write(bestSpeedEver);
+                    w.Write(bestSpeedAt);
+                    w.Write(assayFired);
+
+                    StateIo.Tag(w, "PEND");
+                });
+        }
+
         private static string StopReason(string path)
         {
             try

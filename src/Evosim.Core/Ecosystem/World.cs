@@ -77,7 +77,7 @@ namespace Evosim.Core
     /// its own.
     /// </para>
     /// </remarks>
-    public sealed class World
+    public sealed partial class World
     {
         private readonly List<Organism> _living = new List<Organism>();
         private readonly List<Organism> _dead = new List<Organism>();

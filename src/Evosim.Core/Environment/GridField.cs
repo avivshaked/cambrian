@@ -1037,6 +1037,50 @@ namespace Evosim.Core
         /// </remarks>
         public double TotalJoules => _total;
 
+        /// <summary>
+        /// Writes the whole of what this field is: the cells' stock and the running total.
+        /// </summary>
+        /// <remarks>
+        /// <b>Everything else here is geometry, a per-step scratch buffer or a cache built once
+        /// from the current.</b> The masks, the patch map, the flux buffers, the velocity tables
+        /// and the hoisted bed and streams terms are all rebuilt by the constructor from the
+        /// config and the seed, which is what a restore reconstructs the world with. The demand
+        /// and availability buffers live inside one metabolic step and are cleared by
+        /// <c>ClearDemand</c> before the next reads them, so a checkpoint taken between steps
+        /// carries nothing of them; the frozen flag is put back to false for the same reason.
+        /// The running total is written rather than re-summed, because a sum over a hundred and
+        /// seventy thousand doubles taken in the same order is the same number but a sum taken
+        /// by a different route is not, and this one is compared against an audit.
+        /// </remarks>
+        internal void WriteState(System.IO.BinaryWriter w)
+        {
+            StateIo.Tag(w, "GRID");
+            w.Write(_stock.Length);
+            for (int i = 0; i < _stock.Length; i++) w.Write(_stock[i]);
+            w.Write(_total);
+        }
+
+        /// <summary>Puts the cells back. See <see cref="WriteState"/> for what is not here.</summary>
+        internal void ReadState(System.IO.BinaryReader r)
+        {
+            StateIo.Tag(r, "GRID");
+
+            int count = r.ReadInt32();
+            if (count != _stock.Length)
+            {
+                throw new System.IO.InvalidDataException(
+                    "The checkpoint holds " + count + " grid cells and this world has " +
+                    _stock.Length + ". The cell size, the box or the mask has moved, which is a " +
+                    "different world and not a different moment in this one.");
+            }
+
+            for (int i = 0; i < count; i++) _stock[i] = r.ReadDouble();
+            _total = r.ReadDouble();
+
+            System.Array.Clear(_demand, 0, _demand.Length);
+            _frozen = false;
+        }
+
         /// <summary>Re-sums the cells into the running total and returns it.</summary>
         public double Recount()
         {

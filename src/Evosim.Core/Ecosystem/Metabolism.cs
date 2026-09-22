@@ -114,7 +114,12 @@ namespace Evosim.Core
             Handling = handling;
         }
 
-        private EnergyLedger(
+        /// <summary>
+        /// Every field of the ledger, by value. What <see cref="WithPoolDrawn"/> and the
+        /// checkpoint reader both need: the ledger's terms are a body's own history and there is
+        /// no intake to rebuild them from.
+        /// </summary>
+        internal EnergyLedger(
             float lightIncome, float foodIncome, float poolDrawn, float lightCapacity,
             float upkeep, float neural, float work, float exuded, float handling)
         {

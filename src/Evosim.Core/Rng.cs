@@ -166,5 +166,52 @@ namespace Evosim.Core
         /// parent stream's sequence.
         /// </summary>
         public Rng Fork(ulong sequence) => new Rng(NextUInt() | ((ulong)NextUInt() << 32), sequence);
+
+        // ------------------------------------------------------------------ the whole state
+        //
+        // A checkpoint has to be able to put this generator back exactly where it stood, and
+        // where it stands is four things and not one: the recurrence's state, the stream's odd
+        // increment, and the Box-Muller spare, which is a value already drawn and not yet handed
+        // out. A restore that forgot the spare would hand the next Gaussian caller a fresh pair
+        // and every draw after it would be a different stream — which is the whole failure a
+        // checkpoint exists to make impossible, arriving through the one field nobody looks at.
+
+        /// <summary>Where the recurrence stands. Together with <see cref="Increment"/>, the stream.</summary>
+        public ulong State => _state;
+
+        /// <summary>The stream's odd increment, fixed at construction by the sequence.</summary>
+        public ulong Increment => _increment;
+
+        /// <summary>Whether a Box-Muller deviate has been drawn and not yet handed out.</summary>
+        public bool HasSpareGaussian => _hasSpareGaussian;
+
+        /// <summary>That deviate. Meaningless when <see cref="HasSpareGaussian"/> is false.</summary>
+        public float SpareGaussian => _spareGaussian;
+
+        /// <summary>
+        /// Puts this generator back where a checkpoint found it.
+        /// </summary>
+        /// <remarks>
+        /// The increment is checked rather than written: it is a property of the sequence the
+        /// generator was constructed with, so a state restored into a generator of another
+        /// stream would run a different recurrence under the same numbers. The constructor is
+        /// the only thing that may set it.
+        /// </remarks>
+        public void RestoreState(ulong state, ulong increment, bool hasSpareGaussian, float spareGaussian)
+        {
+            if (increment != _increment)
+            {
+                throw new ArgumentException(
+                    "This generator's stream increment is " + _increment + " and the state being " +
+                    "restored belongs to stream " + increment + ". A PCG state is only a position " +
+                    "within one stream; moving it to another is a different sequence wearing the " +
+                    "same numbers.",
+                    nameof(increment));
+            }
+
+            _state = state;
+            _hasSpareGaussian = hasSpareGaussian;
+            _spareGaussian = spareGaussian;
+        }
     }
 }

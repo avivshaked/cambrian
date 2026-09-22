@@ -371,6 +371,20 @@ namespace Evosim.Core
         public void Advance(double elapsedSeconds) =>
             DayFactor = Model.DayFactorAt(elapsedSeconds);
 
+        /// <summary>
+        /// Puts the sun back where a checkpoint found it.
+        /// </summary>
+        /// <remarks>
+        /// The value rather than the second it was taken at. <see cref="Advance"/> is a pure
+        /// function of the clock, so a restore could call it — but the clock the world stands at
+        /// when a checkpoint is taken is the clock of the step that has just finished, and
+        /// <see cref="Advance"/> is called inside the next one with the clock it is about to
+        /// reach. Writing the number down removes the question of which of the two a restore
+        /// should reproduce. Everything else here — who is shading whom — is rebuilt by the next
+        /// step's <see cref="Clear"/> and <see cref="Solve"/> before anything reads it.
+        /// </remarks>
+        public void RestoreDayFactor(float dayFactor) => DayFactor = dayFactor;
+
         /// <summary>Effective irradiance at a world height after shading, W/m².</summary>
         /// <remarks>
         /// Valid only after <see cref="Solve"/>. Before any creature has contributed this returns

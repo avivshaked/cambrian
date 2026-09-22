@@ -1,0 +1,537 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+namespace Evosim.Core
+{
+    /// <summary>
+    /// The world, written down and put back — Core's half of a checkpoint
+    /// (<c>logbook/specs/checkpoint-spec.md</c>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Reconstruct, then overwrite.</b> A restore builds a <see cref="World"/> from the same
+    /// <see cref="RunConfig"/> and the same seed the run was launched with, which rebuilds every
+    /// structure that is a function of those two and of nothing else — the light model, the
+    /// current's amplitudes and phases, the sea floor, the fields' geometry and masks, the patch
+    /// map, the conception generator's stream. Then this reads back the state those structures
+    /// have accumulated: the population, the stocks, the counters and the two generators that
+    /// have been drawn from. Nothing that can be derived is written, and nothing that has been
+    /// drawn from is derived.
+    /// </para>
+    /// <para>
+    /// <b>What is deliberately not here, and why each is safe.</b> <c>_ledgers</c>,
+    /// <c>_born</c>, <c>_conceptionOrder</c> and <c>_conceptionSurplus</c> are filled from
+    /// scratch inside <see cref="Step"/> before anything reads them. <c>_dead</c> is an
+    /// accumulator the farm never drains and never reads — it exists for
+    /// <see cref="TakeDead"/>, which nothing in the farm calls — so a resumed run starts it
+    /// empty and every number the run writes is unchanged. The fields' demand, availability and
+    /// sinking buffers belong to one metabolic step. <see cref="Field"/>'s shading is rebuilt by
+    /// the next step's own solve, and only its day factor is carried.
+    /// </para>
+    /// <para>
+    /// <b>A genome is written as its own JSON and that is not a lapse.</b> Everything numeric
+    /// here is bits. A genome is a structure with a version, a validator and a reader that
+    /// refuses rather than defaults, and <see cref="GenomeJson"/> writes every float with the
+    /// round-trip format, so a genome written and read back is the same genome to the bit. A
+    /// second binary genome serializer would be a second thing to move on every format bump —
+    /// and this project has bumped the genome format three times in a fortnight.
+    /// </para>
+    /// </remarks>
+    public sealed partial class World
+    {
+        /// <summary>The layout this build writes and the only one it reads.</summary>
+        public const int StateVersion = 1;
+
+        /// <summary>
+        /// Writes the whole of the world's own state.
+        /// </summary>
+        public void WriteState(BinaryWriter w)
+        {
+            StateIo.Tag(w, "WRLD");
+            w.Write(StateVersion);
+            w.Write(Seed);
+
+            // ---- the clock, the counters and the two books
+
+            w.Write(ElapsedSeconds);
+            w.Write(_nextId);
+            w.Write(_nextIndex);
+            w.Write(_nextSpeciesId);
+
+            w.Write(EnergyIn);
+            w.Write(EnergyOut);
+            w.Write(MatterInfluxedTotal);
+            w.Write(MatterBuriedTotal);
+
+            w.Write(DetritusDepositedTotal);
+            w.Write(DetritusExudedTotal);
+            w.Write(DetritusTakenTotal);
+            w.Write(DetritusReturnedTotal);
+            w.Write(BurntTotal);
+            w.Write(RemineralisedTotal);
+            w.Write(ReserveTrimmedTotal);
+
+            w.Write(PoolShortTakes);
+            w.Write(FixationShortTakes);
+            w.Write(UptakeLimitedSteps);
+            w.Write(PhotosyntheticSteps);
+            w.Write(ConceptionsUnderMassFloor);
+            w.Write(ConceptionsUnderMargin);
+            w.Write(FoundersUnderMassFloor);
+
+            w.Write(FloorSpawns);
+            w.Write(Births);
+            w.Write(Deaths);
+            w.Write(Diverged);
+            w.Write(Inoculated);
+            w.Write(Stillbirths);
+            w.Write(SelfOverlapStillbirths);
+            w.Write(CrowdedStillbirths);
+            w.Write(SecondsSinceFloorFired);
+            w.Write(_absorptiveDeathsDropped);
+
+            // Where the sun stands. See LightField.RestoreDayFactor.
+            w.Write(Field.DayFactor);
+
+            // ---- the conception generator, which a Shuffled world draws from every step
+
+            WriteRng(w, _conceptionRng);
+
+            // ---- the population
+
+            StateIo.Tag(w, "LIVE");
+            w.Write(_living.Count);
+            for (int i = 0; i < _living.Count; i++) WriteOrganism(w, _living[i]);
+
+            // ---- the species registry
+
+            StateIo.Tag(w, "SPEC");
+            w.Write(_species.Count);
+            foreach (KeyValuePair<uint, SpeciesFounder> entry in _species)
+            {
+                w.Write(entry.Key);
+                w.Write(entry.Value.FoundedAtSeconds);
+                w.Write(GenomeJson.Write(entry.Value.Genome, indent: false));
+            }
+
+            // ---- the corpses
+
+            StateIo.Tag(w, "CRPS");
+            w.Write(_corpses.Count);
+            for (int i = 0; i < _corpses.Count; i++)
+            {
+                Corpse corpse = _corpses[i];
+                w.Write(corpse.CreatureId);
+                StateIo.WriteFloat3(w, corpse.Position);
+                w.Write(corpse.Patch);
+                w.Write(corpse.Joules);
+                w.Write(corpse.AgeSeconds);
+            }
+
+            // ---- the two undrained instrument queues
+            //
+            // Both are drained by the harness at a sample, and a checkpoint is not a sample, so
+            // whatever is standing in them belongs to the resumed run's first sample. Dropped,
+            // they would be rows the original wrote and the restore did not.
+
+            StateIo.Tag(w, "LNGE");
+            w.Write(_lineageEvents.Count);
+            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i]);
+
+            StateIo.Tag(w, "ABSD");
+            w.Write(_absorptiveDeaths.Count);
+            for (int i = 0; i < _absorptiveDeaths.Count; i++) WriteAbsorptive(w, _absorptiveDeaths[i]);
+
+            // ---- the water
+
+            WriteField(w, Nutrients);
+            WriteField(w, Matter);
+
+            StateIo.Tag(w, "WEND");
+        }
+
+        /// <summary>
+        /// Puts the world back. Call on a world freshly constructed from the same config and seed.
+        /// </summary>
+        public void ReadState(BinaryReader r)
+        {
+            StateIo.Tag(r, "WRLD");
+
+            int version = r.ReadInt32();
+            if (version != StateVersion)
+            {
+                throw new InvalidDataException(
+                    "The checkpoint's world state is version " + version + " and this build " +
+                    "reads version " + StateVersion + ". A checkpoint is refused rather than " +
+                    "read with a field guessed at, under the rule the config reader follows.");
+            }
+
+            ulong seed = r.ReadUInt64();
+            if (seed != Seed)
+            {
+                throw new InvalidDataException(
+                    "The checkpoint was taken in a world seeded " + seed + " and this one is " +
+                    "seeded " + Seed + ". Every per-creature seed derives from it, so this is a " +
+                    "different world and not a different moment in this one.");
+            }
+
+            ElapsedSeconds = r.ReadDouble();
+            _nextId = r.ReadInt64();
+            _nextIndex = r.ReadUInt64();
+            _nextSpeciesId = r.ReadUInt32();
+
+            EnergyIn = r.ReadDouble();
+            EnergyOut = r.ReadDouble();
+            MatterInfluxedTotal = r.ReadDouble();
+            MatterBuriedTotal = r.ReadDouble();
+
+            DetritusDepositedTotal = r.ReadDouble();
+            DetritusExudedTotal = r.ReadDouble();
+            DetritusTakenTotal = r.ReadDouble();
+            DetritusReturnedTotal = r.ReadDouble();
+            BurntTotal = r.ReadDouble();
+            RemineralisedTotal = r.ReadDouble();
+            ReserveTrimmedTotal = r.ReadDouble();
+
+            PoolShortTakes = r.ReadInt64();
+            FixationShortTakes = r.ReadInt64();
+            UptakeLimitedSteps = r.ReadInt64();
+            PhotosyntheticSteps = r.ReadInt64();
+            ConceptionsUnderMassFloor = r.ReadInt64();
+            ConceptionsUnderMargin = r.ReadInt64();
+            FoundersUnderMassFloor = r.ReadInt64();
+
+            FloorSpawns = r.ReadInt64();
+            Births = r.ReadInt64();
+            Deaths = r.ReadInt64();
+            Diverged = r.ReadInt64();
+            Inoculated = r.ReadInt64();
+            Stillbirths = r.ReadInt64();
+            SelfOverlapStillbirths = r.ReadInt64();
+            CrowdedStillbirths = r.ReadInt64();
+            SecondsSinceFloorFired = r.ReadDouble();
+            _absorptiveDeathsDropped = r.ReadInt32();
+
+            Field.RestoreDayFactor(r.ReadSingle());
+
+            ReadRng(r, _conceptionRng);
+
+            StateIo.Tag(r, "LIVE");
+            int living = r.ReadInt32();
+            _living.Clear();
+            for (int i = 0; i < living; i++) _living.Add(ReadOrganism(r));
+
+            StateIo.Tag(r, "SPEC");
+            int species = r.ReadInt32();
+            _species.Clear();
+            for (int i = 0; i < species; i++)
+            {
+                uint id = r.ReadUInt32();
+                double founded = r.ReadDouble();
+                Genome genome = GenomeJson.Read(r.ReadString());
+                _species[id] = new SpeciesFounder(genome, founded);
+            }
+
+            StateIo.Tag(r, "CRPS");
+            int corpses = r.ReadInt32();
+            _corpses.Clear();
+            for (int i = 0; i < corpses; i++)
+            {
+                long id = r.ReadInt64();
+                Float3 position = StateIo.ReadFloat3(r);
+                int patch = r.ReadInt32();
+                double joules = r.ReadDouble();
+
+                var corpse = new Corpse(id, position, patch, joules)
+                {
+                    AgeSeconds = r.ReadDouble(),
+                };
+
+                _corpses.Add(corpse);
+            }
+
+            StateIo.Tag(r, "LNGE");
+            int events = r.ReadInt32();
+            _lineageEvents.Clear();
+            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r));
+
+            StateIo.Tag(r, "ABSD");
+            int deaths = r.ReadInt32();
+            _absorptiveDeaths.Clear();
+            for (int i = 0; i < deaths; i++) _absorptiveDeaths.Add(ReadAbsorptive(r));
+
+            ReadField(r, Nutrients);
+            ReadField(r, Matter);
+
+            StateIo.Tag(r, "WEND");
+        }
+
+        // ------------------------------------------------------------------ one creature
+
+        private void WriteOrganism(BinaryWriter w, Organism creature)
+        {
+            w.Write(creature.Id);
+            w.Write(creature.ParentId);
+            w.Write(creature.GenerationDepth);
+            w.Write(creature.BirthSeed);
+            w.Write(creature.SpeciesId);
+
+            w.Write(creature.Energy);
+            w.Write(creature.TissueJoules);
+            w.Write(creature.AdultTissueJoules);
+            w.Write(creature.BodyFraction);
+            w.Write(creature.Age);
+            w.Write(creature.HeightY);
+            w.Write(creature.BirthHeightY);
+            w.Write(creature.X);
+            w.Write(creature.Z);
+            w.Write(creature.Patch);
+            w.Write(creature.PendingWorkJoules);
+            w.Write(creature.StandingWatts);
+            w.Write(creature.AbsorptiveVolume);
+            w.Write(creature.HasAbsorptiveTissue);
+            w.Write(creature.HasPhotosyntheticTissue);
+            w.Write(creature.Children);
+            w.Write(creature.LastChildSeconds);
+            w.Write(creature.LastDensityHere);
+            w.Write(creature.LastShare);
+            w.Write(creature.LastStepSeconds);
+
+            WriteLedger(w, creature.Lifetime);
+            WriteLedger(w, creature.LastLedger);
+
+            // How the body is built back: the adult is developed from the genome, and this is
+            // the one call that turns it into the body this creature has. See Phenotype.ScaledBy.
+            bool isAdult = ReferenceEquals(creature.Phenotype, creature.AdultPhenotype);
+            w.Write(isAdult);
+            w.Write(creature.Phenotype.ScaledBy);
+
+            if (!isAdult && creature.Phenotype.ScaledBy == 1f)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"Creature {creature.Id} has a body that is neither its adult nor a ") +
+                    "scaled copy of it. Every body in this world is one or the other — the " +
+                    "developer runs once, at the adult's size — so this is a code path that has " +
+                    "appeared since the checkpoint was written, and a checkpoint that guessed " +
+                    "would restore a creature nobody simulated.");
+            }
+
+            w.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
+        }
+
+        private Organism ReadOrganism(BinaryReader r)
+        {
+            var creature = new Organism
+            {
+                Id = r.ReadInt64(),
+                ParentId = r.ReadInt64(),
+                GenerationDepth = r.ReadInt32(),
+                BirthSeed = r.ReadUInt64(),
+                SpeciesId = r.ReadUInt32(),
+
+                Energy = r.ReadSingle(),
+                TissueJoules = r.ReadSingle(),
+                AdultTissueJoules = r.ReadSingle(),
+                BodyFraction = r.ReadSingle(),
+                Age = r.ReadSingle(),
+                HeightY = r.ReadSingle(),
+                BirthHeightY = r.ReadSingle(),
+                X = r.ReadSingle(),
+                Z = r.ReadSingle(),
+                Patch = r.ReadInt32(),
+                PendingWorkJoules = r.ReadSingle(),
+                StandingWatts = r.ReadSingle(),
+                AbsorptiveVolume = r.ReadSingle(),
+                HasAbsorptiveTissue = r.ReadBoolean(),
+                HasPhotosyntheticTissue = r.ReadBoolean(),
+                Children = r.ReadInt32(),
+                LastChildSeconds = r.ReadDouble(),
+                LastDensityHere = r.ReadSingle(),
+                LastShare = r.ReadSingle(),
+                LastStepSeconds = r.ReadSingle(),
+            };
+
+            creature.Lifetime = ReadLedger(r);
+            creature.LastLedger = ReadLedger(r);
+
+            bool isAdult = r.ReadBoolean();
+            float scale = r.ReadSingle();
+
+            Genome genome = GenomeJson.Read(r.ReadString());
+            creature.Genome = genome;
+
+            // Developed once, at the genome's own adult scale, exactly as birth develops it —
+            // Developer is a pure function of the genome, the limits and the shapes, so this is
+            // the same object the run built.
+            Phenotype adult = Developer.Develop(genome, Config.Development, null, Config.Shapes);
+
+            creature.AdultPhenotype = adult;
+            creature.Phenotype = isAdult ? adult : adult.Scaled(scale, Config.Shapes);
+
+            return creature;
+        }
+
+        // ------------------------------------------------------------------ the small records
+
+        private static void WriteLedger(BinaryWriter w, EnergyLedger ledger)
+        {
+            w.Write(ledger.LightIncome);
+            w.Write(ledger.FoodIncome);
+            w.Write(ledger.PoolDrawn);
+            w.Write(ledger.LightCapacity);
+            w.Write(ledger.Upkeep);
+            w.Write(ledger.Neural);
+            w.Write(ledger.Work);
+            w.Write(ledger.Exuded);
+            w.Write(ledger.Handling);
+        }
+
+        private static EnergyLedger ReadLedger(BinaryReader r) =>
+            new EnergyLedger(
+                r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
+                r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+
+        private static void WriteLineage(BinaryWriter w, LineageEvent e)
+        {
+            w.Write((int)e.Kind);
+            w.Write(e.ElapsedSeconds);
+            w.Write(e.Id);
+            w.Write(e.ParentId);
+            w.Write((int)e.BirthKind);
+            w.Write(e.GenerationDepth);
+            w.Write(e.SpeciesId);
+            w.Write(e.HasAbsorptive);
+            w.Write(e.HasJoint);
+            w.Write(e.HasPhotosynthetic);
+            w.Write(e.Patch);
+            w.Write(e.BirthFraction);
+            w.Write(e.AdultScale);
+            w.Write(e.ReserveMargin);
+            w.Write((int)e.Cause);
+        }
+
+        private static LineageEvent ReadLineage(BinaryReader r)
+        {
+            var kind = (LineageEventKind)r.ReadInt32();
+            double seconds = r.ReadDouble();
+            long id = r.ReadInt64();
+            long parentId = r.ReadInt64();
+            var birthKind = (BirthKind)r.ReadInt32();
+            int generationDepth = r.ReadInt32();
+            uint speciesId = r.ReadUInt32();
+            bool absorptive = r.ReadBoolean();
+            bool joint = r.ReadBoolean();
+            bool photosynthetic = r.ReadBoolean();
+            int patch = r.ReadInt32();
+            float birthFraction = r.ReadSingle();
+            float adultScale = r.ReadSingle();
+            float reserveMargin = r.ReadSingle();
+            var cause = (DeathCause)r.ReadInt32();
+
+            return kind == LineageEventKind.Birth
+                ? LineageEvent.Birth(
+                    seconds, id, parentId, birthKind, generationDepth, speciesId,
+                    absorptive, joint, photosynthetic, patch, birthFraction, adultScale,
+                    reserveMargin)
+                : LineageEvent.Death(seconds, id, cause);
+        }
+
+        private static void WriteAbsorptive(BinaryWriter w, AbsorptiveSample s)
+        {
+            w.Write(s.ElapsedSeconds);
+            w.Write(s.Id);
+            w.Write(s.Age);
+            w.Write(s.GenerationDepth);
+            w.Write(s.Patch);
+            w.Write(s.HeightY);
+            w.Write(s.Volume);
+            w.Write(s.AbsorptiveVolume);
+            w.Write(s.LitArea);
+            w.Write(s.PartCount);
+            w.Write(s.Mixotroph);
+            w.Write(s.Energy);
+            w.Write(s.TissueJoules);
+            w.Write(s.BirthInvestment);
+            w.Write(s.DensityHere);
+            w.Write(s.Share);
+            w.Write(s.FoodWatts);
+            w.Write(s.LightWatts);
+            w.Write(s.UpkeepWatts);
+            w.Write(s.ExudedWatts);
+            w.Write(s.NetWatts);
+            w.Write(s.Children);
+            w.Write(s.LastChildSeconds);
+            w.Write(s.Dead);
+        }
+
+        private static AbsorptiveSample ReadAbsorptive(BinaryReader r) =>
+            new AbsorptiveSample(
+                r.ReadDouble(), r.ReadInt64(), r.ReadSingle(), r.ReadInt32(), r.ReadInt32(),
+                r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadInt32(),
+                r.ReadBoolean(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
+                r.ReadSingle(), r.ReadSingle(),
+                r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
+                r.ReadInt32(), r.ReadDouble(), r.ReadBoolean());
+
+        // ------------------------------------------------------------------ generators, fields
+
+        internal static void WriteRng(BinaryWriter w, Rng rng)
+        {
+            w.Write(rng.State);
+            w.Write(rng.Increment);
+            w.Write(rng.HasSpareGaussian);
+            w.Write(rng.SpareGaussian);
+        }
+
+        internal static void ReadRng(BinaryReader r, Rng rng)
+        {
+            ulong state = r.ReadUInt64();
+            ulong increment = r.ReadUInt64();
+            bool hasSpare = r.ReadBoolean();
+            float spare = r.ReadSingle();
+
+            rng.RestoreState(state, increment, hasSpare, spare);
+        }
+
+        /// <summary>
+        /// Dispatches to the field's own writer.
+        /// </summary>
+        /// <remarks>
+        /// By concrete type rather than through <see cref="IMatterField"/>, so that the interface
+        /// — which is the seam between the world and its water, and which a test double may
+        /// implement — does not grow two members that have nothing to do with what a field is
+        /// for. A representation this does not know is refused by name rather than skipped.
+        /// </remarks>
+        private static void WriteField(BinaryWriter w, IMatterField field)
+        {
+            switch (field)
+            {
+                case GridField grid: grid.WriteState(w); return;
+                case VertexField vertices: vertices.WriteState(w); return;
+                case NutrientField cells: cells.WriteState(w); return;
+
+                default:
+                    throw new InvalidOperationException(
+                        "A checkpoint cannot write a " + field.GetType().Name + ": the three " +
+                        "representations it knows are the cells, the vertices and the grid. A " +
+                        "fourth needs a writer of its own rather than a silent omission.");
+            }
+        }
+
+        private static void ReadField(BinaryReader r, IMatterField field)
+        {
+            switch (field)
+            {
+                case GridField grid: grid.ReadState(r); return;
+                case VertexField vertices: vertices.ReadState(r); return;
+                case NutrientField cells: cells.ReadState(r); return;
+
+                default:
+                    throw new InvalidOperationException(
+                        "A checkpoint cannot read a " + field.GetType().Name + ".");
+            }
+        }
+    }
+}

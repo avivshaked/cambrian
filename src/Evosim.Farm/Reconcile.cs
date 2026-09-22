@@ -104,13 +104,21 @@ namespace Evosim.Farm
                     // A body nobody reserved a spot for. Within one shared-space run this cannot
                     // happen — every admission goes through the placer — so rather than invent a
                     // position, put it where the world thinks it is and say so out loud.
+                    //
+                    // A restore is the one case where it is expected and silent: every body it
+                    // rebuilds was placed when it was born, possibly thousands of seconds ago,
+                    // and the pose written over this one a moment later is the one the checkpoint
+                    // recorded. See Simulation.State.cs.
                     origin = new Vec3(creature.X, creature.HeightY, creature.Z);
 
-                    Console.Error.WriteLine(
-                        FormattableString.Invariant(
-                            $"warning: creature {creature.Id} was admitted into a shared volume ") +
-                        "with no reserved placement — built at the height the world admitted it " +
-                        "at, which is an overlapping spawn and therefore a force in the physics.");
+                    if (!_restoring)
+                    {
+                        Console.Error.WriteLine(
+                            FormattableString.Invariant(
+                                $"warning: creature {creature.Id} was admitted into a shared volume ") +
+                            "with no reserved placement — built at the height the world admitted it " +
+                            "at, which is an overlapping spawn and therefore a force in the physics.");
+                    }
                 }
             }
             else

@@ -54,6 +54,27 @@
   must not launch anything itself: a launcher that calls run-arm.ps1 is refused rather than run,
   because dot-sourcing it would start a Unity arm nobody asked for. -Env is merged over it.
 
+.PARAMETER CheckpointEvery
+  Simulated seconds between checkpoints (EVOSIM_CHECKPOINT_EVERY). 0, the default, writes none.
+  A recording setting like the state stream's: it reaches no config and moves no hash, so an arm
+  that checkpoints and one that does not are the same world.
+
+.PARAMETER ResumeFrom
+  Start from a recorded world instead of from a founding lottery. Takes a .ckpt file, a run
+  directory or an arm directory (the newest run under it that holds checkpoints), under RunsRoot
+  or anywhere else. The new run is a new directory with its own report: its config is read from
+  the run being resumed, so the world is the same world, and run.json carries a resumedFrom block
+  naming the arm, the run, the second and the digest of the checkpoint it read.
+
+.PARAMETER At
+  The simulated second to resume at. The checkpoint at that second, or the last one before it; 0,
+  the default, takes the last checkpoint there is.
+
+.PARAMETER AllowSourceMismatch
+  Resume even when the checkpoint's configHash, coreHash, dynamicsHash or farmHash is not this
+  build's. What comes out is a cousin of the recording rather than its continuation, and the
+  manifest says so; without this the resume is refused and prints which of the four differ.
+
 .PARAMETER ExpectDynamicsHash
   Optional. The dynamicsHash the solver source is expected to carry. There is nothing to check
   before the launch — the digest is over src/Evosim.Dynamics as the run itself reads it — so the
@@ -84,6 +105,10 @@ param(
     [string]$Exe = '',
     [hashtable]$Env = @{},
     [string]$Launcher = '',
+    [double]$CheckpointEvery = 0,
+    [string]$ResumeFrom = '',
+    [double]$At = 0,
+    [switch]$AllowSourceMismatch,
     [string]$ExpectDynamicsHash = '',
     [int]$WaitForManifestSeconds = 60
 )
@@ -152,6 +177,27 @@ $settings['EVOSIM_RUNS_ROOT'] = $runsRootPath
 $settings['EVOSIM_OUT'] = "$Arm.md"
 $settings['EVOSIM_REPO_ROOT'] = $root
 
+if ($CheckpointEvery -gt 0) { $settings['EVOSIM_CHECKPOINT_EVERY'] = $CheckpointEvery }
+
+if ($ResumeFrom -ne '') {
+    # An arm name alone is the common case, so it is tried under RunsRoot before it is taken as a
+    # path. A resumed run reads the world it is continuing out of that run's own config.json, so
+    # nothing in -Launcher or -Env can change the world underneath it; a setting of the world
+    # passed beside -ResumeFrom is simply not read, which the program warns about.
+    $resumePath = Join-Path $runsRootPath $ResumeFrom
+    if (-not (Test-Path -LiteralPath $resumePath)) { $resumePath = Resolve-UnderRepo $ResumeFrom }
+    if (-not (Test-Path -LiteralPath $resumePath)) {
+        throw "-ResumeFrom '$ResumeFrom' is neither under $runsRootPath nor a path that exists."
+    }
+
+    $settings['EVOSIM_RESUME'] = (Resolve-Path -LiteralPath $resumePath).Path
+    if ($At -gt 0) { $settings['EVOSIM_RESUME_AT'] = $At }
+    if ($AllowSourceMismatch) { $settings['EVOSIM_ALLOW_SOURCE_MISMATCH'] = 1 }
+}
+elseif ($At -gt 0 -or $AllowSourceMismatch) {
+    throw '-At and -AllowSourceMismatch say where to resume from, and -ResumeFrom was not given.'
+}
+
 # Logs live inside the project (scratch/ is gitignored): nothing of a run is written outside the
 # repository, TEMP included. Separate streams, because the program prints its header on stdout
 # and every warning about an unread setting on stderr, and the second is the one worth reading.
@@ -171,6 +217,10 @@ Write-Host "$Arm -> farm (dynamics)"
 Write-Host "  exe   $exePath"
 Write-Host "  seed $Seed, $Seconds s, $WallMinutes min wall, $(if ($Threads -eq 0) { 'one thread per processor' } else { "$Threads threads" })"
 Write-Host "  runs  $runsRootPath"
+if ($CheckpointEvery -gt 0) { Write-Host "  ckpt  every $CheckpointEvery s" }
+if ($ResumeFrom -ne '') {
+    Write-Host "  from  $($settings['EVOSIM_RESUME'])$(if ($At -gt 0) { " at $At s" } else { ' (last checkpoint)' })"
+}
 Write-Host "  out   $(Join-Path $runsRootPath "$Arm.md")"
 Write-Host "  log   $outLog / $errLog"
 Write-Host "  $($argList.Count) settings"
@@ -240,6 +290,13 @@ Write-Host "    coreHash     $($manifest.source.coreHash)"
 Write-Host "    configHash   $($manifest.configHash)"
 Write-Host "    threads      $($manifest.threads)"
 Write-Host "    processId    $($manifest.processId)"
+if ($manifest.resumedFrom) {
+    Write-Host "    resumedFrom  $($manifest.resumedFrom.arm)/$($manifest.resumedFrom.run) at $($manifest.resumedFrom.seconds) s"
+    Write-Host "                 checkpoint $($manifest.resumedFrom.checkpointHash)"
+    if ($manifest.resumedFrom.sourceMismatch) {
+        Write-Warning "Resumed across a source change: $($manifest.resumedFrom.note)"
+    }
+}
 if ($manifest.source.note) { Write-Warning "run.json note: $($manifest.source.note)" }
 
 if ($ExpectDynamicsHash -ne '') {

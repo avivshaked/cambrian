@@ -121,6 +121,33 @@ namespace Evosim.Core
         public int SilhouetteFellBackToBox { get; private set; }
 
         /// <summary>
+        /// The length ratio this body was made at by <see cref="Scaled"/>, or 1 for a body the
+        /// developer built.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Recorded so that a body can be rebuilt and not merely re-measured.</b> A living
+        /// creature's body is always either the developed adult itself or exactly one call of
+        /// <c>adult.Scaled(s)</c>, and <see cref="Organism.BodyFraction"/> does not recover
+        /// <c>s</c>: the fraction is re-measured from the scaled body's own tissue, so it differs
+        /// from the volume ratio the caller asked for by whatever the shapes' re-measurement and
+        /// the float rounding did. A checkpoint that stored the fraction and scaled by its cube
+        /// root would restore a body a rounding away from the one it saved, and a rounding is a
+        /// different realisation from the next step on (CLAUDE.md's butterfly note).
+        /// </para>
+        /// <para>
+        /// It is the argument this copy was made with, relative to whatever it was made from, and
+        /// not an accumulated product — nothing in the world scales a body that is already
+        /// scaled, because <c>World.Grow</c> scales the adult at every growth step and
+        /// <see cref="Organism.AdultPhenotype"/>'s remark says why.
+        /// </para>
+        /// <para>
+        /// Pure bookkeeping: nothing in the economy reads it and it is in no hash.
+        /// </para>
+        /// </remarks>
+        public float ScaledBy { get; private set; } = 1f;
+
+        /// <summary>
         /// What a body's summed lit area has to be multiplied by before it earns or shades:
         /// <c>min(1, SilhouetteArea / TotalLitArea)</c> with the cap on, 1 without it.
         /// </summary>
@@ -293,6 +320,10 @@ namespace Evosim.Core
                 // birth and per growth step.
                 SilhouetteArea = SilhouetteArea * linear * linear,
                 SilhouetteFellBackToBox = SilhouetteFellBackToBox,
+
+                // What this copy was made at, so a checkpoint can make it again rather than
+                // infer it from a tissue fraction that does not carry it. See ScaledBy.
+                ScaledBy = linear,
             };
 
             for (int i = 0; i < _parts.Count; i++)

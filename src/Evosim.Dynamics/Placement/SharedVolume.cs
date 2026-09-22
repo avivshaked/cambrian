@@ -584,6 +584,80 @@ namespace Evosim.Dynamics.Placement
             return true;
         }
 
+        // ------------------------------------------------------------------ the whole state
+        //
+        // Three things here outlive a metabolic step and nothing else does. The generator, whose
+        // draw sequence is the contract: a placer restored from the seed would put every body
+        // born after the checkpoint somewhere else. The pending reservations, which are spots
+        // promised to creatures the world has admitted and the harness has not yet built a body
+        // for — dropped, each of those would be built at the height the world admitted it at,
+        // which is an overlapping spawn and therefore a force in the physics. And the three
+        // running counters, which the report differences per window.
+        //
+        // The occupied set, the spatial hash and the known positions are emptied by Begin and
+        // refilled by Note at the top of every metabolic step, before anything reads them.
+
+        /// <summary>Writes the generator, the promised spots and the three counters.</summary>
+        public void WriteState(System.IO.BinaryWriter w)
+        {
+            Evosim.Core.StateIo.Tag(w, "PLAC");
+
+            w.Write(_rng.State);
+            w.Write(_rng.Increment);
+            w.Write(_rng.HasSpareGaussian);
+            w.Write(_rng.SpareGaussian);
+
+            w.Write(Wraps);
+            w.Write(Rejections);
+            w.Write(Refusals);
+
+            w.Write(_pending.Count);
+            foreach (KeyValuePair<long, Float3> entry in _pending)
+            {
+                w.Write(entry.Key);
+                Evosim.Core.StateIo.WriteFloat3(w, entry.Value);
+            }
+
+            // Held for completeness rather than for need: a reservation is committed or released
+            // inside the world's own conception loop, so it is never standing between steps.
+            w.Write(_reserved);
+            Evosim.Core.StateIo.WriteFloat3(w, _reservation.Position);
+            w.Write(_reservation.Radius);
+        }
+
+        /// <summary>Puts the placer back.</summary>
+        public void ReadState(System.IO.BinaryReader r)
+        {
+            Evosim.Core.StateIo.Tag(r, "PLAC");
+
+            ulong state = r.ReadUInt64();
+            ulong increment = r.ReadUInt64();
+            bool hasSpare = r.ReadBoolean();
+            float spare = r.ReadSingle();
+            _rng.RestoreState(state, increment, hasSpare, spare);
+
+            Wraps = r.ReadInt64();
+            Rejections = r.ReadInt64();
+            Refusals = r.ReadInt64();
+
+            int pending = r.ReadInt32();
+            _pending.Clear();
+            for (int i = 0; i < pending; i++)
+            {
+                long id = r.ReadInt64();
+                _pending[id] = Evosim.Core.StateIo.ReadFloat3(r);
+            }
+
+            _reserved = r.ReadBoolean();
+            _reservation = new Occupant
+            {
+                Position = Evosim.Core.StateIo.ReadFloat3(r),
+                Radius = r.ReadSingle(),
+            };
+
+            Begin();
+        }
+
         /// <summary>
         /// Radius of the sphere that contains a whole developed body, about its root part.
         /// </summary>
