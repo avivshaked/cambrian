@@ -71,9 +71,15 @@
   frame, as every reconstruction did before the file existed. The close view is refused in this
   mode for that reason, and so is -Chrome, whose interface reads a replay's census.
 
-  Only a second the run wrote a snapshot at can be drawn, and the request is refused before the
-  Editor enters Play mode when it was not, naming the snapshots either side. Pictures land beside
-  the replay's with -recon- in the name before the view.
+  A run that recorded the state stream, poses.bin, can be drawn at any second the stream holds a
+  frame at, which is every half second or so rather than every thousand. The genomes then come
+  from the last snapshot at or before the second and the poses, the places and the sizes from the
+  frame, the label reads "pose t=105 of snapshot 100", and a body born after that snapshot has no
+  genome and is counted as unmatched. The stream carries the body fraction, so those frames read
+  "recorded size" rather than "adult size". Without a stream, only a second the run wrote a
+  snapshot at can be drawn. Either way the request is refused before the Editor enters Play mode
+  when the second is not one of them, naming the seconds either side. Pictures land beside the
+  replay's with -recon- in the name before the view.
 
 .PARAMETER Carve
   How deep the skin cuts each body inward, as a fraction of the part's smallest half-extent.

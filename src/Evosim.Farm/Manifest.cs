@@ -91,6 +91,12 @@ namespace Evosim.Farm
         /// </remarks>
         public double StreamsAxisRatio = 1d;
 
+        /// <summary>Seconds between state-stream frames. 0 is a run that recorded no stream.</summary>
+        public double PoseEverySeconds;
+
+        /// <summary>Frames the state stream had written when the loop last looked.</summary>
+        public int LastPoseFrames;
+
         /// <summary>
         /// What was true as of the last metabolic step, for the error path.
         /// </summary>
@@ -183,6 +189,9 @@ namespace Evosim.Farm
         public long WallFluidComputeMs;
         public long WallFluidApplyMs;
         public long FluidLinkSteps;
+
+        /// <summary>Complete frames in <c>poses.bin</c>. 0 when the run recorded no stream.</summary>
+        public int PoseFrames;
 
         /// <summary>The statistics field a phase is written under — <c>wallHarnessSettleMs</c>.</summary>
         /// <remarks>
@@ -385,6 +394,11 @@ namespace Evosim.Farm
             // `axes v:h` token is the same number.
             w.Field("streamsAxisRatio", m.StreamsAxisRatio);
 
+            // A recording setting and not a world one, so it sits here and not in config.json:
+            // the seconds between state-stream frames, 0 when the run wrote no poses.bin
+            // (logbook/specs/state-stream-spec.md).
+            w.Field("poseEverySeconds", m.PoseEverySeconds);
+
             w.Field("startedAt", m.StartedAtUtc);
 
             if (ending == null)
@@ -441,6 +455,11 @@ namespace Evosim.Farm
                     w.Field("wallFluidApplyMs", ending.WallFluidApplyMs);
                     w.Field("fluidLinkSteps", ending.FluidLinkSteps);
                 }
+
+                // The state stream's own count, appended after everything the profile writes.
+                // 0 on a run that recorded no stream, which is every run before this build and
+                // every run whose launcher left EVOSIM_POSE_EVERY alone.
+                w.Field("poseFrames", ending.PoseFrames);
             }
 
             w.EndObject();
@@ -489,6 +508,7 @@ namespace Evosim.Farm
                 WallHarnessMs = m.LastWallHarnessMs,
                 WallWritersMs = m.LastWallWritersMs,
                 WallTotalMs = m.LastWallTotalMs,
+                PoseFrames = m.LastPoseFrames,
             };
 
         /// <summary>

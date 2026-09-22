@@ -299,12 +299,14 @@ namespace Evosim.Theatre.EditorTools
                 return e.Message;
             }
 
-            if (!SnapshotWorld.HasPositions(directory))
+            double[] stream = SnapshotWorld.StreamSeconds(directory);
+
+            if (!SnapshotWorld.HasPositions(directory) && stream.Length == 0)
             {
                 return
-                    "this run has no positions.jsonl, so nothing in it says where a body was. A " +
-                    "tiled world writes none, and neither does any run recorded before " +
-                    "2026-09-10.";
+                    "this run has no positions.jsonl and no poses.bin, so nothing in it says " +
+                    "where a body was. A tiled world writes neither, and neither does any run " +
+                    "recorded before 2026-09-10.";
             }
 
             double[] snapshots = SnapshotWorld.SnapshotSeconds(directory);
@@ -318,12 +320,32 @@ namespace Evosim.Theatre.EditorTools
 
             foreach (double t in _times)
             {
+                // The state stream first, because it is what makes a second between snapshots
+                // drawable: its frames are half a second apart and a snapshot is a thousand. The
+                // genomes then come from the last snapshot at or before the second, so the only
+                // thing that has to hold is that there is one.
+                if (Holds(stream, t))
+                {
+                    if (SnapshotWorld.SnapshotFileAtOrBefore(directory, t) == null)
+                    {
+                        return
+                            "poses.bin has a frame at " + Seconds(t) + " s and the run wrote no " +
+                            "snapshot at or before it, so there are no genomes to draw. " +
+                            Nearest(snapshots, t);
+                    }
+
+                    continue;
+                }
+
                 if (!Holds(snapshots, t))
                 {
                     return
-                        Seconds(t) + " s is not a snapshot second. " + Nearest(snapshots, t) +
-                        " A picture drawn this way comes from snapshots/NNNNNNNNN.jsonl, so the " +
-                        "second has to be one the run wrote.";
+                        Seconds(t) + " s is neither a snapshot second nor a second poses.bin " +
+                        "holds a frame at. " + Nearest(snapshots, t) +
+                        (stream.Length > 0
+                            ? " The stream's own nearest: " + Nearest(stream, t)
+                            : " This run recorded no state stream, so only a snapshot second " +
+                              "can be drawn.");
                 }
 
                 if (!Holds(positions, t))

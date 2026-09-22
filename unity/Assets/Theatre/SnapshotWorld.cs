@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using UnityEngine;
 using Evosim.Core;
+using Evosim.Farm;
 using Evosim.Sim;
 using Debug = UnityEngine.Debug;
 
@@ -67,6 +68,9 @@ namespace Evosim.Theatre
             public int Row;
             public Vector3 At;
             public int Flags;
+
+            /// <summary>How far the body had grown: 1 when nothing recorded it.</summary>
+            public float Fraction;
         }
 
         /// <summary>One body that has been built.</summary>
@@ -85,8 +89,29 @@ namespace Evosim.Theatre
 
         public BedShape Bed { get; private set; }
 
-        /// <summary>The snapshot second being drawn.</summary>
+        /// <summary>The second being drawn.</summary>
         public double Second { get; private set; }
+
+        /// <summary>
+        /// Whether the frame came from the state stream rather than from <c>positions.jsonl</c>.
+        /// </summary>
+        /// <remarks>
+        /// The stream is <c>poses.bin</c> (<c>logbook/specs/state-stream-spec.md</c>), written
+        /// every half second or so where a snapshot is written every thousand. So a picture from
+        /// the stream is a join of two instants: the genomes from the last snapshot at or before
+        /// the second, and the poses, the places and the sizes from the stream's frame at it. Both
+        /// seconds go on the label, because a body's plan and a body's attitude coming from
+        /// different instants is the kind of thing a still has to say out loud.
+        /// </remarks>
+        public bool FromStream { get; private set; }
+
+        /// <summary>The snapshot second the genomes came from. Equals <see cref="Second"/> off the stream.</summary>
+        public double SnapshotSecond { get; private set; }
+
+        /// <summary>
+        /// Whether every drawn body was drawn at the size it was rather than at its adult size.
+        /// </summary>
+        public bool RecordedSize { get; private set; }
 
         /// <summary>True once every joined body has been built. Nothing is photographed before it.</summary>
         public bool Ready { get; private set; }
@@ -256,10 +281,19 @@ namespace Evosim.Theatre
             Clear();
 
             Second = second;
+            SnapshotSecond = second;
             Ready = false;
             _begun = true;
+            FromStream = false;
+            RecordedSize = false;
 
             string directory = Record.Path;
+
+            // The state stream first, when the run wrote one and it holds this second. Its frames
+            // are half a second apart where a snapshot is a thousand, so this is the path that
+            // makes a second between snapshots drawable at all.
+            if (BeginFromStream(directory, second)) return;
+
             string snapshot = SnapshotFileAt(directory, second);
 
             if (snapshot == null)
@@ -270,6 +304,212 @@ namespace Evosim.Theatre
                 return;
             }
 
+            ReadGenomes(snapshot);
+
+            string line = PositionsRowAt(directory, second);
+
+            if (line == null)
+            {
+                Debug.LogError(
+                    "[Theatre] no positions row at " + Seconds(second) + " s in " + directory);
+                Ready = true;
+                return;
+            }
+
+            var seen = new HashSet<long>();
+            JsonNode row = Json.Parse(line);
+            JsonNode bodies = row["b"];
+
+            for (int i = 0; i < bodies.Count; i++)
+            {
+                JsonNode entry = bodies[i];
+
+                var at = new Vector3(
+                    (float)entry[1].AsDouble(),
+                    (float)entry[2].AsDouble(),
+                    (float)entry[3].AsDouble());
+
+                long id = (long)entry[0].AsDouble();
+                seen.Add(id);
+
+                if (!_rowOf.TryGetValue(id, out int index))
+                {
+                    WithoutAGenome++;
+                    continue;
+                }
+
+                _queue.Add(new Pending
+                {
+                    Id = id,
+                    Row = index,
+                    At = at,
+                    Flags = entry[4].AsInt(),
+
+                    // Nothing in positions.jsonl says how far a body had grown, so this path draws
+                    // the adult, as it always has.
+                    Fraction = 1f,
+                });
+            }
+
+            foreach (long id in _rowOf.Keys)
+            {
+                if (!seen.Contains(id)) WithoutAPosition++;
+            }
+
+            JoinedCount = _queue.Count;
+            _built = 0;
+
+            // The third file of the join, and the only optional one: a run recorded before
+            // 2026-09-21 has none, and a body is then drawn in the developer's frame as every
+            // reconstruction was before poses existed.
+            _poses = RecordedPoses.At(directory, second);
+            PosesRecorded = _poses != null;
+
+            Debug.Log(
+                "[Theatre] snapshot from snapshots/" + _snapshotName + ": " +
+                _rows.Length + " genomes, " + bodies.Count + " positions, " +
+                JoinedCount + " joined, " + WithoutAGenome + " without a genome, " +
+                WithoutAPosition + " without a position; " +
+                (PosesRecorded
+                    ? _poses.Count + " poses at this second"
+                    : RecordedPoses.Has(directory)
+                        ? "poses.jsonl carries no row at this second, so every body is drawn upright"
+                        : "no poses.jsonl, so every body is drawn upright"));
+
+            if (Unreadable > 0)
+            {
+                Debug.LogWarning(
+                    "[Theatre] " + Unreadable + " genome(s) in " + _snapshotName +
+                    " this build cannot read, counted and not drawn: " + _firstUnreadable);
+            }
+        }
+
+        /// <summary>
+        /// Queues the bodies from <c>poses.bin</c>'s frame at a second, joined to the nearest
+        /// snapshot at or before it. False when the run has no stream or no frame there.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Two instants, and the label says both.</b> A stream frame carries a place, an
+        /// attitude, joint coordinates and a body fraction, and no genome. A snapshot carries
+        /// genomes and is written a thousand seconds apart. So the genomes come from the last
+        /// snapshot at or before the second, and a body born after that snapshot has no genome at
+        /// all: it is skipped, counted in <see cref="WithoutAGenome"/>, and the label's
+        /// <i>unmatched</i> is what says so on the frame.
+        /// </para>
+        /// <para>
+        /// <b>What this path can do that the other cannot.</b> The stream carries the body
+        /// fraction, which no other file ever has, so a body is drawn at the size it was rather
+        /// than at its adult size. What it loses is the harness's guild flags: those are in
+        /// <c>positions.jsonl</c> at the sample cadence and not in the stream, so a body's guild
+        /// here is the development's answer and the disagreement count has nothing to compare.
+        /// </para>
+        /// </remarks>
+        private bool BeginFromStream(string directory, double second)
+        {
+            string streamPath = PoseStream.PathIn(directory);
+            if (streamPath == null) return false;
+
+            PoseFrame frame;
+
+            try
+            {
+                using (PoseStreamReader reader = PoseStreamReader.Open(streamPath))
+                {
+                    frame = reader.At(second);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning(
+                    "[Theatre] " + Path.GetFileName(streamPath) + " could not be read, so the " +
+                    "picture falls back to positions.jsonl: " + e.Message);
+
+                return false;
+            }
+
+            if (frame == null) return false;
+
+            string snapshot = SnapshotFileAtOrBefore(directory, second);
+
+            if (snapshot == null)
+            {
+                Debug.LogError(
+                    "[Theatre] the stream has a frame at " + Seconds(second) + " s and no " +
+                    "snapshot was written at or before it, so there are no genomes to draw.");
+
+                Ready = true;
+                return true;
+            }
+
+            FromStream = true;
+            RecordedSize = true;
+            SnapshotSecond = SecondOfSnapshot(snapshot);
+
+            ReadGenomes(snapshot);
+
+            _poses = new Dictionary<long, RecordedPose>(frame.Bodies.Length);
+
+            var seen = new HashSet<long>();
+
+            for (int i = 0; i < frame.Bodies.Length; i++)
+            {
+                PoseBody body = frame.Bodies[i];
+                long id = body.Id;
+
+                seen.Add(id);
+                _poses[id] = RecordedPoses.From(body);
+
+                if (!_rowOf.TryGetValue(id, out int index))
+                {
+                    // Born after the snapshot, so nothing in the run says what it is made of.
+                    WithoutAGenome++;
+                    continue;
+                }
+
+                _queue.Add(new Pending
+                {
+                    Id = id,
+                    Row = index,
+                    At = new Vector3(body.X, body.Y, body.Z),
+
+                    // The stream carries no guild flags. Build takes the development's answer and
+                    // makes no comparison, which is what a negative here means.
+                    Flags = -1,
+                    Fraction = body.BodyFraction > 0f ? body.BodyFraction : 1f,
+                });
+            }
+
+            foreach (long id in _rowOf.Keys)
+            {
+                if (!seen.Contains(id)) WithoutAPosition++;
+            }
+
+            JoinedCount = _queue.Count;
+            _built = 0;
+            PosesRecorded = true;
+
+            Debug.Log(
+                "[Theatre] pose t=" + Seconds(second) + " s from poses.bin of snapshot " +
+                Seconds(SnapshotSecond) + " s (snapshots/" + _snapshotName + "): " +
+                _rows.Length + " genomes, " + frame.Bodies.Length + " poses, " +
+                JoinedCount + " joined, " + WithoutAGenome + " born after the snapshot and " +
+                "skipped, " + WithoutAPosition + " in the snapshot and not in the frame; every " +
+                "body at the size the stream recorded for it");
+
+            if (Unreadable > 0)
+            {
+                Debug.LogWarning(
+                    "[Theatre] " + Unreadable + " genome(s) in " + _snapshotName +
+                    " this build cannot read, counted and not drawn: " + _firstUnreadable);
+            }
+
+            return true;
+        }
+
+        /// <summary>Reads a snapshot file's rows and builds the id-to-row map.</summary>
+        private void ReadGenomes(string snapshot)
+        {
             _snapshotName = Path.GetFileName(snapshot);
 
             // ReadRows, never File.ReadAllLines: a snapshot of a live run has a writer on it.
@@ -310,79 +550,6 @@ namespace Evosim.Theatre
                 }
 
                 if (!_rowOf.ContainsKey(id)) _rowOf[id] = i;
-            }
-
-            string line = PositionsRowAt(directory, second);
-
-            if (line == null)
-            {
-                Debug.LogError(
-                    "[Theatre] no positions row at " + Seconds(second) + " s in " + directory);
-                Ready = true;
-                return;
-            }
-
-            var seen = new HashSet<long>();
-            JsonNode row = Json.Parse(line);
-            JsonNode bodies = row["b"];
-
-            for (int i = 0; i < bodies.Count; i++)
-            {
-                JsonNode entry = bodies[i];
-
-                var at = new Vector3(
-                    (float)entry[1].AsDouble(),
-                    (float)entry[2].AsDouble(),
-                    (float)entry[3].AsDouble());
-
-                long id = (long)entry[0].AsDouble();
-                seen.Add(id);
-
-                if (!_rowOf.TryGetValue(id, out int index))
-                {
-                    WithoutAGenome++;
-                    continue;
-                }
-
-                _queue.Add(new Pending
-                {
-                    Id = id,
-                    Row = index,
-                    At = at,
-                    Flags = entry[4].AsInt(),
-                });
-            }
-
-            foreach (long id in _rowOf.Keys)
-            {
-                if (!seen.Contains(id)) WithoutAPosition++;
-            }
-
-            JoinedCount = _queue.Count;
-            _built = 0;
-
-            // The third file of the join, and the only optional one: a run recorded before
-            // 2026-09-21 has none, and a body is then drawn in the developer's frame as every
-            // reconstruction was before poses existed.
-            _poses = RecordedPoses.At(directory, second);
-            PosesRecorded = _poses != null;
-
-            Debug.Log(
-                "[Theatre] snapshot from snapshots/" + _snapshotName + ": " +
-                _rows.Length + " genomes, " + bodies.Count + " positions, " +
-                JoinedCount + " joined, " + WithoutAGenome + " without a genome, " +
-                WithoutAPosition + " without a position; " +
-                (PosesRecorded
-                    ? _poses.Count + " poses at this second"
-                    : RecordedPoses.Has(directory)
-                        ? "poses.jsonl carries no row at this second, so every body is drawn upright"
-                        : "no poses.jsonl, so every body is drawn upright"));
-
-            if (Unreadable > 0)
-            {
-                Debug.LogWarning(
-                    "[Theatre] " + Unreadable + " genome(s) in " + _snapshotName +
-                    " this build cannot read, counted and not drawn: " + _firstUnreadable);
             }
         }
 
@@ -501,6 +668,25 @@ namespace Evosim.Theatre
 
             if (phenotype.PartCount == 0) return;
 
+            // The size the body was, when something recorded it. Core grows a creature by scaling
+            // its adult phenotype by the cube root of the tissue fraction (World.Grow), so the
+            // same scaling here draws the body the run had rather than the adult it would become.
+            if (pending.Fraction > 0f && pending.Fraction < 1f)
+            {
+                try
+                {
+                    phenotype = phenotype.Scaled(
+                        Mathf.Pow(pending.Fraction, 1f / 3f), Record.Config.Shapes);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning(
+                        "[Theatre] creature " + pending.Id + " has a body fraction of " +
+                        pending.Fraction + " this build could not scale to, so it is drawn at " +
+                        "its adult size: " + e.Message);
+                }
+            }
+
             bool absorptive = Carries(phenotype, CellTypeIds.Absorptive);
             bool photosynthetic = Carries(phenotype, CellTypeIds.Photosynthetic);
             bool jointed = phenotype.TotalDof > 0;
@@ -509,14 +695,25 @@ namespace Evosim.Theatre
             // body as it stood, which at a fraction of its adult size may have had a part pruned
             // under minPartVolume that the adult keeps. A reader is owed the disagreement.
             int flags = pending.Flags;
-            bool recordedAbsorptive = (flags & PositionsRow.AbsorptiveBit) != 0;
-            bool recordedPhotosynthetic = (flags & PositionsRow.PhotosyntheticBit) != 0;
-            bool recordedJointed = (flags & PositionsRow.JointedBit) != 0;
 
-            if (recordedAbsorptive != absorptive ||
-                recordedPhotosynthetic != photosynthetic ||
-                recordedJointed != jointed ||
-                (flags & ~PositionsRow.AllBits) != 0)
+            // A negative is the stream's answer: it carries no guild flags, so there is no second
+            // opinion to disagree with and the development's own is what the body is painted by.
+            bool fromTheRow = flags >= 0;
+
+            bool recordedAbsorptive =
+                fromTheRow ? (flags & PositionsRow.AbsorptiveBit) != 0 : absorptive;
+
+            bool recordedPhotosynthetic =
+                fromTheRow ? (flags & PositionsRow.PhotosyntheticBit) != 0 : photosynthetic;
+
+            bool recordedJointed =
+                fromTheRow ? (flags & PositionsRow.JointedBit) != 0 : jointed;
+
+            if (fromTheRow &&
+                (recordedAbsorptive != absorptive ||
+                 recordedPhotosynthetic != photosynthetic ||
+                 recordedJointed != jointed ||
+                 (flags & ~PositionsRow.AllBits) != 0))
             {
                 GuildDisagreements++;
 
@@ -812,12 +1009,19 @@ namespace Evosim.Theatre
         {
             int unmatched = WithoutAGenome + WithoutAPosition;
 
+            string join = FromStream
+                ? string.Format(
+                    CultureInfo.InvariantCulture,
+                    "  pose t={0:0.###} of snapshot {1:0.#}", Second, SnapshotSecond)
+                : "";
+
             return
                 "RECONSTRUCTED FROM SNAPSHOT" + (OldRunRead ? " · OLD-RUN READ" : "") + "\n" +
                 string.Format(
                     CultureInfo.InvariantCulture,
-                    "{0}  t={1:0.#}s  joined {2}  {3}  {4}  adult size, {5}{6}",
-                    Record.ArmName ?? "run", Second, JoinedCount, view, look, Attitude(),
+                    "{0}  t={1:0.#}s{2}  joined {3}  {4}  {5}  {6}, {7}{8}",
+                    Record.ArmName ?? "run", Second, join, JoinedCount, view, look,
+                    RecordedSize ? "recorded size" : "adult size", Attitude(),
                     unmatched > 0 ? "  " + unmatched + " unmatched" : "");
         }
 
@@ -874,6 +1078,66 @@ namespace Evosim.Theatre
                 string.Format(CultureInfo.InvariantCulture, "{0:000000000}.jsonl", (long)second));
 
             return File.Exists(file) ? file : null;
+        }
+
+        /// <summary>
+        /// The last snapshot file written at or before a second, or null when there is none.
+        /// </summary>
+        /// <remarks>
+        /// What a state-stream picture joins its poses to. Nearest <i>at or before</i> and never
+        /// the nearest of the two: a later snapshot holds genomes of bodies that did not exist at
+        /// the second being drawn, and it is missing ones that did.
+        /// </remarks>
+        public static string SnapshotFileAtOrBefore(string runDirectory, double second)
+        {
+            double[] seconds = SnapshotSeconds(runDirectory);
+            double best = double.NaN;
+
+            foreach (double s in seconds)
+            {
+                if (s > second + 1e-3) continue;
+                if (double.IsNaN(best) || s > best) best = s;
+            }
+
+            return double.IsNaN(best) ? null : SnapshotFileAt(runDirectory, best);
+        }
+
+        /// <summary>The second a snapshot file's name states.</summary>
+        private static double SecondOfSnapshot(string path) =>
+            long.TryParse(
+                Path.GetFileNameWithoutExtension(path), NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out long t)
+                ? t
+                : 0d;
+
+        /// <summary>Whether the run wrote a state stream.</summary>
+        public static bool HasStream(string runDirectory) => PoseStream.Has(runDirectory);
+
+        /// <summary>
+        /// Every second the state stream holds a complete frame at, ascending, or an empty array.
+        /// </summary>
+        /// <remarks>
+        /// Read from <c>poses.idx</c> when the run left one and by scanning the stream when it did
+        /// not, which is what a killed or a live run needs. The refusals are swallowed here rather
+        /// than thrown, because a caller asking which seconds are drawable wants an answer and the
+        /// picture path logs the reason it fell back.
+        /// </remarks>
+        public static double[] StreamSeconds(string runDirectory)
+        {
+            string path = PoseStream.PathIn(runDirectory);
+            if (path == null) return new double[0];
+
+            try
+            {
+                using (PoseStreamReader reader = PoseStreamReader.Open(path))
+                {
+                    return reader.Seconds();
+                }
+            }
+            catch (Exception)
+            {
+                return new double[0];
+            }
         }
 
         /// <summary>
@@ -1033,6 +1297,9 @@ namespace Evosim.Theatre
             PosedCount = 0;
             PoseRefusals = 0;
             _firstPoseRefusal = null;
+
+            FromStream = false;
+            RecordedSize = false;
         }
 
         public void Dispose()

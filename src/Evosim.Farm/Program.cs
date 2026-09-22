@@ -170,6 +170,12 @@ namespace Evosim.Farm
             // tank it is in. 1 in a box and in a tank whose axes balance, which is every run in
             // the record; the header's `axes v:h` token is the same number.
             manifest.StreamsAxisRatio = config.Current.StreamsAxisRatio;
+
+            // A recording setting, recorded where the other recording settings are: it must not
+            // reach config.json or its hash, and a reader of run.json is owed the cadence the
+            // stream beside it was written at.
+            manifest.PoseEverySeconds = settings.ResolvePoseEvery();
+
             Manifest.Write(dir, manifest, ending: null);
 
             var report = new Report(outPath, config);
@@ -228,6 +234,27 @@ namespace Evosim.Farm
             var readings = new Readings(sim);
             var sampler = new Sampler();
 
+            // The state stream, off unless a launcher asked for it. Opened here rather than in the
+            // sampler because its cadence is not the sample's: it takes a frame from the metabolic
+            // loop, where the sampler is called once a report row.
+            float poseEvery = settings.ResolvePoseEvery();
+
+            PoseRecorder poses = poseEvery > 0f
+                ? new PoseRecorder(dir.Path, poseEvery, manifest.ConfigHash)
+                : null;
+
+            if (poses != null)
+            {
+                Console.WriteLine(
+                    "state stream: " + Path.Combine(dir.Path, PoseStream.FileName) + " every " +
+                    poseEvery.ToString(CultureInfo.InvariantCulture) + " s" +
+                    (Math.Abs(poseEvery - settings.PoseEvery) > 1e-6f
+                        ? " (raised from the " +
+                          settings.PoseEvery.ToString(CultureInfo.InvariantCulture) +
+                          " s asked for: nothing moves inside a metabolic step)"
+                        : ""));
+            }
+
             Genome inoculum = null;
             bool inoculateOn = !string.IsNullOrEmpty(settings.InoculatePath) && settings.InoculateAt > 0f;
 
@@ -262,6 +289,15 @@ namespace Evosim.Farm
                     if (!sim.Step()) continue;
 
                     metabolicSteps++;
+
+                    // The state stream, before anything that can break out of the loop, so the
+                    // last frame is the last instant the world was in and not the one before it.
+                    if (poses != null)
+                    {
+                        sim.WritersClock.Start();
+                        poses.Sample(sim);
+                        sim.WritersClock.Stop();
+                    }
 
                     // So the error path can say how far the run got. All of it, not only the
                     // clock: a manifest that reports zero and one that reports nothing are both
@@ -397,6 +433,11 @@ namespace Evosim.Farm
             {
                 clock.Stop();
 
+                // The stream first: disposing it writes poses.idx, so even a crashed run leaves
+                // an index rather than a file only a scan can open.
+                manifest.LastPoseFrames = poses?.FrameCount ?? 0;
+                poses?.Dispose();
+
                 Manifest.Write(dir, manifest, Manifest.ErrorEnding(manifest, e));
 
                 report.AppendLine();
@@ -428,6 +469,12 @@ namespace Evosim.Farm
 
             sampler.Snapshot(dir, world);
             sampler.Close();
+
+            // Closing the stream writes poses.idx, so the frame count is read before the close
+            // and the index exists before run.json claims a count for it.
+            int poseFrames = poses?.FrameCount ?? 0;
+            manifest.LastPoseFrames = poseFrames;
+            poses?.Dispose();
 
             long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
@@ -475,6 +522,7 @@ namespace Evosim.Farm
                 WallFluidComputeMs = 0L,
                 WallFluidApplyMs = 0L,
                 FluidLinkSteps = sim.FluidLinkSteps,
+                PoseFrames = poseFrames,
             });
 
             report.GenomesLine(dir.Path);

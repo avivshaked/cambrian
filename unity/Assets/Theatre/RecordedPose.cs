@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using UnityEngine;
 using Evosim.Core;
+using Evosim.Farm;
 using Evosim.Sim;
 
 namespace Evosim.Theatre
@@ -72,6 +73,24 @@ namespace Evosim.Theatre
         /// <summary>Whether the run recorded poses at all. Every run before 2026-09-21 did not.</summary>
         public static bool Has(string runDirectory) =>
             File.Exists(Path.Combine(runDirectory, "poses.jsonl"));
+
+        /// <summary>
+        /// One body's pose out of the state stream, which carries the same three quantities the
+        /// JSONL carries and carries them unrounded.
+        /// </summary>
+        /// <remarks>
+        /// The stream is <c>poses.bin</c>, written at a cadence a picture can be taken at rather
+        /// than once a sample (<c>logbook/specs/state-stream-spec.md</c>). Its layout is read by
+        /// <c>Evosim.Farm</c>'s <c>PoseStreamReader</c>, which the theatre reaches through the farm
+        /// package rather than through a second copy of the byte order.
+        /// </remarks>
+        public static RecordedPose From(PoseBody body) =>
+            new RecordedPose
+            {
+                Root = new Vector3(body.X, body.Y, body.Z),
+                Attitude = new Quaternion(body.Qx, body.Qy, body.Qz, body.Qw).normalized,
+                Joint = body.Joints ?? new float[0],
+            };
 
         /// <summary>
         /// Every body's pose at a second, by organism id, or null when the run wrote no poses or

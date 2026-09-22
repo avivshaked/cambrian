@@ -92,6 +92,13 @@ namespace Evosim.Farm
             // run.json instead.
             Int("EVOSIM_THREADS", 0f, (s, v) => s.Threads = v),
 
+            // The third name here that EvolutionRun does not read, and a recording setting rather
+            // than a world one: how often poses.bin takes a frame, in simulated seconds. 0 writes
+            // no file. It is bound beside EVOSIM_REPORT_EVERY and EVOSIM_DIGEST_EVERY, and like
+            // them it reaches EnvSettings and never RunConfig, so no config hash moves and every
+            // recorded run reads as it did (logbook/specs/state-stream-spec.md).
+            Num("EVOSIM_POSE_EVERY", 0f, (s, v) => s.PoseEvery = v),
+
             Num("EVOSIM_IDLE", 0.02f, (s, v) => s.Idle = v),
             Num("EVOSIM_MAXPOWER", RandomGenomeOptions.Default.MaxLinkPower, (s, v) => s.MaxPower = v),
             Num("EVOSIM_MINPOWER", RandomGenomeOptions.Default.MinLinkPower, (s, v) => s.MinPower = v),
@@ -664,6 +671,11 @@ namespace Evosim.Farm
         /// <summary>The farm's thread count. 0 is one per processor; it is not in the hash.</summary>
         public int Threads;
 
+        /// <summary>
+        /// How often the state stream takes a frame, simulated seconds. 0 writes no stream.
+        /// </summary>
+        public float PoseEvery;
+
         public float Idle;
         public float MaxPower;
         public float MinPower;
@@ -819,5 +831,20 @@ namespace Evosim.Farm
         /// <summary>The thread count this run will use: <c>EVOSIM_THREADS</c>, or one per processor.</summary>
         public int ResolveThreads() =>
             Threads > 0 ? Threads : Environment.ProcessorCount;
+
+        /// <summary>
+        /// The cadence the state stream will actually record at: 0 when it is off, and never
+        /// below the metabolic step.
+        /// </summary>
+        /// <remarks>
+        /// A cadence under half a second is raised rather than refused, because nothing about a
+        /// body changes between metabolic steps and a launcher that asks for a tenth of a second
+        /// is asking for every step. The number recorded in the manifest and in the stream's own
+        /// header is this one, so a reader is never told a cadence the file does not have.
+        /// </remarks>
+        public float ResolvePoseEvery() =>
+            PoseEvery > 0f ? Math.Max(PoseEvery, MetabolicStep) : 0f;
+
+        private const float MetabolicStep = EnvBinding.MetabolicStepSeconds;
     }
 }
