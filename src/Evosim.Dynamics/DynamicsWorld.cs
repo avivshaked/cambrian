@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace Evosim.Dynamics
@@ -56,6 +57,27 @@ namespace Evosim.Dynamics
         /// <summary>The largest active bounding radius the last step saw, metres.</summary>
         public double LargestContactRadius => _grid.LargestRadius;
 
+        /// <summary>
+        /// The names of the five phases of <see cref="Step"/>, in order: the contact grid's build,
+        /// the water sampled for every body, the parallel body phase, the contact commit and the
+        /// after-step (the contact census and the digest row).
+        /// </summary>
+        /// <remarks>
+        /// <b>Why the step is timed by phase.</b> Only the third phase runs on more than one
+        /// thread. The farm's rows read the whole step as `wallPhysicsMs` and could not say how
+        /// much of it was serial, which is what decides whether more threads buy pace: on the
+        /// night of 2026-09-22 a full crowd cost 1.6 to 2.7 µs a body-step at 8 and at 12
+        /// threads alike, five times the bench's 24-thread number, and the bench's bodies sample
+        /// no water. Five timestamps a step, no trajectory touched.
+        /// </remarks>
+        public static readonly string[] PhaseNames = { "grid", "water", "bodies", "commit", "after" };
+
+        /// <summary>Stopwatch ticks spent in each phase of <see cref="PhaseNames"/> since construction.</summary>
+        public readonly long[] PhaseTicks = new long[5];
+
+        /// <summary>Milliseconds spent in phase <paramref name="phase"/> of <see cref="PhaseNames"/>.</summary>
+        public long PhaseMs(int phase) => PhaseTicks[phase] * 1000L / Stopwatch.Frequency;
+
         public DynamicsWorld(SolverConfig config)
         {
             Config = config ?? throw new ArgumentNullException(nameof(config));
@@ -77,11 +99,17 @@ namespace Evosim.Dynamics
         {
             double dt = Config.StepSeconds;
 
+            long t0 = Stopwatch.GetTimestamp();
+
             _grid.Build(_creatures, ContactCellOverrideMetres);
+
+            long t1 = Stopwatch.GetTimestamp();
 
             // Package C. Serial and before the parallel phase, over the poses the step starts
             // from — the farm's gather phase, and the one place a CurrentField may be touched.
             SampleWater();
+
+            long t2 = Stopwatch.GetTimestamp();
 
             int count = _creatures.Count;
 
@@ -96,15 +124,27 @@ namespace Evosim.Dynamics
             var options = new ParallelOptions { MaxDegreeOfParallelism = Threads < 1 ? 1 : Threads };
             Parallel.For(0, count, options, i => StepOne(i, dt));
 
+            long t3 = Stopwatch.GetTimestamp();
+
             // Serial, between steps: what every body will read of every other on the next one.
             // Committing inside the parallel phase is what made the digest depend on the thread
             // count — see Creature's contact fields.
             for (int i = 0; i < count; i++) _creatures[i].CommitContactSphere();
 
+            long t4 = Stopwatch.GetTimestamp();
+
             ElapsedSeconds += dt;
             Steps++;
 
             AfterStep();
+
+            long t5 = Stopwatch.GetTimestamp();
+
+            PhaseTicks[0] += t1 - t0;
+            PhaseTicks[1] += t2 - t1;
+            PhaseTicks[2] += t3 - t2;
+            PhaseTicks[3] += t4 - t3;
+            PhaseTicks[4] += t5 - t4;
         }
 
         private void StepOne(int index, double dt)

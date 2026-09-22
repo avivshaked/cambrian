@@ -3,6 +3,15 @@
 # only, and src/Directory.Build.props sends the build to artifacts/). One snapshot by hand:
 #   dotnet artifacts/Evosim.Overlap/bin/Release/net8.0/Evosim.Overlap.dll <snapshot.jsonl> [--top N] [--dump <id>] [--silhouette] [--ids a,b]
 # Unity's bundled SDK, as scripts/core-test.ps1 and scripts/ledger.ps1 use.
+#
+# With no -Snapshots the probe runs over round 41c's list below; with them it runs over those
+# files (a path, or a comma-separated list, which is how a list arrives from bash — split here,
+# as theatre-snap.ps1 splits its views, so that it is a list and not one name).
+#   ./scripts/overlap/run.ps1 -Snapshots runs/r45fixb-s4/<run>/snapshots/000005000.jsonl -Top 3
+param(
+    [string[]]$Snapshots = @(),
+    [int]$Top = 5
+)
 
 $dotnet = 'C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe'
 $here   = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -11,6 +20,18 @@ $runs   = "$root\runs"
 
 & $dotnet build "$root\src\Evosim.Overlap\Evosim.Overlap.csproj" -c Release -v quiet --nologo
 $exe = "$root\artifacts\Evosim.Overlap\bin\Release\net8.0\Evosim.Overlap.dll"
+
+$Snapshots = @($Snapshots | ForEach-Object { $_ -split ',' } | Where-Object { $_ -ne '' })
+if ($Snapshots.Count -gt 0) {
+    $given = @()
+    foreach ($s in $Snapshots) {
+        if (Test-Path -LiteralPath $s) { $given += (Resolve-Path -LiteralPath $s).Path }
+        else { Write-Output "MISSING: $s" }
+    }
+    if ($given.Count -eq 0) { throw 'none of the snapshots given exists' }
+    & $dotnet $exe @given --top $Top
+    exit $LASTEXITCODE
+}
 
 $want = @(
     @('r41c-s3','000001000'), @('r41c-s3','000002000'), @('r41c-s3','000003000'),
@@ -26,4 +47,4 @@ foreach ($w in $want) {
     if (Test-Path $p) { $paths += $p } else { Write-Output "MISSING: $p" }
 }
 
-& $dotnet $exe @paths --top 5
+& $dotnet $exe @paths --top $Top

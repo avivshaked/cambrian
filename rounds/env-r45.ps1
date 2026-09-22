@@ -13,11 +13,19 @@
 # armour is not free), attack, intake and toughness 0.1 W (a capped claw costs about 5% of a leaf's
 # income and one leaf-sized corpse repays about 450 s of it). The two senses the mouth answers,
 # Contact and Damage, are in the pool.
+#
+# The tank is ten times round 44's and the matter is not (owner, 2026-09-22 night: "bigger
+# tank … intentionally didn't say more matter. Reduce the creature mist and reduce bodies
+# colliding"). Area 22,000 m2 (r 83.7 m) at the same 45 m with round 44's 1,500 units, so the
+# same crowd in ten times the water, a tenth of the density; the bed's wavelength held at
+# round 44's 17.64 m rather than derived from the radius, so the rock is the same rock over a
+# larger floor. The 1 m grid is 1.05 million cells and steps in about 65 ms at 4 threads
+# (scratch/r45-build/runs/bigA, a 300 s smoke).
 @{
     EVOSIM_REPORT_EVERY = 20
     EVOSIM_IRRADIANCE = 200; EVOSIM_CURRENT = 0.1; EVOSIM_MIXING = 0.02; EVOSIM_REMIN = 0.002
     EVOSIM_CURRENT_MODE = 'Transport'
-    EVOSIM_AREA = 2200; EVOSIM_DEPTH = 45; EVOSIM_FLOOR_CLOSES = 3000; EVOSIM_MAX_POP = 8000
+    EVOSIM_AREA = 22000; EVOSIM_DEPTH = 45; EVOSIM_FLOOR_CLOSES = 3000; EVOSIM_MAX_POP = 8000
     EVOSIM_MAX_TISSUE = 0
     EVOSIM_SENESCENCE = 3000; EVOSIM_EXCESS_DENSITY = 0.02
     EVOSIM_MATTER_INITIAL = 1; EVOSIM_FOUNDER_FLOAT = 0.5
@@ -51,7 +59,7 @@
     EVOSIM_SHAPE = 'tank'
     EVOSIM_MATTER_BUDGET = 1500
     EVOSIM_DRIVE_LIMIT_ALWAYS = 0
-    EVOSIM_BED_RELIEF = 1.5; EVOSIM_BED_TILT = 30; EVOSIM_BED_SCALE = 0
+    EVOSIM_BED_RELIEF = 1.5; EVOSIM_BED_TILT = 30; EVOSIM_BED_SCALE = 17.641891
     EVOSIM_LIGHT_REACH = 6
     EVOSIM_RHO = 100; EVOSIM_UPTAKE_K = 0.3; EVOSIM_UPTAKE_KS = 0.05
     EVOSIM_HANDLING = 0.1; EVOSIM_RESERVE_CAP = 0

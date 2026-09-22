@@ -106,16 +106,20 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // of the line is still compared character for character against the recording.
                 .Replace(" · rolls ", " · axes v:h 1.00 · rolls ")
 
+                // The reach bound's token (fable-propose-body-reach.md), which only this engine
+                // prints, in its slot after the self-overlap fraction.
+                .Replace(" · selfOverlap 0.1 · ", " · selfOverlap 0.1 · reach off · ")
+
                 // D106's, the same way: appended at the end of the line, before the hash, which is
                 // where both engines print it — first the module gene's token and then the
                 // mouth's. And the hash itself, which a new tunable moves whatever its default
                 // (§9) — round 42 ran under ff557bce2685293a, the module gene filed the same world
-                // under 11602ab76c1e2a19, and the mouth's thirteen knobs and four caps file it
-                // under this.
+                // under 11602ab76c1e2a19, the mouth's thirteen knobs and four caps under
+                // 4cbb170c61668098, and the reach bound under this.
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`4cbb170c61668098`");
+                .Replace("`ff557bce2685293a`", "`5b93c47344df9e67`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -147,7 +151,10 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             // nothing bites, eats, heals or is charged for an attribute.
             Assert.Contains(" · modules add=0 drop=0 after=0 mut=0" + MouthToken + " · configHash", line);
 
-            Assert.EndsWith(" · configHash `4cbb170c61668098`", line);
+            // The reach bound, off: a reader has to see from the header that no body was cut.
+            Assert.Contains(" · selfOverlap 0.1 · reach off · ", line);
+
+            Assert.EndsWith(" · configHash `5b93c47344df9e67`", line);
 
             // parse-arm.ps1 splits on ' · ' and asks for a token by prefix; nothing may arrive
             // with an empty name or a separator inside a value.

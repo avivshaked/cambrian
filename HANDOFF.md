@@ -196,9 +196,10 @@ for a continuation. `LiveUiCheck.Run` passes 129 of 129 on `unity-w6`, the PhysX
 states are pictured in `scratch/snaps/ui/ckUi/`. Two things left from it: the founding
 live path (no checkpoint named) has no check, and the timeline's `peak · record ends`
 label prints over the clock once the head passes the record's end (seen in the selected
-state's picture). And `scratch/checkpoint/runs/ckA` is refused by the build since the
-double-accounts change moved the checkpoint layout to version 2; re-record it (and ckB,
-ckC) on the landed build before the next regress. Untested: the interactive Play-mode path.
+state's picture). `scratch/checkpoint/runs/ckA` was refused by the build after the
+double-accounts change moved the checkpoint layout to version 2; ckA, ckB and ckC were
+re-recorded on the reach-bound build (layout 3, 2026-09-22 night, the acceptance above
+passing again). Untested: the interactive Play-mode path.
 **The accounts are doubles** (`0c19f0d`, the same evening; CLAUDE.md's farm gotcha has the
 detail): the same seed's matter residual read 1.9e-07 units at 3,000 s where the float
 build read 1.1e-04 (`scratch/double-accounts/runs/dblA`, `dblB`), the audit the same in
@@ -434,10 +435,11 @@ subagent and never in a shell loop.
    and says so; the live world on the new engine, checkpoints, the Runner's picker and
    `theatre-snap.ps1 -FromCheckpoint`; the interface and click-select in live mode
    (`91aea20`). Left: the founding live path's check, the timeline label past the record's
-   end, re-recording ckA/ckB/ckC on the landed checkpoint layout, and one Editor run to
-   verify `Mathf.Sin/Cos/Round` bits against `UnityFloatMath`.
-3. **Done: the base round on the new engine** (round 43, logbook/0111). Left from it: `r41d-read.py`
-   reading the sample interval from the rows; the farm's header printing D102's `axes v:h`.
+   end, and one Editor run to verify `Mathf.Sin/Cos/Round` bits against `UnityFloatMath`
+   (ckA/ckB/ckC are re-recorded on the reach-bound build, layout 3, acceptance passing).
+3. **Done: the base round on the new engine** (round 43, logbook/0111). Its two loose ends
+   are closed: `r41d-read.py` reads the sample interval from the rows, and the farm's header
+   prints D102's `axes v:h`.
 4. **The 10,000-creature look on the CPU**: a measurement, not a round. Ten times the area
    and the matter, 3,000 to 5,000 s, the wall split and the pace read; then the solver's
    serial phases (the contact grid, the water sample, the commit) cheapened if they bind,
@@ -490,12 +492,36 @@ subagent and never in a shell loop.
    the body (the writer's fault), the module rule's refusals split by reason (`ref shape`,
    `ref reserve`; `StateVersion` 5, `Checkpoint.Version` 3), and every snapshot row
    carries the body's plan (`moduleCounts`, `lostPaths`) so the theatre and the bench draw
-   the body the run stepped. **The relaunch waits on one ruling**
-   (`fable-propose-body-reach.md`): a bound on a body's reach, recommended at 3 m as a
-   development guard rail, because nothing prices a part's size and a thin leaf grows
-   geometrically once the module gene lets it copy past its recursive limit. Then
-   `rounds/env-r45.ps1` (amended for the ruling), 0114's world section re-committed, three
-   seeds at 8 threads, the read as planned.
+   the body the run stepped. **The owner ruled on the giant and on the tank the same
+   night.** No hard bound on a body's size: the economy is to bound it, as it does in
+   life, where support and transport grow faster with reach than income does (D107). The
+   reach bound (`EVOSIM_MAX_REACH`, header `reach off`) stays in the tree as a development
+   guard at 0, tested and never set; the Farm tests' round 42 hash is re-pinned for it
+   (`5b93c47344df9e67`), both fixtures are re-recorded (`runs/r45fixb-s4`, `pfix2` →
+   `fixtures/r42-config.json`; the identity word `c9b0cabce249c1dd` held), and
+   `r45fixb-s4` replays `r45fix-s4` sample for sample, so the tree is the recorded world.
+   The next base round's proposal is a **support cost**: each part paying an upkeep in
+   proportion to the load it puts on the chain to the root (its mass or its area times its
+   distance), which grows as reach cubed against income as reach squared, so a fan of
+   copies loses money past a size the price sets and a compact body pays nearly nothing;
+   the ledger screen of the 0.5 m leaf against the 14.6 m giant at a few prices is the
+   first step. And **the tank is ten times larger and the matter is not** from round 45
+   (D108): 22,000 m² at 45 m with round 44's 1,500 units, the bed's wavelength held at
+   17.64 m; the grid is not the cost (65 ms a step at 4 threads, `scratch/r45-build/runs/
+   bigA`). Diluted tenfold the world does not found (`bigC`: one birth in 1,700 s; the
+   ledger's leaf nets 0.015 W at a tenth of the density), and the owner chose the island
+   world over a Ks dial (`bigD`, Ks 0.005, founds like round 44): the matter seeded as
+   noise islands, founders planted in them, and a light map from the same noise so the
+   landscape persists (D109, being built). Two things read with it: the one-sphere
+   contact still makes a priced giant a bulldozer, so per-part contact is the contact
+   change for the next base round; and a 14.6 m leaf is a smaller fraction of a bigger
+   tank. Round 45 relaunches on it, three seeds at 5 threads, the read as planned.
+   **The farm's pace is not the solver's**: every full-crowd farm run reads 1.6 to 2.7 µs
+   a body-step at 8 and 12 threads alike (round 43 seed 1 included), five times the
+   bench's 24-thread number, and the 0.32 µs the record extrapolated from was a founding
+   crowd of one-part bodies. The step-phase profile (`wallStep*Ms`, `DynamicsWorld.
+   PhaseNames`) is in to say how much of the step is serial; the serial water pass over
+   every link is the suspect, and the bench's bodies sample no water.
    Rung B's spec is drafted for the owner (`logbook/specs/scent-spec.md`, four
    questions in it, not built); C and D behind it.
 6. **The GPU port.** The probe ran clean alone on 2026-09-22 at 16:13 after the crash

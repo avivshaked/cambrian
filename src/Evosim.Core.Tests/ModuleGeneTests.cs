@@ -380,6 +380,62 @@ namespace Evosim.Core.Tests
             AssertBooksClose(world, "after the refusal");
         }
 
+        /// <summary>
+        /// Rule 5's third bound, <see cref="DevelopmentLimits.MaxBodyReachMetres"/>: a module that
+        /// would put a part past the bound is refused before it is paid for and counted as a shape
+        /// refusal, and the body keeps its reserve. The bound is set from the body's own minimum
+        /// so the test does not depend on the fixture's geometry.
+        /// </summary>
+        [Fact]
+        public void AnAdditionPastTheReachBoundIsRefusedAndCounted()
+        {
+            RunConfig config = Stage(addSeconds: 20f, dropSeconds: 0f, dropAfter: 0f);
+
+            Genome genome = Leaf(maxModules: 6);
+            Phenotype minimum = Developer.Develop(genome, config.Development, null, config.Shapes);
+
+            float farthest = 0f;
+            foreach (PhenotypePart part in minimum.Parts)
+            {
+                Float3 h = part.HalfExtents, c = part.Position;
+                float corner = (float)(
+                    System.Math.Sqrt((double)c.X * c.X + (double)c.Y * c.Y + (double)c.Z * c.Z) +
+                    System.Math.Sqrt((double)h.X * h.X + (double)h.Y * h.Y + (double)h.Z * h.Z));
+                if (corner > farthest) farthest = corner;
+            }
+
+            // Just past the minimum body: the first module lands beyond it and is refused.
+            config.Development.MaxBodyReachMetres = farthest * 1.01f;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(genome, 1, -1f);
+
+            Organism body = world.Living[0];
+            int parts = body.Phenotype.PartCount;
+            Assert.Equal(minimum.PartCount, parts);
+
+            Run(world, 600);
+
+            double energy = body.Energy;
+            Assert.Equal(0, world.ApplyModuleRule(10f));
+
+            _output.WriteLine(
+                $"reach bound {config.Development.MaxBodyReachMetres:0.###} m on a body reaching " +
+                $"{farthest:0.###} m: {world.ModuleAddsRefused} refusal(s), {world.ModuleAdds} add(s)");
+
+            Assert.Equal(1L, world.ModuleAddsRefused);
+            Assert.Equal(1L, world.ModuleAddsRefusedForShape);
+            Assert.Equal(0L, world.ModuleAddsRefusedForReserve);
+            Assert.Equal(parts, body.Phenotype.PartCount);
+            Assert.Equal(energy, body.Energy);
+            AssertBooksClose(world, "after the reach refusal");
+
+            // And with the bound off the same body adds its module: the bound was the reason.
+            config.Development.MaxBodyReachMetres = 0f;
+            Assert.Equal(1, world.ApplyModuleRule(10f));
+            Assert.Equal(parts + 1, body.Phenotype.PartCount);
+        }
+
         [Fact]
         public void ABodyAtThePartLimitAddsNothingAndCountsTheRefusal()
         {

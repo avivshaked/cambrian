@@ -324,6 +324,47 @@ namespace Evosim.Core.Tests
             Assert.True(p.PrunedForParts > 0);
         }
 
+        /// <summary>
+        /// <see cref="DevelopmentLimits.MaxBodyReachMetres"/>: no corner of any part lies farther
+        /// from the root's origin than the bound, the subtree past it is pruned and counted apart
+        /// from the other bounds, and off (0) is the recorded world. Round 44 seed 1's
+        /// fourteen-metre leaf is the reason (logbook/0113, fable-propose-body-reach.md).
+        /// </summary>
+        [Fact]
+        public void ReachBoundTruncatesAndSaysSo()
+        {
+            var unbounded = new DevelopmentLimits { MaxParts = 64, MaxDepth = 64 };
+            Phenotype whole = Developer.Develop(Fixtures.SelfLoopSpine(20), unbounded);
+            Assert.Equal(0, whole.PrunedForReach);
+
+            float FarCorner(PhenotypePart part)
+            {
+                Float3 h = part.HalfExtents, c = part.Position;
+                return (float)(System.Math.Sqrt((double)c.X * c.X + (double)c.Y * c.Y + (double)c.Z * c.Z) +
+                               System.Math.Sqrt((double)h.X * h.X + (double)h.Y * h.Y + (double)h.Z * h.Z));
+            }
+
+            float farthest = whole.Parts.Max(FarCorner);
+            Assert.True(farthest > 1f, $"the spine reaches only {farthest:0.###} m; the test needs a long one");
+
+            var bounded = new DevelopmentLimits { MaxParts = 64, MaxDepth = 64, MaxBodyReachMetres = farthest / 2f };
+            Phenotype cut = Developer.Develop(Fixtures.SelfLoopSpine(20), bounded);
+
+            Assert.True(cut.PartCount < whole.PartCount);
+            Assert.True(cut.PartCount > 0, "the root itself must never be past the bound");
+            Assert.True(cut.WasTruncated);
+            Assert.True(cut.PrunedForReach > 0);
+            Assert.Equal(0, cut.PrunedForParts);
+            Assert.Equal(0, cut.PrunedForDepth);
+            Assert.All(cut.Parts, part => Assert.True(FarCorner(part) <= bounded.MaxBodyReachMetres + 1e-6f));
+
+            // A bound the body already meets changes nothing, part for part.
+            var loose = new DevelopmentLimits { MaxParts = 64, MaxDepth = 64, MaxBodyReachMetres = farthest * 2f };
+            Phenotype same = Developer.Develop(Fixtures.SelfLoopSpine(20), loose);
+            Assert.Equal(whole.PartCount, same.PartCount);
+            Assert.Equal(0, same.PrunedForReach);
+        }
+
         [Fact]
         public void DepthCapTruncatesAndSaysSo()
         {

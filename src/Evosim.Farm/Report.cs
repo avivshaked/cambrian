@@ -171,6 +171,7 @@ namespace Evosim.Farm
                 " · light reach " + F(s.LightReach) + " m" +
                 " · silhouette " + (s.SilhouetteCap ? "on" : "off") +
                 " · selfOverlap " + (s.SelfOverlap > 0f ? s.SelfOverlap.ToString("0.###", Inv) : "off") +
+                " · reach " + (s.MaxReach > 0f ? s.MaxReach.ToString("0.##", Inv) + " m" : "off") +
                 " · day ±" + F(s.DayAmplitude) + " over " + F(s.DayLength) + " s" +
                 " · current " + F(s.CurrentSpeed) + " m/s " +
                 s.CurrentMode.ToString().ToLowerInvariant() +

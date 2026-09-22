@@ -160,6 +160,29 @@ namespace Evosim.Core
 
             transform.Decompose(out Float3 position, out Quat rotation, out _, out bool mirrored);
 
+            // DevelopmentLimits.MaxBodyReachMetres: the far corner of this part, bounded above by
+            // its centre's distance from the root's origin plus its half diagonal, must lie within
+            // the bound. Pruned with its subtree, as the part cap prunes, and counted apart from
+            // it so the module rule can say which bound refused an addition.
+            float reach = limits.MaxBodyReachMetres;
+            if (reach > 0f)
+            {
+                float halfDiagonal = (float)System.Math.Sqrt(
+                    (double)halfExtents.X * halfExtents.X +
+                    (double)halfExtents.Y * halfExtents.Y +
+                    (double)halfExtents.Z * halfExtents.Z);
+                float centre = (float)System.Math.Sqrt(
+                    (double)position.X * position.X +
+                    (double)position.Y * position.Y +
+                    (double)position.Z * position.Z);
+
+                if (centre + halfDiagonal > reach)
+                {
+                    phenotype.PrunedForReach++;
+                    return;
+                }
+            }
+
             PhenotypePart part = phenotype.Add(new PhenotypePart
             {
                 ParentIndex = parentPartIndex,

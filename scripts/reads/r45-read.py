@@ -554,7 +554,11 @@ def j4(seed, ts, by_t):
 # ---------------------------------------------------------------------- J5: the crowd survives
 
 def j5(seed, ts, by_t):
-    """J5: `alive` above 300 at 30,000 s, in 2 of 3 (the massacre reading if not)."""
+    """J5: `alive` above 300 at 30,000 s, in 2 of 3 (the massacre reading if not).
+
+    The bar is a share of the crowd the matter can hold: 1,500 units is about a thousand
+    bodies whatever the tank's size (D108 keeps the matter while the tank grows tenfold).
+    """
     if not ts:
         return dict(clause="J5", seed=seed, held="absent")
 

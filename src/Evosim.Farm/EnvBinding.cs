@@ -72,6 +72,7 @@ namespace Evosim.Farm
             Num("EVOSIM_LIGHT_REACH", 12f, (s, v) => s.LightReach = v),
             Flag("EVOSIM_SILHOUETTE", (s, v) => s.SilhouetteCap = v),
             Num("EVOSIM_SELF_OVERLAP", 0f, (s, v) => s.SelfOverlap = v),
+            Num("EVOSIM_MAX_REACH", 0f, (s, v) => s.MaxReach = v),
             Num("EVOSIM_SECONDS", 4000f, (s, v) => s.BudgetSeconds = v),
             Num("EVOSIM_WALL_MINUTES", 30f, (s, v) => s.WallMinutes = v),
             Int("EVOSIM_REPORT_EVERY", 200f, (s, v) => s.ReportEvery = v),
@@ -464,6 +465,7 @@ namespace Evosim.Farm
             config.PerPatchShading = s.PatchShading;
             config.LightSilhouetteCap = s.SilhouetteCap;
             config.SelfOverlapDepthFraction = s.SelfOverlap;
+            config.Development.MaxBodyReachMetres = s.MaxReach;
             config.WorldAreaSquareMetres = s.Area;
             config.WorldDepthMetres = s.Depth;
             config.SharedSpace = s.SharedSpace;
@@ -733,6 +735,7 @@ namespace Evosim.Farm
         public float LightReach;
         public bool SilhouetteCap;
         public float SelfOverlap;
+        public float MaxReach;
         public float BudgetSeconds;
         public float WallMinutes;
         public int ReportEvery;

@@ -24,6 +24,12 @@ namespace Evosim.Core
         /// <summary>Subtrees dropped because <see cref="DevelopmentLimits.MaxParts"/> was reached.</summary>
         public int PrunedForParts { get; internal set; }
 
+        /// <summary>
+        /// Subtrees dropped because a part's far corner lay past
+        /// <see cref="DevelopmentLimits.MaxBodyReachMetres"/>. Zero in every world with the bound off.
+        /// </summary>
+        public int PrunedForReach { get; internal set; }
+
         public int PartCount => _parts.Count;
 
         /// <summary>
@@ -32,7 +38,8 @@ namespace Evosim.Core
         /// is worth recording because a population that is mostly truncated means the caps,
         /// not selection, are choosing the body plans.
         /// </summary>
-        public bool WasTruncated => PrunedForVolume > 0 || PrunedForDepth > 0 || PrunedForParts > 0;
+        public bool WasTruncated =>
+            PrunedForVolume > 0 || PrunedForDepth > 0 || PrunedForParts > 0 || PrunedForReach > 0;
 
         public float TotalVolume
         {
@@ -324,6 +331,7 @@ namespace Evosim.Core
                 PrunedForVolume = PrunedForVolume,
                 PrunedForDepth = PrunedForDepth,
                 PrunedForParts = PrunedForParts,
+                PrunedForReach = PrunedForReach,
 
                 // An area, so it scales by the square of a length — no rebuild of the hull. Every
                 // corner of every part moves by the same factor about the same origin, so the
@@ -443,6 +451,7 @@ namespace Evosim.Core
                 PrunedForVolume = PrunedForVolume,
                 PrunedForDepth = PrunedForDepth,
                 PrunedForParts = PrunedForParts,
+                PrunedForReach = PrunedForReach,
                 ScaledBy = ScaledBy,
             };
 

@@ -73,6 +73,11 @@ fifteenth is four thousand.
   is a new realisation of every seed. Build and tests about an hour; 0114's world section
   amended and re-committed before the launch. `simHash` is untouched (Core only).
 - Choice 2 is a round of its own, after the kit or in place of a rung, the owner's order.
+- Whatever the choice, DESIGN.md's risk table has a row to amend: "the infinitely thin
+  sheet" says `MinPartHalfExtent` keeps the arithmetic representable and the light running
+  out bounds the body. The giant shows the second half false for a sheet that copies itself:
+  its light is not shared with its copies, since a body never shades itself. The row gets
+  the ruling's mitigation, and the decision entry cites this file's numbers.
 - The contact model stays one sphere per body under any choice; a 3 m body still pushes at
   3 m. Per-part contact is the design question already in front of the owner and is not
   needed for the relaunch once bodies are bounded.
@@ -82,3 +87,18 @@ fifteenth is four thousand.
 Relaunch round 45 on the fixed build with choice 1 at 3 m (my recommendation), with choice 1
 at another bound, or as the world stands (choice 4) — and whether choice 2 is queued as the
 economy change after the kit.
+
+## Built meanwhile, off
+
+Choice 1 is in the tree with its default at 0, so that the relaunch can follow the answer
+within minutes either way. The tunable is `DevelopmentLimits.MaxBodyReachMetres`, set by
+`EVOSIM_MAX_REACH` and printed in the header as `reach 3 m` or `reach off`. Development
+prunes a part whose farthest corner is farther than the bound from the root's origin, with
+its subtree, and counts it in `Phenotype.PrunedForReach`; the root is never past it. The
+module rule's shape test refuses an addition that would be pruned, before it is paid for,
+under `ref shape`. Two tests cover it: a twenty-segment spine cut to the bound, every
+remaining corner inside it and the other counters at zero; and an indeterminate leaf that
+meets a bound set just past its minimum, its first module refused once with its reserve
+untouched and added once the bound is off. With the bound off the tree replays `r45fix-s4`
+sample for sample (`runs/r45fixb-s4`, the re-recorded fixture). So choice 4 is the tree as
+it stands, and choice 1 is one variable in the launcher.

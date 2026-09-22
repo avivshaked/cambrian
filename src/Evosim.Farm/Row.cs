@@ -699,6 +699,15 @@ namespace Evosim.Farm
                 .Field("wallWritersMs", sim.WallWritersMs)
                 .Field("wallTotalMs", sim.WallTotalMs)
 
+                // The solver's step by phase, cumulative like the four above; only `bodies` runs
+                // on more than one thread (DynamicsWorld.PhaseNames' remarks). Their sum is
+                // wallPhysicsMs less the timestamps' own cost.
+                .Field("wallStepGridMs", sim.Dynamics.PhaseMs(0))
+                .Field("wallStepWaterMs", sim.Dynamics.PhaseMs(1))
+                .Field("wallStepBodiesMs", sim.Dynamics.PhaseMs(2))
+                .Field("wallStepCommitMs", sim.Dynamics.PhaseMs(3))
+                .Field("wallStepAfterMs", sim.Dynamics.PhaseMs(4))
+
                 // D106 item 2, rule 8. `modulesStanding` and `indeterminateShare` are states and
                 // the other three are running totals a reader differences into a window, which is
                 // what scripts/reads/r44-read.py does with them. `moduleRebuilds` is the

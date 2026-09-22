@@ -98,6 +98,44 @@ namespace Evosim.Core
         [Tunable("development", Unit = "m")]
         public float MinPartHalfExtent { get; set; } = 0.01f;
 
+        /// <summary>
+        /// How far from the root's origin any corner of any part may lie, metres; 0 is no bound.
+        /// A part past it is pruned with its subtree, as one past <see cref="MaxParts"/> is.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The economics do not forbid giants, and this is the bound that says what the tank
+        /// is scaled for.</b> <see cref="MaxPartVolume"/>'s remark argues that income scales with
+        /// area and upkeep with volume, so a body cannot pay for itself past some size. That is
+        /// false for a sheet: its area over its volume is one over its thickness, and
+        /// <see cref="MinPartHalfExtent"/> clamps the thickness at a centimetre, so a leaf's
+        /// income and its cost scale together and there is no largest leaf. Round 44 seed 1
+        /// (logbook/0113) grew one: a photosynthetic node with a self-edge whose scale had
+        /// mutated above 1 and a growth gene turned indeterminate, so every module was 1.75 times
+        /// its parent, and at its ceiling the seventh leaf was 14.6 m long, 2 cm thick and 21 m
+        /// from the root in a tank 53 m across. The pre-module world was bounded by the
+        /// recursive limit (four copies, 5.4 times); the module gene lets a node copy itself
+        /// sixteen times, and 1.75 to the fifteenth is four thousand.
+        /// </para>
+        /// <para>
+        /// <b>A bound and not a price.</b> The honest economic answer is an upkeep per square
+        /// metre of surface, which the remark on <see cref="MinPartHalfExtent"/> already names and
+        /// which re-prices every leaf in the world, so it is a base round of its own. This is the
+        /// guard rail meanwhile, beside <see cref="MaxParts"/> and <see cref="MaxDepth"/>: the
+        /// far corner of a part (its centre's distance from the root's origin plus its half
+        /// diagonal) must lie within the bound. The module rule's shape test refuses an addition
+        /// that would be pruned by it, so a module past the bound is refused and counted, and a
+        /// genome whose minimum develops past it is a stillbirth as one over the part cap is.
+        /// </para>
+        /// <para>
+        /// Off by default so every recorded configuration replays; 3 m is the proposed campaign
+        /// value (`fable-propose-body-reach.md`): the recorded bodies at their genome minimum read
+        /// a largest bounding radius of 2.0 m, and the fan above is stopped at its fourth leaf.
+        /// </para>
+        /// </remarks>
+        [Tunable("development", Unit = "m")]
+        public float MaxBodyReachMetres { get; set; } = 0f;
+
         public static DevelopmentLimits Default => new DevelopmentLimits();
 
         public DevelopmentLimits Clone() => new DevelopmentLimits
@@ -107,12 +145,16 @@ namespace Evosim.Core
             MinPartVolume = MinPartVolume,
             MaxPartVolume = MaxPartVolume,
             MinPartHalfExtent = MinPartHalfExtent,
+            MaxBodyReachMetres = MaxBodyReachMetres,
         };
 
         public override string ToString() =>
             System.FormattableString.Invariant($"maxParts={MaxParts} maxDepth={MaxDepth} ") +
             System.FormattableString.Invariant(
                 $"volume={MinPartVolume:0.######}..{MaxPartVolume:0.} ") +
-            System.FormattableString.Invariant($"thickness>={MinPartHalfExtent:0.###}");
+            System.FormattableString.Invariant($"thickness>={MinPartHalfExtent:0.###}") +
+            (MaxBodyReachMetres > 0f
+                ? System.FormattableString.Invariant($" reach<={MaxBodyReachMetres:0.##}")
+                : " reach=off");
     }
 }

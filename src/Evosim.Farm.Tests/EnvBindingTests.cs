@@ -31,7 +31,9 @@ namespace Evosim.Farm.Tests
         /// attribute mutation rate and the four per-cell-type caps, which are part of the cell
         /// type's own hash contribution — moved it to <c>fa6cdceda4ab17b6</c>, and the leaf's and
         /// absorptive protection caps rising from 0.25 to 0.5 at the ledger screen (the caps are
-        /// in the cell types' contribution) moved it to this. A tunable is part of the hash whatever
+        /// in the cell types' contribution) moved it to <c>4cbb170c61668098</c>, and the reach
+        /// bound (<c>DevelopmentLimits.MaxBodyReachMetres</c>, fable-propose-body-reach.md, off
+        /// here) moved it to this. A tunable is part of the hash whatever
         /// its default, which is §9's rule and the reason a config written before a tunable is
         /// refused rather than defaulted. What this constant still pins is the thing the test was
         /// written for: that the launcher's environment and this binding build the same world. It
@@ -40,7 +42,7 @@ namespace Evosim.Farm.Tests
         /// world, filed under a new name. <c>scratch/r45-build</c>'s regress is what says the
         /// world did not move — every shared field of a 1,000 s run identical at every sample.
         /// </remarks>
-        private const string Round42ConfigHash = "4cbb170c61668098";
+        private const string Round42ConfigHash = "5b93c47344df9e67";
 
         /// <summary>Round 42 seed 1's environment, from <c>rounds/launch-r42.ps1</c>.</summary>
         /// <remarks>

@@ -8,11 +8,13 @@ namespace Evosim.Dynamics.Tests
 {
     /// <summary>
     /// A recorded crowd on this build, read once for the whole test run: round 44's world
-    /// (<c>rounds/env-r44.ps1</c>, the module gene live) recorded as <c>r45fix-s4</c> on round
-    /// 45's build, seed 4, 20,000 s, with the mouth's tunables at their defaults so that it is
-    /// round 44's world. It replaced <c>r44fix-s4</c> the same night the mouth's tunables and
-    /// caps made that recording unreadable, which had replaced round 42 seed 4 that afternoon
-    /// for the module gene's; every tunable and every format bump re-records this.
+    /// (<c>rounds/env-r44.ps1</c>, the module gene live) recorded as <c>r45fixb-s4</c> on the
+    /// reach-bound build, seed 4, 20,000 s, with the mouth's tunables at their defaults and the
+    /// reach bound off so that it is round 44's world. It replaced <c>r45fix-s4</c> the night
+    /// the reach bound (<c>DevelopmentLimits.MaxBodyReachMetres</c>) made that recording
+    /// unreadable, which had replaced <c>r44fix-s4</c> the same night for the mouth's tunables
+    /// and caps, which had replaced round 42 seed 4 that afternoon for the module gene's; every
+    /// tunable and every format bump re-records this.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -37,10 +39,10 @@ namespace Evosim.Dynamics.Tests
     internal static class RunFixture
     {
         public const string RunDirectory =
-            @"D:\Projects\experiments\evolution-simulator\runs\r45fix-s4\2026-09-22-200442-a930d808";
+            @"D:\Projects\experiments\evolution-simulator\runs\r45fixb-s4\2026-09-22-213554-f943f5f1";
 
         /// <summary>The recording's name, for the messages that say why it cannot serve.</summary>
-        private const string Recording = "r45fix-s4 (round 44's world on round 45's build, seed 4)";
+        private const string Recording = "r45fixb-s4 (round 44's world on the reach-bound build, seed 4)";
 
         public const string Snapshot = "000020000.jsonl";
 

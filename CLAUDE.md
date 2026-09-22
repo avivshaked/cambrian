@@ -1162,10 +1162,14 @@ actually verifying it.
   the dead panel are withheld as on any cousin, and a click selects by a ray against each
   part's own box because a live body has no collider. **A checkpoint version bump orphans
   every checkpoint on disk**: the double-accounts build took the layout from 1 to 2 while
-  `scratch/checkpoint/runs/ckA` was the fixture, so the fixture is refused and
-  `LiveUiCheck` needs `EVOSIM_THEATRE_CHECKPOINT` pointed at one the build wrote
-  (`scratch/live-ui/runs/ckUi` on 2026-09-22) until ckA is re-recorded. The founding live
-  path (no checkpoint named) has no check yet.
+  `scratch/checkpoint/runs/ckA` was the fixture, so the fixture was refused and
+  `LiveUiCheck` needed `EVOSIM_THEATRE_CHECKPOINT` pointed at one the build wrote
+  (`scratch/live-ui/runs/ckUi` on 2026-09-22); the layout is 3 since the refusal split, and
+  ckA, ckB and ckC were re-recorded on the reach-bound build the same night (the newest run
+  under each arm; the restore and the checkpoint-free run both identical, the checkpoint
+  spec's acceptance). Re-record them after every `StateVersion` or `Checkpoint.Version`
+  bump, before the next regress. The founding live path (no checkpoint named) has no check
+  yet.
 - **`World.Observe` reads a body's centre of mass and throws when it is outside the box,
   and until `2771bf0` the farm's divergence check read the root alone.** Round 44 seed 1
   ended `status error` at 22,370 s on creature 7417: the root inside the bound and the
@@ -1203,7 +1207,19 @@ actually verifying it.
   build** (`moduleCounts`, `lostPaths`, read by `GenomeJson.ReadModuleCounts` and
   `ReadLostPartPaths`): the theatre's `-From snapshot` and the bench's record mode draw the
   body the run stepped, and every earlier recording is drawn at the genome minimum, which
-  is why no picture of round 44 showed the fan.
+  is why no picture of round 44 showed the fan. **The reach bound is built and off**
+  (`DevelopmentLimits.MaxBodyReachMetres`, `EVOSIM_MAX_REACH`, header `reach 3 m` or
+  `reach off`, default 0 = the recorded world; its value is the owner's ruling on the
+  proposal): development prunes a part whose farthest corner lies farther than the bound
+  from the root's origin, with its subtree, and counts it in `Phenotype.PrunedForReach`
+  (the root is never past it), and the module rule refuses an addition that would be
+  pruned as a shape refusal (`ref shape`) before it is paid for. It is a tunable, so it
+  refuses every `config.json` written before it, rounds 41 through 45's void launch and
+  both fixtures included; the Dynamics crowd is `runs/r45fixb-s4` and the thread-identity
+  config is `pfix2`'s, both round 44's world with the bound off, and `r45fixb-s4` replays
+  `r45fix-s4` sample for sample in 141 fields (the tree's regress, `scratch/r45-build/
+  regress.py`). The Unity farm does not bind the variable; a world built there carries the
+  bound at 0 and its header has no `reach` token.
 - **A blue screen beside a GPU probe was the file-system filter stack, and a minidump is
   readable without a debugger.** The one crash in this machine's log (2026-09-22, bugcheck
   0x3B) faulted in `FLTMGR.SYS` on a `dotnet.exe` thread, entered through the Xbox Gaming

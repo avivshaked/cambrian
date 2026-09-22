@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "676c16483b32d787",
+  "configHash": "bbbc032c43d1e574",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -26,6 +26,7 @@
     "ventSpeed": 0
   },
   "development": {
+    "maxBodyReachMetres": 0,
     "maxDepth": 8,
     "maxPartVolume": 1000000,
     "maxParts": 16,

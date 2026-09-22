@@ -250,6 +250,7 @@ namespace Evosim.Core
             if (adult.PartCount <= was.PartCount ||
                 adult.PrunedForParts > was.PrunedForParts ||
                 adult.PrunedForDepth > was.PrunedForDepth ||
+                adult.PrunedForReach > was.PrunedForReach ||
                 (Config.SelfOverlapDepthFraction > 0f &&
                  adult.SelfOverlappingPairs(Config.SelfOverlapDepthFraction) > 0))
             {

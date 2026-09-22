@@ -126,6 +126,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D104](#d104) | The water sampled per link on every step on the new engine: D100's hold retired at 0 from round 43, because a held sample undoes D090 (a neutral body 22 m from its parcel in 1,000 s against 5 cm per link) and the cheapening buys nothing on a solver of our own | 2026-09-22 | ruled by the owner in conversation at 03:15 on 2026-09-22 ("Yes" to the agent's recommendation of hold 0) |
 | [D105](#d105) | The physics on the card in single precision through ILGPU, designed for 100,000 bodies and first validated at 10,000 to 30,000 with the grid on the CPU, built in parallel with the animal-kit rounds; double on the 4090 is slower than the cores, and a single-precision world is a new realisation read by D104's gate | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 evening ("for the rest I think we can go with your recommendations") |
 | [D106](#d106) | The animal kit's first two rungs: the cell is the unit of death; a module gene per node (determinate or indeterminate) makes plants grow and regrow by a rule; four priced attributes on any cell (attack, intake, protection, toughness), heritable and mutable, capped per cell type, health as state healed from the reserve; a killed part becomes a corpse the killer gains nothing from, and the yield is intake from corpses; round 44 the module gene, round 45 the mouth, one genome format bump for both; then B, C, D in that order | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 evening, three decisions put in full |
+| [D107](#d107) | A body's size is bounded by the economy and not by a rule: the reach bound is rejected as a world rule and stays in the tree as an unset development guard; a support cost, each part paying for the load it puts on the chain to the root, is the next base round's proposal, with per-part contact beside it | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night |
+| [D108](#d108) | The tank is ten times larger from round 45 and the matter is not: 22,000 m² at 45 m with round 44's 1,500 units, the same crowd in ten times the water, the bed's wavelength held at 17.64 m; the farm out of Unity made the old size a habit rather than a constraint | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night, the size and the matter the owner's, the bed the agent's |
 
 ---
 
@@ -5771,3 +5773,87 @@ one-part bodies; its pre-registration asks separately whether a scavenger line f
 killer line founds, an indeterminate plant survives grazing, and attack or protection
 appears and pays, so that reading is a result and not a failure.
 
+
+### D107
+**A body's size is the economy's to bound, not a rule's** · 2026-09-22
+
+**Status:** ruled by the owner in conversation on the night of 2026-09-22 ("I'm not a huge
+fan of those kinds of rules … we should make the economy control it"), on
+`fable-propose-body-reach.md`, written after round 44's seed 1 grew a self-copying leaf
+whose seventh copy was 14.6 m long (logbook/0113; the giant's anatomy is
+`scratch/logs/giant-7597.txt`). The bound is built and unset; the support cost is not built.
+
+**Decision.** No bound on a body's reach as a world rule. `DevelopmentLimits.MaxBodyReachMetres`
+stays in the tree at 0, a development guard beside `MaxParts` that no round sets, so that
+the tree with it off is the recorded world (the re-recorded fixtures say so, sample for
+sample). What bounds size is a price that grows faster with reach than income does. That is
+what bounds it in life: whole-body maintenance goes as mass to the three quarters, cheaper
+per kilogram the bigger the body, and what grows faster than size is support and transport,
+the load a part puts on everything between it and the root. The next base round's proposal
+is a **support cost**: each part paying an upkeep in proportion to its mass (or its area,
+since drag is what loads a frond) times its distance from the root. A fan of self-similar
+copies then pays as reach cubed against income as reach squared and loses money past a
+size the price sets; a compact body pays nearly nothing; a kelp-shaped one is allowed if
+its light pays for it. It comes with a ledger screen of the 0.5 m leaf against the 14.6 m
+giant at candidate prices and its own pre-registration. DESIGN.md's risk-table row on the
+thin sheet is amended with it: the row says the light running out bounds a body, and a body
+that never shades its own copies is not bounded by it.
+
+**Why.** Nothing in the world prices where a part is. Upkeep is per cubic metre, income per
+square metre, and a sheet a centimetre thick has the same cost-to-income ratio at any size,
+so the module gene's copies grow geometrically once an edge scale mutates above 1 and
+nothing pushes back. A ceiling would say what the tank is scaled for; a price says what a
+body is worth, and leaves the size to selection, which is the project's rule for every
+other trait.
+
+**Rejected.** The reach bound at 3 m (the agent's recommendation, for the relaunch's sake):
+a rule where a price is available. An upkeep per square metre alone: it re-prices thinness
+and not reach, since a big leaf earns per area and would pay per area. Modules that do not
+compound scale: it stops the geometric series and not a chain of equal leaves.
+
+**Cost.** Giants remain possible in round 45, read as an observation with the plan every
+snapshot row now carries (`moduleCounts`), `ovl/body` and the overlap probe; a seed whose
+crowd a giant flattens is read with that. The economy cannot fix the contact model: the
+solver's contact is one bounding sphere per body, a sphere is as tall as it is wide, and a
+priced giant is still a 42 m ball to its neighbours. Per-part contact (each part's own box
+in the same grid, about three entries a body) is the contact change for the base round that
+carries the support cost, and it is a new realisation of every seed, as the price is.
+
+### D108
+**The tank is ten times larger from round 45, and the matter is not** · 2026-09-22
+
+**Status:** ruled by the owner in conversation on the night of 2026-09-22, for the second
+time asked ("we are aiming for so many more creatures, why are we not making the tank a lot
+bigger"), and then made exact: "I said bigger tank but intentionally didn't say more matter.
+Reduce the creature mist and reduce bodies colliding." The bed and the pace numbers are the
+agent's, said before the launch.
+
+**Decision.** From round 45 the campaign's tank is 22,000 m² (r 83.7 m) at 45 m, with round
+44's 1,500 units of matter: the same crowd, about a thousand bodies, in ten times the water,
+at a tenth of the density. The runaway ceiling stays 8,000. The bed's wavelength is held at
+17.64 m, round 44's, rather than derived from the radius, so the rock is the same rock over a
+larger floor. Everything else is unchanged.
+
+**Why.** The 2,200 m² tank was sized in round 39 for the Unity farm, where a thousand
+bodies ran near real time and the grid cost most of an empty world's wall. The farm out of
+Unity ran that world in 24 minutes, and nobody re-asked the size when the constraint went:
+a cheapness rule outliving its reason, CLAUDE.md's own gotcha. The owner's aim in keeping
+the matter is the crowd's spacing: round 44's bodies stood in a mist, touching (the overlap
+census read a pair a body at the peaks), and a body's contact is a sphere, so every touch is
+a push. Measured the night of the ruling: the ten-times grid (1.05 million cells) steps in
+about 65 ms at 4 threads, an hour of water per seed; the bodies cost what they cost in round
+44, so a seed is hours rather than a day.
+
+**Rejected.** Ten times the matter with the tank, the agent's first draft of 15,000 units
+and 10,000 bodies. The owner's aim is the spacing and not the count; and at the farm's
+measured 1.6 to 2.7 µs a body-step, a crowd of 10,000 is half real time, a two-day round.
+A four-times tank: the crowd is the aim. Larger cells to cheapen the grid: the grid is not
+the cost, and the cell is ruled (D086).
+
+**Cost.** A tenth of the density is a tenth of a leaf's uptake at these concentrations, since
+the spent density sits well under the half-saturation. Founding and growth run slower for it,
+and the world may not fill in 30,000 s; the agent screens that with a 3,000 s smoke and the
+ledger before the launch, and says what they read. A round's recordings do not grow with the
+tank; its grid does, and a checkpoint carries ten times the water. Round 45's world is not
+round 44's in space, so the mouth is read on its own within-round predictions and its
+comparison with round 44 is qualitative.

@@ -29,7 +29,7 @@ namespace Evosim.Dynamics.Bench
     internal static class Program
     {
         private const string DefaultRun =
-            @"D:\Projects\experiments\evolution-simulator\runs\r45fix-s4\2026-09-22-200442-a930d808";
+            @"D:\Projects\experiments\evolution-simulator\runs\r45fixb-s4\2026-09-22-213554-f943f5f1";
 
         private const string DefaultSnapshot = "000020000.jsonl";
 
@@ -819,10 +819,20 @@ namespace Evosim.Dynamics.Bench
                     double micros = watch.Elapsed.TotalMilliseconds * 1000.0;
                     double stepsPerSecond = steps / watch.Elapsed.TotalSeconds;
 
+                    long phaseTotal = 0;
+                    for (int p = 0; p < world.PhaseTicks.Length; p++) phaseTotal += world.PhaseTicks[p];
+                    var phases = new System.Text.StringBuilder();
+                    for (int p = 0; p < world.PhaseTicks.Length; p++)
+                    {
+                        phases.Append(p == 0 ? "   " : " ").Append(DynamicsWorld.PhaseNames[p]).Append(' ')
+                            .Append((phaseTotal > 0 ? 100.0 * world.PhaseTicks[p] / phaseTotal : 0).ToString("0", CultureInfo.InvariantCulture))
+                            .Append('%');
+                    }
+
                     Console.WriteLine(
                         $"    {name,-26} {threads,7}   {micros / ((double)steps * bodyCount),12:0.###}   " +
                         $"{stepsPerSecond,7:0}   {stepsPerSecond * 0.01,11:0.##}   " +
-                        $"{(world.OverlapPairs - pairsBefore) / (double)steps,10:0.#}");
+                        $"{(world.OverlapPairs - pairsBefore) / (double)steps,10:0.#}" + phases);
                 }
             }
 
