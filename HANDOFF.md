@@ -433,9 +433,11 @@ subagent and never in a shell loop.
    serial phases (the contact grid, the water sample, the commit) cheapened if they bind,
    and `SampleEdges`' per-column terms hoisted (1.6 to 2x on the grid, estimated).
 5. **The animal kit on D106.** Round 44, the module gene (`logbook/specs/module-gene-spec.md`):
-   built (`39dcf3d`), screened and pre-registered (`3d2cf12`); the three seeds launch
-   once the Dynamics fixture recording `r44fix-s4` ends, three at once at 8 threads
-   (`scripts/run-farm.ps1 -Launcher rounds/env-r44.ps1`), then the read
+   built (`39dcf3d`), screened and pre-registered (`3d2cf12`); **the three seeds are
+   running** (`r44-s1..3`, launched 2026-09-22 19:34 local on `a782472`, `configHash
+   9b4e275e2a552aa6`, 8 threads each, three at once; the header verified `modules add=300
+   drop=50 after=100 mut=0.005 · water per link`; at 0111's pace they end about 21:00),
+   then the read
    (`scripts/reads/r44-read.py`, `--out logbook/specs/r44-read/clauses.tsv`) and the
    entry with pictures (`theatre-snap.ps1 -From snapshot`). Round 45, the mouth (`logbook/specs/mouth-spec.md`): health, the kill, the
    corpse, intake, the two senses, the cap table and the four prices from the ledger, same
