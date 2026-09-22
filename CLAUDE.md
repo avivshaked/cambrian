@@ -1052,6 +1052,46 @@ actually verifying it.
   the owner says the machine is misbehaving, list processes by name and by creation time
   before anything else: the storm was visible in one query as 300 `bash.exe` under an hour
   old.
+- **From 2026-09-22 there are two farms, and the one out of Unity is the one that runs.**
+  `src/Evosim.Farm` is a .NET 8 console that steps Core's `World` with `src/Evosim.Dynamics`
+  (Featherstone in doubles, one creature at a time, bit-identical at any thread count;
+  `fable-propose-own-solver.md` until it is absorbed). It binds the same `EVOSIM_*`
+  variables as `EvolutionRun`, plus `EVOSIM_THREADS` and `EVOSIM_RUNS_ROOT`, and reproduces
+  a launcher's `configHash` (round 42's `ff557bce…`) and its `config.json` byte for byte.
+  Round 42 seed 1's world ran 30,000 s in 24 minutes on it at 16 threads, both books
+  closed, against ten hours in Unity. Eight things bite. **The manifest has no `simHash`**:
+  `run.json` carries `engine: "dynamics"`, `dynamicsHash`, `farmHash`, `threads` and
+  `processId`, and a run is stopped by writing a `STOP` file into its run directory, not by
+  `stop-arm.ps1` (which is still owed a farm mode). **The JIT decides the bits**: .NET's
+  tiered compilation gives quick-JITted and optimised loops different floating-point
+  results on a rounding edge, so every project that reports a digest sets
+  `<TieredCompilation>false</TieredCompilation>` and `DynamicsWorld.Step` takes one
+  `Parallel.For` path at every thread count, including one; a serial `for` beside it
+  parted from it at one thread. **.NET 8 and Mono format a float differently under
+  `"R"`** (17.641891 against 17.6418915), and that formatter feeds the config hash; no
+  recorded run is affected, and a hash read from a Unity build is compared to a farm's only
+  through a launcher both have written. **The contact instrument is renamed**: the farm's
+  contact is a soft push between spheres, so its columns are `overlaps`, `ovl/body`,
+  `ovl jnt %` and `ovl held %` and its stats fields `overlapPairs*` and `bedOrGlassBodies*`;
+  the numbers do not compare with `pairs/body` across the change, and the read scripts
+  still read the old names. **No recorded run replays on it**, and none of the farm's
+  replays in the Unity theatre; a `poses.jsonl` beside `positions.jsonl` is the first
+  bridge. **In the Unity farm a body's own parts collide and a driven joint is mostly not
+  free to turn** (the parity swims, HANDOFF 2026-09-21): forty of round 42's jointed bodies
+  alone in still water agree with the new solver 40 of 40 within 0.05 rad with PhysX's
+  self-collision off and 12 of 40 with it on, and a hand-built stroke agrees to the fifth
+  decimal; so every round's muscle through 42 was jammed by its own siblings, and a
+  reading about joints from those rounds is read with that. **D100's hold undoes D090**: a
+  neutral body under a 0.5 s water hold drifts 22 m from its parcel in 1,000 s, and 5 cm
+  under per-link sampling; a hold of 0 on the new engine is an owner ruling in the
+  proposal. **The matter residual grows on the farm** (−3.2e-04 of 1,500 units at
+  30,000 s against Unity's ±1e-04), and it is float rounding at the body's account
+  against the fields' doubles, not a handoff fault: the farm's `Observe` call equals
+  Unity's line for line. Double accounts in Core would close it and would be a new
+  realisation of every seed. **`sweep-orphans.ps1` lists a detached farm run's `sh.exe`**
+  as an orphan; it is one exiting script, not a loop, and is not killed. **From PowerShell,
+  `bash` is WSL's** (`C:\WINDOWS\system32ash.exe`) and cannot see `D:/`; a detached
+  launcher names `C:\Program Files\Gitinash.exe`.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
