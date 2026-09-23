@@ -77,8 +77,9 @@ writer, so a restored wounded body sensed nothing. The writer carries it now and
 checkpoint on disk before the bump is refused; round 45's own checkpoints are among them
 and were never a continuation of the run. The round itself is unaffected: it never resumed. What it means for the record:
 nothing in rounds 42 to 44 was resumed either, and the theatre's live mode is a cousin by
-construction and says so. `scratch/live-ui/runs/ckUi` (the `LiveUiCheck` fixture) needs
-re-recording before the next Unity live-mode check.
+construction and says so. `scratch/live-ui/runs/ckUi` (the `LiveUiCheck` fixture) is
+re-recorded on the build (2026-09-23, 600 s, three checkpoints); `LiveUiCheck` has not been
+rerun against it yet, and is a sixth Unity process when it is.
 
 **Streams in a shallow tank** (D102) and **four pinned arms** (D103) are ruled and on
 main. The Unity build's `simHash` has moved with the header token and every worker needs
