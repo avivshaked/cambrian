@@ -106,9 +106,15 @@ namespace Evosim.Theatre
         /// something to read. 0 leaves the world's initial field alone. A number a viewer chose
         /// is not the run's water, and the overlay says so whenever it is not 0.
         /// </param>
+        /// <param name="pool">
+        /// D117's trickle pool when <paramref name="config"/> names one, loaded from the run's
+        /// own <c>pool/</c>; the World refuses a config that names a pool it is not handed, and
+        /// a solo body never draws from it.
+        /// </param>
         public static SoloCreature Build(
             Genome genome, RunConfig config, ulong seed, float depth,
-            long sourceId, string source, float smellDensity = 0f)
+            long sourceId, string source, float smellDensity = 0f,
+            IReadOnlyList<Genome> pool = null)
         {
             if (genome == null) throw new ArgumentNullException(nameof(genome));
             if (config == null) throw new ArgumentNullException(nameof(config));
@@ -154,7 +160,7 @@ namespace Evosim.Theatre
 
             // Constructed and never stepped: this is where the nose's field comes from, and
             // nothing else about the world is wanted.
-            solo._water = new World(config, seed);
+            solo._water = new World(config, seed, pool);
             solo.SmellDensity = smellDensity;
 
             if (smellDensity > 0f)
