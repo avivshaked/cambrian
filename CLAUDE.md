@@ -1343,7 +1343,14 @@ actually verifying it.
   the GPU port wants a bound or a count before a run is read on the card. And the card's step
   at the campaign's crowd is the slowest thread's latency and not throughput (both spike-3
   kernels flat from 6,145 to 30,000 bodies): a 75-neuron sixteen-link body sets the step for
-  everyone, which is what size classes are for.
+  everyone, which is what size classes are for. **A raw-bit digest is not an identity claim across two
+  compilations once a body is lost**: when both operands are NaN the machine keeps one
+  operand's NaN and two compilations of the same source may keep different ones, so the
+  whole-step kernel (0115) agreed with the solver in every living value and disagreed in the
+  sign bit of NaNs inside lost bodies alone, and the raw digest differed at every step after
+  the loss. The farm's own digest at 1 and N threads is one compilation and does not see
+  this; a digest compared across the CPU and the card, or across two builds, hashes a lost
+  body's NaNs as one pattern or leaves lost bodies out.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

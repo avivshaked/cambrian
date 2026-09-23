@@ -700,7 +700,18 @@ subagent and never in a shell loop.
    proved in double on the CPU device against `DynamicsWorld` on a round 45 world for
    3,000 s (item 1) before the precision changes. One thing for the port: a neuron in
    round 45 seed 2's crowd has run to 1e29 (nothing bounds a finite value), which in
-   single reaches infinity at 3e38 and the guard; it wants a bound or a count.
+   single reaches infinity at 3e38 and the guard; it wants a bound or a count. **The
+   whole-step kernel is built and exact (spike 4, the same afternoon, logbook/0115's last
+   section):** the body phase whole, a thread a body, bit-exact in double against
+   `DynamicsWorld.Step` in the real world over 1,000 steps (1,712,306,642 values and the
+   digest row, 0 mismatches), 3.2x / 4.7x / 9.4x over 16 threads in single at 6,145 /
+   10,000 / 30,000 bodies (0.28 / 0.19 / 0.11 µs a body-step all in), double slower than
+   the CPU. What remains of acceptance item 1 is the farm driving the kernel through its own
+   uploads and readbacks for 3,000 s of a round 45 world, which is the port proper: the
+   `gpu` engine in `Evosim.Farm` behind `Simulation`, the manifest naming the device, the
+   digest hashing a lost body's NaNs as one pattern (the spike found two compilations keep
+   different NaN sign bits in lost bodies), size classes for the readback and the slowest
+   thread, and the founding live path. It goes to a subagent after the D110 build.
 7. **Loose ends.** Double accounts in Core for the matter residual (done, `0c19f0d`).
    `ParallelIdentityTests` is `Slow` and the overlap probe's `run.ps1` takes `-Snapshots`
    (both done). Close pictures beside the whole-tank views in every entry. DESIGN §11.1 and the ArticulationBody
