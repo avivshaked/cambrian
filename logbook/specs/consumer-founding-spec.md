@@ -1,3 +1,5 @@
+*Superseded on 2026-09-23 late afternoon by D115 and D116 (`founding-trickle-spec.md`): the owner ruled against a timed window and a placed cohort. Kept as the record of what was proposed.*
+
 # The consumer's second founding: the build spec
 
 *Fable, 2026-09-23, for `fable-propose-round-46.md`'s question 2, the recommended form (a

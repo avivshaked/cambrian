@@ -134,16 +134,16 @@ vertical).
 ## The questions
 
 1. The buoyancy offset as a genome field: ruled yes (D111).
-2. The consumer's founding: the second window (recommended), intake on non-consumer
-   founders, or the larger reserve.
+2. The consumer's founding: ruled otherwise (D115): the owner's founding trickle, founders
+   at one per 30 s for the whole run, no timed window.
 3. The support cost: ruled (D113): the square form at 0.1 W per m² per m² ("I'd follow
    nature here").
 4. Per-part contact: ruled (D114, "agreed").
 5. The reef held for round 47: agreed in conversation (2026-09-23 afternoon, "we don't
    have to do both in the same run"); the mushroom shape is the owner's and its spec follows
    the beach's.
-6. The beach in this round at a 1 m shoal and a 15 m fade, with the second founding window's
-   cohort placed over the shelf by rule: yes, or the beach alone with the cohort placed as
-   the first founders were.
+6. The cohort over the shelf: ruled otherwise (D116): founders follow their food, D109's
+   rule reading the field the founder's body eats. The beach itself is the owner's rule of
+   14:00 ("go directly to the gradient floor + beach"), at a 1 m shoal and a 15 m fade.
 7. The snow's life: ruled (D112, "Agreed"): remineralisation at 0.0005 per second, pending
    the quarter-rate screen's reading of the plants' cost.

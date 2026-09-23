@@ -8,11 +8,12 @@ then the numbers in brackets are the ones the rulings can move. Round 45's entry
 
 ## What it asks
 
-Six rules land together (D110's light by exposure with the buoyancy offset; the consumer's
-second founding; the support cost; per-part contact; the two repaired clauses; the beach),
-and the round asks one thing of each: does the crowd use it. A leaf that can lie flat and
-is paid for it; a consumer that arrives when there is food, over a floor that holds the
-food in the light; a price that stops the fan; a contact that touches with the part; a
+Seven rules land together (D110's light by exposure with the buoyancy offset; the founding
+trickle with founders that follow their food, D115 and D116; the support cost, D113;
+per-part contact, D114; the two repaired clauses; the beach; the snow's life, D112), and the
+round asks one thing of each: does the crowd use it. A leaf that can lie flat and is paid
+for it; founders that keep arriving and land where their food is, over a floor that holds
+the food in the light; a price that stops the fan; a contact that touches with the part; a
 killer read on a window it can meet.
 
 ## The world
@@ -20,8 +21,8 @@ killer read on a window it can meet.
 Round 45's (D108, D109: 22,000 m², 45 m, 15,000 units as islands, matter-mix 0.02, remin
 0.0005 by D112 (the snow's life, a quarter of round 45's rate), shade
 off, the mouth's prices) with the five rules on at the ruled values: `light by exposure`,
-`buoyancy offset [0.02 W/m3]`, `consumers found at [6000] s ([40] over [1000] s)`, `support
-[0.1] W/m2/m2`, `contact per part`, the bed's `tilt [96] m shore [1] m` with the fade at
+`buoyancy offset [0.02 W/m3]`, `trickle 1/30 s`, `founders in their food`, `support
+0.1 W/m2/m2`, `contact per part`, the bed's `tilt [96] m shore [1] m` with the fade at
 [15] m. Three seeds, 30,000 s at dt 0.01, five threads each,
 the runaway ceiling 25,000, checkpoints every 2,500 s, the fields dumped with the snapshots,
 poses recorded. The header is read after the launch and every token above is checked
@@ -33,7 +34,7 @@ against it before the queue is left to run.
 |---|---|---|
 | K1 | **the crowd lies down**: `expo` (1 = random, 2 = every leaf flat) above 1.3 at 30,000 s in 2 of 3, from a founding at 1.0 ± 0.1 | the column; `scripts/reads/tilt.py`'s flat factor as the check from the poses |
 | K2 | **the offset is the way**: among living photosynthetic parts at 30,000 s, those with `|buoyancyOffset|` above 0.2 have a mean exposure factor above those without by 0.3 or more, in 2 of 3 | the snapshot's genomes against `PartExposure` in the absorptive log |
-| K3 | **the second founding founds a line**: an inherited consumer birth (`ink` inherited) inside 5,000 s of the window's end, and `corpse eat` above zero in 20 windows before 30,000 s, in 2 of 3 | `lineage.jsonl` (`fnd 2`, `ink`), the column |
+| K3 | **the trickle founds an eater's line**: an inherited consumer birth (`ink` inherited) whose ancestor is a trickle founder, and `corpse eat` above zero in 20 windows before 30,000 s, in 2 of 3 | `lineage.jsonl` (`src: trickle`, `ink`), the column |
 | K4 | **a killer line founds**: attack above zero with a kill in 20 windows inside the last 10,000 s, in 1 of 3 or more (J2 re-asked on the repaired window) | `lineage.jsonl` (`atk`), the `killed` column |
 | K5 | **defence follows offence, read above a crowd floor**: with 500 alive or more, the first window with `prot %` above 1% comes after the first with `attack %` above 1%, in 3 of 3 with attack present | the two columns |
 | K6 | **the price stops the fan**: `reach m` (the area-weighted mean part distance from the root) below 2 m at every sample after 5,000 s in 3 of 3, and no part farther than 6 m from its root in any snapshot | the column; the snapshots' `moduleCounts` and developed reach |
@@ -51,7 +52,7 @@ against it before the queue is left to run.
   water (a reading about the physics, checked on one leaf alone).
 - **K1 holds and K2 fails:** the crowd lay down another way (a float part, rising, a joint);
   the entry says which from the genomes of the flat bodies.
-- **K3 fails with `fnd 2` rows present:** the second cohort starved with food present. Read
+- **K3 fails with trickle stomachs present:** the founders starved with food present. Read
   their ages at death against the first cohort's (20 to 55 s): the same means the mouth's
   economy is short at this snow, and longer means they ate and did not breed.
 - **K4 fails:** the killer of round 45 was that seed's; the two-sided reading stands.

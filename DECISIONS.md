@@ -134,6 +134,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D112](#d112) | The snow's life: remineralisation at 0.0005 per second from round 46, a quarter of rounds 41 to 45's rate, so that marine snow lives long enough to fall from the crowd on to the beach's shelf; the plant world read as the snow's thinness, not its depth | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("Agreed"), pending the quarter-rate screen's reading of the plants' cost |
 | [D113](#d113) | The support cost: a part's standing cost grows with its area times the square of its distance from the root, 0.1 W per m² per m², the price of reach in place of a bound (D107's price) | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("I'd follow nature here. so if that's your recommendation, lets go with that") |
 | [D114](#d114) | Contact on the part: every part its own sphere in the farm's contact, so a body touches with the part that touches and a bite lands on it; a tunable, off in every recorded world | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("agreed") |
+| [D115](#d115) | The founding trickle: founders keep arriving at a low rate for the whole run (one per 30 s in round 46), booked as matter influx, the floor unchanged, an empty world still the run's end unless founders are being added; replaces the timed second founding window | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 late afternoon (the owner's own proposal; "ok fine. but a world that dies out should be 'game over'") |
+| [D116](#d116) | Founders follow their food: D109's landing rule reads the field the founder's body eats, snow for a stomach and dissolved matter for a leaf, the larger for a mixotroph; replaces placing a cohort by rule | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 late afternoon ("use probability to make it more likely to land in high matter concentrates"; "yes") |
 
 ---
 
@@ -6127,3 +6129,64 @@ enters links.
 
 **Rejected.** Keeping one sphere a body (the bite stays approximate and the mouth's clause
 cannot be read). Full mesh contact (the solver's own step is spheres by design, D104).
+
+
+### D115
+**The founding trickle: founders keep arriving at a low rate for the whole run** · 2026-09-23
+
+**Status:** the owner's own rule, proposed in conversation on the afternoon of 2026-09-23
+against the timed second founding window of `fable-propose-round-46.md`'s rule 2 ("I don't
+like these kinds of rules. adding specific timing for specific times of founders ... the
+evolution keeps creating founders at probability P per tick (should be very low ...) so that
+when conditions change, new lines can evolve. Of course evolution should stay as it currently
+is"), and ruled with the rate and the empty-world clause the same afternoon ("ok fine. but a
+world that dies out should be 'game over'. no point in running an empty simulation if we are
+not adding creatures to it"). The build spec is `logbook/specs/founding-trickle-spec.md`;
+`consumer-founding-spec.md` is superseded.
+
+**Decision.** After the floor closes, the world adds founders as a Poisson draw at
+`FoundingTricklePerSecond` (`EVOSIM_TRICKLE`; one per 30 s in round 46, about a thousand a
+run and a few percent of births), each drawn, placed, endowed and booked as a floor founder
+is (matter influx, D098's leg 9), marked in the lineage as a trickle founder. The floor is
+unchanged: to forty, closed at 3,000 s. An empty world ends the run `extinct` as it does now,
+except while the trickle is adding founders, when it is refounded at the trickle's pace and
+the record shows the crash. 0 is the recorded world.
+
+**Why.** It is immigration, the propagule pressure every real island has, and it is what lets
+a new kind of life arrive when conditions change, which the eaters need and which no round
+has had since the floor closed at 3,000 s. It is one rule for the whole run with no special
+time in it, which was the owner's objection to the window, and the record already separates
+a founder from a birth so the crowd's evolution is read as before. The rate keeps founders a
+small share of births and their matter a few percent of the budget over a run. The floor is
+left as it is so a crash is still a crash in the record.
+
+**Rejected.** The timed second window (a rule with a time in it). Changing the founder draw's
+cell-type shares toward plants or eaters (the owner: "if we decide to change the starting
+condition of the world, i'd like for selection to just make, well, selection"). Topping a
+crash up from the trickle (the floor's job, and it is closed by design). Running an empty
+world with the trickle off (the owner's game-over).
+
+### D116
+**Founders follow their food: the landing rule reads the field the founder's body eats** · 2026-09-23
+
+**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 ("use
+probability to make it more likely to land in high matter concentrates. that rule should make
+founding more likely to be effective throughout"; "yes"), against placing the consumer cohort
+over the beach's shelf by rule (`fable-propose-round-46.md`'s question 6). The build spec is
+`logbook/specs/founding-trickle-spec.md` section 2.
+
+**Decision.** D109's founder acceptance (a landing accepted with probability equal to the
+column's dissolved matter over the tank's richest column) reads the field the founder's
+developed body eats: the snow's columns for a body with an absorptive part, the dissolved
+matter's for one with a photosynthetic part, the larger ratio for a mixotroph, anywhere for
+neither. `FoundersFollowFood` (`EVOSIM_FOUNDERS_FOLLOW_FOOD`), refused together with
+`FoundersFollowMatter`; off is the recorded world.
+
+**Why.** It is D109's rule with the field chosen by the body, so it changes nothing for the
+plants and puts a stomach founder under the crowd where the snow lies, throughout the run and
+not for one cohort; with D115 it is what gives an eater's line its chance whenever the larder
+is there. A rule that names a place (the shelf) for a kind (the consumers) is the kind of rule
+the owner does not want.
+
+**Rejected.** The cohort over the shelf by rule. A founder placed at the richest column
+outright (a lottery, not a certainty, as D109 chose).

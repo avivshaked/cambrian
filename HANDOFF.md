@@ -132,9 +132,14 @@ over the shoal so the floor-following map's stretch is not a jet. The spec is
 `logbook/specs/beach-spec.md` (two tunables, 0 = the recorded world; the shelf inside the
 founders' 12 m is about a tenth of the disc), it is rule 6 of the proposal and K11 of the
 prereg draft, and the mushroom reef (a rock column with a shading cap; the owner's shape,
-14:00) is round 47 with its spec after this one. Questions 2 to 4 (the consumer's founding,
-the support cost's price, per-part contact) and 6 (the beach with the second window's
-cohort placed over the shelf) are still the owner's; 5 (the reef held for 47) is agreed.
+14:00) is round 47 with its spec after this one. **Every question of the round-46 proposal is ruled** (2026-09-23 late afternoon): D113 the
+support cost at 0.1 W/m²/m², D114 contact on the part, D115 the owner's founding trickle in
+place of the timed window (one founder per 30 s for the whole run, booked as influx, the
+floor unchanged, an empty world game over unless founders are being added), D116 founders
+follow their food in place of a placed cohort, D112 the snow's life, the beach and the reef
+for 47. The builds that remain: the trickle and the food rule
+(`logbook/specs/founding-trickle-spec.md`), the support cost, per-part contact; then the
+fixtures re-recorded once, the ledger screens, the prereg as 0116, the launch.
 The pre-registration is drafted with the ruled values in brackets
 (`logbook/specs/r46-prereg-draft.md`, K1 to K10: the crowd lies down, the offset is the way,
 the second founding founds a line, the killer on the repaired window, the price stops the
