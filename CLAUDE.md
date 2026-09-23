@@ -259,6 +259,24 @@ strict reader refuses, and the bodies' plans from a genome of format 4 or 5. Bot
 the strict readers, and the label's first line then ends `· OLD-RUN READ`. The rule that loading
 refuses rather than defaults is untouched for everything that simulates.
 
+**A run is filmed from a checkpoint** (2026-09-23 evening, the owner's request for clips at
+5,000, 15,000 and 30,000 s): `./scripts/theatre-film.ps1 r46-s1 -At 5000 [-Worker 6] [-Shots
+orbit,close,drift] [-Seconds 60] [-Fps 30] [-Turns 0.25] [-MotionBlur 0]` runs
+`Evosim.Theatre.EditorTools.TheatreFilm.Run` (same launch shape as the snapshot: `-batchmode`,
+no `-quit`, no `-nographics`), which restores the checkpoint at or before the second in live
+mode, steps the world itself one frame interval at a time, renders each shot through the
+snapshot's RenderTexture read-back with the interface off but the provenance word, and
+writes `scratch/films/<arm>/<s>/<shot>/frame-NNNNNN.png`; the script then runs ffmpeg to
+`scratch/films/<arm>/<arm>-t<s>-<shot>.mp4`. Every clip is a labelled cousin (live play on
+the Editor's Mono), which the owner accepted for filming. Three things bite. The film's
+clock is the physics step count since the restore, because `live.ElapsedSeconds` moves in
+half-second metabolic steps and put five frames on one instant. Each shot has its own
+camera, because the grade's motion blur drew the jump between shots on a shared one; the
+blur is tuned for the fly camera at screen rate and smears any fast move at a low frame
+rate, so `-MotionBlur 0` for those. And a full orbit at the tank's radius is metres a second,
+far past the owner's rule that nothing moves faster than a body swims, so the default is a
+quarter turn. The `drift` shot compiled and was never filmed.
+
 Keys: `Space` pause, `[` `]` pace, `L` pace lock (at or under real time, for filming), `K` seek,
 `C` colour, `X` raw shapes (the colliders as the physics has them, no rounding, carve, taper or
 bend), `F` follow, `R` reload, `H` hide, `P` provenance, click to select; fly with `WASD`+`QE`, right-drag to look, wheel for speed.

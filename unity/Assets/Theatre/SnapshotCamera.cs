@@ -449,6 +449,136 @@ namespace Evosim.Theatre
             return png.Length;
         }
 
+        /// <summary>
+        /// One frame of a film: the camera stands where the caller puts it, rather than where a
+        /// view's fit would, and the picture carries no box, no markers and a one-line label.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why a second capture beside <see cref="Capture"/>.</b> Every view there is a fit:
+        /// the camera is placed from the world's bounds so that the thing asked about is inside
+        /// the frame. A film shot is a move, and its camera is placed by a plan from one frame to
+        /// the next (<c>TheatreFilm</c>, logbook/specs/safari-spec.md §9), so the placement is the
+        /// caller's and only the render is shared. The render is the close view's in every other
+        /// respect: the scene's own fog, the furniture that only the water sees left in (a film
+        /// is shot inside the water), the key aimed from behind this camera for the one render,
+        /// and the portrait's back light and focus when <paramref name="portrait"/> is set.
+        /// </para>
+        /// <para>
+        /// <b>No box and no markers, by the owner's filming rules</b> (video-tools-notes.md: "no
+        /// wireframe box, ring lines or markers"). The water's own immediate-mode box is silenced
+        /// for the render as it is for every picture here, and nothing is stamped but the label.
+        /// </para>
+        /// </remarks>
+        /// <param name="frame">The world being filmed. Read, never stepped.</param>
+        /// <param name="eye">Where the camera stands, world metres.</param>
+        /// <param name="rotation">Which way it looks.</param>
+        /// <param name="fieldOfView">The vertical field of view, degrees.</param>
+        /// <param name="portrait">Light and focus the frame as a portrait of one subject.</param>
+        /// <param name="focusMetres">The focus distance for a portrait; ignored otherwise.</param>
+        /// <param name="label">The one line burnt into the corner.</param>
+        /// <param name="path">The PNG to write. Its directory is created if it is missing.</param>
+        /// <returns>The bytes written.</returns>
+        public int CapturePlaced(
+            ITheatreFrame frame, Vector3 eye, Quaternion rotation, float fieldOfView,
+            bool portrait, float focusMetres, string label, string path)
+        {
+            if (frame == null) throw new ArgumentNullException(nameof(frame));
+
+            _label = LabelLines(label);
+
+            Bounds box = BoxOf(frame, out _);
+
+            _camera.orthographic = false;
+            _camera.aspect = (float)_width / _height;
+            _camera.fieldOfView = Mathf.Clamp(fieldOfView, 5f, 120f);
+            _camera.transform.SetPositionAndRotation(eye, rotation);
+            _camera.nearClipPlane = 0.05f;
+            _camera.farClipPlane = 2f * box.size.magnitude + 200f;
+            _camera.backgroundColor = Water;
+            _camera.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
+
+            List<WaterBounds> silenced = SilenceTheWater();
+            Light back = portrait ? BackLight() : null;
+
+            TheatreGrade grade = portrait && focusMetres > 0f ? TheatreGrade.Current : null;
+            if (grade != null) grade.Focus(focusMetres, 5.6f);
+
+            TheatreSkin skin = TheatreSkin.Current;
+            Quaternion lightsWere = skin != null ? skin.Aim(rotation) : Quaternion.identity;
+
+            try
+            {
+                _camera.Render();
+            }
+            finally
+            {
+                if (grade != null) grade.Unfocus();
+                if (skin != null) skin.Aim(lightsWere);
+                if (back != null) UnityEngine.Object.DestroyImmediate(back.gameObject);
+                for (int i = 0; i < silenced.Count; i++) silenced[i].enabled = true;
+            }
+
+            RenderTexture active = RenderTexture.active;
+            RenderTexture.active = _target;
+
+            try
+            {
+                _readbackFull.ReadPixels(new Rect(0f, 0f, _width * _super, _height * _super), 0, 0, false);
+            }
+            finally
+            {
+                RenderTexture.active = active;
+            }
+
+            _pixels = _super > 1 ? BoxDown(_readbackFull.GetPixels32(), _super) : _readbackFull.GetPixels32();
+
+            DrawLabel(_label);
+
+            _readback.SetPixels32(_pixels);
+            _readback.Apply(false);
+
+            byte[] png = _readback.EncodeToPNG();
+
+            string directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            File.WriteAllBytes(path, png);
+
+            return png.Length;
+        }
+
+        /// <summary>
+        /// How far the last written picture's pixels spread, as the standard deviation of their
+        /// luminance on 0 to 255, and their mean. A headless device can render nothing and still
+        /// hand back a buffer, which reads as a uniform frame: this is the check for it.
+        /// </summary>
+        public void LastPictureSpread(out float mean, out float deviation)
+        {
+            mean = 0f;
+            deviation = 0f;
+            if (_pixels == null || _pixels.Length == 0) return;
+
+            double sum = 0d, squares = 0d;
+            int n = 0;
+
+            // Every seventh pixel is plenty for a spread, and keeps this out of the frame's cost.
+            for (int i = 0; i < _pixels.Length; i += 7)
+            {
+                Color32 c = _pixels[i];
+                double y = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+                sum += y;
+                squares += y * y;
+                n++;
+            }
+
+            double m = sum / n;
+            mean = (float)m;
+            deviation = (float)Math.Sqrt(Math.Max(0d, squares / n - m * m));
+        }
+
+        /// <summary>The furthest a part reaches from the body's origin: the close view's size rule.</summary>
+        public static float ReachOf(Phenotype phenotype) => Radius(phenotype);
+
         /// <summary>What the render settings' fog was, so one render can borrow them.</summary>
         private struct Fog
         {
