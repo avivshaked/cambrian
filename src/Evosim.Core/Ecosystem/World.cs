@@ -184,6 +184,14 @@ namespace Evosim.Core
         public const ulong IslandMapIndex = ulong.MaxValue - 7UL;
 
         /// <summary>
+        /// The seed slot of D115's founding trickle: how many founders arrive on each step after
+        /// the floor has closed. Its own, so the count a step draws moves no genome, no placement
+        /// and no conception order; constructed for every world and drawn from by none whose
+        /// trickle is off, which is every recorded world.
+        /// </summary>
+        public const ulong TrickleIndex = ulong.MaxValue - 8UL;
+
+        /// <summary>
         /// The stream behind <see cref="ConceptionOrder.Shuffled"/> — D072. Constructed for every
         /// world and drawn from by none but a shuffled one.
         /// </summary>
@@ -193,6 +201,13 @@ namespace Evosim.Core
         /// a single draw is taken from it, and a default run is step for step what it always was.
         /// </remarks>
         private readonly Rng _conceptionRng;
+
+        /// <summary>
+        /// The stream behind D115's founding trickle, seeded at <see cref="TrickleIndex"/>. Built
+        /// for every world and drawn from only while <see cref="FoundersStillArriving"/>; the
+        /// founders it counts draw their genomes from <c>_nextIndex</c> as a floor founder does.
+        /// </summary>
+        private readonly Rng _trickleRng;
 
         /// <summary>
         /// Indices into <c>_living</c>, permuted each step under
@@ -304,20 +319,79 @@ namespace Evosim.Core
         private readonly float _islandMapMin;
 
         /// <summary>
-        /// D109's founder rule handed to the placer once there is one: the column's spent matter
-        /// over the fullest column's. Called before every founding and inoculation.
+        /// D109's founder rule, or D116's, handed to the placer once there is one. Called before
+        /// every founding, every trickle founder and every inoculation.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>D109</b>: the column's spent matter over the fullest column's, for every body. The
+        /// delegate takes the body since D116 and ignores it here, and the arithmetic is the
+        /// arithmetic it was, so a world under D109 asks the placer the same question with the
+        /// same answer and draws its stream as the recorded world did.
+        /// </para>
+        /// <para>
+        /// <b>D116</b> (<c>logbook/specs/founding-trickle-spec.md</c> §2): the same share, of the
+        /// field the founder's developed adult eats. A body with an absorptive part eats the
+        /// snow (<see cref="Nutrients"/>), one with a photosynthetic part takes up the dissolved
+        /// matter (<see cref="Matter"/>), a body with both takes the larger of its two shares,
+        /// and a body with neither is accepted anywhere. Each share is D109's, empty field
+        /// included: a field holding nothing accepts every spot, which is what the snow does
+        /// until the first deaths have fed it.
+        /// </para>
+        /// </remarks>
         private void EnsureFounderAcceptance()
         {
-            if (!Config.FoundersFollowMatter || Placement == null) return;
+            if (Placement == null) return;
             if (Placement.FounderAcceptance != null) return;
-            if (!(Matter is GridField grid)) return;
 
-            Placement.FounderAcceptance = (x, z) =>
+            if (Config.FoundersFollowMatter)
             {
-                double max = grid.MaxColumnStock();
-                return max > 0d ? (float)(grid.ColumnStockAt(x, z) / max) : 1f;
-            };
+                if (!(Matter is GridField grid)) return;
+
+                Placement.FounderAcceptance = (body, x, z) => ShareOfRichestColumn(grid, x, z);
+                return;
+            }
+
+            if (Config.FoundersFollowFood)
+            {
+                // Refused at construction without a grid, so both casts hold here.
+                var snow = (GridField)Nutrients;
+                var matter = (GridField)Matter;
+
+                Placement.FounderAcceptance = (body, x, z) =>
+                {
+                    bool eatsSnow = false;
+                    bool eatsMatter = false;
+
+                    if (body != null)
+                    {
+                        IReadOnlyList<PhenotypePart> parts = body.Parts;
+                        for (int i = 0; i < parts.Count; i++)
+                        {
+                            string type = parts[i].CellTypeId;
+                            if (type == CellTypeIds.Absorptive) eatsSnow = true;
+                            else if (type == CellTypeIds.Photosynthetic) eatsMatter = true;
+                        }
+                    }
+
+                    if (!eatsSnow && !eatsMatter) return 1f;
+
+                    float share = 0f;
+                    if (eatsSnow) share = Math.Max(share, ShareOfRichestColumn(snow, x, z));
+                    if (eatsMatter) share = Math.Max(share, ShareOfRichestColumn(matter, x, z));
+                    return share;
+                };
+            }
+        }
+
+        /// <summary>
+        /// The stock in the column under (x, z) over the fullest live column's, or 1 when the
+        /// field holds nothing — D109's acceptance, written once for both rules.
+        /// </summary>
+        private static float ShareOfRichestColumn(GridField grid, float x, float z)
+        {
+            double max = grid.MaxColumnStock();
+            return max > 0d ? (float)(grid.ColumnStockAt(x, z) / max) : 1f;
         }
 
         /// <summary>
@@ -854,6 +928,8 @@ namespace Evosim.Core
                     "nothing in it can live.", nameof(config));
             }
 
+            ValidateFounding(config);
+
             // D061: PatchCount reads Config.HorizontalPatches, so it is valid from this point on
             // (Config was just assigned above) and every field below is built with the same K.
             int patchCount = PatchCount;
@@ -1289,6 +1365,10 @@ namespace Evosim.Core
             // by its existence.
             _conceptionRng = new Rng(Rng.SeedFor(seed, ConceptionOrderIndex));
 
+            // D115, on the same terms: an object for every world, a draw for none whose trickle
+            // is off, so a recorded world's streams are untouched by its existence.
+            _trickleRng = new Rng(Rng.SeedFor(seed, TrickleIndex));
+
             // Likewise for every world and used by none but a Reserve one — an object, not a draw.
             _byReserve = new ReserveComparer(this);
         }
@@ -1392,6 +1472,65 @@ namespace Evosim.Core
         /// cannot be refused because of one.
         /// </para>
         /// </remarks>
+        /// <summary>
+        /// Refuses the founding worlds D115 and D116 cannot describe
+        /// (<c>logbook/specs/founding-trickle-spec.md</c> §§1–2), before the first step.
+        /// </summary>
+        /// <remarks>
+        /// Nothing is asked of a world with both rules off, which is every recorded world. The
+        /// trickle's own bound (at most one founder a metabolic step on average) is the setter's,
+        /// because it is a fact about the one number; these are facts about two.
+        /// </remarks>
+        private static void ValidateFounding(RunConfig config)
+        {
+            if (config.FoundingTricklePerSecond > 0f)
+            {
+                if (config.FloorSpawnsPerStep <= 0)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"FoundingTricklePerSecond is {config.FoundingTricklePerSecond} and ") +
+                        "FloorSpawnsPerStep is 0. The trickle spawns through the floor's own path " +
+                        "(D115), and a world that turned the floor's spawning off has not said it " +
+                        "wants founders at all.",
+                        nameof(config));
+                }
+
+                if (!(config.FloorClosesAfterSeconds > 0f))
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"FoundingTricklePerSecond is {config.FoundingTricklePerSecond} and ") +
+                        "FloorClosesAfterSeconds is 0, so the floor never closes and the trickle, " +
+                        "which runs only after it has (D115), would never add anyone. Close the " +
+                        "floor, or set the trickle to 0; a header naming a trickle that never runs " +
+                        "would describe a world the run did not have.",
+                        nameof(config));
+                }
+            }
+
+            if (config.FoundersFollowFood)
+            {
+                if (config.FoundersFollowMatter)
+                {
+                    throw new ArgumentException(
+                        "FoundersFollowFood and FoundersFollowMatter are both on. They are one rule " +
+                        "asked two ways (D109 reads the dissolved matter for every founder, D116 " +
+                        "the field its body eats), and a world runs one or the other.",
+                        nameof(config));
+                }
+
+                if (config.FieldModel != MatterField.Grid)
+                {
+                    throw new ArgumentException(
+                        "FoundersFollowFood is on and FieldModel is " + config.FieldModel + ". The " +
+                        "rule reads the stock in the column under a spot, and only the grid field " +
+                        "has columns; run a grid, or turn the rule off.",
+                        nameof(config));
+                }
+            }
+        }
+
         private static void ValidateVent(RunConfig config, int patchCount)
         {
             CurrentField current = config.Current;
@@ -1697,6 +1836,12 @@ namespace Evosim.Core
 
             Reproduce();
             EnforceFloor();
+
+            // D115. After the floor, which has returned by the time the trickle runs (the trickle
+            // runs only once the floor has closed), and before the ceiling, so a founder that
+            // arrives this step is counted by it as a floor founder always has been.
+            EnforceTrickle(seconds);
+
             EnforceCeiling();
         }
 
@@ -3374,101 +3519,210 @@ namespace Evosim.Core
 
             EnsureFounderAcceptance();
 
-            for (int i = 0; i < wanted; i++)
+            for (int i = 0; i < wanted; i++) SpawnFounder(FounderSource.Floor);
+        }
+
+        /// <summary>
+        /// Whether the founding trickle is adding founders now — D115: a rate above 0 and a floor
+        /// that has closed. The farm's <c>extinct</c> ending is not taken while this holds,
+        /// because an empty world is still being founded.
+        /// </summary>
+        public bool FoundersStillArriving =>
+            Config.FoundingTricklePerSecond > 0f &&
+            Config.FloorClosesAfterSeconds > 0f &&
+            ElapsedSeconds >= Config.FloorClosesAfterSeconds;
+
+        /// <summary>
+        /// Founders the trickle has spawned, running total — D115. Every attempt, as
+        /// <see cref="FloorSpawns"/> counts every floor attempt: a founder refused for want of
+        /// room or under the newborn mass floor is still one the trickle drew.
+        /// </summary>
+        public long TrickleSpawns { get; private set; }
+
+        /// <summary>
+        /// D115's founding trickle (<c>logbook/specs/founding-trickle-spec.md</c> §1): after the
+        /// floor has closed, a Poisson count of founders a step at
+        /// <see cref="RunConfig.FoundingTricklePerSecond"/>, each spawned through the floor's own
+        /// path.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Returns before any draw while the trickle is off or the floor still open</b>, so a
+        /// world at rate 0 never advances <see cref="_trickleRng"/> and is step for step the
+        /// recorded world. A world whose floor never closes cannot reach here with a rate: the
+        /// constructor refuses it (<see cref="ValidateFounding"/>), because the trickle would
+        /// never run there.
+        /// </para>
+        /// <para>
+        /// <b>It adds at its rate whatever the count.</b> It does not top up a crash and does not
+        /// stop for a crowd; a world that empties under it is refounded at the trickle's pace. The
+        /// count comes from the trickle's own stream and each founder's genome from
+        /// <c>_nextIndex</c> as the floor's does, so the trickle moves which genomes later births
+        /// are given only by the founders it actually adds.
+        /// </para>
+        /// </remarks>
+        private void EnforceTrickle(float seconds)
+        {
+            if (!FoundersStillArriving) return;
+
+            double mean = (double)Config.FoundingTricklePerSecond * seconds;
+            if (mean > 1d)
             {
-                ulong seed = Rng.SeedFor(Seed, _nextIndex++);
-                var rng = new Rng(seed);
-
-                // The registry is handed over for D106 item 3's one founder rule: a consumer node
-                // is drawn at this run's own intake cap, not at the built-in table's.
-                Genome genome = GenomeFactory.Founder(
-                    rng, Config.Genome, Config.SensorPool(), Config.CellTypes);
-
-                // Placed through the lit zone rather than at the surface. Starting everything at
-                // depth zero would hand generation zero the best light in the world and make the
-                // §5A.2 calibration read as more generous than it is.
-                //
-                // The draw runs to the full spread, which in the reference world is the world's
-                // own depth (EVOSIM_FOUNDER_DEPTH 60 in a 60 m world), so a founder can be drawn
-                // at the very bottom. The placer raises it clear of a solid sea bed when there is
-                // one — see IBodyPlacement.TryReserveFounder — rather than the draw being narrowed
-                // here, because how much room a body needs is a fact about the body and the
-                // world's geometry, neither of which Core has.
-                float height = -rng.Range(0f, Config.FounderDepthSpread);
-
-                // D061. A second, independent seed slot, drawn only when there is more than one
-                // patch to land in — the CLAUDE.md guard: any new Rng draw on a path that runs at
-                // K=1 breaks bit-identity, so this is skipped entirely rather than drawn and
-                // discarded. A separate draw rather than one more call against `rng` above: reusing
-                // it would make where a founder lands depend on how many draws GenomeFactory.Founder
-                // happened to make, coupling two things D061 wants independent of each other.
-                // D077. The draw is retired in a shared volume — a founder's patch is wherever
-                // the placement below put it, and drawing an index as well would give the world
-                // two answers to the same question. Written as one condition rather than nested,
-                // so the tiled branch is the same expression it has always been.
-                int patch = 0;
-                if (!Config.SharedSpace && PatchCount > 1)
-                {
-                    ulong patchSeed = Rng.SeedFor(Seed, _nextIndex++);
-                    patch = new Rng(patchSeed).Range(PatchCount);
-                }
-
-                Phenotype adult = Developer.Develop(
-                    genome, Config.Development, null, Config.Shapes);
-
-                // fable-propose-growth.md rule 7: a founder is born as a child is, at its own
-                // genome's birth fraction, so the founding lottery runs under the same rule as
-                // every birth rather than seeding the world with adults nobody paid for. The
-                // reserve the floor gives it is scaled the same way, so a founder placed at a
-                // fifth of its adult body arrives with a fifth of the purse — otherwise the floor
-                // would hand the smallest bodies the largest head starts.
-                bool admissible = NewbornFrom(
-                    genome, adult, out Phenotype body, out double tissue, out float birthFraction);
-
-                // Rule 3 applies to a founder's body too, and the floor's answer is simply to
-                // draw again next step. Counted rather than retried here, for the same reason a
-                // stillborn founder is counted: a floor that redrew until something fitted would
-                // be selecting for viability instead of sampling the genome space, and rule 3
-                // exists because every divergence on record was a newborn.
-                if (!admissible)
-                {
-                    FoundersUnderMassFloor++;
-                    FloorSpawns++;
-                    continue;
-                }
-
-                bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
-
-                // D077. A world with no room left refuses a founder exactly as it refuses a
-                // birth, and the attempt is still counted — for the trickle's sake, per the
-                // remark below, and because a floor that retried until something fitted would be
-                // packing the world rather than sampling it.
-                if (shared && !Placement.TryReserveFounder(adult, ref height, out patch))
-                {
-                    CrowdedStillbirths++;
-                    FloorSpawns++;
-                    continue;
-                }
-
-                Organism founder = Admit(
-                    genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
-                    energy: Config.FounderEnergyJoules * birthFraction,
-                    tissue: tissue, heightY: height, parent: null,
-                    patch: patch, adultPhenotype: adult,
-                    adultTissue: Metabolism.TissueJoules(adult, Config));
-
-                if (shared)
-                {
-                    if (founder != null) Placement.Commit(founder.Id);
-                    else Placement.Release();
-                }
-
-                // A stillborn founder is still an attempt, and counting it keeps the floor's
-                // trickle a trickle. Not counting it would let a step retry until something
-                // developed, which is the floor quietly selecting for viability.
-                FloorSpawns++;
-                if (founder != null) _living.Add(founder);
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"The founding trickle at {Config.FoundingTricklePerSecond}/s over a ") +
+                    FormattableString.Invariant($"{seconds} s step adds {mean:0.###} founders a ") +
+                    "step on average, and the trickle is bounded at one (rate · dt ≤ 1, D115). " +
+                    "Step the world at the 0.5 s metabolic step, or lower the rate.");
             }
+
+            int count = TrickleCount(_trickleRng, mean);
+            if (count == 0) return;
+
+            EnsureFounderAcceptance();
+
+            for (int i = 0; i < count; i++) SpawnFounder(FounderSource.Trickle);
+        }
+
+        /// <summary>
+        /// A Poisson count of mean <paramref name="mean"/>, drawn from <paramref name="rng"/> by
+        /// Knuth's product of uniforms — D115's draw, public so the draw can be tested alone.
+        /// </summary>
+        /// <remarks>
+        /// Takes no draw at a mean of 0 or below, which is what keeps a trickle at rate 0 off the
+        /// stream entirely. At the means the trickle allows (at most 1) the product needs about
+        /// <c>mean + 1</c> uniforms, so the stream advances by one or two draws a step.
+        /// </remarks>
+        public static int TrickleCount(Rng rng, double mean)
+        {
+            if (rng == null) throw new ArgumentNullException(nameof(rng));
+            if (!(mean > 0d)) return 0;
+
+            double limit = Math.Exp(-mean);
+            double product = 1d;
+            int count = -1;
+
+            do
+            {
+                count++;
+                product *= rng.NextFloat();
+            }
+            while (product > limit);
+
+            return count;
+        }
+
+        /// <summary>
+        /// One founder, drawn, placed, endowed and admitted — the floor's own spawn path, shared
+        /// with D115's trickle so that the two sources cannot drift apart. The counter the
+        /// attempt lands in is the source's.
+        /// </summary>
+        private void SpawnFounder(FounderSource source)
+        {
+            ulong seed = Rng.SeedFor(Seed, _nextIndex++);
+            var rng = new Rng(seed);
+
+            // The registry is handed over for D106 item 3's one founder rule: a consumer node
+            // is drawn at this run's own intake cap, not at the built-in table's.
+            Genome genome = GenomeFactory.Founder(
+                rng, Config.Genome, Config.SensorPool(), Config.CellTypes);
+
+            // Placed through the lit zone rather than at the surface. Starting everything at
+            // depth zero would hand generation zero the best light in the world and make the
+            // §5A.2 calibration read as more generous than it is.
+            //
+            // The draw runs to the full spread, which in the reference world is the world's
+            // own depth (EVOSIM_FOUNDER_DEPTH 60 in a 60 m world), so a founder can be drawn
+            // at the very bottom. The placer raises it clear of a solid sea bed when there is
+            // one — see IBodyPlacement.TryReserveFounder — rather than the draw being narrowed
+            // here, because how much room a body needs is a fact about the body and the
+            // world's geometry, neither of which Core has.
+            float height = -rng.Range(0f, Config.FounderDepthSpread);
+
+            // D061. A second, independent seed slot, drawn only when there is more than one
+            // patch to land in — the CLAUDE.md guard: any new Rng draw on a path that runs at
+            // K=1 breaks bit-identity, so this is skipped entirely rather than drawn and
+            // discarded. A separate draw rather than one more call against `rng` above: reusing
+            // it would make where a founder lands depend on how many draws GenomeFactory.Founder
+            // happened to make, coupling two things D061 wants independent of each other.
+            // D077. The draw is retired in a shared volume — a founder's patch is wherever
+            // the placement below put it, and drawing an index as well would give the world
+            // two answers to the same question. Written as one condition rather than nested,
+            // so the tiled branch is the same expression it has always been.
+            int patch = 0;
+            if (!Config.SharedSpace && PatchCount > 1)
+            {
+                ulong patchSeed = Rng.SeedFor(Seed, _nextIndex++);
+                patch = new Rng(patchSeed).Range(PatchCount);
+            }
+
+            Phenotype adult = Developer.Develop(
+                genome, Config.Development, null, Config.Shapes);
+
+            // fable-propose-growth.md rule 7: a founder is born as a child is, at its own
+            // genome's birth fraction, so the founding lottery runs under the same rule as
+            // every birth rather than seeding the world with adults nobody paid for. The
+            // reserve the floor gives it is scaled the same way, so a founder placed at a
+            // fifth of its adult body arrives with a fifth of the purse — otherwise the floor
+            // would hand the smallest bodies the largest head starts.
+            bool admissible = NewbornFrom(
+                genome, adult, out Phenotype body, out double tissue, out float birthFraction);
+
+            // Rule 3 applies to a founder's body too, and the floor's answer is simply to
+            // draw again next step. Counted rather than retried here, for the same reason a
+            // stillborn founder is counted: a floor that redrew until something fitted would
+            // be selecting for viability instead of sampling the genome space, and rule 3
+            // exists because every divergence on record was a newborn.
+            if (!admissible)
+            {
+                FoundersUnderMassFloor++;
+                CountFounderAttempt(source);
+                return;
+            }
+
+            bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
+
+            // D077. A world with no room left refuses a founder exactly as it refuses a
+            // birth, and the attempt is still counted — for the trickle's sake, per the
+            // remark below, and because a floor that retried until something fitted would be
+            // packing the world rather than sampling it.
+            if (shared && !Placement.TryReserveFounder(adult, ref height, out patch))
+            {
+                CrowdedStillbirths++;
+                CountFounderAttempt(source);
+                return;
+            }
+
+            Organism founder = Admit(
+                genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
+                energy: Config.FounderEnergyJoules * birthFraction,
+                tissue: tissue, heightY: height, parent: null,
+                patch: patch, adultPhenotype: adult,
+                adultTissue: Metabolism.TissueJoules(adult, Config),
+                founderSource: source);
+
+            if (shared)
+            {
+                if (founder != null) Placement.Commit(founder.Id);
+                else Placement.Release();
+            }
+
+            // A stillborn founder is still an attempt, and counting it keeps the floor's
+            // trickle a trickle. Not counting it would let a step retry until something
+            // developed, which is the floor quietly selecting for viability.
+            CountFounderAttempt(source);
+            if (founder != null) _living.Add(founder);
+        }
+
+        /// <summary>
+        /// One founder attempt in its source's running total: <see cref="FloorSpawns"/> or
+        /// <see cref="TrickleSpawns"/>, never both, so the table's <c>floor</c> column still
+        /// reads the floor alone once the trickle is on.
+        /// </summary>
+        private void CountFounderAttempt(FounderSource source)
+        {
+            if (source == FounderSource.Trickle) TrickleSpawns++;
+            else FloorSpawns++;
         }
 
         /// <summary>
@@ -3770,10 +4024,16 @@ namespace Evosim.Core
         /// rather than measured here because every caller has just computed it to decide how big
         /// the newborn is, and measuring it twice is a walk over every part for nothing.
         /// </param>
+        /// <param name="founderSource">
+        /// Which door a <see cref="BirthKind.Floor"/> founder came through, floor or trickle
+        /// (D115), carried to its lineage row; <see cref="FounderSource.None"/> for everything
+        /// else.
+        /// </param>
         private Organism Admit(
             Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
             int generationDepth, double energy, double tissue, float heightY, Organism parent,
-            int patch, Phenotype adultPhenotype, double adultTissue)
+            int patch, Phenotype adultPhenotype, double adultTissue,
+            FounderSource founderSource = FounderSource.None)
         {
             // The owner's ruling of 2026-09-19: a body that would grow into itself is not born.
             // Asked here rather than at each of the three call sites so that a founder and an
@@ -3912,7 +4172,8 @@ namespace Evosim.Core
                 creature.IndeterminateNodes,
                 CarriesAttribute(genome, n => n.Attack),
                 CarriesAttribute(genome, n => n.Intake),
-                CarriesAttribute(genome, n => n.Protection)));
+                CarriesAttribute(genome, n => n.Protection),
+                founderSource));
 
             return creature;
         }

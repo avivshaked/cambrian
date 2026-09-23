@@ -31,6 +31,21 @@ namespace Evosim.Farm
     /// </remarks>
     public static class Program
     {
+        /// <summary>
+        /// Whether the run ends <c>extinct</c> after this step: nobody alive, and nobody being
+        /// added — D115, the owner's game over (<c>logbook/specs/founding-trickle-spec.md</c> §1).
+        /// </summary>
+        /// <remarks>
+        /// A world with no living body ends the step it empties, as it always has, except while
+        /// the founding trickle is adding founders (<see cref="World.FoundersStillArriving"/>):
+        /// that world is being refounded at the trickle's pace, and the record shows the crash as
+        /// a gap in every inherited column rather than as the end of the run. With the trickle
+        /// off this is the old test to the character. Every other ending is decided where it
+        /// always was.
+        /// </remarks>
+        public static bool EndsExtinct(World world) =>
+            world.Living.Count == 0 && !world.FoundersStillArriving;
+
         public static int Main(string[] args)
         {
             try
@@ -505,7 +520,7 @@ namespace Evosim.Farm
                     // otherwise sit doing nothing for up to reportEvery more steps. A crash to
                     // zero is a real outcome, so it ends through the same finishing path as a
                     // normal one — one last row first, so the final state is not lost.
-                    if (world.Living.Count == 0)
+                    if (EndsExtinct(world))
                     {
                         ending =
                             "extinct at t=" +

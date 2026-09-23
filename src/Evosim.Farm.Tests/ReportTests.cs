@@ -121,6 +121,9 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 .Replace(" · silhouette on · ", " · silhouette on · light averaged · buoyancy offset off · ")
                 .Replace(" · area ", " · matter-mix 2 m2/s · area ")
 
+                // D115's token, beside the floor it follows; off in every recorded world.
+                .Replace(" · ceiling ", " · trickle off · ceiling ")
+
                 // D106's, the same way: appended at the end of the line, before the hash, which is
                 // where both engines print it — first the module gene's token and then the
                 // mouth's. And the hash itself, which a new tunable moves whatever its default
@@ -180,6 +183,9 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             // D111, off: no price, so no torque and no genome floating off its centre.
             Assert.Contains(" · light averaged · buoyancy offset off · selfOverlap 0.1 · ", line);
 
+            // D115, off: the floor closes and nothing follows it.
+            Assert.Contains(" · floor closes 3000 s · trickle off · ceiling ", line);
+
             // parse-arm.ps1 splits on ' · ' and asks for a token by prefix; nothing may arrive
             // with an empty name or a separator inside a value.
             foreach (string token in line.Split(new[] { " · " }, StringSplitOptions.None))
@@ -205,7 +211,8 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             Assert.Equal(Report.BaseColumns.Length + 4, report.Columns.Count);
             Assert.Equal("t (s)", report.Columns[0]);
-            Assert.Equal("reach m", report.Columns[Report.BaseColumns.Length - 1]);
+            Assert.Equal("reach m", report.Columns[Report.BaseColumns.Length - 2]);
+            Assert.Equal("**trickle**", report.Columns[Report.BaseColumns.Length - 1]);
             Assert.Equal("p0", report.Columns[Report.BaseColumns.Length]);
             Assert.Equal("p3", report.Columns[Report.BaseColumns.Length + 3]);
 
@@ -271,6 +278,9 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             // D113's two: the support watts, a dash in every recorded world, and the reach.
             "support W", "reach m",
+
+            // D115's window of trickle founders, 0 in every recorded world.
+            "**trickle**",
         };
 
         /// <summary>

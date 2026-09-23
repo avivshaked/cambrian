@@ -90,6 +90,10 @@ namespace Evosim.Farm
             Num("EVOSIM_MATTER_ISLAND_COVER", D.MatterIslandCover, (s, v) => s.MatterIslandCover = v),
             Num("EVOSIM_MATTER_ISLAND_DEPTH", D.MatterIslandDepthMetres, (s, v) => s.MatterIslandDepth = v),
             Flag("EVOSIM_FOUNDERS_FOLLOW_MATTER", (s, v) => s.FoundersFollowMatter = v),
+
+            // D116: the founder rule reads the field the founder's body eats. Off is the recorded
+            // world, and the world refuses it beside D109's.
+            Flag("EVOSIM_FOUNDERS_FOLLOW_FOOD", (s, v) => s.FoundersFollowFood = v),
             Num("EVOSIM_LIGHT_SHADE", 0f, (s, v) => s.LightShade = v),
             Num("EVOSIM_LIGHT_SHADE_DRIFT", 0f, (s, v) => s.LightShadeDrift = v),
             Num("EVOSIM_SECONDS", 4000f, (s, v) => s.BudgetSeconds = v),
@@ -185,6 +189,11 @@ namespace Evosim.Farm
             Num("EVOSIM_OFFSPRING_DISPERSAL", D.OffspringDispersalMetres, (s, v) => s.OffspringDispersal = v),
             Num("EVOSIM_SURFACE_RESTORE", D.Fluid.SurfaceRestoringFraction, (s, v) => s.SurfaceRestore = v),
             Num("EVOSIM_FLOOR_CLOSES", 0f, (s, v) => s.FloorCloses = v),
+
+            // D115: founders a second after the floor closes. A number, or a reciprocal written
+            // as 1/N, which is how round 46's launcher names one per 30 s without a rounded
+            // decimal in it. 0 is the recorded world.
+            Custom("EVOSIM_TRICKLE", (s, env) => s.Trickle = RateOf(env, "EVOSIM_TRICKLE")),
             Int("EVOSIM_MAX_POP", D.MaximumPopulation, (s, v) => s.MaxPopulation = v),
 
             // double from a float read, as EvolutionRun's own cast is: the ceiling is a double on
@@ -504,6 +513,7 @@ namespace Evosim.Farm
             config.MatterIslandCover = s.MatterIslandCover;
             config.MatterIslandDepthMetres = s.MatterIslandDepth;
             config.FoundersFollowMatter = s.FoundersFollowMatter;
+            config.FoundersFollowFood = s.FoundersFollowFood;
             config.LightShadeDepth = s.LightShade;
             config.LightShadeDriftMetresPerHour = s.LightShadeDrift;
             config.WorldAreaSquareMetres = s.Area;
@@ -512,6 +522,7 @@ namespace Evosim.Farm
             config.OffspringDispersalMetres = s.OffspringDispersal;
             config.PhysicsStepSeconds = physicsDt;
             config.FloorClosesAfterSeconds = s.FloorCloses;
+            config.FoundingTricklePerSecond = s.Trickle;
             config.MaximumPopulation = s.MaxPopulation;
             config.MaximumTissueJoules = s.MaxTissue;
             config.SenescenceDoublingSeconds = s.Senescence;
@@ -597,6 +608,46 @@ namespace Evosim.Farm
             throw new ArgumentException(
                 name + " is '" + raw + "', which is not a number. Unset it or give it a number; " +
                 "a setting that fails to parse must not become its default without anyone knowing.");
+        }
+
+        /// <summary>
+        /// A rate per second: a number, or <c>1/N</c> for one every N seconds — D115's reader.
+        /// </summary>
+        /// <remarks>
+        /// The reciprocal form is <c>1f / N</c> in single precision. A decimal spelling of the same
+        /// rate is the same world, and the same config hash, only when it parses to that same
+        /// float, so a launcher should name one form and keep it; the header prints the rate as
+        /// <c>1/N</c> either way. Anything else refuses the launch, for
+        /// <see cref="Num(Lookup, string, float)"/>'s reason.
+        /// </remarks>
+        private static float RateOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return 0f;
+
+            string trimmed = raw.Trim();
+            int slash = trimmed.IndexOf('/');
+
+            if (slash > 0 &&
+                trimmed.Substring(0, slash).Trim() == "1" &&
+                float.TryParse(
+                    trimmed.Substring(slash + 1), NumberStyles.Float, CultureInfo.InvariantCulture,
+                    out float every) &&
+                every > 0f && !float.IsInfinity(every))
+            {
+                return 1f / every;
+            }
+
+            if (slash < 0 &&
+                float.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out float v))
+            {
+                return v;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is neither a number nor 1/N for one every N " +
+                "seconds. Unset it or give it one; a setting that fails to parse must not become " +
+                "its default without anyone knowing.");
         }
 
         private static ulong ULong(Lookup env, string name, ulong fallback)
@@ -785,6 +836,7 @@ namespace Evosim.Farm
         public float MatterIslandCover;
         public float MatterIslandDepth;
         public bool FoundersFollowMatter;
+        public bool FoundersFollowFood;
         public float LightShade;
         public float LightShadeDrift;
         public float BudgetSeconds;
@@ -883,6 +935,7 @@ namespace Evosim.Farm
         public float OffspringDispersal;
         public float SurfaceRestore;
         public float FloorCloses;
+        public float Trickle;
         public int MaxPopulation;
         public double MaxTissue;
         public float Senescence;
