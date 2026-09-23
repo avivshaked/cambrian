@@ -334,6 +334,11 @@ namespace Evosim.Theatre
             }
 
             OpenWhateverModeSays();
+
+            // The safari (safari-spec.md), in an interactive Editor only: it waits for a live
+            // world with a guide beside its run and removes itself when there is none, so a
+            // replay, a film or a snapshot is exactly what it was.
+            TheatreSafari.Attach(this);
         }
 
         private void OpenWhateverModeSays()
@@ -1046,6 +1051,38 @@ namespace Evosim.Theatre
             _seeking = target > now;
 
             if (!_seeking) EndSeek();
+        }
+
+        /// <summary>
+        /// Opens the live world again from a checkpoint, as the <c>R</c> key would with the
+        /// checkpoint fields set: the safari's director restores a scene's second this way.
+        /// </summary>
+        /// <remarks>
+        /// Synchronous: the old world is closed and the new one restored and dressed before this
+        /// returns, so the caller reads <see cref="Live"/> straight after. Nothing is sought: the
+        /// director steps the world itself (<see cref="SafariDirector"/>).
+        /// </remarks>
+        public void OpenCheckpoint(string checkpoint, double seconds)
+        {
+            Mode = ViewMode.World;
+            CheckpointPath = checkpoint ?? "";
+            CheckpointSeconds = (float)seconds;
+            SeekToSeconds = 0f;
+            OpenWhateverModeSays();
+        }
+
+        /// <summary>
+        /// Opens the live world from its founding (no checkpoint), for a second no checkpoint is
+        /// behind. The run must be one the console farm recorded.
+        /// </summary>
+        public void OpenFounding(string runDirectory)
+        {
+            Mode = ViewMode.World;
+            CheckpointPath = "";
+            CheckpointSeconds = 0f;
+            SeekToSeconds = 0f;
+            if (!string.IsNullOrWhiteSpace(runDirectory)) RunDirectory = runDirectory;
+            OpenWhateverModeSays();
         }
 
         /// <summary>Space, without the key: pause or carry on.</summary>
