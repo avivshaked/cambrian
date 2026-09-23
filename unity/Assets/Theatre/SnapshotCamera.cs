@@ -1370,6 +1370,17 @@ namespace Evosim.Theatre
             Vector3 target = new Vector3(x, underside - 0.5f, z);
             Vector3 eye = target + away * (2.5f * radius) + Vector3.down * 0.5f;
 
+            // EVOSIM_THEATRE_REEF_ABOVE=1 looks at the same rock from over its table instead: a
+            // check of the rock's lit top (the crust, the boulders), which the room under the cap
+            // cannot see. Off unless named, so the reef view is the view the record describes.
+            if (System.Environment.GetEnvironmentVariable("EVOSIM_THEATRE_REEF_ABOVE") == "1")
+            {
+                float top = (float)(_reefs.CapTopY);
+                target = new Vector3(x, top, z);
+                eye = target + away * (1.6f * radius) + Vector3.up * (0.9f * radius);
+                eye.y = Mathf.Min(eye.y, -0.3f);
+            }
+
             _camera.orthographic = false;
             _camera.aspect = (float)_width / _height;
             _camera.fieldOfView = 55f;
