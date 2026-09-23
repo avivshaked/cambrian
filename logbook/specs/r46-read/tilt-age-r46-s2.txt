@@ -1,0 +1,18 @@
+runs/r46-s2/2026-09-23-152219-7300c71b/ at 30000 s: 5891 living with a genome, 301 pose rows read (every 10th), 34020 bodies seen
+1. flat factor by age at 30000 s (1 flat, 0.5 random):
+      0- 500 s  n   860  mean 0.984
+    500-1000 s  n   869  mean 0.993
+   1000-1500 s  n   822  mean 0.995
+   1500-2000 s  n   722  mean 0.996
+   2000-2500 s  n   581  mean 0.998
+   2500-3000 s  n   571  mean 0.997
+      3000+ s  n  1466  mean 0.999
+2. flat factor by the root's buoyancy offset at 30000 s:
+   |offset| > 0.2  n  1746  mean 0.994
+   |offset| <= 0.2 n  4145  mean 0.995
+3. a child's first recorded pose against its parent's in the same row:
+   pairs 33529, correlation 0.587, parent mean 0.970, child mean at its first row 0.959
+   bodies seen over 1,000 s or more: 29178; flat factor at their first row 0.959, at their last 0.963, correlation first-to-last 0.706
+   bodies first seen in     0-10000 s: n  6206, flat factor at the first row 0.853, at the last 0.823
+   bodies first seen in 10000-20000 s: n 11100, flat factor at the first row 0.978, at the last 0.982
+   bodies first seen in 20000-30000 s: n 16577, flat factor at the first row 0.971, at the last 0.988

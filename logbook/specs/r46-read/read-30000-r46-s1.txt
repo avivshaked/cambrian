@@ -1,0 +1,31 @@
+milestone 30000 s, r46-s1 (every record read up to that second)
+ctx  r46-s1     last_t=30000  alive=4142  floor_spawns=113  trickle_spawns=922  lineage_births=24323  founders_floor=88  founders_trickle=921  founders_share_of_births=0.0414834  header_tokens=light by exposure; buoyancy offset 0.02 W/m3; trickle 1/30 s; founders in their food; support 0.1 W/m2/m2; contact per part; tilt 96 m shore 1 m fade 15 m; remin 0.0005 /s; floor closes 3000 s
+K1   r46-s1     expo_at=30000  short=False  expo=1.77017  expo_founding_at=10  expo_founding=0.88715  founding_in_band=False  float_off_at_end=0.153302  held=True  pose_check_at=30000  pose_root_leaves=4126  pose_root_leaf_mean_expo=1.76413  pose_mean_abs_cos_tilt=0.996452  pose_note=root leaves only, unweighted; tilt.py's flat factor is the mean |cos tilt| (0.5 random, 1 flat)
+K2   r46-s1     at=30000  short=False  scope=root leaf parts only (docstring)  offset_leaves=957  plain_leaves=3169  offset_mean_expo=1.73863  plain_mean_expo=1.77183  difference=-0.033202  held=False
+K3   r46-s1     trickle_founders=921  trickle_rooted_births=20632  inherited_consumer_births_of_trickle=0  of_them_with_abs=0  first_such_birth_at=  corpse_eat_windows=2  corpse_eat_longest_run=1  held=False
+K4   r46-s1     window_from=20000  window_to=30000  short=False  windows_attack_and_kill=0  longest_run=0  kills_total=0  held=False
+K5   r46-s1     first_attack_over_1pct=8420  first_prot_over_1pct=7720  held=False
+K6a  r46-s1     samples=2500  reach_max=0.0978147  reach_max_at=5160  reach_end=0.00534858  support_w_end=0.485774  short=False  held=True
+K6b  r46-s1     held=absent  note=no file records a part's distance from its root; the snapshot is the genome and development is not rebuilt here
+K7   r46-s1     at=30000  short=False  alive=4142  held=True
+K8   r46-s1     audit_absmax_J=1.0097e-05  matter_resid_at=30000  matter_resid=-1.16454e-06  short=False  diverged=0  manifest_status=ended  censored=False  provisional=False  held=True
+K9a  r46-s1     at=30000  short=False  ovl_per_body=0.00345123  contact_model=this run's overlap columns: contact per part, a sphere on every part (D114) -- the two models' counts do not compare  held=True
+K9b  r46-s1     held=absent  kill_rows=0  note=the kill row carries no part index (id, by, root, parts, tj, rj, ind) and no file records the overlap pairs
+K10  r46-s1     held=absent  note=the harness split has no exposure or support phase: exposure runs inside `metabolise`, support inside Core's step (`world`)  metabolise_share_of_wall=0.00457976  metabolise_note=a ceiling on the exposure pass alone, not the clause
+K11a r46-s1     held=absent  note=the snow is dumped as column sums, not by cell; the lowest live cell's density is not recorded  shelf_columns=2196  shelf_share_of_live=0.0998454  column_mean_at=30000  before_10000s=False  shelf_column_mean_J_m3=0.347537  shelf_columns_mean_above_0.4=0.418033  column_note=column mean (joules over water depth), not the clause's lowest cell
+K11b r46-s1     held=no line  note=K3 does not hold on this seed, so there is no line to place
+
+K1:  held in 1 of 1 -- needs 2 of 3
+K2:  held in 0 of 1 -- needs 2 of 3
+K3:  held in 0 of 1 -- needs 2 of 3
+K4:  held in 0 of 1 -- needs 1 of 3 or more
+K5:  held in 0 of 1 -- needs 3 of 3 with attack present
+K6a: held in 1 of 1 -- needs 3 of 3
+K6b: held in 0 of 1 (1 absent) -- needs 3 of 3
+K7:  held in 1 of 1 -- needs 3 of 3
+K8:  held in 1 of 1 -- needs 3 of 3
+K9a: held in 1 of 1 -- needs 3 of 3
+K9b: held in 0 of 1 (1 absent) -- needs 3 of 3
+K10: held in 0 of 1 (1 absent) -- needs 3 of 3
+K11a: held in 0 of 1 (1 absent) -- needs 3 of 3
+K11b: held in 0 of 1 (1 no line) -- needs 2 of 3 where K3 holds

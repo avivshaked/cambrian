@@ -170,6 +170,69 @@ touching-part clause was dropped from the prereg), a part's largest distance fro
 in the stats (K6 reads the ledger's `farthest part` instead), a timer for the exposure and
 support terms (K10 reads the pace against round 45's), and the snow's floor cell in the
 dump (K11 reads the column mean). `LiveUiCheck` has not been run against the new `ckUi` yet; it is the next theatre check.
+**Round 46 is read** (the night of 2026-09-23; 0116's read section, `logbook/specs/r46-read/`):
+the crowd lies flat (K1 holds, the flat-born out-breeding the edge-born 1.4 to 1.7 times
+inside seed 1's crowd) and the offset had nothing to do with it (K2 fails: the pose is the
+genome's frame in seed 1 and the physics in seed 3); the trickle refounded seed 1 and was
+noise in seed 3; no stomach founder of either kind bred (a consumer mouth cannot live on
+snow, an absorptive one lives at the underside's 0.44 J/m³ and saves nothing); nothing bit;
+no fan; books closed; the shelf's column mean either side of the break-even. **Three rulings
+came from it the same night.** D117 (the trickle brings back extinct species: a share of its
+founders are copies from a pool the config pins by hash; the owner: "I like the idea of
+reintroducing extinct species"); no change to the mutation or cell-type rates for round 47
+(the owner followed the recommendation; the mouth's attribute rates, at 0.005 a node, are
+the dial to screen once an eater can live); and **the owner delegated the reef's picture
+review** ("you can review the reef pictures and decide if they are good enough"): before any
+round-47 run the agent takes the smoke's pictures from the side and from under a cap, reads
+the light under a cap against the water beside it, and launches on its own judgement. **The
+safari is being built** (the owner, the same night: "fire up an opus 5.5 to build up the full
+safari... I'd like safari videos of round 47 at the end"): two Opus subagents in worktrees,
+the guide (`scripts/guide.py`, safari-spec items 1 to 5) and the director with the record
+(items 6 to 13, on TheatreFilm's machinery), against round 46's recordings; the caller runs
+the Editor checks and the first clips on round 46. The guide landed first (21:36):
+`scripts/guide.py` is in main, uncommitted, standard library only, about 11 to 19 s a seed,
+and its clades are the scorer's over each flag (every scorer clade is a disjoint union of
+guide clades, checked on seeds 1 and 3); it writes `guide.json` and `guide.md` beside the
+run by default and to `--out` otherwise, and the three seeds' guides are under
+`scratch/safari-guide/`. Two of its rules are the agent's own and the owner may overrule
+them: novelty gives full marks to the first clade of a flag triple to reach ten members and
+half to a first appearance that never did, and success is the largest share of the living
+at a sample with at least 100 alive. The `economics` field is null on every card until the
+ledger pass; the trip table's ranks are the global ranks, so a rank whose clade never
+appears in the positions is skipped in the numbering. **The pool landed at 21:40** (committed on its worktree branch, `213b894`, not merged):
+three tunables in the `population` group (`FoundingTricklePoolShare`, `FoundingTricklePoolCount`,
+`FoundingTricklePoolHash`, the first string tunable), `EVOSIM_TRICKLE_POOL` (a semicolon list
+of genome files) and `EVOSIM_TRICKLE_POOL_SHARE`, the files copied to `<run>/pool/NN.json`
+and their SHA-256 pinned in the config, `src: pool` and the index on the lineage row,
+`poolSpawns` in the stats and a `pool` column and header token when a pool is named; share 0
+is the recorded world bit for bit (a three-world test) and the draw comes from the trickle's
+own stream. It moves round 42's hash pin to `64f1aaa6b3e170f2` on its own and refuses every
+earlier config; the theatre's live and replay paths build a `World` without the pool and
+refuse a pool world at share above 0 until they load `pool/` (owed, after the merge), and
+the Unity farm binds neither variable. `rounds/env-r47.ps1` is drafted from round 46's block
+with the reef dials (three caps 8 m across at 3 m, 2 m thick, stems 2 m, fade 15 m) and the
+pool at 0.1 of the four bodies under `inocula/pool-r47/`; the fade waits on the smoke's
+fastest-water reading. `logbook/specs/r47-prereg-draft.md` holds L1 to L11, and an Opus
+subagent is writing `scripts/reads/r47-read.py` against the two worktrees' record names.
+**The four builds are merged into main (22:05)**: the instruments (`bd0346e`), the pool
+(`47714bc`, one conflict in the lineage row's constructor, both branches' fields kept), the
+reef (`bd87f46`, the round-42 hash pins re-pinned to the merged `679f831c59c6f1af`) and the
+safari director (`803d3ee`). The reef landed with two rulings of the agent's: the cap is
+opaque to the light under it (the build's first cut let e⁻¹ through, the canopy's own
+arithmetic at a cover of 1; the owner's words were "make sure they block the sun under
+them", and one constant carries it, `ReefGeometry.CapTransmission`), and the fade stays at
+15 m, because at 10 m the fade's own term makes the water beside a reef faster than the
+grid's Courant bound (0.89 against 0.83 m/s; 0.24 within a cap radius at 15 m, 0.13 at
+20 m). Core 916 of 916 and Farm 85 of 85 on the merged tree; the Core fixture is `pfix9`'s
+config (`679f831c59c6f1af`), the crowd fixture `runs/r47fixc-s4` (round 44's world on the
+merged build, everything off) is recording for the Dynamics suite and the regress against
+`r46fixc-s4`, and the theatre is compiling on worker 6. The reef was built in a worktree from `scratch/r47-build/brief.md`; the pool's bodies are
+chosen by the ledger (`logbook/specs/r46-read/ledger-stomachs.md`): the screens' inoculum
+breaks even at 0.44 J/m³ and breeds from 1, and round 46's own longest-lived absorptive
+founders are the other candidates. The night's order after the builds land: merge with the
+instruments, full suites, fixtures re-recorded, the regress with everything off, a smoke
+with three reefs and the pool, its pictures and the light reading, the pre-registration
+(logbook/0117) committed, two seeds launched then the third, round 47's films after its end.
 **The four instruments are built and uncommitted in the worktree
 `.claude/worktrees/agent-ab2fe58d8f11894f3`** (an Opus subagent, 2026-09-23 evening; 16
 files, filtered tests green: `part` and `byPart` on the kill row, `maxReach` in the stats

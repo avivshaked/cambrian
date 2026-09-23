@@ -1,0 +1,12 @@
+runs/r46-s1/2026-09-23-152213-7300c71b/: 23803 bodies with a genome; births per body-hour by the root's birth pose
+  window         trait                   bodies  body-seconds  births   per hour
+   3000-6000     born flat (thin on y)      816       1233194     446       1.30
+   3000-6000     born on edge               896       1066553     407       1.37
+   6000-10000    born flat (thin on y)     1224       1896966     746       1.42
+   6000-10000    born on edge               798       1286780     366       1.02
+  10000-15000    born flat (thin on y)     3063       4971088    2486       1.80
+  10000-15000    born on edge               631       1084784     313       1.04
+  15000-20000    born flat (thin on y)     5908       9761734    4487       1.65
+  15000-20000    born on edge               402        699838     130       0.67
+  20000-30000    born flat (thin on y)    15395      33246966   12916       1.40
+  20000-30000    born on edge               176        146291       8       0.20

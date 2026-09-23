@@ -1,0 +1,15 @@
+runs/r46-s3/2026-09-23-152225-7300c71b/: 22435 births, 18215 deaths
+  floor    founders 74 (first at 0 s, last at 252 s), of them stomachs 14, alive at the end 0
+           founders that bred 10 (0.14), stomach founders that bred 0, children of stomach founders 0
+           consumer founders' ages at death   14: median 10 s, quartiles 3 to 28, min 2, max 266
+           absorptive founders 9, bred 0; ages at death 9: median 9 s, quartiles 6 to 24, min 4, max 80
+           leaf founders' ages at death       51: median 601 s, quartiles 232 to 1792, min 12, max 5136
+           births rooted in this source 21273
+  trickle  founders 897 (first at 3026 s, last at 29982 s), of them stomachs 219, alive at the end 4
+           founders that bred 29 (0.03), stomach founders that bred 0, children of stomach founders 0
+           consumer founders' ages at death   219: median 6 s, quartiles 4 to 52, min 2, max 1534
+           absorptive founders 223, bred 0; ages at death 223: median 14 s, quartiles 10 to 200, min 4, max 2470
+           leaf founders' ages at death       451: median 521 s, quartiles 74 to 1470, min 8, max 4410
+           births rooted in this source 191
+  living at 30000 s: 4220, rooted in {'floor': 4216, 'trickle': 4}
+  by the founder's source and birth window (5,000 s bins): floor 0-5000: 4216, trickle 25000-30000: 4

@@ -136,6 +136,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D114](#d114) | Contact on the part: every part its own sphere in the farm's contact, so a body touches with the part that touches and a bite lands on it; a tunable, off in every recorded world | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("agreed") |
 | [D115](#d115) | The founding trickle: founders keep arriving at a low rate for the whole run (one per 30 s in round 46), booked as matter influx, the floor unchanged, an empty world still the run's end unless founders are being added; replaces the timed second founding window | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 late afternoon (the owner's own proposal; "ok fine. but a world that dies out should be 'game over'") |
 | [D116](#d116) | Founders follow their food: D109's landing rule reads the field the founder's body eats, snow for a stomach and dissolved matter for a leaf, the larger for a mixotroph; replaces placing a cohort by rule | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 late afternoon ("use probability to make it more likely to land in high matter concentrates"; "yes") |
+| [D117](#d117) | The trickle brings back extinct species: with a launcher's share, a trickle founder is an exact copy of an evolved body from a pool the config pins by hash, marked `src: pool` in the lineage | 2026-09-23 | ruled by the owner in conversation on the night of 2026-09-23, on round 46's read ("I like the idea of reintroducing extinct species... yes lets do it") |
 
 ---
 
@@ -6190,3 +6191,40 @@ the owner does not want.
 
 **Rejected.** The cohort over the shelf by rule. A founder placed at the richest column
 outright (a lottery, not a certainty, as D109 chose).
+
+### D117
+**The trickle brings back extinct species: a share of its founders are copies of evolved bodies from a pool** · 2026-09-23
+
+**Status:** ruled by the owner in conversation on the night of 2026-09-23, on round 46's
+read (logbook/0116: every stomach the trickle drew died within seconds, none bred, and the
+ledger shows a random stomach cannot live on any snow the world holds; "oh I like the idea
+of reintroducing extinct species... it's interesting. yes lets do it"; "lets follow your
+recommendations"). For round 47 with the reef. The build spec is the brief under
+`scratch/r47-build/` until the round's entry cites its spec file.
+
+**Decision.** D115's trickle draws each founder from the founding lottery as before, except
+that with probability `FoundingTricklePoolShare` (0 to 1; 0 is the recorded world and takes
+no draw) it admits instead an exact copy of a genome from a pool the launcher names
+(`EVOSIM_TRICKLE_POOL`, genome files; `EVOSIM_TRICKLE_POOL_SHARE`). The farm copies the
+pool into the run directory and the config carries the pool's count and a hash of its bytes,
+so `configHash` pins which bodies could arrive and a resume refuses a changed pool. A pool
+founder is a founder in every other respect: generation zero, no parent, endowed and placed
+as a trickle founder is (D116's food rule reads its developed body), and its lineage row
+reads `src: pool` with the pool index, so a reader can follow the line. The pool's contents
+are data the round's pre-registration names: evolved eaters, the stomach screens' body among
+them, and any line that went extinct and is worth a second chance.
+
+**Why.** The world can feed an evolved absorptive stomach (the screens' body breaks even at
+0.44 J/m³, about what the crowd's underside holds, and breeds from about 1 J/m³, which the
+densest columns under the crowd reach) and cannot feed a random one long enough for it to
+evolve into one: a random consumer mouth has no break-even at any snow the world holds and
+dies in seconds, and a random absorptive stomach lives where the snow is and never saves a
+child's price (round 46: 900 stomach founders per seed, none bred). A founding that only
+ever draws random bodies therefore never founds an eater in this water, whatever the rate.
+Reintroducing a body that once lived is the smallest change that gives the eater question a
+subject, and it keeps every other founder random.
+
+**Rejected.** Raising the mouth's mutation rates for round 47 (supply was not what held
+the eaters back, and a second variable in the reef's round). A stomach founder endowed with a
+reserve sized to its bill (it lengthens the death, since the mouth still earns nothing).
+Waiting for round 48 (the owner chose the same round as the reef).
