@@ -1398,6 +1398,16 @@ actually verifying it.
   remains: loose ends, instruments, measurements, the round-gap changes that are a new
   realisation of every seed and land best while no arm runs, pre-registration drafts and
   ledger screens for the round that waits.
+- **Cap the load a build puts on the machine** (owner, 2026-09-23 afternoon, on seeing the
+  CPU at 100%: "are we doing farms and unit tests at the same time?"). A subagent's build of
+  a tunable ran two farm runs at six threads each beside the test suites, because its brief
+  capped nothing. A farm run's result is bit-identical at any load, so nothing was wrong;
+  what a loaded machine breaks is pace against a wall limit, every timing reading taken
+  meanwhile (a cost measured beside a test suite is not a measurement), and the owner's own
+  use of the machine. The rule, in every brief: one farm run at a time beside a test suite
+  and never two farm runs beside tests; a subagent's work takes at most half the machine's
+  logical processors while the owner is at it; and a timing read (a wall split, a pace
+  number, a kernel time) is taken with nothing else running, or it is re-taken.
 - **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
   amendments, scope and round design forks, pushes of anything that is not code/prose, and
   anything irreversible or outward-facing. Instruments, diagnostics, replays of scored
