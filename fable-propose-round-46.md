@@ -25,8 +25,8 @@ Ruled on 2026-09-23 ("I'll support your recommendations") with two conditions, b
 answered in `fable-propose-light-exposure.md`: the cost is microseconds a metabolic step, and
 a body needs a way to affect its angle. Three ways exist (a float part above tissue, rising
 or sinking under the panels, a joint with the up sense). The fourth, for the one-part leaf,
-is the one open ruling in this text: **a heritable offset of a part's centre of buoyancy
-along its thinnest axis**, as a fraction of that half-extent, so the buoyant face turns up.
+**a heritable offset of a part's centre of buoyancy along its thinnest axis** (ruled
+"agreed" on 2026-09-23 afternoon, D111), as a fraction of that half-extent, so the buoyant face turns up.
 It is a genome field (a format bump), mutable and priced like lift, acting only where the
 node carries lift above zero. My recommendation is yes, because without it the rule kills
 the leaves that were born wrong and rewards nothing they can do.
@@ -97,7 +97,7 @@ transcription and takes the machine for its timings between the round's reads.
 
 ## The questions
 
-1. The buoyancy offset as a genome field: yes or no.
+1. The buoyancy offset as a genome field: ruled yes (D111).
 2. The consumer's founding: the second window (recommended), intake on non-consumer
    founders, or the larger reserve.
 3. The support cost: the square form at 0.1 W per m² per m², or a price of the owner's.

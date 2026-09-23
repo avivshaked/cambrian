@@ -85,7 +85,10 @@ buoyancy offset's is `logbook/specs/buoyancy-offset-spec.md` (a torque from the 
 weight acting off the mass centre, a genome field at format 8, priced) and the consumer's
 second founding's is `logbook/specs/consumer-founding-spec.md` (a second window of random
 consumer-carrying founders when the snow is there, three tunables, `fnd` on the lineage row).
-All five of round 46's specs are written; the builds wait on the rulings and the machine.
+All five of round 46's specs are written. **The buoyancy offset is ruled (D111, 2026-09-23
+afternoon, "agreed")** and its build follows the exposure build on the same tree; questions
+2 to 5 (the consumer's founding, the support cost's price, per-part contact, the reef held)
+are still the owner's.
 The pre-registration is drafted with the ruled values in brackets
 (`logbook/specs/r46-prereg-draft.md`, K1 to K10: the crowd lies down, the offset is the way,
 the second founding founds a line, the killer on the repaired window, the price stops the

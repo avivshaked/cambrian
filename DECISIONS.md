@@ -130,6 +130,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D108](#d108) | The tank is ten times larger from round 45 and the matter is not: 22,000 m² at 45 m with round 44's 1,500 units, the same crowd in ten times the water, the bed's wavelength held at 17.64 m; the farm out of Unity made the old size a habit rather than a constraint. The matter superseded by D109 the same night | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night, the size and the matter the owner's, the bed the agent's |
 | [D109](#d109) | Islands and deserts: the matter seeded by a noise map into the top of a tenth of the columns, founders planted in the islands, the matter grid stirred at the snow's 0.02 m²/s (it was a hard default of 2), and 15,000 units so the water is round 44's density once the islands have spread; a light shade map built and off, its physical form (a shelf reef) proposed | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night, step by step after five screens |
 | [D110](#d110) | Light by exposure: a part earns on, and shades with, its projected area onto the horizontal in its actual pose (a flat leaf twice the orientation average, an edge-on one about nothing, a random crowd unchanged), the hull's one-sided shadow as the cap, a tunable off by default; the one-part leaf's way to lie flat (a buoyancy offset) put for its own ruling | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 morning from the owner's observation of the pictures, with two conditions (the cost weighed, a way to affect the angle) |
+| [D111](#d111) | The buoyancy offset: a part's centre of buoyancy may sit off its mass centre along its thinnest axis, a heritable priced genome trait (format 8) so a one-part leaf turns face up by the water it displaces; D110's second condition answered | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("agreed") after the biology was laid out |
 
 ---
 
@@ -5963,7 +5964,7 @@ from the exposure to the field, where angles would matter"), then "as I often do
 your recommendations", with two conditions: the computational effort weighed, and a way for a
 body to affect its angle ("if there is none, then basically some plants just die because they
 are born in the wrong angle"). The one-part leaf's way, an offset of the centre of buoyancy, is
-a genome field and is put for its own ruling in `fable-propose-round-46.md`.
+a genome field and was ruled the same afternoon as D111.
 
 **Decision.** From the next base round, with `RunConfig.LightByExposure` on, a part's lit area
 is its projected area onto the horizontal in the pose the solver holds at the metabolic step:
@@ -6009,3 +6010,41 @@ projection is onto the horizontal. A phototropic torque toward the light as a ru
 a designed force with nothing casting it, the objection D109 recorded against the shade map.
 A mean over the metabolic block instead of one sample: a projection a physics step for a
 crowd that has not been seen to tumble; re-asked if one is.
+
+### D111
+**The buoyancy offset: a part's centre of buoyancy may sit off its centre of mass along its thinnest axis, a heritable and priced trait** · 2026-09-23
+
+**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 ("agreed"),
+after asking how plants align their angles and being told the biology and the three ways the
+physics already offers. It is D110's second condition ("we need to give them some way of
+affecting the angle") answered for the one-part leaf, which had none.
+
+**Decision.** A genome node carries `BuoyancyOffset` in [−1, 1], the position of the part's
+centre of buoyancy along its own thinnest axis as a fraction of that half-extent, drawn at 0
+for founders, mutated as lift is, counted in the species distance, and written as
+`buoyancyOffset` at genome format 8. The solver applies the part's full displaced weight
+(`ρ_water · V · g`) at that point and its weight at the origin, so a torque appears and the
+net force on the body is unchanged to the bit; a sphere part has no thinnest axis and no
+torque. The trait is priced (`BuoyancyOffsetWattsPerCubicMetre`, `EVOSIM_BUOYANCY_OFFSET_COST`,
+0 = the field refused above 0 so that no world carries a trait nothing charges for; the
+recommendation is 0.02 W per m³, a tenth of standing cost at full offset, screened before the
+pre-registration). The build spec is `logbook/specs/buoyancy-offset-spec.md`; the readout is the
+table's `float off` beside D110's `expo`.
+
+**Why.** Under D110 a leaf's income is its projected area in its actual pose, and round 45's
+poses read most of an early crowd standing as it was born. A one-part uniform box has its
+weight and its buoyancy at one point, so nothing ever turns it: born on edge, it would earn
+nothing and die with no move to make, which is what the owner objected to. The three ways the
+physics offers (a float part above tissue, rising or sinking under the panels, a joint with the
+up sense) all need a second part, a drift or a drive. The plant's own answer for a single frond
+is a density gradient within the tissue, gas on the upper face, so that it floats face up
+however it lands; the rule is that gradient, Archimedes on a non-uniform body. It costs one
+cross product a link a physics step. For a half-metre leaf at offset 0.5 the righting moment is
+about 35 N·m and the leaf turns in well under a second against the panels' damping; the
+divergence check reads the first screen for what a stiff new torque does to the solver.
+
+**Rejected.** A phototropic torque as a rule of its own (a designed force with nothing casting
+it, D109's objection). Letting the offset act only on a buoyancy cell's lift: the one-part
+photosynthetic leaf carries no lift and would be left as it is, which is the case the rule
+exists for. Free of charge: a trait nothing charges for is one the genome records and
+selection cannot see (the lift rule's reason).
