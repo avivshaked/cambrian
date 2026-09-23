@@ -571,7 +571,7 @@ namespace Evosim.Theatre
                 ? TankGeometry.RadiusFor(dressed.WorldAreaSquareMetres)
                 : 0f;
 
-            _skin.Dress(SnapshotCamera.BoxOf(frame, out _), frame.Bed, glassRadius);
+            _skin.Dress(SnapshotCamera.BoxOf(frame, out _), frame.Bed, glassRadius, frame.Reefs);
         }
 
         /// <summary>

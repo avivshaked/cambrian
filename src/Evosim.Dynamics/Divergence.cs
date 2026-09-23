@@ -141,6 +141,25 @@ namespace Evosim.Dynamics
                 }
             }
 
+            // Guard 3b, the reefs' rock (logbook/specs/reef-spec.md §2), on the bed's terms: a
+            // body resting on a cap or against a stem touches the rock at its own radius, so a root
+            // deeper inside than that is a body in the stone and not on it. The dump names the reef.
+            ReefGeometry reefs = config.Reefs;
+
+            if (reefs != null)
+            {
+                double inside = -reefs.SignedDistance(rootX, rootY, rootZ, out int reef, out _);
+
+                if (inside > boundingRadius)
+                {
+                    reason = FormattableString.Invariant(
+                        $"inside reef {reef} by {inside:0.###} m at x {rootX:0.##}, y {rootY:0.##}, z {rootZ:0.##}");
+
+                    return true;
+                }
+            }
+
+
             // Guard 4, every other link. The farm asks this of the links' positions; this asks it
             // of their spins and velocities too, which is the set Creature.IsFinite already reads
             // and the set the solver's own backstop kills on — so the guard and the backstop

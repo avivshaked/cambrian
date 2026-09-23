@@ -360,8 +360,12 @@ namespace Evosim.Farm
                     " m (" + config.WorldAreaSquareMetres.ToString("0.###", Inv) +
                     " m2), depth " + F(config.WorldDepthMetres) + ", " +
                     (space.HasWall ? "wall" : "no wall") + ", " +
-                    (space.HasFloor ? BedToken(space.Bed) : "no bed");
+                    (space.HasFloor ? BedToken(space.Bed) : "no bed") +
+                    // The reefs after the bed and its shore (logbook/specs/reef-spec.md §1): the
+                    // dials as the config holds them, or "no reef".
+                    ", " + ReefGeometry.HeaderToken(config);
             }
+
 
             string width = space.PatchWidthMetres.ToString("0.###", Inv);
             int patchesAcross = space.PatchesAcross;

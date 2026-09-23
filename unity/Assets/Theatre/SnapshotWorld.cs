@@ -89,6 +89,9 @@ namespace Evosim.Theatre
 
         public BedShape Bed { get; private set; }
 
+        /// <inheritdoc />
+        public ReefGeometry Reefs { get; private set; }
+
         /// <summary>The second being drawn.</summary>
         public double Second { get; private set; }
 
@@ -247,6 +250,16 @@ namespace Evosim.Theatre
                             Rng.SeedFor(world.Record.Seed, World.BedShapeIndex),
                             config.BedShoreDepthMetres, config.BedShoreFadeMetres)
                         : null;
+
+                // The reefs, placed as World places them: the same stream of the run's seed over
+                // the same floor, so the rock stands where the run's rock stood. The two refusals
+                // about the rest of the world are skipped (worldRules: false), because a
+                // picture-only config does not carry the field model and the farm already ran it.
+                world.Reefs = config.ReefCount > 0
+                    ? ReefGeometry.Place(
+                        config, TankGeometry.RadiusFor(config.WorldAreaSquareMetres), world.Bed,
+                        Rng.SeedFor(world.Record.Seed, World.ReefPlacementIndex), worldRules: false)
+                    : null;
             }
             catch (Exception e)
             {

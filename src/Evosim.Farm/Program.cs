@@ -263,6 +263,7 @@ namespace Evosim.Farm
                 settings, config.Hash(), inoculumHash, physicsDt, stepsPerMetabolic, threads);
 
             Manifest.RecordBed(manifest, world.Bed);
+            Manifest.RecordReefs(manifest, world.Reefs);
 
             // D102, set here for RecordBed's reason and from the same world: the ratio the streams
             // were built to, which the world's constructor derived when it told the field what

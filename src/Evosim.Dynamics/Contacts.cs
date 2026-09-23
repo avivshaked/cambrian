@@ -572,6 +572,22 @@ namespace Evosim.Dynamics
                 }
             }
 
+            // The reefs (logbook/specs/reef-spec.md §2): the bed's law and material against the
+            // rock's signed distance, counted with the bed and the glass. No branch is taken in a
+            // world without reefs, so its arithmetic is the one above to the bit.
+            if (config.Reefs != null)
+            {
+                Vec3 reef = ContactReef.Push(
+                    body.ContactCentre, body.ContactRadius, body.ContactVelocity, mass,
+                    config, bedStiffness, bedDamping);
+
+                if (reef.X != 0 || reef.Y != 0 || reef.Z != 0)
+                {
+                    force += reef;
+                    if (instrument) body.TouchedBedOrGlass = true;
+                }
+            }
+
             // The glass, a cylinder about the vertical axis.
             if (config.TankRadiusMetres > 0)
             {
@@ -740,6 +756,20 @@ namespace Evosim.Dynamics
                         if (instrument) body.TouchedBedOrGlass = true;
                     }
                 }
+
+                // The reefs, on this link's sphere — the body sphere's rule, read on a link.
+                if (config.Reefs != null)
+                {
+                    Vec3 reef = ContactReef.Push(
+                        centre, radius, velocity, mass, config, bedStiffness, bedDamping);
+
+                    if (reef.X != 0 || reef.Y != 0 || reef.Z != 0)
+                    {
+                        force += reef;
+                        if (instrument) body.TouchedBedOrGlass = true;
+                    }
+                }
+
 
                 // The glass, on this link's sphere.
                 if (config.TankRadiusMetres > 0)

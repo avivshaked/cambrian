@@ -542,6 +542,10 @@ namespace Evosim.Core
             _shoreDepth = _fadeOn ? _bed.ShoreDepthMetres : 0d;
             _shoreFade = _fadeOn ? _bed.ShoreFadeMetres : 0d;
 
+            // The reefs are the world's, set after this by SetReefs; a box handed a second
+            // geometry must not keep the first one's rock.
+            _reefs = null;
+
             // Built lazily on the first sample, so a Rolls world never pays for it and a config
             // handed to two worlds of different geometry rebuilds rather than describing the first.
             _transportAmplitude = null;
@@ -562,6 +566,71 @@ namespace Evosim.Core
         private bool _fadeOn;
         private double _shoreDepth;
         private double _shoreFade;
+
+        // The reefs' rock, logbook/specs/reef-spec.md §2. Null in every recorded world, and every
+        // sampler tests it before touching anything reef-shaped, so a tank without reefs is the
+        // arithmetic it was to the bit.
+        private ReefGeometry _reefs;
+
+        /// <summary>
+        /// The reefs the streams fade around, or null — every recorded world.
+        /// <c>logbook/specs/reef-spec.md</c> §2.
+        /// </summary>
+        public ReefGeometry Reefs => _reefs;
+
+        /// <summary>
+        /// Hands the water the world's reefs, after <see cref="SetBox"/>. The streams' potential is
+        /// then multiplied by <see cref="ReefGeometry.FadeAt"/>: 0 in the rock, 1 beyond the fade, a
+        /// quintic of the signed distance between, the plain form and not the beach's depth product.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The velocity is the curl of <c>g·A</c></b>: <c>g·u + ∇g × A</c>, still divergence-free
+        /// (<c>∇·(∇g × A) = A·(∇×∇g) − ∇g·(∇×A) = −∇g·u</c>, which cancels <c>∇g·u</c> from the
+        /// first term), exactly still in the rock, and exactly still on the rock's surface too,
+        /// because the quintic's slope is zero there as well as its value, so nothing crosses it.
+        /// What it costs is the contour current <c>∇g × A</c>, of the order of <c>|A|/fade</c>;
+        /// <c>ReefStreamsTests</c> reads it.
+        /// </para>
+        /// <para>
+        /// <b>The knob is not re-measured.</b> <see cref="Speed"/> still names the RMS of the tank's
+        /// water without the rock, and the Courant ceiling (<see cref="MaximumTransportSpeed"/>) is
+        /// the unfaded one. The grid's substeps come from its own face fluxes, which carry the
+        /// contour current, so the ceiling's only job — the refusal past eight substeps — reads a
+        /// number that can be lower than the fastest water beside a reef.
+        /// </para>
+        /// <para>
+        /// <b>Samplable under a pin.</b> The fade is a pure function of the point with no memo, so
+        /// any number of threads may read it between <see cref="PinInstant"/> and
+        /// <see cref="UnpinInstant"/>.
+        /// </para>
+        /// </remarks>
+        public void SetReefs(ReefGeometry reefs)
+        {
+            if (reefs != null && reefs.Count > 0 && _shape != WorldShape.Tank)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant($"Reefs were handed to water in a {_shape}. ") +
+                    "A reef fades the tank's streams, and a box has none. logbook/specs/reef-spec.md §3.",
+                    nameof(reefs));
+            }
+
+            _reefs = reefs != null && reefs.Count > 0 ? reefs : null;
+        }
+
+        /// <summary>
+        /// The reefs' fade at a point as the float the potential is multiplied by, 1 with no reefs.
+        /// </summary>
+        /// <remarks>
+        /// The hoisted potentials (<see cref="PotentialAt(in StreamsColumn, in StreamsDepth, double)"/>
+        /// and its bed overload) return the water <i>before</i> this factor, because a hoisted
+        /// column carries no point to read the rock at; a caller that samples them multiplies by
+        /// this at the same float coordinates, which is what <see cref="GridField"/> does, and the
+        /// product is then the direct <see cref="PotentialAt(float, float, float, double)"/>'s to
+        /// the bit.
+        /// </remarks>
+        public float ReefFadeAt(float x, float y, float z) =>
+            _reefs == null ? 1f : (float)_reefs.FadeAt(x, y, z);
 
         /// <summary>
         /// The shore's fade at a column of water depth <paramref name="d"/>, and its first two
@@ -989,7 +1058,7 @@ namespace Evosim.Core
             }
 
             Float3 flow = _shape == WorldShape.Tank
-                ? StreamsAt(x, y, z, seconds)
+                ? _reefs == null ? StreamsAt(x, y, z, seconds) : ReefStreamsAt(x, y, z, seconds)
                 : TransportAt(x, y, z, seconds);
             if (!VentActive(_patchCount)) return flow;
 
@@ -1096,18 +1165,11 @@ namespace Evosim.Core
 
             if (_shape == WorldShape.Tank)
             {
-                EnsureStreams();
-
-                double t = 2.0 * Math.PI * seconds / _periodSeconds;
-
-                if (_bed == null)
-                {
-                    return StreamsPotentialUnit(x, y, z, t, _streamsOverturning)
-                           * (_speed * _streamsScale);
-                }
-
-                return StreamsSlopedPotentialUnit(x, y, z, t, _streamsOverturning)
-                       * (float)(_speed * _streamsScale * _bedScale);
+                // The reefs' fade, last and as one float multiply, so the grid's hoisted edges can
+                // apply the same factor to the same product (ReefFadeAt's remarks).
+                return _reefs == null
+                    ? TankPotential(x, y, z, seconds)
+                    : TankPotential(x, y, z, seconds) * ReefFadeAt(x, y, z);
             }
 
             EnsureTransport();
@@ -1166,8 +1228,55 @@ namespace Evosim.Core
 
             double t = 2.0 * Math.PI * seconds / _periodSeconds;
 
-            return StreamsSlopedPotentialUnit(x, y, z, t, _streamsOverturning, column)
+            Float3 potential = StreamsSlopedPotentialUnit(x, y, z, t, _streamsOverturning, column)
+                               * (float)(_speed * _streamsScale * _bedScale);
+
+            return _reefs == null ? potential : potential * ReefFadeAt(x, y, z);
+        }
+
+        /// <summary>
+        /// The tank's potential before the reefs' fade: the flat or the sloped streams', scaled —
+        /// the arithmetic <see cref="PotentialAt(float, float, float, double)"/> always ran.
+        /// </summary>
+        private Float3 TankPotential(float x, float y, float z, double seconds)
+        {
+            EnsureStreams();
+
+            double t = 2.0 * Math.PI * seconds / _periodSeconds;
+
+            if (_bed == null)
+            {
+                return StreamsPotentialUnit(x, y, z, t, _streamsOverturning)
+                       * (_speed * _streamsScale);
+            }
+
+            return StreamsSlopedPotentialUnit(x, y, z, t, _streamsOverturning)
                    * (float)(_speed * _streamsScale * _bedScale);
+        }
+
+        /// <summary>
+        /// The streams with the reefs' fade: the curl of <c>g·A</c>, <c>g·u + ∇g × A</c> —
+        /// <c>logbook/specs/reef-spec.md</c> §2, <see cref="SetReefs"/>'s remarks.
+        /// </summary>
+        /// <remarks>
+        /// Beyond every reef's fade this is <see cref="StreamsAt"/> itself, not a product with 1,
+        /// so the open water is the unfaded field to the bit; inside the rock it is exact zeros.
+        /// </remarks>
+        private Float3 ReefStreamsAt(float x, float y, float z, double seconds)
+        {
+            if (_speed <= 0f) return Float3.Zero;
+
+            if (!_reefs.Fade(x, y, z, out ReefGeometry.Distance f)) return StreamsAt(x, y, z, seconds);
+            if (f.S == 0d && f.Gx == 0d && f.Gy == 0d && f.Gz == 0d) return Float3.Zero;
+
+            Float3 u = StreamsAt(x, y, z, seconds);
+            Float3 a = TankPotential(x, y, z, seconds);
+
+            // g·u + G × A, with G = ∇g.
+            return new Float3(
+                (float)(f.S * u.X + (f.Gy * a.Z - f.Gz * a.Y)),
+                (float)(f.S * u.Y + (f.Gz * a.X - f.Gx * a.Z)),
+                (float)(f.S * u.Z + (f.Gx * a.Y - f.Gy * a.X)));
         }
 
         /// <summary>
@@ -1426,7 +1535,9 @@ namespace Evosim.Core
 
             if (_shape == WorldShape.Tank && !VentActive(_patchCount))
             {
-                return StreamsAccelerationAt(x, y, z, seconds);
+                return _reefs == null
+                    ? StreamsAccelerationAt(x, y, z, seconds)
+                    : ReefStreamsAccelerationAt(x, y, z, seconds);
             }
 
             // The delegate is made at the first call, or by PinInstant before a parallel pass,
@@ -4915,6 +5026,199 @@ namespace Evosim.Core
         /// got wrong without any test of the velocity noticing. The clock carries its own factor:
         /// <see cref="StreamsUnit"/>'s <c>t</c> is <c>2π·seconds/Period</c>.
         /// </remarks>
+        private Float3 ReefStreamsAccelerationAt(float x, float y, float z, double seconds)
+        {
+            if (!_reefs.Fade(x, y, z, out ReefGeometry.Distance f)) return StreamsAccelerationAt(x, y, z, seconds);
+            if (f.S == 0d && f.Gx == 0d && f.Gy == 0d && f.Gz == 0d) return Float3.Zero;
+
+            EnsureStreams();
+
+            double clock = 2.0 * Math.PI / _periodSeconds;
+            StreamsGradient g = ReefFadedGradient(x, y, z, clock * seconds, f);
+
+            double sigma = (double)_speed * _streamsScale * _bedScale;
+            double perSecond = sigma * clock;
+            double squared = sigma * sigma;
+
+            return new Float3(
+                (float)(perSecond * g.Tx +
+                        squared * (g.Vx * g.Xx + g.Vy * g.Xy + g.Vz * g.Xz)),
+                (float)(perSecond * g.Ty +
+                        squared * (g.Vx * g.Yx + g.Vy * g.Yy + g.Vz * g.Yz)),
+                (float)(perSecond * g.Tz +
+                        squared * (g.Vx * g.Zx + g.Vy * g.Zy + g.Vz * g.Zz)));
+        }
+
+        /// <summary>
+        /// The reef-faded streams' velocity, clock derivative and Jacobian at unit scale, from the
+        /// unfaded field's and its potential's, through <c>g·u + ∇g × A</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The chain rule, written out</b>, as the shore's fade is (<see cref="Faded"/>): with
+        /// <c>G = ∇g</c> and <c>H = ∇∇g</c> from <see cref="ReefGeometry.Fade"/>,
+        /// <c>∂_t u'' = g·∂_t u + G × ∂_t A</c> and
+        /// <c>∂_k u''_i = G_k·u_i + g·∂_k u_i + (H_{·k} × A)_i + (G × ∂_k A)_i</c>. The unfaded
+        /// field is the flat or the sloped streams, the shore's fade included, and its potential
+        /// comes with its own Jacobian (<see cref="StreamsPotentialUnitWithGradient"/>, or
+        /// <see cref="SlopedPotentialWithGradient"/> on a shaped floor).
+        /// </para>
+        /// <para>
+        /// <b>Checked, not argued.</b> <c>ReefStreamsTests</c> holds the assembled acceleration
+        /// against the stencil of the faded velocity and the Jacobian's trace against zero within
+        /// the fade.
+        /// </para>
+        /// </remarks>
+        private StreamsGradient ReefFadedGradient(
+            double x, double y, double z, double t, in ReefGeometry.Distance f)
+        {
+            StreamsGradient u = _bed == null
+                ? StreamsUnitWithGradient(x, y, z, t, _streamsOverturning)
+                : StreamsSlopedUnitWithGradient(x, y, z, t, _streamsOverturning);
+
+            StreamsGradient p = _bed == null
+                ? StreamsPotentialUnitWithGradient(x, y, z, t, _streamsOverturning)
+                : SlopedPotentialWithGradient(x, y, z, t, _streamsOverturning);
+
+            double gv = f.S;
+            double gx = f.Gx, gy = f.Gy, gz = f.Gz;
+
+            var r = default(StreamsGradient);
+
+            // u'' = g·u + G × A.
+            r.Vx = gv * u.Vx + (gy * p.Vz - gz * p.Vy);
+            r.Vy = gv * u.Vy + (gz * p.Vx - gx * p.Vz);
+            r.Vz = gv * u.Vz + (gx * p.Vy - gy * p.Vx);
+
+            r.Tx = gv * u.Tx + (gy * p.Tz - gz * p.Ty);
+            r.Ty = gv * u.Ty + (gz * p.Tx - gx * p.Tz);
+            r.Tz = gv * u.Tz + (gx * p.Ty - gy * p.Tx);
+
+            // Column k of the Jacobian: ∂_k u''. The Hessian is symmetric, so its column k is
+            // (H_xk, H_yk, H_zk).
+            Column(
+                gx, gv, gx, gy, gz, f.Hxx, f.Hxy, f.Hxz, u.Vx, u.Vy, u.Vz,
+                u.Xx, u.Yx, u.Zx, p.Vx, p.Vy, p.Vz, p.Xx, p.Yx, p.Zx,
+                out r.Xx, out r.Yx, out r.Zx);
+
+            Column(
+                gy, gv, gx, gy, gz, f.Hxy, f.Hyy, f.Hyz, u.Vx, u.Vy, u.Vz,
+                u.Xy, u.Yy, u.Zy, p.Vx, p.Vy, p.Vz, p.Xy, p.Yy, p.Zy,
+                out r.Xy, out r.Yy, out r.Zy);
+
+            Column(
+                gz, gv, gx, gy, gz, f.Hxz, f.Hyz, f.Hzz, u.Vx, u.Vy, u.Vz,
+                u.Xz, u.Yz, u.Zz, p.Vx, p.Vy, p.Vz, p.Xz, p.Yz, p.Zz,
+                out r.Xz, out r.Yz, out r.Zz);
+
+            return r;
+        }
+
+        /// <summary>
+        /// One column of the reef-faded Jacobian: <c>G_k·u + g·∂_k u + ∂_k G × A + G × ∂_k A</c>.
+        /// </summary>
+        private static void Column(
+            double gk, double g, double gx, double gy, double gz,
+            double hxk, double hyk, double hzk,
+            double ux, double uy, double uz,
+            double dux, double duy, double duz,
+            double ax, double ay, double az,
+            double dax, double day, double daz,
+            out double jx, out double jy, out double jz)
+        {
+            jx = gk * ux + g * dux + (hyk * az - hzk * ay) + (gy * daz - gz * day);
+            jy = gk * uy + g * duy + (hzk * ax - hxk * az) + (gz * dax - gx * daz);
+            jz = gk * uz + g * duz + (hxk * ay - hyk * ax) + (gx * day - gy * dax);
+        }
+
+        /// <summary>
+        /// The sloped streams' potential — <c>f·Jᵀ·A(Φ)</c> with the shore's fade <c>f</c> when it
+        /// is on — with its clock derivative and Jacobian at unit scale, for the reefs' chain rule.
+        /// </summary>
+        /// <remarks>
+        /// The map's arithmetic is <see cref="StreamsSlopedUnitWithGradient"/>'s line for line and
+        /// the pullback's Jacobian is <see cref="Faded"/>'s; the shore's factor enters as
+        /// <c>∂_k(f·A'_i) = F_k·A'_i + f·∂_k A'_i</c> with <c>F = ∇f</c> horizontal.
+        /// </remarks>
+        private StreamsGradient SlopedPotentialWithGradient(
+            double x, double y, double z, double t, double overturning)
+        {
+            double depth = _depthMetres;
+
+            BedSample(
+                x, z, out double h, out double hx, out double hz,
+                out double hxx, out double hxz, out double hzz);
+
+            double d = depth - h;
+            double floorY = -depth + h;
+
+            if (y > 0d) y = 0d;
+            else if (y < floorY) y = floorY;
+
+            double inverseSquared = 1d / (d * d);
+            double inverseCubed = inverseSquared / d;
+
+            double c = depth / d;
+            double a = y * depth * hx * inverseSquared;
+            double b = y * depth * hz * inverseSquared;
+
+            double cx = depth * hx * inverseSquared;
+            double cz = depth * hz * inverseSquared;
+
+            double ax = y * depth * (hxx * inverseSquared + 2d * hx * hx * inverseCubed);
+            double az = y * depth * (hxz * inverseSquared + 2d * hx * hz * inverseCubed);
+            double bz = y * depth * (hzz * inverseSquared + 2d * hz * hz * inverseCubed);
+
+            StreamsGradient p = StreamsPotentialUnitWithGradient(x, y * c, z, t, overturning);
+
+            double dxAx = p.Xx + a * p.Xy, dyAx = c * p.Xy, dzAx = p.Xz + b * p.Xy;
+            double dxAy = p.Yx + a * p.Yy, dyAy = c * p.Yy, dzAy = p.Yz + b * p.Yy;
+            double dxAz = p.Zx + a * p.Zy, dyAz = c * p.Zy, dzAz = p.Zz + b * p.Zy;
+
+            var r = default(StreamsGradient);
+
+            r.Vx = p.Vx + a * p.Vy;
+            r.Vy = c * p.Vy;
+            r.Vz = p.Vz + b * p.Vy;
+
+            r.Xx = dxAx + ax * p.Vy + a * dxAy;
+            r.Xy = dyAx + cx * p.Vy + a * dyAy;
+            r.Xz = dzAx + az * p.Vy + a * dzAy;
+
+            r.Yx = cx * p.Vy + c * dxAy;
+            r.Yy = c * dyAy;
+            r.Yz = cz * p.Vy + c * dzAy;
+
+            r.Zx = dxAz + az * p.Vy + b * dxAy;
+            r.Zy = dyAz + cz * p.Vy + b * dyAy;
+            r.Zz = dzAz + bz * p.Vy + b * dzAy;
+
+            r.Tx = p.Tx + a * p.Ty;
+            r.Ty = c * p.Ty;
+            r.Tz = p.Tz + b * p.Ty;
+
+            if (!_fadeOn) return r;
+
+            ShoreFade(d, out double fade, out double fd, out _);
+
+            if (fade == 0d) return default(StreamsGradient);
+
+            // F = ∇f = −f'(d)·(h_x, 0, h_z).
+            double fx = -fd * hx;
+            double fz = -fd * hz;
+
+            var s = default(StreamsGradient);
+
+            s.Vx = fade * r.Vx; s.Vy = fade * r.Vy; s.Vz = fade * r.Vz;
+            s.Tx = fade * r.Tx; s.Ty = fade * r.Ty; s.Tz = fade * r.Tz;
+
+            s.Xx = fx * r.Vx + fade * r.Xx; s.Xy = fade * r.Xy; s.Xz = fz * r.Vx + fade * r.Xz;
+            s.Yx = fx * r.Vy + fade * r.Yx; s.Yy = fade * r.Yy; s.Yz = fz * r.Vy + fade * r.Yz;
+            s.Zx = fx * r.Vz + fade * r.Zx; s.Zy = fade * r.Zy; s.Zz = fz * r.Vz + fade * r.Zz;
+
+            return s;
+        }
+
         private Float3 StreamsAccelerationAt(float x, float y, float z, double seconds)
         {
             EnsureStreams();
@@ -4974,14 +5278,27 @@ namespace Evosim.Core
 
             double clock = 2.0 * Math.PI / _periodSeconds;
 
-            StreamsGradient g = _bed == null
-                ? StreamsUnitWithGradient(x, y, z, clock * seconds, _streamsOverturning)
-                : StreamsSlopedUnitWithGradient(x, y, z, clock * seconds, _streamsOverturning);
+            StreamsGradient g;
+
+            if (_reefs != null && _reefs.Fade(x, y, z, out ReefGeometry.Distance fade))
+            {
+                // The reefs' chain rule (ReefFadedGradient); zeros inside the rock.
+                g = fade.S == 0d && fade.Gx == 0d && fade.Gy == 0d && fade.Gz == 0d
+                    ? default(StreamsGradient)
+                    : ReefFadedGradient(x, y, z, clock * seconds, fade);
+            }
+            else
+            {
+                g = _bed == null
+                    ? StreamsUnitWithGradient(x, y, z, clock * seconds, _streamsOverturning)
+                    : StreamsSlopedUnitWithGradient(x, y, z, clock * seconds, _streamsOverturning);
+            }
 
             double sigma = (double)_speed * _streamsScale * _bedScale;
             double perSecond = sigma * clock;
 
             return (
+
                 new Float3((float)(sigma * g.Vx), (float)(sigma * g.Vy), (float)(sigma * g.Vz)),
                 new Float3(
                     (float)(perSecond * g.Tx),

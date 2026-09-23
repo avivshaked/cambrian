@@ -105,6 +105,24 @@ namespace Evosim.Theatre
                 missing.Add("bed (the flat floor every world before D092 had)");
             }
 
+            // The mushroom reefs (logbook/specs/reef-spec.md). Absent is no reef, which is what
+            // every config written before the dials meant.
+            if (root.Has("reef"))
+            {
+                JsonNode reef = root["reef"];
+
+                config.ReefCount = (int)Optional(reef, "reefCount", 0f, missing, "reef.reefCount");
+                config.ReefCapRadiusMetres = Optional(reef, "reefCapRadiusMetres", 0f, missing, "reef.reefCapRadiusMetres");
+                config.ReefCapDepthMetres = Optional(reef, "reefCapDepthMetres", 0f, missing, "reef.reefCapDepthMetres");
+                config.ReefCapThicknessMetres = Optional(reef, "reefCapThicknessMetres", 0f, missing, "reef.reefCapThicknessMetres");
+                config.ReefStemRadiusMetres = Optional(reef, "reefStemRadiusMetres", 0f, missing, "reef.reefStemRadiusMetres");
+                config.ReefFadeMetres = Optional(reef, "reefFadeMetres", 0f, missing, "reef.reefFadeMetres");
+            }
+            else
+            {
+                missing.Add("reef (no reef, as every world before the reefs)");
+            }
+
             // The seams the box view stamps, and the rings the tank's does. One patch is what a
             // config written before the layout existed described.
             if (root.Has("patches"))

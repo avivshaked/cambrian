@@ -31,6 +31,12 @@ namespace Evosim.Theatre
         /// <summary>The shaped floor, or null on a flat bed and on a recording made before D092.</summary>
         BedShape Bed { get; }
 
+        /// <summary>
+        /// The mushroom reefs (logbook/specs/reef-spec.md), or null with no reef and on every
+        /// recording made before them.
+        /// </summary>
+        ReefGeometry Reefs { get; }
+
         /// <summary>How many bodies are standing in the world.</summary>
         int BodyCount { get; }
 

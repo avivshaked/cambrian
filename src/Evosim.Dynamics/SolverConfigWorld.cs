@@ -40,6 +40,14 @@ namespace Evosim.Dynamics
         public BedShape Bed;
 
         /// <summary>
+        /// The reefs' rock, or null — every recorded world. <c>logbook/specs/reef-spec.md</c> §2:
+        /// a static shape in the contacts (<see cref="ContactReef"/>), counted with the bed and the
+        /// glass, and a guard in <see cref="Divergence"/>. Carried by <see cref="FromWorld"/> from
+        /// <c>World.Reefs</c>, the one object every reader of the rock shares.
+        /// </summary>
+        public ReefGeometry Reefs;
+
+        /// <summary>
         /// The glass's axis, m. <b>Core's frame, and not a dial:</b> the tank's water is
         /// <c>[0, 2R)</c> on both horizontal axes and its axis stands at <c>(R, R)</c>.
         /// </summary>
@@ -155,6 +163,11 @@ namespace Evosim.Dynamics
 
             solver.TankRadiusMetres = radius;
             solver.Bed = bed != null && bed.HasRelief ? bed : null;
+
+            // Round 47's reefs, from the world that placed them; null without a world, which is
+            // the bench and the solver tests, and null in every world without reefs.
+            solver.Reefs = world?.Reefs;
+
 
             return solver;
         }

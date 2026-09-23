@@ -409,6 +409,9 @@ namespace Evosim.Theatre
         /// </remarks>
         public BedShape Bed => Eco?.World?.Bed;
 
+        /// <inheritdoc />
+        public ReefGeometry Reefs => Eco?.World?.Reefs;
+
         public int BodyCount => Eco?.World?.Living?.Count ?? 0;
 
         public Vector3 PositionOf(int index)

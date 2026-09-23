@@ -92,6 +92,13 @@ namespace Evosim.Farm
         public float BedShoreFade;
         public double BedShoalFraction;
 
+        /// <summary>
+        /// The reefs' axes as the seed placed them (logbook/specs/reef-spec.md §5: the round reads
+        /// the positions against the reefs' places), in the tank's frame, m. Empty with no reef.
+        /// </summary>
+        public double[] ReefX = Array.Empty<double>();
+        public double[] ReefZ = Array.Empty<double>();
+
         /// <summary>D102's ratio: the water the streams were built to, read off the built world.</summary>
         /// <remarks>
         /// 1 in a box and in every tank whose axes balance, which is every recording before the
@@ -369,6 +376,25 @@ namespace Evosim.Farm
             manifest.BedShoalFraction = bed.ShoalAreaFraction;
         }
 
+        /// <summary>
+        /// Records the reefs' axes from the built world — the seed's placement, which exists
+        /// nowhere else as numbers. Nothing with no reef.
+        /// </summary>
+        public static void RecordReefs(RunManifest manifest, ReefGeometry reefs)
+        {
+            if (manifest == null) throw new ArgumentNullException(nameof(manifest));
+            if (reefs == null || reefs.Count == 0) return;
+
+            manifest.ReefX = new double[reefs.Count];
+            manifest.ReefZ = new double[reefs.Count];
+
+            for (int i = 0; i < reefs.Count; i++)
+            {
+                manifest.ReefX[i] = reefs.CentreX(i);
+                manifest.ReefZ[i] = reefs.CentreZ(i);
+            }
+        }
+
         /// <summary>Writes <c>run.json</c> into the run directory: the first call, or the second.</summary>
         public static void Write(RunDirectory dir, RunManifest m, RunEnding ending)
         {
@@ -444,6 +470,15 @@ namespace Evosim.Farm
             w.Field("bedShore", m.BedShore);
             w.Field("bedShoreFade", m.BedShoreFade);
             w.Field("bedShoalFraction", m.BedShoalFraction);
+
+            // The reefs' axes (logbook/specs/reef-spec.md §5), appended; an empty list with no reef.
+            w.BeginArray("reefs");
+            for (int i = 0; i < m.ReefX.Length; i++)
+            {
+                w.BeginObject().Field("x", m.ReefX[i]).Field("z", m.ReefZ[i]).EndObject();
+            }
+            w.EndArray();
+
 
             // D102 — after the bed's seven, per the same append-only rule and in the place
             // EvolutionRun writes it. Derived from the world the launch produced rather than from

@@ -426,6 +426,9 @@ namespace Evosim.Theatre
 
         public BedShape Bed => Sim?.World?.Bed;
 
+        /// <inheritdoc />
+        public ReefGeometry Reefs => Sim?.World?.Reefs;
+
         public int BodyCount => Sim?.World?.Living?.Count ?? 0;
 
         public Vector3 PositionOf(int index)

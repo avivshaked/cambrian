@@ -80,6 +80,19 @@ namespace Evosim.Core
     /// columns are deepest, which is what makes a hollow a place detritus gathers in;
     /// <see cref="ColumnFloorAndFloorStock"/> is the reading that says so.
     /// </para>
+    /// <para>
+    /// <b>With reefs the mask gains a third condition, and a column may hold water in pieces</b>
+    /// — <c>logbook/specs/reef-spec.md</c> §2. A cell whose centre is inside a reef's rock
+    /// (<see cref="ReefGeometry.Inside"/>) is dead as a cell under the floor is, so a column
+    /// through a cap is water above the cap, rock, and water below it. Each column keeps its live
+    /// intervals (<see cref="LiveIntervalCount"/>, <see cref="LiveInterval"/>); settling and the
+    /// vertical mixing and transport faces stop at the lowest live cell of the interval the snow is
+    /// in, so snow above a cap lands on the cap's top and snow below it falls to the floor. The
+    /// floor readings (<see cref="LowestLiveLayer"/>, <see cref="ColumnFloorAndFloorStock"/>,
+    /// <see cref="RefugeStock"/>) read the lowest interval's floor cell, which is the floor. A
+    /// point in rock (a body resting on a cap, a corpse at the stem) is answered by the nearest
+    /// live cell of its own column (<see cref="InColumn"/>), never by the dead cell.
+    /// </para>
     /// </remarks>
     public sealed class GridField : IMatterField
     {
@@ -248,6 +261,12 @@ namespace Evosim.Core
         public BedShape Bed { get; }
 
         /// <summary>
+        /// The reefs whose rock the mask kills, or null — every recorded world.
+        /// <c>logbook/specs/reef-spec.md</c> §2.
+        /// </summary>
+        public ReefGeometry Reefs { get; }
+
+        /// <summary>
         /// Cells the mask calls live: the whole array in a box, the cells whose centres lie inside
         /// the circle in a tank, and of those the ones above the floor when there is a bed.
         /// </summary>
@@ -312,7 +331,7 @@ namespace Evosim.Core
             float worldArea, float sinkMetresPerSecond, float worldDepth,
             float refugeMetres, float refugeEdibleFraction, int patchCount, float cellMetres,
             int patchesAcross = 1, WorldShape shape = WorldShape.Box, float tankRadiusMetres = 0f,
-            BedShape bed = null)
+            BedShape bed = null, ReefGeometry reefs = null)
         {
             if (!(worldArea > 0f) || float.IsInfinity(worldArea))
                 throw new ArgumentOutOfRangeException(nameof(worldArea), worldArea, "Must be positive and finite.");
@@ -355,6 +374,14 @@ namespace Evosim.Core
                     "tank's disc and the box is periodic on both horizontal axes, where a floor " +
                     "would have to meet itself at two seams. logbook/specs/bed-spec.md.",
                     nameof(bed));
+            }
+
+            if (reefs != null && reefs.Count > 0 && shape != WorldShape.Tank)
+            {
+                throw new ArgumentException(
+                    "Reefs were handed to a box. A reef is the tank's rock, placed over the disc. " +
+                    "logbook/specs/reef-spec.md §3.",
+                    nameof(reefs));
             }
 
             if (bed != null && bed.HasRelief &&
@@ -520,8 +547,13 @@ namespace Evosim.Core
             }
 
             Bed = bed != null && bed.HasRelief ? bed : null;
+            Reefs = reefs != null && reefs.Count > 0 ? reefs : null;
 
-            if (shape != WorldShape.Tank) return;
+            if (shape != WorldShape.Tank)
+            {
+                BuildIntervals();
+                return;
+            }
 
             // The mask, built once — logbook/specs/tank-spec.md. A cell is live when its own
             // centre is inside the circle, which is the only test that cannot make a cell half
@@ -558,6 +590,17 @@ namespace Evosim.Core
                         if (!inside) continue;
                         if (-((iy + 0.5f) * cellMetres) <= floorY) continue;
 
+                        // The reefs' condition — logbook/specs/reef-spec.md §2: a cell whose centre
+                        // is in rock is rock, by the test the floor and the glass get and for their
+                        // reason. Read at the cell centre in doubles; never asked in a world
+                        // without reefs, so the mask above is the recorded one bit for bit.
+                        if (Reefs != null &&
+                            Reefs.Inside(
+                                (ix + 0.5d) * cellMetres, -((iy + 0.5d) * cellMetres), (iz + 0.5d) * cellMetres))
+                        {
+                            continue;
+                        }
+
                         _live[Index(ix, iy, iz)] = true;
                         live++;
                         lowest = iy;
@@ -585,6 +628,7 @@ namespace Evosim.Core
             }
 
             LiveCellCount = live;
+            BuildIntervals();
         }
 
         /// <summary>
@@ -594,9 +638,137 @@ namespace Evosim.Core
 
         // The lowest live layer of each column, −1 for a column with no water in it, and the
         // floor's height under each column, m. Both are the array's last layer and −depth
-        // everywhere until a bed says otherwise (D092).
+        // everywhere until a bed says otherwise (D092). With reefs a column may hold several live
+        // intervals, and this is still the lowest live layer of the lowest one — the cell that sits
+        // on the floor — so every floor reading that walks it reads the floor and not a cap's top.
         private readonly int[] _lowestLive;
         private readonly float[] _floorYOfColumn;
+
+        // Each column's live intervals, top down: _intervalFirst[c] to _intervalFirst[c + 1] − 1
+        // index _intervalTop and _intervalBottom (inclusive layers). One interval per live column in
+        // every world without reefs, which is every recorded world; built for every world so that a
+        // reader has one way to ask. logbook/specs/reef-spec.md §2.
+        private int[] _intervalFirst;
+        private int[] _intervalTop;
+        private int[] _intervalBottom;
+
+        // Whether any column holds more than one interval — whether a cell's lower neighbour can be
+        // rock above the floor. False in every world without reefs, where the vertical faces' tests
+        // are the ones every recorded run made.
+        private bool _splitColumns;
+
+        private void BuildIntervals()
+        {
+            int columns = _nx * _nz;
+            _intervalFirst = new int[columns + 1];
+            var tops = new List<int>(columns);
+            var bottoms = new List<int>(columns);
+
+            for (int column = 0; column < columns; column++)
+            {
+                _intervalFirst[column] = tops.Count;
+
+                int ix = column / _nz;
+                int iz = column % _nz;
+                int top = -1;
+
+                for (int iy = 0; iy < _ny; iy++)
+                {
+                    bool water = _live == null || _live[Index(ix, iy, iz)];
+
+                    if (water && top < 0) top = iy;
+
+                    if (!water && top >= 0)
+                    {
+                        tops.Add(top);
+                        bottoms.Add(iy - 1);
+                        top = -1;
+                    }
+                }
+
+                if (top >= 0)
+                {
+                    tops.Add(top);
+                    bottoms.Add(_ny - 1);
+                }
+
+                int count = tops.Count - _intervalFirst[column];
+                if (count > 1) _splitColumns = true;
+
+                // The floor cell is the lowest interval's bottom, which is what _lowestLive says;
+                // checked rather than assumed, since the floor-stock readings read _lowestLive.
+                int bottom = count > 0 ? bottoms[bottoms.Count - 1] : -1;
+                if (_live != null && bottom != _lowestLive[column])
+                {
+                    throw new InvalidOperationException(
+                        FormattableString.Invariant(
+                            $"Column ({ix}, {iz}) ends its water at layer {bottom} and its floor reads {_lowestLive[column]}."));
+                }
+            }
+
+            _intervalFirst[columns] = tops.Count;
+            _intervalTop = tops.ToArray();
+            _intervalBottom = bottoms.ToArray();
+        }
+
+        /// <summary>
+        /// How many separate runs of water a column holds, top down: 1 in a live column with no reef
+        /// over it, 2 through a cap (water above, water below), 0 in a dead column.
+        /// <c>logbook/specs/reef-spec.md</c> §2.
+        /// </summary>
+        public int LiveIntervalCount(int ix, int iz)
+        {
+            int column = CheckedColumn(ix, iz);
+            return _intervalFirst[column + 1] - _intervalFirst[column];
+        }
+
+        /// <summary>
+        /// A column's <paramref name="interval"/>th run of water from the top, as its first and last
+        /// layers (inclusive). The last interval's bottom is <see cref="LowestLiveLayer"/>.
+        /// </summary>
+        public (int TopLayer, int BottomLayer) LiveInterval(int ix, int iz, int interval)
+        {
+            int column = CheckedColumn(ix, iz);
+            int first = _intervalFirst[column];
+            int count = _intervalFirst[column + 1] - first;
+
+            if (interval < 0 || interval >= count)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(interval), interval,
+                    FormattableString.Invariant($"Column ({ix}, {iz}) holds {count} interval(s) of water."));
+            }
+
+            return (_intervalTop[first + interval], _intervalBottom[first + interval]);
+        }
+
+        /// <summary>
+        /// The lowest live layer of the interval a cell is in — where snow in it comes to rest — or
+        /// −1 when the cell is not water. <c>logbook/specs/reef-spec.md</c> §2's settling rule.
+        /// </summary>
+        public int RestingLayer(int ix, int iy, int iz)
+        {
+            int column = CheckedColumn(ix, iz);
+
+            for (int k = _intervalFirst[column]; k < _intervalFirst[column + 1]; k++)
+            {
+                if (iy >= _intervalTop[k] && iy <= _intervalBottom[k]) return _intervalBottom[k];
+            }
+
+            return -1;
+        }
+
+        private int CheckedColumn(int ix, int iz)
+        {
+            if (ix < 0 || ix >= _nx || iz < 0 || iz >= _nz)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(ix), (ix, iz),
+                    FormattableString.Invariant($"This field is {_nx} by {_nz} columns."));
+            }
+
+            return ix * _nz + iz;
+        }
 
         /// <summary>
         /// The floor's height under a column, m — <c>−depth</c> on a flat bed and the bed's own
@@ -892,10 +1064,35 @@ namespace Evosim.Core
         /// </remarks>
         private int InColumn(int ix, int iz, int iy)
         {
-            int lowest = _lowestLive[ix * _nz + iz];
+            int column = ix * _nz + iz;
+            int lowest = _lowestLive[column];
             if (lowest < 0) return -1;
 
-            return Index(ix, iy < lowest ? iy : lowest, iz);
+            int layer = iy < lowest ? iy : lowest;
+            if (!_splitColumns || _live[Index(ix, layer, iz)]) return Index(ix, layer, iz);
+
+            // A point in a reef's rock — logbook/specs/reef-spec.md §2. The nearest water of the
+            // same column, the shallower on a tie: a body resting on a cap reads the cap's top cell
+            // and a deposit at the underside the cell under it, and nothing lands in a dead cell,
+            // for the reason the floor's clamp above gives.
+            int best = lowest;
+            int bestGap = int.MaxValue;
+
+            for (int k = _intervalFirst[column]; k < _intervalFirst[column + 1]; k++)
+            {
+                int top = _intervalTop[k];
+                int bottom = _intervalBottom[k];
+                int nearest = layer < top ? top : layer > bottom ? bottom : layer;
+                int gap = Math.Abs(nearest - layer);
+
+                if (gap < bestGap)
+                {
+                    bestGap = gap;
+                    best = nearest;
+                }
+            }
+
+            return Index(ix, best, iz);
         }
 
         /// <summary>
@@ -1671,6 +1868,9 @@ namespace Evosim.Core
             {
                 double[] stock = _stock, fluxY = _fluxY;
                 int[] lowest = _lowestLive;
+                bool[] live = _live;
+                bool split = _splitColumns;
+                int layerStride = _layerStride;
 
                 for (int iy = from; iy < to; iy++)
                 {
@@ -1690,7 +1890,10 @@ namespace Evosim.Core
                             // last passes it and the arithmetic is the one this line always ran —
                             // and with a bed it is what keeps spec item 9's rule: what reaches the
                             // lowest live cell of a column stays there, whichever layer that is.
-                            fluxY[cell] = hasBelow && iy < lowest[lowRow + iz]
+                            // With reefs (logbook/specs/reef-spec.md §2) the cell below must be
+                            // water too, so snow over a cap stops on the cap's top.
+                            fluxY[cell] = hasBelow && iy < lowest[lowRow + iz] &&
+                                          (!split || live[cell + layerStride])
                                 ? stock[cell] * fraction
                                 : 0d;
                         }
@@ -1984,6 +2187,7 @@ namespace Evosim.Core
                 double[] fluxX = _fluxX, fluxY = _fluxY, fluxZ = _fluxZ;
                 int[] lowest = _lowestLive;
                 bool wraps = Shape != WorldShape.Tank;
+                bool split = _splitColumns;
 
                 for (int iy = from; iy < to; iy++)
                 {
@@ -2040,7 +2244,8 @@ namespace Evosim.Core
                             // the column's own (D092). On a flat bed the second test is the
                             // first one's restatement, since a live column is water to the last
                             // layer.
-                            fluxY[cell] = hasBelow && iy < lowest[lowRow + iz]
+                            fluxY[cell] = hasBelow && iy < lowest[lowRow + iz] &&
+                                          (!split || live[below + iz])
                                 ? (stock[cell] - stock[below + iz]) * fraction
                                 : 0d;
                         }
@@ -3031,6 +3236,76 @@ namespace Evosim.Core
                 new EdgeTerms(bedZ, null, null, 0, 0));
         }
 
+        // The reefs' fade at every edge midpoint, as the float the potential is multiplied by —
+        // logbook/specs/reef-spec.md §2. Geometry and not state, so built once per rock; null in
+        // every world without reefs, where the edge loops read nothing from them.
+        private ReefGeometry _edgeFadesFor;
+        private float[] _edgeFadeX;
+        private float[] _edgeFadeY;
+        private float[] _edgeFadeZ;
+
+        /// <summary>
+        /// Builds the three edge families' reef fades for this water, or clears them for water
+        /// with no reefs. Only the hoisted edge paths read them: the direct path's
+        /// <see cref="CurrentField.PotentialAt(float, float, float, double)"/> applies the same
+        /// factor itself, at the same float coordinates, so the two paths are one product.
+        /// </summary>
+        private void EnsureEdgeFades(CurrentField current)
+        {
+            ReefGeometry reefs = current.Reefs;
+
+            if (reefs == null)
+            {
+                _edgeFadesFor = null;
+                _edgeFadeX = _edgeFadeY = _edgeFadeZ = null;
+                return;
+            }
+
+            if (ReferenceEquals(_edgeFadesFor, reefs)) return;
+
+            double h = CellMetres;
+            var fadeX = new float[_edgeX.Length];
+            var fadeY = new float[_edgeY.Length];
+            var fadeZ = new float[_edgeZ.Length];
+
+            for (int j = 0; j <= _ny; j++)
+            {
+                float y = -(float)(j * h);
+
+                for (int i = 0; i < _nx; i++)
+                {
+                    float x = (float)((i + 0.5) * h);
+                    int row = (j * _nx + i) * (_nz + 1);
+                    for (int k = 0; k <= _nz; k++) fadeX[row + k] = current.ReefFadeAt(x, y, (float)(k * h));
+                }
+
+                for (int i = 0; i <= _nx; i++)
+                {
+                    int row = (j * (_nx + 1) + i) * _nz;
+                    for (int k = 0; k < _nz; k++)
+                    {
+                        fadeZ[row + k] = current.ReefFadeAt((float)(i * h), y, (float)((k + 0.5) * h));
+                    }
+                }
+            }
+
+            for (int j = 0; j < _ny; j++)
+            {
+                float y = -(float)((j + 0.5) * h);
+
+                for (int i = 0; i <= _nx; i++)
+                {
+                    int row = (j * (_nx + 1) + i) * (_nz + 1);
+                    for (int k = 0; k <= _nz; k++) fadeY[row + k] = current.ReefFadeAt((float)(i * h), y, (float)(k * h));
+                }
+            }
+
+            _edgeFadeX = fadeX;
+            _edgeFadeY = fadeY;
+            _edgeFadeZ = fadeZ;
+            _edgeFadesFor = reefs;
+        }
+
         /// <summary>
         /// One edge lattice's precomputed terms: the floor's numbers at each <c>(x, z)</c> (D092),
         /// the streams' polar terms there and the depth phases (D105). A null
@@ -3080,6 +3355,8 @@ namespace Evosim.Core
             Array.Clear(_edgeX, _nx * _ny * (_nz + 1), _nx * (_nz + 1));
             Array.Clear(_edgeZ, (_nx + 1) * _nz * _ny, (_nx + 1) * _nz);
 
+            EnsureEdgeFades(current);
+
             current.PinInstant(seconds);
 
             try
@@ -3122,6 +3399,7 @@ namespace Evosim.Core
             // same bits as a constant read at every edge.
             double[] edgeX = _edgeX, edgeZ = _edgeZ;
             bool[] openX = _edgeOpenX, openZ = _edgeOpenZ;
+            float[] fadeX = _edgeFadeX, fadeZ = _edgeFadeZ;
             int depthBaseX = d * termsX.Stride, stepX = termsX.Step;
             int depthBaseZ = d * termsZ.Stride, stepZ = termsZ.Step;
 
@@ -3161,14 +3439,16 @@ namespace Evosim.Core
                     }
                     else if (bedX == null)
                     {
-                        value = current.PotentialAt(
-                            termsX.Columns[c], termsX.Depths[depthBaseX + c * stepX], seconds).X;
+                        Float3 p = current.PotentialAt(
+                            termsX.Columns[c], termsX.Depths[depthBaseX + c * stepX], seconds);
+                        value = fadeX == null ? p.X : (p * fadeX[row + k]).X;
                     }
                     else
                     {
-                        value = current.PotentialAt(
+                        Float3 p = current.PotentialAt(
                             termsX.Columns[c], bedX[c],
-                            termsX.Depths[depthBaseX + c * stepX], y, seconds).X;
+                            termsX.Depths[depthBaseX + c * stepX], y, seconds);
+                        value = fadeX == null ? p.X : (p * fadeX[row + k]).X;
                     }
 
                     edgeX[row + k] = value * h;
@@ -3210,14 +3490,16 @@ namespace Evosim.Core
                     }
                     else if (bedZ == null)
                     {
-                        value = current.PotentialAt(
-                            termsZ.Columns[c], termsZ.Depths[depthBaseZ + c * stepZ], seconds).Z;
+                        Float3 p = current.PotentialAt(
+                            termsZ.Columns[c], termsZ.Depths[depthBaseZ + c * stepZ], seconds);
+                        value = fadeZ == null ? p.Z : (p * fadeZ[row + k]).Z;
                     }
                     else
                     {
-                        value = current.PotentialAt(
+                        Float3 p = current.PotentialAt(
                             termsZ.Columns[c], bedZ[c],
-                            termsZ.Depths[depthBaseZ + c * stepZ], y, seconds).Z;
+                            termsZ.Depths[depthBaseZ + c * stepZ], y, seconds);
+                        value = fadeZ == null ? p.Z : (p * fadeZ[row + k]).Z;
                     }
 
                     edgeZ[row + k] = value * h;
@@ -3241,6 +3523,7 @@ namespace Evosim.Core
             // The plane's constants, lifted for HorizontalEdgePlane's reason.
             double[] edgeY = _edgeY;
             bool[] openY = _edgeOpenY;
+            float[] fadeY = _edgeFadeY;
             int depthBaseY = j * termsY.Stride, stepY = termsY.Step;
 
             for (int i = 0; i <= _nx; i++)
@@ -3276,15 +3559,18 @@ namespace Evosim.Core
                     }
                     else if (bedY == null)
                     {
-                        value = current.PotentialAt(
-                            termsY.Columns[c], termsY.Depths[depthBaseY + c * stepY], seconds).Y;
+                        Float3 p = current.PotentialAt(
+                            termsY.Columns[c], termsY.Depths[depthBaseY + c * stepY], seconds);
+                        value = fadeY == null ? p.Y : (p * fadeY[row + k]).Y;
                     }
                     else
                     {
-                        value = current.PotentialAt(
+                        Float3 p = current.PotentialAt(
                             termsY.Columns[c], bedY[c],
-                            termsY.Depths[depthBaseY + c * stepY], y, seconds).Y;
+                            termsY.Depths[depthBaseY + c * stepY], y, seconds);
+                        value = fadeY == null ? p.Y : (p * fadeY[row + k]).Y;
                     }
+
 
                     edgeY[row + k] = value * h;
                 }
@@ -3326,6 +3612,8 @@ namespace Evosim.Core
                 double[] edgeX = _edgeX, edgeY = _edgeY, edgeZ = _edgeZ;
                 double[] faceX = _faceX, faceY = _faceY, faceZ = _faceZ;
                 int[] lowest = _lowestLive;
+                bool split = _splitColumns;
+                int layerStride = _layerStride;
 
                 for (int iy = from; iy < to; iy++)
                 {
@@ -3408,7 +3696,8 @@ namespace Evosim.Core
                             // touch the dead cell and were left at zero by SampleEdges, so the
                             // circulation would come out zero anyway, which is what keeps the
                             // telescoping exact either way.
-                            faceY[cell] = wideY && iy < lowest[lowRow + iz]
+                            faceY[cell] = wideY && iy < lowest[lowRow + iz] &&
+                                          (!split || live[cell + layerStride])
                                 ? edgeZ[ezBelowEast + iz] +
                                   edgeX[exBelow + iz] -
                                   edgeZ[ezBelowWest + iz] -
@@ -3710,8 +3999,11 @@ namespace Evosim.Core
                             int lower = Index(ix, iy + 1, iz);
 
                             // A dead column is dead all the way down, so the vertical face needs
-                            // no mask of its own beyond this one.
+                            // no mask of its own beyond this one — until a reef puts rock between
+                            // two runs of water (logbook/specs/reef-spec.md §2).
                             if (_live != null && !_live[upper]) continue;
+                            if (_splitColumns && !_live[lower]) continue;
+
 
                             // Per cell rather than per column, for the x pass's reason.
                             double w = transport

@@ -461,6 +461,7 @@ namespace Evosim.Dynamics.Placement
 
             // D092. Read once for the whole draw: false for every recorded world.
             bool shaped = ShapedFloor;
+            bool reefs = Floor != null && Floor.HasReefs;
 
             for (int attempt = 0; attempt < AttemptBudget; attempt++)
             {
@@ -498,6 +499,10 @@ namespace Evosim.Dynamics.Placement
                     candidate = new Float3(candidate.X, placedY, candidate.Z);
                 }
 
+                // The reefs' rock (logbook/specs/reef-spec.md §2): refused as the glass refuses,
+                // or set on a cap's table. No branch in a world without reefs.
+                if (reefs && !ReefRule(ref candidate, ref placedY, radius)) { Rejections++; continue; }
+
                 if (!Free(candidate, radius)) { Rejections++; continue; }
 
                 Reserve(candidate, radius);
@@ -528,6 +533,7 @@ namespace Evosim.Dynamics.Placement
 
             // D092, as in TryReserveOffspring above and for the same reason.
             bool shaped = ShapedFloor;
+            bool reefs = Floor != null && Floor.HasReefs;
 
             Func<Phenotype, float, float, float> accept = FounderAcceptance;
             int budget = accept == null ? AttemptBudget : AttemptBudget * 8;
@@ -573,6 +579,9 @@ namespace Evosim.Dynamics.Placement
                     candidate = new Float3(candidate.X, placedY, candidate.Z);
                 }
 
+                // A founder over a cap lands on it; one in the rock is drawn again.
+                if (reefs && !ReefRule(ref candidate, ref placedY, radius)) { Rejections++; continue; }
+
                 if (!Free(candidate, radius)) { Rejections++; continue; }
 
                 Reserve(candidate, radius);
@@ -587,8 +596,27 @@ namespace Evosim.Dynamics.Placement
             return false;
         }
 
+        /// <summary>
+        /// <see cref="PlacementFloor.ClearOfReefs"/> on a candidate: false to refuse it, true with
+        /// the candidate and its height raised where a cap's table took it.
+        /// </summary>
+        private bool ReefRule(ref Float3 candidate, ref float placedY, float radius)
+        {
+            float y = candidate.Y;
+            if (!Floor.ClearOfReefs(candidate.X, ref y, candidate.Z, radius)) return false;
+
+            if (y != candidate.Y)
+            {
+                candidate = new Float3(candidate.X, y, candidate.Z);
+                placedY = y;
+            }
+
+            return true;
+        }
+
         private void Reserve(Float3 position, float radius)
         {
+
             _reserved = true;
             _reservation = new Occupant { Position = position, Radius = radius };
         }

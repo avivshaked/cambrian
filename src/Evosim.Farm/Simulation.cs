@@ -219,7 +219,7 @@ namespace Evosim.Farm
                 // The bed before anything is placed: the placer asks it how much clearance a body
                 // needs and the very first floor spawn has to get the answer. The shape is the
                 // world's own (D092), never rebuilt here.
-                Floor = new PlacementFloor(config.WorldDepthMetres, world.Bed);
+                Floor = new PlacementFloor(config.WorldDepthMetres, world.Bed, world.Reefs);
                 Volume.Floor = Floor;
             }
 
