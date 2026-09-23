@@ -266,11 +266,19 @@ world and smoke sections, L10a as a reading of the faded water, which at 8 m of 
 to 1.0 m/s beside a cap and fails the clause as first written, and the launch section).
 The crowd fixture `r47fixd-s4` is recorded (round 44's world, seed 4, 20,000 s), Dynamics
 reads 102 of 102 on it, and the regress against `r46fixc-s4` is identical in 149 fields at
-2,000 samples with the positions byte-equal at cover 0. **This commit is the
-pre-registration's record**: the tree is clean at it, the farm exe is rebuilt from it to
-`artifacts/Evosim.Farm/bin/Release-r47e`, and seeds 1 and 2 launch from it (five threads
-each, a 600-minute wall, checkpoints every 2,500 s), seed 3 when one ends; the launch's facts
-(the `configHash`, the header tokens, the manifest's `gitCommit`) go in the next commit. The commit
+2,000 samples with the positions byte-equal at cover 0. **Round 47 is launched** (2026-09-24 at 00:25 local from `50102ba`, the amended
+pre-registration, on a clean tree; the farm exe rebuilt from it to
+`artifacts/Evosim.Farm/bin/Release-r47e`): seeds 1 and 2, 30,000 s at dt 0.01, five threads
+each, a 600-minute wall, checkpoints every 2,500 s, `configHash 7a7f5d41d68ab01f`, both
+manifests naming the commit with `gitDirty` false and the `dynamicsHash` checked at launch
+(`c45b0d58…`). The header tokens read `reefs 15 cover 0.25 (0.251 got)` on seed 1 (the
+smoke's fifteen, 6.3 to 15.6 m) and `reefs 21 cover 0.25 (0.249 got)` on seed 2 (6.4 to
+14.8 m, fourteen of them under 9 m), `pool 0.1 of 4`, `trickle 1/30 s`, `founders in their
+food`, the shore at 1 m with a 15 m fade. Seed 3 launches when one ends (two arms at a
+time). The watch is a session cron running `watch-round.py r47 --read
+scripts/reads/r47-read.py --seeds 1,2,3` every half hour; frames are taken from the
+snapshots at the marks on worker 6, one at a time. The films of round 47 (the safari,
+`theatre-safari.ps1 r47-sN` with `guide.py`'s guide per seed) come after its end. The commit
 `b0048dd` is not pushed; nothing tonight is pushed yet. The safari cannot rehearse on round 46 on
 this build: its live mode reads the run's `config.json` through the strict reader, which
 refuses round 46's for the reef and pool tunables (the config rule), so the rehearsal runs
