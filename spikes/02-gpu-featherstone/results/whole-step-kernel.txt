@@ -1,0 +1,208 @@
+THE WHOLE BODY PHASE IN ONE KERNEL (fourth GPU spike, spike4/), 2026-09-23
+===========================================================================
+
+What was built
+--------------
+One ILGPU kernel, one thread a body, carrying DynamicsWorld.StepOne's body phase in the CPU's
+order (src/Evosim.Dynamics/DynamicsWorld.cs:151-188), transcribed line for line:
+
+  water pass     Water.Sample (no hold) -> CurrentField.VelocityAt / StreamsAt / StreamsSlopedUnit /
+                 MapAt / StreamsUnit and AccelerationAt / StreamsAccelerationAt /
+                 StreamsSlopedUnitWithGradient / StreamsUnitWithGradient / BedShape.HeightGradientAndHessian,
+                 read at a pinned instant whose cosines, sines, envelopes and rates the host uploads
+                 (186 numbers a step: the samplers' phase 2*pi*s/P and the acceleration's (2*pi/P)*s),
+                 50 steps a block. Taken at the start of the body's own thread, which is the CPU's
+                 separate pass because a body's water reads only that body.
+  senses         CreatureSenses.Sample (the third spike's transcription)
+  brain          Brain.Step (the third spike's transcription)
+  drive          EffectorDrive.Drive: the ten-sample window and cursor, the limiter branch, the pair
+                 torque, NoteDriveTorque
+  fluid          Fluid.Apply: panels, NoteDrag, the drag limiter branch, D090's Morison term,
+                 buoyancy and Restore
+  contacts       Contacts.Apply with the instrument (overlap ids, bed/glass flag), ContactBed.Push,
+                 ContactLaw; the push ADDED into Fext beside the drive and the fluid
+  joint torques  DynamicsWorld.JointTorques with NotePassiveTorque
+  solve          Aba.Seed / Inward / Outward (Outward parks q-dot-dot in tau, Settle reads it there),
+                 Integrate
+  kinematics     Kinematics.Poses, Kinematics.Velocities
+  settle         Creature.Settle: the four accumulators in double in both builds
+  trace          Creature.RecordTraceFrame for jointed bodies: a global ring, 3 frames x 16 links x 21
+  finiteness     Creature.IsFinite, Alive = false and MarkLost
+  sphere         Creature.RefreshContactSphere into the pending buffer
+
+The grid build (memset, mean, ranges, one-group scan, scatter) is the third spike's; the commit is a
+swap of two sphere buffers, and a dead body copies its committed sphere into the pending buffer so the
+swap is the CPU's copy. The census (CloseContactStep) and the digest row stay serial on the host,
+computed from the kernel's overlap lists and state.
+
+Not carried: D100's water hold (round 45 runs at 0; the host refuses a hold), the rolls and the box's
+transport field (the host refuses anything but the tank's streams with the vent off),
+EffectorDrive.AppliedTorque (a probe readout nothing reads), a resize's flag on the trace frame
+(nothing resizes inside a physics step; carried as 0).
+
+Ceiling: 16 links and 48 degrees of freedom a body, 256 contact candidates a body (local), 64 overlap
+ids a body (global, with a count that reports overflow); neuron stride = the crowd's largest brain
+(75 at round 45 seed 2). Local memory, declared a thread (every local array at the ceiling, registers
+and spills not counted): 28,572 bytes in double, 15,312 bytes in single.
+
+Files: spike4/step.template (kernel and runner), spike4/gen4.py (writes StepD.cs, Gpu.Spike4.Dbl, and
+StepF.cs, Gpu.Spike4.Sgl), spike4/StepHost.cs (flattening, the streams' instant, reflection reads),
+spike4/StepSpike.cs (the driver). Program.cs dispatches "wholestep". spike3/BrainSpike.cs: MakeField
+and ReadBirths made internal (no other change). No change to src/.
+
+The crowd and the inputs
+------------------------
+runs\r45-s2\2026-09-22-232754-e51997d5 at 30,000 s: 6,145 bodies rebuilt from the snapshot and
+poses.jsonl (Crowd3.Load), 280 jointed, links mean 3.09, max 16, dof max 12. The world: World(config,
+seed 2), so the real current (Transport in a Tank, speed 0.1 m/s, the streams over the sloped bed) and
+the real bed; the solver is SolverConfig.FromWorld(config, (double)0.01f, world.Bed, world) with the
+contact instrument and its events on, as Simulation.cs:194-201 builds it. The world clock is set to
+30,000 s and the step count to 3,000,000 through DynamicsWorld.ReadState.
+
+Unrecorded inputs, declared: a reserve (9000 s x hash), a contact flag a part (hash < 0.1) and a damage
+a part (hash < 0.05, then 1.2 x hash), all hashed from the id as the third spike hashes them; the
+brain's clock is the body's age from lineage.jsonl; the snow field is the recorded column sums spread
+evenly down each column. Velocities and joint rates are NOT synthetic: the bodies start at rest in
+their recorded poses and move under the real current, their own drive and buoyancy (root displacement
+over 1,000 steps: median 0.168 m, max 6.65 m).
+
+1. EXACTNESS: the double build on ILGPU's CPU device against DynamicsWorld.Step (16 threads)
+--------------------------------------------------------------------------------------------
+1,000 steps, compared to the bit after every step.
+
+  what                                                         values    mismatches
+  positions                                                57,030,000             0
+  rotations (quaternion)                                   76,040,000             0
+  rotation matrices                                       171,090,000             0
+  velocities                                               57,030,000             0
+  spins                                                    57,030,000             0
+  ball rotations                                           76,040,000             0
+  motion subspaces and cbias                              456,240,000             0
+  relative velocity, water, water acceleration            171,090,000             0
+  Fext                                                    114,060,000             0
+  base pose                                                43,015,000             0
+  joint angles q and rates qd                                 946,000             0
+  tau (the parked q-dot-dot) and the implicit term            946,000             0
+  drive signal (brain targets)                              6,338,000             0
+  drive window: history, sums, cursor, filled              17,493,000             0
+  limiter counts (drive, drag)                             12,290,000             0
+  settle sums (work, signed, dissipated, passive)          24,580,000             0
+  neuron buffers, memories, clocks                        110,203,000             0
+  trace ring, steps, times, flags, cursor, held            94,406,000             0
+  lost flags                                                6,145,000             0
+  committed spheres (after the swap) vs committed and
+    pending                                                98,320,000             0
+  the other sphere buffer vs the committed set the step
+    read                                                   49,160,000             0
+  overlap lists and bed/glass flags                        12,807,642             0
+  census counts (CloseContactStep's five)                       5,000             0
+  digest rows (the world's own digest.jsonl, every step)        1,000             0
+  digest, every NaN written as one pattern, both sides          1,000             0
+  TOTAL                                                 1,712,306,642             0
+
+  The digest was computed: DynamicsWorld.EnableDigest(dir, 1) wrote 1,000 rows and the host hashed the
+  kernel's state the same way (FNV-1a over id and 13 doubles a link); last 7d92a9ee3743c651.
+  The streams' instant as the host transcribes it, against the field's own pinned slots: 186 values,
+  0 mismatches. Occupancy: largest candidate list 97 (0 over 256), largest overlap list 5 (0 over 64),
+  0 grid entries dropped. 6,145 of 6,145 alive. Wall 303 s.
+
+  At the farm's dt neither limiter engages and no body is lost, so a second check exercised those
+  branches: dt 0.02 (both limiters engage above 0.0100001 s) with five jointed bodies poisoned (a NaN
+  in the root's spin), 300 steps:
+    every value, count, flag, list and census: 513,659,879 values, 0 mismatches apart from the NaN pairs below
+    the library's limiter counts at the end: drive 598, drag 13,405; 5 bodies lost, at the same step
+    5,100 values NaN on both sides with different bits (fff8... against 7ff8...), all in the 5 lost
+      bodies (0 in living bodies), in their spins and cbias
+    so the world's raw digest differs from the host's at all 300 steps (it hashes the lost bodies'
+      NaN bits), and the same digest with every NaN written as one pattern agrees at all 300.
+  The NaN difference is not a transcription difference: the source of every operation involved is
+  the same text (Vec3 and V3 are the same one-line operators, Kinematics.Velocities and the kernel's
+  Velocities the same order). BELIEVED, not proved: x64 propagates the first operand's NaN when both
+  are NaN, and the JIT is free to swap the operands of an addition, so which NaN survives depends on
+  the compiled code, not the source. Consequence for the port: a raw-bit digest is not an identity
+  check across two compilations once a body has gone non-finite; hash lost bodies' NaNs canonically,
+  or drop lost bodies from the digest.
+
+2. SINGLE PRECISION ON THE CARD (RTX 4090, SM_89, driver 13.1)
+---------------------------------------------------------------
+Same crowd and inputs; the grid's mean by the tree reduction; instants uploaded 50 steps a block.
+
+  identity across repeats, group 32:  at 100 steps bit-identical (9a38f64a22540c51), at 1,000 bit-identical (d19ed5f7cb9c70a5)
+  group 32 against group 64:          at 100 steps bit-identical, at 1,000 bit-identical
+  (the identity digest hashes every state buffer, both sphere sets' committed side, the drive window,
+  the neurons, the ledger, the trace ring, the counts and the overlap lists)
+
+  deviation from the CPU's double (6,145 bodies alive in both; none lost on either side)
+                              after 100 steps                    after 1,000 steps
+  link positions, m           max 6.73e-4  p99 2.76e-4           max 3.02e-1  p99 2.01e-3
+                              (median 4.82e-6)                   (median 2.90e-5)
+  joint angles, rad           max 1.95e-5  p99 8.56e-6           max 1.54e-4  p99 5.38e-5
+  drive targets, [-1, 1]      max 4.17e-7  p99 0                 max 4.54e-7  p99 0
+  (57,030 position values, 473 joint angles, 6,338 drive targets.) Inference: a single-precision
+  position at 80 m has an ulp of 7.6e-6 m, which is the median's scale; the 0.3 m maximum is one or a
+  few bodies whose paths parted, not measured further.
+
+3. PRICE (card single and double, group 32, 500 steps in blocks of 50, median of 3)
+-----------------------------------------------------------------------------------
+Tiling for 10,000 and 30,000: as the third spike tiles (Crowd3.Tile): the 3,945 bodies whose roots
+lie in the 118.35 m square inscribed in the recorded tank, repeated edge to edge, the N nearest the
+new axis kept, the glass moved to r = 106.37 m (10,000) and 185.45 m (30,000); the streams and the bed
+stay the recorded tank's, centred on the old axis.
+
+"All in" = grid kernels + body kernel + swap each step, the instants' upload once a block and the
+metabolic readback once a block (poses, the four ledger sums, the two limiter counts, lost flags,
+overlap ids and counts, bed flags, the committed spheres), wall clock.
+
+                                              N = 6,145     N = 10,000     N = 30,000
+  us per body-step
+  card single, all in                            0.276          0.190          0.106
+  card single, kernel time: grid                 0.0103         0.0133         0.0078
+  card single, kernel time: body kernel          0.258          0.172          0.0935
+  card single, host launch cost (6 launches)     0.0035         0.0043         0.0014
+  card double, all in                            4.147          2.790          1.381
+  card double, kernel time: body kernel          4.137          2.784          1.381
+  CPU DynamicsWorld.Step, 1 thread               7.393          7.766          8.201
+  CPU DynamicsWorld.Step, 16 threads             0.872          0.897          0.996
+
+  us per step
+  card single, all in                             1,696          1,897          3,190
+  card single, grid kernels                          63            133            234
+  card single, body kernel                        1,587          1,717          2,806
+  card single, host launch cost                      21             43             41
+  card double, all in                            25,482         27,897         41,441
+  CPU, 16 threads                                 5,361          8,975         29,880
+
+  per metabolic block of 50 steps (single; double in brackets)
+  instants up (37,200 B; 74,400 B)             18.1 us        22.5 us        14.9 us
+  readback (4.66 / 7.59 / 22.77 MB single;   1,088 us       1,656 us       3,727 us
+    7.45 / 12.13 / 36.39 MB double)          (1,103 us)     (1,598 us)     (5,842 us)
+
+  single, all in, against the CPU at 16 threads: 3.2x (6,145), 4.7x (10,000), 9.4x (30,000).
+  The body kernel costs about the same per step at 6,145 and 10,000 (1.59 and 1.72 ms): at these
+  counts the step is the slowest thread's latency, not the throughput.
+  Double on the card is slower than 16 CPU threads at every size.
+  CPU timing: 20 steps at 1 thread and 100 at 16, after 5 warm-up steps, on a fresh crowd each.
+
+4. OCCUPANCY
+------------
+  trace ring writes a step (single; double): 280 jointed bodies, 105,028 B (202,216 B) at 6,145;
+    523, 192,388 B (370,132 B) at 10,000; 1,795, 679,756 B (1,309,252 B) at 30,000
+    (links x 21 values + step, time and flag a frame, for every living jointed body with finite state)
+  candidate overflow (over 256): 0 in every run; largest list 97 (check), 96 (card), 85 / 85 / 88 (pace)
+  overlap overflow (over 64): 0 in every run; largest 5 (check), 3 (card), 3 / 3 / 4 (pace)
+  grid entries dropped (entry cap 64 x N): 0 in every run
+
+COMMANDS (from spikes\02-gpu-featherstone; the SDK is Unity's)
+---------------------------------------------------------------
+  python spike4\gen4.py
+  "C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe" build featherstone.csproj -c Release
+  out\bin\Release\net8.0\featherstone.exe wholestep --check-steps 1000 --no-card --no-time --tag check
+  out\bin\Release\net8.0\featherstone.exe wholestep --check-steps 300 --no-card --no-time --dt 0.02 --poison 5 --tag check-dt02-poison
+  out\bin\Release\net8.0\featherstone.exe wholestep --no-check --no-time --card-steps 1000 --tag card
+  out\bin\Release\net8.0\featherstone.exe wholestep --no-check --no-card --sizes 0 --time-steps 500 --repeats 3 --tag pace-6145
+  out\bin\Release\net8.0\featherstone.exe wholestep --no-check --no-card --sizes 10000 --time-steps 500 --repeats 3 --tag pace-10000
+  out\bin\Release\net8.0\featherstone.exe wholestep --no-check --no-card --sizes 30000 --time-steps 500 --repeats 3 --tag pace-30000
+
+Raw output: scratch\gpu-spike4\check-20260923-115523.txt, check-dt02-poison-20260923-114744.txt,
+card-20260923-114935.txt, pace-6145-20260923-115012.txt, pace-10000-20260923-115136.txt,
+pace-30000-20260923-115304.txt; the world's digest rows in scratch\gpu-spike4\digest-20260923-115523\.

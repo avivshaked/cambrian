@@ -53,6 +53,9 @@ namespace Gpu.Spike
             if (args.Length > 0 && args[0] == "contact") return Gpu.Spike3.ContactSpike.Run(args[1..]);
             if (args.Length > 0 && args[0] == "brain") return Gpu.Spike3.BrainSpike.Run(args[1..]);
 
+            // The fourth spike (spike4/): the whole body phase of a step as one kernel.
+            if (args.Length > 0 && args[0] == "wholestep") return Gpu.Spike4.StepSpike.Run(args[1..]);
+
             string run = DefaultRun;
             string snapshot = null;
             int genomeLimit = 2000;

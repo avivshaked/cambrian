@@ -155,7 +155,7 @@ namespace Gpu.Spike3
         /// The snow field as World builds it (World.cs:1080-1084), filled from the recorded column
         /// sums, each spread evenly down its column's live cells.
         /// </summary>
-        private static GridField MakeField(Crowd3 crowd, out string note)
+        internal static GridField MakeField(Crowd3 crowd, out string note)
         {
             RunConfig c = crowd.Config;
             int patchCount = Math.Max(1, (int)c.HorizontalPatches);
@@ -205,7 +205,7 @@ namespace Gpu.Spike3
             return field;
         }
 
-        private static Dictionary<long, double> ReadBirths(string run)
+        internal static Dictionary<long, double> ReadBirths(string run)
         {
             var births = new Dictionary<long, double>();
             foreach (string line in File.ReadLines(Path.Combine(run, "lineage.jsonl")))
