@@ -70,7 +70,9 @@ cost (the cost side is closed, the prize side is open; `mean m/s` reads the wate
 Throughput still binds: dt 0.02
 screens, 0.01 confirms (logbook/0052). Experiments are *arms*, launched with
 `scripts/run-arm.ps1` against worker copies `unity-w2`..`unity-w7` — never two processes on
-one worker, **three concurrent arms** (owner's ruling, 2026-09-17: five arms on this
+one worker, **two concurrent arms from round 47** (owner's ruling, 2026-09-23 evening, on
+the machine's heat: round 46's three farm arms at five threads each held the CPU near 80%
+for four hours; before it, three arms, the ruling of 2026-09-17: five arms on this
 machine deliver about 1.7x real time in total and three about 1.5x, so the fourth and
 fifth buy little and put every seed a day later and past its wall; `scripts/pace-survey.py`
 is the reading), five Unity processes at most with the owner's open Editor on `unity/`

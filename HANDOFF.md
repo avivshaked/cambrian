@@ -150,7 +150,8 @@ check. The trickle and the food rule are merged (`3f48f6f`, `founding-trickle-sp
 `StateVersion` 9, `Checkpoint.Version` 4), so **every rule of round 46 is on main**, and
 the full-build regress of the crowd fixture's world with every new tunable at its default
 (`r46allreg-s4`, `4467ad6`) is identical in 145 fields at 300 samples with the positions
-byte-equal and the lineage differing by the founder rows' `src` alone. **Round 46 is launched** (2026-09-23 at 15:22 local from `7bf9064`, the pre-registration
+byte-equal and the lineage differing by the founder rows' `src` alone. **Two arms at a time from round 47** (owner, 2026-09-23 evening, on the machine's heat
+under three farm arms for four hours; CLAUDE.md's arm rule). **Round 46 is launched** (2026-09-23 at 15:22 local from `7bf9064`, the pre-registration
 `logbook/0116-the-angle-the-price-the-second-founding.md`; three seeds, 30,000 s at dt
 0.01, five threads each, a 900-minute wall, `configHash 7300c71be3b6b453`; every header
 token checked). Before it: the fixtures re-recorded on the build (the r42 config from
