@@ -101,3 +101,18 @@ expected**: a link's sphere covers fewer cells, but there are 2.8 times as many 
 the contact phase is 1.9 times the recorded one (1.48 s against 0.79 s for 1,000 steps of
 1,000 bodies on one thread) and the whole body phase 19% more at 8 threads; read on the
 screen's `wallStep*` phases at the round's crowd.
+
+## 7. The price screen (`r46price-s1`, 2026-09-23 afternoon)
+
+The same screen as the support spec's section 8, and test 6 in part: 3,000 s at dt 0.02 of
+round 45's launcher with the switch on, both books closed at every row. `ovl/body` reads
+0.0001 to 0.005 over the run and `ovl held %` 88 to 100%. `ovl jnt %` swings between 0.4
+and 64% from window to window, which is a few pairs in a crowd of a thousand. The census
+note prints that the two models' counts do not compare, and they do not; the reading is that
+nothing sticks. The `killed` column read 0 at every row. No mouth in the crowd ate anyone in
+3,000 s, so the clause that a kill row names the touching part is not exercised here and
+stays owed to the round's read. The cost at this crowd cannot be separated. The solver's
+phases carry no contact phase of their own (`wallStepBodiesMs` 7.4%, `wallStepWaterMs`
+4.7%, the grid 1.8%, the commit 1.3%), and the world's step took 83% of the wall at 1,344
+bodies. Section 6's one-thread measurement, 1.9 times the recorded contact phase, is the
+cost reading until a full crowd's profile.

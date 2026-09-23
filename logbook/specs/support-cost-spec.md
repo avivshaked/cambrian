@@ -98,3 +98,17 @@ real distances the ledger's support equals the formula exactly. The support area
 before D099's cap and before D110's exposure; `supportWatts` and the row's `support` are
 unworn by senescence while the bill is worn; both are null at price 0 and `meanReach` is
 written at any price.
+
+## 8. The price screen (`r46price-s1`, 2026-09-23 afternoon)
+
+A 3,000 s dt 0.02 screen of round 45's launcher with the support at 0.1 W/m²/m² and contact
+per part, on the build that carried both and nothing later (`configHash 64f3b7cd808a741d`,
+under `scratch/r46-build/runs/`). Both books close at every row (`audit` 0.0000%, `mat
+resid` 0). The bill is small at a founding crowd and grows with it: `support W` reads 0.11 W
+over 33 founders and 1.65 W over 1,344 bodies at 3,000 s, about 1.2 mW a body, with `reach
+m` falling from 0.17 m at founding to 0.07 m as the crowd fills with small leaves. So at the
+round's opening the price is a rounding on a leaf's income, and it is the fan's price alone,
+which is what section 1 asked of it; whether it stops one is read on the round (K6), since
+no body in the screen reached past a metre. The wall was 4.9 minutes, 10.3 times real time,
+with the world's step at 83% (the 22,000 m² grid over a small crowd, as round 45's smokes
+read) and the solver at 16%.
