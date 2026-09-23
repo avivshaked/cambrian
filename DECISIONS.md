@@ -129,6 +129,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D107](#d107) | A body's size is bounded by the economy and not by a rule: the reach bound is rejected as a world rule and stays in the tree as an unset development guard; a support cost, each part paying for the load it puts on the chain to the root, is the next base round's proposal, with per-part contact beside it | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night |
 | [D108](#d108) | The tank is ten times larger from round 45 and the matter is not: 22,000 m² at 45 m with round 44's 1,500 units, the same crowd in ten times the water, the bed's wavelength held at 17.64 m; the farm out of Unity made the old size a habit rather than a constraint. The matter superseded by D109 the same night | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night, the size and the matter the owner's, the bed the agent's |
 | [D109](#d109) | Islands and deserts: the matter seeded by a noise map into the top of a tenth of the columns, founders planted in the islands, the matter grid stirred at the snow's 0.02 m²/s (it was a hard default of 2), and 15,000 units so the water is round 44's density once the islands have spread; a light shade map built and off, its physical form (a shelf reef) proposed | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night, step by step after five screens |
+| [D110](#d110) | Light by exposure: a part earns on, and shades with, its projected area onto the horizontal in its actual pose (a flat leaf twice the orientation average, an edge-on one about nothing, a random crowd unchanged), the hull's one-sided shadow as the cap, a tunable off by default; the one-part leaf's way to lie flat (a buoyancy offset) put for its own ruling | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 morning from the owner's observation of the pictures, with two conditions (the cost weighed, a way to affect the angle) |
 
 ---
 
@@ -5951,3 +5952,60 @@ ceiling is raised to 25,000 so it does not censor the reading. And the matter gr
 0.02 m²/s is a different world from rounds 32 to 44's at 2 m²/s in one respect that reads
 everywhere: a leaf's income is diffusion-limited at its cell, so `upt lim` is read as the
 crowd pressing on its cells' refill rather than on the tank's stock.
+
+### D110
+**Light by exposure: a part earns on, and shades with, its projected area in its actual pose** · 2026-09-23
+
+**Status:** ruled by the owner in conversation on the morning of 2026-09-23, from the owner's
+own observation of round 45's pictures ("some of the leaves are not parallel to the surface,
+but rather the opposite, almost perpendicular to it ... the amount of energy has to be derived
+from the exposure to the field, where angles would matter"), then "as I often do, I'll support
+your recommendations", with two conditions: the computational effort weighed, and a way for a
+body to affect its angle ("if there is none, then basically some plants just die because they
+are born in the wrong angle"). The one-part leaf's way, an offset of the centre of buoyancy, is
+a genome field and is put for its own ruling in `fable-propose-round-46.md`.
+
+**Decision.** From the next base round, with `RunConfig.LightByExposure` on, a part's lit area
+is its projected area onto the horizontal in the pose the solver holds at the metabolic step:
+for a box, the sum over its three face pairs of the face's area times the absolute cosine
+between its normal and the vertical; a sphere's is unchanged at every angle. The body's shadow
+with D099's cap on is its rest-pose hull's one-sided projection onto the horizontal in the same
+pose. Both sides of the light move together, as D099 required. The tunable is off by default,
+and off it adds no float to a recorded world's path; on, it is a new realisation of every seed
+and refuses every earlier config, as every tunable does. The build spec is
+`logbook/specs/light-exposure-spec.md`; the readout is the table's `expo` (1 for a random
+crowd, 2 for every leaf flat) with `scripts/reads/tilt.py`'s flat factor as its check from the
+poses.
+
+**Why.** A part's lit area has been a quarter of its surface since §5A.1, which is Cauchy's
+formula, the projected area averaged over every orientation. It is the right average for a
+crowd of random poses and the wrong number for any one body, and it was chosen when no body
+had a pose worth reading. Round 45's poses (`logbook/specs/r45-read/tilt.txt`) read most of an
+early crowd standing as it was born (seed 1 at 5,000 s: 90% at the birth rotation, 92% on
+edge; a genome whose thinnest dimension is x or z develops as a vertical sheet, and a
+neutrally buoyant uniform box has no righting moment) and the end near random (mean flat
+factor 0.44 to 0.73 against 0.50), with the leaves thinned from a thin-over-thick ratio of 0.5
+to 0.1. Selection found thinness, because the income reads surface; it could not find
+flatness, because the income did not read the angle. With the rule a random crowd's total
+income is unchanged, a flat leaf earns twice and an edge-on one about nothing, so orientation
+becomes a trait under selection and holding a pose becomes something a body is paid for,
+which is the first reason a joint has had in this world's record (round 42: a joint costs and
+earns nothing). The cost is three dot products a part and one a hull face once in fifty
+physics steps, microseconds a metabolic step by arithmetic, and the first screen's wall split
+is the measurement.
+
+**The ways to affect the angle**, which the ruling's second condition asked for. Three exist
+in the physics: a float part above a leaf part (the buoyancy cell's heritable priced lift,
+applied per link, so a body with gas above tissue rights itself, the kelp's way); rising or
+sinking, which turns a sheet broadside under the drag panels so a slightly buoyant leaf rises
+flat and lies flat at the surface (the duckweed's way); and a joint with the `OrientationUp`
+sense. The one-part uniform leaf has none, because its weight and buoyancy act at one point,
+and the proposed fourth is a heritable offset of a part's centre of buoyancy along its
+thinnest axis (air spaces on the upper face), Archimedes on a non-uniform body rather than a
+designed torque.
+
+**Rejected.** A sun angle: the light is straight down as `LightField`'s layers are, and the
+projection is onto the horizontal. A phototropic torque toward the light as a rule of its own:
+a designed force with nothing casting it, the objection D109 recorded against the shade map.
+A mean over the metabolic block instead of one sample: a projection a physics step for a
+crowd that has not been seen to tumble; re-asked if one is.

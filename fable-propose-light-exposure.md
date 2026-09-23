@@ -3,8 +3,8 @@
 *Fable, 2026-09-23, from the owner's observation on round 45's pictures ("some of the leaves are
 not parallel to the surface, but rather the opposite, almost perpendicular to it ... the
 amount of energy has to be derived from the exposure to the field, where angles would
-matter"). Not built. A world rule, so the owner's to rule on; absorbed into DECISIONS.md on
-ruling, then deleted.*
+matter"). Ruled and recorded as D110 on 2026-09-23; this file stays until the buoyancy offset (its
+second condition) is ruled in `fable-propose-round-46.md`, then it is deleted.*
 
 ## What the code does now
 
