@@ -80,7 +80,13 @@ namespace Evosim.Core
         /// reason. A part's distance from the root is not written: it is re-measured when the body
         /// is developed again, as its volume is.
         /// </remarks>
-        public const int StateVersion = 8;
+        /// <remarks>
+        /// 9 with the founding trickle (D115, 2026-09-23): the world carries the trickle's own
+        /// generator and its cumulative spawn count, and every queued lineage row carries its
+        /// founder source. A version-8 stream has none of the three, and a resumed trickle whose
+        /// stream restarted from its seed would draw the unbroken run's founders a second time.
+        /// </remarks>
+        public const int StateVersion = 9;
 
         /// <summary>
         /// Writes the whole of the world's own state.
@@ -148,12 +154,19 @@ namespace Evosim.Core
             w.Write(CorpsesEaten);
             w.Write(HealingJoules);
 
+            // D115's count, beside the floor's for the same reason the mouth's six are here.
+            w.Write(TrickleSpawns);
+
             // Where the sun stands. See LightField.RestoreDayFactor.
             w.Write(Field.DayFactor);
 
             // ---- the conception generator, which a Shuffled world draws from every step
 
             WriteRng(w, _conceptionRng);
+
+            // ---- the trickle's generator, which draws every step once the floor has closed
+
+            WriteRng(w, _trickleRng);
 
             // ---- the population
 
@@ -283,9 +296,12 @@ namespace Evosim.Core
             CorpsesEaten = r.ReadInt64();
             HealingJoules = r.ReadDouble();
 
+            TrickleSpawns = r.ReadInt64();
+
             Field.RestoreDayFactor(r.ReadSingle());
 
             ReadRng(r, _conceptionRng);
+            ReadRng(r, _trickleRng);
 
             StateIo.Tag(r, "LIVE");
             int living = r.ReadInt32();
@@ -592,6 +608,10 @@ namespace Evosim.Core
             w.Write(e.HasProtection);
             w.Write((int)e.Cause);
 
+            // D115, on every row: version 9 is the first to carry it, so there is no older
+            // layout to stay byte-compatible with.
+            w.Write((int)e.Source);
+
             // The kill's own five, appended and written only on a kill row — which is what lets
             // this stay version 4. A birth and a death are byte for byte what the mouth build
             // wrote, so every checkpoint on disk still restores; a version-4 stream can only carry
@@ -626,6 +646,7 @@ namespace Evosim.Core
             bool intake = r.ReadBoolean();
             bool protection = r.ReadBoolean();
             var cause = (DeathCause)r.ReadInt32();
+            var source = (FounderSource)r.ReadInt32();
 
             if (kind == LineageEventKind.Kill)
             {
@@ -644,7 +665,7 @@ namespace Evosim.Core
                 ? LineageEvent.Birth(
                     seconds, id, parentId, birthKind, generationDepth, speciesId,
                     absorptive, joint, photosynthetic, patch, birthFraction, adultScale,
-                    reserveMargin, indeterminateNodes, attack, intake, protection)
+                    reserveMargin, indeterminateNodes, attack, intake, protection, source)
                 : LineageEvent.Death(seconds, id, cause);
         }
 

@@ -84,6 +84,9 @@ namespace Evosim.Farm
         private long _lastCorpsesEaten;
         private double _lastHealingJoules;
 
+        // D115's window, on the same rule.
+        private long _lastTrickleSpawns;
+
         private readonly List<AbsorptiveSample> _absorptiveRows = new List<AbsorptiveSample>();
 
         private long[] _positionIds = Array.Empty<long>();
@@ -150,6 +153,8 @@ namespace Evosim.Farm
             w.Write(_lastBodiesEaten);
             w.Write(_lastCorpsesEaten);
             w.Write(_lastHealingJoules);
+
+            w.Write(_lastTrickleSpawns);
         }
 
         /// <summary>Puts the sampler back.</summary>
@@ -192,6 +197,8 @@ namespace Evosim.Farm
             _lastBodiesEaten = r.ReadInt64();
             _lastCorpsesEaten = r.ReadInt64();
             _lastHealingJoules = r.ReadDouble();
+
+            _lastTrickleSpawns = r.ReadInt64();
         }
 
         /// <summary>
@@ -810,6 +817,11 @@ namespace Evosim.Farm
                 if (double.IsNaN(meanReach)) w.Field("meanReach", (string)null);
                 else w.Field("meanReach", meanReach);
 
+                // D115. The running total and the window, beside nothing because the stats row is
+                // read by name; 0 in every world with the trickle off.
+                w.Field("trickleSpawns", world.TrickleSpawns)
+                    .Field("trickleSpawnsWindow", world.TrickleSpawns - _lastTrickleSpawns);
+
                 long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
                 for (int p = 0; p < harnessPhaseMs.Length; p++)
@@ -1009,6 +1021,9 @@ namespace Evosim.Farm
                 // D113's two, after it.
                 double.IsNaN(supportTotal) ? "—" : supportTotal.ToString("0.###", c),
                 double.IsNaN(meanReach) ? "—" : meanReach.ToString("0.###", c),
+
+                // D115, the window's trickle founders, bold as `floor` is.
+                "**" + (world.TrickleSpawns - _lastTrickleSpawns).ToString(c) + "**",
             };
 
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));
@@ -1040,6 +1055,7 @@ namespace Evosim.Farm
             _lastBodiesEaten = world.BodiesEaten;
             _lastCorpsesEaten = world.CorpsesEaten;
             _lastHealingJoules = world.HealingJoules;
+            _lastTrickleSpawns = world.TrickleSpawns;
 
             if (row.Count != columns.Count)
             {

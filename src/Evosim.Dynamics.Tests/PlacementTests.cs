@@ -284,7 +284,7 @@ namespace Evosim.Dynamics.Tests
         {
             var planted = new PortVolume(Patches, 5f, DepthMetres, 9UL)
             {
-                FounderAcceptance = (x, z) => x < 4f ? 1f : 0f,
+                FounderAcceptance = (body, x, z) => x < 4f ? 1f : 0f,
             };
 
             Phenotype[] bodies = Bodies(12, 9UL);

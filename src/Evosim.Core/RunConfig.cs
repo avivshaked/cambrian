@@ -268,6 +268,55 @@ namespace Evosim.Core
         [Tunable("population", Unit = "s")]
         public float FloorClosesAfterSeconds { get; set; } = 0f;
 
+        /// <summary>
+        /// Founders a second the world keeps adding once the floor has closed — D115, the
+        /// founding trickle (<c>logbook/specs/founding-trickle-spec.md</c> §1). 0, the default, is
+        /// off and is every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Immigration, not rescue.</b> Each metabolic step after
+        /// <see cref="FloorClosesAfterSeconds"/> the world draws a Poisson count of mean
+        /// <c>rate · dt</c> on a stream of its own and spawns each founder exactly as the floor
+        /// spawns one: the same genome lottery, the same placer, the same purse, the same influx
+        /// booking (D098's leg 9). It adds at its rate whatever the count, so it does not top up a
+        /// crash the way the floor did; a world that empties under it is refounded at the
+        /// trickle's pace and the record shows the crash. Round 46 runs one per 30 s, about a
+        /// thousand founders a 30,000 s run and a few percent of the births.
+        /// </para>
+        /// <para>
+        /// <b>Only after the floor closes.</b> A world whose floor never closes
+        /// (<see cref="FloorClosesAfterSeconds"/> 0) would never run the trickle, so the world
+        /// refuses a rate above 0 there rather than print a trickle in the header that never
+        /// adds anyone; it also refuses one with <see cref="FloorSpawnsPerStep"/> 0, because the
+        /// spawn path is the floor's. The setter refuses a rate that would add more than one
+        /// founder a 0.5 s metabolic step on average: the trickle is a trickle.
+        /// </para>
+        /// </remarks>
+        [Tunable("population", Unit = "1/s")]
+        public float FoundingTricklePerSecond
+        {
+            get => _foundingTricklePerSecond;
+            set => _foundingTricklePerSecond =
+                value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value) &&
+                value * MetabolicStepForTheTrickle <= 1f
+                    ? value
+                    : throw new ArgumentOutOfRangeException(
+                        nameof(FoundingTricklePerSecond), value,
+                        "A founding trickle is finite, not negative, and adds at most one founder " +
+                        "a 0.5 s metabolic step on average (rate · dt ≤ 1, so at most 2 a second); " +
+                        "0 is off.");
+        }
+
+        private float _foundingTricklePerSecond;
+
+        /// <summary>
+        /// The metabolic step the trickle's bound is read against — the 0.5 s both engines step
+        /// the world at (<c>DividesTheMetabolicStep</c>'s constant, stated again rather than
+        /// shared because that one is local to its method).
+        /// </summary>
+        private const float MetabolicStepForTheTrickle = 0.5f;
+
         /// <summary>Joules a floor-spawned founder starts with.</summary>
         /// <remarks>
         /// The only energy in the design created from nothing besides sunlight, so it is counted
@@ -1143,6 +1192,24 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world")]
         public bool FoundersFollowMatter { get; set; }
+
+        /// <summary>
+        /// Whether a founder is placed where the food its own body eats is — D116
+        /// (<c>logbook/specs/founding-trickle-spec.md</c> §2). Off by default, which is every
+        /// recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="FoundersFollowMatter"/>'s lottery with the field chosen by the founder's
+        /// developed body: the snow's columns (<c>World.Nutrients</c>) for a body with an
+        /// absorptive part, the dissolved matter's (<c>World.Matter</c>) for one with a
+        /// photosynthetic part, the larger of the two shares for a body with both, and anywhere
+        /// for a body with neither. A field that holds nothing accepts everywhere, as D109's does.
+        /// Refused together with <see cref="FoundersFollowMatter"/> (one rule or the other) and
+        /// without a grid field, which is the only field with columns to read. A new draw of the
+        /// placer's stream on every refusal, so it is a new realisation of every seed when on.
+        /// </remarks>
+        [Tunable("world")]
+        public bool FoundersFollowFood { get; set; }
 
         /// <summary>
         /// How dark the darkest column is under the light's shade map, in [0, 1) — D109. 0 is no

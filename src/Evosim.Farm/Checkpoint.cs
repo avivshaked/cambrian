@@ -51,7 +51,12 @@ namespace Evosim.Farm
         /// baselines carry two more counters, so a version-2 payload would put the first mouth
         /// baseline where the split's second is read. Round 45's checkpoints are version 2.
         /// </remarks>
-        public const int Version = 3;
+        /// <remarks>
+        /// 4 with the founding trickle (D115, 2026-09-23, <c>World.StateVersion</c> 9): the row
+        /// carries the trickle's window baseline after the mouth's, and the world its generator,
+        /// its count and a founder source on every queued lineage row.
+        /// </remarks>
+        public const int Version = 4;
 
         /// <summary>Bytes before the header's own fields.</summary>
         public const int MagicBytes = 12;

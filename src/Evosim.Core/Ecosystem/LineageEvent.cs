@@ -19,6 +19,29 @@ namespace Evosim.Core
     }
 
     /// <summary>
+    /// Which of the two founder sources a <see cref="BirthKind.Floor"/> birth came from — D115,
+    /// <c>logbook/specs/founding-trickle-spec.md</c> §1.
+    /// </summary>
+    /// <remarks>
+    /// Beside <see cref="BirthKind"/> rather than a new kind, because a trickle founder is a
+    /// founder in every respect the record already reads by <c>k: "f"</c> (no parent, generation
+    /// 0, its matter booked as influx) and the scorers that gate on <c>"f"</c> should keep
+    /// reading it as one. What a read needs apart is which door it came through, and that is the
+    /// row's <c>src</c> field.
+    /// </remarks>
+    public enum FounderSource
+    {
+        /// <summary>Not a founder: a birth to a parent, an inoculant, a death or a kill.</summary>
+        None = 0,
+
+        /// <summary>The population floor, to <see cref="RunConfig.MinimumPopulation"/> until it closes.</summary>
+        Floor = 1,
+
+        /// <summary>The founding trickle, after the floor has closed.</summary>
+        Trickle = 2,
+    }
+
+    /// <summary>
     /// One birth or one death, queued by <see cref="World"/> for a harness to drain — the
     /// pre-round-8 instrument LITERATURE-REVIEW.md §9 item 9 asks for: per-creature birth/death
     /// rows to compute consumer generation time, boom-bust period and lineage persistence.
@@ -164,6 +187,12 @@ namespace Evosim.Core
         /// </summary>
         public bool HasProtection { get; }
 
+        /// <summary>
+        /// Birth only — for a founder, whether the floor or the trickle spawned it (D115);
+        /// <see cref="FounderSource.None"/> on every other row.
+        /// </summary>
+        public FounderSource Source { get; }
+
         /// <summary>Death only — why the creature left the population.</summary>
         public DeathCause Cause { get; }
 
@@ -210,8 +239,10 @@ namespace Evosim.Core
             bool hasAttack, bool hasIntake, bool hasProtection,
             DeathCause cause,
             long attackerId, bool rootLost, int partsLost,
-            double tissueJoulesLost, double reserveJoulesLost)
+            double tissueJoulesLost, double reserveJoulesLost,
+            FounderSource source = FounderSource.None)
         {
+            Source = source;
             AttackerId = attackerId;
             RootLost = rootLost;
             PartsLost = partsLost;
@@ -243,14 +274,15 @@ namespace Evosim.Core
             int generationDepth, uint speciesId, bool hasAbsorptive, bool hasJoint,
             bool hasPhotosynthetic, int patch, float birthFraction, float adultScale,
             float reserveMargin, int indeterminateNodes,
-            bool hasAttack, bool hasIntake, bool hasProtection) =>
+            bool hasAttack, bool hasIntake, bool hasProtection,
+            FounderSource source = FounderSource.None) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
                 birthFraction, adultScale, reserveMargin, indeterminateNodes,
                 hasAttack, hasIntake, hasProtection, default,
                 attackerId: -1, rootLost: false, partsLost: 0,
-                tissueJoulesLost: 0d, reserveJoulesLost: 0d);
+                tissueJoulesLost: 0d, reserveJoulesLost: 0d, source: source);
 
         public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
             new LineageEvent(
@@ -346,6 +378,14 @@ namespace Evosim.Core
                     .Field("atk", HasAttack ? 1 : 0)
                     .Field("ink", HasIntake ? 1 : 0)
                     .Field("prt", HasProtection ? 1 : 0);
+
+                // D115. On a founder's row only, and on every founder's row from this build, so
+                // a read separates the floor's founders from the trickle's without a config in
+                // hand; appended at the end for the reason the three above are.
+                if (Source != FounderSource.None)
+                {
+                    w.Field("src", Source == FounderSource.Trickle ? "trickle" : "floor");
+                }
             }
             else if (Kind == LineageEventKind.Kill)
             {

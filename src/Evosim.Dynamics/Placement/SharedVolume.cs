@@ -202,7 +202,7 @@ namespace Evosim.Dynamics.Placement
         /// most candidates are refused and a founder that fails the budget is a stillbirth the
         /// floor then draws again.
         /// </remarks>
-        public Func<float, float, float> FounderAcceptance { get; set; }
+        public Func<Phenotype, float, float, float> FounderAcceptance { get; set; }
 
         /// <summary>The spatial hash's cell side, metres: 2× the largest body, floored at 1.</summary>
         public float CellMetres => _cellSize;
@@ -529,7 +529,7 @@ namespace Evosim.Dynamics.Placement
             // D092, as in TryReserveOffspring above and for the same reason.
             bool shaped = ShapedFloor;
 
-            Func<float, float, float> accept = FounderAcceptance;
+            Func<Phenotype, float, float, float> accept = FounderAcceptance;
             int budget = accept == null ? AttemptBudget : AttemptBudget * 8;
 
             for (int attempt = 0; attempt < budget; attempt++)
@@ -553,11 +553,12 @@ namespace Evosim.Dynamics.Placement
                         _rng.Range(0f, LengthMetres), y, _rng.Range(0f, WidthMetres));
                 }
 
-                // D109: planted where the matter is. Asked of the column before the floor and
-                // the crowd are, so a refused spot costs one draw and no reservation.
+                // D109: planted where the matter is; D116: where the body's own food is. Asked
+                // of the column before the floor and the crowd are, so a refused spot costs one
+                // draw and no reservation.
                 if (accept != null)
                 {
-                    float p = accept(candidate.X, candidate.Z);
+                    float p = accept(body, candidate.X, candidate.Z);
                     if (!(p > 0f) || _rng.NextFloat() >= p) { DesertRefusals++; continue; }
                 }
 

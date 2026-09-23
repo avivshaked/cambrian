@@ -184,7 +184,10 @@ namespace Evosim.Farm
                     ? "islands " + s.MatterIslands.ToString("0.#", Inv) + " m cover " + s.MatterIslandCover.ToString("0.###", Inv) +
                       (s.MatterIslandDepth > 0f ? " to " + s.MatterIslandDepth.ToString("0.#", Inv) + " m" : " to bed")
                     : "uniform") +
-                " · founders " + (s.FoundersFollowMatter ? "in matter" : "anywhere") +
+                // D116 takes the token's own slot: one founder rule or the other, never both.
+                " · founders " + (s.FoundersFollowMatter
+                    ? "in matter"
+                    : s.FoundersFollowFood ? "in their food" : "anywhere") +
                 " · shade " + (s.LightShade > 0f
                     ? s.LightShade.ToString("0.##", Inv) + " drift " + s.LightShadeDrift.ToString("0.#", Inv) + " m/h"
                     : "off") +
@@ -242,6 +245,10 @@ namespace Evosim.Farm
                 " dispersal=" + F(s.OffspringDispersal) + " m" +
                 " · surface restore " + F(s.SurfaceRestore) +
                 (s.FloorCloses > 0f ? " · floor closes " + F(s.FloorCloses) + " s" : " · floor open") +
+
+                // D115, beside the floor it follows, and rendered off as well as on so a reader
+                // never has to ask whether a missing token means off or an older build.
+                " · trickle " + TrickleToken(s.Trickle) +
                 " · ceiling " + F(s.MaxPopulation) +
                 " maxTissue=" + s.MaxTissue.ToString("0.#", Inv) +
                 " · senescence " + (s.Senescence > 0f ? F(s.Senescence) + " s" : "off") +
@@ -352,6 +359,29 @@ namespace Evosim.Farm
             return
                 "shared " + layout + " m, depth " + F(config.WorldDepthMetres) + ", wrap, " +
                 (space.HasFloor ? "bed" : "no bed");
+        }
+
+        /// <summary>
+        /// D115's rate as the header prints it: <c>off</c> at 0, <c>1/N s</c> when the rate is
+        /// one every whole N seconds, and a number per second otherwise (<c>0.05/s</c>).
+        /// </summary>
+        /// <remarks>
+        /// The reciprocal is recognised to a part in ten thousand, because <c>1/30</c> reaches the
+        /// config as the float nearest a third of a tenth and its reciprocal is 29.999998, not 30.
+        /// </remarks>
+        public static string TrickleToken(float rate)
+        {
+            if (!(rate > 0f)) return "off";
+
+            double every = 1d / rate;
+            double whole = Math.Round(every);
+
+            if (whole >= 1d && Math.Abs(every - whole) <= 1e-4d * whole)
+            {
+                return "1/" + whole.ToString("0", Inv) + " s";
+            }
+
+            return rate.ToString("0.######", Inv) + "/s";
         }
 
         /// <summary>
@@ -663,6 +693,12 @@ namespace Evosim.Farm
             // price at 0, and the area-weighted mean distance of a part from its root, the reach
             // the price bounds, read at any price.
             "support W", "reach m",
+
+            // D115, the founding trickle: the window's trickle founders, every attempt counted as
+            // `floor` counts the floor's. The spec places it beside `floor`; it is appended here
+            // instead, because nothing already written ever moves and `analyse-arm.ps1` reads by
+            // name, so a reader asking for both gets them side by side all the same.
+            "**trickle**",
         };
     }
 

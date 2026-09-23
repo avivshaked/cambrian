@@ -78,16 +78,26 @@ namespace Evosim.Core
         bool TryReserveFounder(Phenotype adult, ref float heightY, out int patch);
 
         /// <summary>
-        /// D109's founder rule: the probability, in [0, 1], that a founder's candidate spot at
-        /// (x, z) is accepted, or null to accept every spot as before. A placer that does not
-        /// place by x and z ignores it, which is what this default does.
+        /// D109's founder rule and D116's: the probability, in [0, 1], that a founder's candidate
+        /// spot at (x, z) is accepted for the developed adult body given, or null to accept every
+        /// spot as before. A placer that does not place by x and z ignores it, which is what this
+        /// default does.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// A default interface member (C# 8, which netstandard2.1 and Unity 6 both carry) so
         /// that the tiled placer and every test fake are unchanged: only a placer that draws a
         /// spot in a shared volume can ask the question, and <c>SharedVolume</c> answers it.
+        /// </para>
+        /// <para>
+        /// <b>The body is an argument since D116</b> (<c>logbook/specs/founding-trickle-spec.md</c>
+        /// §2), because the field a founder is planted by is the one its body eats. The placer
+        /// passes the same adult it was handed in <see cref="TryReserveFounder"/>. D109's rule
+        /// ignores it, so a world under that rule asks the same question with the same answer
+        /// and draws the placer's stream exactly as it did.
+        /// </para>
         /// </remarks>
-        Func<float, float, float> FounderAcceptance { get => null; set { } }
+        Func<Phenotype, float, float, float> FounderAcceptance { get => null; set { } }
 
         /// <summary>
         /// The patch a living creature's body is actually in — D077's "a patch is a region".
