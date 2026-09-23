@@ -192,6 +192,13 @@ namespace Evosim.Core
         public const ulong TrickleIndex = ulong.MaxValue - 8UL;
 
         /// <summary>
+        /// The seed slot of round 47's reef placement (<c>logbook/specs/reef-spec.md</c> §1). Its
+        /// own, and drawn from only by a world with reefs, so no stream a recorded world draws from
+        /// moves; a reef's place is the seed's and nothing else's, as the bed's is.
+        /// </summary>
+        public const ulong ReefPlacementIndex = ulong.MaxValue - 9UL;
+
+        /// <summary>
         /// The stream behind <see cref="ConceptionOrder.Shuffled"/> — D072. Constructed for every
         /// world and drawn from by none but a shuffled one.
         /// </summary>
@@ -436,6 +443,18 @@ namespace Evosim.Core
         /// <see cref="BedShapeIndex"/>, so the floor is the seed's and nothing else's.
         /// </remarks>
         public BedShape Bed { get; }
+
+        /// <summary>
+        /// The mushroom reefs, or null — every recorded world. <c>logbook/specs/reef-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// Built once, here, after the bed and from <see cref="ReefPlacementIndex"/>, and handed to
+        /// every reader of the rock: both grids' masks, the light, the streams, and (through
+        /// <c>SolverConfig</c> and the placer) the contacts, the divergence guard and the placement.
+        /// One object, for the bed's reason: two rocks built from one seed by two constructors would
+        /// be a body standing in stone or water flowing through it.
+        /// </remarks>
+        public ReefGeometry Reefs { get; }
 
         /// <summary>Dead matter in the water, and what feeds on it — §5A.2c.</summary>
         public IMatterField Nutrients { get; }
@@ -1084,6 +1103,15 @@ namespace Evosim.Core
                     config.BedShoreDepthMetres, config.BedShoreFadeMetres)
                 : null;
 
+            // Round 47's reefs (logbook/specs/reef-spec.md). Refused in full — a reef in a box, a
+            // cap through the surface, a fade the tank cannot space — before a single draw, and
+            // placed from their own stream only when there are any: at ReefCount 0 this is one
+            // refusal pass over six zeros and a null.
+            ReefGeometry.Refuse(config, TankRadiusMetres);
+            Reefs = config.ReefCount > 0
+                ? ReefGeometry.Place(config, TankRadiusMetres, Bed, Rng.SeedFor(seed, ReefPlacementIndex))
+                : null;
+
             // D111. A negative price is a part paid to float off its centre, which is a free
             // energy source; a non-finite one is an arithmetic hole in every bill.
             if (float.IsNaN(config.BuoyancyOffsetWattsPerCubicMetre) ||
@@ -1115,6 +1143,10 @@ namespace Evosim.Core
             Field = new LightField(
                 Light, config.WorldAreaSquareMetres, config.LightLayerMetres,
                 patchCount, config.PerPatchShading > 0f);
+
+            // The caps' shadow, on the column each covers (LightField.Reefs' remarks for why not
+            // through the pooled canopy). Null, and untouched, in every recorded world.
+            Field.Reefs = Reefs;
 
             if (config.FieldModel == MatterField.Vertices)
             {
@@ -1185,7 +1217,7 @@ namespace Evosim.Core
                     config.WorldAreaSquareMetres, config.NutrientSinkMetresPerSecond,
                     config.WorldDepthMetres, config.FloorRefugeMetres, config.RefugeEdibleFraction,
                     patchCount, config.FieldCellMetres, patchesAcross,
-                    config.WorldShape, TankRadiusMetres, Bed);
+                    config.WorldShape, TankRadiusMetres, Bed, Reefs);
 
                 // Its own, coarser cell: matter is drawn in whole conceptions rather than grazed,
                 // and a metre of water cannot afford a child (RunConfig.FieldMatterCellMetres).
@@ -1194,7 +1226,7 @@ namespace Evosim.Core
                 Matter = new GridField(
                     config.WorldAreaSquareMetres, config.MatterSinkMetresPerSecond,
                     config.WorldDepthMetres, 0f, 0f, patchCount, config.FieldMatterCellMetres,
-                    patchesAcross, config.WorldShape, TankRadiusMetres, Bed);
+                    patchesAcross, config.WorldShape, TankRadiusMetres, Bed, Reefs);
             }
             else
             {
@@ -1357,6 +1389,10 @@ namespace Evosim.Core
                 Nutrients.PatchWidthMetres, patchCount, config.WorldDepthMetres,
                 Rng.SeedFor(seed, CurrentFieldIndex), patchesAcross,
                 config.WorldShape, TankRadiusMetres, Bed);
+
+            // The reefs' fade on the streams (logbook/specs/reef-spec.md §2), after SetBox, which
+            // clears it: a current handed to a second world must not keep the first world's rock.
+            config.Current?.SetReefs(Reefs);
 
             Seed = seed;
 

@@ -235,6 +235,15 @@ namespace Evosim.Farm
             // which does not name them runs the floor it always ran.
             Num("EVOSIM_BED_SHORE", D.BedShoreDepthMetres, (s, v) => s.BedShore = v),
             Num("EVOSIM_BED_SHORE_FADE", D.BedShoreFadeMetres, (s, v) => s.BedShoreFade = v),
+
+            // The mushroom reefs (logbook/specs/reef-spec.md §1), all off by default so that a
+            // launcher which does not name them runs the tank it always ran.
+            Int("EVOSIM_REEF_COUNT", D.ReefCount, (s, v) => s.ReefCount = v),
+            Num("EVOSIM_REEF_CAP_RADIUS", D.ReefCapRadiusMetres, (s, v) => s.ReefCapRadius = v),
+            Num("EVOSIM_REEF_CAP_DEPTH", D.ReefCapDepthMetres, (s, v) => s.ReefCapDepth = v),
+            Num("EVOSIM_REEF_CAP_THICKNESS", D.ReefCapThicknessMetres, (s, v) => s.ReefCapThickness = v),
+            Num("EVOSIM_REEF_STEM_RADIUS", D.ReefStemRadiusMetres, (s, v) => s.ReefStemRadius = v),
+            Num("EVOSIM_REEF_FADE", D.ReefFadeMetres, (s, v) => s.ReefFade = v),
             Num("EVOSIM_NEWBORN_RESERVE", D.NewbornReserveFraction, (s, v) => s.NewbornReserve = v),
             Num("EVOSIM_GROWTH_FLOOR", D.GrowthReserveFloor, (s, v) => s.GrowthFloor = v),
             Num("EVOSIM_MIN_NEWBORN_KG", D.MinNewbornPartKilograms, (s, v) => s.MinNewbornKg = v),
@@ -559,6 +568,13 @@ namespace Evosim.Farm
             config.BedScaleMetres = s.BedScale;
             config.BedShoreDepthMetres = s.BedShore;
             config.BedShoreFadeMetres = s.BedShoreFade;
+
+            config.ReefCount = s.ReefCount;
+            config.ReefCapRadiusMetres = s.ReefCapRadius;
+            config.ReefCapDepthMetres = s.ReefCapDepth;
+            config.ReefCapThicknessMetres = s.ReefCapThickness;
+            config.ReefStemRadiusMetres = s.ReefStemRadius;
+            config.ReefFadeMetres = s.ReefFade;
 
             config.NewbornReserveFraction = s.NewbornReserve;
             config.GrowthReserveFloor = s.GrowthFloor;
@@ -973,6 +989,13 @@ namespace Evosim.Farm
         public float BedScale;
         public float BedShore;
         public float BedShoreFade;
+        public int ReefCount;
+        public float ReefCapRadius;
+        public float ReefCapDepth;
+        public float ReefCapThickness;
+        public float ReefStemRadius;
+        public float ReefFade;
+
         public float NewbornReserve;
         public float GrowthFloor;
         public float MinNewbornKg;

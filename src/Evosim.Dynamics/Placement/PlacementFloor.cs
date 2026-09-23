@@ -54,14 +54,74 @@ namespace Evosim.Dynamics.Placement
         /// The world's height map — <c>World.Bed</c> — or null for the flat slab, which is every
         /// recorded world.
         /// </param>
-        public PlacementFloor(float depthMetres, BedShape bed = null)
+        public PlacementFloor(float depthMetres, BedShape bed = null, ReefGeometry reefs = null)
         {
             // SeaFloor.Build's own gate: `bed == null || !bed.HasRelief` goes to Flat, which
             // stores no bed at all. So HasRelief below reads false for a shape with no relief,
             // exactly as SeaFloor's does.
             _bed = bed != null && bed.HasRelief ? bed : null;
             _topY = -depthMetres;
+            _reefs = reefs != null && reefs.Count > 0 ? reefs : null;
         }
+
+        private readonly ReefGeometry _reefs;
+
+        /// <summary>
+        /// The reefs' rock the placer keeps bodies out of, or null — every recorded world.
+        /// <c>logbook/specs/reef-spec.md</c> §2.
+        /// </summary>
+        public ReefGeometry Reefs => _reefs;
+
+        /// <summary>Whether there is rock besides the bed to keep a body out of.</summary>
+        public bool HasReefs => _reefs != null;
+
+        /// <summary>
+        /// The reefs' rule for a candidate spot: true and the height unchanged when a sphere of
+        /// <paramref name="boundingRadius"/> there clears the rock by <see cref="ClearanceMetres"/>;
+        /// true and the height raised onto a cap's table when the spot is over a cap and in or
+        /// against its upper half; false otherwise — <c>logbook/specs/reef-spec.md</c> §2.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The floor's rule, extended with the rock's signed distance.</b> The floor raises a
+        /// body that would be in the sand; the rock refuses one that would be in the stone, as the
+        /// glass does, except over a cap, where "a founder over a cap lands on it": a spot in the
+        /// cap's upper half, or touching it from above, is set on the table at the cap's top plus
+        /// the radius and the clearance. A spot in the cap's lower half, against its underside or in
+        /// a stem is refused and drawn again; a spot on the island's table, which is the surface,
+        /// is refused because a body there would stand out of the water.
+        /// </para>
+        /// <para>
+        /// <b>No draw.</b> The rule reads the rock and nothing else, so it takes nothing from the
+        /// placer's stream; a refusal costs the candidate the draws it already took.
+        /// </para>
+        /// </remarks>
+        public bool ClearOfReefs(float x, ref float y, float z, float boundingRadius)
+        {
+            if (_reefs == null) return true;
+
+            double need = System.Math.Max(0f, boundingRadius) + ClearanceMetres;
+            double distance = _reefs.SignedDistance(x, y, z, out int reef, out _);
+            if (distance >= need) return true;
+
+            double dx = x - _reefs.CentreX(reef);
+            double dz = z - _reefs.CentreZ(reef);
+            double capRadius = _reefs.CapRadiusMetres;
+            double middle = 0.5d * (_reefs.CapTopY + _reefs.CapUndersideY);
+
+            if (dx * dx + dz * dz > capRadius * capRadius || !(y > middle)) return false;
+
+            float landed = (float)(_reefs.CapTopY + need);
+            if (landed + System.Math.Max(0f, boundingRadius) > 0f) return false;
+
+            // The rim is rounded, so a spot near it lands lower than the table's top would put it;
+            // the rock is asked again rather than trusted.
+            if (_reefs.SignedDistance(x, landed, z) < need - 1e-4) return false;
+
+            if (landed > y) y = landed;
+            return true;
+        }
+
 
         /// <summary>Whether this floor has a shape — <c>SeaFloor.HasRelief</c>.</summary>
         public bool HasRelief => _bed != null;

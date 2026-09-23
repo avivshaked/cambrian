@@ -356,6 +356,13 @@ namespace Evosim.Theatre
         private Material _glassMaterial;
         private GameObject _glass;
 
+        // The reefs (logbook/specs/reef-spec.md): one holder per reef, the meshes they share, and
+        // two uncarved copies of the bed's material.
+        private readonly List<GameObject> _reefs = new List<GameObject>();
+        private readonly List<Mesh> _reefMeshes = new List<Mesh>();
+        private Material _reefStemMaterial;
+        private Material _reefRockMaterial;
+
         /// <summary>The waterline's height, from the last box dressed; zero until then, as in every recording.</summary>
         private float _waterlineY;
 
@@ -694,7 +701,12 @@ namespace Evosim.Theatre
         /// The tank's radius when the world is one (D089), for the glass; zero for a box or a
         /// solo creature, which get no wall.
         /// </param>
-        public void Dress(Bounds box, BedShape bed = null, float tankRadius = 0f)
+        /// <param name="reefs">
+        /// The mushroom reefs of the world the frame belongs to (logbook/specs/reef-spec.md), or
+        /// null with none, which is every recording before them. Drawn from the same geometry the
+        /// grid's mask and the contacts read, so the rock in the picture is the rock in the run.
+        /// </param>
+        public void Dress(Bounds box, BedShape bed = null, float tankRadius = 0f, ReefGeometry reefs = null)
         {
             Undress();
             EnsureRoot();
@@ -713,6 +725,191 @@ namespace Evosim.Theatre
             BuildShafts(min, size);
             BuildSnow(min, size);
             if (tankRadius > 0f) BuildGlass(min, size, tankRadius);
+            if (reefs != null && reefs.Count > 0) BuildReefs(min, bed, reefs);
+        }
+
+        /// <summary>
+        /// The mushroom reefs (logbook/specs/reef-spec.md §2): each a stem of sand from under the
+        /// floor to the cap's mid-plane and a cap of rock, a flat disc with a rounded rim, the
+        /// same shape <see cref="ReefGeometry.SignedDistance(double, double, double)"/> gives the
+        /// mask and the contacts.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The bed's shader, uncarved.</b> Both take <c>TheatreBed.shader</c> at a carve of
+        /// zero: the carve moves vertices down in world y and tilts an upward normal, which on a
+        /// stem's wall or a cap's rim would pull the rock out of its own shape. The stem keeps the
+        /// sand's colours, the cap takes grey ones, so a picture tells the table from the floor.
+        /// </para>
+        /// <para>
+        /// <b>Not drawn: the fillet.</b> The rock's distance joins stem and cap with a smooth
+        /// minimum half a cap thick; the drawing is the two shapes meeting at a crease. The
+        /// difference is under a quarter of the cap's thickness and at the join only.
+        /// </para>
+        /// </remarks>
+        private void BuildReefs(Vector3 min, BedShape bed, ReefGeometry reefs)
+        {
+            if (_reefStemMaterial == null) _reefStemMaterial = MakeReefMaterial("Theatre Reef Stem", null, null);
+
+            if (_reefRockMaterial == null)
+            {
+                _reefRockMaterial = MakeReefMaterial(
+                    "Theatre Reef Rock",
+                    new Color(0.020f, 0.021f, 0.024f, 1f),
+                    new Color(0.105f, 0.108f, 0.115f, 1f));
+            }
+
+            if (_reefStemMaterial == null || _reefRockMaterial == null) return;
+
+            float capRadius = (float)reefs.CapRadiusMetres;
+            float thickness = (float)reefs.CapThicknessMetres;
+            float stemRadius = (float)reefs.StemRadiusMetres;
+            float middle = (float)(0.5d * (reefs.CapTopY + reefs.CapUndersideY));
+
+            Mesh cap = CapMesh(capRadius, thickness);
+            _reefMeshes.Add(cap);
+
+            for (int i = 0; i < reefs.Count; i++)
+            {
+                float x = (float)reefs.CentreX(i);
+                float z = (float)reefs.CentreZ(i);
+
+                var holder = new GameObject("Theatre Reef " + i) { hideFlags = HideFlags.DontSave };
+                holder.transform.SetParent(_root.transform, false);
+                holder.transform.position = new Vector3(x, middle, z);
+                _reefs.Add(holder);
+
+                AddPiece(holder, "Cap", cap, _reefRockMaterial);
+
+                if (stemRadius > 0f)
+                {
+                    // From a metre under the floor at the axis (or the box's floor, whichever is
+                    // deeper) to the cap's mid-plane, so no relief shows a gap at the foot.
+                    float floor = bed != null && bed.HasRelief ? (float)bed.FloorY(x, z) : min.y;
+                    float bottom = Mathf.Min(floor, min.y) - 1f - middle;
+
+                    Mesh stem = StemMesh(stemRadius, bottom);
+                    _reefMeshes.Add(stem);
+                    AddPiece(holder, "Stem", stem, _reefStemMaterial);
+                }
+            }
+        }
+
+        private static void AddPiece(GameObject holder, string name, Mesh mesh, Material material)
+        {
+            var piece = new GameObject(name) { hideFlags = HideFlags.DontSave };
+            piece.transform.SetParent(holder.transform, false);
+            piece.AddComponent<MeshFilter>().sharedMesh = mesh;
+
+            MeshRenderer renderer = piece.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+        }
+
+        /// <summary>
+        /// A cap about its own mid-plane: the flat top and bottom to the rim's start at
+        /// <c>r_c − t/2</c>, and a half circle of radius <c>t/2</c> round it, turned about the axis.
+        /// </summary>
+        private static Mesh CapMesh(float capRadius, float thickness)
+        {
+            float half = 0.5f * thickness;
+            float flat = Mathf.Max(0f, capRadius - half);
+            const int arc = 12;
+
+            // The profile from the top's centre, out and round the rim, to the bottom's centre.
+            var profile = new List<Vector2>();
+            var profileNormals = new List<Vector2>();
+
+            profile.Add(new Vector2(0f, half)); profileNormals.Add(new Vector2(0f, 1f));
+            profile.Add(new Vector2(flat, half)); profileNormals.Add(new Vector2(0f, 1f));
+
+            for (int k = 0; k <= arc; k++)
+            {
+                float angle = 0.5f * Mathf.PI - Mathf.PI * k / arc;
+                var n = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                profile.Add(new Vector2(flat, 0f) + half * n);
+                profileNormals.Add(n);
+            }
+
+            profile.Add(new Vector2(flat, -half)); profileNormals.Add(new Vector2(0f, -1f));
+            profile.Add(new Vector2(0f, -half)); profileNormals.Add(new Vector2(0f, -1f));
+
+            return Lathe("Theatre Reef Cap", profile, profileNormals, 96);
+        }
+
+        /// <summary>A stem's wall, open at both ends, from <paramref name="bottom"/> to zero in local y.</summary>
+        private static Mesh StemMesh(float radius, float bottom)
+        {
+            var profile = new List<Vector2> { new Vector2(radius, 0f), new Vector2(radius, bottom) };
+            var normals = new List<Vector2> { new Vector2(1f, 0f), new Vector2(1f, 0f) };
+            return Lathe("Theatre Reef Stem", profile, normals, 48);
+        }
+
+        /// <summary>
+        /// Turns a profile of (radius, height) points and their (radial, vertical) normals about the
+        /// y axis. Drawn two sided by the bed's shader, so the winding does not hide a face.
+        /// </summary>
+        private static Mesh Lathe(string name, List<Vector2> profile, List<Vector2> profileNormals, int segments)
+        {
+            int rows = profile.Count;
+            int stride = segments + 1;
+
+            var vertices = new Vector3[rows * stride];
+            var normals = new Vector3[vertices.Length];
+            var triangles = new List<int>((rows - 1) * segments * 6);
+
+            for (int s = 0; s <= segments; s++)
+            {
+                float angle = 2f * Mathf.PI * s / segments;
+                float c = Mathf.Cos(angle);
+                float si = Mathf.Sin(angle);
+
+                for (int r = 0; r < rows; r++)
+                {
+                    Vector2 p = profile[r];
+                    Vector2 n = profileNormals[r];
+                    vertices[r * stride + s] = new Vector3(p.x * c, p.y, p.x * si);
+                    normals[r * stride + s] = new Vector3(n.x * c, n.y, n.x * si).normalized;
+                }
+            }
+
+            for (int r = 0; r < rows - 1; r++)
+            {
+                for (int s = 0; s < segments; s++)
+                {
+                    int a = r * stride + s;
+                    int b = a + 1;
+                    int d = a + stride;
+                    int e = d + 1;
+
+                    triangles.Add(a); triangles.Add(b); triangles.Add(d);
+                    triangles.Add(b); triangles.Add(e); triangles.Add(d);
+                }
+            }
+
+            var mesh = new Mesh { name = name, hideFlags = HideFlags.DontSave };
+            mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        /// <summary>
+        /// The bed's shader at a carve of zero, in the sand's colours or in the two given.
+        /// </summary>
+        private Material MakeReefMaterial(string name, Color? shaded, Color? lit)
+        {
+            Material material = MakeBedMaterial();
+            if (material == null) return null;
+
+            material.name = name;
+            if (material.HasProperty("_BedCarveMetres")) material.SetFloat("_BedCarveMetres", 0f);
+            if (shaded.HasValue && material.HasProperty("_SandDark")) material.SetColor("_SandDark", shaded.Value);
+            if (lit.HasValue && material.HasProperty("_SandLight")) material.SetColor("_SandLight", lit.Value);
+            if (material.HasProperty("_CausticReach")) material.SetFloat("_CausticReach", Mathf.Clamp(SurfaceLightMetres, 1f, 60f));
+            return material;
         }
 
         /// <summary>
@@ -1369,6 +1566,12 @@ namespace Evosim.Theatre
                 Discard(_glass);
             }
             _glass = null;
+
+            foreach (GameObject reef in _reefs) Discard(reef);
+            _reefs.Clear();
+
+            foreach (Mesh mesh in _reefMeshes) Discard(mesh);
+            _reefMeshes.Clear();
         }
 
         /// <summary>
@@ -1393,6 +1596,8 @@ namespace Evosim.Theatre
             Discard(_shaftMaterial); _shaftMaterial = null;
             Discard(_backdropMaterial); _backdropMaterial = null;
             Discard(_glassMaterial); _glassMaterial = null;
+            Discard(_reefStemMaterial); _reefStemMaterial = null;
+            Discard(_reefRockMaterial); _reefRockMaterial = null;
 
             TheatreMeshes.Release();
 

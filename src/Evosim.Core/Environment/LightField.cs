@@ -449,8 +449,43 @@ namespace Evosim.Core
         {
             float irradiance = IrradianceAt(heightY, patch);
             Func<float, float, float> map = ColumnFactor;
-            return map == null ? irradiance : irradiance * map(x, z);
+            if (map != null) irradiance *= map(x, z);
+
+            // The reefs' caps (logbook/specs/reef-spec.md §2): a separate factor after the map and
+            // only when there are reefs, so a world without them is the expression above to the bit.
+            ReefGeometry reefs = Reefs;
+            return reefs == null ? irradiance : irradiance * reefs.LightTransmission(x, heightY, z);
         }
+
+        /// <summary>
+        /// The reefs whose caps shade the water under them, or null — every recorded world.
+        /// <c>logbook/specs/reef-spec.md</c> §2.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Per column, because the pooled canopy has no columns.</b> The spec asks that a cap
+        /// contribute its disc once at world start, through <see cref="Contribute(float, float, int)"/>
+        /// as a body's silhouette is. That is the arithmetic but not the place: a contribution is
+        /// pooled over the whole layer (or patch), so it would dim every body below the cap's depth
+        /// by the caps' share of the tank's area and leave the water under a cap no darker than the
+        /// water beside it. So the cap's shadow is the canopy's own interception,
+        /// <see cref="Transmitted"/>, read on the column the cap covers whole (a cover of 1), and it
+        /// is applied to the point's own column in <see cref="IrradianceAt(float, int, float, float)"/>:
+        /// under a cap a body receives <c>e⁻¹</c> of what it would beside it, and beside it the same.
+        /// The pooled demand is not touched, so a cap takes no light from anyone outside its shadow.
+        /// </para>
+        /// <para>
+        /// <b>Not a sense.</b> The light a body senses is read elsewhere and is not changed; the
+        /// spec forbids a change to the senses.
+        /// </para>
+        /// </remarks>
+        public ReefGeometry Reefs { get; set; }
+
+        /// <summary>
+        /// What passes a canopy of <paramref name="cover"/> (lit area over aperture): <c>e^−cover</c>,
+        /// computed through the same <see cref="InterceptedFraction"/> every layer's sharing uses.
+        /// </summary>
+        public static double Transmitted(double cover) => 1d - InterceptedFraction(cover);
 
         /// <summary>What fraction of the unshaded light reaches a depth, in (0, 1].</summary>
         /// <remarks>
