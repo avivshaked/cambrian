@@ -64,9 +64,10 @@ namespace Evosim.Dynamics
         /// that has not been refuses to answer, which is the failure the farm wants.
         /// </para>
         /// <para>
-        /// <b>It is sampled on one thread</b>, in <c>DynamicsWorld.SampleWater</c>. The field
-        /// memoises the instants a call touches, so it is not safe to share across the parallel
-        /// phase; <see cref="Water.Sample"/> says so at length.
+        /// <b>It is sampled under a pin</b>, in <c>DynamicsWorld.SampleWater</c>, and nowhere
+        /// else in a step. The field memoises the instants a call touches, so an unpinned sample
+        /// from the parallel phase would race on its slot table; <see cref="Water.Sample"/> says
+        /// so at length.
         /// </para>
         /// </remarks>
         public CurrentField Current;

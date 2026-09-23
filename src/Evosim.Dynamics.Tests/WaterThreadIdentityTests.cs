@@ -9,11 +9,17 @@ namespace Evosim.Dynamics.Tests
     /// package C adds that could have broken it.
     /// </summary>
     /// <remarks>
-    /// <b>The hazard is real and is the reason the sampling is serial.</b>
-    /// <see cref="CurrentField"/> memoises the three instants a call touches in mutable fields
-    /// of its own, so two threads asking it for water at once would race on one slot table.
-    /// <c>DynamicsWorld.SampleWater</c> therefore runs before the parallel phase, in creature
-    /// order, and this test is what says the arrangement holds.
+    /// <b>The hazard is real and is the reason the sampling is pinned.</b>
+    /// <see cref="CurrentField"/> memoises the instants a call touches, and a miss fills a slot,
+    /// so two threads asking it for water at new clocks would race on one slot table.
+    /// <c>DynamicsWorld.SampleWater</c> therefore pins the field at the step's clock, which
+    /// fills the slots and makes every lookup a read, and then samples across the world's
+    /// threads (it ran on one until 2026-09-23); this test is what says the arrangement holds.
+    /// The two cases are D100's half-second hold, under which the root samples the water once
+    /// a hold, and the per-link sampling every round from 43 runs, under which every link asks
+    /// the field for its velocity and its analytic acceleration on every step — the case in
+    /// which the acceleration's own phase, grouped differently from the sampler's, has to be
+    /// answered from a slot of its own.
     /// </remarks>
     public sealed class WaterThreadIdentityTests
     {
@@ -21,13 +27,16 @@ namespace Evosim.Dynamics.Tests
 
         public WaterThreadIdentityTests(ITestOutputHelper output) => _out = output;
 
-        [Fact]
-        public void TheThreadCountDoesNotChangeATrajectoryInMovingWater()
+        [Theory]
+        [InlineData(0.5)]
+        [InlineData(0.0)]
+        public void TheThreadCountDoesNotChangeATrajectoryInMovingWater(double waterHoldSeconds)
         {
-            ulong one = Run(1, out DynamicsWorld world);
-            ulong four = Run(4, out _);
-            ulong sixteen = Run(16, out _);
+            ulong one = Run(1, waterHoldSeconds, out DynamicsWorld world);
+            ulong four = Run(4, waterHoldSeconds, out _);
+            ulong sixteen = Run(16, waterHoldSeconds, out _);
 
+            _out.WriteLine($"hold {waterHoldSeconds} s");
             _out.WriteLine($"digest  1 thread  {one:x16}");
             _out.WriteLine($"digest  4 threads {four:x16}");
             _out.WriteLine($"digest 16 threads {sixteen:x16}");
@@ -71,9 +80,9 @@ namespace Evosim.Dynamics.Tests
         /// survivors. The contact spring is package E's; what this test is for is the water, and
         /// it is made on a population that is entirely alive at the end.
         /// </remarks>
-        private static ulong Run(int threads, out DynamicsWorld built)
+        private static ulong Run(int threads, double waterHoldSeconds, out DynamicsWorld built)
         {
-            SolverConfig config = R42Tank.Config(0.01, 0.5);
+            SolverConfig config = R42Tank.Config(0.01, waterHoldSeconds);
             config.CreatureContact = false;
 
             var world = new DynamicsWorld(config) { Threads = threads };

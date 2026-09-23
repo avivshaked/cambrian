@@ -557,30 +557,42 @@ namespace Evosim.Core
         // samples per part per step cost. One entry keyed on the exact point: the second call at
         // the same (x, z) reuses the first's numbers bit for bit, since the map is a pure function
         // of the point, and a first call pays the Hessian's three multiply-adds per mode so that
-        // the acceleration's call finds everything it needs. Not thread-safe; the harness samples
-        // on its main thread and a Core world is stepped on one (D078).
-        private double _bedX = double.NaN, _bedZ = double.NaN;
-        private double _bedH, _bedHx, _bedHz, _bedHxx, _bedHxz, _bedHzz;
+        // the acceleration's call finds everything it needs. The entry is a thread's own, keyed
+        // on the bed as well as the point, so that any number of threads may sample a pinned
+        // field at once (Evosim.Dynamics' water pass, 2026-09-23) and a second field on the same
+        // thread cannot read the first's floor. A hit and a miss return the same bits, the map
+        // being a pure function of the point, so which thread asked changes nothing.
+        [ThreadStatic] private static BedMemo _bedMemo;
+
+        private struct BedMemo
+        {
+            public BedShape Bed;
+            public double X, Z;
+            public double H, Hx, Hz, Hxx, Hxz, Hzz;
+        }
 
         private void BedSample(
             double x, double z,
             out double h, out double hx, out double hz,
             out double hxx, out double hxz, out double hzz)
         {
-            if (x != _bedX || z != _bedZ)
+            ref BedMemo memo = ref _bedMemo;
+
+            if (!ReferenceEquals(memo.Bed, _bed) || x != memo.X || z != memo.Z)
             {
                 _bed.HeightGradientAndHessian(
-                    x, z, out _bedH, out _bedHx, out _bedHz, out _bedHxx, out _bedHxz, out _bedHzz);
-                _bedX = x;
-                _bedZ = z;
+                    x, z, out memo.H, out memo.Hx, out memo.Hz, out memo.Hxx, out memo.Hxz, out memo.Hzz);
+                memo.Bed = _bed;
+                memo.X = x;
+                memo.Z = z;
             }
 
-            h = _bedH;
-            hx = _bedHx;
-            hz = _bedHz;
-            hxx = _bedHxx;
-            hxz = _bedHxz;
-            hzz = _bedHzz;
+            h = memo.H;
+            hx = memo.Hx;
+            hz = memo.Hz;
+            hxx = memo.Hxx;
+            hxz = memo.Hxz;
+            hzz = memo.Hzz;
         }
 
         /// <summary>
@@ -1086,7 +1098,7 @@ namespace Evosim.Core
             double cosTheta = r > 0d ? dx / r : 1d;
             double sinTheta = r > 0d ? dz / r : 0d;
 
-            EnsureInstant(t);
+            Instant instant = EnsureInstant(t);
 
             double phi = Math.PI * y / depth;
             double cosPhi = Math.Cos(phi);
@@ -1123,9 +1135,9 @@ namespace Evosim.Core
                         double profile = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
 
                         double amplitude =
-                            _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(k) * profile;
+                            _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(instant, k) * profile;
 
-                        double cosChi = cosM * _instantCos[k] - sinM * _instantSin[k];
+                        double cosChi = cosM * instant.Cos[k] - sinM * instant.Sin[k];
 
                         // Minus, for the left-handed frame — see the remarks.
                         ay -= amplitude * f * cosChi;
@@ -1149,7 +1161,7 @@ namespace Evosim.Core
                 {
                     int q = c + 1;
                     double amplitude =
-                        overturning * _cellAmplitude[c] * CellEnvelopeOf(c) * _instantCell[c];
+                        overturning * _cellAmplitude[c] * CellEnvelopeOf(instant, c) * instant.Cell[c];
 
                     double sinKy = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
 
@@ -1249,6 +1261,9 @@ namespace Evosim.Core
                 return StreamsAccelerationAt(x, y, z, seconds);
             }
 
+            // The delegate is made at the first call, or by PinInstant before a parallel pass,
+            // so that no two threads race to make it — a benign race on a reference, but a
+            // pinned field is one that is never written to.
             return MaterialDerivative(
                 _sampler ?? (_sampler = VelocityAt),
                 x, y, z, seconds,
@@ -2608,8 +2623,15 @@ namespace Evosim.Core
                     "instant that is. Call PinInstant, and unpin in a finally. D105.");
             }
 
-            // The pinned path's own refusal, in the same words the sampler uses.
-            EnsureInstant(t);
+            // The folded amplitudes belong to the pinned phase alone, so another clock is refused
+            // here even where a slot happens to hold it — in the sampler's own words.
+            if (t != _pinnedInstant)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"This current is pinned at phase {_pinnedInstant:R} and was sampled at ") +
+                    FormattableString.Invariant($"{t:R}. A pinned field answers at one clock."));
+            }
         }
 
         /// <summary>
@@ -2669,8 +2691,8 @@ namespace Evosim.Core
             double sin1, double sin2, double sin3)
         {
             double[] baseAmplitude = _pinnedEddyBase;
-            double[] instantCos = _instantCos;
-            double[] instantSin = _instantSin;
+            double[] instantCos = _pinned.Cos;
+            double[] instantSin = _pinned.Sin;
 
             for (int q = 0; q < StreamsVertical; q++)
             {
@@ -3163,31 +3185,24 @@ namespace Evosim.Core
             _cellBreathPhase = new double[StreamsCells];
             _cellBreathRate = new double[StreamsCells];
 
-            _slotCos = new double[InstantSlots][];
-            _slotSin = new double[InstantSlots][];
-            _slotEnvelope = new double[InstantSlots][];
-            _slotCellEnvelope = new double[InstantSlots][];
-            _slotCell = new double[InstantSlots][];
-            _slotEnvelopeRate = new double[InstantSlots][];
-            _slotCellEnvelopeRate = new double[InstantSlots][];
-            _slotCellRate = new double[InstantSlots][];
-            _instantAt = new double[InstantSlots];
+            _slots = new Instant[InstantSlots];
             _instantNext = 0;
 
             for (int slot = 0; slot < InstantSlots; slot++)
             {
-                _slotCos[slot] = new double[StreamsTerms];
-                _slotSin[slot] = new double[StreamsTerms];
-                _slotEnvelope[slot] = new double[StreamsTerms];
-                _slotCellEnvelope[slot] = new double[StreamsCells];
-                _slotCell[slot] = new double[StreamsCells];
-                _slotEnvelopeRate[slot] = new double[StreamsTerms];
-                _slotCellEnvelopeRate[slot] = new double[StreamsCells];
-                _slotCellRate[slot] = new double[StreamsCells];
-                _instantAt[slot] = double.NaN;
+                _slots[slot] = new Instant
+                {
+                    At = double.NaN,
+                    Cos = new double[StreamsTerms],
+                    Sin = new double[StreamsTerms],
+                    Envelope = new double[StreamsTerms],
+                    CellEnvelope = new double[StreamsCells],
+                    Cell = new double[StreamsCells],
+                    EnvelopeRate = new double[StreamsTerms],
+                    CellEnvelopeRate = new double[StreamsCells],
+                    CellRate = new double[StreamsCells],
+                };
             }
-
-            Select(0);
 
             var rng = new Rng(_seed);
 
@@ -3536,39 +3551,41 @@ namespace Evosim.Core
         // lands in changes nothing a caller can read, because a slot's contents are a pure
         // function of t.
         //
-        // Still single-threaded, and more sharply so than before: a lookup reassigns the five
-        // array fields below, so two threads sampling one field would see each other's slot. No
-        // caller does — FluidEnvironment samples the water in its main-thread gather phase and its
-        // parallel phase touches no field (see the remarks there).
+        // A slot is a value handed to the sampler that asked for it, never a field the sampler
+        // reads back: EnsureInstant returns the Instant and StreamsUnit and its kin read their
+        // trigonometry off that reference. Unpinned, a miss still fills a slot on the calling
+        // thread, so an unpinned field is single-threaded as it always was. Pinned, a miss is a
+        // refusal and a hit writes nothing, which is what lets any number of threads sample one
+        // field at once (below). Until 2026-09-23 a hit reassigned eight array fields the samplers
+        // read, and one thread's hit was another's wrong instant.
         private const int InstantSlots = 4;
 
-        private double[] _instantAt;
+        private Instant[] _slots;
         private int _instantNext;
 
-        private double[][] _slotCos;
-        private double[][] _slotSin;
-        private double[][] _slotEnvelope;
-        private double[][] _slotCellEnvelope;
-        private double[][] _slotCell;
+        /// <summary>
+        /// One memoised instant: every term's phase as a cosine and a sine, its envelope, the
+        /// three cells' envelopes and reversing phases, and the clock derivatives of the same
+        /// three, for the analytic acceleration (logbook/specs/streams-analytic-spec.md). A term's
+        /// envelope and a cell's reversing phase are functions of t alone, so their derivatives
+        /// belong beside them rather than in the sampler: without this a gradient call would cost
+        /// 27 Math.Cos and 3 Math.Sin of its own, per part per physics step, which is most of what
+        /// the analytic route exists to save.
+        /// </summary>
+        private sealed class Instant
+        {
+            /// <summary>The scaled phase this slot holds, NaN while unfilled or half written.</summary>
+            public double At;
 
-        // THE CLOCK DERIVATIVES OF THE SAME THREE, for the analytic acceleration
-        // (logbook/specs/streams-analytic-spec.md). A term's envelope and a cell's reversing phase
-        // are functions of t alone, so their derivatives belong beside them rather than in the
-        // sampler: without this a gradient call would cost 27 Math.Cos and 3 Math.Sin of its own,
-        // per part per physics step, which is most of what the analytic route exists to save.
-        private double[][] _slotEnvelopeRate;
-        private double[][] _slotCellEnvelopeRate;
-        private double[][] _slotCellRate;
-
-        // The slot the last EnsureInstant selected — what StreamsUnit reads.
-        private double[] _instantCos;
-        private double[] _instantSin;
-        private double[] _instantEnvelope;
-        private double[] _instantCellEnvelope;
-        private double[] _instantCell;
-        private double[] _instantEnvelopeRate;
-        private double[] _instantCellEnvelopeRate;
-        private double[] _instantCellRate;
+            public double[] Cos;
+            public double[] Sin;
+            public double[] Envelope;
+            public double[] CellEnvelope;
+            public double[] Cell;
+            public double[] EnvelopeRate;
+            public double[] CellEnvelopeRate;
+            public double[] CellRate;
+        }
 
         // Set only inside BuildStreams, and only around the measurement walks — see the remarks
         // there. Null everywhere else, which is what makes the water a run feels the breathing
@@ -3577,12 +3594,19 @@ namespace Evosim.Core
 
         // ---------------------------------------------------------------- the pinned instant
         //
-        // The memo above is a mutable lookup: a hit reassigns eight array fields, so two threads
-        // sampling one field at two clocks would see each other's slot. A pin says "every sample
-        // until further notice is at this clock", fills and selects the slot once, and then makes
-        // EnsureInstant a comparison that writes nothing at all — which is what lets a caller
-        // whose sample points are a fixed lattice at one instant (GridField.SampleEdges) split
-        // that lattice across threads without the field being touched by any of them.
+        // The memo above fills a slot on a miss, so two threads sampling one field at two new
+        // clocks would write the slot table at once. A pin says "every sample until further
+        // notice is at this clock", fills the slots the clock needs once, and then makes
+        // EnsureInstant a lookup that writes nothing at all — which is what lets a caller whose
+        // sample points are a fixed lattice at one instant (GridField.SampleEdges) or a crowd of
+        // bodies at one step (DynamicsWorld.SampleWater) split the work across threads without
+        // the field being touched by any of them.
+        //
+        // One clock is two phases. The samplers scale seconds as 2π·s/P and the analytic
+        // acceleration as (2π/P)·s, which differ by an ulp on about half the steps of a run, and
+        // each grouping is what its recorded worlds replay on. A pin therefore fills a slot for
+        // each, and a pinned lookup answers either from its own slot; the hoisted potential's
+        // folded amplitudes belong to the samplers' phase, which is the one a pin names.
         //
         // It is not a lock and does not pretend to be. A pinned field refuses a sample at another
         // clock rather than quietly answering from the wrong slot, so a caller that pins and then
@@ -3590,13 +3614,16 @@ namespace Evosim.Core
         private bool _instantPinned;
         private double _pinnedInstant;
 
+        // The samplers' slot at the pinned phase — what the hoisted entries read.
+        private Instant _pinned;
+
         // The clock the pin was taken at, in seconds rather than in scaled phase — the hoisted
         // entries' fast path, and NaN when nothing is pinned so that it matches no sample.
         private double _pinnedSeconds = double.NaN;
 
         // The prefix of each term's amplitude, folded once per pin for the hoisted entries
         // (D105): _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(k) for the eddies, and
-        // overturning * _cellAmplitude[c] * CellEnvelopeOf(c) * _instantCell[c] for the cells,
+        // overturning * _cellAmplitude[c] * CellEnvelopeOf(c) * Cell[c] for the cells,
         // each grouped left to right exactly as StreamsPotentialUnit writes it. Valid only
         // between a pin and its unpin, which is why the hoisted entries insist on one.
         private double[] _pinnedEddyBase;
@@ -3641,12 +3668,24 @@ namespace Evosim.Core
                     FormattableString.Invariant($"asked to pin at {t:R}. Unpin first."));
             }
 
-            // The tank's potential is the only sampler that reads the instant tables; the box's
-            // transport field is a plain term loop with no memo, so there is nothing to select.
+            // The tank's samplers are the only ones that read the instant tables; the box's
+            // transport field is a plain term loop with no memo, so there is nothing to fill.
+            // The box's stencil acceleration takes its sampler through a delegate made on first
+            // use, which is made here instead so that no worker makes it.
             if (_shape == WorldShape.Tank)
             {
-                EnsureInstant(t);
-                FoldAmplitudes();
+                Instant instant = EnsureInstant(t);
+
+                // The analytic acceleration's own phase, filled if it is another slot's worth —
+                // see the remarks on the pinned instant.
+                EnsureInstant(2.0 * Math.PI / _periodSeconds * seconds);
+
+                _pinned = instant;
+                FoldAmplitudes(instant);
+            }
+            else
+            {
+                _sampler ??= VelocityAt;
             }
 
             _pinnedInstant = t;
@@ -3658,7 +3697,7 @@ namespace Evosim.Core
         /// Folds the clock-only prefix of every term's amplitude for the pass the pin opens.
         /// D105; <see cref="_pinnedEddyBase"/> for what the two products are.
         /// </summary>
-        private void FoldAmplitudes()
+        private void FoldAmplitudes(Instant instant)
         {
             if (_pinnedEddyBase == null)
             {
@@ -3668,13 +3707,13 @@ namespace Evosim.Core
 
             for (int k = 0; k < StreamsTerms; k++)
             {
-                _pinnedEddyBase[k] = _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(k);
+                _pinnedEddyBase[k] = _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(instant, k);
             }
 
             for (int c = 0; c < StreamsCells; c++)
             {
                 _pinnedCellBase[c] =
-                    _streamsOverturning * _cellAmplitude[c] * CellEnvelopeOf(c) * _instantCell[c];
+                    _streamsOverturning * _cellAmplitude[c] * CellEnvelopeOf(instant, c) * instant.Cell[c];
             }
         }
 
@@ -3683,50 +3722,52 @@ namespace Evosim.Core
         {
             _instantPinned = false;
             _pinnedSeconds = double.NaN;
+            _pinned = null;
         }
 
-        private void EnsureInstant(double t)
+        /// <summary>
+        /// The slot holding phase <paramref name="t"/>, filled on this thread if no slot does and
+        /// the field is not pinned; a pinned field refuses a phase it has no slot for.
+        /// </summary>
+        private Instant EnsureInstant(double t)
         {
+            for (int slot = 0; slot < InstantSlots; slot++)
+            {
+                Instant held = _slots[slot];
+
+                // NaN never equals t, so an unfilled slot is simply a miss.
+                if (held.At == t) return held;
+            }
+
             if (_instantPinned)
             {
-                if (_pinnedInstant == t) return;
-
                 throw new InvalidOperationException(
                     FormattableString.Invariant(
                         $"This current is pinned at phase {_pinnedInstant:R} and was sampled at ") +
                     FormattableString.Invariant($"{t:R}. A pinned field answers at one clock."));
             }
 
-            for (int slot = 0; slot < InstantSlots; slot++)
-            {
-                // NaN never equals t, so an unfilled slot is simply a miss.
-                if (_instantAt[slot] != t) continue;
-
-                Select(slot);
-                return;
-            }
-
             int fill = _instantNext;
             _instantNext = fill + 1 == InstantSlots ? 0 : fill + 1;
 
-            Select(fill);
+            Instant instant = _slots[fill];
 
             // Unkeyed while it is half written, so that a slot can never answer for one instant
             // with another's trigonometry.
-            _instantAt[fill] = double.NaN;
+            instant.At = double.NaN;
 
             for (int k = 0; k < StreamsTerms; k++)
             {
                 double psi = _streamPhase[k] + _streamRate[k] * t;
 
-                _instantCos[k] = Math.Cos(psi);
-                _instantSin[k] = Math.Sin(psi);
+                instant.Cos[k] = Math.Cos(psi);
+                instant.Sin[k] = Math.Sin(psi);
 
                 // Between half and full, never off — the spec's 0.75 + 0.25 sin.
                 double breath = _streamBreathRate[k] * t + _streamBreathPhase[k];
 
-                _instantEnvelope[k] = 0.75d + 0.25d * Math.Sin(breath);
-                _instantEnvelopeRate[k] = 0.25d * _streamBreathRate[k] * Math.Cos(breath);
+                instant.Envelope[k] = 0.75d + 0.25d * Math.Sin(breath);
+                instant.EnvelopeRate[k] = 0.25d * _streamBreathRate[k] * Math.Cos(breath);
             }
 
             for (int c = 0; c < StreamsCells; c++)
@@ -3734,36 +3775,26 @@ namespace Evosim.Core
                 double breath = _cellBreathRate[c] * t + _cellBreathPhase[c];
                 double turn = _cellRate[c] * t + _cellPhase[c];
 
-                _instantCellEnvelope[c] = 0.75d + 0.25d * Math.Sin(breath);
-                _instantCellEnvelopeRate[c] = 0.25d * _cellBreathRate[c] * Math.Cos(breath);
-                _instantCell[c] = Math.Cos(turn);
-                _instantCellRate[c] = -_cellRate[c] * Math.Sin(turn);
+                instant.CellEnvelope[c] = 0.75d + 0.25d * Math.Sin(breath);
+                instant.CellEnvelopeRate[c] = 0.25d * _cellBreathRate[c] * Math.Cos(breath);
+                instant.Cell[c] = Math.Cos(turn);
+                instant.CellRate[c] = -_cellRate[c] * Math.Sin(turn);
             }
 
-            _instantAt[fill] = t;
-        }
+            instant.At = t;
 
-        private void Select(int slot)
-        {
-            _instantCos = _slotCos[slot];
-            _instantSin = _slotSin[slot];
-            _instantEnvelope = _slotEnvelope[slot];
-            _instantCellEnvelope = _slotCellEnvelope[slot];
-            _instantCell = _slotCell[slot];
-            _instantEnvelopeRate = _slotEnvelopeRate[slot];
-            _instantCellEnvelopeRate = _slotCellEnvelopeRate[slot];
-            _instantCellRate = _slotCellRate[slot];
+            return instant;
         }
 
         /// <summary>
         /// The envelope term <paramref name="k"/> is at, or whatever
         /// <see cref="BuildStreams"/>'s measurement is holding every envelope at.
         /// </summary>
-        private double EnvelopeOf(int k) =>
-            _envelopeOverride > 0d ? _envelopeOverride : _instantEnvelope[k];
+        private double EnvelopeOf(Instant instant, int k) =>
+            _envelopeOverride > 0d ? _envelopeOverride : instant.Envelope[k];
 
-        private double CellEnvelopeOf(int c) =>
-            _envelopeOverride > 0d ? _envelopeOverride : _instantCellEnvelope[c];
+        private double CellEnvelopeOf(Instant instant, int c) =>
+            _envelopeOverride > 0d ? _envelopeOverride : instant.CellEnvelope[c];
 
         /// <summary>
         /// The clock derivative of the same envelope, which is zero whenever
@@ -3771,11 +3802,11 @@ namespace Evosim.Core
         /// breathe, and a derivative taken through the override would describe a field the
         /// measurement is not looking at.
         /// </summary>
-        private double EnvelopeRateOf(int k) =>
-            _envelopeOverride > 0d ? 0d : _instantEnvelopeRate[k];
+        private double EnvelopeRateOf(Instant instant, int k) =>
+            _envelopeOverride > 0d ? 0d : instant.EnvelopeRate[k];
 
-        private double CellEnvelopeRateOf(int c) =>
-            _envelopeOverride > 0d ? 0d : _instantCellEnvelopeRate[c];
+        private double CellEnvelopeRateOf(Instant instant, int c) =>
+            _envelopeOverride > 0d ? 0d : instant.CellEnvelopeRate[c];
 
         /// <summary>
         /// The streams at unit <see cref="Speed"/> and unit scale, at a place and an already-scaled
@@ -3822,7 +3853,7 @@ namespace Evosim.Core
             double cosTheta = r > 0d ? dx / r : 1d;
             double sinTheta = r > 0d ? dz / r : 0d;
 
-            EnsureInstant(t);
+            Instant instant = EnsureInstant(t);
 
             double radial = 0d;
             double azimuthal = 0d;
@@ -3881,11 +3912,11 @@ namespace Evosim.Core
                         if (profile == 0d) continue;
 
                         double amplitude =
-                            _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(k) * profile;
+                            _streamsEddyWeight * _streamAmplitude[k] * EnvelopeOf(instant, k) * profile;
 
                         // cos(mθ + ψ) and sin(mθ + ψ) from the multiples and the instant's phase.
-                        double cosChi = cosM * _instantCos[k] - sinM * _instantSin[k];
-                        double sinChi = sinM * _instantCos[k] + cosM * _instantSin[k];
+                        double cosChi = cosM * instant.Cos[k] - sinM * instant.Sin[k];
+                        double sinChi = sinM * instant.Cos[k] + cosM * instant.Sin[k];
 
                         radial -= amplitude * m * overR * sinChi;
                         azimuthal -= amplitude * slope * cosChi;
@@ -3912,7 +3943,7 @@ namespace Evosim.Core
                     int q = c + 1;
                     double ky = q * Math.PI / depth;
                     double amplitude =
-                        overturning * _cellAmplitude[c] * CellEnvelopeOf(c) * _instantCell[c];
+                        overturning * _cellAmplitude[c] * CellEnvelopeOf(instant, c) * instant.Cell[c];
 
                     double cosKy = q == 1 ? cos1 : q == 2 ? cos2 : cos3;
                     double sinKy = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
@@ -4075,7 +4106,7 @@ namespace Evosim.Core
             double s = r / radius;
             double u = s * s;
 
-            EnsureInstant(t);
+            Instant instant = EnsureInstant(t);
 
             // The vertical profiles and their y derivatives: d sin(q*pi*y/D)/dy is
             // (q*pi/D)*cos(q*pi*y/D), and the cosines are wanted by the overturning anyway.
@@ -4151,18 +4182,18 @@ namespace Evosim.Core
                         double slope = ky * (q == 1 ? cos1 : q == 2 ? cos2 : cos3);
 
                         double raw = _streamsEddyWeight * _streamAmplitude[k];
-                        double envelope = EnvelopeOf(k);
+                        double envelope = EnvelopeOf(instant, k);
 
                         // The amplitude, its y derivative, its envelope's clock derivative, and
                         // itself against the phase rate. No test for a zero profile: at a face the
                         // amplitude is zero and its y derivative is not.
                         double b = raw * envelope * profile;
                         double by = raw * envelope * slope;
-                        double bt = raw * EnvelopeRateOf(k) * profile;
+                        double bt = raw * EnvelopeRateOf(instant, k) * profile;
                         double bw = b * _streamRate[k];
 
-                        double cosPsi = _instantCos[k];
-                        double sinPsi = _instantSin[k];
+                        double cosPsi = instant.Cos[k];
+                        double sinPsi = instant.Sin[k];
 
                         bc += b * cosPsi;
                         bs += b * sinPsi;
@@ -4257,12 +4288,12 @@ namespace Evosim.Core
                 double ky = q * Math.PI / depth;
 
                 double raw = overturning * _cellAmplitude[c];
-                double envelope = CellEnvelopeOf(c);
-                double turn = _instantCell[c];
+                double envelope = CellEnvelopeOf(instant, c);
+                double turn = instant.Cell[c];
 
                 double amplitude = raw * envelope * turn;
-                double rate = raw * (CellEnvelopeRateOf(c) * turn +
-                                     envelope * _instantCellRate[c]);
+                double rate = raw * (CellEnvelopeRateOf(instant, c) * turn +
+                                     envelope * instant.CellRate[c]);
 
                 double cosKy = q == 1 ? cos1 : q == 2 ? cos2 : cos3;
                 double sinKy = q == 1 ? sin1 : q == 2 ? sin2 : sin3;

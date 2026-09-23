@@ -10,14 +10,16 @@ namespace Evosim.Dynamics
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Serial, and that is not a compromise.</b> <see cref="CurrentField"/> memoises the
-    /// three instants a call touches in mutable fields of its own
-    /// (<c>CurrentField.EnsureInstant</c>), so two threads sampling one field would race on a
-    /// shared slot table and a trajectory would depend on who got there first — the one thing
-    /// the whole solver is built not to do. In the farm this loop is on the main thread for
-    /// Unity's reasons; here it is on one thread for the field's, and it runs between the
-    /// contact grid's build and the parallel phase, over the poses the step begins with, which
-    /// is where the gather phase sat.
+    /// <b>Called under a pin, from any thread.</b> <see cref="CurrentField"/> memoises the
+    /// instants a call touches, and a miss fills a slot, so two threads sampling one field at
+    /// new clocks would race on the slot table and a trajectory would depend on who got there
+    /// first — the one thing the whole solver is built not to do. <c>DynamicsWorld.SampleWater</c>
+    /// therefore pins the field at the step's clock first (<see cref="CurrentField.PinInstant"/>),
+    /// which fills every slot the step will ask for and makes each later lookup a read, and then
+    /// calls this across the world's threads. It runs between the contact grid's build and the
+    /// parallel phase, over the poses the step begins with, which is where the gather phase sat.
+    /// Until 2026-09-23 it ran on one thread for the field's sake (the Unity farm's is on the
+    /// main thread for Unity's), and at 1,200 bodies that thread was a third of the step.
     /// </para>
     /// <para>
     /// <b>The two branches are the farm's two branches.</b> At

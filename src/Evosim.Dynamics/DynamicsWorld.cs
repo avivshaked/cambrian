@@ -105,14 +105,6 @@ namespace Evosim.Dynamics
 
             long t1 = Stopwatch.GetTimestamp();
 
-            // Package C. Serial and before the parallel phase, over the poses the step starts
-            // from — the farm's gather phase, and the one place a CurrentField may be touched.
-            SampleWater();
-
-            long t2 = Stopwatch.GetTimestamp();
-
-            int count = _creatures.Count;
-
             // One code path at every thread count, including one. A serial `for` and a
             // `Parallel.For` delegate are different code to the JIT, and .NET's tiered
             // compilation gives quick-JITted and optimised loops different floating-point bits
@@ -122,6 +114,15 @@ namespace Evosim.Dynamics
             // bench projects also set `TieredCompilation` false; a farm that reports a digest
             // must do the same.
             var options = new ParallelOptions { MaxDegreeOfParallelism = Threads < 1 ? 1 : Threads };
+
+            // Package C. Before the parallel phase, over the poses the step starts from — the
+            // farm's gather phase — with the field pinned so that the same threads may sample it.
+            SampleWater(options);
+
+            long t2 = Stopwatch.GetTimestamp();
+
+            int count = _creatures.Count;
+
             Parallel.For(0, count, options, i => StepOne(i, dt));
 
             long t3 = Stopwatch.GetTimestamp();

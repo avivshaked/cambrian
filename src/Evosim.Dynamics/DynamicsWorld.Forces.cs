@@ -1,29 +1,63 @@
+using System.Threading.Tasks;
+using Evosim.Core;
+
 namespace Evosim.Dynamics
 {
     /// <summary>
-    /// Packages B and C at the world's level: the serial water pass that runs before the
-    /// parallel phase, and the ledger totals, summed in creature order.
+    /// Packages B and C at the world's level: the water pass that runs before the parallel
+    /// phase, and the ledger totals, summed in creature order.
     /// </summary>
     public sealed partial class DynamicsWorld
     {
         /// <summary>
-        /// Samples the current into every living body, in creature order, on one thread.
+        /// Samples the current into every living body, across the world's threads, with the field
+        /// pinned at the step's clock.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Called from <see cref="Step"/> between the contact grid's build and the parallel
         /// phase, so the poses it reads are the ones the step starts from — the farm's gather
-        /// phase, in the same place in the step. <see cref="Water.Sample"/>'s remarks say why it
-        /// is not inside the parallel region: <c>CurrentField</c> memoises its instants.
+        /// phase, in the same place in the step. Each body's sample reads that body alone and the
+        /// field, so which thread takes it changes nothing.
+        /// </para>
+        /// <para>
+        /// <b>Until 2026-09-23 this loop was serial</b>, because <see cref="CurrentField"/>
+        /// memoises the instants a call touches and a hit reassigned fields the samplers read:
+        /// two threads sampling one field would have seen each other's slot. At 1,200 bodies on
+        /// five threads the pass was a third of a step's wall, more than the solver's own parallel
+        /// phase. The field now hands a sampler its instant as a value, a pin
+        /// (<see cref="CurrentField.PinInstant"/>) fills the slots a step's clock needs and makes
+        /// every later lookup a read, and the bed's one-entry memo is a thread's own, so the pass
+        /// splits across the same threads as the bodies. The bits are unchanged: a slot's
+        /// contents are a pure function of the clock, and <c>WaterThreadIdentityTests</c> holds
+        /// the digest across thread counts with the water on.
+        /// </para>
         /// </remarks>
-        private void SampleWater()
+        private void SampleWater(ParallelOptions options)
         {
-            if (Config.Current == null) return;
+            CurrentField current = Config.Current;
+            if (current == null) return;
 
-            for (int i = 0; i < _creatures.Count; i++)
+            // A no-op for water the pin has nothing to fill for (still, or the rolls, whose
+            // sampler is plain trigonometry with no memo); a refusal if something else has the
+            // field pinned at another clock, which nothing between steps should.
+            current.PinInstant(ElapsedSeconds);
+
+            try
             {
-                Creature body = _creatures[i];
-                if (!body.Alive) continue;
-                Water.Sample(body, Config, ElapsedSeconds);
+                double seconds = ElapsedSeconds;
+                SolverConfig config = Config;
+
+                Parallel.For(0, _creatures.Count, options, i =>
+                {
+                    Creature body = _creatures[i];
+                    if (!body.Alive) return;
+                    Water.Sample(body, config, seconds);
+                });
+            }
+            finally
+            {
+                current.UnpinInstant();
             }
         }
 
