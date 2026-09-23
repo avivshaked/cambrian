@@ -77,6 +77,10 @@ namespace Evosim.Farm
 
             // D111: the buoyancy offset's price, which is also its switch. 0 is the recorded world.
             Num("EVOSIM_BUOYANCY_OFFSET_COST", 0f, (s, v) => s.BuoyancyOffsetCost = v),
+
+            // D113: the support cost's price, W per m² of lit area per m² of distance from the
+            // root. 0 is the recorded world.
+            Num("EVOSIM_SUPPORT", 0f, (s, v) => s.Support = v),
             Num("EVOSIM_SELF_OVERLAP", 0f, (s, v) => s.SelfOverlap = v),
             Num("EVOSIM_MAX_REACH", 0f, (s, v) => s.MaxReach = v),
 
@@ -492,6 +496,7 @@ namespace Evosim.Farm
             config.LightSilhouetteCap = s.SilhouetteCap;
             config.LightByExposure = s.LightByExposure;
             config.BuoyancyOffsetWattsPerCubicMetre = s.BuoyancyOffsetCost;
+            config.SupportWattsPerSquareMetrePerSquareMetre = s.Support;
             config.SelfOverlapDepthFraction = s.SelfOverlap;
             config.Development.MaxBodyReachMetres = s.MaxReach;
 
@@ -773,6 +778,7 @@ namespace Evosim.Farm
         public bool SilhouetteCap;
         public bool LightByExposure;
         public float BuoyancyOffsetCost;
+        public float Support;
         public float SelfOverlap;
         public float MaxReach;
         public float MatterIslands;

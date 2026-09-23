@@ -74,7 +74,13 @@ namespace Evosim.Core
         /// that a version-6 reader would take from the next row's time. The exposure array itself
         /// is not written; the harness fills it from the solver's rotations before the world reads.
         /// </remarks>
-        public const int StateVersion = 7;
+        /// <remarks>
+        /// 8 with the support cost (D113, 2026-09-23): a pending row of the absorptive log carries
+        /// the body's support watts after its exposed area, four bytes more a row, for version 7's
+        /// reason. A part's distance from the root is not written: it is re-measured when the body
+        /// is developed again, as its volume is.
+        /// </remarks>
+        public const int StateVersion = 8;
 
         /// <summary>
         /// Writes the whole of the world's own state.
@@ -669,6 +675,7 @@ namespace Evosim.Core
             w.Write(s.LastChildSeconds);
             w.Write(s.Dead);
             w.Write(s.ExposedArea);
+            w.Write(s.SupportWatts);
         }
 
         private static AbsorptiveSample ReadAbsorptive(BinaryReader r) =>
@@ -678,7 +685,7 @@ namespace Evosim.Core
                 r.ReadBoolean(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
-                r.ReadInt32(), r.ReadDouble(), r.ReadBoolean(), r.ReadSingle());
+                r.ReadInt32(), r.ReadDouble(), r.ReadBoolean(), r.ReadSingle(), r.ReadSingle());
 
         // ------------------------------------------------------------------ generators, fields
 

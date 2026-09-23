@@ -300,6 +300,12 @@ namespace Evosim.Farm
                 " prices atk=" + F(s.PriceAttack) + " ink=" + F(s.PriceIntake) +
                 " prt=" + F(s.PriceProtection) + " tgh=" + F(s.PriceToughness) +
                 " mut=" + F(s.AttributeMutation) +
+
+                // D113, beside the four attribute prices it is billed with and at the end of the
+                // line, which is where a new knob goes. Rendered at 0 too, as `off`.
+                " · support " + (s.Support > 0f
+                    ? s.Support.ToString("0.####", Inv) + " W/m2/m2"
+                    : "off") +
                 " · configHash `" + config.Hash() + "`";
         }
 
@@ -647,6 +653,11 @@ namespace Evosim.Farm
             // D111, the buoyancy offset: the leaves' area-weighted |offset|, 0 at founding and 1
             // at the range's end; a dash with the price at 0.
             "float off",
+
+            // D113, the support cost: the living bodies' summed support watts, a dash with the
+            // price at 0, and the area-weighted mean distance of a part from its root, the reach
+            // the price bounds, read at any price.
+            "support W", "reach m",
         };
     }
 

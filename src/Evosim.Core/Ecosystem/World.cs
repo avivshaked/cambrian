@@ -1021,6 +1021,18 @@ namespace Evosim.Core
                     nameof(config));
             }
 
+            // D113, on the same argument: a negative support price pays a body for reach.
+            if (float.IsNaN(config.SupportWattsPerSquareMetrePerSquareMetre) ||
+                float.IsInfinity(config.SupportWattsPerSquareMetrePerSquareMetre) ||
+                config.SupportWattsPerSquareMetrePerSquareMetre < 0f)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"SupportWattsPerSquareMetrePerSquareMetre is {config.SupportWattsPerSquareMetrePerSquareMetre}. ") +
+                    "It is a price, finite and at or above 0; 0 turns the support cost off.",
+                    nameof(config));
+            }
+
             ValidateVent(config, patchCount);
             ValidateMatterInflux(config, patchCount);
 
@@ -3971,7 +3983,7 @@ namespace Evosim.Core
                 return;
             }
 
-            _absorptiveDeaths.Add(AbsorptiveSample.For(creature, ElapsedSeconds, dead: true));
+            _absorptiveDeaths.Add(AbsorptiveSample.For(creature, ElapsedSeconds, dead: true, Config));
         }
 
         /// <summary>
@@ -4071,7 +4083,7 @@ namespace Evosim.Core
                     continue;
                 }
 
-                into.Add(AbsorptiveSample.For(creature, ElapsedSeconds, dead: false));
+                into.Add(AbsorptiveSample.For(creature, ElapsedSeconds, dead: false, Config));
                 written++;
             }
 

@@ -125,6 +125,14 @@ namespace Evosim.Core
         /// </remarks>
         public float UpkeepWatts { get; }
 
+        /// <summary>
+        /// D113's support cost, W — <see cref="Metabolism.SupportWatts(Phenotype, RunConfig)"/> for
+        /// the body as it stands, before senescence's wear. A share of <see cref="UpkeepWatts"/>
+        /// and not a term beside it, so the budget identity is unchanged. NaN with the price off,
+        /// written as JSON null.
+        /// </summary>
+        public float SupportWatts { get; }
+
         /// <summary>D070's release to the water over the last step, W. 0 with exudation off.</summary>
         public float ExudedWatts { get; }
 
@@ -146,9 +154,11 @@ namespace Evosim.Core
             bool mixotroph, float energy, float tissueJoules, float birthInvestment,
             float densityHere, float share,
             float foodWatts, float lightWatts, float upkeepWatts, float exudedWatts, float netWatts,
-            int children, double lastChildSeconds, bool dead, float exposedArea)
+            int children, double lastChildSeconds, bool dead, float exposedArea,
+            float supportWatts)
         {
             ExposedArea = exposedArea;
+            SupportWatts = supportWatts;
             ElapsedSeconds = elapsedSeconds;
             Id = id;
             Age = age;
@@ -188,7 +198,13 @@ namespace Evosim.Core
         /// <param name="creature">A creature with absorptive tissue. Others are not logged.</param>
         /// <param name="elapsedSeconds">World time this row is stamped with.</param>
         /// <param name="dead">True for the one final row a death writes.</param>
-        internal static AbsorptiveSample For(Organism creature, double elapsedSeconds, bool dead)
+        /// <param name="config">
+        /// The world's config, for D113's price. The support cost is recomputed here rather than
+        /// captured by the step because it is a property of the body's shape, which is the same
+        /// body the step billed.
+        /// </param>
+        internal static AbsorptiveSample For(
+            Organism creature, double elapsedSeconds, bool dead, RunConfig config)
         {
             // Zero would be a plausible watt figure, so a creature the metabolic loop has not
             // reached yet — inoculated or spawned after this step's Metabolise — reports its
@@ -228,7 +244,10 @@ namespace Evosim.Core
                 dead,
                 creature.CurrentExposure == null
                     ? creature.Phenotype.TotalLitArea
-                    : creature.Phenotype.ExposedLitArea(creature.CurrentExposure));
+                    : creature.Phenotype.ExposedLitArea(creature.CurrentExposure),
+                config.SupportWattsPerSquareMetrePerSquareMetre > 0f
+                    ? (float)Metabolism.SupportWatts(creature.Phenotype, config)
+                    : float.NaN);
         }
 
         /// <summary>
@@ -258,8 +277,14 @@ namespace Evosim.Core
                 .Field("share", Share)
                 .Field("foodW", FoodWatts)
                 .Field("lightW", LightWatts)
-                .Field("upkeepW", UpkeepWatts)
-                .Field("exudedW", ExudedWatts)
+                .Field("upkeepW", UpkeepWatts);
+
+            // D113's share of it, beside it as the spec places it. Null with the price at 0, for
+            // meanBuoyancyOffset's reason: a 0 would read as a body that reaches nowhere.
+            if (float.IsNaN(SupportWatts)) w.Field("support", (string)null);
+            else w.Field("support", SupportWatts);
+
+            w.Field("exudedW", ExudedWatts)
                 .Field("netW", NetWatts)
                 .Field("children", Children);
 

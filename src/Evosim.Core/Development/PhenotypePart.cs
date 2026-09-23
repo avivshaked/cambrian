@@ -30,6 +30,30 @@ namespace Evosim.Core
         /// <summary>Position in creature-local space.</summary>
         public Float3 Position { get; internal set; }
 
+        /// <summary>
+        /// How far this part's centre sits from the root's, in metres, in the developed body's own
+        /// frame — what D113's support cost is priced on (<c>logbook/specs/support-cost-spec.md</c>).
+        /// 0 at the root.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Stored rather than derived, for <see cref="Volume"/>'s reason</b>: the metabolic step
+        /// reads it on every part on every step with the price on, and a square root a part a step
+        /// is a cost the bill does not need. <see cref="Developer.Develop"/> sets it once the body
+        /// is whole, from the root part's position rather than the frame's origin, so a body
+        /// developed under a root transform pays the same as one developed at the origin.
+        /// <see cref="Phenotype.Scaled"/> scales it with the half-extents, so a growing body pays
+        /// on the distance its grown parts stand at; a cut (<see cref="Phenotype.WithoutSubtrees"/>)
+        /// moves no survivor and carries it as it is.
+        /// </para>
+        /// <para>
+        /// The rest pose's distance, not the pose the solver holds: a joint that folds a limb
+        /// towards the root does not make the limb cheaper to grow and keep. A mirrored part reads
+        /// its twin's distance, since a reflection preserves lengths.
+        /// </para>
+        /// </remarks>
+        public float DistanceFromRoot { get; internal set; }
+
         /// <summary>Orientation in creature-local space. Always a proper rotation.</summary>
         public Quat Rotation { get; internal set; }
 

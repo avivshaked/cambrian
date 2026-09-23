@@ -247,6 +247,31 @@ namespace Evosim.Ledger
             sb.Append("- Tissue: ").Append(Format((float)tissue)).Append(" J\n");
             sb.Append("- Standing cost: ").Append(Format(standingWatts)).Append(" W (")
               .Append(Format(standingWatts / config.JoulesPerUnit)).Append(" units/s)\n");
+
+            // D113, beside the standing cost it is a share of. Printed at every price, the reach
+            // included, because the reach a body has with the price off is what a screen of the
+            // price is read against; the watts say "off" rather than 0 there.
+            double reachArea = 0d, reachWeighted = 0d, farthest = 0d;
+            foreach (PhenotypePart part in body.Parts)
+            {
+                reachArea += part.LitArea;
+                reachWeighted += (double)part.LitArea * part.DistanceFromRoot;
+                if (part.DistanceFromRoot > farthest) farthest = part.DistanceFromRoot;
+            }
+
+            float supportPrice = config.SupportWattsPerSquareMetrePerSquareMetre;
+            double supportWatts = Metabolism.SupportWatts(body, config);
+
+            sb.Append("- support W: ")
+              .Append(supportPrice > 0f
+                  ? Format((float)supportWatts) + " at " + Format(supportPrice) + " W/m2/m2, " +
+                    Format(100f * (float)supportWatts / Math.Max(1e-9f, standingWatts)) +
+                    "% of the standing cost"
+                  : "off")
+              .Append("; reach ")
+              .Append(Format(reachArea > 0d ? (float)(reachWeighted / reachArea) : 0f))
+              .Append(" m area-weighted, farthest part ").Append(Format((float)farthest))
+              .Append(" m\n");
             sb.Append("- Fixation at surface: ").Append(Format(fixationWatts)).Append(" W (")
               .Append(Format(fixationWatts / config.JoulesPerUnit)).Append(" units/s)\n");
 

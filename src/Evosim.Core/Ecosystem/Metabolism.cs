@@ -431,6 +431,9 @@ namespace Evosim.Core
             // D111's price, read once for the same reason: at 0 no float is added.
             float offsetPrice = config.BuoyancyOffsetWattsPerCubicMetre;
 
+            // D113's price, the same way: at 0 no term is computed and no float is added.
+            float supportPrice = config.SupportWattsPerSquareMetrePerSquareMetre;
+
             foreach (PhenotypePart part in phenotype.Parts)
             {
                 CellType cell = config.CellTypes.Resolve(part.CellTypeId);
@@ -474,6 +477,11 @@ namespace Evosim.Core
                 // D111: gas held on one face is tissue kept, billed per cubic metre of the part
                 // and worn with the rest. Charged on a sphere too, where it buys nothing.
                 if (offsetPrice > 0f) upkeep += BuoyancyOffsetWatts(part, config) * seconds;
+
+                // D113: the load this part puts on the chain to the root, its lit area times the
+                // square of its distance, worn with the rest — an old stalk holds its frond up
+                // worse. The root's distance is 0, so it adds a zero and not a branch.
+                if (supportPrice > 0f) upkeep += SupportWatts(part, config) * seconds;
 
                 // Neurons are billed where they live, and neural tissue discounts them (§5A.1).
                 // Counting them creature-wide instead would price a brain identically to the same
@@ -575,6 +583,50 @@ namespace Evosim.Core
 
             return config.BuoyancyOffsetWattsPerCubicMetre * Math.Abs(part.BuoyancyOffset) *
                    Math.Max(0f, part.Volume);
+        }
+
+        /// <summary>
+        /// What one part pays to be held where it is, in watts — D113,
+        /// <c>price · LitArea · DistanceFromRoot²</c> (<c>logbook/specs/support-cost-spec.md</c> §1).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Public for <see cref="AttributeWatts"/>'s reason: the ledger's screen and the bill a
+        /// body pays read one expression. Unworn: the metabolic step multiplies it by the
+        /// senescence factor with the rest of the upkeep, and this is the rate before that.
+        /// </para>
+        /// <para>
+        /// <b>The orientation-averaged area, whatever <see cref="RunConfig.LightByExposure"/>
+        /// says</b>, because the load is the sheet's size and not its angle to the sky; and the
+        /// area before D099's cap, for the same reason — a part hidden behind another still has to
+        /// be held up. The distance is squared in double so that a fourteen-metre frond's bill is
+        /// not the product of two roundings.
+        /// </para>
+        /// </remarks>
+        public static float SupportWatts(PhenotypePart part, RunConfig config)
+        {
+            if (part == null) throw new ArgumentNullException(nameof(part));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            double d = part.DistanceFromRoot;
+            return (float)(config.SupportWattsPerSquareMetrePerSquareMetre *
+                           (double)Math.Max(0f, part.LitArea) * d * d);
+        }
+
+        /// <summary>
+        /// A body's whole support cost, in watts — <see cref="SupportWatts(PhenotypePart, RunConfig)"/>
+        /// summed over its parts, unworn. What the run's <c>supportWatts</c> and the ledger print.
+        /// </summary>
+        public static double SupportWatts(Phenotype phenotype, RunConfig config)
+        {
+            if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            double total = 0d;
+            if (!(config.SupportWattsPerSquareMetrePerSquareMetre > 0f)) return total;
+
+            foreach (PhenotypePart part in phenotype.Parts) total += SupportWatts(part, config);
+            return total;
         }
 
         /// <summary>

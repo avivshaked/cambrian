@@ -445,6 +445,10 @@ namespace Evosim.Core
                     Depth = part.Depth,
                     HalfExtents = halfExtents,
                     Position = part.Position * linear,
+
+                    // D113: a length like the position it is measured from, so the support cost a
+                    // growing body pays is on the distance its grown parts stand at.
+                    DistanceFromRoot = part.DistanceFromRoot * linear,
                     Rotation = part.Rotation,
                     Mirrored = part.Mirrored,
                     CellTypeId = part.CellTypeId,
@@ -566,6 +570,7 @@ namespace Evosim.Core
                     Depth = part.Depth,
                     HalfExtents = part.HalfExtents,
                     Position = part.Position,
+                    DistanceFromRoot = part.DistanceFromRoot,
                     Rotation = part.Rotation,
                     Mirrored = part.Mirrored,
                     CellTypeId = part.CellTypeId,

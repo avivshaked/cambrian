@@ -104,6 +104,11 @@ namespace Evosim.Core
                 parentAnchorLocal: Float3.Zero,
                 childAnchorLocal: Float3.Zero);
 
+            // D113: each part's distance from the root, once the body is whole, which is what the
+            // support cost is priced on. Measured from the root part's own centre and not from
+            // the frame's origin, so a root transform moves nothing a body pays.
+            MeasureDistancesFromRoot(phenotype);
+
             // D099: the body's own shadow, once the body is whole. It cannot be accumulated part
             // by part the way lit area is — a hull is a property of the whole cloud — and it is
             // read every metabolic step, so it is measured here and carried rather than asked
@@ -111,6 +116,30 @@ namespace Evosim.Core
             phenotype.MeasureSilhouette();
 
             return phenotype;
+        }
+
+        // PhenotypePart.DistanceFromRoot for every part, the root at 0. The sum of squares is
+        // taken in double and rounded once, so a part's distance is the same number whichever
+        // order its axes come in.
+        private static void MeasureDistancesFromRoot(Phenotype phenotype)
+        {
+            if (phenotype.PartCount == 0) return;
+
+            Float3 root = phenotype.Parts[0].Position;
+
+            foreach (PhenotypePart part in phenotype.Parts)
+            {
+                if (part.IsRoot)
+                {
+                    part.DistanceFromRoot = 0f;
+                    continue;
+                }
+
+                double x = (double)part.Position.X - root.X;
+                double y = (double)part.Position.Y - root.Y;
+                double z = (double)part.Position.Z - root.Z;
+                part.DistanceFromRoot = (float)Math.Sqrt(x * x + y * y + z * z);
+            }
         }
 
         private static void Expand(
