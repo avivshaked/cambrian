@@ -147,17 +147,38 @@ merged from a worktree; the giant nets −90 W at the code's lit area, `support-
 `per-part-contact-spec.md` §6), and a 3,000 s dt 0.02 screen of round 45's world with the
 support cost at 0.1 and contact per part (`r46price-s1`, 15:24) is the two rules' books
 check. The trickle and the food rule are merged (`3f48f6f`, `founding-trickle-spec.md` §5;
-`StateVersion` 9, `Checkpoint.Version` 4), so **every rule of round 46 is on main**, and the
-full-build regress of the crowd fixture's world with every new tunable at its default
-(`r46allreg-s4`) is the last identity check before the fixtures are re-recorded once for
-all of them: the r42 config (`fixtures/r42-config.json`, the Farm hash `53802564a815df27`
-and `ReportTests`' line), the Dynamics crowd (a 20,000 s `r46fixc-s4` of round 44's world),
-ckA/ckB/ckC and `ckUi`; then `--verify-checkpoint` with contact per part, the ledger
-screens, the prereg as 0116, the launch.
+`StateVersion` 9, `Checkpoint.Version` 4), so **every rule of round 46 is on main**, and
+the full-build regress of the crowd fixture's world with every new tunable at its default
+(`r46allreg-s4`, `4467ad6`) is identical in 145 fields at 300 samples with the positions
+byte-equal and the lineage differing by the founder rows' `src` alone. **The fixtures are
+being re-recorded once for all of them** (late afternoon): the r42 config is `pfix8`'s
+(`5062a25baa35c6e1`, the Farm hash and `ReportTests`' line re-pinned, Farm 73 of 73); the
+Dynamics crowd `r46fixc-s4` (round 44's world, 20,000 s at 6 threads on
+`Release-r46`) is running and `RunFixture.cs` is re-pinned to it when it ends, then the
+Dynamics suite; ckA/ckB/ckC and `ckUi` follow one at a time, and `--verify-checkpoint`
+with contact per part on one of them. **The price screen is read** (`r46price-s1`,
+`support-cost-spec.md` §8 and `per-part-contact-spec.md` §7): both books closed, the
+support at 1.2 mW a body over a crowd of small leaves, `ovl/body` under 0.005, and no kill
+in 3,000 s, so the touching-part clause of the kill row stays owed to the round. **The
+launcher is written** (`rounds/env-r46.ps1`, `010adb3`: round 45's block with the seven
+rules and the beach at the ruled values, D109's founder rule set to 0 beside D116's), and a
+3,000 s dt 0.02 screen of it with every rule on (`r46scr-s1`, `configHash e32cf74f`,
+under `scratch/r46-build/runs/`) is running as the books check and the offset spec's
+test 6; its header carries every token. It ends at 3,000 s, when the floor closes, so the
+trickle never fires in it; a second short screen with the floor closing at 300 s reads the
+trickle, the food rule and the extinct ending, after the fixture ends (one farm run beside
+another, no suite). The ledger at the round's prices is in the prereg draft (the leaf's
+support 1% of standing cost; flat doubles its income and turns a loss at 12 m into a
+living; the offset 3.7 mW on the body). Then the pictures of the screen (the theatre's
+`-From snapshot` on worker 6, the side and the bed views: where the crowd stands against
+the shore, since the screen's first 800 s put 42% of it in the rim quarter against round
+45's fifth), the prereg as 0116 committed before the queue, and the launch: three seeds,
+30,000 s at dt 0.01, five threads each, checkpoints every 2,500 s.
 The pre-registration is drafted with the ruled values in brackets
-(`logbook/specs/r46-prereg-draft.md`, K1 to K10: the crowd lies down, the offset is the way,
-the second founding founds a line, the killer on the repaired window, the price stops the
-fan, the books, contact on the part, the cost); it becomes 0116 at launch.
+(`logbook/specs/r46-prereg-draft.md`, K1 to K11: the crowd lies down, the offset is the way,
+the trickle founds an eater's line, the killer on the repaired window, the price stops the
+fan, the books, contact on the part, the cost, the shelf's larder); it becomes 0116 at
+launch.
 
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,
