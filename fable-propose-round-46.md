@@ -144,6 +144,5 @@ vertical).
 6. The beach in this round at a 1 m shoal and a 15 m fade, with the second founding window's
    cohort placed over the shelf by rule: yes, or the beach alone with the cohort placed as
    the first founders were.
-7. The snow's life: a lower remineralisation rate so that snow reaches the shelf (screened;
-   the recommendation follows the screen), or the round's 0.002 per second kept and the beach
-   read as a place only.
+7. The snow's life: ruled (D112, "Agreed"): remineralisation at 0.0005 per second, pending
+   the quarter-rate screen's reading of the plants' cost.

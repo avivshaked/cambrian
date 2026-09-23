@@ -17,7 +17,8 @@ killer read on a window it can meet.
 
 ## The world
 
-Round 45's (D108, D109: 22,000 m², 45 m, 15,000 units as islands, matter-mix 0.02, shade
+Round 45's (D108, D109: 22,000 m², 45 m, 15,000 units as islands, matter-mix 0.02, remin
+0.0005 by D112 (the snow's life, a quarter of round 45's rate), shade
 off, the mouth's prices) with the five rules on at the ruled values: `light by exposure`,
 `buoyancy offset [0.02 W/m3]`, `consumers found at [6000] s ([40] over [1000] s)`, `support
 [0.1] W/m2/m2`, `contact per part`, the bed's `tilt [96] m shore [1] m` with the fade at

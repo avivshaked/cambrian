@@ -131,6 +131,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D109](#d109) | Islands and deserts: the matter seeded by a noise map into the top of a tenth of the columns, founders planted in the islands, the matter grid stirred at the snow's 0.02 m²/s (it was a hard default of 2), and 15,000 units so the water is round 44's density once the islands have spread; a light shade map built and off, its physical form (a shelf reef) proposed | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night, step by step after five screens |
 | [D110](#d110) | Light by exposure: a part earns on, and shades with, its projected area onto the horizontal in its actual pose (a flat leaf twice the orientation average, an edge-on one about nothing, a random crowd unchanged), the hull's one-sided shadow as the cap, a tunable off by default; the one-part leaf's way to lie flat (a buoyancy offset) put for its own ruling | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 morning from the owner's observation of the pictures, with two conditions (the cost weighed, a way to affect the angle) |
 | [D111](#d111) | The buoyancy offset: a part's centre of buoyancy may sit off its mass centre along its thinnest axis, a heritable priced genome trait (format 8) so a one-part leaf turns face up by the water it displaces; D110's second condition answered | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("agreed") after the biology was laid out |
+| [D112](#d112) | The snow's life: remineralisation at 0.0005 per second from round 46, a quarter of rounds 41 to 45's rate, so that marine snow lives long enough to fall from the crowd on to the beach's shelf; the plant world read as the snow's thinness, not its depth | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("Agreed"), pending the quarter-rate screen's reading of the plants' cost |
 
 ---
 
@@ -6048,3 +6049,33 @@ it, D109's objection). Letting the offset act only on a buoyancy cell's lift: th
 photosynthetic leaf carries no lift and would be left as it is, which is the case the rule
 exists for. Free of charge: a trait nothing charges for is one the genome records and
 selection cannot see (the lift rule's reason).
+
+
+### D112
+**The snow's life: remineralisation at 0.0005 per second, so that marine snow reaches the beach's shelf** · 2026-09-23
+
+**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 ("Agreed"), on
+the recommendation that followed the stomach screens, and pending the quarter-rate screen's
+reading of what the plants pay (`r46remin-5e4-s1`, running at the ruling; its reading goes
+into `logbook/specs/stomach-screens.md` and round 46's pre-registration).
+
+**Decision.** `RemineralisationPerSecond` (`EVOSIM_REMIN`) is 0.0005 from round 46, a quarter
+of the 0.002 every round since 41 has run. No build: the tunable exists (D098). It is a new
+realisation of every seed and lands with round 46's other rules on one set of fixtures.
+
+**Why.** The stomach screens (`logbook/specs/stomach-screens.md`) read the plant world as the
+snow's thinness and not its depth: at 0.002 per second the snow lives about eight minutes and
+falls a metre at 2 mm/s, so it never reaches a floor (11 J of 80 kJ on the whole floor at
+6,000 s) and the eaters' larder is a layer a few metres thick under the plant crowd at about
+0.5 J/m³, the stomach's break-even, where four stomach mutants born inside it broke even and
+bred nothing. Dissolving is the dial a thousand times off nature relative to the fall (marine
+snow falls 10 to 100 m a day and takes weeks to dissolve); the sink rate is not. At 0.0005 the
+half-life is 23 minutes and the snow falls up to a few metres, from a crowd at about 6 m on to
+the beach's shelf at 6 to 12 m, thickening the layer under the crowd about four times, over the
+break-even. The cost is parked matter: about 800 of 15,000 units sit in snow today, about
+3,000 at a quarter of the rate, a fifth of the budget, which the plants can bear; a tenth of
+the rate would park half the budget and halve the crowd, and is not taken.
+
+**Rejected.** Faster sinking (it carries the snow away from the plants' layer in the same eight
+minutes, and the rate would be the one far from nature). A rate below 0.0005 (half the budget
+parked). The beach alone at 0.002 (the snow dissolves before it lands on any shelf).

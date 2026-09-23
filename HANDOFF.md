@@ -108,9 +108,12 @@ metre, so the larder is a thin layer under the plant crowd at about 0.5 J/m³, t
 break-even, and the four stomach mutants born inside it during B broke even and bred
 nothing. The plant world is the snow's thinness, not its depth; placement in the crowd is
 necessary and not sufficient; the beach feeds an eater only if the snow lives long enough to
-land on its shelf, which is the remineralisation rate (question 7 of the proposal, the
-owner's; a ledger and dt 0.02 screen of the plants' side at 0.0005 and 0.0002 per second is
-next). **The owner's answer is the beach** (2026-09-23, 14:00: "the gradient floor back,
+land on its shelf, which is the remineralisation rate. **Ruled the same afternoon: D112,
+remineralisation at 0.0005 per second from round 46** ("Agreed"), pending the quarter-rate
+screen `r46remin-5e4-s1` (dt 0.02, 12,000 s, launched 14:32; a one-shot look at 15:41 reads
+the snow's thickness, the floor's stock and the plants' cost against screen B and appends it
+to `stomach-screens.md`). The beach build is on an Opus subagent from
+`scratch/r46-build/beach-brief.md` since 14:31. **The owner's answer is the beach** (2026-09-23, 14:00: "the gradient floor back,
 and finally put in the beach"): the gradient floor has in fact been on since round 39, its
 shallow arc 30 m down; the beach raises the tilt to about 96 m so the floor breaks the
 surface at the shore, clamped at a shoal a metre deep, with the current's potential faded
