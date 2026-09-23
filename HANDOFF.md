@@ -137,9 +137,16 @@ support cost at 0.1 W/m²/m², D114 contact on the part, D115 the owner's foundi
 place of the timed window (one founder per 30 s for the whole run, booked as influx, the
 floor unchanged, an empty world game over unless founders are being added), D116 founders
 follow their food in place of a placed cohort, D112 the snow's life, the beach and the reef
-for 47. The builds that remain: the trickle and the food rule
-(`logbook/specs/founding-trickle-spec.md`), the support cost, per-part contact; then the
-fixtures re-recorded once, the ledger screens, the prereg as 0116, the launch.
+for 47. **Built and merged since (evening):** the beach (`cc4907f`, the fade as the quintic
+times a depth factor with a C² turnover; the crowd fixture's regress identical in 145
+fields; the smoke `r46beachsmoke-s1` at tilt 96, shore 1, fade 15, remin 0.0005 closed
+both books at 600 s with the shelf holding 1.6% of the snow against 0.01% on the old floor;
+its pictures under `scratch/snaps/r46beachsmoke-s1/`) and the support cost (`58161f1`,
+merged from a worktree; the giant nets −90 W at the code's lit area, `support-cost-spec.md`
+§7). Per-part contact is being built in a worktree. The builds that remain: the trickle and
+the food rule (`logbook/specs/founding-trickle-spec.md`); then the fixtures re-recorded
+once for every tunable (`StateVersion` 8 refuses every checkpoint), the ledger screens,
+the prereg as 0116, the launch.
 The pre-registration is drafted with the ruled values in brackets
 (`logbook/specs/r46-prereg-draft.md`, K1 to K10: the crowd lies down, the offset is the way,
 the second founding founds a line, the killer on the repaired window, the price stops the

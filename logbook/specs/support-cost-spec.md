@@ -80,3 +80,21 @@ It prices a leaf's reach and not a joint's torque, a stalk's thickness or a body
 sheet of fixed thickness has mass in proportion to area, so mass times distance is the same
 shape and is not a second term. It does not bound the size of a single part, which D107
 left to the economy and which a single part cannot escape by copying itself.
+
+## 7. As built (2026-09-23, an Opus subagent in a worktree, merged at `58161f1`)
+
+Sections 2 to 5 as written, with `SupportCostTests` (12) and the ledger's `support W` line.
+Four things differ from the text above. The giant nets **−90 W** at the price and not −179:
+the screen gave each of its sheets a lit area equal to its largest face, and the code's
+`LitArea` is a quarter of the surface, about half of that for a thin sheet; both readings are
+in test 3 and both are a loss, so the price still stops the fan. The giant's genome is not
+under `inocula/`, because its source run is round 44 at genome format 7, which this build
+refuses; test 3 builds the body part by part from the screen's dimensions. The absorptive
+row carries `support`, so `WorldState.StateVersion` is 8 and every checkpoint on disk is
+refused (re-recorded once with the fixtures). And the two-part body and the kelp read 6.14
+and 12.09 W through the ledger against the screen's 6.15 and 12.19, because round 45's
+capsule leaf with a self-edge puts each part 0.673 m out rather than the screen's 0.5; at the
+real distances the ledger's support equals the formula exactly. The support area is taken
+before D099's cap and before D110's exposure; `supportWatts` and the row's `support` are
+unworn by senescence while the bill is worn; both are null at price 0 and `meanReach` is
+written at any price.
