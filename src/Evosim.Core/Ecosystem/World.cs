@@ -1005,6 +1005,19 @@ namespace Evosim.Core
                     config.BedTiltMetres, config.BedScaleMetres, Rng.SeedFor(seed, BedShapeIndex))
                 : null;
 
+            // D111. A negative price is a part paid to float off its centre, which is a free
+            // energy source; a non-finite one is an arithmetic hole in every bill.
+            if (float.IsNaN(config.BuoyancyOffsetWattsPerCubicMetre) ||
+                float.IsInfinity(config.BuoyancyOffsetWattsPerCubicMetre) ||
+                config.BuoyancyOffsetWattsPerCubicMetre < 0f)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"BuoyancyOffsetWattsPerCubicMetre is {config.BuoyancyOffsetWattsPerCubicMetre}. ") +
+                    "It is a price, finite and at or above 0; 0 turns the offset off.",
+                    nameof(config));
+            }
+
             ValidateVent(config, patchCount);
             ValidateMatterInflux(config, patchCount);
 
@@ -3088,7 +3101,8 @@ namespace Evosim.Core
 
             Genome childGenome = Mutator.Mutate(
                 parent.Genome, new Rng(seed), Config.Mutation, Config.CellTypes, Config.Genome,
-                Config.SensorPool());
+                Config.SensorPool(),
+                buoyancyOffsetPriced: Config.BuoyancyOffsetWattsPerCubicMetre > 0f);
 
             Phenotype body = Developer.Develop(
                 childGenome, Config.Development, null, Config.Shapes);
@@ -3434,6 +3448,27 @@ namespace Evosim.Core
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
 
             EnsureFounderAcceptance();
+
+            // D111, before anything is spent: an inoculant floating off its centre in a world
+            // that does not price it would carry a trait nothing charges for. Loud, for rule 3's
+            // reason below — an assay names its genome deliberately.
+            // Only this rule is asked here; everything else Validate says is Develop's to say, as
+            // it always was, against the registry it always used.
+            if (!(Config.BuoyancyOffsetWattsPerCubicMetre > 0f))
+            {
+                for (int n = 0; n < genome.Nodes.Count; n++)
+                {
+                    if (genome.Nodes[n].BuoyancyOffset == 0f) continue;
+
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"inoculant's node {n} floats off its centre (BuoyancyOffset ") +
+                        FormattableString.Invariant($"{genome.Nodes[n].BuoyancyOffset}) in a world ") +
+                        "that does not price it (BuoyancyOffsetWattsPerCubicMetre 0), D111. " +
+                        "Set the price, or bring the genome's offsets to 0.",
+                        nameof(genome));
+                }
+            }
 
             // Rule 3, asked once and before anything is spent. Every copy is the same genome
             // developed the same way, so the answer is the same for all of them; asking inside

@@ -428,6 +428,9 @@ namespace Evosim.Core
                 config.AttackWattsPerUnit > 0f || config.IntakeWattsPerUnit > 0f ||
                 config.ProtectionWattsPerUnit > 0f || config.ToughnessWattsPerUnit > 0f;
 
+            // D111's price, read once for the same reason: at 0 no float is added.
+            float offsetPrice = config.BuoyancyOffsetWattsPerCubicMetre;
+
             foreach (PhenotypePart part in phenotype.Parts)
             {
                 CellType cell = config.CellTypes.Resolve(part.CellTypeId);
@@ -467,6 +470,10 @@ namespace Evosim.Core
                 // cubic metre and is billed per cubic metre, and only above the neutral 1, so a
                 // part that has not been made tough pays nothing.
                 if (priced) upkeep += AttributeWatts(part, config) * seconds;
+
+                // D111: gas held on one face is tissue kept, billed per cubic metre of the part
+                // and worn with the rest. Charged on a sphere too, where it buys nothing.
+                if (offsetPrice > 0f) upkeep += BuoyancyOffsetWatts(part, config) * seconds;
 
                 // Neurons are billed where they live, and neural tissue discounts them (§5A.1).
                 // Counting them creature-wide instead would price a brain identically to the same
@@ -551,6 +558,23 @@ namespace Evosim.Core
                 (above > 0f
                     ? config.ToughnessWattsPerUnit * above * Math.Max(0f, part.Volume)
                     : 0f);
+        }
+
+        /// <summary>
+        /// What one part pays to float off its centre, in watts — D111,
+        /// <c>price · |offset| · volume</c>.
+        /// </summary>
+        /// <remarks>
+        /// Public for <see cref="AttributeWatts"/>'s reason: the screen that chooses the price and
+        /// the bill a body pays read one expression.
+        /// </remarks>
+        public static float BuoyancyOffsetWatts(PhenotypePart part, RunConfig config)
+        {
+            if (part == null) throw new ArgumentNullException(nameof(part));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            return config.BuoyancyOffsetWattsPerCubicMetre * Math.Abs(part.BuoyancyOffset) *
+                   Math.Max(0f, part.Volume);
         }
 
         /// <summary>

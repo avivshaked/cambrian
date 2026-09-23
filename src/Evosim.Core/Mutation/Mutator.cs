@@ -48,7 +48,8 @@ namespace Evosim.Core
 
         public static Genome Mutate(
             Genome parent, Rng rng, MutationRates rates = null, CellTypeRegistry cellTypes = null,
-            RandomGenomeOptions genome = null, SensorChannel[] sensorPool = null)
+            RandomGenomeOptions genome = null, SensorChannel[] sensorPool = null,
+            bool buoyancyOffsetPriced = false)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (rng == null) throw new ArgumentNullException(nameof(rng));
@@ -78,7 +79,9 @@ namespace Evosim.Core
 
             for (int n = 0; n < child.Nodes.Count; n++)
             {
-                MutateNode(child, child.Nodes[n], rng, rates, cellTypes, genome, sensorPool);
+                MutateNode(
+                    child, child.Nodes[n], rng, rates, cellTypes, genome, sensorPool,
+                    buoyancyOffsetPriced);
             }
 
             if (rng.Chance(rates.AddNodeChance) && child.Nodes.Count < rates.MaxNodes)
@@ -88,7 +91,7 @@ namespace Evosim.Core
 
             PruneVanishedNodes(child, rates);
 
-            IReadOnlyList<string> issues = child.Validate(cellTypes);
+            IReadOnlyList<string> issues = child.Validate(cellTypes, buoyancyOffsetPriced);
             if (issues.Count > 0)
             {
                 throw new InvalidOperationException(
@@ -152,7 +155,7 @@ namespace Evosim.Core
 
         private static void MutateNode(
             Genome g, MorphNode node, Rng rng, MutationRates rates, CellTypeRegistry cellTypes,
-            RandomGenomeOptions genome, SensorChannel[] sensorPool)
+            RandomGenomeOptions genome, SensorChannel[] sensorPool, bool buoyancyOffsetPriced)
         {
             node.Dimensions = new Float3(
                 PerturbPositive(node.Dimensions.X, rng, rates),
@@ -199,6 +202,18 @@ namespace Evosim.Core
             {
                 node.Lift = Math.Min(
                     BuoyancyCell.MaxLiftSinkMultiples, PerturbPositive(node.Lift, rng, rates));
+            }
+
+            // D111. Nothing is drawn in a world that does not price it, which is every recorded
+            // world: the stream a birth consumes is then the one it always was, the module
+            // gene's rule. Lift's rate (ScalarChance), on every node whatever it is made of,
+            // since any part floats. The step is absolute, a Gaussian of ScalarStdDev on the
+            // half-range, where lift's is relative: from the founders' 0 a relative step never
+            // leaves the floor, MutateAttributes' argument.
+            if (buoyancyOffsetPriced && rng.Chance(rates.ScalarChance))
+            {
+                node.BuoyancyOffset = Clamp(
+                    node.BuoyancyOffset + rng.Gaussian(0f, rates.ScalarStdDev), -1f, 1f);
             }
 
             for (int e = node.Edges.Count - 1; e >= 0; e--)

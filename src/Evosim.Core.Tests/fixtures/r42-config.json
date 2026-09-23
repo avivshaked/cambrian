@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "38202c74d38f095a",
+  "configHash": "c27e2b01db83f457",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -224,6 +224,7 @@
     "speciesTopologyWeight": 1
   },
   "world": {
+    "buoyancyOffsetWattsPerCubicMetre": 0,
     "conceptionOrder": "Age",
     "floorRefugeMetres": 0,
     "foundersFollowMatter": false,

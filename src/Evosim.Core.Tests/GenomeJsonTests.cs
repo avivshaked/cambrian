@@ -259,7 +259,6 @@ namespace Evosim.Core.Tests
             Assert.Contains("\"growth\":\"Indeterminate\"", text);
             Assert.Contains("\"maxModules\":5", text);
             Assert.Contains($"\"format\":{GenomeJson.FormatVersion}", text);
-            Assert.Equal(7, GenomeJson.FormatVersion);
 
             Genome back = GenomeJson.Read(text);
             Assert.Equal(ModuleGrowth.Indeterminate, back.Nodes[0].Growth);

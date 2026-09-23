@@ -213,6 +213,9 @@ namespace Evosim.Core
                 Intake = node.Intake,
                 Protection = node.Protection,
                 Toughness = node.Toughness,
+
+                // D111, on every shape; a sphere carries it and the solver finds no axis for it.
+                BuoyancyOffset = node.BuoyancyOffset,
                 ParentAnchorLocal = parentAnchorLocal,
                 ChildAnchorLocal = childAnchorLocal,
                 Neurons = node.Neurons,

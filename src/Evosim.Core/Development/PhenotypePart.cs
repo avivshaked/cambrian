@@ -96,6 +96,39 @@ namespace Evosim.Core
         /// </summary>
         public float Toughness { get; internal set; } = 1f;
 
+        /// <summary>
+        /// Where this part floats from, along its thinnest axis, as a fraction of that
+        /// half-extent — <see cref="MorphNode.BuoyancyOffset"/>, D111.
+        /// </summary>
+        /// <remarks>
+        /// A fraction and not metres, so growth and <see cref="Phenotype.Scaled"/> leave it as it
+        /// is; the solver multiplies it by the half-extent the part has now. A mirrored part keeps
+        /// the value: a reflection carries the thin axis with the part, and the offset face with it.
+        /// </remarks>
+        public float BuoyancyOffset { get; internal set; }
+
+        /// <summary>
+        /// The part's thinnest axis in its own frame, 0 for x, 1 for y, 2 for z, or -1 for a
+        /// sphere, which has none — D111's lever arm.
+        /// </summary>
+        /// <remarks>
+        /// The first of a tie, so a cube takes x: a cube has no thinnest face either, but it is
+        /// a box and its offset still turns it, and an arbitrary axis chosen the same way every
+        /// time is a body the genome describes. A capsule takes its box's axes, as D099's hull
+        /// and D110's exposure do.
+        /// </remarks>
+        public int ThinAxis
+        {
+            get
+            {
+                if (ShapeId == ShapeIds.Sphere) return -1;
+
+                float x = Math.Abs(HalfExtents.X), y = Math.Abs(HalfExtents.Y), z = Math.Abs(HalfExtents.Z);
+                if (x <= y && x <= z) return 0;
+                return y <= z ? 1 : 2;
+            }
+        }
+
         /// <summary>Min/max per DOF, in radians.</summary>
         public Float2[] JointLimits { get; internal set; } = Array.Empty<Float2>();
 

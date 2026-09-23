@@ -194,6 +194,17 @@ namespace Evosim.Dynamics
                 Volume[i] = volume;
                 Lift[i] = part.Lift;
                 Power[i] = part.Power;
+
+                // D111's lever, from the half-extent the link has now, so a grown body's arm is
+                // the built body's to the bit.
+                int thin = part.ThinAxis;
+                BuoyancyOffset[i] = part.BuoyancyOffset;
+                ThinAxis[i] = thin;
+                BuoyancyArm[i] = thin < 0
+                    ? 0.0
+                    : part.BuoyancyOffset * System.Math.Abs((double)(thin == 0
+                        ? part.HalfExtents.X
+                        : thin == 1 ? part.HalfExtents.Y : part.HalfExtents.Z));
                 totalVolume += volume;
 
                 // The builder's own two lines: the plain mass with its floor, then the effective

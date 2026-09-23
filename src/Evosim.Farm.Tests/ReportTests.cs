@@ -118,7 +118,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
                 // D110's token, beside the silhouette cap it shares the shadow with; averaged in
                 // every recorded world.
-                .Replace(" · silhouette on · ", " · silhouette on · light averaged · ")
+                .Replace(" · silhouette on · ", " · silhouette on · light averaged · buoyancy offset off · ")
                 .Replace(" · area ", " · matter-mix 2 m2/s · area ")
 
                 // D106's, the same way: appended at the end of the line, before the hash, which is
@@ -127,11 +127,12 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // (§9) — round 42 ran under ff557bce2685293a, the module gene filed the same world
                 // under 11602ab76c1e2a19, the mouth's thirteen knobs and four caps under
                 // 4cbb170c61668098, the reach bound under 5b93c47344df9e67, D109's five
-                // island tunables under c862fd2c510b82e9, and D110's light by exposure under this.
+                // island tunables under c862fd2c510b82e9, D110's light by exposure under
+                // 5a456a9e7b2518d3, and D111's buoyancy offset price under this.
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`5a456a9e7b2518d3`");
+                .Replace("`ff557bce2685293a`", "`5e9da13fa5ab246a`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -171,10 +172,13 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · reach off · matter uniform · founders anywhere · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `5a456a9e7b2518d3`", line);
+            Assert.EndsWith(" · configHash `5e9da13fa5ab246a`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
-            Assert.Contains(" · silhouette on · light averaged · selfOverlap 0.1 · ", line);
+            Assert.Contains(" · silhouette on · light averaged · ", line);
+
+            // D111, off: no price, so no torque and no genome floating off its centre.
+            Assert.Contains(" · light averaged · buoyancy offset off · selfOverlap 0.1 · ", line);
 
             // parse-arm.ps1 splits on ' · ' and asks for a token by prefix; nothing may arrive
             // with an empty name or a separator inside a value.
@@ -201,7 +205,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             Assert.Equal(Report.BaseColumns.Length + 4, report.Columns.Count);
             Assert.Equal("t (s)", report.Columns[0]);
-            Assert.Equal("expo", report.Columns[Report.BaseColumns.Length - 1]);
+            Assert.Equal("float off", report.Columns[Report.BaseColumns.Length - 1]);
             Assert.Equal("p0", report.Columns[Report.BaseColumns.Length]);
             Assert.Equal("p3", report.Columns[Report.BaseColumns.Length + 3]);
 
@@ -261,6 +265,9 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             // D110's readout, a dash in every recorded world.
             "expo",
+
+            // D111's, the same.
+            "float off",
         };
 
         /// <summary>

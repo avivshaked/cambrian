@@ -156,6 +156,29 @@ namespace Evosim.Core
         /// </remarks>
         public float Toughness { get; set; } = 1f;
 
+        /// <summary>
+        /// Where this node's parts float from — the centre of buoyancy along the part's own
+        /// thinnest axis, as a fraction of that half-extent, in <c>[−1, 1]</c>. D111,
+        /// <c>logbook/specs/buoyancy-offset-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Gas on one face, and the part floats that face up.</b> The solver puts the part's
+        /// whole displaced weight at this point and its weight at the origin, so a torque turns
+        /// the offset face towards the surface and the net force is what it was. A duckweed
+        /// frond's answer to landing on edge, and under D110 the one-part leaf's only way to lie
+        /// flat. A sphere has no thinnest axis and the value does nothing on it, though it is
+        /// still charged.
+        /// </para>
+        /// <para>
+        /// <b>Carried at 0, and refused above it where nothing prices it</b>
+        /// (<see cref="RunConfig.BuoyancyOffsetWattsPerCubicMetre"/>), the lift rule's reason: a
+        /// trait nothing charges for is one the genome records and selection cannot see. Founders
+        /// draw 0, so a lineage that floats face up found it.
+        /// </para>
+        /// </remarks>
+        public float BuoyancyOffset { get; set; }
+
         /// <summary>The node's local brain. Duplicated with the node — DESIGN.md §4.3.</summary>
         public NeuronDef[] Neurons { get; set; } = Array.Empty<NeuronDef>();
 
@@ -180,6 +203,7 @@ namespace Evosim.Core
                 Intake = Intake,
                 Protection = Protection,
                 Toughness = Toughness,
+                BuoyancyOffset = BuoyancyOffset,
                 Neurons = new NeuronDef[Neurons.Length],
             };
 

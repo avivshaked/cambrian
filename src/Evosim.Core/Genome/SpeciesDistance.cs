@@ -276,6 +276,12 @@ namespace Evosim.Core
                 units += RelativeDiff(na.Lift, nb.Lift);
                 units += RelativeDiff(na.RecursiveLimit, nb.RecursiveLimit);
 
+                // D111. Bounded like an anchor rather than relative like lift: it is signed and
+                // lives in [-1, 1], and a relative difference would read 0.1 against -0.1 as far
+                // apart as 1 against -1. Two genomes at 0 add an exact 0, so every distance in the
+                // record is unchanged.
+                units += Math.Abs(na.BuoyancyOffset - nb.BuoyancyOffset) / 2f;
+
                 int minLimits = Math.Min(na.JointLimits.Length, nb.JointLimits.Length);
                 for (int d = 0; d < minLimits; d++)
                 {

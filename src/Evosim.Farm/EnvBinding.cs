@@ -74,6 +74,9 @@ namespace Evosim.Farm
 
             // D110: a part earns on and shades with its area in its pose. Off is the recorded world.
             Flag("EVOSIM_LIGHT_EXPOSURE", (s, v) => s.LightByExposure = v),
+
+            // D111: the buoyancy offset's price, which is also its switch. 0 is the recorded world.
+            Num("EVOSIM_BUOYANCY_OFFSET_COST", 0f, (s, v) => s.BuoyancyOffsetCost = v),
             Num("EVOSIM_SELF_OVERLAP", 0f, (s, v) => s.SelfOverlap = v),
             Num("EVOSIM_MAX_REACH", 0f, (s, v) => s.MaxReach = v),
 
@@ -483,6 +486,7 @@ namespace Evosim.Farm
             config.PerPatchShading = s.PatchShading;
             config.LightSilhouetteCap = s.SilhouetteCap;
             config.LightByExposure = s.LightByExposure;
+            config.BuoyancyOffsetWattsPerCubicMetre = s.BuoyancyOffsetCost;
             config.SelfOverlapDepthFraction = s.SelfOverlap;
             config.Development.MaxBodyReachMetres = s.MaxReach;
 
@@ -761,6 +765,7 @@ namespace Evosim.Farm
         public float LightReach;
         public bool SilhouetteCap;
         public bool LightByExposure;
+        public float BuoyancyOffsetCost;
         public float SelfOverlap;
         public float MaxReach;
         public float MatterIslands;

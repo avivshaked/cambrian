@@ -28,6 +28,16 @@ namespace Evosim.Dynamics
         public double SurfaceRestoringFraction;
 
         /// <summary>
+        /// Whether a link's displaced weight acts at its buoyancy centre rather than at its
+        /// origin — D111, true where <c>RunConfig.BuoyancyOffsetWattsPerCubicMetre</c> is above 0.
+        /// </summary>
+        /// <remarks>
+        /// False is the recorded solver: <see cref="Fluid.Apply"/> does not enter the branch, so
+        /// not even a zero is added to a torque.
+        /// </remarks>
+        public bool BuoyancyOffsetTorque;
+
+        /// <summary>
         /// Tissue density, kg/m3 — <c>PhenotypeBuilder.DensityKgPerM3</c>. Not a tunable in the
         /// farm either: the buoyancy term divides by the same constant the mass was assigned
         /// with, and passing the water's density in its place would rescale every body's weight.
@@ -218,6 +228,7 @@ namespace Evosim.Dynamics
                 NeutralBodyVolume = fluid.NeutralBodyVolume,
                 SurfaceRestoringFraction = fluid.SurfaceRestoringFraction,
                 WaterHoldSeconds = fluid.WaterHoldSeconds,
+                BuoyancyOffsetTorque = config.BuoyancyOffsetWattsPerCubicMetre > 0f,
 
                 WorldDepthMetres = config.WorldDepthMetres,
                 FloorIsSolid = config.SharedSpace,

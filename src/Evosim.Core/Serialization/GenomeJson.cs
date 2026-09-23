@@ -75,7 +75,15 @@ namespace Evosim.Core
         /// being true the first time a round 44 genome was read back — and <c>toughness</c>
         /// defaulted to zero would hand round 45 a world of bodies that die to a scratch.
         /// </remarks>
-        public const int FormatVersion = 7;
+        /// <remarks>
+        /// 8 — D111 (2026-09-23), the buoyancy offset. A format-7 genome says nothing about where
+        /// its parts float from; every one of them floats from its centre, so the number is
+        /// knowable, and it is refused anyway for §9's reason: a reader that supplies a missing
+        /// field is a reader that will one day supply the wrong one without saying so. The
+        /// inocula were re-extracted once, at 0 (the build's converter under
+        /// <c>scratch/r46-build/</c>).
+        /// </remarks>
+        public const int FormatVersion = 8;
 
         /// <summary>Written for a row that carries no organism id.</summary>
         public const long NoId = -1;
@@ -163,7 +171,9 @@ namespace Evosim.Core
                 throw new FormatException(
                     $"Genome is format {format}, this build reads {FormatVersion}. There is no " +
                     "migration path: re-run, or check out the revision that wrote it. " +
-                    "(Format 7 added the module gene (`Growth`, `MaxModules`) and the four cell " +
+                    "(Format 8 added the buoyancy offset (`BuoyancyOffset`, D111): where along " +
+                    "its thinnest axis a part floats from. " +
+                    "Format 7 added the module gene (`Growth`, `MaxModules`) and the four cell " +
                     "attributes (`Attack`, `Intake`, `Protection`, `Toughness`) of D106, so a " +
                     "format-6 genome says nothing about whether a node's count is fixed or is a " +
                     "rule. Format 6 added the breeding margin (`ReserveMargin`): the " +
@@ -266,6 +276,9 @@ namespace Evosim.Core
             w.Field("protection", node.Protection);
             w.Field("toughness", node.Toughness);
 
+            // D111, format 8.
+            w.Field("buoyancyOffset", node.BuoyancyOffset);
+
             WriteFloat3(w, "dimensions", node.Dimensions);
 
             w.BeginArray("jointLimits");
@@ -302,6 +315,7 @@ namespace Evosim.Core
                 Intake = n["intake"].AsFloat(),
                 Protection = n["protection"].AsFloat(),
                 Toughness = n["toughness"].AsFloat(),
+                BuoyancyOffset = n["buoyancyOffset"].AsFloat(),
                 Dimensions = ReadFloat3(n["dimensions"]),
             };
 

@@ -240,6 +240,8 @@ namespace Evosim.Farm
             double liftHeld = 0d, buoyantDepth = 0d;
             int genMin = int.MaxValue, genMax = 0;
             double leafLit = 0d, leafExposed = 0d;
+            bool offsetPriced = world.Config.BuoyancyOffsetWattsPerCubicMetre > 0f;
+            double leafArea = 0d, leafOffset = 0d;
             int belowWorld = 0, absorptiveBelowWorld = 0;
 
             double matterLocked = world.StandingJoulesInBodies / world.Config.JoulesPerUnit;
@@ -303,6 +305,19 @@ namespace Evosim.Farm
 
                         leafLit += part.LitArea;
                         leafExposed += (double)part.LitArea * exposure[part.Index];
+                    }
+                }
+
+                // D111's readout, over the same leaves and weighted by the same area, the
+                // offset's size and not its sign: which face floats up is the body's business.
+                if (offsetPriced && creature.HasPhotosyntheticTissue)
+                {
+                    foreach (PhenotypePart part in creature.Phenotype.Parts)
+                    {
+                        if (part.CellTypeId != CellTypeIds.Photosynthetic) continue;
+
+                        leafArea += part.LitArea;
+                        leafOffset += (double)part.LitArea * Math.Abs(part.BuoyancyOffset);
                     }
                 }
 
@@ -381,6 +396,9 @@ namespace Evosim.Farm
             // Area-weighted, so 1 is a crowd of random poses and 2 is every leaf flat; NaN where
             // there is nothing to weigh, which the row writes as null and the table as a dash.
             double meanExposure = leafLit > 0d ? leafExposed / leafLit : double.NaN;
+
+            // The same shape: NaN with the price at 0 or no leaf alive, a dash in the table.
+            double meanOffset = leafArea > 0d ? leafOffset / leafArea : double.NaN;
 
             HorizontalSpread spread = sim.MeasureHorizontalSpread(absorptiveNow);
 
@@ -760,6 +778,11 @@ namespace Evosim.Farm
                 if (double.IsNaN(meanExposure)) w.Field("meanExposure", (string)null);
                 else w.Field("meanExposure", meanExposure);
 
+                // D111. Null with the price at 0, rather than a 0 that would read as a crowd that
+                // was free to float off-centre and did not.
+                if (double.IsNaN(meanOffset)) w.Field("meanBuoyancyOffset", (string)null);
+                else w.Field("meanBuoyancyOffset", meanOffset);
+
                 long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
                 for (int p = 0; p < harnessPhaseMs.Length; p++)
@@ -952,6 +975,9 @@ namespace Evosim.Farm
 
                 // D110's readout, appended after them.
                 double.IsNaN(meanExposure) ? "—" : meanExposure.ToString("0.###", c),
+
+                // D111's, after it.
+                double.IsNaN(meanOffset) ? "—" : meanOffset.ToString("0.###", c),
             };
 
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));

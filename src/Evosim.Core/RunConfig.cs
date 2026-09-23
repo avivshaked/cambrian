@@ -402,6 +402,31 @@ namespace Evosim.Core
         [Tunable("world")]
         public bool LightByExposure { get; set; }
 
+        /// <summary>
+        /// What a part pays for floating off its centre, W per m³ of the part per unit of
+        /// <see cref="MorphNode.BuoyancyOffset"/> — D111, 2026-09-23,
+        /// <c>logbook/specs/buoyancy-offset-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The switch and the price in one number.</b> Above 0 the solver applies the offset's
+        /// torque, the mutator moves the offset, and <c>Metabolism</c> charges
+        /// <c>price · |offset| · volume</c> in the part's upkeep, worn with the rest by
+        /// senescence. At 0 none of the three happens and a genome carrying a nonzero offset is
+        /// refused (<c>Genome.Validate</c>), so no world carries a trait nothing charges for:
+        /// lift's rule on a cell that holds no gas.
+        /// </para>
+        /// <para>
+        /// <b>0 by default, and 0 is the recorded world to the bit</b>: no draw in the mutator, no
+        /// term in the bill, no branch entered in the solver. The proposal's number is 0.02, a
+        /// tenth of the standing cost at full offset, to be screened before the pre-registration.
+        /// Only the farm binds it (<c>EVOSIM_BUOYANCY_OFFSET_COST</c>); a world built in Unity
+        /// carries it at 0.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "W/m3")]
+        public float BuoyancyOffsetWattsPerCubicMetre { get; set; }
+
         /// <summary>How deep the world is, metres — DESIGN.md §5A.2c.</summary>
         /// <remarks>
         /// <b>The world's first vertical bound, and it exists because detritus has to land

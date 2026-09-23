@@ -14,6 +14,14 @@ were taken from.
 
 ## The files
 
+**Every file in the table below is at genome format 8 since 2026-09-23 (D111).** The
+format-7 files were rewritten by a text edit that changed one byte of the version and added
+`"buoyancyOffset":0` after each node's `toughness` and nothing else
+(`scratch/r46-build/convert/`), and the format-6 ones before them were carried forward the
+same way at D106. The SHA-256s in the table are those of the files as first extracted and
+identify the creature, not the bytes on disk now; a checksum of the current file is
+`sha256sum` away.
+
 | file | what it is | who cites it |
 |---|---|---|
 | `d056-s5-absorptive.json` | the largest-volume absorptive genome in round 6 seed 5's final snapshot at t=22,721; three nodes, developing to one absorptive sphere of about 0.023 m³, brood 2. SHA-256 `e6f8e4da1edb…` | D060; logbook/0043, the first transplant |
@@ -31,6 +39,7 @@ were taken from.
 | `knot-9-r41c-s3-937.json` | the same seed's 2,000 s snapshot, creature 937: the nine-part rigid knot off the same terminal-only self-edge, lit area 0.96 m² over a silhouette of 0.48 m². **Two** parts under D099, the root and one link. Format 6. SHA-256 `08a6decdf3b7…` | as above |
 | `knot-16-jointed-r41b-s1-1632.json` | round 41b seed 1's 5,000 s snapshot, creature 1632: the articulated knot, a twist joint on its link and a reflection on the root's edge, sixteen parts and a lit area of 2.21 m² over a silhouette of 0.46 m². **Three** parts under D099, the root and the reflection's bilateral pair. Format 6. SHA-256 `de7704563e9f…` | as above; the evidence that the knot was not the joint's doing |
 | `bush-16-r41d-s2-15000.json` | round 41d seed 2's 15,000 s snapshot, creature 9137: the bush. One photosynthetic box node with three self-edges and a recursive limit of 3, branching into mirrored copies of itself to depth 2, sixteen rigid parts, 36 self-overlapping pairs, lit area 1.15 m² over a silhouette of 0.60 m², which the D099 cap binds and which still earns 1.7 times a one-part leaf's light on the same matter. Under D101 (self-overlap fraction 0.1) it is a stillbirth. Format 6. SHA-256 `fb1bde72ba97…` | logbook/0108, the round 41d stop; `logbook/specs/cheapening-spec.md` |
+| `r45s1-stomach-100.json` | round 45 seed 1's 100 s snapshot, creature 62: a one-part absorptive sphere founder (0.09 m³, brood 2, adult scale 1), the stomach of the coarse-cell inoculation screens of 2026-09-23 (`r46stom-*`, HANDOFF). Its ledger breaks even at 0.44 J/m³ of snow; dropped at 5 m into 0.004 J/m³ all forty copies starved at a median age of 104 s | logbook/0114's follow-up; the plant-world hypothesis |
 | `spike-reference-config.json` | round 24's `config.json`, byte-identical to `r24-s1` through `r24-s4`'s; refused by every build since the `sense` group and kept as history | the reference world the shared-space spike had to restate by hand, because `EVOSIM_SPIKE_CONFIG` refuses a round-24 config that predates the `sense` group (`logbook/specs/shared-space-spike-report.md`, item 3; logbook/0064) |
 
 Several rows say "no entry names the file". That is their state as found: they were inputs

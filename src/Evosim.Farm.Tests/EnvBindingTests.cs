@@ -34,7 +34,9 @@ namespace Evosim.Farm.Tests
         /// in the cell types' contribution) moved it to <c>4cbb170c61668098</c>, and the reach
         /// bound (<c>DevelopmentLimits.MaxBodyReachMetres</c>, fable-propose-body-reach.md, off
         /// here) moved it to <c>5b93c47344df9e67</c>, D109's island tunables to
-        /// <c>c862fd2c510b82e9</c>, and D110's light by exposure (off here) to this. A tunable is
+        /// <c>c862fd2c510b82e9</c>, D110's light by exposure (off here) to
+        /// <c>5a456a9e7b2518d3</c>, and D111's buoyancy offset price (0 here, <c>pfix7</c>) to
+        /// this. A tunable is
         /// part of the hash whatever
         /// its default, which is §9's rule and the reason a config written before a tunable is
         /// refused rather than defaulted. What this constant still pins is the thing the test was
@@ -44,7 +46,7 @@ namespace Evosim.Farm.Tests
         /// world, filed under a new name. <c>scratch/r45-build</c>'s regress is what says the
         /// world did not move — every shared field of a 1,000 s run identical at every sample.
         /// </remarks>
-        private const string Round42ConfigHash = "5a456a9e7b2518d3";
+        private const string Round42ConfigHash = "5e9da13fa5ab246a";
 
         /// <summary>Round 42 seed 1's environment, from <c>rounds/launch-r42.ps1</c>.</summary>
         /// <remarks>

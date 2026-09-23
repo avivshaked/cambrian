@@ -74,6 +74,29 @@ namespace Evosim.Dynamics
         public readonly double[] Volume;
         public readonly double[] Lift;
 
+        /// <summary>
+        /// D111's offset per link, the fraction of the thin half-extent the buoyancy centre sits
+        /// at — <see cref="PhenotypePart.BuoyancyOffset"/>.
+        /// </summary>
+        public readonly double[] BuoyancyOffset;
+
+        /// <summary>
+        /// Each link's thinnest axis in its own frame, 0 to 2, or -1 for a sphere —
+        /// <see cref="PhenotypePart.ThinAxis"/>.
+        /// </summary>
+        public readonly int[] ThinAxis;
+
+        /// <summary>
+        /// The buoyancy centre's distance from the origin along <see cref="ThinAxis"/>, metres:
+        /// the offset times the thin half-extent the link has now, signed, and 0 on a sphere.
+        /// </summary>
+        /// <remarks>
+        /// Metres and not the fraction, because the fraction is what the genome says and the arm
+        /// is what the torque needs, and a growth resize changes the second without the first; it
+        /// is rewritten with the rest of the sized properties.
+        /// </remarks>
+        public readonly double[] BuoyancyArm;
+
         /// <summary>Total body volume, m3 — what D064's buoyancy factor is a function of.</summary>
         public double TotalVolume { get; private set; }
 
@@ -291,6 +314,9 @@ namespace Evosim.Dynamics
             SmallestInertia = new double[Links];
             Volume = new double[Links];
             Lift = new double[Links];
+            BuoyancyOffset = new double[Links];
+            ThinAxis = new int[Links];
+            BuoyancyArm = new double[Links];
             Power = new double[Links];
 
             ChildAnchor = new double[3 * Links];

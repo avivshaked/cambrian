@@ -89,7 +89,14 @@ namespace Evosim.Core
         /// Registry to resolve <see cref="MorphNode.CellTypeId"/> against.
         /// Defaults to <see cref="CellTypeRegistry.Standard"/>.
         /// </param>
-        public IReadOnlyList<string> Validate(CellTypeRegistry cellTypes = null)
+        /// <param name="buoyancyOffsetPriced">
+        /// Whether the world this genome is to live in charges for
+        /// <see cref="MorphNode.BuoyancyOffset"/> (<see cref="RunConfig.BuoyancyOffsetWattsPerCubicMetre"/>
+        /// above 0). False refuses any nonzero offset; null asks only the range, which is the
+        /// question a genome on its own can answer (development, a file being read).
+        /// </param>
+        public IReadOnlyList<string> Validate(
+            CellTypeRegistry cellTypes = null, bool? buoyancyOffsetPriced = null)
         {
             var issues = new List<string>();
 
@@ -245,6 +252,24 @@ namespace Evosim.Core
                     issues.Add(
                         $"Node {n}: Lift {node.Lift} exceeds the {BuoyancyCell.MaxLiftSinkMultiples}x " +
                         "sink bound, past which the solver rather than the economy decides what happens.");
+                }
+
+                // D111. The range always, because the solver's arm is this times a half-extent
+                // and a value past 1 puts the buoyancy centre outside the part. The price only
+                // where the caller knows the world: Lift's rule, a trait nothing charges for is
+                // one selection cannot see, so a world at price 0 carries none.
+                if (float.IsNaN(node.BuoyancyOffset) || node.BuoyancyOffset < -1f ||
+                    node.BuoyancyOffset > 1f)
+                {
+                    issues.Add(
+                        $"Node {n}: BuoyancyOffset {node.BuoyancyOffset} must lie in [-1, 1], a " +
+                        "fraction of the part's thinnest half-extent.");
+                }
+                else if (buoyancyOffsetPriced == false && node.BuoyancyOffset != 0f)
+                {
+                    issues.Add(
+                        $"Node {n}: BuoyancyOffset {node.BuoyancyOffset} in a world that does not " +
+                        "price it (BuoyancyOffsetWattsPerCubicMetre 0). Nothing would charge for it.");
                 }
 
                 // D106 item 3's four, against the cell type's own caps

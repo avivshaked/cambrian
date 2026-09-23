@@ -471,6 +471,9 @@ namespace Evosim.Core
                     Intake = part.Intake,
                     Protection = part.Protection,
                     Toughness = part.Toughness,
+
+                    // D111: a fraction of the half-extent, so it means the same at any size.
+                    BuoyancyOffset = part.BuoyancyOffset,
                     ParentAnchorLocal = part.ParentAnchorLocal * linear,
                     ChildAnchorLocal = part.ChildAnchorLocal * linear,
                     Neurons = part.Neurons,
@@ -577,6 +580,7 @@ namespace Evosim.Core
                     Intake = part.Intake,
                     Protection = part.Protection,
                     Toughness = part.Toughness,
+                    BuoyancyOffset = part.BuoyancyOffset,
                     ParentAnchorLocal = part.ParentAnchorLocal,
                     ChildAnchorLocal = part.ChildAnchorLocal,
                     Neurons = part.Neurons,

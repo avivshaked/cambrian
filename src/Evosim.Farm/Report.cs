@@ -172,6 +172,10 @@ namespace Evosim.Farm
                 " · silhouette " + (s.SilhouetteCap ? "on" : "off") +
                 // D110, beside the cap it shares the shadow with, as the spec places it.
                 " · light " + (s.LightByExposure ? "by exposure" : "averaged") +
+                // D111, beside the light it turns the leaves towards.
+                " · buoyancy offset " + (s.BuoyancyOffsetCost > 0f
+                    ? s.BuoyancyOffsetCost.ToString("0.####", Inv) + " W/m3"
+                    : "off") +
                 " · selfOverlap " + (s.SelfOverlap > 0f ? s.SelfOverlap.ToString("0.###", Inv) : "off") +
                 " · reach " + (s.MaxReach > 0f ? s.MaxReach.ToString("0.##", Inv) + " m" : "off") +
 
@@ -623,6 +627,10 @@ namespace Evosim.Farm
             // D110, light by exposure: the leaves' area-weighted exposure factor, 1 for a crowd of
             // random poses and 2 for every leaf flat; a dash with the tunable off.
             "expo",
+
+            // D111, the buoyancy offset: the leaves' area-weighted |offset|, 0 at founding and 1
+            // at the range's end; a dash with the price at 0.
+            "float off",
         };
     }
 

@@ -1324,6 +1324,18 @@ actually verifying it.
   build for the next screen goes to another output (`-o artifacts/Evosim.Farm/bin/Release-b`
   and `run-farm.ps1 -Exe`) while a screen runs; the manifest's `farmHash` is of the source
   and does not care which.
+- **Genome format 8 (D111, 2026-09-23) refuses every format-7 file, and the offset is a
+  torque the price switches on.** `buoyancyOffset` sits after `toughness` on every node;
+  the six inocula under `inocula/` were rewritten at 0 by a text edit that changed no other
+  byte (`scratch/r46-build/convert/`), and any snapshot row of rounds 44 and 45 is refused by
+  this build's reader (the theatre's picture reader still draws them, marked `OLD-RUN READ`).
+  With `BuoyancyOffsetWattsPerCubicMetre` at 0 the field is refused above 0, the mutator
+  draws nothing for it (children byte-identical), and the solver never enters the torque
+  branch, so a price of 0 is the recorded world; above 0 the torque is the full displaced
+  weight at the offset point and a new realisation of every seed. The leaf rights itself but
+  does not settle: it first reaches flat in about 1.7 s and then rocks about it with a
+  four-second period, drag being a weak damper at small angles, so a test of the pose
+  asserts "first reaches flat and the swing shrinks", never the angle at a fixed second.
 - **A body's angle is in the poses and, before D110, nowhere in the economy.** A part's lit
   area is a quarter of its surface (Cauchy's orientation average) on both sides of the light,
   so a leaf on edge earned what a flat one did through round 45, and nothing selected a pose;

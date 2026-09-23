@@ -6,7 +6,8 @@ namespace Evosim.Dynamics
     /// The water, ported term for term from <c>Evosim.Sim.FluidEnvironment</c> and
     /// <c>Evosim.Core.FluidModel</c>: panel drag, the drag impulse limiter, added mass,
     /// the water's own acceleration, buoyancy with D064's size scaling and D049's lift, and
-    /// D050/D077's surface rule.
+    /// D050/D077's surface rule; and D111's buoyancy offset, which is the farm's alone (the Unity
+    /// farm does not bind it).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -140,6 +141,7 @@ namespace Evosim.Dynamics
                 // D049/D050/D064/D077's one signed term: excess weight less what the part lifts,
                 // clamped at the waterline and mirrored at the floor where there is no bed.
                 double netDensity = excess * (1.0 - body.Lift[i]);
+                double unclamped = netDensity;
 
                 if (restoringFraction > 0)
                 {
@@ -159,6 +161,28 @@ namespace Evosim.Dynamics
                         -netDensity * body.Mass[i] * config.GravityMetresPerSecondSquared /
                             config.TissueDensity,
                         0);
+                }
+
+                // D111. The part's whole displaced weight, not the 2% excess above, acts at its
+                // buoyancy centre and its weight at the origin, so the force above is untouched
+                // and a torque appears: the lever of a frond with gas on one face, which turns
+                // that face up. The share follows the clamp: none above the waterline and none
+                // where the clamp has zeroed the term, so a body held at the surface is not spun
+                // by water it is not in; below the floor's mirror it is still in water. Not
+                // entered at all where the price is 0, the recorded solver's bits.
+                if (config.BuoyancyOffsetTorque && body.BuoyancyArm[i] != 0.0 && height <= 0 &&
+                    !(netDensity == 0 && unclamped != 0))
+                {
+                    int axis = body.ThinAxis[i];
+                    Vec3 arm = rotation * new Vec3(
+                        axis == 0 ? body.BuoyancyArm[i] : 0.0,
+                        axis == 1 ? body.BuoyancyArm[i] : 0.0,
+                        axis == 2 ? body.BuoyancyArm[i] : 0.0);
+
+                    Vec3 displaced = new Vec3(
+                        0, config.Density * body.Volume[i] * config.GravityMetresPerSecondSquared, 0);
+
+                    torque += Vec3.Cross(arm, displaced);
                 }
 
                 Vec3.Add(body.Fext, 6 * i, torque);
