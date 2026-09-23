@@ -47,6 +47,26 @@ $columnAliases = @{
 }
 $script:aliasNotes = @{}
 
+# D114's census note. From round 46 the farm's contact can put a sphere on every part rather than
+# one on the whole body, and the overlap columns then count pairs of bodies touching part to part:
+# the same names over a different census, so a reader of those columns is told which one it read.
+# Taken from the settings line's `contact per part` / `contact per body` token; a farm report
+# written before the token is the body sphere, the only contact there was.
+$overlapColumns = @('overlaps', 'ovl/body', 'ovl jnt %', 'ovl held %',
+                    'contacts', 'pairs/body', 'pairs jnt %', 'stuck %')
+
+function Get-ContactModel([string[]]$lines) {
+    $settings = ($lines | Select-String 'configHash' | Select-Object -First 1)
+    if (-not $settings) { return $null }
+    $line = $settings.Line
+    # Matched without the separator dot, which Windows PowerShell reads from a BOM-less report as
+    # two ANSI characters.
+    if ($line -match ' contact per part ') { return 'contact per part (D114): a sphere on every part' }
+    if ($line -match ' contact per body ') { return 'contact per body: one sphere a body' }
+    if ($line -match '^engine=dynamics') { return 'contact per body: one sphere a body (written before the token)' }
+    return $null
+}
+
 # Columns shown by default. Named, not positional - resolved per report.
 # 'mat blk' became 'upt lim' with D098: there is no conception the world refuses for want of
 # matter any more, and what a reader wants from a producer is whether its fixation was bound
@@ -145,5 +165,13 @@ foreach ($name in $Names) {
         $said = ($script:aliasNotes.GetEnumerator() | Sort-Object Key |
             ForEach-Object { "$($_.Key) read as $($_.Value)" }) -join '; '
         Write-Output "   (this report names them differently: $said -- a different census, not the same number)"
+    }
+
+    # And which contact the overlap columns counted, when one was shown.
+    if (@($want | Where-Object { $overlapColumns -contains $_ }).Count -gt 0) {
+        $model = Get-ContactModel $lines
+        if ($model) {
+            Write-Output "   (overlap columns: $model -- the two models' counts do not compare)"
+        }
     }
 }

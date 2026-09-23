@@ -14,11 +14,23 @@ namespace Evosim.Dynamics
     public readonly struct OverlapPair
     {
         public OverlapPair(long a, long b, bool jointed, bool held)
+            : this(a, b, jointed, held, -1, -1)
+        {
+        }
+
+        /// <param name="partA">
+        /// <paramref name="a"/>'s part in the first overlapping link pair, under per-part
+        /// contact (D114); -1 under the body sphere, where no part is known.
+        /// </param>
+        /// <param name="partB"><paramref name="b"/>'s part in that pair, or -1.</param>
+        public OverlapPair(long a, long b, bool jointed, bool held, int partA, int partB)
         {
             A = a;
             B = b;
             Jointed = jointed;
             Held = held;
+            PartA = partA;
+            PartB = partB;
         }
 
         /// <summary>The lower of the two creature ids.</summary>
@@ -32,6 +44,20 @@ namespace Evosim.Dynamics
 
         /// <summary>Whether the same two were overlapping on the previous step.</summary>
         public readonly bool Held;
+
+        /// <summary>
+        /// <see cref="A"/>'s part in the first link pair found overlapping, in the contact pass's
+        /// fixed order, under per-part contact (D114); -1 under the body sphere.
+        /// </summary>
+        /// <remarks>
+        /// The pair is still one pair of bodies however many of their parts touch, so the census
+        /// counts what it counted; this is the one link pair a consumer is handed, and it is the
+        /// part that touched rather than the nearest by a search.
+        /// </remarks>
+        public readonly int PartA;
+
+        /// <summary><see cref="B"/>'s part in that link pair, or -1.</summary>
+        public readonly int PartB;
 
         public override string ToString() =>
             System.FormattableString.Invariant($"({A},{B}){(Jointed ? " jointed" : "")}{(Held ? " held" : "")}");
@@ -247,6 +273,18 @@ namespace Evosim.Dynamics
             if (a == null || b == null || !a.Alive || !b.Alive) return false;
             if (a.Links == 0 || b.Links == 0) return false;
 
+            // D114: under per-part contact the pair already names the parts that touched, so the
+            // mouth's contact is the part in contact and not the nearest by origins. A pair from
+            // before a plan change can name a part that is no longer there, and is refused.
+            if (pair.PartA >= 0 && pair.PartB >= 0)
+            {
+                if (pair.PartA >= a.Links || pair.PartB >= b.Links) return false;
+
+                partA = pair.PartA;
+                partB = pair.PartB;
+                return true;
+            }
+
             double best = double.PositiveInfinity;
 
             for (int i = 0; i < a.Links; i++)
@@ -302,6 +340,7 @@ namespace Evosim.Dynamics
 
             int count = _creatures.Count;
             bool events = Config.ContactEvents;
+            bool perPart = Config.ContactPerPart;
 
             for (int i = 1; i < count; i++)
             {
@@ -344,7 +383,12 @@ namespace Evosim.Dynamics
                     if (jointed) OverlapPairsJointedThisStep++;
                     if (held) OverlapPairsHeldThisStep++;
 
-                    if (events) _overlaps.Add(new OverlapPair(a.Id, id, jointed, held));
+                    if (events)
+                    {
+                        _overlaps.Add(perPart
+                            ? new OverlapPair(a.Id, id, jointed, held, a.OverlapPart(k), a.OverlapOtherPart(k))
+                            : new OverlapPair(a.Id, id, jointed, held));
+                    }
                 }
 
                 if (touching) OverlapBodiesThisStep++;

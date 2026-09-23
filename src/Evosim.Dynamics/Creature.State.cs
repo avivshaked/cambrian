@@ -198,6 +198,9 @@ namespace Evosim.Dynamics
             _pendingVelocity = ReadVec(r);
             _pendingActive = r.ReadBoolean();
 
+            // D114's spheres, re-derived from what was just read rather than stored.
+            RestoreLinkSpheres();
+
             int held = r.ReadInt32();
             if (_heldIds.Length < held) _heldIds = new long[held];
             for (int i = 0; i < held; i++) _heldIds[i] = r.ReadInt64();

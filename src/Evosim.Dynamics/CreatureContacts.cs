@@ -71,6 +71,67 @@ namespace Evosim.Dynamics
             _overlapIds[_overlapCount++] = id;
         }
 
+        // D114's link pair for each overlapping body: this body's part, then the other's.
+        // Filled only by NoteOverlapPart, so a per-body world never allocates it.
+        private int[] _overlapParts = Array.Empty<int>();
+
+        /// <summary>
+        /// This body's part in the first overlapping link pair with neighbour <paramref name="at"/>,
+        /// under per-part contact; -1 under the body sphere.
+        /// </summary>
+        public int OverlapPart(int at) => _overlapParts.Length > 2 * at ? _overlapParts[2 * at] : -1;
+
+        /// <summary>The neighbour's part in that pair; -1 under the body sphere.</summary>
+        public int OverlapOtherPart(int at) =>
+            _overlapParts.Length > 2 * at + 1 ? _overlapParts[2 * at + 1] : -1;
+
+        /// <summary>
+        /// Records one overlapping link pair under per-part contact (D114): the neighbour once,
+        /// however many of its parts touch, with the first link pair seen.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The list stays one entry a body and ascending by id</b>, which is what the census
+        /// counts and what <see cref="DynamicsWorld.CloseContactStep"/>'s held test and event list
+        /// assume: a pair of bodies touching at three pairs of parts is one overlapping pair, so
+        /// <c>overlaps</c> and <c>ovl/body</c> keep their meaning across the two models.
+        /// </para>
+        /// <para>
+        /// <b>First seen is a fixed order.</b> The contact pass walks this body's links in index
+        /// order and, for each, the grid's candidates in ascending (body, link) order, so the pair
+        /// kept is the same at any thread count. A neighbour first met through a later link can
+        /// have a lower id than one already listed, so it is inserted in its place rather than
+        /// appended; the list is tens of entries at most, for <see cref="HeldWith"/>'s reason.
+        /// </para>
+        /// </remarks>
+        internal void NoteOverlapPart(long id, int part, int otherPart)
+        {
+            int at = _overlapCount;
+            while (at > 0 && _overlapIds[at - 1] > id) at--;
+            if (at > 0 && _overlapIds[at - 1] == id) return;
+
+            if (_overlapCount == _overlapIds.Length)
+            {
+                Array.Resize(ref _overlapIds, _overlapIds.Length == 0 ? 8 : _overlapIds.Length * 2);
+            }
+            if (_overlapParts.Length < 2 * _overlapIds.Length)
+            {
+                Array.Resize(ref _overlapParts, 2 * _overlapIds.Length);
+            }
+
+            for (int k = _overlapCount; k > at; k--)
+            {
+                _overlapIds[k] = _overlapIds[k - 1];
+                _overlapParts[2 * k] = _overlapParts[2 * k - 2];
+                _overlapParts[2 * k + 1] = _overlapParts[2 * k - 1];
+            }
+
+            _overlapIds[at] = id;
+            _overlapParts[2 * at] = part;
+            _overlapParts[2 * at + 1] = otherPart;
+            _overlapCount++;
+        }
+
         /// <summary>Whether this body overlapped <paramref name="id"/> on the <i>previous</i> step.</summary>
         /// <remarks>
         /// A linear walk of a list that is tens of entries at most, for the reason

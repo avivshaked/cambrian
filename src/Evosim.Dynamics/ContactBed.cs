@@ -44,10 +44,24 @@ namespace Evosim.Dynamics
         /// <param name="stiffness">The spring, N/m — <c>m * omega^2</c>, the caller's.</param>
         /// <param name="damping">The damper, N·s/m — <c>2 * zeta * m * omega</c>, the caller's.</param>
         public static Vec3 Push(
-            Creature body, SolverConfig config, double stiffness, double damping)
+            Creature body, SolverConfig config, double stiffness, double damping) =>
+            Push(
+                body.ContactCentre, body.ContactRadius, body.ContactVelocity, body.TotalMass,
+                config, stiffness, damping);
+
+        /// <summary>
+        /// The bed's push on one sphere, N: a body's under the body sphere, a link's under
+        /// per-part contact (D114). The same arithmetic in the same order either way.
+        /// </summary>
+        /// <param name="centre">The sphere's committed centre.</param>
+        /// <param name="radius">Its radius, metres.</param>
+        /// <param name="velocity">Its velocity, for the damper.</param>
+        /// <param name="mass">What it carries against the rock, kg: the body's, or the link's.</param>
+        public static Vec3 Push(
+            Vec3 centre, double radius, Vec3 velocity, double mass,
+            SolverConfig config, double stiffness, double damping)
         {
             BedShape bed = config.Bed;
-            Vec3 centre = body.ContactCentre;
 
             bed.HeightAndGradient(
                 centre.X, centre.Z, out double height, out double gradientX, out double gradientZ);
@@ -59,14 +73,14 @@ namespace Evosim.Dynamics
             double slope = System.Math.Sqrt(
                 1.0 + gradientX * gradientX + gradientZ * gradientZ);
 
-            double penetration = body.ContactRadius - (centre.Y - floorY) / slope;
+            double penetration = radius - (centre.Y - floorY) / slope;
             if (penetration <= 0) return Vec3.Zero;
 
             Vec3 normal = new Vec3(-gradientX, 1.0, -gradientZ) * (1.0 / slope);
-            double approach = Vec3.Dot(body.ContactVelocity, normal);
+            double approach = Vec3.Dot(velocity, normal);
 
             return normal * ContactLaw.PairPush(
-                stiffness * penetration - damping * approach, body.TotalMass, approach, config);
+                stiffness * penetration - damping * approach, mass, approach, config);
         }
     }
 }

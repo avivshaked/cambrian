@@ -54,7 +54,10 @@ namespace Evosim.Dynamics
         /// <summary>The contact grid's cell after the last step, metres.</summary>
         public double ContactCellMetres => _grid.CellSize;
 
-        /// <summary>The largest active bounding radius the last step saw, metres.</summary>
+        /// <summary>
+        /// The largest active bounding radius the last step saw, metres: a body's, or under
+        /// per-part contact (D114) a link's.
+        /// </summary>
         public double LargestContactRadius => _grid.LargestRadius;
 
         /// <summary>
@@ -101,7 +104,9 @@ namespace Evosim.Dynamics
 
             long t0 = Stopwatch.GetTimestamp();
 
-            _grid.Build(_creatures, ContactCellOverrideMetres);
+            // D114: the links' spheres rather than the bodies' when the world asks for it.
+            if (Config.ContactPerPart) _grid.BuildLinks(_creatures, ContactCellOverrideMetres);
+            else _grid.Build(_creatures, ContactCellOverrideMetres);
 
             long t1 = Stopwatch.GetTimestamp();
 

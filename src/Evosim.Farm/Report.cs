@@ -300,6 +300,12 @@ namespace Evosim.Farm
                 " prices atk=" + F(s.PriceAttack) + " ink=" + F(s.PriceIntake) +
                 " prt=" + F(s.PriceProtection) + " tgh=" + F(s.PriceToughness) +
                 " mut=" + F(s.AttributeMutation) +
+
+                // D114, after the mouth it hands its parts to and before the hash, the end of the
+                // header being where a new knob goes. Rendered either way: the overlap columns
+                // count a different thing under each model, and analyse-arm.ps1 and
+                // contact_aliases.py read which from this token.
+                " · contact " + (config.ContactPerPart ? "per part" : "per body") +
                 " · configHash `" + config.Hash() + "`";
         }
 
