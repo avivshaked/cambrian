@@ -169,6 +169,24 @@ touching-part clause was dropped from the prereg), a part's largest distance fro
 in the stats (K6 reads the ledger's `farthest part` instead), a timer for the exposure and
 support terms (K10 reads the pace against round 45's), and the snow's floor cell in the
 dump (K11 reads the column mean). `LiveUiCheck` has not been run against the new `ckUi` yet; it is the next theatre check.
+**The four instruments are built and uncommitted in the worktree
+`.claude/worktrees/agent-ab2fe58d8f11894f3`** (an Opus subagent, 2026-09-23 evening; 16
+files, filtered tests green: `part` and `byPart` on the kill row, `maxReach` in the stats
+and `max reach` appended to the table after `trickle`, `wallExposureMs` and `wallLedgerMs`
+with an `inner timers` footer line printed only when either is above 0, the support term
+timed as the whole bill because it is one multiply-add inside `Metabolism.Bill`'s walk,
+`fields/*.snow-floor.f32` with `snowFloor` in `layout.json` and `field-map.py`'s
+`snow-floor12`; `StateVersion` untouched, a restored kill row reads −1/−1, which no farm
+checkpoint ever holds because the lineage queue is drained before one is written). Owed
+before the merge, after the seeds end: the three full suites, the crowd regress of
+`r46fixc-s4` on the instruments build (identical in every recorded field, the new ones
+beside them), `r46-read.py` pointed at the new names (K6b at `maxReach`, K9b at `byPart`,
+K10 at the two timers, K11a at `snow-floor12`), the merge. **A film tool is being built
+beside it** (`unity/Assets/Theatre/Editor/TheatreFilm.cs` and `scripts/theatre-film.ps1`,
+the owner's request of the evening: clips of live play from a checkpoint at 5,000, 15,000
+and 30,000 s, an orbit and a close portrait, frames through the RenderTexture read-back
+and ffmpeg to mp4; a labelled cousin, as the owner accepted for filming); the round's
+clips are taken after the seeds end, one Editor at a time.
 
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,
