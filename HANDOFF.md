@@ -80,7 +80,12 @@ the machine. The support cost's build spec is `logbook/specs/support-cost-spec.m
 square form as one tunable at 0 = off, `DistanceFromRoot` on the part, `support W` and
 `reach m` in the table, the ledger reproducing the screen to the watt); per-part contact's is
 `logbook/specs/per-part-contact-spec.md` (a sphere a link, the push on the link's own Fext
-row, a tunable off by default that is the recorded model bit for bit on one-link bodies).
+row, a tunable off by default that is the recorded model bit for bit on one-link bodies); the
+buoyancy offset's is `logbook/specs/buoyancy-offset-spec.md` (a torque from the displaced
+weight acting off the mass centre, a genome field at format 8, priced) and the consumer's
+second founding's is `logbook/specs/consumer-founding-spec.md` (a second window of random
+consumer-carrying founders when the snow is there, three tunables, `fnd` on the lineage row).
+All five of round 46's specs are written; the builds wait on the rulings and the machine.
 
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,
