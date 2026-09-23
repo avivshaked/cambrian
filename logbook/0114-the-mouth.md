@@ -178,3 +178,167 @@ every clause names its column.
 Whether a body can smell a corpse (rung B). Whether a mouth is a joint's reason to swim
 (no body strokes, still). Whether a claw can be aimed: contact is whatever the water and
 the crowd bring together.
+
+## Read at 30,000 s, three seeds of three
+
+*2026-09-23, morning. The three seeds ended on their budget in 8.2, 7.1 and 6.1 hours, at
+1.02, 1.17 and 1.37 times real time over the run and 0.4 to 0.6 in the last windows, with
+4,400 to 6,100 bodies alive. Nothing diverged. The readings are
+`logbook/specs/r45-read/clauses.txt` and `islands.tsv`; the pictures are drawn from the
+last snapshots.*
+
+| # | prediction | s1 | s2 | s3 | verdict |
+|---|---|---|---|---|---|
+| J1 | a scavenger line founds | no | no | no | fails, 0 of 3 |
+| J2 | a killer line founds (kills in 20 consecutive windows) | no attack | run of 1 | run of 2 | fails, 0 of 3 |
+| J3 | an indeterminate plant survives grazing | no kills | 1 victim | 26 of 38 determinate alive; 1 indeterminate, dead | fails, 0 of 3 |
+| J4 | defence follows offence | prot. only | prot. first | prot. first | fails, 0 of 3 |
+| J5 | `alive` above 1,000 at the end | 5,254 | 6,146 | 4,380 | holds, 3 of 3 |
+| J6 | the books close | yes | yes | yes | holds, 3 of 3 |
+| J7 | the yield is the reserve | nothing eaten | nothing eaten | nothing eaten | fails |
+| J8 | founds in the islands, carried off slowly | 0.74, 0.47 | 0.75, 0.34 | 0.74, 0.36 | holds, 2 of 3 |
+| J9 | spent soup by 8,000 s; snow patchy at the end | 0.14; 0.31 | 0.13; 0.21 | 0.14; 0.41 | first clause holds 3 of 3; second fails 0 of 3 |
+| J10 | `upt lim` above 0.5 in every window after 5,000 s | min 0.59 | 0.62 | 0.60 | holds, 3 of 3 |
+
+The numbers are the clause reader's. J8 is the in-footprint share at 1,000 and 5,000 s
+against thresholds of 0.6 and 0.35; seed 2 fails the second by a hundredth. J9 is the
+spent field's column cv at 8,000 s and the snow's at 30,000 s.
+
+### What it looked like
+
+![Seed 1 from the side at 30,000 s](images/r45-s1-t30000-recon-side.png)
+
+![Seed 2 from the side at 30,000 s](images/r45-s2-t30000-recon-side.png)
+
+![Seed 3 from the side at 30,000 s](images/r45-s3-t30000-recon-side.png)
+
+Every seed ends as a crowd of small leaves filling the disc in the top ten to twelve
+metres. A few hundred bodies hang below that, down to about twenty metres, and nothing
+stands on the bed. There is no crust at the glass: the rim ring holds 0.26 to 0.29 of the
+crowd against 0.25 for an even spread, which is the tank with D090's force and not the
+centrifuge of round 37. Seed 1's crowd is thickest at one side of the tank and thins to
+the other; seed 2's is the densest and the most even; seed 3's is thinner at the surface
+and carries a second cloud fifteen to twenty metres down under the middle of the tank.
+The five-pixel squares in the pictures are bodies too small to draw at the world's scale.
+Seed 3 has hundreds of them and seed 1 a handful, which is the killer clade: its bodies
+are small, and by the end it is 45% of that seed's crowd.
+
+![Seed 3 from the top at 30,000 s](images/r45-s3-t30000-recon-top.png)
+
+![Seed 3 from the side at 5,000 s](images/r45-s3-t5000-recon-side.png)
+
+At 5,000 s the islands are still legible from the side: seed 3's 986 bodies sit in two
+clumps at the surface with a plume of them fifteen metres down between, and the eastern
+half of the tank is empty. By 14,000 s the crowd has spread across the disc, and the maps
+below say what the water did with the field under it.
+
+![Seed 3's fields at 14,000 s](images/r45-s3-t14000-map.png)
+
+![Seed 3's fields at 30,000 s](images/r45-s3-t30000-map.png)
+
+The right panel is the marine snow, the crowd's own field, and it sits under the crowd as
+a halo around the densest knot in every seed. 93% of it lies within three metres of a
+living body, where the columns within three metres of a body are 67 to 79% of the live
+columns.
+The column correlation of body count against snow is 0.30 to 0.41. So the snow is made
+where the crowd is and stirred a few metres past its makers, an enrichment and not a
+tight halo. The first maps I sent the owner showed a hard-edged pile of snow at the
+north-east glass in every seed, and I explained it with the gyre. It was a drawing fault
+(below); the numbers had said where the snow was all along. The left panel is the
+spent field, and its densest cells at 30,000 s are under seed 3's central knot. My
+reading, marked as such: the knot burns and dies faster than it takes, so the crowd
+refills its own cells there, and at 0.02 m²/s the refill stays.
+
+### Nothing ate, and the reason is the founding
+
+No corpse was eaten in any seed. Intake never rose above zero after 220, 440 and 270 s,
+and the `ink` flag appears on founders only in every lineage file. Of the consumer
+founders, 24, 26 and 14 a seed, every one died childless, the last at 222, 447 and 274 s,
+with median ages of 20 to 55 s. At 100 s the charged field held about 1,100 J, eleven
+units, over a million cells, because the matter starts spent (D098, D109) and a consumer
+at founding has nothing to eat until the plants exude or die. The floor closes at 3,000 s;
+the snow reaches 80 to 110 kJ only by 5,000 s. Seed 3 made 62 corpses by killing, and
+none was touched. So the frontier that read "the eaters' lines stop recruiting" reads
+here as "they never start": the consumer founder is priced against a world that is empty
+of its food at the start. That is not a fault of the mouth. It is a founding-order fact of
+the one-substance world, and the fix is a world rule: a consumer inoculum after the snow
+forms, or intake drawn on non-consumer founders. Owner's, in the next proposal.
+
+### The killer came late and was accelerating when the round ended
+
+Seed 3 grew one killer clade from founder body 20, thirty-six generations deep by the
+end, 45 distinct killers and 62 kill rows. The kills fall at 2,878, 4,874, 4,879, 11,005,
+16,962, 17,337, 20,433 and 22,770 s, and then they thicken. Parts killed read 2 by
+5,000 s, 4 by 20,000, 13 by 25,000 and 47 by 30,000, with the last four kills between
+29,410 and 29,628 s. The clade had 1,640 attack births, 1,531 of them inherited, and was 2.63% of
+the crowd at the end and climbing. J2 asks for twenty consecutive windows with a kill and
+the longest run is two, so it fails as written; a longer run would meet it on this
+slope, which is a reading and not a result. The top six killers are all jointed, and half
+of the clade's births are. Seed 3's mean speed reads 0.122 m/s against 0.109 and 0.075
+in the other two, and the water's own carry is about 0.07. Seed 2 had 169 attack mutants
+founded and four killers with five kills between 3,170 and 29,087 s, the top ones jointed
+at generations seven to nine, and the line faded from 1.5% to 0.02%. Seed 1 never drew an
+attack node. What I want to know and cannot from this run: whether the joint makes the
+killer, or the killer is the clade that happened to carry one.
+
+### Armour before teeth, as the two-sided reading said
+
+Protection crossed 1% of the crowd before attack did in both seeds that had attack: at
+130 s against 260 in seed 2 and 690 against 8,650 in seed 3. Seed 1's protection crossed
+at 29,810 s with attack never. With forty founders, 1% is one body, so the crossing is a
+founder-era mutation under no selection, which the two-sided reading names. The clause
+needs a crowd floor before it reads anything; the next pre-registration gives it one.
+
+### Grazing
+
+Seed 3's determinate victims were alive 1,000 s after losing a part in 26 cases of 38, so
+a bite is survivable at this healing. The one indeterminate victim died. J3 is unreadable
+at that n and fails as written.
+
+### The islands did what the screens said
+
+The crowd founded in the islands, 0.72 to 0.96 of it standing in them at 1,000 s, and was
+carried off them by 5,000 s, when the spent field was already near soup. J8 holds in two
+seeds and misses in the third by a hundredth; J9's first clause holds with the column cv
+at 0.13 to 0.14 at 8,000 s; J10 holds with uptake binding in every window after 5,000 s.
+The second clause of J9 fails: the snow's column cv at the end is 0.21 to 0.41 against
+the 1 the prediction asked, and seed 3's read 0.75 at 14,000 s and fell as its crowd
+spread. The crowd makes its own patchiness and the stirring flattens it; the prediction's
+threshold was set for a world that stirs less than this one does.
+
+### Pace
+
+The wall went to physics at 82 to 86% and the world at 13 to 17% in every seed. The
+solver cost 2.2 to 2.8 µs a body-step at five threads with three seeds sharing the
+machine, and `ovl/body` stayed under 0.01. The GPU trigger the owner set, under real time
+past 8,000 bodies, was never reached: the crowds peaked at 4,400 to 6,100 and the last
+windows ran at 0.4 to 0.6 times real time.
+
+### Two things found while it ran, and a third
+
+The two are above. The third: `scripts/field-map.py`'s snow panel closed over the matter
+grid's mask and cell and drew the snow field's south-west corner stretched over the tank
+as a wedge at the north-east glass, which the first looks reported as a pile
+(`70ebe6c`). The column sums, one query, said the snow was under the crowd. A straight
+edge on a field is an index rather than a fluid; the rule is in CLAUDE.md.
+
+### What I make of it
+
+The mouth works and nobody uses it. The mechanism is clean: sixty-two kills, every one
+with tissue, both books closed at every sample, and the corpses lie where they fell
+because the one guild that could eat them died in the first five minutes of every seed.
+That is the round's result, and it is a result about founding and not about teeth. The
+killer is the part I did not expect: late, jointed, and accelerating on a slope that
+would have met the prediction with another few thousand seconds. I want to know whether
+the joint is what makes the killer.
+
+### What follows
+
+The next base round's proposal, for the owner as world rules, carries three things. A
+consumer that can found (an inoculum after the snow forms, or intake on a non-consumer
+founder). The support cost with the screen's numbers
+(`logbook/specs/r45-read/support-cost-screen.txt`: the square form at about 0.1 W per m²
+per m² puts round 44's giant under water and costs a metre-scale body a seventh). And
+per-part contact. J2's window is re-asked on a longer
+run; J4 gets a crowd floor. Between rounds, the GPU port (D105) with the machine to
+itself.

@@ -1,0 +1,22 @@
+clause	seed	longest_combined_run_windows	run_started_at	intake_pct_at_end	ink_flagged_births	ink_inherited_births	held	note	attack_pct_at_end	atk_flagged_births	atk_inherited_births	non_root_kills_watched	non_root_kills_censored	root_kills	indeterminate_watched	indeterminate_victims	indeterminate_alive_after_1000s	indeterminate_share	determinate_watched	determinate_victims	determinate_alive_after_1000s	determinate_share	first_attack_over_1pct_at	first_protection_over_1pct_at	at	short	alive	audit_absmax	matter_resid_at	matter_resid	matter_resid_short	diverged_total	manifest_status	censored	provisional	kill_rows	kills_with_tissue	kills_without_tissue	mean_reserve_over_tissue	total_tissue_joules	total_reserve_joules
+J1	r45-s1	0		0	26	1	False	intake % is near-universal from t=0 in most seeds (every founding consumer carries it); this reading is dominated by the corpse-eat condition, not by ink appearing — see the module docstring																																	
+J2	r45-s1	0					False		0	1	0																														
+J3	r45-s1						absent	one side of the comparison has no closed window: 0 indeterminate and 0 determinate non-root kills watched (0 censored by the file's own horizon)				0	0	1	0	0	0		0	0	0																				
+J4	r45-s1						False	protection exceeded 1% while attack never did																29810																	
+J5	r45-s1						True																		30000	False	5254														
+J6	r45-s1						True																					1.83238e-05	30000	4.48535e-07	False	0	ended	False	False						
+J7	r45-s1						False																													1	1	0	8.99818	15.5165	139.62
+J1	r45-s2	0		0	26	1	False	intake % is near-universal from t=0 in most seeds (every founding consumer carries it); this reading is dominated by the corpse-eat condition, not by ink appearing — see the module docstring																																	
+J2	r45-s2	1	3170				False		0.0162707	1232	1063																														
+J3	r45-s2						False					3	0	2	2	2	0	0	1	1	0	0																			
+J4	r45-s2						False	protection's first window at or before attack's															260	130																	
+J5	r45-s2						True																		30000	False	6146														
+J6	r45-s2						True																					1.55673e-05	30000	-5.40365e-07	False	0	ended	False	False						
+J7	r45-s2						False																													5	5	0	2.54464	145.642	323.893
+J1	r45-s3	0		0	14	0	False	intake % is near-universal from t=0 in most seeds (every founding consumer carries it); this reading is dominated by the corpse-eat condition, not by ink appearing — see the module docstring																																	
+J2	r45-s3	2	26300				False		2.62557	1640	1531																														
+J3	r45-s3						False					39	8	15	1	1	0	0	38	29	26	0.684211																			
+J4	r45-s3						False	protection's first window at or before attack's															8650	690																	
+J5	r45-s3						True																		30000	False	4380														
+J6	r45-s3						True																					3.42833e-05	30000	5.96097e-08	False	0	ended	False	False						
+J7	r45-s3						False																													62	62	0	2.55209	621.853	1381.66

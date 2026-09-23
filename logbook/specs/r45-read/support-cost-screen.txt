@@ -1,0 +1,32 @@
+
+leaf (1 part)                    parts 1  lit area    0.36 m2  volume   0.160 m3  area-weighted mean distance  0.00 m
+two parts, 0.5 m                 parts 2  lit area    0.71 m2  volume   0.319 m3  area-weighted mean distance  0.25 m
+kelp, 4 parts to 1.5 m           parts 4  lit area    1.42 m2  volume   0.639 m3  area-weighted mean distance  0.75 m
+giant 7597, 7 copies to 14 m     parts 7  lit area   61.75 m2  volume   1.451 m3  area-weighted mean distance 10.45 m
+
+== support cost = price x lit area x d   (W; net = income - standing - support)
+body                               income  standing p=0.1    p=0.3    p=1      p=2      p=3     
+leaf (1 part)                        3.56     0.479     3.08     3.08     3.08     3.08     3.08
+two parts, 0.5 m                     7.12     0.958     6.14     6.11     5.98     5.80     5.62
+kelp, 4 parts to 1.5 m              14.23     1.916    12.21    12.00    11.25    10.18     9.11
+giant 7597, 7 copies to 14 m       617.52     4.352   548.66   419.64   -31.90  -676.96 -1322.03
+   giant's seventh copy alone: area 35.0 m2 at 14.0 m, income 350 W; support 49 W at p=0.1, support 147 W at p=0.3, support 490 W at p=1, support 979 W at p=2, support 1469 W at p=3
+
+== support cost = price x lit area x d^2   (W; net = income - standing - support)
+body                               income  standing p=0.03   p=0.1    p=0.3    p=1     
+leaf (1 part)                        3.56     0.479     3.08     3.08     3.08     3.08
+two parts, 0.5 m                     7.12     0.958     6.16     6.15     6.13     6.07
+kelp, 4 parts to 1.5 m              14.23     1.916    12.28    12.19    11.94    11.07
+giant 7597, 7 copies to 14 m       617.52     4.352   375.41  -179.33 -1764.33 -7311.81
+   giant's seventh copy alone: area 35.0 m2 at 14.0 m, income 350 W; support 206 W at p=0.03, support 685 W at p=0.1, support 2056 W at p=0.3, support 6854 W at p=1
+
+The reach at which a copy's own support equals its own income: A*d form d* = 10/p; A*d^2 form d* = sqrt(10/p).
+  A*d   p=0.1  d* = 100.0 m
+  A*d   p=0.3  d* =  33.3 m
+  A*d   p=1    d* =  10.0 m
+  A*d   p=2    d* =   5.0 m
+  A*d   p=3    d* =   3.3 m
+  A*d^2 p=0.03 d* =  18.3 m
+  A*d^2 p=0.1  d* =  10.0 m
+  A*d^2 p=0.3  d* =   5.8 m
+  A*d^2 p=1    d* =   3.2 m

@@ -56,6 +56,23 @@ J10 for the islands and the screen's maps. The fixtures are re-recorded on the b
 (`pfix3`, `r45fixc-s4`, `ckA/B/C`), the Farm tests' round 42 hash is `c862fd2c510b82e9`, the
 identity word held. The ideas set aside are in `fable-propose-reef.md`.
 
+**Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
+their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,
+J6, J10 hold 3 of 3, J8 2 of 3, J9's first clause 3 of 3; J1, J2, J3, J4, J7 and J9's
+second clause fail. Nothing ate in any seed because every consumer founder (14 to 26 a
+seed) died childless inside 450 s in a world whose charged field held eleven units at
+100 s, a founding-order fact and not the mouth's; seed 3 grew one killer clade from
+founder 20 (45 killers, 62 kills, 47 parts killed of which 34 in the last 5,000 s, 2.6% of
+the crowd and climbing, the top killers all jointed), so J2's twenty-window clause fails on
+a slope that would have met it. The snow follows the crowd (93% within 3 m of a body) and
+the stirring flattens it (column cv 0.2 to 0.4 against the 1 predicted). Pace: physics 82
+to 86% of the wall, 2.2 to 2.8 µs a body-step at five threads with three seeds; the GPU
+trigger (under 1x past 8,000 bodies) was never reached. The clause reader's output is
+`logbook/specs/r45-read/`. What follows, in order: the GPU port block (item 6 below, D105,
+the machine to itself), then the next base round's proposal as world rules for the owner
+(a consumer that can found, the support cost at the screen's A·d² of about 0.1 W per m²
+per m², per-part contact; J2 on a longer run; J4 with a crowd floor).
+
 **The farm's water pass is parallel (`c6cbba8`, 2026-09-23, while round 45 ran).** At
 1,800 bodies on five threads the serial sampling of the current was 41% of a step against
 27% for the bodies' own phase. `CurrentField` now hands each sampler its memoised instant
