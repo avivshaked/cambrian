@@ -116,3 +116,9 @@ phases carry no contact phase of their own (`wallStepBodiesMs` 7.4%, `wallStepWa
 4.7%, the grid 1.8%, the commit 1.3%), and the world's step took 83% of the wall at 1,344
 bodies. Section 6's one-thread measurement, 1.9 times the recorded contact phase, is the
 cost reading until a full crowd's profile.
+
+The checkpoint clause is closed the same evening: `Evosim.Farm.exe --verify-checkpoint` on
+the round-46 screen (`r46scr-s1`, every rule on, contact per part among them) at 2,500 s
+founded the world, stepped it to 911 living bodies on 4 threads, wrote a checkpoint,
+restored it and found the restored world the stepped world in every compared member. A
+resume under the switch is trusted from here.
