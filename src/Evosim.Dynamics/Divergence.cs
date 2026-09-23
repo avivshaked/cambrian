@@ -148,7 +148,7 @@ namespace Evosim.Dynamics
 
             if (reefs != null)
             {
-                double inside = -reefs.SignedDistance(rootX, rootY, rootZ, out int reef, out _);
+                double inside = -reefs.SignedDistance(rootX, rootY, rootZ, -boundingRadius, out int reef, out _);
 
                 if (inside > boundingRadius)
                 {

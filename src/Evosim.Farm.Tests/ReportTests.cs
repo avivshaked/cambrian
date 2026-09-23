@@ -138,11 +138,13 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // 5a456a9e7b2518d3, D111's buoyancy offset price and round 46's rules under
                 // 5062a25baa35c6e1, D117's three pool tunables under 64f1aaa6b3e170f2 alone
                 // and the reefs' six dials (logbook/specs/reef-spec.md) under 9036f75aa700b784
-                // alone, and the two together, merged 2026-09-23 night, under this.
+                // alone, and the two together, merged 2026-09-23 night, under 679f831c59c6f1af,
+                // and the reef group redesigned under the owner's cover ruling (cover 0 here)
+                // under this.
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`679f831c59c6f1af`");
+                .Replace("`ff557bce2685293a`", "`256078e816861b27`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -182,7 +184,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · reach off · matter uniform · founders anywhere · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `679f831c59c6f1af`", line);
+            Assert.EndsWith(" · configHash `256078e816861b27`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
             Assert.Contains(" · silhouette on · light averaged · ", line);

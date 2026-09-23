@@ -101,17 +101,16 @@ namespace Evosim.Dynamics.Placement
             if (_reefs == null) return true;
 
             double need = System.Math.Max(0f, boundingRadius) + ClearanceMetres;
-            double distance = _reefs.SignedDistance(x, y, z, out int reef, out _);
+            double distance = _reefs.SignedDistance(x, y, z, need, out int reef, out _);
             if (distance >= need) return true;
 
-            double dx = x - _reefs.CentreX(reef);
-            double dz = z - _reefs.CentreZ(reef);
-            double capRadius = _reefs.CapRadiusMetres;
-            double middle = 0.5d * (_reefs.CapTopY + _reefs.CapUndersideY);
+            // The nearest reef's cap, read at its own outline and its own depth; under overlapping
+            // caps the rock is asked again below, so a landing inside a neighbour is refused.
+            double middle = 0.5d * (_reefs.CapTopY(reef) + _reefs.CapUndersideY(reef));
 
-            if (dx * dx + dz * dz > capRadius * capRadius || !(y > middle)) return false;
+            if (!_reefs.InsideOutline(reef, x, z) || !(y > middle)) return false;
 
-            float landed = (float)(_reefs.CapTopY + need);
+            float landed = (float)(_reefs.CapTopY(reef) + need);
             if (landed + System.Math.Max(0f, boundingRadius) > 0f) return false;
 
             // The rim is rounded, so a spot near it lands lower than the table's top would put it;

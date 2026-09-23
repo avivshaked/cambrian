@@ -1113,12 +1113,12 @@ namespace Evosim.Core
                     config.BedShoreDepthMetres, config.BedShoreFadeMetres)
                 : null;
 
-            // Round 47's reefs (logbook/specs/reef-spec.md). Refused in full — a reef in a box, a
-            // cap through the surface, a fade the tank cannot space — before a single draw, and
-            // placed from their own stream only when there are any: at ReefCount 0 this is one
-            // refusal pass over six zeros and a null.
+            // Round 47's reefs (logbook/specs/reef-spec.md, redesigned 2026-09-23 night). Refused
+            // in full — a reef in a box, a cap through the surface, a cap no tank can hold — before
+            // a single draw, and drawn from their own stream to the cover only when there is one:
+            // at ReefCover 0 this is one pass over the dials' defaults and a null.
             ReefGeometry.Refuse(config, TankRadiusMetres);
-            Reefs = config.ReefCount > 0
+            Reefs = config.ReefCover > 0f
                 ? ReefGeometry.Place(config, TankRadiusMetres, Bed, Rng.SeedFor(seed, ReefPlacementIndex))
                 : null;
 

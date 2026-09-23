@@ -2374,7 +2374,7 @@ namespace Evosim.Core
             if (!(dt > 0f)) return;
 
             bool transport = current.Shape == WorldShape.Tank || current.Mode == CurrentMode.Transport;
-            int substeps = transport ? CourantSubsteps(current, dt) : 1;
+            int substeps = transport ? CourantSubsteps(current, dt, seconds) : 1;
             float step = dt / substeps;
 
             if (transport) EnsureCellVelocities();
@@ -2408,23 +2408,30 @@ namespace Evosim.Core
         /// words. See <see cref="AdvectFromThePotential"/>.
         /// </para>
         /// </remarks>
-        private int CourantSubsteps(CurrentField current, float dt)
+        private int CourantSubsteps(CurrentField current, float dt, double seconds)
         {
-            double courant = current.MaximumTransportSpeed * (double)dt / CellMetres;
+            double ceiling = TransportCeiling(current, seconds);
+            double courant = ceiling * (double)dt / CellMetres;
             if (courant <= 0.5) return 1;
 
             int substeps = (int)Math.Ceiling(2.0 * courant);
 
             if (substeps > MaximumSubsteps)
             {
+                string which = ceiling > current.MaximumTransportSpeed
+                    ? FormattableString.Invariant(
+                        $"the reefs' faded water, sampled at every open face within their fade at {FadedWaterMaximum:0.####} m/s ") +
+                      FormattableString.Invariant(
+                        $"(past the open water's ceiling of {current.MaximumTransportSpeed:0.####} m/s; logbook/specs/reef-spec.md §2), ")
+                    : FormattableString.Invariant(
+                        $"the transport field's fastest water, at most {ceiling:0.####} m/s, ");
+
                 throw new ArgumentException(
                     FormattableString.Invariant(
-                        $"Upwind advection on a grid is stable to a Courant number of a half, ") +
+                        $"Upwind advection on a grid is stable to a Courant number of a half, and ") +
+                    which +
                     FormattableString.Invariant(
-                        $"and the transport field's fastest water, at most ") +
-                    FormattableString.Invariant(
-                        $"{current.MaximumTransportSpeed:0.####} m/s, crosses {courant:0.####} ") +
-                    FormattableString.Invariant($"of a {CellMetres} m cell in {dt} s. ") +
+                        $"crosses {courant:0.####} of a {CellMetres} m cell in {dt} s. ") +
                     FormattableString.Invariant(
                         $"That needs {substeps} substeps and the ceiling is {MaximumSubsteps}. ") +
                     "Shorten the step, widen the cell, or slow the current. The knob is an RMS " +
@@ -2436,6 +2443,117 @@ namespace Evosim.Core
             return substeps;
         }
 
+        /// <summary>
+        /// The fastest water the reefs' fade makes, m/s: the largest speed of the faded streams
+        /// at the centre of every open face within a reef's fade, sampled once, at the first
+        /// transport step, at <see cref="FadedWaterPhases"/> clocks spread over the streams' period.
+        /// 0 until then, and 0 in water with no reefs.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why it is measured.</b> The a-priori ceiling (<see cref="CurrentField.MaximumTransportSpeed"/>,
+        /// 2.45 times the RMS) bounds the open water, and the fade adds its own term,
+        /// <c>∇g × A</c>, a current along the rock's contours of the order of <c>|A|/fade</c>,
+        /// which the ceiling does not see: the first reef build read 0.89 m/s beside a reef at a
+        /// 10 m fade against a 0.83 m/s ceiling. So the refusal past
+        /// <see cref="MaximumSubsteps"/> reads the larger of the two. Outside every reef's fade the
+        /// water is the open water, which the ceiling bounds, so only the faces within a fade's
+        /// reach are sampled.
+        /// </para>
+        /// <para>
+        /// ⚠ <b>A sample, not a bound.</b> The streams turn over with their period, so the reading is
+        /// the largest of eight instants a period apart by eighths and not the maximum over all
+        /// time: on round 46's tank at cover 0.25 and an 8 m fade one instant read 0.78 m/s where
+        /// random points across four periods reached 1.04 (<c>ReefStreamsTests</c>). The count the
+        /// transport actually takes is still
+        /// chosen from the face fluxes at every step (<see cref="AdvectFromThePotential"/>), which
+        /// carry the contour current; this is the refusal and nothing else.
+        /// </para>
+        /// </remarks>
+        public double FadedWaterMaximum { get; private set; }
+
+        /// <summary>How many clocks across one period <see cref="FadedWaterMaximum"/> is sampled at.</summary>
+        public const int FadedWaterPhases = 8;
+
+        private ReefGeometry _fadedMaximumFor;
+
+        /// <summary>
+        /// The speed the Courant refusal reads: the open water's ceiling, or the reefs' measured
+        /// faded maximum where that is larger. The first alone in water with no reefs, bit for bit.
+        /// </summary>
+        private double TransportCeiling(CurrentField current, double seconds)
+        {
+            double bound = current.MaximumTransportSpeed;
+            ReefGeometry reefs = current.Reefs;
+            if (reefs == null) return bound;
+
+            if (!ReferenceEquals(_fadedMaximumFor, reefs))
+            {
+                FadedWaterMaximum = MeasureFadedWater(current, reefs, seconds);
+                _fadedMaximumFor = reefs;
+            }
+
+            return Math.Max(bound, FadedWaterMaximum);
+        }
+
+        private double MeasureFadedWater(CurrentField current, ReefGeometry reefs, double seconds)
+        {
+            double h = CellMetres;
+            double fastest = 0d;
+
+            int phases = current.PeriodSeconds > 0f ? FadedWaterPhases : 1;
+            var clocks = new double[phases];
+            for (int k = 0; k < phases; k++) clocks[k] = seconds + k * (double)current.PeriodSeconds / phases;
+
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                double cx = (ix + 0.5d) * h;
+
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    double cz = (iz + 0.5d) * h;
+                    bool near = false;
+
+                    for (int reef = 0; reef < reefs.Count && !near; reef++)
+                    {
+                        double dx = cx - reefs.CentreX(reef), dz = cz - reefs.CentreZ(reef);
+                        double reach = reefs.FadeReach(reef) + h;
+                        near = dx * dx + dz * dz < reach * reach;
+                    }
+
+                    if (!near) continue;
+
+                    for (int iy = 0; iy < _ny; iy++)
+                    {
+                        if (_live != null && !_live[Index(ix, iy, iz)]) continue;
+
+                        float centreY = -(float)((iy + 0.5) * h);
+
+                        // A face beyond every fade carries the open water, which the ceiling
+                        // bounds; only a face some fade reaches is sampled.
+                        float eastX = (float)((ix + 1) * h), midX = (float)((ix + 0.5) * h);
+                        float frontZ = (float)((iz + 1) * h), midZ = (float)((iz + 0.5) * h);
+                        float lowY = -(float)((iy + 1) * h);
+
+                        bool east = EastOf(ix, iy, iz) >= 0 && reefs.FadeAt(eastX, centreY, midZ) < 1d;
+                        bool front = FrontOf(ix, iy, iz) >= 0 && reefs.FadeAt(midX, centreY, frontZ) < 1d;
+                        bool down = iy < _ny - 1 && (_live == null || _live[Index(ix, iy + 1, iz)]) &&
+                                    reefs.FadeAt(midX, lowY, midZ) < 1d;
+
+                        if (!(east || front || down)) continue;
+
+                        foreach (double t in clocks)
+                        {
+                            if (east) fastest = Math.Max(fastest, current.VelocityAt(eastX, centreY, midZ, t).Magnitude);
+                            if (front) fastest = Math.Max(fastest, current.VelocityAt(midX, centreY, frontZ, t).Magnitude);
+                            if (down) fastest = Math.Max(fastest, current.VelocityAt(midX, lowY, midZ, t).Magnitude);
+                        }
+                    }
+                }
+            }
+
+            return fastest;
+        }
         /// <summary>
         /// How many substeps <see cref="Advect"/> will split one step into rather than run past a
         /// Courant number of a half, and the ceiling past which it refuses instead.
@@ -2547,7 +2665,7 @@ namespace Evosim.Core
             // The a-priori bound, first, and as a refusal only: a config the grid refused before
             // this repair is refused after it, and for the same reason in the same words. It does
             // not set the count. CourantSubsteps' own remarks say why.
-            CourantSubsteps(current, dt);
+            CourantSubsteps(current, dt, seconds);
 
             EnsureFaceBuffers();
             SampleEdges(current, seconds);
@@ -2633,7 +2751,7 @@ namespace Evosim.Core
             SampleEdges(current, seconds);
             AssembleFaces();
 
-            CourantSubsteps(current, dt);
+            CourantSubsteps(current, dt, seconds);
 
             double outflow = LargestOutflowFraction(dt);
             int substeps = outflow <= OutflowMargin ? 1 : (int)Math.Ceiling(outflow / OutflowMargin);

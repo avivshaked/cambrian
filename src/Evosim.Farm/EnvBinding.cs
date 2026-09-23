@@ -243,13 +243,19 @@ namespace Evosim.Farm
             Num("EVOSIM_BED_SHORE", D.BedShoreDepthMetres, (s, v) => s.BedShore = v),
             Num("EVOSIM_BED_SHORE_FADE", D.BedShoreFadeMetres, (s, v) => s.BedShoreFade = v),
 
-            // The mushroom reefs (logbook/specs/reef-spec.md §1), all off by default so that a
-            // launcher which does not name them runs the tank it always ran.
-            Int("EVOSIM_REEF_COUNT", D.ReefCount, (s, v) => s.ReefCount = v),
-            Num("EVOSIM_REEF_CAP_RADIUS", D.ReefCapRadiusMetres, (s, v) => s.ReefCapRadius = v),
+            // The mushroom reefs (logbook/specs/reef-spec.md §1, redesigned 2026-09-23 night):
+            // off at a cover of 0, the default, so that a launcher which does not name them runs
+            // the tank it always ran. EVOSIM_REEF_COUNT, _CAP_RADIUS and _STEM_RADIUS are retired
+            // with the count, and are not bound: a launcher naming them is warned and gets no reef.
+            Num("EVOSIM_REEF_COVER", D.ReefCover, (s, v) => s.ReefCover = v),
+            Int("EVOSIM_REEF_MAX_COUNT", D.ReefMaxCount, (s, v) => s.ReefMaxCount = v),
+            Num("EVOSIM_REEF_CAP_RADIUS_MIN", D.ReefCapRadiusMinMetres, (s, v) => s.ReefCapRadiusMin = v),
+            Num("EVOSIM_REEF_CAP_RADIUS_MAX", D.ReefCapRadiusMaxMetres, (s, v) => s.ReefCapRadiusMax = v),
+            Num("EVOSIM_REEF_ROUGHNESS", D.ReefOutlineRoughness, (s, v) => s.ReefRoughness = v),
             Num("EVOSIM_REEF_CAP_DEPTH", D.ReefCapDepthMetres, (s, v) => s.ReefCapDepth = v),
+            Num("EVOSIM_REEF_CAP_DEPTH_JITTER", D.ReefCapDepthJitterMetres, (s, v) => s.ReefCapDepthJitter = v),
             Num("EVOSIM_REEF_CAP_THICKNESS", D.ReefCapThicknessMetres, (s, v) => s.ReefCapThickness = v),
-            Num("EVOSIM_REEF_STEM_RADIUS", D.ReefStemRadiusMetres, (s, v) => s.ReefStemRadius = v),
+            Num("EVOSIM_REEF_STEM_FRACTION", D.ReefStemRadiusFraction, (s, v) => s.ReefStemFraction = v),
             Num("EVOSIM_REEF_FADE", D.ReefFadeMetres, (s, v) => s.ReefFade = v),
             Num("EVOSIM_NEWBORN_RESERVE", D.NewbornReserveFraction, (s, v) => s.NewbornReserve = v),
             Num("EVOSIM_GROWTH_FLOOR", D.GrowthReserveFloor, (s, v) => s.GrowthFloor = v),
@@ -580,11 +586,15 @@ namespace Evosim.Farm
             config.BedShoreDepthMetres = s.BedShore;
             config.BedShoreFadeMetres = s.BedShoreFade;
 
-            config.ReefCount = s.ReefCount;
-            config.ReefCapRadiusMetres = s.ReefCapRadius;
+            config.ReefCover = s.ReefCover;
+            config.ReefMaxCount = s.ReefMaxCount;
+            config.ReefCapRadiusMinMetres = s.ReefCapRadiusMin;
+            config.ReefCapRadiusMaxMetres = s.ReefCapRadiusMax;
+            config.ReefOutlineRoughness = s.ReefRoughness;
             config.ReefCapDepthMetres = s.ReefCapDepth;
+            config.ReefCapDepthJitterMetres = s.ReefCapDepthJitter;
             config.ReefCapThicknessMetres = s.ReefCapThickness;
-            config.ReefStemRadiusMetres = s.ReefStemRadius;
+            config.ReefStemRadiusFraction = s.ReefStemFraction;
             config.ReefFadeMetres = s.ReefFade;
 
             config.NewbornReserveFraction = s.NewbornReserve;
@@ -1006,11 +1016,15 @@ namespace Evosim.Farm
         public float BedScale;
         public float BedShore;
         public float BedShoreFade;
-        public int ReefCount;
-        public float ReefCapRadius;
+        public float ReefCover;
+        public int ReefMaxCount;
+        public float ReefCapRadiusMin;
+        public float ReefCapRadiusMax;
+        public float ReefRoughness;
         public float ReefCapDepth;
+        public float ReefCapDepthJitter;
         public float ReefCapThickness;
-        public float ReefStemRadius;
+        public float ReefStemFraction;
         public float ReefFade;
 
         public float NewbornReserve;

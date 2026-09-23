@@ -251,11 +251,13 @@ namespace Evosim.Theatre
                             config.BedShoreDepthMetres, config.BedShoreFadeMetres)
                         : null;
 
-                // The reefs, placed as World places them: the same stream of the run's seed over
-                // the same floor, so the rock stands where the run's rock stood. The two refusals
-                // about the rest of the world are skipped (worldRules: false), because a
+                // The reefs, drawn as World draws them: the same stream of the run's seed over the
+                // same floor to the same cover, counted on the same grid columns, so every cap
+                // stands where the run's stood with the run's size, depth and outline (the
+                // manifest's `reefs` list is the record to check a picture against). The two
+                // refusals about the rest of the world are skipped (worldRules: false), because a
                 // picture-only config does not carry the field model and the farm already ran it.
-                world.Reefs = config.ReefCount > 0
+                world.Reefs = config.ReefCover > 0f
                     ? ReefGeometry.Place(
                         config, TankGeometry.RadiusFor(config.WorldAreaSquareMetres), world.Bed,
                         Rng.SeedFor(world.Record.Seed, World.ReefPlacementIndex), worldRules: false)

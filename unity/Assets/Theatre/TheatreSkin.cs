@@ -729,10 +729,11 @@ namespace Evosim.Theatre
         }
 
         /// <summary>
-        /// The mushroom reefs (logbook/specs/reef-spec.md §2): each a stem of sand from under the
-        /// floor to the cap's mid-plane and a cap of rock, a flat disc with a rounded rim, the
-        /// same shape <see cref="ReefGeometry.SignedDistance(double, double, double)"/> gives the
-        /// mask and the contacts.
+        /// The mushroom reefs (logbook/specs/reef-spec.md §2, the group as redesigned under the
+        /// owner's cover ruling of 2026-09-23 night): each a stem of sand from under the floor to
+        /// its cap's mid-plane and a cap of rock with its own outline, depth and size, the same
+        /// shape <see cref="ReefGeometry.SignedDistance(double, double, double)"/> gives the mask
+        /// and the contacts.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -744,7 +745,8 @@ namespace Evosim.Theatre
         /// <para>
         /// <b>Not drawn: the fillet.</b> The rock's distance joins stem and cap with a smooth
         /// minimum half a cap thick; the drawing is the two shapes meeting at a crease. The
-        /// difference is under a quarter of the cap's thickness and at the join only.
+        /// difference is under a quarter of the cap's thickness and at the join only. Where caps
+        /// overlap each is drawn whole, and the two meshes cross inside the rock.
         /// </para>
         /// </remarks>
         private void BuildReefs(Vector3 min, BedShape bed, ReefGeometry reefs)
@@ -761,25 +763,24 @@ namespace Evosim.Theatre
 
             if (_reefStemMaterial == null || _reefRockMaterial == null) return;
 
-            float capRadius = (float)reefs.CapRadiusMetres;
             float thickness = (float)reefs.CapThicknessMetres;
-            float stemRadius = (float)reefs.StemRadiusMetres;
-            float middle = (float)(0.5d * (reefs.CapTopY + reefs.CapUndersideY));
-
-            Mesh cap = CapMesh(capRadius, thickness);
-            _reefMeshes.Add(cap);
 
             for (int i = 0; i < reefs.Count; i++)
             {
                 float x = (float)reefs.CentreX(i);
                 float z = (float)reefs.CentreZ(i);
+                float middle = (float)(0.5d * (reefs.CapTopY(i) + reefs.CapUndersideY(i)));
 
                 var holder = new GameObject("Theatre Reef " + i) { hideFlags = HideFlags.DontSave };
                 holder.transform.SetParent(_root.transform, false);
                 holder.transform.position = new Vector3(x, middle, z);
                 _reefs.Add(holder);
 
+                Mesh cap = CapMesh(reefs, i, thickness);
+                _reefMeshes.Add(cap);
                 AddPiece(holder, "Cap", cap, _reefRockMaterial);
+
+                float stemRadius = (float)reefs.StemRadius(i);
 
                 if (stemRadius > 0f)
                 {
@@ -807,35 +808,108 @@ namespace Evosim.Theatre
             renderer.receiveShadows = false;
         }
 
+        /// <summary>How many samples of a cap's outline make one ring of its mesh.</summary>
+        private const int ReefOutlineSamples = 64;
+
         /// <summary>
-        /// A cap about its own mid-plane: the flat top and bottom to the rim's start at
-        /// <c>r_c − t/2</c>, and a half circle of radius <c>t/2</c> round it, turned about the axis.
+        /// One reef's cap about its own mid-plane, lathed round its own outline: at each of
+        /// <see cref="ReefOutlineSamples"/> angles, the profile from the top's centre out along the
+        /// flat top, round the rounded rim and back along the underside to the bottom's centre.
         /// </summary>
-        private static Mesh CapMesh(float capRadius, float thickness)
+        /// <remarks>
+        /// The stations are placed where <see cref="ReefGeometry"/>'s distance puts the rock's
+        /// surface along each radial: with <c>c = r/√(r² + r′²)</c> the outline's slope cosine, a
+        /// point of the rim's half circle at <c>(q, v) = (t/2)(cos α, sin α)</c> lies at
+        /// <c>ρ = r(θ) + (q − t/2)/c</c>, so the flat top ends at <c>r − t/(2c)</c> and the rim's
+        /// widest point, at the mid-plane, is the outline <c>r(θ)</c> exactly. A round cap is the
+        /// first build's mesh. The rim's normal is the profile's turned onto the outline's outward
+        /// normal rather than the radial, which is the distance's own gradient on the outline and
+        /// within its first-order error off it.
+        /// </remarks>
+        private static Mesh CapMesh(ReefGeometry reefs, int reef, float thickness)
         {
             float half = 0.5f * thickness;
-            float flat = Mathf.Max(0f, capRadius - half);
             const int arc = 12;
 
-            // The profile from the top's centre, out and round the rim, to the bottom's centre.
-            var profile = new List<Vector2>();
-            var profileNormals = new List<Vector2>();
+            // The profile in (q, v) and its normal in (radial-outward, vertical), and whether a
+            // station is the axis rather than a point measured from the outline.
+            var q = new List<float>();
+            var v = new List<float>();
+            var nq = new List<float>();
+            var nv = new List<float>();
+            var axis = new List<bool>();
 
-            profile.Add(new Vector2(0f, half)); profileNormals.Add(new Vector2(0f, 1f));
-            profile.Add(new Vector2(flat, half)); profileNormals.Add(new Vector2(0f, 1f));
+            void Station(float sq, float sv, float snq, float snv, bool onAxis)
+            {
+                q.Add(sq); v.Add(sv); nq.Add(snq); nv.Add(snv); axis.Add(onAxis);
+            }
+
+            Station(0f, half, 0f, 1f, true);
+            Station(0f, half, 0f, 1f, false);
 
             for (int k = 0; k <= arc; k++)
             {
                 float angle = 0.5f * Mathf.PI - Mathf.PI * k / arc;
-                var n = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-                profile.Add(new Vector2(flat, 0f) + half * n);
-                profileNormals.Add(n);
+                float ca = Mathf.Cos(angle), sa = Mathf.Sin(angle);
+                Station(half * ca, half * sa, ca, sa, false);
             }
 
-            profile.Add(new Vector2(flat, -half)); profileNormals.Add(new Vector2(0f, -1f));
-            profile.Add(new Vector2(0f, -half)); profileNormals.Add(new Vector2(0f, -1f));
+            Station(0f, -half, 0f, -1f, false);
+            Station(0f, -half, 0f, -1f, true);
 
-            return Lathe("Theatre Reef Cap", profile, profileNormals, 96);
+            int rows = q.Count;
+            int segments = ReefOutlineSamples;
+            int stride = segments + 1;
+
+            var vertices = new Vector3[rows * stride];
+            var normals = new Vector3[vertices.Length];
+            var triangles = new List<int>((rows - 1) * segments * 6);
+
+            for (int s = 0; s <= segments; s++)
+            {
+                double theta = 2d * System.Math.PI * (s % segments) / segments;
+                double o = reefs.OutlineRadius(reef, theta);
+
+                // The outline's slope, by a central difference of the outline itself.
+                const double H = 1e-5;
+                double slope = (reefs.OutlineRadius(reef, theta + H) - reefs.OutlineRadius(reef, theta - H)) / (2d * H);
+                double c = o / System.Math.Sqrt(o * o + slope * slope);
+
+                float cos = (float)System.Math.Cos(theta), sin = (float)System.Math.Sin(theta);
+
+                // The outline's outward unit normal: c·e_ρ − (c·r′/r)·e_θ, with e_θ = (−sin, cos).
+                float tangentShare = (float)(-c * slope / o);
+                var outward = new Vector3(
+                    (float)c * cos - tangentShare * sin, 0f, (float)c * sin + tangentShare * cos);
+
+                for (int r = 0; r < rows; r++)
+                {
+                    float rho = axis[r] ? 0f : (float)(o + (q[r] - half) / c);
+                    vertices[r * stride + s] = new Vector3(rho * cos, v[r], rho * sin);
+                    normals[r * stride + s] = (outward * nq[r] + new Vector3(0f, nv[r], 0f)).normalized;
+                }
+            }
+
+            for (int r = 0; r < rows - 1; r++)
+            {
+                for (int s = 0; s < segments; s++)
+                {
+                    int a = r * stride + s;
+                    int b = a + 1;
+                    int d = a + stride;
+                    int e = d + 1;
+
+                    triangles.Add(a); triangles.Add(b); triangles.Add(d);
+                    triangles.Add(b); triangles.Add(e); triangles.Add(d);
+                }
+            }
+
+            var mesh = new Mesh { name = "Theatre Reef Cap " + reef, hideFlags = HideFlags.DontSave };
+            mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         /// <summary>A stem's wall, open at both ends, from <paramref name="bottom"/> to zero in local y.</summary>

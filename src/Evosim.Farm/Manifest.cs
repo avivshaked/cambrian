@@ -93,11 +93,16 @@ namespace Evosim.Farm
         public double BedShoalFraction;
 
         /// <summary>
-        /// The reefs' axes as the seed placed them (logbook/specs/reef-spec.md §5: the round reads
-        /// the positions against the reefs' places), in the tank's frame, m. Empty with no reef.
+        /// The reefs as the seed drew them (logbook/specs/reef-spec.md §5: the round reads the
+        /// positions against the reefs' places): each one's axis in the tank's frame, its cap's
+        /// mean radius, depth, stem, outline harmonics and rock seed. Empty with no reef. The count
+        /// and the cover got are derived from the config's cover and exist nowhere else.
         /// </summary>
-        public double[] ReefX = Array.Empty<double>();
-        public double[] ReefZ = Array.Empty<double>();
+        public ReefGeometry.Reef[] Reefs = Array.Empty<ReefGeometry.Reef>();
+
+        /// <summary>The cover the reefs were drawn to and the cover they reached on the grid's columns; 0 with no reef.</summary>
+        public double ReefCoverTarget;
+        public double ReefCoverGot;
 
         /// <summary>D102's ratio: the water the streams were built to, read off the built world.</summary>
         /// <remarks>
@@ -377,22 +382,19 @@ namespace Evosim.Farm
         }
 
         /// <summary>
-        /// Records the reefs' axes from the built world — the seed's placement, which exists
-        /// nowhere else as numbers. Nothing with no reef.
+        /// Records the reefs from the built world — the seed's draw, which exists nowhere else as
+        /// numbers. Nothing with no reef.
         /// </summary>
         public static void RecordReefs(RunManifest manifest, ReefGeometry reefs)
         {
             if (manifest == null) throw new ArgumentNullException(nameof(manifest));
             if (reefs == null || reefs.Count == 0) return;
 
-            manifest.ReefX = new double[reefs.Count];
-            manifest.ReefZ = new double[reefs.Count];
+            manifest.Reefs = new ReefGeometry.Reef[reefs.Count];
+            for (int i = 0; i < reefs.Count; i++) manifest.Reefs[i] = reefs.ReefAt(i);
 
-            for (int i = 0; i < reefs.Count; i++)
-            {
-                manifest.ReefX[i] = reefs.CentreX(i);
-                manifest.ReefZ[i] = reefs.CentreZ(i);
-            }
+            manifest.ReefCoverTarget = reefs.CoverTarget;
+            manifest.ReefCoverGot = reefs.CoverGot;
         }
 
         /// <summary>Writes <c>run.json</c> into the run directory: the first call, or the second.</summary>
@@ -471,13 +473,25 @@ namespace Evosim.Farm
             w.Field("bedShoreFade", m.BedShoreFade);
             w.Field("bedShoalFraction", m.BedShoalFraction);
 
-            // The reefs' axes (logbook/specs/reef-spec.md §5), appended; an empty list with no reef.
+            // The reefs (logbook/specs/reef-spec.md §5), appended; an empty list with no reef.
+            // Each: its axis (x, z), its cap's mean radius r, the depth of its top, its stem's
+            // radius, the outline's amplitudes a2..a4 (shares of r) and phases p2..p4 (radians),
+            // r(θ) = r·(1 + Σ a_k cos(kθ + p_k)) with θ from +x towards +z, and the rock's seed.
             w.BeginArray("reefs");
-            for (int i = 0; i < m.ReefX.Length; i++)
+            for (int i = 0; i < m.Reefs.Length; i++)
             {
-                w.BeginObject().Field("x", m.ReefX[i]).Field("z", m.ReefZ[i]).EndObject();
+                ReefGeometry.Reef r = m.Reefs[i];
+                w.BeginObject()
+                    .Field("x", r.X).Field("z", r.Z).Field("r", r.CapRadius).Field("depth", r.CapDepth)
+                    .Field("stem", r.StemRadius)
+                    .Field("a2", r.A2).Field("a3", r.A3).Field("a4", r.A4)
+                    .Field("p2", r.P2).Field("p3", r.P3).Field("p4", r.P4)
+                    .Field("noiseSeed", (long)r.NoiseSeed)
+                    .EndObject();
             }
             w.EndArray();
+            w.Field("reefCover", m.ReefCoverTarget);
+            w.Field("reefCoverGot", m.ReefCoverGot);
 
 
             // D102 — after the bed's seven, per the same append-only rule and in the place

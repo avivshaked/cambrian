@@ -105,18 +105,51 @@ namespace Evosim.Theatre
                 missing.Add("bed (the flat floor every world before D092 had)");
             }
 
-            // The mushroom reefs (logbook/specs/reef-spec.md). Absent is no reef, which is what
-            // every config written before the dials meant.
+            // The mushroom reefs (logbook/specs/reef-spec.md, the group as redesigned under the
+            // owner's cover ruling of 2026-09-23 night). Absent is no reef, which is what every
+            // config written before the dials meant; a dial absent from a group that is there
+            // takes the build's default, and says so. The first reef build's group (a count, one
+            // radius, a stem radius) carries no cover: it is read as no reef and named, because
+            // its rock was placed by a rule this build no longer has.
             if (root.Has("reef"))
             {
                 JsonNode reef = root["reef"];
+                var d = new RunConfig();
 
-                config.ReefCount = (int)Optional(reef, "reefCount", 0f, missing, "reef.reefCount");
-                config.ReefCapRadiusMetres = Optional(reef, "reefCapRadiusMetres", 0f, missing, "reef.reefCapRadiusMetres");
-                config.ReefCapDepthMetres = Optional(reef, "reefCapDepthMetres", 0f, missing, "reef.reefCapDepthMetres");
-                config.ReefCapThicknessMetres = Optional(reef, "reefCapThicknessMetres", 0f, missing, "reef.reefCapThicknessMetres");
-                config.ReefStemRadiusMetres = Optional(reef, "reefStemRadiusMetres", 0f, missing, "reef.reefStemRadiusMetres");
-                config.ReefFadeMetres = Optional(reef, "reefFadeMetres", 0f, missing, "reef.reefFadeMetres");
+                if (!reef.Has("reefCover") && reef.Has("reefCount"))
+                {
+                    float count = reef["reefCount"].AsFloat();
+                    missing.Add(
+                        count > 0f
+                            ? "reef.reefCover (a first-build reef group of " + count.ToString("0", CultureInfo.InvariantCulture) +
+                              " reef(s), placed by a rule this build does not have; no rock drawn)"
+                            : "reef.reefCover (a first-build reef group with no reef)");
+                }
+                else
+                {
+                    config.ReefCover = Optional(reef, "reefCover", 0f, missing, "reef.reefCover");
+                    config.ReefMaxCount = (int)Optional(reef, "reefMaxCount", d.ReefMaxCount, missing, "reef.reefMaxCount");
+                    config.ReefCapRadiusMinMetres = Optional(reef, "reefCapRadiusMinMetres", d.ReefCapRadiusMinMetres, missing, "reef.reefCapRadiusMinMetres");
+                    config.ReefCapRadiusMaxMetres = Optional(reef, "reefCapRadiusMaxMetres", d.ReefCapRadiusMaxMetres, missing, "reef.reefCapRadiusMaxMetres");
+                    config.ReefOutlineRoughness = Optional(reef, "reefOutlineRoughness", d.ReefOutlineRoughness, missing, "reef.reefOutlineRoughness");
+                    config.ReefCapDepthMetres = Optional(reef, "reefCapDepthMetres", d.ReefCapDepthMetres, missing, "reef.reefCapDepthMetres");
+                    config.ReefCapDepthJitterMetres = Optional(reef, "reefCapDepthJitterMetres", d.ReefCapDepthJitterMetres, missing, "reef.reefCapDepthJitterMetres");
+                    config.ReefCapThicknessMetres = Optional(reef, "reefCapThicknessMetres", d.ReefCapThicknessMetres, missing, "reef.reefCapThicknessMetres");
+                    config.ReefStemRadiusFraction = Optional(reef, "reefStemRadiusFraction", d.ReefStemRadiusFraction, missing, "reef.reefStemRadiusFraction");
+                    config.ReefFadeMetres = Optional(reef, "reefFadeMetres", d.ReefFadeMetres, missing, "reef.reefFadeMetres");
+
+                    // The grid's column size, which the placer counts the cover on: a picture
+                    // must draw the rock the farm drew, and the cover's count is the one place
+                    // the placement reads a dial outside the reef group.
+                    if (root.Has("field") && root["field"].Has("fieldCellMetres"))
+                    {
+                        config.FieldCellMetres = root["field"]["fieldCellMetres"].AsFloat();
+                    }
+                    else if (config.ReefCover > 0f)
+                    {
+                        missing.Add("field.fieldCellMetres (" + config.FieldCellMetres.ToString("0.##", CultureInfo.InvariantCulture) + " used for the reefs' cover count)");
+                    }
+                }
             }
             else
             {

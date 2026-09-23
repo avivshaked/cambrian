@@ -1598,52 +1598,100 @@ namespace Evosim.Core
         private float _bedShoreFadeMetres;
 
         /// <summary>
-        /// How many mushroom reefs stand in the tank: a rock stem from the floor to a cap that
-        /// overhangs and shades. 0 (the default) is off, which is every recorded world.
-        /// <c>logbook/specs/reef-spec.md</c> §1, <c>EVOSIM_REEF_COUNT</c>.
+        /// The share of the tank's surface disc the reefs' caps cover, 0 to under 1: the placer
+        /// draws reefs from the reef stream until the union of the caps' outlines, counted on the
+        /// grid's own columns, reaches it. 0 (the default) is off, which is every recorded world.
+        /// <c>logbook/specs/reef-spec.md</c> and the owner's ruling of 2026-09-23 night ("areas in
+        /// the tank that do not get light", about a quarter of the surface), <c>EVOSIM_REEF_COVER</c>.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>One group, and every earlier config refused.</b> The six reef dials are the group
-        /// <c>reef</c>, so a <c>config.json</c> written before them has no such group and is
-        /// refused by this build under §9's rule, as every tunable group before it did. At 0 the
-        /// other five must be 0 too (<see cref="World"/>'s refusals), so a world that asks for
-        /// no reef cannot carry the numbers of one in its hash.
+        /// <b>One group, and every earlier config refused.</b> The reef dials are the group
+        /// <c>reef</c>, redesigned whole on 2026-09-23 night (the cover replaced the count, the
+        /// radius became a range, the stem a fraction of its cap), so a <c>config.json</c> written
+        /// before them is refused by this build under §9's rule. At 0 every other reef dial must
+        /// stand at its default (<see cref="ReefGeometry.Refuse"/>), so no reef-less world carries a
+        /// reef's numbers in its hash that another reef-less world does not.
         /// </para>
         /// <para>
-        /// <b>What a reef is to each system</b> is <see cref="ReefGeometry"/>'s remarks: dead
-        /// cells in both grids, a cap's shadow in the light, a fade on the streams' potential, a
-        /// static shape in the contacts and the placer, and a guard. ⚠ Unmeasured (§5A.10).
+        /// <b>The count is derived</b> and recorded in the manifest with every reef's parameters,
+        /// and the header prints the cover asked and the cover got. <see cref="ReefGeometry"/>'s
+        /// remarks say what a reef is to each system. ⚠ Unmeasured (§5A.10).
         /// </para>
         /// </remarks>
         [Tunable("reef")]
-        public int ReefCount
+        public float ReefCover
         {
-            get => _reefCount;
-            set => _reefCount = value >= 0
+            get => _reefCover;
+            set => _reefCover = value >= 0f && value < 1f && !float.IsNaN(value)
                 ? value
                 : throw new ArgumentOutOfRangeException(
-                    nameof(ReefCount), value, "A count of reefs is not negative; 0 is off.");
+                    nameof(ReefCover), value,
+                    "A reef cover is a share of the tank's surface, at least 0 and under 1; 0 is off.");
         }
 
-        private int _reefCount;
+        private float _reefCover;
 
         /// <summary>
-        /// A reef's cap radius, m: the disc of rock that overhangs the stem, its rim rounded by
-        /// half the cap's thickness. <c>EVOSIM_REEF_CAP_RADIUS</c>, 0 with the reef off.
+        /// The most reefs the placer may draw before the cover is reached; a config whose cover
+        /// needs more is refused, not truncated. <c>EVOSIM_REEF_MAX_COUNT</c>.
+        /// </summary>
+        [Tunable("reef")]
+        public int ReefMaxCount
+        {
+            get => _reefMaxCount;
+            set => _reefMaxCount = value >= 1
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(ReefMaxCount), value, "The reef ceiling is at least one reef.");
+        }
+
+        private int _reefMaxCount = 64;
+
+        /// <summary>
+        /// The least mean radius a cap is drawn at, m: each reef's <c>r0</c> is uniform between
+        /// this and <see cref="ReefCapRadiusMaxMetres"/>. <c>EVOSIM_REEF_CAP_RADIUS_MIN</c>.
         /// </summary>
         [Tunable("reef", Unit = "m")]
-        public float ReefCapRadiusMetres
+        public float ReefCapRadiusMinMetres
         {
-            get => _reefCapRadiusMetres;
-            set => _reefCapRadiusMetres = ReefDial(nameof(ReefCapRadiusMetres), value);
+            get => _reefCapRadiusMinMetres;
+            set => _reefCapRadiusMinMetres = ReefDial(nameof(ReefCapRadiusMinMetres), value);
         }
 
-        private float _reefCapRadiusMetres;
+        private float _reefCapRadiusMinMetres = 6f;
+
+        /// <summary>The largest mean radius a cap is drawn at, m. <c>EVOSIM_REEF_CAP_RADIUS_MAX</c>.</summary>
+        [Tunable("reef", Unit = "m")]
+        public float ReefCapRadiusMaxMetres
+        {
+            get => _reefCapRadiusMaxMetres;
+            set => _reefCapRadiusMaxMetres = ReefDial(nameof(ReefCapRadiusMaxMetres), value);
+        }
+
+        private float _reefCapRadiusMaxMetres = 16f;
 
         /// <summary>
-        /// The depth of a cap's top below the surface, m: the lit table snow lands on. 0 with a
-        /// stem radius of 0 is the floating island. <c>EVOSIM_REEF_CAP_DEPTH</c>.
+        /// How far a cap's outline strays from a circle: its radius as a function of angle is
+        /// <c>r0·(1 + Σ_{k=2..4} a_k cos(kθ + φ_k))</c> with each <c>a_k</c> uniform up to this,
+        /// the three scaled together when their sum passes 0.4 so that the outline stays within
+        /// 0.6 and 1.4 of <c>r0</c>. 0 is a circle. <c>EVOSIM_REEF_ROUGHNESS</c>.
+        /// </summary>
+        [Tunable("reef")]
+        public float ReefOutlineRoughness
+        {
+            get => _reefOutlineRoughness;
+            set => _reefOutlineRoughness = value >= 0f && value <= 1f && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(ReefOutlineRoughness), value, "An outline's roughness is 0 to 1; 0 is a circle.");
+        }
+
+        private float _reefOutlineRoughness = 0.15f;
+
+        /// <summary>
+        /// The mean depth of a cap's top below the surface, m: the lit table snow lands on. 0 with
+        /// a stem fraction of 0 is the floating island. <c>EVOSIM_REEF_CAP_DEPTH</c>.
         /// </summary>
         [Tunable("reef", Unit = "m")]
         public float ReefCapDepthMetres
@@ -1652,10 +1700,25 @@ namespace Evosim.Core
             set => _reefCapDepthMetres = ReefDial(nameof(ReefCapDepthMetres), value);
         }
 
-        private float _reefCapDepthMetres;
+        private float _reefCapDepthMetres = 3f;
 
         /// <summary>
-        /// A cap's thickness, m, from its top to its underside. <c>EVOSIM_REEF_CAP_THICKNESS</c>.
+        /// How far each cap's top strays from <see cref="ReefCapDepthMetres"/>, m, uniform either
+        /// way. A stemmed cap's top never rises above 0.5 m: a config that could put one there is
+        /// refused rather than clamped. <c>EVOSIM_REEF_CAP_DEPTH_JITTER</c>.
+        /// </summary>
+        [Tunable("reef", Unit = "m")]
+        public float ReefCapDepthJitterMetres
+        {
+            get => _reefCapDepthJitterMetres;
+            set => _reefCapDepthJitterMetres = ReefDial(nameof(ReefCapDepthJitterMetres), value);
+        }
+
+        private float _reefCapDepthJitterMetres = 1f;
+
+        /// <summary>
+        /// A cap's thickness, m, from its top to its underside, one for every reef.
+        /// <c>EVOSIM_REEF_CAP_THICKNESS</c>.
         /// </summary>
         [Tunable("reef", Unit = "m")]
         public float ReefCapThicknessMetres
@@ -1664,33 +1727,37 @@ namespace Evosim.Core
             set => _reefCapThicknessMetres = ReefDial(nameof(ReefCapThicknessMetres), value);
         }
 
-        private float _reefCapThicknessMetres;
+        private float _reefCapThicknessMetres = 2f;
 
         /// <summary>
-        /// A reef's stem radius, m: the rock column from the floor to the cap's underside. 0 is a
-        /// floating island, which is refused unless the cap is at the surface.
-        /// <c>EVOSIM_REEF_STEM_RADIUS</c>.
+        /// A reef's stem radius as a fraction of its cap's mean radius <c>r0</c>. 0 is a floating
+        /// island, which is refused unless the cap is at the surface with no jitter.
+        /// <c>EVOSIM_REEF_STEM_FRACTION</c>.
         /// </summary>
-        [Tunable("reef", Unit = "m")]
-        public float ReefStemRadiusMetres
+        [Tunable("reef")]
+        public float ReefStemRadiusFraction
         {
-            get => _reefStemRadiusMetres;
-            set => _reefStemRadiusMetres = ReefDial(nameof(ReefStemRadiusMetres), value);
+            get => _reefStemRadiusFraction;
+            set => _reefStemRadiusFraction = value >= 0f && value < 1f && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(ReefStemRadiusFraction), value, "A stem is a fraction of its cap, at least 0 and under 1.");
         }
 
-        private float _reefStemRadiusMetres;
+        private float _reefStemRadiusFraction = 0.25f;
 
         /// <summary>
         /// The distance from the rock over which the streams fade from still to whole, m: the
-        /// potential is multiplied by a quintic of the signed distance to the rock, 0 inside it and
-        /// 1 beyond this. <c>logbook/specs/reef-spec.md</c> §2, <c>EVOSIM_REEF_FADE</c>.
+        /// potential is multiplied by the product over the reefs of a quintic of each reef's
+        /// distance, 0 in any rock and 1 beyond this from every reef.
+        /// <c>logbook/specs/reef-spec.md</c> §2, <c>EVOSIM_REEF_FADE</c>.
         /// </summary>
         /// <remarks>
         /// The plain form, not the beach's depth product: a rock has no depth to turn over. Its
         /// cost is the contour current <c>∇g × A</c> of the order of <c>|A|/fade</c>, which
-        /// <c>ReefStreamsTests</c> reads at 10, 15 and 20 m in round 46's tank. The placer keeps
-        /// two reefs' fades from overlapping (<see cref="ReefGeometry"/>), and the world refuses a
-        /// tank that cannot hold the count at that spacing.
+        /// <c>ReefStreamsTests</c> reads in round 46's tank. Overlapping fades multiply, and the
+        /// grid's substep refusal reads the faded field's sampled maximum as well as the open
+        /// water's bound (<see cref="GridField.FadedWaterMaximum"/>).
         /// </remarks>
         [Tunable("reef", Unit = "m")]
         public float ReefFadeMetres
@@ -1699,13 +1766,13 @@ namespace Evosim.Core
             set => _reefFadeMetres = ReefDial(nameof(ReefFadeMetres), value);
         }
 
-        private float _reefFadeMetres;
+        private float _reefFadeMetres = 8f;
 
         private static float ReefDial(string name, float value) =>
             value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
                 ? value
                 : throw new ArgumentOutOfRangeException(
-                    name, value, "A reef's dimension is finite and not negative; 0 is off.");
+                    name, value, "A reef's dimension is finite and not negative.");
 
         /// <summary>How fast matter falls, m/s — D048.</summary>
         /// <remarks>

@@ -596,8 +596,10 @@ namespace Evosim.Core
         /// <b>The knob is not re-measured.</b> <see cref="Speed"/> still names the RMS of the tank's
         /// water without the rock, and the Courant ceiling (<see cref="MaximumTransportSpeed"/>) is
         /// the unfaded one. The grid's substeps come from its own face fluxes, which carry the
-        /// contour current, so the ceiling's only job — the refusal past eight substeps — reads a
-        /// number that can be lower than the fastest water beside a reef.
+        /// contour current, and its refusal past eight substeps reads the larger of this ceiling
+        /// and the faded water it samples at its open faces within the fade
+        /// (<see cref="GridField.FadedWaterMaximum"/>), because the contour current can outrun it.
+        /// Overlapping reefs multiply their fades, which keeps all of this true of the union.
         /// </para>
         /// <para>
         /// <b>Samplable under a pin.</b> The fade is a pure function of the point with no memo, so
