@@ -138,11 +138,16 @@ def draw(plt, arm, second, sample_t, bodies, density, cell, mask, radius, snow, 
     if panels == 1:
         axes = [axes]
 
-    def panel(ax, field, title, label, cmap):
+    def panel(ax, field, field_mask, field_cell, title, label, cmap):
         # imshow wants rows = z, columns = x; mask the glass out so the deserts read as deserts
-        # and not as the outside.
-        grid = [[field[ix][iz] if mask[ix][iz] else float('nan') for ix in range(nx)] for iz in range(nz)]
-        image = ax.imshow(grid, origin='lower', extent=(0, nx * cell, 0, nz * cell),
+        # and not as the outside. The grid, the mask and the cell are the panel's own: the snow's
+        # 1 m columns are not the matter's 5 m cells, and until 2026-09-23 this closed over the
+        # matter's, so the snow panel drew the field's south-west 34 m corner stretched over the
+        # tank as a wedge at the north-east glass (round 45's first looks read it as a pile).
+        fnx, fnz = len(field), len(field[0])
+        grid = [[field[ix][iz] if field_mask[ix][iz] else float('nan') for ix in range(fnx)]
+                for iz in range(fnz)]
+        image = ax.imshow(grid, origin='lower', extent=(0, fnx * field_cell, 0, fnz * field_cell),
                           cmap=cmap, interpolation='nearest')
         fig.colorbar(image, ax=ax, fraction=0.046, pad=0.02, label=label)
         if radius is not None:
@@ -163,7 +168,7 @@ def draw(plt, arm, second, sample_t, bodies, density, cell, mask, radius, snow, 
 
     where = 'top %d layer%s' % (layers, '' if layers == 1 else 's') if layers else 'whole column'
     mean, cv, peak = stats(density, mask)
-    panel(axes[0], density,
+    panel(axes[0], density, mask, cell,
           '%s | t = %d s (bodies at %d s) | alive %d\nspent matter, %s: cv %.2f, max %.4f units/m3'
           % (arm, second, sample_t, len(bodies), where, cv, peak),
           'units / m3', 'YlGn')
@@ -174,7 +179,7 @@ def draw(plt, arm, second, sample_t, bodies, density, cell, mask, radius, snow, 
         s_density, s_cell = snow
         s_mask, _ = live_mask_for(s_density, s_cell, radius)
         s_mean, s_cv, s_peak = stats(s_density, s_mask)
-        panel(axes[1], s_density,
+        panel(axes[1], s_density, s_mask, s_cell,
               'marine snow, column mean: cv %.2f, max %.3f J/m3' % (s_cv, s_peak),
               'J / m3', 'YlOrBr')
 
