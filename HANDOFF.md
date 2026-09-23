@@ -711,7 +711,10 @@ subagent and never in a shell loop.
    `gpu` engine in `Evosim.Farm` behind `Simulation`, the manifest naming the device, the
    digest hashing a lost body's NaNs as one pattern (the spike found two compilations keep
    different NaN sign bits in lost bodies), size classes for the readback and the slowest
-   thread, and the founding live path. It goes to a subagent after the D110 build.
+   thread, and the founding live path. It goes to a subagent after the D110 build; its build spec is
+   `logbook/specs/gpu-port-spec.md` (a backend inside `DynamicsWorld` stepping a block on
+   the card and filling the host mirror once a block, slots in size classes, the refusals,
+   the digest canonicalised, four acceptances, six tests).
 7. **Loose ends.** Double accounts in Core for the matter residual (done, `0c19f0d`).
    `ParallelIdentityTests` is `Slow` and the overlap probe's `run.ps1` takes `-Snapshots`
    (both done). Close pictures beside the whole-tank views in every entry. DESIGN §11.1 and the ArticulationBody
