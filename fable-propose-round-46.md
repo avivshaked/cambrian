@@ -73,8 +73,9 @@ a part, entered in the grid as spike3's kernel enters spheres, the push between 
 part pair, and the mouth's contact read on the part that touches (which the mouth already
 asks for: it kills a part). The census columns keep their names and read pairs of parts.
 The cost is the entry count times the parts a body, about two on the record, which the
-contact kernel's occupancy says the card and the CPU both carry. No tunable: the contact
-model is the engine's, and the round's manifest names the engine version. **Ruling asked:
+contact kernel's occupancy says the card and the CPU both carry. A tunable, off by default, so
+every recorded world replays and the manifest says which model ran (the build spec is
+`logbook/specs/per-part-contact-spec.md`). **Ruling asked:
 yes.**
 
 ## 5. The two pre-registration repairs
