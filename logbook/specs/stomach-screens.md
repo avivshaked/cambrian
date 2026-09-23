@@ -67,3 +67,33 @@ and is the owner's dial) or something that gathers it: a floor within a metre or
 crowd, which the beach's shoal is only along the rim. The beach's premise as written on the
 morning of the 23rd, that snow lands on the lit floor, is true only if the snow lives long
 enough to reach a floor, and at the current rate it does not.
+
+## The snow's life: remineralisation at 0.0005
+
+*Read on 2026-09-23 at 15:20 from `r46remin-5e4-s1`, round 45's launcher at dt 0.02 with
+`EVOSIM_REMIN` 0.0005 (D112's value) against screen B at the round's 0.002; the same seed,
+the same 12,000 s, no inoculation.*
+
+| | B, remin 0.002, 6,000 s | quarter rate, 6,000 s | B, 12,000 s | quarter rate, 12,000 s |
+|---|---|---|---|---|
+| alive | 2,052 | 1,335 | 2,268 | 1,516 |
+| births in the window | 3,400 | 2,414 | 7,135 | 4,758 |
+| standing snow, kJ | 80 | 196 | 62 | 146 |
+| on the floor, J | 11 | 425 | 10 | 768 |
+| densest 20 columns, J a column | 27 | 55 | 19 | 27 |
+| snow a column, 60 to 80 m from the centre | 5.5 | 13.0 | 3.6 | 7.9 |
+| uptake-limited share of leaf-steps | 0.74 | 0.69 | 0.67 | 0.63 |
+| matter standing, units | 15,105 | 15,073 | 15,105 | 15,073 |
+
+**Reading (inference).** A quarter of the rate makes about two and a half times the snow, not
+four, because there are a third fewer plants to make it: the crowd settles at about two
+thirds of B's, at both samples. The layer under the crowd is about twice as thick (the
+densest columns 55 J against 27 at 6,000 s), so an eater there sees about 1 J/m³ against a
+break-even of 0.44, a margin where B's was none. The floor still holds half a percent of the
+snow; at 2 mm/s and a 23-minute half-life the snow falls four or five metres before it is
+gone, so a shelf within that of the crowd is what catches it, which is the beach's. The
+plants' cost is a third of the crowd, more than the fifth of the budget the ruling estimated
+from the parked matter alone (about 1,500 to 2,000 units are in snow at any moment, a tenth
+of the budget); the uptake-limited share falls with the crowd, so the plants that remain are
+not shorter of matter. D112 stands on this reading as ruled, with the cost stated as a third
+of the crowd rather than a fifth.
