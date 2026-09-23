@@ -132,6 +132,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D110](#d110) | Light by exposure: a part earns on, and shades with, its projected area onto the horizontal in its actual pose (a flat leaf twice the orientation average, an edge-on one about nothing, a random crowd unchanged), the hull's one-sided shadow as the cap, a tunable off by default; the one-part leaf's way to lie flat (a buoyancy offset) put for its own ruling | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 morning from the owner's observation of the pictures, with two conditions (the cost weighed, a way to affect the angle) |
 | [D111](#d111) | The buoyancy offset: a part's centre of buoyancy may sit off its mass centre along its thinnest axis, a heritable priced genome trait (format 8) so a one-part leaf turns face up by the water it displaces; D110's second condition answered | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("agreed") after the biology was laid out |
 | [D112](#d112) | The snow's life: remineralisation at 0.0005 per second from round 46, a quarter of rounds 41 to 45's rate, so that marine snow lives long enough to fall from the crowd on to the beach's shelf; the plant world read as the snow's thinness, not its depth | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("Agreed"), pending the quarter-rate screen's reading of the plants' cost |
+| [D113](#d113) | The support cost: a part's standing cost grows with its area times the square of its distance from the root, 0.1 W per m² per m², the price of reach in place of a bound (D107's price) | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("I'd follow nature here. so if that's your recommendation, lets go with that") |
+| [D114](#d114) | Contact on the part: every part its own sphere in the farm's contact, so a body touches with the part that touches and a bite lands on it; a tunable, off in every recorded world | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("agreed") |
 
 ---
 
@@ -6079,3 +6081,49 @@ the rate would park half the budget and halve the crowd, and is not taken.
 **Rejected.** Faster sinking (it carries the snow away from the plants' layer in the same eight
 minutes, and the rate would be the one far from nature). A rate below 0.0005 (half the budget
 parked). The beach alone at 0.002 (the snow dissolves before it lands on any shelf).
+
+
+### D113
+**The support cost: a part's standing cost grows as its area times the square of its distance from the root** · 2026-09-23
+
+**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23, on the
+recommendation of `fable-propose-round-46.md`'s rule 3 ("I'd follow nature here. so if that's
+your recommendation, lets go with that"). The build spec is `logbook/specs/support-cost-spec.md`.
+
+**Decision.** Every part pays, on top of its tissue's upkeep, a standing cost of
+`A · area · distance²` with `A = 0.1 W per m² per m²`, the distance taken from the root's
+origin to the part's centre in the rest pose, scaled with growth. It is a tunable in the
+config and the hash, 0 in every recorded world, screened on the ledger before round 46's
+pre-registration and read in the table (`support W`, `reach m`).
+
+**Why.** D107 left a part's size unbounded and named a price as the bound's honest
+replacement: round 44 grew a fourteen-metre fan of leaves that the one-sphere contact turned
+into a bulldozer (logbook/0113). A beam's cost of standing grows with its length squared,
+which is the form a stem or a frond pays in nature; the price stops the fan by making reach
+dear rather than forbidden, and a body that earns enough light at the end of a long stalk may
+still keep it.
+
+**Rejected.** A hard bound on reach (`MaxBodyReachMetres`, built and off; D107 ruled against
+it as a rule). A linear price (it does not stop a doubling body, whose earnings grow with its
+area as fast as the cost). No price (the fan returns, and D114's honest bites make it a
+bulldozer that eats).
+
+### D114
+**Contact on the part: every part its own sphere, so a body touches with the part that touches** · 2026-09-23
+
+**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 ("agreed"), on
+`fable-propose-round-46.md`'s rule 4. The build spec is `logbook/specs/per-part-contact-spec.md`.
+
+**Decision.** The farm's contact enters every part's bounding sphere into the contact grid
+rather than one sphere a body, resolves the soft push pair by pair between parts, and hands
+the mouth (D106) the part that is in contact, so a bite lands on the part touched and the
+kill row names it. A tunable, off by default so every recorded world replays; on from round
+46. The overlap columns are read per part from then, and the profile prices it on the smoke.
+
+**Why.** One sphere a body makes a many-part body a ball to its neighbours and lets the mouth
+bite a part it is not touching, which confounded round 45's reading of the mouth. Per-part
+contact is the honest geometry the mouth needs, and the GPU port's design (D105) already
+enters links.
+
+**Rejected.** Keeping one sphere a body (the bite stays approximate and the mouth's clause
+cannot be read). Full mesh contact (the solver's own step is spheres by design, D104).

@@ -136,8 +136,9 @@ vertical).
 1. The buoyancy offset as a genome field: ruled yes (D111).
 2. The consumer's founding: the second window (recommended), intake on non-consumer
    founders, or the larger reserve.
-3. The support cost: the square form at 0.1 W per m² per m², or a price of the owner's.
-4. Per-part contact: yes or no.
+3. The support cost: ruled (D113): the square form at 0.1 W per m² per m² ("I'd follow
+   nature here").
+4. Per-part contact: ruled (D114, "agreed").
 5. The reef held for round 47: agreed in conversation (2026-09-23 afternoon, "we don't
    have to do both in the same run"); the mushroom shape is the owner's and its spec follows
    the beach's.
