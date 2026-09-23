@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "b3ea7f3291abd8e4",
+  "configHash": "38202c74d38f095a",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -230,6 +230,7 @@
     "handlingCostPerJouleEaten": 0.1,
     "initialMatterPerCubicMetre": 1,
     "joulesPerUnit": 100,
+    "lightByExposure": false,
     "lightLayerMetres": 1,
     "lightShadeDepth": 0,
     "lightShadeDriftMetresPerHour": 0,

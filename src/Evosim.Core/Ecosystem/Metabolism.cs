@@ -310,6 +310,104 @@ namespace Evosim.Core
             if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
             if (config == null) throw new ArgumentNullException(nameof(config));
 
+            // D099's cap, applied part by part rather than to the body's total, because income is
+            // earned per cell and a body's cells are not all of one kind. Every part is shortened
+            // by the same factor, so a mixed body keeps the proportions its plan chose; what it
+            // loses is the square metres it never had. One with the cap off, which is every world
+            // before D099.
+            float litFactor = phenotype.LitAreaFactor(config.LightSilhouetteCap);
+
+            return Bill(
+                phenotype, config, irradiance, nutrientDensity, spentDensity, workJoules, seconds,
+                ageSeconds, null, litFactor);
+        }
+
+        /// <summary>
+        /// <see cref="StepAt(Phenotype, RunConfig, float, float, float, float, float, float)"/> in a
+        /// pose — D110. Each part earns on <c>LitArea · e_i</c>, and with D099's cap on every part
+        /// is shortened by <c>min(1, ShadowArea / ExposedLitArea)</c>, which is the shadow
+        /// <c>World</c> contributes for the same body; both sides of the light are one quantity.
+        /// </summary>
+        /// <param name="exposure">
+        /// One factor a part, <see cref="Organism.PartExposure"/>. Never null here: a body with no
+        /// pose read goes through the orientation-averaged overload, which is what keeps the off
+        /// path the recorded one.
+        /// </param>
+        /// <param name="upInBody">The world's up in the body's own frame, <see cref="Organism.UpInBody"/>.</param>
+        public static EnergyLedger StepAt(
+            Phenotype phenotype,
+            RunConfig config,
+            float irradiance,
+            float nutrientDensity,
+            float spentDensity,
+            float workJoules,
+            float seconds,
+            float ageSeconds,
+            float[] exposure,
+            Float3 upInBody)
+        {
+            if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+            if (exposure == null) throw new ArgumentNullException(nameof(exposure));
+
+            float litFactor = phenotype.LitAreaFactor(exposure, upInBody, config.LightSilhouetteCap);
+
+            return Bill(
+                phenotype, config, irradiance, nutrientDensity, spentDensity, workJoules, seconds,
+                ageSeconds, exposure, litFactor);
+        }
+
+        /// <summary>
+        /// The same with each part's factor given and no pose — the ledger's <c>-Exposure</c>
+        /// screen, D110. The cap is the orientation-averaged one,
+        /// <see cref="Phenotype.LitAreaFactor(bool)"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>A calculator's reading and never the world's.</b> Without a pose the hull's shadow is
+        /// not defined; with every part at one factor it is the averaged silhouette at that factor,
+        /// which is what this takes, and it is exact for a body of one part. The world always has a
+        /// pose and always goes through the overload that takes one.
+        /// </remarks>
+        public static EnergyLedger StepAt(
+            Phenotype phenotype,
+            RunConfig config,
+            float irradiance,
+            float nutrientDensity,
+            float spentDensity,
+            float workJoules,
+            float seconds,
+            float ageSeconds,
+            float[] exposure)
+        {
+            if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+            if (exposure != null && exposure.Length != phenotype.PartCount)
+            {
+                throw new ArgumentException(
+                    "An exposure array names one factor a part; this one has " + exposure.Length +
+                    " for a body of " + phenotype.PartCount + " parts.", nameof(exposure));
+            }
+
+            return Bill(
+                phenotype, config, irradiance, nutrientDensity, spentDensity, workJoules, seconds,
+                ageSeconds, exposure, phenotype.LitAreaFactor(config.LightSilhouetteCap));
+        }
+
+        // The bill itself, shared by every overload. With exposure null every part's lit area is
+        // the expression it has always been, so the orientation-averaged world's bits do not move.
+        private static EnergyLedger Bill(
+            Phenotype phenotype,
+            RunConfig config,
+            float irradiance,
+            float nutrientDensity,
+            float spentDensity,
+            float workJoules,
+            float seconds,
+            float ageSeconds,
+            float[] exposure,
+            float litFactor)
+        {
+
             // Senescence, as a multiplier on the terms of staying alive rather than as a clock
             // that kills (D038). It moves both sides of the ledger from one knob and by the same
             // factor: an old body spends more and converts less, which is what ageing is. Death
@@ -321,13 +419,6 @@ namespace Evosim.Core
 
             CellIntake intake = CellIntake.None;
             float upkeep = 0f, neural = 0f;
-
-            // D099's cap, applied part by part rather than to the body's total, because income is
-            // earned per cell and a body's cells are not all of one kind. Every part is shortened
-            // by the same factor, so a mixed body keeps the proportions its plan chose; what it
-            // loses is the square metres it never had. One with the cap off, which is every world
-            // before D099.
-            float litFactor = phenotype.LitAreaFactor(config.LightSilhouetteCap);
 
             // D106 item 3's rule 7, read once before the walk rather than four times inside it.
             // With every price at zero — the default, and every world in the record — no term is
@@ -343,10 +434,16 @@ namespace Evosim.Core
 
                 // Named throughout: these are eight floats and ints of similar magnitude, and a
                 // transposed pair would produce a plausible number rather than an error.
+                //
+                // D110: the part's area in its pose, then the cap. The null branch is the recorded
+                // expression, character for character, and handed straight to the parameter as it
+                // always was rather than through a local (Mono may hold a local wider than a float).
                 var context = new CellContext(
                     seconds: seconds,
                     volume: part.Volume,
-                    litArea: part.LitArea * litFactor,
+                    litArea: exposure == null
+                        ? part.LitArea * litFactor
+                        : part.LitArea * exposure[part.Index] * litFactor,
                     irradiance: irradiance,
                     nutrientDensity: nutrientDensity,
                     contact: null,

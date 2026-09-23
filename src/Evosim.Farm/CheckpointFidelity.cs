@@ -370,9 +370,10 @@ namespace Evosim.Farm
         // buffers written for every link, the limit's implicit term written for every degree of
         // freedom, the ledger's pre-step copies, the brain's output, the step's own overlap list
         // (the held one is compared through _heldCount and the ids it counts), the applied
-        // torque a probe narrows, and Core's contact list the harness hands over each metabolic
-        // step. A member added to the solver that the next step reads before it writes is not
-        // on this list, and this check will name it.
+        // torque a probe narrows, Core's contact list the harness hands over each metabolic
+        // step, and D110's exposure and up, which the harness reads off the restored rotations
+        // before the world prices anything on them. A member added to the solver that the next
+        // step reads before it writes is not on this list, and this check will name it.
         private static readonly HashSet<string> FilledBeforeRead = new HashSet<string>(StringComparer.Ordinal)
         {
             "IaA", "IaB", "IaC", "Pa", "Un", "Uf", "Dinv", "Ubar", "Acc", "Fext", "Tau",
@@ -380,6 +381,7 @@ namespace Evosim.Farm
             "_preVelocity", "_preSpin", "_preRelativeSpin", "_preJointRate", "_passiveTorque",
             "DriveSignal", "_overlapIds", "_overlapCount", "_heldIds", "AppliedTorque",
             "<PartContact>k__BackingField",
+            "<PartExposure>k__BackingField", "<UpInBody>k__BackingField",
         };
 
         private static bool IsSkippedName(string name) =>

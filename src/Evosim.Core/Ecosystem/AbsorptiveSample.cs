@@ -54,6 +54,17 @@ namespace Evosim.Core
         /// <summary>Lit area, m² — <see cref="Phenotype.TotalLitArea"/>.</summary>
         public float LitArea { get; }
 
+        /// <summary>
+        /// Lit area in the pose the body held, m² — <see cref="Phenotype.ExposedLitArea"/>, D110.
+        /// Equal to <see cref="LitArea"/> in a world with <see cref="RunConfig.LightByExposure"/>
+        /// off and for a body whose pose has not been read, since null exposure is every factor 1.
+        /// </summary>
+        /// <remarks>
+        /// Before the cap, as <see cref="LitArea"/> is, so the two differ by the pose alone and a
+        /// reader's ratio is the body's mean exposure.
+        /// </remarks>
+        public float ExposedArea { get; }
+
         public int PartCount { get; }
 
         /// <summary>Also carries photosynthetic tissue, so it is not a pure stomach.</summary>
@@ -135,8 +146,9 @@ namespace Evosim.Core
             bool mixotroph, float energy, float tissueJoules, float birthInvestment,
             float densityHere, float share,
             float foodWatts, float lightWatts, float upkeepWatts, float exudedWatts, float netWatts,
-            int children, double lastChildSeconds, bool dead)
+            int children, double lastChildSeconds, bool dead, float exposedArea)
         {
+            ExposedArea = exposedArea;
             ElapsedSeconds = elapsedSeconds;
             Id = id;
             Age = age;
@@ -213,7 +225,10 @@ namespace Evosim.Core
                 (float)(ledger.Net * perSecond),
                 creature.Children,
                 creature.LastChildSeconds,
-                dead);
+                dead,
+                creature.CurrentExposure == null
+                    ? creature.Phenotype.TotalLitArea
+                    : creature.Phenotype.ExposedLitArea(creature.CurrentExposure));
         }
 
         /// <summary>
@@ -233,6 +248,7 @@ namespace Evosim.Core
                 .Field("volume", Volume)
                 .Field("absVolume", AbsorptiveVolume)
                 .Field("photoArea", LitArea)
+                .Field("exposedArea", ExposedArea)
                 .Field("parts", PartCount)
                 .Field("mixotroph", Mixotroph)
                 .Field("energy", Energy)

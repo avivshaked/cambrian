@@ -67,6 +67,10 @@ namespace Evosim.Core
         /// The genome's own <see cref="ReproductionTraits"/> — brood size and birth investment.
         /// Not read from <paramref name="phenotype"/>, which carries no genome.
         /// </param>
+        /// <param name="exposure">
+        /// Each part's exposure factor, D110 — the ledger's <c>-Exposure</c>, one value repeated.
+        /// Null is every factor 1, the orientation average and every forecast before D110.
+        /// </param>
         /// <remarks>
         /// <para>
         /// <b>Mirrors <see cref="World"/>'s per-step order exactly</b> — metabolise, then check
@@ -118,7 +122,8 @@ namespace Evosim.Core
             float nutrientDensityJoulesPerCubicMetre,
             float spentDensityUnitsPerCubicMetre,
             float shadeFraction,
-            ReproductionTraits reproduction)
+            ReproductionTraits reproduction,
+            float[] exposure = null)
         {
             if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
             if (config == null) throw new ArgumentNullException(nameof(config));
@@ -203,10 +208,10 @@ namespace Evosim.Core
             float netWattsAtBirth = (float)Metabolism.StepAt(
                 phenotype, config, irradiance, nutrientDensityJoulesPerCubicMetre,
                 spentDensityUnitsPerCubicMetre,
-                workJoules: 0f, seconds: 1f, ageSeconds: 0f).Net;
+                workJoules: 0f, seconds: 1f, ageSeconds: 0f, exposure: exposure).Net;
 
             float? breakEvenDensity = FindBreakEvenDensity(
-                phenotype, config, irradiance, spentDensityUnitsPerCubicMetre);
+                phenotype, config, irradiance, spentDensityUnitsPerCubicMetre, exposure);
 
             // fable-propose-growth.md rules 2 and 3, at the one body this calculator has. A parent
             // spends its investment on the litter; each child's share is that over the brood, and
@@ -241,7 +246,7 @@ namespace Evosim.Core
                 EnergyLedger ledger = Metabolism.StepAt(
                     phenotype, config, irradiance, nutrientDensityJoulesPerCubicMetre,
                     spentDensityUnitsPerCubicMetre,
-                    workJoules: 0f, seconds: StepSeconds, ageSeconds: age);
+                    workJoules: 0f, seconds: StepSeconds, ageSeconds: age, exposure: exposure);
 
                 // D098's leg 2 at one body: a body burns no more than it holds, and one that
                 // could not pay in full dies that step with nothing left. Handling is already in
@@ -311,7 +316,8 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         private static float? FindBreakEvenDensity(
-            Phenotype phenotype, RunConfig config, float irradiance, float spentDensity)
+            Phenotype phenotype, RunConfig config, float irradiance, float spentDensity,
+            float[] exposure)
         {
             bool hasAbsorptive = false;
             for (int i = 0; i < phenotype.Parts.Count; i++)
@@ -328,7 +334,7 @@ namespace Evosim.Core
             float NetAt(float density) =>
                 (float)Metabolism.StepAt(
                     phenotype, config, irradiance, density, spentDensity,
-                    workJoules: 0f, seconds: 1f, ageSeconds: 0f).Net;
+                    workJoules: 0f, seconds: 1f, ageSeconds: 0f, exposure: exposure).Net;
 
             // Light alone already covers upkeep: density does not need to contribute anything,
             // so "the density at which net = 0" has no single answer above zero.

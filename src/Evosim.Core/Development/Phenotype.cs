@@ -187,6 +187,83 @@ namespace Evosim.Core
         /// </remarks>
         public float EffectiveLitArea(bool capOn) => TotalLitArea * LitAreaFactor(capOn);
 
+        // D110. The rest-pose hull's faces as outward area vectors, kept from MeasureSilhouette,
+        // and the square of the length ratio this body stands at against them. Shared by
+        // reference with every Scaled copy rather than copied, because a copy is made at every
+        // growth step of every body and the faces do not change shape with size.
+        private Double3[] _hullFaces;
+        private double _hullFaceScale = 1.0;
+
+        /// <summary>How many faces the rest-pose hull carries — six when the box stood in.</summary>
+        public int HullFaceCount => _hullFaces?.Length ?? 0;
+
+        /// <summary>
+        /// The lit area this body's parts present in a pose, m² — <c>Σ LitArea_i · e_i</c>. D110.
+        /// </summary>
+        /// <param name="exposure">
+        /// One factor a part, as <see cref="Organism.PartExposure"/> holds them. Must be one a part.
+        /// </param>
+        /// <remarks>
+        /// Summed in part order in float, the order <see cref="Metabolism"/> bills the parts in.
+        /// </remarks>
+        public float ExposedLitArea(float[] exposure)
+        {
+            if (exposure == null) throw new System.ArgumentNullException(nameof(exposure));
+            if (exposure.Length != _parts.Count)
+            {
+                throw new System.ArgumentException(
+                    "An exposure array names one factor a part; this one has " + exposure.Length +
+                    " for a body of " + _parts.Count + " parts, so it describes another plan.",
+                    nameof(exposure));
+            }
+
+            float sum = 0f;
+            for (int i = 0; i < _parts.Count; i++) sum += _parts[i].LitArea * exposure[i];
+            return sum;
+        }
+
+        /// <summary>
+        /// The whole body's shadow in a pose, m²: its rest-pose hull projected onto the plane
+        /// normal to <paramref name="upInBody"/>, the world's up brought into the body's own frame.
+        /// D110's cap, as <see cref="SilhouetteArea"/> is D099's.
+        /// </summary>
+        /// <remarks>
+        /// The one-sided sum over the faces, so a face turned away from the light counts nothing
+        /// and a closed hull's sum is its shadow. Where the hull fell back to the box, the box's
+        /// three face pairs stand in, as they do for the surface.
+        /// </remarks>
+        public float ShadowArea(Float3 upInBody)
+        {
+            if (_hullFaces == null || _hullFaces.Length == 0) return 0f;
+
+            double shadow = ConvexHull.ProjectedArea(
+                _hullFaces, new Double3(upInBody.X, upInBody.Y, upInBody.Z));
+            return (float)(shadow * _hullFaceScale);
+        }
+
+        /// <summary>
+        /// <see cref="LitAreaFactor(bool)"/> in a pose: <c>min(1, ShadowArea / ExposedLitArea)</c>
+        /// with the cap on, 1 without it. D110.
+        /// </summary>
+        public float LitAreaFactor(float[] exposure, Float3 upInBody, bool capOn)
+        {
+            if (!capOn) return 1f;
+
+            float exposed = ExposedLitArea(exposure);
+            if (!(exposed > 0f)) return 1f;
+
+            float factor = ShadowArea(upInBody) / exposed;
+            return factor < 1f ? factor : 1f;
+        }
+
+        /// <summary>
+        /// The lit area this body earns on and casts as its shadow in a pose, m² —
+        /// <see cref="ExposedLitArea"/> times <see cref="LitAreaFactor(float[], Float3, bool)"/>.
+        /// D110's shading side, and the same quantity <see cref="Metabolism"/> bills the parts on.
+        /// </summary>
+        public float EffectiveLitArea(float[] exposure, Float3 upInBody, bool capOn) =>
+            ExposedLitArea(exposure) * LitAreaFactor(exposure, upInBody, capOn);
+
         /// <summary>
         /// Measures <see cref="SilhouetteArea"/> over the parts as they now stand. Called once by
         /// <see cref="Developer.Develop"/> when the body is complete.
@@ -194,20 +271,24 @@ namespace Evosim.Core
         internal void MeasureSilhouette()
         {
             SilhouetteFellBackToBox = 0;
+            _hullFaceScale = 1.0;
 
             if (_parts.Count == 0)
             {
                 SilhouetteArea = 0f;
+                _hullFaces = System.Array.Empty<Double3>();
                 return;
             }
 
             var corners = new List<Double3>(_parts.Count * 8);
             for (int i = 0; i < _parts.Count; i++) ConvexHull.AppendPartCorners(_parts[i], corners);
 
-            double surface = ConvexHull.SurfaceArea(corners, out bool fellBack, out _);
+            var faces = new List<Double3>();
+            double surface = ConvexHull.SurfaceArea(corners, out bool fellBack, out _, faces);
             if (fellBack) SilhouetteFellBackToBox = 1;
 
             SilhouetteArea = (float)(surface / 4.0);
+            _hullFaces = faces.ToArray();
         }
 
         /// <summary>
@@ -340,6 +421,11 @@ namespace Evosim.Core
                 // birth and per growth step.
                 SilhouetteArea = SilhouetteArea * linear * linear,
                 SilhouetteFellBackToBox = SilhouetteFellBackToBox,
+
+                // D110's faces, by the same argument: the same hull at a length ratio, so the
+                // same faces at its square, and nothing is built.
+                _hullFaces = _hullFaces,
+                _hullFaceScale = _hullFaceScale * linear * linear,
 
                 // What this copy was made at, so a checkpoint can make it again rather than
                 // infer it from a tissue fraction that does not carry it. See ScaledBy.

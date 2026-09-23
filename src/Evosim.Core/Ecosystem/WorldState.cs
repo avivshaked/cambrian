@@ -68,7 +68,13 @@ namespace Evosim.Core
         /// version 4 and are refused by this build; the farm program that wrote them
         /// (`4300278`) reads them.
         /// </remarks>
-        public const int StateVersion = 6;
+        /// <remarks>
+        /// 7 with light by exposure (D110, 2026-09-23): a pending row of the absorptive log carries
+        /// the body's lit area in its pose beside the orientation-averaged one, four bytes a row
+        /// that a version-6 reader would take from the next row's time. The exposure array itself
+        /// is not written; the harness fills it from the solver's rotations before the world reads.
+        /// </remarks>
+        public const int StateVersion = 7;
 
         /// <summary>
         /// Writes the whole of the world's own state.
@@ -662,6 +668,7 @@ namespace Evosim.Core
             w.Write(s.Children);
             w.Write(s.LastChildSeconds);
             w.Write(s.Dead);
+            w.Write(s.ExposedArea);
         }
 
         private static AbsorptiveSample ReadAbsorptive(BinaryReader r) =>
@@ -671,7 +678,7 @@ namespace Evosim.Core
                 r.ReadBoolean(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
-                r.ReadInt32(), r.ReadDouble(), r.ReadBoolean());
+                r.ReadInt32(), r.ReadDouble(), r.ReadBoolean(), r.ReadSingle());
 
         // ------------------------------------------------------------------ generators, fields
 

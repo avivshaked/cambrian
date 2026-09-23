@@ -56,6 +56,11 @@ param(
     # Fraction of irradiance blocked before it reaches the body, in [0, 1]. 0 (unshaded) by default.
     [double] $Shade = 0,
 
+    # D110: every part's exposure factor, its lit area in a pose over the orientation average.
+    # 1 (the default) is the average and every screen before D110; 2 is a thin sheet lying flat,
+    # 0.5 a leaf half on edge. Applied through the ledger's own per-part path.
+    [double] $Exposure = 1,
+
     # Also evaluate the same genome with every absorptive node's cell set to photosynthetic and
     # every photosynthetic node's set to absorptive — a leaf and a stomach of the same shape,
     # side by side.
@@ -130,6 +135,7 @@ $toolArgs = @(
     '--shade', $Shade
 )
 if ($Spent) { $toolArgs += @('--spent', $Spent) }
+if ($Exposure -ne 1) { $toolArgs += @('--exposure', $Exposure.ToString([System.Globalization.CultureInfo]::InvariantCulture)) }
 if ($Compare) { $toolArgs += '--compare' }
 if ($Attack) { $toolArgs += @('--attack', $Attack) }
 if ($Intake) { $toolArgs += @('--intake', $Intake) }

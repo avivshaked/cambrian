@@ -235,6 +235,48 @@ namespace Evosim.Core
         public bool[] PartContact { get; internal set; }
 
         /// <summary>
+        /// Each part's exposure factor at the last metabolic step, indexed like
+        /// <see cref="PartDamage"/> — its projected area onto the horizontal over
+        /// <see cref="PhenotypePart.LitArea"/>, from <see cref="PhenotypePart.ExposureFactor"/>.
+        /// D110. <b>Null is every factor 1</b>, and it is null in every world with
+        /// <see cref="RunConfig.LightByExposure"/> off.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Written by the harness and read by Core</b>, because a pose is the solver's and the
+        /// light is the world's: the harness fills it from the links' rotations immediately before
+        /// <c>World.Step</c>, and the shading pass and the income read it inside that step. Public
+        /// to set for that reason, as nothing inside Core ever writes it.
+        /// </para>
+        /// <para>
+        /// <b>Not checkpointed.</b> The solver's rotations are, and the harness fills this before
+        /// the world reads it, so a restored world rebuilds it exactly; it is on
+        /// <c>CheckpointFidelity</c>'s list of members a step fills before it reads.
+        /// </para>
+        /// <para>
+        /// <b>A stale array is refused rather than read.</b> A plan change inside the step (a bite,
+        /// a module) re-indexes the parts; the world reads the array only while its length is the
+        /// part count, and <c>World.AdoptPlan</c> drops it, so a body whose plan has just moved
+        /// earns and shades on the orientation average until the harness has read its new pose.
+        /// </para>
+        /// </remarks>
+        public float[] PartExposure { get; set; }
+
+        /// <summary>
+        /// The world's up in this body's own frame (the developer's), at the last metabolic step —
+        /// what the hull's shadow in the pose is taken against, D110. Set by the harness beside
+        /// <see cref="PartExposure"/> and read only while that is set.
+        /// </summary>
+        public Float3 UpInBody { get; set; }
+
+        /// <summary>
+        /// The exposure array when it describes this body's present plan, or null — the one
+        /// test every reader of <see cref="PartExposure"/> goes through.
+        /// </summary>
+        public float[] CurrentExposure =>
+            PartExposure != null && PartExposure.Length == Phenotype.PartCount ? PartExposure : null;
+
+        /// <summary>
         /// The developer's path to every part this body has lost to a kill — D106 item 1. Null is
         /// a whole body, which is every body in the record.
         /// </summary>

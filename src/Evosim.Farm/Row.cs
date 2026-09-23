@@ -239,6 +239,7 @@ namespace Evosim.Farm
             int photosyntheticInherited = 0;
             double liftHeld = 0d, buoyantDepth = 0d;
             int genMin = int.MaxValue, genMax = 0;
+            double leafLit = 0d, leafExposed = 0d;
             int belowWorld = 0, absorptiveBelowWorld = 0;
 
             double matterLocked = world.StandingJoulesInBodies / world.Config.JoulesPerUnit;
@@ -289,6 +290,20 @@ namespace Evosim.Farm
                 {
                     _everPhotosynthetic.Add(creature.Id);
                     if (_everPhotosynthetic.Contains(creature.ParentId)) photosyntheticInherited++;
+                }
+
+                // D110's readout: the leaves' area in their poses over their area averaged, over
+                // every body whose pose the harness has read. Nothing to read with the tunable off.
+                float[] exposure = creature.CurrentExposure;
+                if (exposure != null && creature.HasPhotosyntheticTissue)
+                {
+                    foreach (PhenotypePart part in creature.Phenotype.Parts)
+                    {
+                        if (part.CellTypeId != CellTypeIds.Photosynthetic) continue;
+
+                        leafLit += part.LitArea;
+                        leafExposed += (double)part.LitArea * exposure[part.Index];
+                    }
                 }
 
                 int creatureDof = 0;
@@ -362,6 +377,10 @@ namespace Evosim.Farm
             if (alive == 0) genMin = 0;
 
             int photosynthetic = world.CountPhotosynthetic();
+
+            // Area-weighted, so 1 is a crowd of random poses and 2 is every leaf flat; NaN where
+            // there is nothing to weigh, which the row writes as null and the table as a dash.
+            double meanExposure = leafLit > 0d ? leafExposed / leafLit : double.NaN;
 
             HorizontalSpread spread = sim.MeasureHorizontalSpread(absorptiveNow);
 
@@ -736,6 +755,11 @@ namespace Evosim.Farm
                 .Field("intakeShare", intakeShare)
                 .Field("protectionShare", protectionShare);
 
+                // D110. Null with the tunable off and in a world with no leaf posed yet, rather
+                // than a 1 that would read as a crowd measured at random.
+                if (double.IsNaN(meanExposure)) w.Field("meanExposure", (string)null);
+                else w.Field("meanExposure", meanExposure);
+
                 long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
                 for (int p = 0; p < harnessPhaseMs.Length; p++)
@@ -925,6 +949,9 @@ namespace Evosim.Farm
                 // The refusal split, appended after the mouth's seven (logbook/0113's read).
                 moduleRefusedShapeWindow.ToString(c),
                 moduleRefusedReserveWindow.ToString(c),
+
+                // D110's readout, appended after them.
+                double.IsNaN(meanExposure) ? "—" : meanExposure.ToString("0.###", c),
             };
 
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));

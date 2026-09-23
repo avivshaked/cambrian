@@ -71,6 +71,9 @@ namespace Evosim.Farm
             Num("EVOSIM_IRRADIANCE", 48f, (s, v) => s.Irradiance = v),
             Num("EVOSIM_LIGHT_REACH", 12f, (s, v) => s.LightReach = v),
             Flag("EVOSIM_SILHOUETTE", (s, v) => s.SilhouetteCap = v),
+
+            // D110: a part earns on and shades with its area in its pose. Off is the recorded world.
+            Flag("EVOSIM_LIGHT_EXPOSURE", (s, v) => s.LightByExposure = v),
             Num("EVOSIM_SELF_OVERLAP", 0f, (s, v) => s.SelfOverlap = v),
             Num("EVOSIM_MAX_REACH", 0f, (s, v) => s.MaxReach = v),
 
@@ -479,6 +482,7 @@ namespace Evosim.Farm
             config.DispersalChancePerStep = s.DispersalChance;
             config.PerPatchShading = s.PatchShading;
             config.LightSilhouetteCap = s.SilhouetteCap;
+            config.LightByExposure = s.LightByExposure;
             config.SelfOverlapDepthFraction = s.SelfOverlap;
             config.Development.MaxBodyReachMetres = s.MaxReach;
 
@@ -756,6 +760,7 @@ namespace Evosim.Farm
         public float Irradiance;
         public float LightReach;
         public bool SilhouetteCap;
+        public bool LightByExposure;
         public float SelfOverlap;
         public float MaxReach;
         public float MatterIslands;

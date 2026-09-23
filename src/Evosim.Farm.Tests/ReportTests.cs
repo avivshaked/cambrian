@@ -115,6 +115,10 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // before the area — a hard default of 2 m²/s that no launcher could name until the
                 // islands needed it lower, so the recording never printed it.
                 .Replace(" · reach off · ", " · reach off · matter uniform · founders anywhere · shade off · ")
+
+                // D110's token, beside the silhouette cap it shares the shadow with; averaged in
+                // every recorded world.
+                .Replace(" · silhouette on · ", " · silhouette on · light averaged · ")
                 .Replace(" · area ", " · matter-mix 2 m2/s · area ")
 
                 // D106's, the same way: appended at the end of the line, before the hash, which is
@@ -122,12 +126,12 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // mouth's. And the hash itself, which a new tunable moves whatever its default
                 // (§9) — round 42 ran under ff557bce2685293a, the module gene filed the same world
                 // under 11602ab76c1e2a19, the mouth's thirteen knobs and four caps under
-                // 4cbb170c61668098, the reach bound under 5b93c47344df9e67, and D109's five
-                // island tunables under this.
+                // 4cbb170c61668098, the reach bound under 5b93c47344df9e67, D109's five
+                // island tunables under c862fd2c510b82e9, and D110's light by exposure under this.
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`c862fd2c510b82e9`");
+                .Replace("`ff557bce2685293a`", "`5a456a9e7b2518d3`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -167,7 +171,10 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · reach off · matter uniform · founders anywhere · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `c862fd2c510b82e9`", line);
+            Assert.EndsWith(" · configHash `5a456a9e7b2518d3`", line);
+
+            // D110, off: the light is the orientation average, printed beside the cap.
+            Assert.Contains(" · silhouette on · light averaged · selfOverlap 0.1 · ", line);
 
             // parse-arm.ps1 splits on ' · ' and asks for a token by prefix; nothing may arrive
             // with an empty name or a separator inside a value.
@@ -194,7 +201,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             Assert.Equal(Report.BaseColumns.Length + 4, report.Columns.Count);
             Assert.Equal("t (s)", report.Columns[0]);
-            Assert.Equal("ref reserve", report.Columns[Report.BaseColumns.Length - 1]);
+            Assert.Equal("expo", report.Columns[Report.BaseColumns.Length - 1]);
             Assert.Equal("p0", report.Columns[Report.BaseColumns.Length]);
             Assert.Equal("p3", report.Columns[Report.BaseColumns.Length + 3]);
 
@@ -251,6 +258,9 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             "modules", "mod add", "mod drop", "mod refused", "indet %",
             "attack %", "intake %", "prot %", "killed", "eaten", "corpse eat", "heal J",
             "ref shape", "ref reserve",
+
+            // D110's readout, a dash in every recorded world.
+            "expo",
         };
 
         /// <summary>

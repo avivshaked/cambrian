@@ -377,6 +377,31 @@ namespace Evosim.Core
         [Tunable("world")]
         public bool LightSilhouetteCap { get; set; }
 
+        /// <summary>
+        /// Whether a part earns on, and shades with, its projected area onto the horizontal in the
+        /// pose it holds — D110, 2026-09-23, <c>logbook/specs/light-exposure-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// With it off a part's lit area is <see cref="PhenotypePart.LitArea"/>, a quarter of its
+        /// surface, which is Cauchy's average over every orientation: right for a crowd of random
+        /// poses and wrong for any one body. With it on each part's area is multiplied by
+        /// <see cref="Organism.PartExposure"/>, the factor the harness reads off the solver's
+        /// rotations before every step (2 for a thin sheet lying flat, about 0 on edge, 1 on
+        /// average), and with <see cref="LightSilhouetteCap"/> also on the body's shadow is its
+        /// hull's projection in the same pose. Both sides of the light move together, as D099
+        /// required.
+        /// </para>
+        /// <para>
+        /// <b>Off by default, for <see cref="LightSilhouetteCap"/>'s reason</b>, and off it adds no
+        /// float to a recorded world's path: the exposure array is never allocated and the
+        /// orientation-averaged methods are called exactly as before. Only the farm binds it
+        /// (<c>EVOSIM_LIGHT_EXPOSURE</c>); a world built in Unity carries it off.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public bool LightByExposure { get; set; }
+
         /// <summary>How deep the world is, metres — DESIGN.md §5A.2c.</summary>
         /// <remarks>
         /// <b>The world's first vertical bound, and it exists because detritus has to land

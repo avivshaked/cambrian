@@ -50,6 +50,7 @@ namespace Evosim.Farm
             Volume?.Begin();
 
             IReadOnlyList<Organism> living = World.Living;
+            bool byExposure = Config.LightByExposure;
 
             for (int i = 0; i < living.Count; i++)
             {
@@ -66,6 +67,11 @@ namespace Evosim.Farm
                 Volume?.Note(creature.Id, root, body.Radius);
 
                 Float3 centre = CentreOfMass(solver);
+
+                // D110. The pose the world prices this body's light on, read on the pass that
+                // already holds it. Skipped entirely with the tunable off, so the array is never
+                // allocated and the world takes the orientation average it always has.
+                if (byExposure) Exposure(solver, creature);
 
                 // Unsigned, and drained per interval. The solver reports the magnitude of the
                 // work at each joint precisely because a joint being driven *by* the water is
@@ -188,6 +194,57 @@ namespace Evosim.Farm
 
             _phaseTicks[PhaseMetabolise] += Now() - metaboliseStarted -
                                             (_worldTicks + _phaseTicks[PhaseGrowth] - nestedAtEntry);
+        }
+
+        /// <summary>
+        /// Writes each part's exposure factor and the world's up in the body's frame onto the
+        /// creature, from the links' rotations as the physics left them — D110,
+        /// <c>logbook/specs/light-exposure-spec.md</c> §4.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Row 1 of a link's matrix is the whole of what is read.</b> The matrix takes the
+        /// link's own axes to the world's, so its second row is the world's up expressed on each
+        /// of the link's three axes — the three dot products the factor needs — and a link's
+        /// frame is its part's (<c>Creature</c>'s remarks), so link <i>i</i> is part <i>i</i>.
+        /// </para>
+        /// <para>
+        /// <b>Only while the solver holds the creature's plan.</b> A bite or a module inside the
+        /// last world step re-indexed the parts, and the solver is rebuilt only at the next growth
+        /// step; until then link <i>i</i> need not be part <i>i</i>, so the array is dropped and
+        /// the body earns and shades on the orientation average, both sides together.
+        /// </para>
+        /// </remarks>
+        private static void Exposure(Creature solver, Organism creature)
+        {
+            Phenotype phenotype = creature.Phenotype;
+            int links = solver.Links;
+
+            if (links != phenotype.PartCount ||
+                creature.PlanRevision != solver.AppliedPlanRevision)
+            {
+                creature.PartExposure = null;
+                return;
+            }
+
+            float[] exposure = creature.PartExposure;
+            if (exposure == null || exposure.Length != links)
+            {
+                exposure = new float[links];
+                creature.PartExposure = exposure;
+            }
+
+            double[] m = solver.RotationMatrix;
+            for (int i = 0; i < links; i++)
+            {
+                int at = 9 * i + 3;
+                exposure[i] = phenotype.Parts[i].ExposureFactor(m[at], m[at + 1], m[at + 2]);
+            }
+
+            // The root link's axes are the root part's, which the developer may have turned in
+            // the body's own frame; the hull is in that frame, so up is carried the last step.
+            var upOnRoot = new Float3((float)m[3], (float)m[4], (float)m[5]);
+            creature.UpInBody = phenotype.Parts[0].Rotation.Rotate(upOnRoot);
         }
 
         /// <summary>

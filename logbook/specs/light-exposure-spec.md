@@ -95,8 +95,13 @@ already carries what this needs.
 
 ## 6. Tests
 
-1. A thin box (`hy` a tenth of `hx`, `hz`) at identity reads `e` within 1e-3 of `2 · 4hx·hz /
-   LitArea`; rotated a quarter turn about x, within 1e-3 of `2 · 4hx·hy / LitArea`.
+1. A thin box (`hy` a tenth of `hx`, `hz`) at identity reads `e` within 1e-3 of `4hx·hz /
+   LitArea` (about 2 for a thin sheet; the draft wrote a spurious factor of 2 in front, which
+   the builder caught against §1 and the mean-of-1 test); rotated a quarter turn about x,
+   within 1e-3 of `4hx·hy / LitArea`. Note for the readers: a thick box lying flat reads
+   below 1 (thin/thick 0.55 reads 0.95, a cube 2/3 face up and 1.155 on its diagonal), so
+   `expo` rewards thin and flat together, and `tilt.py`'s `2 · mean|cos|` stands for it only
+   on thin sheets.
 2. The mean of `e` over 10,000 uniformly random rotations of that box is 1 within 0.02
    (Cauchy).
 3. A sphere reads 1 at any rotation.

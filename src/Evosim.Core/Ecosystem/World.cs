@@ -2131,6 +2131,8 @@ namespace Evosim.Core
         /// </remarks>
         private void Metabolise(float seconds)
         {
+            bool byExposure = Config.LightByExposure;
+
             Field.Clear();
             Nutrients.ClearDemand();
 
@@ -2147,9 +2149,16 @@ namespace Evosim.Core
                 // what it earns on, so the two have to be one quantity: shade it casts but does
                 // not collect would be light destroyed, and light it collects but does not cast
                 // would be light created, and the audit would see either.
+                //
+                // D110 keeps the rule in a pose: the same exposure array reaches Bill below, or
+                // neither side reads it. Off, the array is null and this is the recorded call.
+                float[] exposure = byExposure ? creature.CurrentExposure : null;
                 Field.Contribute(
                     creature.HeightY,
-                    creature.Phenotype.EffectiveLitArea(Config.LightSilhouetteCap),
+                    exposure == null
+                        ? creature.Phenotype.EffectiveLitArea(Config.LightSilhouetteCap)
+                        : creature.Phenotype.EffectiveLitArea(
+                            exposure, creature.UpInBody, Config.LightSilhouetteCap),
                     creature.Patch);
             }
             Field.Solve();
@@ -2166,9 +2175,15 @@ namespace Evosim.Core
                 float density = Nutrients.EdibleDensityAt(creature.Point);
                 float spent = Matter.DensityAt(creature.Point);
 
-                EnergyLedger ledger = Metabolism.StepAt(
-                    creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
-                    density, spent, creature.PendingWorkJoules, seconds, creature.Age);
+                float[] exposure = byExposure ? creature.CurrentExposure : null;
+                EnergyLedger ledger = exposure == null
+                    ? Metabolism.StepAt(
+                        creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
+                        density, spent, creature.PendingWorkJoules, seconds, creature.Age)
+                    : Metabolism.StepAt(
+                        creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
+                        density, spent, creature.PendingWorkJoules, seconds, creature.Age,
+                        exposure, creature.UpInBody);
 
                 // The absorptive log's capture, taken where the number is — one field write, on
                 // the pass that already read it, and only for the creatures the file records
@@ -2228,9 +2243,15 @@ namespace Evosim.Core
                         : Matter.FrozenEdibleDensityAt(creature.Point);
 
                     // The same work, not more: this replaces the ledger rather than adding to it.
-                    ledger = Metabolism.StepAt(
-                        creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
-                        rationed, rationedSpent, creature.PendingWorkJoules, seconds, age);
+                    float[] exposure = byExposure ? creature.CurrentExposure : null;
+                    ledger = exposure == null
+                        ? Metabolism.StepAt(
+                            creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
+                            rationed, rationedSpent, creature.PendingWorkJoules, seconds, age)
+                        : Metabolism.StepAt(
+                            creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
+                            rationed, rationedSpent, creature.PendingWorkJoules, seconds, age,
+                            exposure, creature.UpInBody);
 
                     // A share is a fraction of the demand, and scaling the density delivers
                     // exactly that only for an intake linear in density. A saturating mouth

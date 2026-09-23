@@ -170,6 +170,8 @@ namespace Evosim.Farm
                 F(s.MinPower) + "-" + F(s.MaxPower) +
                 " · light reach " + F(s.LightReach) + " m" +
                 " · silhouette " + (s.SilhouetteCap ? "on" : "off") +
+                // D110, beside the cap it shares the shadow with, as the spec places it.
+                " · light " + (s.LightByExposure ? "by exposure" : "averaged") +
                 " · selfOverlap " + (s.SelfOverlap > 0f ? s.SelfOverlap.ToString("0.###", Inv) : "off") +
                 " · reach " + (s.MaxReach > 0f ? s.MaxReach.ToString("0.##", Inv) + " m" : "off") +
 
@@ -617,6 +619,10 @@ namespace Evosim.Farm
             // (logbook/0113): the shape test (no larger, cut by a limit, or folded under D101)
             // and the reserve short of the tissue. They sum to `mod refused`.
             "ref shape", "ref reserve",
+
+            // D110, light by exposure: the leaves' area-weighted exposure factor, 1 for a crowd of
+            // random poses and 2 for every leaf flat; a dash with the tunable off.
+            "expo",
         };
     }
 

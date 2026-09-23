@@ -459,6 +459,11 @@ namespace Evosim.Core
             creature.PartDamage = null;
             creature.PartContact = null;
 
+            // D110. The old plan's poses name the old plan's parts; until the harness reads the
+            // new body's, it earns and shades on the orientation average. Null already in every
+            // world with the tunable off.
+            creature.PartExposure = null;
+
             creature.PartMapFromPreviousPlan = map;
 
             creature.AdultPhenotype = adult;

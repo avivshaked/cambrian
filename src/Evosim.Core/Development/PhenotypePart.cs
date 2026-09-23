@@ -151,6 +151,58 @@ namespace Evosim.Core
         /// </remarks>
         public float LitArea => SurfaceArea * 0.25f;
 
+        /// <summary>
+        /// This part's exposure factor in a pose: its projected area onto the horizontal over its
+        /// orientation average, <see cref="LitArea"/>. D110, <c>logbook/specs/light-exposure-spec.md</c> §1.
+        /// </summary>
+        /// <param name="upAlongX">The world's up on the part's own x axis, <c>Rx · up</c>; the sign is ignored.</param>
+        /// <param name="upAlongY">The same on its y axis.</param>
+        /// <param name="upAlongZ">The same on its z axis.</param>
+        /// <remarks>
+        /// <para>
+        /// <b>2 for a thin sheet lying flat, about 0 on edge, 1 averaged over every pose</b>: a
+        /// box's shadow is <c>4·(hy·hz·|ux| + hx·hz·|uy| + hx·hy·|uz|)</c>, the mean of each
+        /// <c>|u|</c> over the sphere is a half, and so the mean shadow is a quarter of the surface,
+        /// which is Cauchy's formula and what <see cref="LitArea"/> already is.
+        /// </para>
+        /// <para>
+        /// <b>A ratio of the box's own two quantities</b>, so growth, which scales every
+        /// half-extent, leaves it unchanged, and a capsule takes the box formula on its
+        /// half-extents with the mean still 1 — consistent with D099's hull, which takes a capsule
+        /// as its box, rather than exact. A sphere shades the same at every angle and reads 1.
+        /// </para>
+        /// </remarks>
+        public float ExposureFactor(double upAlongX, double upAlongY, double upAlongZ)
+        {
+            if (ShapeId == ShapeIds.Sphere) return 1f;
+
+            double hx = Math.Abs(HalfExtents.X);
+            double hy = Math.Abs(HalfExtents.Y);
+            double hz = Math.Abs(HalfExtents.Z);
+
+            double faces = hx * hy + hy * hz + hx * hz;
+            if (!(faces > 0.0)) return 1f;
+
+            double shadow =
+                hy * hz * Math.Abs(upAlongX) +
+                hx * hz * Math.Abs(upAlongY) +
+                hx * hy * Math.Abs(upAlongZ);
+
+            return (float)(2.0 * shadow / faces);
+        }
+
+        /// <summary>
+        /// <see cref="ExposureFactor(double, double, double)"/> for a part whose own frame stands
+        /// at <paramref name="worldRotation"/> — what a test or a Core-only world asks with.
+        /// </summary>
+        public float ExposureFactor(Quat worldRotation)
+        {
+            Float3 x = worldRotation.Rotate(new Float3(1f, 0f, 0f));
+            Float3 y = worldRotation.Rotate(new Float3(0f, 1f, 0f));
+            Float3 z = worldRotation.Rotate(new Float3(0f, 0f, 1f));
+            return ExposureFactor(x.Y, y.Y, z.Y);
+        }
+
         public bool IsRoot => ParentIndex < 0;
 
         public override string ToString() =>

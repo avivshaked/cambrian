@@ -65,21 +65,92 @@ namespace Evosim.Core
         /// </param>
         /// <param name="boxSurfaceArea">The axis-aligned box's surface area, m², always computed.</param>
         public static double SurfaceArea(
-            List<Double3> pts, out bool fellBackToBox, out double boxSurfaceArea)
+            List<Double3> pts, out bool fellBackToBox, out double boxSurfaceArea) =>
+            SurfaceArea(pts, out fellBackToBox, out boxSurfaceArea, null);
+
+        /// <summary>
+        /// <see cref="SurfaceArea(List{Double3}, out bool, out double)"/>, and the faces the area
+        /// was summed over as area vectors — D110's shadow in a pose.
+        /// </summary>
+        /// <param name="pts">The cloud, in one frame. Not modified.</param>
+        /// <param name="fellBackToBox">As the overload without the faces says.</param>
+        /// <param name="boxSurfaceArea">The axis-aligned box's surface area, m², always computed.</param>
+        /// <param name="faceAreas">
+        /// Cleared and filled with one outward vector a face, its length the face's area, m². When
+        /// the box stood in, its six faces. Null asks for the area alone.
+        /// </param>
+        /// <remarks>
+        /// <b>The area is the same number with or without the faces</b>, to the bit: the faces are
+        /// collected beside the sum, never summed from, so asking for them moves no recorded
+        /// silhouette (the Slow snapshot scan is the check).
+        /// </remarks>
+        public static double SurfaceArea(
+            List<Double3> pts, out bool fellBackToBox, out double boxSurfaceArea,
+            List<Double3> faceAreas)
         {
             boxSurfaceArea = AabbSurfaceArea(pts);
 
             // The 1.001 is not a tolerance on the hull, it is a sanity check on it: a convex hull
             // can never have more surface than the box that contains it, so a larger answer means
             // the build went wrong and the box is the honest number.
-            if (TrySurfaceArea(pts, out double hull) && hull > 0.0 && hull <= boxSurfaceArea * 1.001)
+            if (TryBuild(pts, out double hull, faceAreas) && hull > 0.0 && hull <= boxSurfaceArea * 1.001)
             {
                 fellBackToBox = false;
                 return hull;
             }
 
+            if (faceAreas != null) AppendAabbFaces(pts, faceAreas);
+
             fellBackToBox = true;
             return boxSurfaceArea;
+        }
+
+        /// <summary>
+        /// The axis-aligned box's six faces as outward area vectors, replacing whatever the list
+        /// held — the stand-in for a hull that did not build.
+        /// </summary>
+        private static void AppendAabbFaces(List<Double3> pts, List<Double3> into)
+        {
+            into.Clear();
+            if (pts.Count == 0) return;
+
+            double minX = pts[0].X, maxX = pts[0].X;
+            double minY = pts[0].Y, maxY = pts[0].Y;
+            double minZ = pts[0].Z, maxZ = pts[0].Z;
+            for (int i = 1; i < pts.Count; i++)
+            {
+                Double3 p = pts[i];
+                if (p.X < minX) minX = p.X; else if (p.X > maxX) maxX = p.X;
+                if (p.Y < minY) minY = p.Y; else if (p.Y > maxY) maxY = p.Y;
+                if (p.Z < minZ) minZ = p.Z; else if (p.Z > maxZ) maxZ = p.Z;
+            }
+
+            double dx = maxX - minX, dy = maxY - minY, dz = maxZ - minZ;
+            into.Add(new Double3(dy * dz, 0.0, 0.0));
+            into.Add(new Double3(-dy * dz, 0.0, 0.0));
+            into.Add(new Double3(0.0, dx * dz, 0.0));
+            into.Add(new Double3(0.0, -dx * dz, 0.0));
+            into.Add(new Double3(0.0, 0.0, dx * dy));
+            into.Add(new Double3(0.0, 0.0, -dx * dy));
+        }
+
+        /// <summary>
+        /// The area a set of outward face vectors projects onto the plane normal to
+        /// <paramref name="up"/>: the one-sided sum of each face's area times the cosine of its
+        /// normal with up, faces turned away counting nothing. For a closed convex surface this is
+        /// its shadow along <paramref name="up"/>, which must be a unit vector.
+        /// </summary>
+        public static double ProjectedArea(IReadOnlyList<Double3> faceAreas, Double3 up)
+        {
+            if (faceAreas == null) throw new ArgumentNullException(nameof(faceAreas));
+
+            double sum = 0.0;
+            for (int f = 0; f < faceAreas.Count; f++)
+            {
+                double d = Double3.Dot(faceAreas[f], up);
+                if (d > 0.0) sum += d;
+            }
+            return sum;
         }
 
         private struct Face
@@ -93,9 +164,24 @@ namespace Evosim.Core
         /// Surface area of the convex hull, m². Returns false when the cloud is collinear or
         /// coplanar — there is no hull with an interior and the caller must say so.
         /// </summary>
-        public static bool TrySurfaceArea(List<Double3> pts, out double area)
+        public static bool TrySurfaceArea(List<Double3> pts, out double area) =>
+            TryBuild(pts, out area, null);
+
+        /// <summary>
+        /// <see cref="TrySurfaceArea"/>, and the hull's faces as outward area vectors, each half
+        /// the unnormalised cross product the area is summed from. Returns false, with the list
+        /// emptied, where <see cref="TrySurfaceArea"/> does.
+        /// </summary>
+        public static bool TryFaces(List<Double3> pts, out double area, List<Double3> faceAreas)
+        {
+            if (faceAreas == null) throw new ArgumentNullException(nameof(faceAreas));
+            return TryBuild(pts, out area, faceAreas);
+        }
+
+        private static bool TryBuild(List<Double3> pts, out double area, List<Double3> faceAreas)
         {
             if (pts == null) throw new ArgumentNullException(nameof(pts));
+            faceAreas?.Clear();
 
             area = 0.0;
             int n = pts.Count;
@@ -229,10 +315,13 @@ namespace Evosim.Core
             {
                 if (faces[f].Dead) continue;
                 sum += 0.5 * faces[f].N.Length;
+                faceAreas?.Add(faces[f].N * 0.5);
             }
 
             area = sum;
-            return !double.IsNaN(sum) && !double.IsInfinity(sum);
+            bool finite = !double.IsNaN(sum) && !double.IsInfinity(sum);
+            if (!finite) faceAreas?.Clear();
+            return finite;
         }
 
         private static void AddFace(List<Face> faces, List<Double3> pts, int a, int b, int c, Double3 inside)

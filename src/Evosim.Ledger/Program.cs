@@ -20,7 +20,7 @@ namespace Evosim.Ledger
     /// dotnet run --project src/Evosim.Ledger -- ^
     ///     --genome path\to\genome.json --config path\to\run\config.json ^
     ///     --clearance 1,5,10 --depth 0,5,10,15,20 --density 0.5,1,2,4,7,10,15 ^
-    ///     [--shade 0] [--compare]
+    ///     [--shade 0] [--exposure 1] [--compare]
     /// </code>
     /// Or, from PowerShell: <c>scripts/ledger.ps1 -Genome ... -Config ... -Clearance 1,5,10 ...</c>
     /// (see that script's own header for its exact switches).
@@ -53,6 +53,7 @@ namespace Evosim.Ledger
         private static int Run(string[] args)
         {
             Options options = Options.Parse(args);
+            _exposure = options.Exposure;
 
             string genomeText = ReadFirstLine(options.GenomePath, "genome");
             Genome genome = GenomeJson.Read(genomeText);
@@ -175,6 +176,30 @@ namespace Evosim.Ledger
             return 0;
         }
 
+        // ------------------------------------------------------------------ exposure
+
+        // D110's --exposure, one factor for every part. Held here rather than threaded through
+        // every table, since it is one number for the whole invocation.
+        private static float _exposure = 1f;
+
+        /// <summary>
+        /// The exposure array for one body — the factor repeated a part — or null at 1, which is
+        /// the orientation average and the path every screen before D110 took.
+        /// </summary>
+        /// <remarks>
+        /// An array rather than a multiplier on the answer, so that the factor reaches the bill
+        /// through Core's own per-part path (<c>Metabolism.StepAt</c>'s exposure overload) and the
+        /// uptake ceiling, which is per square metre too, sees it as the world would.
+        /// </remarks>
+        private static float[] Exposed(Phenotype body)
+        {
+            if (_exposure == 1f) return null;
+
+            var exposure = new float[body.PartCount];
+            for (int i = 0; i < exposure.Length; i++) exposure[i] = _exposure;
+            return exposure;
+        }
+
         // ------------------------------------------------------------------ body summary
 
         private static void AppendBodySummary(
@@ -189,7 +214,7 @@ namespace Evosim.Ledger
             float surfaceIrradiance = config.Light.IrradianceAt(0f);
             float fixationWatts = Metabolism.StepAt(
                 body, config, surfaceIrradiance, nutrientDensity: 0f, spentDensity: spentDensity,
-                workJoules: 0f, seconds: 1f, ageSeconds: 0f).LightIncome;
+                workJoules: 0f, seconds: 1f, ageSeconds: 0f, exposure: Exposed(body)).LightIncome;
 
             var byType = new Dictionary<string, (int Count, float Volume)>(StringComparer.Ordinal);
             foreach (PhenotypePart part in body.Parts)
@@ -213,6 +238,12 @@ namespace Evosim.Ledger
             sb.Append("- Lit area (capped): ")
               .Append(Format(body.EffectiveLitArea(config.LightSilhouetteCap))).Append(" m2 (cap ")
               .Append(config.LightSilhouetteCap ? "on" : "off").Append(")\n");
+            if (_exposure != 1f)
+            {
+                sb.Append("- Exposure: every part at ").Append(Format(_exposure))
+                  .Append(" (D110; 1 is the orientation average, 2 a thin sheet lying flat), lit area ")
+                  .Append(Format(body.ExposedLitArea(Exposed(body)))).Append(" m2 before the cap\n");
+            }
             sb.Append("- Tissue: ").Append(Format((float)tissue)).Append(" J\n");
             sb.Append("- Standing cost: ").Append(Format(standingWatts)).Append(" W (")
               .Append(Format(standingWatts / config.JoulesPerUnit)).Append(" units/s)\n");
@@ -347,7 +378,7 @@ namespace Evosim.Ledger
             Phenotype body, RunConfig config, float surfaceIrradiance, float spentDensity) =>
             Metabolism.StepAt(
                 body, config, surfaceIrradiance, nutrientDensity: 0f, spentDensity: spentDensity,
-                workJoules: 0f, seconds: 1f, ageSeconds: 0f).Net;
+                workJoules: 0f, seconds: 1f, ageSeconds: 0f, exposure: Exposed(body)).Net;
 
         // ------------------------------------------------------------------ the mouth
 
@@ -402,7 +433,7 @@ namespace Evosim.Ledger
             float surfaceIrradiance = config.Light.IrradianceAt(0f);
             float fixationWatts = Metabolism.StepAt(
                 body, config, surfaceIrradiance, nutrientDensity: 0f, spentDensity: spentDensity,
-                workJoules: 0f, seconds: 1f, ageSeconds: 0f).LightIncome;
+                workJoules: 0f, seconds: 1f, ageSeconds: 0f, exposure: Exposed(body)).LightIncome;
 
             // The lifetime the world already uses for one: senescence's doubling scale, which is
             // how long a body lasts before upkeep alone finishes it (D038). A world without
@@ -562,7 +593,8 @@ namespace Evosim.Ledger
                 foreach (float density in densities)
                 {
                     LedgerForecastResult result = LedgerForecast.Forecast(
-                        body, config, irradiance, density, spentDensity, shade, reproduction);
+                        body, config, irradiance, density, spentDensity, shade, reproduction,
+                        Exposed(body));
 
                     sb.Append('|').Append(Format(depth))
                       .Append('|').Append(Format(density))
@@ -683,6 +715,12 @@ namespace Evosim.Ledger
             public float Shade;
 
             /// <summary>
+            /// D110's exposure factor, every part alike. 1 by default, the orientation average;
+            /// 2 is a thin sheet lying flat and 0 one standing on edge.
+            /// </summary>
+            public float Exposure = 1f;
+
+            /// <summary>
             /// Spent matter dissolved in the water, units/m3 — D098's leg 1. Null until
             /// <see cref="Program"/> fills it from the config, since the default is a reading of
             /// the world the config describes rather than a constant.
@@ -746,6 +784,9 @@ namespace Evosim.Ledger
                         ? ParseFloat("spent", spentText)
                         : (float?)null,
                     Compare = compare,
+                    Exposure = raw.TryGetValue("exposure", out string exposureText)
+                        ? ParseFloat("exposure", exposureText)
+                        : 1f,
                     Attack = ParseOverride(raw, "attack"),
                     Intake = ParseOverride(raw, "intake"),
                     Protection = ParseOverride(raw, "protection"),
@@ -780,6 +821,12 @@ namespace Evosim.Ledger
                 if (options.Shade < 0f || options.Shade > 1f)
                 {
                     throw new LedgerCliException($"--shade must be in [0, 1]; got {options.Shade}.");
+                }
+
+                if (!(options.Exposure >= 0f) || float.IsInfinity(options.Exposure))
+                {
+                    throw new LedgerCliException(
+                        $"--exposure must be a finite non-negative factor; got {options.Exposure}.");
                 }
 
                 if (options.Spent.HasValue && options.Spent.Value < 0f)
