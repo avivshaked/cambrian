@@ -94,9 +94,27 @@ namespace Evosim.Dynamics.Placement
         /// squares in <c>float</c>, the sum widened once, and <c>Math.Sqrt</c> over the double.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Not <c>Float3.Magnitude</c> of the difference and not <see cref="Sqrt"/> of
         /// <c>SqrMagnitude</c> — those happen to agree here, but the guarantee this port owes
         /// is that the expression is the same one, so the expression is written out.
+        /// </para>
+        /// <para>
+        /// <b>The same expression is not the same bits across the two runtimes</b> (the
+        /// float-maths sweep of 2026-09-23, <c>FloatMathCheck</c> in the Editor against
+        /// <c>Evosim.Farm --float-math</c>; CLAUDE.md's farm gotcha). .NET 8 rounds each
+        /// product and sum here to a float; Mono holds the intermediates wider and rounds only
+        /// at a cast, and Unity's own <c>Vector3.Distance</c> is a third evaluation. Over four
+        /// million triples the inline form differs from the Editor's inline form in 8% of
+        /// distances and from <c>Vector3.Distance</c> in about 8%, by one ulp, while the form
+        /// that casts every product and sum to <c>float</c> gives .NET's bits in both runtimes
+        /// (the sweep's <c>Distance/cast</c> line: 0 mismatches against the inline form on .NET,
+        /// so the farm's recorded worlds keep their bits). So the line is written with the
+        /// casts, which pins this expression to one rounding wherever the solver runs, the
+        /// Editor's live mode included. What it does not pin is Unity's own placer, which calls
+        /// <c>Vector3.Distance</c>: a placement that turns on that ulp is one more reason a live
+        /// Editor world is a cousin of a farm run.
+        /// </para>
         /// </remarks>
         public static float Distance(Evosim.Core.Float3 a, Evosim.Core.Float3 b)
         {
@@ -104,7 +122,8 @@ namespace Evosim.Dynamics.Placement
             float diffY = a.Y - b.Y;
             float diffZ = a.Z - b.Z;
 
-            return (float)Math.Sqrt(diffX * diffX + diffY * diffY + diffZ * diffZ);
+            return (float)Math.Sqrt(
+                (float)((float)((float)(diffX * diffX) + (float)(diffY * diffY)) + (float)(diffZ * diffZ)));
         }
     }
 }
