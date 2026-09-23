@@ -427,6 +427,33 @@ namespace Evosim.Core
         [Tunable("world", Unit = "W/m3")]
         public float BuoyancyOffsetWattsPerCubicMetre { get; set; }
 
+        /// <summary>
+        /// What a part pays for the load it puts on the chain to the root, W per m² of its lit
+        /// area per m² of its distance from the root — D113, 2026-09-23,
+        /// <c>logbook/specs/support-cost-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A standing cost that grows faster with reach than income does.</b> Each part pays
+        /// <c>price · LitArea · d²</c> in its upkeep, <c>d</c> being
+        /// <see cref="PhenotypePart.DistanceFromRoot"/>, worn with the rest by senescence; the root
+        /// pays nothing. Income goes as area, so a fan of self-similar copies pays as reach to the
+        /// fourth against income as reach squared and loses money past <c>sqrt(income per m² /
+        /// price)</c>, ten metres at the ruled 0.1: round 44's fourteen-metre giant, which D107
+        /// left to the economy to bound, goes negative while a half-metre two-part leaf keeps all
+        /// but a hundredth of a watt. The area is the orientation average and not the pose's,
+        /// with <see cref="LightByExposure"/> on or off, because the load is the sheet's size and
+        /// not its angle to the sky.
+        /// </para>
+        /// <para>
+        /// <b>0 by default, and 0 is the recorded world to the bit</b>: the term is not computed
+        /// and no float is added to the bill (the pattern of the attribute prices). Only the farm
+        /// binds it (<c>EVOSIM_SUPPORT</c>); a world built in Unity carries it at 0.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "W/m2/m2")]
+        public float SupportWattsPerSquareMetrePerSquareMetre { get; set; }
+
         /// <summary>How deep the world is, metres — DESIGN.md §5A.2c.</summary>
         /// <remarks>
         /// <b>The world's first vertical bound, and it exists because detritus has to land

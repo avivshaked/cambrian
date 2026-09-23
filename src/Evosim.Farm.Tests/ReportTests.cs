@@ -131,7 +131,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // 5a456a9e7b2518d3, and D111's buoyancy offset price under this.
                 .Replace(
                     " · configHash ",
-                    " · modules add=0 drop=0 after=0 mut=0" + MouthToken + " · configHash ")
+                    " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + " · configHash ")
                 .Replace("`ff557bce2685293a`", "`5e9da13fa5ab246a`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
@@ -162,7 +162,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             // D106's, last before the hash and all at their defaults: a reader verifying an arm
             // has to be able to see from the header alone that the module gene is off and that
             // nothing bites, eats, heals or is charged for an attribute.
-            Assert.Contains(" · modules add=0 drop=0 after=0 mut=0" + MouthToken + " · configHash", line);
+            Assert.Contains(" · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + " · configHash", line);
 
             // The reach bound, off: a reader has to see from the header that no body was cut.
             Assert.Contains(" · selfOverlap 0.1 · reach off · ", line);
@@ -205,7 +205,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             Assert.Equal(Report.BaseColumns.Length + 4, report.Columns.Count);
             Assert.Equal("t (s)", report.Columns[0]);
-            Assert.Equal("float off", report.Columns[Report.BaseColumns.Length - 1]);
+            Assert.Equal("reach m", report.Columns[Report.BaseColumns.Length - 1]);
             Assert.Equal("p0", report.Columns[Report.BaseColumns.Length]);
             Assert.Equal("p3", report.Columns[Report.BaseColumns.Length + 3]);
 
@@ -268,6 +268,9 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             // D111's, the same.
             "float off",
+
+            // D113's two: the support watts, a dash in every recorded world, and the reach.
+            "support W", "reach m",
         };
 
         /// <summary>
@@ -276,6 +279,9 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         /// </summary>
         private const string MouthToken =
             " · mouth hp=1 heal=0/s@1J reach=0 waste=0 prices atk=0 ink=0 prt=0 tgh=0 mut=0";
+
+        /// <summary>D113's header token at the recorded world's price, after the mouth's.</summary>
+        private const string SupportToken = " · support off";
 
         /// <summary>
         /// The recorded table's header row, column for column but for the four that were renamed

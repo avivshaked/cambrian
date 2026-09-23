@@ -82,8 +82,9 @@ $reader = New-Object System.IO.StreamReader($fs)
 # summary above it. That is what fable-propose-growth.md (2026-09-08) did when `endowment`
 # became `investment`: the failure is loud but the message points at the schema rather than at
 # the key, so scripts/tests/absorptive-log/ now holds a row of the current shape and asserts
-# that nothing is malformed. `exposedArea` (D110, 2026-09-23) is the one optional key, so a log
-# written before it still reads.
+# that nothing is malformed. `exposedArea` (D110, 2026-09-23) and `support` (D113, the same
+# day, null with the price off) are the two optional keys, so a log written before either
+# still reads.
 $rx = [regex]('"t":(?<t>-?[0-9.E+-]+),"id":(?<id>\d+),"age":(?<age>-?[0-9.E+-]+),' +
     '"gen":(?<gen>\d+),"patch":(?<patch>\d+),"y":(?<y>-?[0-9.E+-]+),' +
     '"volume":(?<volume>-?[0-9.E+-]+),"absVolume":(?<absv>-?[0-9.E+-]+),' +
@@ -92,7 +93,7 @@ $rx = [regex]('"t":(?<t>-?[0-9.E+-]+),"id":(?<id>\d+),"age":(?<age>-?[0-9.E+-]+)
     '"energy":(?<energy>-?[0-9.E+-]+),"tissue":(?<tissue>-?[0-9.E+-]+),' +
     '"investment":(?<investment>-?[0-9.E+-]+),"densityHere":(?<dens>-?[0-9.E+-]+),' +
     '"share":(?<share>-?[0-9.E+-]+),"foodW":(?<food>-?[0-9.E+-]+),"lightW":(?<light>-?[0-9.E+-]+),' +
-    '"upkeepW":(?<upkeep>-?[0-9.E+-]+),"exudedW":(?<exuded>-?[0-9.E+-]+),"netW":(?<net>-?[0-9.E+-]+),' +
+    '"upkeepW":(?<upkeep>-?[0-9.E+-]+),(?:"support":(?<support>null|-?[0-9.E+-]+),)?"exudedW":(?<exuded>-?[0-9.E+-]+),"netW":(?<net>-?[0-9.E+-]+),' +
     '"children":(?<children>\d+),"lastChildT":(?<lastChild>null|-?[0-9.E+-]+),"dead":(?<dead>true|false)')
 $rxTrunc = [regex]'"t":(?<t>-?[0-9.E+-]+),"truncated":(?<n>\d+)'
 

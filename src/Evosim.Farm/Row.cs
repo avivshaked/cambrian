@@ -242,6 +242,8 @@ namespace Evosim.Farm
             double leafLit = 0d, leafExposed = 0d;
             bool offsetPriced = world.Config.BuoyancyOffsetWattsPerCubicMetre > 0f;
             double leafArea = 0d, leafOffset = 0d;
+            bool supportPriced = world.Config.SupportWattsPerSquareMetrePerSquareMetre > 0f;
+            double supportWatts = 0d, reachArea = 0d, reachWeighted = 0d;
             int belowWorld = 0, absorptiveBelowWorld = 0;
 
             double matterLocked = world.StandingJoulesInBodies / world.Config.JoulesPerUnit;
@@ -321,6 +323,18 @@ namespace Evosim.Farm
                     }
                 }
 
+                // D113's readouts. The reach is every part's distance from its root weighted by
+                // the area the price bills it on, read at any price, since the reach a body grows
+                // with the price off is what the price is measured against. The support watts are
+                // the bill's own expression, unworn, and only with the price on.
+                foreach (PhenotypePart part in creature.Phenotype.Parts)
+                {
+                    reachArea += part.LitArea;
+                    reachWeighted += (double)part.LitArea * part.DistanceFromRoot;
+                }
+
+                if (supportPriced) supportWatts += Metabolism.SupportWatts(creature.Phenotype, world.Config);
+
                 int creatureDof = 0;
                 foreach (PhenotypePart part in creature.Phenotype.Parts)
                 {
@@ -399,6 +413,11 @@ namespace Evosim.Farm
 
             // The same shape: NaN with the price at 0 or no leaf alive, a dash in the table.
             double meanOffset = leafArea > 0d ? leafOffset / leafArea : double.NaN;
+
+            // D113. The support watts NaN with the price at 0, for meanOffset's reason; the reach
+            // NaN only in a world with no part alive.
+            double supportTotal = supportPriced ? supportWatts : double.NaN;
+            double meanReach = reachArea > 0d ? reachWeighted / reachArea : double.NaN;
 
             HorizontalSpread spread = sim.MeasureHorizontalSpread(absorptiveNow);
 
@@ -783,6 +802,14 @@ namespace Evosim.Farm
                 if (double.IsNaN(meanOffset)) w.Field("meanBuoyancyOffset", (string)null);
                 else w.Field("meanBuoyancyOffset", meanOffset);
 
+                // D113. `supportWatts` null with the price at 0; `meanReach` null only with no
+                // part alive.
+                if (double.IsNaN(supportTotal)) w.Field("supportWatts", (string)null);
+                else w.Field("supportWatts", supportTotal);
+
+                if (double.IsNaN(meanReach)) w.Field("meanReach", (string)null);
+                else w.Field("meanReach", meanReach);
+
                 long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
                 for (int p = 0; p < harnessPhaseMs.Length; p++)
@@ -978,6 +1005,10 @@ namespace Evosim.Farm
 
                 // D111's, after it.
                 double.IsNaN(meanOffset) ? "—" : meanOffset.ToString("0.###", c),
+
+                // D113's two, after it.
+                double.IsNaN(supportTotal) ? "—" : supportTotal.ToString("0.###", c),
+                double.IsNaN(meanReach) ? "—" : meanReach.ToString("0.###", c),
             };
 
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));
